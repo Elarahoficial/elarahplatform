@@ -289,10 +289,10 @@ select {
 /* ===== HERO ===== */
 .hero {
   position: relative;
-  height: 520px;
+  height: 580px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: hidden;
 }
 
@@ -300,41 +300,32 @@ select {
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.hero__video-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #F27623 0%, #FF9A4D 30%, #FFD4A8 60%, #FFF0E3 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.9rem;
-}
-
-.hero__play-icon {
-  font-size: 3rem;
-  width: 80px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(4px);
+.hero__video-iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120vw;
+  height: 120vh;
+  min-width: 100%;
+  min-height: 100%;
+  border: 0;
+  pointer-events: none;
+  object-fit: cover;
 }
 
 .hero__overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.1) 0%,
-    rgba(0, 0, 0, 0.35) 100%
+    90deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.1) 100%
   );
   z-index: 1;
 }
@@ -342,20 +333,24 @@ select {
 .hero__content {
   position: relative;
   z-index: 2;
-  text-align: center;
-  padding: 0 24px;
-  max-width: 700px;
+  text-align: left;
+  padding: 0 24px 0 80px;
+  max-width: 750px;
 }
 
 .hero__title {
   font-family: 'DM Serif Display', serif;
-  font-size: 3.2rem;
+  font-size: 3.4rem;
   font-weight: 400;
   color: var(--white);
   line-height: 1.15;
   margin-bottom: 16px;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+}
+
+.hero__title span {
+  display: block;
 }
 
 .hero__subtitle {
@@ -363,6 +358,7 @@ select {
   color: rgba(255, 255, 255, 0.9);
   margin-bottom: 32px;
   font-weight: 300;
+  text-align: left;
 }
 
 .hero__cta {
@@ -830,6 +826,10 @@ select {
 
   .hero {
     height: 420px;
+  }
+
+  .hero__content {
+    padding: 0 24px;
   }
 
   .hero__title {
