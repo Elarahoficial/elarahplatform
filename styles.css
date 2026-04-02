@@ -206,14 +206,15 @@ select {
   display: block;
   padding: 10px 14px;
   font-size: 0.9rem;
-  color: var(--gray-700);
+  color: var(--orange);
+  font-weight: 500;
   border-radius: var(--radius-sm);
   transition: var(--transition);
 }
 
 .header__dropdown-item:hover {
   background: var(--cream);
-  color: var(--orange);
+  color: var(--orange-dark);
 }
 
 .header__actions {
