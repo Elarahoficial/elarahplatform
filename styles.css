@@ -116,18 +116,18 @@ select {
   transform: translateY(-50%);
   width: 18px;
   height: 18px;
-  color: var(--gray-400);
+  color: var(--orange);
   pointer-events: none;
 }
 
 .header__search-input {
   width: 100%;
   padding: 10px 16px 10px 42px;
-  border: 1.5px solid var(--gray-200);
+  border: 2px solid var(--orange);
   border-radius: var(--radius-full);
   font-size: 0.9rem;
   color: var(--gray-800);
-  background: var(--gray-50);
+  background: var(--white);
   transition: var(--transition);
   font-family: inherit;
 }
@@ -152,8 +152,8 @@ select {
 .header__nav-link {
   padding: 8px 14px;
   font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--gray-700);
+  font-weight: 600;
+  color: var(--orange);
   border-radius: var(--radius-sm);
   transition: var(--transition);
   white-space: nowrap;
@@ -163,7 +163,7 @@ select {
 }
 
 .header__nav-link:hover {
-  color: var(--orange);
+  color: var(--orange-dark);
   background: var(--cream);
 }
 
@@ -171,6 +171,7 @@ select {
   width: 16px;
   height: 16px;
   transition: transform var(--transition);
+  color: var(--orange);
 }
 
 .header__nav-dropdown {
@@ -231,7 +232,7 @@ select {
   justify-content: center;
   border-radius: var(--radius-full);
   transition: var(--transition);
-  color: var(--gray-600);
+  color: var(--orange);
 }
 
 .header__action-btn svg {
@@ -241,7 +242,7 @@ select {
 
 .header__action-btn:hover {
   background: var(--cream);
-  color: var(--orange);
+  color: var(--orange-dark);
 }
 
 .header__login-btn {
