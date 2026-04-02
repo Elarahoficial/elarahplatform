@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elarah — Offline is a Feeling</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo">
+        <svg class="header__logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 4C11.163 4 4 11.163 4 20s7.163 16 16 16c4.418 0 8.418-1.791 11.314-4.686" stroke="#F27623" stroke-width="3.5" stroke-linecap="round"/>
+          <path d="M20 10c-5.523 0-10 4.477-10 10s4.477 10 10 10" stroke="#F27623" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+        <span class="header__logo-text">Elarah</span>
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="#" class="header__dropdown-item">Cerâmica</a>
+            <a href="#" class="header__dropdown-item">Pintura</a>
+            <a href="#" class="header__dropdown-item">Gastronomia</a>
+            <a href="#" class="header__dropdown-item">Fotografia</a>
+            <a href="#" class="header__dropdown-item">Música</a>
+            <a href="#" class="header__dropdown-item">Artesanato</a>
+            <a href="#" class="header__dropdown-item">Jardinagem</a>
+            <a href="#" class="header__dropdown-item">Dança</a>
+          </div>
+        </div>
+        <a href="#" class="header__nav-link">Presentear</a>
+        <a href="#" class="header__nav-link">Oferecer uma experiência</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO SECTION ========== -->
+  <section class="hero">
+    <div class="hero__video-bg">
+      <div class="hero__video-placeholder">
+        <span class="hero__play-icon">&#9654;</span>
+        <span>Vídeo de fundo</span>
+      </div>
+    </div>
+    <div class="hero__overlay"></div>
+    <div class="hero__content">
+      <h1 class="hero__title">Descubra experiências criativas perto de você</h1>
+      <p class="hero__subtitle">Um convite para sair da tela e viver algo novo</p>
+      <a href="#experiencias" class="hero__cta">Explorar experiências</a>
+    </div>
+  </section>
+
+  <!-- ========== CATEGORIES STRIP ========== -->
+  <section class="categories">
+    <div class="categories__inner">
+      <button class="category-chip category-chip--active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+        Todas
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+        Cerâmica
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
+        Pintura
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg>
+        Gastronomia
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        Fotografia
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        Música
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/></svg>
+        Artesanato
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c4.97 0 9-2.69 9-6v-2c0-3.31-4.03-6-9-6s-9 2.69-9 6v2c0 3.31 4.03 6 9 6z"/><path d="M12 8V2M8 4l4-2 4 2"/></svg>
+        Jardinagem
+      </button>
+      <button class="category-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22V8M5 12l7-4 7 4"/><circle cx="12" cy="5" r="3"/></svg>
+        Dança
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== FILTER SECTION ========== -->
+  <section class="filters">
+    <div class="filters__inner">
+      <h2 class="filters__title">Encontre sua próxima experiência</h2>
+      <div class="filters__row">
+        <div class="filters__group">
+          <label class="filters__label">Bairro</label>
+          <select class="filters__select">
+            <option value="">Todos os bairros</option>
+            <option>Vila Madalena</option>
+            <option>Pinheiros</option>
+            <option>Jardins</option>
+            <option>Vila Mariana</option>
+            <option>Liberdade</option>
+            <option>Bela Vista</option>
+            <option>Consolação</option>
+            <option>Itaim Bibi</option>
+            <option>Moema</option>
+            <option>Perdizes</option>
+          </select>
+        </div>
+        <div class="filters__group">
+          <label class="filters__label">Categoria</label>
+          <select class="filters__select">
+            <option value="">Todas as categorias</option>
+            <option>Cerâmica</option>
+            <option>Pintura</option>
+            <option>Gastronomia</option>
+            <option>Fotografia</option>
+            <option>Música</option>
+            <option>Artesanato</option>
+            <option>Jardinagem</option>
+            <option>Dança</option>
+          </select>
+        </div>
+        <button class="filters__btn">Explorar experiências</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIENCES GRID ========== -->
+  <section class="experiences" id="experiencias">
+    <div class="experiences__inner">
+      <div class="experiences__header">
+        <h2 class="experiences__title">Experiências em destaque</h2>
+        <a href="#" class="experiences__view-all">Ver todas &rarr;</a>
+      </div>
+
+      <div class="experiences__grid">
+        <!-- Card 1 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #f6d5a8, #f0a05e);">
+              <span>Cerâmica</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Aula de cerâmica artesanal</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Vila Madalena, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 120</strong></p>
+          </div>
+        </article>
+
+        <!-- Card 2 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #d4e7c5, #8cb369);">
+              <span>Gastronomia</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Workshop de massa fresca italiana</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Pinheiros, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 180</strong></p>
+          </div>
+        </article>
+
+        <!-- Card 3 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #f9d1d1, #e07a7a);">
+              <span>Pintura</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Noite de pintura com vinho</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Jardins, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 150</strong></p>
+          </div>
+        </article>
+
+        <!-- Card 4 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #c5d4e7, #6991b3);">
+              <span>Fotografia</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Fotografia analógica nas ruas</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Liberdade, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 95</strong></p>
+          </div>
+        </article>
+
+        <!-- Card 5 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #e7d4c5, #b38a69);">
+              <span>Artesanato</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Macramê: crie seu próprio painel</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Vila Mariana, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 110</strong></p>
+          </div>
+        </article>
+
+        <!-- Card 6 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #d5c5e7, #9369b3);">
+              <span>Música</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Jam session ao pôr do sol</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Bela Vista, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 80</strong></p>
+          </div>
+        </article>
+
+        <!-- Card 7 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #c5e7d4, #69b391);">
+              <span>Jardinagem</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Terrário urbano: monte o seu</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Perdizes, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 90</strong></p>
+          </div>
+        </article>
+
+        <!-- Card 8 -->
+        <article class="card">
+          <div class="card__image">
+            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #f6e6a8, #e0c05e);">
+              <span>Dança</span>
+            </div>
+            <button class="card__favorite" aria-label="Favoritar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Forró pé de serra para iniciantes</h3>
+            <p class="card__location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Consolação, São Paulo
+            </p>
+            <p class="card__price">A partir de <strong>R$ 70</strong></p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA SECTION ========== -->
+  <section class="cta-section">
+    <div class="cta-section__inner">
+      <div class="cta-section__content">
+        <h2 class="cta-section__title">Você oferece experiências criativas?</h2>
+        <p class="cta-section__text">Junte-se à comunidade Elarah e conecte-se com pessoas que buscam viver algo novo, offline e inesquecível.</p>
+        <a href="#" class="cta-section__btn">Oferecer uma experiência</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo">
+          <span class="header__logo-text">Elarah</span>
+        </a>
+        <p class="footer__tagline">offline is a feeling</p>
+      </div>
+      <div class="footer__links">
+        <div class="footer__col">
+          <h4>Explorar</h4>
+          <a href="#">Cerâmica</a>
+          <a href="#">Pintura</a>
+          <a href="#">Gastronomia</a>
+          <a href="#">Fotografia</a>
+        </div>
+        <div class="footer__col">
+          <h4>Elarah</h4>
+          <a href="#">Sobre nós</a>
+          <a href="#">Como funciona</a>
+          <a href="#">Ofereça experiências</a>
+          <a href="#">Contato</a>
+        </div>
+        <div class="footer__col">
+          <h4>Suporte</h4>
+          <a href="#">Central de ajuda</a>
+          <a href="#">Termos de uso</a>
+          <a href="#">Política de privacidade</a>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>&copy; 2026 Elarah. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
