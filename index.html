@@ -116,32 +116,25 @@
       <div class="filters__row">
         <div class="filters__group">
           <label class="filters__label">Bairro</label>
-          <select class="filters__select">
+          <select class="filters__select" id="filter-bairro">
             <option value="">Todos os bairros</option>
             <option>Brooklin</option>
-            <option>Faria Lima</option>
             <option>Jardim das Bandeiras</option>
-            <option>Jardins</option>
-            <option>Moema</option>
             <option>Pinheiros</option>
           </select>
         </div>
         <div class="filters__group">
           <label class="filters__label">Categoria</label>
-          <select class="filters__select">
+          <select class="filters__select" id="filter-categoria">
             <option value="">Todas as experiências</option>
-            <option>Bartenderia</option>
-            <option>Cerâmica</option>
-            <option>Floral</option>
             <option>Gastronomia</option>
-            <option>Macramê</option>
             <option>Pintura</option>
             <option>Sabonete</option>
             <option>Tufting</option>
             <option>Vela</option>
           </select>
         </div>
-        <button class="filters__btn">Explorar experiências</button>
+        <button class="filters__btn" id="filter-btn">Explorar experiências</button>
       </div>
     </div>
   </section>
@@ -151,170 +144,12 @@
     <div class="experiences__inner">
       <div class="experiences__header">
         <h2 class="experiences__title">Experiências em destaque</h2>
-        <a href="#" class="experiences__view-all">Ver todas &rarr;</a>
+        <span class="experiences__count" id="experiences-count"></span>
       </div>
-
-      <div class="experiences__grid">
-        <!-- Card 1 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #f6d5a8, #f0a05e);">
-              <span>Cerâmica</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Aula de cerâmica artesanal</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Vila Madalena, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 120</strong></p>
-          </div>
-        </article>
-
-        <!-- Card 2 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #d4e7c5, #8cb369);">
-              <span>Gastronomia</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Workshop de massa fresca italiana</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Pinheiros, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 180</strong></p>
-          </div>
-        </article>
-
-        <!-- Card 3 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #f9d1d1, #e07a7a);">
-              <span>Pintura</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Noite de pintura com vinho</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Jardins, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 150</strong></p>
-          </div>
-        </article>
-
-        <!-- Card 4 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #c5d4e7, #6991b3);">
-              <span>Fotografia</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Fotografia analógica nas ruas</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Liberdade, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 95</strong></p>
-          </div>
-        </article>
-
-        <!-- Card 5 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #e7d4c5, #b38a69);">
-              <span>Artesanato</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Macramê: crie seu próprio painel</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Vila Mariana, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 110</strong></p>
-          </div>
-        </article>
-
-        <!-- Card 6 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #d5c5e7, #9369b3);">
-              <span>Música</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Jam session ao pôr do sol</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Bela Vista, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 80</strong></p>
-          </div>
-        </article>
-
-        <!-- Card 7 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #c5e7d4, #69b391);">
-              <span>Jardinagem</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Terrário urbano: monte o seu</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Perdizes, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 90</strong></p>
-          </div>
-        </article>
-
-        <!-- Card 8 -->
-        <article class="card">
-          <div class="card__image">
-            <div class="card__image-placeholder" style="background: linear-gradient(135deg, #f6e6a8, #e0c05e);">
-              <span>Dança</span>
-            </div>
-            <button class="card__favorite" aria-label="Favoritar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
-          <div class="card__body">
-            <h3 class="card__title">Forró pé de serra para iniciantes</h3>
-            <p class="card__location">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Consolação, São Paulo
-            </p>
-            <p class="card__price">A partir de <strong>R$ 70</strong></p>
-          </div>
-        </article>
+      <div class="experiences__grid" id="experiences-grid">
+        <!-- Cards rendered by JS -->
       </div>
+      <p class="experiences__empty" id="experiences-empty" style="display:none;">Nenhuma experiência encontrada com esses filtros.</p>
     </div>
   </section>
 
