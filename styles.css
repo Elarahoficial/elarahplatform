@@ -502,7 +502,6 @@ select {
   font-size: 1.6rem;
   font-weight: 400;
   color: var(--gray-800);
-  text-align: center;
   margin-bottom: 20px;
 }
 
