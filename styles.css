@@ -524,6 +524,7 @@ select {
   display: flex;
   gap: 16px;
   align-items: flex-end;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
