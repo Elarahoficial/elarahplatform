@@ -464,7 +464,7 @@ select {
 
 .category-link {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(1.1rem, 1.4vw, 1.7rem);
+  font-size: clamp(1.2rem, 1.55vw, 1.85rem);
   font-weight: 400;
   color: var(--orange);
   white-space: nowrap;
