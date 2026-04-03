@@ -2,11 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===== EXPERIENCES DATA =====
   const experiences = [
-    { data: "06/04", categoria: "Gastronomia", nome: "Pães Alemães", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#d4e7c5,#8cb369" },
-    { data: "06/04", categoria: "Gastronomia", nome: "The Art of Lemmen", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#e7d4c5,#b38a69" },
-    { data: "07/04", categoria: "Gastronomia", nome: "CEO Kitchen (Comida Asiática)", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#f6d5a8,#f0a05e" },
-    { data: "08/04", categoria: "Gastronomia", nome: "Cozinha Tailandesa", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#d4e7c5,#8cb369" },
-    { data: "09/04", categoria: "Gastronomia", nome: "Cozinha Japonesa (Sushi/Sashimi)", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#e7d4c5,#b38a69" },
+    { data: "06/04", categoria: "Gastronomia", nome: "Pães Alemães", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#d4e7c5,#8cb369", imagem: "assets/experiences/paes-alemaes.jpg" },
+    { data: "06/04", categoria: "Gastronomia", nome: "The Art of Lemmen", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#e7d4c5,#b38a69", imagem: "assets/experiences/art-of-lemmen.jpg" },
+    { data: "07/04", categoria: "Gastronomia", nome: "CEO Kitchen (Comida Asiática)", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#f6d5a8,#f0a05e", imagem: "assets/experiences/ceo-kitchen.jpg" },
+    { data: "08/04", categoria: "Gastronomia", nome: "Cozinha Tailandesa", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#d4e7c5,#8cb369", imagem: "assets/experiences/cozinha-tailandesa.jpg" },
+    { data: "09/04", categoria: "Gastronomia", nome: "Cozinha Japonesa (Sushi/Sashimi)", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#e7d4c5,#b38a69", imagem: "assets/experiences/cozinha-japonesa.jpg" },
     { data: "10/04", categoria: "Gastronomia", nome: "Torta Salgada", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#f6d5a8,#f0a05e" },
     { data: "10/04", categoria: "Gastronomia", nome: "Izakaya (Japonesa)", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#d4e7c5,#8cb369" },
     { data: "11/04", categoria: "Gastronomia", nome: "Bolo Caseiro da Fazenda", horario: "16h00 – 19h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Becoária, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#e7d4c5,#b38a69" },
@@ -62,11 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const colors = exp.cor.split(',');
       const card = document.createElement('article');
       card.className = 'card';
+      const imageContent = exp.imagem
+        ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
+        : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
+
       card.innerHTML = `
         <div class="card__image">
-          <div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});">
-            <span>${exp.categoria}</span>
-          </div>
+          ${imageContent}
           <button class="card__favorite" aria-label="Favoritar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </button>
