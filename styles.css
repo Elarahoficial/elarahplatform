@@ -280,7 +280,7 @@ select {
 /* ===== HERO ===== */
 .hero {
   position: relative;
-  height: 580px;
+  height: 640px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -371,6 +371,74 @@ select {
   background: var(--cream);
 }
 
+/* ===== HERO FILTER CARD ===== */
+.hero__filter-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.hero__filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+}
+
+.hero__filter-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--gray-400);
+}
+
+.hero__filter-select {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--gray-800);
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23737373' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0 center;
+  padding-right: 20px;
+}
+
+.hero__filter-divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: 0 20px;
+}
+
+.hero__filter-btn {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 4px 20px 16px;
+  padding: 14px 0;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  text-align: center;
+  transition: var(--transition);
+}
+
+.hero__filter-btn:hover {
+  background: var(--orange-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
 /* ===== CATEGORIES STRIP ===== */
 .categories {
   border-bottom: 1px solid var(--gray-200);
@@ -382,6 +450,7 @@ select {
   margin: 0 auto;
   padding: 16px 24px;
   display: flex;
+  justify-content: center;
   gap: 10px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -447,6 +516,7 @@ select {
   font-size: 1.6rem;
   font-weight: 400;
   color: var(--gray-800);
+  text-align: center;
   margin-bottom: 20px;
 }
 
