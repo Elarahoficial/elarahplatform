@@ -90,8 +90,7 @@ select {
 }
 
 .header__logo-img {
-  height: 38px;
-  width: auto;
+    height: 80px;
 }
 
 .header__search {
