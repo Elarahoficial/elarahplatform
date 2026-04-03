@@ -464,13 +464,13 @@ select {
 
 .category-link {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(1.05rem, 1.3vw, 1.65rem);
+  font-size: clamp(0.95rem, 1.15vw, 1.5rem);
   font-weight: 400;
   color: var(--orange);
   white-space: nowrap;
   transition: color 0.25s ease, border-color 0.25s ease;
   padding: 10px 0;
-  margin: 0 clamp(12px, 2vw, 32px);
+  margin: 0 clamp(10px, 1.5vw, 28px);
   border-bottom: 3px solid transparent;
   cursor: pointer;
   letter-spacing: -0.01em;
@@ -509,7 +509,6 @@ select {
   display: flex;
   gap: 16px;
   align-items: flex-end;
-  justify-content: center;
   flex-wrap: wrap;
 }
 
