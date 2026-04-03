@@ -448,10 +448,10 @@ select {
 .categories__inner {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 20px 24px;
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 32px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -460,43 +460,23 @@ select {
   display: none;
 }
 
-.category-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1.5px solid var(--gray-200);
-  border-radius: var(--radius-full);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--gray-600);
+.category-link {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--orange);
   white-space: nowrap;
   transition: var(--transition);
-  background: var(--white);
+  padding: 8px 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
 }
 
-.category-chip svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
+.category-link:hover {
+  color: var(--orange-light);
 }
 
-.category-chip:hover {
-  border-color: var(--orange);
-  color: var(--orange);
-  background: var(--cream);
-}
-
-.category-chip--active {
-  background: var(--orange);
-  color: var(--white);
-  border-color: var(--orange);
-}
-
-.category-chip--active:hover {
-  background: var(--orange-dark);
-  color: var(--white);
-  border-color: var(--orange-dark);
+.category-link--active {
+  border-bottom-color: var(--orange);
 }
 
 /* ===== FILTERS ===== */

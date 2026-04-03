@@ -35,13 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ===== Category chip selection =====
-  document.querySelectorAll('.category-chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('.category-chip').forEach((c) =>
-        c.classList.remove('category-chip--active')
+  // ===== Category link selection =====
+  document.querySelectorAll('.category-link').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('.category-link').forEach((c) =>
+        c.classList.remove('category-link--active')
       );
-      chip.classList.add('category-chip--active');
+      link.classList.add('category-link--active');
     });
   });
 
