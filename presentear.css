@@ -86,97 +86,17 @@
   box-shadow: var(--shadow-xl);
 }
 
-/* Hero visual - gift card stack */
+/* Hero visual - gift card image */
 .gift-hero__visual {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.gift-hero__card-stack {
-  position: relative;
-  width: 320px;
-  height: 400px;
-}
-
-.gift-hero__mock-card {
-  position: absolute;
-  width: 300px;
-  border-radius: var(--radius-xl);
-  padding: 32px;
-  box-shadow: var(--shadow-lg);
-}
-
-.gift-hero__mock-card--back {
-  background: linear-gradient(135deg, #f9d1d1, #e07a7a);
-  top: 0;
-  right: 0;
-  height: 180px;
-  transform: rotate(6deg);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-.gift-hero__mock-label {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.2rem;
-  color: var(--white);
-}
-
-.gift-hero__mock-price {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin-top: 4px;
-}
-
-.gift-hero__mock-card--front {
-  background: var(--white);
-  bottom: 0;
-  left: 0;
-  height: 280px;
-  transform: rotate(-3deg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border: 1px solid var(--gray-200);
-}
-
-.gift-hero__mock-badge {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--orange);
-  background: var(--cream);
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-}
-
-.gift-hero__mock-logo img {
-  height: 48px;
-  margin-bottom: 16px;
-}
-
-.gift-hero__mock-msg {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.15rem;
-  color: var(--gray-800);
-  line-height: 1.4;
-  margin-bottom: 12px;
-}
-
-.gift-hero__mock-value {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--orange);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.gift-hero__image {
+  max-width: 420px;
+  width: 100%;
+  height: auto;
 }
 
 /* ===== COMO FUNCIONA ===== */
@@ -645,17 +565,8 @@
     order: -1;
   }
 
-  .gift-hero__card-stack {
-    width: 260px;
-    height: 340px;
-  }
-
-  .gift-hero__mock-card {
-    width: 240px;
-  }
-
-  .gift-hero__mock-card--front {
-    height: 240px;
+  .gift-hero__image {
+    max-width: 320px;
   }
 
   .gift-steps__grid {
