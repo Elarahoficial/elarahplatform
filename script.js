@@ -46,18 +46,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterCategoria = document.getElementById('filter-categoria');
   const filterBtn = document.getElementById('filter-btn');
   const categoryLinks = document.querySelectorAll('.category-link');
-
   const searchInput = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
 
   // ===== RENDER CARDS =====
   function renderCards() {
-       const filtered = experiences.filter((exp) => {
-      const textoBusca = activeBusca.toLowerCase();
-
+    const filtered = experiences.filter((exp) => {
       const matchCat = !activeCategoria || exp.categoria === activeCategoria;
       const matchBairro = !activeBairro || exp.bairro === activeBairro;
 
+      const textoBusca = activeBusca.toLowerCase();
       const matchBusca =
         !textoBusca ||
         exp.nome.toLowerCase().includes(textoBusca) ||
