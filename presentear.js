@@ -133,3 +133,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+// ===== SEARCH REDIRECT =====
+const searchInput = document.getElementById('search-input');
+
+if (searchInput) {
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const busca = searchInput.value.trim();
+
+      if (busca) {
+        window.location.href = `/elarahplatform/?busca=${encodeURIComponent(busca)}`;
+      }
+    }
+  });
+}
