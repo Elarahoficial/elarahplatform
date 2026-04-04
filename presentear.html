@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentear — Elarah</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="presentear.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="/" class="header__dropdown-item">Todas</a>
+            <a href="/" class="header__dropdown-item">Bartenderia</a>
+            <a href="/" class="header__dropdown-item">Cerâmica</a>
+            <a href="/" class="header__dropdown-item">Floral</a>
+            <a href="/" class="header__dropdown-item">Gastronomia</a>
+            <a href="/" class="header__dropdown-item">Macramê</a>
+            <a href="/" class="header__dropdown-item">Pintura</a>
+            <a href="/" class="header__dropdown-item">Sabonete</a>
+            <a href="/" class="header__dropdown-item">Tufting</a>
+            <a href="/" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="presentear.html" class="header__nav-link header__nav-link--active">Presentear</a>
+        <a href="#" class="header__nav-link">Oferecer uma experiência</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="gift-hero">
+    <div class="gift-hero__inner">
+      <div class="gift-hero__content">
+        <span class="gift-hero__tag">Presente criativo</span>
+        <h1 class="gift-hero__title">Dê algo que ninguém<br>esquece: uma experiência.</h1>
+        <p class="gift-hero__text">Surpreenda quem você ama com momentos únicos, feitos à mão, offline e cheios de significado. Muito melhor que qualquer coisa dentro de uma caixa.</p>
+        <a href="#gift-options" class="gift-hero__cta">Escolher presente</a>
+      </div>
+      <div class="gift-hero__visual">
+        <div class="gift-hero__card-stack">
+          <div class="gift-hero__mock-card gift-hero__mock-card--back">
+            <span class="gift-hero__mock-label">Pintura em Taça</span>
+            <span class="gift-hero__mock-price">R$262</span>
+          </div>
+          <div class="gift-hero__mock-card gift-hero__mock-card--front">
+            <div class="gift-hero__mock-badge">Gift Card</div>
+            <div class="gift-hero__mock-logo">
+              <img src="assets/logo.png" alt="Elarah">
+            </div>
+            <p class="gift-hero__mock-msg">Para você viver<br>algo especial.</p>
+            <span class="gift-hero__mock-value">Valor livre</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== COMO FUNCIONA ========== -->
+  <section class="gift-steps">
+    <div class="gift-steps__inner">
+      <h2 class="gift-steps__title">Como funciona</h2>
+      <p class="gift-steps__subtitle">Presentear com a Elarah é simples, rápido e especial.</p>
+      <div class="gift-steps__grid">
+        <div class="gift-steps__item">
+          <div class="gift-steps__number">1</div>
+          <h3 class="gift-steps__name">Escolha o presente</h3>
+          <p class="gift-steps__desc">Selecione um gift card com valor livre ou escolha uma experiência específica para presentear.</p>
+        </div>
+        <div class="gift-steps__item">
+          <div class="gift-steps__number">2</div>
+          <h3 class="gift-steps__name">Personalize e envie</h3>
+          <p class="gift-steps__desc">Adicione uma mensagem especial e envie por e-mail ou WhatsApp na hora que quiser.</p>
+        </div>
+        <div class="gift-steps__item">
+          <div class="gift-steps__number">3</div>
+          <h3 class="gift-steps__name">A pessoa escolhe e vive</h3>
+          <p class="gift-steps__desc">Quem receber pode trocar o gift card por qualquer experiência ou usar a que você escolheu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== OPÇÕES DE PRESENTE ========== -->
+  <section class="gift-options" id="gift-options">
+    <div class="gift-options__inner">
+      <h2 class="gift-options__title">Escolha como presentear</h2>
+      <div class="gift-options__grid">
+
+        <div class="gift-option-card">
+          <div class="gift-option-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="3"/>
+              <path d="M2 10h20"/>
+            </svg>
+          </div>
+          <h3 class="gift-option-card__title">Gift Card de valor livre</h3>
+          <p class="gift-option-card__desc">Escolha qualquer valor a partir de R$50. A pessoa presenteada decide qual experiência viver.</p>
+          <ul class="gift-option-card__perks">
+            <li>Válido por 12 meses</li>
+            <li>Qualquer experiência</li>
+            <li>Envio imediato</li>
+          </ul>
+          <a href="#" class="gift-option-card__btn">Comprar gift card</a>
+        </div>
+
+        <div class="gift-option-card gift-option-card--featured">
+          <div class="gift-option-card__badge">Mais escolhido</div>
+          <div class="gift-option-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 12v10H4V12"/>
+              <path d="M2 7h20v5H2z"/>
+              <path d="M12 22V7"/>
+              <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/>
+              <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>
+            </svg>
+          </div>
+          <h3 class="gift-option-card__title">Presente de experiência</h3>
+          <p class="gift-option-card__desc">Escolha uma experiência específica e surpreenda com algo pensado especialmente para a pessoa.</p>
+          <ul class="gift-option-card__perks">
+            <li>Experiência garantida</li>
+            <li>Mensagem personalizada</li>
+            <li>Troca de data flexível</li>
+          </ul>
+          <a href="#gift-experiences" class="gift-option-card__btn">Escolher experiência</a>
+        </div>
+
+        <div class="gift-option-card">
+          <div class="gift-option-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <h3 class="gift-option-card__title">Não sabe o que escolher?</h3>
+          <p class="gift-option-card__desc">Conte um pouco sobre a pessoa e nosso time sugere a experiência perfeita para ela.</p>
+          <ul class="gift-option-card__perks">
+            <li>Curadoria personalizada</li>
+            <li>Resposta em até 24h</li>
+            <li>Sem compromisso</li>
+          </ul>
+          <a href="#" class="gift-option-card__btn gift-option-card__btn--outline">Falar com a Elarah</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIÊNCIAS PARA PRESENTEAR ========== -->
+  <section class="gift-experiences" id="gift-experiences">
+    <div class="gift-experiences__inner">
+      <div class="gift-experiences__header">
+        <h2 class="gift-experiences__title">Experiências que combinam com presente</h2>
+        <p class="gift-experiences__subtitle">As mais escolhidas para surpreender alguém especial.</p>
+      </div>
+      <div class="gift-experiences__filters">
+        <button class="gift-filter-btn gift-filter-btn--active" data-filter="">Todas</button>
+        <button class="gift-filter-btn" data-filter="Gastronomia">Gastronomia</button>
+        <button class="gift-filter-btn" data-filter="Pintura">Pintura</button>
+        <button class="gift-filter-btn" data-filter="Vela">Vela</button>
+        <button class="gift-filter-btn" data-filter="Sabonete">Sabonete</button>
+        <button class="gift-filter-btn" data-filter="Tufting">Tufting</button>
+      </div>
+      <div class="gift-experiences__grid" id="gift-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section class="gift-faq">
+    <div class="gift-faq__inner">
+      <h2 class="gift-faq__title">Dúvidas frequentes</h2>
+      <div class="gift-faq__list">
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">O gift card tem validade?</summary>
+          <p class="gift-faq__answer">Sim, o gift card da Elarah é válido por 12 meses a partir da data da compra. Dentro desse período, a pessoa pode escolher qualquer experiência disponível.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">Posso trocar a data da experiência depois?</summary>
+          <p class="gift-faq__answer">Claro! A troca de data pode ser feita até 48 horas antes da experiência agendada, sem custo adicional. Basta entrar em contato com a Elarah.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">Como a pessoa recebe o presente?</summary>
+          <p class="gift-faq__answer">Você escolhe: pode enviar por e-mail com uma mensagem personalizada ou compartilhar um link direto pelo WhatsApp. O envio é imediato ou pode ser agendado para uma data especial.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">E se a pessoa quiser escolher outra experiência?</summary>
+          <p class="gift-faq__answer">Se você comprou um gift card de valor livre, a pessoa pode escolher qualquer experiência. Se comprou uma experiência específica, é possível trocar por outra de mesmo valor.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">Posso presentear mais de uma pessoa?</summary>
+          <p class="gift-faq__answer">Sim! Você pode comprar quantos gift cards ou experiências quiser, cada um com uma mensagem personalizada diferente.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA FINAL ========== -->
+  <section class="gift-cta">
+    <div class="gift-cta__inner">
+      <div class="gift-cta__content">
+        <h2 class="gift-cta__title">O melhor presente é uma memória.</h2>
+        <p class="gift-cta__text">Esqueça o óbvio. Dê algo que se sente, se vive e se lembra para sempre.</p>
+        <div class="gift-cta__actions">
+          <a href="#gift-options" class="gift-cta__btn">Presentear agora</a>
+          <a href="/" class="gift-cta__btn gift-cta__btn--outline">Ver todas as experiências</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo">
+          <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+        </a>
+        <p class="footer__tagline">offline is a feeling</p>
+      </div>
+      <div class="footer__links">
+        <div class="footer__col">
+          <h4>Explorar</h4>
+          <a href="/">Bartenderia</a>
+          <a href="/">Cerâmica</a>
+          <a href="/">Floral</a>
+          <a href="/">Gastronomia</a>
+          <a href="/">Macramê</a>
+          <a href="/">Pintura</a>
+          <a href="/">Sabonete</a>
+          <a href="/">Tufting</a>
+          <a href="/">Vela</a>
+        </div>
+        <div class="footer__col">
+          <h4>Elarah</h4>
+          <a href="#">Sobre nós</a>
+          <a href="#">Como funciona</a>
+          <a href="#">Ofereça experiências</a>
+          <a href="#">Contato</a>
+        </div>
+        <div class="footer__col">
+          <h4>Suporte</h4>
+          <a href="#">Central de ajuda</a>
+          <a href="#">Termos de uso</a>
+          <a href="#">Política de privacidade</a>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>&copy; 2026 Elarah. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="presentear.js"></script>
+</body>
+</html>

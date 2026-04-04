@@ -1,0 +1,713 @@
+/* ===== PRESENTEAR PAGE ===== */
+
+/* --- Active nav link indicator --- */
+.header__nav-link--active {
+  color: var(--orange-dark);
+  position: relative;
+}
+
+.header__nav-link--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--orange);
+  border-radius: 2px;
+}
+
+/* ===== GIFT HERO ===== */
+.gift-hero {
+  background: var(--cream);
+  padding: 80px 0 100px;
+  overflow: hidden;
+}
+
+.gift-hero__inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.gift-hero__tag {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--orange);
+  background: rgba(242, 118, 35, 0.1);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  margin-bottom: 20px;
+}
+
+.gift-hero__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 3rem;
+  font-weight: 400;
+  color: var(--gray-900);
+  line-height: 1.15;
+  margin-bottom: 20px;
+  letter-spacing: -0.02em;
+}
+
+.gift-hero__text {
+  font-size: 1.1rem;
+  color: var(--gray-600);
+  line-height: 1.7;
+  margin-bottom: 36px;
+  max-width: 480px;
+  font-weight: 300;
+}
+
+.gift-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 36px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+  box-shadow: var(--shadow-md);
+}
+
+.gift-hero__cta:hover {
+  background: var(--orange-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Hero visual - gift card stack */
+.gift-hero__visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.gift-hero__card-stack {
+  position: relative;
+  width: 320px;
+  height: 400px;
+}
+
+.gift-hero__mock-card {
+  position: absolute;
+  width: 300px;
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+}
+
+.gift-hero__mock-card--back {
+  background: linear-gradient(135deg, #f9d1d1, #e07a7a);
+  top: 0;
+  right: 0;
+  height: 180px;
+  transform: rotate(6deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.gift-hero__mock-label {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.2rem;
+  color: var(--white);
+}
+
+.gift-hero__mock-price {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
+}
+
+.gift-hero__mock-card--front {
+  background: var(--white);
+  bottom: 0;
+  left: 0;
+  height: 280px;
+  transform: rotate(-3deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid var(--gray-200);
+}
+
+.gift-hero__mock-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--orange);
+  background: var(--cream);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+}
+
+.gift-hero__mock-logo img {
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.gift-hero__mock-msg {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+  color: var(--gray-800);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.gift-hero__mock-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--orange);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ===== COMO FUNCIONA ===== */
+.gift-steps {
+  padding: 80px 0;
+  background: var(--white);
+}
+
+.gift-steps__inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.gift-steps__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+}
+
+.gift-steps__subtitle {
+  font-size: 1.05rem;
+  color: var(--gray-500);
+  margin-bottom: 48px;
+  font-weight: 300;
+}
+
+.gift-steps__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.gift-steps__item {
+  text-align: center;
+  padding: 0 16px;
+}
+
+.gift-steps__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--cream);
+  color: var(--orange);
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+}
+
+.gift-steps__name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 8px;
+}
+
+.gift-steps__desc {
+  font-size: 0.95rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* ===== GIFT OPTIONS ===== */
+.gift-options {
+  padding: 80px 0;
+  background: var(--cream);
+}
+
+.gift-options__inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.gift-options__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--gray-900);
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.gift-options__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+/* Option cards */
+.gift-option-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 36px 28px;
+  border: 1px solid var(--gray-200);
+  transition: var(--transition);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.gift-option-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+
+.gift-option-card--featured {
+  border-color: var(--orange);
+  box-shadow: var(--shadow-md);
+}
+
+.gift-option-card--featured:hover {
+  border-color: var(--orange);
+}
+
+.gift-option-card__badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--orange);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 16px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.gift-option-card__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  color: var(--orange);
+}
+
+.gift-option-card__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.gift-option-card__title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+}
+
+.gift-option-card__desc {
+  font-size: 0.92rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  font-weight: 300;
+}
+
+.gift-option-card__perks {
+  list-style: none;
+  margin-bottom: 24px;
+  flex: 1;
+}
+
+.gift-option-card__perks li {
+  font-size: 0.88rem;
+  color: var(--gray-600);
+  padding: 6px 0;
+  padding-left: 22px;
+  position: relative;
+}
+
+.gift-option-card__perks li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F27623' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.gift-option-card__btn {
+  display: block;
+  text-align: center;
+  padding: 14px 24px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+}
+
+.gift-option-card__btn:hover {
+  background: var(--orange-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.gift-option-card__btn--outline {
+  background: transparent;
+  color: var(--orange);
+  border: 2px solid var(--orange);
+}
+
+.gift-option-card__btn--outline:hover {
+  background: var(--orange);
+  color: var(--white);
+}
+
+/* ===== GIFT EXPERIENCES ===== */
+.gift-experiences {
+  padding: 80px 0;
+  background: var(--white);
+}
+
+.gift-experiences__inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.gift-experiences__header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.gift-experiences__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+}
+
+.gift-experiences__subtitle {
+  font-size: 1.05rem;
+  color: var(--gray-500);
+  font-weight: 300;
+}
+
+.gift-experiences__filters {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.gift-filter-btn {
+  padding: 8px 20px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--gray-600);
+  background: var(--gray-100);
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.gift-filter-btn:hover {
+  color: var(--orange);
+  background: var(--cream);
+}
+
+.gift-filter-btn--active {
+  background: var(--orange);
+  color: var(--white);
+}
+
+.gift-filter-btn--active:hover {
+  background: var(--orange-dark);
+  color: var(--white);
+}
+
+.gift-experiences__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+/* ===== FAQ ===== */
+.gift-faq {
+  padding: 80px 0;
+  background: var(--cream);
+}
+
+.gift-faq__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.gift-faq__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--gray-900);
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.gift-faq__item {
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.gift-faq__question {
+  padding: 20px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.gift-faq__question::-webkit-details-marker {
+  display: none;
+}
+
+.gift-faq__question::after {
+  content: '+';
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: var(--orange);
+  flex-shrink: 0;
+  margin-left: 16px;
+  transition: transform 0.2s ease;
+}
+
+.gift-faq__item[open] .gift-faq__question::after {
+  content: '\2212';
+}
+
+.gift-faq__question:hover {
+  color: var(--orange);
+}
+
+.gift-faq__answer {
+  padding: 0 0 20px;
+  font-size: 0.95rem;
+  color: var(--gray-500);
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* ===== CTA FINAL ===== */
+.gift-cta {
+  padding: 80px 0;
+  background: var(--white);
+}
+
+.gift-cta__inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.gift-cta__content {
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-light) 100%);
+  border-radius: var(--radius-xl);
+  padding: 72px 60px;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.gift-cta__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.2rem;
+  font-weight: 400;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+
+.gift-cta__text {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 32px;
+  font-weight: 300;
+  max-width: 460px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gift-cta__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gift-cta__btn {
+  display: inline-block;
+  padding: 14px 32px;
+  background: var(--white);
+  color: var(--orange);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+}
+
+.gift-cta__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.gift-cta__btn--outline {
+  background: transparent;
+  color: var(--white);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.gift-cta__btn--outline:hover {
+  border-color: var(--white);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .gift-experiences__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .gift-hero__inner {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    text-align: center;
+  }
+
+  .gift-hero__title {
+    font-size: 2.2rem;
+  }
+
+  .gift-hero__text {
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .gift-hero__visual {
+    order: -1;
+  }
+
+  .gift-hero__card-stack {
+    width: 260px;
+    height: 340px;
+  }
+
+  .gift-hero__mock-card {
+    width: 240px;
+  }
+
+  .gift-hero__mock-card--front {
+    height: 240px;
+  }
+
+  .gift-steps__grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .gift-options__grid {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .gift-option-card--featured {
+    order: -1;
+  }
+
+  .gift-experiences__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .gift-cta__content {
+    padding: 48px 24px;
+  }
+
+  .gift-cta__title {
+    font-size: 1.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .gift-hero {
+    padding: 48px 0 64px;
+  }
+
+  .gift-hero__title {
+    font-size: 1.8rem;
+  }
+
+  .gift-experiences__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gift-experiences__filters {
+    gap: 6px;
+  }
+
+  .gift-filter-btn {
+    padding: 6px 14px;
+    font-size: 0.82rem;
+  }
+}
