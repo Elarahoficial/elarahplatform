@@ -94,9 +94,8 @@
 }
 
 .gift-hero__image {
-  max-width: 420px;
   width: 100%;
-  height: auto;
+  max-width: 500px;
 }
 
 /* ===== COMO FUNCIONA ===== */
