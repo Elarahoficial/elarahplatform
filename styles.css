@@ -1029,3 +1029,22 @@ select {
   justify-content: space-between;
   padding: 12px 14px;
 }
+
+.header__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header__search-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header__search-btn svg {
+  width: 18px;
+  height: 18px;
+}
