@@ -283,3 +283,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+// ===== READ SEARCH FROM URL =====
+const params = new URLSearchParams(window.location.search);
+const buscaFromUrl = params.get('busca');
+
+if (buscaFromUrl) {
+  activeBusca = buscaFromUrl.trim();
+
+  if (searchInput) {
+    searchInput.value = activeBusca;
+  }
+
+  renderCards();
+
+  const secaoExperiencias = document.getElementById('experiencias');
+  if (secaoExperiencias) {
+    secaoExperiencias.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
