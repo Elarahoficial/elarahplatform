@@ -218,6 +218,38 @@ document.addEventListener('DOMContentLoaded', () => {
       explorarDropdown.classList.remove('open');
       explorarBtn.querySelector('.header__nav-chevron').style.transform = '';
     });
+
+    // Explorar dropdown items filter like category links
+    explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const text = item.textContent.trim();
+        activeCategoria = text === 'Todas' ? '' : text;
+
+        // Sync category links
+        categoryLinks.forEach((c) => {
+          c.classList.remove('category-link--active');
+          const linkText = c.textContent.trim();
+          if ((!activeCategoria && linkText === 'Todas') || linkText === activeCategoria) {
+            c.classList.add('category-link--active');
+          }
+        });
+
+        // Sync filter dropdown
+        filterCategoria.value = activeCategoria;
+
+        // Close Explorar dropdown
+        explorarDropdown.classList.remove('open');
+        explorarBtn.querySelector('.header__nav-chevron').style.transform = '';
+
+        renderCards();
+
+        // Scroll to results
+        document.getElementById('experiencias').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
   }
 
   // ===== Mobile menu toggle =====
