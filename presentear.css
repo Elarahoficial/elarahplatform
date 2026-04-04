@@ -621,3 +621,83 @@
     font-size: 0.82rem;
   }
 }
+.gift-card-stack {
+  position: relative;
+  width: 520px;
+  height: 360px;
+  margin: 0 auto;
+}
+
+.gift-card-back,
+.gift-card-front {
+  position: absolute;
+  border-radius: 28px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.gift-card-back {
+  width: 320px;
+  height: 210px;
+  background: #f7f3ef;
+  top: 30px;
+  left: 70px;
+  transform: rotate(-9deg);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 28px;
+}
+
+.gift-card-back__logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  color: #f47a1f;
+}
+
+.gift-card-front {
+  width: 380px;
+  height: 245px;
+  background: #f47a1f;
+  bottom: 0;
+  right: 0;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.gift-card-front__logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  color: #fff;
+}
+
+.gift-card-front__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.gift-card-front__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gift-card-front__site {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  opacity: 0.95;
+}
+
+.gift-card-front__value {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #fff;
+}
