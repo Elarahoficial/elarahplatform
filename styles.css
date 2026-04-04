@@ -1048,3 +1048,16 @@ select {
   width: 18px;
   height: 18px;
 }
+.header__search {
+  position: relative;
+}
+
+.header__search-btn {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0;
+  color: transparent;
+}
