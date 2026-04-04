@@ -133,19 +133,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-// ===== SEARCH REDIRECT =====
-// ===== SEARCH REDIRECT CORRETO =====
-const searchInput = document.getElementById('search-input');
+// ===== SEARCH REDIRECT FINAL =====
+const input = document.getElementById('search-input');
 
-if (searchInput) {
-  searchInput.addEventListener('keydown', function(e) {
+if (input) {
+  input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
 
-      const busca = searchInput.value.trim();
+      const valor = input.value.trim();
 
-      if (busca !== '') {
-        window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(busca);
+      if (valor !== '') {
+        window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(valor);
       }
     }
   });
