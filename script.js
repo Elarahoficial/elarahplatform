@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===== STATE =====
   let activeCategoria = '';
   let activeBairro = '';
+  let activeBusca = '';
 
   // ===== DOM REFS =====
   const grid = document.getElementById('experiences-grid');
@@ -46,14 +47,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterBtn = document.getElementById('filter-btn');
   const categoryLinks = document.querySelectorAll('.category-link');
 
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
+
   // ===== RENDER CARDS =====
   function renderCards() {
-    const filtered = experiences.filter((exp) => {
+       const filtered = experiences.filter((exp) => {
+      const textoBusca = activeBusca.toLowerCase();
+
       const matchCat = !activeCategoria || exp.categoria === activeCategoria;
       const matchBairro = !activeBairro || exp.bairro === activeBairro;
-      return matchCat && matchBairro;
-    });
 
+      const matchBusca =
+        !textoBusca ||
+        exp.nome.toLowerCase().includes(textoBusca) ||
+        exp.categoria.toLowerCase().includes(textoBusca) ||
+        exp.bairro.toLowerCase().includes(textoBusca) ||
+        exp.endereco.toLowerCase().includes(textoBusca) ||
+        exp.inclui.toLowerCase().includes(textoBusca) ||
+        exp.data.toLowerCase().includes(textoBusca);
+
+      return matchCat && matchBairro && matchBusca;
+    });
     grid.innerHTML = '';
     emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
     countEl.textContent = filtered.length + ' experiência' + (filtered.length !== 1 ? 's' : '');
@@ -167,6 +182,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     renderCards();
   });
+  
+    // ===== SEARCH =====
+  if (searchBtn && searchInput) {
+    searchBtn.addEventListener('click', () => {
+      activeBusca = searchInput.value.trim();
+      renderCards();
+      document.getElementById('experiencias').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        activeBusca = searchInput.value.trim();
+        renderCards();
+        document.getElementById('experiencias').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
 
   // ===== INITIAL RENDER =====
   renderCards();
