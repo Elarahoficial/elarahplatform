@@ -37,6 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeCategoria = '';
   let activeBairro = '';
   let activeBusca = '';
+  const params = new URLSearchParams(window.location.search);
+const buscaURL = params.get('busca');
+
+if (buscaURL) {
+  activeBusca = buscaURL;
+}
 
   // ===== DOM REFS =====
   const grid = document.getElementById('experiences-grid');
@@ -343,29 +349,4 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 });
-// ===== FILTRO NA HOME VIA BUSCA (CORRETO) =====
-document.addEventListener('DOMContentLoaded', function () {
 
-  const params = new URLSearchParams(window.location.search);
-  const busca = params.get('busca');
-
-  if (!busca) return;
-
-  const termo = busca.toLowerCase();
-
-  const container = document.getElementById('experiences-grid');
-  if (!container) return;
-
-  const cards = container.children;
-
-  Array.from(cards).forEach(card => {
-    const texto = (card.innerText || '').toLowerCase();
-
-    if (texto.includes(termo)) {
-      card.style.display = '';
-    } else {
-      card.style.display = 'none';
-    }
-  });
-
-});
