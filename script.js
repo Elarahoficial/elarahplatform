@@ -135,6 +135,9 @@ if (buscaURL) {
   categoryLinks.forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
+      activeBusca = '';
+window.history.replaceState({}, '', 'index.html');
+if (searchInput) searchInput.value = '';
       categoryLinks.forEach((c) => c.classList.remove('category-link--active'));
       link.classList.add('category-link--active');
 
@@ -150,6 +153,9 @@ if (buscaURL) {
 
   // ===== FILTER BUTTON =====
   filterBtn.addEventListener('click', () => {
+    activeBusca = '';
+window.history.replaceState({}, '', 'index.html');
+if (searchInput) searchInput.value = '';
     activeBairro = filterBairro.value;
     activeCategoria = filterCategoria.value;
 
