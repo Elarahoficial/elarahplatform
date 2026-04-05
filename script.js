@@ -1,4 +1,12 @@
-document.addEventListener('DOMContentLoaded', () => {
+// ===== EXPLORAR DROPDOWN =====
+const explorarBtn = document.getElementById('explorar-btn');
+const explorarDropdown = document.getElementById('explorar-dropdown');
+
+if (explorarBtn && explorarDropdown) {
+  explorarBtn.addEventListener('click', function () {
+    explorarDropdown.classList.toggle('active');
+  });
+}
 
   // ===== EXPERIENCES DATA =====
   const experiences = [
