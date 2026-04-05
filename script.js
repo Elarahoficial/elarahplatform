@@ -4,7 +4,7 @@ const explorarDropdown = document.getElementById('explorar-dropdown');
 
 if (explorarBtn && explorarDropdown) {
   explorarBtn.addEventListener('click', function () {
-    explorarDropdown.classList.toggle('active');
+    explorarDropdown.classList.toggle('open');
   });
 }
 
