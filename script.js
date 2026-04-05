@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function executarBusca() {
     const valor = searchInput?.value.trim();
     if (!valor) return;
-    window.location.href = 'assets/resultado.html?busca=' + encodeURIComponent(valor);
+   window.location.href = 'index.html?busca=' + encodeURIComponent(valor);
   }
 
   if (searchInput) {
