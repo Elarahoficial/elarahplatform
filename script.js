@@ -283,3 +283,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+// ===== RESULTADO DA BUSCA =====
+const params = new URLSearchParams(window.location.search);
+const busca = params.get('busca');
+
+const container = document.getElementById('resultados');
+
+if (busca && container) {
+  const termo = busca.toLowerCase();
+
+  const experiencias = [
+    { titulo: "Vela personalizada", descricao: "Aprenda a fazer velas" },
+    { titulo: "Pintura em cerâmica", descricao: "Crie sua peça" },
+    { titulo: "Aula de massas", descricao: "Gastronomia italiana" }
+  ];
+
+  const filtrados = experiencias.filter(item =>
+    item.titulo.toLowerCase().includes(termo) ||
+    item.descricao.toLowerCase().includes(termo)
+  );
+
+  if (filtrados.length === 0) {
+    container.innerHTML = "<p>Nenhuma experiência encontrada</p>";
+  } else {
+    container.innerHTML = filtrados.map(item => `
+      <div>
+        <h3>${item.titulo}</h3>
+        <p>${item.descricao}</p>
+      </div>
+    `).join('');
+  }
+}
