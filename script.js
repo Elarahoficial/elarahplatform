@@ -182,19 +182,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
     // ===== SEARCH =====
+  function executarBusca() {
+    const valor = searchInput.value.trim();
+    if (!valor) return;
+    window.location.href = 'resultado.html?busca=' + encodeURIComponent(valor);
+  }
+
   if (searchBtn && searchInput) {
-    searchBtn.addEventListener('click', () => {
-      activeBusca = searchInput.value.trim();
-      renderCards();
-      document.getElementById('experiencias').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    searchBtn.addEventListener('click', executarBusca);
 
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        activeBusca = searchInput.value.trim();
-        renderCards();
-        document.getElementById('experiencias').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        executarBusca();
       }
     });
   }
@@ -283,21 +283,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-// ===== READ SEARCH FROM URL =====
-const params = new URLSearchParams(window.location.search);
-const buscaFromUrl = params.get('busca');
-
-if (buscaFromUrl) {
-  activeBusca = buscaFromUrl.trim();
-
-  if (searchInput) {
-    searchInput.value = activeBusca;
-  }
-
-  renderCards();
-
-  const secaoExperiencias = document.getElementById('experiencias');
-  if (secaoExperiencias) {
-    secaoExperiencias.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-}
