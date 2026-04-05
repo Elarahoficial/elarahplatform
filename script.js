@@ -293,25 +293,3 @@ if (searchInput) searchInput.value = '';
     });
   }
 });
-document.addEventListener('DOMContentLoaded', function () {
-
-  // ===== SEARCH =====
-  const searchInput = document.getElementById('search-input');
-  const searchBtn = document.getElementById('search-btn');
-
-  function executarBusca() {
-    const valor = searchInput?.value.trim();
-    if (!valor) return;
-   window.location.href = 'index.html?busca=' + encodeURIComponent(valor);
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        executarBusca();
-      }
-    });
-  }
-
- 
