@@ -314,3 +314,55 @@ if (busca && container) {
     `).join('');
   }
 }
+// ===== SEARCH =====
+const searchInput = document.getElementById('search-input');
+const searchBtn = document.getElementById('search-btn');
+
+function executarBusca() {
+  if (!searchInput) return;
+  const valor = searchInput.value.trim();
+  if (!valor) return;
+  window.location.href = 'assets/resultado.html?busca=' + encodeURIComponent(valor);
+}
+
+if (searchBtn && searchInput) {
+  searchBtn.addEventListener('click', executarBusca);
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executarBusca();
+    }
+  });
+}
+
+// ===== RESULTADO DA BUSCA =====
+const params = new URLSearchParams(window.location.search);
+const busca = params.get('busca');
+const container = document.getElementById('resultados');
+
+if (busca && container) {
+  const termo = busca.toLowerCase();
+
+  const experiencias = [
+    { titulo: "Vela personalizada", descricao: "Aprenda a fazer velas" },
+    { titulo: "Pintura em cerâmica", descricao: "Crie sua peça" },
+    { titulo: "Aula de massas", descricao: "Gastronomia italiana" }
+  ];
+
+  const filtrados = experiencias.filter(item =>
+    item.titulo.toLowerCase().includes(termo) ||
+    item.descricao.toLowerCase().includes(termo)
+  );
+
+  if (filtrados.length === 0) {
+    container.innerHTML = "<p>Nenhuma experiência encontrada</p>";
+  } else {
+    container.innerHTML = filtrados.map(item => `
+      <div>
+        <h3>${item.titulo}</h3>
+        <p>${item.descricao}</p>
+      </div>
+    `).join('');
+  }
+}
