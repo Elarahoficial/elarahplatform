@@ -152,7 +152,28 @@ if (searchInput) searchInput.value = '';
   });
 
   // ===== FILTER BUTTON =====
+  if (filterBtn && filterBairro && filterCategoria) {
   filterBtn.addEventListener('click', () => {
+    activeBusca = '';
+    window.history.replaceState({}, '', 'index.html');
+    if (searchInput) searchInput.value = '';
+
+    activeBairro = filterBairro.value;
+    activeCategoria = filterCategoria.value;
+
+    categoryLinks.forEach((c) => {
+      c.classList.remove('category-link--active');
+      const text = c.textContent.trim();
+      if ((!activeCategoria && text === 'Todas') || text === activeCategoria) {
+        c.classList.add('category-link--active');
+      }
+    });
+
+    renderCards();
+
+    document.getElementById('experiencias').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
     activeBusca = '';
 window.history.replaceState({}, '', 'index.html');
 if (searchInput) searchInput.value = '';
