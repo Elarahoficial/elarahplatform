@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oferecer uma experiência — Elarah</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="oferecer.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="/" class="header__dropdown-item">Todas</a>
+            <a href="/" class="header__dropdown-item">Bartenderia</a>
+            <a href="/" class="header__dropdown-item">Cerâmica</a>
+            <a href="/" class="header__dropdown-item">Floral</a>
+            <a href="/" class="header__dropdown-item">Gastronomia</a>
+            <a href="/" class="header__dropdown-item">Macramê</a>
+            <a href="/" class="header__dropdown-item">Pintura</a>
+            <a href="/" class="header__dropdown-item">Sabonete</a>
+            <a href="/" class="header__dropdown-item">Tufting</a>
+            <a href="/" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="oferecer.html" class="header__nav-link header__nav-link--active">Oferecer uma experiência</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="host-hero">
+    <div class="host-hero__inner">
+      <div class="host-hero__content">
+        <span class="host-hero__tag">Para parceiros</span>
+        <h1 class="host-hero__title">Transforme seu talento em uma experiência inesquecível.</h1>
+        <p class="host-hero__text">Conecte-se com pessoas que querem aprender, sentir e viver algo novo. A Elarah é a plataforma que leva seu trabalho criativo para quem realmente valoriza.</p>
+        <div class="host-hero__actions">
+          <a href="#host-form" class="host-hero__cta">Quero ser parceiro</a>
+          <a href="#host-how" class="host-hero__cta host-hero__cta--outline">Como funciona</a>
+        </div>
+      </div>
+      <div class="host-hero__visual">
+        <div class="host-hero__stats">
+          <div class="host-hero__stat">
+            <span class="host-hero__stat-number">2.400+</span>
+            <span class="host-hero__stat-label">Experiências realizadas</span>
+          </div>
+          <div class="host-hero__stat">
+            <span class="host-hero__stat-number">96%</span>
+            <span class="host-hero__stat-label">Avaliações positivas</span>
+          </div>
+          <div class="host-hero__stat">
+            <span class="host-hero__stat-number">R$8.200</span>
+            <span class="host-hero__stat-label">Faturamento médio mensal por parceiro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== BENEFÍCIOS ========== -->
+  <section class="host-benefits">
+    <div class="host-benefits__inner">
+      <div class="host-benefits__header">
+        <h2 class="host-benefits__title">Por que oferecer na Elarah?</h2>
+        <p class="host-benefits__subtitle">Tudo o que você precisa para crescer, sem complicação.</p>
+      </div>
+      <div class="host-benefits__grid">
+
+        <div class="host-benefit">
+          <div class="host-benefit__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+              <path d="M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+          </div>
+          <h3 class="host-benefit__name">Acesso a novos clientes</h3>
+          <p class="host-benefit__desc">Pessoas que buscam ativamente experiências criativas e offline encontram você na Elarah. Sem precisar investir em marketing.</p>
+        </div>
+
+        <div class="host-benefit">
+          <div class="host-benefit__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8"/>
+              <path d="M12 17v4"/>
+            </svg>
+          </div>
+          <h3 class="host-benefit__name">Página própria profissional</h3>
+          <p class="host-benefit__desc">Seu perfil com fotos, descrições, avaliações e agenda — tudo pronto para converter visitantes em participantes.</p>
+        </div>
+
+        <div class="host-benefit">
+          <div class="host-benefit__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2"/>
+              <path d="M1 10h22"/>
+            </svg>
+          </div>
+          <h3 class="host-benefit__name">Pagamento garantido</h3>
+          <p class="host-benefit__desc">Receba de forma segura e previsível. Nós cuidamos do pagamento e você foca no que faz de melhor: criar.</p>
+        </div>
+
+        <div class="host-benefit">
+          <div class="host-benefit__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+              <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+            </svg>
+          </div>
+          <h3 class="host-benefit__name">Agenda flexível</h3>
+          <p class="host-benefit__desc">Você define datas, horários e número de vagas. Abra turmas quando quiser, pause quando precisar.</p>
+        </div>
+
+        <div class="host-benefit">
+          <div class="host-benefit__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20V10"/>
+              <path d="M18 20V4"/>
+              <path d="M6 20v-4"/>
+            </svg>
+          </div>
+          <h3 class="host-benefit__name">Dados e insights</h3>
+          <p class="host-benefit__desc">Acompanhe suas reservas, entenda seu público e tome decisões baseadas em dados reais sobre suas experiências.</p>
+        </div>
+
+        <div class="host-benefit">
+          <div class="host-benefit__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+              <path d="M22 4L12 14.01l-3-3"/>
+            </svg>
+          </div>
+          <h3 class="host-benefit__name">Suporte dedicado</h3>
+          <p class="host-benefit__desc">Time Elarah ao seu lado desde o cadastro até a primeira aula. Ajudamos com fotos, textos, precificação e estratégia.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== COMO FUNCIONA ========== -->
+  <section class="host-how" id="host-how">
+    <div class="host-how__inner">
+      <h2 class="host-how__title">Como funciona</h2>
+      <p class="host-how__subtitle">Do cadastro à primeira experiência em poucos dias.</p>
+      <div class="host-how__steps">
+
+        <div class="host-how__step">
+          <div class="host-how__step-number">1</div>
+          <div class="host-how__step-content">
+            <h3 class="host-how__step-name">Cadastre-se</h3>
+            <p class="host-how__step-desc">Preencha o formulário com informações sobre você e sua experiência. Leva menos de 5 minutos.</p>
+          </div>
+        </div>
+
+        <div class="host-how__step-line"></div>
+
+        <div class="host-how__step">
+          <div class="host-how__step-number">2</div>
+          <div class="host-how__step-content">
+            <h3 class="host-how__step-name">Criamos seu perfil</h3>
+            <p class="host-how__step-desc">Nosso time ajuda a montar sua página com fotos profissionais, descrição atrativa e precificação estratégica.</p>
+          </div>
+        </div>
+
+        <div class="host-how__step-line"></div>
+
+        <div class="host-how__step">
+          <div class="host-how__step-number">3</div>
+          <div class="host-how__step-content">
+            <h3 class="host-how__step-name">Defina sua agenda</h3>
+            <p class="host-how__step-desc">Escolha os dias e horários que funcionam para você. Abra vagas, defina limites e publique.</p>
+          </div>
+        </div>
+
+        <div class="host-how__step-line"></div>
+
+        <div class="host-how__step">
+          <div class="host-how__step-number">4</div>
+          <div class="host-how__step-content">
+            <h3 class="host-how__step-name">Receba participantes</h3>
+            <p class="host-how__step-desc">Pessoas reservam, você recebe a confirmação e o pagamento. Simples assim.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PARA QUEM É ========== -->
+  <section class="host-for">
+    <div class="host-for__inner">
+      <div class="host-for__header">
+        <h2 class="host-for__title">Para quem é a Elarah?</h2>
+        <p class="host-for__subtitle">Se você cria, ensina ou inspira, a Elarah é para você.</p>
+      </div>
+      <div class="host-for__grid">
+
+        <div class="host-for__card">
+          <div class="host-for__card-emoji">&#127860;</div>
+          <h3 class="host-for__card-title">Chefs e cozinheiros</h3>
+          <p class="host-for__card-desc">Aulas de culinária, jantares temáticos, workshops de fermentação, confeitaria e muito mais.</p>
+        </div>
+
+        <div class="host-for__card">
+          <div class="host-for__card-emoji">&#127912;</div>
+          <h3 class="host-for__card-title">Artistas e artesãos</h3>
+          <p class="host-for__card-desc">Pintura, cerâmica, escultura, macramê, tufting, bordado e qualquer técnica artística.</p>
+        </div>
+
+        <div class="host-for__card">
+          <div class="host-for__card-emoji">&#128367;</div>
+          <h3 class="host-for__card-title">Criadores de velas e aromas</h3>
+          <p class="host-for__card-desc">Velas artesanais, home sprays, sabonetes, aromaterapia e produtos sensoriais.</p>
+        </div>
+
+        <div class="host-for__card">
+          <div class="host-for__card-emoji">&#127803;</div>
+          <h3 class="host-for__card-title">Floristas e paisagistas</h3>
+          <p class="host-for__card-desc">Arranjos florais, kokedamas, terrários e workshops de jardinagem urbana.</p>
+        </div>
+
+        <div class="host-for__card">
+          <div class="host-for__card-emoji">&#127867;</div>
+          <h3 class="host-for__card-title">Bartenders e sommeliers</h3>
+          <p class="host-for__card-desc">Aulas de coquetelaria, degustação de vinhos, harmonização e experiências sensoriais.</p>
+        </div>
+
+        <div class="host-for__card">
+          <div class="host-for__card-emoji">&#127968;</div>
+          <h3 class="host-for__card-title">Espaços e ateliês</h3>
+          <p class="host-for__card-desc">Se você tem um espaço criativo, pode receber experiências de outros parceiros ou criar as suas.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CREDIBILIDADE ========== -->
+  <section class="host-proof">
+    <div class="host-proof__inner">
+      <div class="host-proof__header">
+        <h2 class="host-proof__title">Quem faz parte da Elarah</h2>
+        <p class="host-proof__subtitle">Parceiros reais, resultados reais.</p>
+      </div>
+      <div class="host-proof__grid">
+
+        <div class="host-proof__card">
+          <div class="host-proof__card-quote">"A Elarah trouxe um público que realmente valoriza o que faço. Minhas turmas lotam toda semana."</div>
+          <div class="host-proof__card-author">
+            <div class="host-proof__card-avatar">MC</div>
+            <div>
+              <p class="host-proof__card-name">Marina Costa</p>
+              <p class="host-proof__card-role">Chef & Professora de Gastronomia</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="host-proof__card">
+          <div class="host-proof__card-quote">"Eu fazia tudo sozinha — marketing, reservas, cobranças. Com a Elarah, foco só em criar. O resto flui."</div>
+          <div class="host-proof__card-author">
+            <div class="host-proof__card-avatar">LS</div>
+            <div>
+              <p class="host-proof__card-name">Luísa Sato</p>
+              <p class="host-proof__card-role">Artista & Ceramista</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="host-proof__card">
+          <div class="host-proof__card-quote">"Em 3 meses na plataforma, triplicou meu faturamento com workshops. O suporte do time é incrível."</div>
+          <div class="host-proof__card-author">
+            <div class="host-proof__card-avatar">RF</div>
+            <div>
+              <p class="host-proof__card-name">Rodrigo Ferreira</p>
+              <p class="host-proof__card-role">Criador de Velas Artesanais</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="host-proof__numbers">
+        <div class="host-proof__number-item">
+          <span class="host-proof__number-value">50+</span>
+          <span class="host-proof__number-label">Parceiros ativos</span>
+        </div>
+        <div class="host-proof__number-item">
+          <span class="host-proof__number-value">9</span>
+          <span class="host-proof__number-label">Categorias</span>
+        </div>
+        <div class="host-proof__number-item">
+          <span class="host-proof__number-value">4.9</span>
+          <span class="host-proof__number-label">Nota média</span>
+        </div>
+        <div class="host-proof__number-item">
+          <span class="host-proof__number-value">SP</span>
+          <span class="host-proof__number-label">São Paulo</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section class="host-faq">
+    <div class="host-faq__inner">
+      <h2 class="host-faq__title">Perguntas frequentes de parceiros</h2>
+      <div class="host-faq__list">
+
+        <details class="host-faq__item">
+          <summary class="host-faq__question">Quanto custa para ser parceiro da Elarah?</summary>
+          <p class="host-faq__answer">Não há custo fixo para se cadastrar. A Elarah trabalha com uma comissão sobre cada reserva concretizada. Você só paga quando ganha.</p>
+        </details>
+
+        <details class="host-faq__item">
+          <summary class="host-faq__question">Preciso ter um espaço próprio?</summary>
+          <p class="host-faq__answer">Não necessariamente. Você pode usar seu próprio espaço, alugar um ateliê parceiro ou até utilizar espaços disponíveis na rede Elarah.</p>
+        </details>
+
+        <details class="host-faq__item">
+          <summary class="host-faq__question">Quem define o preço da experiência?</summary>
+          <p class="host-faq__answer">Você! Nosso time pode ajudar com sugestões de precificação baseadas no mercado e na sua proposta, mas a decisão final é sempre sua.</p>
+        </details>
+
+        <details class="host-faq__item">
+          <summary class="host-faq__question">Quando e como recebo o pagamento?</summary>
+          <p class="host-faq__answer">O repasse é feito em até 7 dias úteis após a realização da experiência, via transferência bancária ou Pix.</p>
+        </details>
+
+        <details class="host-faq__item">
+          <summary class="host-faq__question">E se eu precisar cancelar uma turma?</summary>
+          <p class="host-faq__answer">Você pode cancelar com até 48 horas de antecedência sem penalidades. Os participantes serão notificados automaticamente e podem reagendar.</p>
+        </details>
+
+        <details class="host-faq__item">
+          <summary class="host-faq__question">A Elarah ajuda com divulgação?</summary>
+          <p class="host-faq__answer">Sim! Sua experiência é divulgada na plataforma, nas redes sociais da Elarah, em campanhas de e-mail e para a base de clientes que buscam a sua categoria.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA FINAL / FORMULÁRIO ========== -->
+  <section class="host-final" id="host-form">
+    <div class="host-final__inner">
+      <div class="host-final__content">
+        <h2 class="host-final__title">Pronto para compartilhar seu talento com o mundo?</h2>
+        <p class="host-final__text">Cadastre-se agora e comece a receber pessoas que vão amar o que você faz. Sem burocracia, sem risco.</p>
+        <form class="host-final__form" id="host-contact-form">
+          <div class="host-final__form-row">
+            <input type="text" placeholder="Seu nome" class="host-final__input" required>
+            <input type="email" placeholder="Seu e-mail" class="host-final__input" required>
+          </div>
+          <div class="host-final__form-row">
+            <input type="tel" placeholder="WhatsApp" class="host-final__input" required>
+            <select class="host-final__input host-final__select" required>
+              <option value="" disabled selected>Tipo de experiência</option>
+              <option>Gastronomia</option>
+              <option>Pintura</option>
+              <option>Cerâmica</option>
+              <option>Vela</option>
+              <option>Sabonete</option>
+              <option>Tufting</option>
+              <option>Floral</option>
+              <option>Bartenderia</option>
+              <option>Macramê</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <textarea placeholder="Conte um pouco sobre sua experiência..." class="host-final__textarea" rows="4"></textarea>
+          <button type="submit" class="host-final__btn">Quero ser parceiro Elarah</button>
+        </form>
+        <p class="host-final__disclaimer">Sem compromisso. Nosso time entra em contato em até 24 horas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo">
+          <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+        </a>
+        <p class="footer__tagline">offline is a feeling</p>
+      </div>
+      <div class="footer__links">
+        <div class="footer__col">
+          <h4>Explorar</h4>
+          <a href="/">Bartenderia</a>
+          <a href="/">Cerâmica</a>
+          <a href="/">Floral</a>
+          <a href="/">Gastronomia</a>
+          <a href="/">Macramê</a>
+          <a href="/">Pintura</a>
+          <a href="/">Sabonete</a>
+          <a href="/">Tufting</a>
+          <a href="/">Vela</a>
+        </div>
+        <div class="footer__col">
+          <h4>Elarah</h4>
+          <a href="#">Sobre nós</a>
+          <a href="#">Como funciona</a>
+          <a href="oferecer.html">Ofereça experiências</a>
+          <a href="#">Contato</a>
+        </div>
+        <div class="footer__col">
+          <h4>Suporte</h4>
+          <a href="#">Central de ajuda</a>
+          <a href="#">Termos de uso</a>
+          <a href="#">Política de privacidade</a>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>&copy; 2026 Elarah. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="oferecer.js"></script>
+</body>
+</html>
