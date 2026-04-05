@@ -343,3 +343,27 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 });
+// ===== FILTRO NA HOME VIA BUSCA =====
+document.addEventListener('DOMContentLoaded', function () {
+
+  const params = new URLSearchParams(window.location.search);
+  const busca = params.get('busca');
+
+  if (!busca) return;
+
+  const termo = busca.toLowerCase();
+
+  // seleciona TODOS os cards da página
+  const cards = document.querySelectorAll('.card, .experience-card, [data-card]');
+
+  cards.forEach(card => {
+    const texto = card.innerText.toLowerCase();
+
+    if (texto.includes(termo)) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+});
