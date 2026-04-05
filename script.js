@@ -1,13 +1,3 @@
-// ===== EXPLORAR DROPDOWN =====
-const explorarBtn = document.getElementById('explorar-btn');
-const explorarDropdown = document.getElementById('explorar-dropdown');
-
-if (explorarBtn && explorarDropdown) {
-  explorarBtn.addEventListener('click', function () {
-    explorarDropdown.classList.toggle('open');
-  });
-}
-
   // ===== EXPERIENCES DATA =====
   const experiences = [
     { data: "06/04", categoria: "Gastronomia", nome: "Pães Alemães", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Abegoaria, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#d4e7c5,#8cb369", imagem: "assets/experiences/paes-alemaes.jpg" },
