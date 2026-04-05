@@ -343,8 +343,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 });
-// ===== FILTRO NA HOME VIA BUSCA =====
+// ===== FILTRO NA HOME VIA BUSCA (CORRETO) =====
 document.addEventListener('DOMContentLoaded', function () {
+
   const params = new URLSearchParams(window.location.search);
   const busca = params.get('busca');
 
@@ -352,20 +353,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const termo = busca.toLowerCase();
 
-  const cards = Array.from(document.querySelectorAll('a, article, div, li'))
-    .filter(el => {
-      const texto = (el.innerText || '').trim().toLowerCase();
-      return texto.length > 0 &&
-             (texto.includes('cerâmica') ||
-              texto.includes('pintura') ||
-              texto.includes('vela') ||
-              texto.includes('gastronomia') ||
-              texto.includes('workshop') ||
-              texto.includes('experiência'));
-    });
+  const container = document.getElementById('experiences-grid');
+  if (!container) return;
 
-  cards.forEach(card => {
+  const cards = container.children;
+
+  Array.from(cards).forEach(card => {
     const texto = (card.innerText || '').toLowerCase();
-    card.style.display = texto.includes(termo) ? '' : 'none';
+
+    if (texto.includes(termo)) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
   });
+
 });
