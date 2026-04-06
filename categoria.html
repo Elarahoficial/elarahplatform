@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experiências — Elarah</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="categoria.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+        <button id="search-btn" class="header__search-btn"></button>
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macramê</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="oferecer.html" class="header__nav-link">Oferecer uma experiência</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== BREADCRUMB + TITLE ========== -->
+  <section class="cat-hero">
+    <div class="cat-hero__inner">
+      <nav class="cat-hero__breadcrumb">
+        <a href="/">Home</a>
+        <span>/</span>
+        <span id="cat-breadcrumb-current">Todas as experiências</span>
+      </nav>
+      <h1 class="cat-hero__title" id="cat-title">Todas as experiências</h1>
+      <p class="cat-hero__count" id="cat-count"></p>
+    </div>
+  </section>
+
+  <!-- ========== FILTERS ========== -->
+  <section class="cat-filters">
+    <div class="cat-filters__inner">
+      <div class="cat-filters__row">
+        <div class="cat-filters__group">
+          <label class="cat-filters__label">Categoria</label>
+          <select class="cat-filters__select" id="cat-filter-categoria">
+            <option value="">Todas</option>
+            <option>Bartenderia</option>
+            <option>Cerâmica</option>
+            <option>Floral</option>
+            <option>Gastronomia</option>
+            <option>Macramê</option>
+            <option>Pintura</option>
+            <option>Sabonete</option>
+            <option>Tufting</option>
+            <option>Vela</option>
+          </select>
+        </div>
+        <div class="cat-filters__group">
+          <label class="cat-filters__label">Bairro</label>
+          <select class="cat-filters__select" id="cat-filter-bairro">
+            <option value="">Todos os bairros</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIENCES GRID ========== -->
+  <section class="cat-experiences">
+    <div class="cat-experiences__inner">
+      <div class="cat-experiences__grid" id="cat-grid"></div>
+      <p class="cat-experiences__empty" id="cat-empty" style="display:none;">Nenhuma experiência encontrada com esses filtros.</p>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo">
+          <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+        </a>
+        <p class="footer__tagline">offline is a feeling</p>
+      </div>
+      <div class="footer__links">
+        <div class="footer__col">
+          <h4>Explorar</h4>
+          <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+          <a href="categoria.html?cat=Cer%C3%A2mica">Cerâmica</a>
+          <a href="categoria.html?cat=Floral">Floral</a>
+          <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+          <a href="categoria.html?cat=Macram%C3%AA">Macramê</a>
+          <a href="categoria.html?cat=Pintura">Pintura</a>
+          <a href="categoria.html?cat=Sabonete">Sabonete</a>
+          <a href="categoria.html?cat=Tufting">Tufting</a>
+          <a href="categoria.html?cat=Vela">Vela</a>
+        </div>
+        <div class="footer__col">
+          <h4>Elarah</h4>
+          <a href="#">Sobre nós</a>
+          <a href="#">Como funciona</a>
+          <a href="oferecer.html">Ofereça experiências</a>
+          <a href="#">Contato</a>
+        </div>
+        <div class="footer__col">
+          <h4>Suporte</h4>
+          <a href="#">Central de ajuda</a>
+          <a href="#">Termos de uso</a>
+          <a href="#">Política de privacidade</a>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>&copy; 2026 Elarah. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="auth.js"></script>
+  <script src="categoria.js"></script>
+</body>
+</html>

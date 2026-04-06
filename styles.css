@@ -608,8 +608,41 @@ select {
 
 .experiences__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+}
+
+.experiences__ver-mais {
+  text-align: center;
+  padding: 32px 0 0;
+}
+
+.experiences__ver-mais-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--orange);
+  border: 2px solid var(--orange);
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+}
+
+.experiences__ver-mais-btn:hover {
+  background: var(--orange);
+  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.experiences__ver-mais-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.experiences__ver-mais-btn:hover svg {
+  transform: translateX(4px);
 }
 
 /* ===== CARD ===== */
@@ -917,7 +950,7 @@ select {
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .experiences__grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

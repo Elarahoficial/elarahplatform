@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+  // ===== SAME DATA AS HOME =====
   const experiences = [
     { data: "06/04", categoria: "Gastronomia", nome: "Pães Alemães", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Abegoaria, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#d4e7c5,#8cb369", imagem: "assets/experiences/paes-alemaes.jpg" },
     { data: "06/04", categoria: "Gastronomia", nome: "The Art of Lamen", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", endereco: "Rua Abegoaria, 538 – São Paulo", inclui: "Aula completa", preco: "R$383", cor: "#e7d4c5,#b38a69", imagem: "assets/experiences/art-of-lemmen.jpg" },
@@ -31,223 +33,133 @@ document.addEventListener('DOMContentLoaded', () => {
     { data: "Semanal", categoria: "Tufting", nome: "Aula de Tufting (Ter/Qui/Sex)", horario: "14h00 – 17h00", duracao: "3h", bairro: "Itaim", endereco: "Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui: "Experiência completa", preco: "R$243", cor: "#c5d4e7,#6991b3", imagem: "assets/experiences/tufting.jpg" }
   ];
 
-  let activeCategoria = '';
-  let activeBairro = '';
-  let activeBusca = '';
-
+  // ===== URL PARAMS =====
   const params = new URLSearchParams(window.location.search);
-const buscaURL = params.get('busca');
-const categoriaURL = params.get('categoria');
+  let activeCategoria = params.get('cat') || '';
+  let activeBairro = '';
 
-if (buscaURL) activeBusca = buscaURL;
-if (categoriaURL) activeCategoria = categoriaURL;
+  // ===== DOM REFS =====
+  const grid = document.getElementById('cat-grid');
+  const emptyEl = document.getElementById('cat-empty');
+  const titleEl = document.getElementById('cat-title');
+  const countEl = document.getElementById('cat-count');
+  const breadcrumb = document.getElementById('cat-breadcrumb-current');
+  const filterCategoria = document.getElementById('cat-filter-categoria');
+  const filterBairro = document.getElementById('cat-filter-bairro');
 
-  const grid = document.getElementById('experiences-grid');
-  const countEl = document.getElementById('experiences-count');
-  const emptyEl = document.getElementById('experiences-empty');
-  const filterBairro = document.getElementById('filter-bairro');
-  const filterCategoria = document.getElementById('filter-categoria');
-  const filterBtn = document.getElementById('filter-btn');
-  const categoryLinks = document.querySelectorAll('.category-link');
-  const searchInput = document.getElementById('search-input');
-  const searchBtn = document.getElementById('search-btn');
+  // ===== POPULATE BAIRRO DROPDOWN =====
+  const bairros = [...new Set(experiences.map(e => e.bairro))].sort();
+  bairros.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b;
+    opt.textContent = b;
+    filterBairro.appendChild(opt);
+  });
 
-  const MAX_HOME_CARDS = 3;
+  // ===== SET INITIAL FILTER STATE =====
+  if (activeCategoria) {
+    filterCategoria.value = activeCategoria;
+  }
 
+  function updateTitle() {
+    const cat = activeCategoria || 'Todas as experiências';
+    titleEl.textContent = activeCategoria ? activeCategoria : 'Todas as experiências';
+    breadcrumb.textContent = activeCategoria || 'Todas as experiências';
+    document.title = (activeCategoria || 'Experiências') + ' — Elarah';
+  }
+
+  // ===== RENDER =====
   function renderCards() {
-    if (!grid || !countEl || !emptyEl) return;
-
-    const filtered = experiences.filter((exp) => {
+    const filtered = experiences.filter(exp => {
       const matchCat = !activeCategoria || exp.categoria === activeCategoria;
       const matchBairro = !activeBairro || exp.bairro === activeBairro;
-
-      const textoBusca = activeBusca.toLowerCase();
-      const matchBusca =
-        !textoBusca ||
-        exp.nome.toLowerCase().includes(textoBusca) ||
-        exp.categoria.toLowerCase().includes(textoBusca) ||
-        exp.bairro.toLowerCase().includes(textoBusca) ||
-        exp.endereco.toLowerCase().includes(textoBusca) ||
-        exp.inclui.toLowerCase().includes(textoBusca) ||
-        exp.data.toLowerCase().includes(textoBusca);
-
-      return matchCat && matchBairro && matchBusca;
+      return matchCat && matchBairro;
     });
 
     grid.innerHTML = '';
     emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
     countEl.textContent = filtered.length + ' experiência' + (filtered.length !== 1 ? 's' : '');
+    updateTitle();
 
-    // Remove old "ver mais" link
-    const oldLink = document.querySelector('.experiences__ver-mais');
-    if (oldLink) oldLink.remove();
+    filtered.forEach(exp => {
+      const colors = exp.cor.split(',');
+      const card = document.createElement('article');
+      card.className = 'card';
 
-    const isFiltered = activeCategoria || activeBairro || activeBusca;
-    const toShow = isFiltered ? filtered.slice(0, MAX_HOME_CARDS) : filtered.slice(0, MAX_HOME_CARDS * 3);
+      const imageContent = exp.imagem
+        ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
+        : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
 
-    toShow.forEach((exp) => {
-      grid.appendChild(createCard(exp));
-    });
-
-    // Show "Ver mais" if there are more results
-    if (filtered.length > toShow.length) {
-      const verMais = document.createElement('div');
-      verMais.className = 'experiences__ver-mais';
-      const href = activeCategoria
-        ? 'categoria.html?cat=' + encodeURIComponent(activeCategoria)
-        : 'categoria.html';
-      verMais.innerHTML = `
-        <a href="${href}" class="experiences__ver-mais-btn">
-          Ver todas as ${filtered.length} experiências
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-        </a>
+      card.innerHTML = `
+        <div class="card__image">
+          ${imageContent}
+          <button class="card__favorite" aria-label="Favoritar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <span class="card__badge">${exp.data}</span>
+        </div>
+        <div class="card__body">
+          <span class="card__category">${exp.categoria}</span>
+          <h3 class="card__title">${exp.nome}</h3>
+          <div class="card__details">
+            <p class="card__detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              ${exp.data} &middot; ${exp.horario}
+            </p>
+            <p class="card__detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              ${exp.duracao}
+            </p>
+            <p class="card__detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              ${exp.bairro}
+            </p>
+            <p class="card__detail card__detail--address">${exp.endereco}</p>
+            <p class="card__detail card__detail--includes">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              ${exp.inclui}
+            </p>
+          </div>
+          <div class="card__footer">
+            <p class="card__price"><strong>${exp.preco}</strong></p>
+          </div>
+        </div>
       `;
-      grid.parentNode.insertBefore(verMais, grid.nextSibling);
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll('.card__favorite').forEach(btn => {
+      btn.addEventListener('click', () => btn.classList.toggle('active'));
+    });
+  }
+
+  // ===== FILTER EVENTS =====
+  filterCategoria.addEventListener('change', () => {
+    activeCategoria = filterCategoria.value;
+    // Update URL without reload
+    const url = new URL(window.location);
+    if (activeCategoria) {
+      url.searchParams.set('cat', activeCategoria);
+    } else {
+      url.searchParams.delete('cat');
     }
+    window.history.replaceState({}, '', url);
+    renderCards();
+  });
 
-    grid.querySelectorAll('.card__favorite').forEach((btn) => {
-      const expId = btn.dataset.id;
-      if (typeof ElarahAuth !== 'undefined' && ElarahAuth.isFavorite(expId)) {
-        btn.classList.add('active');
-      }
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (typeof ElarahAuth === 'undefined' || !ElarahAuth.isLoggedIn()) {
-          ElarahAuth.openModal('login', 'Faça login para favoritar');
-          return;
-        }
-        const result = ElarahAuth.toggleFavorite(expId);
-        if (result.success) {
-          btn.classList.toggle('active');
-        }
-      });
-    });
-  }
+  filterBairro.addEventListener('change', () => {
+    activeBairro = filterBairro.value;
+    renderCards();
+  });
 
-  function createCard(exp) {
-    const colors = exp.cor.split(',');
-    const card = document.createElement('article');
-    card.className = 'card';
-
-    const imageContent = exp.imagem
-      ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
-      : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
-
-    card.innerHTML = `
-      <div class="card__image">
-        ${imageContent}
-        <button class="card__favorite" data-id="${exp.nome}_${exp.data}_${exp.horario}" aria-label="Favoritar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </button>
-        <span class="card__badge">${exp.data}</span>
-      </div>
-      <div class="card__body">
-        <span class="card__category">${exp.categoria}</span>
-        <h3 class="card__title">${exp.nome}</h3>
-        <div class="card__details">
-          <p class="card__detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            ${exp.data} &middot; ${exp.horario}
-          </p>
-          <p class="card__detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            ${exp.duracao}
-          </p>
-          <p class="card__detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            ${exp.bairro}
-          </p>
-          <p class="card__detail card__detail--address">${exp.endereco}</p>
-          <p class="card__detail card__detail--includes">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-            ${exp.inclui}
-          </p>
-        </div>
-        <div class="card__footer">
-          <p class="card__price"><strong>${exp.preco}</strong></p>
-        </div>
-      </div>
-    `;
-    return card;
-  }
-
-  if (categoryLinks.length && filterCategoria) {
-    categoryLinks.forEach((link) => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        activeBusca = '';
-        window.history.replaceState({}, '', '/elarahplatform/');
-        if (searchInput) searchInput.value = '';
-
-        categoryLinks.forEach((c) => c.classList.remove('category-link--active'));
-        link.classList.add('category-link--active');
-
-        const text = link.textContent.trim();
-        activeCategoria = text === 'Todas' ? '' : text;
-        filterCategoria.value = activeCategoria;
-
-        renderCards();
-      });
-    });
-  }
-
-  if (filterBtn && filterBairro && filterCategoria) {
-    filterBtn.addEventListener('click', () => {
-      activeBusca = '';
-      window.history.replaceState({}, '', '/elarahplatform/');
-      if (searchInput) searchInput.value = '';
-
-      activeBairro = filterBairro.value;
-      activeCategoria = filterCategoria.value;
-
-      if (categoryLinks.length) {
-        categoryLinks.forEach((c) => {
-          c.classList.remove('category-link--active');
-          const text = c.textContent.trim();
-          if ((!activeCategoria && text === 'Todas') || text === activeCategoria) {
-            c.classList.add('category-link--active');
-          }
-        });
-      }
-
-      renderCards();
-
-      const experienciasEl = document.getElementById('experiencias');
-      if (experienciasEl) {
-        experienciasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  }
-
-  if (filterBairro) {
-    filterBairro.addEventListener('change', () => {
-      activeBairro = filterBairro.value;
-      renderCards();
-    });
-  }
-
-  if (filterCategoria) {
-    filterCategoria.addEventListener('change', () => {
-      activeCategoria = filterCategoria.value;
-
-      if (categoryLinks.length) {
-        categoryLinks.forEach((c) => {
-          c.classList.remove('category-link--active');
-          const text = c.textContent.trim();
-          if ((!activeCategoria && text === 'Todas') || text === activeCategoria) {
-            c.classList.add('category-link--active');
-          }
-        });
-      }
-
-      renderCards();
-    });
-  }
+  // ===== SEARCH REDIRECT =====
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
 
   function executarBusca() {
     const valor = searchInput?.value.trim();
     if (!valor) return;
-    window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(valor);
+    window.location.href = '/?busca=' + encodeURIComponent(valor);
   }
 
   if (searchBtn && searchInput) {
@@ -260,8 +172,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
   }
 
+  // ===== INITIAL RENDER =====
   renderCards();
 
+  // ===== EXPLORAR DROPDOWN =====
   const explorarBtn = document.getElementById('explorar-btn');
   const explorarDropdown = document.getElementById('explorar-dropdown');
 
@@ -269,11 +183,8 @@ if (categoriaURL) activeCategoria = categoriaURL;
     explorarBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       explorarDropdown.classList.toggle('open');
-
       const chevron = explorarBtn.querySelector('.header__nav-chevron');
-      if (chevron) {
-        chevron.style.transform = explorarDropdown.classList.contains('open') ? 'rotate(180deg)' : '';
-      }
+      if (chevron) chevron.style.transform = explorarDropdown.classList.contains('open') ? 'rotate(180deg)' : '';
     });
 
     document.addEventListener('click', () => {
@@ -281,73 +192,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
       const chevron = explorarBtn.querySelector('.header__nav-chevron');
       if (chevron) chevron.style.transform = '';
     });
-
-    explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const text = item.textContent.trim();
-
-        if (grid && filterCategoria) {
-          activeBusca = '';
-          if (searchInput) searchInput.value = '';
-
-          activeCategoria = text === 'Todas' ? '' : text;
-
-          if (categoryLinks.length) {
-            categoryLinks.forEach((c) => {
-              c.classList.remove('category-link--active');
-              const linkText = c.textContent.trim();
-              if ((!activeCategoria && linkText === 'Todas') || linkText === activeCategoria) {
-                c.classList.add('category-link--active');
-              }
-            });
-          }
-
-          filterCategoria.value = activeCategoria;
-          renderCards();
-
-          const experienciasEl = document.getElementById('experiencias');
-          if (experienciasEl) {
-            experienciasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        } else {
-         const destino = text === 'Todas'
-  ? '/elarahplatform/'
-  : '/elarahplatform/?categoria=' + encodeURIComponent(text);
-
-window.location.href = destino;
-        }
-
-        explorarDropdown.classList.remove('open');
-        const chevron = explorarBtn.querySelector('.header__nav-chevron');
-        if (chevron) chevron.style.transform = '';
-      });
-    });
   }
 
+  // ===== MOBILE MENU =====
   const mobileToggle = document.getElementById('mobile-toggle');
   const nav = document.querySelector('.header__nav');
-
   if (mobileToggle && nav) {
-    mobileToggle.addEventListener('click', () => {
-      nav.classList.toggle('mobile-open');
-    });
+    mobileToggle.addEventListener('click', () => nav.classList.toggle('mobile-open'));
   }
 
-  document.querySelectorAll('a[href^="#"]').forEach((link) => {
-    link.addEventListener('click', (e) => {
-      const href = link.getAttribute('href');
-      if (href === '#') return;
-      const target = document.querySelector(href);
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  });
-
+  // ===== HEADER SHADOW =====
   const header = document.querySelector('.header');
   if (header) {
     window.addEventListener('scroll', () => {
@@ -355,4 +209,3 @@ window.location.href = destino;
     });
   }
 });
-
