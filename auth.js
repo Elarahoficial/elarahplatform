@@ -66,8 +66,6 @@ function getCurrentUser() {
   function isLoggedIn() {
   const current = getCurrentUser();
   return !!current;
-}
-    return getCurrentUser() !== null;
   }
 
   function register({ nome, email, senha, telefone, cidade }) {
