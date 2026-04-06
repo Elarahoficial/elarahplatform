@@ -333,3 +333,6 @@ window.location.href = destino;
     });
   }
 });
+
+<script src="auth.js"></script>
+<script src="script.js"></script>
