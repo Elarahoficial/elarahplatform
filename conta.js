@@ -237,7 +237,9 @@ function renderFavoritos() {
   }
 
   empty.style.display = 'none';
-  lista.style.display = 'block';
+  lista.style.display = 'grid';
+lista.style.gridTemplateColumns = '1fr 1fr';
+lista.style.gap = '20px';
 
   lista.innerHTML = favoritos.map(f => {
     const [nome, data, horario] = f.split('_');
@@ -251,10 +253,11 @@ function renderFavoritos() {
         margin-bottom: 20px;
         background: #fff;
       ">
-        <div style="
-          height: 160px;
-          background: #f5f5f5;
-        ">
+      <div style="
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: #f5f5f5;
+">
           ${imagem ? `<img src="${imagem}" alt="${nome}" style="width:100%; height:100%; object-fit:cover; display:block;">` : ''}
         </div>
 
