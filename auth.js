@@ -366,7 +366,6 @@ function getCurrentUser() {
         if (!isLoggedIn()) {
           openModal('login', 'Faça login para ver seus favoritos');
         } else {
-          // Future: open favorites page
           window.location.href = 'conta.html?section=favoritos';
         }
       };
