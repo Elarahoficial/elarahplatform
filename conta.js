@@ -28,7 +28,9 @@ if (user.partnerStatus === 'approved') {
 } else {
   badge.textContent = 'Usuário';
   badge.className = 'account__badge account__badge--user';
-}
+ }
+} 
+    
 
   // ===== SECTION NAVIGATION =====
   const menuItems = document.querySelectorAll('.account__menu-item');
