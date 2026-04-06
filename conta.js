@@ -224,30 +224,46 @@ if (searchInput) {
 }
   
   // ===== EXPLORAR DROPDOWN =====
-  const explorarBtn = document.getElementById('explorar-btn');
-  const explorarDropdown = document.getElementById('explorar-dropdown');
+  // ===== EXPLORAR DROPDOWN =====
+const explorarBtn = document.getElementById('explorar-btn');
+const explorarDropdown = document.getElementById('explorar-dropdown');
 
-  if (explorarBtn && explorarDropdown) {
-    explorarBtn.addEventListener('click', (e) => {
+if (explorarBtn && explorarDropdown) {
+  explorarBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    explorarDropdown.classList.toggle('open');
+
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) {
+      chevron.style.transform = explorarDropdown.classList.contains('open')
+        ? 'rotate(180deg)'
+        : '';
+    }
+  });
+
+  document.addEventListener('click', () => {
+    explorarDropdown.classList.remove('open');
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) chevron.style.transform = '';
+  });
+
+  explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      explorarDropdown.classList.toggle('open');
 
-      const chevron = explorarBtn.querySelector('.header__nav-chevron');
-      if (chevron) {
-        chevron.style.transform = explorarDropdown.classList.contains('open')
-          ? 'rotate(180deg)'
-          : '';
-      }
+      const text = item.textContent.trim();
+
+      const destino = text === 'Todas'
+        ? 'index.html'
+        : 'index.html?categoria=' + encodeURIComponent(text);
+
+      window.location.href = destino;
     });
-
-    document.addEventListener('click', () => {
-      explorarDropdown.classList.remove('open');
-      const chevron = explorarBtn.querySelector('.header__nav-chevron');
-      if (chevron) chevron.style.transform = '';
-    });
-  }
-
+  });
+}
+  
   // ===== MOBILE MENU =====
   const mobileToggle = document.getElementById('mobile-toggle');
   const nav = document.querySelector('.header__nav');
