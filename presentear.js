@@ -83,24 +83,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===== INITIAL RENDER =====
   renderGiftCards();
+// ===== Explorar dropdown toggle + redirect =====
+const explorarBtn = document.getElementById('explorar-btn');
+const explorarDropdown = document.getElementById('explorar-dropdown');
 
-  // ===== Explorar dropdown toggle =====
-  const explorarBtn = document.getElementById('explorar-btn');
-  const explorarDropdown = document.getElementById('explorar-dropdown');
+if (explorarBtn && explorarDropdown) {
+  explorarBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    explorarDropdown.classList.toggle('open');
 
-  if (explorarBtn && explorarDropdown) {
-    explorarBtn.addEventListener('click', (e) => {
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) {
+      chevron.style.transform = explorarDropdown.classList.contains('open')
+        ? 'rotate(180deg)'
+        : '';
+    }
+  });
+
+  document.addEventListener('click', () => {
+    explorarDropdown.classList.remove('open');
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) chevron.style.transform = '';
+  });
+
+  explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      explorarDropdown.classList.toggle('open');
-      explorarBtn.querySelector('.header__nav-chevron').style.transform =
-        explorarDropdown.classList.contains('open') ? 'rotate(180deg)' : '';
-    });
 
-    document.addEventListener('click', () => {
-      explorarDropdown.classList.remove('open');
-      explorarBtn.querySelector('.header__nav-chevron').style.transform = '';
+      const text = item.textContent.trim();
+      const destino = text === 'Todas'
+        ? '/elarahplatform/'
+        : '/elarahplatform/?busca=' + encodeURIComponent(text);
+
+      window.location.href = destino;
     });
-  }
+  });
+}
 
   // ===== Mobile menu toggle =====
   const mobileToggle = document.getElementById('mobile-toggle');
