@@ -348,7 +348,7 @@ function getCurrentUser() {
         <span class="header__user-avatar">${initials}</span>
         ${user.nome.split(' ')[0]}
       `;
-      loginBtn.onclick = () => { window.location.href = 'conta.html'; };
+      loginBtn.onclick = () => {window.location.href = 'conta.html?section=favoritos'; };
     } else {
       loginBtn.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -367,7 +367,7 @@ function getCurrentUser() {
           openModal('login', 'Faça login para ver seus favoritos');
         } else {
           // Future: open favorites page
-          window.location.href = 'conta.html';
+          window.location.href = 'conta.html?section=favoritos';
         }
       };
     }
@@ -379,14 +379,16 @@ function getCurrentUser() {
     updateHeaderUI();
 
     // Intercept card favorite buttons to require login
-    document.addEventListener('click', (e) => {
-      const favBtn = e.target.closest('.card__favorite');
-      if (favBtn && !isLoggedIn()) {
-        e.preventDefault();
-        e.stopPropagation();
-        openModal('login', 'Faça login para favoritar');
-      }
-    }, true);
+   document.addEventListener('click', (e) => {
+  const favBtn = e.target.closest('.card__favorite');
+  if (!favBtn) return;
+
+  if (!isLoggedIn()) {
+    e.preventDefault();
+    e.stopPropagation();
+    openModal('login', 'Faça login para favoritar');
+  }
+}, true);
   }
 
   // Auto-init when DOM is ready
