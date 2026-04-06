@@ -300,22 +300,7 @@
     </div>
   </footer>
 
-  <script src="presentear.js"></script>
+ <script src="script.js"></script>
+<script src="presentear.js"></script>
 </body>
 </html>
-// ===== SEARCH REDIRECT =====
-const searchInput = document.getElementById('search-input');
-
-if (searchInput) {
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const busca = searchInput.value.trim();
-
-      if (busca) {
-        window.location.href = `/elarahplatform/?busca=${encodeURIComponent(busca)}`;
-      }
-    }
-  });
-}
-<script src="script.js"></script>
-<script src="presentear.js"></script>
