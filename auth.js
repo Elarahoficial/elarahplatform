@@ -36,13 +36,33 @@ const ElarahAuth = (function () {
 
   // ===== PUBLIC API =====
 
-  function getCurrentUser() {
-    const userId = localStorage.getItem(SESSION_KEY);
-    if (!userId) return null;
-    const users = getUsers();
-    return users.find(u => u.id === userId) || null;
+ function normalizeUser(user) {
+  if (!user) return null;
+
+  if (!user.partnerStatus) {
+    user.partnerStatus = user.isPartner ? 'approved' : 'none';
   }
 
+  if (typeof user.partnerData === 'undefined') {
+    user.partnerData = null;
+  }
+
+  if (!Array.isArray(user.favorites)) {
+    user.favorites = [];
+  }
+
+  return user;
+}
+
+function getCurrentUser() {
+  const userId = localStorage.getItem(SESSION_KEY);
+  if (!userId) return null;
+
+  const users = getUsers();
+  const user = users.find(u => u.id === userId) || null;
+
+  return normalizeUser(user);
+}
   function isLoggedIn() {
     return getCurrentUser() !== null;
   }
