@@ -122,8 +122,35 @@ function renderPartnerSection() {
 }
 
 renderPartnerSection();
+    // ===== PARTNER FORM SUBMIT =====
+const parceiroForm = document.getElementById('form-parceiro');
+
+if (parceiroForm) {
+  parceiroForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const partnerData = {
+      marca: document.getElementById('parceiro-marca').value.trim(),
+      tipo: document.getElementById('parceiro-tipo').value,
+      bairro: document.getElementById('parceiro-bairro').value.trim(),
+      cidade: document.getElementById('parceiro-cidade').value.trim(),
+      social: document.getElementById('parceiro-social').value.trim(),
+      descricao: document.getElementById('parceiro-descricao').value.trim()
+    };
+
+    const result = ElarahAuth.becomePartner(partnerData);
+
+    if (result.success) {
+      const badgeEl = document.getElementById('account-badge');
+      if (badgeEl) {
+        badgeEl.textContent = 'Em análise';
+        badgeEl.className = 'account__badge account__badge--user';
+      }
+
+      renderPartnerSection();
     }
   });
+}
 
   // ===== LOGOUT =====
   document.getElementById('account-logout').addEventListener('click', () => {
