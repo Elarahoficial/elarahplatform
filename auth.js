@@ -64,6 +64,9 @@ function getCurrentUser() {
   return normalizeUser(user);
 }
   function isLoggedIn() {
+  const current = getCurrentUser();
+  return !!current;
+}
     return getCurrentUser() !== null;
   }
 
