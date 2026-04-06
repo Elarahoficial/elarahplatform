@@ -40,31 +40,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
- // ===== SECTION NAVIGATION =====
-const menuItems = document.querySelectorAll('.account__menu-item');
-const sections = document.querySelectorAll('.account__section');
+  // ===== SECTION NAVIGATION =====
+  const menuItems = document.querySelectorAll('.account__menu-item');
+  const sections = document.querySelectorAll('.account__section');
 
-menuItems.forEach(item => {
-  item.addEventListener('click', () => {
-    const target = item.dataset.section;
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const target = item.dataset.section;
 
-    menuItems.forEach(m => m.classList.remove('account__menu-item--active'));
-    item.classList.add('account__menu-item--active');
+      menuItems.forEach(m => m.classList.remove('account__menu-item--active'));
+      item.classList.add('account__menu-item--active');
 
-    sections.forEach(s => s.classList.remove('account__section--active'));
+      sections.forEach(s => s.classList.remove('account__section--active'));
 
-    const targetSection = document.getElementById('section-' + target);
-    if (targetSection) targetSection.classList.add('account__section--active');
+      const targetSection = document.getElementById('section-' + target);
+      if (targetSection) targetSection.classList.add('account__section--active');
+    });
   });
-});
 
-const sectionParam = new URLSearchParams(window.location.search).get('section');
+  const sectionParam = new URLSearchParams(window.location.search).get('section');
+  if (sectionParam) {
+    const targetBtn = document.querySelector(`.account__menu-item[data-section="${sectionParam}"]`);
+    if (targetBtn) targetBtn.click();
+  }
 
-if (sectionParam) {
-  const targetBtn = document.querySelector(`.account__menu-item[data-section="${sectionParam}"]`);
-  if (targetBtn) targetBtn.click();
-}
-   
   // ===== HEADER FAVORITES SHORTCUT =====
   const headerFav = document.querySelector('.header__action-btn[aria-label="Favoritos"]');
   if (headerFav) {
@@ -172,20 +171,6 @@ if (sectionParam) {
 
   renderPartnerSection();
 
-  <section class="account__section" id="section-favoritos">
-  <h2 class="account__section-title">Favoritos</h2>
-
-  <div class="account__empty" id="favoritos-empty">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="48" height="48">
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-    </svg>
-    <p>Você ainda não favoritou nenhuma experiência.</p>
-    <a href="index.html" class="account__empty-link">Explorar experiências</a>
-  </div>
-
-  <div id="favoritos-lista" style="display:none;"></div>
-</section>
-
   // ===== PARTNER FORM SUBMIT =====
   const parceiroForm = document.getElementById('form-parceiro');
   if (parceiroForm) {
@@ -223,65 +208,64 @@ if (sectionParam) {
       window.location.href = 'index.html';
     });
   }
-// ===== HEADER SEARCH (COPIADO DA HOME) =====
-const searchInput = document.querySelector('.header__search-input');
 
-function executarBuscaConta() {
-  const valor = searchInput?.value.trim();
-  if (!valor) return;
+  // ===== HEADER SEARCH =====
+  const searchInput = document.querySelector('.header__search-input');
 
-  window.location.href = 'index.html?busca=' + encodeURIComponent(valor);
-}
+  function executarBuscaConta() {
+    const valor = searchInput?.value.trim();
+    if (!valor) return;
+    window.location.href = 'index.html?busca=' + encodeURIComponent(valor);
+  }
 
-if (searchInput) {
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      executarBuscaConta();
-    }
-  });
-}
-  
+  if (searchInput) {
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        executarBuscaConta();
+      }
+    });
+  }
+
   // ===== EXPLORAR DROPDOWN =====
-const explorarBtn = document.getElementById('explorar-btn');
-const explorarDropdown = document.getElementById('explorar-dropdown');
+  const explorarBtn = document.getElementById('explorar-btn');
+  const explorarDropdown = document.getElementById('explorar-dropdown');
 
-if (explorarBtn && explorarDropdown) {
-  explorarBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    explorarDropdown.classList.toggle('open');
-
-    const chevron = explorarBtn.querySelector('.header__nav-chevron');
-    if (chevron) {
-      chevron.style.transform = explorarDropdown.classList.contains('open')
-        ? 'rotate(180deg)'
-        : '';
-    }
-  });
-
-  document.addEventListener('click', () => {
-    explorarDropdown.classList.remove('open');
-    const chevron = explorarBtn.querySelector('.header__nav-chevron');
-    if (chevron) chevron.style.transform = '';
-  });
-
-  explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
-    item.addEventListener('click', (e) => {
+  if (explorarBtn && explorarDropdown) {
+    explorarBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      explorarDropdown.classList.toggle('open');
 
-      const text = item.textContent.trim();
-
-      const destino = text === 'Todas'
-        ? 'index.html'
-        : 'index.html?categoria=' + encodeURIComponent(text);
-
-      window.location.href = destino;
+      const chevron = explorarBtn.querySelector('.header__nav-chevron');
+      if (chevron) {
+        chevron.style.transform = explorarDropdown.classList.contains('open')
+          ? 'rotate(180deg)'
+          : '';
+      }
     });
-  });
-}
-  
+
+    document.addEventListener('click', () => {
+      explorarDropdown.classList.remove('open');
+      const chevron = explorarBtn.querySelector('.header__nav-chevron');
+      if (chevron) chevron.style.transform = '';
+    });
+
+    explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const text = item.textContent.trim();
+        const destino = text === 'Todas'
+          ? 'index.html'
+          : 'index.html?categoria=' + encodeURIComponent(text);
+
+        window.location.href = destino;
+      });
+    });
+  }
+
   // ===== MOBILE MENU =====
   const mobileToggle = document.getElementById('mobile-toggle');
   const nav = document.querySelector('.header__nav');
