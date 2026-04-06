@@ -123,10 +123,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
       grid.appendChild(card);
     });
 
-   grid.querySelectorAll('.card__favorite').forEach((btn, index) => {
-  const exp = filtered[index];
-  const expId = exp.nome + '_' + exp.data + '_' + exp.horario;
-
+  grid.querySelectorAll('.card__favorite').forEach((btn) => {
+  const expId = btn.dataset.id;
+    
   // já marcar se for favorito
   if (window.ElarahAuth && ElarahAuth.isFavorite(expId)) {
     btn.classList.add('active');
