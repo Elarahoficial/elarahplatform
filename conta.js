@@ -2,36 +2,41 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===== AUTH GUARD =====
   const user = ElarahAuth.getCurrentUser();
   if (!user) {
-   window.location.href = 'index.html';
+    window.location.href = 'index.html';
     return;
   }
 
   // ===== POPULATE SIDEBAR =====
-  const initials = user.nome
+  const initials = (user.nome || '')
     .split(' ')
+    .filter(Boolean)
     .map(n => n[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
 
-  document.getElementById('account-avatar').textContent = initials;
-  document.getElementById('account-name').textContent = user.nome;
-  document.getElementById('account-email').textContent = user.email;
+  const avatarEl = document.getElementById('account-avatar');
+  const nameEl = document.getElementById('account-name');
+  const emailEl = document.getElementById('account-email');
+  const badgeEl = document.getElementById('account-badge');
 
-  const badge = document.getElementById('account-badge');
-  if (badge) {
+  if (avatarEl) avatarEl.textContent = initials;
+  if (nameEl) nameEl.textContent = user.nome || '';
+  if (emailEl) emailEl.textContent = user.email || '';
+
+  if (badgeEl) {
     if (user.partnerStatus === 'approved') {
-      badge.textContent = 'Parceiro';
-      badge.className = 'account__badge account__badge--partner';
+      badgeEl.textContent = 'Parceiro';
+      badgeEl.className = 'account__badge account__badge--partner';
     } else if (user.partnerStatus === 'pending') {
-      badge.textContent = 'Em análise';
-      badge.className = 'account__badge account__badge--user';
+      badgeEl.textContent = 'Em análise';
+      badgeEl.className = 'account__badge account__badge--user';
     } else if (user.partnerStatus === 'rejected') {
-      badge.textContent = 'Revisar cadastro';
-      badge.className = 'account__badge account__badge--user';
+      badgeEl.textContent = 'Revisar cadastro';
+      badgeEl.className = 'account__badge account__badge--user';
     } else {
-      badge.textContent = 'Usuário';
-      badge.className = 'account__badge account__badge--user';
+      badgeEl.textContent = 'Usuário';
+      badgeEl.className = 'account__badge account__badge--user';
     }
   }
 
@@ -47,84 +52,71 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.add('account__menu-item--active');
 
       sections.forEach(s => s.classList.remove('account__section--active'));
+
       const targetSection = document.getElementById('section-' + target);
-      if (targetSection) targetSection.classList.add('account__section--active');
-    });
-  });
-  // ===== SECTION NAVIGATION =====
-  const menuItems = document.querySelectorAll('.account__menu-item');
-  const sections = document.querySelectorAll('.account__section');
-
-  menuItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const target = item.dataset.section;
-
-      menuItems.forEach(m => m.classList.remove('account__menu-item--active'));
-      item.classList.add('account__menu-item--active');
-
-      sections.forEach(s => s.classList.remove('account__section--active'));
-      const targetSection = document.getElementById('section-' + target);
-      if (targetSection) targetSection.classList.add('account__section--active');
+      if (targetSection) {
+        targetSection.classList.add('account__section--active');
+      }
     });
   });
 
-  const headerFav = document.querySelector('.header__action-btn[aria-label="Favoritos"]');
-
-if (headerFav) {
-  headerFav.addEventListener('click', () => {
-    const favoritosBtn = document.querySelector('[data-section="favoritos"]');
-    if (favoritosBtn) favoritosBtn.click();
-  });
-}
-  
   // ===== HEADER FAVORITES SHORTCUT =====
   const headerFav = document.querySelector('.header__action-btn[aria-label="Favoritos"]');
-
-if (headerFav) {
-  headerFav.addEventListener('click', () => {
-    const favoritosBtn = document.querySelector('[data-section="favoritos"]');
-    if (favoritosBtn) favoritosBtn.click();
-  });
-}
-  
-  // ===== MEUS DADOS FORM =====
-  document.getElementById('dados-nome').value = user.nome || '';
-  document.getElementById('dados-email').value = user.email || '';
-  document.getElementById('dados-telefone').value = user.telefone || '';
-  document.getElementById('dados-cidade').value = user.cidade || '';
-
-  document.getElementById('form-dados').addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const result = ElarahAuth.updateUser({
-      nome: document.getElementById('dados-nome').value.trim(),
-      telefone: document.getElementById('dados-telefone').value.trim(),
-      cidade: document.getElementById('dados-cidade').value.trim()
+  if (headerFav) {
+    headerFav.addEventListener('click', (e) => {
+      e.preventDefault();
+      const favoritosBtn = document.querySelector('.account__menu-item[data-section="favoritos"]');
+      if (favoritosBtn) favoritosBtn.click();
     });
+  }
 
-    if (result.success) {
-      const successEl = document.getElementById('dados-success');
-      if (successEl) {
-        successEl.classList.add('account__form-success--show');
-        setTimeout(() => {
-          successEl.classList.remove('account__form-success--show');
-        }, 3000);
+  // ===== MEUS DADOS FORM =====
+  const dadosNome = document.getElementById('dados-nome');
+  const dadosEmail = document.getElementById('dados-email');
+  const dadosTelefone = document.getElementById('dados-telefone');
+  const dadosCidade = document.getElementById('dados-cidade');
+  const formDados = document.getElementById('form-dados');
+
+  if (dadosNome) dadosNome.value = user.nome || '';
+  if (dadosEmail) dadosEmail.value = user.email || '';
+  if (dadosTelefone) dadosTelefone.value = user.telefone || '';
+  if (dadosCidade) dadosCidade.value = user.cidade || '';
+
+  if (formDados) {
+    formDados.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const result = ElarahAuth.updateUser({
+        nome: dadosNome ? dadosNome.value.trim() : '',
+        telefone: dadosTelefone ? dadosTelefone.value.trim() : '',
+        cidade: dadosCidade ? dadosCidade.value.trim() : ''
+      });
+
+      if (result.success) {
+        const successEl = document.getElementById('dados-success');
+        if (successEl) {
+          successEl.classList.add('account__form-success--show');
+          setTimeout(() => {
+            successEl.classList.remove('account__form-success--show');
+          }, 3000);
+        }
+
+        if (nameEl) nameEl.textContent = result.user.nome || '';
+
+        const newInitials = (result.user.nome || '')
+          .split(' ')
+          .filter(Boolean)
+          .map(n => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
+
+        if (avatarEl) avatarEl.textContent = newInitials;
+
+        ElarahAuth.updateHeaderUI();
       }
-
-      document.getElementById('account-name').textContent = result.user.nome;
-
-      const newInitials = result.user.nome
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
-
-      document.getElementById('account-avatar').textContent = newInitials;
-
-      ElarahAuth.updateHeaderUI();
-    }
-  });
+    });
+  }
 
   // ===== PARTNER SECTION =====
   function renderPartnerSection() {
@@ -134,6 +126,7 @@ if (headerFav) {
     const pendingWrap = document.getElementById('parceiro-pending');
     const approvedWrap = document.getElementById('parceiro-approved');
     const rejectedWrap = document.getElementById('parceiro-rejected');
+    const parceiroInfo = document.getElementById('parceiro-info');
 
     if (formWrap) formWrap.style.display = 'none';
     if (pendingWrap) pendingWrap.style.display = 'none';
@@ -148,8 +141,7 @@ if (headerFav) {
     if (currentUser.partnerStatus === 'approved' && currentUser.partnerData) {
       if (approvedWrap) approvedWrap.style.display = 'block';
 
-      const pd = currentUser.partnerData;
-      const parceiroInfo = document.getElementById('parceiro-info');
+      const pd = currentUser.partnerData || {};
 
       if (parceiroInfo) {
         parceiroInfo.innerHTML = `
@@ -182,18 +174,17 @@ if (headerFav) {
       e.preventDefault();
 
       const partnerData = {
-        marca: document.getElementById('parceiro-marca').value.trim(),
-        tipo: document.getElementById('parceiro-tipo').value,
-        bairro: document.getElementById('parceiro-bairro').value.trim(),
-        cidade: document.getElementById('parceiro-cidade').value.trim(),
-        social: document.getElementById('parceiro-social').value.trim(),
-        descricao: document.getElementById('parceiro-descricao').value.trim()
+        marca: document.getElementById('parceiro-marca')?.value.trim() || '',
+        tipo: document.getElementById('parceiro-tipo')?.value || '',
+        bairro: document.getElementById('parceiro-bairro')?.value.trim() || '',
+        cidade: document.getElementById('parceiro-cidade')?.value.trim() || '',
+        social: document.getElementById('parceiro-social')?.value.trim() || '',
+        descricao: document.getElementById('parceiro-descricao')?.value.trim() || ''
       };
 
       const result = ElarahAuth.becomePartner(partnerData);
 
       if (result.success) {
-        const badgeEl = document.getElementById('account-badge');
         if (badgeEl) {
           badgeEl.textContent = 'Em análise';
           badgeEl.className = 'account__badge account__badge--user';
@@ -207,7 +198,8 @@ if (headerFav) {
   // ===== LOGOUT =====
   const logoutBtn = document.getElementById('account-logout');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       ElarahAuth.logout();
       window.location.href = 'index.html';
     });
@@ -219,6 +211,7 @@ if (headerFav) {
 
   if (explorarBtn && explorarDropdown) {
     explorarBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
       explorarDropdown.classList.toggle('open');
 
@@ -241,7 +234,9 @@ if (headerFav) {
   const mobileToggle = document.getElementById('mobile-toggle');
   const nav = document.querySelector('.header__nav');
   if (mobileToggle && nav) {
-    mobileToggle.addEventListener('click', () => nav.classList.toggle('mobile-open'));
+    mobileToggle.addEventListener('click', () => {
+      nav.classList.toggle('mobile-open');
+    });
   }
 
   // ===== HEADER SHADOW =====
