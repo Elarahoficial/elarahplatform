@@ -195,13 +195,57 @@
             </form>
           </div>
 
-          <!-- Partner confirmed view -->
-          <div id="parceiro-confirmed" style="display:none;">
-            <h2 class="account__section-title">Você é parceiro Elarah!</h2>
-            <div class="account__partner-info" id="parceiro-info"></div>
-          </div>
-        </section>
+          <!-- Partner pending view -->
+<div id="parceiro-pending" style="display:none;">
+  <h2 class="account__section-title">Solicitação enviada ✨</h2>
+  <p class="account__section-desc">
+    Recebemos suas informações e vamos analisar seu perfil com carinho.
+    O retorno acontece em até <strong>48 horas úteis</strong>.
+  </p>
 
+  <div class="account__partner-info">
+    <div class="account__partner-detail">
+      <strong>Status</strong>
+      <span>Em análise</span>
+    </div>
+    <div class="account__partner-detail">
+      <strong>Próximo passo</strong>
+      <span>Se aprovado(a), sua conta será liberada para cadastrar experiências na ELARAH.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Partner approved view -->
+<div id="parceiro-approved" style="display:none;">
+  <h2 class="account__section-title">Sua parceria foi aprovada ✨</h2>
+  <p class="account__section-desc">
+    Agora você já pode acessar sua área de parceiro e começar a cadastrar experiências.
+  </p>
+
+  <div class="account__partner-info" id="parceiro-info"></div>
+
+  <div class="account__form-actions" style="margin-top: 24px;">
+    <button type="button" class="account__form-btn">Cadastrar experiência</button>
+    <button type="button" class="account__form-btn account__form-btn--secondary">Minhas experiências</button>
+  </div>
+</div>
+
+<!-- Partner rejected view -->
+<div id="parceiro-rejected" style="display:none;">
+  <h2 class="account__section-title">Precisamos revisar seu cadastro</h2>
+  <p class="account__section-desc">
+    No momento, sua solicitação não foi aprovada.
+    Você pode revisar suas informações e enviar novamente quando quiser.
+  </p>
+
+  <div class="account__partner-info">
+    <div class="account__partner-detail">
+      <strong>Status</strong>
+      <span>Cadastro não aprovado</span>
+    </div>
+  </div>
+</div>
+          
         <!-- FAVORITOS (placeholder) -->
         <section class="account__section" id="section-favoritos">
           <h2 class="account__section-title">Favoritos</h2>
