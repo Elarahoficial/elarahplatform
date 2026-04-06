@@ -376,18 +376,6 @@ function getCurrentUser() {
 
   function init() {
     updateHeaderUI();
-
-    // Intercept card favorite buttons to require login
-   document.addEventListener('click', (e) => {
-  const favBtn = e.target.closest('.card__favorite');
-  if (!favBtn) return;
-
-  if (!isLoggedIn()) {
-    e.preventDefault();
-    e.stopPropagation();
-    openModal('login', 'Faça login para favoritar');
-  }
-}, true);
   }
 
   // Auto-init when DOM is ready
