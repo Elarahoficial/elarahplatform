@@ -205,65 +205,89 @@ function renderFavoritos() {
   const empty = document.getElementById('favoritos-empty');
   const lista = document.getElementById('favoritos-lista');
 
+  const imageMap = {
+    "Pães Alemães": "assets/experiences/paes-alemaes.jpg",
+    "The Art of Lamen": "assets/experiences/art-of-lemmen.jpg",
+    "CEO Kitchen (Comida Asiática)": "assets/experiences/ceo-kitchen.jpg",
+    "Cozinha Tailandesa": "assets/experiences/cozinha-tailandesa.jpg",
+    "Cozinha Japonesa (Sushi/Sashimi)": "assets/experiences/cozinha-japonesa.jpg",
+    "Torta Salgada": "assets/experiences/torta-salgada.jpg",
+    "Izakaya (Japonesa)": "assets/experiences/izakaya.jpg",
+    "Bolo Caseiro da Fazenda": "assets/experiences/bolo-caseiro.jpg",
+    "Churrasco sem Churrasqueira": "assets/experiences/churrasco.jpg",
+    "Vela + Home Spray (Café Gelado)": "assets/experiences/vela-cafe.jpg",
+    "Vela + Home Spray (Praia)": "assets/experiences/vela-praia.jpg",
+    "Vela + Home Spray (Floral)": "assets/experiences/vela-floral.jpg",
+    "Pintura em Taça": "assets/experiences/pintura-taca.jpg",
+    "Sabonete Artesanal": "assets/experiences/sabonete-artesanal.jpg",
+    "Vela Personalizada": "assets/experiences/vela-personalizada.jpg",
+    "Vela (Cerveja & Caipirinha)": "assets/experiences/vela-cerveja.jpg",
+    "Pintura em Cerâmica": "assets/experiences/pintura-ceramica.jpg",
+    "Aula de Tufting (Seg)": "assets/experiences/tufting.jpg",
+    "Aula de Tufting (Ter/Qui/Sex)": "assets/experiences/tufting.jpg"
+  };
+
   if (!empty || !lista) return;
 
   if (!favoritos.length) {
     empty.style.display = 'block';
     lista.style.display = 'none';
+    lista.innerHTML = '';
     return;
   }
 
   empty.style.display = 'none';
   lista.style.display = 'block';
 
-lista.innerHTML = favoritos.map(f => {
-  const [nome, data, horario] = f.split('_');
+  lista.innerHTML = favoritos.map(f => {
+    const [nome, data, horario] = f.split('_');
+    const imagem = imageMap[nome] || '';
 
-  return `
-    <div style="
-      border: 1px solid #eee;
-      border-radius: 16px;
-      overflow: hidden;
-      margin-bottom: 20px;
-      background: #fff;
-    ">
-
+    return `
       <div style="
-        height: 160px;
-        background: #f5f5f5;
-      "></div>
-
-      <div style="padding:16px;">
-        <span style="
-          font-size:12px;
-          color:#ff6a00;
-          font-weight:600;
-          letter-spacing:0.5px;
+        border: 1px solid #eee;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        background: #fff;
+      ">
+        <div style="
+          height: 160px;
+          background: #f5f5f5;
         ">
-          EXPERIÊNCIA
-        </span>
+          ${imagem ? `<img src="${imagem}" alt="${nome}" style="width:100%; height:100%; object-fit:cover; display:block;">` : ''}
+        </div>
 
-        <h3 style="
-          margin:8px 0;
-          font-size:18px;
-        ">
-          ${nome}
-        </h3>
+        <div style="padding:16px;">
+          <span style="
+            font-size:12px;
+            color:#ff6a00;
+            font-weight:600;
+            letter-spacing:0.5px;
+          ">
+            EXPERIÊNCIA
+          </span>
 
-        <p style="
-          font-size:14px;
-          color:#666;
-        ">
-          ${data || ''}${horario ? ' · ' + horario : ''}
-        </p>
+          <h3 style="
+            margin:8px 0;
+            font-size:18px;
+          ">
+            ${nome}
+          </h3>
+
+          <p style="
+            font-size:14px;
+            color:#666;
+          ">
+            ${data || ''}${horario ? ' · ' + horario : ''}
+          </p>
+        </div>
       </div>
-    </div>
-  `;
-}).join('');
+    `;
+  }).join('');
 }
 
 renderFavoritos();
-  
   // ===== LOGOUT =====
   const logoutBtn = document.getElementById('account-logout');
   if (logoutBtn) {
