@@ -13,14 +13,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('account-name').textContent = user.nome;
   document.getElementById('account-email').textContent = user.email;
 
-  const badge = document.getElementById('account-badge');
-  if (user.isPartner) {
-    badge.textContent = 'Parceiro';
-    badge.className = 'account__badge account__badge--partner';
-  } else {
-    badge.textContent = 'Usuário';
-    badge.className = 'account__badge account__badge--user';
-  }
+const badge = document.getElementById('account-badge');
+
+  if (badge) {
+if (user.partnerStatus === 'approved') {
+  badge.textContent = 'Parceiro';
+  badge.className = 'account__badge account__badge--partner';
+} else if (user.partnerStatus === 'pending') {
+  badge.textContent = 'Em análise';
+  badge.className = 'account__badge account__badge--user';
+} else if (user.partnerStatus === 'rejected') {
+  badge.textContent = 'Revisar cadastro';
+  badge.className = 'account__badge account__badge--user';
+} else {
+  badge.textContent = 'Usuário';
+  badge.className = 'account__badge account__badge--user';
+}
 
   // ===== SECTION NAVIGATION =====
   const menuItems = document.querySelectorAll('.account__menu-item');
@@ -66,53 +74,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ===== PARTNER SECTION =====
-  function renderPartnerSection() {
-    const currentUser = ElarahAuth.getCurrentUser();
-    const formWrap = document.getElementById('parceiro-form-wrap');
-    const confirmed = document.getElementById('parceiro-confirmed');
+// ===== PARTNER SECTION =====
+function renderPartnerSection() {
+  const currentUser = ElarahAuth.getCurrentUser();
 
-    if (currentUser.isPartner && currentUser.partnerData) {
-      formWrap.style.display = 'none';
-      confirmed.style.display = 'block';
+  const formWrap = document.getElementById('parceiro-form-wrap');
+  const pendingWrap = document.getElementById('parceiro-pending');
+  const approvedWrap = document.getElementById('parceiro-approved');
+  const rejectedWrap = document.getElementById('parceiro-rejected');
 
-      const pd = currentUser.partnerData;
-      document.getElementById('parceiro-info').innerHTML = `
+  if (formWrap) formWrap.style.display = 'none';
+  if (pendingWrap) pendingWrap.style.display = 'none';
+  if (approvedWrap) approvedWrap.style.display = 'none';
+  if (rejectedWrap) rejectedWrap.style.display = 'none';
+
+  if (currentUser.partnerStatus === 'pending') {
+    if (pendingWrap) pendingWrap.style.display = 'block';
+    return;
+  }
+
+  if (currentUser.partnerStatus === 'approved' && currentUser.partnerData) {
+    if (approvedWrap) approvedWrap.style.display = 'block';
+
+    const pd = currentUser.partnerData;
+    const parceiroInfo = document.getElementById('parceiro-info');
+
+    if (parceiroInfo) {
+      parceiroInfo.innerHTML = `
         <div class="account__partner-detail"><strong>Marca</strong><span>${pd.marca}</span></div>
         <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo}</span></div>
         <div class="account__partner-detail"><strong>Local</strong><span>${pd.bairro}, ${pd.cidade}</span></div>
         ${pd.social ? `<div class="account__partner-detail"><strong>Redes</strong><span>${pd.social}</span></div>` : ''}
         <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao}</span></div>
-        <div class="account__partner-detail"><strong>Parceiro desde</strong><span>${new Date(pd.registeredAt).toLocaleDateString('pt-BR')}</span></div>
+        ${pd.approvedAt ? `<div class="account__partner-detail"><strong>Aprovado em</strong><span>${new Date(pd.approvedAt).toLocaleDateString('pt-BR')}</span></div>` : ''}
       `;
-    } else {
-      formWrap.style.display = 'block';
-      confirmed.style.display = 'none';
     }
+
+    return;
   }
 
-  renderPartnerSection();
+  if (currentUser.partnerStatus === 'rejected') {
+    if (rejectedWrap) rejectedWrap.style.display = 'block';
+    return;
+  }
 
-  document.getElementById('form-parceiro').addEventListener('submit', (e) => {
-    e.preventDefault();
+  if (formWrap) formWrap.style.display = 'block';
+}
 
-    const partnerData = {
-      marca: document.getElementById('parceiro-marca').value.trim(),
-      tipo: document.getElementById('parceiro-tipo').value,
-      bairro: document.getElementById('parceiro-bairro').value.trim(),
-      cidade: document.getElementById('parceiro-cidade').value.trim(),
-      social: document.getElementById('parceiro-social').value.trim(),
-      descricao: document.getElementById('parceiro-descricao').value.trim()
-    };
-
-    const result = ElarahAuth.becomePartner(partnerData);
-    if (result.success) {
-      // Update badge
-      const badgeEl = document.getElementById('account-badge');
-      badgeEl.textContent = 'Parceiro';
-      badgeEl.className = 'account__badge account__badge--partner';
-
-      renderPartnerSection();
+renderPartnerSection();
     }
   });
 
