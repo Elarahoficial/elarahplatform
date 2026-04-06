@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===== AUTH GUARD =====
   const user = ElarahAuth.getCurrentUser();
   if (!user) {
-    window.location.href = '/';
+   window.location.href = 'index.html';
     return;
   }
 
@@ -51,7 +51,42 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetSection) targetSection.classList.add('account__section--active');
     });
   });
+  // ===== SECTION NAVIGATION =====
+  const menuItems = document.querySelectorAll('.account__menu-item');
+  const sections = document.querySelectorAll('.account__section');
 
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const target = item.dataset.section;
+
+      menuItems.forEach(m => m.classList.remove('account__menu-item--active'));
+      item.classList.add('account__menu-item--active');
+
+      sections.forEach(s => s.classList.remove('account__section--active'));
+      const targetSection = document.getElementById('section-' + target);
+      if (targetSection) targetSection.classList.add('account__section--active');
+    });
+  });
+
+  const headerFav = document.querySelector('.header__action-btn[aria-label="Favoritos"]');
+
+if (headerFav) {
+  headerFav.addEventListener('click', () => {
+    const favoritosBtn = document.querySelector('[data-section="favoritos"]');
+    if (favoritosBtn) favoritosBtn.click();
+  });
+}
+  
+  // ===== HEADER FAVORITES SHORTCUT =====
+  const headerFav = document.querySelector('.header__action-btn[aria-label="Favoritos"]');
+
+if (headerFav) {
+  headerFav.addEventListener('click', () => {
+    const favoritosBtn = document.querySelector('[data-section="favoritos"]');
+    if (favoritosBtn) favoritosBtn.click();
+  });
+}
+  
   // ===== MEUS DADOS FORM =====
   document.getElementById('dados-nome').value = user.nome || '';
   document.getElementById('dados-email').value = user.email || '';
@@ -174,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       ElarahAuth.logout();
-      window.location.href = '/';
+      window.location.href = 'index.html';
     });
   }
 
