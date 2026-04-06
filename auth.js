@@ -375,39 +375,7 @@ const ElarahAuth = (function () {
   } else {
     init();
   }
-function approvePartner(userId) {
-  const users = getUsers();
-  const index = users.findIndex(u => u.id === userId);
 
-  if (index === -1) {
-    return { success: false, error: 'Usuário não encontrado.' };
-  }
-
-  users[index].partnerStatus = 'approved';
-  users[index].partnerData = {
-    ...(users[index].partnerData || {}),
-    approvedAt: new Date().toISOString()
-  };
-
-  saveUsers(users);
-
-  return { success: true, user: users[index] };
-}
-
-function rejectPartner(userId) {
-  const users = getUsers();
-  const index = users.findIndex(u => u.id === userId);
-
-  if (index === -1) {
-    return { success: false, error: 'Usuário não encontrado.' };
-  }
-
-  users[index].partnerStatus = 'rejected';
-  saveUsers(users);
-
-  return { success: true, user: users[index] };
-}
-   
   // ===== PUBLIC INTERFACE =====
   return {
     getCurrentUser,
