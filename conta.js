@@ -204,7 +204,25 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = 'index.html';
     });
   }
+// ===== HEADER SEARCH (COPIADO DA HOME) =====
+const searchInput = document.querySelector('.header__search-input');
 
+function executarBuscaConta() {
+  const valor = searchInput?.value.trim();
+  if (!valor) return;
+
+  window.location.href = 'index.html?busca=' + encodeURIComponent(valor);
+}
+
+if (searchInput) {
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executarBuscaConta();
+    }
+  });
+}
+  
   // ===== EXPLORAR DROPDOWN =====
   const explorarBtn = document.getElementById('explorar-btn');
   const explorarDropdown = document.getElementById('explorar-dropdown');
