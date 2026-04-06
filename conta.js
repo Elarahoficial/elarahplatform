@@ -40,26 +40,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ===== SECTION NAVIGATION =====
-  const menuItems = document.querySelectorAll('.account__menu-item');
-  const sections = document.querySelectorAll('.account__section');
+ // ===== SECTION NAVIGATION =====
+const menuItems = document.querySelectorAll('.account__menu-item');
+const sections = document.querySelectorAll('.account__section');
 
-  menuItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const target = item.dataset.section;
+menuItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const target = item.dataset.section;
 
-      menuItems.forEach(m => m.classList.remove('account__menu-item--active'));
-      item.classList.add('account__menu-item--active');
+    menuItems.forEach(m => m.classList.remove('account__menu-item--active'));
+    item.classList.add('account__menu-item--active');
 
-      sections.forEach(s => s.classList.remove('account__section--active'));
+    sections.forEach(s => s.classList.remove('account__section--active'));
 
-      const targetSection = document.getElementById('section-' + target);
-      if (targetSection) {
-        targetSection.classList.add('account__section--active');
-      }
-    });
+    const targetSection = document.getElementById('section-' + target);
+    if (targetSection) targetSection.classList.add('account__section--active');
   });
+});
 
+const sectionParam = new URLSearchParams(window.location.search).get('section');
+
+if (sectionParam) {
+  const targetBtn = document.querySelector(`.account__menu-item[data-section="${sectionParam}"]`);
+  if (targetBtn) targetBtn.click();
+}
+   
   // ===== HEADER FAVORITES SHORTCUT =====
   const headerFav = document.querySelector('.header__action-btn[aria-label="Favoritos"]');
   if (headerFav) {
