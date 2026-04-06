@@ -123,9 +123,30 @@ if (categoriaURL) activeCategoria = categoriaURL;
       grid.appendChild(card);
     });
 
-    grid.querySelectorAll('.card__favorite').forEach((btn) => {
-      btn.addEventListener('click', () => btn.classList.toggle('active'));
-    });
+   grid.querySelectorAll('.card__favorite').forEach((btn, index) => {
+  const exp = filtered[index];
+  const expId = exp.nome + '_' + exp.data + '_' + exp.horario;
+
+  // já marcar se for favorito
+  if (window.ElarahAuth && ElarahAuth.isFavorite(expId)) {
+    btn.classList.add('active');
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+
+    if (!window.ElarahAuth || !ElarahAuth.isLoggedIn()) {
+      ElarahAuth.openModal('login', 'Faça login para favoritar');
+      return;
+    }
+
+    const result = ElarahAuth.toggleFavorite(expId);
+
+    if (result.success) {
+      btn.classList.toggle('active');
+    }
+  });
+});
   }
 
   if (categoryLinks.length && filterCategoria) {
