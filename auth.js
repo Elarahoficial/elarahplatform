@@ -61,7 +61,7 @@ const ElarahAuth = (function () {
       senha: senha,
       telefone: telefone.trim(),
       cidade: (cidade || '').trim(),
-     partnerStatus: "none"
+     partnerStatus: "none",
       partnerData: null,
       favorites: [],
       createdAt: new Date().toISOString()
@@ -115,7 +115,6 @@ const ElarahAuth = (function () {
     }
   });
 }
-  }
 
   function requireLogin(callback) {
     if (isLoggedIn()) {
@@ -376,7 +375,39 @@ const ElarahAuth = (function () {
   } else {
     init();
   }
+function approvePartner(userId) {
+  const users = getUsers();
+  const index = users.findIndex(u => u.id === userId);
 
+  if (index === -1) {
+    return { success: false, error: 'Usuário não encontrado.' };
+  }
+
+  users[index].partnerStatus = 'approved';
+  users[index].partnerData = {
+    ...(users[index].partnerData || {}),
+    approvedAt: new Date().toISOString()
+  };
+
+  saveUsers(users);
+
+  return { success: true, user: users[index] };
+}
+
+function rejectPartner(userId) {
+  const users = getUsers();
+  const index = users.findIndex(u => u.id === userId);
+
+  if (index === -1) {
+    return { success: false, error: 'Usuário não encontrado.' };
+  }
+
+  users[index].partnerStatus = 'rejected';
+  saveUsers(users);
+
+  return { success: true, user: users[index] };
+}
+   
   // ===== PUBLIC INTERFACE =====
   return {
     getCurrentUser,
@@ -386,10 +417,12 @@ const ElarahAuth = (function () {
     logout,
     updateUser,
     becomePartner,
+    approvePartner,
+    rejectPartner,
     requireLogin,
     openModal,
     closeModal,
-    updateHeaderUI
+    updateHeaderUI,
   };
 })();
 function approvePartner(userId) {
