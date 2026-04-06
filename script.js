@@ -127,14 +127,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
   const expId = btn.dataset.id;
     
   // já marcar se for favorito
-  if (window.ElarahAuth && ElarahAuth.isFavorite(expId)) {
+ if (typeof ElarahAuth !== 'undefined' && ElarahAuth.isFavorite(expId)) {
     btn.classList.add('active');
   }
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
 
-    if (!window.ElarahAuth || !ElarahAuth.isLoggedIn()) {
+    if (typeof ElarahAuth === 'undefined' || !ElarahAuth.isLoggedIn()) {
       ElarahAuth.openModal('login', 'Faça login para favoritar');
       return;
     }
