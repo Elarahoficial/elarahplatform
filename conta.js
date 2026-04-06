@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-
   // ===== AUTH GUARD =====
   const user = ElarahAuth.getCurrentUser();
   if (!user) {
@@ -8,29 +7,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===== POPULATE SIDEBAR =====
-  const initials = user.nome.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = user.nome
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   document.getElementById('account-avatar').textContent = initials;
   document.getElementById('account-name').textContent = user.nome;
   document.getElementById('account-email').textContent = user.email;
 
-const badge = document.getElementById('account-badge');
-
+  const badge = document.getElementById('account-badge');
   if (badge) {
-if (user.partnerStatus === 'approved') {
-  badge.textContent = 'Parceiro';
-  badge.className = 'account__badge account__badge--partner';
-} else if (user.partnerStatus === 'pending') {
-  badge.textContent = 'Em análise';
-  badge.className = 'account__badge account__badge--user';
-} else if (user.partnerStatus === 'rejected') {
-  badge.textContent = 'Revisar cadastro';
-  badge.className = 'account__badge account__badge--user';
-} else {
-  badge.textContent = 'Usuário';
-  badge.className = 'account__badge account__badge--user';
- }
-} 
-    
+    if (user.partnerStatus === 'approved') {
+      badge.textContent = 'Parceiro';
+      badge.className = 'account__badge account__badge--partner';
+    } else if (user.partnerStatus === 'pending') {
+      badge.textContent = 'Em análise';
+      badge.className = 'account__badge account__badge--user';
+    } else if (user.partnerStatus === 'rejected') {
+      badge.textContent = 'Revisar cadastro';
+      badge.className = 'account__badge account__badge--user';
+    } else {
+      badge.textContent = 'Usuário';
+      badge.className = 'account__badge account__badge--user';
+    }
+  }
 
   // ===== SECTION NAVIGATION =====
   const menuItems = document.querySelectorAll('.account__menu-item');
@@ -44,18 +47,20 @@ if (user.partnerStatus === 'approved') {
       item.classList.add('account__menu-item--active');
 
       sections.forEach(s => s.classList.remove('account__section--active'));
-      document.getElementById('section-' + target).classList.add('account__section--active');
+      const targetSection = document.getElementById('section-' + target);
+      if (targetSection) targetSection.classList.add('account__section--active');
     });
   });
 
   // ===== MEUS DADOS FORM =====
-  document.getElementById('dados-nome').value = user.nome;
-  document.getElementById('dados-email').value = user.email;
-  document.getElementById('dados-telefone').value = user.telefone;
+  document.getElementById('dados-nome').value = user.nome || '';
+  document.getElementById('dados-email').value = user.email || '';
+  document.getElementById('dados-telefone').value = user.telefone || '';
   document.getElementById('dados-cidade').value = user.cidade || '';
 
   document.getElementById('form-dados').addEventListener('submit', (e) => {
     e.preventDefault();
+
     const result = ElarahAuth.updateUser({
       nome: document.getElementById('dados-nome').value.trim(),
       telefone: document.getElementById('dados-telefone').value.trim(),
@@ -64,101 +69,114 @@ if (user.partnerStatus === 'approved') {
 
     if (result.success) {
       const successEl = document.getElementById('dados-success');
-      successEl.classList.add('account__form-success--show');
-      setTimeout(() => successEl.classList.remove('account__form-success--show'), 3000);
+      if (successEl) {
+        successEl.classList.add('account__form-success--show');
+        setTimeout(() => {
+          successEl.classList.remove('account__form-success--show');
+        }, 3000);
+      }
 
-      // Update sidebar
       document.getElementById('account-name').textContent = result.user.nome;
-      const newInitials = result.user.nome.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+
+      const newInitials = result.user.nome
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+
       document.getElementById('account-avatar').textContent = newInitials;
 
       ElarahAuth.updateHeaderUI();
     }
   });
 
-// ===== PARTNER SECTION =====
-function renderPartnerSection() {
-  const currentUser = ElarahAuth.getCurrentUser();
+  // ===== PARTNER SECTION =====
+  function renderPartnerSection() {
+    const currentUser = ElarahAuth.getCurrentUser();
 
-  const formWrap = document.getElementById('parceiro-form-wrap');
-  const pendingWrap = document.getElementById('parceiro-pending');
-  const approvedWrap = document.getElementById('parceiro-approved');
-  const rejectedWrap = document.getElementById('parceiro-rejected');
+    const formWrap = document.getElementById('parceiro-form-wrap');
+    const pendingWrap = document.getElementById('parceiro-pending');
+    const approvedWrap = document.getElementById('parceiro-approved');
+    const rejectedWrap = document.getElementById('parceiro-rejected');
 
-  if (formWrap) formWrap.style.display = 'none';
-  if (pendingWrap) pendingWrap.style.display = 'none';
-  if (approvedWrap) approvedWrap.style.display = 'none';
-  if (rejectedWrap) rejectedWrap.style.display = 'none';
+    if (formWrap) formWrap.style.display = 'none';
+    if (pendingWrap) pendingWrap.style.display = 'none';
+    if (approvedWrap) approvedWrap.style.display = 'none';
+    if (rejectedWrap) rejectedWrap.style.display = 'none';
 
-  if (currentUser.partnerStatus === 'pending') {
-    if (pendingWrap) pendingWrap.style.display = 'block';
-    return;
-  }
-
-  if (currentUser.partnerStatus === 'approved' && currentUser.partnerData) {
-    if (approvedWrap) approvedWrap.style.display = 'block';
-
-    const pd = currentUser.partnerData;
-    const parceiroInfo = document.getElementById('parceiro-info');
-
-    if (parceiroInfo) {
-      parceiroInfo.innerHTML = `
-        <div class="account__partner-detail"><strong>Marca</strong><span>${pd.marca}</span></div>
-        <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo}</span></div>
-        <div class="account__partner-detail"><strong>Local</strong><span>${pd.bairro}, ${pd.cidade}</span></div>
-        ${pd.social ? `<div class="account__partner-detail"><strong>Redes</strong><span>${pd.social}</span></div>` : ''}
-        <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao}</span></div>
-        ${pd.approvedAt ? `<div class="account__partner-detail"><strong>Aprovado em</strong><span>${new Date(pd.approvedAt).toLocaleDateString('pt-BR')}</span></div>` : ''}
-      `;
+    if (currentUser.partnerStatus === 'pending') {
+      if (pendingWrap) pendingWrap.style.display = 'block';
+      return;
     }
 
-    return;
-  }
+    if (currentUser.partnerStatus === 'approved' && currentUser.partnerData) {
+      if (approvedWrap) approvedWrap.style.display = 'block';
 
-  if (currentUser.partnerStatus === 'rejected') {
-    if (rejectedWrap) rejectedWrap.style.display = 'block';
-    return;
-  }
+      const pd = currentUser.partnerData;
+      const parceiroInfo = document.getElementById('parceiro-info');
 
-  if (formWrap) formWrap.style.display = 'block';
-}
-
-renderPartnerSection();
-    // ===== PARTNER FORM SUBMIT =====
-const parceiroForm = document.getElementById('form-parceiro');
-
-if (parceiroForm) {
-  parceiroForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const partnerData = {
-      marca: document.getElementById('parceiro-marca').value.trim(),
-      tipo: document.getElementById('parceiro-tipo').value,
-      bairro: document.getElementById('parceiro-bairro').value.trim(),
-      cidade: document.getElementById('parceiro-cidade').value.trim(),
-      social: document.getElementById('parceiro-social').value.trim(),
-      descricao: document.getElementById('parceiro-descricao').value.trim()
-    };
-
-    const result = ElarahAuth.becomePartner(partnerData);
-
-    if (result.success) {
-      const badgeEl = document.getElementById('account-badge');
-      if (badgeEl) {
-        badgeEl.textContent = 'Em análise';
-        badgeEl.className = 'account__badge account__badge--user';
+      if (parceiroInfo) {
+        parceiroInfo.innerHTML = `
+          <div class="account__partner-detail"><strong>Marca</strong><span>${pd.marca || ''}</span></div>
+          <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
+          <div class="account__partner-detail"><strong>Local</strong><span>${pd.bairro || ''}, ${pd.cidade || ''}</span></div>
+          ${pd.social ? `<div class="account__partner-detail"><strong>Redes</strong><span>${pd.social}</span></div>` : ''}
+          <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
+          ${pd.approvedAt ? `<div class="account__partner-detail"><strong>Aprovado em</strong><span>${new Date(pd.approvedAt).toLocaleDateString('pt-BR')}</span></div>` : ''}
+        `;
       }
 
-      renderPartnerSection();
+      return;
     }
-  });
-}
+
+    if (currentUser.partnerStatus === 'rejected') {
+      if (rejectedWrap) rejectedWrap.style.display = 'block';
+      return;
+    }
+
+    if (formWrap) formWrap.style.display = 'block';
+  }
+
+  renderPartnerSection();
+
+  // ===== PARTNER FORM SUBMIT =====
+  const parceiroForm = document.getElementById('form-parceiro');
+  if (parceiroForm) {
+    parceiroForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const partnerData = {
+        marca: document.getElementById('parceiro-marca').value.trim(),
+        tipo: document.getElementById('parceiro-tipo').value,
+        bairro: document.getElementById('parceiro-bairro').value.trim(),
+        cidade: document.getElementById('parceiro-cidade').value.trim(),
+        social: document.getElementById('parceiro-social').value.trim(),
+        descricao: document.getElementById('parceiro-descricao').value.trim()
+      };
+
+      const result = ElarahAuth.becomePartner(partnerData);
+
+      if (result.success) {
+        const badgeEl = document.getElementById('account-badge');
+        if (badgeEl) {
+          badgeEl.textContent = 'Em análise';
+          badgeEl.className = 'account__badge account__badge--user';
+        }
+
+        renderPartnerSection();
+      }
+    });
+  }
 
   // ===== LOGOUT =====
-  document.getElementById('account-logout').addEventListener('click', () => {
-    ElarahAuth.logout();
-    window.location.href = '/';
-  });
+  const logoutBtn = document.getElementById('account-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      ElarahAuth.logout();
+      window.location.href = '/';
+    });
+  }
 
   // ===== EXPLORAR DROPDOWN =====
   const explorarBtn = document.getElementById('explorar-btn');
@@ -168,13 +186,19 @@ if (parceiroForm) {
     explorarBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       explorarDropdown.classList.toggle('open');
-      explorarBtn.querySelector('.header__nav-chevron').style.transform =
-        explorarDropdown.classList.contains('open') ? 'rotate(180deg)' : '';
+
+      const chevron = explorarBtn.querySelector('.header__nav-chevron');
+      if (chevron) {
+        chevron.style.transform = explorarDropdown.classList.contains('open')
+          ? 'rotate(180deg)'
+          : '';
+      }
     });
 
     document.addEventListener('click', () => {
       explorarDropdown.classList.remove('open');
-      explorarBtn.querySelector('.header__nav-chevron').style.transform = '';
+      const chevron = explorarBtn.querySelector('.header__nav-chevron');
+      if (chevron) chevron.style.transform = '';
     });
   }
 
@@ -189,7 +213,9 @@ if (parceiroForm) {
   const header = document.querySelector('.header');
   if (header) {
     window.addEventListener('scroll', () => {
-      header.style.boxShadow = window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,0.06)' : 'none';
+      header.style.boxShadow = window.scrollY > 10
+        ? '0 1px 8px rgba(0,0,0,0.06)'
+        : 'none';
     });
   }
 });
