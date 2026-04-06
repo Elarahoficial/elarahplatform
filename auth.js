@@ -397,7 +397,35 @@ function getCurrentUser() {
   }
 
   // ===== PUBLIC INTERFACE =====
- return {
+   function getFavorites() {
+  const current = getCurrentUser();
+  if (!current) return [];
+  return Array.isArray(current.favorites) ? current.favorites : [];
+}
+
+function isFavorite(experienceId) {
+  const favorites = getFavorites();
+  return favorites.includes(experienceId);
+}
+
+function toggleFavorite(experienceId) {
+  const current = getCurrentUser();
+  if (!current) {
+    return { success: false, error: 'Faça login para favoritar.' };
+  }
+
+  const favorites = Array.isArray(current.favorites) ? [...current.favorites] : [];
+  const index = favorites.indexOf(experienceId);
+
+  if (index >= 0) {
+    favorites.splice(index, 1);
+  } else {
+    favorites.push(experienceId);
+  }
+
+  return updateUser({ favorites });
+}
+return {
   getCurrentUser,
   isLoggedIn,
   login,
@@ -405,6 +433,9 @@ function getCurrentUser() {
   logout,
   updateUser,
   becomePartner,
+  getFavorites,
+  isFavorite,
+  toggleFavorite,
   requireLogin,
   openModal,
   closeModal,
