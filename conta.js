@@ -216,15 +216,50 @@ function renderFavoritos() {
   empty.style.display = 'none';
   lista.style.display = 'block';
 
-  lista.innerHTML = favoritos.map(f => {
-    const [nome, data, horario] = f.split('_');
-    return `
-      <div style="padding:16px; border:1px solid #eee; border-radius:12px; margin-bottom:12px;">
-        <strong>${nome}</strong><br>
-        <span>${data || ''} ${horario || ''}</span>
+lista.innerHTML = favoritos.map(f => {
+  const [nome, data, horario] = f.split('_');
+
+  return `
+    <div style="
+      border: 1px solid #eee;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: #fff;
+    ">
+
+      <div style="
+        height: 160px;
+        background: #f5f5f5;
+      "></div>
+
+      <div style="padding:16px;">
+        <span style="
+          font-size:12px;
+          color:#ff6a00;
+          font-weight:600;
+          letter-spacing:0.5px;
+        ">
+          EXPERIÊNCIA
+        </span>
+
+        <h3 style="
+          margin:8px 0;
+          font-size:18px;
+        ">
+          ${nome}
+        </h3>
+
+        <p style="
+          font-size:14px;
+          color:#666;
+        ">
+          ${data || ''}${horario ? ' · ' + horario : ''}
+        </p>
       </div>
-    `;
-  }).join('');
+    </div>
+  `;
+}).join('');
 }
 
 renderFavoritos();
