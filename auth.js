@@ -348,7 +348,7 @@ function getCurrentUser() {
         <span class="header__user-avatar">${initials}</span>
         ${user.nome.split(' ')[0]}
       `;
-      loginBtn.onclick = () => {window.location.href = 'conta.html?section=favoritos'; };
+      loginBtn.onclick = () => { window.location.href = 'conta.html'; };
     } else {
       loginBtn.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
