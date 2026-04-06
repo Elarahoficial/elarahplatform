@@ -36,8 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeBusca = '';
 
   const params = new URLSearchParams(window.location.search);
-  const buscaURL = params.get('busca');
-  if (buscaURL) activeBusca = buscaURL;
+const buscaURL = params.get('busca');
+const categoriaURL = params.get('categoria');
+
+if (buscaURL) activeBusca = buscaURL;
+if (categoriaURL) activeCategoria = categoriaURL;
 
   const grid = document.getElementById('experiences-grid');
   const countEl = document.getElementById('experiences-count');
@@ -267,10 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
             experienciasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         } else {
-          const destino = text === 'Todas'
-            ? '/elarahplatform/'
-            : '/elarahplatform/?busca=' + encodeURIComponent(text);
-          window.location.href = destino;
+         const destino = text === 'Todas'
+  ? '/elarahplatform/'
+  : '/elarahplatform/?categoria=' + encodeURIComponent(text);
+
+window.location.href = destino;
         }
 
         explorarDropdown.classList.remove('open');
