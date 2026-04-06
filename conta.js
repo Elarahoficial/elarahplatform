@@ -198,7 +198,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  
+// ===== FAVORITOS =====
+function renderFavoritos() {
+  const favoritos = ElarahAuth.getFavorites();
+  const empty = document.getElementById('favoritos-empty');
+  const lista = document.getElementById('favoritos-lista');
 
+  if (!empty || !lista) return;
+
+  if (!favoritos.length) {
+    empty.style.display = 'block';
+    lista.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  lista.style.display = 'block';
+
+  lista.innerHTML = favoritos.map(f => {
+    const [nome, data, horario] = f.split('_');
+    return `
+      <div style="padding:16px; border:1px solid #eee; border-radius:12px; margin-bottom:12px;">
+        <strong>${nome}</strong><br>
+        <span>${data || ''} ${horario || ''}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+renderFavoritos();
+  
   // ===== LOGOUT =====
   const logoutBtn = document.getElementById('account-logout');
   if (logoutBtn) {
