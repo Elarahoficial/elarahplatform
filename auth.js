@@ -397,19 +397,17 @@ function getCurrentUser() {
   }
 
   // ===== PUBLIC INTERFACE =====
-  return {
-    getCurrentUser,
-    isLoggedIn,
-    login,
-    register,
-    logout,
-    updateUser,
-    becomePartner,
-    approvePartner,
-    rejectPartner,
-    requireLogin,
-    openModal,
-    closeModal,
-    updateHeaderUI,
-  };
+ return {
+  getCurrentUser,
+  isLoggedIn,
+  login,
+  register,
+  logout,
+  updateUser,
+  becomePartner,
+  requireLogin,
+  openModal,
+  closeModal,
+  updateHeaderUI,
+};
 })();
