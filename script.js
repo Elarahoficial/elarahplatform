@@ -424,5 +424,53 @@ window.location.href = destino;
       closeOriginalsModal();
     }
   });
+
+  // ===== GROUP SECTION =====
+  var groupBtns = document.querySelectorAll('.group-section__btn');
+  var groupForm = document.getElementById('group-form');
+  var groupPlaceholder = document.querySelector('.group-section__form-placeholder');
+  var groupTipo = document.getElementById('group-tipo');
+  var groupFormTitle = document.getElementById('group-form-title');
+  var groupSuccess = document.getElementById('group-success');
+  var groupSuccessClose = document.getElementById('group-success-close');
+
+  groupBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      groupBtns.forEach(function(b) { b.classList.remove('group-section__btn--active'); });
+      btn.classList.add('group-section__btn--active');
+
+      if (groupPlaceholder) groupPlaceholder.style.display = 'none';
+      if (groupSuccess) groupSuccess.style.display = 'none';
+      if (groupForm) {
+        groupForm.style.display = 'block';
+        groupForm.style.animation = 'none';
+        groupForm.offsetHeight;
+        groupForm.style.animation = '';
+      }
+      if (groupTipo) groupTipo.value = btn.dataset.event;
+      if (groupFormTitle) groupFormTitle.textContent = btn.dataset.event === 'Evento corporativo'
+        ? 'Conte mais sobre seu evento corporativo'
+        : btn.dataset.event === 'Aniversário'
+          ? 'Conte mais sobre o aniversário'
+          : 'Conte mais sobre seu grupo';
+    });
+  });
+
+  if (groupForm) {
+    groupForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      groupForm.style.display = 'none';
+      if (groupSuccess) groupSuccess.style.display = 'block';
+    });
+  }
+
+  if (groupSuccessClose) {
+    groupSuccessClose.addEventListener('click', function() {
+      if (groupSuccess) groupSuccess.style.display = 'none';
+      if (groupPlaceholder) groupPlaceholder.style.display = 'flex';
+      if (groupForm) groupForm.reset();
+      groupBtns.forEach(function(b) { b.classList.remove('group-section__btn--active'); });
+    });
+  }
 });
 

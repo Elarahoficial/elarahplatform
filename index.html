@@ -340,6 +340,88 @@
     </div>
   </div>
 
+  <!-- ========== GROUP SECTION ========== -->
+  <section class="group-section" id="grupos">
+    <div class="group-section__inner">
+      <div class="group-section__content">
+        <h2 class="group-section__title">Viva algo incrível com o seu grupo</h2>
+        <p class="group-section__subtitle">Perfeito para aniversários, eventos de empresa ou simplesmente reunir amigos</p>
+        <div class="group-section__buttons">
+          <button class="group-section__btn" data-event="Aniversário">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><path d="M20 21v-2a4 4 0 00-3-3.87"/><path d="M4 21v-2a4 4 0 013-3.87"/><circle cx="12" cy="10" r="3"/><path d="M12 2v2"/><path d="M12 7c-1.5 0-3 .5-3 2"/><path d="M12 7c1.5 0 3 .5 3 2"/></svg>
+            Aniversário
+          </button>
+          <button class="group-section__btn" data-event="Evento corporativo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+            Evento corporativo
+          </button>
+          <button class="group-section__btn" data-event="Meu grupo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Meu grupo
+          </button>
+        </div>
+      </div>
+      <div class="group-section__form-area" id="group-form-area">
+        <div class="group-section__form-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="40" height="40"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <p>Escolha o tipo de evento ao lado para preencher o formulário</p>
+        </div>
+        <form class="group-section__form" id="group-form" style="display:none;">
+          <h3 class="group-section__form-title" id="group-form-title">Conte mais sobre seu evento</h3>
+          <div class="group-section__form-grid">
+            <div class="group-section__field">
+              <label for="group-nome">Nome</label>
+              <input type="text" id="group-nome" name="nome" placeholder="Seu nome" required>
+            </div>
+            <div class="group-section__field">
+              <label for="group-whatsapp">WhatsApp</label>
+              <input type="tel" id="group-whatsapp" name="whatsapp" placeholder="(11) 99999-9999" required>
+            </div>
+            <div class="group-section__field">
+              <label for="group-tipo">Tipo de evento</label>
+              <input type="text" id="group-tipo" name="tipo_evento" readonly>
+            </div>
+            <div class="group-section__field">
+              <label for="group-pessoas">Número de pessoas</label>
+              <input type="number" id="group-pessoas" name="pessoas" placeholder="Ex: 10" min="2" required>
+            </div>
+            <div class="group-section__field">
+              <label for="group-data">Data desejada</label>
+              <input type="date" id="group-data" name="data">
+            </div>
+            <div class="group-section__field">
+              <label for="group-experiencia">Tipo de experiência</label>
+              <select id="group-experiencia" name="experiencia">
+                <option value="">Ainda não sei</option>
+                <option>Gastronomia</option>
+                <option>Pintura</option>
+                <option>Cerâmica</option>
+                <option>Vela</option>
+                <option>Sabonete</option>
+                <option>Tufting</option>
+                <option>Bartenderia</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <div class="group-section__field group-section__field--full">
+              <label for="group-obs">Observações</label>
+              <textarea id="group-obs" name="observacoes" rows="3" placeholder="Conte mais sobre o que imagina para o evento..."></textarea>
+            </div>
+          </div>
+          <button type="submit" class="group-section__submit">Enviar solicitação</button>
+        </form>
+        <div class="group-section__success" id="group-success" style="display:none;">
+          <div class="group-section__success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="48" height="48"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+          </div>
+          <h3 class="group-section__success-title">Solicitação enviada!</h3>
+          <p class="group-section__success-text">Recebemos seu interesse. Entraremos em contato pelo WhatsApp em breve para montar a experiência perfeita para o seu grupo!</p>
+          <button class="group-section__success-btn" id="group-success-close">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ========== CTA SECTION ========== -->
   <section class="cta-section">
     <div class="cta-section__inner">
