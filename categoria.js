@@ -209,3 +209,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+const logo = document.querySelector('.header__logo');
+
+if (logo) {
+  logo.addEventListener('click', function() {
+    window.location.href = '/elarahplatform/';
+  });
+}
