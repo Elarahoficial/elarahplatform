@@ -1501,7 +1501,9 @@ select {
 
 .originals__image {
   width: 100%;
-  height: 100%;
-  object-fit: cover; /* 🔥 ESSA É A CHAVE */
-  object-position: center; /* centraliza o corte */
+  height: 260px; /* pode ajustar depois */
+  object-fit: cover;
+  display: block;
+  overflow: hidden;
+  border-radius: 16px;
 }
