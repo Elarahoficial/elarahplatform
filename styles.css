@@ -1475,13 +1475,17 @@ select {
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 300px;
+  height: 100%;
   background: var(--white);
   border: 2px dashed var(--gray-200);
   border-radius: var(--radius-xl);
   padding: 48px 32px;
   color: var(--gray-400);
   gap: 16px;
+}
+
+ .group-section__right {
+  height: 100%;
 }
 
 .group-section__form-placeholder p {
