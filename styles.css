@@ -891,15 +891,6 @@ select {
   border-color: transparent;
 }
 
-.originals__card-image {
-  position: relative;
-  aspect-ratio: 1 / 1; /* 🔥 quadrado */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
 .originals__card-badge {
   position: absolute;
   top: 14px;
