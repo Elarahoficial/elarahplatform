@@ -472,5 +472,70 @@ window.location.href = destino;
       groupBtns.forEach(function(b) { b.classList.remove('group-section__btn--active'); });
     });
   }
+
+  // ===== STORIES READER =====
+  var storiesData = [
+    {
+      title: 'Ideias criativas para um encontro diferente',
+      author: 'Por Elarah',
+      image: 'assets/experiences/pintura-ceramica.jpg',
+      text: '<p>Cansar de fazer sempre a mesma coisa é natural. Jantar fora, cinema, passeio no shopping… tudo tem seu charme, mas existe um mundo de possibilidades quando o assunto é viver algo diferente a dois.</p><p><strong>E se em vez de assistir, vocês fizessem algo juntos?</strong></p><p>Imagina pintar um quadro lado a lado, com uma taça de vinho na mão e uma playlist suave ao fundo. Ou modelar argila em uma oficina de cerâmica, sentindo a textura do barro e criando algo com as próprias mãos — juntos, do zero.</p><p>Essas experiências criam memórias que ficam. Não é sobre o resultado final, mas sobre o processo: rir dos erros, se surpreender com os acertos, descobrir algo novo sobre o outro.</p><p><strong>Algumas ideias para começar:</strong></p><p>Uma aula de gastronomia japonesa, onde vocês preparam sushi lado a lado. Uma oficina de velas perfumadas para levar uma lembrança para casa. Ou até uma sessão de tufting para criar um tapete personalizado.</p><p>Na Elarah, acreditamos que as melhores histórias de amor são escritas offline. E a próxima pode começar aqui.</p>'
+    },
+    {
+      title: 'Experiências para presentear alguém especial',
+      author: 'Por Elarah',
+      image: 'assets/experiences/vela-floral.jpg',
+      text: '<p>Chega de presente genérico. Chega de vale-presente sem alma. Se você quer surpreender alguém de verdade, dê algo que ela vai <strong>sentir, viver e lembrar para sempre</strong>.</p><p>Presentear com experiência é o novo luxo. É mostrar que você pensou, escolheu e quis proporcionar algo que vai muito além do material.</p><p><strong>Para a mãe que merece mais:</strong> uma oficina de perfumaria criativa, onde ela cria sua própria fragrância. Para a amiga que ama novidade: uma aula de bartenderia com drinks autorais. Para aquele casal que tem tudo: uma experiência de pintura em cerâmica com vinho.</p><p>A Elarah oferece gift cards com valor livre e experiências específicas, todas com envio digital imediato. Você pode personalizar com uma mensagem especial e agendar para o dia perfeito.</p><p><strong>É simples:</strong> escolha, personalize, envie. Quem recebe escolhe o melhor dia e vive algo único.</p><p>Porque o melhor presente não se embrulha — se vive.</p>'
+    },
+    {
+      title: 'O que fazer em São Paulo além do óbvio',
+      author: 'Por Elarah',
+      image: 'assets/experiences/ceo-kitchen.jpg',
+      text: '<p>São Paulo é uma cidade que não dorme, não para e não deixa ninguém entediado — desde que você saiba onde procurar.</p><p>Além dos bares descolados e dos restaurantes da moda, existe uma cena criativa crescendo em cada bairro. <strong>Oficinas, ateliês, espaços colaborativos e experiências que transformam a rotina.</strong></p><p>No Brooklin, você pode fazer velas artesanais com aromas exclusivos em um estúdio aconchegante. Em Pinheiros, oficinas de cerâmica que parecem meditação. No Itaim, sessões de tufting onde você cria seu próprio tapete com uma pistola de agulha.</p><p><strong>E a gastronomia?</strong> Aulas imersivas de cozinha japonesa, tailandesa, lamen artesanal — tudo com a mão na massa e ingredientes premium.</p><p>O segredo de São Paulo não está nos guias turísticos. Está nas experiências que só quem vive descobre. E na Elarah, a gente cuida para que cada uma delas seja memorável.</p><p>Saia da tela. Viva a cidade. <strong>Offline is a feeling.</strong></p>'
+    }
+  ];
+
+  var storyReader = document.getElementById('story-reader');
+  var storyReaderBackdrop = document.getElementById('story-reader-backdrop');
+  var storyReaderClose = document.getElementById('story-reader-close');
+  var storyReaderImage = document.getElementById('story-reader-image');
+  var storyReaderTitle = document.getElementById('story-reader-title');
+  var storyReaderAuthor = document.getElementById('story-reader-author');
+  var storyReaderText = document.getElementById('story-reader-text');
+
+  function openStoryReader(index) {
+    var story = storiesData[index];
+    if (!story || !storyReader) return;
+    storyReaderImage.src = story.image;
+    storyReaderImage.alt = story.title;
+    storyReaderTitle.textContent = story.title;
+    storyReaderAuthor.textContent = story.author;
+    storyReaderText.innerHTML = story.text;
+    storyReader.classList.add('open');
+    storyReader.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeStoryReader() {
+    if (!storyReader) return;
+    storyReader.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.stories__card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var index = parseInt(card.dataset.story, 10);
+      openStoryReader(index);
+    });
+  });
+
+  if (storyReaderBackdrop) storyReaderBackdrop.addEventListener('click', closeStoryReader);
+  if (storyReaderClose) storyReaderClose.addEventListener('click', closeStoryReader);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && storyReader && storyReader.classList.contains('open')) {
+      closeStoryReader();
+    }
+  });
 });
 
