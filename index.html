@@ -178,6 +178,10 @@
                 24 de abril
               </p>
               <p class="originals__card-detail">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                10h às 13h &nbsp;|&nbsp; 14h às 17h
+              </p>
+              <p class="originals__card-detail">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 Rua Nova Orleans, 34 – Brooklin, São Paulo
               </p>
@@ -238,6 +242,13 @@
         <p class="originals-modal__desc" id="originals-modal-desc"></p>
         <form class="originals-modal__form" id="originals-modal-form">
           <input type="hidden" id="originals-modal-experience" name="experiencia">
+          <div class="originals-modal__field" id="originals-horario-field" style="display:none;">
+            <label for="originals-horario">Horário preferido</label>
+            <select id="originals-horario" name="horario" class="originals-modal__select">
+              <option value="10h às 13h">10h às 13h</option>
+              <option value="14h às 17h">14h às 17h</option>
+            </select>
+          </div>
           <div class="originals-modal__field">
             <label for="originals-nome">Nome</label>
             <input type="text" id="originals-nome" name="nome" placeholder="Seu nome completo" required>

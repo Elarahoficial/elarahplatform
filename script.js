@@ -374,6 +374,10 @@ window.location.href = destino;
     originalsModalDesc.textContent = type === 'participar'
       ? 'Preencha seus dados para registrar seu interesse nessa experiência.'
       : 'Entre na lista de espera e avisaremos você assim que a data for definida.';
+    var horarioField = document.getElementById('originals-horario-field');
+    if (horarioField) {
+      horarioField.style.display = type === 'participar' ? 'block' : 'none';
+    }
     const submitBtn = document.getElementById('originals-modal-submit');
     if (submitBtn) {
       submitBtn.textContent = type === 'participar' ? 'Quero participar' : 'Entrar na lista de espera';
