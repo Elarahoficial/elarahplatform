@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function executarBusca() {
     const valor = searchInput?.value.trim();
     if (!valor) return;
-    window.location.href = '/?busca=' + encodeURIComponent(valor);
+   window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(valor);
   }
 
   if (searchBtn && searchInput) {
