@@ -817,9 +817,6 @@ select {
   font-weight: 700;
   color: var(--gray-900);
 }
-  color: var(--gray-900);
-  font-weight: 700;
-}
 
 /* ===== GIFT SECTION ===== */
 .gift-section {
