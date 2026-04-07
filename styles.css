@@ -1780,7 +1780,7 @@ select {
   position: absolute;
   inset: 0;
   border-radius: var(--radius-xl);
-  border: 2px solid rgba(242, 118, 35, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   pointer-events: none;
 }
 
