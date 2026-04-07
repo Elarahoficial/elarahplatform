@@ -83,10 +83,10 @@ select {
   gap: 24px;
 }
 
-.header__logo {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+.header__logo-img {
+  height: 60px;
+  width: auto;
+  display: block;
 }
 
 .header__logo-img {
