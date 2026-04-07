@@ -354,5 +354,71 @@ window.location.href = destino;
       header.style.boxShadow = window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,0.06)' : 'none';
     });
   }
+
+  // ===== ELARAH ORIGINALS MODAL =====
+  const originalsModal = document.getElementById('originals-modal');
+  const originalsModalBackdrop = document.getElementById('originals-modal-backdrop');
+  const originalsModalClose = document.getElementById('originals-modal-close');
+  const originalsModalTitle = document.getElementById('originals-modal-title');
+  const originalsModalDesc = document.getElementById('originals-modal-desc');
+  const originalsModalForm = document.getElementById('originals-modal-form');
+  const originalsModalBody = document.getElementById('originals-modal-body');
+  const originalsModalSuccess = document.getElementById('originals-modal-success');
+  const originalsModalExperience = document.getElementById('originals-modal-experience');
+  const originalsModalSuccessClose = document.getElementById('originals-modal-success-close');
+
+  function openOriginalsModal(experienceName, type) {
+    if (!originalsModal) return;
+    originalsModalExperience.value = experienceName;
+    originalsModalTitle.textContent = experienceName;
+    originalsModalDesc.textContent = type === 'participar'
+      ? 'Preencha seus dados para registrar seu interesse nessa experiência.'
+      : 'Entre na lista de espera e avisaremos você assim que a data for definida.';
+    const submitBtn = document.getElementById('originals-modal-submit');
+    if (submitBtn) {
+      submitBtn.textContent = type === 'participar' ? 'Quero participar' : 'Entrar na lista de espera';
+    }
+    originalsModalBody.style.display = 'block';
+    originalsModalSuccess.style.display = 'none';
+    originalsModalForm.reset();
+    originalsModal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeOriginalsModal() {
+    if (!originalsModal) return;
+    originalsModal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.originals__card-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      openOriginalsModal(btn.dataset.experience, btn.dataset.type);
+    });
+  });
+
+  if (originalsModalBackdrop) {
+    originalsModalBackdrop.addEventListener('click', closeOriginalsModal);
+  }
+  if (originalsModalClose) {
+    originalsModalClose.addEventListener('click', closeOriginalsModal);
+  }
+  if (originalsModalSuccessClose) {
+    originalsModalSuccessClose.addEventListener('click', closeOriginalsModal);
+  }
+
+  if (originalsModalForm) {
+    originalsModalForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      originalsModalBody.style.display = 'none';
+      originalsModalSuccess.style.display = 'block';
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && originalsModal && originalsModal.classList.contains('open')) {
+      closeOriginalsModal();
+    }
+  });
 });
 
