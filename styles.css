@@ -89,10 +89,6 @@ select {
   display: block;
 }
 
-.header__logo-img {
-    height: 60px;
-}
-
 .header__search {
   flex: 1;
   max-width: 420px;
