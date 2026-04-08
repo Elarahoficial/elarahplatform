@@ -71,26 +71,24 @@ localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
       header.style.boxShadow = window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,0.06)' : 'none';
     });
   }
-});
-
-// ===== PUXAR DADOS DO FORM SALVO =====
-document.addEventListener('DOMContentLoaded', function () {
-
+    // ===== MOSTRAR DADOS SALVOS =====
   var dadosSalvos = localStorage.getItem('hostRequest');
 
   if (dadosSalvos) {
     var dados = JSON.parse(dadosSalvos);
 
-    // TROCA OS TEXTOS NA TELA
+    document.getElementById('host-status-box').style.display = 'block';
+
     document.getElementById('perfil-nome').textContent = dados.nome;
     document.getElementById('perfil-email').textContent = dados.email;
-
     document.getElementById('status-texto').textContent = dados.status;
 
     document.getElementById('resumo-dados').innerHTML =
       '<strong>WhatsApp:</strong> ' + dados.whatsapp + '<br>' +
       '<strong>Tipo:</strong> ' + dados.tipo + '<br>' +
       '<strong>Descrição:</strong> ' + (dados.descricao || 'Não informada');
-  }
 
+    document.getElementById('host-contact-form').style.display = 'none';
+  }
 });
+
