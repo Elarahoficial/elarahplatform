@@ -456,13 +456,35 @@ window.location.href = destino;
     });
   });
 
-  if (groupForm) {
-    groupForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      groupForm.style.display = 'none';
-      if (groupSuccess) groupSuccess.style.display = 'block';
-    });
-  }
+if (groupForm) {
+  groupForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    var nome = document.getElementById('group-nome').value;
+    var whatsapp = document.getElementById('group-whatsapp').value;
+    var tipoEvento = document.getElementById('group-tipo').value;
+    var pessoas = document.getElementById('group-pessoas').value;
+    var data = document.getElementById('group-data').value;
+    var experiencia = document.getElementById('group-experiencia').value;
+    var observacoes = document.getElementById('group-obs').value;
+
+    var mensagem =
+      'Oi! Quero organizar uma experiência com a Elarah ✨%0A%0A' +
+      '📌 Tipo de evento: ' + tipoEvento + '%0A' +
+      '👤 Nome: ' + nome + '%0A' +
+      '📱 WhatsApp: ' + whatsapp + '%0A' +
+      '👥 Número de pessoas: ' + pessoas + '%0A' +
+      '📅 Data desejada: ' + (data || 'Não informada') + '%0A' +
+      '🎨 Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
+      '📝 Observações: ' + (observacoes || 'Nenhuma');
+
+    var numeroElarah = '5511914455930'; // TROQUE PELO NÚMERO CERTO
+
+    var url = 'https://wa.me/' + numeroElarah + '?text=' + mensagem;
+
+    window.open(url, '_blank');
+  });
+}
 
   if (groupSuccessClose) {
     groupSuccessClose.addEventListener('click', function() {
