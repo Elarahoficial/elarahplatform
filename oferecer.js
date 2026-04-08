@@ -36,7 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Erro ao ler hostRequest:', error);
   }
 
-  if (dados && dados.status === 'approved') {
+  const currentUser =
+  (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+    ? ElarahAuth.getCurrentUser()
+    : null;
+
+if (
+  (dados && dados.status === 'approved') ||
+  (currentUser && currentUser.partnerStatus === 'approved')
+) {
     if (partnerCta) partnerCta.style.display = 'none';
     if (hostStatusBox) hostStatusBox.style.display = 'block';
     if (perfilNome) perfilNome.textContent = dados.nome || '';
