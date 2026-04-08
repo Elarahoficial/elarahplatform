@@ -24,13 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (nameEl) nameEl.textContent = user.nome || '';
   if (emailEl) emailEl.textContent = user.email || '';
 
-  if (badgeEl) {
-    if (user.partnerStatus === 'approved') {
-      badgeEl.textContent = 'Parceiro';
-      badgeEl.className = 'account__badge account__badge--partner';
-    } else if (user.partnerStatus === 'pending') {
-      badgeEl.textContent = 'Em análise';
-      badgeEl.className = 'account__badge account__badge--user';
+ if (badgeEl) {
+  // FORÇA COMO APROVADO
+  user.partnerStatus = 'approved';
+
+  badgeEl.textContent = 'Parceiro';
+  badgeEl.className = 'account__badge account__badge--partner';
+}
     } else if (user.partnerStatus === 'rejected') {
       badgeEl.textContent = 'Revisar cadastro';
       badgeEl.className = 'account__badge account__badge--user';
