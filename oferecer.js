@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'minha-conta.html?tab=oferecer-experiencia';
       } else {
         // não logado → manda pro login
-        window.location.href = 'login.html?redirect=minha-conta.html?tab=oferecer-experiencia';
+       window.location.href = 'login.html?redirect=' + encodeURIComponent('minha-conta.html?tab=oferecer-experiencia');
       }
     });
   }
@@ -127,11 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Erro ao ler loggedUser:', error);
       }
 
-      if (usuarioLogado) {
-        window.location.href = 'minha-conta.html?tab=oferecer-experiencia';
-      } else {
-        window.location.href = 'login.html?redirect=minha-conta.html?tab=oferecer-experiencia';
-      }
+     if (usuarioLogado) {
+  window.location.href = 'minha-conta.html?tab=oferecer-experiencia';
+} else {
+  window.location.href = 'login.html?redirect=' + encodeURIComponent('minha-conta.html?tab=oferecer-experiencia');
+}
     });
   }
 });
