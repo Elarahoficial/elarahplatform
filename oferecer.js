@@ -107,24 +107,4 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = loginRedirectUrl;
     }
   }
-
-  // ===== BOTÃO CTA FINAL =====
-  const partnerCtaBtn = document.getElementById('partnerCtaBtn');
-  if (partnerCtaBtn) {
-    partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
-  }
-
-  // ===== BOTÃO HERO (TOPO) =====
-  const partnerHeroBtn = document.getElementById('partnerHeroBtn');
-  if (partnerHeroBtn) {
-    partnerHeroBtn.addEventListener('click', irParaFluxoParceiro);
-  }
-
-  // ===== BOTÃO ENTRAR DO HEADER =====
-  const headerLoginBtn = document.querySelector('.header__login-btn');
-  if (headerLoginBtn) {
-    headerLoginBtn.addEventListener('click', () => {
-      window.location.href = '/elarahplatform/login.html';
-    });
-  }
 });
