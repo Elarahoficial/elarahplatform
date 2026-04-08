@@ -85,28 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
       hostStatusBox.style.display = 'none';
     }
   }
-
-  // ===== URLS CORRETAS DO GITHUB PAGES =====
-  const loginRedirectUrl = '/elarahplatform/login.html?redirect=' + encodeURIComponent('/elarahplatform/minha-conta.html?tab=oferecer-experiencia');
-  const partnerAreaUrl = '/elarahplatform/minha-conta.html?tab=oferecer-experiencia';
-
-  function irParaFluxoParceiro(e) {
-    e.preventDefault();
-
-    let usuarioLogado = null;
-
-    try {
-      usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
-    } catch (error) {
-      console.error('Erro ao ler loggedUser:', error);
-    }
-
-    if (usuarioLogado) {
-      window.location.href = partnerAreaUrl;
-    } else {
-      window.location.href = loginRedirectUrl;
-    }
-  }
+  
   // ===== FLUXO PARCEIRO (CORRIGIDO) =====
 const BASE = '/elarahplatform/';
 const LOGIN_URL = BASE + 'login.html';
