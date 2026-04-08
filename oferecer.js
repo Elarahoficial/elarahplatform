@@ -53,9 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===== REGRA DE EXIBIÇÃO =====
-  // Sem cadastro -> mostra botão
-  // Cadastro enviado, mas não aprovado -> mostra botão
-  // Aprovado -> esconde botão e mostra box
   if (dados && dados.status === 'approved') {
     if (partnerCta) {
       partnerCta.style.display = 'none';
@@ -88,50 +85,46 @@ document.addEventListener('DOMContentLoaded', () => {
       hostStatusBox.style.display = 'none';
     }
   }
-    // ===== BOTÃO "QUERO SER PARCEIRO" =====
-  const partnerCtaBtn = document.getElementById('partnerCtaBtn');
 
-  if (partnerCtaBtn) {
-    partnerCtaBtn.addEventListener('click', function (e) {
-      e.preventDefault();
+  // ===== URLS CORRETAS DO GITHUB PAGES =====
+  const loginRedirectUrl = '/elarahplatform/login.html?redirect=' + encodeURIComponent('/elarahplatform/minha-conta.html?tab=oferecer-experiencia');
+  const partnerAreaUrl = '/elarahplatform/minha-conta.html?tab=oferecer-experiencia';
 
-      let usuarioLogado = null;
+  function irParaFluxoParceiro(e) {
+    e.preventDefault();
 
-      try {
-        usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
-      } catch (error) {
-        console.error('Erro ao ler loggedUser:', error);
-      }
+    let usuarioLogado = null;
 
-      if (usuarioLogado) {
-        // já logado → vai pra conta direto na aba certa
-        window.location.href = 'minha-conta.html?tab=oferecer-experiencia';
-      } else {
-        // não logado → manda pro login
-       window.location.href = 'login.html?redirect=' + encodeURIComponent('minha-conta.html?tab=oferecer-experiencia');
-      }
-    });
+    try {
+      usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
+    } catch (error) {
+      console.error('Erro ao ler loggedUser:', error);
+    }
+
+    if (usuarioLogado) {
+      window.location.href = partnerAreaUrl;
+    } else {
+      window.location.href = loginRedirectUrl;
+    }
   }
-    // ===== BOTÃO HERO (TOPO) =====
+
+  // ===== BOTÃO CTA FINAL =====
+  const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+  if (partnerCtaBtn) {
+    partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
+  }
+
+  // ===== BOTÃO HERO (TOPO) =====
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
-
   if (partnerHeroBtn) {
-    partnerHeroBtn.addEventListener('click', function (e) {
-      e.preventDefault();
+    partnerHeroBtn.addEventListener('click', irParaFluxoParceiro);
+  }
 
-      let usuarioLogado = null;
-
-      try {
-        usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
-      } catch (error) {
-        console.error('Erro ao ler loggedUser:', error);
-      }
-
-     if (usuarioLogado) {
-  window.location.href = 'minha-conta.html?tab=oferecer-experiencia';
-} else {
-  window.location.href = 'login.html?redirect=' + encodeURIComponent('minha-conta.html?tab=oferecer-experiencia');
-}
+  // ===== BOTÃO ENTRAR DO HEADER =====
+  const headerLoginBtn = document.querySelector('.header__login-btn');
+  if (headerLoginBtn) {
+    headerLoginBtn.addEventListener('click', () => {
+      window.location.href = '/elarahplatform/login.html';
     });
   }
 });
