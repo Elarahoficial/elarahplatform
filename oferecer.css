@@ -849,13 +849,7 @@
   margin-top: 10px;
   line-height: 1.7;
 }
-.header__dropdown {
-  display: none;
-}
 
-.header__dropdown.is-open {
-  display: block;
-}
 .host-hero__cta,
 .partner-cta__button {
   appearance: none;
