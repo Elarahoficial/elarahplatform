@@ -88,4 +88,28 @@ document.addEventListener('DOMContentLoaded', () => {
       hostStatusBox.style.display = 'none';
     }
   }
+    // ===== BOTÃO "QUERO SER PARCEIRO" =====
+  const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+
+  if (partnerCtaBtn) {
+    partnerCtaBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+
+      let usuarioLogado = null;
+
+      try {
+        usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
+      } catch (error) {
+        console.error('Erro ao ler loggedUser:', error);
+      }
+
+      if (usuarioLogado) {
+        // já logado → vai pra conta direto na aba certa
+        window.location.href = 'minha-conta.html?tab=oferecer-experiencia';
+      } else {
+        // não logado → manda pro login
+        window.location.href = 'login.html?redirect=minha-conta.html?tab=oferecer-experiencia';
+      }
+    });
+  }
 });
