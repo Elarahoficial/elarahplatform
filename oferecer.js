@@ -60,7 +60,35 @@ if (perfilEmail) perfilEmail.textContent = (dados?.email || currentUser?.email |
     if (partnerCta) partnerCta.style.display = 'flex';
     if (hostStatusBox) hostStatusBox.style.display = 'none';
   }
+function irParaFluxoParceiro() {
+  const currentUser =
+    (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+      ? ElarahAuth.getCurrentUser()
+      : null;
 
+  if (!currentUser) {
+    if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
+      localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
+      ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
+      return;
+    }
+
+    alert('Faça login para continuar.');
+    return;
+  }
+
+  if (currentUser.partnerStatus === 'approved') {
+    alert('Você já é parceiro Elarah!');
+    return;
+  }
+
+  if (currentUser.partnerStatus === 'pending') {
+    alert('Sua solicitação de parceria já está em análise!');
+    return;
+  }
+
+  window.location.href = '/elarahplatform/conta.html?section=parceiro';
+}
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
   const partnerCtaBtn = document.getElementById('partnerCtaBtn');
   const headerLoginBtn = document.querySelector('.header__login-btn');
