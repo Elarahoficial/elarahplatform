@@ -856,3 +856,8 @@
 .header__dropdown.is-open {
   display: block;
 }
+.host-hero__cta,
+.partner-cta__button {
+  appearance: none;
+  -webkit-appearance: none;
+}
