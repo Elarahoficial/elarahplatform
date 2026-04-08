@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const BASE = '/elarahplatform/';
   const LOGIN_URL = BASE + 'login.html';
   const CONTA_URL = BASE + 'minha-conta.html?tab=oferecer-experiencia';
-  const BUSCA_URL = BASE + 'resultado-busca.html';
-  const CATEGORIA_URL = BASE + 'categoria.html';
 
   // ===== MOBILE MENU =====
   const mobileToggle = document.getElementById('mobile-toggle');
@@ -22,94 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', () => {
       header.style.boxShadow =
         window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,0.06)' : 'none';
-    });
-  }
-
-  // ===== SCROLL SUAVE SÓ PARA ÂNCORAS INTERNAS REAIS =====
-  const internalAnchors = document.querySelectorAll('a[href^="#"]:not([href="#"])');
-  internalAnchors.forEach((link) => {
-    link.addEventListener('click', (e) => {
-      const href = link.getAttribute('href');
-      const target = document.querySelector(href);
-
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  });
-
-  // ===== EXPLORAR =====
-  const explorarBtn = document.getElementById('explorar-btn');
-  const explorarDropdown = document.getElementById('explorar-dropdown');
-  const dropdownItems = document.querySelectorAll('.header__dropdown-item');
-
-  if (explorarBtn && explorarDropdown) {
-    explorarBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      explorarDropdown.classList.toggle('is-open');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (
-        !explorarDropdown.contains(e.target) &&
-        !explorarBtn.contains(e.target)
-      ) {
-        explorarDropdown.classList.remove('is-open');
-      }
-    });
-  }
-
-  if (dropdownItems.length) {
-    dropdownItems.forEach((item) => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-
-        const categoria = item.textContent.trim().toLowerCase();
-
-        if (categoria === 'todas') {
-          window.location.href = CATEGORIA_URL;
-          return;
-        }
-
-        window.location.href =
-          CATEGORIA_URL + '?categoria=' + encodeURIComponent(categoria);
-      });
-    });
-  }
-
-  // ===== BUSCAR =====
-  const searchInput = document.getElementById('search-input');
-  const searchBtn = document.getElementById('search-btn');
-
-  function executarBusca() {
-    if (!searchInput) return;
-
-    const termo = searchInput.value.trim();
-    if (!termo) return;
-
-    window.location.href = BUSCA_URL + '?busca=' + encodeURIComponent(termo);
-  }
-
-  if (searchBtn) {
-    searchBtn.addEventListener('click', executarBusca);
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        executarBusca();
-      }
-    });
-  }
-
-  // ===== BOTÃO ENTRAR DO HEADER =====
-  const headerLoginBtn = document.querySelector('.header__login-btn');
-  if (headerLoginBtn) {
-    headerLoginBtn.addEventListener('click', () => {
-      window.location.href = LOGIN_URL;
     });
   }
 
