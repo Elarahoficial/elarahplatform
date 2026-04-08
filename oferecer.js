@@ -69,7 +69,19 @@ function irParaFluxoParceiro() {
 
   if (!currentUser) {
     if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-      localStorage.setItem('postLoginRedirect', '/elarahplatform/minha-conta.html?section=parceiro');
+     function irParaFluxoParceiro() {
+  const currentUser =
+    (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+      ? ElarahAuth.getCurrentUser()
+      : null;
+
+  // NÃO LOGADO → continua igual
+  if (!currentUser) {
+    if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
+      localStorage.setItem(
+        'postLoginRedirect',
+        '/elarahplatform/conta.html?section=parceiro'
+      );
       ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
       return;
     }
@@ -78,17 +90,20 @@ function irParaFluxoParceiro() {
     return;
   }
 
- if (currentUser.partnerStatus === 'approved') {
-  alert('Você já é parceiro Elarah!');
-  return;
-}
+  // SE JÁ FOR PARCEIRO
+  if (currentUser.partnerStatus === 'approved') {
+    alert('Você já é parceiro Elarah!');
+    return;
+  }
 
-if (currentUser.partnerStatus === 'pending') {
-  alert('Sua solicitação de parceria já está em análise!');
-  return;
-}
+  if (currentUser.partnerStatus === 'pending') {
+    alert('Sua solicitação de parceria já está em análise!');
+    return;
+  }
 
-window.location.href = '/elarahplatform/minha-conta.html?section=parceiro';
+  // ✅ AQUI ESTÁ A CORREÇÃO PRINCIPAL
+  window.location.href = '/elarahplatform/conta.html?section=parceiro';
+}
 }
 
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
