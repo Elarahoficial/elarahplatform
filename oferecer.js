@@ -1,23 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ===== Form submission =====
-  const form = document.getElementById('host-contact-form');
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('.host-final__btn');
-      btn.textContent = 'Enviado com sucesso!';
-      btn.style.background = '#2e7d32';
-      btn.disabled = true;
-      setTimeout(() => {
-        btn.textContent = 'Quero ser parceiro Elarah';
-        btn.style.background = '';
-        btn.disabled = false;
-        form.reset();
-      }, 3000);
-    });
-  }
+  // ===== FORM HOST → WHATSAPP =====
+const form = document.getElementById('host-contact-form');
 
+if (form) {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // pegar valores
+    var nome = document.getElementById('host-nome').value;
+    var email = document.getElementById('host-email').value;
+    var whatsapp = document.getElementById('host-whatsapp').value;
+    var tipo = document.getElementById('host-tipo').value;
+    var descricao = document.getElementById('host-descricao').value;
+
+    // montar mensagem
+    var mensagem =
+      'Oi! Quero ser parceiro da Elarah!%0A%0A' +
+      'Nome: ' + nome + '%0A' +
+      'Email: ' + email + '%0A' +
+      'WhatsApp: ' + whatsapp + '%0A' +
+      'Tipo de experiência: ' + tipo + '%0A' +
+      'Descrição: ' + (descricao || 'Não informada');
+
+    // seu número
+    var numeroElarah = '5511914455930'; // CONFERE ESSE
+
+    var url = 'https://wa.me/' + numeroElarah + '?text=' + mensagem;
+
+    window.open(url, '_blank');
+  });
+}
+  
   // ===== Mobile menu toggle =====
   const mobileToggle = document.getElementById('mobile-toggle');
   const nav = document.querySelector('.header__nav');
