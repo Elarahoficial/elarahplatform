@@ -137,11 +137,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (approvedWrap) approvedWrap.style.display = 'none';
     if (rejectedWrap) rejectedWrap.style.display = 'none';
 
-    if (currentUser.partnerStatus === 'pending') {
-      if (pendingWrap) pendingWrap.style.display = 'block';
-      return;
-    }
+   if (currentUser.partnerStatus === 'pending') {
+  if (approvedWrap) approvedWrap.style.display = 'block';
 
+  const dadosSalvos = localStorage.getItem('hostRequest');
+  const pd = dadosSalvos ? JSON.parse(dadosSalvos) : {};
+
+  if (parceiroInfo) {
+    parceiroInfo.innerHTML = `
+      <div class="account__partner-detail"><strong>Nome</strong><span>${pd.nome || ''}</span></div>
+      <div class="account__partner-detail"><strong>Email</strong><span>${pd.email || ''}</span></div>
+      <div class="account__partner-detail"><strong>WhatsApp</strong><span>${pd.whatsapp || ''}</span></div>
+      <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
+      <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
+    `;
+  }
+
+  return;
+}
    if (currentUser.partnerStatus === 'approved') {
   if (approvedWrap) approvedWrap.style.display = 'block';
 
