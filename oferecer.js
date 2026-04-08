@@ -47,9 +47,9 @@ if (
 ) {
     if (partnerCta) partnerCta.style.display = 'none';
     if (hostStatusBox) hostStatusBox.style.display = 'block';
-    if (perfilNome) perfilNome.textContent = dados.nome || '';
-    if (perfilEmail) perfilEmail.textContent = dados.email || '';
-
+   if (perfilNome) perfilNome.textContent = (dados?.nome || currentUser?.nome || '');
+if (perfilEmail) perfilEmail.textContent = (dados?.email || currentUser?.email || '');
+  
     if (resumoDados) {
       resumoDados.innerHTML =
         '<strong>WhatsApp:</strong> ' + (dados.whatsapp || '-') + '<br>' +
