@@ -83,11 +83,45 @@ function irParaFluxoParceiro() {
   }
 
   if (currentUser.partnerStatus === 'pending') {
-    alert('Sua solicitação de parceria já está em análise!');
+   mostrarMensagemParceiro('Você já é parceiro Elarah!');
     return;
   }
 
   window.location.href = '/elarahplatform/conta.html?section=parceiro';
+}
+  function mostrarMensagemParceiro(texto) {
+  const msg = document.createElement('div');
+  msg.innerText = texto;
+
+  msg.style.position = 'fixed';
+  msg.style.bottom = '30px';
+  msg.style.left = '50%';
+  msg.style.transform = 'translateX(-50%)';
+  msg.style.background = '#111';
+  msg.style.color = '#fff';
+  msg.style.padding = '16px 24px';
+  msg.style.borderRadius = '12px';
+  msg.style.fontSize = '14px';
+  msg.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
+  msg.style.zIndex = '9999';
+  msg.style.opacity = '0';
+  msg.style.transition = 'all 0.3s ease';
+
+  document.body.appendChild(msg);
+
+  setTimeout(() => {
+    msg.style.opacity = '1';
+    msg.style.transform = 'translateX(-50%) translateY(-10px)';
+  }, 10);
+
+  setTimeout(() => {
+    msg.style.opacity = '0';
+    msg.style.transform = 'translateX(-50%) translateY(10px)';
+  }, 2500);
+
+  setTimeout(() => {
+    msg.remove();
+  }, 3000);
 }
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
   const partnerCtaBtn = document.getElementById('partnerCtaBtn');
