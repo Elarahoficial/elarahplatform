@@ -139,25 +139,9 @@ if (badgeEl) {
 
   const pd = currentUser.partnerData || {};
 
-  if (currentUser.partnerStatus === 'pending') {
+if (currentUser.partnerStatus === 'pending') {
   currentUser.partnerStatus = 'approved';
 }
-
-  if (currentUser.partnerStatus === 'approved') {
-    if (approvedWrap) approvedWrap.style.display = 'block';
-
-    if (parceiroInfo) {
-      parceiroInfo.innerHTML = `
-        <div class="account__partner-detail"><strong>Nome</strong><span>${currentUser.nome || ''}</span></div>
-        <div class="account__partner-detail"><strong>Email</strong><span>${currentUser.email || ''}</span></div>
-        <div class="account__partner-detail"><strong>WhatsApp</strong><span>${currentUser.telefone || ''}</span></div>
-        <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
-        <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
-      `;
-    }
-
-    return;
-  }
 
   if (currentUser.partnerStatus === 'rejected') {
     if (rejectedWrap) rejectedWrap.style.display = 'block';
