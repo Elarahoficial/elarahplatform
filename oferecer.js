@@ -78,9 +78,7 @@ function irParaFluxoParceiro() {
   // NÃO LOGADO → continua igual
   if (!currentUser) {
     if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-      localStorage.setItem(
-        'postLoginRedirect',
-        '/elarahplatform/conta.html?section=parceiro'
+    localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
       );
       ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
       return;
@@ -102,7 +100,7 @@ function irParaFluxoParceiro() {
   }
 
   // ✅ AQUI ESTÁ A CORREÇÃO PRINCIPAL
-  window.location.href = '/elarahplatform/conta.html?section=parceiro';
+ window.location.href = '/elarahplatform/conta.html?section=parceiro';
 }
 }
 
