@@ -81,7 +81,6 @@ localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
 
     document.getElementById('perfil-nome').textContent = dados.nome;
     document.getElementById('perfil-email').textContent = dados.email;
-    document.getElementById('status-texto').textContent = dados.status;
 
     document.getElementById('resumo-dados').innerHTML =
       '<strong>WhatsApp:</strong> ' + dados.whatsapp + '<br>' +
