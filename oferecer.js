@@ -53,30 +53,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hostStatusBox) hostStatusBox.style.display = 'none';
   }
 
-  // ===== FLUXO PARCEIRO =====
-  function irParaFluxoParceiro() {
-    let usuarioLogado = null;
+function irParaFluxoParceiro() {
+  const currentUser =
+    (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+      ? ElarahAuth.getCurrentUser()
+      : null;
 
-    try {
-      usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
-    } catch (error) {
-      console.error('Erro ao ler loggedUser:', error);
-    }
-
-    if (usuarioLogado) {
-      window.location.href = '/elarahplatform/minha-conta.html?tab=oferecer-experiencia';
-      return;
-    }
-
-    // usa o mesmo sistema de login/modal da home
+  if (!currentUser) {
     if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-      localStorage.setItem('postLoginRedirect', '/elarahplatform/minha-conta.html?tab=oferecer-experiencia');
+      localStorage.setItem('postLoginRedirect', '/elarahplatform/minha-conta.html?section=parceiro');
       ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
       return;
     }
 
     alert('Faça login para continuar.');
+    return;
   }
+
+  if (currentUser.partnerStatus === 'approved') {
+    alert('Você já é parceiro Elarah!');
+    return;
+  }
+
+  window.location.href = '/elarahplatform/minha-conta.html?section=parceiro';
+}
 
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
   const partnerCtaBtn = document.getElementById('partnerCtaBtn');
