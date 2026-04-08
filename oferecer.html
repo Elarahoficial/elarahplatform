@@ -402,75 +402,83 @@
     </div>
   </section>
 
- <!-- ========== CTA FINAL / FORMULÁRIO ========== -->
+<!-- ========== CTA FINAL ========== -->
 <section class="host-final" id="host-form">
   <div class="host-final__inner">
     <div class="host-final__content">
       <h2 class="host-final__title">Pronto para compartilhar seu talento com o mundo?</h2>
-      <p class="host-final__text">Cadastre-se agora e comece a receber pessoas que vão amar o que você faz. Sem burocracia, sem risco.</p>
+      <p class="host-final__text">
+        Cadastre-se agora e comece a receber pessoas que vão amar o que você faz.
+        Sem burocracia, sem risco.
+      </p>
+
       <div id="partnerCta" class="partner-cta">
-  <a href="cadastro-parceiro.html" class="partner-cta__button">Quero ser parceiro</a>
-</div>
-
-<!-- NOVO BLOCO -->
-<div id="host-status-box" style="display:none; margin-bottom:20px; padding:20px; border:1px solid #eee; border-radius:12px; background:#fafafa;">
-  
-  <h3 style="margin-bottom:10px;">Sua parceria foi aprovada!</h3>
-
-  <p style="margin-bottom:16px;">
-    Agora você já pode acessar sua área de parceiro e começar a cadastrar experiências.
-  </p>
-
-  <p><strong>Nome:</strong> <span id="perfil-nome"></span></p>
-  <p><strong>Email:</strong> <span id="perfil-email"></span></p>
-
-  <div id="resumo-dados" style="margin-top:10px;"></div>
-
-</div>
-      
-  <!-- ========== FOOTER ========== -->
-  <footer class="footer">
-    <div class="footer__inner">
-      <div class="footer__brand">
-        <a href="/" class="footer__logo">
-          <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
-        </a>
-        <p class="footer__tagline">offline is a feeling</p>
+        <a href="cadastro-parceiro.html" class="partner-cta__button">Quero ser parceiro</a>
       </div>
-      <div class="footer__links">
-        <div class="footer__col">
-          <h4>Explorar</h4>
-          <a href="/">Bartenderia</a>
-          <a href="/">Cerâmica</a>
-          <a href="/">Floral</a>
-          <a href="/">Gastronomia</a>
-          <a href="/">Macramê</a>
-          <a href="/">Pintura</a>
-          <a href="/">Sabonete</a>
-          <a href="/">Tufting</a>
-          <a href="/">Vela</a>
-        </div>
-        <div class="footer__col">
-          <h4>Elarah</h4>
-          <a href="#">Sobre nós</a>
-          <a href="#">Como funciona</a>
-          <a href="oferecer.html">Ofereça experiências</a>
-          <a href="#">Contato</a>
-        </div>
-        <div class="footer__col">
-          <h4>Suporte</h4>
-          <a href="#">Central de ajuda</a>
-          <a href="#">Termos de uso</a>
-          <a href="#">Política de privacidade</a>
-        </div>
-      </div>
-      <div class="footer__bottom">
-        <p>&copy; 2026 Elarah. Todos os direitos reservados.</p>
+
+      <div id="host-status-box" class="host-status-box" style="display:none;">
+        <h3 class="host-status-box__title">Sua parceria foi aprovada!</h3>
+
+        <p class="host-status-box__text">
+          Agora você já pode acessar sua área de parceiro e começar a cadastrar experiências.
+        </p>
+
+        <p><strong>Nome:</strong> <span id="perfil-nome"></span></p>
+        <p><strong>Email:</strong> <span id="perfil-email"></span></p>
+
+        <div id="resumo-dados" class="host-status-box__summary"></div>
       </div>
     </div>
-  </footer>
+  </div>
+</section>
 
-  <script src="auth.js"></script>
-  <script src="oferecer.js"></script>
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a href="/elarahplatform/" class="footer__logo">
+        <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">offline is a feeling</p>
+    </div>
+
+    <div class="footer__links">
+      <div class="footer__col">
+        <h4>Explorar</h4>
+        <a href="/">Bartenderia</a>
+        <a href="/">Cerâmica</a>
+        <a href="/">Floral</a>
+        <a href="/">Gastronomia</a>
+        <a href="/">Macramê</a>
+        <a href="/">Pintura</a>
+        <a href="/">Sabonete</a>
+        <a href="/">Tufting</a>
+        <a href="/">Vela</a>
+      </div>
+
+      <div class="footer__col">
+        <h4>Elarah</h4>
+        <a href="#">Sobre nós</a>
+        <a href="#">Como funciona</a>
+        <a href="oferecer.html">Ofereça experiências</a>
+        <a href="#">Contato</a>
+      </div>
+
+      <div class="footer__col">
+        <h4>Suporte</h4>
+        <a href="#">Central de ajuda</a>
+        <a href="#">Termos de uso</a>
+        <a href="#">Política de privacidade</a>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <p>&copy; 2026 Elarah. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="auth.js"></script>
+<script src="oferecer.js"></script>
 </body>
 </html>
