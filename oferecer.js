@@ -1,46 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-
-  // ===== FORM HOST → WHATSAPP =====
-const form = document.getElementById('host-contact-form');
-
-if (form) {
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    // pegar valores
-    var nome = document.getElementById('host-nome').value;
-    var email = document.getElementById('host-email').value;
-    var whatsapp = document.getElementById('host-whatsapp').value;
-    var tipo = document.getElementById('host-tipo').value;
-    var descricao = document.getElementById('host-descricao').value;
-
-    // montar mensagem
-    var mensagem =
-      'Oi! Quero ser parceiro da Elarah!%0A%0A' +
-      'Nome: ' + nome + '%0A' +
-      'Email: ' + email + '%0A' +
-      'WhatsApp: ' + whatsapp + '%0A' +
-      'Tipo de experiência: ' + tipo + '%0A' +
-      'Descrição: ' + (descricao || 'Não informada');
-
-    // seu número
-    var numeroElarah = '5511914455930'; // CONFERE ESSE
-
-    var url = 'https://wa.me/' + numeroElarah + '?text=' + mensagem;
-    var hostRequest = {
-    nome: nome,
-    email: email,
-    whatsapp: whatsapp,
-    tipo: tipo,
-    descricao: descricao,
-    status: 'Aprovado'
-};
-
-localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
-    window.open(url, '_blank');
-  });
-}
-  
   // ===== Mobile menu toggle =====
   const mobileToggle = document.getElementById('mobile-toggle');
   const nav = document.querySelector('.header__nav');
@@ -56,6 +14,7 @@ localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
     link.addEventListener('click', (e) => {
       const href = link.getAttribute('href');
       if (href === '#') return;
+
       const target = document.querySelector(href);
       if (target) {
         e.preventDefault();
@@ -68,26 +27,65 @@ localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
   const header = document.querySelector('.header');
   if (header) {
     window.addEventListener('scroll', () => {
-      header.style.boxShadow = window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,0.06)' : 'none';
+      header.style.boxShadow = window.scrollY > 10
+        ? '0 1px 8px rgba(0,0,0,0.06)'
+        : 'none';
     });
   }
-    // ===== MOSTRAR DADOS SALVOS =====
-  var dadosSalvos = localStorage.getItem('hostRequest');
 
-  if (dadosSalvos) {
-    var dados = JSON.parse(dadosSalvos);
+  // ===== ELEMENTOS DA SEÇÃO FINAL =====
+  const partnerCta = document.getElementById('partnerCta');
+  const hostStatusBox = document.getElementById('host-status-box');
+  const perfilNome = document.getElementById('perfil-nome');
+  const perfilEmail = document.getElementById('perfil-email');
+  const resumoDados = document.getElementById('resumo-dados');
 
-    document.getElementById('host-status-box').style.display = 'block';
+  // ===== DADOS SALVOS =====
+  let dados = null;
 
-    document.getElementById('perfil-nome').textContent = dados.nome;
-    document.getElementById('perfil-email').textContent = dados.email;
+  try {
+    const dadosSalvos = localStorage.getItem('hostRequest');
+    if (dadosSalvos) {
+      dados = JSON.parse(dadosSalvos);
+    }
+  } catch (error) {
+    console.error('Erro ao ler hostRequest do localStorage:', error);
+  }
 
-    document.getElementById('resumo-dados').innerHTML =
-      '<strong>WhatsApp:</strong> ' + dados.whatsapp + '<br>' +
-      '<strong>Tipo:</strong> ' + dados.tipo + '<br>' +
-      '<strong>Descrição:</strong> ' + (dados.descricao || 'Não informada');
+  // ===== REGRA DE EXIBIÇÃO =====
+  // Sem cadastro -> mostra botão
+  // Cadastro enviado, mas não aprovado -> mostra botão
+  // Aprovado -> esconde botão e mostra box
+  if (dados && dados.status === 'approved') {
+    if (partnerCta) {
+      partnerCta.style.display = 'none';
+    }
 
-    document.getElementById('host-contact-form').style.display = 'none';
+    if (hostStatusBox) {
+      hostStatusBox.style.display = 'block';
+    }
+
+    if (perfilNome) {
+      perfilNome.textContent = dados.nome || '';
+    }
+
+    if (perfilEmail) {
+      perfilEmail.textContent = dados.email || '';
+    }
+
+    if (resumoDados) {
+      resumoDados.innerHTML =
+        '<strong>WhatsApp:</strong> ' + (dados.whatsapp || '-') + '<br>' +
+        '<strong>Categoria:</strong> ' + (dados.tipo || '-') + '<br>' +
+        '<strong>Descrição:</strong> ' + (dados.descricao || 'Não informada');
+    }
+  } else {
+    if (partnerCta) {
+      partnerCta.style.display = 'flex';
+    }
+
+    if (hostStatusBox) {
+      hostStatusBox.style.display = 'none';
+    }
   }
 });
-
