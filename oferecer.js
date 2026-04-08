@@ -78,12 +78,17 @@ function irParaFluxoParceiro() {
     return;
   }
 
-  if (currentUser.partnerStatus === 'approved') {
-    alert('Você já é parceiro Elarah!');
-    return;
-  }
+ if (currentUser.partnerStatus === 'approved') {
+  alert('Você já é parceiro Elarah!');
+  return;
+}
 
-  window.location.href = '/elarahplatform/minha-conta.html?section=parceiro';
+if (currentUser.partnerStatus === 'pending') {
+  alert('Sua solicitação de parceria já está em análise!');
+  return;
+}
+
+window.location.href = '/elarahplatform/minha-conta.html?section=parceiro';
 }
 
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
