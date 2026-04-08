@@ -107,4 +107,34 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = loginRedirectUrl;
     }
   }
+  // ===== FLUXO PARCEIRO (CORRIGIDO) =====
+const BASE = '/elarahplatform/';
+const LOGIN_URL = BASE + 'login.html';
+const CONTA_URL = BASE + 'minha-conta.html?tab=oferecer-experiencia';
+
+function irParaFluxoParceiro() {
+  let usuarioLogado = null;
+
+  try {
+    usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
+  } catch (e) {}
+
+  if (usuarioLogado) {
+    window.location.href = CONTA_URL;
+  } else {
+    window.location.href = LOGIN_URL + '?redirect=' + encodeURIComponent(CONTA_URL);
+  }
+}
+
+// BOTÃO DE BAIXO
+const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+if (partnerCtaBtn) {
+  partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
+}
+
+// BOTÃO DE CIMA
+const partnerHeroBtn = document.getElementById('partnerHeroBtn');
+if (partnerHeroBtn) {
+  partnerHeroBtn.addEventListener('click', irParaFluxoParceiro);
+}
 });
