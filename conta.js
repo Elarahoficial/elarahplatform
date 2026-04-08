@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (approvedWrap) approvedWrap.style.display = 'block';
 
   const dadosSalvos = localStorage.getItem('hostRequest');
-  const pd = currentUser.partnerData || (dadosSalvos ? JSON.parse(dadosSalvos) : {});
+ const pd = dadosSalvos ? JSON.parse(dadosSalvos) : (currentUser.partnerData || {});
 
     if (parceiroInfo) {
   parceiroInfo.innerHTML = `
