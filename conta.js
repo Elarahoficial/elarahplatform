@@ -142,21 +142,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (currentUser.partnerStatus === 'approved' && currentUser.partnerData) {
-      if (approvedWrap) approvedWrap.style.display = 'block';
+   if (currentUser.partnerStatus === 'approved') {
+  if (approvedWrap) approvedWrap.style.display = 'block';
 
-      const pd = currentUser.partnerData || {};
+  const dadosSalvos = localStorage.getItem('hostRequest');
+  const pd = currentUser.partnerData || (dadosSalvos ? JSON.parse(dadosSalvos) : {});
 
-      if (parceiroInfo) {
-        parceiroInfo.innerHTML = `
-          <div class="account__partner-detail"><strong>Marca</strong><span>${pd.marca || ''}</span></div>
-          <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
-          <div class="account__partner-detail"><strong>Local</strong><span>${pd.bairro || ''}, ${pd.cidade || ''}</span></div>
-          ${pd.social ? `<div class="account__partner-detail"><strong>Redes</strong><span>${pd.social}</span></div>` : ''}
-          <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
-          ${pd.approvedAt ? `<div class="account__partner-detail"><strong>Aprovado em</strong><span>${new Date(pd.approvedAt).toLocaleDateString('pt-BR')}</span></div>` : ''}
-        `;
-      }
+    if (parceiroInfo) {
+  parceiroInfo.innerHTML = `
+    <div class="account__partner-detail"><strong>Nome</strong><span>${pd.nome || ''}</span></div>
+    <div class="account__partner-detail"><strong>Email</strong><span>${pd.email || ''}</span></div>
+    <div class="account__partner-detail"><strong>WhatsApp</strong><span>${pd.whatsapp || ''}</span></div>
+    <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
+    <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
+    <div class="account__partner-detail"><strong>Status</strong><span>${pd.status || 'Aprovado'}</span></div>
+  `;
+}
 
       return;
     }
