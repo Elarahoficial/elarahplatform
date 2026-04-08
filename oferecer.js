@@ -27,7 +27,16 @@ if (form) {
     var numeroElarah = '5511914455930'; // CONFERE ESSE
 
     var url = 'https://wa.me/' + numeroElarah + '?text=' + mensagem;
+    var hostRequest = {
+    nome: nome,
+    email: email,
+    whatsapp: whatsapp,
+    tipo: tipo,
+    descricao: descricao,
+    status: 'Em análise'
+};
 
+localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
     window.open(url, '_blank');
   });
 }
