@@ -129,7 +129,7 @@ function getCurrentUser() {
 
     function becomePartner(partnerData) {
   return updateUser({
-    partnerStatus: 'pending',
+    partnerStatus: 'approved',
     partnerData: {
       ...partnerData,
       requestedAt: new Date().toISOString()
