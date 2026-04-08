@@ -124,58 +124,63 @@ if (badgeEl) {
 
   // ===== PARTNER SECTION =====
   function renderPartnerSection() {
-    const currentUser = ElarahAuth.getCurrentUser();
+  const currentUser = ElarahAuth.getCurrentUser();
 
-    const formWrap = document.getElementById('parceiro-form-wrap');
-    const pendingWrap = document.getElementById('parceiro-pending');
-    const approvedWrap = document.getElementById('parceiro-approved');
-    const rejectedWrap = document.getElementById('parceiro-rejected');
-    const parceiroInfo = document.getElementById('parceiro-info');
+  const formWrap = document.getElementById('parceiro-form-wrap');
+  const pendingWrap = document.getElementById('parceiro-pending');
+  const approvedWrap = document.getElementById('parceiro-approved');
+  const rejectedWrap = document.getElementById('parceiro-rejected');
+  const parceiroInfo = document.getElementById('parceiro-info');
 
-    if (formWrap) formWrap.style.display = 'none';
-    if (pendingWrap) pendingWrap.style.display = 'none';
-    if (approvedWrap) approvedWrap.style.display = 'none';
-    if (rejectedWrap) rejectedWrap.style.display = 'none';
+  if (formWrap) formWrap.style.display = 'none';
+  if (pendingWrap) pendingWrap.style.display = 'none';
+  if (approvedWrap) approvedWrap.style.display = 'none';
+  if (rejectedWrap) rejectedWrap.style.display = 'none';
 
-   parceiroInfo.innerHTML = `
-  <div class="account__partner-detail"><strong>Nome</strong><span>${currentUser.nome || ''}</span></div>
-  <div class="account__partner-detail"><strong>Email</strong><span>${currentUser.email || ''}</span></div>
-  <div class="account__partner-detail"><strong>WhatsApp</strong><span>${currentUser.telefone || ''}</span></div>
-  <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
-  <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
-`;
-  }
+  const pd = currentUser.partnerData || {};
 
-  return;
-}
-   if (currentUser.partnerStatus === 'approved') {
-  if (approvedWrap) approvedWrap.style.display = 'block';
+  if (currentUser.partnerStatus === 'pending') {
+    if (pendingWrap) pendingWrap.style.display = 'block';
 
-  const dadosSalvos = localStorage.getItem('hostRequest');
- const pd = currentUser.partnerData || {};
     if (parceiroInfo) {
-  parceiroInfo.innerHTML = `
-    <div class="account__partner-detail"><strong>Nome</strong><span>${currentUser.nome || ''}</span></div>
-    <div class="account__partner-detail"><strong>Email</strong><span>${currentUser.email || ''}</span></div>
-    <div class="account__partner-detail"><strong>WhatsApp</strong><span>${currentUser.telefone || ''}</span></div>
-    <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
-    <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
-  `;
-}
-
-      return;
+      parceiroInfo.innerHTML = `
+        <div class="account__partner-detail"><strong>Nome</strong><span>${currentUser.nome || ''}</span></div>
+        <div class="account__partner-detail"><strong>Email</strong><span>${currentUser.email || ''}</span></div>
+        <div class="account__partner-detail"><strong>WhatsApp</strong><span>${currentUser.telefone || ''}</span></div>
+        <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
+        <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
+      `;
     }
 
-    if (currentUser.partnerStatus === 'rejected') {
-      if (rejectedWrap) rejectedWrap.style.display = 'block';
-      return;
-    }
-
-    if (formWrap) formWrap.style.display = 'block';
+    return;
   }
 
-  renderPartnerSection();
+  if (currentUser.partnerStatus === 'approved') {
+    if (approvedWrap) approvedWrap.style.display = 'block';
 
+    if (parceiroInfo) {
+      parceiroInfo.innerHTML = `
+        <div class="account__partner-detail"><strong>Nome</strong><span>${currentUser.nome || ''}</span></div>
+        <div class="account__partner-detail"><strong>Email</strong><span>${currentUser.email || ''}</span></div>
+        <div class="account__partner-detail"><strong>WhatsApp</strong><span>${currentUser.telefone || ''}</span></div>
+        <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
+        <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
+      `;
+    }
+
+    return;
+  }
+
+  if (currentUser.partnerStatus === 'rejected') {
+    if (rejectedWrap) rejectedWrap.style.display = 'block';
+    return;
+  }
+
+  if (formWrap) formWrap.style.display = 'block';
+}
+
+renderPartnerSection();
+  
   // ===== PARTNER FORM SUBMIT =====
   const parceiroForm = document.getElementById('form-parceiro');
   if (parceiroForm) {
