@@ -33,7 +33,7 @@ if (form) {
     whatsapp: whatsapp,
     tipo: tipo,
     descricao: descricao,
-    status: 'Em análise'
+    status: 'Aprovado'
 };
 
 localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
