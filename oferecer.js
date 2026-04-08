@@ -108,7 +108,10 @@ function irParaFluxoParceiro() {
 // BOTÃO DE BAIXO
 const partnerCtaBtn = document.getElementById('partnerCtaBtn');
 if (partnerCtaBtn) {
-  partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
+  partnerCtaBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  irParaFluxoParceiro();
+});
 }
 
 // BOTÃO DE CIMA
