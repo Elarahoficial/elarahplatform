@@ -72,3 +72,25 @@ localStorage.setItem('hostRequest', JSON.stringify(hostRequest));
     });
   }
 });
+
+// ===== PUXAR DADOS DO FORM SALVO =====
+document.addEventListener('DOMContentLoaded', function () {
+
+  var dadosSalvos = localStorage.getItem('hostRequest');
+
+  if (dadosSalvos) {
+    var dados = JSON.parse(dadosSalvos);
+
+    // TROCA OS TEXTOS NA TELA
+    document.getElementById('perfil-nome').textContent = dados.nome;
+    document.getElementById('perfil-email').textContent = dados.email;
+
+    document.getElementById('status-texto').textContent = dados.status;
+
+    document.getElementById('resumo-dados').innerHTML =
+      '<strong>WhatsApp:</strong> ' + dados.whatsapp + '<br>' +
+      '<strong>Tipo:</strong> ' + dados.tipo + '<br>' +
+      '<strong>Descrição:</strong> ' + (dados.descricao || 'Não informada');
+  }
+
+});
