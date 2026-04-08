@@ -168,7 +168,6 @@ if (badgeEl) {
     <div class="account__partner-detail"><strong>WhatsApp</strong><span>${pd.whatsapp || ''}</span></div>
     <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
     <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
-    <div class="account__partner-detail"><strong>Status</strong><span>${pd.status || 'Aprovado'}</span></div>
   `;
 }
 
