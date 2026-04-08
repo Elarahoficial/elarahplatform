@@ -112,4 +112,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+    // ===== BOTÃO HERO (TOPO) =====
+  const partnerHeroBtn = document.getElementById('partnerHeroBtn');
+
+  if (partnerHeroBtn) {
+    partnerHeroBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+
+      let usuarioLogado = null;
+
+      try {
+        usuarioLogado = JSON.parse(localStorage.getItem('loggedUser'));
+      } catch (error) {
+        console.error('Erro ao ler loggedUser:', error);
+      }
+
+      if (usuarioLogado) {
+        window.location.href = 'minha-conta.html?tab=oferecer-experiencia';
+      } else {
+        window.location.href = 'login.html?redirect=minha-conta.html?tab=oferecer-experiencia';
+      }
+    });
+  }
 });
