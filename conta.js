@@ -159,13 +159,12 @@ if (badgeEl) {
   if (approvedWrap) approvedWrap.style.display = 'block';
 
   const dadosSalvos = localStorage.getItem('hostRequest');
- const pd = dadosSalvos ? JSON.parse(dadosSalvos) : (currentUser.partnerData || {});
-
+ const pd = currentUser.partnerData || {};
     if (parceiroInfo) {
   parceiroInfo.innerHTML = `
-    <div class="account__partner-detail"><strong>Nome</strong><span>${pd.nome || ''}</span></div>
-    <div class="account__partner-detail"><strong>Email</strong><span>${pd.email || ''}</span></div>
-    <div class="account__partner-detail"><strong>WhatsApp</strong><span>${pd.whatsapp || ''}</span></div>
+    <div class="account__partner-detail"><strong>Nome</strong><span>${currentUser.nome || ''}</span></div>
+    <div class="account__partner-detail"><strong>Email</strong><span>${currentUser.email || ''}</span></div>
+    <div class="account__partner-detail"><strong>WhatsApp</strong><span>${currentUser.telefone || ''}</span></div>
     <div class="account__partner-detail"><strong>Categoria</strong><span>${pd.tipo || ''}</span></div>
     <div class="account__partner-detail"><strong>Descrição</strong><span>${pd.descricao || ''}</span></div>
   `;
