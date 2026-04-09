@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | Elarah</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="admin">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="admin__sidebar">
+    <div class="admin__logo">
+      <img src="assets/logo.png" alt="Elarah">
+      <span>Painel Admin</span>
+    </div>
+
+    <nav class="admin__nav">
+      <button class="admin__nav-item admin__nav-item--active" data-panel="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        <span>Visão geral</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Usuários</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="partners">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2H9z"/><path d="M3 7v10a2 2 0 0 0 2 2h4"/>
+        </svg>
+        <span>Parceiros</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="purchases">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span>Compras</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="experiences">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Experiências</span>
+      </button>
+    </nav>
+
+    <div class="admin__nav-bottom">
+      <button class="admin__logout" id="admin-logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>Sair do admin</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="admin__main">
+
+    <!-- ===== OVERVIEW PANEL ===== -->
+    <div class="admin__panel admin__panel--active" id="panel-overview">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Visão geral</h1>
+        <p class="admin__page-subtitle">Resumo da plataforma Elarah</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Usuários</div>
+          <div class="admin__stat-value" id="stat-users">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Parceiros</div>
+          <div class="admin__stat-value" id="stat-partners">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Compras</div>
+          <div class="admin__stat-value" id="stat-purchases">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Experiências</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-experiences">0</div>
+        </div>
+      </div>
+
+      <!-- Recent users -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Últimos cadastros</span>
+          <span class="admin__table-count" id="overview-users-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Cidade</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="overview-users-body">
+            <tr><td colspan="4" class="admin__table-empty">Nenhum usuário cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== USERS PANEL ===== -->
+    <div class="admin__panel" id="panel-users">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Usuários</h1>
+        <p class="admin__page-subtitle">Todos os usuários cadastrados na plataforma</p>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Lista de usuários</span>
+          <span class="admin__table-count" id="users-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Telefone</th>
+              <th>Cidade</th>
+              <th>Cadastro</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="users-body">
+            <tr><td colspan="6" class="admin__table-empty">Nenhum usuário cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PARTNERS PANEL ===== -->
+    <div class="admin__panel" id="panel-partners">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Parceiros</h1>
+        <p class="admin__page-subtitle">Solicitações e parceiros aprovados</p>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Empresas / Parceiros</span>
+          <span class="admin__table-count" id="partners-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Marca</th>
+              <th>Tipo</th>
+              <th>Bairro</th>
+              <th>Cidade</th>
+              <th>Social</th>
+              <th>Descrição</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="partners-body">
+            <tr><td colspan="8" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PURCHASES PANEL ===== -->
+    <div class="admin__panel" id="panel-purchases">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Compras / Inscrições</h1>
+        <p class="admin__page-subtitle">Todas as reservas e inscrições realizadas</p>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Lista de compras</span>
+          <span class="admin__table-count" id="purchases-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Experiência</th>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="purchases-body">
+            <tr><td colspan="5" class="admin__table-empty">Nenhuma compra registrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== EXPERIENCES PANEL ===== -->
+    <div class="admin__panel" id="panel-experiences">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Experiências</h1>
+          <p class="admin__page-subtitle">Gerencie as experiências da plataforma</p>
+        </div>
+        <button class="admin__add-btn" id="btn-add-experience">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova experiência
+        </button>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Todas as experiências</span>
+          <span class="admin__table-count" id="experiences-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Bairro</th>
+              <th>Preço</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="experiences-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== EXPERIENCE FORM MODAL ===== -->
+<div class="admin__modal" id="experience-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content">
+    <button class="admin__modal-close" id="modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="modal-title">Nova experiência</h2>
+
+    <form id="experience-form">
+      <div class="admin__form-grid">
+        <div class="admin__form-field admin__form-field--full">
+          <label>Nome da experiência</label>
+          <input type="text" id="exp-nome" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Categoria</label>
+          <select id="exp-categoria" required>
+            <option value="">Selecione</option>
+            <option value="Gastronomia">Gastronomia</option>
+            <option value="Cerâmica">Cerâmica</option>
+            <option value="Pintura">Pintura</option>
+            <option value="Vela">Vela</option>
+            <option value="Sabonete">Sabonete</option>
+            <option value="Tufting">Tufting</option>
+            <option value="Floral">Floral</option>
+            <option value="Macramê">Macramê</option>
+            <option value="Bartenderia">Bartenderia</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data</label>
+          <input type="text" id="exp-data" placeholder="Ex: 11/04 ou Semanal" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Horário</label>
+          <input type="text" id="exp-horario" placeholder="Ex: 19h00 – 22h30" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Duração</label>
+          <input type="text" id="exp-duracao" placeholder="Ex: 3h30" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Bairro</label>
+          <input type="text" id="exp-bairro" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Preço</label>
+          <input type="text" id="exp-preco" placeholder="Ex: R$383" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Endereço completo</label>
+          <input type="text" id="exp-endereco" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>O que inclui</label>
+          <input type="text" id="exp-inclui" placeholder="Ex: Aula completa, Coffee break" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>URL da imagem</label>
+          <input type="text" id="exp-imagem" placeholder="assets/experiences/nome.jpg">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição</label>
+          <textarea id="exp-descricao" rows="3" placeholder="Descrição da experiência (opcional)"></textarea>
+        </div>
+      </div>
+
+      <input type="hidden" id="exp-edit-id" value="">
+      <button type="submit" class="admin__form-submit" id="exp-submit-btn">Salvar experiência</button>
+    </form>
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

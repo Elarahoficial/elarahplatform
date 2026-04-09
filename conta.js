@@ -156,6 +156,11 @@ if (currentUser.partnerStatus === 'approved') {
   return;
 }
 
+if (currentUser.partnerStatus === 'pending') {
+  if (pendingWrap) pendingWrap.style.display = 'block';
+  return;
+}
+
 if (currentUser.partnerStatus === 'rejected') {
   if (rejectedWrap) rejectedWrap.style.display = 'block';
   return;

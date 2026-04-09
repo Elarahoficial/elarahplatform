@@ -9,6 +9,17 @@ const ElarahAuth = (function () {
   const SESSION_KEY = 'elarah_session';
    let firebaseCurrentUser = null;
 
+  // ===== ADMIN CONFIG =====
+  const ADMIN_CREDENTIALS = {
+    email: 'contato.elarah@gmail.com',
+    senha: 'Elarah2026DM@',
+    role: 'admin'
+  };
+
+  function isAdminEmail(email) {
+    return email.trim().toLowerCase() === ADMIN_CREDENTIALS.email.toLowerCase();
+  }
+
   // ===== STORAGE HELPERS =====
 
   function getUsers() {
@@ -99,6 +110,12 @@ function getCurrentUser() {
 }
 
 async function login(email, senha) {
+  // Check admin login first
+  if (isAdminEmail(email) && senha === ADMIN_CREDENTIALS.senha) {
+    localStorage.setItem('elarah_admin', 'true');
+    return { success: true, user: { nome: 'Admin', role: 'admin' }, isAdmin: true };
+  }
+
   try {
     const { auth, signInWithEmailAndPassword } = window.ElarahFirebase;
 
@@ -119,6 +136,14 @@ async function login(email, senha) {
     return { success: false, error: 'E-mail ou senha incorretos.' };
   }
 }
+
+  function isAdmin() {
+    return localStorage.getItem('elarah_admin') === 'true';
+  }
+
+  function logoutAdmin() {
+    localStorage.removeItem('elarah_admin');
+  }
 
   async function logout() {
   const { auth, signOut } = window.ElarahFirebase;
@@ -141,7 +166,7 @@ async function login(email, senha) {
 
     function becomePartner(partnerData) {
   return updateUser({
-    partnerStatus: 'approved',
+    partnerStatus: 'pending',
     partnerData: {
       ...partnerData,
       requestedAt: new Date().toISOString()
@@ -256,6 +281,11 @@ async function login(email, senha) {
 
       const result = await login(email, senha);
       if (result.success) {
+        if (result.isAdmin) {
+          closeModal();
+          window.location.href = 'admin.html';
+          return;
+        }
         closeModal();
         updateHeaderUI();
       } else {
@@ -434,6 +464,8 @@ function toggleFavorite(experienceId) {
 return {
   getCurrentUser,
   isLoggedIn,
+  isAdmin,
+  logoutAdmin,
   login,
   register,
   logout,
