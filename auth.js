@@ -457,16 +457,16 @@ function updateUser(data) {
 
   // ===== INIT =====
 
- function init() {
+function init() {
+  updateHeaderUI();
+
   if (window.ElarahFirebase && window.ElarahFirebase.auth && window.ElarahFirebase.onAuthStateChanged) {
     const { auth, onAuthStateChanged } = window.ElarahFirebase;
 
-   onAuthStateChanged(auth, (user) => {
-  firebaseCurrentUser = user || null;
-});
-
-  } else {
-    updateHeaderUI();
+    onAuthStateChanged(auth, (user) => {
+      firebaseCurrentUser = user || null;
+      updateHeaderUI();
+    });
   }
 }
 
