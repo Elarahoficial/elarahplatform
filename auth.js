@@ -116,7 +116,6 @@ async function login(email, senha) {
         email: cred.user.email
       }
     };
-
   } catch (error) {
     return { success: false, error: 'E-mail ou senha incorretos.' };
   }
@@ -250,7 +249,7 @@ async function login(email, senha) {
     });
 
     // Login submit
-    div.querySelector('#auth-form-login').addEventListener('submit', (e) => {
+    div.querySelector('#auth-form-login').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('auth-login-email').value;
       const senha = document.getElementById('auth-login-senha').value;
@@ -266,7 +265,7 @@ async function login(email, senha) {
     });
 
     // Register submit
-    div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
+     div.querySelector('#auth-form-register').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('auth-reg-error');
 
@@ -446,3 +445,8 @@ return {
   updateHeaderUI,
 };
 })();
+const { auth, onAuthStateChanged } = window.ElarahFirebase;
+
+onAuthStateChanged(auth, (user) => {
+  updateHeaderUI();
+});
