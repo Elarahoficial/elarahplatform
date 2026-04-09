@@ -461,10 +461,9 @@ function updateUser(data) {
   if (window.ElarahFirebase && window.ElarahFirebase.auth && window.ElarahFirebase.onAuthStateChanged) {
     const { auth, onAuthStateChanged } = window.ElarahFirebase;
 
-    onAuthStateChanged(auth, (user) => {
-      firebaseCurrentUser = user || null;
-      updateHeaderUI();
-    });
+   onAuthStateChanged(auth, (user) => {
+  firebaseCurrentUser = user || null;
+});
 
   } else {
     updateHeaderUI();
