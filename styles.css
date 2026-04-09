@@ -2878,16 +2878,6 @@ select {
 }
 
 @media (max-width: 768px) {
-  .header__inner,
-  .hero__content,
-  .footer__inner {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 768px) {
   .originals__grid,
   .experiences__grid,
   .cards-grid {
