@@ -98,7 +98,7 @@ function getCurrentUser() {
   function login(email, senha) {
     const users = getUsers();
     const user = users.find(
-      u => u.email.toLowerCase() === email.trim().toLowerCase() && u.senha === senha
+      u => u.email.toLowerCase() === email.trim().toLowerCase() && u.senha === senha.trim()
     );
 
     if (!user) {
