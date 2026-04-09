@@ -47,15 +47,19 @@ if (
 ) {
     if (partnerCta) partnerCta.style.display = 'none';
     if (hostStatusBox) hostStatusBox.style.display = 'block';
-   if (perfilNome) perfilNome.textContent = (dados?.nome || currentUser?.nome || '');
-if (perfilEmail) perfilEmail.textContent = (dados?.email || currentUser?.email || '');
+   if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
+if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
   
-    if (resumoDados) {
-      resumoDados.innerHTML =
-        '<strong>WhatsApp:</strong> ' + (dados.whatsapp || '-') + '<br>' +
-        '<strong>Categoria:</strong> ' + (dados.tipo || '-') + '<br>' +
-        '<strong>Descrição:</strong> ' + (dados.descricao || 'Não informada');
-    }
+   const pd = currentUser?.partnerData || {};
+
+const pd = currentUser?.partnerData || {};
+
+if (resumoDados) {
+  resumoDados.innerHTML =
+    '<strong>WhatsApp:</strong> ' + (currentUser?.telefone || '-') + '<br>' +
+    '<strong>Categoria:</strong> ' + (pd.tipo || '-') + '<br>' +
+    '<strong>Descrição:</strong> ' + (pd.descricao || 'Não informada');
+}
   } else {
     if (partnerCta) partnerCta.style.display = 'flex';
     if (hostStatusBox) hostStatusBox.style.display = 'none';
