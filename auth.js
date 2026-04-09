@@ -70,12 +70,18 @@ function getCurrentUser() {
   const user = firebaseCurrentUser;
   if (!user) return null;
 
+  const key = `elarah_user_${user.email}`;
+  const localData = JSON.parse(localStorage.getItem(key)) || {};
+
   return {
     id: user.uid,
     email: user.email,
-    nome: user.displayName || user.email.split('@')[0],
-    partnerStatus: "none",
-    favorites: []
+    nome: localData.nome || user.displayName || user.email.split('@')[0],
+    telefone: localData.telefone || '',
+    cidade: localData.cidade || '',
+    partnerStatus: localData.partnerStatus || 'none',
+    partnerData: localData.partnerData || null,
+    favorites: Array.isArray(localData.favorites) ? localData.favorites : []
   };
 }
   function isLoggedIn() {
@@ -83,7 +89,7 @@ function getCurrentUser() {
   return !!current;
   }
 
- async function register({ nome, email, senha }) {
+ async function register({ nome, email, senha, telefone, cidade }) {
   try {
     const { auth, createUserWithEmailAndPassword } = window.ElarahFirebase;
 
@@ -93,14 +99,33 @@ function getCurrentUser() {
       senha.trim()
     );
 
+    firebaseCurrentUser = cred.user;
+
+    const userData = {
+      nome: nome.trim(),
+      telefone: (telefone || '').trim(),
+      cidade: (cidade || '').trim(),
+      partnerStatus: 'none',
+      partnerData: null,
+      favorites: []
+    };
+
+    localStorage.setItem(
+      `elarah_user_${cred.user.email}`,
+      JSON.stringify(userData)
+    );
+
     return {
       success: true,
       user: {
         id: cred.user.uid,
-        nome: nome.trim(),
+        nome: userData.nome,
         email: cred.user.email,
-        partnerStatus: "none",
-        favorites: []
+        telefone: userData.telefone,
+        cidade: userData.cidade,
+        partnerStatus: userData.partnerStatus,
+        partnerData: userData.partnerData,
+        favorites: userData.favorites
       }
     };
 
@@ -125,12 +150,11 @@ async function login(email, senha) {
       senha.trim()
     );
 
+    firebaseCurrentUser = cred.user;
+
     return {
       success: true,
-      user: {
-        id: cred.user.uid,
-        email: cred.user.email
-      }
+      user: getCurrentUser()
     };
   } catch (error) {
     return { success: false, error: 'E-mail ou senha incorretos.' };
@@ -146,25 +170,40 @@ async function login(email, senha) {
   }
 
   async function logout() {
-  const { auth, signOut } = window.ElarahFirebase;
-  await signOut(auth);
+  if (isAdmin()) {
+    logoutAdmin();
+  }
+
+  if (window.ElarahFirebase && window.ElarahFirebase.auth) {
+    const { auth, signOut } = window.ElarahFirebase;
+    await signOut(auth);
+  }
+
+  firebaseCurrentUser = null;
   updateHeaderUI();
 }
-
- function updateUser(data) {
+function updateUser(data) {
   const current = getCurrentUser();
   if (!current) return { success: false, error: 'Não autenticado.' };
 
   const key = `elarah_user_${current.email}`;
   const existing = JSON.parse(localStorage.getItem(key)) || {};
 
-  const updated = { ...existing, ...data };
+  const updated = {
+    ...existing,
+    ...data
+  };
 
   localStorage.setItem(key, JSON.stringify(updated));
 
-  return { success: true, user: updated };
+  return {
+    success: true,
+    user: {
+      ...current,
+      ...updated
+    }
+  };
 }
-
     function becomePartner(partnerData) {
   return updateUser({
     partnerStatus: 'pending',
@@ -316,7 +355,7 @@ async function login(email, senha) {
         return;
       }
 
-     const result = await register({ nome, email, senha });
+     const result = await register({ nome, email, senha, telefone, cidade });
       if (result.success) {
         closeModal();
         updateHeaderUI();
