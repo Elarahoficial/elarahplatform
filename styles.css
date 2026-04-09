@@ -2887,10 +2887,21 @@ select {
 }
 
 @media (max-width: 768px) {
-  .btn,
-  button,
+  .filters__btn,
+  .hero__cta,
+  .originals__card-btn,
+  .gift-section__btn,
+  .cta-section__btn,
+  .group-section__btn,
+  .group-section__submit,
+  .originals-modal__submit,
+  .originals-modal__success-btn {
+    width: 100%;
+  }
+
   input,
-  select {
+  select,
+  textarea {
     width: 100%;
   }
 }
