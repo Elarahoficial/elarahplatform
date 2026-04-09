@@ -3167,3 +3167,9 @@ select {
   align-items: center;
   justify-content: center;
 }
+
+@media (max-width: 768px) {
+  .gift-section__list li:last-child svg {
+    transform: translateY(6px);
+  }
+}
