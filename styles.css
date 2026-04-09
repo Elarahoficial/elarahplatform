@@ -3043,3 +3043,25 @@ select {
   justify-content: center;
   margin-left: -20px;
 }
+
+@media (max-width: 768px) {
+
+  /* DEIXAR MENU LARANJA */
+  .header__mobile-toggle span {
+    background-color: #F36C21;
+  }
+
+  /* ALINHAMENTO PERFEITO */
+  .header__inner {
+    height: 64px;
+    align-items: center;
+  }
+
+  .header__mobile-toggle,
+  .header__logo,
+  .header__actions {
+    display: flex;
+    align-items: center;
+  }
+
+}
