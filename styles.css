@@ -3073,3 +3073,7 @@ select {
   }
 }
 
+.header__nav.mobile-open {
+  align-items: center;
+}
+
