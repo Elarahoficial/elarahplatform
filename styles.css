@@ -3065,3 +3065,27 @@ select {
   }
 
 }
+@media (max-width: 768px) {
+  .header__mobile-toggle,
+  .header__login-btn,
+  .header__action-btn {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header__mobile-toggle {
+    width: 48px;
+    padding: 0;
+  }
+
+  .header__action-btn {
+    width: 48px;
+    padding: 0;
+  }
+
+  .header__login-btn {
+    padding: 0 20px;
+  }
+}
