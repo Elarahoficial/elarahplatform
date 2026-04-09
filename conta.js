@@ -139,16 +139,29 @@ if (badgeEl) {
 
   const pd = currentUser.partnerData || {};
 
-if (currentUser.partnerStatus === 'pending') {
-  currentUser.partnerStatus = 'approved';
-}
+if (currentUser.partnerStatus === 'approved') {
+  if (approvedWrap) approvedWrap.style.display = 'block';
 
-  if (currentUser.partnerStatus === 'rejected') {
-    if (rejectedWrap) rejectedWrap.style.display = 'block';
-    return;
+  if (parceiroInfo) {
+    parceiroInfo.innerHTML = `
+      <div class="account__partner-detail"><strong>Nome da marca/empresa</strong><span>${pd.marca || '-'}</span></div>
+      <div class="account__partner-detail"><strong>Tipo de experiência</strong><span>${pd.tipo || '-'}</span></div>
+      <div class="account__partner-detail"><strong>Bairro / Local de atuação</strong><span>${pd.bairro || '-'}</span></div>
+      <div class="account__partner-detail"><strong>Cidade</strong><span>${pd.cidade || '-'}</span></div>
+      <div class="account__partner-detail"><strong>Instagram ou site</strong><span>${pd.social || '-'}</span></div>
+      <div class="account__partner-detail"><strong>Conte sobre sua experiência</strong><span>${pd.descricao || '-'}</span></div>
+    `;
   }
 
-  if (formWrap) formWrap.style.display = 'block';
+  return;
+}
+
+if (currentUser.partnerStatus === 'rejected') {
+  if (rejectedWrap) rejectedWrap.style.display = 'block';
+  return;
+}
+
+if (formWrap) formWrap.style.display = 'block';
 }
 
 renderPartnerSection();
