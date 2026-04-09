@@ -743,23 +743,13 @@
 
 }
 @media (max-width: 768px) {
+  .gift-hero__visual {
+    overflow: hidden;
+  }
 
   .gift-card-stack {
-    width: 100%;
-    max-width: 340px;
-    height: 240px;
+    transform: scale(0.62);
+    transform-origin: center center;
+    margin: -55px auto -40px auto;
   }
-
-  .gift-card-back {
-    width: 220px;
-    height: 140px;
-    top: 20px;
-    left: 40px;
-  }
-
-  .gift-card-front {
-    width: 260px;
-    height: 170px;
-  }
-
 }
