@@ -120,21 +120,4 @@ function irParaFluxoParceiro() {
 }
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
   const partnerCtaBtn = document.getElementById('partnerCtaBtn');
-  const headerLoginBtn = document.querySelector('.header__login-btn');
-
-  if (partnerHeroBtn) {
-    partnerHeroBtn.addEventListener('click', irParaFluxoParceiro);
-  }
-
-  if (partnerCtaBtn) {
-    partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
-  }
-
-  if (headerLoginBtn) {
-    headerLoginBtn.addEventListener('click', () => {
-      if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-        ElarahAuth.openModal('login');
-      }
-    });
-  }
 });
