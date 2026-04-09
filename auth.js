@@ -419,7 +419,13 @@ async function login(email, senha) {
 
  function init() {
   if (window.ElarahFirebase && window.ElarahFirebase.auth && window.ElarahFirebase.onAuthStateChanged) {
-   
+    const { auth, onAuthStateChanged } = window.ElarahFirebase;
+
+    onAuthStateChanged(auth, (user) => {
+      firebaseCurrentUser = user || null;
+      updateHeaderUI();
+    });
+
   } else {
     updateHeaderUI();
   }
