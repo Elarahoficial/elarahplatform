@@ -445,8 +445,4 @@ return {
   updateHeaderUI,
 };
 })();
-const { auth, onAuthStateChanged } = window.ElarahFirebase;
 
-onAuthStateChanged(auth, (user) => {
-  updateHeaderUI();
-});
