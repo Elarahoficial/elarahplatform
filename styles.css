@@ -2172,11 +2172,6 @@ select {
     font-size: 1.8rem;
   }
 
-  .gift-section__list li {
-    justify-content: center;
-    text-align: left;
-  }
-
   .gift-section__card-stack {
     width: 340px;
     height: 240px;
@@ -3161,5 +3156,16 @@ select {
 @media (max-width: 768px) {
   .gift-section__list li:last-child svg {
     transform: translateY(6px);
+  }
+}
+@media (max-width: 768px) {
+  .gift-section__list {
+    align-items: flex-start;
+  }
+
+  .gift-section__list li {
+    justify-content: flex-start;
+    text-align: left;
+    width: 100%;
   }
 }
