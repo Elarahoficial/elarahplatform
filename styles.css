@@ -2481,3 +2481,228 @@ select {
   color: var(--orange);
   transform: translateY(-2px);
 }
+
+/* ===== ABOUT PAGE ===== */
+.about-page-hero {
+  padding: 110px 0 90px;
+  background: linear-gradient(135deg, #1B0F17 0%, #2A1420 100%);
+  color: var(--white);
+}
+
+.about-page-hero__inner,
+.about-page-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.about-page-container--narrow {
+  max-width: 760px;
+}
+
+.about-page-hero__tag,
+.about-page-kicker {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--orange-light);
+  border: 1px solid rgba(255,255,255,0.16);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  margin-bottom: 22px;
+}
+
+.about-page-kicker {
+  color: var(--orange);
+  border-color: rgba(242, 118, 35, 0.25);
+}
+
+.about-page-kicker--light {
+  color: var(--orange-light);
+  border-color: rgba(255,255,255,0.16);
+}
+
+.about-page-hero__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 4rem;
+  line-height: 1.05;
+  font-weight: 400;
+  margin-bottom: 20px;
+  letter-spacing: -0.03em;
+}
+
+.about-page-hero__text {
+  max-width: 680px;
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.78);
+}
+
+.about-page-section {
+  padding: 90px 0;
+  background: var(--white);
+}
+
+.about-page-section--soft {
+  background: var(--cream);
+}
+
+.about-page-section--highlight {
+  background: linear-gradient(135deg, #1B0F17 0%, #2A1420 100%);
+}
+
+.about-page-heading {
+  margin-bottom: 34px;
+}
+
+.about-page-section__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 400;
+  color: var(--gray-900);
+  letter-spacing: -0.02em;
+}
+
+.about-page-section__title--light {
+  color: var(--white);
+}
+
+.about-page-section__text {
+  font-size: 1.03rem;
+  line-height: 1.85;
+  color: var(--gray-600);
+  margin-top: 18px;
+}
+
+.about-page-section__text--light {
+  color: rgba(255,255,255,0.76);
+}
+
+.about-page-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.about-page-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.about-page-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.about-page-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+
+.about-page-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 12px;
+}
+
+.about-page-card__text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--gray-600);
+}
+
+.about-page-cta {
+  padding: 90px 0;
+  background: var(--white);
+}
+
+.about-page-cta__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.about-page-cta__actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.about-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  background: var(--orange);
+  color: var(--white);
+  border-radius: var(--radius-full);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.about-page-btn:hover {
+  background: var(--orange-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.about-page-btn--outline {
+  background: transparent;
+  color: var(--orange);
+  border: 2px solid var(--orange);
+}
+
+.about-page-btn--outline:hover {
+  background: var(--orange);
+  color: var(--white);
+}
+
+@media (max-width: 900px) {
+  .about-page-hero__title {
+    font-size: 2.8rem;
+  }
+
+  .about-page-grid,
+  .about-page-cards,
+  .about-page-cta__inner {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .about-page-cta__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .about-page-hero {
+    padding: 84px 0 70px;
+  }
+
+  .about-page-hero__title {
+    font-size: 2.2rem;
+  }
+
+  .about-page-section {
+    padding: 64px 0;
+  }
+
+  .about-page-section__title {
+    font-size: 1.9rem;
+  }
+}
+
