@@ -2962,3 +2962,11 @@ select {
     padding: 4px 0;
   }
 }
+
+@media (max-width: 768px) {
+  .header__search,
+  .search-btn,
+  .header__icon--search {
+    display: none !important;
+  }
+}
