@@ -3169,3 +3169,12 @@ select {
     width: 100%;
   }
 }
+@media (max-width: 768px) {
+  .cta-section__actions {
+    justify-content: center;
+  }
+
+  .cta-section__btn {
+    width: auto;
+  }
+}
