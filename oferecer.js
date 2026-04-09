@@ -69,8 +69,8 @@ function irParaFluxoParceiro() {
       : null;
 
  if (!currentUser) {
-  if (typeof openModal === 'function') {
-    openModal('login', 'Faça login para se tornar parceiro');
+  if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
+    ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
     return;
   }
 
