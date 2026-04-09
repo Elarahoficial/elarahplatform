@@ -68,17 +68,15 @@ function irParaFluxoParceiro() {
       ? ElarahAuth.getCurrentUser()
       : null;
 
-  if (!currentUser) {
-    if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-      localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
-      ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
-      return;
-    }
-
-    alert('Faça login para continuar.');
+ if (!currentUser) {
+  if (typeof openModal === 'function') {
+    openModal('login', 'Faça login para se tornar parceiro');
     return;
   }
 
+  alert('Faça login para continuar.');
+  return;
+}
  if (currentUser.partnerStatus === 'approved') {
   mostrarMensagemParceiro('Você já é parceiro Elarah!');
   return;
