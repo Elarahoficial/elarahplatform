@@ -151,18 +151,19 @@ async function login(email, senha) {
   updateHeaderUI();
 }
 
-  function updateUser(data) {
-    const current = getCurrentUser();
-    if (!current) return { success: false, error: 'Não autenticado.' };
+ function updateUser(data) {
+  const current = getCurrentUser();
+  if (!current) return { success: false, error: 'Não autenticado.' };
 
-    const users = getUsers();
-    const index = users.findIndex(u => u.id === current.id);
-    if (index === -1) return { success: false, error: 'Usuário não encontrado.' };
+  const key = `elarah_user_${current.email}`;
+  const existing = JSON.parse(localStorage.getItem(key)) || {};
 
-    Object.assign(users[index], data);
-    saveUsers(users);
-    return { success: true, user: users[index] };
-  }
+  const updated = { ...existing, ...data };
+
+  localStorage.setItem(key, JSON.stringify(updated));
+
+  return { success: true, user: updated };
+}
 
     function becomePartner(partnerData) {
   return updateUser({
@@ -442,9 +443,12 @@ async function login(email, senha) {
    function getFavorites() {
   const current = getCurrentUser();
   if (!current) return [];
-  return Array.isArray(current.favorites) ? current.favorites : [];
-}
 
+  const key = `elarah_user_${current.email}`;
+  const data = JSON.parse(localStorage.getItem(key)) || {};
+
+  return data.favorites || [];
+}
 function isFavorite(experienceId) {
   const favorites = getFavorites();
   return favorites.includes(experienceId);
@@ -456,7 +460,10 @@ function toggleFavorite(experienceId) {
     return { success: false, error: 'Faça login para favoritar.' };
   }
 
-  const favorites = Array.isArray(current.favorites) ? [...current.favorites] : [];
+  const key = `elarah_user_${current.email}`;
+  const data = JSON.parse(localStorage.getItem(key)) || {};
+
+  const favorites = data.favorites || [];
   const index = favorites.indexOf(experienceId);
 
   if (index >= 0) {
@@ -465,7 +472,12 @@ function toggleFavorite(experienceId) {
     favorites.push(experienceId);
   }
 
-  return updateUser({ favorites });
+  localStorage.setItem(key, JSON.stringify({
+    ...data,
+    favorites
+  }));
+
+  return { success: true };
 }
 return {
   getCurrentUser,
