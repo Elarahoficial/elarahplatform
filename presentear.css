@@ -753,3 +753,20 @@
     margin: -55px auto -40px auto;
   }
 }
+@media (max-width: 768px) {
+
+  .gift-card-front {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .gift-card-front__title {
+    text-align: left;
+  }
+
+  .gift-card-front__footer {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+}
