@@ -79,7 +79,7 @@ function getCurrentUser() {
       id: generateId(),
       nome: nome.trim(),
       email: email.trim().toLowerCase(),
-      senha: senha,
+      senha: senha.trim(),
       telefone: telefone.trim(),
       cidade: (cidade || '').trim(),
      partnerStatus: "none",
