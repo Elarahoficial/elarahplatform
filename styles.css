@@ -3063,3 +3063,13 @@ select {
   }
 }
 
+@media (max-width: 768px) {
+  .header__nav:not(.mobile-open) {
+    display: none !important;
+  }
+
+  .header__nav.mobile-open {
+    display: flex !important;
+  }
+}
+
