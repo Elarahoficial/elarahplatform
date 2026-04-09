@@ -49,8 +49,6 @@ if (
     if (hostStatusBox) hostStatusBox.style.display = 'block';
    if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
 if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
-  
-   const pd = currentUser?.partnerData || {};
 
 const pd = currentUser?.partnerData || {};
 
