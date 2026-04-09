@@ -3145,3 +3145,15 @@ select {
     margin: 0 auto;
   }
 }
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
