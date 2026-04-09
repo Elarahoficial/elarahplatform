@@ -3063,37 +3063,3 @@ select {
   }
 }
 
-@media (max-width: 768px) {
-  .header__nav {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    width: 100%;
-    gap: 24px;
-  }
-
-  .header__nav-item,
-  .header__nav-dropdown {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  .header__nav-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .header__dropdown {
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-  }
-
-  .header__dropdown-item {
-    text-align: center;
-  }
-}
