@@ -2706,3 +2706,99 @@ select {
   }
 }
 
+/* ===== COMO FUNCIONA ===== */
+
+.how-hero {
+  padding: 100px 20px 60px;
+  text-align: center;
+}
+
+.how-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.how-title {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.how-subtitle {
+  color: var(--gray-500);
+}
+
+.how-steps {
+  padding: 60px 20px;
+}
+
+.how-step {
+  margin-bottom: 50px;
+}
+
+.how-number {
+  font-size: 14px;
+  color: var(--orange);
+  font-weight: bold;
+}
+
+.how-step h2 {
+  margin: 8px 0;
+}
+
+.how-step p {
+  color: var(--gray-600);
+  max-width: 500px;
+}
+
+.how-section {
+  padding: 80px 20px;
+}
+
+.how-section--soft {
+  background: var(--cream);
+}
+
+.how-section-title {
+  margin-bottom: 30px;
+}
+
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.how-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.how-cta {
+  padding: 80px 20px;
+}
+
+.how-cta-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.how-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.how-btn {
+  padding: 12px 20px;
+  background: var(--orange);
+  color: white;
+  border-radius: 999px;
+}
+
+.how-btn--outline {
+  background: transparent;
+  border: 1px solid var(--orange);
+  color: var(--orange);
+}
