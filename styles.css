@@ -2983,3 +2983,38 @@ select {
     gap: 8px;
   }
 }
+
+@media (max-width: 768px) {
+
+  .header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+  }
+
+  /* LOGO CENTRAL */
+  .header__logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* MENU (3 risquinhos) ESQUERDA */
+  .header__mobile-toggle {
+    order: -1;
+  }
+
+  /* AÇÕES (coração + entrar) DIREITA */
+  .header__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ESCONDER NAV DESKTOP */
+  .header__nav {
+    display: none;
+  }
+
+}
