@@ -3127,3 +3127,21 @@ select {
     line-height: 1.2 !important;
   }
 }
+@media (max-width: 768px) {
+  .header__nav-dropdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header__nav-link {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+  }
+
+  .header__nav-dropdown .header__nav-link {
+    margin: 0 auto;
+  }
+}
