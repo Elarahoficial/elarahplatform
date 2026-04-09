@@ -2434,8 +2434,8 @@ select {
   z-index: 200;
 }
 .header__nav.mobile-open .header__nav-link {
-  width: 100%;
-  justify-content: space-between;
+  width: auto;
+  justify-content: center;
   padding: 12px 14px;
 }
 
