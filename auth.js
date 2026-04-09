@@ -55,64 +55,78 @@ const ElarahAuth = (function () {
 }
 
 function getCurrentUser() {
-  const userId = localStorage.getItem(SESSION_KEY);
-  if (!userId) return null;
+  const { auth } = window.ElarahFirebase;
+  const user = auth.currentUser;
 
-  const users = getUsers();
-  const user = users.find(u => u.id === userId) || null;
+  if (!user) return null;
 
-  return normalizeUser(user);
+  return {
+    id: user.uid,
+    email: user.email,
+    nome: user.email.split('@')[0],
+    partnerStatus: "none",
+    favorites: []
+  };
 }
   function isLoggedIn() {
   const current = getCurrentUser();
   return !!current;
   }
 
-  function register({ nome, email, senha, telefone, cidade }) {
-    const users = getUsers();
+ async function register({ nome, email, senha }) {
+  try {
+    const { auth, createUserWithEmailAndPassword } = window.ElarahFirebase;
 
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-      return { success: false, error: 'Este e-mail já está cadastrado.' };
-    }
-
-    const user = {
-      id: generateId(),
-      nome: nome.trim(),
-      email: email.trim().toLowerCase(),
-      senha: senha.trim(),
-      telefone: telefone.trim(),
-      cidade: (cidade || '').trim(),
-     partnerStatus: "none",
-      partnerData: null,
-      favorites: [],
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(user);
-    saveUsers(users);
-    setSession(user.id);
-
-    return { success: true, user: user };
-  }
-
-  function login(email, senha) {
-    const users = getUsers();
-    const user = users.find(
-      u => u.email.toLowerCase() === email.trim().toLowerCase() && u.senha === senha.trim()
+    const cred = await createUserWithEmailAndPassword(
+      auth,
+      email.trim().toLowerCase(),
+      senha.trim()
     );
 
-    if (!user) {
-      return { success: false, error: 'E-mail ou senha incorretos.' };
-    }
+    return {
+      success: true,
+      user: {
+        id: cred.user.uid,
+        nome: nome.trim(),
+        email: cred.user.email,
+        partnerStatus: "none",
+        favorites: []
+      }
+    };
 
-    setSession(user.id);
-    return { success: true, user: user };
+  } catch (error) {
+    return { success: false, error: 'Erro ao criar conta.' };
   }
+}
 
-  function logout() {
-    clearSession();
-    updateHeaderUI();
+async function login(email, senha) {
+  try {
+    const { auth, signInWithEmailAndPassword } = window.ElarahFirebase;
+
+    const cred = await signInWithEmailAndPassword(
+      auth,
+      email.trim().toLowerCase(),
+      senha.trim()
+    );
+
+    return {
+      success: true,
+      user: {
+        id: cred.user.uid,
+        email: cred.user.email
+      }
+    };
+
+  } catch (error) {
+    return { success: false, error: 'E-mail ou senha incorretos.' };
   }
+}
+
+  async function logout() {
+  const { auth, signOut } = window.ElarahFirebase;
+  await signOut(auth);
+  updateHeaderUI();
+}
 
   function updateUser(data) {
     const current = getCurrentUser();
@@ -242,7 +256,7 @@ function getCurrentUser() {
       const senha = document.getElementById('auth-login-senha').value;
       const errorEl = document.getElementById('auth-login-error');
 
-      const result = login(email, senha);
+      const result = await login(email, senha);
       if (result.success) {
         closeModal();
         updateHeaderUI();
@@ -273,7 +287,7 @@ function getCurrentUser() {
         return;
       }
 
-      const result = register({ nome, email, senha, telefone, cidade });
+     const result = await register({ nome, email, senha });
       if (result.success) {
         closeModal();
         updateHeaderUI();
