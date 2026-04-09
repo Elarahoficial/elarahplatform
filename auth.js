@@ -7,6 +7,7 @@
 const ElarahAuth = (function () {
   const STORAGE_KEY = 'elarah_users';
   const SESSION_KEY = 'elarah_session';
+   let firebaseCurrentUser = null;
 
   // ===== STORAGE HELPERS =====
 
@@ -55,15 +56,13 @@ const ElarahAuth = (function () {
 }
 
 function getCurrentUser() {
-  const { auth } = window.ElarahFirebase;
-  const user = auth.currentUser;
-
+  const user = firebaseCurrentUser;
   if (!user) return null;
 
   return {
     id: user.uid,
     email: user.email,
-    nome: user.email.split('@')[0],
+    nome: user.displayName || user.email.split('@')[0],
     partnerStatus: "none",
     favorites: []
   };
@@ -388,9 +387,13 @@ async function login(email, senha) {
 
   // ===== INIT =====
 
-  function init() {
+ function init() {
+  if (window.ElarahFirebase && window.ElarahFirebase.auth && window.ElarahFirebase.onAuthStateChanged) {
+   
+  } else {
     updateHeaderUI();
   }
+}
 
   // Auto-init when DOM is ready
   if (document.readyState === 'loading') {
