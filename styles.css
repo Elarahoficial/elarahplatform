@@ -3107,3 +3107,23 @@ select {
     padding: 10px 16px;
   }
 }
+
+@media (max-width: 768px) {
+  .header__dropdown {
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 220px !important;
+    margin: 10px auto 0 !important;
+    padding: 4px 0 !important;
+    box-shadow: none !important;
+    border-radius: 12px !important;
+  }
+
+  .header__dropdown-item {
+    display: block !important;
+    padding: 8px 12px !important;
+    line-height: 1.2 !important;
+  }
+}
