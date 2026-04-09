@@ -701,3 +701,44 @@
   font-weight: 700;
   color: #fff;
 }
+
+@media (max-width: 768px) {
+
+  /* ESPAÇAMENTO GERAL */
+  .gift-hero__inner,
+  .gift-options__inner,
+  .gift-steps__inner,
+  .gift-experiences__inner,
+  .gift-faq__inner,
+  .gift-cta__inner,
+  .host-hero__inner,
+  .host-benefits__inner,
+  .host-how__inner,
+  .host-for__inner,
+  .host-proof__inner,
+  .host-faq__inner,
+  .host-final__inner {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* GRID → 1 COLUNA */
+  .gift-options__grid,
+  .gift-steps__grid,
+  .gift-experiences__grid,
+  .host-benefits__grid,
+  .host-for__grid,
+  .host-proof__grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px;
+  }
+
+  /* HERO STACK */
+  .gift-hero__inner,
+  .host-hero__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+}
