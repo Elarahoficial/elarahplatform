@@ -875,16 +875,6 @@ select {
   color: var(--orange-light);
 }
 
-@media (max-width: 768px) {
-  .gift-section__list li {
-    align-items: flex-start;
-  }
-
-  .gift-section__list li svg {
-    margin-top: 6px;
-  }
-}
-
 .gift-section__btn {
   display: inline-flex;
   align-items: center;
