@@ -2974,29 +2974,6 @@ select {
 
 @media (max-width: 768px) {
   .header__inner {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-  }
-
-  .header__logo {
-    justify-self: center;
-  }
-
-  .header__menu {
-    justify-self: start;
-  }
-
-  .header__actions {
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-}
-
-@media (max-width: 768px) {
-  .header__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3034,14 +3011,6 @@ select {
   .header__search {
     display: none;
   }
-}
-
-.header__logo {
-  order: 2;
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  margin-left: -20px;
 }
 
 @media (max-width: 768px) {
