@@ -3094,3 +3094,16 @@ select {
   }
 }
 
+@media (max-width: 768px) {
+  .header__dropdown {
+    width: 100%;
+    max-width: 260px;
+    padding: 8px 0;
+    margin-top: 10px;
+  }
+
+  .header__dropdown-item {
+    display: block;
+    padding: 10px 16px;
+  }
+}
