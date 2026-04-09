@@ -81,15 +81,10 @@ function irParaFluxoParceiro() {
     return;
   }
 
-  if (currentUser.partnerStatus === 'approved') {
-    alert('Você já é parceiro Elarah!');
-    return;
-  }
-
-  if (currentUser.partnerStatus === 'pending') {
-   mostrarMensagemParceiro('Você já é parceiro Elarah!');
-    return;
-  }
+ if (currentUser.partnerStatus === 'approved') {
+  mostrarMensagemParceiro('Você já é parceiro Elarah!');
+  return;
+}
 
   window.location.href = '/elarahplatform/conta.html?section=parceiro';
 }
