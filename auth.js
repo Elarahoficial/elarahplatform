@@ -492,11 +492,14 @@ function init() {
       firebaseCurrentUser = user || null;
       authResolved = true;
       updateHeaderUI();
+
       document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
     });
   } else {
     authResolved = true;
     updateHeaderUI();
+
+    document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
   }
 }
   // Auto-init when DOM is ready
