@@ -177,7 +177,7 @@ async function login(email, senha) {
     localStorage.removeItem('elarah_admin');
   }
 
-  async function logout() {
+async function logout() {
   if (isAdmin()) {
     logoutAdmin();
   }
@@ -188,30 +188,11 @@ async function login(email, senha) {
   }
 
   firebaseCurrentUser = null;
+  authResolved = true;
   updateHeaderUI();
+  document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
 }
-function updateUser(data) {
-  const current = getCurrentUser();
-  if (!current) return { success: false, error: 'Não autenticado.' };
 
-  const key = `elarah_user_${current.email}`;
-  const existing = JSON.parse(localStorage.getItem(key)) || {};
-
-  const updated = {
-    ...existing,
-    ...data
-  };
-
-  localStorage.setItem(key, JSON.stringify(updated));
-
-  return {
-    success: true,
-    user: {
-      ...current,
-      ...updated
-    }
-  };
-}
     function becomePartner(partnerData) {
   return updateUser({
     partnerStatus: 'pending',
