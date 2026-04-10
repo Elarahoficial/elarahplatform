@@ -315,6 +315,47 @@
     };
   }
 
+  // ===== HORARIOS LIST (multi-horario inside form) =====
+  const horariosList = document.getElementById('exp-horarios-list');
+  const horariosAddBtn = document.getElementById('exp-horarios-add-btn');
+
+  function addHorarioRow(value) {
+    if (!horariosList) return;
+    const row = document.createElement('div');
+    row.className = 'admin__horario-row';
+    row.innerHTML = `
+      <input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30">
+      <button type="button" class="admin__horario-remove" aria-label="Remover horário">&times;</button>
+    `;
+    row.querySelector('input').value = value || '';
+    row.querySelector('.admin__horario-remove').addEventListener('click', () => {
+      const rows = horariosList.querySelectorAll('.admin__horario-row');
+      if (rows.length > 1) {
+        row.remove();
+      } else {
+        row.querySelector('input').value = '';
+      }
+    });
+    horariosList.appendChild(row);
+  }
+
+  function renderHorarioRows(horarios) {
+    if (!horariosList) return;
+    horariosList.innerHTML = '';
+    const initial = Array.isArray(horarios) && horarios.length ? horarios : [''];
+    initial.forEach(h => addHorarioRow(h));
+  }
+
+  function collectHorarios() {
+    if (!horariosList) return [];
+    const inputs = horariosList.querySelectorAll('.admin__horario-input');
+    return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+  }
+
+  if (horariosAddBtn) {
+    horariosAddBtn.addEventListener('click', () => addHorarioRow(''));
+  }
+
   function openExpModal(editId) {
     if (editId) {
       const exp = getExperiences().find(e => e.id === editId);
@@ -326,7 +367,6 @@
       document.getElementById('exp-nome').value = exp.nome || '';
       document.getElementById('exp-categoria').value = exp.categoria || '';
       document.getElementById('exp-data').value = exp.data || '';
-      document.getElementById('exp-horario').value = exp.horario || '';
       document.getElementById('exp-duracao').value = exp.duracao || '';
       document.getElementById('exp-bairro').value = exp.bairro || '';
       document.getElementById('exp-preco').value = exp.preco || '';
@@ -334,6 +374,11 @@
       document.getElementById('exp-inclui').value = exp.inclui || '';
       document.getElementById('exp-imagem').value = exp.imagem || '';
       document.getElementById('exp-descricao').value = exp.descricao || '';
+
+      const horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
+        ? exp.horarios
+        : (exp.horario ? [exp.horario] : ['']);
+      renderHorarioRows(horarios);
 
       const cores = parseCor(exp.cor);
       const cor1El = document.getElementById('exp-cor1');
@@ -346,6 +391,8 @@
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
       form.reset();
+
+      renderHorarioRows(['']);
 
       const cor1El = document.getElementById('exp-cor1');
       const cor2El = document.getElementById('exp-cor2');
@@ -377,11 +424,18 @@
     const cor1 = (document.getElementById('exp-cor1')?.value || '#f6d5a8').trim();
     const cor2 = (document.getElementById('exp-cor2')?.value || '#f0a05e').trim();
 
+    const horarios = collectHorarios();
+    if (horarios.length === 0) {
+      alert('Adicione pelo menos um horário.');
+      return;
+    }
+
     const expData = {
       nome: document.getElementById('exp-nome').value.trim(),
       categoria: document.getElementById('exp-categoria').value,
       data: document.getElementById('exp-data').value.trim(),
-      horario: document.getElementById('exp-horario').value.trim(),
+      horario: horarios[0],
+      horarios: horarios,
       duracao: document.getElementById('exp-duracao').value.trim(),
       bairro: document.getElementById('exp-bairro').value.trim(),
       preco: document.getElementById('exp-preco').value.trim(),
@@ -417,23 +471,34 @@
       return;
     }
 
-    tbody.innerHTML = experiences.map(exp => `
+    tbody.innerHTML = experiences.map(exp => {
+      const horariosDisplay = Array.isArray(exp.horarios) && exp.horarios.length > 1
+        ? exp.horarios.join(' · ')
+        : (exp.horario || '');
+      return `
       <tr>
         <td>${escapeHtml(exp.nome)}</td>
         <td>${escapeHtml(exp.categoria)}</td>
         <td>${escapeHtml(exp.data)}</td>
-        <td>${escapeHtml(exp.horario)}</td>
+        <td>${escapeHtml(horariosDisplay)}</td>
         <td>${escapeHtml(exp.bairro)}</td>
         <td>${escapeHtml(exp.preco)}</td>
         <td>
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
+          <button class="admin__action-btn admin__action-btn--duplicate" data-duplicate-exp="${escapeHtml(exp.id)}">Duplicar</button>
           <button class="admin__action-btn admin__action-btn--delete" data-delete-exp="${escapeHtml(exp.id)}">Excluir</button>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     tbody.querySelectorAll('[data-edit-exp]').forEach(btn => {
       btn.addEventListener('click', () => openExpModal(btn.dataset.editExp));
+    });
+    tbody.querySelectorAll('[data-duplicate-exp]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        duplicateExperience(btn.dataset.duplicateExp);
+      });
     });
     tbody.querySelectorAll('[data-delete-exp]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -442,6 +507,15 @@
         }
       });
     });
+  }
+
+  function duplicateExperience(expId) {
+    const copy = ElarahData.duplicateExperience(expId);
+    renderExperiences();
+    renderOverview();
+    if (copy) {
+      openExpModal(copy.id);
+    }
   }
 
   function deleteExperience(expId) {

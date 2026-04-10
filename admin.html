@@ -287,13 +287,15 @@
         </div>
 
         <div class="admin__form-field">
-          <label>Horário</label>
-          <input type="text" id="exp-horario" placeholder="Ex: 19h00 – 22h30" required>
-        </div>
-
-        <div class="admin__form-field">
           <label>Duração</label>
           <input type="text" id="exp-duracao" placeholder="Ex: 3h30" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Horários disponíveis</label>
+          <div id="exp-horarios-list" class="admin__horarios-list"></div>
+          <button type="button" id="exp-horarios-add-btn" class="admin__horario-add-btn">+ Adicionar horário</button>
+          <p class="admin__form-hint">Adicione um ou mais horários para esta data. Ex: <em>19h00 – 22h30</em>. Se você cadastrar vários, o cliente vai conseguir escolher qual prefere.</p>
         </div>
 
         <div class="admin__form-field">

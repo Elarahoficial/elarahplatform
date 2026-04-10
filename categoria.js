@@ -54,13 +54,28 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTitle();
 
     filtered.forEach(exp => {
-      const colors = exp.cor.split(',');
+      const colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
       const card = document.createElement('article');
       card.className = 'card';
+
+      const horarios = Array.isArray(exp.horarios) && exp.horarios.length
+        ? exp.horarios
+        : (exp.horario ? [exp.horario] : []);
+      const hasMultipleHorarios = horarios.length > 1;
 
       const imageContent = exp.imagem
         ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
         : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
+
+      const horarioLine = hasMultipleHorarios
+        ? `${exp.data}`
+        : `${exp.data}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
+
+      const horariosBlock = hasMultipleHorarios
+        ? `<div class="card__horarios">${horarios.map((h, i) =>
+            `<button type="button" class="card__horario-btn${i === 0 ? ' card__horario-btn--active' : ''}" data-horario="${h.replace(/"/g, '&quot;')}">${h}</button>`
+          ).join('')}</div>`
+        : '';
 
       card.innerHTML = `
         <div class="card__image">
@@ -76,8 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="card__details">
             <p class="card__detail">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-              ${exp.data} &middot; ${exp.horario}
+              ${horarioLine}
             </p>
+            ${horariosBlock}
             <p class="card__detail">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               ${exp.duracao}
@@ -97,6 +113,17 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
+
+      if (hasMultipleHorarios) {
+        card.querySelectorAll('.card__horario-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            card.querySelectorAll('.card__horario-btn').forEach(b => b.classList.remove('card__horario-btn--active'));
+            btn.classList.add('card__horario-btn--active');
+          });
+        });
+      }
+
       grid.appendChild(card);
     });
 

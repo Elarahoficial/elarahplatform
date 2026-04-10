@@ -45,12 +45,22 @@ function ensureSeeded() {
 
   function normalizeExperience(exp) {
     if (!exp) return exp;
+
+    let horarios = Array.isArray(exp.horarios)
+      ? exp.horarios.map(h => (typeof h === 'string' ? h.trim() : '')).filter(Boolean)
+      : [];
+    if (horarios.length === 0 && exp.horario) {
+      horarios = [exp.horario];
+    }
+    const horario = horarios[0] || exp.horario || '';
+
     return {
       id: exp.id || '',
       data: exp.data || '',
       categoria: exp.categoria || '',
       nome: exp.nome || '',
-      horario: exp.horario || '',
+      horario: horario,
+      horarios: horarios,
       duracao: exp.duracao || '',
       bairro: exp.bairro || '',
       endereco: exp.endereco || '',
@@ -104,6 +114,21 @@ function ensureSeeded() {
     saveAll(filtered);
   }
 
+  function duplicateExperience(id) {
+    const all = ensureSeeded();
+    const src = all.find(e => e.id === id);
+    if (!src) return null;
+    const copy = normalizeExperience({
+      ...src,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: ''
+    });
+    all.push(copy);
+    saveAll(all);
+    return copy;
+  }
+
   function resetToDefaults() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_EXPERIENCES));
   }
@@ -114,6 +139,7 @@ function ensureSeeded() {
     addExperience,
     updateExperience,
     deleteExperience,
+    duplicateExperience,
     resetToDefaults
   };
 })(window);

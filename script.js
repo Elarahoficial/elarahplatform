@@ -97,18 +97,33 @@ if (categoriaURL) activeCategoria = categoriaURL;
   }
 
   function createCard(exp) {
-    const colors = exp.cor.split(',');
+    const colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
     const card = document.createElement('article');
     card.className = 'card';
+
+    const horarios = Array.isArray(exp.horarios) && exp.horarios.length
+      ? exp.horarios
+      : (exp.horario ? [exp.horario] : []);
+    const hasMultipleHorarios = horarios.length > 1;
 
     const imageContent = exp.imagem
       ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
       : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
 
+    const horarioLine = hasMultipleHorarios
+      ? `${exp.data}`
+      : `${exp.data}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
+
+    const horariosBlock = hasMultipleHorarios
+      ? `<div class="card__horarios">${horarios.map((h, i) =>
+          `<button type="button" class="card__horario-btn${i === 0 ? ' card__horario-btn--active' : ''}" data-horario="${h.replace(/"/g, '&quot;')}">${h}</button>`
+        ).join('')}</div>`
+      : '';
+
     card.innerHTML = `
       <div class="card__image">
         ${imageContent}
-        <button class="card__favorite" data-id="${exp.nome}_${exp.data}_${exp.horario}" aria-label="Favoritar">
+        <button class="card__favorite" data-id="${exp.nome}_${exp.data}_${horarios[0] || ''}" aria-label="Favoritar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
         <span class="card__badge">${exp.data}</span>
@@ -119,8 +134,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
         <div class="card__details">
           <p class="card__detail">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            ${exp.data} &middot; ${exp.horario}
+            ${horarioLine}
           </p>
+          ${horariosBlock}
           <p class="card__detail">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             ${exp.duracao}
@@ -140,6 +156,21 @@ if (categoriaURL) activeCategoria = categoriaURL;
         </div>
       </div>
     `;
+
+    if (hasMultipleHorarios) {
+      card.querySelectorAll('.card__horario-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          card.querySelectorAll('.card__horario-btn').forEach(b => b.classList.remove('card__horario-btn--active'));
+          btn.classList.add('card__horario-btn--active');
+          const favBtn = card.querySelector('.card__favorite');
+          if (favBtn) {
+            favBtn.dataset.id = `${exp.nome}_${exp.data}_${btn.dataset.horario}`;
+          }
+        });
+      });
+    }
+
     return card;
   }
 

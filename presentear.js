@@ -30,6 +30,18 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach((exp) => {
       const card = document.createElement('article');
       card.className = 'card';
+
+      const horarios = Array.isArray(exp.horarios) && exp.horarios.length
+        ? exp.horarios
+        : (exp.horario ? [exp.horario] : []);
+      const hasMultipleHorarios = horarios.length > 1;
+
+      const horariosBlock = hasMultipleHorarios
+        ? `<div class="card__horarios">${horarios.map((h, i) =>
+            `<button type="button" class="card__horario-btn${i === 0 ? ' card__horario-btn--active' : ''}" data-horario="${h.replace(/"/g, '&quot;')}">${h}</button>`
+          ).join('')}</div>`
+        : '';
+
       card.innerHTML = `
         <div class="card__image">
           <img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">
@@ -51,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </svg>
               ${exp.duracao}
             </p>
+            ${horariosBlock}
             <p class="card__detail">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
@@ -71,6 +84,17 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
+
+      if (hasMultipleHorarios) {
+        card.querySelectorAll('.card__horario-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            card.querySelectorAll('.card__horario-btn').forEach(b => b.classList.remove('card__horario-btn--active'));
+            btn.classList.add('card__horario-btn--active');
+          });
+        });
+      }
+
       grid.appendChild(card);
     });
 

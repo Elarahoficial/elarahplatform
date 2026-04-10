@@ -802,6 +802,43 @@ select {
   color: var(--orange);
 }
 
+.card__horarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 2px 20px;
+}
+
+.card__horario-btn {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  border: 1.5px solid var(--gray-200);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card__horario-btn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.card__horario-btn--active {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--white);
+}
+
+.card__horario-btn--active:hover {
+  background: var(--orange-dark);
+  border-color: var(--orange-dark);
+  color: var(--white);
+}
+
 .card__footer {
   margin-top: auto;
   padding-top: 12px;
