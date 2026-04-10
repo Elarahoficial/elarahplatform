@@ -8,6 +8,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Admin nunca usa /conta.html — vai direto pro painel.
+    if (ElarahAuth.isAdmin()) {
+      window.location.href = 'admin.html';
+      return;
+    }
+
   // ===== POPULATE SIDEBAR =====
   const initials = (user.nome || '')
     .split(' ')

@@ -532,7 +532,9 @@ const ElarahAuth = (function () {
         <span class="header__user-avatar">${initials}</span>
         ${firstName}
       `;
-      loginBtn.onclick = () => { window.location.href = 'conta.html'; };
+      loginBtn.onclick = () => {
+        window.location.href = isAdmin() ? 'admin.html' : 'conta.html';
+      };
     } else {
       loginBtn.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
