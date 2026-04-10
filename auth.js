@@ -163,7 +163,14 @@ const ElarahAuth = (function () {
         password: (senha || '').trim()
       });
       if (error) {
-        return { success: false, error: 'E-mail ou senha incorretos.' };
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('not confirmed') || msg.includes('email not confirmed')) {
+          return { success: false, error: 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.' };
+        }
+        if (msg.includes('invalid login credentials') || msg.includes('invalid')) {
+          return { success: false, error: 'E-mail ou senha incorretos.' };
+        }
+        return { success: false, error: error.message || 'E-mail ou senha incorretos.' };
       }
       currentSession = data.session;
       currentProfile = await fetchProfile(data.user.id);
@@ -309,9 +316,6 @@ const ElarahAuth = (function () {
           <p style="text-align:center;margin-top:10px;font-size:0.85rem;">
             <a href="#" class="auth-modal__link" id="auth-forgot-link">Esqueci minha senha</a>
           </p>
-          <div class="auth-modal__divider" style="text-align:center;margin:14px 0;font-size:0.8rem;color:#999;">ou</div>
-          <button type="button" class="auth-modal__btn auth-modal__btn--google" id="auth-login-google" style="background:#fff;color:#333;border:1px solid #ddd;margin-bottom:8px;">Continuar com Google</button>
-          <button type="button" class="auth-modal__btn auth-modal__btn--apple" id="auth-login-apple" style="background:#000;color:#fff;">Continuar com Apple</button>
         </form>
 
         <form class="auth-modal__form auth-modal__form--hidden" id="auth-form-register">
@@ -344,9 +348,6 @@ const ElarahAuth = (function () {
           <p class="auth-modal__error" id="auth-reg-error"></p>
           <p class="auth-modal__success" id="auth-reg-success" style="display:none;color:#2e7d32;font-size:0.85rem;margin:6px 0 0;"></p>
           <button type="submit" class="auth-modal__btn">Criar conta</button>
-          <div class="auth-modal__divider" style="text-align:center;margin:14px 0;font-size:0.8rem;color:#999;">ou</div>
-          <button type="button" class="auth-modal__btn" id="auth-reg-google" style="background:#fff;color:#333;border:1px solid #ddd;margin-bottom:8px;">Continuar com Google</button>
-          <button type="button" class="auth-modal__btn" id="auth-reg-apple" style="background:#000;color:#fff;">Continuar com Apple</button>
         </form>
       </div>
     `;
@@ -414,17 +415,6 @@ const ElarahAuth = (function () {
         errorEl.textContent = result.error || 'Não foi possível enviar o link.';
       }
     });
-
-    // OAuth buttons (both tabs)
-    const oauthHandler = (provider) => async () => {
-      const errorEl = document.querySelector('.auth-modal__form:not(.auth-modal__form--hidden) .auth-modal__error');
-      const r = provider === 'google' ? await loginWithGoogle() : await loginWithApple();
-      if (!r.success && errorEl) errorEl.textContent = r.error;
-    };
-    div.querySelector('#auth-login-google').addEventListener('click', oauthHandler('google'));
-    div.querySelector('#auth-login-apple').addEventListener('click', oauthHandler('apple'));
-    div.querySelector('#auth-reg-google').addEventListener('click', oauthHandler('google'));
-    div.querySelector('#auth-reg-apple').addEventListener('click', oauthHandler('apple'));
 
     // Register form
     div.querySelector('#auth-form-register').addEventListener('submit', async (e) => {

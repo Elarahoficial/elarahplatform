@@ -17,13 +17,17 @@
     return;
   }
 
+  // Implicit flow (hash tokens) é intencional: faz com que os links
+  // de confirmação de email e de reset de senha funcionem em qualquer
+  // navegador — não dependem do code_verifier PKCE armazenado no
+  // navegador onde o signup/reset foi iniciado.
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'elarah-auth',
-      flowType: 'pkce'
+      flowType: 'implicit'
     }
   });
 
