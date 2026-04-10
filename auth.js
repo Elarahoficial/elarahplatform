@@ -72,138 +72,160 @@ const ElarahAuth = (function () {
     };
   }
 
-  function getCurrentUser() {
-    if (isAdmin()) {
-      return {
-        id: 'admin',
-        nome: 'Admin',
-        email: ADMIN_CREDENTIALS.email,
-        role: 'admin',
-        telefone: '',
-        cidade: '',
-        partnerStatus: 'none',
-        partnerData: null,
-        favorites: []
-      };
-    }
+ function getCurrentUser() {
+  const firebaseUser =
+    firebaseCurrentUser ||
+    window.ElarahFirebase?.auth?.currentUser ||
+    null;
 
-    const sessionId = getSession();
-    if (!sessionId) return null;
+  if (!firebaseUser) return null;
 
-    const users = getUsers();
-    const found = users.find(user => user.id === sessionId);
-    return normalizeUser(found || null);
-  }
+  const email = (firebaseUser.email || '').trim().toLowerCase();
+  const key = `elarah_user_${email}`;
+  const localData = JSON.parse(localStorage.getItem(key)) || {};
 
-  function isLoggedIn() {
-    return !!getCurrentUser();
-  }
+  return {
+    id: firebaseUser.uid,
+    email,
+    nome: localData.nome || firebaseUser.displayName || email.split('@')[0] || '',
+    telefone: localData.telefone || '',
+    cidade: localData.cidade || '',
+    partnerStatus: localData.partnerStatus || 'none',
+    partnerData: localData.partnerData || null,
+    favorites: Array.isArray(localData.favorites) ? localData.favorites : []
+  };
+}
 
-  function register({ nome, email, senha, telefone, cidade }) {
-    const users = getUsers();
-    const cleanEmail = (email || '').trim().toLowerCase();
+function isLoggedIn() {
+  return !!getCurrentUser();
+}
 
-    if (!nome || !cleanEmail || !senha || !telefone) {
-      return { success: false, error: 'Preencha os campos obrigatórios.' };
-    }
+async function register({ nome, email, senha, telefone, cidade }) {
+  try {
+    const { auth, createUserWithEmailAndPassword } = window.ElarahFirebase;
 
-    if (senha.length < 6) {
-      return { success: false, error: 'A senha deve ter pelo menos 6 caracteres.' };
-    }
+    const cred = await createUserWithEmailAndPassword(
+      auth,
+      email.trim().toLowerCase(),
+      senha.trim()
+    );
 
-    const existing = users.find(user => (user.email || '').trim().toLowerCase() === cleanEmail);
-    if (existing) {
-      return { success: false, error: 'Esse e-mail já está cadastrado.' };
-    }
+    firebaseCurrentUser = cred.user;
 
-    const newUser = normalizeUser({
-      id: generateId(),
+    const userData = {
       nome: nome.trim(),
-      email: cleanEmail,
-      senha: senha.trim(),
       telefone: (telefone || '').trim(),
       cidade: (cidade || '').trim(),
       partnerStatus: 'none',
       partnerData: null,
       favorites: []
-    });
+    };
 
-    users.push(newUser);
-    saveUsers(users);
-    setSession(newUser.id);
-
-    return { success: true, user: newUser };
-  }
-
-  function login(email, senha) {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanSenha = (senha || '').trim();
-
-    if (isAdminEmail(cleanEmail) && cleanSenha === ADMIN_CREDENTIALS.senha) {
-      localStorage.setItem('elarah_admin', 'true');
-      return {
-        success: true,
-        user: { nome: 'Admin', email: ADMIN_CREDENTIALS.email, role: 'admin' },
-        isAdmin: true
-      };
-    }
-
-    const users = getUsers();
-    const found = users.find(user =>
-      (user.email || '').trim().toLowerCase() === cleanEmail &&
-      (user.senha || '') === cleanSenha
+    localStorage.setItem(
+      `elarah_user_${cred.user.email}`,
+      JSON.stringify(userData)
     );
 
-    if (!found) {
-      return { success: false, error: 'E-mail ou senha incorretos.' };
+    return {
+      success: true,
+      user: {
+        id: cred.user.uid,
+        nome: userData.nome,
+        email: cred.user.email,
+        telefone: userData.telefone,
+        cidade: userData.cidade,
+        partnerStatus: userData.partnerStatus,
+        partnerData: userData.partnerData,
+        favorites: userData.favorites
+      }
+    };
+  } catch (error) {
+    return { success: false, error: 'Erro ao criar conta.' };
+  }
+}
+
+async function login(email, senha) {
+  if (isAdminEmail(email) && senha === ADMIN_CREDENTIALS.senha) {
+    localStorage.setItem('elarah_admin', 'true');
+    return { success: true, user: { nome: 'Admin', role: 'admin' }, isAdmin: true };
+  }
+
+  try {
+    const { auth, signInWithEmailAndPassword } = window.ElarahFirebase;
+
+    const cred = await signInWithEmailAndPassword(
+      auth,
+      email.trim().toLowerCase(),
+      senha.trim()
+    );
+
+    firebaseCurrentUser = cred.user;
+
+    return {
+      success: true,
+      user: getCurrentUser()
+    };
+  } catch (error) {
+    return { success: false, error: 'E-mail ou senha incorretos.' };
+  }
+}
+
+function isAdmin() {
+  return localStorage.getItem('elarah_admin') === 'true';
+}
+
+function logoutAdmin() {
+  localStorage.removeItem('elarah_admin');
+}
+
+async function logout() {
+  if (isAdmin()) {
+    logoutAdmin();
+  }
+
+  if (window.ElarahFirebase && window.ElarahFirebase.auth) {
+    const { auth, signOut } = window.ElarahFirebase;
+    await signOut(auth);
+  }
+
+  firebaseCurrentUser = null;
+  authResolved = true;
+  updateHeaderUI();
+  document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
+}
+
+function updateUser(data) {
+  const current = getCurrentUser();
+  if (!current) return { success: false, error: 'Não autenticado.' };
+
+  const key = `elarah_user_${current.email}`;
+  const existing = JSON.parse(localStorage.getItem(key)) || {};
+
+  const updated = {
+    ...existing,
+    ...data
+  };
+
+  localStorage.setItem(key, JSON.stringify(updated));
+
+  return {
+    success: true,
+    user: {
+      ...current,
+      ...updated
     }
+  };
+}
 
-    setSession(found.id);
-    return { success: true, user: normalizeUser(found) };
-  }
-
-  function isAdmin() {
-    return localStorage.getItem('elarah_admin') === 'true';
-  }
-
-  function logoutAdmin() {
-    localStorage.removeItem('elarah_admin');
-  }
-
-  function logout() {
-    if (isAdmin()) {
-      logoutAdmin();
+function becomePartner(partnerData) {
+  return updateUser({
+    partnerStatus: 'pending',
+    partnerData: {
+      ...partnerData,
+      requestedAt: new Date().toISOString()
     }
-
-    clearSession();
-    updateHeaderUI();
-    document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
-  }
-
-  function updateUser(data) {
-    const current = getCurrentUser();
-    if (!current || current.role === 'admin') {
-      return { success: false, error: 'Não autenticado.' };
-    }
-
-    const users = getUsers();
-    const index = users.findIndex(user => user.id === current.id);
-    if (index === -1) {
-      return { success: false, error: 'Usuário não encontrado.' };
-    }
-
-    const updated = normalizeUser({
-      ...users[index],
-      ...data,
-      email: users[index].email,
-      senha: users[index].senha
-    });
-
-    users[index] = updated;
-    saveUsers(users);
-
-    return { success: true, user: updated };
-  }
+  });
+}
 
   function becomePartner(partnerData) {
     return updateUser({
@@ -470,70 +492,70 @@ const ElarahAuth = (function () {
   }
 
   function bindHeaderEvents() {
-    if (headerEventsBound) return;
+  if (headerEventsBound) return;
 
-    document.addEventListener('click', (e) => {
-      const loginBtn = e.target.closest('.header__login-btn');
-      if (loginBtn) {
-        e.preventDefault();
-        e.stopPropagation();
+  document.addEventListener('click', (e) => {
+    const loginBtn = e.target.closest('.header__login-btn');
+    if (loginBtn) {
+      e.preventDefault();
+      e.stopPropagation();
 
-        const user = getCurrentUser();
-        if (user) {
-          goTo('conta.html');
-        } else {
-          openModal('login');
-        }
-        return;
+      const user = getCurrentUser();
+      if (user) {
+        window.location.href = 'conta.html';
+      } else {
+        openModal('login');
       }
-
-      const favBtn = e.target.closest('.header__action-btn[aria-label="Favoritos"]');
-      if (favBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!isLoggedIn()) {
-          openModal('login', 'Faça login para ver seus favoritos');
-        } else {
-          goTo('conta.html?section=favoritos');
-        }
-      }
-    });
-
-    headerEventsBound = true;
-  }
-
-  function updateHeaderUI() {
-    const loginBtn = document.querySelector('.header__login-btn');
-    if (!loginBtn) return;
-
-    const user = getCurrentUser();
-
-    if (user) {
-      const initials = (user.nome || '')
-        .split(' ')
-        .filter(Boolean)
-        .map(n => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
-
-      const firstName = (user.nome || '').split(' ')[0] || 'Conta';
-
-      loginBtn.innerHTML = `
-        <span class="header__user-avatar">${initials || 'EC'}</span>
-        ${firstName}
-      `;
-    } else {
-      loginBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        Entrar
-      `;
+      return;
     }
+
+    const favBtn = e.target.closest('.header__action-btn[aria-label="Favoritos"]');
+    if (favBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isLoggedIn()) {
+        openModal('login', 'Faça login para ver seus favoritos');
+      } else {
+        window.location.href = 'conta.html?section=favoritos';
+      }
+    }
+  });
+
+  headerEventsBound = true;
+}
+
+function updateHeaderUI() {
+  const loginBtn = document.querySelector('.header__login-btn');
+  if (!loginBtn) return;
+
+  const user = getCurrentUser();
+
+  if (user) {
+    const initials = (user.nome || '')
+      .split(' ')
+      .filter(Boolean)
+      .map(n => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
+    const firstName = (user.nome || '').split(' ')[0] || 'Conta';
+
+    loginBtn.innerHTML = `
+      <span class="header__user-avatar">${initials || 'EC'}</span>
+      ${firstName}
+    `;
+  } else {
+    loginBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      Entrar
+    `;
   }
+}
 
   function init() {
     bindHeaderEvents();
