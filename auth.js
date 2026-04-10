@@ -87,6 +87,7 @@ function getCurrentUser() {
   };
 }
   function isLoggedIn() {
+  if (!authResolved) return false;
   const current = getCurrentUser();
   return !!current;
   }
@@ -448,11 +449,13 @@ function updateUser(data) {
       e.preventDefault();
       e.stopPropagation();
 
-      if (!isLoggedIn()) {
-        openModal('login', 'Faça login para ver seus favoritos');
-      } else {
-        window.location.href = 'conta.html?section=favoritos';
-      }
+     if (!authResolved) return;
+
+if (!isLoggedIn()) {
+  openModal('login', 'Faça login para ver seus favoritos');
+} else {
+  window.location.href = 'conta.html?section=favoritos';
+}
     }
   });
 
