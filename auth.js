@@ -322,15 +322,18 @@ function updateUser(data) {
       const errorEl = document.getElementById('auth-login-error');
 
       const result = await login(email, senha);
-      if (result.success) {
-        if (result.isAdmin) {
-          closeModal();
-          window.location.href = 'admin.html';
-          return;
-        }
-        closeModal();
-        updateHeaderUI();
-      } else {
+
+       if (result.success) {
+  if (result.isAdmin) {
+    closeModal();
+    window.location.href = 'admin.html';
+    return;
+  }
+  closeModal();
+  updateHeaderUI();
+  document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
+}
+       else {
         errorEl.textContent = result.error;
       }
     });
@@ -358,10 +361,12 @@ function updateUser(data) {
       }
 
      const result = await register({ nome, email, senha, telefone, cidade });
-      if (result.success) {
-        closeModal();
-        updateHeaderUI();
-      } else {
+     if (result.success) {
+  closeModal();
+  updateHeaderUI();
+  document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
+}
+     else {
         errorEl.textContent = result.error;
       }
     });
