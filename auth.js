@@ -76,16 +76,27 @@ const ElarahAuth = (function () {
   async function fetchProfile(userId) {
     const s = sb();
     if (!s) return null;
-    const { data, error } = await s
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-    if (error) {
-      console.warn('[Elarah] fetchProfile error', error);
-      return null;
+    // Retry uma vez em caso de falha transitória de rede.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data, error } = await s
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        if (error) {
+          console.warn('[Elarah] fetchProfile error (tentativa ' + (attempt + 1) + ')', error);
+          if (attempt === 0) continue;
+          return null;
+        }
+        return data;
+      } catch (e) {
+        console.warn('[Elarah] fetchProfile exception (tentativa ' + (attempt + 1) + ')', e);
+        if (attempt === 0) continue;
+        return null;
+      }
     }
-    return data;
+    return null;
   }
 
   async function hydrate() {
@@ -114,13 +125,23 @@ const ElarahAuth = (function () {
     updateHeaderUI();
 
     s.auth.onAuthStateChange(async (_event, session) => {
-      currentSession = session || null;
-      if (currentSession) {
-        currentProfile = await fetchProfile(currentSession.user.id);
-      } else {
-        currentProfile = null;
+      try {
+        currentSession = session || null;
+        if (currentSession) {
+          // Só re-fetch se ainda não tiver perfil para este user.
+          // Evita sobrescrever um perfil válido com null em caso
+          // de falha transitória de rede.
+          if (!currentProfile || currentProfile.id !== currentSession.user.id) {
+            const fetched = await fetchProfile(currentSession.user.id);
+            if (fetched) currentProfile = fetched;
+          }
+        } else {
+          currentProfile = null;
+        }
+      } catch (e) {
+        console.warn('[Elarah] onAuthStateChange error', e);
       }
-      updateHeaderUI();
+      try { updateHeaderUI(); } catch (e) { console.warn('[Elarah] updateHeaderUI error', e); }
     });
   }
 
@@ -513,6 +534,33 @@ const ElarahAuth = (function () {
     document.body.style.overflow = '';
   }
 
+  // Handler unificado: sempre aguarda ready antes de decidir o
+  // destino. Evita race condition onde o clique acontece antes
+  // do hydrate completar.
+  async function handleHeaderLoginClick(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    try { await ready; } catch {}
+    if (isAdmin()) {
+      window.location.href = 'admin.html';
+      return;
+    }
+    if (isLoggedIn()) {
+      window.location.href = 'conta.html';
+      return;
+    }
+    openModal('login');
+  }
+
+  async function handleHeaderFavClick(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    try { await ready; } catch {}
+    if (!isLoggedIn()) {
+      openModal('login', 'Faça login para ver seus favoritos');
+    } else {
+      window.location.href = 'conta.html?section=favoritos';
+    }
+  }
+
   function updateHeaderUI() {
     const user = getCurrentUser();
     const loginBtn = document.querySelector('.header__login-btn');
@@ -532,9 +580,6 @@ const ElarahAuth = (function () {
         <span class="header__user-avatar">${initials}</span>
         ${firstName}
       `;
-      loginBtn.onclick = () => {
-        window.location.href = isAdmin() ? 'admin.html' : 'conta.html';
-      };
     } else {
       loginBtn.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -543,17 +588,13 @@ const ElarahAuth = (function () {
         </svg>
         Entrar
       `;
-      loginBtn.onclick = () => openModal('login');
     }
 
+    // Handler único e resiliente em ambos os estados.
+    loginBtn.onclick = handleHeaderLoginClick;
+
     if (favBtn) {
-      favBtn.onclick = () => {
-        if (!isLoggedIn()) {
-          openModal('login', 'Faça login para ver seus favoritos');
-        } else {
-          window.location.href = 'conta.html?section=favoritos';
-        }
-      };
+      favBtn.onclick = handleHeaderFavClick;
     }
   }
 

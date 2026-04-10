@@ -41,7 +41,31 @@
       try { await ElarahAuth.ready; } catch {}
     }
 
-    if (!ElarahAuth.isAdmin()) {
+    let allowed = ElarahAuth.isAdmin();
+
+    // Defesa contra cache stale / fetchProfile falho:
+    // confirma diretamente no Supabase antes de redirecionar,
+    // evitando loop admin.html ↔ index.html quando a checagem
+    // do role em memória estiver desatualizada.
+    if (!allowed && window.supabaseClient) {
+      try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (session && session.user) {
+          const { data: prof, error } = await window.supabaseClient
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (!error && prof && prof.role === 'admin') {
+            allowed = true;
+          }
+        }
+      } catch (e) {
+        console.warn('[Admin] verificação direta de role falhou:', e);
+      }
+    }
+
+    if (!allowed) {
       window.location.href = 'index.html';
       return;
     }
