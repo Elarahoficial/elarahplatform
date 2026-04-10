@@ -36,134 +36,107 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Erro ao ler hostRequest:', error);
   }
 
-  function getCurrentUserSafe() {
-    return (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
-      ? ElarahAuth.getCurrentUser()
-      : null;
+  const currentUser =
+  (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+    ? ElarahAuth.getCurrentUser()
+    : null;
+
+if (
+  (dados && dados.status === 'approved') ||
+  (currentUser && currentUser.partnerStatus === 'approved')
+) {
+    if (partnerCta) partnerCta.style.display = 'none';
+    if (hostStatusBox) hostStatusBox.style.display = 'block';
+   if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
+if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
+
+const pd = currentUser?.partnerData || {};
+
+if (resumoDados) {
+  resumoDados.innerHTML =
+    '<strong>WhatsApp:</strong> ' + (currentUser?.telefone || '-') + '<br>' +
+    '<strong>Categoria:</strong> ' + (pd.tipo || '-') + '<br>' +
+    '<strong>Descrição:</strong> ' + (pd.descricao || 'Não informada');
+}
+  } else {
+    if (partnerCta) partnerCta.style.display = 'flex';
+    if (hostStatusBox) hostStatusBox.style.display = 'none';
   }
-
-  function renderPartnerState() {
-    const currentUser = getCurrentUserSafe();
-
-    if (
-      (dados && dados.status === 'approved') ||
-      (currentUser && currentUser.partnerStatus === 'approved')
-    ) {
-      if (partnerCta) partnerCta.style.display = 'none';
-      if (hostStatusBox) hostStatusBox.style.display = 'block';
-      if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
-      if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
-
-      const pd = currentUser?.partnerData || {};
-
-      if (resumoDados) {
-        resumoDados.innerHTML =
-          '<strong>WhatsApp:</strong> ' + (currentUser?.telefone || '-') + '<br>' +
-          '<strong>Categoria:</strong> ' + (pd.tipo || '-') + '<br>' +
-          '<strong>Descrição:</strong> ' + (pd.descricao || 'Não informada');
-      }
-    } else {
-      if (partnerCta) partnerCta.style.display = 'flex';
-      if (hostStatusBox) hostStatusBox.style.display = 'none';
-    }
-  }
-
-  function mostrarMensagemParceiro(texto) {
-    const msg = document.createElement('div');
-    msg.innerText = texto;
-
-    msg.style.position = 'fixed';
-    msg.style.bottom = '30px';
-    msg.style.left = '50%';
-    msg.style.transform = 'translateX(-50%)';
-    msg.style.background = '#111';
-    msg.style.color = '#fff';
-    msg.style.padding = '16px 24px';
-    msg.style.borderRadius = '12px';
-    msg.style.fontSize = '14px';
-    msg.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
-    msg.style.zIndex = '9999';
-    msg.style.opacity = '0';
-    msg.style.transition = 'all 0.3s ease';
-
-    document.body.appendChild(msg);
-
-    setTimeout(() => {
-      msg.style.opacity = '1';
-      msg.style.transform = 'translateX(-50%) translateY(-10px)';
-    }, 10);
-
-    setTimeout(() => {
-      msg.style.opacity = '0';
-      msg.style.transform = 'translateX(-50%) translateY(10px)';
-    }, 2500);
-
-    setTimeout(() => {
-      msg.remove();
-    }, 3000);
-  }
-
-  function irParaFluxoParceiro() {
+function irParaFluxoParceiro() {
   const currentUser =
     (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
       ? ElarahAuth.getCurrentUser()
       : null;
 
-  if (!currentUser) {
-    localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
-
-    if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-      ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
-      return;
-    }
-
-    alert('Faça login para continuar.');
+ if (!currentUser) {
+  if (typeof openModal === 'function') {
+    openModal('login', 'Faça login para se tornar parceiro');
+  if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
+    ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
     return;
   }
 
-  if (currentUser.partnerStatus === 'approved') {
-    mostrarMensagemParceiro('Você já é parceiro da Elarah!');
-    return;
-  }
+  alert('Faça login para continuar.');
+  return;
+}
+ if (currentUser.partnerStatus === 'approved') {
+  mostrarMensagemParceiro('Você já é parceiro Elarah!');
+  return;
+}
 
   window.location.href = '/elarahplatform/conta.html?section=parceiro';
 }
-  
-  // ===== REDIRECT APÓS LOGIN =====
-  function handlePostLoginRedirect() {
-    const currentUser = getCurrentUserSafe();
-    const redirect = localStorage.getItem('postLoginRedirect');
+  function mostrarMensagemParceiro(texto) {
+  const msg = document.createElement('div');
+  msg.innerText = texto;
 
-    if (currentUser && redirect) {
-      localStorage.removeItem('postLoginRedirect');
-      window.location.href = redirect;
-    }
-  }
+  msg.style.position = 'fixed';
+  msg.style.bottom = '30px';
+  msg.style.left = '50%';
+  msg.style.transform = 'translateX(-50%)';
+  msg.style.background = '#111';
+  msg.style.color = '#fff';
+  msg.style.padding = '16px 24px';
+  msg.style.borderRadius = '12px';
+  msg.style.fontSize = '14px';
+  msg.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
+  msg.style.zIndex = '9999';
+  msg.style.opacity = '0';
+  msg.style.transition = 'all 0.3s ease';
 
-  renderPartnerState();
-  handlePostLoginRedirect();
+  document.body.appendChild(msg);
 
-  document.addEventListener('elarah-auth-ready', () => {
-    renderPartnerState();
-    handlePostLoginRedirect();
-  });
+  setTimeout(() => {
+    msg.style.opacity = '1';
+    msg.style.transform = 'translateX(-50%) translateY(-10px)';
+  }, 10);
 
+  setTimeout(() => {
+    msg.style.opacity = '0';
+    msg.style.transform = 'translateX(-50%) translateY(10px)';
+  }, 2500);
+
+  setTimeout(() => {
+    msg.remove();
+  }, 3000);
+}
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
   const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+  const headerLoginBtn = document.querySelector('.header__login-btn');
 
   if (partnerHeroBtn) {
-    partnerHeroBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      irParaFluxoParceiro();
-    });
+    partnerHeroBtn.addEventListener('click', irParaFluxoParceiro);
   }
 
   if (partnerCtaBtn) {
-    partnerCtaBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      irParaFluxoParceiro();
+    partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
+  }
+
+  if (headerLoginBtn) {
+    headerLoginBtn.addEventListener('click', () => {
+      if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
+        ElarahAuth.openModal('login');
+      }
     });
   }
 });
