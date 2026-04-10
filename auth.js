@@ -233,12 +233,19 @@ const ElarahAuth = (function () {
       const errorEl = document.getElementById('auth-login-error');
 
       const result = login(email, senha);
-      if (result.success) {
-        closeModal();
-        updateHeaderUI();
-      } else {
-        errorEl.textContent = result.error;
-      }
+     if (result.success) {
+  const redirect = localStorage.getItem('postLoginRedirect');
+
+  closeModal();
+  updateHeaderUI();
+
+  if (redirect) {
+    localStorage.removeItem('postLoginRedirect');
+    window.location.href = redirect;
+  }
+} else {
+  errorEl.textContent = result.error;
+}
     });
 
     div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
