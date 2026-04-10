@@ -468,23 +468,15 @@ if (groupForm) {
     var experiencia = document.getElementById('group-experiencia').value;
     var observacoes = document.getElementById('group-obs').value;
 
-    var mensagem =
-      'Oi! Quero organizar uma experiência com a Elarah ✨%0A%0A' +
-      '📌 Tipo de evento: ' + tipoEvento + '%0A' +
-      '👤 Nome: ' + nome + '%0A' +
-      '📱 WhatsApp: ' + whatsapp + '%0A' +
-      '👥 Número de pessoas: ' + pessoas + '%0A' +
-      '📅 Data desejada: ' + (data || 'Não informada') + '%0A' +
-      '🎨 Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
-      '📝 Observações: ' + (observacoes || 'Nenhuma');
-      'Oi! Quero viver uma experiência com a Elarah! %0A%0A' +
-      'Tipo de evento: ' + tipoEvento + '%0A' +
-      'Nome: ' + nome + '%0A' +
-      'WhatsApp: ' + whatsapp + '%0A' +
-      'Número de pessoas: ' + pessoas + '%0A' +
-      'Data desejada: ' + (data ? data.split('-').reverse().join('/') : 'Não informada') + '%0A' +
-      'Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
-      'Observações: ' + (observacoes || 'Nenhuma');
+    const mensagem =
+  'Oi! Quero organizar uma experiência com a Elarah ✨%0A%0A' +
+  '📌 Tipo de evento: ' + tipoEvento + '%0A' +
+  '👤 Nome: ' + nome + '%0A' +
+  '📱 WhatsApp: ' + whatsapp + '%0A' +
+  '👥 Número de pessoas: ' + pessoas + '%0A' +
+  '📅 Data desejada: ' + (data ? data.split('-').reverse().join('/') : 'Não informada') + '%0A' +
+  '🎨 Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
+  '📝 Observações: ' + (observacoes || 'Nenhuma');
 
     var numeroElarah = '5511914455930'; // TROQUE PELO NÚMERO CERTO
 
@@ -568,4 +560,3 @@ if (groupForm) {
     }
   });
 });
-~
