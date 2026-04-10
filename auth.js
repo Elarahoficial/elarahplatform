@@ -271,11 +271,18 @@ const ElarahAuth = (function () {
 
       const result = register({ nome, email, senha, telefone, cidade });
       if (result.success) {
-        closeModal();
-        updateHeaderUI();
-      } else {
-        errorEl.textContent = result.error;
-      }
+  const redirect = localStorage.getItem('postLoginRedirect');
+
+  closeModal();
+  updateHeaderUI();
+
+  if (redirect) {
+    localStorage.removeItem('postLoginRedirect');
+    window.location.href = redirect;
+  }
+} else {
+  errorEl.textContent = result.error;
+}
     });
 
     return div;
