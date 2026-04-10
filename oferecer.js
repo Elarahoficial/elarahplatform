@@ -118,14 +118,22 @@ function irParaFluxoParceiro() {
     msg.remove();
   }, 3000);
 }
-  const partnerHeroBtn = document.getElementById('partnerHeroBtn');
-  const partnerCtaBtn = document.getElementById('partnerCtaBtn');
-  
-  if (partnerHeroBtn) {
-  partnerHeroBtn.addEventListener('click', irParaFluxoParceiro);
+ const partnerHeroBtn = document.getElementById('partnerHeroBtn');
+const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+
+if (partnerHeroBtn) {
+  partnerHeroBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    irParaFluxoParceiro();
+  });
 }
 
 if (partnerCtaBtn) {
-  partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
+  partnerCtaBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    irParaFluxoParceiro();
+  });
 }
 });
