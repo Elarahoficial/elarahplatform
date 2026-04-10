@@ -377,6 +377,7 @@ renderFavoritos();
         : 'none';
     });
   }
+  }
       if (ElarahAuth.getCurrentUser()) {
     startPage();
   } else {
