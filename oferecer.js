@@ -120,4 +120,12 @@ function irParaFluxoParceiro() {
 }
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
   const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+  
+  if (partnerHeroBtn) {
+  partnerHeroBtn.addEventListener('click', irParaFluxoParceiro);
+}
+
+if (partnerCtaBtn) {
+  partnerCtaBtn.addEventListener('click', irParaFluxoParceiro);
+}
 });
