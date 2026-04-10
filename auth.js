@@ -1,14 +1,11 @@
 /* =============================================
    ELARAH AUTH MODULE
    Sistema de autenticação com localStorage
-   Preparado para migração futura para API/backend
    ============================================= */
 
 const ElarahAuth = (function () {
   const STORAGE_KEY = 'elarah_users';
   const SESSION_KEY = 'elarah_session';
-
-  // ===== STORAGE HELPERS =====
 
   function getUsers() {
     try {
@@ -34,98 +31,81 @@ const ElarahAuth = (function () {
     return 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
   }
 
-  // ===== PUBLIC API =====
+  function normalizeUser(user) {
+    if (!user) return null;
 
- function normalizeUser(user) {
-  if (!user) return null;
+    if (!user.partnerStatus) user.partnerStatus = user.isPartner ? 'approved' : 'none';
+    if (typeof user.partnerData === 'undefined') user.partnerData = null;
+    if (!Array.isArray(user.favorites)) user.favorites = [];
 
-  if (!user.partnerStatus) {
-    user.partnerStatus = user.isPartner ? 'approved' : 'none';
+    return user;
   }
 
-  if (typeof user.partnerData === 'undefined') {
-    user.partnerData = null;
+  function getCurrentUser() {
+    const sessionId = localStorage.getItem(SESSION_KEY);
+    if (!sessionId) return null;
+
+    const users = getUsers();
+    const user = users.find(u => u.id === sessionId);
+    return normalizeUser(user || null);
   }
 
-  if (!Array.isArray(user.favorites)) {
-    user.favorites = [];
-  }
-
-  return user;
-}
-
-function getCurrentUser() {
-  const { auth } = window.ElarahFirebase;
-  const user = auth.currentUser;
-
-  if (!user) return null;
-
-  return {
-    id: user.uid,
-    email: user.email,
-    nome: user.email.split('@')[0],
-    partnerStatus: "none",
-    favorites: []
-  };
-}
   function isLoggedIn() {
-  const current = getCurrentUser();
-  return !!current;
+    return !!getCurrentUser();
   }
 
- async function register({ nome, email, senha }) {
-  try {
-    const { auth, createUserWithEmailAndPassword } = window.ElarahFirebase;
+  function register({ nome, email, senha, telefone, cidade }) {
+    try {
+      const users = getUsers();
+      const cleanEmail = email.trim().toLowerCase();
 
-    const cred = await createUserWithEmailAndPassword(
-      auth,
-      email.trim().toLowerCase(),
-      senha.trim()
-    );
+      if (users.some(u => (u.email || '').trim().toLowerCase() === cleanEmail)) {
+        return { success: false, error: 'Este e-mail já está cadastrado.' };
+      }
 
-    return {
-      success: true,
-      user: {
-        id: cred.user.uid,
+      const newUser = normalizeUser({
+        id: generateId(),
         nome: nome.trim(),
-        email: cred.user.email,
-        partnerStatus: "none",
+        email: cleanEmail,
+        senha: senha.trim(),
+        telefone: (telefone || '').trim(),
+        cidade: (cidade || '').trim(),
+        partnerStatus: 'none',
+        partnerData: null,
         favorites: []
-      }
-    };
+      });
 
-  } catch (error) {
-    return { success: false, error: 'Erro ao criar conta.' };
+      users.push(newUser);
+      saveUsers(users);
+      setSession(newUser.id);
+
+      return { success: true, user: newUser };
+    } catch {
+      return { success: false, error: 'Erro ao criar conta.' };
+    }
   }
-}
 
-async function login(email, senha) {
-  try {
-    const { auth, signInWithEmailAndPassword } = window.ElarahFirebase;
+  function login(email, senha) {
+    const users = getUsers();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanSenha = senha.trim();
 
-    const cred = await signInWithEmailAndPassword(
-      auth,
-      email.trim().toLowerCase(),
-      senha.trim()
+    const user = users.find(
+      u => (u.email || '').trim().toLowerCase() === cleanEmail && (u.senha || '') === cleanSenha
     );
 
-    return {
-      success: true,
-      user: {
-        id: cred.user.uid,
-        email: cred.user.email
-      }
-    };
-  } catch (error) {
-    return { success: false, error: 'E-mail ou senha incorretos.' };
-  }
-}
+    if (!user) {
+      return { success: false, error: 'E-mail ou senha incorretos.' };
+    }
 
-  async function logout() {
-  const { auth, signOut } = window.ElarahFirebase;
-  await signOut(auth);
-  updateHeaderUI();
-}
+    setSession(user.id);
+    return { success: true, user: normalizeUser(user) };
+  }
+
+  function logout() {
+    clearSession();
+    updateHeaderUI();
+  }
 
   function updateUser(data) {
     const current = getCurrentUser();
@@ -135,20 +115,24 @@ async function login(email, senha) {
     const index = users.findIndex(u => u.id === current.id);
     if (index === -1) return { success: false, error: 'Usuário não encontrado.' };
 
-    Object.assign(users[index], data);
+    users[index] = normalizeUser({
+      ...users[index],
+      ...data
+    });
+
     saveUsers(users);
     return { success: true, user: users[index] };
   }
 
-    function becomePartner(partnerData) {
-  return updateUser({
-    partnerStatus: 'approved',
-    partnerData: {
-      ...partnerData,
-      requestedAt: new Date().toISOString()
-    }
-  });
-}
+  function becomePartner(partnerData) {
+    return updateUser({
+      partnerStatus: 'approved',
+      partnerData: {
+        ...partnerData,
+        requestedAt: new Date().toISOString()
+      }
+    });
+  }
 
   function requireLogin(callback) {
     if (isLoggedIn()) {
@@ -158,8 +142,6 @@ async function login(email, senha) {
     openModal('login', 'Faça login para continuar');
     return false;
   }
-
-  // ===== MODAL =====
 
   let modalEl = null;
 
@@ -184,7 +166,6 @@ async function login(email, senha) {
           <button class="auth-modal__tab" data-tab="register">Criar conta</button>
         </div>
 
-        <!-- LOGIN FORM -->
         <form class="auth-modal__form" id="auth-form-login">
           <div class="auth-modal__field">
             <label class="auth-modal__label">E-mail</label>
@@ -198,7 +179,6 @@ async function login(email, senha) {
           <button type="submit" class="auth-modal__btn">Entrar</button>
         </form>
 
-        <!-- REGISTER FORM -->
         <form class="auth-modal__form auth-modal__form--hidden" id="auth-form-register">
           <div class="auth-modal__field">
             <label class="auth-modal__label">Nome completo</label>
@@ -229,33 +209,30 @@ async function login(email, senha) {
           <p class="auth-modal__error" id="auth-reg-error"></p>
           <button type="submit" class="auth-modal__btn">Criar conta</button>
         </form>
-
       </div>
     `;
 
     document.body.appendChild(div);
     modalEl = div;
 
-    // Tab switching
     div.querySelectorAll('.auth-modal__tab').forEach(tab => {
       tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    // Close
     div.querySelector('.auth-modal__backdrop').addEventListener('click', closeModal);
     div.querySelector('.auth-modal__close').addEventListener('click', closeModal);
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
 
-    // Login submit
-    div.querySelector('#auth-form-login').addEventListener('submit', async (e) => {
+    div.querySelector('#auth-form-login').addEventListener('submit', (e) => {
       e.preventDefault();
       const email = document.getElementById('auth-login-email').value;
       const senha = document.getElementById('auth-login-senha').value;
       const errorEl = document.getElementById('auth-login-error');
 
-      const result = await login(email, senha);
+      const result = login(email, senha);
       if (result.success) {
         closeModal();
         updateHeaderUI();
@@ -264,8 +241,7 @@ async function login(email, senha) {
       }
     });
 
-    // Register submit
-     div.querySelector('#auth-form-register').addEventListener('submit', async (e) => {
+    div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('auth-reg-error');
 
@@ -286,7 +262,7 @@ async function login(email, senha) {
         return;
       }
 
-     const result = await register({ nome, email, senha });
+      const result = register({ nome, email, senha, telefone, cidade });
       if (result.success) {
         closeModal();
         updateHeaderUI();
@@ -315,7 +291,6 @@ async function login(email, senha) {
       regForm.classList.remove('auth-modal__form--hidden');
     }
 
-    // Clear errors
     modalEl.querySelectorAll('.auth-modal__error').forEach(el => el.textContent = '');
   }
 
@@ -334,7 +309,6 @@ async function login(email, senha) {
     modal.classList.add('auth-modal--open');
     document.body.style.overflow = 'hidden';
 
-    // Clear form fields
     modal.querySelectorAll('.auth-modal__input').forEach(input => input.value = '');
     modal.querySelectorAll('.auth-modal__error').forEach(el => el.textContent = '');
     const termosCheckbox = modal.querySelector('#auth-reg-termos');
@@ -347,8 +321,6 @@ async function login(email, senha) {
     document.body.style.overflow = '';
   }
 
-  // ===== HEADER UI UPDATE =====
-
   function updateHeaderUI() {
     const user = getCurrentUser();
     const loginBtn = document.querySelector('.header__login-btn');
@@ -357,10 +329,16 @@ async function login(email, senha) {
     if (!loginBtn) return;
 
     if (user) {
-      const initials = user.nome.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      const fullName = (user.nome || '').trim();
+      const initials = fullName
+        ? fullName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase()
+        : 'EC';
+
+      const firstName = fullName ? fullName.split(' ')[0] : 'Conta';
+
       loginBtn.innerHTML = `
         <span class="header__user-avatar">${initials}</span>
-        ${user.nome.split(' ')[0]}
+        ${firstName}
       `;
       loginBtn.onclick = () => { window.location.href = 'conta.html'; };
     } else {
@@ -374,7 +352,6 @@ async function login(email, senha) {
       loginBtn.onclick = () => openModal('login');
     }
 
-    // Favorite button: require login
     if (favBtn) {
       favBtn.onclick = () => {
         if (!isLoggedIn()) {
@@ -386,67 +363,58 @@ async function login(email, senha) {
     }
   }
 
-  // ===== INIT =====
+  function getFavorites() {
+    const current = getCurrentUser();
+    if (!current) return [];
+    return Array.isArray(current.favorites) ? current.favorites : [];
+  }
+
+  function isFavorite(experienceId) {
+    return getFavorites().includes(experienceId);
+  }
+
+  function toggleFavorite(experienceId) {
+    const current = getCurrentUser();
+    if (!current) {
+      return { success: false, error: 'Faça login para favoritar.' };
+    }
+
+    const favorites = Array.isArray(current.favorites) ? [...current.favorites] : [];
+    const index = favorites.indexOf(experienceId);
+
+    if (index >= 0) {
+      favorites.splice(index, 1);
+    } else {
+      favorites.push(experienceId);
+    }
+
+    return updateUser({ favorites });
+  }
 
   function init() {
     updateHeaderUI();
   }
 
-  // Auto-init when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
 
-  // ===== PUBLIC INTERFACE =====
-   function getFavorites() {
-  const current = getCurrentUser();
-  if (!current) return [];
-  return Array.isArray(current.favorites) ? current.favorites : [];
-}
-
-function isFavorite(experienceId) {
-  const favorites = getFavorites();
-  return favorites.includes(experienceId);
-}
-
-function toggleFavorite(experienceId) {
-  const current = getCurrentUser();
-  if (!current) {
-    return { success: false, error: 'Faça login para favoritar.' };
-  }
-
-  const favorites = Array.isArray(current.favorites) ? [...current.favorites] : [];
-  const index = favorites.indexOf(experienceId);
-
-  if (index >= 0) {
-    favorites.splice(index, 1);
-  } else {
-    favorites.push(experienceId);
-  }
-
-  return updateUser({ favorites });
-}
-return {
-  getCurrentUser,
-  isLoggedIn,
-  login,
-  register,
-  logout,
-  updateUser,
-  becomePartner,
-  getFavorites,
-  isFavorite,
-  toggleFavorite,
-  requireLogin,
-  openModal,
-  closeModal,
-  updateHeaderUI,
-};
+  return {
+    getCurrentUser,
+    isLoggedIn,
+    login,
+    register,
+    logout,
+    updateUser,
+    becomePartner,
+    getFavorites,
+    isFavorite,
+    toggleFavorite,
+    requireLogin,
+    openModal,
+    closeModal,
+    updateHeaderUI,
+  };
 })();
-const { auth, onAuthStateChanged } = window.ElarahFirebase;
-
-onAuthStateChanged(auth, (user) => {
-  updateHeaderUI();
-});
