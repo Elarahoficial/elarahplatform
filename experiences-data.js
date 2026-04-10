@@ -24,7 +24,7 @@
   // Garante que o dataset existe no localStorage.
   // Na primeira visita copia DEFAULT_EXPERIENCES.
   // Depois disso o admin é a fonte da verdade.
-  const DATA_VERSION = 'v3';
+  const DATA_VERSION = 'v4';
 
 function ensureSeeded() {
   const currentVersion = localStorage.getItem(STORAGE_KEY + '_version');
