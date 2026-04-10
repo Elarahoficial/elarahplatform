@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { data: "12/04", categoria: "Vela", nome: "Vela (Cerveja & Caipirinha)", horario: "10h30 – 12h00", duracao: "1h30", bairro: "Brooklin", endereco: "Rua Nova York, 345 – São Paulo", inclui: "Coffee break + petisco + cerveja", preco: "R$180", cor: "#f6e6a8,#e0c05e", imagem: "assets/experiences/vela-cerveja.jpg" },
     { data: "12/04", categoria: "Pintura", nome: "Pintura em Cerâmica", horario: "15h00 – 18h00", duracao: "3h", bairro: "Pinheiros", endereco: "Rua Capote Valente, 697 – São Paulo", inclui: "Materiais inclusos", preco: "R$360", cor: "#f9d1d1,#e07a7a", imagem: "assets/experiences/pintura-ceramica.jpg" },
     { data: "Semanal", categoria: "Tufting", nome: "Aula de Tufting (Seg)", horario: "19h00 – 21h00", duracao: "2h", bairro: "Itaim", endereco: "Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui: "Experiência completa", preco: "R$162", cor: "#c5d4e7,#6991b3", imagem: "assets/experiences/tufting.jpg" },
-    { data: "Semanal", categoria: "Tufting (Seg)", nome: "Aula de Tufting (Seg)", horario: "09h00 – 12h00", duracao: "3h", bairro: "Itaim", endereco: "Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui: "Experiência completa", preco: "R$243", cor: "#c5d4e7,#6991b3", imagem: "assets/experiences/tufting.jpg" },
+    { data: "Semanal", categoria: "Tufting", nome: "Aula de Tufting (Seg)", horario: "09h00 – 12h00", duracao: "3h", bairro: "Itaim", endereco: "Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui: "Experiência completa", preco: "R$243", cor: "#c5d4e7,#6991b3", imagem: "assets/experiences/tufting.jpg" },
     { data: "Semanal", categoria: "Tufting", nome: "Aula de Tufting (Ter/Qui/Sex)", horario: "17h15 – 19h15", duracao: "2h", bairro: "Itaim", endereco: "Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui: "Experiência completa", preco: "R$162", cor: "#c5d4e7,#6991b3", imagem: "assets/experiences/tufting.jpg" },
     { data: "Semanal", categoria: "Tufting", nome: "Aula de Tufting (Ter/Qui/Sex)", horario: "19h30 – 21h30", duracao: "2h", bairro: "Itaim", endereco: "Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui: "Experiência completa", preco: "R$162", cor: "#c5d4e7,#6991b3", imagem: "assets/experiences/tufting.jpg" },
     { data: "Semanal", categoria: "Tufting", nome: "Aula de Tufting (Ter/Qui/Sex)", horario: "09h00 – 12h00", duracao: "3h", bairro: "Itaim", endereco: "Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui: "Experiência completa", preco: "R$243", cor: "#c5d4e7,#6991b3", imagem: "assets/experiences/tufting.jpg" },
@@ -36,11 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeBusca = '';
 
   const params = new URLSearchParams(window.location.search);
-  const buscaURL = params.get('busca');
-  const categoriaURL = params.get('categoria');
+const buscaURL = params.get('busca');
+const categoriaURL = params.get('categoria');
 
-  if (buscaURL) activeBusca = buscaURL;
-  if (categoriaURL) activeCategoria = categoriaURL;
+if (buscaURL) activeBusca = buscaURL;
+if (categoriaURL) activeCategoria = categoriaURL;
 
   const grid = document.getElementById('experiences-grid');
   const countEl = document.getElementById('experiences-count');
@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
     countEl.textContent = filtered.length + ' experiência' + (filtered.length !== 1 ? 's' : '');
 
+    // Remove old "ver mais" link
     const oldLink = document.querySelector('.experiences__ver-mais');
     if (oldLink) oldLink.remove();
 
@@ -88,41 +89,33 @@ document.addEventListener('DOMContentLoaded', () => {
       grid.appendChild(createCard(exp));
     });
 
+    // Show "Ver mais" if there are more results
     if (filtered.length > toShow.length) {
       const verMais = document.createElement('div');
       verMais.className = 'experiences__ver-mais';
       const href = activeCategoria
         ? 'categoria.html?cat=' + encodeURIComponent(activeCategoria)
         : 'categoria.html';
-
       verMais.innerHTML = `
         <a href="${href}" class="experiences__ver-mais-btn">
           Ver todas as ${filtered.length} experiências
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18">
-            <path d="M5 12h14"/>
-            <path d="M12 5l7 7-7 7"/>
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
         </a>
       `;
-
       grid.parentNode.insertBefore(verMais, grid.nextSibling);
     }
 
     grid.querySelectorAll('.card__favorite').forEach((btn) => {
       const expId = btn.dataset.id;
-
       if (typeof ElarahAuth !== 'undefined' && ElarahAuth.isFavorite(expId)) {
         btn.classList.add('active');
       }
-
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-
         if (typeof ElarahAuth === 'undefined' || !ElarahAuth.isLoggedIn()) {
           ElarahAuth.openModal('login', 'Faça login para favoritar');
           return;
         }
-
         const result = ElarahAuth.toggleFavorite(expId);
         if (result.success) {
           btn.classList.toggle('active');
@@ -144,9 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card__image">
         ${imageContent}
         <button class="card__favorite" data-id="${exp.nome}_${exp.data}_${exp.horario}" aria-label="Favoritar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
         <span class="card__badge">${exp.data}</span>
       </div>
@@ -155,32 +146,20 @@ document.addEventListener('DOMContentLoaded', () => {
         <h3 class="card__title">${exp.nome}</h3>
         <div class="card__details">
           <p class="card__detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <path d="M16 2v4M8 2v4M3 10h18"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
             ${exp.data} &middot; ${exp.horario}
           </p>
           <p class="card__detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 6v6l4 2"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             ${exp.duracao}
           </p>
           <p class="card__detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
             ${exp.bairro}
           </p>
           <p class="card__detail card__detail--address">${exp.endereco}</p>
           <p class="card__detail card__detail--includes">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-              <path d="M22 4L12 14.01l-3-3"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
             ${exp.inclui}
           </p>
         </div>
@@ -189,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
     `;
-
     return card;
   }
 
@@ -284,21 +262,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderCards();
 
-  // ===== EXPLORAR DROPDOWN =====
   const explorarBtn = document.getElementById('explorar-btn');
   const explorarDropdown = document.getElementById('explorar-dropdown');
 
   if (explorarBtn && explorarDropdown) {
     explorarBtn.addEventListener('click', (e) => {
-      e.preventDefault();
       e.stopPropagation();
       explorarDropdown.classList.toggle('open');
 
       const chevron = explorarBtn.querySelector('.header__nav-chevron');
       if (chevron) {
-        chevron.style.transform = explorarDropdown.classList.contains('open')
-          ? 'rotate(180deg)'
-          : '';
+        chevron.style.transform = explorarDropdown.classList.contains('open') ? 'rotate(180deg)' : '';
       }
     });
 
@@ -339,11 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
             experienciasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         } else {
-          const destino = text === 'Todas'
-            ? '/elarahplatform/'
-            : '/elarahplatform/?categoria=' + encodeURIComponent(text);
+         const destino = text === 'Todas'
+  ? '/elarahplatform/'
+  : '/elarahplatform/?categoria=' + encodeURIComponent(text);
 
-          window.location.href = destino;
+window.location.href = destino;
         }
 
         explorarDropdown.classList.remove('open');
@@ -400,17 +374,14 @@ document.addEventListener('DOMContentLoaded', () => {
     originalsModalDesc.textContent = type === 'participar'
       ? 'Preencha seus dados para registrar seu interesse nessa experiência.'
       : 'Entre na lista de espera e avisaremos você assim que a data for definida.';
-
-    const horarioField = document.getElementById('originals-horario-field');
+    var horarioField = document.getElementById('originals-horario-field');
     if (horarioField) {
       horarioField.style.display = type === 'participar' ? 'block' : 'none';
     }
-
     const submitBtn = document.getElementById('originals-modal-submit');
     if (submitBtn) {
       submitBtn.textContent = type === 'participar' ? 'Quero participar' : 'Entrar na lista de espera';
     }
-
     originalsModalBody.style.display = 'block';
     originalsModalSuccess.style.display = 'none';
     originalsModalForm.reset();
@@ -424,8 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.overflow = '';
   }
 
-  document.querySelectorAll('.originals__card-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+  document.querySelectorAll('.originals__card-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
       openOriginalsModal(btn.dataset.experience, btn.dataset.type);
     });
   });
@@ -433,105 +404,107 @@ document.addEventListener('DOMContentLoaded', () => {
   if (originalsModalBackdrop) {
     originalsModalBackdrop.addEventListener('click', closeOriginalsModal);
   }
-
   if (originalsModalClose) {
     originalsModalClose.addEventListener('click', closeOriginalsModal);
   }
-
   if (originalsModalSuccessClose) {
     originalsModalSuccessClose.addEventListener('click', closeOriginalsModal);
   }
 
   if (originalsModalForm) {
-    originalsModalForm.addEventListener('submit', function (e) {
+    originalsModalForm.addEventListener('submit', function(e) {
       e.preventDefault();
       originalsModalBody.style.display = 'none';
       originalsModalSuccess.style.display = 'block';
     });
   }
 
-  document.addEventListener('keydown', function (e) {
+  document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && originalsModal && originalsModal.classList.contains('open')) {
       closeOriginalsModal();
     }
   });
 
   // ===== GROUP SECTION =====
-  const groupBtns = document.querySelectorAll('.group-section__btn');
-  const groupForm = document.getElementById('group-form');
-  const groupPlaceholder = document.querySelector('.group-section__form-placeholder');
-  const groupTipo = document.getElementById('group-tipo');
-  const groupFormTitle = document.getElementById('group-form-title');
-  const groupSuccess = document.getElementById('group-success');
-  const groupSuccessClose = document.getElementById('group-success-close');
+  var groupBtns = document.querySelectorAll('.group-section__btn');
+  var groupForm = document.getElementById('group-form');
+  var groupPlaceholder = document.querySelector('.group-section__form-placeholder');
+  var groupTipo = document.getElementById('group-tipo');
+  var groupFormTitle = document.getElementById('group-form-title');
+  var groupSuccess = document.getElementById('group-success');
+  var groupSuccessClose = document.getElementById('group-success-close');
 
-  groupBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      groupBtns.forEach((b) => b.classList.remove('group-section__btn--active'));
+  groupBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      groupBtns.forEach(function(b) { b.classList.remove('group-section__btn--active'); });
       btn.classList.add('group-section__btn--active');
 
       if (groupPlaceholder) groupPlaceholder.style.display = 'none';
       if (groupSuccess) groupSuccess.style.display = 'none';
-
       if (groupForm) {
         groupForm.style.display = 'block';
         groupForm.style.animation = 'none';
         groupForm.offsetHeight;
         groupForm.style.animation = '';
       }
-
       if (groupTipo) groupTipo.value = btn.dataset.event;
-
-      if (groupFormTitle) {
-        groupFormTitle.textContent = btn.dataset.event === 'Evento corporativo'
-          ? 'Conte mais sobre seu evento corporativo'
-          : btn.dataset.event === 'Aniversário'
-            ? 'Conte mais sobre o aniversário'
-            : 'Conte mais sobre seu grupo';
-      }
+      if (groupFormTitle) groupFormTitle.textContent = btn.dataset.event === 'Evento corporativo'
+        ? 'Conte mais sobre seu evento corporativo'
+        : btn.dataset.event === 'Aniversário'
+          ? 'Conte mais sobre o aniversário'
+          : 'Conte mais sobre seu grupo';
     });
   });
 
-  if (groupForm) {
-    groupForm.addEventListener('submit', (e) => {
-      e.preventDefault();
+if (groupForm) {
+  groupForm.addEventListener('submit', function(e) {
+    e.preventDefault();
 
-      const nome = document.getElementById('group-nome').value;
-      const whatsapp = document.getElementById('group-whatsapp').value;
-      const tipoEvento = document.getElementById('group-tipo').value;
-      const pessoas = document.getElementById('group-pessoas').value;
-      const data = document.getElementById('group-data').value;
-      const experiencia = document.getElementById('group-experiencia').value;
-      const observacoes = document.getElementById('group-obs').value;
+    var nome = document.getElementById('group-nome').value;
+    var whatsapp = document.getElementById('group-whatsapp').value;
+    var tipoEvento = document.getElementById('group-tipo').value;
+    var pessoas = document.getElementById('group-pessoas').value;
+    var data = document.getElementById('group-data').value;
+    var experiencia = document.getElementById('group-experiencia').value;
+    var observacoes = document.getElementById('group-obs').value;
 
-      const mensagem =
-        'Oi! Quero viver uma experiência com a Elarah! %0A%0A' +
-        'Tipo de evento: ' + tipoEvento + '%0A' +
-        'Nome: ' + nome + '%0A' +
-        'WhatsApp: ' + whatsapp + '%0A' +
-        'Número de pessoas: ' + pessoas + '%0A' +
-        'Data desejada: ' + (data ? data.split('-').reverse().join('/') : 'Não informada') + '%0A' +
-        'Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
-        'Observações: ' + (observacoes || 'Nenhuma');
+    var mensagem =
+      'Oi! Quero organizar uma experiência com a Elarah ✨%0A%0A' +
+      '📌 Tipo de evento: ' + tipoEvento + '%0A' +
+      '👤 Nome: ' + nome + '%0A' +
+      '📱 WhatsApp: ' + whatsapp + '%0A' +
+      '👥 Número de pessoas: ' + pessoas + '%0A' +
+      '📅 Data desejada: ' + (data || 'Não informada') + '%0A' +
+      '🎨 Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
+      '📝 Observações: ' + (observacoes || 'Nenhuma');
+      'Oi! Quero viver uma experiência com a Elarah! %0A%0A' +
+      'Tipo de evento: ' + tipoEvento + '%0A' +
+      'Nome: ' + nome + '%0A' +
+      'WhatsApp: ' + whatsapp + '%0A' +
+      'Número de pessoas: ' + pessoas + '%0A' +
+      'Data desejada: ' + (data ? data.split('-').reverse().join('/') : 'Não informada') + '%0A' +
+      'Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
+      'Observações: ' + (observacoes || 'Nenhuma');
 
-      const numeroElarah = '5511914455930';
-      const url = 'https://wa.me/' + numeroElarah + '?text=' + mensagem;
+    var numeroElarah = '5511914455930'; // TROQUE PELO NÚMERO CERTO
 
-      window.open(url, '_blank');
-    });
-  }
+    var url = 'https://wa.me/' + numeroElarah + '?text=' + mensagem;
+
+    window.open(url, '_blank');
+  });
+}
 
   if (groupSuccessClose) {
-    groupSuccessClose.addEventListener('click', () => {
+    groupSuccessClose.addEventListener('click', function() {
       if (groupSuccess) groupSuccess.style.display = 'none';
       if (groupPlaceholder) groupPlaceholder.style.display = 'flex';
       if (groupForm) groupForm.reset();
-      groupBtns.forEach((b) => b.classList.remove('group-section__btn--active'));
+      groupBtns.forEach(function(b) { b.classList.remove('group-section__btn--active'); });
     });
   }
 
   // ===== STORIES READER =====
-  const storiesData = [
+  var storiesData = [
     {
       title: 'Ideias criativas para um encontro diferente',
       author: 'Por Elarah',
@@ -552,18 +525,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   ];
 
-  const storyReader = document.getElementById('story-reader');
-  const storyReaderBackdrop = document.getElementById('story-reader-backdrop');
-  const storyReaderClose = document.getElementById('story-reader-close');
-  const storyReaderImage = document.getElementById('story-reader-image');
-  const storyReaderTitle = document.getElementById('story-reader-title');
-  const storyReaderAuthor = document.getElementById('story-reader-author');
-  const storyReaderText = document.getElementById('story-reader-text');
+  var storyReader = document.getElementById('story-reader');
+  var storyReaderBackdrop = document.getElementById('story-reader-backdrop');
+  var storyReaderClose = document.getElementById('story-reader-close');
+  var storyReaderImage = document.getElementById('story-reader-image');
+  var storyReaderTitle = document.getElementById('story-reader-title');
+  var storyReaderAuthor = document.getElementById('story-reader-author');
+  var storyReaderText = document.getElementById('story-reader-text');
 
   function openStoryReader(index) {
-    const story = storiesData[index];
+    var story = storiesData[index];
     if (!story || !storyReader) return;
-
     storyReaderImage.src = story.image;
     storyReaderImage.alt = story.title;
     storyReaderTitle.textContent = story.title;
@@ -580,9 +552,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.overflow = '';
   }
 
-  document.querySelectorAll('.stories__card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const index = parseInt(card.dataset.story, 10);
+  document.querySelectorAll('.stories__card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var index = parseInt(card.dataset.story, 10);
       openStoryReader(index);
     });
   });
@@ -590,9 +562,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (storyReaderBackdrop) storyReaderBackdrop.addEventListener('click', closeStoryReader);
   if (storyReaderClose) storyReaderClose.addEventListener('click', closeStoryReader);
 
-  document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && storyReader && storyReader.classList.contains('open')) {
       closeStoryReader();
     }
   });
 });
+~
