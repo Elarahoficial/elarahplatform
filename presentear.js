@@ -129,5 +129,47 @@ if (input) {
         window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(valor);
       }
     }
+    // ===== EXPLORAR DROPDOWN =====
+const explorarBtn = document.getElementById('explorar-btn');
+const explorarDropdown = document.getElementById('explorar-dropdown');
+
+if (explorarBtn && explorarDropdown) {
+  explorarBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    explorarDropdown.classList.toggle('open');
+
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) {
+      chevron.style.transform = explorarDropdown.classList.contains('open')
+        ? 'rotate(180deg)'
+        : '';
+    }
+  });
+
+  explorarDropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  document.addEventListener('click', () => {
+    explorarDropdown.classList.remove('open');
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) chevron.style.transform = '';
+  });
+
+  explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const text = item.textContent.trim();
+      const destino = text === 'Todas'
+        ? '/elarahplatform/'
+        : '/elarahplatform/?categoria=' + encodeURIComponent(text);
+
+      window.location.href = destino;
+    });
+  });
+}
   });
 }
