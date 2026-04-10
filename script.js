@@ -261,20 +261,74 @@ if (categoriaURL) activeCategoria = categoriaURL;
   }
 
   renderCards();
+  
+  // ===== EXPLORAR DROPDOWN =====
+const explorarBtn = document.getElementById('explorar-btn');
+const explorarDropdown = document.getElementById('explorar-dropdown');
 
-  const explorarBtn = document.getElementById('explorar-btn');
-  const explorarDropdown = document.getElementById('explorar-dropdown');
+if (explorarBtn && explorarDropdown) {
+  explorarBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    explorarDropdown.classList.toggle('open');
 
-  if (explorarBtn && explorarDropdown) {
-    explorarBtn.addEventListener('click', (e) => {
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) {
+      chevron.style.transform = explorarDropdown.classList.contains('open')
+        ? 'rotate(180deg)'
+        : '';
+    }
+  });
+
+  explorarDropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  document.addEventListener('click', () => {
+    explorarDropdown.classList.remove('open');
+    const chevron = explorarBtn.querySelector('.header__nav-chevron');
+    if (chevron) chevron.style.transform = '';
+  });
+
+  explorarDropdown.querySelectorAll('.header__dropdown-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      explorarDropdown.classList.toggle('open');
 
-      const chevron = explorarBtn.querySelector('.header__nav-chevron');
-      if (chevron) {
-        chevron.style.transform = explorarDropdown.classList.contains('open') ? 'rotate(180deg)' : '';
+      const text = item.textContent.trim();
+
+      activeBusca = '';
+      if (searchInput) searchInput.value = '';
+
+      activeCategoria = text === 'Todas' ? '' : text;
+
+      if (categoryLinks.length) {
+        categoryLinks.forEach((c) => {
+          c.classList.remove('category-link--active');
+          const linkText = c.textContent.trim();
+          if ((!activeCategoria && linkText === 'Todas') || linkText === activeCategoria) {
+            c.classList.add('category-link--active');
+          }
+        });
       }
+
+      if (filterCategoria) {
+        filterCategoria.value = activeCategoria;
+      }
+
+      renderCards();
+
+      const experienciasEl = document.getElementById('experiencias');
+      if (experienciasEl) {
+        experienciasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      explorarDropdown.classList.remove('open');
+      const chevron = explorarBtn.querySelector('.header__nav-chevron');
+      if (chevron) chevron.style.transform = '';
     });
+  });
+}
 
     document.addEventListener('click', () => {
       explorarDropdown.classList.remove('open');
