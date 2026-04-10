@@ -36,11 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Erro ao ler hostRequest:', error);
   }
 
+  function getCurrentUserSafe() {
+    return (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+      ? ElarahAuth.getCurrentUser()
+      : null;
+  }
+
   function renderPartnerState() {
-    const currentUser =
-      (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
-        ? ElarahAuth.getCurrentUser()
-        : null;
+    const currentUser = getCurrentUserSafe();
 
     if (
       (dados && dados.status === 'approved') ||
@@ -64,9 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (hostStatusBox) hostStatusBox.style.display = 'none';
     }
   }
-
-  renderPartnerState();
-  document.addEventListener('elarah-auth-ready', renderPartnerState);
 
   function mostrarMensagemParceiro(texto) {
     const msg = document.createElement('div');
@@ -104,18 +104,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function irParaFluxoParceiro() {
-    const currentUser =
-      (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
-        ? ElarahAuth.getCurrentUser()
-        : null;
+    const currentUser = getCurrentUserSafe();
 
     if (!currentUser) {
+      localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
+
       if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
         ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
         return;
       }
 
-      alert('Faça login para continuar.');
+      window.location.href = '/elarahplatform/conta.html?section=parceiro';
       return;
     }
 
@@ -127,11 +126,30 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = '/elarahplatform/conta.html?section=parceiro';
   }
 
+  // ===== REDIRECT APÓS LOGIN =====
+  function handlePostLoginRedirect() {
+    const currentUser = getCurrentUserSafe();
+    const redirect = localStorage.getItem('postLoginRedirect');
+
+    if (currentUser && redirect) {
+      localStorage.removeItem('postLoginRedirect');
+      window.location.href = redirect;
+    }
+  }
+
+  renderPartnerState();
+  handlePostLoginRedirect();
+
+  document.addEventListener('elarah-auth-ready', () => {
+    renderPartnerState();
+    handlePostLoginRedirect();
+  });
+
   const partnerHeroBtn = document.getElementById('partnerHeroBtn');
   const partnerCtaBtn = document.getElementById('partnerCtaBtn');
 
   if (partnerHeroBtn) {
-    partnerHeroBtn.addEventListener('click', function (e) {
+    partnerHeroBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       irParaFluxoParceiro();
@@ -139,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (partnerCtaBtn) {
-    partnerCtaBtn.addEventListener('click', function (e) {
+    partnerCtaBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       irParaFluxoParceiro();
