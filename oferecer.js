@@ -36,110 +36,113 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Erro ao ler hostRequest:', error);
   }
 
-function renderPartnerState() {
-  const currentUser =
-    (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
-      ? ElarahAuth.getCurrentUser()
-      : null;
+  function renderPartnerState() {
+    const currentUser =
+      (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+        ? ElarahAuth.getCurrentUser()
+        : null;
 
-  if (
-    (dados && dados.status === 'approved') ||
-    (currentUser && currentUser.partnerStatus === 'approved')
-  ) {
-    if (partnerCta) partnerCta.style.display = 'none';
-    if (hostStatusBox) hostStatusBox.style.display = 'block';
-    if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
-    if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
+    if (
+      (dados && dados.status === 'approved') ||
+      (currentUser && currentUser.partnerStatus === 'approved')
+    ) {
+      if (partnerCta) partnerCta.style.display = 'none';
+      if (hostStatusBox) hostStatusBox.style.display = 'block';
+      if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
+      if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
 
-    const pd = currentUser?.partnerData || {};
+      const pd = currentUser?.partnerData || {};
 
-    if (resumoDados) {
-      resumoDados.innerHTML =
-        '<strong>WhatsApp:</strong> ' + (currentUser?.telefone || '-') + '<br>' +
-        '<strong>Categoria:</strong> ' + (pd.tipo || '-') + '<br>' +
-        '<strong>Descrição:</strong> ' + (pd.descricao || 'Não informada');
+      if (resumoDados) {
+        resumoDados.innerHTML =
+          '<strong>WhatsApp:</strong> ' + (currentUser?.telefone || '-') + '<br>' +
+          '<strong>Categoria:</strong> ' + (pd.tipo || '-') + '<br>' +
+          '<strong>Descrição:</strong> ' + (pd.descricao || 'Não informada');
+      }
+    } else {
+      if (partnerCta) partnerCta.style.display = 'flex';
+      if (hostStatusBox) hostStatusBox.style.display = 'none';
     }
-  } else {
-    if (partnerCta) partnerCta.style.display = 'flex';
-    if (hostStatusBox) hostStatusBox.style.display = 'none';
-  }
-}
-
-renderPartnerState();
-
-document.addEventListener('elarah-auth-ready', renderPartnerState);
-function irParaFluxoParceiro() {
-  const currentUser =
-    (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
-      ? ElarahAuth.getCurrentUser()
-      : null;
-
- if (!currentUser) {
-  if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-    ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
-    return;
   }
 
-  alert('Faça login para continuar.');
-  return;
-}
- if (currentUser.partnerStatus === 'approved') {
-  mostrarMensagemParceiro('Você já é parceiro Elarah!');
-  return;
-}
+  renderPartnerState();
+  document.addEventListener('elarah-auth-ready', renderPartnerState);
 
-  window.location.href = '/elarahplatform/conta.html?section=parceiro';
-}
   function mostrarMensagemParceiro(texto) {
-  const msg = document.createElement('div');
-  msg.innerText = texto;
+    const msg = document.createElement('div');
+    msg.innerText = texto;
 
-  msg.style.position = 'fixed';
-  msg.style.bottom = '30px';
-  msg.style.left = '50%';
-  msg.style.transform = 'translateX(-50%)';
-  msg.style.background = '#111';
-  msg.style.color = '#fff';
-  msg.style.padding = '16px 24px';
-  msg.style.borderRadius = '12px';
-  msg.style.fontSize = '14px';
-  msg.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
-  msg.style.zIndex = '9999';
-  msg.style.opacity = '0';
-  msg.style.transition = 'all 0.3s ease';
-
-  document.body.appendChild(msg);
-
-  setTimeout(() => {
-    msg.style.opacity = '1';
-    msg.style.transform = 'translateX(-50%) translateY(-10px)';
-  }, 10);
-
-  setTimeout(() => {
+    msg.style.position = 'fixed';
+    msg.style.bottom = '30px';
+    msg.style.left = '50%';
+    msg.style.transform = 'translateX(-50%)';
+    msg.style.background = '#111';
+    msg.style.color = '#fff';
+    msg.style.padding = '16px 24px';
+    msg.style.borderRadius = '12px';
+    msg.style.fontSize = '14px';
+    msg.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
+    msg.style.zIndex = '9999';
     msg.style.opacity = '0';
-    msg.style.transform = 'translateX(-50%) translateY(10px)';
-  }, 2500);
+    msg.style.transition = 'all 0.3s ease';
 
-  setTimeout(() => {
-    msg.remove();
-  }, 3000);
-}
- const partnerHeroBtn = document.getElementById('partnerHeroBtn');
-const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+    document.body.appendChild(msg);
 
-if (partnerHeroBtn) {
-  partnerHeroBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    irParaFluxoParceiro();
-  });
-}
+    setTimeout(() => {
+      msg.style.opacity = '1';
+      msg.style.transform = 'translateX(-50%) translateY(-10px)';
+    }, 10);
 
-if (partnerCtaBtn) {
-  partnerCtaBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    irParaFluxoParceiro();
-  });
-}
+    setTimeout(() => {
+      msg.style.opacity = '0';
+      msg.style.transform = 'translateX(-50%) translateY(10px)';
+    }, 2500);
+
+    setTimeout(() => {
+      msg.remove();
+    }, 3000);
+  }
+
+  function irParaFluxoParceiro() {
+    const currentUser =
+      (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+        ? ElarahAuth.getCurrentUser()
+        : null;
+
+    if (!currentUser) {
+      if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
+        ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
+        return;
+      }
+
+      alert('Faça login para continuar.');
+      return;
+    }
+
+    if (currentUser.partnerStatus === 'approved') {
+      mostrarMensagemParceiro('Você já é parceiro da Elarah!');
+      return;
+    }
+
+    window.location.href = '/elarahplatform/conta.html?section=parceiro';
+  }
+
+  const partnerHeroBtn = document.getElementById('partnerHeroBtn');
+  const partnerCtaBtn = document.getElementById('partnerCtaBtn');
+
+  if (partnerHeroBtn) {
+    partnerHeroBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      irParaFluxoParceiro();
+    });
+  }
+
+  if (partnerCtaBtn) {
+    partnerCtaBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      irParaFluxoParceiro();
+    });
+  }
 });
