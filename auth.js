@@ -353,16 +353,24 @@ const ElarahAuth = (function () {
       const result = login(email, senha);
 
       if (result.success) {
-        if (result.isAdmin) {
-          closeModal();
-          window.location.href = 'admin.html';
-          return;
-        }
+  if (result.isAdmin) {
+    closeModal();
+    window.location.href = 'admin.html';
+    return;
+  }
 
-        closeModal();
-        updateHeaderUI();
-        document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
-      } else {
+  const redirect = localStorage.getItem('postLoginRedirect');
+
+  closeModal();
+  updateHeaderUI();
+  document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
+
+  if (redirect) {
+    localStorage.removeItem('postLoginRedirect');
+    window.location.href = redirect;
+  }
+}
+      else {
         errorEl.textContent = result.error;
       }
     });
@@ -385,11 +393,19 @@ const ElarahAuth = (function () {
 
       const result = register({ nome, email, senha, telefone, cidade });
 
-      if (result.success) {
-        closeModal();
-        updateHeaderUI();
-        document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
-      } else {
+     if (result.success) {
+  const redirect = localStorage.getItem('postLoginRedirect');
+
+  closeModal();
+  updateHeaderUI();
+  document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
+
+  if (redirect) {
+    localStorage.removeItem('postLoginRedirect');
+    window.location.href = redirect;
+  }
+}
+     else {
         errorEl.textContent = result.error;
       }
     });
