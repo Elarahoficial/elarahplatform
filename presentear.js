@@ -1,20 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ===== GIFT EXPERIENCES DATA =====
-  const giftExperiences = [
-    { data: "06/04", categoria: "Gastronomia", nome: "Pães Alemães", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", inclui: "Aula completa", preco: "R$383", imagem: "assets/experiences/paes-alemaes.jpg" },
-    { data: "06/04", categoria: "Gastronomia", nome: "The Art of Lamen", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", inclui: "Aula completa", preco: "R$383", imagem: "assets/experiences/art-of-lemmen.jpg" },
-    { data: "07/04", categoria: "Gastronomia", nome: "CEO Kitchen (Comida Asiática)", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", inclui: "Aula completa", preco: "R$383", imagem: "assets/experiences/ceo-kitchen.jpg" },
-    { data: "08/04", categoria: "Gastronomia", nome: "Cozinha Tailandesa", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", inclui: "Aula completa", preco: "R$383", imagem: "assets/experiences/cozinha-tailandesa.jpg" },
-    { data: "09/04", categoria: "Gastronomia", nome: "Cozinha Japonesa (Sushi/Sashimi)", horario: "19h00 – 22h30", duracao: "3h30", bairro: "Jardim das Bandeiras", inclui: "Aula completa", preco: "R$383", imagem: "assets/experiences/cozinha-japonesa.jpg" },
-    { data: "11/04", categoria: "Vela", nome: "Vela + Home Spray (Café Gelado)", horario: "10h30 – 11h30", duracao: "1h", bairro: "Brooklin", inclui: "Coffee break", preco: "R$180", imagem: "assets/experiences/vela-cafe.jpg" },
-    { data: "11/04", categoria: "Vela", nome: "Vela + Home Spray (Floral)", horario: "15h30 – 17h00", duracao: "1h30", bairro: "Brooklin", inclui: "Coffee break", preco: "R$180", imagem: "assets/experiences/vela-floral.jpg" },
-    { data: "11/04", categoria: "Pintura", nome: "Pintura em Taça", horario: "10h30 – 12h30", duracao: "2h", bairro: "Brooklin", inclui: "Vinho à vontade", preco: "R$262", imagem: "assets/experiences/pintura-taca.jpg" },
-    { data: "11/04", categoria: "Sabonete", nome: "Sabonete Artesanal", horario: "10h30 – 12h30", duracao: "2h", bairro: "Brooklin", inclui: "Vinho à vontade", preco: "R$158", imagem: "assets/experiences/sabonete-artesanal.jpg" },
-    { data: "11/04", categoria: "Vela", nome: "Vela Personalizada", horario: "10h30 – 12h30", duracao: "2h", bairro: "Brooklin", inclui: "Vinho à vontade", preco: "R$262", imagem: "assets/experiences/vela-personalizada.jpg" },
-    { data: "12/04", categoria: "Pintura", nome: "Pintura em Cerâmica", horario: "15h00 – 18h00", duracao: "3h", bairro: "Pinheiros", inclui: "Materiais inclusos", preco: "R$360", imagem: "assets/experiences/pintura-ceramica.jpg" },
-    { data: "Semanal", categoria: "Tufting", nome: "Aula de Tufting", horario: "19h00 – 21h00", duracao: "2h", bairro: "Itaim", inclui: "Experiência completa", preco: "R$162", imagem: "assets/experiences/tufting.jpg" }
-  ];
+  // ===== GIFT EXPERIENCES DATA (shared source) =====
+  const giftExperiences = (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences)
+    ? ElarahData.getAllExperiences()
+    : [];
 
   // ===== DOM REFS =====
   const grid = document.getElementById('gift-grid');

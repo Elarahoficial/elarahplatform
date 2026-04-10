@@ -14,7 +14,6 @@
 
   // ===== STORAGE KEYS =====
   const USERS_KEY = 'elarah_users';
-  const EXPERIENCES_KEY = 'elarah_admin_experiences';
   const PURCHASES_KEY = 'elarah_purchases';
 
   // ===== HELPERS =====
@@ -91,7 +90,10 @@
   }
 
   function getExperiences() {
-    return getFromStorage(EXPERIENCES_KEY);
+    if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
+      return ElarahData.getAllExperiences();
+    }
+    return [];
   }
 
   function getPurchases() {
@@ -305,6 +307,14 @@
   const submitBtn = document.getElementById('exp-submit-btn');
   const addBtn = document.getElementById('btn-add-experience');
 
+  function parseCor(cor) {
+    const parts = (cor || '').split(',').map(s => s.trim());
+    return {
+      cor1: parts[0] || '#f6d5a8',
+      cor2: parts[1] || '#f0a05e'
+    };
+  }
+
   function openExpModal(editId) {
     if (editId) {
       const exp = getExperiences().find(e => e.id === editId);
@@ -324,11 +334,24 @@
       document.getElementById('exp-inclui').value = exp.inclui || '';
       document.getElementById('exp-imagem').value = exp.imagem || '';
       document.getElementById('exp-descricao').value = exp.descricao || '';
+
+      const cores = parseCor(exp.cor);
+      const cor1El = document.getElementById('exp-cor1');
+      const cor2El = document.getElementById('exp-cor2');
+      if (cor1El) cor1El.value = cores.cor1;
+      if (cor2El) cor2El.value = cores.cor2;
+
       document.getElementById('exp-edit-id').value = editId;
     } else {
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
       form.reset();
+
+      const cor1El = document.getElementById('exp-cor1');
+      const cor2El = document.getElementById('exp-cor2');
+      if (cor1El) cor1El.value = '#f6d5a8';
+      if (cor2El) cor2El.value = '#f0a05e';
+
       document.getElementById('exp-edit-id').value = '';
     }
 
@@ -351,6 +374,9 @@
   form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    const cor1 = (document.getElementById('exp-cor1')?.value || '#f6d5a8').trim();
+    const cor2 = (document.getElementById('exp-cor2')?.value || '#f0a05e').trim();
+
     const expData = {
       nome: document.getElementById('exp-nome').value.trim(),
       categoria: document.getElementById('exp-categoria').value,
@@ -363,24 +389,17 @@
       inclui: document.getElementById('exp-inclui').value.trim(),
       imagem: document.getElementById('exp-imagem').value.trim(),
       descricao: document.getElementById('exp-descricao').value.trim(),
+      cor: cor1 + ',' + cor2
     };
 
     const editId = document.getElementById('exp-edit-id').value;
-    const experiences = getExperiences();
 
     if (editId) {
-      const index = experiences.findIndex(ex => ex.id === editId);
-      if (index !== -1) {
-        Object.assign(experiences[index], expData);
-        experiences[index].updatedAt = new Date().toISOString();
-      }
+      ElarahData.updateExperience(editId, expData);
     } else {
-      expData.id = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-      expData.createdAt = new Date().toISOString();
-      experiences.push(expData);
+      ElarahData.addExperience(expData);
     }
 
-    saveToStorage(EXPERIENCES_KEY, experiences);
     closeExpModal();
     renderExperiences();
     renderOverview();
@@ -426,8 +445,7 @@
   }
 
   function deleteExperience(expId) {
-    const experiences = getExperiences().filter(e => e.id !== expId);
-    saveToStorage(EXPERIENCES_KEY, experiences);
+    ElarahData.deleteExperience(expId);
     renderExperiences();
     renderOverview();
   }
