@@ -6,6 +6,11 @@
 const ElarahAuth = (function () {
   const STORAGE_KEY = 'elarah_users';
   const SESSION_KEY = 'elarah_session';
+  const ADMIN_KEY = 'elarah_admin';
+  const ADMIN_CREDENTIALS = {
+    email: 'contato.elarah@gmail.com',
+    senha: 'Elarah2026DM@'
+  };
 
   function getUsers() {
     try {
@@ -86,10 +91,18 @@ const ElarahAuth = (function () {
   }
 
   function login(email, senha) {
-    const users = getUsers();
     const cleanEmail = email.trim().toLowerCase();
     const cleanSenha = senha.trim();
 
+    if (
+      cleanEmail === ADMIN_CREDENTIALS.email.toLowerCase() &&
+      cleanSenha === ADMIN_CREDENTIALS.senha
+    ) {
+      localStorage.setItem(ADMIN_KEY, '1');
+      return { success: true, isAdmin: true };
+    }
+
+    const users = getUsers();
     const user = users.find(
       u => (u.email || '').trim().toLowerCase() === cleanEmail && (u.senha || '') === cleanSenha
     );
@@ -100,6 +113,14 @@ const ElarahAuth = (function () {
 
     setSession(user.id);
     return { success: true, user: normalizeUser(user) };
+  }
+
+  function isAdmin() {
+    return localStorage.getItem(ADMIN_KEY) === '1';
+  }
+
+  function logoutAdmin() {
+    localStorage.removeItem(ADMIN_KEY);
   }
 
   function logout() {
@@ -235,6 +256,12 @@ const ElarahAuth = (function () {
   const result = login(email, senha);
 
   if (result.success) {
+    if (result.isAdmin) {
+      closeModal();
+      window.location.href = 'admin.html';
+      return;
+    }
+
     const redirect = localStorage.getItem('postLoginRedirect');
 
     closeModal();
@@ -436,5 +463,7 @@ div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
     openModal,
     closeModal,
     updateHeaderUI,
+    isAdmin,
+    logoutAdmin,
   };
 })();
