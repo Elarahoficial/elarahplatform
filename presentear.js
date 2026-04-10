@@ -1,8 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== GIFT EXPERIENCES DATA (shared source) =====
   const giftExperiences = (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences)
-    ? ElarahData.getAllExperiences()
+    ? await ElarahData.getAllExperiences()
     : [];
 
   // ===== DOM REFS =====

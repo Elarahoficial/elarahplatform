@@ -21,10 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => msg.remove(), 2500);
   }
 
-  function irParaFluxoParceiro(e) {
+  async function irParaFluxoParceiro(e) {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
+    }
+
+    if (typeof ElarahAuth !== 'undefined' && ElarahAuth.ready) {
+      try { await ElarahAuth.ready; } catch {}
     }
 
     const currentUser =
@@ -34,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!currentUser) {
       if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-        localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
+        localStorage.setItem('postLoginRedirect', 'conta.html?section=parceiro');
         ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
         return;
       }
@@ -48,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    window.location.href = '/elarahplatform/conta.html?section=parceiro';
+    window.location.href = 'conta.html?section=parceiro';
   }
 
   if (partnerHeroBtn) {

@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-  function startPage() {
+  async function startPage() {
+    await ElarahAuth.ready;
     const user = ElarahAuth.getCurrentUser();
 
     if (!user) {
-      window.location.href = '/elarahplatform/';
+      window.location.href = 'index.html';
       return;
     }
 
@@ -88,10 +89,10 @@ if (badgeEl) {
   if (dadosCidade) dadosCidade.value = user.cidade || '';
 
   if (formDados) {
-    formDados.addEventListener('submit', (e) => {
+    formDados.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const result = ElarahAuth.updateUser({
+      const result = await ElarahAuth.updateUser({
         nome: dadosNome ? dadosNome.value.trim() : '',
         telefone: dadosTelefone ? dadosTelefone.value.trim() : '',
         cidade: dadosCidade ? dadosCidade.value.trim() : ''
@@ -175,7 +176,7 @@ renderPartnerSection();
   // ===== PARTNER FORM SUBMIT =====
   const parceiroForm = document.getElementById('form-parceiro');
   if (parceiroForm) {
-    parceiroForm.addEventListener('submit', (e) => {
+    parceiroForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const partnerData = {
@@ -187,7 +188,7 @@ renderPartnerSection();
         descricao: document.getElementById('parceiro-descricao')?.value.trim() || ''
       };
 
-      const result = ElarahAuth.becomePartner(partnerData);
+      const result = await ElarahAuth.becomePartner(partnerData);
 
       if (result.success) {
         if (badgeEl) {
@@ -295,9 +296,9 @@ renderFavoritos();
   // ===== LOGOUT =====
   const logoutBtn = document.getElementById('account-logout');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
+    logoutBtn.addEventListener('click', async (e) => {
       e.preventDefault();
-      ElarahAuth.logout();
+      await ElarahAuth.logout();
       window.location.href = 'index.html';
     });
   }
@@ -378,9 +379,6 @@ renderFavoritos();
     });
   }
   }
-      if (ElarahAuth.getCurrentUser()) {
-    startPage();
-  } else {
-    document.addEventListener('elarah-auth-ready', startPage, { once: true });
-  }
+
+  startPage();
 });

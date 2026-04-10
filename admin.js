@@ -1,33 +1,20 @@
 /* =============================================
-   ELARAH ADMIN PANEL
-   Gerenciamento da plataforma via localStorage
+   ELARAH ADMIN PANEL (Supabase)
+   - Auth: só abre se profile.role === 'admin'
+   - Experiências: CRUD via ElarahData (async)
+   - Usuários/parceiros: lidos de public.profiles
+   - Compras ainda em localStorage (legado)
    ============================================= */
 
 (function () {
   'use strict';
 
-  // ===== AUTH CHECK =====
-  if (!ElarahAuth.isAdmin()) {
-    window.location.href = 'index.html';
-    return;
-  }
-
-  // ===== STORAGE KEYS =====
-  const USERS_KEY = 'elarah_users';
   const PURCHASES_KEY = 'elarah_purchases';
 
   // ===== HELPERS =====
-
   function getFromStorage(key) {
-    try {
-      return JSON.parse(localStorage.getItem(key)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveToStorage(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
+    try { return JSON.parse(localStorage.getItem(key)) || []; }
+    catch { return []; }
   }
 
   function formatDate(isoString) {
@@ -41,92 +28,112 @@
   }
 
   function escapeHtml(str) {
-    if (!str) return '';
+    if (str == null) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
 
-  // ===== PANEL NAVIGATION =====
+  // ===== BOOT (async) =====
+  async function boot() {
+    // Espera auth hidratar antes de decidir se é admin.
+    if (window.ElarahAuth && ElarahAuth.ready) {
+      try { await ElarahAuth.ready; } catch {}
+    }
 
-  const navItems = document.querySelectorAll('.admin__nav-item');
-  const panels = document.querySelectorAll('.admin__panel');
+    if (!ElarahAuth.isAdmin()) {
+      window.location.href = 'index.html';
+      return;
+    }
 
-  navItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const target = item.dataset.panel;
+    wireNavigation();
+    wireLogout();
+    wireExperienceForm();
+    await renderOverview();
+  }
 
-      navItems.forEach(n => n.classList.remove('admin__nav-item--active'));
-      item.classList.add('admin__nav-item--active');
+  // ===== NAVIGATION =====
+  function wireNavigation() {
+    const navItems = document.querySelectorAll('.admin__nav-item');
+    const panels = document.querySelectorAll('.admin__panel');
 
-      panels.forEach(p => p.classList.remove('admin__panel--active'));
-      document.getElementById('panel-' + target).classList.add('admin__panel--active');
+    navItems.forEach(item => {
+      item.addEventListener('click', async () => {
+        const target = item.dataset.panel;
 
-      refreshPanel(target);
+        navItems.forEach(n => n.classList.remove('admin__nav-item--active'));
+        item.classList.add('admin__nav-item--active');
+
+        panels.forEach(p => p.classList.remove('admin__panel--active'));
+        document.getElementById('panel-' + target).classList.add('admin__panel--active');
+
+        await refreshPanel(target);
+      });
     });
-  });
+  }
 
-  function refreshPanel(name) {
+  async function refreshPanel(name) {
     switch (name) {
-      case 'overview': renderOverview(); break;
-      case 'users': renderUsers(); break;
-      case 'partners': renderPartners(); break;
-      case 'purchases': renderPurchases(); break;
-      case 'experiences': renderExperiences(); break;
+      case 'overview':    await renderOverview(); break;
+      case 'users':       await renderUsers(); break;
+      case 'partners':    await renderPartners(); break;
+      case 'purchases':   renderPurchases(); break;
+      case 'experiences': await renderExperiences(); break;
     }
   }
 
   // ===== LOGOUT =====
-
-  document.getElementById('admin-logout').addEventListener('click', () => {
-    ElarahAuth.logoutAdmin();
-    window.location.href = 'index.html';
-  });
-
-  // ===== DATA GETTERS =====
-
-  function getUsers() {
-    return getFromStorage(USERS_KEY);
+  function wireLogout() {
+    const btn = document.getElementById('admin-logout');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      await ElarahAuth.logout();
+      window.location.href = 'index.html';
+    });
   }
 
-  function getExperiences() {
-    if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
-      return ElarahData.getAllExperiences();
+  // ===== DATA GETTERS =====
+  async function getProfiles() {
+    const s = window.supabaseClient;
+    if (!s) return [];
+    const { data, error } = await s
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('[Admin] getProfiles error', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function getExperiences() {
+    if (window.ElarahData && ElarahData.getAllExperiences) {
+      return await ElarahData.getAllExperiences();
     }
     return [];
   }
 
-  function getPurchases() {
-    return getFromStorage(PURCHASES_KEY);
-  }
-
-  function getPartners() {
-    return getUsers().filter(u =>
-      u.partnerStatus === 'pending' ||
-      u.partnerStatus === 'approved' ||
-      u.partnerStatus === 'rejected'
-    );
-  }
+  function getPurchases() { return getFromStorage(PURCHASES_KEY); }
 
   // ===== OVERVIEW =====
-
-  function renderOverview() {
-    const users = getUsers();
-    const partners = getPartners();
+  async function renderOverview() {
+    const [profiles, experiences] = await Promise.all([
+      getProfiles(),
+      getExperiences()
+    ]);
     const purchases = getPurchases();
-    const experiences = getExperiences();
+    const partners = profiles.filter(p => p.partner_status && p.partner_status !== 'none');
 
-    document.getElementById('stat-users').textContent = users.length;
-    document.getElementById('stat-partners').textContent = partners.filter(p => p.partnerStatus === 'approved').length;
+    document.getElementById('stat-users').textContent = profiles.length;
+    document.getElementById('stat-partners').textContent = partners.filter(p => p.partner_status === 'approved').length;
     document.getElementById('stat-purchases').textContent = purchases.length;
     document.getElementById('stat-experiences').textContent = experiences.length;
 
-    // Recent users (last 5)
-    const recent = [...users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+    const recent = profiles.slice(0, 5);
     const tbody = document.getElementById('overview-users-body');
     const countEl = document.getElementById('overview-users-count');
-
-    countEl.textContent = users.length + ' total';
+    countEl.textContent = profiles.length + ' total';
 
     if (recent.length === 0) {
       tbody.innerHTML = '<tr><td colspan="4" class="admin__table-empty">Nenhum usuário cadastrado.</td></tr>';
@@ -138,15 +145,14 @@
         <td>${escapeHtml(u.nome)}</td>
         <td>${escapeHtml(u.email)}</td>
         <td>${escapeHtml(u.cidade || '—')}</td>
-        <td>${formatDate(u.createdAt)}</td>
+        <td>${formatDate(u.created_at)}</td>
       </tr>
     `).join('');
   }
 
   // ===== USERS =====
-
-  function renderUsers() {
-    const users = getUsers();
+  async function renderUsers() {
+    const users = await getProfiles();
     const tbody = document.getElementById('users-body');
     const countEl = document.getElementById('users-count');
 
@@ -163,34 +169,18 @@
         <td>${escapeHtml(u.email)}</td>
         <td>${escapeHtml(u.telefone || '—')}</td>
         <td>${escapeHtml(u.cidade || '—')}</td>
-        <td>${formatDate(u.createdAt)}</td>
+        <td>${formatDate(u.created_at)}</td>
         <td>
-          <button class="admin__action-btn admin__action-btn--delete" data-delete-user="${escapeHtml(u.id)}">Excluir</button>
+          <span class="admin__badge admin__badge--${u.role === 'admin' ? 'approved' : 'pending'}">${u.role}</span>
         </td>
       </tr>
     `).join('');
-
-    tbody.querySelectorAll('[data-delete-user]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.deleteUser;
-        if (confirm('Tem certeza que deseja excluir este usuário?')) {
-          deleteUser(id);
-        }
-      });
-    });
-  }
-
-  function deleteUser(userId) {
-    const users = getUsers().filter(u => u.id !== userId);
-    saveToStorage(USERS_KEY, users);
-    renderUsers();
-    renderOverview();
   }
 
   // ===== PARTNERS =====
-
-  function renderPartners() {
-    const partners = getPartners();
+  async function renderPartners() {
+    const profiles = await getProfiles();
+    const partners = profiles.filter(p => p.partner_status && p.partner_status !== 'none');
     const tbody = document.getElementById('partners-body');
     const countEl = document.getElementById('partners-count');
 
@@ -202,22 +192,21 @@
     }
 
     tbody.innerHTML = partners.map(u => {
-      const pd = u.partnerData || {};
-      const statusClass = u.partnerStatus === 'approved' ? 'approved' :
-                          u.partnerStatus === 'rejected' ? 'rejected' : 'pending';
-      const statusLabel = u.partnerStatus === 'approved' ? 'Aprovado' :
-                          u.partnerStatus === 'rejected' ? 'Rejeitado' : 'Pendente';
-
+      const pd = u.partner_data || {};
+      const statusClass = u.partner_status === 'approved' ? 'approved' :
+                          u.partner_status === 'rejected' ? 'rejected' : 'pending';
+      const statusLabel = u.partner_status === 'approved' ? 'Aprovado' :
+                          u.partner_status === 'rejected' ? 'Rejeitado' : 'Pendente';
       const desc = pd.descricao || '—';
       const descShort = desc.length > 40 ? desc.slice(0, 40) + '...' : desc;
 
       let actions = '';
-      if (u.partnerStatus === 'pending') {
+      if (u.partner_status === 'pending') {
         actions = `
           <button class="admin__action-btn admin__action-btn--approve" data-partner-approve="${escapeHtml(u.id)}">Aprovar</button>
           <button class="admin__action-btn admin__action-btn--reject" data-partner-reject="${escapeHtml(u.id)}">Rejeitar</button>
         `;
-      } else if (u.partnerStatus === 'approved') {
+      } else if (u.partner_status === 'approved') {
         actions = `
           <button class="admin__action-btn admin__action-btn--edit" data-partner-pending="${escapeHtml(u.id)}">Pendente</button>
           <button class="admin__action-btn admin__action-btn--reject" data-partner-reject="${escapeHtml(u.id)}">Rejeitar</button>
@@ -243,7 +232,6 @@
       `;
     }).join('');
 
-    // Bind approve/pending/reject buttons
     tbody.querySelectorAll('[data-partner-approve]').forEach(btn => {
       btn.addEventListener('click', () => updatePartnerStatus(btn.dataset.partnerApprove, 'approved'));
     });
@@ -255,19 +243,23 @@
     });
   }
 
-  function updatePartnerStatus(userId, status) {
-    const users = getUsers();
-    const index = users.findIndex(u => u.id === userId);
-    if (index === -1) return;
-
-    users[index].partnerStatus = status;
-    saveToStorage(USERS_KEY, users);
-    renderPartners();
-    renderOverview();
+  async function updatePartnerStatus(userId, status) {
+    const s = window.supabaseClient;
+    if (!s) return;
+    const { error } = await s
+      .from('profiles')
+      .update({ partner_status: status })
+      .eq('id', userId);
+    if (error) {
+      console.error('[Admin] updatePartnerStatus error', error);
+      alert('Erro ao atualizar status: ' + error.message);
+      return;
+    }
+    await renderPartners();
+    await renderOverview();
   }
 
-  // ===== PURCHASES =====
-
+  // ===== PURCHASES (legado localStorage) =====
   function renderPurchases() {
     const purchases = getPurchases();
     const tbody = document.getElementById('purchases-body');
@@ -284,7 +276,6 @@
       const statusClass = p.status === 'confirmada' ? 'approved' :
                           p.status === 'cancelada' ? 'rejected' : 'pending';
       const statusLabel = p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : 'Pendente';
-
       return `
         <tr>
           <td>${escapeHtml(p.nome || p.userName || '—')}</td>
@@ -298,26 +289,13 @@
   }
 
   // ===== EXPERIENCES CRUD =====
-
-  const modal = document.getElementById('experience-modal');
-  const modalBackdrop = modal.querySelector('.admin__modal-backdrop');
-  const modalClose = document.getElementById('modal-close');
-  const modalTitle = document.getElementById('modal-title');
-  const form = document.getElementById('experience-form');
-  const submitBtn = document.getElementById('exp-submit-btn');
-  const addBtn = document.getElementById('btn-add-experience');
+  let modal, modalBackdrop, modalClose, modalTitle, form, submitBtn, addBtn;
+  let horariosList, horariosAddBtn;
 
   function parseCor(cor) {
     const parts = (cor || '').split(',').map(s => s.trim());
-    return {
-      cor1: parts[0] || '#f6d5a8',
-      cor2: parts[1] || '#f0a05e'
-    };
+    return { cor1: parts[0] || '#f6d5a8', cor2: parts[1] || '#f0a05e' };
   }
-
-  // ===== HORARIOS LIST (multi-horario inside form) =====
-  const horariosList = document.getElementById('exp-horarios-list');
-  const horariosAddBtn = document.getElementById('exp-horarios-add-btn');
 
   function addHorarioRow(value) {
     if (!horariosList) return;
@@ -330,11 +308,8 @@
     row.querySelector('input').value = value || '';
     row.querySelector('.admin__horario-remove').addEventListener('click', () => {
       const rows = horariosList.querySelectorAll('.admin__horario-row');
-      if (rows.length > 1) {
-        row.remove();
-      } else {
-        row.querySelector('input').value = '';
-      }
+      if (rows.length > 1) row.remove();
+      else row.querySelector('input').value = '';
     });
     horariosList.appendChild(row);
   }
@@ -352,13 +327,9 @@
     return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
   }
 
-  if (horariosAddBtn) {
-    horariosAddBtn.addEventListener('click', () => addHorarioRow(''));
-  }
-
-  function openExpModal(editId) {
+  async function openExpModal(editId) {
     if (editId) {
-      const exp = getExperiences().find(e => e.id === editId);
+      const exp = await ElarahData.getExperienceById(editId);
       if (!exp) return;
 
       modalTitle.textContent = 'Editar experiência';
@@ -391,14 +362,11 @@
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
       form.reset();
-
       renderHorarioRows(['']);
-
       const cor1El = document.getElementById('exp-cor1');
       const cor2El = document.getElementById('exp-cor2');
       if (cor1El) cor1El.value = '#f6d5a8';
       if (cor2El) cor2El.value = '#f0a05e';
-
       document.getElementById('exp-edit-id').value = '';
     }
 
@@ -411,56 +379,77 @@
     document.body.style.overflow = '';
   }
 
-  addBtn.addEventListener('click', () => openExpModal(null));
-  modalBackdrop.addEventListener('click', closeExpModal);
-  modalClose.addEventListener('click', closeExpModal);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('open')) closeExpModal();
-  });
+  function wireExperienceForm() {
+    modal = document.getElementById('experience-modal');
+    modalBackdrop = modal.querySelector('.admin__modal-backdrop');
+    modalClose = document.getElementById('modal-close');
+    modalTitle = document.getElementById('modal-title');
+    form = document.getElementById('experience-form');
+    submitBtn = document.getElementById('exp-submit-btn');
+    addBtn = document.getElementById('btn-add-experience');
+    horariosList = document.getElementById('exp-horarios-list');
+    horariosAddBtn = document.getElementById('exp-horarios-add-btn');
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const cor1 = (document.getElementById('exp-cor1')?.value || '#f6d5a8').trim();
-    const cor2 = (document.getElementById('exp-cor2')?.value || '#f0a05e').trim();
-
-    const horarios = collectHorarios();
-    if (horarios.length === 0) {
-      alert('Adicione pelo menos um horário.');
-      return;
+    if (horariosAddBtn) {
+      horariosAddBtn.addEventListener('click', () => addHorarioRow(''));
     }
 
-    const expData = {
-      nome: document.getElementById('exp-nome').value.trim(),
-      categoria: document.getElementById('exp-categoria').value,
-      data: document.getElementById('exp-data').value.trim(),
-      horario: horarios[0],
-      horarios: horarios,
-      duracao: document.getElementById('exp-duracao').value.trim(),
-      bairro: document.getElementById('exp-bairro').value.trim(),
-      preco: document.getElementById('exp-preco').value.trim(),
-      endereco: document.getElementById('exp-endereco').value.trim(),
-      inclui: document.getElementById('exp-inclui').value.trim(),
-      imagem: document.getElementById('exp-imagem').value.trim(),
-      descricao: document.getElementById('exp-descricao').value.trim(),
-      cor: cor1 + ',' + cor2
-    };
+    addBtn.addEventListener('click', () => openExpModal(null));
+    modalBackdrop.addEventListener('click', closeExpModal);
+    modalClose.addEventListener('click', closeExpModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) closeExpModal();
+    });
 
-    const editId = document.getElementById('exp-edit-id').value;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    if (editId) {
-      ElarahData.updateExperience(editId, expData);
-    } else {
-      ElarahData.addExperience(expData);
-    }
+      const cor1 = (document.getElementById('exp-cor1')?.value || '#f6d5a8').trim();
+      const cor2 = (document.getElementById('exp-cor2')?.value || '#f0a05e').trim();
 
-    closeExpModal();
-    renderExperiences();
-    renderOverview();
-  });
+      const horarios = collectHorarios();
+      if (horarios.length === 0) {
+        alert('Adicione pelo menos um horário.');
+        return;
+      }
 
-  function renderExperiences() {
-    const experiences = getExperiences();
+      const expData = {
+        nome: document.getElementById('exp-nome').value.trim(),
+        categoria: document.getElementById('exp-categoria').value,
+        data: document.getElementById('exp-data').value.trim(),
+        horario: horarios[0],
+        horarios: horarios,
+        duracao: document.getElementById('exp-duracao').value.trim(),
+        bairro: document.getElementById('exp-bairro').value.trim(),
+        preco: document.getElementById('exp-preco').value.trim(),
+        endereco: document.getElementById('exp-endereco').value.trim(),
+        inclui: document.getElementById('exp-inclui').value.trim(),
+        imagem: document.getElementById('exp-imagem').value.trim(),
+        descricao: document.getElementById('exp-descricao').value.trim(),
+        cor: cor1 + ',' + cor2
+      };
+
+      const editId = document.getElementById('exp-edit-id').value;
+
+      submitBtn.disabled = true;
+      try {
+        if (editId) {
+          await ElarahData.updateExperience(editId, expData);
+        } else {
+          await ElarahData.addExperience(expData);
+        }
+      } finally {
+        submitBtn.disabled = false;
+      }
+
+      closeExpModal();
+      await renderExperiences();
+      await renderOverview();
+    });
+  }
+
+  async function renderExperiences() {
+    const experiences = await getExperiences();
     const tbody = document.getElementById('experiences-body');
     const countEl = document.getElementById('experiences-count');
 
@@ -496,35 +485,32 @@
       btn.addEventListener('click', () => openExpModal(btn.dataset.editExp));
     });
     tbody.querySelectorAll('[data-duplicate-exp]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        duplicateExperience(btn.dataset.duplicateExp);
-      });
+      btn.addEventListener('click', () => duplicateExperienceAndEdit(btn.dataset.duplicateExp));
     });
     tbody.querySelectorAll('[data-delete-exp]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (confirm('Tem certeza que deseja excluir esta experiência?')) {
-          deleteExperience(btn.dataset.deleteExp);
+          await ElarahData.deleteExperience(btn.dataset.deleteExp);
+          await renderExperiences();
+          await renderOverview();
         }
       });
     });
   }
 
-  function duplicateExperience(expId) {
-    const copy = ElarahData.duplicateExperience(expId);
-    renderExperiences();
-    renderOverview();
+  async function duplicateExperienceAndEdit(expId) {
+    const copy = await ElarahData.duplicateExperience(expId);
+    await renderExperiences();
+    await renderOverview();
     if (copy) {
-      openExpModal(copy.id);
+      await openExpModal(copy.id);
     }
   }
 
-  function deleteExperience(expId) {
-    ElarahData.deleteExperience(expId);
-    renderExperiences();
-    renderOverview();
+  // ===== START =====
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
-
-  // ===== INITIAL RENDER =====
-  renderOverview();
-
 })();

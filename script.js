@@ -1,6 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const experiences = (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences)
-    ? ElarahData.getAllExperiences()
+    ? await ElarahData.getAllExperiences()
     : [];
 
   let activeCategoria = '';

@@ -1,8 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== SHARED DATA SOURCE =====
   const experiences = (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences)
-    ? ElarahData.getAllExperiences()
+    ? await ElarahData.getAllExperiences()
     : [];
 
   // ===== URL PARAMS =====

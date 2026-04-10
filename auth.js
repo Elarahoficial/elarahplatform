@@ -1,158 +1,264 @@
 /* =============================================
-   ELARAH AUTH MODULE
-   Sistema de autenticação com localStorage
+   ELARAH AUTH MODULE (Supabase)
+   - Email/senha, Google, Apple, reset de senha
+   - Perfil armazenado em public.profiles
+   - isAdmin lido de profiles.role = 'admin'
+   - API sync-friendly via cache em memória:
+     getCurrentUser/isLoggedIn/isAdmin retornam
+     do cache, que é hidratado no boot. Aguarde
+     ElarahAuth.ready antes de chamadas críticas.
    ============================================= */
 
 const ElarahAuth = (function () {
-  const STORAGE_KEY = 'elarah_users';
-  const SESSION_KEY = 'elarah_session';
-  const ADMIN_KEY = 'elarah_admin';
-  const ADMIN_CREDENTIALS = {
-    email: 'contato.elarah@gmail.com',
-    senha: 'Elarah2026DM@'
-  };
+  'use strict';
 
-  function getUsers() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-      return [];
+  // ===== Internal state =====
+  let supabase = null;
+  let currentSession = null;
+  let currentProfile = null;
+  let hydrated = false;
+
+  let readyResolve;
+  const ready = new Promise((resolve) => { readyResolve = resolve; });
+
+  function sb() {
+    if (!supabase) {
+      supabase = window.supabaseClient || null;
     }
+    return supabase;
   }
 
-  function saveUsers(users) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  // ===== Favorites (localStorage, per user) =====
+  function favKey() {
+    return currentProfile ? 'elarah_fav_' + currentProfile.id : null;
+  }
+  function getFavorites() {
+    const k = favKey();
+    if (!k) return [];
+    try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; }
+  }
+  function setFavorites(list) {
+    const k = favKey();
+    if (!k) return;
+    localStorage.setItem(k, JSON.stringify(list));
+  }
+  function isFavorite(id) { return getFavorites().includes(id); }
+  function toggleFavorite(id) {
+    if (!currentProfile) {
+      return { success: false, error: 'Faça login para favoritar.' };
+    }
+    const favs = getFavorites();
+    const i = favs.indexOf(id);
+    if (i >= 0) favs.splice(i, 1); else favs.push(id);
+    setFavorites(favs);
+    return { success: true };
   }
 
-  function setSession(userId) {
-    localStorage.setItem(SESSION_KEY, userId);
-  }
-
-  function clearSession() {
-    localStorage.removeItem(SESSION_KEY);
-  }
-
-  function generateId() {
-    return 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-  }
-
-  function normalizeUser(user) {
-    if (!user) return null;
-
-    if (!user.partnerStatus) user.partnerStatus = user.isPartner ? 'approved' : 'none';
-    if (typeof user.partnerData === 'undefined') user.partnerData = null;
-    if (!Array.isArray(user.favorites)) user.favorites = [];
-
-    return user;
-  }
-
+  // ===== Sync getters (cache-backed) =====
   function getCurrentUser() {
-    const sessionId = localStorage.getItem(SESSION_KEY);
-    if (!sessionId) return null;
+    if (!currentProfile) return null;
+    return {
+      id: currentProfile.id,
+      email: currentProfile.email || '',
+      nome: currentProfile.nome || '',
+      telefone: currentProfile.telefone || '',
+      cidade: currentProfile.cidade || '',
+      role: currentProfile.role || 'user',
+      partnerStatus: currentProfile.partner_status || 'none',
+      partnerData: currentProfile.partner_data || null,
+      favorites: getFavorites()
+    };
+  }
+  function isLoggedIn() { return !!currentSession && !!currentProfile; }
+  function isAdmin() { return !!currentProfile && currentProfile.role === 'admin'; }
 
-    const users = getUsers();
-    const user = users.find(u => u.id === sessionId);
-    return normalizeUser(user || null);
+  // ===== Hydration =====
+  async function fetchProfile(userId) {
+    const s = sb();
+    if (!s) return null;
+    const { data, error } = await s
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) {
+      console.warn('[Elarah] fetchProfile error', error);
+      return null;
+    }
+    return data;
   }
 
-  function isLoggedIn() {
-    return !!getCurrentUser();
-  }
-
-  function register({ nome, email, senha, telefone, cidade }) {
+  async function hydrate() {
+    const s = sb();
+    if (!s) {
+      hydrated = true;
+      readyResolve();
+      return;
+    }
     try {
-      const users = getUsers();
-      const cleanEmail = email.trim().toLowerCase();
-
-      if (users.some(u => (u.email || '').trim().toLowerCase() === cleanEmail)) {
-        return { success: false, error: 'Este e-mail já está cadastrado.' };
+      const { data: { session } } = await s.auth.getSession();
+      currentSession = session || null;
+      if (currentSession) {
+        currentProfile = await fetchProfile(currentSession.user.id);
       }
+    } catch (e) {
+      console.warn('[Elarah] hydrate error', e);
+    }
+    hydrated = true;
+    readyResolve();
 
-      const newUser = normalizeUser({
-        id: generateId(),
-        nome: nome.trim(),
-        email: cleanEmail,
-        senha: senha.trim(),
-        telefone: (telefone || '').trim(),
-        cidade: (cidade || '').trim(),
-        partnerStatus: 'none',
-        partnerData: null,
-        favorites: []
+    try {
+      document.dispatchEvent(new Event('elarah-auth-ready'));
+    } catch {}
+
+    updateHeaderUI();
+
+    s.auth.onAuthStateChange(async (_event, session) => {
+      currentSession = session || null;
+      if (currentSession) {
+        currentProfile = await fetchProfile(currentSession.user.id);
+      } else {
+        currentProfile = null;
+      }
+      updateHeaderUI();
+    });
+  }
+
+  // ===== Auth actions =====
+  async function register({ nome, email, senha, telefone, cidade }) {
+    const s = sb();
+    if (!s) return { success: false, error: 'Supabase indisponível.' };
+    try {
+      const { data, error } = await s.auth.signUp({
+        email: (email || '').trim().toLowerCase(),
+        password: (senha || '').trim(),
+        options: {
+          data: {
+            nome: (nome || '').trim(),
+            telefone: (telefone || '').trim(),
+            cidade: (cidade || '').trim()
+          }
+        }
       });
-
-      users.push(newUser);
-      saveUsers(users);
-      setSession(newUser.id);
-
-      return { success: true, user: newUser };
-    } catch {
+      if (error) {
+        return { success: false, error: translateError(error) };
+      }
+      // Se o provedor exige confirmação por email, session vem null.
+      if (data.session) {
+        currentSession = data.session;
+        currentProfile = await fetchProfile(data.user.id);
+      }
+      return { success: true, user: getCurrentUser(), needsEmailConfirm: !data.session };
+    } catch (e) {
       return { success: false, error: 'Erro ao criar conta.' };
     }
   }
 
-  function login(email, senha) {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanSenha = senha.trim();
-
-    if (
-      cleanEmail === ADMIN_CREDENTIALS.email.toLowerCase() &&
-      cleanSenha === ADMIN_CREDENTIALS.senha
-    ) {
-      localStorage.setItem(ADMIN_KEY, '1');
-      return { success: true, isAdmin: true };
+  async function login(email, senha) {
+    const s = sb();
+    if (!s) return { success: false, error: 'Supabase indisponível.' };
+    try {
+      const { data, error } = await s.auth.signInWithPassword({
+        email: (email || '').trim().toLowerCase(),
+        password: (senha || '').trim()
+      });
+      if (error) {
+        return { success: false, error: 'E-mail ou senha incorretos.' };
+      }
+      currentSession = data.session;
+      currentProfile = await fetchProfile(data.user.id);
+      const isAdminUser = !!currentProfile && currentProfile.role === 'admin';
+      return { success: true, user: getCurrentUser(), isAdmin: isAdminUser };
+    } catch (e) {
+      return { success: false, error: 'Erro ao entrar.' };
     }
+  }
 
-    const users = getUsers();
-    const user = users.find(
-      u => (u.email || '').trim().toLowerCase() === cleanEmail && (u.senha || '') === cleanSenha
+  async function loginWithProvider(provider) {
+    const s = sb();
+    if (!s) return { success: false, error: 'Supabase indisponível.' };
+    const base = (window.ElarahSupabase && window.ElarahSupabase.siteBase())
+      || (window.location.origin + '/');
+    const redirectTo = base + 'conta.html';
+    const { error } = await s.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo }
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }
+
+  async function loginWithGoogle() { return loginWithProvider('google'); }
+  async function loginWithApple()  { return loginWithProvider('apple'); }
+
+  async function resetPassword(email) {
+    const s = sb();
+    if (!s) return { success: false, error: 'Supabase indisponível.' };
+    const base = (window.ElarahSupabase && window.ElarahSupabase.siteBase())
+      || (window.location.origin + '/');
+    const redirectTo = base + 'reset-password.html';
+    const { error } = await s.auth.resetPasswordForEmail(
+      (email || '').trim().toLowerCase(),
+      { redirectTo }
     );
-
-    if (!user) {
-      return { success: false, error: 'E-mail ou senha incorretos.' };
-    }
-
-    setSession(user.id);
-    return { success: true, user: normalizeUser(user) };
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   }
 
-  function isAdmin() {
-    return localStorage.getItem(ADMIN_KEY) === '1';
-  }
-
-  function logoutAdmin() {
-    localStorage.removeItem(ADMIN_KEY);
-  }
-
-  function logout() {
-    clearSession();
+  async function logout() {
+    const s = sb();
+    if (s) { try { await s.auth.signOut(); } catch {} }
+    currentSession = null;
+    currentProfile = null;
     updateHeaderUI();
   }
 
-  function updateUser(data) {
-    const current = getCurrentUser();
-    if (!current) return { success: false, error: 'Não autenticado.' };
+  // Compat com fluxo antigo do admin (manter assinatura).
+  function logoutAdmin() { return logout(); }
 
-    const users = getUsers();
-    const index = users.findIndex(u => u.id === current.id);
-    if (index === -1) return { success: false, error: 'Usuário não encontrado.' };
+  async function updateUser(data) {
+    const s = sb();
+    if (!s || !currentProfile) {
+      return { success: false, error: 'Não autenticado.' };
+    }
+    const patch = {};
+    if ('nome' in data)          patch.nome = data.nome || '';
+    if ('telefone' in data)      patch.telefone = data.telefone || '';
+    if ('cidade' in data)        patch.cidade = data.cidade || '';
+    if ('partnerStatus' in data) patch.partner_status = data.partnerStatus;
+    if ('partnerData' in data)   patch.partner_data = data.partnerData;
 
-    users[index] = normalizeUser({
-      ...users[index],
-      ...data
-    });
+    const { data: updated, error } = await s
+      .from('profiles')
+      .update(patch)
+      .eq('id', currentProfile.id)
+      .select()
+      .single();
 
-    saveUsers(users);
-    return { success: true, user: users[index] };
+    if (error) return { success: false, error: error.message };
+    currentProfile = updated;
+    return { success: true, user: getCurrentUser() };
   }
 
-  function becomePartner(partnerData) {
+  async function becomePartner(partnerData) {
     return updateUser({
-      partnerStatus: 'approved',
+      partnerStatus: 'pending',
       partnerData: {
         ...partnerData,
         requestedAt: new Date().toISOString()
       }
     });
+  }
+
+  function translateError(error) {
+    const msg = (error && error.message) || '';
+    if (/already/i.test(msg) && /registered/i.test(msg)) {
+      return 'Este e-mail já está cadastrado.';
+    }
+    if (/password/i.test(msg) && /short|weak/i.test(msg)) {
+      return 'A senha deve ter pelo menos 6 caracteres.';
+    }
+    return msg || 'Erro ao criar conta.';
   }
 
   function requireLogin(callback) {
@@ -164,6 +270,7 @@ const ElarahAuth = (function () {
     return false;
   }
 
+  // ===== Modal UI (preserva layout anterior + Google/Apple + reset) =====
   let modalEl = null;
 
   function createModal() {
@@ -197,7 +304,14 @@ const ElarahAuth = (function () {
             <input type="password" class="auth-modal__input" id="auth-login-senha" placeholder="Sua senha" required>
           </div>
           <p class="auth-modal__error" id="auth-login-error"></p>
+          <p class="auth-modal__success" id="auth-login-success" style="display:none;color:#2e7d32;font-size:0.85rem;margin:6px 0 0;"></p>
           <button type="submit" class="auth-modal__btn">Entrar</button>
+          <p style="text-align:center;margin-top:10px;font-size:0.85rem;">
+            <a href="#" class="auth-modal__link" id="auth-forgot-link">Esqueci minha senha</a>
+          </p>
+          <div class="auth-modal__divider" style="text-align:center;margin:14px 0;font-size:0.8rem;color:#999;">ou</div>
+          <button type="button" class="auth-modal__btn auth-modal__btn--google" id="auth-login-google" style="background:#fff;color:#333;border:1px solid #ddd;margin-bottom:8px;">Continuar com Google</button>
+          <button type="button" class="auth-modal__btn auth-modal__btn--apple" id="auth-login-apple" style="background:#000;color:#fff;">Continuar com Apple</button>
         </form>
 
         <form class="auth-modal__form auth-modal__form--hidden" id="auth-form-register">
@@ -228,7 +342,11 @@ const ElarahAuth = (function () {
             <span>Li e aceito os <a href="#" class="auth-modal__link">termos de uso</a> e a <a href="#" class="auth-modal__link">política de privacidade</a></span>
           </label>
           <p class="auth-modal__error" id="auth-reg-error"></p>
+          <p class="auth-modal__success" id="auth-reg-success" style="display:none;color:#2e7d32;font-size:0.85rem;margin:6px 0 0;"></p>
           <button type="submit" class="auth-modal__btn">Criar conta</button>
+          <div class="auth-modal__divider" style="text-align:center;margin:14px 0;font-size:0.8rem;color:#999;">ou</div>
+          <button type="button" class="auth-modal__btn" id="auth-reg-google" style="background:#fff;color:#333;border:1px solid #ddd;margin-bottom:8px;">Continuar com Google</button>
+          <button type="button" class="auth-modal__btn" id="auth-reg-apple" style="background:#000;color:#fff;">Continuar com Apple</button>
         </form>
       </div>
     `;
@@ -247,76 +365,111 @@ const ElarahAuth = (function () {
       if (e.key === 'Escape') closeModal();
     });
 
-    div.querySelector('#auth-form-login').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const email = document.getElementById('auth-login-email').value;
-  const senha = document.getElementById('auth-login-senha').value;
-  const errorEl = document.getElementById('auth-login-error');
+    // Login form
+    div.querySelector('#auth-form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-login-email').value;
+      const senha = document.getElementById('auth-login-senha').value;
+      const errorEl = document.getElementById('auth-login-error');
+      errorEl.textContent = '';
 
-  const result = login(email, senha);
+      const result = await login(email, senha);
 
-  if (result.success) {
-    if (result.isAdmin) {
-      closeModal();
-      window.location.href = 'admin.html';
-      return;
-    }
+      if (result.success) {
+        if (result.isAdmin) {
+          closeModal();
+          window.location.href = 'admin.html';
+          return;
+        }
+        const redirect = localStorage.getItem('postLoginRedirect');
+        closeModal();
+        if (redirect) {
+          localStorage.removeItem('postLoginRedirect');
+          window.location.href = redirect;
+          return;
+        }
+        updateHeaderUI();
+      } else {
+        errorEl.textContent = result.error;
+      }
+    });
 
-    const redirect = localStorage.getItem('postLoginRedirect');
+    // Forgot password link
+    div.querySelector('#auth-forgot-link').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-login-email').value.trim();
+      const errorEl = document.getElementById('auth-login-error');
+      const successEl = document.getElementById('auth-login-success');
+      errorEl.textContent = '';
+      successEl.style.display = 'none';
+      if (!email) {
+        errorEl.textContent = 'Digite seu e-mail acima para receber o link de recuperação.';
+        return;
+      }
+      const result = await resetPassword(email);
+      if (result.success) {
+        successEl.textContent = 'Enviamos um link de recuperação para ' + email + '.';
+        successEl.style.display = 'block';
+      } else {
+        errorEl.textContent = result.error || 'Não foi possível enviar o link.';
+      }
+    });
 
-    closeModal();
+    // OAuth buttons (both tabs)
+    const oauthHandler = (provider) => async () => {
+      const errorEl = document.querySelector('.auth-modal__form:not(.auth-modal__form--hidden) .auth-modal__error');
+      const r = provider === 'google' ? await loginWithGoogle() : await loginWithApple();
+      if (!r.success && errorEl) errorEl.textContent = r.error;
+    };
+    div.querySelector('#auth-login-google').addEventListener('click', oauthHandler('google'));
+    div.querySelector('#auth-login-apple').addEventListener('click', oauthHandler('apple'));
+    div.querySelector('#auth-reg-google').addEventListener('click', oauthHandler('google'));
+    div.querySelector('#auth-reg-apple').addEventListener('click', oauthHandler('apple'));
 
-    if (redirect) {
-      localStorage.removeItem('postLoginRedirect');
-      window.location.href = redirect;
-      return;
-    }
+    // Register form
+    div.querySelector('#auth-form-register').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('auth-reg-error');
+      const successEl = document.getElementById('auth-reg-success');
+      errorEl.textContent = '';
+      successEl.style.display = 'none';
 
-    updateHeaderUI();
-  } else {
-    errorEl.textContent = result.error;
-  }
-});
+      const nome = document.getElementById('auth-reg-nome').value;
+      const email = document.getElementById('auth-reg-email').value;
+      const senha = document.getElementById('auth-reg-senha').value;
+      const telefone = document.getElementById('auth-reg-telefone').value;
+      const cidade = document.getElementById('auth-reg-cidade').value;
+      const termos = document.getElementById('auth-reg-termos').checked;
 
-div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const errorEl = document.getElementById('auth-reg-error');
+      if (!termos) {
+        errorEl.textContent = 'Aceite os termos para continuar.';
+        return;
+      }
+      if (senha.length < 6) {
+        errorEl.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+        return;
+      }
 
-  const nome = document.getElementById('auth-reg-nome').value;
-  const email = document.getElementById('auth-reg-email').value;
-  const senha = document.getElementById('auth-reg-senha').value;
-  const telefone = document.getElementById('auth-reg-telefone').value;
-  const cidade = document.getElementById('auth-reg-cidade').value;
-  const termos = document.getElementById('auth-reg-termos').checked;
+      const result = await register({ nome, email, senha, telefone, cidade });
 
-  if (!termos) {
-    errorEl.textContent = 'Aceite os termos para continuar.';
-    return;
-  }
-
-  if (senha.length < 6) {
-    errorEl.textContent = 'A senha deve ter pelo menos 6 caracteres.';
-    return;
-  }
-
-  const result = register({ nome, email, senha, telefone, cidade });
-
-  if (result.success) {
-    const redirect = localStorage.getItem('postLoginRedirect');
-
-    closeModal();
-
-    if (redirect) {
-      localStorage.removeItem('postLoginRedirect');
-      window.location.href = redirect;
-      return;
-    }
-
-    updateHeaderUI();
-  } else {
-    errorEl.textContent = result.error;
-  }
-});
+      if (result.success) {
+        if (result.needsEmailConfirm) {
+          successEl.textContent = 'Conta criada. Confirme seu e-mail para continuar.';
+          successEl.style.display = 'block';
+          return;
+        }
+        const redirect = localStorage.getItem('postLoginRedirect');
+        closeModal();
+        if (redirect) {
+          localStorage.removeItem('postLoginRedirect');
+          window.location.href = redirect;
+          return;
+        }
+        updateHeaderUI();
+      } else {
+        errorEl.textContent = result.error;
+      }
+    });
 
     return div;
   }
@@ -339,6 +492,7 @@ div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
     }
 
     modalEl.querySelectorAll('.auth-modal__error').forEach(el => el.textContent = '');
+    modalEl.querySelectorAll('.auth-modal__success').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
   }
 
   function openModal(tab, message) {
@@ -358,6 +512,7 @@ div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
 
     modal.querySelectorAll('.auth-modal__input').forEach(input => input.value = '');
     modal.querySelectorAll('.auth-modal__error').forEach(el => el.textContent = '');
+    modal.querySelectorAll('.auth-modal__success').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
     const termosCheckbox = modal.querySelector('#auth-reg-termos');
     if (termosCheckbox) termosCheckbox.checked = false;
   }
@@ -410,36 +565,10 @@ div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
     }
   }
 
-  function getFavorites() {
-    const current = getCurrentUser();
-    if (!current) return [];
-    return Array.isArray(current.favorites) ? current.favorites : [];
-  }
-
-  function isFavorite(experienceId) {
-    return getFavorites().includes(experienceId);
-  }
-
-  function toggleFavorite(experienceId) {
-    const current = getCurrentUser();
-    if (!current) {
-      return { success: false, error: 'Faça login para favoritar.' };
-    }
-
-    const favorites = Array.isArray(current.favorites) ? [...current.favorites] : [];
-    const index = favorites.indexOf(experienceId);
-
-    if (index >= 0) {
-      favorites.splice(index, 1);
-    } else {
-      favorites.push(experienceId);
-    }
-
-    return updateUser({ favorites });
-  }
-
+  // ===== Bootstrap =====
   function init() {
-    updateHeaderUI();
+    updateHeaderUI(); // primeiro render: provavelmente "Entrar"
+    hydrate();         // assíncrono; re-renderiza ao terminar
   }
 
   if (document.readyState === 'loading') {
@@ -449,11 +578,17 @@ div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
   }
 
   return {
+    ready,
     getCurrentUser,
     isLoggedIn,
+    isAdmin,
     login,
     register,
     logout,
+    logoutAdmin,
+    loginWithGoogle,
+    loginWithApple,
+    resetPassword,
     updateUser,
     becomePartner,
     getFavorites,
@@ -462,8 +597,6 @@ div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
     requireLogin,
     openModal,
     closeModal,
-    updateHeaderUI,
-    isAdmin,
-    logoutAdmin,
+    updateHeaderUI
   };
 })();
