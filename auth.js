@@ -227,63 +227,69 @@ const ElarahAuth = (function () {
     });
 
     div.querySelector('#auth-form-login').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const email = document.getElementById('auth-login-email').value;
-      const senha = document.getElementById('auth-login-senha').value;
-      const errorEl = document.getElementById('auth-login-error');
+  e.preventDefault();
+  const email = document.getElementById('auth-login-email').value;
+  const senha = document.getElementById('auth-login-senha').value;
+  const errorEl = document.getElementById('auth-login-error');
 
-      const result = login(email, senha);
-     if (result.success) {
-  const redirect = localStorage.getItem('postLoginRedirect');
+  const result = login(email, senha);
 
-  closeModal();
-  updateHeaderUI();
+  if (result.success) {
+    const redirect = localStorage.getItem('postLoginRedirect');
 
-  if (redirect) {
-    localStorage.removeItem('postLoginRedirect');
-    window.location.href = redirect;
+    closeModal();
+
+    if (redirect) {
+      localStorage.removeItem('postLoginRedirect');
+      window.location.href = redirect;
+      return;
+    }
+
+    updateHeaderUI();
+  } else {
+    errorEl.textContent = result.error;
   }
-} else {
-  errorEl.textContent = result.error;
-}
-    });
+});
 
-    div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const errorEl = document.getElementById('auth-reg-error');
+div.querySelector('#auth-form-register').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('auth-reg-error');
 
-      const nome = document.getElementById('auth-reg-nome').value;
-      const email = document.getElementById('auth-reg-email').value;
-      const senha = document.getElementById('auth-reg-senha').value;
-      const telefone = document.getElementById('auth-reg-telefone').value;
-      const cidade = document.getElementById('auth-reg-cidade').value;
-      const termos = document.getElementById('auth-reg-termos').checked;
+  const nome = document.getElementById('auth-reg-nome').value;
+  const email = document.getElementById('auth-reg-email').value;
+  const senha = document.getElementById('auth-reg-senha').value;
+  const telefone = document.getElementById('auth-reg-telefone').value;
+  const cidade = document.getElementById('auth-reg-cidade').value;
+  const termos = document.getElementById('auth-reg-termos').checked;
 
-      if (!termos) {
-        errorEl.textContent = 'Aceite os termos para continuar.';
-        return;
-      }
-
-      if (senha.length < 6) {
-        errorEl.textContent = 'A senha deve ter pelo menos 6 caracteres.';
-        return;
-      }
-
-      const result = register({ nome, email, senha, telefone, cidade });
-      if (result.success) {
-  const redirect = localStorage.getItem('postLoginRedirect');
-
-  closeModal();
-  updateHeaderUI();
-
-  if (redirect) {
-    localStorage.removeItem('postLoginRedirect');
-    window.location.href = redirect;
+  if (!termos) {
+    errorEl.textContent = 'Aceite os termos para continuar.';
+    return;
   }
-} else {
-  errorEl.textContent = result.error;
-}
-    });
+
+  if (senha.length < 6) {
+    errorEl.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+    return;
+  }
+
+  const result = register({ nome, email, senha, telefone, cidade });
+
+  if (result.success) {
+    const redirect = localStorage.getItem('postLoginRedirect');
+
+    closeModal();
+
+    if (redirect) {
+      localStorage.removeItem('postLoginRedirect');
+      window.location.href = redirect;
+      return;
+    }
+
+    updateHeaderUI();
+  } else {
+    errorEl.textContent = result.error;
+  }
+});
 
     return div;
   }
