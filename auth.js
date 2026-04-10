@@ -8,6 +8,7 @@ const ElarahAuth = (function () {
   const STORAGE_KEY = 'elarah_users';
   const SESSION_KEY = 'elarah_session';
    let firebaseCurrentUser = null;
+  let headerEventsBound = false;
 
   // ===== ADMIN CONFIG =====
   const ADMIN_CREDENTIALS = {
@@ -418,46 +419,64 @@ function updateUser(data) {
 
   // ===== HEADER UI UPDATE =====
 
-  function updateHeaderUI() {
-    const user = getCurrentUser();
-    const loginBtn = document.querySelector('.header__login-btn');
-    const favBtn = document.querySelector('.header__action-btn[aria-label="Favoritos"]');
+   function bindHeaderEvents() {
+  if (headerEventsBound) return;
 
-    if (!loginBtn) return;
+  document.addEventListener('click', (e) => {
+    const loginBtn = e.target.closest('.header__login-btn');
+    if (loginBtn) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (user) {
-      const initials = user.nome.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-      loginBtn.innerHTML = `
-        <span class="header__user-avatar">${initials}</span>
-        ${user.nome.split(' ')[0]}
-      `;
-      loginBtn.onclick = () => { window.location.href = 'conta.html'; };
-    } else {
-      loginBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        Entrar
-      `;
-      loginBtn.onclick = () => openModal('login');
+      const user = getCurrentUser();
+      if (user) {
+        window.location.href = 'conta.html';
+      } else {
+        openModal('login');
+      }
+      return;
     }
 
-    // Favorite button: require login
+    const favBtn = e.target.closest('.header__action-btn[aria-label="Favoritos"]');
     if (favBtn) {
-      favBtn.onclick = () => {
-        if (!isLoggedIn()) {
-          openModal('login', 'Faça login para ver seus favoritos');
-        } else {
-          window.location.href = 'conta.html?section=favoritos';
-        }
-      };
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isLoggedIn()) {
+        openModal('login', 'Faça login para ver seus favoritos');
+      } else {
+        window.location.href = 'conta.html?section=favoritos';
+      }
     }
+  });
+
+  headerEventsBound = true;
+}
+  function updateHeaderUI() {
+  const user = getCurrentUser();
+  const loginBtn = document.querySelector('.header__login-btn');
+
+  if (!loginBtn) return;
+
+  if (user) {
+    const initials = user.nome.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    loginBtn.innerHTML = `
+      <span class="header__user-avatar">${initials}</span>
+      ${user.nome.split(' ')[0]}
+    `;
+  } else {
+    loginBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      Entrar
+    `;
   }
-
+}
   // ===== INIT =====
-
 function init() {
+  bindHeaderEvents();
   updateHeaderUI();
 
   if (window.ElarahFirebase && window.ElarahFirebase.auth && window.ElarahFirebase.onAuthStateChanged) {
