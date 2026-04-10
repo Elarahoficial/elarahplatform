@@ -55,14 +55,20 @@
   // Garante que o dataset existe no localStorage.
   // Na primeira visita copia DEFAULT_EXPERIENCES.
   // Depois disso o admin é a fonte da verdade.
-  function ensureSeeded() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_EXPERIENCES));
-      return DEFAULT_EXPERIENCES.slice();
-    }
-    return safeParse(raw, DEFAULT_EXPERIENCES.slice());
+  const DATA_VERSION = 'v3';
+
+function ensureSeeded() {
+  const currentVersion = localStorage.getItem(STORAGE_KEY + '_version');
+  const raw = localStorage.getItem(STORAGE_KEY);
+
+  if (raw === null || currentVersion !== DATA_VERSION) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_EXPERIENCES));
+    localStorage.setItem(STORAGE_KEY + '_version', DATA_VERSION);
+    return DEFAULT_EXPERIENCES.slice();
   }
+
+  return safeParse(raw, DEFAULT_EXPERIENCES.slice());
+}
 
   function getAllExperiences() {
     return ensureSeeded().map(normalizeExperience);
