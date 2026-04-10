@@ -69,16 +69,21 @@ const ElarahAuth = (function () {
 }
 
 function getCurrentUser() {
-  const user = firebaseCurrentUser;
-  if (!user) return null;
+  const firebaseUser =
+    firebaseCurrentUser ||
+    window.ElarahFirebase?.auth?.currentUser ||
+    null;
 
-  const key = `elarah_user_${user.email}`;
+  if (!firebaseUser) return null;
+
+  const email = (firebaseUser.email || '').trim().toLowerCase();
+  const key = `elarah_user_${email}`;
   const localData = JSON.parse(localStorage.getItem(key)) || {};
 
   return {
-    id: user.uid,
-    email: user.email,
-    nome: localData.nome || user.displayName || user.email.split('@')[0],
+    id: firebaseUser.uid,
+    email,
+    nome: localData.nome || firebaseUser.displayName || email.split('@')[0] || '',
     telefone: localData.telefone || '',
     cidade: localData.cidade || '',
     partnerStatus: localData.partnerStatus || 'none',
