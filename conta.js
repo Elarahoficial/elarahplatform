@@ -1,10 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   // ===== AUTH GUARD =====
-  const user = ElarahAuth.getCurrentUser();
-  if (!user) {
-    window.location.href = 'index.html';
-    return;
-  }
+ const user = ElarahAuth.getCurrentUser();
+
+if (!user) {
+  setTimeout(() => {
+    const retryUser = ElarahAuth.getCurrentUser();
+
+    if (!retryUser) {
+      window.location.href = '/elarahplatform/';
+      return;
+    }
+
+    window.location.reload();
+  }, 700);
+
+  return;
+}
 
   // ===== POPULATE SIDEBAR =====
   const initials = (user.nome || '')
