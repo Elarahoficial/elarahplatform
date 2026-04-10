@@ -1,21 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // ===== AUTH GUARD =====
- const user = ElarahAuth.getCurrentUser();
+  function startPage() {
+    const user = ElarahAuth.getCurrentUser();
 
-if (!user) {
-  setTimeout(() => {
-    const retryUser = ElarahAuth.getCurrentUser();
-
-    if (!retryUser) {
+    if (!user) {
       window.location.href = '/elarahplatform/';
       return;
     }
-
-    window.location.reload();
-  }, 700);
-
-  return;
-}
 
   // ===== POPULATE SIDEBAR =====
   const initials = (user.nome || '')
@@ -386,5 +376,10 @@ renderFavoritos();
         ? '0 1px 8px rgba(0,0,0,0.06)'
         : 'none';
     });
+  }
+      if (ElarahAuth.getCurrentUser()) {
+    startPage();
+  } else {
+    document.addEventListener('elarah-auth-ready', startPage, { once: true });
   }
 });
