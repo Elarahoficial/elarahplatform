@@ -104,28 +104,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function irParaFluxoParceiro() {
-    const currentUser = getCurrentUserSafe();
+  const currentUser =
+    (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+      ? ElarahAuth.getCurrentUser()
+      : null;
 
-    if (!currentUser) {
-      localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
+  if (!currentUser) {
+    localStorage.setItem('postLoginRedirect', '/elarahplatform/conta.html?section=parceiro');
 
-      if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
-        ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
-        return;
-      }
-
-      window.location.href = '/elarahplatform/conta.html?section=parceiro';
+    if (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.openModal === 'function') {
+      ElarahAuth.openModal('login', 'Faça login para se tornar parceiro');
       return;
     }
 
-    if (currentUser.partnerStatus === 'approved') {
-      mostrarMensagemParceiro('Você já é parceiro da Elarah!');
-      return;
-    }
-
-    window.location.href = '/elarahplatform/conta.html?section=parceiro';
+    alert('Faça login para continuar.');
+    return;
   }
 
+  if (currentUser.partnerStatus === 'approved') {
+    mostrarMensagemParceiro('Você já é parceiro da Elarah!');
+    return;
+  }
+
+  window.location.href = '/elarahplatform/conta.html?section=parceiro';
+}
+  
   // ===== REDIRECT APÓS LOGIN =====
   function handlePostLoginRedirect() {
     const currentUser = getCurrentUserSafe();
