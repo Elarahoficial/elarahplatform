@@ -465,10 +465,17 @@ function updateHeaderUI() {
   const user = getCurrentUser();
 
   if (user) {
-    const initials = user.nome.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    const initials = (user.nome || '')
+      .split(' ')
+      .filter(Boolean)
+      .map(n => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
     loginBtn.innerHTML = `
       <span class="header__user-avatar">${initials}</span>
-      ${user.nome.split(' ')[0]}
+      ${(user.nome || '').split(' ')[0] || 'Conta'}
     `;
   } else {
     loginBtn.innerHTML = `
@@ -492,13 +499,11 @@ function init() {
       firebaseCurrentUser = user || null;
       authResolved = true;
       updateHeaderUI();
-
       document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
     });
   } else {
     authResolved = true;
     updateHeaderUI();
-
     document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
   }
 }
