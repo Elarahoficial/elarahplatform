@@ -8,7 +8,8 @@ const ElarahAuth = (function () {
   const STORAGE_KEY = 'elarah_users';
   const SESSION_KEY = 'elarah_session';
    let firebaseCurrentUser = null;
-  let headerEventsBound = false;
+   let headerEventsBound = false;
+   let authResolved = false;
 
   // ===== ADMIN CONFIG =====
   const ADMIN_CREDENTIALS = {
@@ -452,11 +453,16 @@ function updateUser(data) {
 
   headerEventsBound = true;
 }
-  function updateHeaderUI() {
-  const user = getCurrentUser();
+ 
+function updateHeaderUI() {
   const loginBtn = document.querySelector('.header__login-btn');
-
   if (!loginBtn) return;
+
+  if (!authResolved) {
+    return;
+  }
+
+  const user = getCurrentUser();
 
   if (user) {
     const initials = user.nome.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -474,21 +480,25 @@ function updateUser(data) {
     `;
   }
 }
+   
   // ===== INIT =====
 function init() {
   bindHeaderEvents();
-  updateHeaderUI();
 
   if (window.ElarahFirebase && window.ElarahFirebase.auth && window.ElarahFirebase.onAuthStateChanged) {
     const { auth, onAuthStateChanged } = window.ElarahFirebase;
 
     onAuthStateChanged(auth, (user) => {
       firebaseCurrentUser = user || null;
+      authResolved = true;
       updateHeaderUI();
+      document.dispatchEvent(new CustomEvent('elarah-auth-ready'));
     });
+  } else {
+    authResolved = true;
+    updateHeaderUI();
   }
 }
-
   // Auto-init when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
