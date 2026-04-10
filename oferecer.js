@@ -36,32 +36,38 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Erro ao ler hostRequest:', error);
   }
 
+function renderPartnerState() {
   const currentUser =
-  (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
-    ? ElarahAuth.getCurrentUser()
-    : null;
+    (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
+      ? ElarahAuth.getCurrentUser()
+      : null;
 
-if (
-  (dados && dados.status === 'approved') ||
-  (currentUser && currentUser.partnerStatus === 'approved')
-) {
+  if (
+    (dados && dados.status === 'approved') ||
+    (currentUser && currentUser.partnerStatus === 'approved')
+  ) {
     if (partnerCta) partnerCta.style.display = 'none';
     if (hostStatusBox) hostStatusBox.style.display = 'block';
-   if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
-if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
+    if (perfilNome) perfilNome.textContent = currentUser?.nome || '';
+    if (perfilEmail) perfilEmail.textContent = currentUser?.email || '';
 
-const pd = currentUser?.partnerData || {};
+    const pd = currentUser?.partnerData || {};
 
-if (resumoDados) {
-  resumoDados.innerHTML =
-    '<strong>WhatsApp:</strong> ' + (currentUser?.telefone || '-') + '<br>' +
-    '<strong>Categoria:</strong> ' + (pd.tipo || '-') + '<br>' +
-    '<strong>Descrição:</strong> ' + (pd.descricao || 'Não informada');
-}
+    if (resumoDados) {
+      resumoDados.innerHTML =
+        '<strong>WhatsApp:</strong> ' + (currentUser?.telefone || '-') + '<br>' +
+        '<strong>Categoria:</strong> ' + (pd.tipo || '-') + '<br>' +
+        '<strong>Descrição:</strong> ' + (pd.descricao || 'Não informada');
+    }
   } else {
     if (partnerCta) partnerCta.style.display = 'flex';
     if (hostStatusBox) hostStatusBox.style.display = 'none';
   }
+}
+
+renderPartnerState();
+
+document.addEventListener('elarah-auth-ready', renderPartnerState);
 function irParaFluxoParceiro() {
   const currentUser =
     (typeof ElarahAuth !== 'undefined' && typeof ElarahAuth.getCurrentUser === 'function')
