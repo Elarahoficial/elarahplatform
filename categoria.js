@@ -1,9 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== SHARED DATA SOURCE =====
-  const experiences = (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences)
-    ? await ElarahData.getAllExperiences()
-    : [];
+  let experiences = [];
+  try {
+    if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
+      experiences = await ElarahData.getAllExperiences();
+    }
+  } catch (e) {
+    console.warn('[Elarah categoria] falha ao carregar experiências', e);
+    experiences = [];
+  }
 
   // ===== URL PARAMS =====
   const params = new URLSearchParams(window.location.search);
@@ -137,7 +143,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     grid.querySelectorAll('.card__favorite').forEach(btn => {
-      btn.addEventListener('click', () => btn.classList.toggle('active'));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof ElarahAuth === 'undefined') {
+          alert('Não foi possível carregar a sua conta. Recarregue a página.');
+          return;
+        }
+        if (!ElarahAuth.isLoggedIn()) {
+          ElarahAuth.openModal('login', 'Faça login para favoritar');
+          return;
+        }
+        const card = btn.closest('.card');
+        const titleEl = card && card.querySelector('.card__title');
+        const expId = (titleEl && titleEl.textContent.trim()) || btn.getAttribute('aria-label') || '';
+        const result = ElarahAuth.toggleFavorite(expId);
+        if (result && result.success) {
+          btn.classList.toggle('active');
+        }
+      });
     });
   }
 
@@ -216,12 +239,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       header.style.boxShadow = window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,0.06)' : 'none';
     });
   }
+
+  // ===== LOGO CLICK -> HOME =====
+  const logo = document.querySelector('.header__logo');
+  if (logo) {
+    logo.addEventListener('click', function() {
+      window.location.href = '/elarahplatform/';
+    });
+  }
 });
-
-const logo = document.querySelector('.header__logo');
-
-if (logo) {
-  logo.addEventListener('click', function() {
-    window.location.href = '/elarahplatform/';
-  });
-}

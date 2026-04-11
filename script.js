@@ -1,7 +1,13 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const experiences = (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences)
-    ? await ElarahData.getAllExperiences()
-    : [];
+  let experiences = [];
+  try {
+    if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
+      experiences = await ElarahData.getAllExperiences();
+    }
+  } catch (e) {
+    console.warn('[Elarah] falha ao carregar experiências, seguindo com lista vazia', e);
+    experiences = [];
+  }
 
   let activeCategoria = '';
   let activeBairro = '';
@@ -84,12 +90,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
       }
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (typeof ElarahAuth === 'undefined' || !ElarahAuth.isLoggedIn()) {
+        if (typeof ElarahAuth === 'undefined') {
+          alert('Não foi possível carregar a sua conta. Recarregue a página.');
+          return;
+        }
+        if (!ElarahAuth.isLoggedIn()) {
           ElarahAuth.openModal('login', 'Faça login para favoritar');
           return;
         }
         const result = ElarahAuth.toggleFavorite(expId);
-        if (result.success) {
+        if (result && result.success) {
           btn.classList.toggle('active');
         }
       });
@@ -451,11 +461,13 @@ window.location.href = destino;
 
   function openOriginalsModal(experienceName, type) {
     if (!originalsModal) return;
-    originalsModalExperience.value = experienceName;
-    originalsModalTitle.textContent = experienceName;
-    originalsModalDesc.textContent = type === 'participar'
-      ? 'Preencha seus dados para registrar seu interesse nessa experiência.'
-      : 'Entre na lista de espera e avisaremos você assim que a data for definida.';
+    if (originalsModalExperience) originalsModalExperience.value = experienceName;
+    if (originalsModalTitle) originalsModalTitle.textContent = experienceName;
+    if (originalsModalDesc) {
+      originalsModalDesc.textContent = type === 'participar'
+        ? 'Preencha seus dados para registrar seu interesse nessa experiência.'
+        : 'Entre na lista de espera e avisaremos você assim que a data for definida.';
+    }
     var horarioField = document.getElementById('originals-horario-field');
     if (horarioField) {
       horarioField.style.display = type === 'participar' ? 'block' : 'none';
@@ -500,10 +512,13 @@ window.location.href = destino;
       var submitBtn = document.getElementById('originals-modal-submit');
       if (submitBtn) submitBtn.disabled = true;
 
-      var experiencia = originalsModalExperience.value || '';
-      var nome = document.getElementById('originals-nome').value || '';
-      var email = document.getElementById('originals-email').value || '';
-      var telefone = document.getElementById('originals-telefone').value || '';
+      var experiencia = (originalsModalExperience && originalsModalExperience.value) || '';
+      var nomeEl = document.getElementById('originals-nome');
+      var emailEl = document.getElementById('originals-email');
+      var telefoneEl = document.getElementById('originals-telefone');
+      var nome = (nomeEl && nomeEl.value) || '';
+      var email = (emailEl && emailEl.value) || '';
+      var telefone = (telefoneEl && telefoneEl.value) || '';
       var horarioEl = document.getElementById('originals-horario');
       var horarioField = document.getElementById('originals-horario-field');
       var horario = (horarioField && horarioField.style.display !== 'none' && horarioEl)

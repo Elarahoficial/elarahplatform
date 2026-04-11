@@ -92,7 +92,10 @@
         item.classList.add('admin__nav-item--active');
 
         panels.forEach(p => p.classList.remove('admin__panel--active'));
-        document.getElementById('panel-' + target).classList.add('admin__panel--active');
+        const targetPanel = document.getElementById('panel-' + target);
+        if (targetPanel) {
+          targetPanel.classList.add('admin__panel--active');
+        }
 
         await refreshPanel(target);
       });

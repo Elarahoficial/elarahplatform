@@ -1,9 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== GIFT EXPERIENCES DATA (shared source) =====
-  const giftExperiences = (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences)
-    ? await ElarahData.getAllExperiences()
-    : [];
+  let giftExperiences = [];
+  try {
+    if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
+      giftExperiences = await ElarahData.getAllExperiences();
+    }
+  } catch (e) {
+    console.warn('[Elarah presentear] falha ao carregar experiências', e);
+    giftExperiences = [];
+  }
 
   // ===== DOM REFS =====
   const grid = document.getElementById('gift-grid');
@@ -108,7 +114,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     grid.querySelectorAll('.card__favorite').forEach((btn) => {
-      btn.addEventListener('click', () => btn.classList.toggle('active'));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof ElarahAuth === 'undefined') {
+          alert('Não foi possível carregar a sua conta. Recarregue a página.');
+          return;
+        }
+        if (!ElarahAuth.isLoggedIn()) {
+          ElarahAuth.openModal('login', 'Faça login para favoritar');
+          return;
+        }
+        const card = btn.closest('.card');
+        const titleEl = card && card.querySelector('.card__title');
+        const expId = (titleEl && titleEl.textContent.trim()) || '';
+        const result = ElarahAuth.toggleFavorite(expId);
+        if (result && result.success) {
+          btn.classList.toggle('active');
+        }
+      });
     });
   }
 
