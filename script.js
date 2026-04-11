@@ -153,6 +153,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
         </div>
         <div class="card__footer">
           <p class="card__price"><strong>${exp.preco}</strong></p>
+          <button type="button" class="card__reserve-btn"
+            data-reserve
+            data-experience-id="${exp.id}"
+            data-experience-nome="${(exp.nome || '').replace(/"/g, '&quot;')}"
+            data-analytics="reserve_click"
+            data-analytics-category="booking"
+            data-analytics-label="${(exp.nome || '').replace(/"/g, '&quot;')}">
+            Reservar
+          </button>
         </div>
       </div>
     `;

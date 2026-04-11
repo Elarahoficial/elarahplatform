@@ -195,30 +195,84 @@
       </div>
     </div>
 
-    <!-- ===== PURCHASES PANEL ===== -->
+    <!-- ===== BOOKINGS / PURCHASES PANEL ===== -->
     <div class="admin__panel" id="panel-purchases">
-      <div class="admin__header">
-        <h1 class="admin__page-title">Compras / Inscrições</h1>
-        <p class="admin__page-subtitle">Todas as reservas e inscrições realizadas</p>
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Reservas (Stripe)</h1>
+          <p class="admin__page-subtitle">Todas as reservas criadas via checkout</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <select id="bookings-filter-exp" class="admin__analytics-select">
+            <option value="">Todas as experiências</option>
+          </select>
+          <select id="bookings-filter-status" class="admin__analytics-select">
+            <option value="">Todos os status</option>
+            <option value="pago">Pago</option>
+            <option value="pending">Pendente</option>
+            <option value="expirado">Expirado</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="reembolsado">Reembolsado</option>
+          </select>
+          <button class="admin__add-btn" id="btn-refresh-bookings" type="button">Atualizar</button>
+        </div>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Reservas pagas</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-bookings-paid">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Reservas pendentes</div>
+          <div class="admin__stat-value" id="stat-bookings-pending">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita confirmada</div>
+          <div class="admin__stat-value" id="stat-bookings-revenue">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Conversão (cliques → pagas)</div>
+          <div class="admin__stat-value" id="stat-bookings-conversion">—</div>
+        </div>
+      </div>
+
+      <div class="admin__analytics-grid">
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Reservas por experiência</h3>
+          <div id="bookings-by-exp" class="admin__bars">
+            <p class="admin__analytics-empty">Sem reservas ainda.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Conversão por experiência (clique → paga)</h3>
+          <div id="bookings-conversion-list" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados ainda.</p>
+          </div>
+        </section>
       </div>
 
       <div class="admin__table-wrap">
         <div class="admin__table-header">
-          <span class="admin__table-title">Lista de compras</span>
+          <span class="admin__table-title">Lista de reservas</span>
           <span class="admin__table-count" id="purchases-count"></span>
         </div>
         <table class="admin__table">
           <thead>
             <tr>
+              <th>Quando</th>
               <th>Nome</th>
+              <th>E-mail</th>
               <th>Experiência</th>
               <th>Data</th>
               <th>Horário</th>
+              <th>Valor</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody id="purchases-body">
-            <tr><td colspan="5" class="admin__table-empty">Nenhuma compra registrada.</td></tr>
+            <tr><td colspan="8" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
           </tbody>
         </table>
       </div>
@@ -623,6 +677,6 @@
 <script src="experiences-data.js?v=6"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=9"></script>
+<script src="admin.js?v=10"></script>
 </body>
 </html>

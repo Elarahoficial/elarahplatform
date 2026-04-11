@@ -843,6 +843,11 @@ select {
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .card__price {
@@ -853,6 +858,35 @@ select {
 .card__price strong {
   font-weight: 700;
   color: var(--gray-900);
+}
+
+.card__reserve-btn {
+  appearance: none;
+  border: none;
+  background: var(--orange, #f0a05e);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  letter-spacing: 0.02em;
+}
+
+.card__reserve-btn:hover {
+  background: #e88f47;
+}
+
+.card__reserve-btn:active {
+  transform: scale(0.97);
+}
+
+.card__reserve-btn:disabled {
+  background: #d8b89a;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ===== GIFT SECTION ===== */

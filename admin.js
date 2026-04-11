@@ -75,6 +75,7 @@
     wireExperienceForm();
     wireByElarahForm();
     wireAnalyticsControls();
+    wireBookingsControls();
     await renderOverview();
   }
 
@@ -103,7 +104,7 @@
       case 'overview':    await renderOverview(); break;
       case 'users':       await renderUsers(); break;
       case 'partners':    await renderPartners(); break;
-      case 'purchases':   renderPurchases(); break;
+      case 'purchases':   await renderBookings(); break;
       case 'experiences': await renderExperiences(); break;
       case 'byelarah':    await renderByElarah(); break;
       case 'analytics':   await renderAnalytics(); break;
@@ -287,30 +288,163 @@
     await renderOverview();
   }
 
-  // ===== PURCHASES (legado localStorage) =====
-  function renderPurchases() {
-    const purchases = getPurchases();
+  // ===== BOOKINGS (Supabase) =====
+  let bookingsCache = null;
+
+  async function getBookings() {
+    if (bookingsCache) return bookingsCache.slice();
+    const s = window.supabaseClient;
+    if (!s) return [];
+    const { data, error } = await s
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('[Admin] getBookings error', error);
+      return [];
+    }
+    bookingsCache = data || [];
+    return bookingsCache.slice();
+  }
+
+  function invalidateBookings() { bookingsCache = null; }
+
+  function formatCents(amountCents, currency) {
+    if (amountCents == null) return '—';
+    const value = (amountCents / 100).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: (currency || 'BRL').toUpperCase()
+    });
+    return value;
+  }
+
+  function bookingStatusBadge(status) {
+    const cls = status === 'pago' ? 'approved'
+              : status === 'pending' ? 'pending'
+              : status === 'reembolsado' ? 'pending'
+              : 'rejected';
+    const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : '—';
+    return `<span class="admin__badge admin__badge--${cls}">${escapeHtml(label)}</span>`;
+  }
+
+  function wireBookingsControls() {
+    const refreshBtn = document.getElementById('btn-refresh-bookings');
+    const filterExp = document.getElementById('bookings-filter-exp');
+    const filterStatus = document.getElementById('bookings-filter-status');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => {
+      invalidateBookings();
+      renderBookings();
+    });
+    if (filterExp) filterExp.addEventListener('change', () => renderBookings());
+    if (filterStatus) filterStatus.addEventListener('change', () => renderBookings());
+  }
+
+  async function renderBookings() {
+    if (!document.getElementById('purchases-body')) return;
+    const bookings = await getBookings();
+
+    // Popula filtro de experiências (apenas uma vez por load).
+    const filterExpEl = document.getElementById('bookings-filter-exp');
+    if (filterExpEl && filterExpEl.options.length <= 1) {
+      const seen = new Set();
+      bookings.forEach(b => {
+        if (b.experiencia_nome && !seen.has(b.experiencia_nome)) {
+          seen.add(b.experiencia_nome);
+          const opt = document.createElement('option');
+          opt.value = b.experiencia_nome;
+          opt.textContent = b.experiencia_nome;
+          filterExpEl.appendChild(opt);
+        }
+      });
+    }
+
+    const filterExp = filterExpEl ? filterExpEl.value : '';
+    const filterStatusEl = document.getElementById('bookings-filter-status');
+    const filterStatus = filterStatusEl ? filterStatusEl.value : '';
+
+    const filtered = bookings.filter(b => {
+      if (filterExp && b.experiencia_nome !== filterExp) return false;
+      if (filterStatus && b.status !== filterStatus) return false;
+      return true;
+    });
+
+    // Stats sobre TODAS as bookings (não filtradas).
+    const paid = bookings.filter(b => b.status === 'pago');
+    const pending = bookings.filter(b => b.status === 'pending');
+    const revenueCents = paid.reduce((sum, b) => sum + (b.amount_total || 0), 0);
+
+    document.getElementById('stat-bookings-paid').textContent = paid.length;
+    document.getElementById('stat-bookings-pending').textContent = pending.length;
+    document.getElementById('stat-bookings-revenue').textContent = formatCents(revenueCents, 'BRL');
+
+    // Conversão = pagas / cliques de Reservar (vem dos analytics_events).
+    let conversionLabel = '—';
+    try {
+      if (window.ElarahAnalytics && ElarahAnalytics.rawSelect) {
+        const clicks = await ElarahAnalytics.rawSelect({ eventName: 'reserve_click', limit: 10000 });
+        if (clicks && clicks.length) {
+          const rate = (paid.length / clicks.length) * 100;
+          conversionLabel = rate.toFixed(1) + '% (' + paid.length + '/' + clicks.length + ')';
+
+          // Conversão por experiência
+          const clicksByExp = new Map();
+          clicks.forEach(c => {
+            const k = c.target_label || c.target_id || '—';
+            clicksByExp.set(k, (clicksByExp.get(k) || 0) + 1);
+          });
+          const paidByExp = new Map();
+          paid.forEach(b => {
+            const k = b.experiencia_nome || '—';
+            paidByExp.set(k, (paidByExp.get(k) || 0) + 1);
+          });
+          const rows = Array.from(clicksByExp.entries()).map(([k, totalClicks]) => {
+            const totalPaid = paidByExp.get(k) || 0;
+            const r = totalClicks > 0 ? Math.round((totalPaid / totalClicks) * 100) : 0;
+            return { key: k, label: k + ' — ' + totalPaid + '/' + totalClicks + ' (' + r + '%)', count: r };
+          }).sort((a, b) => b.count - a.count);
+          renderBars('bookings-conversion-list', rows);
+        }
+      }
+    } catch (e) {
+      console.warn('[Admin] conversion calc failed', e);
+    }
+    document.getElementById('stat-bookings-conversion').textContent = conversionLabel;
+
+    // Reservas por experiência (pagas + pendentes contam aqui).
+    const byExp = new Map();
+    bookings.forEach(b => {
+      const k = b.experiencia_nome || '—';
+      byExp.set(k, (byExp.get(k) || 0) + 1);
+    });
+    const byExpRows = Array.from(byExp.entries())
+      .map(([k, c]) => ({ key: k, label: k, count: c }))
+      .sort((a, b) => b.count - a.count);
+    renderBars('bookings-by-exp', byExpRows);
+
+    // Tabela
     const tbody = document.getElementById('purchases-body');
     const countEl = document.getElementById('purchases-count');
+    countEl.textContent = filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : '');
 
-    countEl.textContent = purchases.length + ' compra' + (purchases.length !== 1 ? 's' : '');
-
-    if (purchases.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="admin__table-empty">Nenhuma compra registrada.</td></tr>';
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = purchases.map(p => {
-      const statusClass = p.status === 'confirmada' ? 'approved' :
-                          p.status === 'cancelada' ? 'rejected' : 'pending';
-      const statusLabel = p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : 'Pendente';
+    tbody.innerHTML = filtered.map(b => {
+      const when = b.created_at
+        ? new Date(b.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+        : '—';
       return `
         <tr>
-          <td>${escapeHtml(p.nome || p.userName || '—')}</td>
-          <td>${escapeHtml(p.experiencia || p.experienceName || '—')}</td>
-          <td>${escapeHtml(p.data || '—')}</td>
-          <td>${escapeHtml(p.horario || '—')}</td>
-          <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
+          <td>${escapeHtml(when)}</td>
+          <td>${escapeHtml(b.nome || '—')}</td>
+          <td>${escapeHtml(b.email || '—')}</td>
+          <td>${escapeHtml(b.experiencia_nome || '—')}</td>
+          <td>${escapeHtml(b.data || '—')}</td>
+          <td>${escapeHtml(b.horario || '—')}</td>
+          <td>${escapeHtml(formatCents(b.amount_total, b.currency))}</td>
+          <td>${bookingStatusBadge(b.status)}</td>
         </tr>
       `;
     }).join('');
