@@ -110,8 +110,79 @@
       case 'purchases':   await renderBookings(); break;
       case 'experiences': await renderExperiences(); break;
       case 'byelarah':    await renderByElarah(); break;
+      case 'giftcards':   await renderGiftCards(); break;
       case 'analytics':   await renderAnalytics(); break;
     }
+  }
+
+  // ===== GIFT CARDS =====
+  async function renderGiftCards() {
+    const tbody = document.getElementById('giftcards-body');
+    const countEl = document.getElementById('giftcards-count');
+    if (!tbody) return;
+
+    const sb = window.supabaseClient;
+    if (!sb) {
+      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Supabase indisponível.</td></tr>';
+      return;
+    }
+
+    const { data, error } = await sb
+      .from('gift_cards')
+      .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, created_at')
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (error) {
+      console.error('[admin/gift_cards] load error', error);
+      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Erro ao carregar gift cards.</td></tr>';
+      return;
+    }
+
+    const rows = data || [];
+    if (countEl) countEl.textContent = rows.length + ' gift card' + (rows.length !== 1 ? 's' : '');
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>';
+      return;
+    }
+
+    const brl = (cents) => 'R$ ' + ((Number(cents) || 0) / 100).toFixed(2).replace('.', ',');
+    const statusBadge = (s) => {
+      const colors = {
+        active:    '#1a8a4a',
+        used:      '#888',
+        expired:   '#c0392b',
+        pending:   '#b07b00',
+        cancelled: '#c0392b'
+      };
+      const labels = {
+        active:    'ativo',
+        used:      'usado',
+        expired:   'expirado',
+        pending:   'pendente',
+        cancelled: 'cancelado'
+      };
+      const c = colors[s] || '#666';
+      const l = labels[s] || s;
+      return '<span style="color:' + c + ';font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;">' + l + '</span>';
+    };
+
+    tbody.innerHTML = rows.map(g => {
+      const dt = g.created_at ? new Date(g.created_at).toLocaleString('pt-BR') : '';
+      const compradorLabel = (g.comprador_nome || '') + (g.comprador_email ? ' <' + g.comprador_email + '>' : '');
+      const destLabel = (g.destinatario_nome || '') + (g.destinatario_email ? ' <' + g.destinatario_email + '>' : '');
+      const codeDisplay = g.status === 'pending' ? '—' : (g.code || '');
+      return '<tr>' +
+        '<td style="font-family:Menlo,Consolas,monospace;font-size:12px;">' + escapeHtml(codeDisplay) + '</td>' +
+        '<td>' + escapeHtml(compradorLabel.trim() || '—') + '</td>' +
+        '<td>' + escapeHtml(destLabel.trim() || '—') + '</td>' +
+        '<td>' + escapeHtml(brl(g.valor_inicial_centavos)) + '</td>' +
+        '<td>' + escapeHtml(brl(g.saldo_centavos)) + '</td>' +
+        '<td>' + statusBadge(g.status) + '</td>' +
+        '<td>' + escapeHtml(dt) + '</td>' +
+        '</tr>';
+    }).join('');
   }
 
   // ===== LOGOUT =====
@@ -511,6 +582,31 @@
       document.getElementById('exp-imagem').value = exp.imagem || '';
       document.getElementById('exp-descricao').value = exp.descricao || '';
 
+      // Vagas e cutoff
+      const vagasTotalEl = document.getElementById('exp-vagas-total');
+      const vagasRestEl = document.getElementById('exp-vagas-restantes');
+      const eventAtEl = document.getElementById('exp-event-at');
+      const cutoffEl = document.getElementById('exp-cutoff-hours');
+      if (vagasTotalEl) vagasTotalEl.value = exp.vagasTotal != null ? exp.vagasTotal : '';
+      if (vagasRestEl)  vagasRestEl.value  = exp.vagasRestantes != null ? exp.vagasRestantes : '';
+      if (eventAtEl) {
+        // Converte ISO -> "YYYY-MM-DDTHH:MM" pro input datetime-local
+        if (exp.eventAt) {
+          const d = new Date(exp.eventAt);
+          if (!isNaN(d.getTime())) {
+            const pad = n => String(n).padStart(2, '0');
+            eventAtEl.value =
+              d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' +
+              pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+          } else {
+            eventAtEl.value = '';
+          }
+        } else {
+          eventAtEl.value = '';
+        }
+      }
+      if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : 24;
+
       const horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
         ? exp.horarios
         : (exp.horario ? [exp.horario] : ['']);
@@ -532,6 +628,10 @@
       const cor2El = document.getElementById('exp-cor2');
       if (cor1El) cor1El.value = '#f6d5a8';
       if (cor2El) cor2El.value = '#f0a05e';
+      const cutoffEl = document.getElementById('exp-cutoff-hours');
+      if (cutoffEl) cutoffEl.value = 24;
+      const vagasRestEl = document.getElementById('exp-vagas-restantes');
+      if (vagasRestEl) vagasRestEl.value = '';
       document.getElementById('exp-edit-id').value = '';
     }
 
@@ -578,6 +678,18 @@
         return;
       }
 
+      const vagasTotalRaw = (document.getElementById('exp-vagas-total')?.value || '').trim();
+      const eventAtRaw    = (document.getElementById('exp-event-at')?.value || '').trim();
+      const cutoffRaw     = (document.getElementById('exp-cutoff-hours')?.value || '').trim();
+
+      // datetime-local devolve "YYYY-MM-DDTHH:MM" sem timezone — convertemos
+      // pro horário local do navegador e mandamos como ISO.
+      let eventAtIso = null;
+      if (eventAtRaw) {
+        const d = new Date(eventAtRaw);
+        if (!isNaN(d.getTime())) eventAtIso = d.toISOString();
+      }
+
       const expData = {
         nome: document.getElementById('exp-nome').value.trim(),
         categoria: document.getElementById('exp-categoria').value,
@@ -591,7 +703,10 @@
         inclui: document.getElementById('exp-inclui').value.trim(),
         imagem: document.getElementById('exp-imagem').value.trim(),
         descricao: document.getElementById('exp-descricao').value.trim(),
-        cor: cor1 + ',' + cor2
+        cor: cor1 + ',' + cor2,
+        vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
+        eventAt: eventAtIso,
+        cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw)
       };
 
       const editId = document.getElementById('exp-edit-id').value;
@@ -621,7 +736,7 @@
     countEl.textContent = experiences.length + ' experiência' + (experiences.length !== 1 ? 's' : '');
 
     if (experiences.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>';
       return;
     }
 
@@ -629,6 +744,13 @@
       const horariosDisplay = Array.isArray(exp.horarios) && exp.horarios.length > 1
         ? exp.horarios.join(' · ')
         : (exp.horario || '');
+      let vagasDisplay = '<span style="color:#888;">∞</span>';
+      if (exp.vagasTotal != null) {
+        const rest = exp.vagasRestantes != null ? exp.vagasRestantes : exp.vagasTotal;
+        const cor = rest <= 0 ? '#c0392b' : (rest <= 3 ? '#b07b00' : '#1a8a4a');
+        vagasDisplay = '<span style="color:' + cor + ';font-weight:600;">' +
+                       rest + ' / ' + exp.vagasTotal + '</span>';
+      }
       return `
       <tr>
         <td>${escapeHtml(exp.nome)}</td>
@@ -637,6 +759,7 @@
         <td>${escapeHtml(horariosDisplay)}</td>
         <td>${escapeHtml(exp.bairro)}</td>
         <td>${escapeHtml(exp.preco)}</td>
+        <td>${vagasDisplay}</td>
         <td>
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
           <button class="admin__action-btn admin__action-btn--duplicate" data-duplicate-exp="${escapeHtml(exp.id)}">Duplicar</button>

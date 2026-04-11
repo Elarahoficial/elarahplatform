@@ -726,6 +726,8 @@ if (groupForm) {
   (function () {
     const CHECKOUT_FN_URL =
       'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/create-checkout-session';
+    const REDEEM_FN_URL =
+      'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/redeem-gift-card';
     // Anon key do Supabase (JWT). Pode ficar exposta no front — é o
     // "publishable key" do projeto, sem privilégios além do RLS.
     const SUPABASE_ANON_KEY =
@@ -733,7 +735,12 @@ if (groupForm) {
 
     function readActiveHorario(triggerEl) {
       if (!triggerEl) return null;
-      const card = triggerEl.closest('.card, .originals__card, .exp-card');
+      // Trigger pode trazer um data-horario explícito (ex.: ghost button
+      // criado pelo resumePendingCheckout após login).
+      if (triggerEl.dataset && triggerEl.dataset.horario) {
+        return triggerEl.dataset.horario;
+      }
+      const card = triggerEl.closest && triggerEl.closest('.card, .originals__card, .exp-card');
       if (!card) return null;
       const active = card.querySelector('.card__horario-btn--active');
       if (active && active.dataset && active.dataset.horario) {
@@ -742,6 +749,32 @@ if (groupForm) {
       const first = card.querySelector('.card__horario-btn');
       if (first && first.dataset) return first.dataset.horario || null;
       return null;
+    }
+
+    function readPrecoFromCard(triggerEl) {
+      if (!triggerEl) return '';
+      const card = triggerEl.closest('.card, .originals__card, .exp-card');
+      if (!card) return '';
+      const el = card.querySelector('[data-experience-preco], .card__price, .card__preco');
+      if (!el) return '';
+      return (el.getAttribute('data-experience-preco') || el.textContent || '').trim();
+    }
+
+    // "R$ 1.234,50" / "R$383" / "383,00" -> 38300
+    function parsePrecoToCents(raw) {
+      if (raw == null) return null;
+      const text = String(raw).replace(/\s/g, '').replace(/^R\$/i, '');
+      if (!text) return null;
+      const norm = text.indexOf(',') !== -1
+        ? text.replace(/\./g, '').replace(',', '.')
+        : text;
+      const num = Number(norm);
+      if (!isFinite(num) || num <= 0) return null;
+      return Math.round(num * 100);
+    }
+
+    function brl(centavos) {
+      return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
     }
 
     async function getAuthInfo() {
@@ -784,6 +817,213 @@ if (groupForm) {
       return false;
     }
 
+    // ===== Modal de confirmação de reserva (com campo de cupom) =====
+    let modalRoot = null;
+    function buildReservationModal() {
+      if (modalRoot) return modalRoot;
+      modalRoot = document.createElement('div');
+      modalRoot.id = 'elarah-reserve-modal';
+      modalRoot.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(20,12,4,.55);padding:20px;font-family:"DM Sans",sans-serif;';
+      modalRoot.innerHTML = ''
+        + '<div style="background:#fff;border-radius:18px;max-width:440px;width:100%;padding:28px 28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto;">'
+        +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;">'
+        +     '<h3 id="erm-title" style="font-family:\'DM Serif Display\',serif;font-size:1.35rem;color:#1a1a1a;margin:0;">Confirmar reserva</h3>'
+        +     '<button type="button" id="erm-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;padding:0 4px;">&times;</button>'
+        +   '</div>'
+        +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
+        +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   '<div style="background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+        +     '<div style="display:flex;justify-content:space-between;font-size:.88rem;color:#666;"><span>Subtotal</span><span id="erm-subtotal"></span></div>'
+        +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
+        +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
+        +   '</div>'
+        +   '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;">Cupom / Gift Card (opcional)</label>'
+        +   '<div style="display:flex;gap:8px;">'
+        +     '<input id="erm-cupom" type="text" placeholder="ELRH-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;text-transform:uppercase;">'
+        +     '<button type="button" id="erm-validate" style="padding:11px 14px;border:1px solid #f0a05e;background:#fff;color:#f0a05e;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;white-space:nowrap;">Aplicar</button>'
+        +   '</div>'
+        +   '<p id="erm-cupom-msg" style="margin:6px 0 0;font-size:.82rem;min-height:1.1em;"></p>'
+        +   '<button type="button" id="erm-confirm" style="width:100%;margin-top:18px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Confirmar e pagar</button>'
+        +   '<p id="erm-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>'
+        + '</div>';
+      document.body.appendChild(modalRoot);
+
+      modalRoot.addEventListener('click', function (e) {
+        if (e.target === modalRoot) closeReservationModal();
+      });
+      modalRoot.querySelector('#erm-close').addEventListener('click', closeReservationModal);
+      return modalRoot;
+    }
+
+    function closeReservationModal() {
+      if (!modalRoot) return;
+      modalRoot.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    let currentReservationCtx = null;
+
+    function openReservationModal(ctx) {
+      const root = buildReservationModal();
+      currentReservationCtx = ctx;
+      root.querySelector('#erm-exp').textContent = ctx.experienceNome || 'Experiência';
+      root.querySelector('#erm-meta').textContent = [ctx.horario, ctx.precoLabel]
+        .filter(Boolean).join(' · ');
+      root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
+      root.querySelector('#erm-total').textContent = brl(ctx.precoCentavos);
+      root.querySelector('#erm-discount-row').style.display = 'none';
+      root.querySelector('#erm-cupom').value = '';
+      root.querySelector('#erm-cupom-msg').textContent = '';
+      root.querySelector('#erm-cupom-msg').style.color = '#666';
+      root.querySelector('#erm-error').textContent = '';
+      const confirmBtn = root.querySelector('#erm-confirm');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirmar e pagar';
+
+      // Reset cupom state on context
+      ctx.cupomCode = null;
+      ctx.cupomCentavos = 0;
+      ctx.totalCentavos = ctx.precoCentavos;
+
+      root.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+
+      // Bind buttons (uma vez por abertura, com remoção do antigo)
+      const validateBtn = root.querySelector('#erm-validate');
+      validateBtn.onclick = function () { handleValidateCupom(); };
+      confirmBtn.onclick = function () { handleConfirmReservation(); };
+      root.querySelector('#erm-cupom').onkeydown = function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); handleValidateCupom(); }
+      };
+    }
+
+    async function handleValidateCupom() {
+      if (!currentReservationCtx) return;
+      const root = modalRoot;
+      const input = root.querySelector('#erm-cupom');
+      const msg = root.querySelector('#erm-cupom-msg');
+      const code = (input.value || '').trim().toUpperCase();
+      if (!code) {
+        msg.style.color = '#c0392b';
+        msg.textContent = 'Digite um código.';
+        return;
+      }
+      msg.style.color = '#666';
+      msg.textContent = 'Validando...';
+
+      try {
+        const res = await fetch(REDEEM_FN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            code: code,
+            amount_centavos: currentReservationCtx.precoCentavos,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data || !data.ok) {
+          msg.style.color = '#c0392b';
+          msg.textContent = (data && data.error) || 'Não foi possível validar o cupom.';
+          return;
+        }
+        if (!data.valid) {
+          msg.style.color = '#c0392b';
+          msg.textContent = data.message || 'Cupom inválido.';
+          currentReservationCtx.cupomCode = null;
+          currentReservationCtx.cupomCentavos = 0;
+          currentReservationCtx.totalCentavos = currentReservationCtx.precoCentavos;
+          root.querySelector('#erm-discount-row').style.display = 'none';
+          root.querySelector('#erm-total').textContent = brl(currentReservationCtx.precoCentavos);
+          return;
+        }
+        const used = Number(data.used_centavos || 0);
+        const total = Math.max(0, currentReservationCtx.precoCentavos - used);
+        currentReservationCtx.cupomCode = code;
+        currentReservationCtx.cupomCentavos = used;
+        currentReservationCtx.totalCentavos = total;
+
+        msg.style.color = '#1a8a4a';
+        msg.textContent = data.covers_full
+          ? 'Cupom cobre 100% — você não paga nada extra.'
+          : 'Cupom aplicado: ' + brl(used) + ' de desconto.';
+        const drow = root.querySelector('#erm-discount-row');
+        drow.style.display = 'flex';
+        root.querySelector('#erm-discount').textContent = '- ' + brl(used);
+        root.querySelector('#erm-total').textContent = brl(total);
+
+        const confirmBtn = root.querySelector('#erm-confirm');
+        confirmBtn.textContent = total === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+      } catch (e) {
+        console.error('[Elarah checkout] validate cupom', e);
+        msg.style.color = '#c0392b';
+        msg.textContent = 'Erro ao validar o cupom.';
+      }
+    }
+
+    async function handleConfirmReservation() {
+      if (!currentReservationCtx) return;
+      const ctx = currentReservationCtx;
+      const root = modalRoot;
+      const confirmBtn = root.querySelector('#erm-confirm');
+      const errEl = root.querySelector('#erm-error');
+      errEl.textContent = '';
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Processando...';
+
+      try {
+        const auth = await getAuthInfo();
+        const headers = {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + (auth.token || SUPABASE_ANON_KEY),
+        };
+        const body = {
+          experiencia_id: ctx.experienceId,
+          horario: ctx.horario,
+          email: auth.email || ctx.email,
+          nome: ctx.nome || null,
+          cupom: ctx.cupomCode || null,
+        };
+        const res = await fetch(CHECKOUT_FN_URL, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data) {
+          const msg = (data && (data.message || data.error)) || 'Não foi possível processar a reserva.';
+          errEl.textContent = msg;
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = ctx.totalCentavos === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+          return;
+        }
+
+        if (data.direct === true) {
+          // Pagamento integral via gift card — vai direto pra success.
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(data.booking_id || '');
+          return;
+        }
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+        errEl.textContent = 'Resposta inesperada do servidor.';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = ctx.totalCentavos === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+      } catch (e) {
+        console.error('[Elarah checkout] confirm', e);
+        errEl.textContent = 'Erro ao confirmar. Tente novamente.';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = ctx.totalCentavos === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+      }
+    }
+
     async function startCheckout(btn) {
       const experienceId = btn.getAttribute('data-experience-id');
       const experienceNome = btn.getAttribute('data-experience-nome') || '';
@@ -794,9 +1034,6 @@ if (groupForm) {
       }
 
       // === GATE DE LOGIN OBRIGATÓRIO ===
-      // Ninguém reserva sem estar logado. Se não estiver, guardamos a
-      // intenção e abrimos o modal de login. Após o login, o listener
-      // de onAuthStateChange (mais abaixo) retoma o checkout.
       if (!isUserLogged()) {
         try {
           sessionStorage.setItem(PENDING_KEY, JSON.stringify({
@@ -813,12 +1050,6 @@ if (groupForm) {
         return;
       }
 
-      // Estado de loading
-      const originalLabel = btn.dataset.originalLabel || btn.textContent;
-      btn.dataset.originalLabel = originalLabel;
-      btn.disabled = true;
-      btn.textContent = 'Abrindo pagamento...';
-
       // Tracking opcional
       try {
         if (window.ElarahAnalytics && ElarahAnalytics.track) {
@@ -830,49 +1061,37 @@ if (groupForm) {
         }
       } catch (e) {}
 
-      try {
-        const auth = await getAuthInfo();
-        const horario = readActiveHorario(btn);
+      // Resolve preço (do botão, do card ou do cache de experiências).
+      const horario = readActiveHorario(btn);
+      let precoLabel = btn.getAttribute('data-experience-preco') || readPrecoFromCard(btn);
+      let precoCentavos = parsePrecoToCents(precoLabel);
 
-        const headers = {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + (auth.token || SUPABASE_ANON_KEY),
-        };
-
-        const body = {
-          // Edge Function espera snake_case; mandamos os dois por segurança.
-          experiencia_id: experienceId,
-          experienceId: experienceId,
-          horario: horario,
-          email: auth.email,
-        };
-
-        const res = await fetch(CHECKOUT_FN_URL, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(body),
-        });
-
-        let data = null;
-        try { data = await res.json(); } catch (e) {}
-
-        if (!res.ok || !data || !data.url) {
-          console.error('[Elarah checkout] falha', res.status, data);
-          alert('Não foi possível abrir o pagamento. Tente novamente em instantes.');
-          btn.disabled = false;
-          btn.textContent = originalLabel;
-          return;
-        }
-
-        // Sucesso — redireciona pro Stripe
-        window.location.href = data.url;
-      } catch (err) {
-        console.error('[Elarah checkout] exception', err);
-        alert('Não foi possível abrir o pagamento. Tente novamente em instantes.');
-        btn.disabled = false;
-        btn.textContent = originalLabel;
+      if (!precoCentavos && window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
+        try {
+          const exp = await ElarahData.getExperienceById(experienceId);
+          if (exp) {
+            precoLabel = exp.preco || precoLabel;
+            precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
+          }
+        } catch (e) {}
       }
+      if (!precoCentavos) {
+        // Fallback: deixa o backend dizer. Sem cupom faz sentido nesse caso.
+        precoCentavos = 0;
+        precoLabel = precoLabel || '';
+      }
+
+      const auth = await getAuthInfo();
+
+      openReservationModal({
+        experienceId: experienceId,
+        experienceNome: experienceNome,
+        horario: horario,
+        precoLabel: precoLabel,
+        precoCentavos: precoCentavos,
+        email: auth.email,
+        nome: null,
+      });
     }
 
     // Capture phase + stopImmediatePropagation: garante que SOMENTE este
@@ -922,6 +1141,9 @@ if (groupForm) {
       ghost.setAttribute('data-experience-id', pending.experienceId);
       if (pending.experienceNome) {
         ghost.setAttribute('data-experience-nome', pending.experienceNome);
+      }
+      if (pending.horario) {
+        ghost.setAttribute('data-horario', pending.horario);
       }
       startCheckout(ghost);
     }

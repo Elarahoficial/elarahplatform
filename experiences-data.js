@@ -77,6 +77,12 @@
       descricao: row.descricao || '',
       horario: horario,
       horarios: horarios.length ? horarios : (horario ? [horario] : []),
+      // ----- novos campos -----
+      vagasTotal: row.vagas_total != null ? Number(row.vagas_total) : null,
+      vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
+      eventAt: row.event_at || null,
+      cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : 24,
+      // ------------------------
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
     };
@@ -86,7 +92,21 @@
     const horarios = Array.isArray(exp.horarios) && exp.horarios.length
       ? exp.horarios.map(h => (typeof h === 'string' ? h.trim() : '')).filter(Boolean)
       : (exp.horario ? [String(exp.horario).trim()] : []);
-    return {
+
+    // Aceita tanto camelCase (vagasTotal) quanto snake_case (vagas_total)
+    // pra ser tolerante com formulários antigos.
+    const rawVagasTotal = exp.vagasTotal != null ? exp.vagasTotal : exp.vagas_total;
+    const vagasTotal = rawVagasTotal === '' || rawVagasTotal == null
+      ? null
+      : Number(rawVagasTotal);
+
+    const rawEventAt = exp.eventAt != null ? exp.eventAt : exp.event_at;
+    const eventAt = rawEventAt && String(rawEventAt).trim() ? String(rawEventAt).trim() : null;
+
+    const rawCutoff = exp.cutoffHours != null ? exp.cutoffHours : exp.cutoff_hours;
+    const cutoffHours = rawCutoff === '' || rawCutoff == null ? 24 : Number(rawCutoff);
+
+    const row = {
       nome: (exp.nome || '').trim(),
       categoria: (exp.categoria || '').trim(),
       data: (exp.data || '').trim(),
@@ -99,8 +119,12 @@
       imagem: (exp.imagem || '').trim(),
       descricao: (exp.descricao || '').trim(),
       horario: horarios[0] || '',
-      horarios: horarios
+      horarios: horarios,
+      vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
+      event_at: eventAt,
+      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24
     };
+    return row;
   }
 
   function invalidateCache() {

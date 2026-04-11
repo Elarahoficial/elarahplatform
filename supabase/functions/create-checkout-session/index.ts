@@ -3,30 +3,46 @@
 // -------------------------------------------------------------
 // POST /functions/v1/create-checkout-session
 //
-// Body JSON:
+// Dois modos:
+//
+// (A) Reserva de experiência:
 //   {
 //     "experiencia_id": "uuid",
-//     "horario": "19h00 – 22h30",   // opcional
-//     "email":   "cliente@dominio"  // opcional (se logado)
+//     "horario":   "19h00 – 22h30",   // opcional
+//     "email":     "cliente@dominio", // opcional (se logado)
+//     "nome":      "Maria",           // opcional
+//     "cupom":     "ELRH-XXXX-..."    // opcional, gift card
 //   }
 //
-// Resposta:
+// (B) Compra de gift card:
+//   {
+//     "mode": "gift_card",
+//     "gift_card_value_centavos": 20000,
+//     "buyer_email":      "joao@dominio",
+//     "buyer_nome":       "João",
+//     "recipient_email":  "maria@dominio",
+//     "recipient_nome":   "Maria",
+//     "mensagem":         "Feliz aniversário!"
+//   }
+//
+// Resposta padrão:
 //   { url: "https://checkout.stripe.com/...", session_id: "cs_..." }
 //
-// Comportamento:
-//   * Busca a experiência no banco para garantir preço autoritativo
-//     (não confia no preço enviado pelo frontend).
-//   * Cria a Stripe Checkout Session com metadata da reserva.
-//   * Insere uma row em public.bookings com status='pending'
-//     usando o SUPABASE_SERVICE_ROLE_KEY (ignora RLS).
-//   * Retorna a URL para o frontend redirecionar.
+// Resposta no caso de gift card cobrir 100% (sem cobrança):
+//   { direct: true, booking_id: "uuid" }
 //
-// Variáveis de ambiente esperadas (configure no Supabase):
-//   STRIPE_SECRET_KEY        sk_test_... ou sk_live_...
-//   SUPABASE_URL             (preenchida automaticamente)
+// Erros conhecidos (4xx):
+//   experience_not_found      | 404
+//   experience_sold_out       | 409  (sem vagas)
+//   experience_cutoff_passed  | 409  (faltando < cutoff_hours)
+//   gift_card_invalid         | 422
+//   invalid_price             | 422
+//
+// Variáveis de ambiente:
+//   STRIPE_SECRET_KEY
+//   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
 //   PUBLIC_SITE_URL          ex.: https://elarah.com.br
-//                            (sem barra final)
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -55,7 +71,6 @@ function parsePrecoToCents(raw: unknown): number | null {
   if (raw == null) return null;
   const text = String(raw).replace(/\s/g, "").replace(/^R\$/i, "");
   if (!text) return null;
-  // Formato BR: usa vírgula como decimal e ponto como milhar.
   const normalized = text.includes(",")
     ? text.replace(/\./g, "").replace(",", ".")
     : text;
@@ -71,6 +86,397 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+// =============================================================
+// MODO B — gift card purchase
+// =============================================================
+async function handleGiftCardPurchase(payload: Record<string, unknown>) {
+  const valor = Number(payload.gift_card_value_centavos ?? 0);
+  const buyerEmail = String(payload.buyer_email ?? "").trim();
+  const buyerNome = String(payload.buyer_nome ?? "").trim();
+  const recipientEmail = String(payload.recipient_email ?? "").trim();
+  const recipientNome = String(payload.recipient_nome ?? "").trim();
+  const mensagem = String(payload.mensagem ?? "").trim();
+
+  if (!Number.isFinite(valor) || valor < 5000) {
+    return jsonResponse({ error: "gift_card_min_value" }, 400);
+  }
+  if (valor > 500000) {
+    return jsonResponse({ error: "gift_card_max_value" }, 400);
+  }
+  if (!recipientEmail || !/.+@.+\..+/.test(recipientEmail)) {
+    return jsonResponse({ error: "recipient_email_required" }, 400);
+  }
+
+  // Resolve user_id do comprador (opcional)
+  let buyerUserId: string | null = null;
+  if (buyerEmail) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", buyerEmail)
+      .maybeSingle();
+    if (prof) buyerUserId = prof.id;
+  }
+
+  const successUrl =
+    PUBLIC_SITE_URL + "/success.html?gift=1&session_id={CHECKOUT_SESSION_ID}";
+  const cancelUrl = PUBLIC_SITE_URL + "/cancel.html";
+
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      locale: "pt-BR",
+      customer_email: buyerEmail || undefined,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "brl",
+            unit_amount: valor,
+            product_data: {
+              name: "Gift Card Elarah",
+              description:
+                ("Para " + (recipientNome || recipientEmail)).slice(0, 380),
+            },
+          },
+        },
+      ],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        kind: "gift_card",
+        valor_centavos: String(valor),
+        buyer_email: buyerEmail,
+        buyer_nome: buyerNome,
+        recipient_email: recipientEmail,
+        recipient_nome: recipientNome,
+        mensagem: mensagem.slice(0, 480),
+      },
+    });
+  } catch (e) {
+    console.error("[create-checkout-session/gift] stripe error", e);
+    return jsonResponse({ error: "stripe_create_failed" }, 502);
+  }
+
+  // Pré-grava gift card como pending — webhook ativa.
+  const { error: insertErr } = await supabase.from("gift_cards").insert({
+    code: "PENDING-" + session.id.slice(-12).toUpperCase(),
+    valor_inicial_centavos: valor,
+    saldo_centavos: valor,
+    status: "pending",
+    comprador_user_id: buyerUserId,
+    comprador_email: buyerEmail || null,
+    comprador_nome: buyerNome || null,
+    destinatario_email: recipientEmail,
+    destinatario_nome: recipientNome || null,
+    mensagem: mensagem || null,
+    stripe_session_id: session.id,
+    expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+
+  if (insertErr) {
+    console.error("[create-checkout-session/gift] insert error", insertErr);
+  }
+
+  return jsonResponse({ url: session.url, session_id: session.id });
+}
+
+// =============================================================
+// MODO A — reserva de experiência
+// =============================================================
+async function handleExperienceCheckout(payload: Record<string, unknown>) {
+  const experienciaId = String(payload.experiencia_id ?? "").trim();
+  const horario = payload.horario ? String(payload.horario).trim() : null;
+  const email = payload.email ? String(payload.email).trim() : null;
+  const nome = payload.nome ? String(payload.nome).trim() : null;
+  const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
+
+  if (!experienciaId) {
+    return jsonResponse({ error: "experiencia_id_required" }, 400);
+  }
+
+  // Busca a experiência (preço autoritativo + vagas + cutoff)
+  const { data: exp, error: expErr } = await supabase
+    .from("experiences")
+    .select(
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours",
+    )
+    .eq("id", experienciaId)
+    .maybeSingle();
+
+  if (expErr) {
+    console.error("[create-checkout-session] experience lookup error", expErr);
+    return jsonResponse({ error: "experience_lookup_failed" }, 500);
+  }
+  if (!exp) {
+    return jsonResponse({ error: "experience_not_found" }, 404);
+  }
+
+  // ===== Cutoff 24h =====
+  if (exp.event_at) {
+    const cutoffH = Number(exp.cutoff_hours ?? 24);
+    const eventTs = new Date(exp.event_at).getTime();
+    const limit = Date.now() + cutoffH * 60 * 60 * 1000;
+    if (limit > eventTs) {
+      return jsonResponse(
+        {
+          error: "experience_cutoff_passed",
+          message:
+            "As reservas para esta experiência encerraram " +
+            cutoffH +
+            "h antes do evento.",
+        },
+        409,
+      );
+    }
+  }
+
+  // ===== Vagas — checagem prévia (não atômica) =====
+  if (
+    exp.vagas_total !== null &&
+    exp.vagas_total !== undefined &&
+    (exp.vagas_restantes === null || Number(exp.vagas_restantes) <= 0)
+  ) {
+    return jsonResponse(
+      {
+        error: "experience_sold_out",
+        message: "Esta experiência está esgotada.",
+      },
+      409,
+    );
+  }
+
+  const cents = parsePrecoToCents(exp.preco);
+  if (!cents) {
+    console.error("[create-checkout-session] invalid price", exp.preco);
+    return jsonResponse({ error: "invalid_price" }, 422);
+  }
+
+  // ===== Resolve user_id =====
+  let userId: string | null = null;
+  if (email) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+    if (prof) userId = prof.id;
+  }
+
+  // ===== Hold gift card (se cupom enviado) =====
+  let giftCardId: string | null = null;
+  let giftCardCentavos = 0;
+  let amountToCharge = cents;
+
+  if (cupomCode) {
+    const { data: holdRows, error: holdErr } = await supabase.rpc(
+      "hold_gift_card",
+      { p_code: cupomCode, p_amount_centavos: cents },
+    );
+    if (holdErr) {
+      console.error("[create-checkout-session] hold error", holdErr);
+      return jsonResponse({ error: "gift_card_lookup_failed" }, 500);
+    }
+    const hold = Array.isArray(holdRows) ? holdRows[0] : holdRows;
+    if (!hold || !hold.ok) {
+      return jsonResponse(
+        {
+          error: "gift_card_invalid",
+          message: hold?.message || "Cupom inválido.",
+        },
+        422,
+      );
+    }
+    giftCardId = hold.gift_card_id;
+    giftCardCentavos = Number(hold.used_centavos || 0);
+    amountToCharge = Math.max(0, cents - giftCardCentavos);
+  }
+
+  // ===== Decremento atômico de vaga =====
+  // Só agora — depois do hold do cupom — pra evitar reservar vaga
+  // que vamos liberar logo em seguida se o cupom falhar.
+  const { data: vagaRows, error: vagaErr } = await supabase.rpc(
+    "decrement_experience_vagas",
+    { p_experience_id: exp.id },
+  );
+  if (vagaErr) {
+    console.error("[create-checkout-session] vagas decrement error", vagaErr);
+    if (giftCardId) {
+      // Devolve o saldo do cupom já segurado.
+      await supabase.rpc("refund_gift_card", {
+        p_gift_card_id: giftCardId,
+        p_amount_centavos: giftCardCentavos,
+      });
+    }
+    return jsonResponse({ error: "vagas_check_failed" }, 500);
+  }
+  const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
+  if (!vagaRow || vagaRow.ok === false) {
+    if (giftCardId) {
+      await supabase.rpc("refund_gift_card", {
+        p_gift_card_id: giftCardId,
+        p_amount_centavos: giftCardCentavos,
+      });
+    }
+    return jsonResponse(
+      {
+        error: "experience_sold_out",
+        message: "Esta experiência está esgotada.",
+      },
+      409,
+    );
+  }
+
+  // ===== CASO 1: gift card cobre 100% — pula Stripe =====
+  if (amountToCharge === 0) {
+    const directBookingId = crypto.randomUUID();
+    const { error: directErr } = await supabase.from("bookings").insert({
+      id: directBookingId,
+      user_id: userId,
+      email: email ?? "",
+      nome: nome,
+      experiencia_id: exp.id,
+      experiencia_nome: exp.nome,
+      data: exp.data ?? null,
+      horario: horario,
+      preco_label: exp.preco,
+      amount_total: 0,
+      currency: "brl",
+      status: "pago",
+      stripe_session_id: "GIFT-" + directBookingId.slice(0, 12),
+      gift_card_id: giftCardId,
+      gift_card_centavos: giftCardCentavos,
+      gift_card_code: cupomCode,
+      metadata: {
+        bairro: exp.bairro ?? null,
+        endereco: exp.endereco ?? null,
+        paid_with_gift_card_only: true,
+      },
+    });
+
+    if (directErr) {
+      console.error(
+        "[create-checkout-session] direct booking insert error",
+        directErr,
+      );
+      // Rollback: devolve cupom + vaga.
+      if (giftCardId) {
+        await supabase.rpc("refund_gift_card", {
+          p_gift_card_id: giftCardId,
+          p_amount_centavos: giftCardCentavos,
+        });
+      }
+      await supabase.rpc("increment_experience_vagas", {
+        p_experience_id: exp.id,
+      });
+      return jsonResponse({ error: "booking_failed" }, 500);
+    }
+
+    return jsonResponse({
+      direct: true,
+      booking_id: directBookingId,
+      paid_with_gift_card: true,
+      gift_card_centavos: giftCardCentavos,
+    });
+  }
+
+  // ===== CASO 2: cobrança parcial ou total no Stripe =====
+  const successUrl =
+    PUBLIC_SITE_URL + "/success.html?session_id={CHECKOUT_SESSION_ID}";
+  const cancelUrl = PUBLIC_SITE_URL + "/cancel.html";
+
+  const productName = giftCardCentavos > 0
+    ? exp.nome + " (com gift card)"
+    : exp.nome;
+
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      locale: "pt-BR",
+      customer_email: email || undefined,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "brl",
+            unit_amount: amountToCharge,
+            product_data: {
+              name: productName,
+              description: [exp.data, horario, exp.bairro]
+                .filter(Boolean)
+                .join(" · ")
+                .slice(0, 380),
+            },
+          },
+        },
+      ],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        kind: "experience",
+        experiencia_id: exp.id,
+        experiencia_nome: exp.nome,
+        data: exp.data ?? "",
+        horario: horario ?? "",
+        email: email ?? "",
+        nome: nome ?? "",
+        gift_card_id: giftCardId ?? "",
+        gift_card_centavos: String(giftCardCentavos),
+        gift_card_code: cupomCode ?? "",
+      },
+    });
+  } catch (e) {
+    console.error("[create-checkout-session] stripe create error", e);
+    if (giftCardId) {
+      await supabase.rpc("refund_gift_card", {
+        p_gift_card_id: giftCardId,
+        p_amount_centavos: giftCardCentavos,
+      });
+    }
+    await supabase.rpc("increment_experience_vagas", {
+      p_experience_id: exp.id,
+    });
+    return jsonResponse({ error: "stripe_create_failed" }, 502);
+  }
+
+  // Insere booking pending — fonte da verdade local.
+  const { error: insertErr } = await supabase.from("bookings").insert({
+    user_id: userId,
+    email: email ?? "",
+    nome: nome,
+    experiencia_id: exp.id,
+    experiencia_nome: exp.nome,
+    data: exp.data ?? null,
+    horario: horario,
+    preco_label: exp.preco,
+    amount_total: amountToCharge,
+    currency: "brl",
+    status: "pending",
+    stripe_session_id: session.id,
+    gift_card_id: giftCardId,
+    gift_card_centavos: giftCardCentavos || null,
+    gift_card_code: cupomCode,
+    metadata: {
+      bairro: exp.bairro ?? null,
+      endereco: exp.endereco ?? null,
+      preco_total_centavos: cents,
+    },
+  });
+
+  if (insertErr) {
+    console.error("[create-checkout-session] booking insert error", insertErr);
+  }
+
+  return jsonResponse({ url: session.url, session_id: session.id });
+}
+
+// =============================================================
+// ENTRY
+// =============================================================
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -92,114 +498,10 @@ serve(async (req) => {
     return jsonResponse({ error: "invalid_json" }, 400);
   }
 
-  const experienciaId = String(payload.experiencia_id ?? "").trim();
-  const horario = payload.horario ? String(payload.horario).trim() : null;
-  const email = payload.email ? String(payload.email).trim() : null;
-  const nome = payload.nome ? String(payload.nome).trim() : null;
+  const mode = String(payload.mode ?? "experience");
 
-  if (!experienciaId) {
-    return jsonResponse({ error: "experiencia_id_required" }, 400);
+  if (mode === "gift_card") {
+    return handleGiftCardPurchase(payload);
   }
-
-  // Busca a experiência (preço autoritativo).
-  const { data: exp, error: expErr } = await supabase
-    .from("experiences")
-    .select("id, nome, preco, data, horario, horarios, endereco, bairro")
-    .eq("id", experienciaId)
-    .maybeSingle();
-
-  if (expErr) {
-    console.error("[create-checkout-session] experience lookup error", expErr);
-    return jsonResponse({ error: "experience_lookup_failed" }, 500);
-  }
-  if (!exp) {
-    return jsonResponse({ error: "experience_not_found" }, 404);
-  }
-
-  const cents = parsePrecoToCents(exp.preco);
-  if (!cents) {
-    console.error("[create-checkout-session] invalid price", exp.preco);
-    return jsonResponse({ error: "invalid_price" }, 422);
-  }
-
-  // Resolve user_id pelo email (opcional).
-  let userId: string | null = null;
-  if (email) {
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
-    if (prof) userId = prof.id;
-  }
-
-  const successUrl =
-    PUBLIC_SITE_URL + "/success.html?session_id={CHECKOUT_SESSION_ID}";
-  const cancelUrl = PUBLIC_SITE_URL + "/cancel.html";
-
-  let session;
-  try {
-    session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      locale: "pt-BR",
-      customer_email: email || undefined,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "brl",
-            unit_amount: cents,
-            product_data: {
-              name: exp.nome,
-              description: [exp.data, horario, exp.bairro]
-                .filter(Boolean)
-                .join(" · ")
-                .slice(0, 380),
-            },
-          },
-        },
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        experiencia_id: exp.id,
-        experiencia_nome: exp.nome,
-        data: exp.data ?? "",
-        horario: horario ?? "",
-        email: email ?? "",
-        nome: nome ?? "",
-      },
-    });
-  } catch (e) {
-    console.error("[create-checkout-session] stripe create error", e);
-    return jsonResponse({ error: "stripe_create_failed" }, 502);
-  }
-
-  // Insere booking pending — fonte da verdade local.
-  const { error: insertErr } = await supabase.from("bookings").insert({
-    user_id: userId,
-    email: email ?? "",
-    nome: nome,
-    experiencia_id: exp.id,
-    experiencia_nome: exp.nome,
-    data: exp.data ?? null,
-    horario: horario,
-    preco_label: exp.preco,
-    amount_total: cents,
-    currency: "brl",
-    status: "pending",
-    stripe_session_id: session.id,
-    metadata: {
-      bairro: exp.bairro ?? null,
-      endereco: exp.endereco ?? null,
-    },
-  });
-
-  if (insertErr) {
-    // Não impede o checkout, mas loga forte para investigarmos.
-    console.error("[create-checkout-session] booking insert error", insertErr);
-  }
-
-  return jsonResponse({ url: session.url, session_id: session.id });
+  return handleExperienceCheckout(payload);
 });
