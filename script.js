@@ -704,51 +704,134 @@ if (groupForm) {
       closeStoryReader();
     }
   });
-  // ===== CHECKOUT STRIPE =====
-  document.addEventListener('click', async function (e) {
-    const btn = e.target.closest('[data-reserve]');
-    if (!btn) return;
 
-    e.preventDefault();
+  // ===== STRIPE CHECKOUT — Reservar =====
+  // Delegação global: qualquer botão com [data-reserve] dispara
+  // a Edge Function `create-checkout-session` e redireciona para
+  // o Stripe Checkout.
+  (function () {
+    const CHECKOUT_FN_URL =
+      'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/create-checkout-session';
+    // Anon key do Supabase (JWT). Pode ficar exposta no front — é o
+    // "publishable key" do projeto, sem privilégios além do RLS.
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
 
-    const experienceId = btn.dataset.experienceId;
-    if (!experienceId) {
-      alert('Experiência inválida.');
-      return;
+    function readActiveHorario(triggerEl) {
+      if (!triggerEl) return null;
+      const card = triggerEl.closest('.card, .originals__card, .exp-card');
+      if (!card) return null;
+      const active = card.querySelector('.card__horario-btn--active');
+      if (active && active.dataset && active.dataset.horario) {
+        return active.dataset.horario;
+      }
+      const first = card.querySelector('.card__horario-btn');
+      if (first && first.dataset) return first.dataset.horario || null;
+      return null;
     }
 
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Abrindo pagamento...';
-
-    try {
-      const response = await fetch(
-        'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/create-checkout-session',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c'
-          },
-          body: JSON.stringify({
-            experienceId
-          })
+    async function getAuthInfo() {
+      try {
+        if (window.supabaseClient && window.supabaseClient.auth) {
+          const { data } = await window.supabaseClient.auth.getSession();
+          const session = data && data.session;
+          if (session) {
+            return {
+              token: session.access_token || null,
+              email: (session.user && session.user.email) || null,
+            };
+          }
         }
-      );
+      } catch (e) {
+        console.warn('[Elarah checkout] auth lookup falhou', e);
+      }
+      return { token: null, email: null };
+    }
 
-      const data = await response.json();
+    async function startCheckout(btn) {
+      const experienceId = btn.getAttribute('data-experience-id');
+      const experienceNome = btn.getAttribute('data-experience-nome') || '';
 
-      if (!response.ok || !data?.url) {
-        throw new Error(data?.error || 'Falha ao criar checkout.');
+      if (!experienceId) {
+        alert('Não conseguimos identificar essa experiência. Recarregue a página e tente novamente.');
+        return;
       }
 
-      window.location.href = data.url;
-    } catch (error) {
-      console.error('Erro ao abrir checkout:', error);
-      alert('Não foi possível abrir o pagamento. Tente novamente em instantes.');
-      btn.disabled = false;
-      btn.textContent = originalText;
+      // Estado de loading
+      const originalLabel = btn.dataset.originalLabel || btn.textContent;
+      btn.dataset.originalLabel = originalLabel;
+      btn.disabled = true;
+      btn.textContent = 'Abrindo pagamento...';
+
+      // Tracking opcional
+      try {
+        if (window.ElarahAnalytics && ElarahAnalytics.track) {
+          ElarahAnalytics.track('reserve_click', {
+            category: 'booking',
+            targetId: experienceId,
+            targetLabel: experienceNome,
+          });
+        }
+      } catch (e) {}
+
+      try {
+        const auth = await getAuthInfo();
+        const horario = readActiveHorario(btn);
+
+        const headers = {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + (auth.token || SUPABASE_ANON_KEY),
+        };
+
+        const body = {
+          // Edge Function espera snake_case; mandamos os dois por segurança.
+          experiencia_id: experienceId,
+          experienceId: experienceId,
+          horario: horario,
+          email: auth.email,
+        };
+
+        const res = await fetch(CHECKOUT_FN_URL, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(body),
+        });
+
+        let data = null;
+        try { data = await res.json(); } catch (e) {}
+
+        if (!res.ok || !data || !data.url) {
+          console.error('[Elarah checkout] falha', res.status, data);
+          alert('Não foi possível abrir o pagamento. Tente novamente em instantes.');
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          return;
+        }
+
+        // Sucesso — redireciona pro Stripe
+        window.location.href = data.url;
+      } catch (err) {
+        console.error('[Elarah checkout] exception', err);
+        alert('Não foi possível abrir o pagamento. Tente novamente em instantes.');
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+      }
     }
-  });
+
+    // Capture phase + stopImmediatePropagation: garante que SOMENTE este
+    // handler trate o clique, mesmo se outro script também escutar.
+    document.addEventListener('click', function (e) {
+      const btn = e.target && e.target.closest
+        ? e.target.closest('[data-reserve]')
+        : null;
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') {
+        e.stopImmediatePropagation();
+      }
+      startCheckout(btn);
+    }, true);
+  })();
 });
