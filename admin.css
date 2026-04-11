@@ -546,3 +546,126 @@
     overflow-x: auto;
   }
 }
+
+/* ===== BY ELARAH / ANALYTICS EXTRAS ===== */
+.admin__thumb {
+  width: 56px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: inline-block;
+  background: #f2f2f2;
+  border: 1px solid #e5e5e5;
+}
+.admin__thumb--placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.admin__analytics-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin__analytics-select {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.admin__analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.admin__analytics-card {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.admin__analytics-card--wide {
+  grid-column: 1 / -1;
+}
+
+.admin__analytics-title {
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #222;
+}
+
+.admin__analytics-empty {
+  margin: 8px 0 0 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.admin__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) 48px;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.82rem;
+}
+
+.admin__bar-label {
+  color: #444;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin__bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #f3f3f3;
+  overflow: hidden;
+}
+
+.admin__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange, #f0a05e), #f6c48a);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.admin__bar-count {
+  font-weight: 700;
+  color: #333;
+  text-align: right;
+}
+
+.admin__table-wrap--flush {
+  margin-top: 0;
+  box-shadow: none;
+  border: none;
+}
+
+@media (max-width: 900px) {
+  .admin__analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin__bar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
+  }
+}

@@ -73,6 +73,8 @@
     wireNavigation();
     wireLogout();
     wireExperienceForm();
+    wireByElarahForm();
+    wireAnalyticsControls();
     await renderOverview();
   }
 
@@ -103,6 +105,8 @@
       case 'partners':    await renderPartners(); break;
       case 'purchases':   renderPurchases(); break;
       case 'experiences': await renderExperiences(); break;
+      case 'byelarah':    await renderByElarah(); break;
+      case 'analytics':   await renderAnalytics(); break;
     }
   }
 
@@ -528,6 +532,403 @@
     await renderOverview();
     if (copy) {
       await openExpModal(copy.id);
+    }
+  }
+
+  // =================================================
+  // ============ BY ELARAH (Originals) ==============
+  // =================================================
+  let byModal, byModalBackdrop, byModalClose, byModalTitle;
+  let byForm, bySubmitBtn, byAddBtn;
+  let byHorariosList, byHorariosAddBtn;
+
+  function byAddHorarioRow(value) {
+    if (!byHorariosList) return;
+    const row = document.createElement('div');
+    row.className = 'admin__horario-row';
+    row.innerHTML = `
+      <input type="text" class="admin__horario-input" placeholder="Ex: 10h às 13h">
+      <button type="button" class="admin__horario-remove" aria-label="Remover horário">&times;</button>
+    `;
+    row.querySelector('input').value = value || '';
+    row.querySelector('.admin__horario-remove').addEventListener('click', () => {
+      const rows = byHorariosList.querySelectorAll('.admin__horario-row');
+      if (rows.length > 1) row.remove();
+      else row.querySelector('input').value = '';
+    });
+    byHorariosList.appendChild(row);
+  }
+
+  function byRenderHorarios(horarios) {
+    if (!byHorariosList) return;
+    byHorariosList.innerHTML = '';
+    const initial = Array.isArray(horarios) && horarios.length ? horarios : [''];
+    initial.forEach(h => byAddHorarioRow(h));
+  }
+
+  function byCollectHorarios() {
+    if (!byHorariosList) return [];
+    const inputs = byHorariosList.querySelectorAll('.admin__horario-input');
+    return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+  }
+
+  async function openByModal(editId) {
+    if (!byModal) return;
+    const $ = (id) => document.getElementById(id);
+
+    if (editId) {
+      const item = await ElarahByElarah.getItemById(editId);
+      if (!item) return;
+      byModalTitle.textContent = 'Editar item By Elarah';
+      bySubmitBtn.textContent = 'Atualizar item';
+      $('by-nome').value = item.nome || '';
+      $('by-descricao').value = item.descricao || '';
+      $('by-imagem').value = item.imagem || '';
+      $('by-data').value = item.data || '';
+      $('by-local').value = item.local || '';
+      $('by-tipo').value = item.tipo || 'espera';
+      $('by-ordem').value = item.ordem || 0;
+      $('by-ativo').value = item.ativo === false ? 'false' : 'true';
+      $('by-slug').value = item.slug || '';
+      $('by-edit-id').value = editId;
+      byRenderHorarios(item.horarios || []);
+    } else {
+      byModalTitle.textContent = 'Novo item By Elarah';
+      bySubmitBtn.textContent = 'Salvar item';
+      byForm.reset();
+      $('by-tipo').value = 'espera';
+      $('by-ordem').value = 0;
+      $('by-ativo').value = 'true';
+      $('by-edit-id').value = '';
+      byRenderHorarios(['']);
+    }
+    byModal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeByModal() {
+    if (!byModal) return;
+    byModal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function wireByElarahForm() {
+    byModal = document.getElementById('byelarah-modal');
+    if (!byModal) return;
+    byModalBackdrop = byModal.querySelector('.admin__modal-backdrop');
+    byModalClose = document.getElementById('byelarah-modal-close');
+    byModalTitle = document.getElementById('byelarah-modal-title');
+    byForm = document.getElementById('byelarah-form');
+    bySubmitBtn = document.getElementById('by-submit-btn');
+    byAddBtn = document.getElementById('btn-add-byelarah');
+    byHorariosList = document.getElementById('by-horarios-list');
+    byHorariosAddBtn = document.getElementById('by-horarios-add-btn');
+
+    if (byHorariosAddBtn) byHorariosAddBtn.addEventListener('click', () => byAddHorarioRow(''));
+    if (byAddBtn) byAddBtn.addEventListener('click', () => openByModal(null));
+    if (byModalBackdrop) byModalBackdrop.addEventListener('click', closeByModal);
+    if (byModalClose) byModalClose.addEventListener('click', closeByModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && byModal.classList.contains('open')) closeByModal();
+    });
+
+    byForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const $ = (id) => document.getElementById(id);
+      const horarios = byCollectHorarios();
+      const data = {
+        slug: $('by-slug').value.trim(),
+        nome: $('by-nome').value.trim(),
+        descricao: $('by-descricao').value.trim(),
+        imagem: $('by-imagem').value.trim(),
+        data: $('by-data').value.trim(),
+        local: $('by-local').value.trim(),
+        horarios: horarios,
+        tipo: $('by-tipo').value,
+        ordem: parseInt($('by-ordem').value, 10) || 0,
+        ativo: $('by-ativo').value === 'true'
+      };
+      const editId = $('by-edit-id').value;
+      bySubmitBtn.disabled = true;
+      try {
+        if (editId) {
+          await ElarahByElarah.updateItem(editId, data);
+        } else {
+          await ElarahByElarah.addItem(data);
+        }
+      } finally {
+        bySubmitBtn.disabled = false;
+      }
+      closeByModal();
+      await renderByElarah();
+    });
+  }
+
+  async function renderByElarah() {
+    if (!document.getElementById('byelarah-items-body')) return;
+    const [items, subs] = await Promise.all([
+      ElarahByElarah.getAllItems(),
+      ElarahByElarah.getAllSubmissions()
+    ]);
+
+    // Stats
+    document.getElementById('stat-byelarah-items').textContent = items.length;
+    document.getElementById('stat-byelarah-subs').textContent = subs.length;
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const recent = subs.filter(s => new Date(s.created_at).getTime() > dayAgo).length;
+    document.getElementById('stat-byelarah-new').textContent = recent;
+
+    // Items table
+    const itemsBody = document.getElementById('byelarah-items-body');
+    const itemsCount = document.getElementById('byelarah-items-count');
+    itemsCount.textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
+
+    if (!items.length) {
+      itemsBody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhum item By Elarah cadastrado.</td></tr>';
+    } else {
+      itemsBody.innerHTML = items.map(it => {
+        const horariosStr = Array.isArray(it.horarios) && it.horarios.length
+          ? it.horarios.join(' · ') : '—';
+        const tipoLabel = it.tipo === 'participar' ? 'Participar' : 'Lista de espera';
+        const tipoClass = it.tipo === 'participar' ? 'approved' : 'pending';
+        const statusLabel = it.ativo === false ? 'Oculto' : 'Ativo';
+        const statusClass = it.ativo === false ? 'rejected' : 'approved';
+        const imgHtml = it.imagem
+          ? `<img src="${escapeHtml(it.imagem)}" alt="" class="admin__thumb">`
+          : '<span class="admin__thumb admin__thumb--placeholder">—</span>';
+        const isDbItem = typeof it.id === 'string' && it.id && !it.id.startsWith('fallback-');
+        const actions = isDbItem
+          ? `
+            <button class="admin__action-btn admin__action-btn--edit" data-by-edit="${escapeHtml(it.id)}">Editar</button>
+            <button class="admin__action-btn admin__action-btn--delete" data-by-delete="${escapeHtml(it.id)}">Excluir</button>
+          `
+          : '<span class="admin__badge admin__badge--pending">Fallback</span>';
+        return `
+          <tr>
+            <td>${it.ordem || 0}</td>
+            <td>${imgHtml}</td>
+            <td>${escapeHtml(it.nome)}</td>
+            <td>${escapeHtml(it.data || '—')}</td>
+            <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
+            <td>${escapeHtml(horariosStr)}</td>
+            <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
+            <td>${actions}</td>
+          </tr>
+        `;
+      }).join('');
+
+      itemsBody.querySelectorAll('[data-by-edit]').forEach(btn => {
+        btn.addEventListener('click', () => openByModal(btn.dataset.byEdit));
+      });
+      itemsBody.querySelectorAll('[data-by-delete]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (confirm('Remover este item By Elarah?')) {
+            await ElarahByElarah.deleteItem(btn.dataset.byDelete);
+            await renderByElarah();
+          }
+        });
+      });
+    }
+
+    // Submissions table
+    const subsBody = document.getElementById('byelarah-subs-body');
+    const subsCount = document.getElementById('byelarah-subs-count');
+    subsCount.textContent = subs.length + ' resposta' + (subs.length !== 1 ? 's' : '');
+
+    if (!subs.length) {
+      subsBody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma resposta registrada.</td></tr>';
+    } else {
+      subsBody.innerHTML = subs.map(s => {
+        const when = s.created_at
+          ? new Date(s.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+          : '—';
+        const tipoLabel = s.tipo === 'participar' ? 'Participar' : 'Espera';
+        const tipoClass = s.tipo === 'participar' ? 'approved' : 'pending';
+        const statusLabel = s.status || 'novo';
+        const statusClass = statusLabel === 'atendido' ? 'approved'
+                          : statusLabel === 'descartado' ? 'rejected' : 'pending';
+        return `
+          <tr>
+            <td>${escapeHtml(when)}</td>
+            <td>${escapeHtml(s.experiencia || '—')}</td>
+            <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
+            <td>${escapeHtml(s.nome || '—')}</td>
+            <td>${escapeHtml(s.email || '—')}</td>
+            <td>${escapeHtml(s.telefone || '—')}</td>
+            <td>${escapeHtml(s.horario || '—')}</td>
+            <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
+            <td>
+              <button class="admin__action-btn admin__action-btn--approve" data-by-sub-done="${escapeHtml(s.id)}">Atendido</button>
+              <button class="admin__action-btn admin__action-btn--delete" data-by-sub-del="${escapeHtml(s.id)}">Excluir</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      subsBody.querySelectorAll('[data-by-sub-done]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await ElarahByElarah.updateSubmissionStatus(btn.dataset.bySubDone, 'atendido');
+          await renderByElarah();
+        });
+      });
+      subsBody.querySelectorAll('[data-by-sub-del]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (confirm('Remover esta resposta?')) {
+            await ElarahByElarah.deleteSubmission(btn.dataset.bySubDel);
+            await renderByElarah();
+          }
+        });
+      });
+    }
+  }
+
+  // =================================================
+  // ================== ANALYTICS ====================
+  // =================================================
+  function wireAnalyticsControls() {
+    const btn = document.getElementById('btn-refresh-analytics');
+    const sel = document.getElementById('analytics-range');
+    if (btn) btn.addEventListener('click', () => renderAnalytics());
+    if (sel) sel.addEventListener('change', () => renderAnalytics());
+  }
+
+  function groupCount(items, keyFn, labelFn) {
+    const map = new Map();
+    items.forEach(it => {
+      const k = keyFn(it);
+      if (!k) return;
+      const prev = map.get(k);
+      if (prev) { prev.count += 1; }
+      else { map.set(k, { key: k, label: labelFn ? labelFn(it) : k, count: 1 }); }
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }
+
+  function renderBars(containerId, rows, emptyMsg) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (!rows.length) {
+      el.innerHTML = `<p class="admin__analytics-empty">${escapeHtml(emptyMsg || 'Sem dados para o período.')}</p>`;
+      return;
+    }
+    const max = rows[0].count || 1;
+    el.innerHTML = rows.slice(0, 10).map(r => {
+      const pct = Math.max(4, Math.round((r.count / max) * 100));
+      return `
+        <div class="admin__bar">
+          <div class="admin__bar-label" title="${escapeHtml(r.label)}">${escapeHtml(r.label)}</div>
+          <div class="admin__bar-track"><div class="admin__bar-fill" style="width:${pct}%"></div></div>
+          <div class="admin__bar-count">${r.count}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function renderAnalytics() {
+    if (!document.getElementById('panel-analytics')) return;
+    const sel = document.getElementById('analytics-range');
+    const days = sel ? parseInt(sel.value, 10) : 7;
+    const events = await ElarahAnalytics.getAllEvents(days || null);
+
+    // Stats
+    const totalEvents = events.length;
+    const pageviews = events.filter(e => e.event_name === 'page_view');
+    const sessions = new Set();
+    events.forEach(e => { if (e.session_id) sessions.add(e.session_id); });
+    const byConversions = events.filter(e => e.event_name === 'byelarah_submission').length;
+
+    document.getElementById('stat-ana-events').textContent = totalEvents;
+    document.getElementById('stat-ana-pageviews').textContent = pageviews.length;
+    document.getElementById('stat-ana-sessions').textContent = sessions.size;
+    document.getElementById('stat-ana-conversions').textContent = byConversions;
+
+    // Top pages (pageviews by page)
+    const topPages = groupCount(
+      pageviews,
+      e => e.page || e.path || '—',
+      e => (e.page || e.path || '—')
+    );
+    renderBars('ana-top-pages', topPages);
+
+    // Top experiences (experience_card_click + exp_detail_open + exp_cta_click)
+    const expEvents = events.filter(e =>
+      e.event_name === 'experience_card_click' ||
+      e.event_name === 'exp_detail_open' ||
+      e.event_name === 'exp_cta_click'
+    );
+    const topExperiences = groupCount(
+      expEvents,
+      e => e.target_label || e.target_id || '—',
+      e => e.target_label || e.target_id || '—'
+    );
+    renderBars('ana-top-experiences', topExperiences);
+
+    // Top categories (category_nav_click + category filters)
+    const catEvents = events.filter(e =>
+      e.event_name === 'category_nav_click' ||
+      e.event_name === 'category_filter_click'
+    );
+    const topCategories = groupCount(
+      catEvents,
+      e => e.target_label || e.target_id || '—',
+      e => e.target_label || e.target_id || '—'
+    );
+    renderBars('ana-top-categories', topCategories);
+
+    // Top buttons & CTAs
+    const btnEvents = events.filter(e =>
+      e.category === 'cta' ||
+      e.category === 'click' ||
+      e.event_name === 'header_nav_click' ||
+      e.event_name === 'group_button_click'
+    );
+    const topButtons = groupCount(
+      btnEvents,
+      e => (e.target_label || e.event_name || '—'),
+      e => e.target_label || e.event_name || '—'
+    );
+    renderBars('ana-top-buttons', topButtons);
+
+    // By Elarah items
+    const byEvents = events.filter(e =>
+      e.event_name === 'byelarah_card_click' ||
+      e.event_name === 'byelarah_submission'
+    );
+    const topBy = groupCount(
+      byEvents,
+      e => e.target_label || e.target_id || '—',
+      e => e.target_label || e.target_id || '—'
+    );
+    renderBars('ana-byelarah-items', topBy);
+
+    // Event categories
+    const topCatEvents = groupCount(
+      events,
+      e => e.category || 'general',
+      e => e.category || 'general'
+    );
+    renderBars('ana-event-categories', topCatEvents);
+
+    // Recent events
+    const recentBody = document.getElementById('ana-recent-body');
+    const recent = events.slice(0, 30);
+    if (!recent.length) {
+      recentBody.innerHTML = '<tr><td colspan="5" class="admin__table-empty">Nenhum evento registrado.</td></tr>';
+    } else {
+      recentBody.innerHTML = recent.map(e => {
+        const when = e.created_at
+          ? new Date(e.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+          : '—';
+        return `
+          <tr>
+            <td>${escapeHtml(when)}</td>
+            <td>${escapeHtml(e.event_name || '—')}</td>
+            <td>${escapeHtml(e.category || '—')}</td>
+            <td>${escapeHtml(e.page || '—')}</td>
+            <td>${escapeHtml(e.target_label || e.target_id || '—')}</td>
+          </tr>
+        `;
+      }).join('');
     }
   }
 

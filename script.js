@@ -358,6 +358,76 @@ window.location.href = destino;
     });
   }
 
+  // ===== ELARAH ORIGINALS DYNAMIC RENDER =====
+  // Re-renderiza os cards da seção By Elarah a partir do Supabase
+  // assim que estiver disponível, mantendo o HTML estático como
+  // fallback visual (sem flash).
+  function renderOriginalsGrid(items) {
+    var grid = document.querySelector('.originals__grid');
+    if (!grid || !Array.isArray(items) || !items.length) return;
+
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    var html = items.map(function(it) {
+      var horariosHtml = '';
+      if (Array.isArray(it.horarios) && it.horarios.length) {
+        horariosHtml =
+          '<p class="originals__card-detail">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' +
+            esc(it.horarios.join(' | ')) +
+          '</p>';
+      }
+      var localHtml = it.local
+        ? '<p class="originals__card-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + esc(it.local) + '</p>'
+        : '';
+      var dataHtml = it.data
+        ? '<p class="originals__card-detail' + (it.tipo === 'espera' ? ' originals__card-detail--soon' : '') + '">' +
+            (it.tipo === 'espera'
+              ? esc(it.data)
+              : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' + esc(it.data)) +
+          '</p>'
+        : '';
+      var descHtml = it.descricao && it.tipo === 'espera'
+        ? '<p class="originals__card-detail originals__card-detail--highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' + esc(it.descricao) + '</p>'
+        : '';
+
+      var btnClass = it.tipo === 'participar'
+        ? 'originals__card-btn'
+        : 'originals__card-btn originals__card-btn--outline';
+      var btnLabel = it.tipo === 'participar'
+        ? 'Quero participar'
+        : 'Entrar na lista de espera';
+
+      return '' +
+        '<article class="originals__card">' +
+          '<div class="originals__card-image">' +
+            (it.imagem ? '<img src="' + esc(it.imagem) + '" alt="' + esc(it.nome) + '" class="originals__image">' : '') +
+            '<span class="originals__card-badge">Original Elarah</span>' +
+          '</div>' +
+          '<div class="originals__card-body">' +
+            '<h3 class="originals__card-title">' + esc(it.nome) + '</h3>' +
+            '<div class="originals__card-details">' +
+              descHtml + dataHtml + horariosHtml + localHtml +
+            '</div>' +
+            '<button class="' + btnClass + '" data-experience="' + esc(it.nome) + '" data-type="' + esc(it.tipo) + '">' + esc(btnLabel) + '</button>' +
+          '</div>' +
+        '</article>';
+    }).join('');
+
+    grid.innerHTML = html;
+
+    // Re-vincula os cliques nos botões (porque substituímos o HTML).
+    grid.querySelectorAll('.originals__card-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        openOriginalsModal(btn.dataset.experience, btn.dataset.type);
+      });
+    });
+  }
+
   // ===== ELARAH ORIGINALS MODAL =====
   const originalsModal = document.getElementById('originals-modal');
   const originalsModalBackdrop = document.getElementById('originals-modal-backdrop');
@@ -415,8 +485,63 @@ window.location.href = destino;
   }
 
   if (originalsModalForm) {
-    originalsModalForm.addEventListener('submit', function(e) {
+    originalsModalForm.addEventListener('submit', async function(e) {
       e.preventDefault();
+
+      var submitBtn = document.getElementById('originals-modal-submit');
+      if (submitBtn) submitBtn.disabled = true;
+
+      var experiencia = originalsModalExperience.value || '';
+      var nome = document.getElementById('originals-nome').value || '';
+      var email = document.getElementById('originals-email').value || '';
+      var telefone = document.getElementById('originals-telefone').value || '';
+      var horarioEl = document.getElementById('originals-horario');
+      var horarioField = document.getElementById('originals-horario-field');
+      var horario = (horarioField && horarioField.style.display !== 'none' && horarioEl)
+        ? horarioEl.value : null;
+      var tipo = (horarioField && horarioField.style.display !== 'none')
+        ? 'participar' : 'espera';
+
+      // Tenta resolver o slug a partir do nome da experiência.
+      var itemSlug = null;
+      try {
+        if (window.ElarahByElarah && ElarahByElarah.getAllItems) {
+          var items = await ElarahByElarah.getAllItems();
+          var match = items.find(function(i) { return i.nome === experiencia; });
+          if (match) itemSlug = match.slug;
+        }
+      } catch (err) { /* fallback silencioso */ }
+
+      // Persiste no Supabase (se disponível).
+      try {
+        if (window.ElarahByElarah && ElarahByElarah.submitInterest) {
+          await ElarahByElarah.submitInterest({
+            itemSlug: itemSlug,
+            experiencia: experiencia,
+            tipo: tipo,
+            nome: nome,
+            email: email,
+            telefone: telefone,
+            horario: horario
+          });
+        }
+      } catch (err) {
+        console.warn('[Originals] submitInterest falhou:', err);
+      }
+
+      // Registra evento de analytics.
+      try {
+        if (window.ElarahAnalytics && ElarahAnalytics.track) {
+          ElarahAnalytics.track('byelarah_submission', {
+            category: 'byelarah',
+            targetId: itemSlug || experiencia,
+            targetLabel: experiencia,
+            metadata: { tipo: tipo, horario: horario || '' }
+          });
+        }
+      } catch (err) { /* ignore */ }
+
+      if (submitBtn) submitBtn.disabled = false;
       originalsModalBody.style.display = 'none';
       originalsModalSuccess.style.display = 'block';
     });
@@ -427,6 +552,14 @@ window.location.href = destino;
       closeOriginalsModal();
     }
   });
+
+  // Hidrata os cards a partir do Supabase (se disponível).
+  // Mantém o HTML estático como fallback para não piscar.
+  if (window.ElarahByElarah && ElarahByElarah.getActiveItems) {
+    ElarahByElarah.getActiveItems().then(function(items) {
+      if (items && items.length) renderOriginalsGrid(items);
+    }).catch(function(){});
+  }
 
   // ===== GROUP SECTION =====
   var groupBtns = document.querySelectorAll('.group-section__btn');

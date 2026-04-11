@@ -56,6 +56,20 @@
         </svg>
         <span>Experiências</span>
       </button>
+
+      <button class="admin__nav-item" data-panel="byelarah">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.39 6.97H21l-5.3 3.85 2.02 6.21L12 15.1l-5.72 3.93 2.02-6.21L3 8.97h6.61z"/>
+        </svg>
+        <span>By Elarah</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="analytics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>Analytics</span>
+      </button>
     </nav>
 
     <div class="admin__nav-bottom">
@@ -210,6 +224,188 @@
       </div>
     </div>
 
+    <!-- ===== BY ELARAH PANEL ===== -->
+    <div class="admin__panel" id="panel-byelarah">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">By Elarah</h1>
+          <p class="admin__page-subtitle">Elarah Originals — cards, fotos e respostas do formulário</p>
+        </div>
+        <button class="admin__add-btn" id="btn-add-byelarah">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo item By Elarah
+        </button>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Itens publicados</div>
+          <div class="admin__stat-value" id="stat-byelarah-items">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Respostas totais</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-byelarah-subs">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Novas (24h)</div>
+          <div class="admin__stat-value" id="stat-byelarah-new">0</div>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Itens Elarah Originals</span>
+          <span class="admin__table-count" id="byelarah-items-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Ordem</th>
+              <th>Foto</th>
+              <th>Nome</th>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Horários</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="byelarah-items-body">
+            <tr><td colspan="8" class="admin__table-empty">Nenhum item By Elarah cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Respostas do formulário</span>
+          <span class="admin__table-count" id="byelarah-subs-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Experiência</th>
+              <th>Tipo</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Telefone</th>
+              <th>Horário</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="byelarah-subs-body">
+            <tr><td colspan="9" class="admin__table-empty">Nenhuma resposta registrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== ANALYTICS PANEL ===== -->
+    <div class="admin__panel" id="panel-analytics">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Analytics</h1>
+          <p class="admin__page-subtitle">Visão geral de acessos, cliques e conversões</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <label for="analytics-range" class="admin__form-hint" style="margin:0;">Período:</label>
+          <select id="analytics-range" class="admin__analytics-select">
+            <option value="1">Últimas 24h</option>
+            <option value="7" selected>Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="0">Tudo</option>
+          </select>
+          <button class="admin__add-btn" id="btn-refresh-analytics" type="button">Atualizar</button>
+        </div>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Eventos totais</div>
+          <div class="admin__stat-value" id="stat-ana-events">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Pageviews</div>
+          <div class="admin__stat-value" id="stat-ana-pageviews">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Sessões únicas</div>
+          <div class="admin__stat-value" id="stat-ana-sessions">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Conversões By Elarah</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-ana-conversions">0</div>
+        </div>
+      </div>
+
+      <div class="admin__analytics-grid">
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Páginas mais visitadas</h3>
+          <div id="ana-top-pages" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados para o período.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Experiências com mais cliques</h3>
+          <div id="ana-top-experiences" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados para o período.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Categorias mais clicadas</h3>
+          <div id="ana-top-categories" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados para o período.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Botões & CTAs mais clicados</h3>
+          <div id="ana-top-buttons" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados para o período.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">By Elarah — itens com mais interesse</h3>
+          <div id="ana-byelarah-items" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados para o período.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Distribuição por categoria de evento</h3>
+          <div id="ana-event-categories" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados para o período.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card admin__analytics-card--wide">
+          <h3 class="admin__analytics-title">Eventos recentes</h3>
+          <div class="admin__table-wrap admin__table-wrap--flush">
+            <table class="admin__table">
+              <thead>
+                <tr>
+                  <th>Quando</th>
+                  <th>Evento</th>
+                  <th>Categoria</th>
+                  <th>Página</th>
+                  <th>Label</th>
+                </tr>
+              </thead>
+              <tbody id="ana-recent-body">
+                <tr><td colspan="5" class="admin__table-empty">Nenhum evento registrado.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <!-- ===== EXPERIENCES PANEL ===== -->
     <div class="admin__panel" id="panel-experiences">
       <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
@@ -345,10 +541,88 @@
   </div>
 </div>
 
+<!-- ===== BY ELARAH ITEM MODAL ===== -->
+<div class="admin__modal" id="byelarah-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content">
+    <button class="admin__modal-close" id="byelarah-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="byelarah-modal-title">Novo item By Elarah</h2>
+
+    <form id="byelarah-form">
+      <div class="admin__form-grid">
+        <div class="admin__form-field admin__form-field--full">
+          <label>Nome da experiência</label>
+          <input type="text" id="by-nome" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição curta</label>
+          <textarea id="by-descricao" rows="2" placeholder="Descrição exibida no card"></textarea>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>URL da imagem / foto</label>
+          <input type="text" id="by-imagem" placeholder="assets/nome-do-arquivo.jpg">
+          <p class="admin__form-hint">Ex: <em>assets/pintura-aperol.png</em> ou qualquer URL pública.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data</label>
+          <input type="text" id="by-data" placeholder="Ex: 24 de abril ou Data em breve">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Tipo</label>
+          <select id="by-tipo">
+            <option value="participar">Quero participar (com horários)</option>
+            <option value="espera">Lista de espera (sem data)</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Local / endereço</label>
+          <input type="text" id="by-local" placeholder="Rua Nova Orleans, 34 – Brooklin, São Paulo">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Horários disponíveis</label>
+          <div id="by-horarios-list" class="admin__horarios-list"></div>
+          <button type="button" id="by-horarios-add-btn" class="admin__horario-add-btn">+ Adicionar horário</button>
+          <p class="admin__form-hint">Ex: <em>10h às 13h</em>. Deixe vazio quando for "lista de espera".</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Ordem</label>
+          <input type="number" id="by-ordem" value="0" min="0">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Status</label>
+          <select id="by-ativo">
+            <option value="true">Ativo (visível na home)</option>
+            <option value="false">Oculto</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Slug (identificador)</label>
+          <input type="text" id="by-slug" placeholder="pintura-aperol">
+          <p class="admin__form-hint">Opcional. Se vazio, geramos automaticamente a partir do nome.</p>
+        </div>
+      </div>
+
+      <input type="hidden" id="by-edit-id" value="">
+      <button type="submit" class="admin__form-submit" id="by-submit-btn">Salvar item</button>
+    </form>
+  </div>
+</div>
+
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js?v=6"></script>
 <script src="auth.js?v=8"></script>
 <script src="experiences-data.js?v=6"></script>
-<script src="admin.js?v=8"></script>
+<script src="byelarah-data.js?v=1"></script>
+<script src="analytics.js?v=1"></script>
+<script src="admin.js?v=9"></script>
 </body>
 </html>
