@@ -704,4 +704,50 @@ if (groupForm) {
       closeStoryReader();
     }
   });
+  // ===== CHECKOUT STRIPE =====
+  document.addEventListener('click', async function (e) {
+    const btn = e.target.closest('[data-reserve]');
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const experienceId = btn.dataset.experienceId;
+    if (!experienceId) {
+      alert('Experiência inválida.');
+      return;
+    }
+
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Abrindo pagamento...';
+
+    try {
+      const response = await fetch(
+        'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/create-checkout-session',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'SUA_SUPABASE_ANON_KEY_AQUI'
+          },
+          body: JSON.stringify({
+            experienceId
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data?.url) {
+        throw new Error(data?.error || 'Falha ao criar checkout.');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Erro ao abrir checkout:', error);
+      alert('Não foi possível abrir o pagamento. Tente novamente em instantes.');
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  });
 });
