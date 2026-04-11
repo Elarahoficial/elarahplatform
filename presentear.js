@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function executarBuscaPresentear() {
     const valor = searchInput?.value.trim();
     if (!valor) return;
-    window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(valor);
+    window.location.href = '/?busca=' + encodeURIComponent(valor);
   }
 
   if (searchInput) {
@@ -193,8 +193,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const text = item.textContent.trim();
         const destino = text === 'Todas'
-          ? '/elarahplatform/'
-          : '/elarahplatform/?categoria=' + encodeURIComponent(text);
+          ? '/'
+          : '/?categoria=' + encodeURIComponent(text);
 
         window.location.href = destino;
       });

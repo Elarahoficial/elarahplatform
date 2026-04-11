@@ -198,7 +198,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       link.addEventListener('click', (e) => {
         e.preventDefault();
         activeBusca = '';
-        window.history.replaceState({}, '', '/elarahplatform/');
+        window.history.replaceState({}, '', '/');
         if (searchInput) searchInput.value = '';
 
         categoryLinks.forEach((c) => c.classList.remove('category-link--active'));
@@ -216,7 +216,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
   if (filterBtn && filterBairro && filterCategoria) {
     filterBtn.addEventListener('click', () => {
       activeBusca = '';
-      window.history.replaceState({}, '', '/elarahplatform/');
+      window.history.replaceState({}, '', '/');
       if (searchInput) searchInput.value = '';
 
       activeBairro = filterBairro.value;
@@ -269,7 +269,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
   function executarBusca() {
     const valor = searchInput?.value.trim();
     if (!valor) return;
-    window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(valor);
+    window.location.href = '/?busca=' + encodeURIComponent(valor);
   }
 
   if (searchBtn && searchInput) {
@@ -335,11 +335,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
             experienciasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         } else {
-         const destino = text === 'Todas'
-  ? '/elarahplatform/'
-  : '/elarahplatform/?categoria=' + encodeURIComponent(text);
-
-window.location.href = destino;
+          const destino = text === 'Todas'
+            ? 'categoria.html'
+            : 'categoria.html?cat=' + encodeURIComponent(text);
+          window.location.href = destino;
         }
 
         explorarDropdown.classList.remove('open');
@@ -763,12 +762,54 @@ if (groupForm) {
       return { token: null, email: null };
     }
 
+    // Chave usada pra reter o pedido enquanto o usuário faz login.
+    const PENDING_KEY = 'elarah:pendingCheckout';
+
+    function isUserLogged() {
+      try {
+        if (typeof ElarahAuth !== 'undefined' && ElarahAuth && typeof ElarahAuth.isLoggedIn === 'function') {
+          return !!ElarahAuth.isLoggedIn();
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function openLoginModal(msg) {
+      try {
+        if (typeof ElarahAuth !== 'undefined' && ElarahAuth && typeof ElarahAuth.openModal === 'function') {
+          ElarahAuth.openModal('login', msg || 'Faça login para concluir sua reserva');
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
     async function startCheckout(btn) {
       const experienceId = btn.getAttribute('data-experience-id');
       const experienceNome = btn.getAttribute('data-experience-nome') || '';
 
       if (!experienceId) {
         alert('Não conseguimos identificar essa experiência. Recarregue a página e tente novamente.');
+        return;
+      }
+
+      // === GATE DE LOGIN OBRIGATÓRIO ===
+      // Ninguém reserva sem estar logado. Se não estiver, guardamos a
+      // intenção e abrimos o modal de login. Após o login, o listener
+      // de onAuthStateChange (mais abaixo) retoma o checkout.
+      if (!isUserLogged()) {
+        try {
+          sessionStorage.setItem(PENDING_KEY, JSON.stringify({
+            experienceId: experienceId,
+            experienceNome: experienceNome,
+            horario: readActiveHorario(btn),
+            ts: Date.now(),
+          }));
+        } catch (e) {}
+        const opened = openLoginModal('Faça login para concluir sua reserva');
+        if (!opened) {
+          alert('Faça login para concluir sua reserva.');
+        }
         return;
       }
 
@@ -848,5 +889,62 @@ if (groupForm) {
       }
       startCheckout(btn);
     }, true);
+
+    // === Retomar checkout pendente após login ===
+    // Quando o usuário faz login pelo modal aberto pelo gate de
+    // checkout, o Supabase emite SIGNED_IN. Nesse momento, recuperamos
+    // a intenção salva em sessionStorage e relançamos o startCheckout
+    // automaticamente, encontrando o botão correspondente na página.
+    function resumePendingCheckout() {
+      let pending = null;
+      try {
+        const raw = sessionStorage.getItem(PENDING_KEY);
+        if (raw) pending = JSON.parse(raw);
+      } catch (e) {}
+      if (!pending || !pending.experienceId) return;
+      // Pendência expira em 30 minutos pra não disparar checkout antigo.
+      if (pending.ts && (Date.now() - pending.ts) > 30 * 60 * 1000) {
+        try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+        return;
+      }
+      try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+
+      // Tenta achar o botão real na página pra preservar loading state.
+      const selector = '[data-reserve][data-experience-id="' + pending.experienceId + '"]';
+      const btn = document.querySelector(selector);
+      if (btn) {
+        startCheckout(btn);
+        return;
+      }
+      // Fallback: cria um botão fantasma só pra carregar os dados.
+      const ghost = document.createElement('button');
+      ghost.setAttribute('data-reserve', '');
+      ghost.setAttribute('data-experience-id', pending.experienceId);
+      if (pending.experienceNome) {
+        ghost.setAttribute('data-experience-nome', pending.experienceNome);
+      }
+      startCheckout(ghost);
+    }
+
+    // Hook no Supabase: retoma assim que o usuário entra.
+    try {
+      if (window.supabaseClient && window.supabaseClient.auth &&
+          typeof window.supabaseClient.auth.onAuthStateChange === 'function') {
+        window.supabaseClient.auth.onAuthStateChange(function (event, session) {
+          if (event === 'SIGNED_IN' && session) {
+            // Pequeno delay pra UI do modal fechar antes do redirect.
+            setTimeout(resumePendingCheckout, 250);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[Elarah checkout] não foi possível ouvir login', e);
+    }
+
+    // Caso o usuário já estivesse logado quando abrimos o modal (caso
+    // raro de race), tenta retomar logo após o load.
+    setTimeout(function () {
+      if (isUserLogged()) resumePendingCheckout();
+    }, 600);
   })();
 });

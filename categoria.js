@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function executarBusca() {
     const valor = searchInput?.value.trim();
     if (!valor) return;
-   window.location.href = '/elarahplatform/?busca=' + encodeURIComponent(valor);
+   window.location.href = '/?busca=' + encodeURIComponent(valor);
   }
 
   if (searchBtn && searchInput) {
@@ -240,11 +240,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ===== LOGO CLICK -> HOME =====
-  const logo = document.querySelector('.header__logo');
-  if (logo) {
-    logo.addEventListener('click', function() {
-      window.location.href = '/elarahplatform/';
-    });
-  }
 });
