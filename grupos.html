@@ -18,7 +18,7 @@
   <!-- ========== HEADER ========== -->
   <header class="header">
     <div class="header__inner">
-      <a href="/" class="header__logo" title="Ir para página inicial">
+      <a href="/elarahplatform/" class="header__logo" title="Ir para página inicial">
         <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
       </a>
 
@@ -37,7 +37,7 @@
             <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="header__dropdown" id="explorar-dropdown">
-            <a href="/" class="header__dropdown-item">Todas</a>
+            <a href="/elarahplatform/" class="header__dropdown-item">Todas</a>
             <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
             <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
             <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
@@ -328,12 +328,16 @@
         </div>
         <form class="grp-contact__form" id="grp-form">
           <div class="grp-contact__form-row">
-            <input type="text" class="grp-contact__input" placeholder="Seu nome" required>
-            <input type="email" class="grp-contact__input" placeholder="E-mail" required>
+            <label class="sr-only" for="grp-nome">Seu nome</label>
+            <input id="grp-nome" name="nome" type="text" class="grp-contact__input" placeholder="Seu nome" autocomplete="name" required>
+            <label class="sr-only" for="grp-email">E-mail</label>
+            <input id="grp-email" name="email" type="email" class="grp-contact__input" placeholder="E-mail" autocomplete="email" required>
           </div>
           <div class="grp-contact__form-row">
-            <input type="tel" class="grp-contact__input" placeholder="WhatsApp" required>
-            <select class="grp-contact__input grp-contact__select" required>
+            <label class="sr-only" for="grp-whats">WhatsApp</label>
+            <input id="grp-whats" name="whatsapp" type="tel" class="grp-contact__input" placeholder="WhatsApp" autocomplete="tel" required>
+            <label class="sr-only" for="grp-tipo-evento">Tipo de evento</label>
+            <select id="grp-tipo-evento" name="tipo_evento" class="grp-contact__input grp-contact__select" required>
               <option value="" disabled selected>Tipo de evento</option>
               <option>Aniversário</option>
               <option>Team building / Empresa</option>
@@ -344,10 +348,13 @@
             </select>
           </div>
           <div class="grp-contact__form-row">
-            <input type="number" class="grp-contact__input" placeholder="Número de pessoas" min="5" required>
-            <input type="date" class="grp-contact__input" placeholder="Data desejada">
+            <label class="sr-only" for="grp-pessoas-num">Número de pessoas</label>
+            <input id="grp-pessoas-num" name="pessoas" type="number" class="grp-contact__input" placeholder="Número de pessoas" min="5" required>
+            <label class="sr-only" for="grp-data">Data desejada</label>
+            <input id="grp-data" name="data" type="date" class="grp-contact__input" placeholder="Data desejada">
           </div>
-          <textarea class="grp-contact__textarea" rows="4" placeholder="Conte mais sobre o evento: o que o grupo curte, se tem alguma preferência de experiência, orçamento..."></textarea>
+          <label class="sr-only" for="grp-mensagem">Conte mais sobre o evento</label>
+          <textarea id="grp-mensagem" name="mensagem" class="grp-contact__textarea" rows="4" placeholder="Conte mais sobre o evento: o que o grupo curte, se tem alguma preferência de experiência, orçamento..."></textarea>
           <button type="submit" class="grp-contact__btn">Solicitar orçamento</button>
           <p class="grp-contact__success" id="grp-form-success" style="display:none;">Solicitação enviada! Nosso time entra em contato em breve.</p>
         </form>
@@ -363,7 +370,7 @@
         <p class="grp-cta__text">Dê ao seu grupo uma experiência que ninguém vai encontrar numa tela.</p>
         <div class="grp-cta__actions">
           <a href="#grp-contact" class="grp-cta__btn">Falar com a Elarah</a>
-          <a href="/" class="grp-cta__btn grp-cta__btn--outline">Ver experiências</a>
+          <a href="/elarahplatform/" class="grp-cta__btn grp-cta__btn--outline">Ver experiências</a>
         </div>
       </div>
     </div>
@@ -451,3 +458,49 @@
     <p>© 2026 Elarah. Todos os direitos reservados.</p>
   </div>
 </footer>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js?v=6"></script>
+<script src="auth.js?v=8"></script>
+<script src="analytics.js?v=1"></script>
+<script src="script.js?v=8"></script>
+<script>
+  (function () {
+    'use strict';
+    var form = document.getElementById('grp-form');
+    var success = document.getElementById('grp-form-success');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var nome    = (document.getElementById('grp-nome').value || '').trim();
+      var email   = (document.getElementById('grp-email').value || '').trim();
+      var whats   = (document.getElementById('grp-whats').value || '').trim();
+      var tipo    = document.getElementById('grp-tipo-evento').value || '';
+      var pessoas = document.getElementById('grp-pessoas-num').value || '';
+      var data    = document.getElementById('grp-data').value || '';
+      var msg     = (document.getElementById('grp-mensagem').value || '').trim();
+
+      var dataFmt = data ? data.split('-').reverse().join('/') : 'Não informada';
+
+      var texto =
+        'Oi! Quero organizar uma experiência em grupo com a Elarah ✨%0A%0A' +
+        '📌 Tipo de evento: ' + encodeURIComponent(tipo) + '%0A' +
+        '👤 Nome: ' + encodeURIComponent(nome) + '%0A' +
+        '📧 E-mail: ' + encodeURIComponent(email) + '%0A' +
+        '📱 WhatsApp: ' + encodeURIComponent(whats) + '%0A' +
+        '👥 Número de pessoas: ' + encodeURIComponent(pessoas) + '%0A' +
+        '📅 Data desejada: ' + encodeURIComponent(dataFmt) + '%0A' +
+        '📝 Observações: ' + encodeURIComponent(msg || 'Nenhuma');
+
+      var url = 'https://wa.me/5511914455930?text=' + texto;
+      window.open(url, '_blank');
+
+      if (success) success.style.display = 'block';
+      form.reset();
+    });
+  })();
+</script>
+</body>
+</html>

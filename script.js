@@ -638,7 +638,7 @@ if (groupForm) {
   '🎨 Tipo de experiência: ' + (experiencia || 'Ainda não sei') + '%0A' +
   '📝 Observações: ' + (observacoes || 'Nenhuma');
 
-    var numeroElarah = '5511914455930'; // TROQUE PELO NÚMERO CERTO
+    var numeroElarah = '5511914455930'; // WhatsApp oficial Elarah
 
     var url = 'https://wa.me/' + numeroElarah + '?text=' + mensagem;
 

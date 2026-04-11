@@ -7,16 +7,70 @@
   <title>Como funciona — Elarah</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-<!-- HEADER CLEAN -->
+<!-- HEADER -->
 <header class="header">
-  <div class="header__inner" style="justify-content: center;">
-    <a href="/elarahplatform/" class="header__logo">
+  <div class="header__inner">
+    <a href="/elarahplatform/" class="header__logo" title="Ir para página inicial">
       <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
     </a>
+
+    <div class="header__search">
+      <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+    </div>
+
+    <nav class="header__nav">
+      <div class="header__nav-item header__nav-dropdown">
+        <button class="header__nav-link" id="explorar-btn" type="button">
+          Explorar
+          <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="header__dropdown" id="explorar-dropdown">
+          <a href="/elarahplatform/" class="header__dropdown-item">Todas</a>
+          <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+          <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
+          <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+          <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+          <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macramê</a>
+          <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+          <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+          <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+          <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+        </div>
+      </div>
+      <a href="presentear.html" class="header__nav-link">Presentear</a>
+      <a href="oferecer.html" class="header__nav-link">Oferecer uma experiência</a>
+    </nav>
+
+    <div class="header__actions">
+      <button class="header__action-btn" aria-label="Favoritos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </button>
+      <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Entrar
+      </button>
+    </div>
+
+    <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle" type="button">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
 
@@ -204,3 +258,10 @@
     <p>© 2026 Elarah. Todos os direitos reservados.</p>
   </div>
 </footer>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js?v=6"></script>
+<script src="auth.js?v=8"></script>
+<script src="analytics.js?v=1"></script>
+</body>
+</html>
