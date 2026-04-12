@@ -390,6 +390,42 @@ if (categoriaURL) activeCategoria = categoriaURL;
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Mapa de fallback por slug/nome — garante que mesmo se o
+    // Supabase devolver imagem vazia ou com path quebrado a foto
+    // certa ainda apareça (a seção tem cards conhecidos).
+    var ORIGINALS_IMAGE_FALLBACKS = {
+      'pintura-aperol': 'assets/pintura-aperol.png',
+      'perfumaria-criativa': 'assets/perfumariaa.jpg',
+      'ourivesaria-joia': 'assets/ourivesariaa.jpg',
+      'pintura de quadro com cristal & aperol spritz': 'assets/pintura-aperol.png',
+      'oficina de perfumaria criativa': 'assets/perfumariaa.jpg',
+      'workshop de ourivesaria: crie sua joia': 'assets/ourivesariaa.jpg'
+    };
+    var DEFAULT_ORIGINALS_IMAGE = 'assets/pintura-aperol.png';
+
+    function normalizeImagePath(p) {
+      var s = String(p == null ? '' : p).trim();
+      if (!s) return '';
+      // URL absoluta — usa como está
+      if (/^https?:\/\//i.test(s)) return s;
+      // path absoluto local — usa como está
+      if (s.charAt(0) === '/') return s;
+      // já tem prefixo de pasta conhecido
+      if (/^(assets|images|img)\//i.test(s)) return s;
+      // nome de arquivo solto — assume assets/
+      return 'assets/' + s;
+    }
+
+    function resolveImage(it) {
+      var raw = normalizeImagePath(it.imagem);
+      if (raw) return raw;
+      var bySlug = it.slug && ORIGINALS_IMAGE_FALLBACKS[String(it.slug).toLowerCase()];
+      if (bySlug) return bySlug;
+      var byName = it.nome && ORIGINALS_IMAGE_FALLBACKS[String(it.nome).toLowerCase()];
+      if (byName) return byName;
+      return DEFAULT_ORIGINALS_IMAGE;
+    }
+
     var html = items.map(function(it) {
       var horariosHtml = '';
       if (Array.isArray(it.horarios) && it.horarios.length) {
@@ -420,10 +456,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? 'Quero participar'
         : 'Entrar na lista de espera';
 
+      var imgSrc = resolveImage(it);
+      var imgFallback = (it.slug && ORIGINALS_IMAGE_FALLBACKS[String(it.slug).toLowerCase()])
+        || (it.nome && ORIGINALS_IMAGE_FALLBACKS[String(it.nome).toLowerCase()])
+        || DEFAULT_ORIGINALS_IMAGE;
+
       return '' +
         '<article class="originals__card">' +
           '<div class="originals__card-image">' +
-            (it.imagem ? '<img src="' + esc(it.imagem) + '" alt="' + esc(it.nome) + '" class="originals__image">' : '') +
+            '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
+              'onerror="if(this.dataset.fb!==&quot;1&quot;){this.dataset.fb=&quot;1&quot;;this.src=&quot;' + esc(imgFallback) + '&quot;;}">' +
             '<span class="originals__card-badge">Original Elarah</span>' +
           '</div>' +
           '<div class="originals__card-body">' +
