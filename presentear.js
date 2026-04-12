@@ -355,16 +355,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       submitBtn.textContent = 'Abrindo pagamento...';
 
       try {
-        // Auth opcional — comprar gift card não exige login
+        // Auth opcional — comprar gift card não exige login.
+        // getSession pode devolver token expirado (fica em localStorage
+        // sem validar). Se expirou, tenta refresh; se falhar, anon key.
         let token = SUPABASE_ANON_KEY;
         let prefilledEmail = buyerEmail;
         if (window.supabaseClient && window.supabaseClient.auth) {
           try {
             const { data } = await window.supabaseClient.auth.getSession();
-            const session = data && data.session;
+            let session = data && data.session;
             if (session) {
-              token = session.access_token || token;
-              if (!prefilledEmail) prefilledEmail = session.user?.email || prefilledEmail;
+              const expiresAt = session.expires_at; // epoch seconds
+              if (expiresAt && (expiresAt - 30) < Math.floor(Date.now() / 1000)) {
+                try {
+                  const ref = await window.supabaseClient.auth.refreshSession();
+                  session = ref.data && ref.data.session;
+                } catch (_) { session = null; }
+              }
+              if (session && session.access_token) {
+                token = session.access_token;
+                if (!prefilledEmail) prefilledEmail = session.user?.email || prefilledEmail;
+              }
             }
           } catch {}
         }

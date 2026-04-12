@@ -823,12 +823,22 @@ if (groupForm) {
       try {
         if (window.supabaseClient && window.supabaseClient.auth) {
           const { data } = await window.supabaseClient.auth.getSession();
-          const session = data && data.session;
+          var session = data && data.session;
           if (session) {
-            return {
-              token: session.access_token || null,
-              email: (session.user && session.user.email) || null,
-            };
+            // Se o token expirou (ou expira em < 30s), tenta renovar
+            var expiresAt = session.expires_at; // epoch seconds
+            if (expiresAt && (expiresAt - 30) < Math.floor(Date.now() / 1000)) {
+              try {
+                var ref = await window.supabaseClient.auth.refreshSession();
+                session = ref.data && ref.data.session;
+              } catch (_) { session = null; }
+            }
+            if (session && session.access_token) {
+              return {
+                token: session.access_token,
+                email: (session.user && session.user.email) || null,
+              };
+            }
           }
         }
       } catch (e) {
