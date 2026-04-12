@@ -819,32 +819,23 @@ if (groupForm) {
       return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
     }
 
+    // Pega apenas o e-mail do usuário logado (para pré-preencher).
+    // NÃO retorna o access_token — as Edge Functions usam service role
+    // internamente, então o JWT do usuário não serve pra nada lá.
+    // Todas as chamadas vão com o anon key (JWT válido, nunca expira).
     async function getAuthInfo() {
       try {
         if (window.supabaseClient && window.supabaseClient.auth) {
           const { data } = await window.supabaseClient.auth.getSession();
           var session = data && data.session;
-          if (session) {
-            // Se o token expirou (ou expira em < 30s), tenta renovar
-            var expiresAt = session.expires_at; // epoch seconds
-            if (expiresAt && (expiresAt - 30) < Math.floor(Date.now() / 1000)) {
-              try {
-                var ref = await window.supabaseClient.auth.refreshSession();
-                session = ref.data && ref.data.session;
-              } catch (_) { session = null; }
-            }
-            if (session && session.access_token) {
-              return {
-                token: session.access_token,
-                email: (session.user && session.user.email) || null,
-              };
-            }
+          if (session && session.user) {
+            return { email: session.user.email || null };
           }
         }
       } catch (e) {
         console.warn('[Elarah checkout] auth lookup falhou', e);
       }
-      return { token: null, email: null };
+      return { email: null };
     }
 
     // Chave usada pra reter o pedido enquanto o usuário faz login.
@@ -1032,7 +1023,7 @@ if (groupForm) {
         const headers = {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + (auth.token || SUPABASE_ANON_KEY),
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
         };
         const body = {
           experiencia_id: ctx.experienceId,
