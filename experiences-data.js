@@ -88,10 +88,8 @@
       eventAt: row.event_at || null,
       cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : 24,
       // Visibilidade (oculta/mostra no site sem excluir).
-      // Default true pra manter compat com bancos antigos sem a coluna.
-      isActive: row.is_active == null ? true : !!row.is_active,
-      // Visibilidade: default true pra retrocompat com linhas antigas
-      // (sem coluna ou com null). Só false explícito esconde.
+      // Só `false` explícito esconde. Default true pra retrocompat com
+      // bancos antigos sem a coluna ou com null.
       isActive: row.is_active === false ? false : true,
       // ------------------------
       createdAt: row.created_at || '',
@@ -117,10 +115,6 @@
     const rawCutoff = exp.cutoffHours != null ? exp.cutoffHours : exp.cutoff_hours;
     const cutoffHours = rawCutoff === '' || rawCutoff == null ? 24 : Number(rawCutoff);
 
-    // Visibilidade: aceita camelCase (isActive) ou snake_case (is_active).
-    // Quando vier undefined, assume true (mantém comportamento antigo).
-    const rawIsActive = exp.isActive != null ? exp.isActive : exp.is_active;
-    const isActive = rawIsActive == null ? true : !!rawIsActive;
     // Visibilidade: aceita isActive (camelCase) ou is_active (snake_case).
     // Só false explícito oculta — qualquer outra coisa mantém true.
     const rawIsActive = exp.isActive != null ? exp.isActive : exp.is_active;
@@ -227,10 +221,13 @@
 
   // Lista pública: oculta experiências com isActive === false.
   // Admin continua usando getAllExperiences() pra ver tudo.
+  // Exposta também como getActiveExperiences pra compat com código
+  // que usa esse nome.
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
     return all.filter(e => e && e.isActive !== false);
   }
+  const getActiveExperiences = getVisibleExperiences;
 
   // Remove is_active do row, útil no retry/fallback quando a migration
   // ainda não rodou.
@@ -390,30 +387,51 @@
     return addExperience(copy);
   }
 
-  // Lista só o que o site público deve mostrar.
-  // isActive === false esconde; qualquer outra coisa (true, undefined,
-  // null vindo de fallback antigo) mantém visível.
-  async function getActiveExperiences() {
-    const all = await getAllExperiences();
-    return all.filter(e => e && e.isActive !== false);
-  }
-
   // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
+  // Passa só a coluna is_active, pra não mexer em nenhum outro campo.
+  // Usa maybeSingle pra detectar zero linhas afetadas (RLS ou id
+  // inexistente) sem levantar erro confuso.
   async function setExperienceActive(id, active) {
     const s = sb();
-    if (!s) return null;
-    const { data: updated, error } = await s
-      .from(TABLE)
-      .update({ is_active: !!active })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) {
-      console.error('[Elarah] setExperienceActive error', error);
+    if (!s) {
+      console.error('[Elarah] setExperienceActive: Supabase indisponível.');
       return null;
     }
-    invalidateCache();
-    return dbRowToExperience(updated);
+    if (!id) {
+      console.error('[Elarah] setExperienceActive: id vazio — abortando.');
+      return null;
+    }
+    try {
+      const { data: updated, error } = await s
+        .from(TABLE)
+        .update({ is_active: !!active })
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+      if (error) {
+        if (isMissingColumnError(error, 'is_active')) {
+          console.error(
+            '[Elarah] setExperienceActive: coluna is_active ausente. ' +
+            'Rode sql/elarah_experiences_visibility.sql no Supabase.'
+          );
+        } else {
+          console.error('[Elarah] setExperienceActive erro do Supabase:', error);
+        }
+        return null;
+      }
+      if (!updated) {
+        console.error(
+          '[Elarah] setExperienceActive: 0 linhas atualizadas para id=' + id +
+          '. Verifique RLS (profiles.role = "admin") e se o id existe.'
+        );
+        return null;
+      }
+      invalidateCache();
+      return dbRowToExperience(updated);
+    } catch (e) {
+      console.error('[Elarah] setExperienceActive exceção inesperada:', e);
+      return null;
+    }
   }
 
   window.ElarahData = {
