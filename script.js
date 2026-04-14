@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
   try {
-    if (typeof ElarahData !== 'undefined' && ElarahData.getVisibleExperiences) {
-      experiences = await ElarahData.getVisibleExperiences();
+    isActive: row.is_active === false ? false : true,
     } else if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
       experiences = await ElarahData.getAllExperiences();
     }

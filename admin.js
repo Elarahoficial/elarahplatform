@@ -772,13 +772,22 @@
                        rest + ' / ' + exp.vagasTotal + '</span>';
       }
       const isActive = exp.isActive !== false;
+ claude/add-experience-visibility-toggle-VcLu4
       const statusLabel = isActive ? 'Visível' : 'Oculta';
       const statusColor = isActive ? '#1a8a4a' : '#888';
       const toggleLabel = isActive ? 'Ocultar' : 'Mostrar';
       const statusDisplay = '<span style="color:' + statusColor + ';font-weight:600;">' + statusLabel + '</span>';
+
+      const rowStyle = isActive ? '' : ' style="opacity:0.55;"';
+      const statusBadge = isActive
+        ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Visível</span>'
+        : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:600;">Oculta</span>';
+      const toggleLabel = isActive ? 'Ocultar' : 'Reativar';
+      const toggleClass = isActive ? 'admin__action-btn--hide' : 'admin__action-btn--show';
+ claude/create-elarah-homepage-VsE5i
       return `
-      <tr>
-        <td>${escapeHtml(exp.nome)}</td>
+      <tr${rowStyle}>
+        <td>${escapeHtml(exp.nome)} ${statusBadge}</td>
         <td>${escapeHtml(exp.categoria)}</td>
         <td>${escapeHtml(exp.data)}</td>
         <td>${escapeHtml(horariosDisplay)}</td>
@@ -788,7 +797,11 @@
         <td>${statusDisplay}</td>
         <td>
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
+ claude/add-experience-visibility-toggle-VcLu4
           <button class="admin__action-btn admin__action-btn--duplicate" data-toggle-exp="${escapeHtml(exp.id)}">${toggleLabel}</button>
+
+          <button class="admin__action-btn ${toggleClass}" data-toggle-exp="${escapeHtml(exp.id)}" data-toggle-active="${isActive ? '1' : '0'}">${toggleLabel}</button>
+ claude/create-elarah-homepage-VsE5i
           <button class="admin__action-btn admin__action-btn--duplicate" data-duplicate-exp="${escapeHtml(exp.id)}">Duplicar</button>
           <button class="admin__action-btn admin__action-btn--delete" data-delete-exp="${escapeHtml(exp.id)}">Excluir</button>
         </td>
@@ -803,11 +816,36 @@
       btn.addEventListener('click', () => duplicateExperienceAndEdit(btn.dataset.duplicateExp));
     });
     tbody.querySelectorAll('[data-toggle-exp]').forEach(btn => {
+ claude/add-experience-visibility-toggle-VcLu4
       btn.addEventListener('click', () => toggleExperienceVisibility(btn.dataset.toggleExp));
+
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.toggleExp;
+        const currentlyActive = btn.dataset.toggleActive === '1';
+        const nextActive = !currentlyActive;
+        const verb = nextActive ? 'reativar' : 'ocultar';
+        if (!confirm('Deseja ' + verb + ' esta experiência? Os dados são preservados.')) return;
+        btn.disabled = true;
+        try {
+          if (ElarahData && typeof ElarahData.setExperienceActive === 'function') {
+            const updated = await ElarahData.setExperienceActive(id, nextActive);
+            if (!updated) {
+              alert('Não foi possível atualizar a visibilidade. Verifique se a coluna is_active existe na tabela experiences (rode sql/elarah_experiences_visibility.sql).');
+            }
+          } else {
+            alert('Função setExperienceActive indisponível. Recarregue a página.');
+          }
+        } finally {
+          btn.disabled = false;
+        }
+        await renderExperiences();
+        await renderOverview();
+      });
+ claude/create-elarah-homepage-VsE5i
     });
     tbody.querySelectorAll('[data-delete-exp]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Tem certeza que deseja excluir esta experiência?')) {
+        if (confirm('Tem certeza que deseja excluir esta experiência? Essa ação é permanente — se quiser apenas tirar do site, use "Ocultar".')) {
           await ElarahData.deleteExperience(btn.dataset.deleteExp);
           await renderExperiences();
           await renderOverview();

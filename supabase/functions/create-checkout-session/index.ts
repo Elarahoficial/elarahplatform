@@ -201,7 +201,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const { data: exp, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours",
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -212,6 +212,18 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   }
   if (!exp) {
     return jsonResponse({ error: "experience_not_found" }, 404);
+  }
+  // Se a experiência foi ocultada pelo admin, bloqueia o checkout —
+  // mesmo que alguém tenha o link direto. is_active === false esconde;
+  // qualquer outra coisa (true, undefined em bancos sem a coluna) libera.
+  if (exp.is_active === false) {
+    return jsonResponse(
+      {
+        error: "experience_unavailable",
+        message: "Esta experiência não está mais disponível.",
+      },
+      404,
+    );
   }
 
   // ===== Cutoff 24h =====
