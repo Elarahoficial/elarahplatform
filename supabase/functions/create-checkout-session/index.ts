@@ -57,6 +57,29 @@ const PUBLIC_SITE_URL =
   (Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "") ||
   "https://elarah.com.br";
 
+// ===== TAXA DO CARTÃO =====
+// Gross-up transparente: total = ceil((base + fixed) / (1 - percent/100))
+// Garante que, depois que o Stripe cobra a própria taxa (~4.99% + R$0.39
+// pra Brasil), o merchant receba pelo menos o valor base líquido.
+// Configurável via Supabase secrets se precisar tunar.
+const CARD_FEE_PERCENT = Number(Deno.env.get("CARD_FEE_PERCENT") ?? "4.99");
+const CARD_FEE_FIXED_CENTS = Number(
+  Deno.env.get("CARD_FEE_FIXED_CENTS") ?? "39",
+);
+
+function computeCardTotalCents(baseCents: number): number {
+  if (!baseCents || baseCents <= 0) return 0;
+  const numerator = baseCents + CARD_FEE_FIXED_CENTS;
+  const denominator = 1 - CARD_FEE_PERCENT / 100;
+  if (denominator <= 0) return baseCents;
+  return Math.ceil(numerator / denominator);
+}
+
+function computeCardFeeCents(baseCents: number): number {
+  if (!baseCents || baseCents <= 0) return 0;
+  return computeCardTotalCents(baseCents) - baseCents;
+}
+
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20",
   httpClient: Stripe.createFetchHttpClient(),
@@ -238,6 +261,19 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const email = payload.email ? String(payload.email).trim() : null;
   const nome = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
+  // ===== MÉTODO DE PAGAMENTO (pix | card) =====
+  // Default: 'pix' (sem taxa, o que o frontend já mostra por padrão).
+  // Só aceita 'card' ou 'pix' — qualquer outro valor vira 'pix'.
+  const rawPaymentMethod = String(payload.payment_method ?? "pix")
+    .toLowerCase()
+    .trim();
+  const paymentMethod: "card" | "pix" =
+    rawPaymentMethod === "card" ? "card" : "pix";
+  console.info(
+    "[Elarah Payment] método recebido:",
+    paymentMethod,
+    "(raw=" + rawPaymentMethod + ")",
+  );
   // ===== TELEFONE / WHATSAPP =====
   // Aceita tanto `telefone` (formato humano: "(11) 91234-5678")
   // quanto `telefone_digits` (só dígitos: "11912345678"). Se o
@@ -381,6 +417,30 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     amountToCharge = Math.max(0, cents - giftCardCentavos);
   }
 
+  // ===== Taxa do cartão (gross-up) =====
+  // Aplica SOBRE o valor que efetivamente vai pro Stripe (amountToCharge,
+  // já descontado do gift card). Se o gift card cobrir 100%, não há
+  // valor a cobrar e portanto não há taxa.
+  // Se o método for PIX, a taxa é zero.
+  const baseAmountCentavos = amountToCharge; // o que chegaria sem taxa
+  let cardFeeCentavos = 0;
+  if (paymentMethod === "card" && amountToCharge > 0) {
+    cardFeeCentavos = computeCardFeeCents(amountToCharge);
+    amountToCharge = amountToCharge + cardFeeCentavos;
+    console.info(
+      "[Elarah Payment] taxa de cartão aplicada —",
+      "base=" + baseAmountCentavos,
+      "fee=" + cardFeeCentavos,
+      "total=" + amountToCharge,
+    );
+  } else {
+    console.info(
+      "[Elarah Payment] sem taxa —",
+      "method=" + paymentMethod,
+      "amount=" + amountToCharge,
+    );
+  }
+
   // ===== Decremento atômico de vaga =====
   // Só agora — depois do hold do cupom — pra evitar reservar vaga
   // que vamos liberar logo em seguida se o cupom falhar.
@@ -480,49 +540,67 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     ? exp.nome + " (com gift card)"
     : exp.nome;
 
-  let session;
-  try {
-    session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      locale: "pt-BR",
-      customer_email: email || undefined,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "brl",
-            unit_amount: amountToCharge,
-            product_data: {
-              name: productName,
-              description: [exp.data, horario, exp.bairro]
-                .filter(Boolean)
-                .join(" · ")
-                .slice(0, 380),
-            },
+  // Escolhe os métodos de pagamento aceitos no Stripe Checkout
+  // com base no que o usuário escolheu no modal.
+  const stripePaymentMethodTypes: ("card" | "pix")[] =
+    paymentMethod === "card" ? ["card"] : ["pix"];
+
+  // PIX no Stripe é assíncrono: o checkout.session.completed fica
+  // com payment_status='processing' até o pagamento confirmar via
+  // webhook async_payment_succeeded. Default de expiração é 24h —
+  // definimos um expire_at explícito pra dar margem de 24h.
+  const sessionParams: Record<string, unknown> = {
+    mode: "payment",
+    payment_method_types: stripePaymentMethodTypes,
+    locale: "pt-BR",
+    customer_email: email || undefined,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: amountToCharge,
+          product_data: {
+            name: productName,
+            description: [exp.data, horario, exp.bairro]
+              .filter(Boolean)
+              .join(" · ")
+              .slice(0, 380),
           },
         },
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        kind: "experience",
-        experiencia_id: exp.id,
-        experiencia_nome: exp.nome,
-        data: exp.data ?? "",
-        horario: horario ?? "",
-        email: email ?? "",
-        nome: nome ?? "",
-        // Telefone também vai pro metadata como safety net —
-        // se o pre-insert falhar por qualquer motivo, o webhook
-        // pode reconstruir a booking com o telefone a partir daqui.
-        telefone: telefoneToSave ?? "",
-        telefone_digits: telefoneDigits ?? "",
-        gift_card_id: giftCardId ?? "",
-        gift_card_centavos: String(giftCardCentavos),
-        gift_card_code: cupomCode ?? "",
       },
-    });
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      kind: "experience",
+      experiencia_id: exp.id,
+      experiencia_nome: exp.nome,
+      data: exp.data ?? "",
+      horario: horario ?? "",
+      email: email ?? "",
+      nome: nome ?? "",
+      // Telefone também vai pro metadata como safety net —
+      // se o pre-insert falhar por qualquer motivo, o webhook
+      // pode reconstruir a booking com o telefone a partir daqui.
+      telefone: telefoneToSave ?? "",
+      telefone_digits: telefoneDigits ?? "",
+      gift_card_id: giftCardId ?? "",
+      gift_card_centavos: String(giftCardCentavos),
+      gift_card_code: cupomCode ?? "",
+      // ===== Info do método de pagamento e taxa =====
+      payment_method: paymentMethod,
+      base_amount_centavos: String(baseAmountCentavos),
+      card_fee_centavos: String(cardFeeCentavos),
+      total_charged_centavos: String(amountToCharge),
+    },
+  };
+
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create(
+      sessionParams as unknown as Stripe.Checkout.SessionCreateParams,
+    );
   } catch (e) {
     console.error("[create-checkout-session] stripe create error", e);
     if (giftCardId) {
@@ -564,6 +642,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       endereco: exp.endereco ?? null,
       telefone_digits: telefoneDigits || null,
       preco_total_centavos: cents,
+      payment_method: paymentMethod,
+      base_amount_centavos: baseAmountCentavos,
+      card_fee_centavos: cardFeeCentavos,
     },
   });
 
@@ -603,6 +684,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
           telefone: telefoneToSave,
           telefone_digits: telefoneDigits || null,
           preco_total_centavos: cents,
+          payment_method: paymentMethod,
+          base_amount_centavos: baseAmountCentavos,
+          card_fee_centavos: cardFeeCentavos,
         },
       });
       if (retryErr) {
@@ -626,7 +710,14 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
-  return jsonResponse({ url: session.url, session_id: session.id });
+  return jsonResponse({
+    url: session.url,
+    session_id: session.id,
+    payment_method: paymentMethod,
+    base_amount_centavos: baseAmountCentavos,
+    card_fee_centavos: cardFeeCentavos,
+    total_charged_centavos: amountToCharge,
+  });
 }
 
 // =============================================================
