@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v11 carregado — desc modal v2 (collapsible hero + scroll listener)');
+console.info('[Elarah] script.js v12 carregado — desc modal v2 + telefone obrigatório no checkout');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -920,6 +920,10 @@ if (groupForm) {
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
         +   '</div>'
+        +   // ===== CAMPO TELEFONE / WHATSAPP (obrigatório) =====
+            '<label for="erm-telefone" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">WhatsApp <span style="color:#c0392b;">*</span></label>'
+        +   '<input id="erm-telefone" type="tel" required inputmode="tel" autocomplete="tel-national" placeholder="(11) 91234-5678" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
+        +   '<p id="erm-telefone-msg" style="margin:0 0 14px;font-size:.78rem;color:#888;min-height:1em;">Usamos pra te avisar sobre a experiência e mudanças de horário.</p>'
         +   '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;">Cupom / Gift Card (opcional)</label>'
         +   '<div style="display:flex;gap:8px;">'
         +     '<input id="erm-cupom" type="text" placeholder="ELRH-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;text-transform:uppercase;">'
@@ -935,6 +939,23 @@ if (groupForm) {
         if (e.target === modalRoot) closeReservationModal();
       });
       modalRoot.querySelector('#erm-close').addEventListener('click', closeReservationModal);
+
+      // Máscara simples de telefone BR: formata enquanto digita.
+      // (11) 91234-5678 ou (11) 1234-5678 — aceita ambos.
+      const telInput = modalRoot.querySelector('#erm-telefone');
+      if (telInput) {
+        telInput.addEventListener('input', function () {
+          const raw = telInput.value.replace(/\D+/g, '').slice(0, 11);
+          let formatted = raw;
+          if (raw.length >= 1) formatted = '(' + raw.slice(0, 2);
+          if (raw.length >= 3) formatted += ') ' + raw.slice(2, raw.length >= 11 ? 7 : 6);
+          if (raw.length >= 7) {
+            formatted += '-' + raw.slice(raw.length >= 11 ? 7 : 6);
+          }
+          telInput.value = formatted;
+        });
+      }
+
       return modalRoot;
     }
 
@@ -959,6 +980,14 @@ if (groupForm) {
       root.querySelector('#erm-cupom-msg').textContent = '';
       root.querySelector('#erm-cupom-msg').style.color = '#666';
       root.querySelector('#erm-error').textContent = '';
+      // Reset telefone field — cada reserva começa limpa.
+      const telefoneInput = root.querySelector('#erm-telefone');
+      if (telefoneInput) {
+        telefoneInput.value = '';
+        root.querySelector('#erm-telefone-msg').style.color = '#888';
+        root.querySelector('#erm-telefone-msg').textContent =
+          'Usamos pra te avisar sobre a experiência e mudanças de horário.';
+      }
       const confirmBtn = root.querySelector('#erm-confirm');
       confirmBtn.disabled = false;
       confirmBtn.textContent = 'Confirmar e pagar';
@@ -971,6 +1000,39 @@ if (groupForm) {
       root.style.display = 'flex';
       document.body.style.overflow = 'hidden';
 
+      // Pré-preenche telefone se o usuário já tiver cadastrado no
+      // perfil (profiles.telefone). Usa fetch async sem bloquear o
+      // render — se der erro ou demorar, o usuário digita manualmente.
+      if (telefoneInput) {
+        (async function prefillTelefone() {
+          try {
+            if (!window.supabaseClient || !window.supabaseClient.auth) return;
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            if (!session || !session.user) return;
+            const { data: prof, error } = await window.supabaseClient
+              .from('profiles')
+              .select('telefone')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            if (error) {
+              console.warn('[Elarah checkout] prefill telefone falhou:', error.message);
+              return;
+            }
+            if (prof && prof.telefone && !telefoneInput.value) {
+              telefoneInput.value = prof.telefone;
+              console.log('[Elarah checkout] telefone pré-preenchido do perfil');
+            }
+          } catch (e) {
+            console.warn('[Elarah checkout] prefill telefone exceção:', e);
+          }
+        })();
+      }
+
+      // Foca o telefone automaticamente pra reduzir atrito.
+      setTimeout(function () {
+        try { if (telefoneInput) telefoneInput.focus({ preventScroll: true }); } catch (e) {}
+      }, 150);
+
       // Bind buttons (uma vez por abertura, com remoção do antigo)
       const validateBtn = root.querySelector('#erm-validate');
       validateBtn.onclick = function () { handleValidateCupom(); };
@@ -978,6 +1040,11 @@ if (groupForm) {
       root.querySelector('#erm-cupom').onkeydown = function (e) {
         if (e.key === 'Enter') { e.preventDefault(); handleValidateCupom(); }
       };
+      if (telefoneInput) {
+        telefoneInput.onkeydown = function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); handleConfirmReservation(); }
+        };
+      }
     }
 
     async function handleValidateCupom() {
@@ -1048,6 +1115,19 @@ if (groupForm) {
       }
     }
 
+    // Valida telefone BR: pelo menos 10 dígitos (fixo) ou 11 (celular).
+    // Aceita qualquer formato, só conta dígitos. Retorna a versão
+    // só-dígitos (E.164 BR: 55 + DDD + número).
+    function normalizePhoneBR(raw) {
+      const digits = String(raw || '').replace(/\D+/g, '');
+      if (digits.length < 10 || digits.length > 13) return null;
+      // Se veio com 55 no início e tiver 12 ou 13 chars, remove.
+      if ((digits.length === 12 || digits.length === 13) && digits.startsWith('55')) {
+        return digits.slice(2);
+      }
+      return digits;
+    }
+
     async function handleConfirmReservation() {
       if (!currentReservationCtx) return;
       const ctx = currentReservationCtx;
@@ -1055,6 +1135,29 @@ if (groupForm) {
       const confirmBtn = root.querySelector('#erm-confirm');
       const errEl = root.querySelector('#erm-error');
       errEl.textContent = '';
+
+      // ===== VALIDAÇÃO TELEFONE =====
+      const telefoneInput = root.querySelector('#erm-telefone');
+      const telefoneMsg = root.querySelector('#erm-telefone-msg');
+      const telefoneRaw = telefoneInput ? telefoneInput.value.trim() : '';
+      const telefoneNormalized = normalizePhoneBR(telefoneRaw);
+      if (!telefoneNormalized) {
+        if (telefoneMsg) {
+          telefoneMsg.style.color = '#c0392b';
+          telefoneMsg.textContent = 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).';
+        }
+        if (telefoneInput) {
+          try { telefoneInput.focus({ preventScroll: true }); } catch (e) {}
+        }
+        console.warn('[Elarah checkout] telefone inválido bloqueou o submit:', telefoneRaw);
+        return;
+      }
+      if (telefoneMsg) {
+        telefoneMsg.style.color = '#888';
+        telefoneMsg.textContent = 'Usamos pra te avisar sobre a experiência e mudanças de horário.';
+      }
+      console.log('[Elarah checkout] telefone válido:', telefoneNormalized);
+
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Processando...';
 
@@ -1070,8 +1173,34 @@ if (groupForm) {
           horario: ctx.horario,
           email: auth.email || ctx.email,
           nome: ctx.nome || null,
+          telefone: telefoneRaw, // mantém formato humano pro admin
+          telefone_digits: telefoneNormalized, // só dígitos pra WhatsApp links
           cupom: ctx.cupomCode || null,
         };
+
+        // Side-effect: atualiza o telefone no perfil do usuário pra
+        // próxima reserva pré-preencher. Fire-and-forget, não bloqueia
+        // o fluxo se falhar (RLS/network).
+        try {
+          if (window.supabaseClient && window.supabaseClient.auth) {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            if (session && session.user && session.user.id) {
+              window.supabaseClient
+                .from('profiles')
+                .update({ telefone: telefoneRaw })
+                .eq('id', session.user.id)
+                .then(function (res) {
+                  if (res && res.error) {
+                    console.warn('[Elarah checkout] salvar telefone no profile falhou (OK, segue):', res.error.message);
+                  } else {
+                    console.log('[Elarah checkout] telefone salvo no perfil do usuário');
+                  }
+                });
+            }
+          }
+        } catch (e) {
+          console.warn('[Elarah checkout] não foi possível atualizar profile.telefone:', e);
+        }
         const res = await fetch(CHECKOUT_FN_URL, {
           method: 'POST',
           headers: headers,

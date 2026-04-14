@@ -85,10 +85,35 @@ async function updateBookingBySession(
   sessionId: string,
   patch: Record<string, unknown>,
 ) {
-  const { error } = await supabase
+  let { error } = await supabase
     .from("bookings")
     .update(patch)
     .eq("stripe_session_id", sessionId);
+
+  // Fallback: se a coluna `telefone` não existir no banco (migração
+  // nova não rodou), remove do patch e tenta de novo. Evita que o
+  // update de status='pago' falhe inteiro por causa de um campo
+  // auxiliar.
+  if (error) {
+    const msg = String(error.message || "").toLowerCase();
+    if (
+      "telefone" in patch &&
+      msg.includes("telefone") &&
+      (msg.includes("column") || msg.includes("schema cache"))
+    ) {
+      console.warn(
+        "[stripe-webhook] coluna telefone ausente — retry update sem ela",
+        sessionId
+      );
+      const { telefone: _drop, ...rest } = patch;
+      const retry = await supabase
+        .from("bookings")
+        .update(rest)
+        .eq("stripe_session_id", sessionId);
+      error = retry.error;
+    }
+  }
+
   if (error) {
     console.error("[stripe-webhook] booking update error", sessionId, error);
   }
@@ -442,12 +467,23 @@ serve(async (req) => {
         // Reserva de experiência — o e-mail SÓ é disparado depois do
         // UPDATE de status='pago', então se o UPDATE falhar o webhook
         // NÃO manda e-mail (correto — pagamento não foi confirmado).
-        await updateBookingBySession(session.id, {
+        //
+        // Também atualiza o telefone se ele veio no metadata da
+        // sessão Stripe (safety net) — cobre o caso raro em que o
+        // pre-insert gravou sem telefone (coluna ausente, erro, etc.)
+        // e a gente tem o valor no metadata pra recuperar.
+        const telefoneFromMeta = String(session.metadata?.telefone ?? "").trim() ||
+          String(session.metadata?.telefone_digits ?? "").trim();
+        const updatePatch: Record<string, unknown> = {
           status: "pago",
           stripe_payment_intent: session.payment_intent ?? null,
           amount_total: session.amount_total ?? null,
           currency: session.currency ?? "brl",
-        });
+        };
+        if (telefoneFromMeta) {
+          updatePatch.telefone = telefoneFromMeta;
+        }
+        await updateBookingBySession(session.id, updatePatch);
         const booking = await getBookingBySession(session.id);
         if (!booking) {
           console.error(

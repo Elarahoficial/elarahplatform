@@ -238,6 +238,35 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const email = payload.email ? String(payload.email).trim() : null;
   const nome = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
+  // ===== TELEFONE / WHATSAPP =====
+  // Aceita tanto `telefone` (formato humano: "(11) 91234-5678")
+  // quanto `telefone_digits` (só dígitos: "11912345678"). Se o
+  // frontend antigo não enviar, cai em null — bookings antigas
+  // continuam funcionando graças à coluna `telefone` ser nullable.
+  const telefoneHuman = payload.telefone
+    ? String(payload.telefone).trim()
+    : null;
+  const telefoneDigits = payload.telefone_digits
+    ? String(payload.telefone_digits).replace(/\D+/g, "")
+    : (telefoneHuman ? telefoneHuman.replace(/\D+/g, "") : null);
+  const telefoneValid =
+    telefoneDigits && telefoneDigits.length >= 10 && telefoneDigits.length <= 13;
+  // Se o telefone for válido, usa o formato humano (melhor pra
+  // exibir no admin). Senão, armazena o melhor que temos.
+  const telefoneToSave = telefoneValid
+    ? (telefoneHuman || telefoneDigits)
+    : (telefoneHuman || null);
+  if (!telefoneValid) {
+    console.warn(
+      "[create-checkout-session] telefone ausente ou inválido:",
+      JSON.stringify({ raw: telefoneHuman, digits: telefoneDigits })
+    );
+  } else {
+    console.info(
+      "[create-checkout-session] telefone recebido:",
+      telefoneDigits
+    );
+  }
 
   if (!experienciaId) {
     return jsonResponse({ error: "experiencia_id_required" }, 400);
@@ -395,6 +424,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       user_id: userId,
       email: email ?? "",
       nome: nome,
+      telefone: telefoneToSave,
       experiencia_id: exp.id,
       experiencia_nome: exp.nome,
       data: exp.data ?? null,
@@ -411,6 +441,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         bairro: exp.bairro ?? null,
         endereco: exp.endereco ?? null,
         paid_with_gift_card_only: true,
+        telefone_digits: telefoneDigits || null,
       },
     });
 
@@ -482,6 +513,11 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         horario: horario ?? "",
         email: email ?? "",
         nome: nome ?? "",
+        // Telefone também vai pro metadata como safety net —
+        // se o pre-insert falhar por qualquer motivo, o webhook
+        // pode reconstruir a booking com o telefone a partir daqui.
+        telefone: telefoneToSave ?? "",
+        telefone_digits: telefoneDigits ?? "",
         gift_card_id: giftCardId ?? "",
         gift_card_centavos: String(giftCardCentavos),
         gift_card_code: cupomCode ?? "",
@@ -502,10 +538,15 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   }
 
   // Insere booking pending — fonte da verdade local.
+  // Importante: o telefone vai tanto no campo dedicado quanto no
+  // metadata JSON. Se a coluna `telefone` não existir (migração
+  // nova não rodou ainda), a linha é gravada sem ele e o webhook
+  // tenta o retry-without-column. O metadata preserva o valor.
   const { error: insertErr } = await supabase.from("bookings").insert({
     user_id: userId,
     email: email ?? "",
     nome: nome,
+    telefone: telefoneToSave,
     experiencia_id: exp.id,
     experiencia_nome: exp.nome,
     data: exp.data ?? null,
@@ -521,12 +562,68 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     metadata: {
       bairro: exp.bairro ?? null,
       endereco: exp.endereco ?? null,
+      telefone_digits: telefoneDigits || null,
       preco_total_centavos: cents,
     },
   });
 
   if (insertErr) {
-    console.error("[create-checkout-session] booking insert error", insertErr);
+    // Fallback específico: se a coluna `telefone` ainda não existir
+    // (migração sql/elarah_bookings_telefone.sql não rodou), o erro
+    // vem como "Could not find the 'telefone' column of 'bookings'".
+    // Retry sem o campo dedicado — o telefone permanece preservado
+    // dentro de metadata.telefone_digits pra reconciliar depois.
+    const msg = String(insertErr.message || "").toLowerCase();
+    const looksLikeTelefoneMissing =
+      msg.includes("telefone") &&
+      (msg.includes("column") || msg.includes("schema cache"));
+    if (looksLikeTelefoneMissing) {
+      console.warn(
+        "[create-checkout-session] coluna telefone ausente — retry sem ela (migração sql/elarah_bookings_telefone.sql não rodou)"
+      );
+      const { error: retryErr } = await supabase.from("bookings").insert({
+        user_id: userId,
+        email: email ?? "",
+        nome: nome,
+        experiencia_id: exp.id,
+        experiencia_nome: exp.nome,
+        data: exp.data ?? null,
+        horario: horario,
+        preco_label: exp.preco,
+        amount_total: amountToCharge,
+        currency: "brl",
+        status: "pending",
+        stripe_session_id: session.id,
+        gift_card_id: giftCardId,
+        gift_card_centavos: giftCardCentavos || null,
+        gift_card_code: cupomCode,
+        metadata: {
+          bairro: exp.bairro ?? null,
+          endereco: exp.endereco ?? null,
+          telefone: telefoneToSave,
+          telefone_digits: telefoneDigits || null,
+          preco_total_centavos: cents,
+        },
+      });
+      if (retryErr) {
+        console.error(
+          "[create-checkout-session] booking retry insert error",
+          retryErr
+        );
+      } else {
+        console.info(
+          "[create-checkout-session] booking gravada sem coluna telefone (metadata preservou)"
+        );
+      }
+    } else {
+      console.error("[create-checkout-session] booking insert error", insertErr);
+    }
+  } else {
+    console.info(
+      "[create-checkout-session] booking pending gravada",
+      "session=" + session.id,
+      "telefone_present=" + (telefoneValid ? "yes" : "no")
+    );
   }
 
   return jsonResponse({ url: session.url, session_id: session.id });

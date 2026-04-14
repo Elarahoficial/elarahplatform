@@ -607,7 +607,7 @@
     countEl.textContent = filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : '');
 
     if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
       return;
     }
 
@@ -615,11 +615,31 @@
       const when = b.created_at
         ? new Date(b.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
         : '—';
+      // Telefone: aceita coluna dedicada OU fallback via metadata
+      // (bookings criadas antes da migração rodar ou em casos onde
+      // a coluna telefone falhou e só o metadata foi preservado).
+      // Extrai só dígitos pro link wa.me (formato E.164 BR: 55 + DDD + nº).
+      let telefone = b.telefone || null;
+      if (!telefone && b.metadata && typeof b.metadata === 'object') {
+        telefone = b.metadata.telefone || b.metadata.telefone_digits || null;
+      }
+      let telefoneCell;
+      if (telefone) {
+        const digits = String(telefone).replace(/\D+/g, '');
+        const waDigits = digits.length >= 10 ? ('55' + digits.replace(/^55/, '')) : digits;
+        const href = waDigits ? 'https://wa.me/' + waDigits : '';
+        telefoneCell = href
+          ? '<a href="' + href + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(telefone) + '</a>'
+          : escapeHtml(telefone);
+      } else {
+        telefoneCell = '<span style="color:#bbb;">—</span>';
+      }
       return `
         <tr>
           <td>${escapeHtml(when)}</td>
           <td>${escapeHtml(b.nome || '—')}</td>
           <td>${escapeHtml(b.email || '—')}</td>
+          <td>${telefoneCell}</td>
           <td>${escapeHtml(b.experiencia_nome || '—')}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
