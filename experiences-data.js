@@ -141,6 +141,28 @@
     cachePromise = null;
   }
 
+  // Detecta erro do PostgREST quando uma coluna não existe / não está
+  // no schema cache. Usado pra fallback compat (ver addExperience /
+  // updateExperience).
+  function isMissingColumnError(error, columnName) {
+    if (!error) return false;
+    const haystack = [error.message, error.details, error.hint, error.code]
+      .filter(Boolean)
+      .map(v => String(v).toLowerCase())
+      .join(' ');
+    if (!haystack) return false;
+    const col = String(columnName || '').toLowerCase();
+    // PostgREST: "Could not find the 'is_active' column of 'experiences'
+    // in the schema cache" (PGRST204) ou "column experiences.is_active
+    // does not exist" (42703).
+    return haystack.includes(col) && (
+      haystack.includes('column') ||
+      haystack.includes('schema cache') ||
+      haystack.includes('pgrst204') ||
+      haystack.includes('42703')
+    );
+  }
+
   async function getAllExperiences() {
     if (cache) return cache.slice();
     if (cachePromise) return (await cachePromise).slice();
@@ -191,11 +213,32 @@
     const s = sb();
     if (!s) return null;
     const row = experienceToDbRow(data);
-    const { data: inserted, error } = await s
+    let { data: inserted, error } = await s
       .from(TABLE)
       .insert(row)
       .select()
       .single();
+
+    // Compat: se a migration do is_active ainda não rodou, o Supabase
+    // rejeita o payload inteiro com "column ... does not exist". Nesse
+    // caso, tenta de novo sem a coluna pra não quebrar updates de
+    // outros campos (event_at, data, horário, preço, etc.).
+    if (error && isMissingColumnError(error, 'is_active')) {
+      console.warn(
+        '[Elarah] addExperience: coluna is_active ausente. Rode ' +
+        'sql/elarah_experiences_visibility.sql pra habilitar a feature. ' +
+        'Salvando sem ela por enquanto.'
+      );
+      const { is_active: _omit, ...rowNoActive } = row;
+      const retry = await s
+        .from(TABLE)
+        .insert(rowNoActive)
+        .select()
+        .single();
+      inserted = retry.data;
+      error = retry.error;
+    }
+
     if (error) {
       console.error('[Elarah] addExperience error', error);
       return null;
@@ -208,12 +251,33 @@
     const s = sb();
     if (!s) return null;
     const row = experienceToDbRow(data);
-    const { data: updated, error } = await s
+    let { data: updated, error } = await s
       .from(TABLE)
       .update(row)
       .eq('id', id)
       .select()
       .single();
+
+    // Mesmo retry defensivo do addExperience — sem isso, updates de
+    // event_at/data/horário falham silenciosamente quando a coluna
+    // is_active ainda não foi adicionada no banco.
+    if (error && isMissingColumnError(error, 'is_active')) {
+      console.warn(
+        '[Elarah] updateExperience: coluna is_active ausente. Rode ' +
+        'sql/elarah_experiences_visibility.sql pra habilitar a feature. ' +
+        'Salvando sem ela por enquanto.'
+      );
+      const { is_active: _omit, ...rowNoActive } = row;
+      const retry = await s
+        .from(TABLE)
+        .update(rowNoActive)
+        .eq('id', id)
+        .select()
+        .single();
+      updated = retry.data;
+      error = retry.error;
+    }
+
     if (error) {
       console.error('[Elarah] updateExperience error', error);
       return null;

@@ -718,14 +718,28 @@
       const editId = document.getElementById('exp-edit-id').value;
 
       submitBtn.disabled = true;
+      let saved = null;
       try {
         if (editId) {
-          await ElarahData.updateExperience(editId, expData);
+          saved = await ElarahData.updateExperience(editId, expData);
         } else {
-          await ElarahData.addExperience(expData);
+          saved = await ElarahData.addExperience(expData);
         }
       } finally {
         submitBtn.disabled = false;
+      }
+
+      // Se o save falhou (retorno null), NÃO fecha o modal e avisa o
+      // admin. Evita o bug antigo de "cliquei em salvar, o modal fechou
+      // e a mudança não apareceu no site" — que na real era uma falha
+      // silenciosa do Supabase.
+      if (!saved) {
+        alert(
+          'Não foi possível salvar a experiência. Veja o console do ' +
+          'navegador para detalhes (possível erro de permissão ou ' +
+          'coluna ausente no banco).'
+        );
+        return;
       }
 
       closeExpModal();
@@ -806,7 +820,15 @@
     const exp = await ElarahData.getExperienceById(expId);
     if (!exp) return;
     const nextActive = !(exp.isActive !== false);
-    await ElarahData.updateExperience(expId, { ...exp, isActive: nextActive });
+    const saved = await ElarahData.updateExperience(expId, { ...exp, isActive: nextActive });
+    if (!saved) {
+      alert(
+        'Não foi possível atualizar a visibilidade. Verifique se a ' +
+        'migration sql/elarah_experiences_visibility.sql foi executada ' +
+        'no Supabase.'
+      );
+      return;
+    }
     await renderExperiences();
     await renderOverview();
   }
