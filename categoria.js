@@ -27,14 +27,60 @@ document.addEventListener('DOMContentLoaded', async () => {
   const filterCategoria = document.getElementById('cat-filter-categoria');
   const filterBairro = document.getElementById('cat-filter-bairro');
 
-  // ===== POPULATE BAIRRO DROPDOWN =====
-  const bairros = [...new Set(experiences.map(e => e.bairro))].sort();
+  // ===== POPULATE BAIRRO DROPDOWN (dinâmico do banco) =====
+  const bairros = [...new Set(
+    experiences
+      .map(e => (e && e.bairro ? String(e.bairro).trim() : ''))
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
   bairros.forEach(b => {
     const opt = document.createElement('option');
     opt.value = b;
     opt.textContent = b;
     filterBairro.appendChild(opt);
   });
+
+  // ===== POPULATE CATEGORIA DROPDOWN (dinâmico do banco) =====
+  // Substitui as options hardcoded no HTML pelas categorias reais
+  // das experiências carregadas. Quando o admin cadastra uma
+  // categoria nova, ela aparece automaticamente aqui na próxima
+  // vez que a página carrega.
+  const catSet = new Set();
+  const catMap = new Map();
+  experiences.forEach(exp => {
+    if (!exp || !exp.categoria) return;
+    const c = String(exp.categoria).trim();
+    if (!c) return;
+    const k = c.toLowerCase();
+    if (!catSet.has(k)) {
+      catSet.add(k);
+      catMap.set(k, c);
+    }
+  });
+  const categoriasDinamicas = Array.from(catMap.values()).sort(
+    (a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' })
+  );
+  console.log('[Elarah categoria] filtros dinâmicos:',
+    categoriasDinamicas.length + ' categorias,',
+    bairros.length + ' bairros');
+  // Mantém a primeira option ("Todas") e substitui o resto.
+  if (filterCategoria) {
+    const first = filterCategoria.querySelector('option[value=""]');
+    filterCategoria.innerHTML = '';
+    if (first) filterCategoria.appendChild(first);
+    else {
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Todas';
+      filterCategoria.appendChild(placeholder);
+    }
+    categoriasDinamicas.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      filterCategoria.appendChild(opt);
+    });
+  }
 
   // ===== SET INITIAL FILTER STATE =====
   if (activeCategoria) {

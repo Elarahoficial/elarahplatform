@@ -689,7 +689,60 @@
     return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
   }
 
+  // Popula o <datalist id="exp-categoria-datalist"> com todas as
+  // categorias já cadastradas no banco (+ um seed mínimo pra não
+  // deixar vazio se não houver nenhuma experiência ainda).
+  // É chamado toda vez que o modal abre pra garantir que a lista
+  // reflita o estado atual (ex: o admin criou outra categoria
+  // antes e quer escolher de novo).
+  async function populateCategoriaDatalist() {
+    const datalist = document.getElementById('exp-categoria-datalist');
+    if (!datalist) return;
+    const seed = [
+      'Gastronomia', 'Cerâmica', 'Pintura', 'Vela', 'Sabonete',
+      'Tufting', 'Floral', 'Macramê', 'Bartenderia',
+    ];
+    let dbCategorias = [];
+    try {
+      if (window.ElarahData && ElarahData.getAllExperiences) {
+        const all = await ElarahData.getAllExperiences();
+        dbCategorias = (all || [])
+          .map(e => (e && e.categoria ? String(e.categoria).trim() : ''))
+          .filter(Boolean);
+      }
+    } catch (e) {
+      console.warn('[Admin] populateCategoriaDatalist: falha ao carregar categorias do banco', e);
+    }
+    // Unique + sorted (case-insensitive)
+    const set = new Set();
+    seed.concat(dbCategorias).forEach(c => {
+      if (c && !set.has(c.toLowerCase())) set.add(c.toLowerCase());
+    });
+    // Reconstrói mantendo a capitalização original de cada uma
+    // (prefere a do banco sobre a do seed).
+    const seen = new Map();
+    dbCategorias.forEach(c => {
+      const k = c.toLowerCase();
+      if (!seen.has(k)) seen.set(k, c);
+    });
+    seed.forEach(c => {
+      const k = c.toLowerCase();
+      if (!seen.has(k)) seen.set(k, c);
+    });
+    const final = Array.from(seen.values()).sort(function (a, b) {
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+    datalist.innerHTML = final
+      .map(c => '<option value="' + escapeHtml(c) + '"></option>')
+      .join('');
+    console.log('[Admin] datalist de categorias populado:', final.length, 'categorias');
+  }
+
   async function openExpModal(editId) {
+    // Garante que o datalist de categorias esteja atualizado ANTES
+    // de abrir o modal — assim o autocomplete funciona na hora.
+    await populateCategoriaDatalist();
+
     if (editId) {
       const exp = await ElarahData.getExperienceById(editId);
       if (!exp) return;
@@ -823,7 +876,7 @@
 
       const expData = {
         nome: document.getElementById('exp-nome').value.trim(),
-        categoria: document.getElementById('exp-categoria').value,
+        categoria: (document.getElementById('exp-categoria').value || '').trim(),
         data: document.getElementById('exp-data').value.trim(),
         horario: horarios[0],
         horarios: horarios,
