@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v12 carregado — desc modal v2 + telefone obrigatório no checkout');
+console.info('[Elarah] script.js v13 carregado — filtros dinâmicos de categoria/bairro');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -37,9 +37,141 @@ if (categoriaURL) activeCategoria = categoriaURL;
   const filterBairro = document.getElementById('filter-bairro');
   const filterCategoria = document.getElementById('filter-categoria');
   const filterBtn = document.getElementById('filter-btn');
-  const categoryLinks = document.querySelectorAll('.category-link');
   const searchInput = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
+
+  // =====================================================
+  //  POPULA DROPDOWNS/STRIPS DINAMICAMENTE A PARTIR DO BANCO
+  // =====================================================
+  // Substitui as options/links hardcoded no HTML por uma lista
+  // derivada das experiências reais. Quando o admin cadastra uma
+  // experiência com categoria NOVA, ela aparece automaticamente
+  // nos filtros na próxima vez que a página carrega.
+  function populateFiltersFromExperiences() {
+    // --- Categorias únicas do banco ---
+    const categoriasSet = new Set();
+    const categoriasOriginalCase = new Map();
+    (experiences || []).forEach(function (exp) {
+      if (!exp || !exp.categoria) return;
+      const c = String(exp.categoria).trim();
+      if (!c) return;
+      const k = c.toLowerCase();
+      if (!categoriasSet.has(k)) {
+        categoriasSet.add(k);
+        categoriasOriginalCase.set(k, c);
+      }
+    });
+    const categorias = Array.from(categoriasOriginalCase.values()).sort(function (a, b) {
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+
+    // --- Bairros únicos do banco ---
+    const bairrosSet = new Set();
+    const bairrosMap = new Map();
+    (experiences || []).forEach(function (exp) {
+      if (!exp || !exp.bairro) return;
+      const b = String(exp.bairro).trim();
+      if (!b) return;
+      const k = b.toLowerCase();
+      if (!bairrosSet.has(k)) {
+        bairrosSet.add(k);
+        bairrosMap.set(k, b);
+      }
+    });
+    const bairros = Array.from(bairrosMap.values()).sort(function (a, b) {
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+
+    console.log('[Elarah Home] filtros dinâmicos:',
+      categorias.length + ' categorias,',
+      bairros.length + ' bairros');
+
+    // --- Popula o <select id="filter-categoria"> ---
+    if (filterCategoria) {
+      const current = filterCategoria.value;
+      // Mantém o primeiro <option value=""> (Todas as experiências)
+      // e substitui todos os outros pelas categorias dinâmicas.
+      const first = filterCategoria.querySelector('option[value=""]');
+      filterCategoria.innerHTML = '';
+      if (first) filterCategoria.appendChild(first);
+      else {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Todas as experiências';
+        filterCategoria.appendChild(placeholder);
+      }
+      categorias.forEach(function (c) {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        filterCategoria.appendChild(opt);
+      });
+      // Restaura seleção se ainda existe nas novas options
+      if (current && categorias.indexOf(current) !== -1) {
+        filterCategoria.value = current;
+      } else if (activeCategoria && categorias.indexOf(activeCategoria) !== -1) {
+        filterCategoria.value = activeCategoria;
+      }
+    }
+
+    // --- Popula o <select id="filter-bairro"> ---
+    if (filterBairro) {
+      const current = filterBairro.value;
+      const first = filterBairro.querySelector('option[value=""]');
+      filterBairro.innerHTML = '';
+      if (first) filterBairro.appendChild(first);
+      else {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Todos os bairros';
+        filterBairro.appendChild(placeholder);
+      }
+      bairros.forEach(function (b) {
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = b;
+        filterBairro.appendChild(opt);
+      });
+      if (current && bairros.indexOf(current) !== -1) {
+        filterBairro.value = current;
+      } else if (activeBairro && bairros.indexOf(activeBairro) !== -1) {
+        filterBairro.value = activeBairro;
+      }
+    }
+
+    // --- Popula o strip de categorias (links .category-link) ---
+    // O strip fica dentro de <nav class="categories__inner">. Mantém
+    // o link "Todas" + adiciona um link por categoria do banco.
+    const categoriesNav = document.querySelector('.categories__inner');
+    if (categoriesNav) {
+      // Preserva apenas o "Todas" (primeiro link)
+      const todasLink = categoriesNav.querySelector('.category-link--active') ||
+        categoriesNav.querySelector('.category-link');
+      categoriesNav.innerHTML = '';
+      if (todasLink) {
+        todasLink.classList.add('category-link', 'category-link--active');
+        categoriesNav.appendChild(todasLink);
+      } else {
+        const todas = document.createElement('a');
+        todas.href = 'categoria.html';
+        todas.className = 'category-link category-link--active';
+        todas.textContent = 'Todas';
+        categoriesNav.appendChild(todas);
+      }
+      categorias.forEach(function (c) {
+        const a = document.createElement('a');
+        a.href = 'categoria.html?cat=' + encodeURIComponent(c);
+        a.className = 'category-link';
+        a.textContent = c;
+        categoriesNav.appendChild(a);
+      });
+    }
+  }
+
+  populateFiltersFromExperiences();
+
+  // Atualizado depois da geração dinâmica (links novos).
+  const categoryLinks = document.querySelectorAll('.category-link');
 
   const MAX_HOME_CARDS = 3;
 

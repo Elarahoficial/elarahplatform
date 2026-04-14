@@ -158,3 +158,134 @@
     font-size: 1.4rem;
   }
 }
+
+/* =============================================================
+   COLAGEM POR CATEGORIA — seções com carrossel horizontal
+   Usada quando categoria.html está sem filtro de categoria
+   específico (modo "Todas as experiências"). Cada seção mostra
+   o título da categoria + um carrossel horizontal dos cards.
+   ============================================================= */
+
+.cat-section {
+  max-width: 1320px;
+  margin: 0 auto 48px;
+  padding: 0;
+  position: relative;
+}
+
+.cat-section:last-child {
+  margin-bottom: 72px;
+}
+
+.cat-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.cat-section__title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.cat-section__see-all {
+  font-size: 0.85rem;
+  color: #f0a05e;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color .15s ease, transform .15s ease;
+}
+
+.cat-section__see-all::after {
+  content: '→';
+  transition: transform .15s ease;
+}
+
+.cat-section__see-all:hover {
+  color: #d68a45;
+}
+
+.cat-section__see-all:hover::after {
+  transform: translateX(3px);
+}
+
+/* Carrossel horizontal com scroll-snap */
+.cat-section__scroller {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 24px;
+  padding: 6px 24px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #e5d8c5 transparent;
+}
+
+.cat-section__scroller::-webkit-scrollbar {
+  height: 8px;
+}
+.cat-section__scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cat-section__scroller::-webkit-scrollbar-thumb {
+  background: #e5d8c5;
+  border-radius: 4px;
+}
+.cat-section__scroller::-webkit-scrollbar-thumb:hover {
+  background: #d4c4a6;
+}
+
+/* Cada card no carrossel tem largura fixa e snap */
+.cat-section__scroller > .card {
+  flex: 0 0 320px;
+  scroll-snap-align: start;
+  /* Reset da grid do pai — card vira bloco individual aqui */
+  width: 320px;
+  max-width: 320px;
+}
+
+/* Mobile: cards maiores (85% da viewport) pra ficar tipo Netflix/iOS */
+@media (max-width: 640px) {
+  .cat-section {
+    margin-bottom: 36px;
+  }
+  .cat-section__header {
+    padding: 0 16px;
+    margin-bottom: 14px;
+  }
+  .cat-section__title {
+    font-size: 1.5rem;
+  }
+  .cat-section__scroller {
+    gap: 14px;
+    padding: 4px 16px 16px;
+    scroll-padding: 16px;
+  }
+  .cat-section__scroller > .card {
+    flex: 0 0 85%;
+    width: 85%;
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 400px) {
+  .cat-section__scroller > .card {
+    flex: 0 0 90%;
+    width: 90%;
+  }
+}

@@ -594,19 +594,19 @@
 
         <div class="admin__form-field">
           <label>Categoria</label>
-          <select id="exp-categoria" required>
-            <option value="">Selecione</option>
-            <option value="Gastronomia">Gastronomia</option>
-            <option value="Cerâmica">Cerâmica</option>
-            <option value="Pintura">Pintura</option>
-            <option value="Vela">Vela</option>
-            <option value="Sabonete">Sabonete</option>
-            <option value="Tufting">Tufting</option>
-            <option value="Floral">Floral</option>
-            <option value="Macramê">Macramê</option>
-            <option value="Bartenderia">Bartenderia</option>
-            <option value="Outro">Outro</option>
-          </select>
+          <input
+            id="exp-categoria"
+            type="text"
+            list="exp-categoria-datalist"
+            required
+            placeholder="Ex: Cerâmica, Pintura, Tufting, ou digite uma nova..."
+            autocomplete="off">
+          <!-- Datalist populado dinamicamente pelo admin.js a partir
+               das experiências já cadastradas. Permite escolher uma
+               categoria existente (autocomplete) OU digitar uma nova
+               categoria — qualquer texto é aceito. -->
+          <datalist id="exp-categoria-datalist"></datalist>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Escolha uma categoria existente ou digite um nome novo. Categorias novas aparecem automaticamente nos filtros do site.</p>
         </div>
 
         <div class="admin__form-field">
@@ -787,7 +787,7 @@
 <script src="experiences-data.js?v=11"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=18"></script>
+<script src="admin.js?v=19"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
