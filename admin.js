@@ -1090,6 +1090,34 @@
     });
   }
 
+  // Chave de agrupamento estável: normaliza case/espaço pra que
+  // "Pintura com Aperol" e "pintura com  aperol" caiam no mesmo
+  // bloco. Não muda o valor exibido — só a chave usada pra agrupar.
+  function byElarahGroupKey(nome) {
+    return String(nome || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+  }
+
+  // Agrupa uma lista por experience name preservando a ordem da
+  // primeira ocorrência de cada grupo (estável). Retorna um array
+  // de { nome, rows } pronto pra iterar.
+  function groupByExperienceName(list, getName) {
+    const order = [];
+    const map = new Map();
+    for (const row of list) {
+      const nome = (getName(row) || '').trim() || '— sem nome —';
+      const key = byElarahGroupKey(nome);
+      if (!map.has(key)) {
+        order.push(key);
+        map.set(key, { nome, rows: [] });
+      }
+      map.get(key).rows.push(row);
+    }
+    return order.map(k => map.get(k));
+  }
+
   async function renderByElarah() {
     if (!document.getElementById('byelarah-items-body')) return;
     const [items, subs] = await Promise.all([
@@ -1104,44 +1132,73 @@
     const recent = subs.filter(s => new Date(s.created_at).getTime() > dayAgo).length;
     document.getElementById('stat-byelarah-new').textContent = recent;
 
-    // Items table
+    // ========== Items table — GROUPED BY NAME ==========
     const itemsBody = document.getElementById('byelarah-items-body');
     const itemsCount = document.getElementById('byelarah-items-count');
-    itemsCount.textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
 
     if (!items.length) {
+      itemsCount.textContent = '0 itens';
       itemsBody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhum item By Elarah cadastrado.</td></tr>';
     } else {
-      itemsBody.innerHTML = items.map(it => {
-        const horariosStr = Array.isArray(it.horarios) && it.horarios.length
-          ? it.horarios.join(' · ') : '—';
-        const tipoLabel = it.tipo === 'participar' ? 'Participar' : 'Lista de espera';
-        const tipoClass = it.tipo === 'participar' ? 'approved' : 'pending';
-        const statusLabel = it.ativo === false ? 'Oculto' : 'Ativo';
-        const statusClass = it.ativo === false ? 'rejected' : 'approved';
-        const imgHtml = it.imagem
-          ? `<img src="${escapeHtml(it.imagem)}" alt="" class="admin__thumb">`
-          : '<span class="admin__thumb admin__thumb--placeholder">—</span>';
-        const isDbItem = typeof it.id === 'string' && it.id && !it.id.startsWith('fallback-');
-        const actions = isDbItem
-          ? `
-            <button class="admin__action-btn admin__action-btn--edit" data-by-edit="${escapeHtml(it.id)}">Editar</button>
-            <button class="admin__action-btn admin__action-btn--delete" data-by-delete="${escapeHtml(it.id)}">Excluir</button>
-          `
-          : '<span class="admin__badge admin__badge--pending">Fallback</span>';
-        return `
-          <tr>
-            <td>${it.ordem || 0}</td>
-            <td>${imgHtml}</td>
-            <td>${escapeHtml(it.nome)}</td>
-            <td>${escapeHtml(it.data || '—')}</td>
-            <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
-            <td>${escapeHtml(horariosStr)}</td>
-            <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
-            <td>${actions}</td>
-          </tr>
-        `;
-      }).join('');
+      // Ordena itens por `ordem` antes de agrupar — dentro de cada
+      // grupo os itens saem na ordem natural definida no admin.
+      const sortedItems = items.slice().sort((a, b) => {
+        const oa = Number(a.ordem) || 0;
+        const ob = Number(b.ordem) || 0;
+        return oa - ob;
+      });
+      const itemGroups = groupByExperienceName(sortedItems, it => it.nome);
+      const nGroups = itemGroups.length;
+      itemsCount.textContent =
+        items.length + ' item' + (items.length !== 1 ? 's' : '') +
+        ' · ' + nGroups + ' experiência' + (nGroups !== 1 ? 's' : '');
+
+      const html = [];
+      itemGroups.forEach(group => {
+        const nSessions = group.rows.length;
+        const sessoesLabel = nSessions + ' sess' + (nSessions === 1 ? 'ão' : 'ões');
+        html.push(
+          '<tr class="admin__group-header">' +
+            '<td colspan="8">' +
+              '<div class="admin__group-header-inner">' +
+                '<span class="admin__group-header-title">' + escapeHtml(group.nome) + '</span>' +
+                '<span class="admin__group-header-pill">' + escapeHtml(sessoesLabel) + '</span>' +
+              '</div>' +
+            '</td>' +
+          '</tr>'
+        );
+        group.rows.forEach(it => {
+          const horariosStr = Array.isArray(it.horarios) && it.horarios.length
+            ? it.horarios.join(' · ') : '—';
+          const tipoLabel = it.tipo === 'participar' ? 'Participar' : 'Lista de espera';
+          const tipoClass = it.tipo === 'participar' ? 'approved' : 'pending';
+          const statusLabel = it.ativo === false ? 'Oculto' : 'Ativo';
+          const statusClass = it.ativo === false ? 'rejected' : 'approved';
+          const imgHtml = it.imagem
+            ? `<img src="${escapeHtml(it.imagem)}" alt="" class="admin__thumb">`
+            : '<span class="admin__thumb admin__thumb--placeholder">—</span>';
+          const isDbItem = typeof it.id === 'string' && it.id && !it.id.startsWith('fallback-');
+          const actions = isDbItem
+            ? `
+              <button class="admin__action-btn admin__action-btn--edit" data-by-edit="${escapeHtml(it.id)}">Editar</button>
+              <button class="admin__action-btn admin__action-btn--delete" data-by-delete="${escapeHtml(it.id)}">Excluir</button>
+            `
+            : '<span class="admin__badge admin__badge--pending">Fallback</span>';
+          html.push(`
+            <tr>
+              <td>${it.ordem || 0}</td>
+              <td>${imgHtml}</td>
+              <td>${escapeHtml(it.nome)}</td>
+              <td>${escapeHtml(it.data || '—')}</td>
+              <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
+              <td>${escapeHtml(horariosStr)}</td>
+              <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
+              <td>${actions}</td>
+            </tr>
+          `);
+        });
+      });
+      itemsBody.innerHTML = html.join('');
 
       itemsBody.querySelectorAll('[data-by-edit]').forEach(btn => {
         btn.addEventListener('click', () => openByModal(btn.dataset.byEdit));
@@ -1156,40 +1213,86 @@
       });
     }
 
-    // Submissions table
+    // ========== Submissions table — GROUPED BY EXPERIENCE ==========
     const subsBody = document.getElementById('byelarah-subs-body');
     const subsCount = document.getElementById('byelarah-subs-count');
-    subsCount.textContent = subs.length + ' resposta' + (subs.length !== 1 ? 's' : '');
 
     if (!subs.length) {
+      subsCount.textContent = '0 respostas';
       subsBody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma resposta registrada.</td></tr>';
     } else {
-      subsBody.innerHTML = subs.map(s => {
-        const when = s.created_at
-          ? new Date(s.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-          : '—';
-        const tipoLabel = s.tipo === 'participar' ? 'Participar' : 'Espera';
-        const tipoClass = s.tipo === 'participar' ? 'approved' : 'pending';
-        const statusLabel = s.status || 'novo';
-        const statusClass = statusLabel === 'atendido' ? 'approved'
-                          : statusLabel === 'descartado' ? 'rejected' : 'pending';
-        return `
-          <tr>
-            <td>${escapeHtml(when)}</td>
-            <td>${escapeHtml(s.experiencia || '—')}</td>
-            <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
-            <td>${escapeHtml(s.nome || '—')}</td>
-            <td>${escapeHtml(s.email || '—')}</td>
-            <td>${escapeHtml(s.telefone || '—')}</td>
-            <td>${escapeHtml(s.horario || '—')}</td>
-            <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
-            <td>
-              <button class="admin__action-btn admin__action-btn--approve" data-by-sub-done="${escapeHtml(s.id)}">Atendido</button>
-              <button class="admin__action-btn admin__action-btn--delete" data-by-sub-del="${escapeHtml(s.id)}">Excluir</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      // Ordena por data desc ANTES de agrupar — dentro de cada
+      // grupo as respostas mais novas ficam no topo.
+      const sortedSubs = subs.slice().sort((a, b) => {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      });
+      const subGroups = groupByExperienceName(sortedSubs, s => s.experiencia);
+      // Ordena grupos: mais recentes (pela resposta mais nova do
+      // grupo) primeiro, pra experiências com movimento recente
+      // ficarem no topo.
+      subGroups.sort((ga, gb) => {
+        const ta = ga.rows[0] && ga.rows[0].created_at ? new Date(ga.rows[0].created_at).getTime() : 0;
+        const tb = gb.rows[0] && gb.rows[0].created_at ? new Date(gb.rows[0].created_at).getTime() : 0;
+        return tb - ta;
+      });
+      const nGroups = subGroups.length;
+      subsCount.textContent =
+        subs.length + ' resposta' + (subs.length !== 1 ? 's' : '') +
+        ' · ' + nGroups + ' experiência' + (nGroups !== 1 ? 's' : '');
+
+      const html = [];
+      subGroups.forEach(group => {
+        const n = group.rows.length;
+        const respLabel = n + ' resposta' + (n !== 1 ? 's' : '');
+        // Conta novas nas últimas 24h dentro do grupo (útil pra
+        // identificar experiências com demanda recente).
+        const novasDoGrupo = group.rows.filter(r =>
+          r.created_at && new Date(r.created_at).getTime() > dayAgo
+        ).length;
+        const novasPill = novasDoGrupo > 0
+          ? '<span class="admin__group-header-pill" style="background:#1a8a4a;">' + novasDoGrupo + ' nova' + (novasDoGrupo !== 1 ? 's' : '') + ' (24h)</span>'
+          : '';
+        html.push(
+          '<tr class="admin__group-header">' +
+            '<td colspan="9">' +
+              '<div class="admin__group-header-inner">' +
+                '<span class="admin__group-header-title">' + escapeHtml(group.nome) + '</span>' +
+                '<span class="admin__group-header-pill admin__group-header-pill--muted">' + respLabel + '</span>' +
+                novasPill +
+              '</div>' +
+            '</td>' +
+          '</tr>'
+        );
+        group.rows.forEach(s => {
+          const when = s.created_at
+            ? new Date(s.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+            : '—';
+          const tipoLabel = s.tipo === 'participar' ? 'Participar' : 'Espera';
+          const tipoClass = s.tipo === 'participar' ? 'approved' : 'pending';
+          const statusLabel = s.status || 'novo';
+          const statusClass = statusLabel === 'atendido' ? 'approved'
+                            : statusLabel === 'descartado' ? 'rejected' : 'pending';
+          html.push(`
+            <tr>
+              <td>${escapeHtml(when)}</td>
+              <td>${escapeHtml(s.experiencia || '—')}</td>
+              <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
+              <td>${escapeHtml(s.nome || '—')}</td>
+              <td>${escapeHtml(s.email || '—')}</td>
+              <td>${escapeHtml(s.telefone || '—')}</td>
+              <td>${escapeHtml(s.horario || '—')}</td>
+              <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
+              <td>
+                <button class="admin__action-btn admin__action-btn--approve" data-by-sub-done="${escapeHtml(s.id)}">Atendido</button>
+                <button class="admin__action-btn admin__action-btn--delete" data-by-sub-del="${escapeHtml(s.id)}">Excluir</button>
+              </td>
+            </tr>
+          `);
+        });
+      });
+      subsBody.innerHTML = html.join('');
 
       subsBody.querySelectorAll('[data-by-sub-done]').forEach(btn => {
         btn.addEventListener('click', async () => {
