@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Preview — By Elarah agrupado por experiência</title>
+  <style>
+    /* ===== reset + base ===== */
+    :root {
+      --gray-50:  #faf6f0;
+      --gray-100: #f0e8de;
+      --gray-200: #e5d8c5;
+      --gray-300: #d0c2ab;
+      --gray-400: #a8998a;
+      --gray-500: #888;
+      --gray-700: #3a3a3a;
+      --gray-900: #1a1a1a;
+      --orange:   #f0a05e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 24px;
+      background: #faf6f0;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-700);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .hint {
+      background: #fff8ee;
+      border: 1px solid #f0cfa0;
+      border-left: 4px solid var(--orange);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.88rem;
+      color: #5a3a10;
+      margin-bottom: 24px;
+      line-height: 1.55;
+    }
+    .hint strong { color: #1a1a1a; }
+    h1 {
+      font-family: Georgia, serif;
+      font-size: 1.8rem;
+      color: var(--gray-900);
+      margin: 0 0 6px;
+      font-weight: 400;
+    }
+    .subtitle {
+      font-size: 0.92rem;
+      color: var(--gray-500);
+      margin-bottom: 28px;
+    }
+
+    /* ===== table wrap mimicking admin.css ===== */
+    .admin__table-wrap {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .admin__table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--gray-100);
+      background: #fefbf6;
+    }
+    .admin__table-title {
+      font-family: Georgia, serif;
+      font-size: 1.1rem;
+      color: var(--gray-900);
+      font-weight: 400;
+    }
+    .admin__table-count {
+      font-size: 0.78rem;
+      color: var(--gray-500);
+    }
+    .admin__table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .admin__table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .admin__table td {
+      padding: 14px 16px;
+      font-size: 0.88rem;
+      color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: top;
+    }
+    .admin__table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ===== badges ===== */
+    .admin__badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .admin__badge--pending  { background: #fff4de; color: #856404; }
+    .admin__badge--approved { background: #d4edda; color: #155724; }
+
+    /* ===== GROUP HEADERS (o foco deste preview) ===== */
+    .admin__table tr.admin__group-header td {
+      background: linear-gradient(90deg, #fff8ee 0%, #fdf4e3 100%);
+      border-top: 3px solid #f0a05e;
+      border-bottom: 1px solid #f0cfa0;
+      padding: 18px 16px 14px;
+    }
+    .admin__table tr.admin__group-header:first-child td {
+      border-top: none;
+    }
+    .admin__group-header-inner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .admin__group-header-title {
+      font-family: Georgia, serif;
+      font-size: 1.1rem;
+      color: var(--gray-900);
+      font-weight: 400;
+    }
+    .admin__group-header-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .pill-orange { background: #f0a05e; color: #fff; }
+    .pill-muted  { background: #e5d8c5; color: #7a5a2e; }
+    .pill-green  { background: #1a8a4a; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>By Elarah — Respostas do formulário</h1>
+    <p class="subtitle">Preview de como a tabela vai ficar depois do deploy (commit <code>b1c4699</code>). Abre este arquivo direto no navegador pra ver.</p>
+
+    <div class="hint">
+      <strong>Isto é só um preview estático</strong> — mostra o mesmo HTML que o <code>renderByElarah()</code> do <code>admin.js</code> vai gerar quando o novo código rodar. Cada experiência vira um bloco com cabeçalho laranja e as inscrições aparecem listadas logo abaixo, na ordem da mais recente pra mais antiga.
+    </div>
+
+    <!-- ===== TABELA: RESPOSTAS DO FORMULÁRIO ===== -->
+    <div class="admin__table-wrap">
+      <div class="admin__table-header">
+        <span class="admin__table-title">Respostas do formulário</span>
+        <span class="admin__table-count">6 respostas · 3 experiências</span>
+      </div>
+      <table class="admin__table">
+        <thead>
+          <tr>
+            <th>Quando</th>
+            <th>Experiência</th>
+            <th>Tipo</th>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Telefone</th>
+            <th>Horário</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <p class="subtitle" style="margin-top:24px;">
+      Dados de exemplo vêm do seu screenshot real — dá pra ver imediatamente
+      que Pintura de Quadro tem 3 inscrições (1 nova), Perfumaria tem 2 e
+      Ourivesaria tem 1.
+    </p>
+  </div>
+
+<script>
+/* ============================================================
+   MESMO CÓDIGO que está no admin.js renderByElarah() (real).
+   Copiado aqui só pra você ver o output sem precisar deployar.
+   ============================================================ */
+
+// Dados de exemplo (mesmos nomes e campos do seu screenshot real)
+const subs = [
+  { id: '1', created_at: '2026-04-14T14:43:00Z', experiencia: 'Workshop de Ourivesaria: Crie sua Joia', tipo: 'espera',     nome: 'Duda',            email: 'santosdudas@hotmail.com',        telefone: '84999610060',  horario: ''          },
+  { id: '2', created_at: '2026-04-14T14:19:00Z', experiencia: 'Pintura de Quadro com Cristal & Aperol Spritz', tipo: 'participar', nome: 'Isabella Rodrigues', email: 'isabellarodriguesds0@gmail.com', telefone: '11948427104', horario: '10h às 13h' },
+  { id: '3', created_at: '2026-04-14T14:16:00Z', experiencia: 'Oficina de Perfumaria Criativa', tipo: 'espera',    nome: 'Camila Tiemi',    email: 'tiemicami@gmail.com',            telefone: '(41) 9888-18501', horario: ''    },
+  { id: '4', created_at: '2026-04-14T14:01:00Z', experiencia: 'Pintura de Quadro com Cristal & Aperol Spritz', tipo: 'participar', nome: 'Bianca Pinhoni Viana da Silva', email: 'bi.pinhoni@gmail.com', telefone: '11945407000', horario: '10h às 13h' },
+  { id: '5', created_at: '2026-04-13T09:22:00Z', experiencia: 'Oficina de Perfumaria Criativa', tipo: 'espera',    nome: 'Luiza Martins',   email: 'luiza@email.com',                telefone: '11987654321', horario: ''       },
+  { id: '6', created_at: '2026-04-12T18:14:00Z', experiencia: 'Pintura de Quadro com Cristal & Aperol Spritz', tipo: 'participar', nome: 'Paula Souza', email: 'paula.souza@email.com', telefone: '11911112222', horario: '14h às 17h' },
+];
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function byElarahGroupKey(nome) {
+  return String(nome || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function groupByExperienceName(list, getName) {
+  const order = [];
+  const map = new Map();
+  for (const row of list) {
+    const nome = (getName(row) || '').trim() || '— sem nome —';
+    const key = byElarahGroupKey(nome);
+    if (!map.has(key)) {
+      order.push(key);
+      map.set(key, { nome, rows: [] });
+    }
+    map.get(key).rows.push(row);
+  }
+  return order.map(k => map.get(k));
+}
+
+// Ordena por data desc antes de agrupar
+const sortedSubs = subs.slice().sort((a, b) => {
+  const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+  const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+  return tb - ta;
+});
+
+// Agrupa
+const subGroups = groupByExperienceName(sortedSubs, s => s.experiencia);
+
+// Ordena grupos pelo item mais recente
+subGroups.sort((ga, gb) => {
+  const ta = ga.rows[0] && ga.rows[0].created_at ? new Date(ga.rows[0].created_at).getTime() : 0;
+  const tb = gb.rows[0] && gb.rows[0].created_at ? new Date(gb.rows[0].created_at).getTime() : 0;
+  return tb - ta;
+});
+
+const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+const html = [];
+subGroups.forEach(group => {
+  const n = group.rows.length;
+  const respLabel = n + ' resposta' + (n !== 1 ? 's' : '');
+  const novas = group.rows.filter(r =>
+    r.created_at && new Date(r.created_at).getTime() > dayAgo
+  ).length;
+  const novasPill = novas > 0
+    ? '<span class="admin__group-header-pill pill-green" style="margin-left:4px;">' + novas + ' nova' + (novas !== 1 ? 's' : '') + ' (24h)</span>'
+    : '';
+  html.push(
+    '<tr class="admin__group-header">' +
+      '<td colspan="7">' +
+        '<div class="admin__group-header-inner">' +
+          '<span class="admin__group-header-title">' + escapeHtml(group.nome) + '</span>' +
+          '<span class="admin__group-header-pill pill-orange">' + respLabel + '</span>' +
+          novasPill +
+        '</div>' +
+      '</td>' +
+    '</tr>'
+  );
+  group.rows.forEach(s => {
+    const when = s.created_at
+      ? new Date(s.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      : '—';
+    const tipoLabel = s.tipo === 'participar' ? 'Participar' : 'Espera';
+    const tipoClass = s.tipo === 'participar' ? 'approved' : 'pending';
+    html.push(
+      '<tr>' +
+        '<td>' + escapeHtml(when) + '</td>' +
+        '<td>' + escapeHtml(s.experiencia) + '</td>' +
+        '<td><span class="admin__badge admin__badge--' + tipoClass + '">' + tipoLabel + '</span></td>' +
+        '<td>' + escapeHtml(s.nome) + '</td>' +
+        '<td>' + escapeHtml(s.email) + '</td>' +
+        '<td>' + escapeHtml(s.telefone) + '</td>' +
+        '<td>' + escapeHtml(s.horario || '—') + '</td>' +
+      '</tr>'
+    );
+  });
+});
+
+document.getElementById('tbody').innerHTML = html.join('');
+</script>
+</body>
+</html>

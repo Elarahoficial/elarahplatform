@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="admin.css?v=2">
 </head>
 <body>
 
@@ -786,6 +786,194 @@
 <script src="experiences-data.js?v=9"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=14"></script>
+<script src="admin.js?v=17"></script>
+
+<!-- ==========================================================
+     BY ELARAH — INLINE GROUPING PATCH
+     ----------------------------------------------------------
+     Reagrupa as tabelas "Itens Elarah Originals" e "Respostas do
+     formulário" por nome da experiência, usando MutationObserver
+     sobre os <tbody>. Fica inline (não em arquivo separado) pra
+     ser imune a cache de CDN/browser que possa estar servindo
+     um admin.js antigo sem a lógica de agrupamento.
+
+     - Se o admin.js novo já renderizou com grupos, este patch
+       detecta <tr class="admin__group-header"> e não faz nada.
+     - Se o admin.js antigo renderizou rows planas, este patch
+       reconstrói o tbody com headers estilizados INLINE (não
+       depende de admin.css).
+     - Usa IIFE pra não poluir o escopo global.
+     ========================================================== -->
+<script>
+(function () {
+  'use strict';
+
+  console.info('[Elarah Admin patch] byelarah group-patch inline v1 — carregado');
+
+  var SUBS  = {
+    tbody: 'byelarah-subs-body',
+    expCol: 1,
+    dateCol: 0,
+    colspan: 9,
+    singular: 'resposta',
+    plural: 'respostas'
+  };
+  var ITEMS = {
+    tbody: 'byelarah-items-body',
+    expCol: 2,
+    dateCol: null,
+    colspan: 8,
+    singular: 'sessão',
+    plural: 'sessões'
+  };
+
+  function esc(s) {
+    if (s == null) return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  function gkey(s) {
+    return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  // Parse "14/04/2026, 14:43" → timestamp ms
+  function parseTs(txt) {
+    if (!txt) return 0;
+    var m = String(txt).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})[\s,]+(\d{1,2}):(\d{2})/);
+    if (!m) return 0;
+    var y = parseInt(m[3], 10);
+    if (y < 100) y += 2000;
+    var d = new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10), parseInt(m[4], 10), parseInt(m[5], 10));
+    var t = d.getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
+  function applyGroup(cfg) {
+    var tbody = document.getElementById(cfg.tbody);
+    if (!tbody) return;
+    // Se já está agrupado (seja pelo admin.js novo, seja por chamada
+    // anterior do patch), não refaz nada.
+    if (tbody.querySelector('tr.admin__group-header')) return;
+
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+    if (!rows.length) return;
+    // Preserva o empty state do admin.
+    if (rows.length === 1 && rows[0].querySelector('.admin__table-empty')) return;
+
+    // Extrai: nome da experiência, timestamp (quando possível) e
+    // o HTML original da row (pra preservar botões e estilos).
+    var entries = rows.map(function (tr) {
+      var tds = tr.querySelectorAll('td');
+      var nome = tds[cfg.expCol] ? tds[cfg.expCol].textContent.trim() : '';
+      if (!nome) nome = '— sem nome —';
+      var ts = 0;
+      if (cfg.dateCol != null && tds[cfg.dateCol]) {
+        ts = parseTs(tds[cfg.dateCol].textContent.trim());
+      }
+      return { nome: nome, ts: ts, html: tr.outerHTML };
+    });
+
+    // Ordena por data desc (rows sem data ficam no fim do grupo).
+    entries.sort(function (a, b) { return b.ts - a.ts; });
+
+    // Agrupa preservando ordem da primeira ocorrência.
+    var order = [];
+    var map = {};
+    entries.forEach(function (e) {
+      var k = gkey(e.nome);
+      if (!map[k]) {
+        order.push(k);
+        map[k] = { nome: e.nome, rows: [] };
+      }
+      map[k].rows.push(e);
+    });
+
+    // Ordena grupos pelo row mais recente de cada um.
+    order.sort(function (ka, kb) {
+      var ta = map[ka].rows[0] ? map[ka].rows[0].ts : 0;
+      var tb = map[kb].rows[0] ? map[kb].rows[0].ts : 0;
+      return tb - ta;
+    });
+
+    var dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    var headerStyle = 'background:linear-gradient(90deg,#fff8ee 0%,#fdf4e3 100%);border-top:3px solid #f0a05e;border-bottom:1px solid #f0cfa0;padding:18px 16px 14px;';
+    var innerStyle  = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+    var titleStyle  = 'font-family:Georgia,"DM Serif Display",serif;font-size:1.1rem;color:#1a1a1a;font-weight:400;';
+    var pillBase    = 'display:inline-block;padding:4px 12px;border-radius:999px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;vertical-align:middle;';
+    var pillOrange  = pillBase + 'background:#f0a05e;color:#fff;';
+    var pillGreen   = pillBase + 'background:#1a8a4a;color:#fff;margin-left:4px;';
+
+    var out = [];
+    order.forEach(function (k) {
+      var g = map[k];
+      var n = g.rows.length;
+      var label = n + ' ' + (n === 1 ? cfg.singular : cfg.plural);
+      var novas = g.rows.filter(function (r) { return r.ts > dayAgo; }).length;
+      var novasPill = novas > 0
+        ? '<span style="' + pillGreen + '">' + novas + ' nova' + (novas !== 1 ? 's' : '') + ' (24h)</span>'
+        : '';
+      out.push(
+        '<tr class="admin__group-header">' +
+          '<td colspan="' + cfg.colspan + '" style="' + headerStyle + '">' +
+            '<div style="' + innerStyle + '">' +
+              '<span style="' + titleStyle + '">' + esc(g.nome) + '</span>' +
+              '<span style="' + pillOrange + '">' + esc(label) + '</span>' +
+              novasPill +
+            '</div>' +
+          '</td>' +
+        '</tr>'
+      );
+      g.rows.forEach(function (r) { out.push(r.html); });
+    });
+
+    tbody.innerHTML = out.join('');
+    console.info(
+      '[Elarah Admin patch] agrupou #' + cfg.tbody + ':',
+      order.length + ' grupo' + (order.length !== 1 ? 's' : ''),
+      'de ' + entries.length + ' row' + (entries.length !== 1 ? 's' : '')
+    );
+  }
+
+  function watch(cfg) {
+    var tbody = document.getElementById(cfg.tbody);
+    if (!tbody) {
+      // Tenta de novo em 300ms até 60 tentativas (~18s). Necessário
+      // porque admin.js pode demorar pra inicializar.
+      if (watch._tries == null) watch._tries = 0;
+      if (watch._tries++ < 60) {
+        setTimeout(function () { watch(cfg); }, 300);
+      }
+      return;
+    }
+    applyGroup(cfg);
+    // MutationObserver: reagrupa automaticamente quando o admin.js
+    // redesenhar o tbody (via renderByElarah, clique em "Atualizar",
+    // etc.).
+    try {
+      var obs = new MutationObserver(function () {
+        if (!tbody.querySelector('tr.admin__group-header')) {
+          setTimeout(function () { applyGroup(cfg); }, 20);
+        }
+      });
+      obs.observe(tbody, { childList: true });
+    } catch (e) {
+      console.warn('[Elarah Admin patch] MutationObserver falhou', e);
+    }
+  }
+
+  function boot() {
+    watch(SUBS);
+    watch(ITEMS);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
 </body>
 </html>
