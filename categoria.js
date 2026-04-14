@@ -48,104 +48,228 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.title = (activeCategoria || 'Experiências') + ' — Elarah';
   }
 
-  // ===== RENDER =====
+  // =================================================
+  //  CARD BUILDER (helper — mesmo markup usado nos
+  //  dois modos de render: flat grid e carrossel por
+  //  categoria). Idêntico ao card original — não muda
+  //  nada no data-reserve, card__favorite etc.
+  // =================================================
+  function createCardEl(exp) {
+    const colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
+    const card = document.createElement('article');
+    card.className = 'card';
+
+    const horarios = Array.isArray(exp.horarios) && exp.horarios.length
+      ? exp.horarios
+      : (exp.horario ? [exp.horario] : []);
+    const hasMultipleHorarios = horarios.length > 1;
+
+    const imageContent = exp.imagem
+      ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
+      : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
+
+    const horarioLine = hasMultipleHorarios
+      ? `${exp.data || ''}`
+      : `${exp.data || ''}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
+
+    const horariosBlock = hasMultipleHorarios
+      ? `<div class="card__horarios">${horarios.map((h, i) =>
+          `<button type="button" class="card__horario-btn${i === 0 ? ' card__horario-btn--active' : ''}" data-horario="${String(h).replace(/"/g, '&quot;')}">${h}</button>`
+        ).join('')}</div>`
+      : '';
+
+    card.innerHTML = `
+      <div class="card__image">
+        ${imageContent}
+        <button class="card__favorite" aria-label="Favoritar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <span class="card__badge">${exp.data || ''}</span>
+      </div>
+      <div class="card__body">
+        <span class="card__category">${exp.categoria || ''}</span>
+        <h3 class="card__title">${exp.nome || ''}</h3>
+        <div class="card__details">
+          <p class="card__detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            ${horarioLine}
+          </p>
+          ${horariosBlock}
+          <p class="card__detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            ${exp.duracao || ''}
+          </p>
+          <p class="card__detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${exp.bairro || ''}
+          </p>
+          <p class="card__detail card__detail--address">${exp.endereco || ''}</p>
+          <p class="card__detail card__detail--includes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+            ${exp.inclui || ''}
+          </p>
+        </div>
+        <div class="card__footer">
+          <p class="card__price"><strong>${exp.preco || ''}</strong></p>
+          <button type="button" class="card__reserve-btn"
+            data-reserve
+            data-experience-id="${exp.id || ''}"
+            data-experience-nome="${(exp.nome || '').replace(/"/g, '&quot;')}"
+            data-analytics="reserve_click"
+            data-analytics-category="booking"
+            data-analytics-label="${(exp.nome || '').replace(/"/g, '&quot;')}">
+            Reservar
+          </button>
+        </div>
+      </div>
+    `;
+
+    if (hasMultipleHorarios) {
+      card.querySelectorAll('.card__horario-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          card.querySelectorAll('.card__horario-btn').forEach(b => b.classList.remove('card__horario-btn--active'));
+          btn.classList.add('card__horario-btn--active');
+        });
+      });
+    }
+
+    return card;
+  }
+
+  // =================================================
+  //  AGRUPAMENTO POR CATEGORIA
+  // =================================================
+  // Agrupa uma lista de experiências pela chave `categoria`,
+  // jogando as sem categoria (null, undefined, '') em "Outros".
+  // Retorna um array de { categoria, experiences } ordenado por
+  // contagem desc — categorias mais populares aparecem primeiro.
+  // "Outros" sempre vai pro final independente da contagem.
+  function groupByCategoria(list) {
+    const map = new Map();
+    const order = [];
+    list.forEach(function (exp) {
+      if (!exp) return;
+      let cat = exp.categoria;
+      if (cat == null || String(cat).trim() === '') {
+        cat = 'Outros';
+      } else {
+        cat = String(cat).trim();
+      }
+      if (!map.has(cat)) {
+        order.push(cat);
+        map.set(cat, []);
+      }
+      map.get(cat).push(exp);
+    });
+    // Ordena por popularidade (desc), com "Outros" sempre no fim.
+    const groups = order.map(function (cat) {
+      return { categoria: cat, experiences: map.get(cat) };
+    });
+    groups.sort(function (a, b) {
+      if (a.categoria === 'Outros') return 1;
+      if (b.categoria === 'Outros') return -1;
+      return b.experiences.length - a.experiences.length;
+    });
+    return groups;
+  }
+
+  // =================================================
+  //  RENDER PRINCIPAL
+  // =================================================
   function renderCards() {
-    const filtered = experiences.filter(exp => {
-      const matchCat = !activeCategoria || exp.categoria === activeCategoria;
-      const matchBairro = !activeBairro || exp.bairro === activeBairro;
-      return matchCat && matchBairro;
+    // Filter by bairro only — categoria drive o modo de render.
+    const base = experiences.filter(function (exp) {
+      return !activeBairro || exp.bairro === activeBairro;
     });
 
     grid.innerHTML = '';
-    emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
-    countEl.textContent = filtered.length + ' experiência' + (filtered.length !== 1 ? 's' : '');
     updateTitle();
 
-    filtered.forEach(exp => {
-      const colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
-      const card = document.createElement('article');
-      card.className = 'card';
+    // Limpa qualquer seção de categoria antiga (rerender)
+    const oldSections = document.querySelectorAll('.cat-section');
+    oldSections.forEach(function (el) { el.remove(); });
 
-      const horarios = Array.isArray(exp.horarios) && exp.horarios.length
-        ? exp.horarios
-        : (exp.horario ? [exp.horario] : []);
-      const hasMultipleHorarios = horarios.length > 1;
+    if (activeCategoria) {
+      // ===== MODO 1: categoria específica — flat grid =====
+      const filtered = base.filter(function (exp) {
+        return exp.categoria === activeCategoria;
+      });
+      grid.style.display = '';
+      emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
+      countEl.textContent = filtered.length + ' experiência' + (filtered.length !== 1 ? 's' : '');
 
-      const imageContent = exp.imagem
-        ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
-        : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
+      filtered.forEach(function (exp) {
+        grid.appendChild(createCardEl(exp));
+      });
 
-      const horarioLine = hasMultipleHorarios
-        ? `${exp.data}`
-        : `${exp.data}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
+      wireFavorites(grid);
+      return;
+    }
 
-      const horariosBlock = hasMultipleHorarios
-        ? `<div class="card__horarios">${horarios.map((h, i) =>
-            `<button type="button" class="card__horario-btn${i === 0 ? ' card__horario-btn--active' : ''}" data-horario="${h.replace(/"/g, '&quot;')}">${h}</button>`
-          ).join('')}</div>`
-        : '';
+    // ===== MODO 2: sem filtro de categoria — agrupa por seções =====
+    if (base.length === 0) {
+      grid.style.display = '';
+      emptyEl.style.display = 'block';
+      countEl.textContent = '0 experiências';
+      return;
+    }
 
-      card.innerHTML = `
-        <div class="card__image">
-          ${imageContent}
-          <button class="card__favorite" aria-label="Favoritar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </button>
-          <span class="card__badge">${exp.data}</span>
-        </div>
-        <div class="card__body">
-          <span class="card__category">${exp.categoria}</span>
-          <h3 class="card__title">${exp.nome}</h3>
-          <div class="card__details">
-            <p class="card__detail">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-              ${horarioLine}
-            </p>
-            ${horariosBlock}
-            <p class="card__detail">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              ${exp.duracao}
-            </p>
-            <p class="card__detail">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              ${exp.bairro}
-            </p>
-            <p class="card__detail card__detail--address">${exp.endereco}</p>
-            <p class="card__detail card__detail--includes">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-              ${exp.inclui}
-            </p>
-          </div>
-          <div class="card__footer">
-            <p class="card__price"><strong>${exp.preco}</strong></p>
-            <button type="button" class="card__reserve-btn"
-              data-reserve
-              data-experience-id="${exp.id}"
-              data-experience-nome="${(exp.nome || '').replace(/"/g, '&quot;')}"
-              data-analytics="reserve_click"
-              data-analytics-category="booking"
-              data-analytics-label="${(exp.nome || '').replace(/"/g, '&quot;')}">
-              Reservar
-            </button>
-          </div>
-        </div>
-      `;
+    const grouped = groupByCategoria(base);
+    console.log('[Elarah] categorias agrupadas', grouped.map(function (g) {
+      return { categoria: g.categoria, count: g.experiences.length };
+    }));
 
-      if (hasMultipleHorarios) {
-        card.querySelectorAll('.card__horario-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            card.querySelectorAll('.card__horario-btn').forEach(b => b.classList.remove('card__horario-btn--active'));
-            btn.classList.add('card__horario-btn--active');
-          });
-        });
-      }
+    grid.style.display = 'none';
+    emptyEl.style.display = 'none';
+    countEl.textContent = base.length + ' experiência' + (base.length !== 1 ? 's' : '') +
+      ' · ' + grouped.length + ' categoria' + (grouped.length !== 1 ? 's' : '');
 
-      grid.appendChild(card);
+    const parent = grid.parentNode;
+    grouped.forEach(function (group) {
+      const section = document.createElement('section');
+      section.className = 'cat-section';
+      section.setAttribute('data-categoria', group.categoria);
+
+      const header = document.createElement('div');
+      header.className = 'cat-section__header';
+      header.innerHTML =
+        '<h2 class="cat-section__title">' + escapeHtml(group.categoria) + '</h2>' +
+        '<a class="cat-section__see-all" href="categoria.html?cat=' +
+          encodeURIComponent(group.categoria) + '">Ver todas (' + group.experiences.length + ')</a>';
+      section.appendChild(header);
+
+      const scroller = document.createElement('div');
+      scroller.className = 'cat-section__scroller';
+      group.experiences.forEach(function (exp) {
+        const card = createCardEl(exp);
+        scroller.appendChild(card);
+      });
+      section.appendChild(scroller);
+
+      parent.insertBefore(section, grid.nextSibling);
     });
 
-    grid.querySelectorAll('.card__favorite').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    // Liga favoritar em todas as seções novas.
+    document.querySelectorAll('.cat-section').forEach(function (sec) {
+      wireFavorites(sec);
+    });
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  // Wire handlers de favoritar pros cards de um container.
+  // Extraído pra funcionar tanto no flat grid quanto em cada seção
+  // de categoria.
+  function wireFavorites(container) {
+    if (!container) return;
+    container.querySelectorAll('.card__favorite').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
         e.stopPropagation();
         if (typeof ElarahAuth === 'undefined') {
           alert('Não foi possível carregar a sua conta. Recarregue a página.');
