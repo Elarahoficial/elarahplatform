@@ -698,9 +698,13 @@
   async function populateCategoriaDatalist() {
     const datalist = document.getElementById('exp-categoria-datalist');
     if (!datalist) return;
+    // Seed de sugestões — usado quando o banco estiver vazio ou pra
+    // garantir que categorias comuns sempre apareçam no autocomplete.
+    // "Colagem" está aqui porque foi a primeira categoria nova
+    // criada pelo admin (antes era "Outro", que não queríamos).
     const seed = [
-      'Gastronomia', 'Cerâmica', 'Pintura', 'Vela', 'Sabonete',
-      'Tufting', 'Floral', 'Macramê', 'Bartenderia',
+      'Bartenderia', 'Cerâmica', 'Colagem', 'Floral', 'Gastronomia',
+      'Macramê', 'Pintura', 'Sabonete', 'Tufting', 'Vela',
     ];
     let dbCategorias = [];
     try {
