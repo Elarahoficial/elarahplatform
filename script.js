@@ -1,3 +1,12 @@
+/* =============================================================
+   ELARAH — script.js
+   -------------------------------------------------------------
+   Versão explícita pra diagnóstico de cache. Se você NÃO vê esse
+   log no console do navegador, o browser ou CDN está servindo
+   um script.js antigo.
+   ============================================================= */
+console.info('[Elarah] script.js v11 carregado — desc modal v2 (collapsible hero + scroll listener)');
+
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
   try {
@@ -1202,6 +1211,20 @@ if (groupForm) {
         return true;
       }
 
+      // --- Log completo do objeto experiência pra diagnóstico ---
+      // Se "descricao" não aparecer aqui ou vier vazia, o problema
+      // é nos DADOS (banco/seeds), não no código do modal.
+      console.log('[Elarah Description] exp objeto retornado pelo ElarahData:', {
+        id: exp.id,
+        nome: exp.nome,
+        categoria: exp.categoria,
+        preco: exp.preco,
+        imagem: exp.imagem,
+        descricao_present: exp.descricao != null,
+        descricao_length: exp.descricao ? String(exp.descricao).length : 0,
+        descricao_preview: exp.descricao ? String(exp.descricao).slice(0, 120) + '...' : '(vazio)',
+      });
+
       // --- Checa se existe descrição cadastrada ---
       // Aceita tanto exp.descricao (PT) quanto exp.description (EN)
       // por compatibilidade futura.
@@ -1212,7 +1235,7 @@ if (groupForm) {
         return true;
       }
 
-      console.log('[Elarah Description Flow] descrição encontrada (' + desc.length + ' chars), abrindo modal');
+      console.log('[Elarah Description Flow] descrição encontrada (' + desc.length + ' chars), abrindo modal v2');
 
       // --- Monta e mostra a modal ---
       return new Promise(function (resolve) {
@@ -1227,6 +1250,14 @@ if (groupForm) {
       const bairro = exp.bairro || '';
       const data = exp.data || '';
       const duracao = exp.duracao || '';
+      const inclui = exp.inclui || '';
+      const endereco = exp.endereco || '';
+
+      // Altura inicial e mínima do hero (mobile-first).
+      // Ajusta via CSS var no scroll pra efeito collapsible suave.
+      const HERO_MAX_PX = 280; // altura inicial em px (desktop)
+      const HERO_MIN_PX = 72;  // altura colapsada
+      const SCROLL_RANGE = 240; // px de rolagem até colapsar totalmente
 
       // Root do modal
       const root = document.createElement('div');
@@ -1234,101 +1265,195 @@ if (groupForm) {
       root.setAttribute('role', 'dialog');
       root.setAttribute('aria-modal', 'true');
       root.setAttribute('aria-label', 'Detalhes da experiência: ' + (exp.nome || ''));
+      // Diagnóstico: marca a versão da modal no próprio DOM. Dá pra
+      // inspecionar no DevTools → Elements e confirmar que é a V2.
+      root.setAttribute('data-elarah-modal-version', '2');
+      console.log('[Elarah Modal Render OK] openDescriptionModal v2 — hero collapsible, body scroll, footer fixo');
       root.style.cssText = [
         'position:fixed', 'inset:0', 'z-index:10000',
         'display:flex', 'align-items:center', 'justify-content:center',
-        'padding:20px',
+        'padding:0',
         'background:rgba(20,12,4,0.55)',
         'font-family:"DM Sans",-apple-system,BlinkMacSystemFont,sans-serif',
         'animation:elarahDescFadeIn 180ms ease',
       ].join(';');
 
-      // Keyframes (injeta só uma vez)
+      // Keyframes + mobile media queries (injeta só uma vez)
       if (!document.getElementById('elarah-desc-modal-keyframes')) {
         const style = document.createElement('style');
         style.id = 'elarah-desc-modal-keyframes';
         style.textContent =
           '@keyframes elarahDescFadeIn{from{opacity:0}to{opacity:1}}' +
-          '@keyframes elarahDescSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}';
+          '@keyframes elarahDescSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}' +
+          // Scrollbar discreta no body do modal
+          '.elarah-desc-modal .elarah-desc-scroll::-webkit-scrollbar{width:6px;}' +
+          '.elarah-desc-modal .elarah-desc-scroll::-webkit-scrollbar-thumb{background:#e5d8c5;border-radius:3px;}' +
+          '.elarah-desc-modal .elarah-desc-scroll::-webkit-scrollbar-track{background:transparent;}' +
+          // Mobile: card full-screen, hero menor
+          '@media (max-width:640px){' +
+            '.elarah-desc-modal{padding:0 !important;}' +
+            '.elarah-desc-modal .elarah-desc-card{border-radius:0 !important;max-height:100vh !important;max-height:100dvh !important;width:100% !important;}' +
+            '.elarah-desc-modal .elarah-desc-body{padding:20px 20px 28px !important;}' +
+            '.elarah-desc-modal .elarah-desc-title{font-size:1.5rem !important;}' +
+            '.elarah-desc-modal .elarah-desc-footer{padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px)) !important;}' +
+          '}';
         document.head.appendChild(style);
       }
 
-      // Card interno scrollável
+      // Card — contêiner principal, flex column
       const card = document.createElement('div');
+      card.className = 'elarah-desc-card';
       card.style.cssText = [
-        'background:#fff', 'border-radius:22px',
-        'max-width:640px', 'width:100%',
+        'position:relative',
+        'background:#fff',
+        'border-radius:22px',
+        'max-width:680px',
+        'width:calc(100% - 24px)',
         'max-height:92vh',
         'overflow:hidden',
-        'display:flex', 'flex-direction:column',
-        'box-shadow:0 24px 60px rgba(0,0,0,0.25)',
+        'display:flex',
+        'flex-direction:column',
+        'box-shadow:0 24px 60px rgba(0,0,0,0.28)',
         'animation:elarahDescSlideUp 220ms ease',
       ].join(';');
 
-      // Botão fechar (X) absolutamente posicionado
+      // Botão fechar (X) — ABSOLUTO no card inteiro, sempre visível
+      // independente de scroll/hero.
       const closeBtn = document.createElement('button');
       closeBtn.type = 'button';
       closeBtn.setAttribute('aria-label', 'Fechar');
       closeBtn.innerHTML = '&times;';
       closeBtn.style.cssText = [
-        'position:absolute', 'top:14px', 'right:14px',
-        'width:36px', 'height:36px',
-        'border:none', 'background:rgba(255,255,255,0.92)',
+        'position:absolute',
+        'top:14px', 'right:14px',
+        'width:40px', 'height:40px',
+        'border:none',
+        'background:rgba(255,255,255,0.95)',
         'border-radius:50%',
         'font-size:26px', 'line-height:1', 'color:#1a1a1a',
-        'cursor:pointer', 'z-index:2',
-        'box-shadow:0 2px 8px rgba(0,0,0,0.15)',
+        'cursor:pointer',
+        'z-index:20',
+        'box-shadow:0 3px 12px rgba(0,0,0,0.18)',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'padding:0',
+        'transition:transform .15s ease',
       ].join(';');
+      closeBtn.addEventListener('mouseenter', function () {
+        closeBtn.style.transform = 'scale(1.06)';
+      });
+      closeBtn.addEventListener('mouseleave', function () {
+        closeBtn.style.transform = 'scale(1)';
+      });
 
-      // Hero: imagem OU gradiente fallback com o nome
+      // ===== HERO (collapsible) =====
+      // Wrapper que muda de altura conforme scroll. Começa em HERO_MAX_PX
+      // e colapsa até HERO_MIN_PX. position:sticky pra ficar "colando"
+      // no topo do scroll container enquanto encolhe.
       const hero = document.createElement('div');
+      hero.className = 'elarah-desc-hero';
       hero.style.cssText = [
-        'position:relative',
+        'position:sticky',
+        'top:0',
+        'z-index:5',
         'width:100%',
-        'aspect-ratio:16/9',
+        'height:' + HERO_MAX_PX + 'px',
         'background:linear-gradient(135deg,#f6d5a8,#f0a05e)',
         'overflow:hidden',
         'flex-shrink:0',
+        'transition:height 220ms cubic-bezier(.22,.61,.36,1)',
+        'will-change:height',
       ].join(';');
-      hero.appendChild(closeBtn);
 
+      // Gradient overlay no bottom pro contraste do título (se hover)
+      const heroOverlay = document.createElement('div');
+      heroOverlay.style.cssText = [
+        'position:absolute', 'inset:0',
+        'background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,0.35) 100%)',
+        'pointer-events:none',
+        'transition:opacity 220ms ease',
+        'opacity:1',
+      ].join(';');
+
+      // Image (se houver)
+      let heroImg = null;
       if (imagem) {
-        const img = document.createElement('img');
-        img.src = imagem;
-        img.alt = exp.nome || '';
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
-        // Fallback: se a imagem falhar, esconde e mantém só o gradiente.
-        img.onerror = function () {
-          img.style.display = 'none';
+        heroImg = document.createElement('img');
+        heroImg.src = imagem;
+        heroImg.alt = exp.nome || '';
+        heroImg.style.cssText = [
+          'width:100%', 'height:100%',
+          'object-fit:cover',
+          'display:block',
+          'transition:transform 220ms cubic-bezier(.22,.61,.36,1), opacity 220ms ease',
+          'will-change:transform,opacity',
+        ].join(';');
+        heroImg.onerror = function () {
+          if (heroImg) heroImg.style.display = 'none';
           console.warn('[Elarah Description Flow] falha ao carregar imagem:', imagem);
         };
-        hero.appendChild(img);
+        hero.appendChild(heroImg);
       }
+      hero.appendChild(heroOverlay);
 
-      // Corpo scrollável com conteúdo textual
-      const body = document.createElement('div');
-      body.style.cssText = [
-        'padding:26px 28px 20px',
-        'overflow-y:auto',
+      // Título flutuante no hero (aparece sobre a imagem, desaparece ao
+      // colapsar porque o próprio hero encolhe).
+      const heroTitle = document.createElement('div');
+      heroTitle.style.cssText = [
+        'position:absolute',
+        'left:0', 'right:0', 'bottom:0',
+        'padding:20px 24px 22px',
+        'color:#fff',
+        'text-shadow:0 2px 10px rgba(0,0,0,0.4)',
+        'transition:opacity 200ms ease, transform 220ms ease',
+        'pointer-events:none',
+      ].join(';');
+      if (exp.categoria) {
+        const catTag = document.createElement('div');
+        catTag.textContent = exp.categoria;
+        catTag.style.cssText = 'font-size:.7rem;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;margin-bottom:6px;opacity:.92;';
+        heroTitle.appendChild(catTag);
+      }
+      const heroTitleH = document.createElement('div');
+      heroTitleH.textContent = exp.nome || '';
+      heroTitleH.style.cssText = "font-family:'DM Serif Display',Georgia,serif;font-size:1.6rem;font-weight:400;line-height:1.2;";
+      heroTitle.appendChild(heroTitleH);
+      hero.appendChild(heroTitle);
+
+      // ===== SCROLL CONTAINER =====
+      // Contém hero (sticky) + body. Todo o scroll do modal acontece aqui.
+      const scrollContainer = document.createElement('div');
+      scrollContainer.className = 'elarah-desc-scroll';
+      scrollContainer.style.cssText = [
         'flex:1 1 auto',
+        'overflow-y:auto',
         '-webkit-overflow-scrolling:touch',
+        'position:relative',
       ].join(';');
 
-      // Categoria (opcional, acima do título)
+      // ===== BODY TEXTUAL =====
+      const body = document.createElement('div');
+      body.className = 'elarah-desc-body';
+      body.style.cssText = [
+        'padding:28px 32px 32px',
+        'background:#fff',
+        'position:relative',
+      ].join(';');
+
+      // Título repetido no body pra quando o hero colapsa — mais
+      // legível que o título over-image. A categoria acima faz eyebrow.
       if (exp.categoria) {
         const cat = document.createElement('div');
         cat.textContent = exp.categoria;
-        cat.style.cssText = 'font-size:.72rem;color:#a4663b;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;';
+        cat.style.cssText = 'font-size:.7rem;color:#a4663b;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;margin-bottom:8px;';
         body.appendChild(cat);
       }
-
-      // Título
       const title = document.createElement('h2');
+      title.className = 'elarah-desc-title';
       title.textContent = exp.nome || '';
-      title.style.cssText = 'font-family:"DM Serif Display",Georgia,serif;font-size:1.6rem;color:#1a1a1a;margin:0 0 14px;font-weight:400;line-height:1.25;';
+      title.style.cssText = "font-family:'DM Serif Display',Georgia,serif;font-size:1.8rem;color:#1a1a1a;margin:0 0 16px;font-weight:400;line-height:1.22;";
       body.appendChild(title);
 
-      // Meta grid: data · horário · duração · bairro
+      // Meta chips: data · horário · duração · bairro
       const metaBits = [];
       if (data) metaBits.push({ icon: '📅', text: data });
       if (horario) metaBits.push({ icon: '⏱', text: horario });
@@ -1336,47 +1461,113 @@ if (groupForm) {
       if (bairro) metaBits.push({ icon: '📍', text: bairro });
       if (metaBits.length) {
         const meta = document.createElement('div');
-        meta.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:18px;font-size:.85rem;color:#666;';
+        meta.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;';
         metaBits.forEach(function (m) {
-          const span = document.createElement('span');
-          span.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
-          // Usa textContent pra evitar XSS
-          span.textContent = m.icon + ' ' + m.text;
-          meta.appendChild(span);
+          const chip = document.createElement('span');
+          chip.style.cssText = [
+            'display:inline-flex', 'align-items:center', 'gap:6px',
+            'padding:7px 13px',
+            'background:#faf6f0',
+            'border:1px solid #f0e8de',
+            'border-radius:999px',
+            'font-size:.82rem',
+            'color:#5a4a3a',
+            'white-space:nowrap',
+          ].join(';');
+          chip.textContent = m.icon + ' ' + m.text;
+          meta.appendChild(chip);
         });
         body.appendChild(meta);
       }
 
-      // Divisor
+      // Divisor sutil
       const divider = document.createElement('div');
-      divider.style.cssText = 'height:1px;background:#f0e8de;margin:0 0 18px;';
+      divider.style.cssText = 'height:1px;background:#f0e8de;margin:0 0 22px;';
       body.appendChild(divider);
 
-      // Descrição (multi-parágrafo, XSS-safe via descriptionTextToHtml)
+      // Seção "Sobre a experiência"
+      const descHeader = document.createElement('div');
+      descHeader.textContent = 'Sobre a experiência';
+      descHeader.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:12px;';
+      body.appendChild(descHeader);
+
+      // Descrição (multi-parágrafo, XSS-safe)
+      // Agora com mais line-height, font-size e cor mais confortável.
       const descWrap = document.createElement('div');
+      descWrap.className = 'elarah-desc-prose';
       descWrap.innerHTML = descriptionTextToHtml(exp.descricao || exp.description || '');
+      // Override: seta line-height e font-size mais confortáveis
+      // diretamente nos <p>s que descriptionTextToHtml gerou.
+      descWrap.querySelectorAll('p').forEach(function (p) {
+        p.style.margin = '0 0 16px';
+        p.style.lineHeight = '1.72';
+        p.style.color = '#3a3a3a';
+        p.style.fontSize = '1rem';
+      });
       body.appendChild(descWrap);
 
-      // Footer sticky com preço + botão "Continuar"
+      // "O que inclui" (se o campo existir)
+      if (inclui && String(inclui).trim()) {
+        const incluiWrap = document.createElement('div');
+        incluiWrap.style.cssText = 'margin-top:28px;padding:18px 20px;background:#fff8ee;border-radius:14px;border:1px solid #f0cfa0;';
+        const incluiHeader = document.createElement('div');
+        incluiHeader.textContent = 'O que está incluso';
+        incluiHeader.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:8px;';
+        incluiWrap.appendChild(incluiHeader);
+        const incluiText = document.createElement('div');
+        incluiText.textContent = String(inclui).trim();
+        incluiText.style.cssText = 'font-size:.92rem;color:#3a2410;line-height:1.55;';
+        incluiWrap.appendChild(incluiText);
+        body.appendChild(incluiWrap);
+      }
+
+      // "Onde acontece" (se endereço estiver disponível)
+      if (endereco && String(endereco).trim() && bairro) {
+        const enderecoWrap = document.createElement('div');
+        enderecoWrap.style.cssText = 'margin-top:20px;padding:16px 20px;background:#faf6f0;border-radius:12px;border:1px solid #f0e8de;';
+        const enderecoHeader = document.createElement('div');
+        enderecoHeader.textContent = 'Onde acontece';
+        enderecoHeader.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#666;margin-bottom:6px;';
+        enderecoWrap.appendChild(enderecoHeader);
+        const enderecoText = document.createElement('div');
+        enderecoText.textContent = String(endereco).trim();
+        enderecoText.style.cssText = 'font-size:.88rem;color:#444;line-height:1.5;';
+        enderecoWrap.appendChild(enderecoText);
+        body.appendChild(enderecoWrap);
+      }
+
+      // Spacer pra o conteúdo poder rolar além do footer
+      const spacer = document.createElement('div');
+      spacer.style.cssText = 'height:20px;';
+      body.appendChild(spacer);
+
+      scrollContainer.appendChild(hero);
+      scrollContainer.appendChild(body);
+
+      // ===== FOOTER STICKY =====
+      // FORA do scrollContainer, sempre visível.
       const footer = document.createElement('div');
+      footer.className = 'elarah-desc-footer';
       footer.style.cssText = [
-        'padding:18px 28px',
+        'padding:16px 24px',
         'border-top:1px solid #f0e8de',
         'background:#fff',
         'display:flex',
         'align-items:center',
         'justify-content:space-between',
         'gap:14px',
-        'flex-wrap:wrap',
+        'flex-wrap:nowrap',
         'flex-shrink:0',
+        'z-index:10',
+        'box-shadow:0 -4px 14px rgba(0,0,0,0.04)',
       ].join(';');
 
       if (precoLabel) {
         const priceTag = document.createElement('div');
-        priceTag.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+        priceTag.style.cssText = 'display:flex;flex-direction:column;gap:2px;flex-shrink:0;';
         const priceLabelEl = document.createElement('span');
         priceLabelEl.textContent = 'Valor';
-        priceLabelEl.style.cssText = 'font-size:.7rem;color:#999;text-transform:uppercase;letter-spacing:.5px;';
+        priceLabelEl.style.cssText = 'font-size:.68rem;color:#999;text-transform:uppercase;letter-spacing:.5px;font-weight:600;';
         const priceValEl = document.createElement('strong');
         priceValEl.textContent = precoLabel;
         priceValEl.style.cssText = 'font-size:1.15rem;color:#1a1a1a;font-weight:700;';
@@ -1390,8 +1581,8 @@ if (groupForm) {
       continueBtn.textContent = 'Continuar para pagamento';
       continueBtn.style.cssText = [
         'flex:1 1 auto',
-        'min-width:200px',
-        'padding:14px 22px',
+        'min-width:0',
+        'padding:15px 22px',
         'border:none',
         'border-radius:999px',
         'background:#f0a05e',
@@ -1400,38 +1591,75 @@ if (groupForm) {
         'font-weight:700',
         'letter-spacing:.3px',
         'cursor:pointer',
-        'transition:background .18s ease, transform .18s ease',
+        'transition:background .18s ease, transform .12s ease, box-shadow .18s ease',
+        'box-shadow:0 4px 14px rgba(240,160,94,0.35)',
       ].join(';');
       continueBtn.addEventListener('mouseenter', function () {
         continueBtn.style.background = '#e08c45';
+        continueBtn.style.boxShadow = '0 6px 18px rgba(240,160,94,0.45)';
       });
       continueBtn.addEventListener('mouseleave', function () {
         continueBtn.style.background = '#f0a05e';
+        continueBtn.style.boxShadow = '0 4px 14px rgba(240,160,94,0.35)';
+      });
+      continueBtn.addEventListener('mousedown', function () {
+        continueBtn.style.transform = 'scale(0.98)';
+      });
+      continueBtn.addEventListener('mouseup', function () {
+        continueBtn.style.transform = 'scale(1)';
       });
       footer.appendChild(continueBtn);
 
-      card.appendChild(hero);
-      card.appendChild(body);
+      // ===== MONTAGEM FINAL =====
+      card.appendChild(scrollContainer);
       card.appendChild(footer);
+      card.appendChild(closeBtn); // absolute sobre o card inteiro
       root.appendChild(card);
       document.body.appendChild(root);
       document.body.style.overflow = 'hidden';
-      // Marca como aberto pra CSS selectors funcionarem
       root.classList.add('open');
 
-      // --- Handlers ---
+      // ===== SCROLL HANDLER — collapsible hero =====
+      // Ao rolar, diminui a altura do hero e aplica fade+scale na
+      // imagem. Throttle via requestAnimationFrame pra suavidade.
+      let rafPending = false;
+      function onScroll() {
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(function () {
+          rafPending = false;
+          const st = scrollContainer.scrollTop;
+          // progress vai de 0 (hero cheio) a 1 (hero colapsado)
+          const progress = Math.max(0, Math.min(1, st / SCROLL_RANGE));
+          const newHeight = HERO_MAX_PX - (HERO_MAX_PX - HERO_MIN_PX) * progress;
+          hero.style.height = newHeight + 'px';
+          if (heroImg) {
+            // Pequeno parallax + fade
+            const scale = 1 + progress * 0.08;
+            const translateY = progress * 18;
+            heroImg.style.transform = 'scale(' + scale + ') translateY(-' + translateY + 'px)';
+            heroImg.style.opacity = String(1 - progress * 0.45);
+          }
+          // Esconde o título flutuante conforme colapsa
+          heroTitle.style.opacity = String(Math.max(0, 1 - progress * 1.4));
+          heroTitle.style.transform = 'translateY(' + (progress * 20) + 'px)';
+          // Suaviza o overlay quando o hero fica pequeno
+          heroOverlay.style.opacity = String(Math.max(0, 1 - progress * 0.8));
+        });
+      }
+      scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+
+      // ===== HANDLERS =====
       function dismiss(confirmed) {
-        // Remove listeners primeiro pra evitar double-fire
         document.removeEventListener('keydown', onKey, true);
         root.removeEventListener('click', onBackdrop, true);
+        scrollContainer.removeEventListener('scroll', onScroll);
         closeBtn.removeEventListener('click', onClose);
         continueBtn.removeEventListener('click', onContinue);
-        // Fade-out rápido
         root.style.animation = 'elarahDescFadeIn 140ms ease reverse';
         setTimeout(function () {
           if (root.parentNode) root.parentNode.removeChild(root);
         }, 140);
-        // Atualiza estado E resolve o Promise APENAS aqui.
         const wasResolve = descriptionGateState.resolve;
         descriptionGateState = {
           open: false,
@@ -1448,30 +1676,27 @@ if (groupForm) {
       }
 
       function onContinue(e) {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        // Guard contra double-click no botão final — desabilita e muda
+        // o texto pra avisar o usuário que está processando.
+        if (continueBtn.disabled) return;
+        continueBtn.disabled = true;
+        continueBtn.textContent = 'Abrindo pagamento…';
+        continueBtn.style.opacity = '0.85';
+        continueBtn.style.cursor = 'wait';
         console.log('[Elarah Description Flow] usuário clicou Continuar para pagamento (' + (exp.id || '?') + ')');
         dismiss(true);
       }
       function onClose(e) {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         console.log('[Elarah Description Flow] usuário fechou a modal sem continuar');
         dismiss(false);
       }
       function onBackdrop(e) {
-        if (e.target === root) {
-          onClose(e);
-        }
+        if (e.target === root) { onClose(e); }
       }
       function onKey(e) {
-        if (e.key === 'Escape') {
-          onClose(e);
-        }
+        if (e.key === 'Escape') { onClose(e); }
       }
 
       closeBtn.addEventListener('click', onClose);
@@ -1479,7 +1704,6 @@ if (groupForm) {
       root.addEventListener('click', onBackdrop, true);
       document.addEventListener('keydown', onKey, true);
 
-      // Guarda no state global
       descriptionGateState = {
         open: true,
         currentExpId: exp.id || null,
@@ -1487,11 +1711,13 @@ if (groupForm) {
         cleanup: function () {
           document.removeEventListener('keydown', onKey, true);
           root.removeEventListener('click', onBackdrop, true);
+          scrollContainer.removeEventListener('scroll', onScroll);
           if (root.parentNode) root.parentNode.removeChild(root);
         },
       };
 
-      // Foco inicial no botão Continuar (acessibilidade + mobile)
+      // Foco inicial no botão Continuar (acessibilidade + mobile).
+      // preventScroll evita que o foco auto-role a página por baixo.
       try { continueBtn.focus({ preventScroll: true }); } catch (e) {}
     }
 
