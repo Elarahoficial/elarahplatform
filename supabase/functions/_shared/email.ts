@@ -7,14 +7,23 @@
 //   RESEND_API_KEY     re_xxx
 //   ELARAH_FROM_EMAIL  "Elarah <contato@elarah.com.br>"  (opcional)
 //
-// Se RESEND_API_KEY não estiver setado, sendEmail() loga um warn
+// Se RESEND_API_KEY não estiver setado, sendEmail() loga um ERROR
 // e retorna { ok: false, skipped: true } — assim o resto do
 // fluxo (gravar gift card, marcar booking pago) NÃO quebra em
 // produção enquanto o e-mail não é configurado.
+//
+// Fallback automático: se o FROM configurado for rejeitado pelo
+// Resend com erro de domínio não-verificado, o wrapper tenta
+// AUTOMATICAMENTE de novo usando `onboarding@resend.dev`, que é o
+// endereço sandbox do Resend (funciona sem verificação de domínio).
+// Isso evita o fluxo ficar travado enquanto o cliente não verifica
+// o domínio dele.
 // =============================================================
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM = Deno.env.get("ELARAH_FROM_EMAIL") ?? "Elarah <contato@elarah.com.br>";
+// Endereço sandbox do Resend que funciona sem verificação.
+const FALLBACK_FROM = "Elarah <onboarding@resend.dev>";
 
 export interface EmailMessage {
   to: string | string[];
@@ -29,17 +38,68 @@ export interface EmailResult {
   status?: number;
   error?: string;
   id?: string;
+  usedFallbackFrom?: boolean;
+}
+
+// Detecta erros do Resend que indicam domínio/FROM inválido. Usado
+// pra decidir se vale a pena retry com o endereço sandbox.
+function isFromAddressError(status: number, body: string): boolean {
+  if (status === 403) return true;
+  const b = (body || "").toLowerCase();
+  return (
+    b.includes("domain") && (
+      b.includes("not verified") ||
+      b.includes("not_verified") ||
+      b.includes("not found") ||
+      b.includes("validation_error") ||
+      b.includes("unauthorized")
+    )
+  ) ||
+    b.includes("from address") ||
+    b.includes("verify your domain") ||
+    b.includes("invalid `from`");
+}
+
+// Chama a API do Resend uma vez com o FROM informado.
+async function postToResend(
+  fromAddress: string,
+  to: string[],
+  msg: EmailMessage,
+): Promise<{ res: Response; text: string }> {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromAddress,
+      to,
+      subject: msg.subject,
+      html: msg.html,
+      reply_to: msg.reply_to,
+    }),
+  });
+  const text = res.ok ? "" : await res.text().catch(() => "");
+  return { res, text };
 }
 
 export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
+  const to = Array.isArray(msg.to) ? msg.to : [msg.to];
+
+  // Log de entrada pra confirmar que a função foi chamada. Aparece
+  // em Supabase → Edge Functions → <function> → Logs.
+  console.info(
+    "[elarah/email] sendEmail() chamado",
+    "to=" + JSON.stringify(to),
+    "subject=" + JSON.stringify(msg.subject),
+    "from=" + FROM,
+  );
+
   if (!RESEND_API_KEY) {
-    // Antes isto era um console.warn silencioso e dava a impressão
-    // de que o pagamento tinha falhado por e-mail. Loga como ERROR
-    // pra ficar óbvio no painel de Logs do Supabase (Edge Functions
-    // → stripe-webhook) quando a secret não está configurada.
     console.error(
       "[elarah/email] RESEND_API_KEY AUSENTE — e-mail NÃO enviado para",
-      JSON.stringify(msg.to),
+      JSON.stringify(to),
       "— cadastre RESEND_API_KEY em Supabase → Project Settings → " +
         "Edge Functions → Secrets e faça redeploy do stripe-webhook.",
     );
@@ -50,45 +110,75 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
     };
   }
 
-  const to = Array.isArray(msg.to) ? msg.to : [msg.to];
-
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: FROM,
-        to,
-        subject: msg.subject,
-        html: msg.html,
-        reply_to: msg.reply_to,
-      }),
-    });
+    // ---- Tentativa 1: com o FROM configurado ----
+    let attempt = await postToResend(FROM, to, msg);
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      // Loga STATUS + BODY completo (até 800 chars) pra diagnosticar
-      // domínio não verificado, from address recusado, quota, etc.
-      console.error(
-        "[elarah/email] Resend rejeitou o envio —",
-        "status=" + res.status,
+    if (attempt.res.ok) {
+      const data = await attempt.res.json().catch(() => ({} as Record<string, unknown>));
+      console.info(
+        "[elarah/email] ENVIADO ✓",
         "to=" + JSON.stringify(to),
         "from=" + FROM,
-        "body=" + text.slice(0, 800),
+        "resend_id=" + ((data as { id?: string }).id ?? "?"),
       );
-      return { ok: false, status: res.status, error: text };
+      return {
+        ok: true,
+        status: attempt.res.status,
+        id: (data as { id?: string }).id,
+      };
     }
 
-    const data = await res.json().catch(() => ({}));
-    console.info(
-      "[elarah/email] enviado",
+    // ---- Tentativa 1 falhou: analisa o motivo ----
+    console.error(
+      "[elarah/email] Resend rejeitou o envio (tentativa 1) —",
+      "status=" + attempt.res.status,
       "to=" + JSON.stringify(to),
-      "resend_id=" + (data.id ?? "?"),
+      "from=" + FROM,
+      "body=" + attempt.text.slice(0, 800),
     );
-    return { ok: true, status: res.status, id: data.id };
+
+    // ---- Tentativa 2: fallback para onboarding@resend.dev ----
+    // Só ativa se o FROM principal é diferente do fallback E o erro
+    // parece ser por domínio/FROM não-verificado. Emails ainda saem,
+    // só que do endereço sandbox do Resend.
+    const mainIsSandbox = FROM.toLowerCase().includes("onboarding@resend.dev");
+    if (!mainIsSandbox && isFromAddressError(attempt.res.status, attempt.text)) {
+      console.warn(
+        "[elarah/email] FROM principal parece não-verificado. " +
+          "Tentando fallback automático com " + FALLBACK_FROM + ".",
+      );
+      const retry = await postToResend(FALLBACK_FROM, to, msg);
+      if (retry.res.ok) {
+        const data = await retry.res.json().catch(() => ({} as Record<string, unknown>));
+        console.info(
+          "[elarah/email] ENVIADO VIA FALLBACK ✓",
+          "to=" + JSON.stringify(to),
+          "from=" + FALLBACK_FROM,
+          "resend_id=" + ((data as { id?: string }).id ?? "?"),
+          "— recomendo verificar elarah.com.br em Resend → Domains " +
+            "pra voltar ao FROM principal.",
+        );
+        return {
+          ok: true,
+          status: retry.res.status,
+          id: (data as { id?: string }).id,
+          usedFallbackFrom: true,
+        };
+      }
+      console.error(
+        "[elarah/email] Fallback onboarding@resend.dev também falhou —",
+        "status=" + retry.res.status,
+        "body=" + retry.text.slice(0, 800),
+      );
+      return {
+        ok: false,
+        status: retry.res.status,
+        error: retry.text,
+      };
+    }
+
+    return { ok: false, status: attempt.res.status, error: attempt.text };
   } catch (e) {
     console.error("[elarah/email] exceção durante envio", e);
     return { ok: false, error: String(e) };
