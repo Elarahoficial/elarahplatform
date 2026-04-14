@@ -127,87 +127,149 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Gera código único — tenta no máx. 5 vezes em caso de colisão.
-  let code = "";
-  for (let i = 0; i < 5; i++) {
-    code = generateGiftCardCode();
-    const { data: existing } = await supabase
-      .from("gift_cards")
-      .select("id")
-      .eq("code", code)
-      .maybeSingle();
-    if (!existing) break;
-  }
-  if (!code) {
-    console.error("[stripe-webhook] não foi possível gerar code único");
-    return;
-  }
-
   const recipient = String(meta.recipient_email ?? "").trim();
   const recipientNome = String(meta.recipient_nome ?? "").trim() || null;
   const buyerEmail = String(meta.buyer_email ?? "").trim() || null;
   const buyerNome = String(meta.buyer_nome ?? "").trim() || null;
   const mensagem = String(meta.mensagem ?? "").trim() || null;
-  const expiresAt = new Date(
-    Date.now() + 365 * 24 * 60 * 60 * 1000,
-  ).toISOString();
 
-  // Atualiza o registro pre-criado em create-checkout-session.
-  const { data: updated, error: updErr } = await supabase
+  // ----- Idempotência -----
+  // Se o webhook já rodou antes (Stripe às vezes reentrega o mesmo
+  // evento), reaproveita o gift card existente pra não gerar um novo
+  // código nem enviar um e-mail com código diferente do primeiro.
+  const { data: existing } = await supabase
     .from("gift_cards")
-    .update({
-      code,
-      status: "active",
-      valor_inicial_centavos: valor,
-      saldo_centavos: valor,
-      destinatario_email: recipient || null,
-      destinatario_nome: recipientNome,
-      comprador_email: buyerEmail,
-      comprador_nome: buyerNome,
-      mensagem,
-      expires_at: expiresAt,
-      email_sent_at: null,
-    })
+    .select("id, code, status, email_sent_at, expires_at")
     .eq("stripe_session_id", session.id)
-    .select()
     .maybeSingle();
 
-  if (updErr || !updated) {
-    // Provavelmente o pre-insert falhou; faz upsert manual.
-    console.warn(
-      "[stripe-webhook] update gift_card falhou, tentando insert",
-      updErr,
-    );
-    await supabase.from("gift_cards").insert({
+  let code = "";
+  let expiresAtIso = "";
+  let isReplay = false;
+
+  if (
+    existing &&
+    existing.status === "active" &&
+    existing.code &&
+    !existing.code.startsWith("PENDING-")
+  ) {
+    // Reentrega do webhook — reusa o código que já existe.
+    code = existing.code;
+    expiresAtIso = existing.expires_at ||
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    isReplay = true;
+    console.info(
+      "[stripe-webhook] gift card já ativo, reusando code existente",
+      session.id,
       code,
-      valor_inicial_centavos: valor,
-      saldo_centavos: valor,
-      status: "active",
-      stripe_session_id: session.id,
-      destinatario_email: recipient || null,
-      destinatario_nome: recipientNome,
-      comprador_email: buyerEmail,
-      comprador_nome: buyerNome,
-      mensagem,
-      expires_at: expiresAt,
-    });
+    );
+  } else {
+    // Primeira execução — gera código único, tentando no máx. 5 vezes
+    // em caso de colisão improvável.
+    for (let i = 0; i < 5; i++) {
+      const candidate = generateGiftCardCode();
+      const { data: collision } = await supabase
+        .from("gift_cards")
+        .select("id")
+        .eq("code", candidate)
+        .maybeSingle();
+      if (!collision) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) {
+      console.error(
+        "[stripe-webhook] não foi possível gerar code único",
+        session.id,
+      );
+      return;
+    }
+    expiresAtIso = new Date(
+      Date.now() + 365 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    // Atualiza o registro pre-criado em create-checkout-session.
+    // Só atualiza se o status ainda for pending — protege contra
+    // sobrescrever uma linha já ativada.
+    const { data: updated, error: updErr } = await supabase
+      .from("gift_cards")
+      .update({
+        code,
+        status: "active",
+        valor_inicial_centavos: valor,
+        saldo_centavos: valor,
+        destinatario_email: recipient || null,
+        destinatario_nome: recipientNome,
+        comprador_email: buyerEmail,
+        comprador_nome: buyerNome,
+        mensagem,
+        expires_at: expiresAtIso,
+        email_sent_at: null,
+      })
+      .eq("stripe_session_id", session.id)
+      .eq("status", "pending")
+      .select()
+      .maybeSingle();
+
+    if (updErr || !updated) {
+      // Pré-insert falhou; faz upsert manual.
+      console.warn(
+        "[stripe-webhook] update gift_card falhou, tentando insert",
+        updErr,
+      );
+      const { error: insErr } = await supabase.from("gift_cards").insert({
+        code,
+        valor_inicial_centavos: valor,
+        saldo_centavos: valor,
+        status: "active",
+        stripe_session_id: session.id,
+        destinatario_email: recipient || null,
+        destinatario_nome: recipientNome,
+        comprador_email: buyerEmail,
+        comprador_nome: buyerNome,
+        mensagem,
+        expires_at: expiresAtIso,
+      });
+      if (insErr) {
+        console.error(
+          "[stripe-webhook] insert gift_card fallback também falhou",
+          insErr,
+        );
+        return;
+      }
+    }
   }
 
-  // Envia o email para o destinatário (e cópia ao comprador, se houver)
-  const recipients: string[] = [];
-  if (recipient) recipients.push(recipient);
+  // Na reentrega, se o e-mail já foi enviado da primeira vez, pula
+  // (evita duplicar a notificação pro cliente).
+  if (isReplay && existing && existing.email_sent_at) {
+    console.info(
+      "[stripe-webhook] gift card email já enviado antes, pulando reenvio",
+      session.id,
+    );
+    return;
+  }
 
-  if (recipients.length) {
+  const expiresAtLabel = new Date(expiresAtIso).toLocaleDateString("pt-BR");
+
+  // ----- Envia o email para o destinatário -----
+  if (!recipient) {
+    console.error(
+      "[stripe-webhook] gift card sem recipient_email — e-mail principal " +
+        "não pôde ser enviado. session=" + session.id,
+    );
+  } else {
     const html = giftCardEmailHtml({
       recipientName: recipientNome,
       buyerName: buyerNome,
       code,
       valorCentavos: valor,
       message: mensagem,
-      expiresAt: new Date(expiresAt).toLocaleDateString("pt-BR"),
+      expiresAt: expiresAtLabel,
     });
     const result = await sendEmail({
-      to: recipients,
+      to: recipient,
       subject: "Você recebeu um gift card da Elarah ✨",
       html,
     });
@@ -216,25 +278,54 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
         .from("gift_cards")
         .update({ email_sent_at: new Date().toISOString() })
         .eq("stripe_session_id", session.id);
+    } else {
+      console.error(
+        "[stripe-webhook] FALHA ao enviar gift card pro destinatário",
+        "session=" + session.id,
+        "to=" + recipient,
+        "skipped=" + (result.skipped ? "true" : "false"),
+        "status=" + (result.status ?? "?"),
+        "error=" + (result.error ?? "?"),
+      );
     }
   }
 
-  // E-mail de cópia ao comprador (com o mesmo código, se diferente do destinatário)
-  if (buyerEmail && buyerEmail.toLowerCase() !== recipient.toLowerCase()) {
-    const html = giftCardEmailHtml({
+  // ----- E-mail de cópia ao comprador (mesmo código) -----
+  // Só envia cópia se o comprador informou e-mail e se for diferente do
+  // destinatário (senão ele já recebeu o e-mail acima).
+  if (
+    buyerEmail &&
+    buyerEmail.toLowerCase() !== recipient.toLowerCase()
+  ) {
+    const htmlBuyer = giftCardEmailHtml({
       recipientName: buyerNome,
       buyerName: buyerNome,
       code,
       valorCentavos: valor,
       message: "Cópia para você. O código original foi enviado para " +
         recipient + ".",
-      expiresAt: new Date(expiresAt).toLocaleDateString("pt-BR"),
+      expiresAt: expiresAtLabel,
     });
-    await sendEmail({
+    const buyerResult = await sendEmail({
       to: buyerEmail,
       subject: "Sua compra de gift card Elarah foi confirmada",
-      html,
+      html: htmlBuyer,
     });
+    if (!buyerResult.ok) {
+      console.error(
+        "[stripe-webhook] FALHA ao enviar cópia do gift card pro comprador",
+        "session=" + session.id,
+        "to=" + buyerEmail,
+        "skipped=" + (buyerResult.skipped ? "true" : "false"),
+        "status=" + (buyerResult.status ?? "?"),
+        "error=" + (buyerResult.error ?? "?"),
+      );
+    }
+  } else if (!buyerEmail) {
+    console.warn(
+      "[stripe-webhook] comprador sem e-mail — nenhuma cópia enviada. " +
+        "session=" + session.id,
+    );
   }
 }
 

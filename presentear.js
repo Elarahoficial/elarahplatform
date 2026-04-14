@@ -270,8 +270,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       +     '<input type="number" id="gcm-custom" min="50" step="1" placeholder="Outro valor (R$, mínimo 50)" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:14px;">'
       +     '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Seu nome</label>'
       +     '<input type="text" id="gcm-buyer-nome" placeholder="Como você quer assinar" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;">'
-      +     '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Seu e-mail</label>'
-      +     '<input type="email" id="gcm-buyer-email" placeholder="seu@email" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;">'
+      +     '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Seu e-mail <span style="color:#a4663b;font-weight:600;">(recebe cópia do gift card)</span></label>'
+      +     '<input type="email" id="gcm-buyer-email" placeholder="seu@email" required style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;">'
       +     '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Nome de quem vai receber</label>'
       +     '<input type="text" id="gcm-rec-nome" placeholder="Nome do presenteado" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;">'
       +     '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">E-mail de quem vai receber</label>'
@@ -350,6 +350,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (!recEmail || !/.+@.+\..+/.test(recEmail)) {
         errEl.textContent = 'Informe um e-mail válido para o presenteado.';
+        return;
+      }
+      if (!buyerEmail || !/.+@.+\..+/.test(buyerEmail)) {
+        errEl.textContent = 'Informe seu e-mail — é nele que você recebe a cópia do gift card.';
         return;
       }
 

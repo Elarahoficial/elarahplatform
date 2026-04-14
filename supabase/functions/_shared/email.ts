@@ -33,11 +33,21 @@ export interface EmailResult {
 
 export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
   if (!RESEND_API_KEY) {
-    console.warn(
-      "[elarah/email] RESEND_API_KEY ausente — pulando envio para",
-      msg.to,
+    // Antes isto era um console.warn silencioso e dava a impressão
+    // de que o pagamento tinha falhado por e-mail. Loga como ERROR
+    // pra ficar óbvio no painel de Logs do Supabase (Edge Functions
+    // → stripe-webhook) quando a secret não está configurada.
+    console.error(
+      "[elarah/email] RESEND_API_KEY AUSENTE — e-mail NÃO enviado para",
+      JSON.stringify(msg.to),
+      "— cadastre RESEND_API_KEY em Supabase → Project Settings → " +
+        "Edge Functions → Secrets e faça redeploy do stripe-webhook.",
     );
-    return { ok: false, skipped: true, error: "RESEND_API_KEY missing" };
+    return {
+      ok: false,
+      skipped: true,
+      error: "RESEND_API_KEY missing in Supabase secrets",
+    };
   }
 
   const to = Array.isArray(msg.to) ? msg.to : [msg.to];
@@ -60,18 +70,27 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
+      // Loga STATUS + BODY completo (até 800 chars) pra diagnosticar
+      // domínio não verificado, from address recusado, quota, etc.
       console.error(
-        "[elarah/email] resend error",
-        res.status,
-        text.slice(0, 400),
+        "[elarah/email] Resend rejeitou o envio —",
+        "status=" + res.status,
+        "to=" + JSON.stringify(to),
+        "from=" + FROM,
+        "body=" + text.slice(0, 800),
       );
       return { ok: false, status: res.status, error: text };
     }
 
     const data = await res.json().catch(() => ({}));
+    console.info(
+      "[elarah/email] enviado",
+      "to=" + JSON.stringify(to),
+      "resend_id=" + (data.id ?? "?"),
+    );
     return { ok: true, status: res.status, id: data.id };
   } catch (e) {
-    console.error("[elarah/email] exception", e);
+    console.error("[elarah/email] exceção durante envio", e);
     return { ok: false, error: String(e) };
   }
 }
