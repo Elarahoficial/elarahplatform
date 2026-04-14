@@ -1,3 +1,12 @@
+/* =============================================================
+   ELARAH — script.js
+   -------------------------------------------------------------
+   Versão explícita pra diagnóstico de cache. Se você NÃO vê esse
+   log no console do navegador, o browser ou CDN está servindo
+   um script.js antigo.
+   ============================================================= */
+console.info('[Elarah] script.js v11 carregado — desc modal v2 (collapsible hero + scroll listener)');
+
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
   try {
@@ -1202,6 +1211,20 @@ if (groupForm) {
         return true;
       }
 
+      // --- Log completo do objeto experiência pra diagnóstico ---
+      // Se "descricao" não aparecer aqui ou vier vazia, o problema
+      // é nos DADOS (banco/seeds), não no código do modal.
+      console.log('[Elarah Description] exp objeto retornado pelo ElarahData:', {
+        id: exp.id,
+        nome: exp.nome,
+        categoria: exp.categoria,
+        preco: exp.preco,
+        imagem: exp.imagem,
+        descricao_present: exp.descricao != null,
+        descricao_length: exp.descricao ? String(exp.descricao).length : 0,
+        descricao_preview: exp.descricao ? String(exp.descricao).slice(0, 120) + '...' : '(vazio)',
+      });
+
       // --- Checa se existe descrição cadastrada ---
       // Aceita tanto exp.descricao (PT) quanto exp.description (EN)
       // por compatibilidade futura.
@@ -1212,7 +1235,7 @@ if (groupForm) {
         return true;
       }
 
-      console.log('[Elarah Description Flow] descrição encontrada (' + desc.length + ' chars), abrindo modal');
+      console.log('[Elarah Description Flow] descrição encontrada (' + desc.length + ' chars), abrindo modal v2');
 
       // --- Monta e mostra a modal ---
       return new Promise(function (resolve) {
@@ -1242,6 +1265,10 @@ if (groupForm) {
       root.setAttribute('role', 'dialog');
       root.setAttribute('aria-modal', 'true');
       root.setAttribute('aria-label', 'Detalhes da experiência: ' + (exp.nome || ''));
+      // Diagnóstico: marca a versão da modal no próprio DOM. Dá pra
+      // inspecionar no DevTools → Elements e confirmar que é a V2.
+      root.setAttribute('data-elarah-modal-version', '2');
+      console.log('[Elarah Modal Render OK] openDescriptionModal v2 — hero collapsible, body scroll, footer fixo');
       root.style.cssText = [
         'position:fixed', 'inset:0', 'z-index:10000',
         'display:flex', 'align-items:center', 'justify-content:center',
