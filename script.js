@@ -502,14 +502,43 @@ if (categoriaURL) activeCategoria = categoriaURL;
   const originalsModalExperience = document.getElementById('originals-modal-experience');
   const originalsModalSuccessClose = document.getElementById('originals-modal-success-close');
 
-  function openOriginalsModal(experienceName, type) {
+  async function openOriginalsModal(experienceName, type) {
     if (!originalsModal) return;
     if (originalsModalExperience) originalsModalExperience.value = experienceName;
     if (originalsModalTitle) originalsModalTitle.textContent = experienceName;
+
+    // Tenta resolver a descrição real do item By Elarah (descricao do
+    // banco/fallback seeds). Se não houver, cai pro texto genérico.
+    let customDesc = '';
+    try {
+      if (window.ElarahByElarah && typeof ElarahByElarah.getAllItems === 'function') {
+        const items = await ElarahByElarah.getAllItems();
+        const match = items && items.find(function (i) { return i.nome === experienceName; });
+        if (match && match.descricao && String(match.descricao).trim()) {
+          customDesc = String(match.descricao).trim();
+          console.log('[Elarah Description Flow] originals: descrição encontrada para', experienceName);
+        } else {
+          console.warn('[Elarah Description Flow] originals: sem descrição para', experienceName);
+        }
+      }
+    } catch (err) {
+      console.warn('[Elarah Description Flow] originals: falha ao buscar descrição', err);
+    }
+
     if (originalsModalDesc) {
-      originalsModalDesc.textContent = type === 'participar'
-        ? 'Preencha seus dados para registrar seu interesse nessa experiência.'
-        : 'Entre na lista de espera e avisaremos você assim que a data for definida.';
+      if (customDesc) {
+        // Preserva quebras de linha como <br>, escapa HTML.
+        const escaped = customDesc
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+        originalsModalDesc.innerHTML = escaped;
+      } else {
+        originalsModalDesc.textContent = type === 'participar'
+          ? 'Preencha seus dados para registrar seu interesse nessa experiência.'
+          : 'Entre na lista de espera e avisaremos você assim que a data for definida.';
+      }
     }
     var horarioField = document.getElementById('originals-horario-field');
     if (horarioField) {
@@ -1069,13 +1098,433 @@ if (groupForm) {
       }
     }
 
-    async function startCheckout(btn) {
+    // =====================================================
+    //  DESCRIPTION GATE — modal intermediária antes do checkout
+    // =====================================================
+    // Estado do gate. Guard pra impedir que dois cliques em sequência
+    // abram duas modais e pra permitir cancelar um gate anterior
+    // quando o usuário clica em Reservar de uma experiência diferente.
+    let descriptionGateState = {
+      open: false,
+      currentExpId: null,
+      resolve: null, // Promise resolver pendente
+      cleanup: null, // Função pra desmontar a modal
+    };
+
+    function htmlEscape(str) {
+      if (str == null) return '';
+      const div = document.createElement('div');
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+
+    // Converte texto com quebras de linha em <p>s separados,
+    // preservando parágrafos da descrição. Escapa HTML.
+    function descriptionTextToHtml(text) {
+      const raw = String(text || '').trim();
+      if (!raw) return '';
+      const paragraphs = raw.split(/\n{2,}|\r\n{2,}/);
+      return paragraphs
+        .map(p => p.trim())
+        .filter(Boolean)
+        .map(p => {
+          // Quebras de linha simples dentro de um parágrafo viram <br>
+          const escaped = htmlEscape(p).replace(/\n/g, '<br>');
+          return '<p style="margin:0 0 14px;line-height:1.65;color:#3a3a3a;font-size:.95rem;">' + escaped + '</p>';
+        })
+        .join('');
+    }
+
+    // Destrói a modal atual (se existir). Se `resolveWith` for passado,
+    // resolve a Promise pendente com esse valor antes de remover o DOM.
+    function tearDownDescriptionGate(resolveWith) {
+      const s = descriptionGateState;
+      if (typeof s.resolve === 'function') {
+        try { s.resolve(resolveWith === true); } catch (e) {}
+      }
+      if (typeof s.cleanup === 'function') {
+        try { s.cleanup(); } catch (e) {}
+      }
+      descriptionGateState = {
+        open: false,
+        currentExpId: null,
+        resolve: null,
+        cleanup: null,
+      };
+      // Libera o scroll do body se não tiver outra modal aberta.
+      if (!document.querySelector('.elarah-desc-modal.open')) {
+        document.body.style.overflow = '';
+      }
+    }
+
+    // Ponto de entrada principal. Resolve para `true` se o usuário
+    // confirmou o "Continuar para pagamento", `false` caso contrário
+    // (inclusive se a experiência não tiver descrição — nesse caso
+    // resolvemos true imediatamente pra o fluxo seguir normalmente).
+    async function runDescriptionGate(experienceId, experienceNome, triggerBtn) {
+      // --- Fast path 1: ElarahData indisponível ---
+      if (!window.ElarahData || typeof window.ElarahData.getExperienceById !== 'function') {
+        console.warn('[Elarah Description Flow] ElarahData indisponível, indo direto para checkout');
+        return true;
+      }
+
+      // --- Fast path 2: já tem uma modal aberta pra esta experiência ---
+      // (proteção contra double-click no mesmo botão)
+      if (descriptionGateState.open && descriptionGateState.currentExpId === experienceId) {
+        console.warn('[Elarah Description Flow] modal já aberta pra esta experiência, ignorando clique duplicado');
+        return false;
+      }
+
+      // --- Fast path 3: existe modal aberta pra OUTRA experiência ---
+      // (usuário clicou em Reservar de outra experiência sem fechar)
+      if (descriptionGateState.open) {
+        console.log('[Elarah Description Flow] fechando modal anterior de outra experiência');
+        tearDownDescriptionGate(false);
+      }
+
+      // --- Busca a experiência com timeout defensivo ---
+      let exp = null;
+      try {
+        const fetchPromise = window.ElarahData.getExperienceById(experienceId);
+        // Timeout de 3s — se ElarahData estiver travado, não bloqueia
+        // o checkout. Default: pula a modal e segue direto.
+        exp = await Promise.race([
+          Promise.resolve(fetchPromise),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+        ]);
+      } catch (e) {
+        console.warn('[Elarah Description Flow] falha ao carregar experiência, indo direto para checkout:', e && e.message ? e.message : e);
+        return true;
+      }
+
+      if (!exp) {
+        console.warn('[Elarah Description Flow] experiência não encontrada em ElarahData, indo direto para checkout');
+        return true;
+      }
+
+      // --- Checa se existe descrição cadastrada ---
+      // Aceita tanto exp.descricao (PT) quanto exp.description (EN)
+      // por compatibilidade futura.
+      const descRaw = exp.descricao != null ? exp.descricao : exp.description;
+      const desc = (descRaw == null ? '' : String(descRaw)).trim();
+      if (!desc) {
+        console.warn('[Elarah Description Flow] sem descrição (' + experienceId + '), indo direto para checkout');
+        return true;
+      }
+
+      console.log('[Elarah Description Flow] descrição encontrada (' + desc.length + ' chars), abrindo modal');
+
+      // --- Monta e mostra a modal ---
+      return new Promise(function (resolve) {
+        openDescriptionModal(exp, triggerBtn, resolve);
+      });
+    }
+
+    function openDescriptionModal(exp, triggerBtn, resolve) {
+      const horario = readActiveHorario(triggerBtn) || exp.horario || '';
+      const precoLabel = exp.preco || (triggerBtn && triggerBtn.getAttribute('data-experience-preco')) || '';
+      const imagem = exp.imagem && String(exp.imagem).trim() ? exp.imagem : '';
+      const bairro = exp.bairro || '';
+      const data = exp.data || '';
+      const duracao = exp.duracao || '';
+
+      // Root do modal
+      const root = document.createElement('div');
+      root.className = 'elarah-desc-modal';
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-modal', 'true');
+      root.setAttribute('aria-label', 'Detalhes da experiência: ' + (exp.nome || ''));
+      root.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:10000',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'padding:20px',
+        'background:rgba(20,12,4,0.55)',
+        'font-family:"DM Sans",-apple-system,BlinkMacSystemFont,sans-serif',
+        'animation:elarahDescFadeIn 180ms ease',
+      ].join(';');
+
+      // Keyframes (injeta só uma vez)
+      if (!document.getElementById('elarah-desc-modal-keyframes')) {
+        const style = document.createElement('style');
+        style.id = 'elarah-desc-modal-keyframes';
+        style.textContent =
+          '@keyframes elarahDescFadeIn{from{opacity:0}to{opacity:1}}' +
+          '@keyframes elarahDescSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}';
+        document.head.appendChild(style);
+      }
+
+      // Card interno scrollável
+      const card = document.createElement('div');
+      card.style.cssText = [
+        'background:#fff', 'border-radius:22px',
+        'max-width:640px', 'width:100%',
+        'max-height:92vh',
+        'overflow:hidden',
+        'display:flex', 'flex-direction:column',
+        'box-shadow:0 24px 60px rgba(0,0,0,0.25)',
+        'animation:elarahDescSlideUp 220ms ease',
+      ].join(';');
+
+      // Botão fechar (X) absolutamente posicionado
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.setAttribute('aria-label', 'Fechar');
+      closeBtn.innerHTML = '&times;';
+      closeBtn.style.cssText = [
+        'position:absolute', 'top:14px', 'right:14px',
+        'width:36px', 'height:36px',
+        'border:none', 'background:rgba(255,255,255,0.92)',
+        'border-radius:50%',
+        'font-size:26px', 'line-height:1', 'color:#1a1a1a',
+        'cursor:pointer', 'z-index:2',
+        'box-shadow:0 2px 8px rgba(0,0,0,0.15)',
+      ].join(';');
+
+      // Hero: imagem OU gradiente fallback com o nome
+      const hero = document.createElement('div');
+      hero.style.cssText = [
+        'position:relative',
+        'width:100%',
+        'aspect-ratio:16/9',
+        'background:linear-gradient(135deg,#f6d5a8,#f0a05e)',
+        'overflow:hidden',
+        'flex-shrink:0',
+      ].join(';');
+      hero.appendChild(closeBtn);
+
+      if (imagem) {
+        const img = document.createElement('img');
+        img.src = imagem;
+        img.alt = exp.nome || '';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        // Fallback: se a imagem falhar, esconde e mantém só o gradiente.
+        img.onerror = function () {
+          img.style.display = 'none';
+          console.warn('[Elarah Description Flow] falha ao carregar imagem:', imagem);
+        };
+        hero.appendChild(img);
+      }
+
+      // Corpo scrollável com conteúdo textual
+      const body = document.createElement('div');
+      body.style.cssText = [
+        'padding:26px 28px 20px',
+        'overflow-y:auto',
+        'flex:1 1 auto',
+        '-webkit-overflow-scrolling:touch',
+      ].join(';');
+
+      // Categoria (opcional, acima do título)
+      if (exp.categoria) {
+        const cat = document.createElement('div');
+        cat.textContent = exp.categoria;
+        cat.style.cssText = 'font-size:.72rem;color:#a4663b;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;';
+        body.appendChild(cat);
+      }
+
+      // Título
+      const title = document.createElement('h2');
+      title.textContent = exp.nome || '';
+      title.style.cssText = 'font-family:"DM Serif Display",Georgia,serif;font-size:1.6rem;color:#1a1a1a;margin:0 0 14px;font-weight:400;line-height:1.25;';
+      body.appendChild(title);
+
+      // Meta grid: data · horário · duração · bairro
+      const metaBits = [];
+      if (data) metaBits.push({ icon: '📅', text: data });
+      if (horario) metaBits.push({ icon: '⏱', text: horario });
+      if (duracao) metaBits.push({ icon: '⏳', text: duracao });
+      if (bairro) metaBits.push({ icon: '📍', text: bairro });
+      if (metaBits.length) {
+        const meta = document.createElement('div');
+        meta.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:18px;font-size:.85rem;color:#666;';
+        metaBits.forEach(function (m) {
+          const span = document.createElement('span');
+          span.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
+          // Usa textContent pra evitar XSS
+          span.textContent = m.icon + ' ' + m.text;
+          meta.appendChild(span);
+        });
+        body.appendChild(meta);
+      }
+
+      // Divisor
+      const divider = document.createElement('div');
+      divider.style.cssText = 'height:1px;background:#f0e8de;margin:0 0 18px;';
+      body.appendChild(divider);
+
+      // Descrição (multi-parágrafo, XSS-safe via descriptionTextToHtml)
+      const descWrap = document.createElement('div');
+      descWrap.innerHTML = descriptionTextToHtml(exp.descricao || exp.description || '');
+      body.appendChild(descWrap);
+
+      // Footer sticky com preço + botão "Continuar"
+      const footer = document.createElement('div');
+      footer.style.cssText = [
+        'padding:18px 28px',
+        'border-top:1px solid #f0e8de',
+        'background:#fff',
+        'display:flex',
+        'align-items:center',
+        'justify-content:space-between',
+        'gap:14px',
+        'flex-wrap:wrap',
+        'flex-shrink:0',
+      ].join(';');
+
+      if (precoLabel) {
+        const priceTag = document.createElement('div');
+        priceTag.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+        const priceLabelEl = document.createElement('span');
+        priceLabelEl.textContent = 'Valor';
+        priceLabelEl.style.cssText = 'font-size:.7rem;color:#999;text-transform:uppercase;letter-spacing:.5px;';
+        const priceValEl = document.createElement('strong');
+        priceValEl.textContent = precoLabel;
+        priceValEl.style.cssText = 'font-size:1.15rem;color:#1a1a1a;font-weight:700;';
+        priceTag.appendChild(priceLabelEl);
+        priceTag.appendChild(priceValEl);
+        footer.appendChild(priceTag);
+      }
+
+      const continueBtn = document.createElement('button');
+      continueBtn.type = 'button';
+      continueBtn.textContent = 'Continuar para pagamento';
+      continueBtn.style.cssText = [
+        'flex:1 1 auto',
+        'min-width:200px',
+        'padding:14px 22px',
+        'border:none',
+        'border-radius:999px',
+        'background:#f0a05e',
+        'color:#fff',
+        'font-size:.95rem',
+        'font-weight:700',
+        'letter-spacing:.3px',
+        'cursor:pointer',
+        'transition:background .18s ease, transform .18s ease',
+      ].join(';');
+      continueBtn.addEventListener('mouseenter', function () {
+        continueBtn.style.background = '#e08c45';
+      });
+      continueBtn.addEventListener('mouseleave', function () {
+        continueBtn.style.background = '#f0a05e';
+      });
+      footer.appendChild(continueBtn);
+
+      card.appendChild(hero);
+      card.appendChild(body);
+      card.appendChild(footer);
+      root.appendChild(card);
+      document.body.appendChild(root);
+      document.body.style.overflow = 'hidden';
+      // Marca como aberto pra CSS selectors funcionarem
+      root.classList.add('open');
+
+      // --- Handlers ---
+      function dismiss(confirmed) {
+        // Remove listeners primeiro pra evitar double-fire
+        document.removeEventListener('keydown', onKey, true);
+        root.removeEventListener('click', onBackdrop, true);
+        closeBtn.removeEventListener('click', onClose);
+        continueBtn.removeEventListener('click', onContinue);
+        // Fade-out rápido
+        root.style.animation = 'elarahDescFadeIn 140ms ease reverse';
+        setTimeout(function () {
+          if (root.parentNode) root.parentNode.removeChild(root);
+        }, 140);
+        // Atualiza estado E resolve o Promise APENAS aqui.
+        const wasResolve = descriptionGateState.resolve;
+        descriptionGateState = {
+          open: false,
+          currentExpId: null,
+          resolve: null,
+          cleanup: null,
+        };
+        if (!document.querySelector('.elarah-desc-modal.open')) {
+          document.body.style.overflow = '';
+        }
+        if (typeof wasResolve === 'function') {
+          try { wasResolve(confirmed === true); } catch (e) {}
+        }
+      }
+
+      function onContinue(e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        console.log('[Elarah Description Flow] usuário clicou Continuar para pagamento (' + (exp.id || '?') + ')');
+        dismiss(true);
+      }
+      function onClose(e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        console.log('[Elarah Description Flow] usuário fechou a modal sem continuar');
+        dismiss(false);
+      }
+      function onBackdrop(e) {
+        if (e.target === root) {
+          onClose(e);
+        }
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          onClose(e);
+        }
+      }
+
+      closeBtn.addEventListener('click', onClose);
+      continueBtn.addEventListener('click', onContinue);
+      root.addEventListener('click', onBackdrop, true);
+      document.addEventListener('keydown', onKey, true);
+
+      // Guarda no state global
+      descriptionGateState = {
+        open: true,
+        currentExpId: exp.id || null,
+        resolve: resolve,
+        cleanup: function () {
+          document.removeEventListener('keydown', onKey, true);
+          root.removeEventListener('click', onBackdrop, true);
+          if (root.parentNode) root.parentNode.removeChild(root);
+        },
+      };
+
+      // Foco inicial no botão Continuar (acessibilidade + mobile)
+      try { continueBtn.focus({ preventScroll: true }); } catch (e) {}
+    }
+
+    async function startCheckout(btn, opts) {
+      opts = opts || {};
       const experienceId = btn.getAttribute('data-experience-id');
       const experienceNome = btn.getAttribute('data-experience-nome') || '';
 
       if (!experienceId) {
         alert('Não conseguimos identificar essa experiência. Recarregue a página e tente novamente.');
         return;
+      }
+
+      // === [NEW] GATE DE DESCRIÇÃO ===
+      // Antes de qualquer outra coisa (antes do login, do tracking, do
+      // preço), mostra uma modal intermediária com a descrição completa
+      // da experiência — SE houver descrição cadastrada. Isso dá ao
+      // usuário contexto total antes de começar o fluxo de pagamento,
+      // melhorando conversão.
+      //
+      // Skip quando:
+      //   - opts.skipDescription === true (resume após login já confirmou)
+      //   - experiência não tem descricao cadastrada (null/undefined/'')
+      //   - ElarahData indisponível ou falha ao buscar
+      //   - descricao contém só espaços em branco
+      if (!opts.skipDescription) {
+        const proceed = await runDescriptionGate(experienceId, experienceNome, btn);
+        if (!proceed) {
+          // Usuário fechou a modal sem continuar OU modal já estava
+          // aberta pra outra experiência — não damos sequência.
+          return;
+        }
+        // Chegou aqui = usuário clicou "Continuar para pagamento".
       }
 
       // === GATE DE LOGIN OBRIGATÓRIO ===
@@ -1085,6 +1534,7 @@ if (groupForm) {
             experienceId: experienceId,
             experienceNome: experienceNome,
             horario: readActiveHorario(btn),
+            descriptionAcknowledged: true,
             ts: Date.now(),
           }));
         } catch (e) {}
@@ -1175,9 +1625,14 @@ if (groupForm) {
 
       // Tenta achar o botão real na página pra preservar loading state.
       const selector = '[data-reserve][data-experience-id="' + pending.experienceId + '"]';
+      // Na retomada pós-login NUNCA re-exibimos a description modal —
+      // o usuário já clicou "Continuar para pagamento" antes do login.
+      // skipDescription evita dupla exibição (seria pedagogicamente
+      // estranho + reduz conversão).
+      const resumeOpts = { skipDescription: true };
       const btn = document.querySelector(selector);
       if (btn) {
-        startCheckout(btn);
+        startCheckout(btn, resumeOpts);
         return;
       }
       // Fallback: cria um botão fantasma só pra carregar os dados.
@@ -1190,7 +1645,7 @@ if (groupForm) {
       if (pending.horario) {
         ghost.setAttribute('data-horario', pending.horario);
       }
-      startCheckout(ghost);
+      startCheckout(ghost, resumeOpts);
     }
 
     // Hook no Supabase: retoma assim que o usuário entra.
