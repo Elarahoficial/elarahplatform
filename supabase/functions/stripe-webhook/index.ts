@@ -330,7 +330,19 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
 }
 
 async function sendBookingConfirmation(booking: BookingRow) {
-  if (!booking.email) return;
+  if (!booking.email) {
+    console.warn(
+      "[stripe-webhook] booking sem email — não dá pra enviar confirmação",
+      "booking_id=" + booking.id,
+    );
+    return;
+  }
+  console.info(
+    "[stripe-webhook] enviando confirmação de reserva",
+    "booking_id=" + booking.id,
+    "to=" + booking.email,
+    "experiencia=" + (booking.experiencia_nome ?? "?"),
+  );
   const meta = (booking.metadata ?? {}) as Record<string, unknown>;
   const html = bookingConfirmationEmailHtml({
     nome: booking.nome,
@@ -340,11 +352,23 @@ async function sendBookingConfirmation(booking: BookingRow) {
     endereco: (meta.endereco as string | null) ?? null,
     precoLabel: booking.preco_label,
   });
-  await sendEmail({
+  const result = await sendEmail({
     to: booking.email,
     subject: "Sua reserva na Elarah está confirmada ✨",
     html,
   });
+  if (!result.ok) {
+    // NÃO relança o erro — o pagamento já foi confirmado e o estado
+    // da booking é 'pago'. Só loga pra diagnóstico.
+    console.error(
+      "[stripe-webhook] FALHA ao enviar confirmação de reserva —",
+      "booking_id=" + booking.id,
+      "to=" + booking.email,
+      "skipped=" + (result.skipped ? "true" : "false"),
+      "status=" + (result.status ?? "?"),
+      "error=" + (result.error ?? "?"),
+    );
+  }
 }
 
 serve(async (req) => {
@@ -353,7 +377,13 @@ serve(async (req) => {
   }
 
   if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET || !SERVICE_ROLE) {
-    console.error("[stripe-webhook] missing env vars");
+    console.error(
+      "[stripe-webhook] VARIÁVEIS DE AMBIENTE AUSENTES — webhook não pode processar eventos.",
+      "STRIPE_SECRET_KEY=" + (STRIPE_SECRET_KEY ? "ok" : "MISSING"),
+      "STRIPE_WEBHOOK_SECRET=" + (STRIPE_WEBHOOK_SECRET ? "ok" : "MISSING"),
+      "SUPABASE_SERVICE_ROLE_KEY=" + (SERVICE_ROLE ? "ok" : "MISSING"),
+      "— cadastre em Supabase → Project Settings → Edge Functions → Secrets",
+    );
     return new Response("server_misconfigured", { status: 500 });
   }
 
@@ -376,19 +406,42 @@ serve(async (req) => {
     return new Response("invalid_signature", { status: 400 });
   }
 
+  // Log de entrada — confirma que o webhook foi invocado pelo Stripe
+  // e qual evento chegou. Aparece em Supabase → Edge Functions →
+  // stripe-webhook → Logs. Serve de "pulso" pra saber se o webhook
+  // está conectado mesmo.
+  console.info(
+    "[stripe-webhook] evento recebido",
+    "type=" + event.type,
+    "id=" + event.id,
+    "livemode=" + event.livemode,
+  );
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (!session.id) break;
+        if (!session.id) {
+          console.warn("[stripe-webhook] completed sem session.id — ignorando");
+          break;
+        }
         const kind = String(session.metadata?.kind ?? "experience");
+        console.info(
+          "[stripe-webhook] checkout.session.completed",
+          "session=" + session.id,
+          "kind=" + kind,
+          "amount_total=" + (session.amount_total ?? "?"),
+          "payment_intent=" + (session.payment_intent ?? "?"),
+        );
 
         if (kind === "gift_card") {
           await activateGiftCardFromSession(session);
           break;
         }
 
-        // Reserva de experiência
+        // Reserva de experiência — o e-mail SÓ é disparado depois do
+        // UPDATE de status='pago', então se o UPDATE falhar o webhook
+        // NÃO manda e-mail (correto — pagamento não foi confirmado).
         await updateBookingBySession(session.id, {
           status: "pago",
           stripe_payment_intent: session.payment_intent ?? null,
@@ -396,7 +449,23 @@ serve(async (req) => {
           currency: session.currency ?? "brl",
         });
         const booking = await getBookingBySession(session.id);
-        if (booking) await sendBookingConfirmation(booking);
+        if (!booking) {
+          console.error(
+            "[stripe-webhook] booking não encontrado após UPDATE — ",
+            "session=" + session.id,
+            "— e-mail de confirmação NÃO pode ser enviado. Verifique",
+            "se create-checkout-session gravou a booking antes do",
+            "redirect pro Stripe.",
+          );
+          break;
+        }
+        if (booking.status !== "pago") {
+          console.warn(
+            "[stripe-webhook] booking existe mas status=" + booking.status +
+              " (esperado 'pago') — e-mail será enviado mesmo assim.",
+          );
+        }
+        await sendBookingConfirmation(booking);
         break;
       }
       case "checkout.session.expired": {

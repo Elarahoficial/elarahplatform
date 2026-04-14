@@ -160,8 +160,14 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
     return jsonResponse({ error: "stripe_create_failed" }, 502);
   }
 
-  // Pré-grava gift card como pending — webhook ativa.
-  const { error: insertErr } = await supabase.from("gift_cards").insert({
+  // Pré-grava gift card como pending — webhook ativa. Se esta linha
+  // falhar (tabela inexistente, coluna fora de sintonia, etc.), a
+  // gente NÃO pode seguir pra Stripe: o cliente pagaria e o webhook
+  // tentaria um fallback insert, mas se o problema é estrutural, o
+  // fallback também falha e o pagamento fica "orfão" sem rastro no
+  // admin. Por isso: se a pre-gravação falha, cancela a sessão Stripe
+  // recém-criada e devolve erro pro front.
+  const giftCardRow = {
     code: "PENDING-" + session.id.slice(-12).toUpperCase(),
     valor_inicial_centavos: valor,
     saldo_centavos: valor,
@@ -174,11 +180,51 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
     mensagem: mensagem || null,
     stripe_session_id: session.id,
     expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-  });
+  };
+
+  const { error: insertErr } = await supabase
+    .from("gift_cards")
+    .insert(giftCardRow);
 
   if (insertErr) {
-    console.error("[create-checkout-session/gift] insert error", insertErr);
+    console.error(
+      "[create-checkout-session/gift] FALHA CRÍTICA ao pré-gravar gift " +
+        "card. Abortando pagamento pra não cobrar o cliente sem registro.",
+      "session=" + session.id,
+      "error=" + JSON.stringify(insertErr),
+    );
+    // Expira a sessão Stripe recém-criada pra garantir que o cliente
+    // não consiga pagar num link órfão. Stripe aceita expire mesmo
+    // antes de qualquer pagamento.
+    try {
+      await stripe.checkout.sessions.expire(session.id);
+    } catch (e) {
+      console.error(
+        "[create-checkout-session/gift] não consegui expirar sessão",
+        session.id,
+        e,
+      );
+    }
+    return jsonResponse(
+      {
+        error: "gift_card_save_failed",
+        message: "Não foi possível registrar o gift card antes do " +
+          "pagamento. Detalhe: " + (insertErr.message || "erro desconhecido"),
+        hint:
+          "Verifique se a migration sql/elarah_extensions.sql foi " +
+          "executada no Supabase e se a tabela public.gift_cards existe.",
+        detail: insertErr,
+      },
+      500,
+    );
   }
+
+  console.info(
+    "[create-checkout-session/gift] gift card pré-gravado com sucesso",
+    "session=" + session.id,
+    "recipient=" + recipientEmail,
+    "valor_centavos=" + valor,
+  );
 
   return jsonResponse({ url: session.url, session_id: session.id });
 }

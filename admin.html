@@ -122,6 +122,10 @@
           <div class="admin__stat-label">Experiências</div>
           <div class="admin__stat-value admin__stat-value--orange" id="stat-experiences">0</div>
         </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Gift cards (ativos)</div>
+          <div class="admin__stat-value" id="stat-giftcards">0</div>
+        </div>
       </div>
 
       <!-- Recent users -->
@@ -286,6 +290,33 @@
           </thead>
           <tbody id="purchases-body">
             <tr><td colspan="8" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== GIFT CARDS DENTRO DE COMPRAS ===== -->
+      <!-- Mesma fonte de dados do painel Gift Cards, mas visível
+           diretamente na tela de Compras pra operador que acha que
+           "compras = tudo". -->
+      <div class="admin__table-wrap" style="margin-top:32px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Gift cards comprados</span>
+          <span class="admin__table-count" id="purchases-giftcards-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Comprador</th>
+              <th>Destinatário</th>
+              <th>Valor</th>
+              <th>Saldo</th>
+              <th>Status</th>
+              <th>Criado</th>
+            </tr>
+          </thead>
+          <tbody id="purchases-giftcards-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>
           </tbody>
         </table>
       </div>
@@ -755,6 +786,6 @@
 <script src="experiences-data.js?v=9"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=13"></script>
+<script src="admin.js?v=14"></script>
 </body>
 </html>

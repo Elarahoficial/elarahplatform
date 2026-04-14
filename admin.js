@@ -116,59 +116,68 @@
   }
 
   // ===== GIFT CARDS =====
-  async function renderGiftCards() {
-    const tbody = document.getElementById('giftcards-body');
-    const countEl = document.getElementById('giftcards-count');
-    if (!tbody) return;
-
+  // Cache compartilhado com a seção de gift cards do painel de Compras
+  // e com a stat do overview. Uma única query Supabase alimenta os
+  // três locais, evitando hits repetidos.
+  let giftCardsCache = null;
+  async function getGiftCards() {
+    if (giftCardsCache) return giftCardsCache;
     const sb = window.supabaseClient;
-    if (!sb) {
-      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Supabase indisponível.</td></tr>';
-      return;
-    }
+    if (!sb) return { rows: [], error: new Error('Supabase client indisponível') };
 
     const { data, error } = await sb
       .from('gift_cards')
-      .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, created_at')
+      .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, stripe_session_id, created_at, email_sent_at, expires_at')
       .order('created_at', { ascending: false })
       .limit(500);
 
     if (error) {
       console.error('[admin/gift_cards] load error', error);
-      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Erro ao carregar gift cards.</td></tr>';
-      return;
+      return { rows: [], error };
     }
+    giftCardsCache = { rows: data || [], error: null };
+    return giftCardsCache;
+  }
+  function invalidateGiftCardsCache() { giftCardsCache = null; }
 
-    const rows = data || [];
-    if (countEl) countEl.textContent = rows.length + ' gift card' + (rows.length !== 1 ? 's' : '');
-
-    if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>';
-      return;
+  function giftCardErrorHint(error) {
+    if (!error) return '';
+    const msg = String(error.message || error.details || '').toLowerCase();
+    if (msg.includes('gift_cards') && (msg.includes('does not exist') || msg.includes('relation'))) {
+      return 'A tabela public.gift_cards não existe. Rode sql/elarah_extensions.sql no SQL Editor do Supabase.';
     }
+    if (msg.includes('permission denied') || msg.includes('row-level')) {
+      return 'RLS bloqueou a leitura. Confirme que seu usuário está marcado como admin em public.profiles (role = \'admin\') e que as policies de gift_cards foram criadas pelo elarah_extensions.sql.';
+    }
+    return error.message || 'Erro ao carregar gift cards.';
+  }
 
-    const brl = (cents) => 'R$ ' + ((Number(cents) || 0) / 100).toFixed(2).replace('.', ',');
-    const statusBadge = (s) => {
-      const colors = {
-        active:    '#1a8a4a',
-        used:      '#888',
-        expired:   '#c0392b',
-        pending:   '#b07b00',
-        cancelled: '#c0392b'
-      };
-      const labels = {
-        active:    'ativo',
-        used:      'usado',
-        expired:   'expirado',
-        pending:   'pendente',
-        cancelled: 'cancelado'
-      };
-      const c = colors[s] || '#666';
-      const l = labels[s] || s;
-      return '<span style="color:' + c + ';font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;">' + l + '</span>';
+  const giftCardBrl = (cents) => 'R$ ' + ((Number(cents) || 0) / 100).toFixed(2).replace('.', ',');
+  const giftCardStatusBadge = (s) => {
+    const colors = {
+      active:    '#1a8a4a',
+      used:      '#888',
+      expired:   '#c0392b',
+      pending:   '#b07b00',
+      cancelled: '#c0392b'
     };
+    const labels = {
+      active:    'ativo',
+      used:      'usado',
+      expired:   'expirado',
+      pending:   'pendente',
+      cancelled: 'cancelado'
+    };
+    const c = colors[s] || '#666';
+    const l = labels[s] || s || '—';
+    return '<span style="color:' + c + ';font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;">' + l + '</span>';
+  };
 
-    tbody.innerHTML = rows.map(g => {
+  function giftCardRowsHtml(rows, colspan) {
+    if (!rows.length) {
+      return '<tr><td colspan="' + colspan + '" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>';
+    }
+    return rows.map(g => {
       const dt = g.created_at ? new Date(g.created_at).toLocaleString('pt-BR') : '';
       const compradorLabel = (g.comprador_nome || '') + (g.comprador_email ? ' <' + g.comprador_email + '>' : '');
       const destLabel = (g.destinatario_nome || '') + (g.destinatario_email ? ' <' + g.destinatario_email + '>' : '');
@@ -177,12 +186,76 @@
         '<td style="font-family:Menlo,Consolas,monospace;font-size:12px;">' + escapeHtml(codeDisplay) + '</td>' +
         '<td>' + escapeHtml(compradorLabel.trim() || '—') + '</td>' +
         '<td>' + escapeHtml(destLabel.trim() || '—') + '</td>' +
-        '<td>' + escapeHtml(brl(g.valor_inicial_centavos)) + '</td>' +
-        '<td>' + escapeHtml(brl(g.saldo_centavos)) + '</td>' +
-        '<td>' + statusBadge(g.status) + '</td>' +
+        '<td>' + escapeHtml(giftCardBrl(g.valor_inicial_centavos)) + '</td>' +
+        '<td>' + escapeHtml(giftCardBrl(g.saldo_centavos)) + '</td>' +
+        '<td>' + giftCardStatusBadge(g.status) + '</td>' +
         '<td>' + escapeHtml(dt) + '</td>' +
         '</tr>';
     }).join('');
+  }
+
+  async function renderGiftCards() {
+    const tbody = document.getElementById('giftcards-body');
+    const countEl = document.getElementById('giftcards-count');
+    if (!tbody) return;
+
+    const { rows, error } = await getGiftCards();
+
+    if (error) {
+      const hint = giftCardErrorHint(error);
+      tbody.innerHTML =
+        '<tr><td colspan="7" class="admin__table-empty" style="color:#c0392b;">' +
+        'Erro ao carregar gift cards: ' + escapeHtml(hint) +
+        '</td></tr>';
+      if (countEl) countEl.textContent = 'erro';
+      return;
+    }
+
+    // Estatística por status (útil pro operador ver rapidamente
+    // quantos gift cards estão pagos/pendentes etc).
+    const byStatus = rows.reduce((acc, g) => {
+      const s = g.status || 'unknown';
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    }, {});
+    const paidCount   = byStatus.active || 0;
+    const pendingCount= byStatus.pending || 0;
+    const usedCount   = byStatus.used || 0;
+
+    if (countEl) {
+      const parts = [rows.length + ' total'];
+      if (paidCount)    parts.push(paidCount + ' ativos');
+      if (pendingCount) parts.push(pendingCount + ' pendentes');
+      if (usedCount)    parts.push(usedCount + ' usados');
+      countEl.textContent = parts.join(' · ');
+    }
+
+    tbody.innerHTML = giftCardRowsHtml(rows, 7);
+  }
+
+  // Tabela compacta injetada no painel de Compras pra o operador não
+  // precisar navegar até o menu Gift Cards. Mesma fonte de dados.
+  async function renderGiftCardsInPurchasesPanel() {
+    const tbody = document.getElementById('purchases-giftcards-body');
+    const countEl = document.getElementById('purchases-giftcards-count');
+    if (!tbody) return;
+
+    const { rows, error } = await getGiftCards();
+
+    if (error) {
+      const hint = giftCardErrorHint(error);
+      tbody.innerHTML =
+        '<tr><td colspan="7" class="admin__table-empty" style="color:#c0392b;">' +
+        'Erro ao carregar gift cards: ' + escapeHtml(hint) +
+        '</td></tr>';
+      if (countEl) countEl.textContent = 'erro';
+      return;
+    }
+
+    if (countEl) {
+      countEl.textContent = rows.length + ' gift card' + (rows.length !== 1 ? 's' : '');
+    }
+    tbody.innerHTML = giftCardRowsHtml(rows, 7);
   }
 
   // ===== LOGOUT =====
@@ -221,17 +294,37 @@
 
   // ===== OVERVIEW =====
   async function renderOverview() {
-    const [profiles, experiences] = await Promise.all([
+    const [profiles, experiences, giftCardsResult, bookings] = await Promise.all([
       getProfiles(),
-      getExperiences()
+      getExperiences(),
+      getGiftCards(),
+      getBookings().catch(() => [])
     ]);
-    const purchases = getPurchases();
     const partners = profiles.filter(p => p.partner_status && p.partner_status !== 'none');
+
+    // "Compras" no overview = reservas pagas via Stripe + gift cards
+    // ativos. Antes lia de localStorage (legado) e sempre mostrava 0.
+    const bookingsPaid = (bookings || []).filter(b => b.status === 'pago').length;
+    const giftCardsActive = (giftCardsResult.rows || []).filter(
+      g => g.status === 'active' || g.status === 'used'
+    ).length;
+    const totalCompras = bookingsPaid + giftCardsActive;
 
     document.getElementById('stat-users').textContent = profiles.length;
     document.getElementById('stat-partners').textContent = partners.filter(p => p.partner_status === 'approved').length;
-    document.getElementById('stat-purchases').textContent = purchases.length;
+    document.getElementById('stat-purchases').textContent = totalCompras;
     document.getElementById('stat-experiences').textContent = experiences.length;
+
+    // Atualiza a stat-gift opcional se o painel de overview tiver
+    // essa box. A box é criada no admin.html — se não existir, apenas
+    // pula silenciosamente pra não quebrar layouts antigos.
+    const statGiftEl = document.getElementById('stat-giftcards');
+    if (statGiftEl) {
+      const total = (giftCardsResult.rows || []).length;
+      const active = giftCardsActive;
+      statGiftEl.textContent = active + (total > active ? ' / ' + total : '');
+      statGiftEl.title = total + ' total, ' + active + ' ativos/usados';
+    }
 
     const recent = profiles.slice(0, 5);
     const tbody = document.getElementById('overview-users-body');
@@ -407,6 +500,7 @@
     const filterStatus = document.getElementById('bookings-filter-status');
     if (refreshBtn) refreshBtn.addEventListener('click', () => {
       invalidateBookings();
+      invalidateGiftCardsCache();
       renderBookings();
     });
     if (filterExp) filterExp.addEventListener('change', () => renderBookings());
@@ -415,6 +509,12 @@
 
   async function renderBookings() {
     if (!document.getElementById('purchases-body')) return;
+    // Renderiza gift cards na mesma tela (seção auxiliar) — assim o
+    // operador vê TODAS as compras (reservas + gift cards) sem trocar
+    // de menu. Não bloqueia o render principal.
+    renderGiftCardsInPurchasesPanel().catch(e =>
+      console.error('[admin] render gift cards in purchases failed', e)
+    );
     const bookings = await getBookings();
 
     // Popula filtro de experiências (apenas uma vez por load).
