@@ -1,19 +1,21 @@
 -- =========================================================
--- ELARAH PLATFORM — experiences hide/unhide
+-- ELARAH PLATFORM — experiences visibility
 -- -----------------------------------------------------
--- Adiciona is_active (default true) na tabela experiences
--- pra permitir ocultar experiências sem deletar os dados.
+-- Adiciona a coluna is_active para permitir que o admin
+-- oculte/mostre experiências sem precisar excluí-las.
 --
 -- Idempotente: pode rodar quantas vezes quiser.
--- Rode no SQL Editor do Supabase.
+-- Rode no SQL Editor do Supabase DEPOIS de
+-- elarah_supabase_setup.sql.
 -- =========================================================
 
 alter table public.experiences
   add column if not exists is_active boolean not null default true;
 
--- Garante que linhas antigas continuem visíveis (default vale só pra
--- novas linhas, mas como acabamos de criar a coluna, todas as linhas
--- existentes ganham true automaticamente porque é NOT NULL DEFAULT).
+-- Garante que registros pré-existentes fiquem visíveis por padrão.
+-- (O default da coluna já cobre linhas novas; este update é só pra
+-- qualquer linha que porventura esteja com NULL em uma versão
+-- anterior da coluna.)
 update public.experiences
    set is_active = true
  where is_active is null;

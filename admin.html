@@ -501,11 +501,12 @@
               <th>Bairro</th>
               <th>Preço</th>
               <th>Vagas</th>
+              <th>Status</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody id="experiences-body">
-            <tr><td colspan="8" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>
+            <tr><td colspan="9" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>
           </tbody>
         </table>
       </div>
@@ -656,6 +657,14 @@
           <input type="number" id="exp-cutoff-hours" min="0" step="1" value="24">
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Quantas horas antes a venda é encerrada. Padrão: 24h.</p>
         </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="exp-is-active" checked style="width:auto;margin:0;">
+            <span>Visível no site</span>
+          </label>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Desmarque para ocultar a experiência do site sem excluí-la. Ela continua salva no banco e pode ser reativada a qualquer momento.</p>
+        </div>
       </div>
 
       <input type="hidden" id="exp-edit-id" value="">
@@ -743,9 +752,9 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js?v=6"></script>
 <script src="auth.js?v=8"></script>
-<script src="experiences-data.js?v=6"></script>
+<script src="experiences-data.js?v=9"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=10"></script>
+<script src="admin.js?v=13"></script>
 </body>
 </html>

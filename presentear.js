@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ===== GIFT EXPERIENCES DATA (shared source) =====
   let giftExperiences = [];
   try {
-    if (typeof ElarahData !== 'undefined' && ElarahData.getActiveExperiences) {
-      giftExperiences = await ElarahData.getActiveExperiences();
+    if (typeof ElarahData !== 'undefined' && ElarahData.getVisibleExperiences) {
+      giftExperiences = await ElarahData.getVisibleExperiences();
     } else if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
       giftExperiences = await ElarahData.getAllExperiences();
     }

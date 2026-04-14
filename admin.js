@@ -607,6 +607,9 @@
       }
       if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : 24;
 
+      const isActiveEl = document.getElementById('exp-is-active');
+      if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
+
       const horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
         ? exp.horarios
         : (exp.horario ? [exp.horario] : ['']);
@@ -632,6 +635,8 @@
       if (cutoffEl) cutoffEl.value = 24;
       const vagasRestEl = document.getElementById('exp-vagas-restantes');
       if (vagasRestEl) vagasRestEl.value = '';
+      const isActiveEl = document.getElementById('exp-is-active');
+      if (isActiveEl) isActiveEl.checked = true;
       document.getElementById('exp-edit-id').value = '';
     }
 
@@ -706,20 +711,43 @@
         cor: cor1 + ',' + cor2,
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,
-        cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw)
+        cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw),
+        isActive: !!(document.getElementById('exp-is-active')?.checked ?? true)
       };
 
       const editId = document.getElementById('exp-edit-id').value;
 
       submitBtn.disabled = true;
+      let saved = null;
+      let caughtErr = null;
       try {
         if (editId) {
-          await ElarahData.updateExperience(editId, expData);
+          saved = await ElarahData.updateExperience(editId, expData);
         } else {
-          await ElarahData.addExperience(expData);
+          saved = await ElarahData.addExperience(expData);
         }
+      } catch (e) {
+        caughtErr = e;
+        console.error('[Admin] exceção ao salvar experiência:', e);
       } finally {
         submitBtn.disabled = false;
+      }
+
+      // Se o save falhou (retorno null OU exceção), NÃO fecha o modal e
+      // avisa o admin. Evita o bug antigo de "cliquei em salvar, o
+      // modal fechou e a mudança não apareceu no site" — que na real
+      // era uma falha silenciosa do Supabase.
+      if (!saved) {
+        const extra = caughtErr
+          ? '\n\nDetalhe: ' + (caughtErr.message || String(caughtErr))
+          : '';
+        alert(
+          'Não foi possível salvar a experiência. Abra o console do ' +
+          'navegador (F12 → Console) para ver o erro exato. Causas ' +
+          'comuns: usuário não está logado como admin, sessão expirada, ' +
+          'ou falha de rede com o Supabase.' + extra
+        );
+        return;
       }
 
       closeExpModal();
@@ -736,7 +764,7 @@
     countEl.textContent = experiences.length + ' experiência' + (experiences.length !== 1 ? 's' : '');
 
     if (experiences.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>';
       return;
     }
 
@@ -760,13 +788,14 @@
       const toggleClass = isActive ? 'admin__action-btn--hide' : 'admin__action-btn--show';
       return `
       <tr${rowStyle}>
-        <td>${escapeHtml(exp.nome)} ${statusBadge}</td>
+        <td>${escapeHtml(exp.nome)}</td>
         <td>${escapeHtml(exp.categoria)}</td>
         <td>${escapeHtml(exp.data)}</td>
         <td>${escapeHtml(horariosDisplay)}</td>
         <td>${escapeHtml(exp.bairro)}</td>
         <td>${escapeHtml(exp.preco)}</td>
         <td>${vagasDisplay}</td>
+        <td>${statusBadge}</td>
         <td>
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
           <button class="admin__action-btn ${toggleClass}" data-toggle-exp="${escapeHtml(exp.id)}" data-toggle-active="${isActive ? '1' : '0'}">${toggleLabel}</button>
@@ -795,7 +824,12 @@
           if (ElarahData && typeof ElarahData.setExperienceActive === 'function') {
             const updated = await ElarahData.setExperienceActive(id, nextActive);
             if (!updated) {
-              alert('Não foi possível atualizar a visibilidade. Verifique se a coluna is_active existe na tabela experiences (rode sql/elarah_experiences_visibility.sql).');
+              alert(
+                'Não foi possível atualizar a visibilidade. Veja o ' +
+                'console (F12) pra detalhes — causas comuns: coluna ' +
+                'is_active ausente (rode sql/elarah_experiences_visibility.sql) ' +
+                'ou usuário não é admin.'
+              );
             }
           } else {
             alert('Função setExperienceActive indisponível. Recarregue a página.');
