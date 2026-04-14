@@ -82,6 +82,9 @@
       vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
       eventAt: row.event_at || null,
       cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : 24,
+      // Visibilidade: default true pra retrocompat com linhas antigas
+      // (sem coluna ou com null). Só false explícito esconde.
+      isActive: row.is_active === false ? false : true,
       // ------------------------
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
@@ -106,6 +109,11 @@
     const rawCutoff = exp.cutoffHours != null ? exp.cutoffHours : exp.cutoff_hours;
     const cutoffHours = rawCutoff === '' || rawCutoff == null ? 24 : Number(rawCutoff);
 
+    // Visibilidade: aceita isActive (camelCase) ou is_active (snake_case).
+    // Só false explícito oculta — qualquer outra coisa mantém true.
+    const rawIsActive = exp.isActive != null ? exp.isActive : exp.is_active;
+    const isActive = rawIsActive === false ? false : true;
+
     const row = {
       nome: (exp.nome || '').trim(),
       categoria: (exp.categoria || '').trim(),
@@ -122,7 +130,8 @@
       horarios: horarios,
       vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
       event_at: eventAt,
-      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24
+      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
+      is_active: isActive
     };
     return row;
   }
@@ -228,13 +237,41 @@
     return addExperience(copy);
   }
 
+  // Lista só o que o site público deve mostrar.
+  // isActive === false esconde; qualquer outra coisa (true, undefined,
+  // null vindo de fallback antigo) mantém visível.
+  async function getActiveExperiences() {
+    const all = await getAllExperiences();
+    return all.filter(e => e && e.isActive !== false);
+  }
+
+  // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
+  async function setExperienceActive(id, active) {
+    const s = sb();
+    if (!s) return null;
+    const { data: updated, error } = await s
+      .from(TABLE)
+      .update({ is_active: !!active })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      console.error('[Elarah] setExperienceActive error', error);
+      return null;
+    }
+    invalidateCache();
+    return dbRowToExperience(updated);
+  }
+
   window.ElarahData = {
     getAllExperiences,
+    getActiveExperiences,
     getExperienceById,
     addExperience,
     updateExperience,
     deleteExperience,
     duplicateExperience,
+    setExperienceActive,
     invalidateCache
   };
 })(window);
