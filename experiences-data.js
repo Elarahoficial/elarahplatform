@@ -14,11 +14,34 @@
   const TABLE = 'experiences';
   let cache = null;
   let cachePromise = null;
-  // Capability flag detectado na primeira leitura do banco:
-  //   null  = ainda não sabemos se a coluna is_active existe
-  //   true  = existe, podemos mandar nos writes
-  //   false = não existe (migration não rodou), omitir dos writes
-  let hasIsActiveColumn = null;
+
+  // Set de colunas conhecidamente existentes na tabela. Detectado na
+  // primeira leitura do banco (a partir das keys da primeira linha) e
+  // ampliado dinamicamente pelos retries de write. Qualquer coluna que
+  // não estiver aqui é omitida dos writes pra não quebrar com
+  // "column X not found in schema cache" quando alguma migration
+  // (extensions.sql, visibility.sql, etc) ainda não rodou.
+  //   null = ainda não sabemos → mandamos tudo e deixamos o retry
+  //          corrigir o que estiver faltando.
+  //   Set  = sabemos, filtra só as colunas presentes.
+  let knownColumns = null;
+
+  // Colunas que SEMPRE devem ir num write (base schema mínimo). O
+  // resto só entra se estiver em knownColumns (ou ainda for null).
+  const CORE_COLUMNS = new Set([
+    'nome', 'categoria', 'data', 'duracao', 'bairro', 'endereco',
+    'inclui', 'preco', 'cor', 'imagem', 'descricao', 'horario',
+    'horarios'
+  ]);
+  // Colunas opcionais — só vão pro write quando sabemos (ou não sabemos
+  // ainda) que existem. Cada uma depende de uma migration:
+  //   vagas_total / vagas_restantes / event_at / cutoff_hours
+  //     → sql/elarah_extensions.sql
+  //   is_active
+  //     → sql/elarah_experiences_visibility.sql
+  const OPTIONAL_COLUMNS = new Set([
+    'vagas_total', 'event_at', 'cutoff_hours', 'is_active'
+  ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
   // indisponível ou vazio). Mesmas 34 experiências da base. ----------
@@ -120,7 +143,9 @@
     const rawIsActive = exp.isActive != null ? exp.isActive : exp.is_active;
     const isActive = rawIsActive === false ? false : true;
 
-    const row = {
+    // Monta o row completo primeiro, depois filtra contra knownColumns
+    // (se já detectado) pra remover colunas que não existem no banco.
+    const fullRow = {
       nome: (exp.nome || '').trim(),
       categoria: (exp.categoria || '').trim(),
       data: (exp.data || '').trim(),
@@ -136,15 +161,26 @@
       horarios: horarios,
       vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
       event_at: eventAt,
-      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24
+      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
+      is_active: isActive
     };
-    // Só manda is_active quando já sabemos que a coluna existe
-    // (ou quando ainda não detectamos — nesse caso o retry cobre).
-    // Isso evita que cada update falhe quando a migration não rodou.
-    if (hasIsActiveColumn !== false) {
-      row.is_active = isActive;
+    return filterKnownColumns(fullRow);
+  }
+
+  // Remove do row qualquer coluna opcional que sabidamente não existe
+  // no banco. Mantém o core schema sempre. Se knownColumns ainda é
+  // null, devolve o row inteiro — o retry path cobre as colunas
+  // faltantes no primeiro erro.
+  function filterKnownColumns(row) {
+    if (!row || typeof row !== 'object') return row;
+    if (!knownColumns) return row;
+    const out = {};
+    for (const key of Object.keys(row)) {
+      if (CORE_COLUMNS.has(key) || knownColumns.has(key)) {
+        out[key] = row[key];
+      }
     }
-    return row;
+    return out;
   }
 
   function invalidateCache() {
@@ -152,26 +188,36 @@
     cachePromise = null;
   }
 
-  // Detecta erro do PostgREST quando uma coluna não existe / não está
-  // no schema cache. Usado pra fallback compat (ver addExperience /
-  // updateExperience).
-  function isMissingColumnError(error, columnName) {
-    if (!error) return false;
-    const haystack = [error.message, error.details, error.hint, error.code]
-      .filter(Boolean)
-      .map(v => String(v).toLowerCase())
-      .join(' ');
-    if (!haystack) return false;
-    const col = String(columnName || '').toLowerCase();
-    // PostgREST: "Could not find the 'is_active' column of 'experiences'
-    // in the schema cache" (PGRST204) ou "column experiences.is_active
-    // does not exist" (42703).
-    return haystack.includes(col) && (
-      haystack.includes('column') ||
-      haystack.includes('schema cache') ||
-      haystack.includes('pgrst204') ||
-      haystack.includes('42703')
-    );
+  // Se o erro for "column X não existe no schema cache", devolve
+  // o nome da coluna. Caso contrário, null. Cobre os dois formatos
+  // mais comuns que o PostgREST / Postgres usam.
+  //   PGRST204: "Could not find the 'cutoff_hours' column of 'experiences' in the schema cache"
+  //   42703:    "column \"cutoff_hours\" does not exist"
+  //             ou "column experiences.cutoff_hours does not exist"
+  function extractMissingColumn(error) {
+    if (!error) return null;
+    const msg = String(error.message || error.details || error.hint || '');
+    if (!msg) return null;
+    const m1 = msg.match(/find the ['"]?([a-zA-Z_][a-zA-Z_0-9]*)['"]? column/i);
+    if (m1) return m1[1];
+    const m2 = msg.match(/column\s+(?:[a-zA-Z_][a-zA-Z_0-9]*\.)?["']?([a-zA-Z_][a-zA-Z_0-9]*)["']?\s+does not exist/i);
+    if (m2) return m2[1];
+    return null;
+  }
+
+  // Marca permanentemente que a coluna nomeada NÃO existe. Próximos
+  // writes já não vão enviá-la.
+  function markColumnMissing(col) {
+    if (!col) return;
+    if (!knownColumns) {
+      // Ainda não detectamos o schema — considera tudo existente
+      // menos essa coluna. O próximo SELECT corrige se precisar.
+      knownColumns = new Set([
+        ...CORE_COLUMNS,
+        ...OPTIONAL_COLUMNS
+      ]);
+    }
+    knownColumns.delete(col);
   }
 
   async function getAllExperiences() {
@@ -195,11 +241,13 @@
           console.warn('[Elarah] getAllExperiences error — usando fallback:', error.message);
           cache = FALLBACK_SEEDS.slice();
         } else {
-          // Detecta capability da coluna is_active olhando a primeira
-          // linha retornada. Se não tiver 'is_active', a migration ainda
-          // não rodou e os writes devem omitir a coluna.
-          if (Array.isArray(data) && data.length > 0) {
-            hasIsActiveColumn = Object.prototype.hasOwnProperty.call(data[0], 'is_active');
+          // Detecta o conjunto real de colunas olhando a primeira linha.
+          // Tudo que não estiver aqui é considerado ausente e será
+          // omitido dos writes — evita os erros
+          // "column X not found in schema cache" quando alguma migration
+          // (extensions.sql, visibility.sql) ainda não rodou.
+          if (Array.isArray(data) && data.length > 0 && data[0]) {
+            knownColumns = new Set(Object.keys(data[0]));
           }
           const rows = (data || []).map(dbRowToExperience);
           cache = rows.length ? rows : FALLBACK_SEEDS.slice();
@@ -229,13 +277,35 @@
   }
   const getActiveExperiences = getVisibleExperiences;
 
-  // Remove is_active do row, útil no retry/fallback quando a migration
-  // ainda não rodou.
-  function stripIsActive(row) {
-    if (!row || typeof row !== 'object') return row;
-    const clone = Object.assign({}, row);
-    delete clone.is_active;
-    return clone;
+  // Write loop: tenta executar `doOnce(row)` e, enquanto o erro for
+  // "coluna X não existe", remove a coluna do row e tenta de novo.
+  // Cobre o caso de várias colunas opcionais estarem faltando (ex:
+  // banco rodou só o setup.sql mas não o extensions.sql nem o
+  // visibility.sql — 4+ colunas faltantes). Limita a 10 iterações
+  // por segurança.
+  async function writeWithColumnRetry(label, row, doOnce) {
+    let current = Object.assign({}, row);
+    for (let i = 0; i < 10; i++) {
+      const { data, error } = await doOnce(current);
+      if (!error) return { data, error: null };
+      const missing = extractMissingColumn(error);
+      if (!missing || !(missing in current)) {
+        // Erro não é de coluna faltante, ou não conseguimos extrair,
+        // ou a coluna faltante nem estava no payload. Reporta e sai.
+        return { data: null, error };
+      }
+      console.warn(
+        '[Elarah] ' + label + ': coluna "' + missing + '" ausente no ' +
+        'banco. Removendo do payload e tentando de novo. Rode as ' +
+        'migrations do sql/ pra habilitar todos os recursos.'
+      );
+      markColumnMissing(missing);
+      delete current[missing];
+    }
+    return {
+      data: null,
+      error: { message: '[Elarah] ' + label + ': retries esgotados removendo colunas ausentes.' }
+    };
   }
 
   async function addExperience(data) {
@@ -245,42 +315,22 @@
       return null;
     }
 
-    let row = experienceToDbRow(data);
+    const row = experienceToDbRow(data);
 
     try {
-      let { data: inserted, error } = await s
-        .from(TABLE)
-        .insert(row)
-        .select()
-        .maybeSingle();
-
-      // Retry defense-in-depth: se a coluna is_active não existir
-      // (ex: primeiro uso antes de getAllExperiences() ter detectado a
-      // capability), remove do payload e tenta de novo.
-      if (error && isMissingColumnError(error, 'is_active')) {
-        console.warn(
-          '[Elarah] addExperience: coluna is_active ausente no banco. ' +
-          'Rode sql/elarah_experiences_visibility.sql pra habilitar a ' +
-          'feature. Salvando sem ela por enquanto.'
-        );
-        hasIsActiveColumn = false;
-        row = stripIsActive(row);
-        const retry = await s
-          .from(TABLE)
-          .insert(row)
-          .select()
-          .maybeSingle();
-        inserted = retry.data;
-        error = retry.error;
-      }
+      const { data: inserted, error } = await writeWithColumnRetry(
+        'addExperience',
+        row,
+        (payload) => s.from(TABLE).insert(payload).select().maybeSingle()
+      );
 
       if (error) {
         console.error('[Elarah] addExperience erro do Supabase:', error);
         return null;
       }
       if (!inserted) {
-        // maybeSingle retorna null quando 0 rows foram afetadas. Em
-        // INSERT isso praticamente só rola com RLS bloqueando.
+        // maybeSingle retorna null quando 0 rows foram afetadas.
+        // Normalmente RLS bloqueando.
         console.error(
           '[Elarah] addExperience: 0 linhas inseridas. Provável bloqueio ' +
           'por RLS — confirme que o usuário está logado como admin ' +
@@ -307,36 +357,14 @@
       return null;
     }
 
-    let row = experienceToDbRow(data);
+    const row = experienceToDbRow(data);
 
     try {
-      let { data: updated, error } = await s
-        .from(TABLE)
-        .update(row)
-        .eq('id', id)
-        .select()
-        .maybeSingle();
-
-      // Retry defense-in-depth: se a coluna is_active não existir,
-      // remove do payload e tenta de novo (e memoriza pra próximos
-      // updates).
-      if (error && isMissingColumnError(error, 'is_active')) {
-        console.warn(
-          '[Elarah] updateExperience: coluna is_active ausente no banco. ' +
-          'Rode sql/elarah_experiences_visibility.sql pra habilitar a ' +
-          'feature. Salvando sem ela por enquanto.'
-        );
-        hasIsActiveColumn = false;
-        row = stripIsActive(row);
-        const retry = await s
-          .from(TABLE)
-          .update(row)
-          .eq('id', id)
-          .select()
-          .maybeSingle();
-        updated = retry.data;
-        error = retry.error;
-      }
+      const { data: updated, error } = await writeWithColumnRetry(
+        'updateExperience',
+        row,
+        (payload) => s.from(TABLE).update(payload).eq('id', id).select().maybeSingle()
+      );
 
       if (error) {
         console.error('[Elarah] updateExperience erro do Supabase:', error);
@@ -347,9 +375,6 @@
         // atualizadas. Causas comuns:
         //   1) RLS bloqueou (usuário não é admin em profiles)
         //   2) id passado não existe na tabela
-        // Em ambos os casos, o save falhou de fato — NÃO podemos
-        // devolver sucesso aqui, senão o modal do admin fecha e o
-        // usuário pensa que salvou.
         console.error(
           '[Elarah] updateExperience: 0 linhas atualizadas para id=' + id +
           '. Verifique (1) se o usuário está logado como admin ' +
@@ -388,9 +413,7 @@
   }
 
   // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
-  // Passa só a coluna is_active, pra não mexer em nenhum outro campo.
-  // Usa maybeSingle pra detectar zero linhas afetadas (RLS ou id
-  // inexistente) sem levantar erro confuso.
+  // Só mexe na coluna is_active (não toca nenhum outro campo).
   async function setExperienceActive(id, active) {
     const s = sb();
     if (!s) {
@@ -409,10 +432,13 @@
         .select()
         .maybeSingle();
       if (error) {
-        if (isMissingColumnError(error, 'is_active')) {
+        const missing = extractMissingColumn(error);
+        if (missing === 'is_active') {
+          markColumnMissing('is_active');
           console.error(
             '[Elarah] setExperienceActive: coluna is_active ausente. ' +
-            'Rode sql/elarah_experiences_visibility.sql no Supabase.'
+            'Rode sql/elarah_experiences_visibility.sql no Supabase ' +
+            'antes de usar o botão Ocultar/Reativar.'
           );
         } else {
           console.error('[Elarah] setExperienceActive erro do Supabase:', error);
