@@ -3,7 +3,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ===== SHARED DATA SOURCE =====
   let experiences = [];
   try {
-    if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
+    if (typeof ElarahData !== 'undefined' && ElarahData.getVisibleExperiences) {
+      experiences = await ElarahData.getVisibleExperiences();
+    } else if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
       experiences = await ElarahData.getAllExperiences();
     }
   } catch (e) {

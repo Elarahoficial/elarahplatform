@@ -82,6 +82,9 @@
       vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
       eventAt: row.event_at || null,
       cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : 24,
+      // Visibilidade (oculta/mostra no site sem excluir).
+      // Default true pra manter compat com bancos antigos sem a coluna.
+      isActive: row.is_active == null ? true : !!row.is_active,
       // ------------------------
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
@@ -106,6 +109,11 @@
     const rawCutoff = exp.cutoffHours != null ? exp.cutoffHours : exp.cutoff_hours;
     const cutoffHours = rawCutoff === '' || rawCutoff == null ? 24 : Number(rawCutoff);
 
+    // Visibilidade: aceita camelCase (isActive) ou snake_case (is_active).
+    // Quando vier undefined, assume true (mantém comportamento antigo).
+    const rawIsActive = exp.isActive != null ? exp.isActive : exp.is_active;
+    const isActive = rawIsActive == null ? true : !!rawIsActive;
+
     const row = {
       nome: (exp.nome || '').trim(),
       categoria: (exp.categoria || '').trim(),
@@ -122,7 +130,8 @@
       horarios: horarios,
       vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
       event_at: eventAt,
-      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24
+      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
+      is_active: isActive
     };
     return row;
   }
@@ -169,6 +178,13 @@
   async function getExperienceById(id) {
     const all = await getAllExperiences();
     return all.find(e => e.id === id) || null;
+  }
+
+  // Lista pública: oculta experiências com isActive === false.
+  // Admin continua usando getAllExperiences() pra ver tudo.
+  async function getVisibleExperiences() {
+    const all = await getAllExperiences();
+    return all.filter(e => e && e.isActive !== false);
   }
 
   async function addExperience(data) {
@@ -230,6 +246,7 @@
 
   window.ElarahData = {
     getAllExperiences,
+    getVisibleExperiences,
     getExperienceById,
     addExperience,
     updateExperience,

@@ -607,6 +607,9 @@
       }
       if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : 24;
 
+      const isActiveEl = document.getElementById('exp-is-active');
+      if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
+
       const horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
         ? exp.horarios
         : (exp.horario ? [exp.horario] : ['']);
@@ -632,6 +635,8 @@
       if (cutoffEl) cutoffEl.value = 24;
       const vagasRestEl = document.getElementById('exp-vagas-restantes');
       if (vagasRestEl) vagasRestEl.value = '';
+      const isActiveEl = document.getElementById('exp-is-active');
+      if (isActiveEl) isActiveEl.checked = true;
       document.getElementById('exp-edit-id').value = '';
     }
 
@@ -706,7 +711,8 @@
         cor: cor1 + ',' + cor2,
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,
-        cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw)
+        cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw),
+        isActive: !!(document.getElementById('exp-is-active')?.checked ?? true)
       };
 
       const editId = document.getElementById('exp-edit-id').value;
@@ -736,7 +742,7 @@
     countEl.textContent = experiences.length + ' experiência' + (experiences.length !== 1 ? 's' : '');
 
     if (experiences.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>';
       return;
     }
 
@@ -751,6 +757,11 @@
         vagasDisplay = '<span style="color:' + cor + ';font-weight:600;">' +
                        rest + ' / ' + exp.vagasTotal + '</span>';
       }
+      const isActive = exp.isActive !== false;
+      const statusLabel = isActive ? 'Visível' : 'Oculta';
+      const statusColor = isActive ? '#1a8a4a' : '#888';
+      const toggleLabel = isActive ? 'Ocultar' : 'Mostrar';
+      const statusDisplay = '<span style="color:' + statusColor + ';font-weight:600;">' + statusLabel + '</span>';
       return `
       <tr>
         <td>${escapeHtml(exp.nome)}</td>
@@ -760,8 +771,10 @@
         <td>${escapeHtml(exp.bairro)}</td>
         <td>${escapeHtml(exp.preco)}</td>
         <td>${vagasDisplay}</td>
+        <td>${statusDisplay}</td>
         <td>
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
+          <button class="admin__action-btn admin__action-btn--duplicate" data-toggle-exp="${escapeHtml(exp.id)}">${toggleLabel}</button>
           <button class="admin__action-btn admin__action-btn--duplicate" data-duplicate-exp="${escapeHtml(exp.id)}">Duplicar</button>
           <button class="admin__action-btn admin__action-btn--delete" data-delete-exp="${escapeHtml(exp.id)}">Excluir</button>
         </td>
@@ -775,6 +788,9 @@
     tbody.querySelectorAll('[data-duplicate-exp]').forEach(btn => {
       btn.addEventListener('click', () => duplicateExperienceAndEdit(btn.dataset.duplicateExp));
     });
+    tbody.querySelectorAll('[data-toggle-exp]').forEach(btn => {
+      btn.addEventListener('click', () => toggleExperienceVisibility(btn.dataset.toggleExp));
+    });
     tbody.querySelectorAll('[data-delete-exp]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (confirm('Tem certeza que deseja excluir esta experiência?')) {
@@ -784,6 +800,15 @@
         }
       });
     });
+  }
+
+  async function toggleExperienceVisibility(expId) {
+    const exp = await ElarahData.getExperienceById(expId);
+    if (!exp) return;
+    const nextActive = !(exp.isActive !== false);
+    await ElarahData.updateExperience(expId, { ...exp, isActive: nextActive });
+    await renderExperiences();
+    await renderOverview();
   }
 
   async function duplicateExperienceAndEdit(expId) {
