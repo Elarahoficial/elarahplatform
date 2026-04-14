@@ -9,6 +9,12 @@
 (function () {
   'use strict';
 
+  // Version banner — abra o Console (F12) do admin pra confirmar
+  // qual versão do admin.js tá realmente rodando no seu navegador.
+  // Se você ainda vê a tabela plana do By Elarah, é sinal de que
+  // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
+  console.info('[Elarah Admin] admin.js v16 — byelarah agrupado por experiência');
+
   const PURCHASES_KEY = 'elarah_purchases';
 
   // ===== HELPERS =====
@@ -1153,16 +1159,23 @@
         items.length + ' item' + (items.length !== 1 ? 's' : '') +
         ' · ' + nGroups + ' experiência' + (nGroups !== 1 ? 's' : '');
 
+      console.info('[Admin/byelarah] rendering', itemGroups.length, 'item groups from', items.length, 'items');
       const html = [];
       itemGroups.forEach(group => {
         const nSessions = group.rows.length;
         const sessoesLabel = nSessions + ' sess' + (nSessions === 1 ? 'ão' : 'ões');
+        // Inline styles como fallback — garantem que o header
+        // apareça mesmo se admin.css estiver cacheado numa versão
+        // antiga sem as classes .admin__group-header.
+        const headerStyle = 'background:linear-gradient(90deg,#fff8ee 0%,#fdf4e3 100%);border-top:3px solid #f0a05e;border-bottom:1px solid #f0cfa0;padding:18px 16px 14px;';
+        const titleStyle = "font-family:'DM Serif Display',serif;font-size:1.1rem;color:#1a1a1a;";
+        const pillStyle = 'display:inline-block;padding:4px 12px;border-radius:999px;background:#f0a05e;color:#fff;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-left:12px;vertical-align:middle;';
         html.push(
           '<tr class="admin__group-header">' +
-            '<td colspan="8">' +
-              '<div class="admin__group-header-inner">' +
-                '<span class="admin__group-header-title">' + escapeHtml(group.nome) + '</span>' +
-                '<span class="admin__group-header-pill">' + escapeHtml(sessoesLabel) + '</span>' +
+            '<td colspan="8" style="' + headerStyle + '">' +
+              '<div class="admin__group-header-inner" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
+                '<span class="admin__group-header-pill" style="' + pillStyle + '">' + escapeHtml(sessoesLabel) + '</span>' +
               '</div>' +
             '</td>' +
           '</tr>'
@@ -1242,6 +1255,16 @@
         subs.length + ' resposta' + (subs.length !== 1 ? 's' : '') +
         ' · ' + nGroups + ' experiência' + (nGroups !== 1 ? 's' : '');
 
+      console.info('[Admin/byelarah] rendering', subGroups.length, 'submission groups from', subs.length, 'responses');
+      // Inline styles como fallback — garantem visibilidade mesmo
+      // com admin.css cacheado numa versão antiga.
+      const headerStyle = 'background:linear-gradient(90deg,#fff8ee 0%,#fdf4e3 100%);border-top:3px solid #f0a05e;border-bottom:1px solid #f0cfa0;padding:18px 16px 14px;';
+      const titleStyle = "font-family:'DM Serif Display',serif;font-size:1.1rem;color:#1a1a1a;";
+      const pillBase = 'display:inline-block;padding:4px 12px;border-radius:999px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;vertical-align:middle;';
+      const pillOrange = pillBase + 'background:#f0a05e;color:#fff;';
+      const pillMuted = pillBase + 'background:#e5d8c5;color:#7a5a2e;';
+      const pillGreen = pillBase + 'background:#1a8a4a;color:#fff;';
+
       const html = [];
       subGroups.forEach(group => {
         const n = group.rows.length;
@@ -1252,14 +1275,14 @@
           r.created_at && new Date(r.created_at).getTime() > dayAgo
         ).length;
         const novasPill = novasDoGrupo > 0
-          ? '<span class="admin__group-header-pill" style="background:#1a8a4a;">' + novasDoGrupo + ' nova' + (novasDoGrupo !== 1 ? 's' : '') + ' (24h)</span>'
+          ? '<span class="admin__group-header-pill" style="' + pillGreen + 'margin-left:8px;">' + novasDoGrupo + ' nova' + (novasDoGrupo !== 1 ? 's' : '') + ' (24h)</span>'
           : '';
         html.push(
           '<tr class="admin__group-header">' +
-            '<td colspan="9">' +
-              '<div class="admin__group-header-inner">' +
-                '<span class="admin__group-header-title">' + escapeHtml(group.nome) + '</span>' +
-                '<span class="admin__group-header-pill admin__group-header-pill--muted">' + respLabel + '</span>' +
+            '<td colspan="9" style="' + headerStyle + '">' +
+              '<div class="admin__group-header-inner" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
+                '<span class="admin__group-header-pill admin__group-header-pill--muted" style="' + pillOrange + '">' + respLabel + '</span>' +
                 novasPill +
               '</div>' +
             '</td>' +
