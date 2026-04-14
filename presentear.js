@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     if (typeof ElarahData !== 'undefined' && ElarahData.getVisibleExperiences) {
       giftExperiences = await ElarahData.getVisibleExperiences();
+    if (typeof ElarahData !== 'undefined' && ElarahData.getActiveExperiences) {
+      giftExperiences = await ElarahData.getActiveExperiences();
     } else if (typeof ElarahData !== 'undefined' && ElarahData.getAllExperiences) {
       giftExperiences = await ElarahData.getAllExperiences();
     }

@@ -90,6 +90,9 @@
       // Visibilidade (oculta/mostra no site sem excluir).
       // Default true pra manter compat com bancos antigos sem a coluna.
       isActive: row.is_active == null ? true : !!row.is_active,
+      // Visibilidade: default true pra retrocompat com linhas antigas
+      // (sem coluna ou com null). Só false explícito esconde.
+      isActive: row.is_active === false ? false : true,
       // ------------------------
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
@@ -118,6 +121,10 @@
     // Quando vier undefined, assume true (mantém comportamento antigo).
     const rawIsActive = exp.isActive != null ? exp.isActive : exp.is_active;
     const isActive = rawIsActive == null ? true : !!rawIsActive;
+    // Visibilidade: aceita isActive (camelCase) ou is_active (snake_case).
+    // Só false explícito oculta — qualquer outra coisa mantém true.
+    const rawIsActive = exp.isActive != null ? exp.isActive : exp.is_active;
+    const isActive = rawIsActive === false ? false : true;
 
     const row = {
       nome: (exp.nome || '').trim(),
@@ -383,14 +390,42 @@
     return addExperience(copy);
   }
 
+  // Lista só o que o site público deve mostrar.
+  // isActive === false esconde; qualquer outra coisa (true, undefined,
+  // null vindo de fallback antigo) mantém visível.
+  async function getActiveExperiences() {
+    const all = await getAllExperiences();
+    return all.filter(e => e && e.isActive !== false);
+  }
+
+  // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
+  async function setExperienceActive(id, active) {
+    const s = sb();
+    if (!s) return null;
+    const { data: updated, error } = await s
+      .from(TABLE)
+      .update({ is_active: !!active })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      console.error('[Elarah] setExperienceActive error', error);
+      return null;
+    }
+    invalidateCache();
+    return dbRowToExperience(updated);
+  }
+
   window.ElarahData = {
     getAllExperiences,
     getVisibleExperiences,
+    getActiveExperiences,
     getExperienceById,
     addExperience,
     updateExperience,
     deleteExperience,
     duplicateExperience,
+    setExperienceActive,
     invalidateCache
   };
 })(window);
