@@ -14,6 +14,11 @@
   const TABLE = 'experiences';
   let cache = null;
   let cachePromise = null;
+  // Capability flag detectado na primeira leitura do banco:
+  //   null  = ainda não sabemos se a coluna is_active existe
+  //   true  = existe, podemos mandar nos writes
+  //   false = não existe (migration não rodou), omitir dos writes
+  let hasIsActiveColumn = null;
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
   // indisponível ou vazio). Mesmas 34 experiências da base. ----------
@@ -130,9 +135,14 @@
       horarios: horarios,
       vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
       event_at: eventAt,
-      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
-      is_active: isActive
+      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24
     };
+    // Só manda is_active quando já sabemos que a coluna existe
+    // (ou quando ainda não detectamos — nesse caso o retry cobre).
+    // Isso evita que cada update falhe quando a migration não rodou.
+    if (hasIsActiveColumn !== false) {
+      row.is_active = isActive;
+    }
     return row;
   }
 
@@ -184,6 +194,12 @@
           console.warn('[Elarah] getAllExperiences error — usando fallback:', error.message);
           cache = FALLBACK_SEEDS.slice();
         } else {
+          // Detecta capability da coluna is_active olhando a primeira
+          // linha retornada. Se não tiver 'is_active', a migration ainda
+          // não rodou e os writes devem omitir a coluna.
+          if (Array.isArray(data) && data.length > 0) {
+            hasIsActiveColumn = Object.prototype.hasOwnProperty.call(data[0], 'is_active');
+          }
           const rows = (data || []).map(dbRowToExperience);
           cache = rows.length ? rows : FALLBACK_SEEDS.slice();
         }
@@ -209,81 +225,140 @@
     return all.filter(e => e && e.isActive !== false);
   }
 
+  // Remove is_active do row, útil no retry/fallback quando a migration
+  // ainda não rodou.
+  function stripIsActive(row) {
+    if (!row || typeof row !== 'object') return row;
+    const clone = Object.assign({}, row);
+    delete clone.is_active;
+    return clone;
+  }
+
   async function addExperience(data) {
     const s = sb();
-    if (!s) return null;
-    const row = experienceToDbRow(data);
-    let { data: inserted, error } = await s
-      .from(TABLE)
-      .insert(row)
-      .select()
-      .single();
-
-    // Compat: se a migration do is_active ainda não rodou, o Supabase
-    // rejeita o payload inteiro com "column ... does not exist". Nesse
-    // caso, tenta de novo sem a coluna pra não quebrar updates de
-    // outros campos (event_at, data, horário, preço, etc.).
-    if (error && isMissingColumnError(error, 'is_active')) {
-      console.warn(
-        '[Elarah] addExperience: coluna is_active ausente. Rode ' +
-        'sql/elarah_experiences_visibility.sql pra habilitar a feature. ' +
-        'Salvando sem ela por enquanto.'
-      );
-      const { is_active: _omit, ...rowNoActive } = row;
-      const retry = await s
-        .from(TABLE)
-        .insert(rowNoActive)
-        .select()
-        .single();
-      inserted = retry.data;
-      error = retry.error;
-    }
-
-    if (error) {
-      console.error('[Elarah] addExperience error', error);
+    if (!s) {
+      console.error('[Elarah] addExperience: Supabase client indisponível.');
       return null;
     }
-    invalidateCache();
-    return dbRowToExperience(inserted);
+
+    let row = experienceToDbRow(data);
+
+    try {
+      let { data: inserted, error } = await s
+        .from(TABLE)
+        .insert(row)
+        .select()
+        .maybeSingle();
+
+      // Retry defense-in-depth: se a coluna is_active não existir
+      // (ex: primeiro uso antes de getAllExperiences() ter detectado a
+      // capability), remove do payload e tenta de novo.
+      if (error && isMissingColumnError(error, 'is_active')) {
+        console.warn(
+          '[Elarah] addExperience: coluna is_active ausente no banco. ' +
+          'Rode sql/elarah_experiences_visibility.sql pra habilitar a ' +
+          'feature. Salvando sem ela por enquanto.'
+        );
+        hasIsActiveColumn = false;
+        row = stripIsActive(row);
+        const retry = await s
+          .from(TABLE)
+          .insert(row)
+          .select()
+          .maybeSingle();
+        inserted = retry.data;
+        error = retry.error;
+      }
+
+      if (error) {
+        console.error('[Elarah] addExperience erro do Supabase:', error);
+        return null;
+      }
+      if (!inserted) {
+        // maybeSingle retorna null quando 0 rows foram afetadas. Em
+        // INSERT isso praticamente só rola com RLS bloqueando.
+        console.error(
+          '[Elarah] addExperience: 0 linhas inseridas. Provável bloqueio ' +
+          'por RLS — confirme que o usuário está logado como admin ' +
+          '(profiles.role = "admin").'
+        );
+        return null;
+      }
+      invalidateCache();
+      return dbRowToExperience(inserted);
+    } catch (e) {
+      console.error('[Elarah] addExperience exceção inesperada:', e);
+      return null;
+    }
   }
 
   async function updateExperience(id, data) {
     const s = sb();
-    if (!s) return null;
-    const row = experienceToDbRow(data);
-    let { data: updated, error } = await s
-      .from(TABLE)
-      .update(row)
-      .eq('id', id)
-      .select()
-      .single();
-
-    // Mesmo retry defensivo do addExperience — sem isso, updates de
-    // event_at/data/horário falham silenciosamente quando a coluna
-    // is_active ainda não foi adicionada no banco.
-    if (error && isMissingColumnError(error, 'is_active')) {
-      console.warn(
-        '[Elarah] updateExperience: coluna is_active ausente. Rode ' +
-        'sql/elarah_experiences_visibility.sql pra habilitar a feature. ' +
-        'Salvando sem ela por enquanto.'
-      );
-      const { is_active: _omit, ...rowNoActive } = row;
-      const retry = await s
-        .from(TABLE)
-        .update(rowNoActive)
-        .eq('id', id)
-        .select()
-        .single();
-      updated = retry.data;
-      error = retry.error;
-    }
-
-    if (error) {
-      console.error('[Elarah] updateExperience error', error);
+    if (!s) {
+      console.error('[Elarah] updateExperience: Supabase client indisponível.');
       return null;
     }
-    invalidateCache();
-    return dbRowToExperience(updated);
+    if (!id) {
+      console.error('[Elarah] updateExperience: id vazio — abortando.');
+      return null;
+    }
+
+    let row = experienceToDbRow(data);
+
+    try {
+      let { data: updated, error } = await s
+        .from(TABLE)
+        .update(row)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+
+      // Retry defense-in-depth: se a coluna is_active não existir,
+      // remove do payload e tenta de novo (e memoriza pra próximos
+      // updates).
+      if (error && isMissingColumnError(error, 'is_active')) {
+        console.warn(
+          '[Elarah] updateExperience: coluna is_active ausente no banco. ' +
+          'Rode sql/elarah_experiences_visibility.sql pra habilitar a ' +
+          'feature. Salvando sem ela por enquanto.'
+        );
+        hasIsActiveColumn = false;
+        row = stripIsActive(row);
+        const retry = await s
+          .from(TABLE)
+          .update(row)
+          .eq('id', id)
+          .select()
+          .maybeSingle();
+        updated = retry.data;
+        error = retry.error;
+      }
+
+      if (error) {
+        console.error('[Elarah] updateExperience erro do Supabase:', error);
+        return null;
+      }
+      if (!updated) {
+        // maybeSingle retorna null sem erro quando 0 rows foram
+        // atualizadas. Causas comuns:
+        //   1) RLS bloqueou (usuário não é admin em profiles)
+        //   2) id passado não existe na tabela
+        // Em ambos os casos, o save falhou de fato — NÃO podemos
+        // devolver sucesso aqui, senão o modal do admin fecha e o
+        // usuário pensa que salvou.
+        console.error(
+          '[Elarah] updateExperience: 0 linhas atualizadas para id=' + id +
+          '. Verifique (1) se o usuário está logado como admin ' +
+          '(profiles.role = "admin") e (2) se o id existe na tabela.'
+        );
+        return null;
+      }
+      invalidateCache();
+      return dbRowToExperience(updated);
+    } catch (e) {
+      console.error('[Elarah] updateExperience exceção inesperada:', e);
+      return null;
+    }
   }
 
   async function deleteExperience(id) {

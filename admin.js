@@ -719,25 +719,33 @@
 
       submitBtn.disabled = true;
       let saved = null;
+      let caughtErr = null;
       try {
         if (editId) {
           saved = await ElarahData.updateExperience(editId, expData);
         } else {
           saved = await ElarahData.addExperience(expData);
         }
+      } catch (e) {
+        caughtErr = e;
+        console.error('[Admin] exceção ao salvar experiência:', e);
       } finally {
         submitBtn.disabled = false;
       }
 
-      // Se o save falhou (retorno null), NÃO fecha o modal e avisa o
-      // admin. Evita o bug antigo de "cliquei em salvar, o modal fechou
-      // e a mudança não apareceu no site" — que na real era uma falha
-      // silenciosa do Supabase.
+      // Se o save falhou (retorno null OU exceção), NÃO fecha o modal e
+      // avisa o admin. Evita o bug antigo de "cliquei em salvar, o
+      // modal fechou e a mudança não apareceu no site" — que na real
+      // era uma falha silenciosa do Supabase.
       if (!saved) {
+        const extra = caughtErr
+          ? '\n\nDetalhe: ' + (caughtErr.message || String(caughtErr))
+          : '';
         alert(
-          'Não foi possível salvar a experiência. Veja o console do ' +
-          'navegador para detalhes (possível erro de permissão ou ' +
-          'coluna ausente no banco).'
+          'Não foi possível salvar a experiência. Abra o console do ' +
+          'navegador (F12 → Console) para ver o erro exato. Causas ' +
+          'comuns: usuário não está logado como admin, sessão expirada, ' +
+          'ou falha de rede com o Supabase.' + extra
         );
         return;
       }
