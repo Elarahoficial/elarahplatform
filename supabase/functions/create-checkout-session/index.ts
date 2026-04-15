@@ -236,7 +236,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
   const email = payload.email ? String(payload.email).trim() : null;
-  const nome = payload.nome ? String(payload.nome).trim() : null;
+  const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
   // ===== TELEFONE / WHATSAPP =====
   // Aceita tanto `telefone` (formato humano: "(11) 91234-5678")
@@ -341,15 +341,38 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     return jsonResponse({ error: "invalid_price" }, 422);
   }
 
-  // ===== Resolve user_id =====
+  // ===== Resolve user_id + nome do profile (fallback) =====
+  // Fallback: se o frontend não mandou nome mas o e-mail bate com um
+  // profile cadastrado, usa o profile.nome. Isso cobre integrações
+  // antigas do front e garante que a booking sempre nasça com um nome
+  // se houver alguma fonte disponível.
   let userId: string | null = null;
+  let profileNome: string | null = null;
   if (email) {
     const { data: prof } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, nome")
       .eq("email", email)
       .maybeSingle();
-    if (prof) userId = prof.id;
+    if (prof) {
+      userId = prof.id;
+      if (prof.nome && String(prof.nome).trim()) {
+        profileNome = String(prof.nome).trim();
+      }
+    }
+  }
+
+  // Fonte da verdade do nome: payload > profile. Persistido tanto na
+  // coluna `bookings.nome` quanto no `session.metadata.nome` (safety
+  // net pro webhook reconstruir em caso de pre-insert perdido).
+  const nome = nomeFromPayload || profileNome;
+  if (!nome) {
+    console.warn(
+      "[create-checkout-session] nome ausente — payload=" +
+        (nomeFromPayload ? "yes" : "no") +
+        " profile=" + (profileNome ? "yes" : "no") +
+        " email=" + (email || "?"),
+    );
   }
 
   // ===== Hold gift card (se cupom enviado) =====

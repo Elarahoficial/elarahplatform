@@ -991,23 +991,46 @@ if (groupForm) {
       return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
     }
 
-    // Pega apenas o e-mail do usuário logado (para pré-preencher).
-    // NÃO retorna o access_token — as Edge Functions usam service role
-    // internamente, então o JWT do usuário não serve pra nada lá.
-    // Todas as chamadas vão com o anon key (JWT válido, nunca expira).
+    // Pega e-mail + nome do usuário logado (para pré-preencher o modal
+    // de reserva). NÃO retorna o access_token — as Edge Functions usam
+    // service role internamente, então o JWT do usuário não serve pra
+    // nada lá. Todas as chamadas vão com o anon key (JWT válido, nunca
+    // expira).
+    //
+    // O `nome` é resolvido nessa ordem:
+    //   1. profiles.nome (fonte canônica, setada no cadastro)
+    //   2. user_metadata.nome / full_name / name (fallback)
     async function getAuthInfo() {
       try {
         if (window.supabaseClient && window.supabaseClient.auth) {
           const { data } = await window.supabaseClient.auth.getSession();
           var session = data && data.session;
           if (session && session.user) {
-            return { email: session.user.email || null };
+            let nome = null;
+            try {
+              const { data: prof } = await window.supabaseClient
+                .from('profiles')
+                .select('nome')
+                .eq('id', session.user.id)
+                .maybeSingle();
+              if (prof && prof.nome) {
+                nome = String(prof.nome).trim() || null;
+              }
+            } catch (e) {
+              console.warn('[Elarah checkout] prefill nome (profile) falhou', e);
+            }
+            if (!nome) {
+              const meta = session.user.user_metadata || {};
+              const rawNome = meta.nome || meta.full_name || meta.name || null;
+              if (rawNome) nome = String(rawNome).trim() || null;
+            }
+            return { email: session.user.email || null, nome: nome };
           }
         }
       } catch (e) {
         console.warn('[Elarah checkout] auth lookup falhou', e);
       }
-      return { email: null };
+      return { email: null, nome: null };
     }
 
     // Chave usada pra reter o pedido enquanto o usuário faz login.
@@ -1052,6 +1075,10 @@ if (groupForm) {
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
         +   '</div>'
+        +   // ===== CAMPO NOME COMPLETO (obrigatório) =====
+            '<label for="erm-nome" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">Nome completo <span style="color:#c0392b;">*</span></label>'
+        +   '<input id="erm-nome" type="text" required autocomplete="name" placeholder="Seu nome completo" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
+        +   '<p id="erm-nome-msg" style="margin:0 0 14px;font-size:.78rem;color:#888;min-height:1em;">Como você quer aparecer na sua reserva.</p>'
         +   // ===== CAMPO TELEFONE / WHATSAPP (obrigatório) =====
             '<label for="erm-telefone" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">WhatsApp <span style="color:#c0392b;">*</span></label>'
         +   '<input id="erm-telefone" type="tel" required inputmode="tel" autocomplete="tel-national" placeholder="(11) 91234-5678" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
@@ -1112,6 +1139,16 @@ if (groupForm) {
       root.querySelector('#erm-cupom-msg').textContent = '';
       root.querySelector('#erm-cupom-msg').style.color = '#666';
       root.querySelector('#erm-error').textContent = '';
+      // Reset + prefill nome — usa o que já veio do auth/profile no ctx.
+      const nomeInput = root.querySelector('#erm-nome');
+      const nomeMsg = root.querySelector('#erm-nome-msg');
+      if (nomeInput) {
+        nomeInput.value = (ctx.nome || '').trim();
+        if (nomeMsg) {
+          nomeMsg.style.color = '#888';
+          nomeMsg.textContent = 'Como você quer aparecer na sua reserva.';
+        }
+      }
       // Reset telefone field — cada reserva começa limpa.
       const telefoneInput = root.querySelector('#erm-telefone');
       if (telefoneInput) {
@@ -1132,37 +1169,52 @@ if (groupForm) {
       root.style.display = 'flex';
       document.body.style.overflow = 'hidden';
 
-      // Pré-preenche telefone se o usuário já tiver cadastrado no
-      // perfil (profiles.telefone). Usa fetch async sem bloquear o
-      // render — se der erro ou demorar, o usuário digita manualmente.
-      if (telefoneInput) {
-        (async function prefillTelefone() {
+      // Pré-preenche nome + telefone se o usuário já tiver cadastrado
+      // no perfil. Usa fetch async sem bloquear o render — se der erro
+      // ou demorar, o usuário digita manualmente. Só pré-preenche se o
+      // campo ainda estiver vazio (ex.: auth.nome não veio antes da
+      // abertura do modal).
+      if (nomeInput || telefoneInput) {
+        (async function prefillFromProfile() {
           try {
             if (!window.supabaseClient || !window.supabaseClient.auth) return;
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             if (!session || !session.user) return;
             const { data: prof, error } = await window.supabaseClient
               .from('profiles')
-              .select('telefone')
+              .select('nome, telefone')
               .eq('id', session.user.id)
               .maybeSingle();
             if (error) {
-              console.warn('[Elarah checkout] prefill telefone falhou:', error.message);
+              console.warn('[Elarah checkout] prefill profile falhou:', error.message);
               return;
             }
-            if (prof && prof.telefone && !telefoneInput.value) {
+            if (!prof) return;
+            if (nomeInput && prof.nome && !nomeInput.value) {
+              nomeInput.value = String(prof.nome).trim();
+              if (currentReservationCtx) currentReservationCtx.nome = nomeInput.value;
+              console.log('[Elarah checkout] nome pré-preenchido do perfil');
+            }
+            if (telefoneInput && prof.telefone && !telefoneInput.value) {
               telefoneInput.value = prof.telefone;
               console.log('[Elarah checkout] telefone pré-preenchido do perfil');
             }
           } catch (e) {
-            console.warn('[Elarah checkout] prefill telefone exceção:', e);
+            console.warn('[Elarah checkout] prefill profile exceção:', e);
           }
         })();
       }
 
-      // Foca o telefone automaticamente pra reduzir atrito.
+      // Foca nome (ou telefone se o nome já estiver preenchido) pra
+      // reduzir atrito.
       setTimeout(function () {
-        try { if (telefoneInput) telefoneInput.focus({ preventScroll: true }); } catch (e) {}
+        try {
+          if (nomeInput && !nomeInput.value) {
+            nomeInput.focus({ preventScroll: true });
+          } else if (telefoneInput) {
+            telefoneInput.focus({ preventScroll: true });
+          }
+        } catch (e) {}
       }, 150);
 
       // Bind buttons (uma vez por abertura, com remoção do antigo)
@@ -1172,6 +1224,18 @@ if (groupForm) {
       root.querySelector('#erm-cupom').onkeydown = function (e) {
         if (e.key === 'Enter') { e.preventDefault(); handleValidateCupom(); }
       };
+      if (nomeInput) {
+        nomeInput.onkeydown = function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (telefoneInput) {
+              try { telefoneInput.focus({ preventScroll: true }); } catch (err) {}
+            } else {
+              handleConfirmReservation();
+            }
+          }
+        };
+      }
       if (telefoneInput) {
         telefoneInput.onkeydown = function (e) {
           if (e.key === 'Enter') { e.preventDefault(); handleConfirmReservation(); }
@@ -1268,6 +1332,28 @@ if (groupForm) {
       const errEl = root.querySelector('#erm-error');
       errEl.textContent = '';
 
+      // ===== VALIDAÇÃO NOME =====
+      const nomeInput = root.querySelector('#erm-nome');
+      const nomeMsg = root.querySelector('#erm-nome-msg');
+      const nomeRaw = nomeInput ? nomeInput.value.trim().replace(/\s+/g, ' ') : '';
+      if (!nomeRaw || nomeRaw.length < 3) {
+        if (nomeMsg) {
+          nomeMsg.style.color = '#c0392b';
+          nomeMsg.textContent = 'Informe seu nome completo.';
+        }
+        if (nomeInput) {
+          try { nomeInput.focus({ preventScroll: true }); } catch (e) {}
+        }
+        console.warn('[Elarah checkout] nome inválido bloqueou o submit:', nomeRaw);
+        return;
+      }
+      if (nomeMsg) {
+        nomeMsg.style.color = '#888';
+        nomeMsg.textContent = 'Como você quer aparecer na sua reserva.';
+      }
+      // Persiste no ctx pra que retries / fallbacks continuem tendo acesso.
+      ctx.nome = nomeRaw;
+
       // ===== VALIDAÇÃO TELEFONE =====
       const telefoneInput = root.querySelector('#erm-telefone');
       const telefoneMsg = root.querySelector('#erm-telefone-msg');
@@ -1310,22 +1396,22 @@ if (groupForm) {
           cupom: ctx.cupomCode || null,
         };
 
-        // Side-effect: atualiza o telefone no perfil do usuário pra
-        // próxima reserva pré-preencher. Fire-and-forget, não bloqueia
-        // o fluxo se falhar (RLS/network).
+        // Side-effect: atualiza telefone + nome no perfil do usuário
+        // pra próxima reserva pré-preencher. Fire-and-forget, não
+        // bloqueia o fluxo se falhar (RLS/network).
         try {
           if (window.supabaseClient && window.supabaseClient.auth) {
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             if (session && session.user && session.user.id) {
               window.supabaseClient
                 .from('profiles')
-                .update({ telefone: telefoneRaw })
+                .update({ telefone: telefoneRaw, nome: nomeRaw })
                 .eq('id', session.user.id)
                 .then(function (res) {
                   if (res && res.error) {
-                    console.warn('[Elarah checkout] salvar telefone no profile falhou (OK, segue):', res.error.message);
+                    console.warn('[Elarah checkout] salvar telefone/nome no profile falhou (OK, segue):', res.error.message);
                   } else {
-                    console.log('[Elarah checkout] telefone salvo no perfil do usuário');
+                    console.log('[Elarah checkout] telefone + nome salvos no perfil do usuário');
                   }
                 });
             }
@@ -2072,7 +2158,9 @@ if (groupForm) {
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
         email: auth.email,
-        nome: null,
+        // Pré-preenche com o nome do profile (se disponível). O usuário
+        // ainda pode editar no modal antes de confirmar.
+        nome: auth.nome || null,
       });
     }
 
