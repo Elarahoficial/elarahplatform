@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v13 carregado — filtros dinâmicos de categoria/bairro');
+console.info('[Elarah] script.js v14 carregado — taxa de cartão + PIX');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -991,6 +991,38 @@ if (groupForm) {
       return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
     }
 
+    // =====================================================
+    //  TAXA DO CARTÃO (gross-up transparente)
+    // =====================================================
+    // Fórmula: total = ceil((base + fixed) / (1 - percent/100))
+    // Exemplo: base=10000, percent=4.99, fixed=39
+    //   → (10000 + 39) / 0.9501 = 10566.88 → ceil = 10567 cents
+    //   → taxa exibida = 567 cents = R$ 5,67
+    //
+    // Isso garante que, depois que o Stripe cobrar a própria taxa
+    // (~4.99% + R$ 0,39) sobre o valor bruto, o merchant receba
+    // pelo menos o valor base líquido. Rounded up por 1 centavo
+    // pra nunca ficar deficitário.
+    //
+    // Valores padrão espelham a Stripe Brasil em 2024-2026. O
+    // backend pode sobrescrever via env vars CARD_FEE_PERCENT e
+    // CARD_FEE_FIXED_CENTS se precisar tunar.
+    const CARD_FEE_PERCENT = 4.99;
+    const CARD_FEE_FIXED_CENTS = 39;
+
+    function computeCardTotalCents(baseCents) {
+      if (!baseCents || baseCents <= 0) return 0;
+      const numerator = baseCents + CARD_FEE_FIXED_CENTS;
+      const denominator = 1 - (CARD_FEE_PERCENT / 100);
+      if (denominator <= 0) return baseCents; // safety
+      return Math.ceil(numerator / denominator);
+    }
+
+    function computeCardFeeCents(baseCents) {
+      if (!baseCents || baseCents <= 0) return 0;
+      return computeCardTotalCents(baseCents) - baseCents;
+    }
+
     // Pega apenas o e-mail do usuário logado (para pré-preencher).
     // NÃO retorna o access_token — as Edge Functions usam service role
     // internamente, então o JWT do usuário não serve pra nada lá.
@@ -1047,9 +1079,21 @@ if (groupForm) {
         +   '</div>'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== PAYMENT METHOD SELECTOR (PIX / CARTÃO) =====
+            '<div style="display:flex;gap:8px;margin-bottom:14px;padding:4px;background:#faf6f0;border-radius:12px;">'
+        +     '<button type="button" id="erm-pay-pix" data-method="pix" style="flex:1;padding:12px 8px;border:none;background:#fff;color:#1a1a1a;border-radius:9px;font-size:.9rem;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 1px 3px rgba(0,0,0,.08);">'
+        +       '<span>PIX</span>'
+        +       '<span style="font-size:.7rem;font-weight:500;color:#1a8a4a;">Sem taxa</span>'
+        +     '</button>'
+        +     '<button type="button" id="erm-pay-card" data-method="card" style="flex:1;padding:12px 8px;border:none;background:transparent;color:#666;border-radius:9px;font-size:.9rem;font-weight:500;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;">'
+        +       '<span>Cartão</span>'
+        +       '<span id="erm-card-fee-label" style="font-size:.7rem;font-weight:500;color:#888;">+ taxa</span>'
+        +     '</button>'
+        +   '</div>'
         +   '<div style="background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
         +     '<div style="display:flex;justify-content:space-between;font-size:.88rem;color:#666;"><span>Subtotal</span><span id="erm-subtotal"></span></div>'
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
+        +     '<div id="erm-fee-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#666;margin-top:6px;"><span>Taxa do cartão</span><span id="erm-fee"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
         +   '</div>'
         +   // ===== CAMPO TELEFONE / WHATSAPP (obrigatório) =====
@@ -1099,6 +1143,106 @@ if (groupForm) {
 
     let currentReservationCtx = null;
 
+    // Recalcula e atualiza a UI de subtotal/desconto/taxa/total
+    // baseado no estado atual do ctx (precoCentavos, cupomCentavos,
+    // paymentMethod). Chamada sempre que o user troca PIX↔Cartão ou
+    // aplica/remove um cupom.
+    function refreshReservationTotals() {
+      if (!currentReservationCtx || !modalRoot) return;
+      const ctx = currentReservationCtx;
+      const root = modalRoot;
+
+      const base = Number(ctx.precoCentavos) || 0;
+      const desconto = Number(ctx.cupomCentavos) || 0;
+      const afterCoupon = Math.max(0, base - desconto);
+
+      // Taxa só quando método = cartão E há valor a cobrar > 0
+      const method = ctx.paymentMethod || 'pix';
+      const fee = (method === 'card' && afterCoupon > 0)
+        ? computeCardFeeCents(afterCoupon)
+        : 0;
+      const total = afterCoupon + fee;
+
+      // Escreve no ctx pro handleConfirmReservation usar depois
+      ctx.feeCentavos = fee;
+      ctx.afterCouponCentavos = afterCoupon;
+      ctx.totalCentavos = total;
+
+      // --- Render ---
+      const feeRow = root.querySelector('#erm-fee-row');
+      const feeEl = root.querySelector('#erm-fee');
+      if (fee > 0) {
+        if (feeRow) feeRow.style.display = 'flex';
+        if (feeEl) feeEl.textContent = '+ ' + brl(fee);
+      } else {
+        if (feeRow) feeRow.style.display = 'none';
+      }
+      root.querySelector('#erm-total').textContent = brl(total);
+
+      // Atualiza o label do botão "Cartão" com a taxa real
+      const cardFeeLabel = root.querySelector('#erm-card-fee-label');
+      if (cardFeeLabel) {
+        if (afterCoupon > 0) {
+          cardFeeLabel.textContent = '+ ' + brl(computeCardFeeCents(afterCoupon)) + ' de taxa';
+        } else {
+          cardFeeLabel.textContent = 'Sem taxa';
+        }
+      }
+
+      // Atualiza o label do botão confirmar
+      const confirmBtn = root.querySelector('#erm-confirm');
+      if (confirmBtn && !confirmBtn.disabled) {
+        if (total === 0) {
+          confirmBtn.textContent = 'Confirmar reserva';
+        } else if (method === 'pix') {
+          confirmBtn.textContent = 'Confirmar e pagar com PIX';
+        } else {
+          confirmBtn.textContent = 'Confirmar e pagar com cartão';
+        }
+      }
+
+      console.log('[Elarah Payment] totais atualizados —',
+        'method=' + method,
+        'base=' + base,
+        'desconto=' + desconto,
+        'fee=' + fee,
+        'total=' + total);
+    }
+
+    // Marca visualmente qual método está selecionado
+    function setActivePaymentMethod(method) {
+      if (!modalRoot || !currentReservationCtx) return;
+      currentReservationCtx.paymentMethod = method;
+
+      const pixBtn = modalRoot.querySelector('#erm-pay-pix');
+      const cardBtn = modalRoot.querySelector('#erm-pay-card');
+      const ACTIVE_STYLE = {
+        background: '#fff',
+        color: '#1a1a1a',
+        fontWeight: '600',
+        boxShadow: '0 1px 3px rgba(0,0,0,.08)',
+      };
+      const INACTIVE_STYLE = {
+        background: 'transparent',
+        color: '#666',
+        fontWeight: '500',
+        boxShadow: 'none',
+      };
+      function apply(btn, style) {
+        if (!btn) return;
+        Object.keys(style).forEach(function (k) { btn.style[k] = style[k]; });
+      }
+      if (method === 'pix') {
+        apply(pixBtn, ACTIVE_STYLE);
+        apply(cardBtn, INACTIVE_STYLE);
+      } else {
+        apply(pixBtn, INACTIVE_STYLE);
+        apply(cardBtn, ACTIVE_STYLE);
+      }
+      console.log('[Elarah Payment] método selecionado:', method);
+      refreshReservationTotals();
+    }
+
     function openReservationModal(ctx) {
       const root = buildReservationModal();
       currentReservationCtx = ctx;
@@ -1108,6 +1252,8 @@ if (groupForm) {
       root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-total').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-discount-row').style.display = 'none';
+      const feeRow0 = root.querySelector('#erm-fee-row');
+      if (feeRow0) feeRow0.style.display = 'none';
       root.querySelector('#erm-cupom').value = '';
       root.querySelector('#erm-cupom-msg').textContent = '';
       root.querySelector('#erm-cupom-msg').style.color = '#666';
@@ -1128,9 +1274,14 @@ if (groupForm) {
       ctx.cupomCode = null;
       ctx.cupomCentavos = 0;
       ctx.totalCentavos = ctx.precoCentavos;
+      ctx.feeCentavos = 0;
+      ctx.paymentMethod = 'pix'; // PIX é o default — sem taxa pro user
 
       root.style.display = 'flex';
       document.body.style.overflow = 'hidden';
+
+      // Aplica o método default (PIX) e renderiza totais iniciais
+      setActivePaymentMethod('pix');
 
       // Pré-preenche telefone se o usuário já tiver cadastrado no
       // perfil (profiles.telefone). Usa fetch async sem bloquear o
@@ -1177,6 +1328,12 @@ if (groupForm) {
           if (e.key === 'Enter') { e.preventDefault(); handleConfirmReservation(); }
         };
       }
+
+      // Bind dos botões de método de pagamento (PIX / Cartão)
+      const pixBtn = root.querySelector('#erm-pay-pix');
+      const cardBtn = root.querySelector('#erm-pay-card');
+      if (pixBtn) pixBtn.onclick = function () { setActivePaymentMethod('pix'); };
+      if (cardBtn) cardBtn.onclick = function () { setActivePaymentMethod('card'); };
     }
 
     async function handleValidateCupom() {
@@ -1218,16 +1375,13 @@ if (groupForm) {
           msg.textContent = data.message || 'Cupom inválido.';
           currentReservationCtx.cupomCode = null;
           currentReservationCtx.cupomCentavos = 0;
-          currentReservationCtx.totalCentavos = currentReservationCtx.precoCentavos;
           root.querySelector('#erm-discount-row').style.display = 'none';
-          root.querySelector('#erm-total').textContent = brl(currentReservationCtx.precoCentavos);
+          refreshReservationTotals();
           return;
         }
         const used = Number(data.used_centavos || 0);
-        const total = Math.max(0, currentReservationCtx.precoCentavos - used);
         currentReservationCtx.cupomCode = code;
         currentReservationCtx.cupomCentavos = used;
-        currentReservationCtx.totalCentavos = total;
 
         msg.style.color = '#1a8a4a';
         msg.textContent = data.covers_full
@@ -1236,7 +1390,9 @@ if (groupForm) {
         const drow = root.querySelector('#erm-discount-row');
         drow.style.display = 'flex';
         root.querySelector('#erm-discount').textContent = '- ' + brl(used);
-        root.querySelector('#erm-total').textContent = brl(total);
+        // refreshReservationTotals recalcula a taxa de cartão sobre
+        // o valor após o cupom (se método=card) e atualiza o total.
+        refreshReservationTotals();
 
         const confirmBtn = root.querySelector('#erm-confirm');
         confirmBtn.textContent = total === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
@@ -1300,6 +1456,14 @@ if (groupForm) {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
         };
+        // Método de pagamento escolhido no modal (PIX default / Cartão
+        // com taxa) — o backend decide quais payment_method_types
+        // habilitar no Stripe Checkout e se aplica taxa ou não.
+        const paymentMethod = ctx.paymentMethod === 'card' ? 'card' : 'pix';
+        console.log('[Elarah Payment] enviando checkout —',
+          'method=' + paymentMethod,
+          'total=' + (ctx.totalCentavos || 0),
+          'fee=' + (ctx.feeCentavos || 0));
         const body = {
           experiencia_id: ctx.experienceId,
           horario: ctx.horario,
@@ -1308,6 +1472,7 @@ if (groupForm) {
           telefone: telefoneRaw, // mantém formato humano pro admin
           telefone_digits: telefoneNormalized, // só dígitos pra WhatsApp links
           cupom: ctx.cupomCode || null,
+          payment_method: paymentMethod,
         };
 
         // Side-effect: atualiza o telefone no perfil do usuário pra
