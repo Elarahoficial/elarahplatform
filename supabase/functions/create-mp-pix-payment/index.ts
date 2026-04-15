@@ -114,7 +114,7 @@ serve(async (req) => {
   // ===== Parse do payload =====
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
-  const email = payload.email ? String(payload.email).trim() : null;
+  const emailRaw = payload.email ? String(payload.email).trim() : null;
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
   const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
@@ -131,15 +131,38 @@ serve(async (req) => {
     ? (telefoneHuman || telefoneDigits)
     : (telefoneHuman || null);
 
+  // ===== Email: usa o do payload se válido, senão gera um fake =====
+  // Mercado Pago exige payer.email OBRIGATÓRIO no POST /v1/payments.
+  // Se o frontend não mandar (ou mandar inválido), caímos em um
+  // fallback determinístico baseado no telefone ou timestamp. Isso
+  // é aceitável pro MP — o e-mail do payer no PIX não precisa ser
+  // real, só precisa ter formato válido.
+  //
+  // Ordem de resolução:
+  //   1. payload.email (se passar regex básica)
+  //   2. cliente+<telefone>@elarah.com (se tiver telefone)
+  //   3. cliente+<timestamp>@elarah.com (último fallback)
+  const EMAIL_RE = /.+@.+\..+/;
+  let email: string;
+  if (emailRaw && EMAIL_RE.test(emailRaw)) {
+    email = emailRaw;
+  } else if (telefoneDigits) {
+    email = "cliente+" + telefoneDigits + "@elarah.com";
+    console.warn(
+      "[Elarah Payment/MP] email ausente no payload — gerando fallback via telefone",
+      email,
+    );
+  } else {
+    email = "cliente+" + Date.now() + "@elarah.com";
+    console.warn(
+      "[Elarah Payment/MP] email ausente no payload — gerando fallback via timestamp",
+      email,
+    );
+  }
+
   // ===== Validações básicas =====
   if (!experienciaId) {
     return jsonResponse({ error: "experiencia_id_required" }, 400);
-  }
-  if (!email || !/.+@.+\..+/.test(email)) {
-    return jsonResponse(
-      { error: "email_required", message: "E-mail é obrigatório pra PIX." },
-      400,
-    );
   }
   if (!isValidCpf(cpfRaw)) {
     return jsonResponse(
@@ -390,6 +413,8 @@ serve(async (req) => {
     "booking=" + bookingId,
     "mp_payment=" + payment.id,
     "amount_cents=" + amountToChargeCents,
+    "payer_email=" + email,
+    "email_was_autogen=" + (emailRaw !== email ? "yes" : "no"),
   );
 
   return jsonResponse({
