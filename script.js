@@ -938,10 +938,17 @@ if (groupForm) {
   // a Edge Function `create-checkout-session` e redireciona para
   // o Stripe Checkout.
   (function () {
+    // Base pra todas as Edge Functions. CHECKOUT_FN_URL continua
+    // apontando pra create-checkout-session (cartão/Stripe); as novas
+    // funções da Mercado Pago (PIX) e reconcile usam a mesma base.
+    const CHECKOUT_FN_BASE =
+      'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1';
     const CHECKOUT_FN_URL =
-      'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/create-checkout-session';
+      CHECKOUT_FN_BASE + '/create-checkout-session';
+    const MP_PIX_FN_URL =
+      CHECKOUT_FN_BASE + '/create-mp-pix-payment';
     const REDEEM_FN_URL =
-      'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/redeem-gift-card';
+      CHECKOUT_FN_BASE + '/redeem-gift-card';
     // Anon key do Supabase (JWT). Pode ficar exposta no front — é o
     // "publishable key" do projeto, sem privilégios além do RLS.
     const SUPABASE_ANON_KEY =
@@ -1068,6 +1075,8 @@ if (groupForm) {
         +     '<h3 id="erm-title" style="font-family:\'DM Serif Display\',serif;font-size:1.35rem;color:#1a1a1a;margin:0;">Confirmar reserva</h3>'
         +     '<button type="button" id="erm-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;padding:0 4px;">&times;</button>'
         +   '</div>'
+        +   // ===== SEÇÃO FORMULÁRIO (default) =====
+            '<div id="erm-form-section">'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
         +   // ===== SELEÇÃO DE MÉTODO DE PAGAMENTO =====
@@ -1095,6 +1104,12 @@ if (groupForm) {
             '<label for="erm-telefone" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">WhatsApp <span style="color:#c0392b;">*</span></label>'
         +   '<input id="erm-telefone" type="tel" required inputmode="tel" autocomplete="tel-national" placeholder="(11) 91234-5678" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
         +   '<p id="erm-telefone-msg" style="margin:0 0 14px;font-size:.78rem;color:#888;min-height:1em;">Usamos pra te avisar sobre a experiência e mudanças de horário.</p>'
+        +   // ===== CAMPO CPF (obrigatório só quando método = PIX) =====
+            '<div id="erm-cpf-wrap" style="display:none;">'
+        +     '<label for="erm-cpf" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">CPF <span style="color:#c0392b;">*</span></label>'
+        +     '<input id="erm-cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
+        +     '<p id="erm-cpf-msg" style="margin:0 0 14px;font-size:.78rem;color:#888;min-height:1em;">Exigido pelo Mercado Pago pra gerar o PIX.</p>'
+        +   '</div>'
         +   '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;">Cupom / Gift Card (opcional)</label>'
         +   '<div style="display:flex;gap:8px;">'
         +     '<input id="erm-cupom" type="text" placeholder="ELRH-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;text-transform:uppercase;">'
@@ -1103,6 +1118,29 @@ if (groupForm) {
         +   '<p id="erm-cupom-msg" style="margin:6px 0 0;font-size:.82rem;min-height:1.1em;"></p>'
         +   '<button type="button" id="erm-confirm" style="width:100%;margin-top:18px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Confirmar e pagar</button>'
         +   '<p id="erm-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>'
+        +   '</div>' // fim erm-form-section
+        +   // ===== SEÇÃO PIX QR CODE (só aparece após gerar o PIX) =====
+            '<div id="erm-pix-section" style="display:none;">'
+        +     '<p style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;">Pague com PIX pra confirmar sua reserva</p>'
+        +     '<p id="erm-pix-exp" style="margin:0 0 14px;color:#666;font-size:.85rem;"></p>'
+        +     '<div style="background:#faf6f0;border-radius:12px;padding:16px;margin-bottom:14px;text-align:center;">'
+        +       '<img id="erm-pix-qr" alt="QR Code PIX" style="max-width:220px;width:100%;height:auto;margin:0 auto 10px;display:block;background:#fff;border-radius:8px;padding:8px;">'
+        +       '<p style="margin:0;font-size:.82rem;color:#666;">Escaneie com o app do seu banco</p>'
+        +     '</div>'
+        +     '<label style="display:block;font-size:.78rem;color:#666;margin-bottom:4px;">Ou copie o código PIX:</label>'
+        +     '<div style="display:flex;gap:6px;margin-bottom:14px;">'
+        +       '<input id="erm-pix-code" type="text" readonly style="flex:1;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.75rem;background:#fafafa;color:#666;font-family:monospace;box-sizing:border-box;">'
+        +       '<button type="button" id="erm-pix-copy" style="padding:10px 14px;border:1px solid #f0a05e;background:#fff;color:#f0a05e;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer;white-space:nowrap;">Copiar</button>'
+        +     '</div>'
+        +     '<div id="erm-pix-status" style="padding:12px 14px;border-radius:10px;background:#fff8ef;border:1px solid #f4c48a;color:#8a5a1a;font-size:.88rem;text-align:center;margin-bottom:10px;">'
+        +       '<span id="erm-pix-status-text">Aguardando confirmação do pagamento...</span>'
+        +       '<div id="erm-pix-spinner" style="display:inline-block;width:12px;height:12px;border:2px solid #f0a05e;border-top-color:transparent;border-radius:50%;margin-left:8px;vertical-align:middle;animation:erm-spin 0.8s linear infinite;"></div>'
+        +     '</div>'
+        +     '<p id="erm-pix-expires" style="margin:0 0 10px;font-size:.78rem;color:#888;text-align:center;"></p>'
+        +     '<button type="button" id="erm-pix-check" style="width:100%;padding:11px;border:1px solid #ddd;background:#fff;color:#666;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;margin-bottom:8px;">Já paguei, verificar agora</button>'
+        +     '<button type="button" id="erm-pix-cancel" style="width:100%;padding:11px;border:none;background:transparent;color:#999;border-radius:10px;font-size:.85rem;cursor:pointer;">Cancelar e voltar</button>'
+        +     '<style>@keyframes erm-spin { to { transform: rotate(360deg); } }</style>'
+        +   '</div>' // fim erm-pix-section
         + '</div>';
       document.body.appendChild(modalRoot);
 
@@ -1127,13 +1165,189 @@ if (groupForm) {
         });
       }
 
+      // Máscara CPF: 000.000.000-00
+      const cpfInput = modalRoot.querySelector('#erm-cpf');
+      if (cpfInput) {
+        cpfInput.addEventListener('input', function () {
+          cpfInput.value = formatCpf(cpfInput.value);
+        });
+      }
+
       return modalRoot;
     }
 
     function closeReservationModal() {
       if (!modalRoot) return;
+      stopPixPolling();
       modalRoot.style.display = 'none';
       document.body.style.overflow = '';
+      // Volta o modal pro estado "formulário" pra próxima abertura.
+      const form = modalRoot.querySelector('#erm-form-section');
+      const pix = modalRoot.querySelector('#erm-pix-section');
+      if (form) form.style.display = 'block';
+      if (pix) pix.style.display = 'none';
+    }
+
+    // ===== PIX polling state =====
+    // Gerenciado num só lugar pra facilitar cleanup no close/cancel.
+    let pixPollingHandle = null;
+    let pixPollingStartedAt = 0;
+    const PIX_POLLING_INTERVAL_MS = 3000; // 3s
+    const PIX_POLLING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutos
+
+    function stopPixPolling() {
+      if (pixPollingHandle) {
+        clearInterval(pixPollingHandle);
+        pixPollingHandle = null;
+        console.log('[Elarah Payment/MP] polling parado');
+      }
+    }
+
+    async function pollBookingStatus(bookingId) {
+      try {
+        if (!window.supabaseClient) return null;
+        const { data, error } = await window.supabaseClient
+          .from('bookings')
+          .select('status')
+          .eq('id', bookingId)
+          .maybeSingle();
+        if (error) {
+          console.warn('[Elarah Payment/MP] polling erro:', error.message);
+          return null;
+        }
+        return data ? data.status : null;
+      } catch (e) {
+        console.warn('[Elarah Payment/MP] polling exceção:', e);
+        return null;
+      }
+    }
+
+    function startPixPolling(bookingId) {
+      stopPixPolling();
+      pixPollingStartedAt = Date.now();
+      console.log('[Elarah Payment/MP] polling iniciado pra booking', bookingId);
+      const tick = async function () {
+        const elapsed = Date.now() - pixPollingStartedAt;
+        if (elapsed > PIX_POLLING_TIMEOUT_MS) {
+          stopPixPolling();
+          const statusEl = modalRoot && modalRoot.querySelector('#erm-pix-status');
+          const statusText = modalRoot && modalRoot.querySelector('#erm-pix-status-text');
+          const spinner = modalRoot && modalRoot.querySelector('#erm-pix-spinner');
+          if (statusEl) statusEl.style.background = '#fdecea';
+          if (statusEl) statusEl.style.borderColor = '#f5b4ae';
+          if (statusEl) statusEl.style.color = '#9c2f22';
+          if (statusText) statusText.textContent = 'Tempo esgotado. Se você já pagou, clique em "Já paguei, verificar agora".';
+          if (spinner) spinner.style.display = 'none';
+          return;
+        }
+        const status = await pollBookingStatus(bookingId);
+        if (status === 'pago') {
+          stopPixPolling();
+          console.log('[Elarah Payment/MP] pagamento confirmado! redirect pra success');
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(bookingId);
+        } else if (status === 'cancelado' || status === 'expirado' || status === 'reembolsado') {
+          stopPixPolling();
+          const statusEl = modalRoot && modalRoot.querySelector('#erm-pix-status');
+          const statusText = modalRoot && modalRoot.querySelector('#erm-pix-status-text');
+          const spinner = modalRoot && modalRoot.querySelector('#erm-pix-spinner');
+          if (statusEl) statusEl.style.background = '#fdecea';
+          if (statusEl) statusEl.style.borderColor = '#f5b4ae';
+          if (statusEl) statusEl.style.color = '#9c2f22';
+          if (statusText) statusText.textContent = 'Pagamento ' + status + '. Feche e tente de novo.';
+          if (spinner) spinner.style.display = 'none';
+        }
+        // status === 'pending' ou null → continua polling
+      };
+      pixPollingHandle = setInterval(tick, PIX_POLLING_INTERVAL_MS);
+      // Tick imediato pra não esperar 3s se o webhook foi rápido.
+      tick();
+    }
+
+    // Transforma o modal do estado "formulário" pro estado "QR code PIX".
+    function showPixPanel(resp, ctx) {
+      if (!modalRoot) return;
+      const form = modalRoot.querySelector('#erm-form-section');
+      const pix = modalRoot.querySelector('#erm-pix-section');
+      if (form) form.style.display = 'none';
+      if (pix) pix.style.display = 'block';
+
+      // QR code (imagem PNG base64)
+      const img = modalRoot.querySelector('#erm-pix-qr');
+      if (img && resp.qr_code_base64) {
+        img.src = 'data:image/png;base64,' + resp.qr_code_base64;
+      }
+      // Código copia-e-cola
+      const codeInput = modalRoot.querySelector('#erm-pix-code');
+      if (codeInput) codeInput.value = resp.qr_code || '';
+      // Meta
+      const metaEl = modalRoot.querySelector('#erm-pix-exp');
+      if (metaEl) metaEl.textContent = [ctx.experienceNome, ctx.horario].filter(Boolean).join(' · ');
+      // Expiração
+      const expEl = modalRoot.querySelector('#erm-pix-expires');
+      if (expEl && resp.expires_at) {
+        try {
+          const when = new Date(resp.expires_at);
+          expEl.textContent = 'Válido até ' + when.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) { expEl.textContent = ''; }
+      }
+      // Status reset
+      const statusEl = modalRoot.querySelector('#erm-pix-status');
+      const statusText = modalRoot.querySelector('#erm-pix-status-text');
+      const spinner = modalRoot.querySelector('#erm-pix-spinner');
+      if (statusEl) { statusEl.style.background = '#fff8ef'; statusEl.style.borderColor = '#f4c48a'; statusEl.style.color = '#8a5a1a'; }
+      if (statusText) statusText.textContent = 'Aguardando confirmação do pagamento...';
+      if (spinner) spinner.style.display = 'inline-block';
+
+      // Binds (cada show redefine pra ter closure do ctx/booking atual)
+      const copyBtn = modalRoot.querySelector('#erm-pix-copy');
+      if (copyBtn) {
+        copyBtn.onclick = function () {
+          try {
+            const codeInputEl = modalRoot.querySelector('#erm-pix-code');
+            codeInputEl.select();
+            document.execCommand('copy');
+            copyBtn.textContent = 'Copiado!';
+            setTimeout(function () { copyBtn.textContent = 'Copiar'; }, 1800);
+          } catch (e) { console.warn('[Elarah Payment/MP] copy falhou', e); }
+        };
+      }
+      const cancelBtn = modalRoot.querySelector('#erm-pix-cancel');
+      if (cancelBtn) {
+        cancelBtn.onclick = function () { closeReservationModal(); };
+      }
+      const checkBtn = modalRoot.querySelector('#erm-pix-check');
+      if (checkBtn) {
+        checkBtn.onclick = async function () {
+          checkBtn.disabled = true;
+          checkBtn.textContent = 'Verificando...';
+          try {
+            // Chama endpoint de reconciliação pra forçar sincronização
+            // com a MP (backup do webhook).
+            await fetch(CHECKOUT_FN_BASE + '/check-mp-payment-status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+              },
+              body: JSON.stringify({ booking_id: resp.booking_id }),
+            });
+          } catch (e) {
+            console.warn('[Elarah Payment/MP] check manual falhou:', e);
+          }
+          checkBtn.disabled = false;
+          checkBtn.textContent = 'Já paguei, verificar agora';
+          // Tick imediato do polling
+          const status = await pollBookingStatus(resp.booking_id);
+          if (status === 'pago') {
+            stopPixPolling();
+            window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(resp.booking_id);
+          }
+        };
+      }
+
+      // Começa polling
+      startPixPolling(resp.booking_id);
     }
 
     let currentReservationCtx = null;
@@ -1229,7 +1443,8 @@ if (groupForm) {
       }
     }
 
-    // Visual toggle dos botões Cartão / PIX.
+    // Visual toggle dos botões Cartão / PIX. Também mostra/esconde
+    // o campo CPF (obrigatório só pra PIX via Mercado Pago).
     function updatePaymentMethodButtons() {
       if (!modalRoot || !currentReservationCtx) return;
       const ctx = currentReservationCtx;
@@ -1249,9 +1464,43 @@ if (groupForm) {
       const hint = modalRoot.querySelector('#erm-pm-hint');
       if (hint) {
         hint.textContent = ctx.paymentMethod === 'pix'
-          ? 'Sem taxa. Vamos gerar um QR Code após confirmar.'
-          : 'Cartão tem taxa de processamento repassada ao cliente.';
+          ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
+          : 'Cartão via Stripe — taxa de processamento é repassada ao cliente.';
       }
+      // Mostra/esconde campo CPF. O reset do valor NÃO acontece aqui
+      // pra preservar o que o usuário digitou se ele alternar entre
+      // os dois métodos.
+      const cpfWrap = modalRoot.querySelector('#erm-cpf-wrap');
+      if (cpfWrap) {
+        cpfWrap.style.display = ctx.paymentMethod === 'pix' ? 'block' : 'none';
+      }
+    }
+
+    // Valida CPF por dígito verificador (espelha o helper do backend).
+    function isValidCpfFront(raw) {
+      const digits = String(raw || '').replace(/\D+/g, '');
+      if (digits.length !== 11) return false;
+      if (/^(\d)\1{10}$/.test(digits)) return false;
+      const arr = digits.split('').map(Number);
+      let sum = 0;
+      for (let i = 0; i < 9; i++) sum += arr[i] * (10 - i);
+      let d1 = (sum * 10) % 11;
+      if (d1 === 10) d1 = 0;
+      if (d1 !== arr[9]) return false;
+      sum = 0;
+      for (let i = 0; i < 10; i++) sum += arr[i] * (11 - i);
+      let d2 = (sum * 10) % 11;
+      if (d2 === 10) d2 = 0;
+      return d2 === arr[10];
+    }
+
+    // Formata CPF: 000.000.000-00
+    function formatCpf(digits) {
+      const d = String(digits || '').replace(/\D+/g, '').slice(0, 11);
+      if (d.length <= 3) return d;
+      if (d.length <= 6) return d.slice(0, 3) + '.' + d.slice(3);
+      if (d.length <= 9) return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6);
+      return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
     }
 
     function openReservationModal(ctx) {
@@ -1285,6 +1534,23 @@ if (groupForm) {
         root.querySelector('#erm-telefone-msg').textContent =
           'Usamos pra te avisar sobre a experiência e mudanças de horário.';
       }
+      // Reset CPF.
+      const cpfInputReset = root.querySelector('#erm-cpf');
+      if (cpfInputReset) {
+        cpfInputReset.value = '';
+        const cpfMsgReset = root.querySelector('#erm-cpf-msg');
+        if (cpfMsgReset) {
+          cpfMsgReset.style.color = '#888';
+          cpfMsgReset.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+        }
+      }
+      // Garante o estado "formulário" (pode estar no PIX section
+      // de uma abertura anterior).
+      const formSectionInit = root.querySelector('#erm-form-section');
+      const pixSectionInit = root.querySelector('#erm-pix-section');
+      if (formSectionInit) formSectionInit.style.display = 'block';
+      if (pixSectionInit) pixSectionInit.style.display = 'none';
+      stopPixPolling();
       const confirmBtn = root.querySelector('#erm-confirm');
       confirmBtn.disabled = false;
       confirmBtn.textContent = 'Confirmar e pagar';
@@ -1534,6 +1800,31 @@ if (groupForm) {
       }
       console.log('[Elarah checkout] telefone válido:', telefoneNormalized);
 
+      // ===== VALIDAÇÃO CPF (só pra PIX) =====
+      let cpfDigits = '';
+      if (ctx.paymentMethod === 'pix') {
+        const cpfInput = root.querySelector('#erm-cpf');
+        const cpfMsg = root.querySelector('#erm-cpf-msg');
+        const cpfRaw = cpfInput ? cpfInput.value.trim() : '';
+        cpfDigits = cpfRaw.replace(/\D+/g, '');
+        if (!isValidCpfFront(cpfDigits)) {
+          if (cpfMsg) {
+            cpfMsg.style.color = '#c0392b';
+            cpfMsg.textContent = 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
+          }
+          if (cpfInput) {
+            try { cpfInput.focus({ preventScroll: true }); } catch (e) {}
+          }
+          console.warn('[Elarah Payment/MP] CPF inválido bloqueou o submit:', cpfDigits);
+          return;
+        }
+        if (cpfMsg) {
+          cpfMsg.style.color = '#888';
+          cpfMsg.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+        }
+        ctx.cpf = cpfDigits;
+      }
+
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Processando...';
 
@@ -1544,25 +1835,6 @@ if (groupForm) {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
         };
-        const body = {
-          experiencia_id: ctx.experienceId,
-          horario: ctx.horario,
-          email: auth.email || ctx.email,
-          nome: ctx.nome || null,
-          telefone: telefoneRaw, // mantém formato humano pro admin
-          telefone_digits: telefoneNormalized, // só dígitos pra WhatsApp links
-          cupom: ctx.cupomCode || null,
-          // Método de pagamento escolhido no modal (card ou pix).
-          // Default no backend é 'card' pra compat com front antigo.
-          payment_method: ctx.paymentMethod || 'card',
-        };
-        console.log('[Elarah Payment] enviando checkout', {
-          method: body.payment_method,
-          base: ctx.precoCentavos,
-          cupom: ctx.cupomCentavos || 0,
-          fee: ctx.feeCents || 0,
-          total: ctx.totalCentavos || 0,
-        });
 
         // Side-effect: atualiza telefone + nome no perfil do usuário
         // pra próxima reserva pré-preencher. Fire-and-forget, não
@@ -1587,6 +1859,74 @@ if (groupForm) {
         } catch (e) {
           console.warn('[Elarah checkout] não foi possível atualizar profile.telefone:', e);
         }
+
+        // ===== Branch: PIX (Mercado Pago) OU Cartão (Stripe) =====
+        if (ctx.paymentMethod === 'pix') {
+          const pixBody = {
+            experiencia_id: ctx.experienceId,
+            horario: ctx.horario,
+            email: auth.email || ctx.email,
+            nome: ctx.nome || null,
+            cpf: cpfDigits,
+            telefone: telefoneRaw,
+            telefone_digits: telefoneNormalized,
+            cupom: ctx.cupomCode || null,
+          };
+          console.log('[Elarah Payment/MP] criando PIX', {
+            base: ctx.precoCentavos,
+            cupom: ctx.cupomCentavos || 0,
+            total: ctx.totalCentavos || 0,
+          });
+          const res = await fetch(MP_PIX_FN_URL, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(pixBody),
+          });
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok || !data) {
+            const msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            errEl.textContent = msg;
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+
+          if (data.direct === true) {
+            // Cupom cobriu 100% — vai direto pra success.
+            window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(data.booking_id || '');
+            return;
+          }
+
+          if (!data.qr_code_base64 || !data.booking_id) {
+            errEl.textContent = 'Resposta inesperada do servidor.';
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+
+          // Troca o modal pro painel de QR code e começa o polling.
+          showPixPanel(data, ctx);
+          return;
+        }
+
+        // ===== Cartão: Stripe Checkout =====
+        const body = {
+          experiencia_id: ctx.experienceId,
+          horario: ctx.horario,
+          email: auth.email || ctx.email,
+          nome: ctx.nome || null,
+          telefone: telefoneRaw,
+          telefone_digits: telefoneNormalized,
+          cupom: ctx.cupomCode || null,
+          payment_method: 'card',
+        };
+        console.log('[Elarah Payment] enviando checkout cartão', {
+          base: ctx.precoCentavos,
+          cupom: ctx.cupomCentavos || 0,
+          fee: ctx.feeCents || 0,
+          total: ctx.totalCentavos || 0,
+        });
         const res = await fetch(CHECKOUT_FN_URL, {
           method: 'POST',
           headers: headers,
@@ -1603,7 +1943,6 @@ if (groupForm) {
         }
 
         if (data.direct === true) {
-          // Pagamento integral via gift card — vai direto pra success.
           window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(data.booking_id || '');
           return;
         }

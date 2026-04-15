@@ -275,16 +275,15 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
 
-  // ===== Método de pagamento (card | pix) =====
-  // Default: card — preserva compat com clientes antigos que não
-  // enviam esse campo (continuam pagando com cartão).
-  const rawPaymentMethod = String(payload.payment_method ?? "card").toLowerCase();
-  const paymentMethod: "card" | "pix" =
-    rawPaymentMethod === "pix" ? "pix" : "card";
+  // ===== Método de pagamento =====
+  // Esta edge function agora só cuida de cartão. PIX é gerenciado
+  // pela função separada create-mp-pix-payment (Mercado Pago).
+  // Se o frontend velho mandar payment_method='pix' por engano aqui,
+  // ignoramos e tratamos como cartão — o repasse de taxa vai ser
+  // aplicado normalmente.
+  const paymentMethod: "card" = "card";
   console.info(
-    "[Elarah Payment] método selecionado:",
-    paymentMethod,
-    "(raw=" + rawPaymentMethod + ")",
+    "[Elarah Payment] create-checkout-session (cartão)",
   );
   // ===== TELEFONE / WHATSAPP =====
   // Aceita tanto `telefone` (formato humano: "(11) 91234-5678")
@@ -465,7 +464,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     feeFixedCents: 0,
     feeTotalCents: 0,
   };
-  if (paymentMethod === "card" && amountToCharge > 0) {
+  if (amountToCharge > 0) {
     feeInfo = applyCardFee(amountToCharge);
     amountToCharge = feeInfo.finalCents;
     console.info(
@@ -476,11 +475,6 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       "total=" + amountToCharge,
       "percent_config=" + CARD_FEE_PERCENT,
       "fixed_config=" + CARD_FEE_FIXED_CENTS,
-    );
-  } else if (paymentMethod === "pix" && amountToCharge > 0) {
-    console.info(
-      "[Elarah Payment] PIX selecionado — sem taxa",
-      "total=" + amountToCharge,
     );
   }
 
@@ -583,24 +577,15 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     ? exp.nome + " (com gift card)"
     : exp.nome;
 
-  // Config Stripe dinâmica por método de pagamento.
-  // - card: cobrança síncrona, sem expiração especial
-  // - pix: cobrança assíncrona, usa QR code nativo Stripe. A
-  //   sessão gera payment_status='unpaid' no `completed`, e só
-  //   vira 'paid' no evento `async_payment_succeeded` quando o
-  //   cliente de fato paga (webhook tá configurado pra isso).
-  // Tipo mantido como `any[]` pra evitar depender de um nested type
-  // específico (`Stripe.Checkout.SessionCreateParams.PaymentMethodType`)
-  // que pode variar entre builds do SDK. Stripe aceita string[] aqui.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stripePaymentMethods: any[] =
-    paymentMethod === "pix" ? ["pix"] : ["card"];
-
+  // Esta function agora atende somente cartão. PIX foi migrado pra
+  // create-mp-pix-payment (Mercado Pago). Pagamento síncrono: o
+  // webhook recebe `checkout.session.completed` com payment_status
+  // 'paid' e marca a booking como 'pago' imediatamente.
   let session;
   try {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: stripePaymentMethods,
+      payment_method_types: ["card"],
       locale: "pt-BR",
       customer_email: email || undefined,
       line_items: [

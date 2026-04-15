@@ -499,12 +499,10 @@ serve(async (req) => {
           break;
         }
         const kind = String(session.metadata?.kind ?? "experience");
-        const paymentMethodMeta = String(session.metadata?.payment_method ?? "card");
         console.info(
           "[Elarah Payment] checkout.session.completed",
           "session=" + session.id,
           "kind=" + kind,
-          "method=" + paymentMethodMeta,
           "payment_status=" + (session.payment_status ?? "?"),
           "amount_total=" + (session.amount_total ?? "?"),
           "payment_intent=" + (session.payment_intent ?? "?"),
@@ -515,57 +513,16 @@ serve(async (req) => {
           break;
         }
 
-        // PIX: no `completed` o payment_status vem 'unpaid' — o
-        // cliente recebeu o QR code mas ainda não pagou. NÃO
-        // marca como pago aqui. Só anota o payment_intent e deixa
-        // a booking em 'pending' até chegar o async_payment_succeeded.
-        // Cartão: payment_status vem 'paid' → segue o fluxo normal.
-        if (session.payment_status !== "paid") {
-          console.info(
-            "[Elarah Payment] sessão completed mas ainda não paga (provável PIX aguardando) — mantém pending",
+        // Stripe agora só processa cartão — pagamento é síncrono, então
+        // session.payment_status deve vir 'paid'. Se por algum motivo
+        // vier diferente, logamos e ainda marcamos como pago (fallback
+        // conservador pra não deixar o cliente sem confirmação).
+        if (session.payment_status && session.payment_status !== "paid") {
+          console.warn(
+            "[Elarah Payment] completed com payment_status inesperado — marcando como pago mesmo assim",
             "session=" + session.id,
             "payment_status=" + session.payment_status,
           );
-          // Só anota o payment_intent pro charge.refunded conseguir
-          // achar a booking depois. Não toca em status/nome/etc.
-          if (session.payment_intent) {
-            await updateBookingBySession(session.id, {
-              stripe_payment_intent: session.payment_intent,
-            });
-          }
-          break;
-        }
-
-        await markBookingAsPaid(session);
-        break;
-      }
-
-      // PIX: evento disparado quando o cliente paga o QR code gerado
-      // pela sessão. Aqui SIM marcamos como 'pago' e mandamos o e-mail.
-      // Cartão nunca passa por esse evento — a confirmação dele vem
-      // em `completed` com payment_status='paid'.
-      case "checkout.session.async_payment_succeeded": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (!session.id) {
-          console.warn(
-            "[stripe-webhook] async_payment_succeeded sem session.id — ignorando",
-          );
-          break;
-        }
-        const kind = String(session.metadata?.kind ?? "experience");
-        console.info(
-          "[Elarah Payment] checkout.session.async_payment_succeeded",
-          "session=" + session.id,
-          "kind=" + kind,
-          "amount_total=" + (session.amount_total ?? "?"),
-          "payment_intent=" + (session.payment_intent ?? "?"),
-        );
-
-        if (kind === "gift_card") {
-          // Gift cards hoje não usam PIX, mas se um dia usarem, reusa
-          // o mesmo fluxo de ativação.
-          await activateGiftCardFromSession(session);
-          break;
         }
 
         await markBookingAsPaid(session);
