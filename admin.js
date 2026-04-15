@@ -533,12 +533,23 @@
     ]);
     const telefonePorUserId = new Map();
     const telefonePorEmail = new Map();
+    // Fallback de nome: bookings antigas (ou geradas por front antigo)
+    // podem não ter o `nome` salvo. Se o user_id / email bater com um
+    // profile cadastrado, exibimos o profile.nome no lugar de '—'.
+    const nomePorUserId = new Map();
+    const nomePorEmail = new Map();
     (profiles || []).forEach(p => {
       if (!p) return;
       const tel = (p.telefone || '').trim();
-      if (!tel) return;
-      if (p.id) telefonePorUserId.set(p.id, tel);
-      if (p.email) telefonePorEmail.set(String(p.email).toLowerCase(), tel);
+      if (tel) {
+        if (p.id) telefonePorUserId.set(p.id, tel);
+        if (p.email) telefonePorEmail.set(String(p.email).toLowerCase(), tel);
+      }
+      const nm = (p.nome || '').trim();
+      if (nm) {
+        if (p.id) nomePorUserId.set(p.id, nm);
+        if (p.email) nomePorEmail.set(String(p.email).toLowerCase(), nm);
+      }
     });
 
     // Popula filtro de experiências (apenas uma vez por load).
@@ -651,6 +662,19 @@
         const key = String(b.email).toLowerCase();
         if (telefonePorEmail.has(key)) telefone = telefonePorEmail.get(key);
       }
+      // Nome: coluna bookings.nome é a fonte canônica (setada pelo
+      // create-checkout-session). Se estiver vazia (booking antiga
+      // OU edge function antiga sem o fallback), tenta recuperar
+      // pelo profile (user_id primeiro, email como catch-all).
+      let nomeResolved = (b.nome || '').trim() || null;
+      if (!nomeResolved && b.user_id && nomePorUserId.has(b.user_id)) {
+        nomeResolved = nomePorUserId.get(b.user_id);
+      }
+      if (!nomeResolved && b.email) {
+        const nk = String(b.email).toLowerCase();
+        if (nomePorEmail.has(nk)) nomeResolved = nomePorEmail.get(nk);
+      }
+
       let telefoneCell;
       if (telefone) {
         const digits = String(telefone).replace(/\D+/g, '');
@@ -665,7 +689,7 @@
       return `
         <tr>
           <td>${escapeHtml(when)}</td>
-          <td>${escapeHtml(b.nome || '—')}</td>
+          <td>${escapeHtml(nomeResolved || '—')}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
           <td>${escapeHtml(b.experiencia_nome || '—')}</td>

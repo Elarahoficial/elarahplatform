@@ -468,12 +468,15 @@ serve(async (req) => {
         // UPDATE de status='pago', então se o UPDATE falhar o webhook
         // NÃO manda e-mail (correto — pagamento não foi confirmado).
         //
-        // Também atualiza o telefone se ele veio no metadata da
+        // Também atualiza telefone + nome se vieram no metadata da
         // sessão Stripe (safety net) — cobre o caso raro em que o
-        // pre-insert gravou sem telefone (coluna ausente, erro, etc.)
-        // e a gente tem o valor no metadata pra recuperar.
+        // pre-insert gravou sem algum deles (coluna ausente, erro
+        // parcial) e a gente tem o valor no metadata pra recuperar.
+        // Os valores no metadata e no pre-insert vêm da mesma fonte,
+        // então escrever idempotentemente é seguro.
         const telefoneFromMeta = String(session.metadata?.telefone ?? "").trim() ||
           String(session.metadata?.telefone_digits ?? "").trim();
+        const nomeFromMeta = String(session.metadata?.nome ?? "").trim();
         const updatePatch: Record<string, unknown> = {
           status: "pago",
           stripe_payment_intent: session.payment_intent ?? null,
@@ -482,6 +485,9 @@ serve(async (req) => {
         };
         if (telefoneFromMeta) {
           updatePatch.telefone = telefoneFromMeta;
+        }
+        if (nomeFromMeta) {
+          updatePatch.nome = nomeFromMeta;
         }
         await updateBookingBySession(session.id, updatePatch);
         const booking = await getBookingBySession(session.id);
