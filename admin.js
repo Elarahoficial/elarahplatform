@@ -640,7 +640,10 @@
       return;
     }
 
-    tbody.innerHTML = filtered.map(b => {
+    // Renderiza uma linha da tabela. Extraído pra reaproveitar em
+    // cada grupo (pendentes / pagos / outros) sem duplicar o código
+    // de resolução de telefone + nome.
+    function renderBookingRow(b) {
       const when = b.created_at
         ? new Date(b.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
         : '—';
@@ -699,7 +702,57 @@
           <td>${bookingStatusBadge(b.status)}</td>
         </tr>
       `;
-    }).join('');
+    }
+
+    // Cabeçalho de grupo — divisor visual entre seções (pendentes,
+    // pagos, outros). Usa colspan=9 pra ocupar todas as colunas e um
+    // estilo inline suave pra não depender de mudanças no CSS.
+    function renderGroupHeader(label, count) {
+      return `
+        <tr class="admin__table-group-header">
+          <td colspan="9" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
+            ${escapeHtml(label)} <span style="color:#999;font-weight:500;margin-left:6px;">(${count})</span>
+          </td>
+        </tr>
+      `;
+    }
+
+    // Ordenação dentro de um grupo: sempre created_at desc (mais
+    // recentes no topo). Bookings sem created_at vão pro fundo.
+    function sortByCreatedDesc(list) {
+      return list.slice().sort((a, b) => {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      });
+    }
+
+    // Agrupa por status:
+    //   1. Pendentes (mais importantes — ação necessária)
+    //   2. Pagos
+    //   3. Outros (expirado, cancelado, reembolsado) — preservados
+    //      em um terceiro grupo pra não serem perdidos.
+    const pendingGroup = sortByCreatedDesc(filtered.filter(b => b.status === 'pending'));
+    const paidGroup = sortByCreatedDesc(filtered.filter(b => b.status === 'pago'));
+    const otherGroup = sortByCreatedDesc(
+      filtered.filter(b => b.status !== 'pending' && b.status !== 'pago')
+    );
+
+    const parts = [];
+    if (pendingGroup.length) {
+      parts.push(renderGroupHeader('Pendentes', pendingGroup.length));
+      parts.push(pendingGroup.map(renderBookingRow).join(''));
+    }
+    if (paidGroup.length) {
+      parts.push(renderGroupHeader('Pagos', paidGroup.length));
+      parts.push(paidGroup.map(renderBookingRow).join(''));
+    }
+    if (otherGroup.length) {
+      parts.push(renderGroupHeader('Outros', otherGroup.length));
+      parts.push(otherGroup.map(renderBookingRow).join(''));
+    }
+
+    tbody.innerHTML = parts.join('');
   }
 
   // ===== EXPERIENCES CRUD =====

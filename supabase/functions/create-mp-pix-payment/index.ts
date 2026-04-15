@@ -10,10 +10,32 @@
 // Diferente do Stripe (redirect), aqui o usuário nunca sai do site.
 // O polling do frontend + o mp-webhook cuidam da confirmação.
 //
+// Payload esperado:
+//   {
+//     "experiencia_id": "uuid",
+//     "horario":        "19h00 – 22h30",
+//     "email":          "cliente@dominio",
+//     "nome":           "Maria Silva",
+//     "cpf":            "12345678900",        // só dígitos
+//     "telefone":       "(11) 91234-5678",
+//     "telefone_digits":"11912345678",
+//     "cupom":          "ELRH-..." | null
+//   }
+//
+// Respostas:
+//   200 { booking_id, payment_id, qr_code, qr_code_base64,
+//         expires_at, amount_total_centavos, direct?: true }
+//   4xx { error, message }
+//   502 { error: "mp_create_failed", detail }
+//
 // Variáveis de ambiente:
 //   MERCADO_PAGO_ACCESS_TOKEN
+//   MERCADO_PAGO_WEBHOOK_SECRET  (usada no webhook, não aqui, mas
+//                                  o front pode consultar este
+//                                  endpoint sem ela)
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
+//   PUBLIC_SITE_URL              (usada pra montar a notification_url)
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -28,8 +50,18 @@ import { reserveExperienceSlot } from "../_shared/booking_guard.ts";
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+ claude/show-buyer-name-admin-secEZ
+const PUBLIC_SITE_URL =
+  (Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "") ||
+  "https://elarah.com.br";
 
 // Notification URL é a URL pública da nossa função mp-webhook.
+// Supabase Edge Functions sempre estão em
+// https://<project>.supabase.co/functions/v1/<name>
+=======
+
+// Notification URL é a URL pública da nossa função mp-webhook.
+ claude/create-elarah-homepage-VsE5i
 function buildMpNotificationUrl(): string | undefined {
   if (!SUPABASE_URL) return undefined;
   return SUPABASE_URL.replace(/\/+$/, "") + "/functions/v1/mp-webhook";
@@ -151,6 +183,11 @@ serve(async (req) => {
   } = guard;
 
   // ===== CASO especial: cupom cobre 100% — pula MP =====
+ claude/show-buyer-name-admin-secEZ
+  // Fluxo idêntico ao que create-checkout-session faz: grava direto
+  // como pago, nenhum pagamento é criado na MP.
+
+ claude/create-elarah-homepage-VsE5i
   if (amountToChargeCents === 0) {
     const directBookingId = crypto.randomUUID();
     const { error: directErr } = await supabase.from("bookings").insert({
@@ -201,6 +238,11 @@ serve(async (req) => {
   }
 
   // ===== Caso normal: criar pagamento PIX na MP =====
+ claude/show-buyer-name-admin-secEZ
+  // Reserva booking_id ANTES de chamar a MP pra poder usar como
+  // external_reference — facilita reconciliação.
+=======
+ claude/create-elarah-homepage-VsE5i
   const bookingId = crypto.randomUUID();
   const { first: firstName, last: lastName } = splitName(resolvedNome || "Cliente Elarah");
 
@@ -214,7 +256,11 @@ serve(async (req) => {
     payerCpf: cpfRaw,
     expiresInMinutes: 30,
     notificationUrl: buildMpNotificationUrl(),
+ claude/show-buyer-name-admin-secEZ
+    idempotencyKey: bookingId, // garante idempotência por booking
+
     idempotencyKey: bookingId,
+ claude/create-elarah-homepage-VsE5i
   });
 
   if (!mpResult.ok || !mpResult.payment) {

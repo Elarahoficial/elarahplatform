@@ -57,6 +57,42 @@ const PUBLIC_SITE_URL =
   (Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "") ||
   "https://elarah.com.br";
 
+// ===== Taxa do cartão (repasse pro cliente) =====
+// Lida uma vez no boot. Se o admin mudar as envs, basta redeploy da
+// function. Defaults conservadores (0) — sem repasse se não tiver
+// config, pra não quebrar deploys antigos silenciosamente.
+const CARD_FEE_PERCENT = Number(Deno.env.get("CARD_FEE_PERCENT") ?? "0");
+const CARD_FEE_FIXED_CENTS = Number(Deno.env.get("CARD_FEE_FIXED_CENTS") ?? "0");
+
+// Calcula o preço final repassando a taxa do cartão ao cliente.
+// Formula: final = base + round(base * percent/100) + fixed
+// Arredondamento em centavos (Math.round) — consistente com parsing.
+// PIX NÃO usa essa função — vai direto com o base_price.
+function applyCardFee(baseCents: number): {
+  finalCents: number;
+  feePercentCents: number;
+  feeFixedCents: number;
+  feeTotalCents: number;
+} {
+  if (!Number.isFinite(baseCents) || baseCents <= 0) {
+    return {
+      finalCents: baseCents,
+      feePercentCents: 0,
+      feeFixedCents: 0,
+      feeTotalCents: 0,
+    };
+  }
+  const feePercentCents = Math.round(baseCents * (CARD_FEE_PERCENT / 100));
+  const feeFixedCents = CARD_FEE_FIXED_CENTS;
+  const feeTotalCents = feePercentCents + feeFixedCents;
+  return {
+    finalCents: baseCents + feeTotalCents,
+    feePercentCents,
+    feeFixedCents,
+    feeTotalCents,
+  };
+}
+
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20",
   httpClient: Stripe.createFetchHttpClient(),
@@ -238,6 +274,17 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const email = payload.email ? String(payload.email).trim() : null;
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
+
+  // ===== Método de pagamento =====
+  // Esta edge function agora só cuida de cartão. PIX é gerenciado
+  // pela função separada create-mp-pix-payment (Mercado Pago).
+  // Se o frontend velho mandar payment_method='pix' por engano aqui,
+  // ignoramos e tratamos como cartão — o repasse de taxa vai ser
+  // aplicado normalmente.
+  const paymentMethod: "card" = "card";
+  console.info(
+    "[Elarah Payment] create-checkout-session (cartão)",
+  );
   // ===== TELEFONE / WHATSAPP =====
   // Aceita tanto `telefone` (formato humano: "(11) 91234-5678")
   // quanto `telefone_digits` (só dígitos: "11912345678"). Se o
@@ -404,6 +451,33 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     amountToCharge = Math.max(0, cents - giftCardCentavos);
   }
 
+  // ===== Repasse da taxa do cartão =====
+  // Aplica SOMENTE quando o método é 'card' E ainda resta valor a
+  // cobrar (>0). PIX nunca recebe fee. Gift card 100% também não.
+  // A taxa é calculada sobre o valor restante (depois do desconto do
+  // cupom), não sobre o preço cheio — o cliente paga taxa só sobre o
+  // que efetivamente cai no cartão.
+  const baseBeforeFeeCents = amountToCharge;
+  let feeInfo = {
+    finalCents: amountToCharge,
+    feePercentCents: 0,
+    feeFixedCents: 0,
+    feeTotalCents: 0,
+  };
+  if (amountToCharge > 0) {
+    feeInfo = applyCardFee(amountToCharge);
+    amountToCharge = feeInfo.finalCents;
+    console.info(
+      "[Elarah Payment] taxa do cartão aplicada",
+      "base=" + baseBeforeFeeCents,
+      "fee_percent=" + feeInfo.feePercentCents,
+      "fee_fixed=" + feeInfo.feeFixedCents,
+      "total=" + amountToCharge,
+      "percent_config=" + CARD_FEE_PERCENT,
+      "fixed_config=" + CARD_FEE_FIXED_CENTS,
+    );
+  }
+
   // ===== Decremento atômico de vaga =====
   // Só agora — depois do hold do cupom — pra evitar reservar vaga
   // que vamos liberar logo em seguida se o cupom falhar.
@@ -503,6 +577,10 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     ? exp.nome + " (com gift card)"
     : exp.nome;
 
+  // Esta function agora atende somente cartão. PIX foi migrado pra
+  // create-mp-pix-payment (Mercado Pago). Pagamento síncrono: o
+  // webhook recebe `checkout.session.completed` com payment_status
+  // 'paid' e marca a booking como 'pago' imediatamente.
   let session;
   try {
     session = await stripe.checkout.sessions.create({
@@ -544,10 +622,16 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         gift_card_id: giftCardId ?? "",
         gift_card_centavos: String(giftCardCentavos),
         gift_card_code: cupomCode ?? "",
+        // Método de pagamento + breakdown de taxa (auditoria/admin).
+        payment_method: paymentMethod,
+        base_before_fee_centavos: String(baseBeforeFeeCents),
+        card_fee_percent_centavos: String(feeInfo.feePercentCents),
+        card_fee_fixed_centavos: String(feeInfo.feeFixedCents),
+        card_fee_total_centavos: String(feeInfo.feeTotalCents),
       },
     });
   } catch (e) {
-    console.error("[create-checkout-session] stripe create error", e);
+    console.error("[Elarah Payment] stripe create error", e);
     if (giftCardId) {
       await supabase.rpc("refund_gift_card", {
         p_gift_card_id: giftCardId,
@@ -565,6 +649,22 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // metadata JSON. Se a coluna `telefone` não existir (migração
   // nova não rodou ainda), a linha é gravada sem ele e o webhook
   // tenta o retry-without-column. O metadata preserva o valor.
+  const bookingMetadataBase = {
+    bairro: exp.bairro ?? null,
+    endereco: exp.endereco ?? null,
+    telefone_digits: telefoneDigits || null,
+    preco_total_centavos: cents,
+    // Breakdown do pagamento — admin pode usar pra auditar o repasse
+    // de taxa. `base_before_fee_centavos` é o valor que cairia no
+    // cartão SEM o repasse; `amount_total` na coluna já é o valor
+    // final com fee.
+    payment_method: paymentMethod,
+    base_before_fee_centavos: baseBeforeFeeCents,
+    card_fee_percent_centavos: feeInfo.feePercentCents,
+    card_fee_fixed_centavos: feeInfo.feeFixedCents,
+    card_fee_total_centavos: feeInfo.feeTotalCents,
+  };
+
   const { error: insertErr } = await supabase.from("bookings").insert({
     user_id: userId,
     email: email ?? "",
@@ -582,12 +682,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     gift_card_id: giftCardId,
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
-    metadata: {
-      bairro: exp.bairro ?? null,
-      endereco: exp.endereco ?? null,
-      telefone_digits: telefoneDigits || null,
-      preco_total_centavos: cents,
-    },
+    metadata: bookingMetadataBase,
   });
 
   if (insertErr) {
@@ -621,11 +716,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         gift_card_centavos: giftCardCentavos || null,
         gift_card_code: cupomCode,
         metadata: {
-          bairro: exp.bairro ?? null,
-          endereco: exp.endereco ?? null,
+          ...bookingMetadataBase,
           telefone: telefoneToSave,
-          telefone_digits: telefoneDigits || null,
-          preco_total_centavos: cents,
         },
       });
       if (retryErr) {
@@ -643,13 +735,24 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     }
   } else {
     console.info(
-      "[create-checkout-session] booking pending gravada",
+      "[Elarah Payment] booking pending gravada",
       "session=" + session.id,
-      "telefone_present=" + (telefoneValid ? "yes" : "no")
+      "method=" + paymentMethod,
+      "base_cents=" + baseBeforeFeeCents,
+      "fee_cents=" + feeInfo.feeTotalCents,
+      "total_cents=" + amountToCharge,
+      "telefone_present=" + (telefoneValid ? "yes" : "no"),
     );
   }
 
-  return jsonResponse({ url: session.url, session_id: session.id });
+  return jsonResponse({
+    url: session.url,
+    session_id: session.id,
+    payment_method: paymentMethod,
+    base_before_fee_centavos: baseBeforeFeeCents,
+    card_fee_total_centavos: feeInfo.feeTotalCents,
+    amount_total_centavos: amountToCharge,
+  });
 }
 
 // =============================================================
@@ -677,6 +780,17 @@ serve(async (req) => {
   }
 
   const mode = String(payload.mode ?? "experience");
+
+  // Modo leve: devolve as taxas do cartão pro frontend exibir o
+  // breakdown antes do checkout. Não cria booking, não chama Stripe.
+  // Fonte da verdade das taxas pra que o preview no modal de
+  // reserva case com o que o backend realmente cobra.
+  if (mode === "fee_config") {
+    return jsonResponse({
+      card_fee_percent: CARD_FEE_PERCENT,
+      card_fee_fixed_cents: CARD_FEE_FIXED_CENTS,
+    });
+  }
 
   if (mode === "gift_card") {
     return handleGiftCardPurchase(payload);
