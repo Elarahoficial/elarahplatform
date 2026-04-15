@@ -1070,9 +1070,21 @@ if (groupForm) {
         +   '</div>'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== SELEÇÃO DE MÉTODO DE PAGAMENTO =====
+            // Cartão tem repasse de taxa; PIX é o preço limpo. A seleção
+            // altera o breakdown acima e o valor final enviado pro Stripe.
+            '<div style="margin-bottom:12px;">'
+        +     '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">Forma de pagamento</label>'
+        +     '<div id="erm-pm-group" style="display:flex;gap:8px;">'
+        +       '<button type="button" class="erm-pm-btn" data-pm="card" style="flex:1;padding:11px 10px;border:1px solid #f0a05e;background:#fff8ef;color:#1a1a1a;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;">Cartão</button>'
+        +       '<button type="button" class="erm-pm-btn" data-pm="pix" style="flex:1;padding:11px 10px;border:1px solid #ddd;background:#fff;color:#666;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;">PIX</button>'
+        +     '</div>'
+        +     '<p id="erm-pm-hint" style="margin:6px 0 0;font-size:.78rem;color:#888;min-height:1em;">Cartão tem taxa de processamento. PIX não tem taxa.</p>'
+        +   '</div>'
         +   '<div style="background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
         +     '<div style="display:flex;justify-content:space-between;font-size:.88rem;color:#666;"><span>Subtotal</span><span id="erm-subtotal"></span></div>'
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
+        +     '<div id="erm-fee-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#666;margin-top:6px;"><span>Taxa do cartão</span><span id="erm-fee"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
         +   '</div>'
         +   // ===== CAMPO NOME COMPLETO (obrigatório) =====
@@ -1126,6 +1138,122 @@ if (groupForm) {
 
     let currentReservationCtx = null;
 
+    // ===== Fee config cache =====
+    // Busca as taxas do backend uma vez por sessão do navegador. Se
+    // o backend não responder, cai no fallback 0/0 (sem repasse) —
+    // nunca trava o checkout por causa da taxa. O admin pode mudar
+    // os valores via env var; cliente velho pega novos valores no
+    // próximo F5.
+    let cachedFeeConfig = null;
+    let feeConfigPromise = null;
+    async function getFeeConfig() {
+      if (cachedFeeConfig) return cachedFeeConfig;
+      if (feeConfigPromise) return feeConfigPromise;
+      feeConfigPromise = (async () => {
+        try {
+          const res = await fetch(CHECKOUT_FN_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ mode: 'fee_config' }),
+          });
+          const data = await res.json().catch(() => null);
+          if (res.ok && data) {
+            cachedFeeConfig = {
+              percent: Number(data.card_fee_percent || 0),
+              fixedCents: Number(data.card_fee_fixed_cents || 0),
+            };
+            console.log('[Elarah Payment] fee config carregado:', cachedFeeConfig);
+          } else {
+            console.warn('[Elarah Payment] fee config falhou, usando fallback 0/0', data);
+            cachedFeeConfig = { percent: 0, fixedCents: 0 };
+          }
+        } catch (e) {
+          console.warn('[Elarah Payment] fee config exceção, fallback 0/0:', e);
+          cachedFeeConfig = { percent: 0, fixedCents: 0 };
+        }
+        return cachedFeeConfig;
+      })();
+      return feeConfigPromise;
+    }
+
+    // Calcula quanto de taxa seria adicionado pra um dado valor de
+    // base (em centavos). Espelha o backend (applyCardFee).
+    function computeCardFee(baseCents, feeConfig) {
+      if (!feeConfig || baseCents <= 0) return 0;
+      const pct = Math.round(baseCents * (feeConfig.percent / 100));
+      return pct + feeConfig.fixedCents;
+    }
+
+    // Re-renderiza subtotal / desconto / taxa / total baseado no
+    // estado atual do ctx (cupom aplicado + método escolhido).
+    function refreshPriceBreakdown() {
+      if (!currentReservationCtx || !modalRoot) return;
+      const ctx = currentReservationCtx;
+      const root = modalRoot;
+      const cupomCents = Number(ctx.cupomCentavos || 0);
+      const baseAfterCupom = Math.max(0, (ctx.precoCentavos || 0) - cupomCents);
+
+      // Taxa só incide sobre o valor que cai no cartão.
+      let feeCents = 0;
+      if (ctx.paymentMethod === 'card' && baseAfterCupom > 0 && ctx.feeConfig) {
+        feeCents = computeCardFee(baseAfterCupom, ctx.feeConfig);
+      }
+      const total = baseAfterCupom + feeCents;
+
+      ctx.totalCentavos = total;
+      ctx.feeCents = feeCents;
+
+      root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
+      root.querySelector('#erm-total').textContent = brl(total);
+
+      const feeRow = root.querySelector('#erm-fee-row');
+      if (feeCents > 0) {
+        feeRow.style.display = 'flex';
+        root.querySelector('#erm-fee').textContent = '+ ' + brl(feeCents);
+      } else {
+        feeRow.style.display = 'none';
+      }
+
+      // Atualiza texto do botão — deixa claro pro usuário.
+      const confirmBtn = root.querySelector('#erm-confirm');
+      if (total === 0) {
+        confirmBtn.textContent = 'Confirmar reserva';
+      } else if (ctx.paymentMethod === 'pix') {
+        confirmBtn.textContent = 'Confirmar e pagar com PIX';
+      } else {
+        confirmBtn.textContent = 'Confirmar e pagar com cartão';
+      }
+    }
+
+    // Visual toggle dos botões Cartão / PIX.
+    function updatePaymentMethodButtons() {
+      if (!modalRoot || !currentReservationCtx) return;
+      const ctx = currentReservationCtx;
+      const buttons = modalRoot.querySelectorAll('.erm-pm-btn');
+      buttons.forEach(function (btn) {
+        const pm = btn.getAttribute('data-pm');
+        if (pm === ctx.paymentMethod) {
+          btn.style.background = '#fff8ef';
+          btn.style.borderColor = '#f0a05e';
+          btn.style.color = '#1a1a1a';
+        } else {
+          btn.style.background = '#fff';
+          btn.style.borderColor = '#ddd';
+          btn.style.color = '#666';
+        }
+      });
+      const hint = modalRoot.querySelector('#erm-pm-hint');
+      if (hint) {
+        hint.textContent = ctx.paymentMethod === 'pix'
+          ? 'Sem taxa. Vamos gerar um QR Code após confirmar.'
+          : 'Cartão tem taxa de processamento repassada ao cliente.';
+      }
+    }
+
     function openReservationModal(ctx) {
       const root = buildReservationModal();
       currentReservationCtx = ctx;
@@ -1165,6 +1293,23 @@ if (groupForm) {
       ctx.cupomCode = null;
       ctx.cupomCentavos = 0;
       ctx.totalCentavos = ctx.precoCentavos;
+
+      // ===== Estado do método de pagamento =====
+      // Default: cartão — preserva UX atual pra quem já tá acostumado.
+      ctx.paymentMethod = ctx.paymentMethod || 'card';
+      ctx.feeCents = 0;
+      ctx.feeConfig = cachedFeeConfig || null;
+      // Esconde a linha de taxa até o fee_config carregar.
+      const feeRowInit = root.querySelector('#erm-fee-row');
+      if (feeRowInit) feeRowInit.style.display = 'none';
+      updatePaymentMethodButtons();
+      refreshPriceBreakdown();
+      // Busca as taxas assincronamente — quando responder, re-renderiza.
+      getFeeConfig().then(function (cfg) {
+        if (!currentReservationCtx) return;
+        currentReservationCtx.feeConfig = cfg;
+        refreshPriceBreakdown();
+      });
 
       root.style.display = 'flex';
       document.body.style.overflow = 'hidden';
@@ -1221,6 +1366,23 @@ if (groupForm) {
       const validateBtn = root.querySelector('#erm-validate');
       validateBtn.onclick = function () { handleValidateCupom(); };
       confirmBtn.onclick = function () { handleConfirmReservation(); };
+
+      // ===== Binds dos botões de método de pagamento =====
+      // Clicar troca o método no ctx e re-renderiza o breakdown.
+      // Não chama backend — tudo local até o confirm final.
+      const pmButtons = root.querySelectorAll('.erm-pm-btn');
+      pmButtons.forEach(function (btn) {
+        btn.onclick = function () {
+          if (!currentReservationCtx) return;
+          const pm = btn.getAttribute('data-pm');
+          if (pm !== 'card' && pm !== 'pix') return;
+          if (currentReservationCtx.paymentMethod === pm) return;
+          currentReservationCtx.paymentMethod = pm;
+          console.log('[Elarah Payment] método trocado para', pm);
+          updatePaymentMethodButtons();
+          refreshPriceBreakdown();
+        };
+      });
       root.querySelector('#erm-cupom').onkeydown = function (e) {
         if (e.key === 'Enter') { e.preventDefault(); handleValidateCupom(); }
       };
@@ -1282,16 +1444,13 @@ if (groupForm) {
           msg.textContent = data.message || 'Cupom inválido.';
           currentReservationCtx.cupomCode = null;
           currentReservationCtx.cupomCentavos = 0;
-          currentReservationCtx.totalCentavos = currentReservationCtx.precoCentavos;
           root.querySelector('#erm-discount-row').style.display = 'none';
-          root.querySelector('#erm-total').textContent = brl(currentReservationCtx.precoCentavos);
+          refreshPriceBreakdown();
           return;
         }
         const used = Number(data.used_centavos || 0);
-        const total = Math.max(0, currentReservationCtx.precoCentavos - used);
         currentReservationCtx.cupomCode = code;
         currentReservationCtx.cupomCentavos = used;
-        currentReservationCtx.totalCentavos = total;
 
         msg.style.color = '#1a8a4a';
         msg.textContent = data.covers_full
@@ -1300,10 +1459,9 @@ if (groupForm) {
         const drow = root.querySelector('#erm-discount-row');
         drow.style.display = 'flex';
         root.querySelector('#erm-discount').textContent = '- ' + brl(used);
-        root.querySelector('#erm-total').textContent = brl(total);
-
-        const confirmBtn = root.querySelector('#erm-confirm');
-        confirmBtn.textContent = total === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+        // Re-renderiza pra atualizar taxa + total corretamente
+        // (taxa é recalculada sobre o valor pós-cupom).
+        refreshPriceBreakdown();
       } catch (e) {
         console.error('[Elarah checkout] validate cupom', e);
         msg.style.color = '#c0392b';
@@ -1394,7 +1552,17 @@ if (groupForm) {
           telefone: telefoneRaw, // mantém formato humano pro admin
           telefone_digits: telefoneNormalized, // só dígitos pra WhatsApp links
           cupom: ctx.cupomCode || null,
+          // Método de pagamento escolhido no modal (card ou pix).
+          // Default no backend é 'card' pra compat com front antigo.
+          payment_method: ctx.paymentMethod || 'card',
         };
+        console.log('[Elarah Payment] enviando checkout', {
+          method: body.payment_method,
+          base: ctx.precoCentavos,
+          cupom: ctx.cupomCentavos || 0,
+          fee: ctx.feeCents || 0,
+          total: ctx.totalCentavos || 0,
+        });
 
         // Side-effect: atualiza telefone + nome no perfil do usuário
         // pra próxima reserva pré-preencher. Fire-and-forget, não
@@ -1430,7 +1598,7 @@ if (groupForm) {
           const msg = (data && (data.message || data.error)) || 'Não foi possível processar a reserva.';
           errEl.textContent = msg;
           confirmBtn.disabled = false;
-          confirmBtn.textContent = ctx.totalCentavos === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+          refreshPriceBreakdown();
           return;
         }
 
@@ -1445,12 +1613,12 @@ if (groupForm) {
         }
         errEl.textContent = 'Resposta inesperada do servidor.';
         confirmBtn.disabled = false;
-        confirmBtn.textContent = ctx.totalCentavos === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+        refreshPriceBreakdown();
       } catch (e) {
-        console.error('[Elarah checkout] confirm', e);
+        console.error('[Elarah Payment] confirm erro:', e);
         errEl.textContent = 'Erro ao confirmar. Tente novamente.';
         confirmBtn.disabled = false;
-        confirmBtn.textContent = ctx.totalCentavos === 0 ? 'Confirmar reserva' : 'Confirmar e pagar';
+        refreshPriceBreakdown();
       }
     }
 

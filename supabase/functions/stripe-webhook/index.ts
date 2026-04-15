@@ -354,6 +354,54 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
   }
 }
 
+// Marca a booking como paga (UPDATE) e dispara o e-mail de
+// confirmação. Usado tanto pelo fluxo síncrono do cartão (`completed`
+// com payment_status='paid') quanto pelo fluxo assíncrono do PIX
+// (`async_payment_succeeded`).
+//
+// Idempotente: se a booking já estiver como 'pago' quando for chamada
+// de novo (ex.: Stripe reentregou o mesmo evento), o UPDATE continua
+// passando mas o e-mail pode ser reenviado. Se isso virar problema,
+// o ideal é adicionar uma coluna `confirmation_email_sent_at` e
+// checar aqui antes de mandar. Por ora, deixa simples — e-mail
+// duplicado é menos ruim do que cliente sem confirmação.
+async function markBookingAsPaid(session: Stripe.Checkout.Session) {
+  const telefoneFromMeta = String(session.metadata?.telefone ?? "").trim() ||
+    String(session.metadata?.telefone_digits ?? "").trim();
+  const nomeFromMeta = String(session.metadata?.nome ?? "").trim();
+  const updatePatch: Record<string, unknown> = {
+    status: "pago",
+    stripe_payment_intent: session.payment_intent ?? null,
+    amount_total: session.amount_total ?? null,
+    currency: session.currency ?? "brl",
+  };
+  if (telefoneFromMeta) {
+    updatePatch.telefone = telefoneFromMeta;
+  }
+  if (nomeFromMeta) {
+    updatePatch.nome = nomeFromMeta;
+  }
+  await updateBookingBySession(session.id, updatePatch);
+  const booking = await getBookingBySession(session.id);
+  if (!booking) {
+    console.error(
+      "[Elarah Payment] booking não encontrado após UPDATE — ",
+      "session=" + session.id,
+      "— e-mail de confirmação NÃO pode ser enviado. Verifique",
+      "se create-checkout-session gravou a booking antes do",
+      "redirect pro Stripe.",
+    );
+    return;
+  }
+  if (booking.status !== "pago") {
+    console.warn(
+      "[Elarah Payment] booking existe mas status=" + booking.status +
+        " (esperado 'pago') — e-mail será enviado mesmo assim.",
+    );
+  }
+  await sendBookingConfirmation(booking);
+}
+
 async function sendBookingConfirmation(booking: BookingRow) {
   if (!booking.email) {
     console.warn(
@@ -451,10 +499,13 @@ serve(async (req) => {
           break;
         }
         const kind = String(session.metadata?.kind ?? "experience");
+        const paymentMethodMeta = String(session.metadata?.payment_method ?? "card");
         console.info(
-          "[stripe-webhook] checkout.session.completed",
+          "[Elarah Payment] checkout.session.completed",
           "session=" + session.id,
           "kind=" + kind,
+          "method=" + paymentMethodMeta,
+          "payment_status=" + (session.payment_status ?? "?"),
           "amount_total=" + (session.amount_total ?? "?"),
           "payment_intent=" + (session.payment_intent ?? "?"),
         );
@@ -464,50 +515,60 @@ serve(async (req) => {
           break;
         }
 
-        // Reserva de experiência — o e-mail SÓ é disparado depois do
-        // UPDATE de status='pago', então se o UPDATE falhar o webhook
-        // NÃO manda e-mail (correto — pagamento não foi confirmado).
-        //
-        // Também atualiza telefone + nome se vieram no metadata da
-        // sessão Stripe (safety net) — cobre o caso raro em que o
-        // pre-insert gravou sem algum deles (coluna ausente, erro
-        // parcial) e a gente tem o valor no metadata pra recuperar.
-        // Os valores no metadata e no pre-insert vêm da mesma fonte,
-        // então escrever idempotentemente é seguro.
-        const telefoneFromMeta = String(session.metadata?.telefone ?? "").trim() ||
-          String(session.metadata?.telefone_digits ?? "").trim();
-        const nomeFromMeta = String(session.metadata?.nome ?? "").trim();
-        const updatePatch: Record<string, unknown> = {
-          status: "pago",
-          stripe_payment_intent: session.payment_intent ?? null,
-          amount_total: session.amount_total ?? null,
-          currency: session.currency ?? "brl",
-        };
-        if (telefoneFromMeta) {
-          updatePatch.telefone = telefoneFromMeta;
-        }
-        if (nomeFromMeta) {
-          updatePatch.nome = nomeFromMeta;
-        }
-        await updateBookingBySession(session.id, updatePatch);
-        const booking = await getBookingBySession(session.id);
-        if (!booking) {
-          console.error(
-            "[stripe-webhook] booking não encontrado após UPDATE — ",
+        // PIX: no `completed` o payment_status vem 'unpaid' — o
+        // cliente recebeu o QR code mas ainda não pagou. NÃO
+        // marca como pago aqui. Só anota o payment_intent e deixa
+        // a booking em 'pending' até chegar o async_payment_succeeded.
+        // Cartão: payment_status vem 'paid' → segue o fluxo normal.
+        if (session.payment_status !== "paid") {
+          console.info(
+            "[Elarah Payment] sessão completed mas ainda não paga (provável PIX aguardando) — mantém pending",
             "session=" + session.id,
-            "— e-mail de confirmação NÃO pode ser enviado. Verifique",
-            "se create-checkout-session gravou a booking antes do",
-            "redirect pro Stripe.",
+            "payment_status=" + session.payment_status,
+          );
+          // Só anota o payment_intent pro charge.refunded conseguir
+          // achar a booking depois. Não toca em status/nome/etc.
+          if (session.payment_intent) {
+            await updateBookingBySession(session.id, {
+              stripe_payment_intent: session.payment_intent,
+            });
+          }
+          break;
+        }
+
+        await markBookingAsPaid(session);
+        break;
+      }
+
+      // PIX: evento disparado quando o cliente paga o QR code gerado
+      // pela sessão. Aqui SIM marcamos como 'pago' e mandamos o e-mail.
+      // Cartão nunca passa por esse evento — a confirmação dele vem
+      // em `completed` com payment_status='paid'.
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (!session.id) {
+          console.warn(
+            "[stripe-webhook] async_payment_succeeded sem session.id — ignorando",
           );
           break;
         }
-        if (booking.status !== "pago") {
-          console.warn(
-            "[stripe-webhook] booking existe mas status=" + booking.status +
-              " (esperado 'pago') — e-mail será enviado mesmo assim.",
-          );
+        const kind = String(session.metadata?.kind ?? "experience");
+        console.info(
+          "[Elarah Payment] checkout.session.async_payment_succeeded",
+          "session=" + session.id,
+          "kind=" + kind,
+          "amount_total=" + (session.amount_total ?? "?"),
+          "payment_intent=" + (session.payment_intent ?? "?"),
+        );
+
+        if (kind === "gift_card") {
+          // Gift cards hoje não usam PIX, mas se um dia usarem, reusa
+          // o mesmo fluxo de ativação.
+          await activateGiftCardFromSession(session);
+          break;
         }
-        await sendBookingConfirmation(booking);
+
+        await markBookingAsPaid(session);
         break;
       }
       case "checkout.session.expired": {
