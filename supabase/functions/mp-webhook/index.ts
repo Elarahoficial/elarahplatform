@@ -20,7 +20,8 @@
 //
 // Variáveis de ambiente:
 //   MERCADO_PAGO_ACCESS_TOKEN
-//   MERCADO_PAGO_WEBHOOK_SECRET
+//   MP_WEBHOOK_SECRET           (preferido — padrão atual)
+//     OU MERCADO_PAGO_WEBHOOK_SECRET (alias legado, também aceito)
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
 //   RESEND_API_KEY        (opcional — sem ele, e-mail é pulado)
@@ -39,7 +40,12 @@ import {
 } from "../_shared/mercadopago.ts";
 
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
-const MP_WEBHOOK_SECRET = Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET") ?? "";
+// Aceita tanto o nome curto (MP_WEBHOOK_SECRET) quanto o longo
+// (MERCADO_PAGO_WEBHOOK_SECRET) — quem configurar primeiro vence.
+const MP_WEBHOOK_SECRET =
+  Deno.env.get("MP_WEBHOOK_SECRET") ??
+  Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET") ??
+  "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
