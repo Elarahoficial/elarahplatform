@@ -7,14 +7,6 @@
 // de pagamentos. Diferente do Stripe, a MP só manda o ID — a
 // gente precisa buscar o pagamento completo pra ver o status.
 //
-// Fluxo:
-//   1. Verifica assinatura (x-signature HMAC-SHA256)
-//   2. Extrai data.id do body
-//   3. GET /v1/payments/{id} na MP
-//   4. Se status === 'approved' → marca booking como 'pago' + email
-//      Se status === 'cancelled'/'rejected' → cancela + rollback
-//      Outros → ignora (aguarda próximo webhook)
-//
 // Deploy:
 //   supabase functions deploy mp-webhook --no-verify-jwt
 //

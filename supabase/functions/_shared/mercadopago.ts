@@ -219,7 +219,11 @@ export async function getPayment(
 //
 // Se o secret não tiver sido configurado, retornamos `true` com um
 // warning — permite desenvolvimento local sem quebrar o fluxo.
+claude/show-buyer-name-admin-secEZ
 // Em produção SEMPRE configure `MERCADO_PAGO_WEBHOOK_SECRET`.
+=======
+// Em produção SEMPRE configure `MP_WEBHOOK_SECRET`.
+ claude/create-elarah-homepage-VsE5i
 export async function verifyWebhookSignature(
   secret: string,
   signatureHeader: string | null,
@@ -228,7 +232,11 @@ export async function verifyWebhookSignature(
 ): Promise<boolean> {
   if (!secret) {
     console.warn(
+claude/show-buyer-name-admin-secEZ
       "[Elarah Payment/MP] MERCADO_PAGO_WEBHOOK_SECRET ausente — " +
+
+      "[Elarah Payment/MP] MP_WEBHOOK_SECRET ausente — " +
+ claude/create-elarah-homepage-VsE5i
         "aceitando webhook sem verificar assinatura. NÃO use assim em produção.",
     );
     return true;
@@ -328,3 +336,7 @@ export function isValidCpf(raw: string): boolean {
   if (d2 === 10) d2 = 0;
   return d2 === arr[10];
 }
+ claude/show-buyer-name-admin-secEZ
+
+
+ claude/create-elarah-homepage-VsE5i
