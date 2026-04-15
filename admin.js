@@ -521,7 +521,25 @@
     renderGiftCardsInPurchasesPanel().catch(e =>
       console.error('[admin] render gift cards in purchases failed', e)
     );
-    const bookings = await getBookings();
+    // Carrega bookings + profiles em paralelo. Os profiles viram um
+    // mapa telefone por user_id / email pra funcionar como fallback
+    // quando a coluna bookings.telefone está vazia (bookings antigas
+    // OU edge function create-checkout-session sem a versão nova
+    // deployada ainda). O frontend do checkout grava telefone no
+    // profile como side-effect, então aqui a gente resgata o dado.
+    const [bookings, profiles] = await Promise.all([
+      getBookings(),
+      getProfiles().catch(() => []),
+    ]);
+    const telefonePorUserId = new Map();
+    const telefonePorEmail = new Map();
+    (profiles || []).forEach(p => {
+      if (!p) return;
+      const tel = (p.telefone || '').trim();
+      if (!tel) return;
+      if (p.id) telefonePorUserId.set(p.id, tel);
+      if (p.email) telefonePorEmail.set(String(p.email).toLowerCase(), tel);
+    });
 
     // Popula filtro de experiências (apenas uma vez por load).
     const filterExpEl = document.getElementById('bookings-filter-exp');
@@ -615,13 +633,23 @@
       const when = b.created_at
         ? new Date(b.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
         : '—';
-      // Telefone: aceita coluna dedicada OU fallback via metadata
-      // (bookings criadas antes da migração rodar ou em casos onde
-      // a coluna telefone falhou e só o metadata foi preservado).
-      // Extrai só dígitos pro link wa.me (formato E.164 BR: 55 + DDD + nº).
+      // Telefone: ordem de resolução (tolerante a migrações/deploy parciais)
+      //   1. coluna bookings.telefone (caminho ideal — edge function nova)
+      //   2. metadata.telefone / metadata.telefone_digits (retry sem coluna)
+      //   3. profiles.telefone via user_id (fallback quando a edge function
+      //      antiga tá rodando mas o frontend já grava no profile como
+      //      side-effect do checkout)
+      //   4. profiles.telefone via email (catch-all)
       let telefone = b.telefone || null;
       if (!telefone && b.metadata && typeof b.metadata === 'object') {
         telefone = b.metadata.telefone || b.metadata.telefone_digits || null;
+      }
+      if (!telefone && b.user_id && telefonePorUserId.has(b.user_id)) {
+        telefone = telefonePorUserId.get(b.user_id);
+      }
+      if (!telefone && b.email) {
+        const key = String(b.email).toLowerCase();
+        if (telefonePorEmail.has(key)) telefone = telefonePorEmail.get(key);
       }
       let telefoneCell;
       if (telefone) {
