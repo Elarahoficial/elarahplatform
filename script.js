@@ -1909,8 +1909,21 @@ if (groupForm) {
             return;
           }
 
-          if (!data.qr_code_base64 || !data.booking_id) {
+          if (!data.booking_id) {
             errEl.textContent = 'Resposta inesperada do servidor.';
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+
+          // Fallback: se não veio QR inline mas veio ticket_url,
+          // redireciona pra página da MP com o PIX.
+          if (!data.qr_code_base64 && data.ticket_url) {
+            window.location.href = data.ticket_url;
+            return;
+          }
+          if (!data.qr_code_base64) {
+            errEl.textContent = 'Resposta inesperada do servidor (QR code ausente).';
             confirmBtn.disabled = false;
             refreshPriceBreakdown();
             return;
