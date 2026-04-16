@@ -277,10 +277,11 @@ export async function reserveExperienceSlot(
   let giftCardId: string | null = null;
   let giftCardCentavos = 0;
 
+  const totalBaseCentsForCupom = baseCents * quantidade;
   if (input.cupomCode) {
     const { data: holdRows, error: holdErr } = await supabase.rpc(
       "hold_gift_card",
-      { p_code: input.cupomCode, p_amount_centavos: baseCents },
+      { p_code: input.cupomCode, p_amount_centavos: totalBaseCentsForCupom },
     );
     if (holdErr) {
       console.error("[Elarah Guard] hold cupom error", holdErr);

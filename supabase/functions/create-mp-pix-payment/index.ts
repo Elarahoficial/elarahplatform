@@ -252,6 +252,15 @@ serve(async (req) => {
   const bookingId = crypto.randomUUID();
   const { first: firstName, last: lastName } = splitName(resolvedNome || "Cliente Elarah");
 
+  console.info(
+    "[Elarah Payment/MP] QUANTIDADE DEBUG",
+    "payload.quantidade=" + payload.quantidade,
+    "guardQty=" + guardQty,
+    "baseCents=" + baseCents,
+    "amountToChargeCents=" + amountToChargeCents,
+    "giftCardCentavos=" + giftCardCentavos,
+  );
+
   const mpResult = await createPixPayment(MP_ACCESS_TOKEN, {
     transactionAmountCents: amountToChargeCents,
     description: [exp.nome, exp.data, horario].filter(Boolean).join(" · ").slice(0, 250),
