@@ -1110,8 +1110,60 @@
     });
   }
 
+  // ===== Filtro por categoria =====
+  let activeExpFilter = '';
+
+  function buildExpFilterBar(experiences) {
+    const bar = document.getElementById('exp-filter-bar');
+    if (!bar) return;
+    // Extrai categorias únicas (case-insensitive, preserva capitalização original)
+    const seen = new Map();
+    (experiences || []).forEach(function (e) {
+      if (!e || !e.categoria) return;
+      var key = e.categoria.toLowerCase();
+      if (!seen.has(key)) seen.set(key, e.categoria);
+    });
+    var cats = Array.from(seen.values()).sort(function (a, b) {
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+
+    bar.innerHTML = '';
+    // Botão "Todas"
+    var allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.textContent = 'Todas';
+    allBtn.className = 'admin__filter-pill' + (!activeExpFilter ? ' admin__filter-pill--active' : '');
+    allBtn.addEventListener('click', function () {
+      activeExpFilter = '';
+      renderExperiences();
+    });
+    bar.appendChild(allBtn);
+
+    cats.forEach(function (cat) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = cat;
+      btn.className = 'admin__filter-pill' + (activeExpFilter.toLowerCase() === cat.toLowerCase() ? ' admin__filter-pill--active' : '');
+      btn.addEventListener('click', function () {
+        activeExpFilter = cat;
+        renderExperiences();
+      });
+      bar.appendChild(btn);
+    });
+  }
+
   async function renderExperiences() {
-    const experiences = await getExperiences();
+    const allExperiences = await getExperiences();
+
+    // Constrói barra de filtro com TODAS as experiências (antes de filtrar)
+    buildExpFilterBar(allExperiences);
+
+    // Aplica filtro
+    const experiences = activeExpFilter
+      ? allExperiences.filter(function (e) {
+          return e && e.categoria && e.categoria.toLowerCase() === activeExpFilter.toLowerCase();
+        })
+      : allExperiences;
     const tbody = document.getElementById('experiences-body');
     const countEl = document.getElementById('experiences-count');
 
@@ -1121,10 +1173,16 @@
       if (ElarahData.loadAllSlots) allSlotsMap = await ElarahData.loadAllSlots();
     } catch (e) { /* tabela pode não existir */ }
 
-    countEl.textContent = experiences.length + ' experiência' + (experiences.length !== 1 ? 's' : '');
+    if (activeExpFilter) {
+      countEl.textContent = experiences.length + ' de ' + allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
+    } else {
+      countEl.textContent = allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
+    }
 
     if (experiences.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
+        (activeExpFilter ? 'Nenhuma experiência na categoria "' + escapeHtml(activeExpFilter) + '".' : 'Nenhuma experiência cadastrada.') +
+        '</td></tr>';
       return;
     }
 

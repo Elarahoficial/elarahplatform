@@ -201,6 +201,35 @@
   color: var(--gray-800);
 }
 
+/* Filter pills (experience category filter) */
+.admin__filter-pill {
+  padding: 5px 14px;
+  font-size: .82rem;
+  font-weight: 500;
+  border: 1px solid var(--gray-300, #ddd);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--gray-600, #666);
+  cursor: pointer;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+.admin__filter-pill:hover {
+  border-color: var(--orange, #f0a05e);
+  color: var(--orange, #f0a05e);
+}
+.admin__filter-pill--active {
+  background: var(--orange, #f0a05e);
+  border-color: var(--orange, #f0a05e);
+  color: #fff;
+  font-weight: 600;
+}
+.admin__filter-pill--active:hover {
+  background: var(--orange-dark, #d88a44);
+  border-color: var(--orange-dark, #d88a44);
+  color: #fff;
+}
+
 .admin__table-count {
   font-size: 0.85rem;
   color: var(--gray-500);
