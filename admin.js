@@ -725,17 +725,12 @@
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b.amount_total, b.currency))}</td>
-          <td style="font-size:.82rem;">${escapeHtml(b.fornecedor_nome || '—')}</td>
-          <td>${b.valor_cheio_centavos ? escapeHtml(formatCents(b.valor_cheio_centavos, b.currency)) : '—'}</td>
-          <td>${b.valor_repasse_centavos ? escapeHtml(formatCents(b.valor_repasse_centavos, b.currency)) : '—'}</td>
-          <td>${b.valor_comissao_centavos ? escapeHtml(formatCents(b.valor_comissao_centavos, b.currency)) : '—'}</td>
+          <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(b.fornecedor_nome || '—') : ''}</td>
+          <td>${b.status === 'pago' && b.valor_cheio_centavos ? escapeHtml(formatCents(b.valor_cheio_centavos, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
+          <td>${b.status === 'pago' && b.valor_repasse_centavos ? escapeHtml(formatCents(b.valor_repasse_centavos, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
+          <td>${b.status === 'pago' && b.valor_comissao_centavos ? escapeHtml(formatCents(b.valor_comissao_centavos, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${bookingStatusBadge(b.status)}</td>
-          <td>
-            <select class="admin__sf-select" data-booking-id="${escapeHtml(b.id)}" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;${(b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;'}">
-              <option value="repasse_pendente"${(b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : ''}>Repasse pendente</option>
-              <option value="repasse_feito"${b.status_fornecedor === 'repasse_feito' ? ' selected' : ''}>Repasse feito</option>
-            </select>
-          </td>
+          <td>${b.status === 'pago' ? '<select class="admin__sf-select" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;' + ((b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;') + '"><option value="repasse_pendente"' + ((b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : '') + '>Repasse pendente</option><option value="repasse_feito"' + (b.status_fornecedor === 'repasse_feito' ? ' selected' : '') + '>Repasse feito</option></select>' : ''}</td>
         </tr>
       `;
     }
