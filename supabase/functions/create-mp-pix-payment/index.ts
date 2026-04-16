@@ -51,6 +51,13 @@ const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
+if (MP_ACCESS_TOKEN && MP_ACCESS_TOKEN.startsWith("TEST-")) {
+  console.warn(
+    "[Elarah Payment/MP] ⚠ MERCADO_PAGO_ACCESS_TOKEN é de TESTE (TEST-…). " +
+      "PIX pode falhar se a conta de teste não tiver chave PIX cadastrada.",
+  );
+}
+
 const PUBLIC_SITE_URL =
   (Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "") ||
   "https://elarah.com.br";
@@ -150,6 +157,7 @@ serve(async (req) => {
   // ===== Reserva slot (valida exp, decrementa vaga, hold cupom) =====
   const guard = await reserveExperienceSlot(supabase, {
     experienciaId,
+    horario,
     email,
     nome: nomeFromPayload,
     cupomCode,
@@ -175,6 +183,7 @@ serve(async (req) => {
     giftCardId,
     giftCardCentavos,
     amountToChargeCents,
+    slotId,
     rollback,
   } = guard;
 
@@ -201,6 +210,7 @@ serve(async (req) => {
       gift_card_id: giftCardId,
       gift_card_centavos: giftCardCentavos,
       gift_card_code: cupomCode,
+      slot_id: slotId,
       payment_provider: "mercado_pago",
       metadata: {
         bairro: exp.bairro ?? null,
@@ -270,20 +280,32 @@ serve(async (req) => {
   const qrCode = payment.point_of_interaction?.transaction_data?.qr_code ?? null;
   const qrCodeBase64 =
     payment.point_of_interaction?.transaction_data?.qr_code_base64 ?? null;
+  const ticketUrl =
+    payment.point_of_interaction?.transaction_data?.ticket_url ?? null;
 
   if (!qrCode || !qrCodeBase64) {
-    console.error(
-      "[Elarah Payment/MP] resposta sem QR code",
-      JSON.stringify(payment),
-    );
-    await rollback();
-    return jsonResponse(
-      {
-        error: "mp_qr_missing",
-        message: "MP respondeu sem QR code.",
-      },
-      502,
-    );
+    // Fallback: se a MP devolveu ticket_url mas não QR inline, usamos
+    // a página hospedada pela MP pra exibir o PIX pro usuário.
+    if (ticketUrl) {
+      console.warn(
+        "[Elarah Payment/MP] QR inline ausente, usando ticket_url fallback",
+        "mp_payment=" + payment.id,
+        "ticket_url=" + ticketUrl,
+      );
+    } else {
+      console.error(
+        "[Elarah Payment/MP] resposta sem QR code nem ticket_url",
+        JSON.stringify(payment),
+      );
+      await rollback();
+      return jsonResponse(
+        {
+          error: "mp_qr_missing",
+          message: "MP respondeu sem QR code.",
+        },
+        502,
+      );
+    }
   }
 
   // ===== Grava booking pending =====
@@ -322,6 +344,7 @@ serve(async (req) => {
     gift_card_id: giftCardId,
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
+    slot_id: slotId,
     mp_payment_id: String(payment.id),
     payment_provider: "mercado_pago",
     metadata: bookingMetadata,
@@ -384,6 +407,7 @@ serve(async (req) => {
     payment_id: String(payment.id),
     qr_code: qrCode,
     qr_code_base64: qrCodeBase64,
+    ticket_url: ticketUrl,
     expires_at: payment.date_of_expiration,
     amount_total_centavos: amountToChargeCents,
   });

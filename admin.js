@@ -764,34 +764,75 @@
     return { cor1: parts[0] || '#f6d5a8', cor2: parts[1] || '#f0a05e' };
   }
 
-  function addHorarioRow(value) {
+  // slotObj = { id?, horario, vagasTotal, vagasRestantes }
+  function addHorarioRow(slotObj) {
     if (!horariosList) return;
-    const row = document.createElement('div');
+    var s = slotObj || {};
+    var row = document.createElement('div');
     row.className = 'admin__horario-row';
-    row.innerHTML = `
-      <input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30">
-      <button type="button" class="admin__horario-remove" aria-label="Remover horário">&times;</button>
-    `;
-    row.querySelector('input').value = value || '';
-    row.querySelector('.admin__horario-remove').addEventListener('click', () => {
-      const rows = horariosList.querySelectorAll('.admin__horario-row');
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+    row.innerHTML =
+      '<input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30" style="flex:2;">' +
+      '<input type="number" class="admin__horario-vagas" min="0" step="1" placeholder="Vagas" title="Vagas totais (vazio = ilimitado)" style="flex:0 0 70px;text-align:center;">' +
+      '<span class="admin__horario-restantes" style="flex:0 0 50px;font-size:.8rem;color:#888;text-align:center;" title="Vagas restantes"></span>' +
+      '<button type="button" class="admin__horario-remove" aria-label="Remover horário" style="flex:0 0 28px;">&times;</button>';
+    row.querySelector('.admin__horario-input').value = s.horario || '';
+    row.querySelector('.admin__horario-vagas').value = s.vagasTotal != null ? s.vagasTotal : '';
+    var restEl = row.querySelector('.admin__horario-restantes');
+    if (s.vagasTotal != null && s.vagasRestantes != null) {
+      restEl.textContent = s.vagasRestantes + ' rest.';
+      var cor = s.vagasRestantes <= 0 ? '#c0392b' : (s.vagasRestantes <= 3 ? '#b07b00' : '#1a8a4a');
+      restEl.style.color = cor;
+      restEl.style.fontWeight = '600';
+    } else {
+      restEl.textContent = '∞';
+    }
+    if (s.id) row.dataset.slotId = s.id;
+    row.querySelector('.admin__horario-remove').addEventListener('click', function () {
+      var rows = horariosList.querySelectorAll('.admin__horario-row');
       if (rows.length > 1) row.remove();
-      else row.querySelector('input').value = '';
+      else {
+        row.querySelector('.admin__horario-input').value = '';
+        row.querySelector('.admin__horario-vagas').value = '';
+        row.querySelector('.admin__horario-restantes').textContent = '∞';
+        row.querySelector('.admin__horario-restantes').style.color = '#888';
+        delete row.dataset.slotId;
+      }
     });
     horariosList.appendChild(row);
   }
 
-  function renderHorarioRows(horarios) {
+  function renderHorarioRows(slots) {
     if (!horariosList) return;
     horariosList.innerHTML = '';
-    const initial = Array.isArray(horarios) && horarios.length ? horarios : [''];
-    initial.forEach(h => addHorarioRow(h));
+    var initial = Array.isArray(slots) && slots.length ? slots : [{ horario: '' }];
+    initial.forEach(function (s) { addHorarioRow(s); });
   }
 
   function collectHorarios() {
     if (!horariosList) return [];
-    const inputs = horariosList.querySelectorAll('.admin__horario-input');
-    return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+    var inputs = horariosList.querySelectorAll('.admin__horario-input');
+    return Array.from(inputs).map(function (i) { return i.value.trim(); }).filter(Boolean);
+  }
+
+  // Coleta slots com vagas pra salvar via ElarahData.saveSlots()
+  function collectSlots() {
+    if (!horariosList) return [];
+    var rows = horariosList.querySelectorAll('.admin__horario-row');
+    var out = [];
+    rows.forEach(function (row) {
+      var h = row.querySelector('.admin__horario-input').value.trim();
+      if (!h) return;
+      var vRaw = row.querySelector('.admin__horario-vagas').value.trim();
+      out.push({
+        id: row.dataset.slotId || null,
+        horario: h,
+        vagasTotal: vRaw === '' ? null : Number(vRaw),
+        data: null, // será preenchido com exp.data no save
+        eventAt: null, // será preenchido com exp.eventAt no save
+      });
+    });
+    return out;
   }
 
   // Popula o <datalist id="exp-categoria-datalist"> com todas as
@@ -894,10 +935,23 @@
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
 
-      const horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
-        ? exp.horarios
-        : (exp.horario ? [exp.horario] : ['']);
-      renderHorarioRows(horarios);
+      // Carrega slots do banco — cada horário com sua vaga
+      var slotsFromDb = [];
+      try {
+        if (ElarahData.getSlotsForExperience) {
+          slotsFromDb = await ElarahData.getSlotsForExperience(editId);
+        }
+      } catch (e) { console.warn('[Admin] slots load failed', e); }
+
+      if (slotsFromDb.length) {
+        renderHorarioRows(slotsFromDb);
+      } else {
+        // Fallback: horarios sem slots (experiência pré-migração)
+        var horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
+          ? exp.horarios
+          : (exp.horario ? [exp.horario] : ['']);
+        renderHorarioRows(horarios.map(function (h) { return { horario: h }; }));
+      }
 
       const cores = parseCor(exp.cor);
       const cor1El = document.getElementById('exp-cor1');
@@ -910,7 +964,7 @@
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
       form.reset();
-      renderHorarioRows(['']);
+      renderHorarioRows([{ horario: '' }]);
       const cor1El = document.getElementById('exp-cor1');
       const cor2El = document.getElementById('exp-cor2');
       if (cor1El) cor1El.value = '#f6d5a8';
@@ -945,7 +999,7 @@
     horariosAddBtn = document.getElementById('exp-horarios-add-btn');
 
     if (horariosAddBtn) {
-      horariosAddBtn.addEventListener('click', () => addHorarioRow(''));
+      horariosAddBtn.addEventListener('click', () => addHorarioRow({ horario: '' }));
     }
 
     addBtn.addEventListener('click', () => openExpModal(null));
@@ -1034,6 +1088,22 @@
         return;
       }
 
+      // Salva slots (vagas por horário) na tabela experience_slots
+      if (saved && saved.id && ElarahData.saveSlots) {
+        try {
+          var slotsToSave = collectSlots();
+          // Preenche data e eventAt do slot com os valores da experiência
+          slotsToSave.forEach(function (sl) {
+            sl.data = expData.data || null;
+            sl.eventAt = eventAtIso || null;
+          });
+          await ElarahData.saveSlots(saved.id, slotsToSave);
+        } catch (slotErr) {
+          console.error('[Admin] saveSlots falhou:', slotErr);
+        }
+        ElarahData.invalidateSlotsCache && ElarahData.invalidateSlotsCache();
+      }
+
       closeExpModal();
       await renderExperiences();
       await renderOverview();
@@ -1044,6 +1114,12 @@
     const experiences = await getExperiences();
     const tbody = document.getElementById('experiences-body');
     const countEl = document.getElementById('experiences-count');
+
+    // Carrega todos os slots pra exibir vagas por horário
+    var allSlotsMap = new Map();
+    try {
+      if (ElarahData.loadAllSlots) allSlotsMap = await ElarahData.loadAllSlots();
+    } catch (e) { /* tabela pode não existir */ }
 
     countEl.textContent = experiences.length + ' experiência' + (experiences.length !== 1 ? 's' : '');
 
@@ -1056,12 +1132,24 @@
       const horariosDisplay = Array.isArray(exp.horarios) && exp.horarios.length > 1
         ? exp.horarios.join(' · ')
         : (exp.horario || '');
-      let vagasDisplay = '<span style="color:#888;">∞</span>';
-      if (exp.vagasTotal != null) {
+
+      // Vagas: mostra por slot se existirem, senão experience-level
+      var expSlots = allSlotsMap.get(exp.id) || [];
+      let vagasDisplay = '';
+      if (expSlots.length) {
+        vagasDisplay = expSlots.map(function (sl) {
+          if (sl.vagasTotal == null) return '<span style="color:#888;font-size:.8rem;">' + escapeHtml(sl.horario) + ': ∞</span>';
+          var rest = sl.vagasRestantes != null ? sl.vagasRestantes : sl.vagasTotal;
+          var cor = rest <= 0 ? '#c0392b' : (rest <= 3 ? '#b07b00' : '#1a8a4a');
+          return '<span style="color:' + cor + ';font-weight:600;font-size:.8rem;">' + escapeHtml(sl.horario) + ': ' + rest + '/' + sl.vagasTotal + '</span>';
+        }).join('<br>');
+      } else if (exp.vagasTotal != null) {
         const rest = exp.vagasRestantes != null ? exp.vagasRestantes : exp.vagasTotal;
         const cor = rest <= 0 ? '#c0392b' : (rest <= 3 ? '#b07b00' : '#1a8a4a');
         vagasDisplay = '<span style="color:' + cor + ';font-weight:600;">' +
                        rest + ' / ' + exp.vagasTotal + '</span>';
+      } else {
+        vagasDisplay = '<span style="color:#888;">∞</span>';
       }
       const isActive = exp.isActive !== false;
       const rowStyle = isActive ? '' : ' style="opacity:0.55;"';

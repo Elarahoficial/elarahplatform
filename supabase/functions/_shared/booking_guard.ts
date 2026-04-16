@@ -9,7 +9,8 @@
 //   1. Buscar experiência e validar (existe, ativa, cutoff, vagas).
 //   2. Resolver user_id + nome via profile (fallback pro nome).
 //   3. Segurar cupom (hold_gift_card RPC).
-//   4. Decrementar vaga atomicamente (decrement_experience_vagas RPC).
+//   4. Decrementar vaga atomicamente — por slot se existir, senão
+//      por experiência (backward compat).
 //   5. Devolver helper rollback() pro caller reverter side-effects
 //      em caso de erro posterior.
 //
@@ -23,6 +24,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 export interface GuardInput {
   experienciaId: string;
+  horario: string | null;
   email: string | null;
   nome: string | null;
   cupomCode: string | null;
@@ -55,6 +57,7 @@ export interface GuardSuccess {
   giftCardCentavos: number;
   amountToChargeCents: number;        // baseCents - giftCardCentavos
   cupomCode: string | null;
+  slotId: string | null;              // UUID do slot reservado (null = experience-level)
   // Chamar se o caller falhar depois de reservar a vaga (ex.:
   // Stripe/MP retornar erro). Devolve vaga + saldo do cupom.
   rollback: () => Promise<void>;
@@ -111,6 +114,8 @@ export async function reserveExperienceSlot(
     };
   }
 
+  const horarioInput = input.horario ? String(input.horario).trim() : null;
+
   // ===== 1. Busca experiência =====
   const { data: expRaw, error: expErr } = await supabase
     .from("experiences")
@@ -148,10 +153,45 @@ export async function reserveExperienceSlot(
     };
   }
 
-  // ===== 2. Cutoff =====
-  if (exp.event_at) {
+  // ===== 2. Tenta encontrar o slot pro horário escolhido =====
+  // deno-lint-ignore no-explicit-any
+  let slot: any = null;
+  let slotId: string | null = null;
+  let useSlotVagas = false;
+
+  if (horarioInput) {
+    const { data: slotRow, error: slotErr } = await supabase
+      .from("experience_slots")
+      .select("id, vagas_total, vagas_restantes, event_at, is_active")
+      .eq("experience_id", experienciaId)
+      .eq("horario", horarioInput)
+      .maybeSingle();
+
+    if (slotErr) {
+      // Tabela pode não existir — continua com experience-level
+      console.warn("[Elarah Guard] slot lookup falhou (tabela ausente?)", slotErr.message);
+    } else if (slotRow) {
+      slot = slotRow;
+      slotId = slot.id;
+      useSlotVagas = true;
+
+      if (slot.is_active === false) {
+        return {
+          ok: false,
+          errorCode: "slot_unavailable",
+          errorMessage: "Este horário não está mais disponível.",
+          errorStatus: 409,
+        };
+      }
+    }
+  }
+
+  // ===== 3. Cutoff =====
+  // Prioridade: event_at do slot > event_at da experiência
+  const effectiveEventAt = (useSlotVagas && slot?.event_at) ? slot.event_at : exp.event_at;
+  if (effectiveEventAt) {
     const cutoffH = Number(exp.cutoff_hours ?? 24);
-    const eventTs = new Date(exp.event_at).getTime();
+    const eventTs = new Date(effectiveEventAt).getTime();
     const limit = Date.now() + cutoffH * 60 * 60 * 1000;
     if (limit > eventTs) {
       return {
@@ -163,21 +203,37 @@ export async function reserveExperienceSlot(
     }
   }
 
-  // ===== 3. Vagas prévia (não atômica — a verdade é o RPC) =====
-  if (
-    exp.vagas_total !== null &&
-    exp.vagas_total !== undefined &&
-    (exp.vagas_restantes === null || Number(exp.vagas_restantes) <= 0)
-  ) {
-    return {
-      ok: false,
-      errorCode: "experience_sold_out",
-      errorMessage: "Esta experiência está esgotada.",
-      errorStatus: 409,
-    };
+  // ===== 4. Vagas prévia (não atômica — a verdade é o RPC) =====
+  if (useSlotVagas) {
+    // Check slot-level
+    if (
+      slot.vagas_total !== null &&
+      (slot.vagas_restantes === null || Number(slot.vagas_restantes) <= 0)
+    ) {
+      return {
+        ok: false,
+        errorCode: "slot_sold_out",
+        errorMessage: "Este horário está esgotado.",
+        errorStatus: 409,
+      };
+    }
+  } else {
+    // Fallback: experience-level
+    if (
+      exp.vagas_total !== null &&
+      exp.vagas_total !== undefined &&
+      (exp.vagas_restantes === null || Number(exp.vagas_restantes) <= 0)
+    ) {
+      return {
+        ok: false,
+        errorCode: "experience_sold_out",
+        errorMessage: "Esta experiência está esgotada.",
+        errorStatus: 409,
+      };
+    }
   }
 
-  // ===== 4. Preço =====
+  // ===== 5. Preço =====
   const baseCents = parsePrecoToCents(exp.preco);
   if (!baseCents) {
     console.error("[Elarah Guard] invalid price", exp.preco);
@@ -189,7 +245,7 @@ export async function reserveExperienceSlot(
     };
   }
 
-  // ===== 5. Resolve user_id + nome =====
+  // ===== 6. Resolve user_id + nome =====
   let userId: string | null = null;
   let profileNome: string | null = null;
   if (input.email) {
@@ -209,7 +265,7 @@ export async function reserveExperienceSlot(
   }
   const resolvedNome = (input.nome && input.nome.trim()) || profileNome;
 
-  // ===== 6. Hold do cupom (se informado) =====
+  // ===== 7. Hold do cupom (se informado) =====
   let giftCardId: string | null = null;
   let giftCardCentavos = 0;
 
@@ -244,46 +300,81 @@ export async function reserveExperienceSlot(
 
   const amountToChargeCents = Math.max(0, baseCents - giftCardCentavos);
 
-  // ===== 7. Decremento atômico de vaga =====
-  const { data: vagaRows, error: vagaErr } = await supabase.rpc(
-    "decrement_experience_vagas",
-    { p_experience_id: exp.id },
-  );
-  if (vagaErr) {
-    console.error("[Elarah Guard] vagas decrement error", vagaErr);
-    // Devolve o cupom já segurado.
+  // ===== 8. Decremento atômico de vaga =====
+  // Se temos slot → decrement_slot_vagas, senão → decrement_experience_vagas
+  const refundGiftCard = async () => {
     if (giftCardId) {
       await supabase.rpc("refund_gift_card", {
         p_gift_card_id: giftCardId,
         p_amount_centavos: giftCardCentavos,
       });
     }
-    return {
-      ok: false,
-      errorCode: "vagas_check_failed",
-      errorMessage: "Falha ao verificar vagas.",
-      errorStatus: 500,
-    };
-  }
-  const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
-  // deno-lint-ignore no-explicit-any
-  const vr = vagaRow as any;
-  if (!vr || vr.ok === false) {
-    if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
-        p_gift_card_id: giftCardId,
-        p_amount_centavos: giftCardCentavos,
-      });
+  };
+
+  if (useSlotVagas) {
+    // Slot-level decrement
+    const { data: vagaRows, error: vagaErr } = await supabase.rpc(
+      "decrement_slot_vagas",
+      { p_slot_id: slotId },
+    );
+    if (vagaErr) {
+      console.error("[Elarah Guard] slot vagas decrement error", vagaErr);
+      await refundGiftCard();
+      return {
+        ok: false,
+        errorCode: "vagas_check_failed",
+        errorMessage: "Falha ao verificar vagas do horário.",
+        errorStatus: 500,
+      };
     }
-    return {
-      ok: false,
-      errorCode: "experience_sold_out",
-      errorMessage: "Esta experiência está esgotada.",
-      errorStatus: 409,
-    };
+    const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
+    // deno-lint-ignore no-explicit-any
+    const vr = vagaRow as any;
+    if (!vr || vr.ok === false) {
+      await refundGiftCard();
+      return {
+        ok: false,
+        errorCode: "slot_sold_out",
+        errorMessage: "Este horário está esgotado.",
+        errorStatus: 409,
+      };
+    }
+    console.info(
+      "[Elarah Guard] slot vaga decrementada",
+      "slot=" + slotId,
+      "restantes=" + vr.vagas_restantes,
+    );
+  } else {
+    // Experience-level decrement (backward compat)
+    const { data: vagaRows, error: vagaErr } = await supabase.rpc(
+      "decrement_experience_vagas",
+      { p_experience_id: exp.id },
+    );
+    if (vagaErr) {
+      console.error("[Elarah Guard] vagas decrement error", vagaErr);
+      await refundGiftCard();
+      return {
+        ok: false,
+        errorCode: "vagas_check_failed",
+        errorMessage: "Falha ao verificar vagas.",
+        errorStatus: 500,
+      };
+    }
+    const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
+    // deno-lint-ignore no-explicit-any
+    const vr = vagaRow as any;
+    if (!vr || vr.ok === false) {
+      await refundGiftCard();
+      return {
+        ok: false,
+        errorCode: "experience_sold_out",
+        errorMessage: "Esta experiência está esgotada.",
+        errorStatus: 409,
+      };
+    }
   }
 
-  // ===== 8. Rollback closure =====
+  // ===== 9. Rollback closure =====
   // Caller chama se falhar depois desta função (ex: Stripe/MP erro).
   // Idempotente — dá pra chamar mais de uma vez sem estourar.
   let rolledBack = false;
@@ -293,12 +384,17 @@ export async function reserveExperienceSlot(
     console.info(
       "[Elarah Guard] rollback de reserva",
       "exp=" + exp.id,
+      "slot=" + (slotId ?? "none"),
       "cupom=" + (giftCardId ?? "none"),
     );
     try {
-      await supabase.rpc("increment_experience_vagas", {
-        p_experience_id: exp.id,
-      });
+      if (useSlotVagas && slotId) {
+        await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId });
+      } else {
+        await supabase.rpc("increment_experience_vagas", {
+          p_experience_id: exp.id,
+        });
+      }
     } catch (e) {
       console.error("[Elarah Guard] rollback vagas falhou", e);
     }
@@ -325,6 +421,7 @@ export async function reserveExperienceSlot(
     giftCardCentavos,
     amountToChargeCents,
     cupomCode: input.cupomCode,
+    slotId,
     rollback,
   };
 }

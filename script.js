@@ -20,6 +20,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     experiences = [];
   }
 
+  // Carrega disponibilidade por slot (vagas por horário)
+  window._elarahSlotMap = {};
+  try {
+    if (typeof ElarahData !== 'undefined' && ElarahData.loadAllSlots) {
+      var sMap = await ElarahData.loadAllSlots();
+      if (sMap && sMap.forEach) {
+        sMap.forEach(function (slots, expId) {
+          var byHorario = {};
+          slots.forEach(function (sl) { byHorario[sl.horario] = sl; });
+          window._elarahSlotMap[expId] = byHorario;
+        });
+      }
+    }
+  } catch (e) { /* tabela pode não existir */ }
+
   let activeCategoria = '';
   let activeBairro = '';
   let activeBusca = '';
@@ -259,6 +274,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
       : (exp.horario ? [exp.horario] : []);
     const hasMultipleHorarios = horarios.length > 1;
 
+    // Slot availability lookup (populated by loadSlotAvailability)
+    var slotMap = (window._elarahSlotMap && window._elarahSlotMap[exp.id]) || {};
+
     const imageContent = exp.imagem
       ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
       : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
@@ -268,9 +286,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
       : `${exp.data}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
 
     const horariosBlock = hasMultipleHorarios
-      ? `<div class="card__horarios">${horarios.map((h, i) =>
-          `<button type="button" class="card__horario-btn${i === 0 ? ' card__horario-btn--active' : ''}" data-horario="${h.replace(/"/g, '&quot;')}">${h}</button>`
-        ).join('')}</div>`
+      ? `<div class="card__horarios">${horarios.map((h, i) => {
+          var sl = slotMap[h];
+          var soldOut = sl && sl.vagasTotal != null && sl.vagasRestantes != null && sl.vagasRestantes <= 0;
+          var label = soldOut ? h + ' (esgotado)' : h;
+          var cls = 'card__horario-btn' + (i === 0 && !soldOut ? ' card__horario-btn--active' : '') + (soldOut ? ' card__horario-btn--sold-out' : '');
+          return '<button type="button" class="' + cls + '"' + (soldOut ? ' disabled' : '') + ' data-horario="' + h.replace(/"/g, '&quot;') + '">' + label + '</button>';
+        }).join('')}</div>`
       : '';
 
     card.innerHTML = `
@@ -1885,7 +1907,18 @@ if (groupForm) {
           const data = await res.json().catch(() => null);
 
           if (!res.ok || !data) {
-            const msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            let msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            if (data && data.detail) {
+              const d = data.detail;
+              const causes = Array.isArray(d.cause)
+                ? d.cause.map(function(c) { return c.description; }).filter(Boolean)
+                : [];
+              const mpDetail = causes.length
+                ? causes.join('; ')
+                : (d.message || (typeof d === 'string' ? d : JSON.stringify(d)));
+              if (mpDetail) msg += ' (MP: ' + mpDetail + ')';
+              console.error('[Elarah PIX] MP error detail:', JSON.stringify(d));
+            }
             errEl.textContent = msg;
             confirmBtn.disabled = false;
             refreshPriceBreakdown();
@@ -1898,8 +1931,21 @@ if (groupForm) {
             return;
           }
 
-          if (!data.qr_code_base64 || !data.booking_id) {
+          if (!data.booking_id) {
             errEl.textContent = 'Resposta inesperada do servidor.';
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+
+          // Fallback: se não veio QR inline mas veio ticket_url,
+          // redireciona pra página da MP com o PIX.
+          if (!data.qr_code_base64 && data.ticket_url) {
+            window.location.href = data.ticket_url;
+            return;
+          }
+          if (!data.qr_code_base64) {
+            errEl.textContent = 'Resposta inesperada do servidor (QR code ausente).';
             confirmBtn.disabled = false;
             refreshPriceBreakdown();
             return;

@@ -72,7 +72,7 @@ async function findBookingByMpPaymentId(
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, metadata, mp_payment_id, payment_provider",
+      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, metadata, mp_payment_id, payment_provider",
     )
     .eq("mp_payment_id", paymentId)
     .maybeSingle();
@@ -87,7 +87,7 @@ async function findBookingByMpPaymentId(
   const { data: data2 } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, metadata, mp_payment_id, payment_provider",
+      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, metadata, mp_payment_id, payment_provider",
     )
     .eq("stripe_session_id", "MP-" + paymentId)
     .maybeSingle();
@@ -129,8 +129,16 @@ async function cancelBooking(booking: BookingRow, newStatus: string) {
       error,
     );
   }
-  // Devolve vaga
-  if (booking.experiencia_id) {
+  // Devolve vaga — prioriza slot, fallback pra experiência
+  // deno-lint-ignore no-explicit-any
+  const bk = booking as any;
+  if (bk.slot_id) {
+    await supabase
+      .rpc("increment_slot_vagas", { p_slot_id: bk.slot_id })
+      .then(({ error }: { error: unknown }) => {
+        if (error) console.error("[Elarah Payment/MP] refund slot vagas", error);
+      });
+  } else if (booking.experiencia_id) {
     await supabase
       .rpc("increment_experience_vagas", {
         p_experience_id: booking.experiencia_id,
@@ -298,7 +306,7 @@ serve(async (req) => {
     const { data: byExt } = await supabase
       .from("bookings")
       .select(
-        "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, metadata, mp_payment_id, payment_provider",
+        "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, metadata, mp_payment_id, payment_provider",
       )
       .eq("id", payment.external_reference)
       .maybeSingle();
