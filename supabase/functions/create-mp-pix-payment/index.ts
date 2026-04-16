@@ -50,7 +50,7 @@ import { reserveExperienceSlot } from "../_shared/booking_guard.ts";
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
- claude/show-buyer-name-admin-secEZ
+
 const PUBLIC_SITE_URL =
   (Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "") ||
   "https://elarah.com.br";
@@ -58,10 +58,6 @@ const PUBLIC_SITE_URL =
 // Notification URL é a URL pública da nossa função mp-webhook.
 // Supabase Edge Functions sempre estão em
 // https://<project>.supabase.co/functions/v1/<name>
-=======
-
-// Notification URL é a URL pública da nossa função mp-webhook.
- claude/create-elarah-homepage-VsE5i
 function buildMpNotificationUrl(): string | undefined {
   if (!SUPABASE_URL) return undefined;
   return SUPABASE_URL.replace(/\/+$/, "") + "/functions/v1/mp-webhook";
@@ -183,11 +179,8 @@ serve(async (req) => {
   } = guard;
 
   // ===== CASO especial: cupom cobre 100% — pula MP =====
- claude/show-buyer-name-admin-secEZ
   // Fluxo idêntico ao que create-checkout-session faz: grava direto
   // como pago, nenhum pagamento é criado na MP.
-
- claude/create-elarah-homepage-VsE5i
   if (amountToChargeCents === 0) {
     const directBookingId = crypto.randomUUID();
     const { error: directErr } = await supabase.from("bookings").insert({
@@ -238,11 +231,8 @@ serve(async (req) => {
   }
 
   // ===== Caso normal: criar pagamento PIX na MP =====
- claude/show-buyer-name-admin-secEZ
   // Reserva booking_id ANTES de chamar a MP pra poder usar como
   // external_reference — facilita reconciliação.
-=======
- claude/create-elarah-homepage-VsE5i
   const bookingId = crypto.randomUUID();
   const { first: firstName, last: lastName } = splitName(resolvedNome || "Cliente Elarah");
 
@@ -256,17 +246,14 @@ serve(async (req) => {
     payerCpf: cpfRaw,
     expiresInMinutes: 30,
     notificationUrl: buildMpNotificationUrl(),
- claude/show-buyer-name-admin-secEZ
-    idempotencyKey: bookingId, // garante idempotência por booking
-
     idempotencyKey: bookingId,
- claude/create-elarah-homepage-VsE5i
   });
 
   if (!mpResult.ok || !mpResult.payment) {
     console.error(
       "[Elarah Payment/MP] MP retornou erro, fazendo rollback",
       "status=" + mpResult.errorStatus,
+      "body=" + JSON.stringify(mpResult.errorBody),
     );
     await rollback();
     return jsonResponse(
