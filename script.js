@@ -1959,7 +1959,10 @@ if (groupForm) {
         }
         if (!partValid) return;
       }
-      ctx.participantes = participantes;
+      // Inclui o comprador como Participante 1
+      var allParticipantes = [{ nome: nomeRaw, telefone: telefoneRaw, telefone_digits: telefoneNormalized, email: null }];
+      allParticipantes = allParticipantes.concat(participantes);
+      ctx.participantes = allParticipantes;
 
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Processando...';
