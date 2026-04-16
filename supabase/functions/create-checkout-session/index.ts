@@ -468,12 +468,13 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // ===== Hold gift card (se cupom enviado) =====
   let giftCardId: string | null = null;
   let giftCardCentavos = 0;
-  let amountToCharge = cents;
+  const totalCents = cents * quantidade;
+  let amountToCharge = totalCents;
 
   if (cupomCode) {
     const { data: holdRows, error: holdErr } = await supabase.rpc(
       "hold_gift_card",
-      { p_code: cupomCode, p_amount_centavos: cents },
+      { p_code: cupomCode, p_amount_centavos: totalCents },
     );
     if (holdErr) {
       console.error("[create-checkout-session] hold error", holdErr);
@@ -491,8 +492,17 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     }
     giftCardId = hold.gift_card_id;
     giftCardCentavos = Number(hold.used_centavos || 0);
-    amountToCharge = Math.max(0, cents - giftCardCentavos);
+    amountToCharge = Math.max(0, totalCents - giftCardCentavos);
   }
+
+  console.info(
+    "[Elarah Payment/Stripe] QUANTIDADE DEBUG",
+    "payload.quantidade=" + quantidade,
+    "unitCents=" + cents,
+    "totalCents=" + totalCents,
+    "giftCardCentavos=" + giftCardCentavos,
+    "amountToCharge=" + amountToCharge,
+  );
 
   // ===== Repasse da taxa do cartão =====
   // Aplica SOMENTE quando o método é 'card' E ainda resta valor a
