@@ -1467,6 +1467,7 @@ if (groupForm) {
       const qty = Math.max(1, ctx.quantidade || 1);
       const unitPrice = ctx.precoCentavos || 0;
       const subtotalCents = unitPrice * qty;
+      console.log('[Elarah PRICE] refreshPriceBreakdown: qty=' + qty + ' unitPrice=' + unitPrice + ' subtotal=' + subtotalCents);
       const cupomCents = Number(ctx.cupomCentavos || 0);
       const baseAfterCupom = Math.max(0, subtotalCents - cupomCents);
 
@@ -1646,8 +1647,9 @@ if (groupForm) {
       if (participantsEl) participantsEl.innerHTML = '';
 
       function renderParticipantFields() {
-        if (!participantsEl) return;
+        if (!participantsEl) { console.warn('[Elarah QTY] participantsEl NAO ENCONTRADO'); return; }
         participantsEl.innerHTML = '';
+        console.log('[Elarah QTY] renderParticipantFields: ctx.quantidade=' + ctx.quantidade);
         if (ctx.quantidade <= 1) return;
         for (var i = 2; i <= ctx.quantidade; i++) {
           var div = document.createElement('div');
