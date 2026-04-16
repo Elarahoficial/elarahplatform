@@ -182,8 +182,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         var url = window.location.origin + '/experiencia.html?id=' + encodeURIComponent(shareBtn.dataset.shareId);
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(url).then(function () {
-            shareBtn.title = 'Copiado!';
-            setTimeout(function () { shareBtn.title = 'Copiar link'; }, 2000);
+            shareBtn.innerHTML = '<span style="font-size:.75rem;font-weight:600;color:var(--orange,#f0a05e);">Link copiado!</span>';
+            setTimeout(function () {
+              shareBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+            }, 2500);
           });
         } else {
           prompt('Copie o link:', url);
