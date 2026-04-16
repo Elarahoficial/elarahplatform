@@ -1666,12 +1666,14 @@ if (groupForm) {
         if (newQty === ctx.quantidade) return;
         ctx.quantidade = newQty;
         if (qtyEl) qtyEl.textContent = String(newQty);
+        console.log('[Elarah QTY] quantidade atualizada para', newQty);
         renderParticipantFields();
         refreshPriceBreakdown();
       }
 
       var minusBtn = root.querySelector('#erm-qty-minus');
       var plusBtn = root.querySelector('#erm-qty-plus');
+      console.log('[Elarah QTY] elementos encontrados: qtyEl=' + !!qtyEl + ' participantsEl=' + !!participantsEl + ' minusBtn=' + !!minusBtn + ' plusBtn=' + !!plusBtn);
       if (minusBtn) minusBtn.onclick = function () { updateQty(-1); };
       if (plusBtn) plusBtn.onclick = function () { updateQty(1); };
 
@@ -2006,6 +2008,14 @@ if (groupForm) {
             quantidade: ctx.quantidade || 1,
             participantes: ctx.participantes || [],
           };
+          console.log('[Elarah CHECKOUT FINAL] PIX payload:', JSON.stringify({
+            selectedQuantity: ctx.quantidade,
+            unitPrice: ctx.precoCentavos,
+            totalPrice: ctx.totalCentavos,
+            participantsCount: (ctx.participantes || []).length,
+            payloadQuantidade: pixBody.quantidade,
+            payloadParticipantes: pixBody.participantes,
+          }));
           console.log('[Elarah Payment/MP] criando PIX', {
             base: ctx.precoCentavos,
             cupom: ctx.cupomCentavos || 0,
@@ -2081,6 +2091,14 @@ if (groupForm) {
           quantidade: ctx.quantidade || 1,
           participantes: ctx.participantes || [],
         };
+        console.log('[Elarah CHECKOUT FINAL] Stripe payload:', JSON.stringify({
+          selectedQuantity: ctx.quantidade,
+          unitPrice: ctx.precoCentavos,
+          totalPrice: ctx.totalCentavos,
+          participantsCount: (ctx.participantes || []).length,
+          payloadQuantidade: body.quantidade,
+          payloadParticipantes: body.participantes,
+        }));
         console.log('[Elarah Payment] enviando checkout cartão', {
           base: ctx.precoCentavos,
           cupom: ctx.cupomCentavos || 0,
