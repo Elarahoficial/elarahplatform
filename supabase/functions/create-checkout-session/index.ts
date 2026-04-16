@@ -274,6 +274,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const email = payload.email ? String(payload.email).trim() : null;
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
+  const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
+  const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
 
   // ===== Método de pagamento =====
   // Esta edge function agora só cuida de cartão. PIX é gerenciado
@@ -400,22 +402,24 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   if (useSlotVagas) {
     if (
       slotRow.vagas_total !== null &&
-      (slotRow.vagas_restantes === null || Number(slotRow.vagas_restantes) <= 0)
+      (slotRow.vagas_restantes === null || Number(slotRow.vagas_restantes) < quantidade)
     ) {
+      const r = Number(slotRow.vagas_restantes || 0);
       return jsonResponse(
-        { error: "slot_sold_out", message: "Este horário está esgotado." },
+        { error: "slot_sold_out", message: r <= 0 ? "Este horário está esgotado." : `Só restam ${r} vaga(s) neste horário.` },
         409,
       );
     }
   } else if (
     exp.vagas_total !== null &&
     exp.vagas_total !== undefined &&
-    (exp.vagas_restantes === null || Number(exp.vagas_restantes) <= 0)
+    (exp.vagas_restantes === null || Number(exp.vagas_restantes) < quantidade)
   ) {
+    const r = Number(exp.vagas_restantes || 0);
     return jsonResponse(
       {
         error: "experience_sold_out",
-        message: "Esta experiência está esgotada.",
+        message: r <= 0 ? "Esta experiência está esgotada." : `Só restam ${r} vaga(s) nesta experiência.`,
       },
       409,
     );
@@ -523,8 +527,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // Usa slot-level se disponível, senão experience-level.
   const decrementRpc = useSlotVagas ? "decrement_slot_vagas" : "decrement_experience_vagas";
   const decrementArg = useSlotVagas
-    ? { p_slot_id: slotId }
-    : { p_experience_id: exp.id };
+    ? { p_slot_id: slotId, p_qty: quantidade }
+    : { p_experience_id: exp.id, p_qty: quantidade };
 
   const { data: vagaRows, error: vagaErr } = await supabase.rpc(
     decrementRpc,
@@ -563,9 +567,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // Helper pra rollback de vaga — slot ou experiência
   const incrementVaga = async () => {
     if (useSlotVagas) {
-      await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId });
+      await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId, p_qty: quantidade });
     } else {
-      await supabase.rpc("increment_experience_vagas", { p_experience_id: exp.id });
+      await supabase.rpc("increment_experience_vagas", { p_experience_id: exp.id, p_qty: quantidade });
     }
   };
 
@@ -591,11 +595,13 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       gift_card_centavos: giftCardCentavos,
       gift_card_code: cupomCode,
       slot_id: slotId,
+      quantidade: quantidade,
       metadata: {
         bairro: exp.bairro ?? null,
         endereco: exp.endereco ?? null,
         paid_with_gift_card_only: true,
         telefone_digits: telefoneDigits || null,
+        participantes: participantes,
       },
     });
 
@@ -668,6 +674,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         data: exp.data ?? "",
         horario: horario ?? "",
         slot_id: slotId ?? "",
+        quantidade: String(quantidade),
         email: email ?? "",
         nome: nome ?? "",
         // Telefone também vai pro metadata como safety net —
@@ -737,7 +744,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
     slot_id: slotId,
-    metadata: bookingMetadataBase,
+    quantidade: quantidade,
+    metadata: { ...bookingMetadataBase, participantes },
   });
 
   if (insertErr) {

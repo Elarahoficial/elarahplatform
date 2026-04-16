@@ -28,6 +28,7 @@ export interface GuardInput {
   email: string | null;
   nome: string | null;
   cupomCode: string | null;
+  quantidade: number;
 }
 
 export interface ExperienceSnapshot {
@@ -58,6 +59,7 @@ export interface GuardSuccess {
   amountToChargeCents: number;        // baseCents - giftCardCentavos
   cupomCode: string | null;
   slotId: string | null;              // UUID do slot reservado (null = experience-level)
+  quantidade: number;                  // vagas reservadas (default 1)
   // Chamar se o caller falhar depois de reservar a vaga (ex.:
   // Stripe/MP retornar erro). Devolve vaga + saldo do cupom.
   rollback: () => Promise<void>;
@@ -115,6 +117,7 @@ export async function reserveExperienceSlot(
   }
 
   const horarioInput = input.horario ? String(input.horario).trim() : null;
+  const quantidade = Math.max(1, Math.floor(Number(input.quantidade) || 1));
 
   // ===== 1. Busca experiência =====
   const { data: expRaw, error: expErr } = await supabase
@@ -208,26 +211,31 @@ export async function reserveExperienceSlot(
     // Check slot-level
     if (
       slot.vagas_total !== null &&
-      (slot.vagas_restantes === null || Number(slot.vagas_restantes) <= 0)
+      (slot.vagas_restantes === null || Number(slot.vagas_restantes) < quantidade)
     ) {
+      const restantes = Number(slot.vagas_restantes || 0);
       return {
         ok: false,
         errorCode: "slot_sold_out",
-        errorMessage: "Este horário está esgotado.",
+        errorMessage: restantes <= 0
+          ? "Este horário está esgotado."
+          : `Só restam ${restantes} vaga(s) neste horário.`,
         errorStatus: 409,
       };
     }
   } else {
-    // Fallback: experience-level
     if (
       exp.vagas_total !== null &&
       exp.vagas_total !== undefined &&
-      (exp.vagas_restantes === null || Number(exp.vagas_restantes) <= 0)
+      (exp.vagas_restantes === null || Number(exp.vagas_restantes) < quantidade)
     ) {
+      const restantes = Number(exp.vagas_restantes || 0);
       return {
         ok: false,
         errorCode: "experience_sold_out",
-        errorMessage: "Esta experiência está esgotada.",
+        errorMessage: restantes <= 0
+          ? "Esta experiência está esgotada."
+          : `Só restam ${restantes} vaga(s) nesta experiência.`,
         errorStatus: 409,
       };
     }
@@ -298,7 +306,8 @@ export async function reserveExperienceSlot(
     giftCardCentavos = Number(h.used_centavos || 0);
   }
 
-  const amountToChargeCents = Math.max(0, baseCents - giftCardCentavos);
+  const totalBaseCents = baseCents * quantidade;
+  const amountToChargeCents = Math.max(0, totalBaseCents - giftCardCentavos);
 
   // ===== 8. Decremento atômico de vaga =====
   // Se temos slot → decrement_slot_vagas, senão → decrement_experience_vagas
@@ -315,7 +324,7 @@ export async function reserveExperienceSlot(
     // Slot-level decrement
     const { data: vagaRows, error: vagaErr } = await supabase.rpc(
       "decrement_slot_vagas",
-      { p_slot_id: slotId },
+      { p_slot_id: slotId, p_qty: quantidade },
     );
     if (vagaErr) {
       console.error("[Elarah Guard] slot vagas decrement error", vagaErr);
@@ -348,7 +357,7 @@ export async function reserveExperienceSlot(
     // Experience-level decrement (backward compat)
     const { data: vagaRows, error: vagaErr } = await supabase.rpc(
       "decrement_experience_vagas",
-      { p_experience_id: exp.id },
+      { p_experience_id: exp.id, p_qty: quantidade },
     );
     if (vagaErr) {
       console.error("[Elarah Guard] vagas decrement error", vagaErr);
@@ -389,10 +398,10 @@ export async function reserveExperienceSlot(
     );
     try {
       if (useSlotVagas && slotId) {
-        await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId });
+        await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId, p_qty: quantidade });
       } else {
         await supabase.rpc("increment_experience_vagas", {
-          p_experience_id: exp.id,
+          p_experience_id: exp.id, p_qty: quantidade,
         });
       }
     } catch (e) {
@@ -422,6 +431,7 @@ export async function reserveExperienceSlot(
     amountToChargeCents,
     cupomCode: input.cupomCode,
     slotId,
+    quantidade,
     rollback,
   };
 }

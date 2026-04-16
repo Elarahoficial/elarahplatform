@@ -1124,6 +1124,17 @@ if (groupForm) {
             '<div id="erm-form-section">'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== SELETOR DE QUANTIDADE =====
+            '<div style="margin-bottom:14px;">'
+        +     '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">Quantidade de vagas</label>'
+        +     '<div style="display:flex;align-items:center;gap:10px;">'
+        +       '<button type="button" id="erm-qty-minus" style="width:36px;height:36px;border:1px solid #ddd;border-radius:10px;background:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;">&minus;</button>'
+        +       '<span id="erm-qty" style="font-size:1.1rem;font-weight:700;color:#1a1a1a;min-width:24px;text-align:center;">1</span>'
+        +       '<button type="button" id="erm-qty-plus" style="width:36px;height:36px;border:1px solid #ddd;border-radius:10px;background:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;">+</button>'
+        +     '</div>'
+        +   '</div>'
+        +   // ===== CONTAINER PARTICIPANTES ADICIONAIS =====
+            '<div id="erm-participants" style="margin-bottom:14px;"></div>'
         +   // ===== SELEÇÃO DE MÉTODO DE PAGAMENTO =====
             // Cartão tem repasse de taxa; PIX é o preço limpo. A seleção
             // altera o breakdown acima e o valor final enviado pro Stripe.
@@ -1453,10 +1464,12 @@ if (groupForm) {
       if (!currentReservationCtx || !modalRoot) return;
       const ctx = currentReservationCtx;
       const root = modalRoot;
+      const qty = Math.max(1, ctx.quantidade || 1);
+      const unitPrice = ctx.precoCentavos || 0;
+      const subtotalCents = unitPrice * qty;
       const cupomCents = Number(ctx.cupomCentavos || 0);
-      const baseAfterCupom = Math.max(0, (ctx.precoCentavos || 0) - cupomCents);
+      const baseAfterCupom = Math.max(0, subtotalCents - cupomCents);
 
-      // Taxa só incide sobre o valor que cai no cartão.
       let feeCents = 0;
       if (ctx.paymentMethod === 'card' && baseAfterCupom > 0 && ctx.feeConfig) {
         feeCents = computeCardFee(baseAfterCupom, ctx.feeConfig);
@@ -1466,7 +1479,9 @@ if (groupForm) {
       ctx.totalCentavos = total;
       ctx.feeCents = feeCents;
 
-      root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
+      root.querySelector('#erm-subtotal').textContent = qty > 1
+        ? qty + 'x ' + brl(unitPrice) + ' = ' + brl(subtotalCents)
+        : brl(unitPrice);
       root.querySelector('#erm-total').textContent = brl(total);
 
       const feeRow = root.querySelector('#erm-fee-row');
@@ -1621,6 +1636,44 @@ if (groupForm) {
         currentReservationCtx.feeConfig = cfg;
         refreshPriceBreakdown();
       });
+
+      // ===== Quantidade + Participantes =====
+      ctx.quantidade = 1;
+      ctx.participantes = [];
+      var qtyEl = root.querySelector('#erm-qty');
+      var participantsEl = root.querySelector('#erm-participants');
+      if (qtyEl) qtyEl.textContent = '1';
+      if (participantsEl) participantsEl.innerHTML = '';
+
+      function renderParticipantFields() {
+        if (!participantsEl) return;
+        participantsEl.innerHTML = '';
+        if (ctx.quantidade <= 1) return;
+        for (var i = 2; i <= ctx.quantidade; i++) {
+          var div = document.createElement('div');
+          div.style.cssText = 'background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:10px;';
+          div.innerHTML =
+            '<p style="margin:0 0 8px;font-size:.85rem;font-weight:600;color:#1a1a1a;">Participante ' + i + '</p>' +
+            '<input type="text" class="erm-part-nome" placeholder="Nome completo *" data-idx="' + i + '" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:8px;box-sizing:border-box;">' +
+            '<input type="tel" class="erm-part-telefone" placeholder="WhatsApp *" data-idx="' + i + '" inputmode="tel" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:6px;box-sizing:border-box;">' +
+            '<input type="email" class="erm-part-email" placeholder="E-mail (opcional)" data-idx="' + i + '" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;box-sizing:border-box;">';
+          participantsEl.appendChild(div);
+        }
+      }
+
+      function updateQty(delta) {
+        var newQty = Math.max(1, Math.min(10, ctx.quantidade + delta));
+        if (newQty === ctx.quantidade) return;
+        ctx.quantidade = newQty;
+        if (qtyEl) qtyEl.textContent = String(newQty);
+        renderParticipantFields();
+        refreshPriceBreakdown();
+      }
+
+      var minusBtn = root.querySelector('#erm-qty-minus');
+      var plusBtn = root.querySelector('#erm-qty-plus');
+      if (minusBtn) minusBtn.onclick = function () { updateQty(-1); };
+      if (plusBtn) plusBtn.onclick = function () { updateQty(1); };
 
       root.style.display = 'flex';
       document.body.style.overflow = 'hidden';
@@ -1870,6 +1923,40 @@ if (groupForm) {
         ctx.cpf = cpfDigits;
       }
 
+      // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
+      var participantes = [];
+      if (ctx.quantidade > 1 && modalRoot) {
+        var partNomes = modalRoot.querySelectorAll('.erm-part-nome');
+        var partTels = modalRoot.querySelectorAll('.erm-part-telefone');
+        var partEmails = modalRoot.querySelectorAll('.erm-part-email');
+        var partValid = true;
+        for (var pi = 0; pi < partNomes.length; pi++) {
+          var pNome = partNomes[pi].value.trim();
+          var pTel = partTels[pi] ? partTels[pi].value.trim() : '';
+          var pEmail = partEmails[pi] ? partEmails[pi].value.trim() : '';
+          if (!pNome || pNome.length < 3) {
+            partNomes[pi].style.borderColor = '#c0392b';
+            errEl.textContent = 'Preencha o nome do Participante ' + (pi + 2) + '.';
+            try { partNomes[pi].focus({ preventScroll: true }); } catch (e) {}
+            partValid = false;
+            break;
+          }
+          partNomes[pi].style.borderColor = '#ddd';
+          var pTelNorm = normalizePhoneBR(pTel);
+          if (!pTelNorm) {
+            partTels[pi].style.borderColor = '#c0392b';
+            errEl.textContent = 'Informe o WhatsApp do Participante ' + (pi + 2) + '.';
+            try { partTels[pi].focus({ preventScroll: true }); } catch (e) {}
+            partValid = false;
+            break;
+          }
+          partTels[pi].style.borderColor = '#ddd';
+          participantes.push({ nome: pNome, telefone: pTel, telefone_digits: pTelNorm, email: pEmail || null });
+        }
+        if (!partValid) return;
+      }
+      ctx.participantes = participantes;
+
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Processando...';
 
@@ -1916,6 +2003,8 @@ if (groupForm) {
             telefone: telefoneRaw,
             telefone_digits: telefoneNormalized,
             cupom: ctx.cupomCode || null,
+            quantidade: ctx.quantidade || 1,
+            participantes: ctx.participantes || [],
           };
           console.log('[Elarah Payment/MP] criando PIX', {
             base: ctx.precoCentavos,
@@ -1989,6 +2078,8 @@ if (groupForm) {
           telefone_digits: telefoneNormalized,
           cupom: ctx.cupomCode || null,
           payment_method: 'card',
+          quantidade: ctx.quantidade || 1,
+          participantes: ctx.participantes || [],
         };
         console.log('[Elarah Payment] enviando checkout cartão', {
           base: ctx.precoCentavos,
