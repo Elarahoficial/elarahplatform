@@ -225,11 +225,12 @@ serve(async (req) => {
       // Devolve vaga + cupom — prioriza slot, fallback pra experiência
       // deno-lint-ignore no-explicit-any
       const bk = booking as any;
+      const qty = Number(bk.quantidade) || 1;
       if (bk.slot_id) {
-        await supabase.rpc("increment_slot_vagas", { p_slot_id: bk.slot_id });
+        await supabase.rpc("increment_slot_vagas", { p_slot_id: bk.slot_id, p_qty: qty });
       } else if (booking.experiencia_id) {
         await supabase.rpc("increment_experience_vagas", {
-          p_experience_id: booking.experiencia_id,
+          p_experience_id: booking.experiencia_id, p_qty: qty,
         });
       }
       if (booking.gift_card_id && booking.gift_card_centavos) {

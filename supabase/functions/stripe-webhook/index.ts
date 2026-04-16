@@ -70,7 +70,7 @@ async function getBookingBySession(sessionId: string): Promise<BookingRow | null
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, metadata",
+      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata",
     )
     .eq("stripe_session_id", sessionId)
     .maybeSingle();
@@ -124,16 +124,17 @@ async function refundReservationSideEffects(booking: BookingRow | null) {
   // Devolve a vaga — prioriza slot-level, fallback pro experience-level
   // deno-lint-ignore no-explicit-any
   const bk = booking as any;
+  const qty = Number(bk.quantidade) || 1;
   if (bk.slot_id) {
     await supabase
-      .rpc("increment_slot_vagas", { p_slot_id: bk.slot_id })
+      .rpc("increment_slot_vagas", { p_slot_id: bk.slot_id, p_qty: qty })
       .then(({ error }: { error: unknown }) => {
         if (error) console.error("[stripe-webhook] slot vagas refund", error);
       });
   } else if (booking.experiencia_id) {
     await supabase
       .rpc("increment_experience_vagas", {
-        p_experience_id: booking.experiencia_id,
+        p_experience_id: booking.experiencia_id, p_qty: qty,
       })
       .then(({ error }) => {
         if (error) console.error("[stripe-webhook] vagas refund", error);
@@ -578,7 +579,7 @@ serve(async (req) => {
         const { data: refundBookings } = await supabase
           .from("bookings")
           .select(
-            "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, metadata",
+            "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata",
           )
           .eq("stripe_payment_intent", pi);
         if (refundBookings && refundBookings.length) {

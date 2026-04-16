@@ -121,6 +121,8 @@ serve(async (req) => {
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
   const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
+  const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
+  const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
 
   const telefoneHuman = payload.telefone
     ? String(payload.telefone).trim()
@@ -161,6 +163,7 @@ serve(async (req) => {
     email,
     nome: nomeFromPayload,
     cupomCode,
+    quantidade,
   });
 
   if (!guard.ok) {
@@ -184,6 +187,7 @@ serve(async (req) => {
     giftCardCentavos,
     amountToChargeCents,
     slotId,
+    quantidade: guardQty,
     rollback,
   } = guard;
 
@@ -211,11 +215,13 @@ serve(async (req) => {
       gift_card_centavos: giftCardCentavos,
       gift_card_code: cupomCode,
       slot_id: slotId,
+      quantidade: guardQty,
       payment_provider: "mercado_pago",
       metadata: {
         bairro: exp.bairro ?? null,
         endereco: exp.endereco ?? null,
         paid_with_gift_card_only: true,
+        participantes: participantes,
         telefone_digits: telefoneDigits || null,
         payment_method: "pix",
         cpf: cpfRaw,
@@ -345,9 +351,10 @@ serve(async (req) => {
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
     slot_id: slotId,
+    quantidade: guardQty,
     mp_payment_id: String(payment.id),
     payment_provider: "mercado_pago",
-    metadata: bookingMetadata,
+    metadata: { ...bookingMetadata, participantes },
   });
 
   if (insertErr) {
