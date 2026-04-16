@@ -20,6 +20,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     experiences = [];
   }
 
+  // Carrega disponibilidade por slot (vagas por horário)
+  window._elarahSlotMap = {};
+  try {
+    if (typeof ElarahData !== 'undefined' && ElarahData.loadAllSlots) {
+      var sMap = await ElarahData.loadAllSlots();
+      if (sMap && sMap.forEach) {
+        sMap.forEach(function (slots, expId) {
+          var byHorario = {};
+          slots.forEach(function (sl) { byHorario[sl.horario] = sl; });
+          window._elarahSlotMap[expId] = byHorario;
+        });
+      }
+    }
+  } catch (e) { /* tabela pode não existir */ }
+
   let activeCategoria = '';
   let activeBairro = '';
   let activeBusca = '';
@@ -259,6 +274,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
       : (exp.horario ? [exp.horario] : []);
     const hasMultipleHorarios = horarios.length > 1;
 
+    // Slot availability lookup (populated by loadSlotAvailability)
+    var slotMap = (window._elarahSlotMap && window._elarahSlotMap[exp.id]) || {};
+
     const imageContent = exp.imagem
       ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
       : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
@@ -268,9 +286,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
       : `${exp.data}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
 
     const horariosBlock = hasMultipleHorarios
-      ? `<div class="card__horarios">${horarios.map((h, i) =>
-          `<button type="button" class="card__horario-btn${i === 0 ? ' card__horario-btn--active' : ''}" data-horario="${h.replace(/"/g, '&quot;')}">${h}</button>`
-        ).join('')}</div>`
+      ? `<div class="card__horarios">${horarios.map((h, i) => {
+          var sl = slotMap[h];
+          var soldOut = sl && sl.vagasTotal != null && sl.vagasRestantes != null && sl.vagasRestantes <= 0;
+          var label = soldOut ? h + ' (esgotado)' : h;
+          var cls = 'card__horario-btn' + (i === 0 && !soldOut ? ' card__horario-btn--active' : '') + (soldOut ? ' card__horario-btn--sold-out' : '');
+          return '<button type="button" class="' + cls + '"' + (soldOut ? ' disabled' : '') + ' data-horario="' + h.replace(/"/g, '&quot;') + '">' + label + '</button>';
+        }).join('')}</div>`
       : '';
 
     card.innerHTML = `

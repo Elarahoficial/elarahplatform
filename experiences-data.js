@@ -478,6 +478,135 @@
     }
   }
 
+  // =============== EXPERIENCE SLOTS (vagas por horário) ===============
+  // Carrega experience_slots e expõe helpers pra o admin e o frontend.
+  // Se a tabela não existir (migration não rodou), retorna vazio sem erro.
+
+  const SLOTS_TABLE = 'experience_slots';
+  let slotsCache = null;    // Map<experienceId, slotObj[]>
+  let slotsCachePromise = null;
+
+  function dbRowToSlot(row) {
+    return {
+      id: row.id,
+      experienceId: row.experience_id,
+      data: row.data || null,
+      horario: row.horario || '',
+      vagasTotal: row.vagas_total != null ? Number(row.vagas_total) : null,
+      vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
+      eventAt: row.event_at || null,
+      isActive: row.is_active !== false,
+    };
+  }
+
+  async function loadAllSlots() {
+    if (slotsCache) return slotsCache;
+    if (slotsCachePromise) return slotsCachePromise;
+
+    const s = sb();
+    if (!s) { slotsCache = new Map(); return slotsCache; }
+
+    slotsCachePromise = (async () => {
+      try {
+        const { data, error } = await s
+          .from(SLOTS_TABLE)
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (error) {
+          // Tabela provavelmente não existe — silencia
+          console.warn('[Elarah] loadAllSlots: ' + (error.message || 'erro'));
+          slotsCache = new Map();
+        } else {
+          const map = new Map();
+          (data || []).forEach(function (row) {
+            const slot = dbRowToSlot(row);
+            if (!map.has(slot.experienceId)) map.set(slot.experienceId, []);
+            map.get(slot.experienceId).push(slot);
+          });
+          slotsCache = map;
+          console.info('[Elarah] loadAllSlots: ' + (data || []).length + ' slots carregados');
+        }
+      } catch (e) {
+        console.warn('[Elarah] loadAllSlots exception:', e);
+        slotsCache = new Map();
+      }
+      slotsCachePromise = null;
+      return slotsCache;
+    })();
+    return slotsCachePromise;
+  }
+
+  async function getSlotsForExperience(experienceId) {
+    const map = await loadAllSlots();
+    return (map.get(experienceId) || []).slice();
+  }
+
+  // Salva (upsert) slots pra uma experiência. Recebe array de objetos:
+  //   [{ id?, data, horario, vagasTotal, eventAt }]
+  // Slots que existiam mas não estão no array são deletados.
+  async function saveSlots(experienceId, slotsArray) {
+    const s = sb();
+    if (!s || !experienceId) return false;
+
+    // 1) Busca os slots atuais do banco pra esta experiência
+    const { data: existing } = await s
+      .from(SLOTS_TABLE)
+      .select('id, horario, data')
+      .eq('experience_id', experienceId);
+    const existingIds = new Set((existing || []).map(function (r) { return r.id; }));
+
+    // 2) Separa upserts dos deletes
+    const toUpsert = [];
+    const keepIds = new Set();
+    (slotsArray || []).forEach(function (slot) {
+      if (!slot.horario || !String(slot.horario).trim()) return;
+      const vt = slot.vagasTotal === '' || slot.vagasTotal == null
+        ? null : Number(slot.vagasTotal);
+      const row = {
+        experience_id: experienceId,
+        data: slot.data || null,
+        horario: String(slot.horario).trim(),
+        vagas_total: Number.isFinite(vt) && vt >= 0 ? vt : null,
+        event_at: slot.eventAt || null,
+        is_active: slot.isActive !== false,
+      };
+      if (slot.id && existingIds.has(slot.id)) {
+        row.id = slot.id;
+        keepIds.add(slot.id);
+      }
+      toUpsert.push(row);
+    });
+
+    // 3) Deleta slots removidos do form
+    const toDelete = [];
+    existingIds.forEach(function (id) { if (!keepIds.has(id)) toDelete.push(id); });
+    if (toDelete.length) {
+      await s.from(SLOTS_TABLE).delete().in('id', toDelete);
+    }
+
+    // 4) Upsert os que ficaram/foram adicionados
+    if (toUpsert.length) {
+      const { error } = await s.from(SLOTS_TABLE).upsert(toUpsert, {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
+      if (error) {
+        console.error('[Elarah] saveSlots upsert error:', error);
+        return false;
+      }
+    }
+
+    // Invalida cache de slots
+    slotsCache = null;
+    slotsCachePromise = null;
+    return true;
+  }
+
+  function invalidateSlotsCache() {
+    slotsCache = null;
+    slotsCachePromise = null;
+  }
+
   window.ElarahData = {
     getAllExperiences,
     getVisibleExperiences,
@@ -488,6 +617,11 @@
     deleteExperience,
     duplicateExperience,
     setExperienceActive,
-    invalidateCache
+    invalidateCache,
+    // Slots
+    loadAllSlots,
+    getSlotsForExperience,
+    saveSlots,
+    invalidateSlotsCache
   };
 })(window);

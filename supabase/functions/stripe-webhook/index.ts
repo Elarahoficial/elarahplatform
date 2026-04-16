@@ -70,7 +70,7 @@ async function getBookingBySession(sessionId: string): Promise<BookingRow | null
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, metadata",
+      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, metadata",
     )
     .eq("stripe_session_id", sessionId)
     .maybeSingle();
@@ -121,8 +121,16 @@ async function updateBookingBySession(
 
 async function refundReservationSideEffects(booking: BookingRow | null) {
   if (!booking) return;
-  // Devolve a vaga (se experiência tinha controle)
-  if (booking.experiencia_id) {
+  // Devolve a vaga — prioriza slot-level, fallback pro experience-level
+  // deno-lint-ignore no-explicit-any
+  const bk = booking as any;
+  if (bk.slot_id) {
+    await supabase
+      .rpc("increment_slot_vagas", { p_slot_id: bk.slot_id })
+      .then(({ error }: { error: unknown }) => {
+        if (error) console.error("[stripe-webhook] slot vagas refund", error);
+      });
+  } else if (booking.experiencia_id) {
     await supabase
       .rpc("increment_experience_vagas", {
         p_experience_id: booking.experiencia_id,
@@ -570,7 +578,7 @@ serve(async (req) => {
         const { data: refundBookings } = await supabase
           .from("bookings")
           .select(
-            "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, metadata",
+            "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, metadata",
           )
           .eq("stripe_payment_intent", pi);
         if (refundBookings && refundBookings.length) {

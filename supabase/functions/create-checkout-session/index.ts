@@ -348,10 +348,39 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
-  // ===== Cutoff 24h =====
-  if (exp.event_at) {
+  // ===== Slot lookup (vagas por horário) =====
+  // Se existe um slot para este (experience_id, horario), usamos
+  // vagas do slot. Senão, fallback pro experience-level.
+  let slotId: string | null = null;
+  let useSlotVagas = false;
+  // deno-lint-ignore no-explicit-any
+  let slotRow: any = null;
+
+  if (horario) {
+    const { data: sr } = await supabase
+      .from("experience_slots")
+      .select("id, vagas_total, vagas_restantes, event_at, is_active")
+      .eq("experience_id", exp.id)
+      .eq("horario", horario)
+      .maybeSingle();
+    if (sr) {
+      slotRow = sr;
+      slotId = sr.id;
+      useSlotVagas = true;
+      if (sr.is_active === false) {
+        return jsonResponse(
+          { error: "slot_unavailable", message: "Este horário não está mais disponível." },
+          409,
+        );
+      }
+    }
+  }
+
+  // ===== Cutoff =====
+  const effectiveEventAt = (useSlotVagas && slotRow?.event_at) ? slotRow.event_at : exp.event_at;
+  if (effectiveEventAt) {
     const cutoffH = Number(exp.cutoff_hours ?? 24);
-    const eventTs = new Date(exp.event_at).getTime();
+    const eventTs = new Date(effectiveEventAt).getTime();
     const limit = Date.now() + cutoffH * 60 * 60 * 1000;
     if (limit > eventTs) {
       return jsonResponse(
@@ -368,7 +397,17 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   }
 
   // ===== Vagas — checagem prévia (não atômica) =====
-  if (
+  if (useSlotVagas) {
+    if (
+      slotRow.vagas_total !== null &&
+      (slotRow.vagas_restantes === null || Number(slotRow.vagas_restantes) <= 0)
+    ) {
+      return jsonResponse(
+        { error: "slot_sold_out", message: "Este horário está esgotado." },
+        409,
+      );
+    }
+  } else if (
     exp.vagas_total !== null &&
     exp.vagas_total !== undefined &&
     (exp.vagas_restantes === null || Number(exp.vagas_restantes) <= 0)
@@ -481,14 +520,19 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // ===== Decremento atômico de vaga =====
   // Só agora — depois do hold do cupom — pra evitar reservar vaga
   // que vamos liberar logo em seguida se o cupom falhar.
+  // Usa slot-level se disponível, senão experience-level.
+  const decrementRpc = useSlotVagas ? "decrement_slot_vagas" : "decrement_experience_vagas";
+  const decrementArg = useSlotVagas
+    ? { p_slot_id: slotId }
+    : { p_experience_id: exp.id };
+
   const { data: vagaRows, error: vagaErr } = await supabase.rpc(
-    "decrement_experience_vagas",
-    { p_experience_id: exp.id },
+    decrementRpc,
+    decrementArg,
   );
   if (vagaErr) {
     console.error("[create-checkout-session] vagas decrement error", vagaErr);
     if (giftCardId) {
-      // Devolve o saldo do cupom já segurado.
       await supabase.rpc("refund_gift_card", {
         p_gift_card_id: giftCardId,
         p_amount_centavos: giftCardCentavos,
@@ -504,14 +548,26 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         p_amount_centavos: giftCardCentavos,
       });
     }
+    const soldOutMsg = useSlotVagas
+      ? "Este horário está esgotado."
+      : "Esta experiência está esgotada.";
     return jsonResponse(
       {
-        error: "experience_sold_out",
-        message: "Esta experiência está esgotada.",
+        error: useSlotVagas ? "slot_sold_out" : "experience_sold_out",
+        message: soldOutMsg,
       },
       409,
     );
   }
+
+  // Helper pra rollback de vaga — slot ou experiência
+  const incrementVaga = async () => {
+    if (useSlotVagas) {
+      await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId });
+    } else {
+      await supabase.rpc("increment_experience_vagas", { p_experience_id: exp.id });
+    }
+  };
 
   // ===== CASO 1: gift card cobre 100% — pula Stripe =====
   if (amountToCharge === 0) {
@@ -534,6 +590,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       gift_card_id: giftCardId,
       gift_card_centavos: giftCardCentavos,
       gift_card_code: cupomCode,
+      slot_id: slotId,
       metadata: {
         bairro: exp.bairro ?? null,
         endereco: exp.endereco ?? null,
@@ -554,9 +611,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
           p_amount_centavos: giftCardCentavos,
         });
       }
-      await supabase.rpc("increment_experience_vagas", {
-        p_experience_id: exp.id,
-      });
+      await incrementVaga();
       return jsonResponse({ error: "booking_failed" }, 500);
     }
 
@@ -612,6 +667,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         experiencia_nome: exp.nome,
         data: exp.data ?? "",
         horario: horario ?? "",
+        slot_id: slotId ?? "",
         email: email ?? "",
         nome: nome ?? "",
         // Telefone também vai pro metadata como safety net —
@@ -638,9 +694,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         p_amount_centavos: giftCardCentavos,
       });
     }
-    await supabase.rpc("increment_experience_vagas", {
-      p_experience_id: exp.id,
-    });
+    await incrementVaga();
     return jsonResponse({ error: "stripe_create_failed" }, 502);
   }
 
@@ -682,6 +736,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     gift_card_id: giftCardId,
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
+    slot_id: slotId,
     metadata: bookingMetadataBase,
   });
 

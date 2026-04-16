@@ -839,6 +839,13 @@ select {
   color: var(--white);
 }
 
+.card__horario-btn--sold-out {
+  opacity: 0.45;
+  text-decoration: line-through;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .card__footer {
   margin-top: auto;
   padding-top: 12px;

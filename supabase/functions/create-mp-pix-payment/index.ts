@@ -157,6 +157,7 @@ serve(async (req) => {
   // ===== Reserva slot (valida exp, decrementa vaga, hold cupom) =====
   const guard = await reserveExperienceSlot(supabase, {
     experienciaId,
+    horario,
     email,
     nome: nomeFromPayload,
     cupomCode,
@@ -182,6 +183,7 @@ serve(async (req) => {
     giftCardId,
     giftCardCentavos,
     amountToChargeCents,
+    slotId,
     rollback,
   } = guard;
 
@@ -208,6 +210,7 @@ serve(async (req) => {
       gift_card_id: giftCardId,
       gift_card_centavos: giftCardCentavos,
       gift_card_code: cupomCode,
+      slot_id: slotId,
       payment_provider: "mercado_pago",
       metadata: {
         bairro: exp.bairro ?? null,
@@ -341,6 +344,7 @@ serve(async (req) => {
     gift_card_id: giftCardId,
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
+    slot_id: slotId,
     mp_payment_id: String(payment.id),
     payment_provider: "mercado_pago",
     metadata: bookingMetadata,

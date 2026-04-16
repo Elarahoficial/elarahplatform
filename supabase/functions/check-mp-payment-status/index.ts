@@ -222,8 +222,12 @@ serve(async (req) => {
       .eq("id", booking.id);
     if (!updErr) {
       updated = true;
-      // Devolve vaga + cupom
-      if (booking.experiencia_id) {
+      // Devolve vaga + cupom — prioriza slot, fallback pra experiência
+      // deno-lint-ignore no-explicit-any
+      const bk = booking as any;
+      if (bk.slot_id) {
+        await supabase.rpc("increment_slot_vagas", { p_slot_id: bk.slot_id });
+      } else if (booking.experiencia_id) {
         await supabase.rpc("increment_experience_vagas", {
           p_experience_id: booking.experiencia_id,
         });
