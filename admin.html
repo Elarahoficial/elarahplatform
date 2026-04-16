@@ -52,6 +52,13 @@
         <span>Compras</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="purchases-pending">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+        </svg>
+        <span>Pendentes</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="experiences">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -216,8 +223,8 @@
     <div class="admin__panel" id="panel-purchases">
       <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 class="admin__page-title">Reservas (Stripe)</h1>
-          <p class="admin__page-subtitle">Todas as reservas criadas via checkout</p>
+          <h1 class="admin__page-title">Compras (Pagas)</h1>
+          <p class="admin__page-subtitle">Reservas finalizadas com controle financeiro e fornecedor</p>
         </div>
         <div class="admin__analytics-controls">
           <select id="bookings-filter-exp" class="admin__analytics-select">
@@ -226,14 +233,7 @@
           <select id="bookings-filter-fornecedor" class="admin__analytics-select">
             <option value="">Todos os fornecedores</option>
           </select>
-          <select id="bookings-filter-status" class="admin__analytics-select">
-            <option value="">Todos os status</option>
-            <option value="pago">Pago</option>
-            <option value="pending">Pendente</option>
-            <option value="expirado">Expirado</option>
-            <option value="cancelado">Cancelado</option>
-            <option value="reembolsado">Reembolsado</option>
-          </select>
+          <!-- Status filter removed: this panel only shows paid -->
           <select id="bookings-filter-status-fornecedor" class="admin__analytics-select">
             <option value="">Status fornecedor</option>
             <option value="repasse_pendente">Repasse pendente</option>
@@ -332,6 +332,54 @@
           </thead>
           <tbody id="purchases-giftcards-body">
             <tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PENDENTES PANEL ===== -->
+    <div class="admin__panel" id="panel-purchases-pending">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Compras Pendentes</h1>
+          <p class="admin__page-subtitle">Reservas aguardando pagamento, expiradas ou canceladas</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <select id="pending-filter-exp" class="admin__analytics-select">
+            <option value="">Todas as experiências</option>
+          </select>
+          <select id="pending-filter-status" class="admin__analytics-select">
+            <option value="">Todos os status</option>
+            <option value="pending">Pendente</option>
+            <option value="expirado">Expirado</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="reembolsado">Reembolsado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Reservas pendentes e canceladas</span>
+          <span class="admin__table-count" id="pending-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>WhatsApp</th>
+              <th>Experiência</th>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Qty</th>
+              <th>Valor</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="pending-body">
+            <tr><td colspan="10" class="admin__table-empty">Nenhuma reserva pendente.</td></tr>
           </tbody>
         </table>
       </div>
@@ -802,7 +850,7 @@
 <script src="experiences-data.js?v=12"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=24"></script>
+<script src="admin.js?v=25"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

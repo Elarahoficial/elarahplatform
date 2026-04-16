@@ -114,6 +114,7 @@
       case 'users':       await renderUsers(); break;
       case 'partners':    await renderPartners(); break;
       case 'purchases':   await renderBookings(); break;
+      case 'purchases-pending': await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
       case 'byelarah':    await renderByElarah(); break;
       case 'giftcards':   await renderGiftCards(); break;
@@ -594,9 +595,10 @@
     const filterSfEl = document.getElementById('bookings-filter-status-fornecedor');
     const filterSf = filterSfEl ? filterSfEl.value : '';
 
+    // Este painel só mostra bookings PAGAS
     const filtered = bookings.filter(b => {
+      if (b.status !== 'pago') return false;
       if (filterExp && b.experiencia_nome !== filterExp) return false;
-      if (filterStatus && b.status !== filterStatus) return false;
       if (filterForn && (b.fornecedor_nome || '') !== filterForn) return false;
       if (filterSf && (b.status_fornecedor || '') !== filterSf) return false;
       return true;
@@ -763,27 +765,11 @@
     //   2. Pagos
     //   3. Outros (expirado, cancelado, reembolsado) — preservados
     //      em um terceiro grupo pra não serem perdidos.
-    const pendingGroup = sortByCreatedDesc(filtered.filter(b => b.status === 'pending'));
-    const paidGroup = sortByCreatedDesc(filtered.filter(b => b.status === 'pago'));
-    const otherGroup = sortByCreatedDesc(
-      filtered.filter(b => b.status !== 'pending' && b.status !== 'pago')
-    );
-
-    const parts = [];
-    if (pendingGroup.length) {
-      parts.push(renderGroupHeader('Pendentes', pendingGroup.length));
-      parts.push(pendingGroup.map(renderBookingRow).join(''));
-    }
-    if (paidGroup.length) {
-      parts.push(renderGroupHeader('Pagos', paidGroup.length));
-      parts.push(paidGroup.map(renderBookingRow).join(''));
-    }
-    if (otherGroup.length) {
-      parts.push(renderGroupHeader('Outros', otherGroup.length));
-      parts.push(otherGroup.map(renderBookingRow).join(''));
-    }
-
-    tbody.innerHTML = parts.join('');
+    // Painel de pagas: lista flat, sem grupos
+    const sorted = sortByCreatedDesc(filtered);
+    tbody.innerHTML = sorted.length
+      ? sorted.map(renderBookingRow).join('')
+      : '<tr><td colspan="15" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
 
     // Wire editable status_fornecedor dropdowns
     tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
@@ -811,6 +797,100 @@
       });
     });
   }
+
+  // ===== PENDENTES =====
+  async function renderPendingBookings() {
+    if (!document.getElementById('pending-body')) return;
+    const bookings = await getBookings();
+    const profiles = await getProfiles();
+
+    const nomePorUserId = new Map();
+    const nomePorEmail = new Map();
+    const telPorUserId = new Map();
+    const telPorEmail = new Map();
+    (profiles || []).forEach(function (p) {
+      var nm = (p.nome || '').trim();
+      var tel = (p.telefone || '').trim();
+      if (nm && p.id) nomePorUserId.set(p.id, nm);
+      if (nm && p.email) nomePorEmail.set(String(p.email).toLowerCase(), nm);
+      if (tel && p.id) telPorUserId.set(p.id, tel);
+      if (tel && p.email) telPorEmail.set(String(p.email).toLowerCase(), tel);
+    });
+
+    // Filters
+    var filterExpEl = document.getElementById('pending-filter-exp');
+    if (filterExpEl && filterExpEl.options.length <= 1) {
+      var seen = new Set();
+      bookings.forEach(function (b) {
+        if (b.experiencia_nome && !seen.has(b.experiencia_nome)) {
+          seen.add(b.experiencia_nome);
+          var opt = document.createElement('option');
+          opt.value = b.experiencia_nome;
+          opt.textContent = b.experiencia_nome;
+          filterExpEl.appendChild(opt);
+        }
+      });
+    }
+    var filterExp = filterExpEl ? filterExpEl.value : '';
+    var filterStatusEl = document.getElementById('pending-filter-status');
+    var filterStatus = filterStatusEl ? filterStatusEl.value : '';
+
+    // Only non-paid bookings
+    var filtered = bookings.filter(function (b) {
+      if (b.status === 'pago') return false;
+      if (filterExp && b.experiencia_nome !== filterExp) return false;
+      if (filterStatus && b.status !== filterStatus) return false;
+      return true;
+    });
+
+    var countEl = document.getElementById('pending-count');
+    if (countEl) countEl.textContent = filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : '');
+
+    var tbody = document.getElementById('pending-body');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhuma reserva pendente.</td></tr>';
+      return;
+    }
+
+    filtered.sort(function (a, b) {
+      var ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      var tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
+    });
+
+    tbody.innerHTML = filtered.map(function (b) {
+      var telefone = b.telefone || '';
+      if (!telefone && b.user_id && telPorUserId.has(b.user_id)) telefone = telPorUserId.get(b.user_id);
+      if (!telefone && b.email) { var ek = String(b.email).toLowerCase(); if (telPorEmail.has(ek)) telefone = telPorEmail.get(ek); }
+      var nomeResolved = (b.nome || '').trim() || null;
+      if (!nomeResolved && b.user_id && nomePorUserId.has(b.user_id)) nomeResolved = nomePorUserId.get(b.user_id);
+      if (!nomeResolved && b.email) { var nk = String(b.email).toLowerCase(); if (nomePorEmail.has(nk)) nomeResolved = nomePorEmail.get(nk); }
+      var when = b.created_at ? new Date(b.created_at).toLocaleDateString('pt-BR') : '—';
+      var telefoneCell = telefone
+        ? '<a href="https://wa.me/55' + String(telefone).replace(/\D+/g, '').replace(/^55/, '') + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(telefone) + '</a>'
+        : '<span style="color:#bbb;">—</span>';
+      return '<tr>' +
+        '<td>' + escapeHtml(when) + '</td>' +
+        '<td>' + escapeHtml(nomeResolved || '—') + '</td>' +
+        '<td>' + escapeHtml(b.email || '—') + '</td>' +
+        '<td>' + telefoneCell + '</td>' +
+        '<td>' + escapeHtml(b.experiencia_nome || '—') + '</td>' +
+        '<td>' + escapeHtml(b.data || '—') + '</td>' +
+        '<td>' + escapeHtml(b.horario || '—') + '</td>' +
+        '<td>' + (b.quantidade > 1 ? b.quantidade : '1') + '</td>' +
+        '<td>' + escapeHtml(formatCents(b.amount_total, b.currency)) + '</td>' +
+        '<td>' + bookingStatusBadge(b.status) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // Wire pending filters
+  (function () {
+    var fe = document.getElementById('pending-filter-exp');
+    var fs = document.getElementById('pending-filter-status');
+    if (fe) fe.addEventListener('change', function () { renderPendingBookings(); });
+    if (fs) fs.addEventListener('change', function () { renderPendingBookings(); });
+  })();
 
   // ===== EXPERIENCES CRUD =====
   let modal, modalBackdrop, modalClose, modalTitle, form, submitBtn, addBtn;
