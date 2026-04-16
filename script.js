@@ -305,7 +305,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       </div>
       <div class="card__body">
         <span class="card__category">${exp.categoria}</span>
-        <h3 class="card__title">${exp.nome}</h3>
+        <h3 class="card__title"><a href="experiencia.html?id=${encodeURIComponent(exp.id)}" class="card__title-link">${exp.nome}</a></h3>
         <div class="card__details">
           <p class="card__detail">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -337,6 +337,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
             data-analytics-label="${(exp.nome || '').replace(/"/g, '&quot;')}">
             Reservar
           </button>
+          <button type="button" class="card__share-btn" data-share-id="${exp.id}" aria-label="Copiar link" title="Copiar link">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
         </div>
       </div>
     `;
@@ -352,6 +355,24 @@ if (categoriaURL) activeCategoria = categoriaURL;
             favBtn.dataset.id = `${exp.nome}_${exp.data}_${btn.dataset.horario}`;
           }
         });
+      });
+    }
+
+    // Share button handler
+    var shareBtn = card.querySelector('.card__share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var url = window.location.origin + '/experiencia.html?id=' + encodeURIComponent(shareBtn.dataset.shareId);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () {
+            shareBtn.title = 'Copiado!';
+            setTimeout(function () { shareBtn.title = 'Copiar link'; }, 2000);
+          });
+        } else {
+          prompt('Copie o link:', url);
+        }
       });
     }
 
