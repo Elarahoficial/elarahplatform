@@ -1885,7 +1885,18 @@ if (groupForm) {
           const data = await res.json().catch(() => null);
 
           if (!res.ok || !data) {
-            const msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            let msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            if (data && data.detail) {
+              const d = data.detail;
+              const causes = Array.isArray(d.cause)
+                ? d.cause.map(function(c) { return c.description; }).filter(Boolean)
+                : [];
+              const mpDetail = causes.length
+                ? causes.join('; ')
+                : (d.message || (typeof d === 'string' ? d : JSON.stringify(d)));
+              if (mpDetail) msg += ' (MP: ' + mpDetail + ')';
+              console.error('[Elarah PIX] MP error detail:', JSON.stringify(d));
+            }
             errEl.textContent = msg;
             confirmBtn.disabled = false;
             refreshPriceBreakdown();
