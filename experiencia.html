@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" id="meta-desc" content="Experiência na Elarah — descubra, reserve e viva.">
+  <title id="page-title">Experiência — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    .exp-detail { max-width: 960px; margin: 0 auto; padding: 32px 20px 60px; }
+    .exp-detail__back { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: .88rem; text-decoration: none; margin-bottom: 20px; }
+    .exp-detail__back:hover { color: var(--orange, #f0a05e); }
+    .exp-detail__hero { width: 100%; max-height: 420px; object-fit: cover; border-radius: 16px; margin-bottom: 28px; background: #f5f0eb; }
+    .exp-detail__hero-placeholder { width: 100%; height: 280px; border-radius: 16px; margin-bottom: 28px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 600; color: #fff; }
+    .exp-detail__category { display: inline-block; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--orange, #f0a05e); margin-bottom: 8px; }
+    .exp-detail__title { font-family: 'DM Serif Display', serif; font-size: 2rem; color: #1a1a1a; margin: 0 0 16px; line-height: 1.2; }
+    .exp-detail__meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+    .exp-detail__meta-item { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: #555; }
+    .exp-detail__meta-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .exp-detail__price { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 20px; }
+    .exp-detail__horarios { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .exp-detail__horario-btn { padding: 8px 16px; font-size: .88rem; font-weight: 600; border: 1.5px solid #ddd; border-radius: 10px; background: #fff; color: #555; cursor: pointer; transition: all .15s; }
+    .exp-detail__horario-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
+    .exp-detail__horario-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
+    .exp-detail__horario-btn--sold-out { opacity: .45; text-decoration: line-through; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__includes { font-size: .9rem; color: #666; margin-bottom: 24px; padding: 14px 18px; background: #faf6f0; border-radius: 12px; }
+    .exp-detail__includes strong { color: #1a1a1a; }
+    .exp-detail__desc { font-size: .95rem; line-height: 1.7; color: #444; white-space: pre-line; margin-bottom: 32px; }
+    .exp-detail__actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+    .exp-detail__reserve-btn { padding: 14px 32px; border: none; border-radius: 12px; background: var(--orange, #f0a05e); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .exp-detail__reserve-btn:hover { background: var(--orange-dark, #d88a44); }
+    .exp-detail__share-btn { padding: 14px 20px; border: 1.5px solid #ddd; border-radius: 12px; background: #fff; color: #555; font-size: .9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; }
+    .exp-detail__share-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
+    .exp-detail__not-found { text-align: center; padding: 80px 20px; }
+    .exp-detail__not-found h2 { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: #1a1a1a; margin-bottom: 12px; }
+    .exp-detail__not-found p { color: #888; margin-bottom: 24px; }
+    .exp-detail__not-found a { color: var(--orange, #f0a05e); font-weight: 600; text-decoration: none; }
+    .exp-detail__loading { text-align: center; padding: 80px 20px; color: #888; font-size: 1rem; }
+    @media (max-width: 600px) {
+      .exp-detail__title { font-size: 1.5rem; }
+      .exp-detail__hero { max-height: 260px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+        <button id="search-btn" class="header__search-btn"></button>
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Ceramica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macrame</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="oferecer.html" class="header__nav-link">Oferecer uma experiencia</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== CONTENT ========== -->
+  <div id="exp-content" class="exp-detail">
+    <div class="exp-detail__loading">Carregando experiencia...</div>
+  </div>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo"><img src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
+        <p class="footer__tagline">Offline is a feeling.</p>
+        <div class="footer__socials">
+          <a href="https://www.instagram.com/elarah.oficial" target="_blank" aria-label="Instagram"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/></svg></a>
+          <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/></svg></a>
+        </div>
+      </div>
+      <div class="footer__column">
+        <h4>Explorar</h4>
+        <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+        <a href="categoria.html?cat=Cer%C3%A2mica">Ceramica</a>
+        <a href="categoria.html?cat=Pintura">Pintura</a>
+        <a href="categoria.html?cat=Tufting">Tufting</a>
+        <a href="categoria.html?cat=Vela">Vela</a>
+      </div>
+      <div class="footer__column">
+        <h4>Elarah</h4>
+        <a href="/sobre.html">Sobre nos</a>
+        <a href="/como-funciona.html">Como funciona</a>
+        <a href="/oferecer.html">Ofereca experiencias</a>
+      </div>
+      <div class="footer__column">
+        <h4>Informacoes</h4>
+        <a href="/termos.html">Termos de uso</a>
+        <a href="/privacidade.html">Politica de privacidade</a>
+      </div>
+    </div>
+    <div class="footer__bottom"><p>&copy; 2026 Elarah. Todos os direitos reservados.</p></div>
+  </footer>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js?v=6"></script>
+<script src="auth.js?v=8"></script>
+<script src="experiences-data.js?v=12"></script>
+<script src="analytics.js?v=1"></script>
+<script src="script.js?v=17"></script>
+<script>
+(function () {
+  'use strict';
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  var params = new URLSearchParams(window.location.search);
+  var expId = params.get('id');
+
+  if (!expId) {
+    showNotFound();
+    return;
+  }
+
+  // Wait for ElarahData to be ready
+  var tries = 0;
+  var poll = setInterval(function () {
+    tries++;
+    if (typeof ElarahData !== 'undefined' && ElarahData.getExperienceById) {
+      clearInterval(poll);
+      loadExperience();
+    } else if (tries > 40) {
+      clearInterval(poll);
+      showNotFound();
+    }
+  }, 100);
+
+  async function loadExperience() {
+    var exp = await ElarahData.getExperienceById(expId);
+    if (!exp) { showNotFound(); return; }
+
+    // Update page title and meta
+    document.getElementById('page-title').textContent = exp.nome + ' — Elarah';
+    var metaDesc = document.getElementById('meta-desc');
+    if (metaDesc) metaDesc.content = (exp.descricao || exp.nome || '').slice(0, 160);
+
+    // Load slots for availability
+    var slotMap = {};
+    try {
+      if (ElarahData.getSlotsForExperience) {
+        var slots = await ElarahData.getSlotsForExperience(expId);
+        slots.forEach(function (sl) { slotMap[sl.horario] = sl; });
+      }
+    } catch (e) { /* ok */ }
+
+    var horarios = Array.isArray(exp.horarios) && exp.horarios.length
+      ? exp.horarios : (exp.horario ? [exp.horario] : []);
+
+    var colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
+
+    // Hero image
+    var heroHtml = exp.imagem
+      ? '<img class="exp-detail__hero" src="' + esc(exp.imagem) + '" alt="' + esc(exp.nome) + '">'
+      : '<div class="exp-detail__hero-placeholder" style="background:linear-gradient(135deg,' + esc(colors[0]) + ',' + esc(colors[1]) + ');">' + esc(exp.categoria) + '</div>';
+
+    // Horario buttons
+    var firstAvailable = -1;
+    var horariosHtml = '';
+    if (horarios.length > 0) {
+      horariosHtml = '<div class="exp-detail__horarios">';
+      horarios.forEach(function (h, i) {
+        var sl = slotMap[h];
+        var soldOut = sl && sl.vagasTotal != null && sl.vagasRestantes != null && sl.vagasRestantes <= 0;
+        if (firstAvailable < 0 && !soldOut) firstAvailable = i;
+        var cls = 'exp-detail__horario-btn';
+        if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
+        else if (firstAvailable === i) cls += ' exp-detail__horario-btn--active';
+        var label = soldOut ? h + ' (esgotado)' : h;
+        horariosHtml += '<button type="button" class="' + cls + '"' + (soldOut ? ' disabled' : '') + ' data-horario="' + esc(h) + '">' + label + '</button>';
+      });
+      horariosHtml += '</div>';
+    }
+
+    // Includes
+    var includesHtml = exp.inclui
+      ? '<div class="exp-detail__includes"><strong>Inclui:</strong> ' + esc(exp.inclui) + '</div>'
+      : '';
+
+    // Description
+    var descHtml = exp.descricao
+      ? '<div class="exp-detail__desc">' + esc(exp.descricao) + '</div>'
+      : '';
+
+    var container = document.getElementById('exp-content');
+    container.innerHTML =
+      '<a href="javascript:history.back()" class="exp-detail__back">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+        'Voltar' +
+      '</a>' +
+      heroHtml +
+      '<span class="exp-detail__category">' + esc(exp.categoria) + '</span>' +
+      '<h1 class="exp-detail__title">' + esc(exp.nome) + '</h1>' +
+      '<div class="exp-detail__meta">' +
+        '<span class="exp-detail__meta-item">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+          esc(exp.data) +
+        '</span>' +
+        (exp.duracao ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' + esc(exp.duracao) + '</span>' : '') +
+        (exp.bairro ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + esc(exp.bairro) + '</span>' : '') +
+        (exp.endereco ? '<span class="exp-detail__meta-item">' + esc(exp.endereco) + '</span>' : '') +
+      '</div>' +
+      '<div class="exp-detail__price">' + esc(exp.preco) + '</div>' +
+      horariosHtml +
+      includesHtml +
+      descHtml +
+      '<div class="exp-detail__actions">' +
+        '<button type="button" class="exp-detail__reserve-btn" id="exp-reserve-btn"' +
+          ' data-reserve' +
+          ' data-experience-id="' + esc(exp.id) + '"' +
+          ' data-experience-nome="' + esc(exp.nome) + '"' +
+          ' data-analytics="reserve_click"' +
+          ' data-analytics-category="booking"' +
+          ' data-analytics-label="' + esc(exp.nome) + '"' +
+        '>Reservar</button>' +
+        '<button type="button" class="exp-detail__share-btn" id="exp-share-btn">' +
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
+          'Copiar link' +
+        '</button>' +
+      '</div>';
+
+    // Wire horario button clicks
+    container.querySelectorAll('.exp-detail__horario-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        container.querySelectorAll('.exp-detail__horario-btn').forEach(function (b) {
+          b.classList.remove('exp-detail__horario-btn--active');
+        });
+        btn.classList.add('exp-detail__horario-btn--active');
+        // Update reserve button data-horario for checkout
+        var reserveBtn = document.getElementById('exp-reserve-btn');
+        if (reserveBtn) reserveBtn.dataset.horario = btn.dataset.horario;
+      });
+    });
+
+    // Set initial horario on reserve button
+    var reserveBtn = document.getElementById('exp-reserve-btn');
+    if (reserveBtn && firstAvailable >= 0) {
+      reserveBtn.dataset.horario = horarios[firstAvailable];
+    }
+
+    // Wire share button
+    var shareBtn = document.getElementById('exp-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function () {
+        var url = window.location.origin + '/experiencia.html?id=' + encodeURIComponent(exp.id);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () {
+            shareBtn.textContent = 'Link copiado!';
+            setTimeout(function () { shareBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Copiar link'; }, 2000);
+          });
+        } else {
+          prompt('Copie o link:', url);
+        }
+      });
+    }
+  }
+
+  function showNotFound() {
+    var container = document.getElementById('exp-content');
+    container.innerHTML =
+      '<div class="exp-detail__not-found">' +
+        '<h2>Experiencia nao encontrada</h2>' +
+        '<p>O link pode estar incorreto ou a experiencia nao esta mais disponivel.</p>' +
+        '<a href="/">Explorar experiencias</a>' +
+      '</div>';
+  }
+})();
+</script>
+</body>
+</html>
