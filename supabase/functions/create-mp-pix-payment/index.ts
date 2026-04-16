@@ -190,8 +190,18 @@ serve(async (req) => {
     quantidade: guardQty,
     fornecedorId,
     fornecedorNome,
+    valorCheioCentavos,
+    percentualRepasse,
     rollback,
   } = guard;
+
+  // Auto-calcula repasse e comissao a partir da experiencia
+  const valorCheioFinal = valorCheioCentavos ? valorCheioCentavos * guardQty : null;
+  const repassePct = percentualRepasse / 100;
+  const valorRepasseCentavos = amountToChargeCents > 0
+    ? Math.round(amountToChargeCents * repassePct) : null;
+  const valorComissaoCentavos = amountToChargeCents > 0 && valorRepasseCentavos != null
+    ? amountToChargeCents - valorRepasseCentavos : null;
 
   // ===== CASO especial: cupom cobre 100% — pula MP =====
   // Fluxo idêntico ao que create-checkout-session faz: grava direto
@@ -220,6 +230,9 @@ serve(async (req) => {
       quantidade: guardQty,
       fornecedor_nome: fornecedorNome,
       fornecedor_id: fornecedorId,
+      valor_cheio_centavos: valorCheioFinal,
+      valor_repasse_centavos: valorRepasseCentavos,
+      valor_comissao_centavos: valorComissaoCentavos,
       status_fornecedor: "repasse_pendente",
       payment_provider: "mercado_pago",
       metadata: {

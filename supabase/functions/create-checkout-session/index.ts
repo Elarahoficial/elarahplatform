@@ -325,7 +325,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const { data: exp, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by",
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -363,6 +363,11 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       fornecedorNome = (fornProf as any)?.partner_data?.marca || (fornProf as any)?.nome || null;
     }
   }
+
+  // Use fornecedor_nome from experience if not found via profile
+  if (!fornecedorNome && exp.fornecedor_nome) fornecedorNome = exp.fornecedor_nome;
+  const expValorCheioCentavos = exp.valor_cheio_centavos ?? null;
+  const expPercentualRepasse = Number(exp.percentual_repasse ?? 90);
 
   // ===== Slot lookup (vagas por horário) =====
   // Se existe um slot para este (experience_id, horario), usamos
@@ -597,6 +602,14 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     }
   };
 
+  // Auto-calcula repasse e comissao
+  const valorCheioFinal = expValorCheioCentavos ? expValorCheioCentavos * quantidade : null;
+  const repassePct = expPercentualRepasse / 100;
+  const valorRepasseCentavos = amountToCharge > 0
+    ? Math.round(amountToCharge * repassePct) : null;
+  const valorComissaoCentavos = amountToCharge > 0 && valorRepasseCentavos != null
+    ? amountToCharge - valorRepasseCentavos : null;
+
   // ===== CASO 1: gift card cobre 100% — pula Stripe =====
   if (amountToCharge === 0) {
     const directBookingId = crypto.randomUUID();
@@ -622,6 +635,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       quantidade: quantidade,
       fornecedor_nome: fornecedorNome,
       fornecedor_id: fornecedorId,
+      valor_cheio_centavos: valorCheioFinal,
+      valor_repasse_centavos: valorRepasseCentavos,
+      valor_comissao_centavos: valorComissaoCentavos,
       status_fornecedor: "repasse_pendente",
       metadata: {
         bairro: exp.bairro ?? null,
@@ -772,6 +788,12 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     gift_card_code: cupomCode,
     slot_id: slotId,
     quantidade: quantidade,
+    fornecedor_nome: fornecedorNome,
+    fornecedor_id: fornecedorId,
+    valor_cheio_centavos: valorCheioFinal,
+    valor_repasse_centavos: valorRepasseCentavos,
+    valor_comissao_centavos: valorComissaoCentavos,
+    status_fornecedor: "repasse_pendente",
     metadata: { ...bookingMetadataBase, participantes },
   });
 

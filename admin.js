@@ -1072,6 +1072,14 @@
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
 
+      // Fornecedor fields
+      var fnEl = document.getElementById('exp-fornecedor-nome');
+      var vcEl = document.getElementById('exp-valor-cheio');
+      var prEl = document.getElementById('exp-percentual-repasse');
+      if (fnEl) fnEl.value = exp.fornecedorNome || '';
+      if (vcEl) vcEl.value = exp.valorCheioCentavos != null ? 'R$' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
+      if (prEl) prEl.value = exp.percentualRepasse != null ? exp.percentualRepasse : 90;
+
       // Carrega slots do banco — cada horário com sua vaga
       var slotsFromDb = [];
       try {
@@ -1112,6 +1120,12 @@
       if (vagasRestEl) vagasRestEl.value = '';
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = true;
+      var fnEl2 = document.getElementById('exp-fornecedor-nome');
+      var vcEl2 = document.getElementById('exp-valor-cheio');
+      var prEl2 = document.getElementById('exp-percentual-repasse');
+      if (fnEl2) fnEl2.value = '';
+      if (vcEl2) vcEl2.value = '';
+      if (prEl2) prEl2.value = 90;
       document.getElementById('exp-edit-id').value = '';
     }
 
@@ -1187,7 +1201,17 @@
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,
         cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw),
-        isActive: !!(document.getElementById('exp-is-active')?.checked ?? true)
+        isActive: !!(document.getElementById('exp-is-active')?.checked ?? true),
+        fornecedorNome: (document.getElementById('exp-fornecedor-nome')?.value || '').trim() || null,
+        valorCheioCentavos: (function () {
+          var raw = (document.getElementById('exp-valor-cheio')?.value || '').trim();
+          if (!raw) return null;
+          var cleaned = raw.replace(/[R$\s]/gi, '').replace(',', '.');
+          var n = Math.round(Number(cleaned) * (cleaned.includes('.') ? 1 : 100));
+          if (raw.match(/^\d+$/)) n = Number(raw) * 100;
+          return Number.isFinite(n) && n > 0 ? n : null;
+        })(),
+        percentualRepasse: Number(document.getElementById('exp-percentual-repasse')?.value || 90)
       };
 
       const editId = document.getElementById('exp-edit-id').value;
