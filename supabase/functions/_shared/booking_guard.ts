@@ -45,6 +45,7 @@ export interface ExperienceSnapshot {
   event_at: string | null;
   cutoff_hours: number | null;
   is_active: boolean | null;
+  created_by: string | null;
 }
 
 export interface GuardSuccess {
@@ -60,6 +61,8 @@ export interface GuardSuccess {
   cupomCode: string | null;
   slotId: string | null;              // UUID do slot reservado (null = experience-level)
   quantidade: number;                  // vagas reservadas (default 1)
+  fornecedorId: string | null;
+  fornecedorNome: string | null;
   // Chamar se o caller falhar depois de reservar a vaga (ex.:
   // Stripe/MP retornar erro). Devolve vaga + saldo do cupom.
   rollback: () => Promise<void>;
@@ -123,7 +126,7 @@ export async function reserveExperienceSlot(
   const { data: expRaw, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active",
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -272,6 +275,22 @@ export async function reserveExperienceSlot(
     }
   }
   const resolvedNome = (input.nome && input.nome.trim()) || profileNome;
+
+  // ===== 6b. Resolve fornecedor (supplier) =====
+  let fornecedorId: string | null = exp.created_by ?? null;
+  let fornecedorNome: string | null = null;
+  if (fornecedorId) {
+    const { data: fornProf } = await supabase
+      .from("profiles")
+      .select("nome, partner_data")
+      .eq("id", fornecedorId)
+      .maybeSingle();
+    if (fornProf) {
+      // deno-lint-ignore no-explicit-any
+      const fp = fornProf as any;
+      fornecedorNome = (fp.partner_data?.marca) || fp.nome || null;
+    }
+  }
 
   // ===== 7. Hold do cupom (se informado) =====
   let giftCardId: string | null = null;
@@ -433,6 +452,8 @@ export async function reserveExperienceSlot(
     cupomCode: input.cupomCode,
     slotId,
     quantidade,
+    fornecedorId,
+    fornecedorNome,
     rollback,
   };
 }

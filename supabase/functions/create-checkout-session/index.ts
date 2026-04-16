@@ -325,7 +325,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const { data: exp, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active",
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -348,6 +348,20 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       },
       404,
     );
+  }
+
+  // ===== Fornecedor (supplier) lookup =====
+  let fornecedorId: string | null = exp.created_by ?? null;
+  let fornecedorNome: string | null = null;
+  if (fornecedorId) {
+    const { data: fornProf } = await supabase
+      .from("profiles")
+      .select("nome, partner_data")
+      .eq("id", fornecedorId)
+      .maybeSingle();
+    if (fornProf) {
+      fornecedorNome = (fornProf as any)?.partner_data?.marca || (fornProf as any)?.nome || null;
+    }
   }
 
   // ===== Slot lookup (vagas por horário) =====
@@ -606,6 +620,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       gift_card_code: cupomCode,
       slot_id: slotId,
       quantidade: quantidade,
+      fornecedor_nome: fornecedorNome,
+      fornecedor_id: fornecedorId,
+      status_fornecedor: "repasse_pendente",
       metadata: {
         bairro: exp.bairro ?? null,
         endereco: exp.endereco ?? null,

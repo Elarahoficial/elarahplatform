@@ -223,6 +223,9 @@
           <select id="bookings-filter-exp" class="admin__analytics-select">
             <option value="">Todas as experiências</option>
           </select>
+          <select id="bookings-filter-fornecedor" class="admin__analytics-select">
+            <option value="">Todos os fornecedores</option>
+          </select>
           <select id="bookings-filter-status" class="admin__analytics-select">
             <option value="">Todos os status</option>
             <option value="pago">Pago</option>
@@ -230,6 +233,11 @@
             <option value="expirado">Expirado</option>
             <option value="cancelado">Cancelado</option>
             <option value="reembolsado">Reembolsado</option>
+          </select>
+          <select id="bookings-filter-status-fornecedor" class="admin__analytics-select">
+            <option value="">Status fornecedor</option>
+            <option value="repasse_pendente">Repasse pendente</option>
+            <option value="repasse_feito">Repasse feito</option>
           </select>
           <button class="admin__add-btn" id="btn-refresh-bookings" type="button">Atualizar</button>
         </div>
@@ -286,12 +294,17 @@
               <th>Data</th>
               <th>Horário</th>
               <th>Qty</th>
-              <th>Valor</th>
+              <th>Valor ELARAH</th>
+              <th>Fornecedor</th>
+              <th>Valor cheio</th>
+              <th>Repasse</th>
+              <th>Comissão</th>
               <th>Status</th>
+              <th>Status fornecedor</th>
             </tr>
           </thead>
           <tbody id="purchases-body">
-            <tr><td colspan="10" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
+            <tr><td colspan="15" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
           </tbody>
         </table>
       </div>
@@ -789,7 +802,7 @@
 <script src="experiences-data.js?v=12"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=22"></script>
+<script src="admin.js?v=23"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
