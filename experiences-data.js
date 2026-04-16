@@ -40,7 +40,8 @@
   //   is_active
   //     → sql/elarah_experiences_visibility.sql
   const OPTIONAL_COLUMNS = new Set([
-    'vagas_total', 'event_at', 'cutoff_hours', 'is_active'
+    'vagas_total', 'event_at', 'cutoff_hours', 'is_active',
+    'fornecedor_nome', 'valor_cheio_centavos', 'percentual_repasse'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -114,6 +115,10 @@
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
       isActive: row.is_active === false ? false : true,
+      // --- fornecedor ---
+      fornecedorNome: row.fornecedor_nome || null,
+      valorCheioCentavos: row.valor_cheio_centavos != null ? Number(row.valor_cheio_centavos) : null,
+      percentualRepasse: row.percentual_repasse != null ? Number(row.percentual_repasse) : 90,
       // ------------------------
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
@@ -162,7 +167,20 @@
       vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
       event_at: eventAt,
       cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
-      is_active: isActive
+      is_active: isActive,
+      fornecedor_nome: (exp.fornecedorNome || exp.fornecedor_nome || '').trim() || null,
+      valor_cheio_centavos: (function () {
+        var raw = exp.valorCheioCentavos != null ? exp.valorCheioCentavos : exp.valor_cheio_centavos;
+        if (raw == null || raw === '') return null;
+        var n = Number(raw);
+        return Number.isFinite(n) && n >= 0 ? n : null;
+      })(),
+      percentual_repasse: (function () {
+        var raw = exp.percentualRepasse != null ? exp.percentualRepasse : exp.percentual_repasse;
+        if (raw == null || raw === '') return 90;
+        var n = Number(raw);
+        return Number.isFinite(n) ? n : 90;
+      })()
     };
     return filterKnownColumns(fullRow);
   }

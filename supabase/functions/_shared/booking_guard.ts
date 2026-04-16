@@ -46,6 +46,9 @@ export interface ExperienceSnapshot {
   cutoff_hours: number | null;
   is_active: boolean | null;
   created_by: string | null;
+  fornecedor_nome: string | null;
+  valor_cheio_centavos: number | null;
+  percentual_repasse: number | null;
 }
 
 export interface GuardSuccess {
@@ -63,6 +66,8 @@ export interface GuardSuccess {
   quantidade: number;                  // vagas reservadas (default 1)
   fornecedorId: string | null;
   fornecedorNome: string | null;
+  valorCheioCentavos: number | null;
+  percentualRepasse: number;
   // Chamar se o caller falhar depois de reservar a vaga (ex.:
   // Stripe/MP retornar erro). Devolve vaga + saldo do cupom.
   rollback: () => Promise<void>;
@@ -126,7 +131,7 @@ export async function reserveExperienceSlot(
   const { data: expRaw, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by",
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -453,7 +458,9 @@ export async function reserveExperienceSlot(
     slotId,
     quantidade,
     fornecedorId,
-    fornecedorNome,
+    fornecedorNome: fornecedorNome || exp.fornecedor_nome || null,
+    valorCheioCentavos: exp.valor_cheio_centavos ?? null,
+    percentualRepasse: Number(exp.percentual_repasse ?? 90),
     rollback,
   };
 }
