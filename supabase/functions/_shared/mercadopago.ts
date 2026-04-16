@@ -86,23 +86,38 @@ export async function createPixPayment(
   }
 
   const expiresMinutes = input.expiresInMinutes ?? 30;
-  const expiresAt = new Date(Date.now() + expiresMinutes * 60 * 1000)
-    .toISOString();
+  // MP exige date_of_expiration em ISO 8601 COM offset de timezone
+  // (ex: "2024-04-15T20:00:00.000-03:00"). O formato UTC com "Z"
+  // (que JavaScript produz por default com toISOString()) é rejeitado
+  // com 400 em muitas contas MP. Forçamos offset -03:00 (BRT).
+  const expiresDate = new Date(Date.now() + expiresMinutes * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const expiresAt =
+    expiresDate.getFullYear() + "-" +
+    pad(expiresDate.getMonth() + 1) + "-" +
+    pad(expiresDate.getDate()) + "T" +
+    pad(expiresDate.getHours()) + ":" +
+    pad(expiresDate.getMinutes()) + ":" +
+    pad(expiresDate.getSeconds()) + ".000-03:00";
 
   // MP quer CPF como string de dígitos (sem formatação).
   const cpfDigits = String(input.payerCpf || "").replace(/\D+/g, "");
 
+  // Sanitiza email: remove "+" (MP pode rejeitar sub-addressing).
+  const sanitizedEmail = String(input.payerEmail || "")
+    .replace(/\+/g, ".")
+    .trim();
+
   const body = {
     transaction_amount: centsToReais(input.transactionAmountCents),
-    description: input.description.slice(0, 600),
+    description: input.description.slice(0, 600) || "Pagamento Elarah",
     external_reference: input.externalReference,
     payment_method_id: "pix",
     date_of_expiration: expiresAt,
-    notification_url: input.notificationUrl || undefined,
     payer: {
-      email: input.payerEmail,
-      first_name: input.payerFirstName,
-      last_name: input.payerLastName,
+      email: sanitizedEmail,
+      first_name: input.payerFirstName || "Cliente",
+      last_name: input.payerLastName || "Elarah",
       identification: {
         type: "CPF",
         number: cpfDigits,

@@ -142,13 +142,13 @@ serve(async (req) => {
   if (emailRaw && EMAIL_RE.test(emailRaw)) {
     email = emailRaw;
   } else if (telefoneDigits) {
-    email = "cliente+" + telefoneDigits + "@elarah.com";
+    email = "pix." + telefoneDigits + "@elarah.com.br";
     console.warn(
       "[Elarah Payment/MP] email ausente no payload — gerando fallback via telefone",
       email,
     );
   } else {
-    email = "cliente+" + Date.now() + "@elarah.com";
+    email = "pix." + Date.now() + "@elarah.com.br";
     console.warn(
       "[Elarah Payment/MP] email ausente no payload — gerando fallback via timestamp",
       email,
@@ -267,7 +267,10 @@ serve(async (req) => {
     payerLastName: lastName,
     payerCpf: cpfRaw,
     expiresInMinutes: 30,
-    notificationUrl: buildMpNotificationUrl(),
+    // notification_url omitida intencionalmente — configurar no
+    // Dashboard do MP pra evitar que a API rejeite uma URL que
+    // ela considere inválida/inacessível. O webhook no dashboard
+    // já aponta pra /functions/v1/mp-webhook.
     idempotencyKey: bookingId, // garante idempotência por booking
   });
 
@@ -275,6 +278,7 @@ serve(async (req) => {
     console.error(
       "[Elarah Payment/MP] MP retornou erro, fazendo rollback",
       "status=" + mpResult.errorStatus,
+      "detail=" + JSON.stringify(mpResult.errorBody),
     );
     await rollback();
     return jsonResponse(
