@@ -511,6 +511,10 @@
     });
     if (filterExp) filterExp.addEventListener('change', () => renderBookings());
     if (filterStatus) filterStatus.addEventListener('change', () => renderBookings());
+    var filterFornInit = document.getElementById('bookings-filter-fornecedor');
+    var filterSfInit = document.getElementById('bookings-filter-status-fornecedor');
+    if (filterFornInit) filterFornInit.addEventListener('change', () => renderBookings());
+    if (filterSfInit) filterSfInit.addEventListener('change', () => renderBookings());
   }
 
   async function renderBookings() {
@@ -567,13 +571,34 @@
       });
     }
 
+    // Popula filtro de fornecedores
+    const filterFornEl = document.getElementById('bookings-filter-fornecedor');
+    if (filterFornEl && filterFornEl.options.length <= 1) {
+      const seenForn = new Set();
+      bookings.forEach(b => {
+        var fn = b.fornecedor_nome || '';
+        if (fn && !seenForn.has(fn)) {
+          seenForn.add(fn);
+          var opt = document.createElement('option');
+          opt.value = fn;
+          opt.textContent = fn;
+          filterFornEl.appendChild(opt);
+        }
+      });
+    }
+
     const filterExp = filterExpEl ? filterExpEl.value : '';
     const filterStatusEl = document.getElementById('bookings-filter-status');
     const filterStatus = filterStatusEl ? filterStatusEl.value : '';
+    const filterForn = filterFornEl ? filterFornEl.value : '';
+    const filterSfEl = document.getElementById('bookings-filter-status-fornecedor');
+    const filterSf = filterSfEl ? filterSfEl.value : '';
 
     const filtered = bookings.filter(b => {
       if (filterExp && b.experiencia_nome !== filterExp) return false;
       if (filterStatus && b.status !== filterStatus) return false;
+      if (filterForn && (b.fornecedor_nome || '') !== filterForn) return false;
+      if (filterSf && (b.status_fornecedor || '') !== filterSf) return false;
       return true;
     });
 
@@ -700,7 +725,17 @@
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b.amount_total, b.currency))}</td>
+          <td style="font-size:.82rem;">${escapeHtml(b.fornecedor_nome || '—')}</td>
+          <td>${b.valor_cheio_centavos ? escapeHtml(formatCents(b.valor_cheio_centavos, b.currency)) : '—'}</td>
+          <td>${b.valor_repasse_centavos ? escapeHtml(formatCents(b.valor_repasse_centavos, b.currency)) : '—'}</td>
+          <td>${b.valor_comissao_centavos ? escapeHtml(formatCents(b.valor_comissao_centavos, b.currency)) : '—'}</td>
           <td>${bookingStatusBadge(b.status)}</td>
+          <td>
+            <select class="admin__sf-select" data-booking-id="${escapeHtml(b.id)}" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;${(b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;'}">
+              <option value="repasse_pendente"${(b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : ''}>Repasse pendente</option>
+              <option value="repasse_feito"${b.status_fornecedor === 'repasse_feito' ? ' selected' : ''}>Repasse feito</option>
+            </select>
+          </td>
         </tr>
       `;
     }
@@ -711,7 +746,7 @@
     function renderGroupHeader(label, count) {
       return `
         <tr class="admin__table-group-header">
-          <td colspan="10" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
+          <td colspan="15" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
             ${escapeHtml(label)} <span style="color:#999;font-weight:500;margin-left:6px;">(${count})</span>
           </td>
         </tr>
@@ -754,6 +789,32 @@
     }
 
     tbody.innerHTML = parts.join('');
+
+    // Wire editable status_fornecedor dropdowns
+    tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
+      sel.addEventListener('change', async function () {
+        var bookingId = sel.dataset.bookingId;
+        var newStatus = sel.value;
+        sel.disabled = true;
+        try {
+          var s = window.supabaseClient;
+          if (s) {
+            var { error } = await s.from('bookings').update({ status_fornecedor: newStatus }).eq('id', bookingId);
+            if (error) {
+              console.error('[Admin] status_fornecedor update error', error);
+              alert('Erro ao atualizar status do fornecedor. Veja o console.');
+            } else {
+              sel.style.background = newStatus === 'repasse_feito' ? '#e6f4ea' : '#fff8ef';
+              sel.style.color = newStatus === 'repasse_feito' ? '#1a8a4a' : '#b07b00';
+              invalidateBookings();
+            }
+          }
+        } catch (e) {
+          console.error('[Admin] status_fornecedor exception', e);
+        }
+        sel.disabled = false;
+      });
+    });
   }
 
   // ===== EXPERIENCES CRUD =====

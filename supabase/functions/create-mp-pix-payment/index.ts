@@ -188,6 +188,8 @@ serve(async (req) => {
     amountToChargeCents,
     slotId,
     quantidade: guardQty,
+    fornecedorId,
+    fornecedorNome,
     rollback,
   } = guard;
 
@@ -216,6 +218,9 @@ serve(async (req) => {
       gift_card_code: cupomCode,
       slot_id: slotId,
       quantidade: guardQty,
+      fornecedor_nome: fornecedorNome,
+      fornecedor_id: fornecedorId,
+      status_fornecedor: "repasse_pendente",
       payment_provider: "mercado_pago",
       metadata: {
         bairro: exp.bairro ?? null,
@@ -361,6 +366,9 @@ serve(async (req) => {
     gift_card_code: cupomCode,
     slot_id: slotId,
     quantidade: guardQty,
+    fornecedor_nome: fornecedorNome,
+    fornecedor_id: fornecedorId,
+    status_fornecedor: "repasse_pendente",
     mp_payment_id: String(payment.id),
     payment_provider: "mercado_pago",
     metadata: { ...bookingMetadata, participantes },
