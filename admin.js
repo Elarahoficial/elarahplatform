@@ -692,12 +692,13 @@
       return `
         <tr>
           <td>${escapeHtml(when)}</td>
-          <td>${escapeHtml(nomeResolved || '—')}</td>
+          <td>${escapeHtml(nomeResolved || '—')}${b.quantidade > 1 && b.metadata && Array.isArray(b.metadata.participantes) && b.metadata.participantes.length ? '<br>' + b.metadata.participantes.map(function(p, i) { return '<span style="font-size:.75rem;color:#888;">+' + escapeHtml(p.nome || '?') + '</span>'; }).join('<br>') : ''}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
           <td>${escapeHtml(b.experiencia_nome || '—')}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
+          <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b.amount_total, b.currency))}</td>
           <td>${bookingStatusBadge(b.status)}</td>
         </tr>
@@ -710,7 +711,7 @@
     function renderGroupHeader(label, count) {
       return `
         <tr class="admin__table-group-header">
-          <td colspan="9" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
+          <td colspan="10" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
             ${escapeHtml(label)} <span style="color:#999;font-weight:500;margin-left:6px;">(${count})</span>
           </td>
         </tr>
