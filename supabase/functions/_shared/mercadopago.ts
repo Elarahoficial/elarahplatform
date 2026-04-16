@@ -112,11 +112,33 @@ export async function createPixPayment(
 
   const idemKey = input.idempotencyKey || buildIdempotencyKey();
 
+  // Log estruturado do payload enviado pra MP — redacted do CPF.
+  // Crítico pra debug: quando a MP devolve 400, o body aqui mostra
+  // exatamente quais campos foram aceitos/rejeitados.
+  const bodyForLog = {
+    transaction_amount: body.transaction_amount,
+    description: body.description.slice(0, 80) + (body.description.length > 80 ? "..." : ""),
+    external_reference: body.external_reference,
+    payment_method_id: body.payment_method_id,
+    date_of_expiration: body.date_of_expiration,
+    notification_url: body.notification_url ?? "(none)",
+    payer: {
+      email: body.payer.email,
+      first_name: body.payer.first_name,
+      last_name: body.payer.last_name,
+      identification: {
+        type: body.payer.identification.type,
+        number: cpfDigits.slice(0, 3) + "********" + cpfDigits.slice(-2),
+      },
+    },
+  };
   console.info(
     "[Elarah Payment/MP] POST /v1/payments",
     "amount=" + body.transaction_amount,
     "external_ref=" + input.externalReference,
     "idem=" + idemKey,
+    "body=" + JSON.stringify(bodyForLog),
+    "token_prefix=" + accessToken.slice(0, 10) + "...",
   );
 
   let res: Response;
@@ -144,9 +166,10 @@ export async function createPixPayment(
 
   if (!res.ok) {
     console.error(
-      "[Elarah Payment/MP] create payment failed",
+      "[Elarah Payment/MP] create payment FAILED",
       "status=" + res.status,
       "body=" + JSON.stringify(parsed),
+      "sent_payload=" + JSON.stringify(bodyForLog),
     );
     return { ok: false, errorStatus: res.status, errorBody: parsed };
   }
@@ -219,11 +242,7 @@ export async function getPayment(
 //
 // Se o secret não tiver sido configurado, retornamos `true` com um
 // warning — permite desenvolvimento local sem quebrar o fluxo.
-claude/show-buyer-name-admin-secEZ
-// Em produção SEMPRE configure `MERCADO_PAGO_WEBHOOK_SECRET`.
-=======
 // Em produção SEMPRE configure `MP_WEBHOOK_SECRET`.
- claude/create-elarah-homepage-VsE5i
 export async function verifyWebhookSignature(
   secret: string,
   signatureHeader: string | null,
@@ -232,11 +251,7 @@ export async function verifyWebhookSignature(
 ): Promise<boolean> {
   if (!secret) {
     console.warn(
-claude/show-buyer-name-admin-secEZ
-      "[Elarah Payment/MP] MERCADO_PAGO_WEBHOOK_SECRET ausente — " +
-
       "[Elarah Payment/MP] MP_WEBHOOK_SECRET ausente — " +
- claude/create-elarah-homepage-VsE5i
         "aceitando webhook sem verificar assinatura. NÃO use assim em produção.",
     );
     return true;
@@ -336,7 +351,3 @@ export function isValidCpf(raw: string): boolean {
   if (d2 === 10) d2 = 0;
   return d2 === arr[10];
 }
- claude/show-buyer-name-admin-secEZ
-
-
- claude/create-elarah-homepage-VsE5i

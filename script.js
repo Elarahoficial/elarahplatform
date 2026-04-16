@@ -1884,9 +1884,27 @@ if (groupForm) {
           });
           const data = await res.json().catch(() => null);
 
+          console.log('[Elarah Payment/MP] resposta PIX',
+            'status=' + res.status,
+            'ok=' + res.ok,
+            'data=', data);
+
           if (!res.ok || !data) {
-            const msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            // Tenta extrair a mensagem mais informativa possível.
+            // Se o backend repassou `detail` da MP, inclui na mensagem
+            // pro cliente ver o erro real (e facilita debug no console).
+            let msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            if (data && data.detail) {
+              try {
+                const det = typeof data.detail === 'string'
+                  ? data.detail
+                  : JSON.stringify(data.detail);
+                msg = msg + ' — ' + det.slice(0, 300);
+                console.error('[Elarah Payment/MP] detail do erro:', data.detail);
+              } catch (e) {}
+            }
             errEl.textContent = msg;
+            errEl.style.whiteSpace = 'pre-wrap';
             confirmBtn.disabled = false;
             refreshPriceBreakdown();
             return;
