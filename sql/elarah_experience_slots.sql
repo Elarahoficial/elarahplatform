@@ -72,12 +72,13 @@ create trigger sync_slot_vagas_restantes_trg
   for each row execute function sync_slot_vagas_restantes();
 
 -- ===== 3. RPC: decrement_slot_vagas (reservar vaga atômico) =====
-create or replace function public.decrement_slot_vagas(p_slot_id uuid)
+create or replace function public.decrement_slot_vagas(p_slot_id uuid, p_qty integer default 1)
 returns table(ok boolean, vagas_restantes integer)
 language plpgsql security definer as $$
 declare
   v_total integer;
   v_rest  integer;
+  v_qty   integer := greatest(1, coalesce(p_qty, 1));
 begin
   select s.vagas_total, s.vagas_restantes
     into v_total, v_rest
@@ -90,34 +91,35 @@ begin
     return;
   end if;
 
-  -- ilimitado
   if v_total is null then
     return query select true, v_rest;
     return;
   end if;
 
-  if v_rest is null or v_rest <= 0 then
+  if v_rest is null or v_rest < v_qty then
     return query select false, coalesce(v_rest, 0);
     return;
   end if;
 
   update public.experience_slots
-     set vagas_restantes = vagas_restantes - 1
+     set vagas_restantes = vagas_restantes - v_qty
    where id = p_slot_id;
 
-  return query select true, (v_rest - 1);
+  return query select true, (v_rest - v_qty);
 end;
 $$;
 
 -- ===== 4. RPC: increment_slot_vagas (devolver vaga — rollback) =====
-create or replace function public.increment_slot_vagas(p_slot_id uuid)
+create or replace function public.increment_slot_vagas(p_slot_id uuid, p_qty integer default 1)
 returns void
 language plpgsql security definer as $$
+declare
+  v_qty integer := greatest(1, coalesce(p_qty, 1));
 begin
   update public.experience_slots
      set vagas_restantes = least(
-           coalesce(vagas_restantes, 0) + 1,
-           coalesce(vagas_total, vagas_restantes + 1)
+           coalesce(vagas_restantes, 0) + v_qty,
+           coalesce(vagas_total, vagas_restantes + v_qty)
          )
    where id = p_slot_id
      and vagas_total is not null;
