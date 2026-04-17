@@ -603,12 +603,13 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   };
 
   // Auto-calcula repasse e comissao baseado no VALOR CHEIO
-  // Regra: repasse = valor_cheio * 70%, comissao = valor_cheio * 30%
+  // Regra: repasse = valor_cheio * 70%, comissao = valor_cheio * 20%
+  // Os 10% restantes sao o desconto dado ao cliente
   const valorCheioFinal = expValorCheioCentavos ? expValorCheioCentavos * quantidade : null;
   const valorRepasseCentavos = valorCheioFinal
     ? Math.round(valorCheioFinal * 0.70) : null;
   const valorComissaoCentavos = valorCheioFinal
-    ? Math.round(valorCheioFinal * 0.30) : null;
+    ? Math.round(valorCheioFinal * 0.20) : null;
 
   // ===== CASO 1: gift card cobre 100% — pula Stripe =====
   if (amountToCharge === 0) {
