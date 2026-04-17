@@ -834,12 +834,15 @@
     var filterExp = filterExpEl ? filterExpEl.value : '';
     var filterStatusEl = document.getElementById('pending-filter-status');
     var filterStatus = filterStatusEl ? filterStatusEl.value : '';
+    var filterFuEl = document.getElementById('pending-filter-followup');
+    var filterFu = filterFuEl ? filterFuEl.value : '';
 
     // Only non-paid bookings
     var filtered = bookings.filter(function (b) {
       if (b.status === 'pago') return false;
       if (filterExp && b.experiencia_nome !== filterExp) return false;
       if (filterStatus && b.status !== filterStatus) return false;
+      if (filterFu && (b.followup_status || 'nenhum') !== filterFu) return false;
       return true;
     });
 
@@ -869,6 +872,28 @@
       var telefoneCell = telefone
         ? '<a href="https://wa.me/55' + String(telefone).replace(/\D+/g, '').replace(/^55/, '') + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(telefone) + '</a>'
         : '<span style="color:#bbb;">—</span>';
+      // Follow-up status badge
+      var fuStatus = b.followup_status || 'nenhum';
+      var fuBadge = '';
+      if (fuStatus === 'nenhum') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8ef;color:#b07b00;font-size:11px;font-weight:600;">Sem follow-up</span>';
+      else if (fuStatus === 'primeiro_enviado') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e8f0fe;color:#1a73e8;font-size:11px;font-weight:600;">1º enviado</span>';
+      else if (fuStatus === 'segundo_enviado') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fce8e6;color:#c0392b;font-size:11px;font-weight:600;">2º enviado</span>';
+      else if (fuStatus === 'recuperado') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Recuperado</span>';
+      else fuBadge = '<span style="font-size:11px;color:#888;">' + escapeHtml(fuStatus) + '</span>';
+
+      // WhatsApp follow-up button — builds message and wa.me link
+      var waBtn = '';
+      if (b.status === 'pending' && telefone && fuStatus !== 'segundo_enviado') {
+        var firstName = (nomeResolved || '').split(' ')[0] || 'Oi';
+        var msg = 'Oi, ' + firstName + '! Vimos que você quase reservou a experiência *' + (b.experiencia_nome || '') + '* ✨\n' +
+          'As vagas estão nas últimas e essa pode ser sua última chance de garantir.\n' +
+          'Se quiser, posso te mandar o link para finalizar sua reserva 💛';
+        var waDigits = String(telefone).replace(/\D+/g, '').replace(/^55/, '');
+        var waUrl = 'https://wa.me/55' + waDigits + '?text=' + encodeURIComponent(msg);
+        var btnLabel = fuStatus === 'nenhum' ? '1º Follow-up' : '2º Follow-up';
+        waBtn = '<button class="admin__fu-btn" data-booking-id="' + escapeHtml(b.id) + '" data-fu-next="' + (fuStatus === 'nenhum' ? 'primeiro_enviado' : 'segundo_enviado') + '" data-wa-url="' + escapeHtml(waUrl) + '" style="padding:4px 10px;border:1px solid #1a8a4a;background:#fff;color:#1a8a4a;border-radius:8px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">' + btnLabel + '</button>';
+      }
+
       return '<tr>' +
         '<td>' + escapeHtml(when) + '</td>' +
         '<td>' + escapeHtml(nomeResolved || '—') + '</td>' +
@@ -880,16 +905,49 @@
         '<td>' + (b.quantidade > 1 ? b.quantidade : '1') + '</td>' +
         '<td>' + escapeHtml(formatCents(b.amount_total, b.currency)) + '</td>' +
         '<td>' + bookingStatusBadge(b.status) + '</td>' +
+        '<td>' + fuBadge + '</td>' +
+        '<td>' + waBtn + '</td>' +
         '</tr>';
     }).join('');
+
+    // Wire follow-up buttons
+    tbody.querySelectorAll('.admin__fu-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var bookingId = btn.dataset.bookingId;
+        var nextStatus = btn.dataset.fuNext;
+        var waUrl = btn.dataset.waUrl;
+        // Open WhatsApp with pre-filled message
+        window.open(waUrl, '_blank');
+        // Update follow-up status in DB
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+        try {
+          var s = window.supabaseClient;
+          if (s) {
+            var tsField = nextStatus === 'primeiro_enviado' ? 'followup_1_at' : 'followup_2_at';
+            var patch = { followup_status: nextStatus };
+            patch[tsField] = new Date().toISOString();
+            await s.from('bookings').update(patch).eq('id', bookingId);
+            invalidateBookings();
+            renderPendingBookings();
+          }
+        } catch (e) {
+          console.error('[Admin] follow-up update error', e);
+          btn.disabled = false;
+          btn.textContent = 'Erro';
+        }
+      });
+    });
   }
 
   // Wire pending filters
   (function () {
     var fe = document.getElementById('pending-filter-exp');
     var fs = document.getElementById('pending-filter-status');
+    var ff = document.getElementById('pending-filter-followup');
     if (fe) fe.addEventListener('change', function () { renderPendingBookings(); });
     if (fs) fs.addEventListener('change', function () { renderPendingBookings(); });
+    if (ff) ff.addEventListener('change', function () { renderPendingBookings(); });
   })();
 
   // ===== EXPERIENCES CRUD =====
