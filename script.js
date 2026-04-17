@@ -2820,16 +2820,21 @@ if (groupForm) {
       } catch (e) {}
 
       // Resolve preço (do botão, do card ou do cache de experiências).
-      const horario = readActiveHorario(btn);
+      let horario = readActiveHorario(btn);
       let precoLabel = btn.getAttribute('data-experience-preco') || readPrecoFromCard(btn);
       let precoCentavos = parsePrecoToCents(precoLabel);
 
-      if (!precoCentavos && window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
+      if ((!precoCentavos || !horario) && window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
           const exp = await ElarahData.getExperienceById(experienceId);
           if (exp) {
-            precoLabel = exp.preco || precoLabel;
-            precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
+            if (!precoLabel || !precoCentavos) {
+              precoLabel = exp.preco || precoLabel;
+              precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
+            }
+            if (!horario) {
+              horario = (Array.isArray(exp.horarios) && exp.horarios.length) ? exp.horarios[0] : (exp.horario || null);
+            }
           }
         } catch (e) {}
       }
