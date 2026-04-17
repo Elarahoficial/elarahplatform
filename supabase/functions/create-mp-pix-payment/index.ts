@@ -196,12 +196,13 @@ serve(async (req) => {
   } = guard;
 
   // Auto-calcula repasse e comissao baseado no VALOR CHEIO
-  // Regra: repasse = valor_cheio * 70%, comissao = valor_cheio * 30%
+  // Regra: repasse = valor_cheio * 70%, comissao = valor_cheio * 20%
+  // Os 10% restantes sao o desconto dado ao cliente
   const valorCheioFinal = valorCheioCentavos ? valorCheioCentavos * guardQty : null;
   const valorRepasseCentavos = valorCheioFinal
     ? Math.round(valorCheioFinal * 0.70) : null;
   const valorComissaoCentavos = valorCheioFinal
-    ? Math.round(valorCheioFinal * 0.30) : null;
+    ? Math.round(valorCheioFinal * 0.20) : null;
 
   // ===== CASO especial: cupom cobre 100% — pula MP =====
   // Fluxo idêntico ao que create-checkout-session faz: grava direto
