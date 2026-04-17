@@ -355,10 +355,14 @@
             <option value="cancelado">Cancelado</option>
             <option value="reembolsado">Reembolsado</option>
           </select>
+          <select id="pending-filter-followup" class="admin__analytics-select">
+            <option value="">Follow-up</option>
+            <option value="nenhum">Sem follow-up</option>
+            <option value="primeiro_enviado">1º enviado</option>
+            <option value="segundo_enviado">2º enviado</option>
+          </select>
         </div>
       </div>
-
-      <div class="admin__table-wrap">
         <div class="admin__table-header">
           <span class="admin__table-title">Reservas pendentes e canceladas</span>
           <span class="admin__table-count" id="pending-count"></span>
@@ -376,10 +380,12 @@
               <th>Qty</th>
               <th>Valor</th>
               <th>Status</th>
+              <th>Follow-up</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody id="pending-body">
-            <tr><td colspan="10" class="admin__table-empty">Nenhuma reserva pendente.</td></tr>
+            <tr><td colspan="12" class="admin__table-empty">Nenhuma reserva pendente.</td></tr>
           </tbody>
         </table>
       </div>
@@ -870,7 +876,7 @@
 <script src="experiences-data.js?v=13"></script>
 <script src="byelarah-data.js?v=1"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=26"></script>
+<script src="admin.js?v=27"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
