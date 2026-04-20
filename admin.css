@@ -117,6 +117,12 @@
   margin-left: 240px;
   padding: 32px;
   min-height: 100vh;
+  /* Evita que conteúdo largo (tabelas, grids) empurre o documento
+     inteiro para fora da viewport. O scroll horizontal, quando
+     necessário, fica dentro do .admin__table-wrap, não no body. */
+  min-width: 0;
+  max-width: calc(100vw - 240px);
+  overflow-x: hidden;
 }
 
 .admin__header {
@@ -139,7 +145,9 @@
 /* Stats */
 .admin__stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* Auto-fit adapta para 3 stats (By Elarah) ou 4+ (outros painéis)
+     sem deixar colunas vazias nem forçar overflow em telas menores. */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
   margin-bottom: 32px;
 }
@@ -184,7 +192,15 @@
   background: var(--white);
   border-radius: 12px;
   border: 1px solid var(--gray-200);
-  overflow: hidden;
+  /* Antes era overflow:hidden — com tabelas largas, o conteúdo ficava
+     CLIPADO e o usuário não conseguia rolar pros lados. Agora o
+     scroll horizontal fica aqui dentro quando a tabela exige.
+     overflow-y:auto é necessário porque overflow-x:auto sozinho gera
+     side-effect de overflow-y:auto. Deixa explícito pra manter o
+     cantinho arredondado bonitinho. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
 }
 
 .admin__table-header {
@@ -571,9 +587,7 @@
     grid-template-columns: 1fr;
   }
 
-  .admin__table-wrap {
-    overflow-x: auto;
-  }
+  /* overflow-x:auto no .admin__table-wrap já é global agora. */
 }
 
 /* ===== BY ELARAH / ANALYTICS EXTRAS ===== */
@@ -759,17 +773,17 @@
   color: #7a5a2e;
 }
 
-/* Tabelas do By Elarah: controla conteúdo longo pra não quebrar
-   layout — horários muitos, nomes de experiência gigantes, etc.
-   Mantém legibilidade em desktop e mobile. */
+/* Tabelas do By Elarah: quebra textos muito longos (URLs, nomes
+   compridos) dentro das células, mas sem forçar width — o scroll
+   horizontal do .admin__table-wrap cuida do resto. */
 #byelarah-items-body td,
 #byelarah-subs-body td {
-  word-break: break-word;
   overflow-wrap: anywhere;
-  max-width: 360px;
   vertical-align: top;
 }
-#byelarah-items-body tr.admin__group-header td,
-#byelarah-subs-body tr.admin__group-header td {
-  max-width: none;
+/* Garante uma largura mínima pras tabelas que sinalize ao
+   .admin__table-wrap ativar o scroll horizontal de forma consistente. */
+#byelarah-items-body,
+#byelarah-subs-body {
+  min-width: 880px;
 }

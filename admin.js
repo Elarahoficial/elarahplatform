@@ -103,6 +103,12 @@
           targetPanel.classList.add('admin__panel--active');
         }
 
+        // Volta o scroll pro topo — senão o usuário cai na posição
+        // vertical da aba anterior (ex.: veio de "Compras" com 300+
+        // linhas, clica By Elarah, e o topo da aba fica acima da
+        // viewport).
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
         await refreshPanel(target);
       });
     });
