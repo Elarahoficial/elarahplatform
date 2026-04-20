@@ -735,6 +735,10 @@
   font-weight: 400;
   color: #1a1a1a;
   letter-spacing: 0;
+  max-width: 520px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin__group-header-pill {
@@ -753,4 +757,19 @@
 .admin__group-header-pill--muted {
   background: #e5d8c5;
   color: #7a5a2e;
+}
+
+/* Tabelas do By Elarah: controla conteúdo longo pra não quebrar
+   layout — horários muitos, nomes de experiência gigantes, etc.
+   Mantém legibilidade em desktop e mobile. */
+#byelarah-items-body td,
+#byelarah-subs-body td {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 360px;
+  vertical-align: top;
+}
+#byelarah-items-body tr.admin__group-header td,
+#byelarah-subs-body tr.admin__group-header td {
+  max-width: none;
 }

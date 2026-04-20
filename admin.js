@@ -1667,8 +1667,56 @@
     return order.map(k => map.get(k));
   }
 
+  // Fica fora do render pra sobreviver entre re-renders — se
+  // re-adicionássemos listeners a cada innerHTML, o mesmo click
+  // dispararia múltiplas vezes (memory leak + ação em duplicidade).
+  let byElarahListenersWired = false;
+  function wireByElarahTableListeners() {
+    if (byElarahListenersWired) return;
+    const itemsBody = document.getElementById('byelarah-items-body');
+    const subsBody = document.getElementById('byelarah-subs-body');
+    if (!itemsBody || !subsBody) return;
+    byElarahListenersWired = true;
+
+    itemsBody.addEventListener('click', async (e) => {
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (!target) return;
+      const editBtn = target.closest('[data-by-edit]');
+      if (editBtn) {
+        openByModal(editBtn.dataset.byEdit);
+        return;
+      }
+      const delBtn = target.closest('[data-by-delete]');
+      if (delBtn) {
+        if (confirm('Remover este item By Elarah?')) {
+          await ElarahByElarah.deleteItem(delBtn.dataset.byDelete);
+          await renderByElarah();
+        }
+      }
+    });
+
+    subsBody.addEventListener('click', async (e) => {
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (!target) return;
+      const doneBtn = target.closest('[data-by-sub-done]');
+      if (doneBtn) {
+        await ElarahByElarah.updateSubmissionStatus(doneBtn.dataset.bySubDone, 'atendido');
+        await renderByElarah();
+        return;
+      }
+      const delBtn = target.closest('[data-by-sub-del]');
+      if (delBtn) {
+        if (confirm('Remover esta resposta?')) {
+          await ElarahByElarah.deleteSubmission(delBtn.dataset.bySubDel);
+          await renderByElarah();
+        }
+      }
+    });
+  }
+
   async function renderByElarah() {
     if (!document.getElementById('byelarah-items-body')) return;
+    wireByElarahTableListeners();
     const [items, subs] = await Promise.all([
       ElarahByElarah.getAllItems(),
       ElarahByElarah.getAllSubmissions()
@@ -1731,7 +1779,7 @@
           const statusLabel = it.ativo === false ? 'Oculto' : 'Ativo';
           const statusClass = it.ativo === false ? 'rejected' : 'approved';
           const imgHtml = it.imagem
-            ? `<img src="${escapeHtml(it.imagem)}" alt="" class="admin__thumb">`
+            ? `<img src="${escapeHtml(it.imagem)}" alt="" class="admin__thumb" loading="lazy" decoding="async">`
             : '<span class="admin__thumb admin__thumb--placeholder">—</span>';
           const isDbItem = typeof it.id === 'string' && it.id && !it.id.startsWith('fallback-');
           const actions = isDbItem
@@ -1755,18 +1803,8 @@
         });
       });
       itemsBody.innerHTML = html.join('');
-
-      itemsBody.querySelectorAll('[data-by-edit]').forEach(btn => {
-        btn.addEventListener('click', () => openByModal(btn.dataset.byEdit));
-      });
-      itemsBody.querySelectorAll('[data-by-delete]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (confirm('Remover este item By Elarah?')) {
-            await ElarahByElarah.deleteItem(btn.dataset.byDelete);
-            await renderByElarah();
-          }
-        });
-      });
+      // Listeners são registrados uma única vez via delegação em
+      // wireByElarahTableListeners() — não re-wirar aqui.
     }
 
     // ========== Submissions table — GROUPED BY EXPERIENCE ==========
@@ -1859,21 +1897,8 @@
         });
       });
       subsBody.innerHTML = html.join('');
-
-      subsBody.querySelectorAll('[data-by-sub-done]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          await ElarahByElarah.updateSubmissionStatus(btn.dataset.bySubDone, 'atendido');
-          await renderByElarah();
-        });
-      });
-      subsBody.querySelectorAll('[data-by-sub-del]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (confirm('Remover esta resposta?')) {
-            await ElarahByElarah.deleteSubmission(btn.dataset.bySubDel);
-            await renderByElarah();
-          }
-        });
-      });
+      // Listeners são registrados uma única vez via delegação em
+      // wireByElarahTableListeners() — não re-wirar aqui.
     }
   }
 

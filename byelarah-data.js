@@ -259,13 +259,18 @@
     return { ok: true };
   }
 
-  async function getAllSubmissions() {
+  // Limite default alto o bastante pra caber uso real sem estourar
+  // o DOM nem o payload. Admin raramente precisa de > 500 ao mesmo
+  // tempo; pode passar `limit` explícito pra carregar mais.
+  async function getAllSubmissions(limit = 500) {
     const client = sb();
     if (!client) return [];
-    const { data, error } = await client
+    let query = client
       .from(SUBMISSIONS_TABLE)
       .select('*')
       .order('created_at', { ascending: false });
+    if (limit && limit > 0) query = query.limit(limit);
+    const { data, error } = await query;
     if (error) {
       console.error('[ElarahByElarah] getAllSubmissions error', error);
       return [];
