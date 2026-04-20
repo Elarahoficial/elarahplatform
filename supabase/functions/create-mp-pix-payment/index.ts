@@ -419,7 +419,15 @@ serve(async (req) => {
         gift_card_id: giftCardId,
         gift_card_centavos: giftCardCentavos || null,
         gift_card_code: cupomCode,
-        metadata: bookingMetadata,
+        slot_id: slotId,
+        quantidade: guardQty,
+        fornecedor_nome: fornecedorNome,
+        fornecedor_id: fornecedorId,
+        valor_cheio_centavos: valorCheioFinal,
+        valor_repasse_centavos: valorRepasseCentavos,
+        valor_comissao_centavos: valorComissaoCentavos,
+        status_fornecedor: "repasse_pendente",
+        metadata: { ...bookingMetadata, participantes },
       });
       if (retryErr) {
         console.error("[Elarah Payment/MP] retry insert falhou", retryErr);

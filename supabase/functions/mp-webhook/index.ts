@@ -62,6 +62,13 @@ interface BookingRow {
   metadata: Record<string, unknown> | null;
   mp_payment_id: string | null;
   payment_provider: string | null;
+  fornecedor_id: string | null;
+  fornecedor_nome: string | null;
+  valor_cheio_centavos: number | null;
+  valor_repasse_centavos: number | null;
+  valor_comissao_centavos: number | null;
+  status_fornecedor: string | null;
+  quantidade: number | null;
 }
 
 // ===== Helpers de DB =====
@@ -72,7 +79,7 @@ async function findBookingByMpPaymentId(
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider",
+      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
     )
     .eq("mp_payment_id", paymentId)
     .maybeSingle();
@@ -87,7 +94,7 @@ async function findBookingByMpPaymentId(
   const { data: data2 } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider",
+      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
     )
     .eq("stripe_session_id", "MP-" + paymentId)
     .maybeSingle();
@@ -100,6 +107,58 @@ async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
     amount_total: paidAmountCents,
     currency: "brl",
   };
+
+  // Reconcilia fornecedor/financeiro se o pre-insert tiver caído no
+  // fallback (colunas ausentes ou retry sem dados). Busca a
+  // experiência pra recalcular e preencher só o que estiver vazio.
+  const needsFinancialBackfill =
+    !booking.valor_cheio_centavos ||
+    !booking.valor_repasse_centavos ||
+    !booking.valor_comissao_centavos ||
+    !booking.fornecedor_nome ||
+    !booking.status_fornecedor;
+
+  if (needsFinancialBackfill && booking.experiencia_id) {
+    const { data: exp } = await supabase
+      .from("experiences")
+      .select("fornecedor_nome, valor_cheio_centavos, created_by")
+      .eq("id", booking.experiencia_id)
+      .maybeSingle();
+    if (exp) {
+      const qty = Number(booking.quantidade) || 1;
+      const valorCheioTotal = exp.valor_cheio_centavos
+        ? exp.valor_cheio_centavos * qty : null;
+      const valorRepasse = valorCheioTotal
+        ? Math.round(valorCheioTotal * 0.70) : null;
+      const valorComissao = valorCheioTotal
+        ? Math.round(valorCheioTotal * 0.20) : null;
+
+      if (!booking.fornecedor_nome && exp.fornecedor_nome) {
+        patch.fornecedor_nome = exp.fornecedor_nome;
+      }
+      if (!booking.fornecedor_id && exp.created_by) {
+        patch.fornecedor_id = exp.created_by;
+      }
+      if (!booking.valor_cheio_centavos && valorCheioTotal) {
+        patch.valor_cheio_centavos = valorCheioTotal;
+      }
+      if (!booking.valor_repasse_centavos && valorRepasse) {
+        patch.valor_repasse_centavos = valorRepasse;
+      }
+      if (!booking.valor_comissao_centavos && valorComissao) {
+        patch.valor_comissao_centavos = valorComissao;
+      }
+      if (!booking.status_fornecedor) {
+        patch.status_fornecedor = "repasse_pendente";
+      }
+      console.info(
+        "[Elarah Payment/MP] reconciliando campos financeiros via experience",
+        "booking=" + booking.id,
+        "exp=" + booking.experiencia_id,
+      );
+    }
+  }
+
   const { error } = await supabase
     .from("bookings")
     .update(patch)
@@ -307,7 +366,7 @@ serve(async (req) => {
     const { data: byExt } = await supabase
       .from("bookings")
       .select(
-        "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider",
+        "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
       )
       .eq("id", payment.external_reference)
       .maybeSingle();

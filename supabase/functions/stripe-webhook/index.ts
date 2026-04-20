@@ -70,7 +70,7 @@ async function getBookingBySession(sessionId: string): Promise<BookingRow | null
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata",
+      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
     )
     .eq("stripe_session_id", sessionId)
     .maybeSingle();
@@ -375,9 +375,17 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
 // checar aqui antes de mandar. Por ora, deixa simples — e-mail
 // duplicado é menos ruim do que cliente sem confirmação.
 async function markBookingAsPaid(session: Stripe.Checkout.Session) {
-  const telefoneFromMeta = String(session.metadata?.telefone ?? "").trim() ||
-    String(session.metadata?.telefone_digits ?? "").trim();
-  const nomeFromMeta = String(session.metadata?.nome ?? "").trim();
+  const meta = session.metadata ?? {};
+  const telefoneFromMeta = String(meta.telefone ?? "").trim() ||
+    String(meta.telefone_digits ?? "").trim();
+  const nomeFromMeta = String(meta.nome ?? "").trim();
+
+  // Campos de fornecedor/financeiro no metadata — safety net. Só
+  // aplica via COALESCE (DB-side) pra não sobrescrever valores já
+  // persistidos pelo pre-insert. Lê o atual primeiro, só atualiza
+  // o que estiver vazio.
+  const existing = await getBookingBySession(session.id);
+
   const updatePatch: Record<string, unknown> = {
     status: "pago",
     stripe_payment_intent: session.payment_intent ?? null,
@@ -390,6 +398,34 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
   if (nomeFromMeta) {
     updatePatch.nome = nomeFromMeta;
   }
+
+  // Reconcilia fornecedor/financeiro se faltarem — usa metadata do
+  // Stripe como fonte secundária. Evita sobrescrever valores válidos
+  // já no banco.
+  if (existing) {
+    // deno-lint-ignore no-explicit-any
+    const ex = existing as any;
+    const fornId = String(meta.fornecedor_id ?? "").trim();
+    const fornNome = String(meta.fornecedor_nome ?? "").trim();
+    const vCheio = Number(meta.valor_cheio_centavos ?? 0);
+    const vRepasse = Number(meta.valor_repasse_centavos ?? 0);
+    const vComissao = Number(meta.valor_comissao_centavos ?? 0);
+    if (fornId && !ex.fornecedor_id) updatePatch.fornecedor_id = fornId;
+    if (fornNome && !ex.fornecedor_nome) updatePatch.fornecedor_nome = fornNome;
+    if (vCheio > 0 && !ex.valor_cheio_centavos) {
+      updatePatch.valor_cheio_centavos = vCheio;
+    }
+    if (vRepasse > 0 && !ex.valor_repasse_centavos) {
+      updatePatch.valor_repasse_centavos = vRepasse;
+    }
+    if (vComissao > 0 && !ex.valor_comissao_centavos) {
+      updatePatch.valor_comissao_centavos = vComissao;
+    }
+    if (!ex.status_fornecedor) {
+      updatePatch.status_fornecedor = "repasse_pendente";
+    }
+  }
+
   await updateBookingBySession(session.id, updatePatch);
   const booking = await getBookingBySession(session.id);
   if (!booking) {

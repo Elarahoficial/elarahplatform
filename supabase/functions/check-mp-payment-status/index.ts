@@ -187,13 +187,60 @@ serve(async (req) => {
   if (booking.status !== "pago" &&
       (mpStatus === "approved" || mpStatus === "authorized")) {
     const paidCents = Math.round((payment.transaction_amount || 0) * 100);
+    const patch: Record<string, unknown> = {
+      status: "pago",
+      amount_total: paidCents,
+      currency: "brl",
+    };
+
+    // Reconcilia fornecedor/financeiro se faltarem — idêntico ao
+    // mp-webhook markBookingAsPaid. Cobre o caso em que o pre-insert
+    // caiu no fallback sem esses campos.
+    const needsFinancialBackfill =
+      !booking.valor_cheio_centavos ||
+      !booking.valor_repasse_centavos ||
+      !booking.valor_comissao_centavos ||
+      !booking.fornecedor_nome ||
+      !booking.status_fornecedor;
+
+    if (needsFinancialBackfill && booking.experiencia_id) {
+      const { data: exp } = await supabase
+        .from("experiences")
+        .select("fornecedor_nome, valor_cheio_centavos, created_by")
+        .eq("id", booking.experiencia_id)
+        .maybeSingle();
+      if (exp) {
+        const qty = Number(booking.quantidade) || 1;
+        const valorCheioTotal = exp.valor_cheio_centavos
+          ? exp.valor_cheio_centavos * qty : null;
+        const valorRepasse = valorCheioTotal
+          ? Math.round(valorCheioTotal * 0.70) : null;
+        const valorComissao = valorCheioTotal
+          ? Math.round(valorCheioTotal * 0.20) : null;
+        if (!booking.fornecedor_nome && exp.fornecedor_nome) {
+          patch.fornecedor_nome = exp.fornecedor_nome;
+        }
+        if (!booking.fornecedor_id && exp.created_by) {
+          patch.fornecedor_id = exp.created_by;
+        }
+        if (!booking.valor_cheio_centavos && valorCheioTotal) {
+          patch.valor_cheio_centavos = valorCheioTotal;
+        }
+        if (!booking.valor_repasse_centavos && valorRepasse) {
+          patch.valor_repasse_centavos = valorRepasse;
+        }
+        if (!booking.valor_comissao_centavos && valorComissao) {
+          patch.valor_comissao_centavos = valorComissao;
+        }
+        if (!booking.status_fornecedor) {
+          patch.status_fornecedor = "repasse_pendente";
+        }
+      }
+    }
+
     const { error: updErr } = await supabase
       .from("bookings")
-      .update({
-        status: "pago",
-        amount_total: paidCents,
-        currency: "brl",
-      })
+      .update(patch)
       .eq("id", booking.id);
     if (!updErr) {
       updated = true;

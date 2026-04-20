@@ -735,6 +735,14 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         card_fee_percent_centavos: String(feeInfo.feePercentCents),
         card_fee_fixed_centavos: String(feeInfo.feeFixedCents),
         card_fee_total_centavos: String(feeInfo.feeTotalCents),
+        // Fornecedor + financeiro — safety net pro webhook
+        // reconciliar caso o pre-insert tenha caído no fallback
+        // de colunas ausentes e perdido algum desses campos.
+        fornecedor_id: fornecedorId ?? "",
+        fornecedor_nome: fornecedorNome ?? "",
+        valor_cheio_centavos: valorCheioFinal != null ? String(valorCheioFinal) : "",
+        valor_repasse_centavos: valorRepasseCentavos != null ? String(valorRepasseCentavos) : "",
+        valor_comissao_centavos: valorComissaoCentavos != null ? String(valorComissaoCentavos) : "",
       },
     });
   } catch (e) {
@@ -828,9 +836,18 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         gift_card_id: giftCardId,
         gift_card_centavos: giftCardCentavos || null,
         gift_card_code: cupomCode,
+        slot_id: slotId,
+        quantidade: quantidade,
+        fornecedor_nome: fornecedorNome,
+        fornecedor_id: fornecedorId,
+        valor_cheio_centavos: valorCheioFinal,
+        valor_repasse_centavos: valorRepasseCentavos,
+        valor_comissao_centavos: valorComissaoCentavos,
+        status_fornecedor: "repasse_pendente",
         metadata: {
           ...bookingMetadataBase,
           telefone: telefoneToSave,
+          participantes,
         },
       });
       if (retryErr) {
