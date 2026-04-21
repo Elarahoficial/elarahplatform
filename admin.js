@@ -106,8 +106,15 @@
         // Volta o scroll pro topo — senão o usuário cai na posição
         // vertical da aba anterior (ex.: veio de "Compras" com 300+
         // linhas, clica By Elarah, e o topo da aba fica acima da
-        // viewport).
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        // viewport). Reseta tanto o window quanto os containers mais
+        // prováveis pra cobrir navegadores/configs diferentes.
+        try {
+          window.scrollTo(0, 0);
+          if (document.documentElement) document.documentElement.scrollTop = 0;
+          if (document.body) document.body.scrollTop = 0;
+          const mainEl = document.querySelector('.admin__main');
+          if (mainEl) mainEl.scrollTop = 0;
+        } catch {}
 
         await refreshPanel(target);
       });
