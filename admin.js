@@ -1680,6 +1680,37 @@
     return order.map(k => map.get(k));
   }
 
+  // Detecta turno a partir da string de horário (ex: "10h às 13h" → manha,
+  // "14h às 17h" → tarde). Pega o primeiro número que aparece.
+  function byElarahPeriodOf(horario) {
+    if (!horario) return 'sem';
+    const m = String(horario).match(/(\d{1,2})/);
+    if (!m) return 'sem';
+    const h = parseInt(m[1], 10);
+    if (isNaN(h)) return 'sem';
+    if (h < 12) return 'manha';
+    if (h < 18) return 'tarde';
+    return 'noite';
+  }
+
+  const BY_ELARAH_PERIOD_ORDER = ['manha', 'tarde', 'noite', 'sem'];
+  const BY_ELARAH_PERIOD_LABEL = {
+    manha: 'Manhã',
+    tarde: 'Tarde',
+    noite: 'Noite',
+    sem: 'Sem horário'
+  };
+
+  // Quebra rows por turno, preservando a ordem original (data desc).
+  // Devolve só os buckets não-vazios, na ordem manha → tarde → noite → sem.
+  function bucketByPeriod(rows) {
+    const buckets = { manha: [], tarde: [], noite: [], sem: [] };
+    rows.forEach(r => buckets[byElarahPeriodOf(r.horario)].push(r));
+    return BY_ELARAH_PERIOD_ORDER
+      .filter(p => buckets[p].length > 0)
+      .map(p => ({ period: p, label: BY_ELARAH_PERIOD_LABEL[p], rows: buckets[p] }));
+  }
+
   // Fica fora do render pra sobreviver entre re-renders — se
   // re-adicionássemos listeners a cada innerHTML, o mesmo click
   // dispararia múltiplas vezes (memory leak + ação em duplicidade).
@@ -1882,31 +1913,53 @@
             '</td>' +
           '</tr>'
         );
-        group.rows.forEach(s => {
-          const when = s.created_at
-            ? new Date(s.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-            : '—';
-          const tipoLabel = s.tipo === 'participar' ? 'Participar' : 'Espera';
-          const tipoClass = s.tipo === 'participar' ? 'approved' : 'pending';
-          const statusLabel = s.status || 'novo';
-          const statusClass = statusLabel === 'atendido' ? 'approved'
-                            : statusLabel === 'descartado' ? 'rejected' : 'pending';
-          html.push(`
-            <tr>
-              <td>${escapeHtml(when)}</td>
-              <td>${escapeHtml(s.experiencia || '—')}</td>
-              <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
-              <td>${escapeHtml(s.nome || '—')}</td>
-              <td>${escapeHtml(s.email || '—')}</td>
-              <td>${escapeHtml(s.telefone || '—')}</td>
-              <td>${escapeHtml(s.horario || '—')}</td>
-              <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
-              <td>
-                <button class="admin__action-btn admin__action-btn--approve" data-by-sub-done="${escapeHtml(s.id)}">Atendido</button>
-                <button class="admin__action-btn admin__action-btn--delete" data-by-sub-del="${escapeHtml(s.id)}">Excluir</button>
-              </td>
-            </tr>
-          `);
+
+        // Sub-agrupamento por turno (manhã/tarde/noite). Só aparece
+        // sub-cabeçalho quando o grupo tem mais de um turno — pra
+        // grupos com um único horário, mantém o visual compacto.
+        const buckets = bucketByPeriod(group.rows);
+        const showSubHeaders = buckets.length > 1;
+        const subHeaderStyle = 'background:#fdf6e9;border-bottom:1px solid #f0cfa0;padding:10px 16px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#7a5a2e;';
+
+        buckets.forEach(bucket => {
+          if (showSubHeaders) {
+            const nb = bucket.rows.length;
+            const subLabel = nb + ' resposta' + (nb !== 1 ? 's' : '');
+            html.push(
+              '<tr class="admin__sub-header">' +
+                '<td colspan="9" style="' + subHeaderStyle + '">' +
+                  escapeHtml(bucket.label) +
+                  ' <span style="color:#a07c4c;font-weight:500;text-transform:none;letter-spacing:0;">· ' + subLabel + '</span>' +
+                '</td>' +
+              '</tr>'
+            );
+          }
+          bucket.rows.forEach(s => {
+            const when = s.created_at
+              ? new Date(s.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+              : '—';
+            const tipoLabel = s.tipo === 'participar' ? 'Participar' : 'Espera';
+            const tipoClass = s.tipo === 'participar' ? 'approved' : 'pending';
+            const statusLabel = s.status || 'novo';
+            const statusClass = statusLabel === 'atendido' ? 'approved'
+                              : statusLabel === 'descartado' ? 'rejected' : 'pending';
+            html.push(`
+              <tr>
+                <td>${escapeHtml(when)}</td>
+                <td>${escapeHtml(s.experiencia || '—')}</td>
+                <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
+                <td>${escapeHtml(s.nome || '—')}</td>
+                <td>${escapeHtml(s.email || '—')}</td>
+                <td>${escapeHtml(s.telefone || '—')}</td>
+                <td>${escapeHtml(s.horario || '—')}</td>
+                <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
+                <td>
+                  <button class="admin__action-btn admin__action-btn--approve" data-by-sub-done="${escapeHtml(s.id)}">Atendido</button>
+                  <button class="admin__action-btn admin__action-btn--delete" data-by-sub-del="${escapeHtml(s.id)}">Excluir</button>
+                </td>
+              </tr>
+            `);
+          });
         });
       });
       subsBody.innerHTML = html.join('');
