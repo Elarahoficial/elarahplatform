@@ -1711,6 +1711,53 @@
       .map(p => ({ period: p, label: BY_ELARAH_PERIOD_LABEL[p], rows: buckets[p] }));
   }
 
+  // Acha o item By Elarah correspondente à experiência da submissão.
+  // Match case-insensitive pelo nome, via byElarahGroupKey (mesma
+  // normalização que o agrupamento da tabela usa).
+  function findByElarahItemFor(items, expName) {
+    if (!Array.isArray(items) || !expName) return null;
+    const key = byElarahGroupKey(expName);
+    return items.find(i => byElarahGroupKey(i && i.nome) === key) || null;
+  }
+
+  // Monta URL wa.me com mensagem pré-preenchida de "última chance"
+  // pro follow-up de By Elarah. Pega dados estruturados do item
+  // (local, data, horários) quando disponíveis. Se não houver telefone
+  // válido, devolve '' — caller não renderiza botão.
+  function buildByElarahWaUrl(sub, item) {
+    const digits = String(sub.telefone || '').replace(/\D+/g, '').replace(/^55/, '');
+    if (!digits) return '';
+    const firstName = String(sub.nome || '').trim().split(/\s+/)[0] || 'Oi';
+    const exp = (sub.experiencia || (item && item.nome) || '').trim();
+    const local = (item && item.local || '').trim();
+    const data = (item && item.data || '').trim();
+    const horariosList = Array.isArray(item && item.horarios)
+      ? item.horarios.map(h => String(h || '').trim()).filter(Boolean)
+      : [];
+    const horariosStr = horariosList.length ? horariosList.join(' ou ') : '';
+
+    const lines = [
+      'Oii ' + firstName + ' 💛',
+      '',
+      'Passando pra te contar que essa experiência é pra sair do automático e viver algo diferente ✨'
+    ];
+    if (exp) {
+      lines.push('');
+      lines.push('Você vai participar de *' + exp + '* — um encontro pra relaxar, criar e conhecer gente nova 💫');
+    }
+    if (local || data || horariosStr) {
+      lines.push('');
+      if (local) lines.push('📍 ' + local);
+      if (data) lines.push('🗓️ ' + data);
+      if (horariosStr) lines.push('⏰ ' + horariosStr);
+    }
+    lines.push('');
+    lines.push('As vagas estão nas últimas — essa pode ser a sua *última chance* de garantir seu lugar! 🧡');
+    lines.push('Se quiser, eu te envio o link pra confirmar agora mesmo.');
+
+    return 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(lines.join('\n'));
+  }
+
   // Fica fora do render pra sobreviver entre re-renders — se
   // re-adicionássemos listeners a cada innerHTML, o mesmo click
   // dispararia múltiplas vezes (memory leak + ação em duplicidade).
@@ -1943,6 +1990,18 @@
             const statusLabel = s.status || 'novo';
             const statusClass = statusLabel === 'atendido' ? 'approved'
                               : statusLabel === 'descartado' ? 'rejected' : 'pending';
+
+            // Botão WhatsApp de "última chance" — só aparece quando há
+            // telefone válido. Abre wa.me com mensagem pré-preenchida
+            // em aba nova. Status no banco não é alterado (diferente
+            // do follow-up de Pendentes): pra By Elarah, usar "Atendido"
+            // manualmente quando a pessoa responder.
+            const matchedItem = findByElarahItemFor(items, s.experiencia);
+            const waUrl = buildByElarahWaUrl(s, matchedItem);
+            const waBtn = waUrl
+              ? `<a href="${escapeHtml(waUrl)}" target="_blank" rel="noopener" class="admin__action-btn" style="background:#fff;color:#1a8a4a;border:1px solid #1a8a4a;text-decoration:none;display:inline-block;" title="Abrir WhatsApp com mensagem de última chance">WhatsApp</a>`
+              : '';
+
             html.push(`
               <tr>
                 <td>${escapeHtml(when)}</td>
@@ -1954,6 +2013,7 @@
                 <td>${escapeHtml(s.horario || '—')}</td>
                 <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
                 <td>
+                  ${waBtn}
                   <button class="admin__action-btn admin__action-btn--approve" data-by-sub-done="${escapeHtml(s.id)}">Atendido</button>
                   <button class="admin__action-btn admin__action-btn--delete" data-by-sub-del="${escapeHtml(s.id)}">Excluir</button>
                 </td>
