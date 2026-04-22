@@ -545,10 +545,20 @@
     // OU edge function create-checkout-session sem a versão nova
     // deployada ainda). O frontend do checkout grava telefone no
     // profile como side-effect, então aqui a gente resgata o dado.
-    const [bookings, profiles] = await Promise.all([
+    // Experiências entram pra servir de fallback dos campos
+    // fornecedor/valor_cheio/repasse/comissão quando o booking
+    // foi criado antes do deploy que começou a gravar esses campos.
+    const [bookings, profiles, allExperiences] = await Promise.all([
       getBookings(),
       getProfiles().catch(() => []),
+      (window.ElarahData && ElarahData.getAllExperiences)
+        ? ElarahData.getAllExperiences().catch(() => [])
+        : Promise.resolve([]),
     ]);
+    const expById = new Map();
+    (allExperiences || []).forEach(e => {
+      if (e && e.id) expById.set(e.id, e);
+    });
     const telefonePorUserId = new Map();
     const telefonePorEmail = new Map();
     // Fallback de nome: bookings antigas (ou geradas por front antigo)
@@ -729,6 +739,32 @@
       } else {
         telefoneCell = '<span style="color:#bbb;">—</span>';
       }
+      // Fallback de fornecedor + valores: se o booking não tem esses
+      // campos (caso típico: experiência sem valor_cheio_centavos
+      // cadastrado OU booking criado antes do deploy que começou a
+      // gravar), puxa da experiência correspondente e calcula o
+      // repasse/comissão com a mesma fórmula da edge function
+      // (repasse = 70% do cheio, comissão = 20%). Se a experiência
+      // também estiver vazia, volta pra '—' — aí o admin sabe que
+      // precisa preencher o campo "Valor cheio" no formulário.
+      const exp = expById.get(b.experiencia_id) || null;
+      const qty = Math.max(1, Number(b.quantidade) || 1);
+      const fornecedorDisplay = (b.fornecedor_nome && b.fornecedor_nome.trim())
+        || (exp && exp.fornecedorNome && String(exp.fornecedorNome).trim())
+        || '';
+      let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
+      if (!valorCheio && exp && exp.valorCheioCentavos) {
+        valorCheio = Number(exp.valorCheioCentavos) * qty;
+      }
+      let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
+      if (!valorRepasse && valorCheio) {
+        valorRepasse = Math.round(valorCheio * 0.70);
+      }
+      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
+      if (!valorComissao && valorCheio) {
+        valorComissao = Math.round(valorCheio * 0.20);
+      }
+
       return `
         <tr>
           <td>${escapeHtml(when)}</td>
@@ -740,10 +776,10 @@
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b.amount_total, b.currency))}</td>
-          <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(b.fornecedor_nome || '—') : ''}</td>
-          <td>${b.status === 'pago' && b.valor_cheio_centavos ? escapeHtml(formatCents(b.valor_cheio_centavos, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
-          <td>${b.status === 'pago' && b.valor_repasse_centavos ? escapeHtml(formatCents(b.valor_repasse_centavos, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
-          <td>${b.status === 'pago' && b.valor_comissao_centavos ? escapeHtml(formatCents(b.valor_comissao_centavos, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
+          <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
+          <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
+          <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
+          <td>${b.status === 'pago' && valorComissao ? escapeHtml(formatCents(valorComissao, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${bookingStatusBadge(b.status)}</td>
           <td>${b.status === 'pago' ? '<select class="admin__sf-select" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;' + ((b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;') + '"><option value="repasse_pendente"' + ((b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : '') + '>Repasse pendente</option><option value="repasse_feito"' + (b.status_fornecedor === 'repasse_feito' ? ' selected' : '') + '>Repasse feito</option></select>' : ''}</td>
         </tr>
