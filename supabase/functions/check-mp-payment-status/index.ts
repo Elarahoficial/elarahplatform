@@ -90,7 +90,13 @@ async function sendConfirmationEmail(booking: Booking) {
     data: booking.data,
     horario: booking.horario,
     endereco: (meta.endereco as string | null) ?? null,
+    bairro: (meta.bairro as string | null) ?? null,
     precoLabel: booking.preco_label,
+    quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
+    participantes: Array.isArray((meta as { participantes?: unknown }).participantes)
+      ? ((meta as { participantes?: Array<{ nome?: string | null }> }).participantes ?? null)
+      : null,
+    bookingId: booking.id,
   });
   const result = await sendEmail({
     to: booking.email,

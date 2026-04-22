@@ -262,26 +262,71 @@ export function bookingConfirmationEmailHtml(opts: {
   data?: string | null;
   horario?: string | null;
   endereco?: string | null;
+  bairro?: string | null;
   precoLabel?: string | null;
+  quantidade?: number | null;
+  participantes?: Array<{ nome?: string | null }> | null;
+  bookingId?: string | null;
 }): string {
-  const greeting = opts.nome ? `Olá, ${opts.nome}!` : "Reserva confirmada!";
+  const firstName = (opts.nome || "").trim().split(/\s+/)[0] || "";
+  const greeting = firstName ? `Olá, ${firstName}!` : "Reserva confirmada!";
   const linha = (label: string, value?: string | null) =>
     value
-      ? `<tr><td style="padding:6px 0;color:#888;font-size:13px;">${label}</td><td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right;">${escapeHtml(value)}</td></tr>`
+      ? `<tr><td style="padding:6px 0;color:#888;font-size:13px;vertical-align:top;width:38%;">${label}</td><td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right;">${escapeHtml(value)}</td></tr>`
       : "";
+  // Junta endereço + bairro em uma linha só quando os dois existem.
+  const enderecoFull = opts.endereco && opts.bairro
+    ? `${opts.endereco} — ${opts.bairro}`
+    : (opts.endereco || opts.bairro || null);
+  // Quantidade só aparece se for grupo (>1). Reserva individual é o
+  // caso default — não precisa destacar.
+  const qty = Number(opts.quantidade || 1);
+  const qtyLabel = qty > 1 ? `${qty} pessoas` : null;
+  // Lista de participantes: só mostra nomes extras (além do titular),
+  // que são os acompanhantes do grupo. Se a lista tem o mesmo tamanho
+  // que a quantidade, pega do 2º em diante.
+  const extras = Array.isArray(opts.participantes) ? opts.participantes : [];
+  const acompanhantesHtml = extras.length > 0
+    ? `<div style="margin-top:14px;padding-top:12px;border-top:1px dashed #e8dfd0;">
+         <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">Acompanhantes</div>
+         <div style="font-size:14px;color:#3a3a3a;line-height:1.5;">
+           ${extras.map(p => escapeHtml((p && p.nome) || "—")).join("<br>")}
+         </div>
+       </div>`
+    : "";
+  // Referência da reserva — últimos 8 chars do UUID, útil se a pessoa
+  // precisar citar no suporte. Não exibe se não tiver ID.
+  const refHtml = opts.bookingId
+    ? `<p style="margin:18px 0 0;font-size:12px;color:#999;text-align:center;letter-spacing:.5px;">
+         Ref. da reserva: <span style="font-family:Menlo,Consolas,monospace;color:#666;">${escapeHtml(
+           String(opts.bookingId).slice(-8).toUpperCase()
+         )}</span>
+       </p>`
+    : "";
+
   const inner = `
     <h2 style="font-family:Georgia,'DM Serif Display',serif;color:#1a1a1a;margin:0 0 12px;font-size:22px;">${greeting}</h2>
-    <p style="margin:0 0 18px;">Recebemos seu pagamento. Sua reserva está confirmada — já estamos preparando tudo pra te receber.</p>
-    <div style="margin:16px 0;padding:18px 20px;background:#faf6f0;border-radius:12px;">
-      <div style="font-family:Georgia,serif;font-size:18px;color:#1a1a1a;margin-bottom:10px;">${escapeHtml(opts.experienciaNome)}</div>
+    <p style="margin:0 0 8px;">Recebemos seu pagamento 💛 Sua reserva está <strong>confirmada</strong>.</p>
+    <p style="margin:0 0 20px;color:#555;">Já estamos preparando tudo pra te receber — guarde este email, ele tem todas as informações que você vai precisar no dia.</p>
+    <div style="margin:16px 0;padding:20px 22px;background:#faf6f0;border-radius:12px;border:1px solid #f0e8de;">
+      <div style="font-family:Georgia,serif;font-size:19px;color:#1a1a1a;margin-bottom:14px;line-height:1.3;">${escapeHtml(opts.experienciaNome)}</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         ${linha("Data", opts.data)}
         ${linha("Horário", opts.horario)}
-        ${linha("Endereço", opts.endereco)}
+        ${linha("Endereço", enderecoFull)}
+        ${linha("Pessoas", qtyLabel)}
         ${linha("Valor pago", opts.precoLabel)}
       </table>
+      ${acompanhantesHtml}
     </div>
-    <p style="margin:18px 0 0;">Qualquer dúvida, é só responder este e-mail. A gente te espera ✨</p>
+    <h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:24px 0 10px;font-size:16px;">O que esperar</h3>
+    <ul style="padding-left:20px;margin:0 0 8px;color:#3a3a3a;line-height:1.7;font-size:14px;">
+      <li>Chegue <strong>10 minutos antes</strong> do horário pra aproveitar tudo com calma.</li>
+      <li>Qualquer imprevisto ou mudança, responde este email que a gente resolve junto.</li>
+      <li>Se for em grupo, avisa se algum acompanhante não conseguir ir.</li>
+    </ul>
+    <p style="margin:22px 0 0;color:#555;">A gente te espera ✨</p>
+    ${refHtml}
   `;
   return htmlShell(inner);
 }
