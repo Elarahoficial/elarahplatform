@@ -303,13 +303,26 @@
     return all.find(e => e.id === id) || null;
   }
 
-  // Lista pública: oculta experiências com isActive === false.
+  // Lista pública: oculta experiências com isActive === false E
+  // aquelas cujo cutoff já passou (mesmo efeito do botão "Ocultar",
+  // mas automático por tempo — não mexe em is_active no banco, então
+  // se o admin esticar event_at ou cutoff_hours, a experiência
+  // reaparece sozinha). O bloqueio de reserva em booking_guard.ts
+  // continua protegendo a página de detalhe contra link direto.
   // Admin continua usando getAllExperiences() pra ver tudo.
   // Exposta também como getActiveExperiences pra compat com código
   // que usa esse nome.
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
-    return all.filter(e => e && e.isActive !== false);
+    const now = Date.now();
+    return all.filter(e => {
+      if (!e || e.isActive === false) return false;
+      if (!e.eventAt) return true;
+      const cutoffH = Number.isFinite(Number(e.cutoffHours)) ? Number(e.cutoffHours) : 24;
+      const eventTs = new Date(e.eventAt).getTime();
+      if (isNaN(eventTs)) return true;
+      return now + cutoffH * 60 * 60 * 1000 <= eventTs;
+    });
   }
   const getActiveExperiences = getVisibleExperiences;
 
