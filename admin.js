@@ -874,7 +874,18 @@
       return tb - ta;
     });
 
-    tbody.innerHTML = filtered.map(function (b) {
+    // Separa pendentes de cancelados/expirados/reembolsados. Pendentes
+    // são os que ainda podem virar pago (vale follow-up); o resto é
+    // contexto histórico. Sub-cabeçalhos só aparecem quando as duas
+    // seções têm conteúdo — se o admin filtrou por um status só,
+    // mostra a lista direta sem quebrar o visual.
+    var pendentes = filtered.filter(function (b) { return b.status === 'pending'; });
+    var cancelados = filtered.filter(function (b) { return b.status !== 'pending'; });
+    var showSubHeaders = pendentes.length > 0 && cancelados.length > 0;
+    var subHeaderBase = 'background:#fdf6e9;border-top:2px solid #f0cfa0;border-bottom:1px solid #f0cfa0;padding:10px 16px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#7a5a2e;';
+    var subHeaderMuted = 'background:#f4f4f4;border-top:2px solid #d9d9d9;border-bottom:1px solid #d9d9d9;padding:10px 16px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#666;';
+
+    function buildRow(b) {
       var telefone = b.telefone || '';
       if (!telefone && b.user_id && telPorUserId.has(b.user_id)) telefone = telPorUserId.get(b.user_id);
       if (!telefone && b.email) { var ek = String(b.email).toLowerCase(); if (telPorEmail.has(ek)) telefone = telPorEmail.get(ek); }
@@ -885,7 +896,6 @@
       var telefoneCell = telefone
         ? '<a href="https://wa.me/55' + String(telefone).replace(/\D+/g, '').replace(/^55/, '') + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(telefone) + '</a>'
         : '<span style="color:#bbb;">—</span>';
-      // Follow-up status badge
       var fuStatus = b.followup_status || 'nenhum';
       var fuBadge = '';
       if (fuStatus === 'nenhum') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8ef;color:#b07b00;font-size:11px;font-weight:600;">Sem follow-up</span>';
@@ -894,7 +904,6 @@
       else if (fuStatus === 'recuperado') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Recuperado</span>';
       else fuBadge = '<span style="font-size:11px;color:#888;">' + escapeHtml(fuStatus) + '</span>';
 
-      // WhatsApp follow-up button — builds message and wa.me link
       var waBtn = '';
       if (b.status === 'pending' && telefone && fuStatus !== 'segundo_enviado') {
         var firstName = (nomeResolved || '').split(' ')[0] || 'Oi';
@@ -921,7 +930,30 @@
         '<td>' + fuBadge + '</td>' +
         '<td>' + waBtn + '</td>' +
         '</tr>';
-    }).join('');
+    }
+
+    var htmlParts = [];
+    if (showSubHeaders && pendentes.length > 0) {
+      htmlParts.push(
+        '<tr class="admin__sub-header"><td colspan="12" style="' + subHeaderBase + '">' +
+          'Pendentes <span style="color:#a07c4c;font-weight:500;text-transform:none;letter-spacing:0;">· ' +
+          pendentes.length + ' reserva' + (pendentes.length !== 1 ? 's' : '') +
+        '</span></td></tr>'
+      );
+    }
+    pendentes.forEach(function (b) { htmlParts.push(buildRow(b)); });
+
+    if (showSubHeaders && cancelados.length > 0) {
+      htmlParts.push(
+        '<tr class="admin__sub-header"><td colspan="12" style="' + subHeaderMuted + '">' +
+          'Cancelados / expirados <span style="color:#888;font-weight:500;text-transform:none;letter-spacing:0;">· ' +
+          cancelados.length + ' reserva' + (cancelados.length !== 1 ? 's' : '') +
+        '</span></td></tr>'
+      );
+    }
+    cancelados.forEach(function (b) { htmlParts.push(buildRow(b)); });
+
+    tbody.innerHTML = htmlParts.join('');
 
     // Wire follow-up buttons
     tbody.querySelectorAll('.admin__fu-btn').forEach(function (btn) {
