@@ -52,6 +52,13 @@
         <span>Compras</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="fornecedores">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Fornecedores</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="purchases-pending">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
@@ -332,6 +339,58 @@
           </thead>
           <tbody id="purchases-giftcards-body">
             <tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== FORNECEDORES PANEL ===== -->
+    <div class="admin__panel" id="panel-fornecedores">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Fornecedores</h1>
+        <p class="admin__page-subtitle">Análise financeira e tempo de parceria — data de entrada editável, tudo mais é calculado automaticamente</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Fornecedores ativos</div>
+          <div class="admin__stat-value" id="stat-fornecedores-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Faturamento bruto total</div>
+          <div class="admin__stat-value" id="stat-fornecedores-gross">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita Elarah total</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-fornecedores-comissao">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Repasses pendentes</div>
+          <div class="admin__stat-value" id="stat-fornecedores-pendente">R$ 0</div>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Todos os fornecedores</span>
+          <span class="admin__table-count" id="fornecedores-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Fornecedor</th>
+              <th>Data de entrada</th>
+              <th>Parceiro há</th>
+              <th>Experiências</th>
+              <th>Reservas</th>
+              <th>Faturamento</th>
+              <th>Repasse</th>
+              <th>Receita Elarah</th>
+              <th>Última reserva</th>
+            </tr>
+          </thead>
+          <tbody id="fornecedores-body">
+            <tr><td colspan="9" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
           </tbody>
         </table>
       </div>
@@ -878,7 +937,7 @@
 <script src="experiences-data.js?v=13"></script>
 <script src="byelarah-data.js?v=2"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=32"></script>
+<script src="admin.js?v=33"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
