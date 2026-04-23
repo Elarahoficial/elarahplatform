@@ -1,1 +1,12 @@
 project_id = "nwijxjmenbfyehvscogs"
+
+# Webhooks chamados por serviços externos (Stripe, Mercado Pago).
+# Eles NÃO mandam JWT do Supabase — autenticam com a própria
+# assinatura (stripe-signature / x-signature). Se verify_jwt ficar
+# true (default), o Supabase responde 401 antes do código rodar, e
+# a Stripe/MP registram falha — foi exatamente o que aconteceu.
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.mp-webhook]
+verify_jwt = false
