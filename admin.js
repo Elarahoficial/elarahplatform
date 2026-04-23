@@ -127,6 +127,7 @@
       case 'users':       await renderUsers(); break;
       case 'partners':    await renderPartners(); break;
       case 'purchases':   await renderBookings(); break;
+      case 'fornecedores': await renderFornecedores(); break;
       case 'purchases-pending': await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
       case 'byelarah':    await renderByElarah(); break;
@@ -2094,6 +2095,263 @@
       // Listeners são registrados uma única vez via delegação em
       // wireByElarahTableListeners() — não re-wirar aqui.
     }
+  }
+
+  // =================================================
+  // ================ FORNECEDORES ===================
+  // =================================================
+  // Análise financeira por fornecedor: agrega reservas pagas e
+  // experiências por `fornecedor_nome` (match case-insensitive),
+  // combina com `data_entrada` editável guardada em
+  // fornecedores_metadata (tabela criada em
+  // sql/elarah_fornecedores_metadata.sql — se ainda não rodou,
+  // o admin mostra tudo sem a data e o save do input vai avisar).
+  //
+  // Fonte dos fornecedores é a UNIÃO de:
+  //   - bookings.fornecedor_nome  (de reservas, inclusive pendentes)
+  //   - experiences.fornecedorNome (pra capturar fornecedores que
+  //     ainda não venderam nada)
+  // Assim fornecedor novo (0 reservas) aparece, e fornecedor antigo
+  // com experiências deletadas também não some.
+  function fornecedorKey(nome) {
+    return String(nome || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  // Formata diferença em dias pra string humana.
+  // 0 → "entrou hoje", 1 → "1 dia", 2-29 → "X dias",
+  // 30-89 → "X meses" arredondado, 90-364 → "X meses",
+  // >= 365 → "X anos" ou "X anos e Y meses"
+  function formatParceiroHa(dataEntrada) {
+    if (!dataEntrada) return '<span style="color:#bbb;">—</span>';
+    const start = new Date(dataEntrada + 'T00:00:00');
+    if (isNaN(start.getTime())) return '<span style="color:#bbb;">—</span>';
+    const now = new Date();
+    const ms = now.getTime() - start.getTime();
+    const dias = Math.floor(ms / (1000 * 60 * 60 * 24));
+    if (dias < 0) return '<span style="color:#c33;">data futura</span>';
+    if (dias === 0) return 'entrou hoje';
+    if (dias === 1) return '1 dia';
+    if (dias < 30) return dias + ' dias';
+    if (dias < 365) {
+      const meses = Math.round(dias / 30);
+      return meses + (meses === 1 ? ' mês' : ' meses');
+    }
+    const anos = Math.floor(dias / 365);
+    const mesesResto = Math.round((dias - anos * 365) / 30);
+    if (mesesResto === 0) return anos + (anos === 1 ? ' ano' : ' anos');
+    return anos + (anos === 1 ? ' ano' : ' anos') + ' e ' + mesesResto + (mesesResto === 1 ? ' mês' : ' meses');
+  }
+
+  // Cache simples — invalidada ao salvar data_entrada.
+  let fornecedoresMetaCache = null;
+  async function getFornecedoresMetadata() {
+    if (fornecedoresMetaCache) return fornecedoresMetaCache.slice();
+    const s = window.supabaseClient;
+    if (!s) return [];
+    const { data, error } = await s.from('fornecedores_metadata').select('*');
+    if (error) {
+      // Tabela pode não existir ainda — migração pendente.
+      console.warn('[Admin] getFornecedoresMetadata error (tabela ausente?)', error.message);
+      return [];
+    }
+    fornecedoresMetaCache = data || [];
+    return fornecedoresMetaCache.slice();
+  }
+
+  async function saveFornecedorDataEntrada(fornecedorNome, dataEntradaISO) {
+    const s = window.supabaseClient;
+    if (!s) return { ok: false, error: 'Supabase client indisponível' };
+    const key = fornecedorKey(fornecedorNome);
+    if (!key) return { ok: false, error: 'Nome do fornecedor vazio' };
+    const { error } = await s.from('fornecedores_metadata').upsert(
+      {
+        fornecedor_key: key,
+        fornecedor_nome: fornecedorNome,
+        data_entrada: dataEntradaISO || null,
+      },
+      { onConflict: 'fornecedor_key' }
+    );
+    if (error) {
+      console.error('[Admin] saveFornecedorDataEntrada error', error);
+      return { ok: false, error: error.message };
+    }
+    fornecedoresMetaCache = null;
+    return { ok: true };
+  }
+
+  async function renderFornecedores() {
+    if (!document.getElementById('fornecedores-body')) return;
+
+    const [bookings, allExperiences, metadata] = await Promise.all([
+      getBookings(),
+      (window.ElarahData && ElarahData.getAllExperiences)
+        ? ElarahData.getAllExperiences().catch(() => [])
+        : Promise.resolve([]),
+      getFornecedoresMetadata(),
+    ]);
+
+    const metaByKey = new Map();
+    (metadata || []).forEach(m => {
+      if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m);
+    });
+
+    // Agrega por fornecedor_key. Começa pelas experiences pra
+    // capturar fornecedores com 0 vendas.
+    const aggByKey = new Map();
+    function ensureAgg(nomeRaw) {
+      const nome = String(nomeRaw || '').trim();
+      if (!nome) return null;
+      const key = fornecedorKey(nome);
+      if (!aggByKey.has(key)) {
+        aggByKey.set(key, {
+          key,
+          nome,
+          experiencesTotal: 0,
+          experiencesAtivas: 0,
+          reservas: 0,
+          faturamentoCents: 0,
+          repasseTotalCents: 0,
+          repassePagoCents: 0,
+          repassePendenteCents: 0,
+          comissaoCents: 0,
+          lastBookingTs: 0,
+        });
+      }
+      return aggByKey.get(key);
+    }
+
+    (allExperiences || []).forEach(e => {
+      if (!e) return;
+      const agg = ensureAgg(e.fornecedorNome);
+      if (!agg) return;
+      agg.experiencesTotal += 1;
+      if (e.isActive !== false) agg.experiencesAtivas += 1;
+    });
+
+    // Para fallback de valores: map experience id → exp object.
+    const expById = new Map();
+    (allExperiences || []).forEach(e => {
+      if (e && e.id) expById.set(e.id, e);
+    });
+
+    (bookings || []).forEach(b => {
+      if (!b) return;
+      // Pega fornecedor do booking OU da experiência de fallback.
+      const exp = expById.get(b.experiencia_id);
+      const nome = (b.fornecedor_nome && b.fornecedor_nome.trim())
+        || (exp && exp.fornecedorNome) || '';
+      if (!nome) return;
+      const agg = ensureAgg(nome);
+      if (!agg) return;
+
+      // Só conta valores pra bookings pagas.
+      if (b.status !== 'pago') return;
+
+      agg.reservas += 1;
+
+      const qty = Math.max(1, Number(b.quantidade) || 1);
+      let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
+      if (!valorCheio && exp && exp.valorCheioCentavos) {
+        valorCheio = Number(exp.valorCheioCentavos) * qty;
+      }
+      let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
+      if (!valorRepasse && valorCheio) valorRepasse = Math.round(valorCheio * 0.70);
+      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
+      if (!valorComissao && valorCheio) valorComissao = Math.round(valorCheio * 0.20);
+
+      if (valorCheio) agg.faturamentoCents += valorCheio;
+      if (valorRepasse) {
+        agg.repasseTotalCents += valorRepasse;
+        if (b.status_fornecedor === 'repasse_feito') {
+          agg.repassePagoCents += valorRepasse;
+        } else {
+          agg.repassePendenteCents += valorRepasse;
+        }
+      }
+      if (valorComissao) agg.comissaoCents += valorComissao;
+
+      const ts = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
+    });
+
+    const list = Array.from(aggByKey.values());
+    // Ordena por faturamento desc (fornecedor mais rentável primeiro).
+    list.sort((a, b) => b.faturamentoCents - a.faturamentoCents);
+
+    // Stats globais.
+    const totalCount = list.length;
+    const totalGross = list.reduce((s, f) => s + f.faturamentoCents, 0);
+    const totalComissao = list.reduce((s, f) => s + f.comissaoCents, 0);
+    const totalPendente = list.reduce((s, f) => s + f.repassePendenteCents, 0);
+
+    document.getElementById('stat-fornecedores-count').textContent = totalCount;
+    document.getElementById('stat-fornecedores-gross').textContent = formatCents(totalGross, 'BRL');
+    document.getElementById('stat-fornecedores-comissao').textContent = formatCents(totalComissao, 'BRL');
+    document.getElementById('stat-fornecedores-pendente').textContent = formatCents(totalPendente, 'BRL');
+
+    const countEl = document.getElementById('fornecedores-count');
+    if (countEl) countEl.textContent = totalCount + ' fornecedor' + (totalCount !== 1 ? 'es' : '');
+
+    const tbody = document.getElementById('fornecedores-body');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(f => {
+      const meta = metaByKey.get(f.key);
+      const dataEntradaISO = meta && meta.data_entrada ? meta.data_entrada : '';
+      const parceiroHa = formatParceiroHa(dataEntradaISO);
+      const experienciasLabel = f.experiencesAtivas === f.experiencesTotal
+        ? f.experiencesTotal
+        : f.experiencesAtivas + ' / ' + f.experiencesTotal;
+      const repasseLabel = f.repassePendenteCents > 0
+        ? formatCents(f.repasseTotalCents, 'BRL') +
+          '<br><span style="font-size:.72rem;color:#b07b00;">' +
+          formatCents(f.repassePendenteCents, 'BRL') + ' pendente</span>'
+        : formatCents(f.repasseTotalCents, 'BRL');
+      const lastBookingLabel = f.lastBookingTs
+        ? new Date(f.lastBookingTs).toLocaleDateString('pt-BR')
+        : '<span style="color:#bbb;">—</span>';
+      return '<tr>' +
+        '<td style="font-weight:600;">' + escapeHtml(f.nome) + '</td>' +
+        '<td><input type="date" class="admin__forn-data-entrada" data-forn-key="' + escapeHtml(f.key) + '" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(dataEntradaISO) + '" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;"></td>' +
+        '<td>' + parceiroHa + '</td>' +
+        '<td>' + experienciasLabel + '</td>' +
+        '<td>' + f.reservas + '</td>' +
+        '<td style="font-weight:600;">' + escapeHtml(formatCents(f.faturamentoCents, 'BRL')) + '</td>' +
+        '<td>' + repasseLabel + '</td>' +
+        '<td style="color:var(--orange,#f0a05e);font-weight:600;">' + escapeHtml(formatCents(f.comissaoCents, 'BRL')) + '</td>' +
+        '<td>' + lastBookingLabel + '</td>' +
+      '</tr>';
+    }).join('');
+
+    // Wire edit handlers. Uses delegation via querySelectorAll —
+    // acceptable aqui porque o tbody é inteiro re-renderizado a
+    // cada refresh, não acumula listeners fantasmas.
+    tbody.querySelectorAll('.admin__forn-data-entrada').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const el = e.target;
+        const nome = el.dataset.fornNome;
+        const value = el.value; // '' ou 'yyyy-mm-dd'
+        el.disabled = true;
+        const res = await saveFornecedorDataEntrada(nome, value);
+        el.disabled = false;
+        if (!res.ok) {
+          alert('Não consegui salvar a data. ' +
+            (res.error && res.error.includes('fornecedores_metadata')
+              ? 'A tabela fornecedores_metadata não existe no banco — rode sql/elarah_fornecedores_metadata.sql no SQL Editor do Supabase.'
+              : res.error || 'Verifique se você está logada como admin.'));
+          return;
+        }
+        // Recalcula "Parceiro há" na célula irmã sem re-renderizar tudo.
+        const row = el.closest('tr');
+        if (row) {
+          const parceiroCell = row.children[2];
+          if (parceiroCell) parceiroCell.innerHTML = formatParceiroHa(value);
+        }
+      });
+    });
   }
 
   // =================================================
