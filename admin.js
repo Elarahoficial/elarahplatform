@@ -372,8 +372,10 @@
     const users = await getProfiles();
     const tbody = document.getElementById('users-body');
     const countEl = document.getElementById('users-count');
+    const totalEl = document.getElementById('stat-users-total');
 
     countEl.textContent = users.length + ' usuário' + (users.length !== 1 ? 's' : '');
+    if (totalEl) totalEl.textContent = users.length;
 
     if (users.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="admin__table-empty">Nenhum usuário cadastrado.</td></tr>';
