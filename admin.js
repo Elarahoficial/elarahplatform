@@ -404,7 +404,7 @@
     const digits = tel.replace(/\D+/g, '').replace(/^55/, '');
     if (!digits) return escapeHtml(tel);
     const primeiroNome = String(u.nome || '').trim().split(/\s+/)[0] || 'tudo bem';
-    const msg = 'Oii ' + primeiroNome + '! 🧡 Você se cadastrou na Elarah e temos um grupo onde liberamos experiências antes de todo mundo (algumas esgotam só por lá 👀). Entra aqui pra não perder: https://chat.whatsapp.com/LRqJa9F7zGWAIMlh2D2yjl';
+    const msg = 'Oii ' + primeiroNome + '! Você se cadastrou na Elarah e temos um grupo onde liberamos experiências antes de todo mundo (algumas esgotam só por lá). Entra aqui pra não perder: https://chat.whatsapp.com/LRqJa9F7zGWAIMlh2D2yjl';
     const href = 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(msg);
     const numero = '<a href="' + href + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(tel) + '</a>';
     const botao = '<a href="' + href + '" target="_blank" rel="noopener" title="Convidar para o grupo no WhatsApp" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 10px;background:#25D366;color:#fff;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;line-height:1;vertical-align:middle;">' +
