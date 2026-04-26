@@ -118,6 +118,11 @@ function parseStartHour(raw: string | null | undefined): { hh: number; mm: numbe
 // existir passaria sem cutoff. Retorna null pra valores que não
 // conseguimos resolver com segurança ("Semanal", string vazia, etc.).
 //
+// "DD/MM" sem ano = ano atual. Se ficar no passado, o cutoff guard
+// rejeita a reserva (alinhado com a regra de auto-expirar exibida no
+// front). Pra eventos num ano específico, admin deve usar
+// "DD/MM/AAAA".
+//
 // Fuso fixo America/Sao_Paulo (-03:00). Edge Functions Deno rodam em
 // UTC, então construir o ISO sem offset interpreta errado em 3h.
 function deriveEventTimestamp(
@@ -134,8 +139,7 @@ function deriveEventTimestamp(
   if (!Number.isFinite(day) || day < 1 || day > 31) return null;
   if (!Number.isFinite(month) || month < 1 || month > 12) return null;
 
-  const hasYear = !!m[3];
-  let year = hasYear
+  const year = m[3]
     ? (Number(m[3]) < 100 ? Number(m[3]) + 2000 : Number(m[3]))
     : new Date(nowMs).getFullYear();
 
@@ -143,20 +147,10 @@ function deriveEventTimestamp(
   if (!h) return null;
 
   const pad = (n: number) => String(n).padStart(2, "0");
-  const iso = (y: number) =>
-    `${y}-${pad(month)}-${pad(day)}T${pad(h.hh)}:${pad(h.mm)}:00-03:00`;
-
-  let ts = new Date(iso(year)).getTime();
-  if (!Number.isFinite(ts)) return null;
-
-  // Sem ano explícito e mais de 6h no passado → assume recorrência
-  // anual e usa o ano seguinte. Evita falso bloqueio quando o admin
-  // cadastrou "12/04" pensando em abril do ano que vem.
-  if (!hasYear && ts < nowMs - 6 * 60 * 60 * 1000) {
-    const nextTs = new Date(iso(year + 1)).getTime();
-    if (Number.isFinite(nextTs)) ts = nextTs;
-  }
-  return ts;
+  const iso =
+    `${year}-${pad(month)}-${pad(day)}T${pad(h.hh)}:${pad(h.mm)}:00-03:00`;
+  const ts = new Date(iso).getTime();
+  return Number.isFinite(ts) ? ts : null;
 }
 
 /**
