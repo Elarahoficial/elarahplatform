@@ -42,9 +42,11 @@ begin
     return;
   end if;
 
-  update public.experience_slots
-     set vagas_restantes = vagas_restantes - v_qty
-   where id = p_slot_id;
+  -- Alias `s` + qualificação evita erro 42702 (vagas_restantes
+  -- ambíguo entre coluna e variável OUTPUT da função).
+  update public.experience_slots s
+     set vagas_restantes = s.vagas_restantes - v_qty
+   where s.id = p_slot_id;
 
   return query select true, (v_rest - v_qty);
 end;
@@ -57,13 +59,13 @@ language plpgsql security definer as $$
 declare
   v_qty integer := greatest(1, coalesce(p_qty, 1));
 begin
-  update public.experience_slots
+  update public.experience_slots s
      set vagas_restantes = least(
-           coalesce(vagas_restantes, 0) + v_qty,
-           coalesce(vagas_total, vagas_restantes + v_qty)
+           coalesce(s.vagas_restantes, 0) + v_qty,
+           coalesce(s.vagas_total, s.vagas_restantes + v_qty)
          )
-   where id = p_slot_id
-     and vagas_total is not null;
+   where s.id = p_slot_id
+     and s.vagas_total is not null;
 end;
 $$;
 
@@ -97,9 +99,10 @@ begin
     return;
   end if;
 
-  update public.experiences
-     set vagas_restantes = vagas_restantes - v_qty
-   where id = p_experience_id;
+  -- Alias `e` + qualificação evita erro 42702.
+  update public.experiences e
+     set vagas_restantes = e.vagas_restantes - v_qty
+   where e.id = p_experience_id;
 
   return query select true, (v_rest - v_qty);
 end;
@@ -112,12 +115,12 @@ language plpgsql security definer as $$
 declare
   v_qty integer := greatest(1, coalesce(p_qty, 1));
 begin
-  update public.experiences
+  update public.experiences e
      set vagas_restantes = least(
-           coalesce(vagas_restantes, 0) + v_qty,
-           coalesce(vagas_total, vagas_restantes + v_qty)
+           coalesce(e.vagas_restantes, 0) + v_qty,
+           coalesce(e.vagas_total, e.vagas_restantes + v_qty)
          )
-   where id = p_experience_id
-     and vagas_total is not null;
+   where e.id = p_experience_id
+     and e.vagas_total is not null;
 end;
 $$;

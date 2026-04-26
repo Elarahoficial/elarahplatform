@@ -272,7 +272,17 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
 // =============================================================
 // MODO A — reserva de experiência
 // =============================================================
+// Marcador único de versão. Mude esse valor a cada release pra
+// confirmar via logs do Supabase qual versão está rodando. Se você
+// ver esse marcador nos logs ao testar uma reserva, o deploy passou
+// e o código novo está ativo.
+const CHECKOUT_FN_VERSION = "v3-inventory-fallback-2026-04-26";
+
 async function handleExperienceCheckout(payload: Record<string, unknown>) {
+  console.info(
+    "[Elarah Payment] handleExperienceCheckout INICIO",
+    "version=" + CHECKOUT_FN_VERSION,
+  );
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
   const email = payload.email ? String(payload.email).trim() : null;
@@ -562,55 +572,146 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
-  // ===== Decremento atômico de vaga =====
-  // Só agora — depois do hold do cupom — pra evitar reservar vaga
-  // que vamos liberar logo em seguida se o cupom falhar.
-  // Usa slot-level se disponível, senão experience-level.
-  const decrementRpc = useSlotVagas ? "decrement_slot_vagas" : "decrement_experience_vagas";
-  const decrementArg = useSlotVagas
-    ? { p_slot_id: slotId, p_qty: quantidade }
-    : { p_experience_id: exp.id, p_qty: quantidade };
+  // ===== Decremento atômico de vaga (com fallback robusto) =====
+  // Estratégia em 3 camadas pra NUNCA derrubar o checkout por
+  // problema de schema/RPC. Se o controle de estoque falha por
+  // causa de versão antiga das funções no banco, pula o controle
+  // (loga ERROR alto pro admin agir) — pagamento tem que continuar.
+  //
+  //   1ª: RPC moderno `decrement_*_vagas(uuid, p_qty integer)`
+  //       — assinatura definida em sql/elarah_bookings_quantidade.sql
+  //   2ª: Se a 1ª falhar (ex.: função com p_qty não existe no banco),
+  //       cai pra versão legada `decrement_*_vagas(uuid)` em loop
+  //       (uma chamada por vaga)
+  //   3ª: Se mesmo a legada falhar, PULA o decremento, loga loud e
+  //       segue o pagamento. Pequeno risco de overbooking transitório
+  //       é PREFERÍVEL a quebrar o checkout inteiro em produção.
+  //
+  // O incrementVaga (rollback) usa a mesma estratégia na ordem inversa,
+  // sem disparar erro: rollback "best effort" — se não conseguir, loga.
+  const slotIdLocal = slotId;
+  const expIdLocal = exp.id;
+  const useSlotVagasLocal = useSlotVagas;
+  const quantidadeLocal = quantidade;
+  const decrementRpc = useSlotVagasLocal
+    ? "decrement_slot_vagas"
+    : "decrement_experience_vagas";
+  const incrementRpc = useSlotVagasLocal
+    ? "increment_slot_vagas"
+    : "increment_experience_vagas";
+  const baseArg = useSlotVagasLocal
+    ? { p_slot_id: slotIdLocal }
+    : { p_experience_id: expIdLocal };
 
-  const { data: vagaRows, error: vagaErr } = await supabase.rpc(
-    decrementRpc,
-    decrementArg,
-  );
-  if (vagaErr) {
-    console.error("[create-checkout-session] vagas decrement error", vagaErr);
-    if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
-        p_gift_card_id: giftCardId,
-        p_amount_centavos: giftCardCentavos,
-      });
+  type DecrementOutcome =
+    | { kind: "ok" }
+    | { kind: "sold_out" }
+    | { kind: "skipped"; reason: string };
+
+  async function tryDecrementVagasSafe(): Promise<DecrementOutcome> {
+    // Camada 1: tenta com p_qty (RPC moderno)
+    const modern = await supabase.rpc(decrementRpc, {
+      ...baseArg,
+      p_qty: quantidadeLocal,
+    });
+    if (!modern.error) {
+      const row = Array.isArray(modern.data) ? modern.data[0] : modern.data;
+      if (row && row.ok === false) return { kind: "sold_out" };
+      return { kind: "ok" };
     }
-    return jsonResponse({ error: "vagas_check_failed" }, 500);
+    console.warn(
+      "[create-checkout-session] decrement com p_qty falhou — tentando versão legada",
+      "rpc=" + decrementRpc,
+      "error=" + JSON.stringify(modern.error),
+      "hint=rode sql/elarah_bookings_quantidade.sql no Supabase pra atualizar",
+    );
+
+    // Camada 2: legada sem p_qty, em loop. Se ficar parcialmente
+    // feita, devolve as vagas que já decrementou pra evitar drift.
+    let decrementedSoFar = 0;
+    for (let i = 0; i < quantidadeLocal; i++) {
+      const legacy = await supabase.rpc(decrementRpc, baseArg);
+      if (legacy.error) {
+        // Compensa parcial best-effort
+        for (let j = 0; j < decrementedSoFar; j++) {
+          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+        }
+        console.error(
+          "[create-checkout-session] decrement legacy TAMBÉM falhou — pulando controle de estoque pra não derrubar pagamento",
+          "rpc=" + decrementRpc,
+          "error=" + JSON.stringify(legacy.error),
+        );
+        return {
+          kind: "skipped",
+          reason: String(legacy.error.message || "rpc_unavailable"),
+        };
+      }
+      const row = Array.isArray(legacy.data) ? legacy.data[0] : legacy.data;
+      if (row && row.ok === false) {
+        for (let j = 0; j < decrementedSoFar; j++) {
+          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+        }
+        return { kind: "sold_out" };
+      }
+      decrementedSoFar += 1;
+    }
+    return { kind: "ok" };
   }
-  const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
-  if (!vagaRow || vagaRow.ok === false) {
+
+  // Acompanha quantas vagas o decremento efetivou pra que o rollback
+  // saiba o que devolver. "skipped" = nenhuma vaga decrementada → no-op.
+  let vagasDecrementadas = 0;
+  let estoquePulado = false;
+
+  const outcome = await tryDecrementVagasSafe();
+  if (outcome.kind === "sold_out") {
     if (giftCardId) {
       await supabase.rpc("refund_gift_card", {
         p_gift_card_id: giftCardId,
         p_amount_centavos: giftCardCentavos,
       });
     }
-    const soldOutMsg = useSlotVagas
+    const soldOutMsg = useSlotVagasLocal
       ? "Este horário está esgotado."
       : "Esta experiência está esgotada.";
     return jsonResponse(
       {
-        error: useSlotVagas ? "slot_sold_out" : "experience_sold_out",
+        error: useSlotVagasLocal ? "slot_sold_out" : "experience_sold_out",
         message: soldOutMsg,
       },
       409,
     );
   }
+  if (outcome.kind === "skipped") {
+    estoquePulado = true;
+    console.error(
+      "[Elarah Payment] CONTROLE DE ESTOQUE PULADO — pagamento prosseguindo sem decremento de vagas",
+      "experiencia=" + exp.id,
+      "slot=" + (slotIdLocal ?? "none"),
+      "quantidade=" + quantidadeLocal,
+      "reason=" + outcome.reason,
+      "ação=admin precisa rodar sql/elarah_bookings_quantidade.sql no Supabase",
+    );
+  } else {
+    vagasDecrementadas = quantidadeLocal;
+  }
 
-  // Helper pra rollback de vaga — slot ou experiência
+  // Helper pra rollback — best effort. Tenta moderna primeiro, depois
+  // legada em loop. Se nenhuma vaga foi decrementada (estoque pulado),
+  // não faz nada — manter consistente com o que efetivamente mudou.
   const incrementVaga = async () => {
-    if (useSlotVagas) {
-      await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId, p_qty: quantidade });
-    } else {
-      await supabase.rpc("increment_experience_vagas", { p_experience_id: exp.id, p_qty: quantidade });
+    if (vagasDecrementadas <= 0) return;
+    const modern = await supabase
+      .rpc(incrementRpc, { ...baseArg, p_qty: vagasDecrementadas })
+      .catch((e) => ({ error: e }));
+    if (!modern.error) return;
+    console.warn(
+      "[create-checkout-session] increment com p_qty falhou — tentando legacy em loop",
+      "rpc=" + incrementRpc,
+      "error=" + JSON.stringify(modern.error),
+    );
+    for (let i = 0; i < vagasDecrementadas; i++) {
+      await supabase.rpc(incrementRpc, baseArg).catch(() => {});
     }
   };
 
@@ -720,6 +821,104 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
+  // ===== Construção dos line_items =====
+  // Regra: quando NÃO há gift card, passa quantity=quantidade explícito
+  // pra Stripe e separa a taxa do cartão como linha distinta. A multi-
+  // plicação fica visível no boundary (Dashboard, recibo) e qualquer
+  // regressão futura que devolva preço unitário em vez de total fica
+  // pega pelo assert abaixo.
+  // Quando HÁ gift card, o desconto pode não dividir exatamente entre
+  // as vagas, então mantemos quantity=1 com unit_amount=total — único
+  // caso em que a opacidade é justificada.
+  const descricaoLinha = [
+    exp.data,
+    horario,
+    exp.bairro,
+  ].filter(Boolean).join(" · ").slice(0, 380);
+
+  // deno-lint-ignore no-explicit-any
+  const lineItems: any[] = [];
+  if (giftCardCentavos > 0) {
+    lineItems.push({
+      quantity: 1,
+      price_data: {
+        currency: "brl",
+        unit_amount: amountToCharge,
+        product_data: {
+          name: productName +
+            (quantidade > 1 ? " (x" + quantidade + ")" : ""),
+          description: [
+            quantidade > 1 ? quantidade + " vagas" : null,
+            descricaoLinha,
+          ].filter(Boolean).join(" · ").slice(0, 380),
+        },
+      },
+    });
+  } else {
+    lineItems.push({
+      quantity: quantidade,
+      price_data: {
+        currency: "brl",
+        unit_amount: cents,
+        product_data: {
+          name: exp.nome,
+          description: descricaoLinha,
+        },
+      },
+    });
+    if (feeInfo.feeTotalCents > 0) {
+      lineItems.push({
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: feeInfo.feeTotalCents,
+          product_data: {
+            name: "Taxa de processamento (cartão)",
+          },
+        },
+      });
+    }
+  }
+
+  // Assert defensivo de boundary: a soma dos line_items que vamos
+  // submeter pra Stripe TEM que bater com amountToCharge. Se algum
+  // refactor futuro quebrar a multiplicação por quantidade, essa
+  // checagem aborta antes de cobrar a menos.
+  const stripeLineItemsSum = lineItems.reduce(
+    // deno-lint-ignore no-explicit-any
+    (acc: number, li: any) =>
+      acc + Number(li.quantity ?? 1) * Number(li.price_data?.unit_amount ?? 0),
+    0,
+  );
+  if (stripeLineItemsSum !== amountToCharge) {
+    console.error(
+      "[Elarah Payment/Stripe] LINE ITEMS SUM MISMATCH",
+      "esperado=" + amountToCharge,
+      "calculado=" + stripeLineItemsSum,
+      "quantidade=" + quantidade,
+      "unitCents=" + cents,
+      "subtotal=" + breakdown.subtotalCents,
+      "discount=" + breakdown.discountCents,
+      "fee=" + feeInfo.feeTotalCents,
+    );
+    if (giftCardId) {
+      await supabase.rpc("refund_gift_card", {
+        p_gift_card_id: giftCardId,
+        p_amount_centavos: giftCardCentavos,
+      });
+    }
+    await incrementVaga();
+    return jsonResponse(
+      {
+        error: "stripe_line_items_mismatch",
+        message:
+          "Erro interno: total dos itens não confere com o valor a cobrar. " +
+          "Recarregue e tente novamente.",
+      },
+      500,
+    );
+  }
+
   let session;
   try {
     session = await stripe.checkout.sessions.create({
@@ -727,32 +926,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       payment_method_types: ["card"],
       locale: "pt-BR",
       customer_email: email || undefined,
-      line_items: [
-        {
-          // Usar quantity=1 e unit_amount=total dá o mesmo resultado
-          // financeiro que quantity=N e unit_amount=preço_unitário,
-          // porém mantemos quantity=1 porque o repasse de taxa do
-          // cartão (acima) é aplicado uma vez sobre o total. Se um
-          // dia mudar pra fee por unidade, vale revisitar.
-          quantity: 1,
-          price_data: {
-            currency: "brl",
-            unit_amount: amountToCharge,
-            product_data: {
-              name: productName + (quantidade > 1 ? " (x" + quantidade + ")" : ""),
-              description: [
-                quantidade > 1 ? quantidade + " vagas" : null,
-                exp.data,
-                horario,
-                exp.bairro,
-              ]
-                .filter(Boolean)
-                .join(" · ")
-                .slice(0, 380),
-            },
-          },
-        },
-      ],
+      line_items: lineItems,
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
@@ -817,7 +991,15 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     bairro: exp.bairro ?? null,
     endereco: exp.endereco ?? null,
     telefone_digits: telefoneDigits || null,
-    preco_total_centavos: cents,
+    // Breakdown completo da cobrança — fonte única de auditoria.
+    // preco_total_centavos = subtotal (unit × quantidade), antes do
+    // desconto e da taxa. Antes era `cents` (unitário), o que era
+    // enganoso e mascarava bugs de quantidade. Igualar com create-mp.
+    unit_price_centavos: breakdown.unitCents,
+    subtotal_centavos: breakdown.subtotalCents,
+    discount_centavos: breakdown.discountCents,
+    total_after_discount_centavos: breakdown.totalCents,
+    preco_total_centavos: breakdown.subtotalCents,
     // Breakdown do pagamento — admin pode usar pra auditar o repasse
     // de taxa. `base_before_fee_centavos` é o valor que cairia no
     // cartão SEM o repasse; `amount_total` na coluna já é o valor
@@ -827,6 +1009,10 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     card_fee_percent_centavos: feeInfo.feePercentCents,
     card_fee_fixed_centavos: feeInfo.feeFixedCents,
     card_fee_total_centavos: feeInfo.feeTotalCents,
+    // Flag de auditoria: TRUE quando o controle de estoque foi pulado
+    // por falha na RPC. Admin pode filtrar por isso pra reconciliar
+    // depois de aplicar a migração SQL faltante.
+    inventory_skipped: estoquePulado || undefined,
   };
 
   const { error: insertErr } = await supabase.from("bookings").insert({
@@ -940,6 +1126,17 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
 // ENTRY
 // =============================================================
 serve(async (req) => {
+  // Marcador no boot. Aparece nos logs do Supabase em CADA invocação,
+  // confirmando qual versão da função está atendendo a request. Se
+  // este log NÃO aparece quando o checkout é tentado, o deploy não
+  // chegou — a função antiga ainda está sendo servida (cache, projeto
+  // errado, build antigo). Diagnóstico imediato pelo log.
+  console.info(
+    "[Elarah Payment] create-checkout-session BOOT",
+    "version=" + CHECKOUT_FN_VERSION,
+    "method=" + req.method,
+  );
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -973,8 +1170,33 @@ serve(async (req) => {
     });
   }
 
-  if (mode === "gift_card") {
-    return handleGiftCardPurchase(payload);
+  // ===== Wrapper de exceção =====
+  // Defesa final: se QUALQUER coisa lançar exceção dentro dos handlers
+  // (RPC indisponível, schema desatualizado, lib quebrada, etc.), a
+  // gente captura aqui e devolve 500 com um erro NOMEADO — nunca
+  // `vagas_check_failed`, nunca o stack trace cru. Garante que o
+  // checkout não trava por bugs de infraestrutura inesperados.
+  try {
+    if (mode === "gift_card") {
+      return await handleGiftCardPurchase(payload);
+    }
+    return await handleExperienceCheckout(payload);
+  } catch (e) {
+    console.error(
+      "[Elarah Payment] EXCEPTION inesperada — checkout abortado",
+      "version=" + CHECKOUT_FN_VERSION,
+      "mode=" + mode,
+      "error=" + (e instanceof Error ? e.message : String(e)),
+      "stack=" + (e instanceof Error ? e.stack : "(no stack)"),
+    );
+    return jsonResponse(
+      {
+        error: "checkout_unexpected_error",
+        message:
+          "Erro inesperado no checkout. Tente novamente em instantes ou " +
+          "entre em contato pelo WhatsApp.",
+      },
+      500,
+    );
   }
-  return handleExperienceCheckout(payload);
 });

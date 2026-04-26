@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v16 — byelarah agrupado por experiência');
+  console.info('[Elarah Admin] admin.js v17 — acompanhantes WhatsApp + dedup por nome/tel');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -712,6 +712,30 @@
       return;
     }
 
+    // Badge de alerta quando o webhook detectou que o gateway cobrou
+    // um valor diferente do esperado (metadata.amount_mismatch). Sem
+    // isso, divergências passam despercebidas — o admin precisa de
+    // sinalização visual pra estornar manualmente quando preciso.
+    function mismatchBadge(b) {
+      if (!b || !b.metadata || typeof b.metadata !== 'object') return '';
+      if (b.metadata.amount_mismatch !== true) return '';
+      const expected = Number(b.metadata.expected_amount_total_centavos);
+      const delta = Number(b.metadata.delta_centavos);
+      const tooltipParts = [];
+      if (Number.isFinite(expected)) {
+        tooltipParts.push('Esperado: ' + formatCents(expected, b.currency || 'BRL'));
+      }
+      if (Number.isFinite(delta)) {
+        tooltipParts.push('Delta: ' + (delta > 0 ? '+' : '') + formatCents(delta, b.currency || 'BRL'));
+      }
+      const tooltip = tooltipParts.length
+        ? tooltipParts.join(' · ')
+        : 'Valor cobrado divergente do esperado';
+      return ' <span title="' + escapeHtml(tooltip) +
+        '" style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;' +
+        'background:#fce8e6;color:#c0392b;font-size:.7rem;font-weight:700;cursor:help;">⚠ valor</span>';
+    }
+
     // Renderiza uma linha da tabela. Extraído pra reaproveitar em
     // cada grupo (pendentes / pagos / outros) sem duplicar o código
     // de resolução de telefone + nome.
@@ -787,17 +811,83 @@
         valorComissao = Math.round(valorCheio * 0.20);
       }
 
+      // Renderiza acompanhantes (participantes adicionais) abaixo do
+      // nome do comprador, com WhatsApp clicável quando o telefone
+      // estiver disponível.
+      //
+      // Dedup defensivo: o checkout grava o próprio comprador como
+      // participantes[0]. Em vez de fazer slice(1) cego (que assumiria
+      // sempre essa ordem e poderia esconder dados de bookings antigas
+      // com formato diferente), filtramos por nome E telefone iguais
+      // aos do comprador. Cobre:
+      //   - bookings novas (comprador no índice 0) → filtra ele fora
+      //   - bookings antigas (sem comprador no array) → mostra tudo
+      //   - duplicatas acidentais → mostra cada pessoa uma vez
+      function renderAcompanhantes() {
+        if (!b.metadata || !Array.isArray(b.metadata.participantes)) return '';
+        if (!b.metadata.participantes.length) return '';
+
+        // Normalização agressiva: lowercase + remove zero-width / NBSP /
+        // outros chars invisíveis que podem entrar via copy-paste do
+        // checkout, e colapsa whitespace. Sem isso, "duda vitiello" e
+        // "duda​ vitiello" não bateriam e o dedup falharia silente.
+        const norm = function (s) {
+          return String(s || '')
+            .normalize('NFKC')
+            .replace(/[​-‍﻿ ]/g, ' ')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+        };
+        const onlyDigits = function (s) { return String(s || '').replace(/\D+/g, ''); };
+        const compradorNome = norm(nomeResolved);
+        const compradorTel = onlyDigits(telefone);
+
+        const seen = new Set();
+        const extras = b.metadata.participantes.filter(function (p) {
+          if (!p) return false;
+          const pNome = norm(p.nome);
+          const pTel = onlyDigits(p.telefone || p.telefone_digits || '');
+          if (!pNome && !pTel) return false;
+          // Pula se for o próprio comprador (mesmo nome OU mesmo telefone).
+          if (compradorNome && pNome && pNome === compradorNome) return false;
+          if (compradorTel && pTel && pTel === compradorTel) return false;
+          // Dedup entre acompanhantes (mesmo telefone gravado 2x, raro).
+          const key = pNome + '|' + pTel;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        if (!extras.length) return '';
+
+        const items = extras.map(function (p) {
+          const pNome = escapeHtml((p && p.nome) || '?');
+          const pTelRaw = String((p && (p.telefone || p.telefone_digits)) || '').trim();
+          if (!pTelRaw) {
+            return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + '</span>';
+          }
+          const pDigits = onlyDigits(pTelRaw);
+          const pWa = pDigits.length >= 10 ? ('55' + pDigits.replace(/^55/, '')) : pDigits;
+          const pTelDisplay = escapeHtml(p.telefone || pDigits);
+          const link = pWa
+            ? '<a href="https://wa.me/' + pWa + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + pTelDisplay + '</a>'
+            : pTelDisplay;
+          return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + ' · ' + link + '</span>';
+        }).join('');
+        return '<br>' + items;
+      }
+
       return `
         <tr>
           <td>${escapeHtml(when)}</td>
-          <td>${escapeHtml(nomeResolved || '—')}${b.quantidade > 1 && b.metadata && Array.isArray(b.metadata.participantes) && b.metadata.participantes.length ? '<br>' + b.metadata.participantes.map(function(p, i) { return '<span style="font-size:.75rem;color:#888;">+' + escapeHtml(p.nome || '?') + '</span>'; }).join('<br>') : ''}</td>
+          <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
           <td>${escapeHtml(b.experiencia_nome || '—')}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
-          <td>${escapeHtml(formatCents(b.amount_total, b.currency))}</td>
+          <td>${escapeHtml(formatCents(b.amount_total, b.currency))}${mismatchBadge(b)}</td>
           <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>

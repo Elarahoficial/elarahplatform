@@ -386,10 +386,11 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
   // o que estiver vazio.
   const existing = await getBookingBySession(session.id);
 
+  const stripeAmountTotal = session.amount_total ?? null;
   const updatePatch: Record<string, unknown> = {
     status: "pago",
     stripe_payment_intent: session.payment_intent ?? null,
-    amount_total: session.amount_total ?? null,
+    amount_total: stripeAmountTotal,
     currency: session.currency ?? "brl",
   };
   if (telefoneFromMeta) {
@@ -397,6 +398,41 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
   }
   if (nomeFromMeta) {
     updatePatch.nome = nomeFromMeta;
+  }
+
+  // ===== Boundary check: pre-insert vs Stripe amount_total =====
+  // O create-checkout-session já gravou amount_total no pre-insert
+  // com o valor correto (unit × quantidade − desconto + taxa). Se a
+  // sessão Stripe vier com um total diferente, é sintoma de bug —
+  // tipicamente "cobrou só 1 unidade". A gente NÃO pode reverter o
+  // pagamento aqui (Stripe já cobrou), mas grava a divergência em
+  // metadata.amount_mismatch + log AMOUNT MISMATCH em alto volume,
+  // pro admin investigar e estornar manualmente se necessário.
+  let amountMismatchInfo: Record<string, unknown> | null = null;
+  if (existing && existing.amount_total != null && stripeAmountTotal != null) {
+    const expected = Number(existing.amount_total);
+    const actual = Number(stripeAmountTotal);
+    if (Number.isFinite(expected) && Number.isFinite(actual) && expected !== actual) {
+      // deno-lint-ignore no-explicit-any
+      const ex = existing as any;
+      console.error(
+        "[Elarah Payment] AMOUNT MISMATCH — Stripe cobrou um valor diferente do esperado",
+        "session=" + session.id,
+        "booking_id=" + existing.id,
+        "expected_from_pre_insert=" + expected,
+        "stripe_session_amount_total=" + actual,
+        "delta=" + (actual - expected),
+        "quantidade=" + (ex.quantidade ?? "?"),
+        "experiencia_nome=" + (existing.experiencia_nome ?? "?"),
+      );
+      amountMismatchInfo = {
+        amount_mismatch: true,
+        expected_amount_total_centavos: expected,
+        stripe_amount_total_centavos: actual,
+        delta_centavos: actual - expected,
+        detected_at: new Date().toISOString(),
+      };
+    }
   }
 
   // Reconcilia fornecedor/financeiro se faltarem — usa metadata do
@@ -423,6 +459,15 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
     }
     if (!ex.status_fornecedor) {
       updatePatch.status_fornecedor = "repasse_pendente";
+    }
+    // Mescla flag de mismatch no metadata existente, pra preservar
+    // bairro/endereco/etc. Sobrescrever metadata por inteiro perderia
+    // informação útil.
+    if (amountMismatchInfo) {
+      updatePatch.metadata = {
+        ...(existing.metadata ?? {}),
+        ...amountMismatchInfo,
+      };
     }
   }
 
@@ -471,6 +516,7 @@ async function sendBookingConfirmation(booking: BookingRow) {
     bairro: (meta.bairro as string | null) ?? null,
     precoLabel: booking.preco_label,
     quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
+    amountTotalCentavos: booking.amount_total ?? null,
     participantes: Array.isArray((meta as { participantes?: unknown }).participantes)
       ? ((meta as { participantes?: Array<{ nome?: string | null }> }).participantes ?? null)
       : null,
