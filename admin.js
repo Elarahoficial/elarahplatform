@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v22 — descrição completa: label/hint claros + aviso na aba By Elarah');
+  console.info('[Elarah Admin] admin.js v23 — atalho ✨ Criar Original comprável (1 clique do By Elarah pro form certo)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -110,39 +110,70 @@
   }
 
   // ===== NAVIGATION =====
-  function wireNavigation() {
+  // Helper exposto pra que outros pontos do admin (ex: atalho da
+  // aba By Elarah → "Criar Original comprável") consigam trocar
+  // de painel programaticamente sem duplicar a lógica de active
+  // class + scroll-to-top + refreshPanel.
+  async function navigateToPanel(target) {
     const navItems = document.querySelectorAll('.admin__nav-item');
     const panels = document.querySelectorAll('.admin__panel');
+    const targetItem = document.querySelector('[data-panel="' + target + '"]');
+    if (!targetItem) return;
+    navItems.forEach(n => n.classList.remove('admin__nav-item--active'));
+    targetItem.classList.add('admin__nav-item--active');
+    panels.forEach(p => p.classList.remove('admin__panel--active'));
+    const targetPanel = document.getElementById('panel-' + target);
+    if (targetPanel) targetPanel.classList.add('admin__panel--active');
+    try {
+      window.scrollTo(0, 0);
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+      const mainEl = document.querySelector('.admin__main');
+      if (mainEl) mainEl.scrollTop = 0;
+    } catch {}
+    await refreshPanel(target);
+  }
+  // Expõe global pra que handlers DOM-level (botão atalho By Elarah)
+  // consigam chamar sem hack de eventos sintéticos.
+  window._adminNavigateToPanel = navigateToPanel;
 
+  function wireNavigation() {
+    const navItems = document.querySelectorAll('.admin__nav-item');
     navItems.forEach(item => {
       item.addEventListener('click', async () => {
-        const target = item.dataset.panel;
-
-        navItems.forEach(n => n.classList.remove('admin__nav-item--active'));
-        item.classList.add('admin__nav-item--active');
-
-        panels.forEach(p => p.classList.remove('admin__panel--active'));
-        const targetPanel = document.getElementById('panel-' + target);
-        if (targetPanel) {
-          targetPanel.classList.add('admin__panel--active');
-        }
-
-        // Volta o scroll pro topo — senão o usuário cai na posição
-        // vertical da aba anterior (ex.: veio de "Compras" com 300+
-        // linhas, clica By Elarah, e o topo da aba fica acima da
-        // viewport). Reseta tanto o window quanto os containers mais
-        // prováveis pra cobrir navegadores/configs diferentes.
-        try {
-          window.scrollTo(0, 0);
-          if (document.documentElement) document.documentElement.scrollTop = 0;
-          if (document.body) document.body.scrollTop = 0;
-          const mainEl = document.querySelector('.admin__main');
-          if (mainEl) mainEl.scrollTop = 0;
-        } catch {}
-
-        await refreshPanel(target);
+        await navigateToPanel(item.dataset.panel);
       });
     });
+
+    // Atalho do aviso na aba By Elarah → leva pra Experiências e
+    // já abre o modal pré-marcado como Elarah Original comprável.
+    // Resolve a confusão "cadastrei em By Elarah mas não tem checkout":
+    // 1 clique e o admin está no formulário certo com defaults certos.
+    const shortcutBtn = document.getElementById('btn-add-elarah-original-shortcut');
+    if (shortcutBtn) {
+      shortcutBtn.addEventListener('click', async () => {
+        await navigateToPanel('experiences');
+        // Espera o painel renderizar antes de tentar abrir o modal.
+        // refreshPanel já é await acima; aqui só damos um tick extra
+        // pra que o wireExperienceForm tenha rodado se for primeira vez.
+        setTimeout(() => {
+          const addBtn = document.getElementById('btn-add-experience');
+          if (addBtn) addBtn.click();
+          // Pré-marca os defaults que fazem sentido pra "Original comprável".
+          // Roda em outro tick pra garantir que o modal abriu e o reset
+          // do form já aconteceu.
+          setTimeout(() => {
+            const ieoEl = document.getElementById('exp-is-elarah-original');
+            const ctaEl = document.getElementById('exp-cta-mode');
+            if (ieoEl) ieoEl.checked = true;
+            if (ctaEl) ctaEl.value = 'buy';
+            // Foca no nome pra começar a digitar logo.
+            const nomeEl = document.getElementById('exp-nome');
+            if (nomeEl) try { nomeEl.focus({ preventScroll: true }); } catch {}
+          }, 50);
+        }, 30);
+      });
+    }
   }
 
   async function refreshPanel(name) {
