@@ -463,13 +463,32 @@
     <div class="admin__panel" id="panel-byelarah">
       <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 class="admin__page-title">By Elarah</h1>
-          <p class="admin__page-subtitle">Elarah Originals — cards, fotos e respostas do formulário</p>
+          <h1 class="admin__page-title">By Elarah <span style="font-size:.7em;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:1px;margin-left:8px;">Lista de espera (legado)</span></h1>
+          <p class="admin__page-subtitle">Apenas cards de lista de espera (lead via WhatsApp) e respostas do formulário.</p>
         </div>
         <button class="admin__add-btn" id="btn-add-byelarah">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Novo item By Elarah
         </button>
+      </div>
+
+      <!-- Aviso direcionando pro fluxo certo de checkout direto -->
+      <div style="background:#fff8ee;border:1.5px solid #f0a05e;border-radius:12px;padding:16px 20px;margin:16px 0 24px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:1.4rem;line-height:1;">✨</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;color:#1a1a1a;margin-bottom:4px;">
+              Quer cadastrar uma experiência <em>comprável</em> direto pelo site?
+            </div>
+            <div style="font-size:.92rem;color:#3a3a3a;line-height:1.5;">
+              Use a aba <strong>Experiências</strong> e marque o checkbox
+              <strong>"É um Elarah Original"</strong>. Lá você define preço, vagas, horários,
+              data, descrição completa e o cliente paga direto (Stripe ou PIX).
+              Esta aba aqui é só pra cards de <strong>lista de espera</strong>
+              (sem data definida — o cliente entra em contato pelo WhatsApp).
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="admin__stats">
@@ -811,8 +830,14 @@
         </div>
 
         <div class="admin__form-field admin__form-field--full">
-          <label>Descrição</label>
-          <textarea id="exp-descricao" rows="3" placeholder="Descrição da experiência (opcional)"></textarea>
+          <label>Descrição completa</label>
+          <textarea id="exp-descricao" rows="6"
+            placeholder="Descreva a experiência por completo: o que o cliente vai vivenciar, como funciona, o que está incluso, qual o tom da experiência, que tipo de público é ideal..."></textarea>
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Aparece <strong>completa</strong> na modal que abre quando o cliente clica em "Quero participar".
+            No card da home, exibimos os primeiros ~120 caracteres como teaser.
+            Use linhas em branco pra separar parágrafos.
+          </p>
         </div>
 
         <div class="admin__form-field">
@@ -983,7 +1008,7 @@
 <script src="experiences-data.js?v=15"></script>
 <script src="byelarah-data.js?v=2"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=40"></script>
+<script src="admin.js?v=41"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

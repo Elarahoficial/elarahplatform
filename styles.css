@@ -1269,13 +1269,15 @@ select {
 /* Teaser: descrição curta no card de Originals compráveis.
    Discreta, sem ícone, em itálico — não compete com nome/data,
    mantém visual premium. A versão completa fica na modal de
-   "Quero participar". */
+   "Quero participar". Espaçamento generoso pra dar respiro
+   acima (do título) e abaixo (dos detalhes data/horário/local). */
 .originals__card-detail--teaser {
   font-style: italic;
   color: #6a6a6a;
   font-size: 0.82rem;
-  line-height: 1.45;
-  margin-top: 4px;
+  line-height: 1.5;
+  margin-top: 14px;
+  margin-bottom: 14px;
   /* Sem ícone — só texto. Override do flex padrão da .originals__card-detail. */
   display: block;
 }
