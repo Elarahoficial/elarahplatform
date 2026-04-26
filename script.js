@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v17 — horários dinâmicos no originals-modal + teaser com mais respiro');
+console.info('[Elarah] script.js v18 — byelarah_items.experience_id viram cards compráveis (mesmo card, fluxo de checkout)');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -1019,50 +1019,85 @@ if (categoriaURL) activeCategoria = categoriaURL;
   }
 
   async function loadByElarahCombined() {
-    var promises = [];
-    // Source 1: experiences com is_elarah_original=true.
-    if (window.ElarahData && ElarahData.getVisibleExperiences) {
-      promises.push(
-        ElarahData.getVisibleExperiences()
-          .then(function (exps) {
-            return (exps || [])
-              .filter(function (e) { return e && e.isElarahOriginal === true; })
-              .map(experienceToOriginalCard)
-              .filter(Boolean);
-          })
-          .catch(function () { return []; })
-      );
-    } else {
-      promises.push(Promise.resolve([]));
-    }
-    // Source 2: byelarah_items legado.
-    if (window.ElarahByElarah && ElarahByElarah.getActiveItems) {
-      promises.push(
-        ElarahByElarah.getActiveItems().catch(function () { return []; })
-      );
-    } else {
-      promises.push(Promise.resolve([]));
-    }
+    // Carrega ambas as fontes em paralelo. As experiences puras (com
+    // is_elarah_original=true e SEM byelarah_item correspondente) são
+    // mantidas pra retrocompat; o caminho principal hoje é
+    // byelarah_item → experience_id.
+    var [allExps, allItems] = await Promise.all([
+      (window.ElarahData && ElarahData.getVisibleExperiences)
+        ? ElarahData.getVisibleExperiences().catch(function () { return []; })
+        : Promise.resolve([]),
+      (window.ElarahByElarah && ElarahByElarah.getActiveItems)
+        ? ElarahByElarah.getActiveItems().catch(function () { return []; })
+        : Promise.resolve([])
+    ]);
 
-    var results = await Promise.all(promises);
-    var fromExp = results[0] || [];
-    var fromLegacy = results[1] || [];
+    // Mapa rápido id → experience pra resolver os byelarah_items
+    // que têm experience_id vinculado.
+    var expById = new Map();
+    (allExps || []).forEach(function (e) {
+      if (e && e.id) expById.set(e.id, e);
+    });
 
-    // Dedup: se o mesmo nome (normalizado) aparece nas duas fontes,
-    // prioriza a versão de experiências (tem checkout). Útil durante
-    // a migração — admin pode duplicar antes de desativar o legado.
+    // Set de experience_ids referenciados por algum byelarah_item.
+    // Usado pra evitar duplicar cards (não mostrar a experience pura
+    // se já vai aparecer através do byelarah_item).
+    var referencedExpIds = new Set();
+    (allItems || []).forEach(function (it) {
+      if (it && it.experienceId) referencedExpIds.add(it.experienceId);
+    });
+
+    var combined = [];
     var seen = new Set();
     function keyOf(it) {
       return String(it.slug || it.nome || '').toLowerCase().trim();
     }
-    var combined = [];
-    fromExp.forEach(function (it) {
-      var k = keyOf(it);
-      if (k && !seen.has(k)) { seen.add(k); combined.push(it); }
+
+    // 1) Cards a partir de byelarah_items. Se tem experience_id e a
+    // experience existe e está ativa, transforma em card-experience
+    // (botão chama startCheckout). Senão, mantém legado (lead).
+    (allItems || []).forEach(function (item) {
+      if (!item) return;
+      var card;
+      if (item.experienceId && expById.has(item.experienceId)) {
+        var exp = expById.get(item.experienceId);
+        // Experience pode estar inativa (admin desligou "comprável") —
+        // se isActive=false, cai no fluxo de lead pra não tentar
+        // checkout numa experience desligada.
+        if (exp.isActive !== false) {
+          card = experienceToOriginalCard(exp);
+          // Preserva campos visuais do byelarah_item — fonte da
+          // verdade pro CARD (imagem, descrição curta, local label,
+          // data label, ordem). Experience é só pra checkout/modal.
+          if (card) {
+            if (item.imagem) card.imagem = item.imagem;
+            if (item.descricao) card.descricao = item.descricao;
+            if (item.local) card.local = item.local;
+            if (item.data) card.data = item.data;
+            if (item.slug) card.slug = item.slug;
+            if (item.ordem != null) card.ordem = item.ordem;
+            card.legacyItemId = item.id;
+          }
+        }
+      }
+      if (!card) {
+        // Legado puro (lead WhatsApp).
+        card = item;
+      }
+      var k = keyOf(card);
+      if (k && !seen.has(k)) { seen.add(k); combined.push(card); }
     });
-    fromLegacy.forEach(function (it) {
-      var k = keyOf(it);
-      if (k && !seen.has(k)) { seen.add(k); combined.push(it); }
+
+    // 2) Experiences puras (Originals criadas direto na aba Experiências
+    // sem byelarah_item correspondente). Filtradas por is_elarah_original
+    // e desreferenciadas (não duplicar com items acima).
+    (allExps || []).forEach(function (exp) {
+      if (!exp || exp.isElarahOriginal !== true) return;
+      if (referencedExpIds.has(exp.id)) return;
+      var card = experienceToOriginalCard(exp);
+      if (!card) return;
+      var k = keyOf(card);
+      if (k && !seen.has(k)) { seen.add(k); combined.push(card); }
     });
 
     if (combined.length) renderOriginalsGrid(combined);

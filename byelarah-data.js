@@ -90,6 +90,11 @@
       tipo: row.tipo || 'espera',
       ordem: row.ordem != null ? row.ordem : 0,
       ativo: row.ativo !== false,
+      // Coluna nova de sql/elarah_byelarah_purchasable.sql.
+      // Quando preenchido, este item espelha uma experience real
+      // (com checkout). Quando null, fluxo de lead WhatsApp. Se a
+      // coluna ainda não existe no banco, vira undefined → null.
+      experienceId: row.experience_id || null,
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
     };
@@ -99,7 +104,7 @@
     const horarios = Array.isArray(item.horarios)
       ? item.horarios.map(h => String(h || '').trim()).filter(Boolean)
       : [];
-    return {
+    const row = {
       slug: (item.slug || '').trim(),
       nome: (item.nome || '').trim(),
       descricao: (item.descricao || '').trim(),
@@ -111,6 +116,13 @@
       ordem: Number.isFinite(+item.ordem) ? +item.ordem : 0,
       ativo: item.ativo !== false
     };
+    // experience_id: aceita camelCase do form admin OU snake_case.
+    // Sempre incluído no row (mesmo null) pra que o admin possa
+    // explicitamente desvincular setando null. Se a coluna ainda
+    // não existe no banco, o Supabase ignora silenciosamente.
+    const expId = item.experienceId !== undefined ? item.experienceId : item.experience_id;
+    row.experience_id = expId || null;
+    return row;
   }
 
   async function getAllItems() {
