@@ -1266,6 +1266,20 @@ select {
   font-size: 0.8rem;
 }
 
+/* Teaser: descrição curta no card de Originals compráveis.
+   Discreta, sem ícone, em itálico — não compete com nome/data,
+   mantém visual premium. A versão completa fica na modal de
+   "Quero participar". */
+.originals__card-detail--teaser {
+  font-style: italic;
+  color: #6a6a6a;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin-top: 4px;
+  /* Sem ícone — só texto. Override do flex padrão da .originals__card-detail. */
+  display: block;
+}
+
 .originals__card-btn {
   margin-top: auto;
   display: block;
