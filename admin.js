@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v16 — byelarah agrupado por experiência');
+  console.info('[Elarah Admin] admin.js v17 — acompanhantes WhatsApp + dedup por nome/tel');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -827,7 +827,18 @@
         if (!b.metadata || !Array.isArray(b.metadata.participantes)) return '';
         if (!b.metadata.participantes.length) return '';
 
-        const norm = function (s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+        // Normalização agressiva: lowercase + remove zero-width / NBSP /
+        // outros chars invisíveis que podem entrar via copy-paste do
+        // checkout, e colapsa whitespace. Sem isso, "duda vitiello" e
+        // "duda​ vitiello" não bateriam e o dedup falharia silente.
+        const norm = function (s) {
+          return String(s || '')
+            .normalize('NFKC')
+            .replace(/[​-‍﻿ ]/g, ' ')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+        };
         const onlyDigits = function (s) { return String(s || '').replace(/\D+/g, ''); };
         const compradorNome = norm(nomeResolved);
         const compradorTel = onlyDigits(telefone);
