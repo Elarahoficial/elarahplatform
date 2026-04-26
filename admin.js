@@ -13,9 +13,33 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v18 — dedup por nome+tel estrito (não esconde mesmo tel)');
+  console.info('[Elarah Admin] admin.js v19 — esconde experiências de teste do admin');
 
   const PURCHASES_KEY = 'elarah_purchases';
+
+  // ===== EXPERIÊNCIAS DE TESTE (escondidas do admin) =====
+  // Bookings cuja experiencia_nome bate com qualquer destes nomes
+  // (case-insensitive, trim) NÃO entram em listas, dropdowns, gráficos
+  // ou métricas do admin. Os dados continuam no banco — é só um filtro
+  // visual pra não poluir as compras reais.
+  //
+  // Pra adicionar/remover, edite só este array. O filtro normaliza
+  // lowercase + trim, então pode escrever em qualquer caixa.
+  const TEST_EXPERIENCE_NAMES = ['teste', 'teste 1'];
+
+  function isTestExperience(nome) {
+    if (!nome) return false;
+    const n = String(nome).toLowerCase().trim();
+    return TEST_EXPERIENCE_NAMES.indexOf(n) !== -1;
+  }
+
+  // Filtra um array de bookings removendo as de experiências de teste.
+  // Usado no topo de cada função render pra que TODO o resto (dropdown,
+  // stats, gráficos, tabela) opere só sobre bookings reais.
+  function withoutTestBookings(arr) {
+    if (!Array.isArray(arr)) return arr;
+    return arr.filter(function (b) { return !isTestExperience(b && b.experiencia_nome); });
+  }
 
   // ===== HELPERS =====
   function getFromStorage(key) {
@@ -315,13 +339,15 @@
 
   // ===== OVERVIEW =====
   async function renderOverview() {
-    const [profiles, experiences, giftCardsResult, bookings] = await Promise.all([
+    const [profiles, experiences, giftCardsResult, bookingsRaw] = await Promise.all([
       getProfiles(),
       getExperiences(),
       getGiftCards(),
       getBookings().catch(() => [])
     ]);
     const partners = profiles.filter(p => p.partner_status && p.partner_status !== 'none');
+    // Esconde bookings de experiências de teste do contador da home.
+    const bookings = withoutTestBookings(bookingsRaw);
 
     // "Compras" no overview = reservas pagas via Stripe + gift cards
     // ativos. Antes lia de localStorage (legado) e sempre mostrava 0.
@@ -570,13 +596,16 @@
     // Experiências entram pra servir de fallback dos campos
     // fornecedor/valor_cheio/repasse/comissão quando o booking
     // foi criado antes do deploy que começou a gravar esses campos.
-    const [bookings, profiles, allExperiences] = await Promise.all([
+    const [bookingsRaw, profiles, allExperiences] = await Promise.all([
       getBookings(),
       getProfiles().catch(() => []),
       (window.ElarahData && ElarahData.getAllExperiences)
         ? ElarahData.getAllExperiences().catch(() => [])
         : Promise.resolve([]),
     ]);
+    // Filtra experiências de teste UMA VEZ aqui — cascata pra dropdown,
+    // stats globais, gráficos (reservas por exp / conversão) e tabela.
+    const bookings = withoutTestBookings(bookingsRaw);
     const expById = new Map();
     (allExperiences || []).forEach(e => {
       if (e && e.id) expById.set(e.id, e);
@@ -662,7 +691,12 @@
     let conversionLabel = '—';
     try {
       if (window.ElarahAnalytics && ElarahAnalytics.rawSelect) {
-        const clicks = await ElarahAnalytics.rawSelect({ eventName: 'reserve_click', limit: 10000 });
+        const allClicks = await ElarahAnalytics.rawSelect({ eventName: 'reserve_click', limit: 10000 });
+        // Remove cliques de experiências de teste pra que a conversão
+        // global e o gráfico por experiência não exibam linhas de teste.
+        const clicks = (allClicks || []).filter(function (c) {
+          return !isTestExperience(c && (c.target_label || c.target_id));
+        });
         if (clicks && clicks.length) {
           const rate = (paid.length / clicks.length) * 100;
           conversionLabel = rate.toFixed(1) + '% (' + paid.length + '/' + clicks.length + ')';
@@ -976,7 +1010,8 @@
   // ===== PENDENTES =====
   async function renderPendingBookings() {
     if (!document.getElementById('pending-body')) return;
-    const bookings = await getBookings();
+    // Filtra experiências de teste — cascata pra dropdown e tabela.
+    const bookings = withoutTestBookings(await getBookings());
     const profiles = await getProfiles();
 
     const nomePorUserId = new Map();
@@ -2336,13 +2371,16 @@
   async function renderFornecedores() {
     if (!document.getElementById('fornecedores-body')) return;
 
-    const [bookings, allExperiences, metadata] = await Promise.all([
+    const [bookingsRaw, allExperiences, metadata] = await Promise.all([
       getBookings(),
       (window.ElarahData && ElarahData.getAllExperiences)
         ? ElarahData.getAllExperiences().catch(() => [])
         : Promise.resolve([]),
       getFornecedoresMetadata(),
     ]);
+    // Esconde bookings de teste pra não inflar faturamento/repasse
+    // do fornecedor associado.
+    const bookings = withoutTestBookings(bookingsRaw);
 
     const metaByKey = new Map();
     (metadata || []).forEach(m => {
@@ -2577,10 +2615,12 @@
     renderBars('ana-top-pages', topPages);
 
     // Top experiences (experience_card_click + exp_detail_open + exp_cta_click)
+    // Esconde eventos de experiências de teste pra não poluir o ranking.
     const expEvents = events.filter(e =>
-      e.event_name === 'experience_card_click' ||
-      e.event_name === 'exp_detail_open' ||
-      e.event_name === 'exp_cta_click'
+      (e.event_name === 'experience_card_click' ||
+        e.event_name === 'exp_detail_open' ||
+        e.event_name === 'exp_cta_click') &&
+      !isTestExperience(e.target_label || e.target_id)
     );
     const topExperiences = groupCount(
       expEvents,
