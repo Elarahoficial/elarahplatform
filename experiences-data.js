@@ -312,15 +312,73 @@
   // Admin continua usando getAllExperiences() pra ver tudo.
   // Exposta também como getActiveExperiences pra compat com código
   // que usa esse nome.
+  // Extrai a hora inicial de uma string como "19h00 – 21h00" / "9h30".
+  // Aceita 'h' ou ':' como separador interno e en/em-dash ou hífen
+  // como separador de range. Devolve null se não der pra parsear.
+  function parseStartHour(raw) {
+    if (!raw) return null;
+    const head = String(raw).split(/[–—\-]/)[0].trim();
+    const m = head.match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})/i);
+    if (!m) return null;
+    const hh = Number(m[1]);
+    const mm = m[2] ? Number(m[2]) : 0;
+    if (!Number.isFinite(hh) || hh < 0 || hh > 23) return null;
+    if (!Number.isFinite(mm) || mm < 0 || mm > 59) return null;
+    return { hh: hh, mm: mm };
+  }
+
+  // Deriva o timestamp do evento a partir de `data` ("DD/MM" ou
+  // "DD/MM/AAAA") + horário ("HH'h'MM ..."). Espelha a mesma lógica
+  // de booking_guard.ts no backend pra que listagem pública e bloqueio
+  // de reserva concordem. Fuso fixo America/Sao_Paulo (-03:00).
+  function deriveEventTimestamp(dataStr, horarioStr, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    if (!dataStr) return null;
+    const trimmed = String(dataStr).trim();
+    const m = trimmed.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if (!m) return null;
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    if (!Number.isFinite(day) || day < 1 || day > 31) return null;
+    if (!Number.isFinite(month) || month < 1 || month > 12) return null;
+    const hasYear = !!m[3];
+    let year = hasYear
+      ? (Number(m[3]) < 100 ? Number(m[3]) + 2000 : Number(m[3]))
+      : new Date(nowMs).getFullYear();
+    const h = parseStartHour(horarioStr);
+    if (!h) return null;
+    const pad = function (n) { return String(n).padStart(2, '0'); };
+    const buildIso = function (y) {
+      return y + '-' + pad(month) + '-' + pad(day) + 'T' + pad(h.hh) + ':' + pad(h.mm) + ':00-03:00';
+    };
+    let ts = new Date(buildIso(year)).getTime();
+    if (!Number.isFinite(ts)) return null;
+    if (!hasYear && ts < nowMs - 6 * 60 * 60 * 1000) {
+      const nextTs = new Date(buildIso(year + 1)).getTime();
+      if (Number.isFinite(nextTs)) ts = nextTs;
+    }
+    return ts;
+  }
+
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
     const now = Date.now();
     return all.filter(e => {
       if (!e || e.isActive === false) return false;
-      if (!e.eventAt) return true;
       const cutoffH = Number.isFinite(Number(e.cutoffHours)) ? Number(e.cutoffHours) : 24;
-      const eventTs = new Date(e.eventAt).getTime();
-      if (isNaN(eventTs)) return true;
+      let eventTs = null;
+      if (e.eventAt) {
+        const t = new Date(e.eventAt).getTime();
+        if (!isNaN(t)) eventTs = t;
+      }
+      if (eventTs == null) {
+        eventTs = deriveEventTimestamp(
+          e.data,
+          e.horario || (Array.isArray(e.horarios) ? e.horarios[0] : null),
+          now,
+        );
+      }
+      if (eventTs == null) return true;
       return now + cutoffH * 60 * 60 * 1000 <= eventTs;
     });
   }
