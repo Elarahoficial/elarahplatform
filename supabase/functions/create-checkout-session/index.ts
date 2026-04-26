@@ -720,6 +720,104 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
+  // ===== Construção dos line_items =====
+  // Regra: quando NÃO há gift card, passa quantity=quantidade explícito
+  // pra Stripe e separa a taxa do cartão como linha distinta. A multi-
+  // plicação fica visível no boundary (Dashboard, recibo) e qualquer
+  // regressão futura que devolva preço unitário em vez de total fica
+  // pega pelo assert abaixo.
+  // Quando HÁ gift card, o desconto pode não dividir exatamente entre
+  // as vagas, então mantemos quantity=1 com unit_amount=total — único
+  // caso em que a opacidade é justificada.
+  const descricaoLinha = [
+    exp.data,
+    horario,
+    exp.bairro,
+  ].filter(Boolean).join(" · ").slice(0, 380);
+
+  // deno-lint-ignore no-explicit-any
+  const lineItems: any[] = [];
+  if (giftCardCentavos > 0) {
+    lineItems.push({
+      quantity: 1,
+      price_data: {
+        currency: "brl",
+        unit_amount: amountToCharge,
+        product_data: {
+          name: productName +
+            (quantidade > 1 ? " (x" + quantidade + ")" : ""),
+          description: [
+            quantidade > 1 ? quantidade + " vagas" : null,
+            descricaoLinha,
+          ].filter(Boolean).join(" · ").slice(0, 380),
+        },
+      },
+    });
+  } else {
+    lineItems.push({
+      quantity: quantidade,
+      price_data: {
+        currency: "brl",
+        unit_amount: cents,
+        product_data: {
+          name: exp.nome,
+          description: descricaoLinha,
+        },
+      },
+    });
+    if (feeInfo.feeTotalCents > 0) {
+      lineItems.push({
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: feeInfo.feeTotalCents,
+          product_data: {
+            name: "Taxa de processamento (cartão)",
+          },
+        },
+      });
+    }
+  }
+
+  // Assert defensivo de boundary: a soma dos line_items que vamos
+  // submeter pra Stripe TEM que bater com amountToCharge. Se algum
+  // refactor futuro quebrar a multiplicação por quantidade, essa
+  // checagem aborta antes de cobrar a menos.
+  const stripeLineItemsSum = lineItems.reduce(
+    // deno-lint-ignore no-explicit-any
+    (acc: number, li: any) =>
+      acc + Number(li.quantity ?? 1) * Number(li.price_data?.unit_amount ?? 0),
+    0,
+  );
+  if (stripeLineItemsSum !== amountToCharge) {
+    console.error(
+      "[Elarah Payment/Stripe] LINE ITEMS SUM MISMATCH",
+      "esperado=" + amountToCharge,
+      "calculado=" + stripeLineItemsSum,
+      "quantidade=" + quantidade,
+      "unitCents=" + cents,
+      "subtotal=" + breakdown.subtotalCents,
+      "discount=" + breakdown.discountCents,
+      "fee=" + feeInfo.feeTotalCents,
+    );
+    if (giftCardId) {
+      await supabase.rpc("refund_gift_card", {
+        p_gift_card_id: giftCardId,
+        p_amount_centavos: giftCardCentavos,
+      });
+    }
+    await incrementVaga();
+    return jsonResponse(
+      {
+        error: "stripe_line_items_mismatch",
+        message:
+          "Erro interno: total dos itens não confere com o valor a cobrar. " +
+          "Recarregue e tente novamente.",
+      },
+      500,
+    );
+  }
+
   let session;
   try {
     session = await stripe.checkout.sessions.create({
@@ -727,32 +825,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       payment_method_types: ["card"],
       locale: "pt-BR",
       customer_email: email || undefined,
-      line_items: [
-        {
-          // Usar quantity=1 e unit_amount=total dá o mesmo resultado
-          // financeiro que quantity=N e unit_amount=preço_unitário,
-          // porém mantemos quantity=1 porque o repasse de taxa do
-          // cartão (acima) é aplicado uma vez sobre o total. Se um
-          // dia mudar pra fee por unidade, vale revisitar.
-          quantity: 1,
-          price_data: {
-            currency: "brl",
-            unit_amount: amountToCharge,
-            product_data: {
-              name: productName + (quantidade > 1 ? " (x" + quantidade + ")" : ""),
-              description: [
-                quantidade > 1 ? quantidade + " vagas" : null,
-                exp.data,
-                horario,
-                exp.bairro,
-              ]
-                .filter(Boolean)
-                .join(" · ")
-                .slice(0, 380),
-            },
-          },
-        },
-      ],
+      line_items: lineItems,
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
@@ -817,7 +890,15 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     bairro: exp.bairro ?? null,
     endereco: exp.endereco ?? null,
     telefone_digits: telefoneDigits || null,
-    preco_total_centavos: cents,
+    // Breakdown completo da cobrança — fonte única de auditoria.
+    // preco_total_centavos = subtotal (unit × quantidade), antes do
+    // desconto e da taxa. Antes era `cents` (unitário), o que era
+    // enganoso e mascarava bugs de quantidade. Igualar com create-mp.
+    unit_price_centavos: breakdown.unitCents,
+    subtotal_centavos: breakdown.subtotalCents,
+    discount_centavos: breakdown.discountCents,
+    total_after_discount_centavos: breakdown.totalCents,
+    preco_total_centavos: breakdown.subtotalCents,
     // Breakdown do pagamento — admin pode usar pra auditar o repasse
     // de taxa. `base_before_fee_centavos` é o valor que cairia no
     // cartão SEM o repasse; `amount_total` na coluna já é o valor
