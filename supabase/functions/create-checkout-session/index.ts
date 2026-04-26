@@ -290,6 +290,11 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
   const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
   const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
+  // Variantes (escolha extra do cliente, ex.: Pintura → Lagosta).
+  // Persistidas em metadata.variant_label + metadata.variant_selected
+  // pra exibir no e-mail e admin. Não afetam preço nem estoque.
+  const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
+  const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
 
   // ===== Método de pagamento =====
   // Esta edge function agora só cuida de cartão. PIX é gerenciado
@@ -968,6 +973,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         valor_cheio_centavos: valorCheioFinal != null ? String(valorCheioFinal) : "",
         valor_repasse_centavos: valorRepasseCentavos != null ? String(valorRepasseCentavos) : "",
         valor_comissao_centavos: valorComissaoCentavos != null ? String(valorComissaoCentavos) : "",
+        variant_label: variantLabel ?? "",
+        variant_selected: variantSelected ?? "",
       },
     });
   } catch (e) {
@@ -1013,6 +1020,10 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     // por falha na RPC. Admin pode filtrar por isso pra reconciliar
     // depois de aplicar a migração SQL faltante.
     inventory_skipped: estoquePulado || undefined,
+    // Variantes (Pintura → Lagosta/Beijo/Olho grego). Persistidas
+    // pra reaparecer no e-mail e no admin. Não afetam o preço.
+    variant_label: variantLabel || undefined,
+    variant_selected: variantSelected || undefined,
   };
 
   const { error: insertErr } = await supabase.from("bookings").insert({

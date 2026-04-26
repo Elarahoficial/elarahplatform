@@ -1083,6 +1083,33 @@
                 Comissão Elarah = 20% (calculada automaticamente). Os 10% restantes são desconto pro cliente.
               </p>
             </div>
+
+            <!-- ========== VARIANTE (escolha extra do cliente) ========== -->
+            <div class="admin__form-field admin__form-field--full"
+                 style="border-top:1px dashed #d8c8a8;padding-top:14px;margin-top:6px;">
+              <div style="font-size:.78rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:10px;">
+                Variação (opcional)
+              </div>
+            </div>
+
+            <div class="admin__form-field">
+              <label>Tipo de variação</label>
+              <input type="text" id="by-variant-label" placeholder="Ex: Modelo do quadro">
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Rótulo que aparece pro cliente. Em branco = sem variação
+                (cliente só escolhe horário no checkout).
+              </p>
+            </div>
+
+            <div class="admin__form-field">
+              <label>Opções (uma por linha)</label>
+              <textarea id="by-variant-options" rows="4"
+                placeholder="Lagosta&#10;Beijo&#10;Olho grego"></textarea>
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Cada linha vira uma opção que o cliente escolhe no modal de reserva.
+                A escolha aparece no e-mail de confirmação e no admin.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1097,10 +1124,10 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js?v=6"></script>
 <script src="auth.js?v=8"></script>
-<script src="experiences-data.js?v=15"></script>
+<script src="experiences-data.js?v=16"></script>
 <script src="byelarah-data.js?v=3"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=44"></script>
+<script src="admin.js?v=45"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

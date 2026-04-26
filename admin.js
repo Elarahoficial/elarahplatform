@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v25 — vagas por horário no By Elarah (slots dedicados por horário)');
+  console.info('[Elarah Admin] admin.js v26 — variantes de experiência (Pintura: Lagosta/Beijo/Olho grego)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -956,13 +956,24 @@
         return '<br>' + items;
       }
 
+      // Variante escolhida pelo cliente (ex.: Pintura → Lagosta).
+      // Aparece como sub-linha discreta abaixo do nome da experiência
+      // pra o admin saber o que preparar sem entrar em cada booking.
+      const variantLabel = b.metadata && b.metadata.variant_label;
+      const variantSelected = b.metadata && b.metadata.variant_selected;
+      const variantCell = (variantLabel && variantSelected)
+        ? '<br><span style="font-size:.75rem;color:#a07c4c;font-weight:600;">' +
+            escapeHtml(variantLabel) + ': ' + escapeHtml(variantSelected) +
+          '</span>'
+        : '';
+
       return `
         <tr>
           <td>${escapeHtml(when)}</td>
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
-          <td>${escapeHtml(b.experiencia_nome || '—')}</td>
+          <td>${escapeHtml(b.experiencia_nome || '—')}${variantCell}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
@@ -2030,6 +2041,8 @@
       $('by-valor-cheio').value = '';
       $('by-fornecedor-nome').value = '';
       $('by-percentual-repasse').value = 90;
+      if ($('by-variant-label')) $('by-variant-label').value = '';
+      if ($('by-variant-options')) $('by-variant-options').value = '';
 
       if (item.experienceId && window.ElarahData && ElarahData.getExperienceById) {
         try {
@@ -2055,6 +2068,13 @@
               ? 'R$ ' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
             $('by-fornecedor-nome').value = exp.fornecedorNome || '';
             $('by-percentual-repasse').value = exp.percentualRepasse != null ? exp.percentualRepasse : 90;
+            // Variantes (Pintura: Lagosta/Beijo/Olho grego)
+            if ($('by-variant-label')) $('by-variant-label').value = exp.variantLabel || '';
+            if ($('by-variant-options')) {
+              $('by-variant-options').value = Array.isArray(exp.variantOptions)
+                ? exp.variantOptions.join('\n')
+                : '';
+            }
           }
           // Carrega slots (vagas por horário) — sobrescreve o render
           // baseado em item.horarios pra que vagas restantes / id do
@@ -2316,7 +2336,11 @@
       // Flags Elarah Original
       isElarahOriginal: true,
       hideFromCategorias: true, // Original By Elarah só aparece na By Elarah
-      ctaMode: 'buy'
+      ctaMode: 'buy',
+      // Variantes (escolha extra do cliente). Quando label vazio,
+      // experiences-data.js grava null e o front não renderiza seletor.
+      variantLabel: ($('by-variant-label')?.value || '').trim() || null,
+      variantOptions: ($('by-variant-options')?.value || '')
     };
   }
 
