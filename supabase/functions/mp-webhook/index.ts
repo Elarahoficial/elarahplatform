@@ -108,6 +108,41 @@ async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
     currency: "brl",
   };
 
+  // ===== Boundary check: pre-insert vs MP transaction_amount =====
+  // O create-mp-pix-payment já gravou amount_total no pre-insert com
+  // o valor correto (unit × quantidade − desconto). Se a MP confirmar
+  // um valor diferente (ex.: PIX foi gerado errado e cobrou 1 vaga),
+  // a gente NÃO pode reverter (já caiu o PIX), mas grava a divergência
+  // em metadata.amount_mismatch + log AMOUNT MISMATCH em alto volume,
+  // pro admin investigar e estornar manualmente se necessário.
+  if (booking.amount_total != null) {
+    const expected = Number(booking.amount_total);
+    if (
+      Number.isFinite(expected) &&
+      Number.isFinite(paidAmountCents) &&
+      expected !== paidAmountCents
+    ) {
+      console.error(
+        "[Elarah Payment/MP] AMOUNT MISMATCH — MP cobrou um valor diferente do esperado",
+        "booking_id=" + booking.id,
+        "mp_payment_id=" + (booking.mp_payment_id ?? "?"),
+        "expected_from_pre_insert=" + expected,
+        "mp_paid_amount=" + paidAmountCents,
+        "delta=" + (paidAmountCents - expected),
+        "quantidade=" + (booking.quantidade ?? "?"),
+        "experiencia_nome=" + (booking.experiencia_nome ?? "?"),
+      );
+      patch.metadata = {
+        ...(booking.metadata ?? {}),
+        amount_mismatch: true,
+        expected_amount_total_centavos: expected,
+        mp_paid_amount_centavos: paidAmountCents,
+        delta_centavos: paidAmountCents - expected,
+        detected_at: new Date().toISOString(),
+      };
+    }
+  }
+
   // Reconcilia fornecedor/financeiro se o pre-insert tiver caído no
   // fallback (colunas ausentes ou retry sem dados). Busca a
   // experiência pra recalcular e preencher só o que estiver vazio.
