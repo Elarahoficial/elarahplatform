@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v20 — By Elarah Originals: is_elarah_original + cta_mode + hide_from_categorias');
+  console.info('[Elarah Admin] admin.js v21 — preview de imagem no form de experiências');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -1343,6 +1343,10 @@
       document.getElementById('exp-inclui').value = exp.inclui || '';
       document.getElementById('exp-imagem').value = exp.imagem || '';
       document.getElementById('exp-descricao').value = exp.descricao || '';
+      // Atualiza o preview de imagem (se já wireado).
+      if (typeof window._refreshImagePreview === 'function') {
+        try { window._refreshImagePreview(); } catch (e) {}
+      }
 
       // Vagas e cutoff
       const vagasTotalEl = document.getElementById('exp-vagas-total');
@@ -1417,6 +1421,10 @@
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
       form.reset();
+      // form.reset() não dispara 'input', então atualiza o preview manual.
+      if (typeof window._refreshImagePreview === 'function') {
+        try { window._refreshImagePreview(); } catch (e) {}
+      }
       renderHorarioRows([{ horario: '' }]);
       const cor1El = document.getElementById('exp-cor1');
       const cor2El = document.getElementById('exp-cor2');
@@ -1467,6 +1475,53 @@
     if (horariosAddBtn) {
       horariosAddBtn.addEventListener('click', () => addHorarioRow({ horario: '' }));
     }
+
+    // ===== Preview da imagem =====
+    // Mostra a imagem (ou erro) ao lado do input quando o admin
+    // digita ou cola URL. Pega problemas ANTES de salvar — caso
+    // típico: link de Drive/Insta/site que não é imagem direta,
+    // path com typo, hotlink protection, 404. Sem isso, o admin
+    // só descobre que está quebrado quando vê o card no site.
+    var imagemEl = document.getElementById('exp-imagem');
+    var previewWrap = document.getElementById('exp-imagem-preview-wrap');
+    var previewImg = document.getElementById('exp-imagem-preview');
+    var previewStatus = document.getElementById('exp-imagem-preview-status');
+    function setPreviewStatus(ok, msg) {
+      if (!previewStatus) return;
+      previewStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
+      previewStatus.textContent = msg;
+    }
+    function refreshImagePreview() {
+      if (!imagemEl || !previewWrap || !previewImg) return;
+      var raw = (imagemEl.value || '').trim();
+      if (!raw) {
+        previewWrap.style.display = 'none';
+        return;
+      }
+      previewWrap.style.display = 'block';
+      // Normaliza igual ao front: URL absoluta ou path relativo a assets/.
+      var src = /^(https?:\/\/|\/|assets\/|images\/|img\/)/i.test(raw)
+        ? raw
+        : 'assets/' + raw;
+      setPreviewStatus(true, 'Carregando…');
+      previewImg.onload = function () {
+        setPreviewStatus(true, '✓ Imagem carregou. Esta é a foto que vai aparecer no card.');
+      };
+      previewImg.onerror = function () {
+        setPreviewStatus(
+          false,
+          '⚠ Não consegui carregar essa imagem. Verifique se a URL é direta (.jpg/.png), pública e sem hotlink protection. ' +
+          'Links de Drive/Insta/sites de compartilhamento geralmente não funcionam — use uma URL terminando em .jpg ou .png.'
+        );
+      };
+      previewImg.src = src;
+    }
+    if (imagemEl) {
+      imagemEl.addEventListener('input', refreshImagePreview);
+      imagemEl.addEventListener('blur', refreshImagePreview);
+    }
+    // Expõe pra que openExpModal chame depois de preencher o input.
+    window._refreshImagePreview = refreshImagePreview;
 
     addBtn.addEventListener('click', () => openExpModal(null));
     modalBackdrop.addEventListener('click', closeExpModal);

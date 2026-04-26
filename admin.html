@@ -785,7 +785,19 @@
 
         <div class="admin__form-field admin__form-field--full">
           <label>URL da imagem</label>
-          <input type="text" id="exp-imagem" placeholder="assets/experiences/nome.jpg">
+          <input type="text" id="exp-imagem" placeholder="https://... ou assets/experiences/nome.jpg">
+          <p class="admin__form-hint" id="exp-imagem-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Aceita URL completa (https://...) ou caminho relativo (assets/...).
+            Veja o preview abaixo antes de salvar.
+          </p>
+          <div id="exp-imagem-preview-wrap"
+               style="margin-top:10px;display:none;border:1px dashed #ddd;border-radius:8px;padding:8px;background:#fafafa;">
+            <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Preview</div>
+            <img id="exp-imagem-preview" alt="Preview da imagem"
+                 style="max-width:200px;max-height:140px;display:block;border-radius:6px;background:#fff;">
+            <div id="exp-imagem-preview-status"
+                 style="margin-top:6px;font-size:12px;color:#1a8a4a;font-weight:600;"></div>
+          </div>
         </div>
 
         <div class="admin__form-field">
@@ -971,7 +983,7 @@
 <script src="experiences-data.js?v=15"></script>
 <script src="byelarah-data.js?v=2"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=39"></script>
+<script src="admin.js?v=40"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
