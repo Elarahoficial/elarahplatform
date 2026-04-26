@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v27 — múltiplos fornecedores por experiência (mapa financeiro flexível)');
+  console.info('[Elarah Admin] admin.js v28 — vagas: fonte única (slot OR global, sem duplicação)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -1959,7 +1959,17 @@
         restEl.style.color = '#888';
         delete row.dataset.slotId;
       }
+      // Recalcula modo vagas (se admin removeu o último horário,
+      // libera o input "Vagas totais" pra controle global).
+      byUpdateVagasTotaisMode();
     });
+    // Listeners pra recalcular soma das vagas em tempo real
+    // conforme admin edita horário ou número de vagas.
+    var horInput = row.querySelector('.admin__horario-input');
+    var vagInput = row.querySelector('.admin__horario-vagas');
+    if (horInput) horInput.addEventListener('input', byUpdateVagasTotaisMode);
+    if (vagInput) vagInput.addEventListener('input', byUpdateVagasTotaisMode);
+
     byHorariosList.appendChild(row);
   }
 
@@ -1968,6 +1978,10 @@
     byHorariosList.innerHTML = '';
     var initial = Array.isArray(slots) && slots.length ? slots : [{ horario: '' }];
     initial.forEach(function (s) { byAddHorarioRow(s); });
+    // Atualiza o modo "vagas totais vs por horário" depois de
+    // renderizar os slots — necessário tanto na abertura do modal
+    // quanto em re-renders.
+    byUpdateVagasTotaisMode();
   }
 
   // Lista flat dos horários (strings) — usado pra salvar no
@@ -2005,6 +2019,91 @@
     var checkbox = document.getElementById('by-is-purchasable');
     if (!section || !checkbox) return;
     section.style.display = checkbox.checked ? 'block' : 'none';
+  }
+
+  // ============================================================
+  // FONTE ÚNICA DE VERDADE PRA VAGAS — slot OR global
+  // ------------------------------------------------------------
+  // Quando há horários cadastrados:
+  //   - Cada horário tem suas próprias vagas (input ao lado).
+  //   - O campo global "Vagas totais" é DESABILITADO e exibe a
+  //     soma das vagas dos horários (auto-calculado).
+  //   - Se algum horário é ilimitado (vazio) → soma vira ∞ também.
+  //   - Indicador "Modo: vagas por horário" verde no topo.
+  //
+  // Quando NÃO há horários:
+  //   - Campo "Vagas totais" habilitado normalmente.
+  //   - Indicador "Modo: limite global" cinza.
+  //
+  // Garantia anti-duplicação: o checkout já usa IF/ELSE entre
+  // slot e experience-level (auditado em create-checkout-session
+  // + booking_guard.ts). Aqui só impedimos que o admin grave
+  // valores conflitantes nos dois lugares.
+  // ============================================================
+  function byUpdateVagasTotaisMode() {
+    var vagasInput = document.getElementById('by-vagas-total');
+    var modoEl = document.getElementById('by-vagas-modo');
+    var hintEl = document.getElementById('by-vagas-hint');
+    if (!vagasInput) return;
+
+    // Coleta os horários cadastrados (não-vazios).
+    var horarios = byCollectHorarios();
+    var temHorarios = horarios.length > 0;
+
+    if (temHorarios) {
+      // Modo: vagas por horário. Calcula soma das vagas dos slots.
+      var slots = byCollectSlots();
+      var temIlimitado = false;
+      var soma = 0;
+      slots.forEach(function (s) {
+        if (s.vagasTotal == null) {
+          // Horário ilimitado — total geral também vira ilimitado.
+          temIlimitado = true;
+        } else {
+          soma += Number(s.vagasTotal) || 0;
+        }
+      });
+
+      vagasInput.disabled = true;
+      vagasInput.style.background = '#f4f4f4';
+      vagasInput.style.color = '#888';
+      vagasInput.style.cursor = 'not-allowed';
+      vagasInput.value = temIlimitado ? '' : String(soma);
+      vagasInput.placeholder = temIlimitado ? '∞ ilimitado' : 'auto';
+
+      if (modoEl) {
+        modoEl.style.display = 'inline-block';
+        modoEl.style.background = '#e6f4ea';
+        modoEl.style.color = '#1a8a4a';
+        modoEl.textContent = '✓ Modo: vagas por horário';
+      }
+      if (hintEl) {
+        hintEl.innerHTML =
+          '🔒 Vagas controladas pelos horários abaixo. ' +
+          'Total auto-calculado: <strong>' +
+          (temIlimitado
+            ? '∞ ilimitado (algum horário sem limite)'
+            : soma + ' vaga(s)') +
+          '</strong>';
+        hintEl.style.color = '#1a8a4a';
+      }
+    } else {
+      vagasInput.disabled = false;
+      vagasInput.style.background = '';
+      vagasInput.style.color = '';
+      vagasInput.style.cursor = '';
+      vagasInput.placeholder = 'Em branco = sem limite';
+      if (modoEl) {
+        modoEl.style.display = 'inline-block';
+        modoEl.style.background = '#f4f4f4';
+        modoEl.style.color = '#666';
+        modoEl.textContent = 'Modo: limite global';
+      }
+      if (hintEl) {
+        hintEl.textContent = 'Adicione um horário pra controle individual, ou use este campo como limite global da experiência.';
+        hintEl.style.color = '#888';
+      }
+    }
   }
 
   // ============================================================
@@ -2373,7 +2472,12 @@
     byHorariosList = document.getElementById('by-horarios-list');
     byHorariosAddBtn = document.getElementById('by-horarios-add-btn');
 
-    if (byHorariosAddBtn) byHorariosAddBtn.addEventListener('click', () => byAddHorarioRow(''));
+    if (byHorariosAddBtn) {
+      byHorariosAddBtn.addEventListener('click', function () {
+        byAddHorarioRow('');
+        byUpdateVagasTotaisMode();
+      });
+    }
     if (byAddBtn) byAddBtn.addEventListener('click', () => openByModal(null));
     if (byModalBackdrop) byModalBackdrop.addEventListener('click', closeByModal);
     if (byModalClose) byModalClose.addEventListener('click', closeByModal);
@@ -2585,13 +2689,8 @@
       descricao: ($('by-descricao-completa').value || '').trim(),
       horario: horariosArr[0] || '',
       horarios: horariosArr,
-      // Checkout / vagas
-      vagasTotal: (function () {
-        const v = ($('by-vagas-total').value || '').trim();
-        if (!v) return null;
-        const n = parseInt(v, 10);
-        return Number.isFinite(n) && n >= 0 ? n : null;
-      })(),
+      // Checkout / vagas — definidas mais abaixo via vagasTotal
+      // (fonte única de verdade: soma dos slots OU input global).
       eventAt: eventAtIso,
       cutoffHours: (function () {
         const v = ($('by-cutoff-hours').value || '').trim();
@@ -2601,6 +2700,31 @@
       })(),
       // Visibilidade respeita o ativo do form By Elarah.
       isActive: byData.ativo !== false,
+      // Vagas totais: fonte única de verdade.
+      // - Se há horários cadastrados → soma dos slots (ou null se
+      //   algum for ilimitado). O input "Vagas totais" do form fica
+      //   desabilitado nesse caso.
+      // - Se NÃO há horários → usa o que admin digitou.
+      // Garantia: o checkout sempre prefere slot quando existe — esta
+      // sobrescrita só mantém experience.vagas_total coerente pra
+      // estatísticas/listagens. Nunca há decremento duplo.
+      vagasTotal: (function () {
+        var slots = byCollectSlots();
+        if (slots.length > 0) {
+          var temIlimitado = false;
+          var soma = 0;
+          slots.forEach(function (s) {
+            if (s.vagasTotal == null) temIlimitado = true;
+            else soma += Number(s.vagasTotal) || 0;
+          });
+          return temIlimitado ? null : soma;
+        }
+        // Sem slots: respeita o input global do admin.
+        var v = ($('by-vagas-total').value || '').trim();
+        if (!v) return null;
+        var n = parseInt(v, 10);
+        return Number.isFinite(n) && n >= 0 ? n : null;
+      })(),
       // Financeiro: valor cheio. Fornecedor (legado: 1 nome) é
       // preenchido com o primeiro da lista, mas a fonte da verdade
       // são as rows em experience_suppliers (gravadas separado abaixo).
