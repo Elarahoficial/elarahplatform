@@ -965,10 +965,16 @@
         </div>
 
         <div class="admin__form-field admin__form-field--full">
-          <label>Horários disponíveis</label>
+          <label>Horários disponíveis (com vagas por horário)</label>
           <div id="by-horarios-list" class="admin__horarios-list"></div>
           <button type="button" id="by-horarios-add-btn" class="admin__horario-add-btn">+ Adicionar horário</button>
-          <p class="admin__form-hint">Ex: <em>10h às 13h</em>. Deixe vazio quando for "lista de espera".</p>
+          <p class="admin__form-hint">
+            Ex: <em>10h às 13h</em> com <em>10</em> vagas. Cada horário tem suas próprias vagas —
+            quando alguém compra um, só esse horário decrementa. Deixe o campo
+            <em>Vagas</em> em branco pra horário ilimitado, ou em <em>0</em> pra esgotado.
+            <strong>Vagas por horário só são respeitadas quando "É comprável" está ligado abaixo.</strong>
+            Cards de espera ignoram o input de vagas.
+          </p>
         </div>
 
         <div class="admin__form-field">
@@ -1094,7 +1100,7 @@
 <script src="experiences-data.js?v=15"></script>
 <script src="byelarah-data.js?v=3"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=43"></script>
+<script src="admin.js?v=44"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
