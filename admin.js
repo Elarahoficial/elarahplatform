@@ -712,6 +712,30 @@
       return;
     }
 
+    // Badge de alerta quando o webhook detectou que o gateway cobrou
+    // um valor diferente do esperado (metadata.amount_mismatch). Sem
+    // isso, divergências passam despercebidas — o admin precisa de
+    // sinalização visual pra estornar manualmente quando preciso.
+    function mismatchBadge(b) {
+      if (!b || !b.metadata || typeof b.metadata !== 'object') return '';
+      if (b.metadata.amount_mismatch !== true) return '';
+      const expected = Number(b.metadata.expected_amount_total_centavos);
+      const delta = Number(b.metadata.delta_centavos);
+      const tooltipParts = [];
+      if (Number.isFinite(expected)) {
+        tooltipParts.push('Esperado: ' + formatCents(expected, b.currency || 'BRL'));
+      }
+      if (Number.isFinite(delta)) {
+        tooltipParts.push('Delta: ' + (delta > 0 ? '+' : '') + formatCents(delta, b.currency || 'BRL'));
+      }
+      const tooltip = tooltipParts.length
+        ? tooltipParts.join(' · ')
+        : 'Valor cobrado divergente do esperado';
+      return ' <span title="' + escapeHtml(tooltip) +
+        '" style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;' +
+        'background:#fce8e6;color:#c0392b;font-size:.7rem;font-weight:700;cursor:help;">⚠ valor</span>';
+    }
+
     // Renderiza uma linha da tabela. Extraído pra reaproveitar em
     // cada grupo (pendentes / pagos / outros) sem duplicar o código
     // de resolução de telefone + nome.
@@ -797,7 +821,7 @@
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
-          <td>${escapeHtml(formatCents(b.amount_total, b.currency))}</td>
+          <td>${escapeHtml(formatCents(b.amount_total, b.currency))}${mismatchBadge(b)}</td>
           <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
