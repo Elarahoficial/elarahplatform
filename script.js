@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v14 — By Elarah Originals (compra direta) + hide_from_categorias');
+console.info('[Elarah] script.js v15 — fix imagem trocada nos cards By Elarah (placeholder neutro)');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -584,9 +584,12 @@ if (categoriaURL) activeCategoria = categoriaURL;
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // Mapa de fallback por slug/nome — garante que mesmo se o
-    // Supabase devolver imagem vazia ou com path quebrado a foto
-    // certa ainda apareça (a seção tem cards conhecidos).
+    // Mapa de fallback por slug/nome — usado SOMENTE pra cards do
+    // legado (byelarah_items) que ainda não têm imagem cadastrada.
+    // Cards vindos de `experiences` (it.fromExperience===true) NÃO
+    // entram aqui: a imagem do admin é fonte da verdade. Se ela
+    // falhar, exibe placeholder neutro — nunca substitui pela foto
+    // de outra experiência (era o bug "cadastrei foto X mas aparece Y").
     var ORIGINALS_IMAGE_FALLBACKS = {
       'pintura-aperol': 'assets/pintura-aperol.png',
       'perfumaria-criativa': 'assets/perfumariaa.jpg',
@@ -595,7 +598,11 @@ if (categoriaURL) activeCategoria = categoriaURL;
       'oficina de perfumaria criativa': 'assets/perfumariaa.jpg',
       'workshop de ourivesaria: crie sua joia': 'assets/ourivesariaa.jpg'
     };
-    var DEFAULT_ORIGINALS_IMAGE = 'assets/pintura-aperol.png';
+    // Placeholder neutro: a logo. Reusa asset que já está no site.
+    // Usado quando uma imagem custom falha de carregar — bem melhor
+    // que servir foto aleatória de outra experiência.
+    var NEUTRAL_PLACEHOLDER = 'assets/logo.png';
+    var DEFAULT_ORIGINALS_IMAGE = NEUTRAL_PLACEHOLDER;
 
     function normalizeImagePath(p) {
       var s = String(p == null ? '' : p).trim();
@@ -613,11 +620,28 @@ if (categoriaURL) activeCategoria = categoriaURL;
     function resolveImage(it) {
       var raw = normalizeImagePath(it.imagem);
       if (raw) return raw;
+      // Cards de `experiences` (Originals) NÃO caem em fallback de
+      // slug/nome — pra evitar que uma experiência sem foto cadastrada
+      // pegue por engano a foto de outra com nome parecido.
+      if (it.fromExperience) return NEUTRAL_PLACEHOLDER;
       var bySlug = it.slug && ORIGINALS_IMAGE_FALLBACKS[String(it.slug).toLowerCase()];
       if (bySlug) return bySlug;
       var byName = it.nome && ORIGINALS_IMAGE_FALLBACKS[String(it.nome).toLowerCase()];
       if (byName) return byName;
       return DEFAULT_ORIGINALS_IMAGE;
+    }
+
+    // Resolve o fallback do <img onerror>. Pra cards de experiences,
+    // SEMPRE retorna o placeholder neutro — bug crítico se a foto
+    // cadastrada falhar e o site servir foto de outra experiência.
+    // Pra cards do legado, mantém o mapping hardcoded.
+    function resolveOnErrorFallback(it) {
+      if (it.fromExperience) return NEUTRAL_PLACEHOLDER;
+      var bySlug = it.slug && ORIGINALS_IMAGE_FALLBACKS[String(it.slug).toLowerCase()];
+      if (bySlug) return bySlug;
+      var byName = it.nome && ORIGINALS_IMAGE_FALLBACKS[String(it.nome).toLowerCase()];
+      if (byName) return byName;
+      return NEUTRAL_PLACEHOLDER;
     }
 
     var html = items.map(function(it) {
@@ -665,9 +689,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
         : 'Entrar na lista de espera';
 
       var imgSrc = resolveImage(it);
-      var imgFallback = (it.slug && ORIGINALS_IMAGE_FALLBACKS[String(it.slug).toLowerCase()])
-        || (it.nome && ORIGINALS_IMAGE_FALLBACKS[String(it.nome).toLowerCase()])
-        || DEFAULT_ORIGINALS_IMAGE;
+      var imgFallback = resolveOnErrorFallback(it);
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
       var dataAttrs =
@@ -687,7 +709,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
         '<article class="' + cardClass + '">' +
           '<div class="originals__card-image">' +
             '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
-              'onerror="if(this.dataset.fb!==&quot;1&quot;){this.dataset.fb=&quot;1&quot;;this.src=&quot;' + esc(imgFallback) + '&quot;;}">' +
+              // onerror: loga URL que falhou (admin vê no DevTools)
+              // e troca pro placeholder neutro. Flag dataset.fb evita
+              // loop se o próprio fallback der erro.
+              'onerror="if(this.dataset.fb!==&quot;1&quot;){' +
+                'this.dataset.fb=&quot;1&quot;;' +
+                'console.warn(&quot;[Elarah] imagem do card falhou — usando placeholder. URL original: &quot;+this.dataset.originalSrc);' +
+                'this.classList.add(&quot;originals__image--placeholder&quot;);' +
+                'this.src=&quot;' + esc(imgFallback) + '&quot;;' +
+              '}" data-original-src="' + esc(imgSrc) + '">' +
             '<span class="originals__card-badge">' + esc(badgeLabel) + '</span>' +
           '</div>' +
           '<div class="originals__card-body">' +

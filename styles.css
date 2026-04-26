@@ -1313,6 +1313,16 @@ select {
   display: block;
 }
 
+/* Quando a imagem cai no placeholder (logo Elarah), aplica fundo
+   neutro e contém a logo em vez de cortar. Sinaliza visualmente
+   que falta a foto sem servir foto de outra experiência. */
+.originals__image--placeholder {
+  object-fit: contain;
+  background: #faf6f0;
+  padding: 24px;
+  opacity: 0.6;
+}
+
 .originals__card-date:empty {
   display: none;
 }
