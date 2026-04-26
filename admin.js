@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v17 — acompanhantes WhatsApp + dedup por nome/tel');
+  console.info('[Elarah Admin] admin.js v18 — dedup por nome+tel estrito (não esconde mesmo tel)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -849,10 +849,24 @@
           const pNome = norm(p.nome);
           const pTel = onlyDigits(p.telefone || p.telefone_digits || '');
           if (!pNome && !pTel) return false;
-          // Pula se for o próprio comprador (mesmo nome OU mesmo telefone).
-          if (compradorNome && pNome && pNome === compradorNome) return false;
-          if (compradorTel && pTel && pTel === compradorTel) return false;
-          // Dedup entre acompanhantes (mesmo telefone gravado 2x, raro).
+
+          // Identifica o próprio comprador no array com critério mais
+          // estrito: só pula quando há evidência forte de ser ele,
+          // pra não esconder um acompanhante real que esteja usando
+          // o mesmo telefone (caso comum: pais/casais com 1 número
+          // só, testes onde se reusa o próprio número).
+          //
+          // Pula só se:
+          //   - nome E telefone batem; ou
+          //   - nome bate e a entry não tem telefone (booking antiga); ou
+          //   - telefone bate e a entry não tem nome (improvável).
+          const nomeIgual = compradorNome && pNome && pNome === compradorNome;
+          const telIgual = compradorTel && pTel && pTel === compradorTel;
+          if (nomeIgual && telIgual) return false;
+          if (nomeIgual && !pTel) return false;
+          if (telIgual && !pNome) return false;
+
+          // Dedup entre acompanhantes (mesma pessoa gravada 2x).
           const key = pNome + '|' + pTel;
           if (seen.has(key)) return false;
           seen.add(key);
