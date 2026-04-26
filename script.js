@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v19 — variantes de experiência (seletor pill no modal de reserva)');
+console.info('[Elarah] script.js v20 — log de diagnóstico no By Elarah (mostra por que o card cai em lead vs checkout)');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -1037,6 +1037,51 @@ if (categoriaURL) activeCategoria = categoriaURL;
     var expById = new Map();
     (allExps || []).forEach(function (e) {
       if (e && e.id) expById.set(e.id, e);
+    });
+
+    // ===== LOG DE DIAGNÓSTICO =====
+    // Mostra exatamente o estado de cada item By Elarah no console
+    // do navegador. Se o card está caindo no fluxo de lead quando
+    // deveria abrir checkout, esse log diz por quê:
+    //   - experienceId ausente → admin não ligou "É comprável" / item legado
+    //   - experienceId existe mas expById.has=false → experience não foi
+    //     carregada (filtro do getVisibleExperiences? cutoff passou? inativa?)
+    //   - exp.isActive=false → admin desligou "Visível no site" na experience
+    console.info('[Elarah By Elarah] diagnóstico do load:', {
+      total_items: (allItems || []).length,
+      total_exps_visible: (allExps || []).length,
+      items_with_exp_id: (allItems || []).filter(function (i) { return i && i.experienceId; }).length,
+    });
+    (allItems || []).forEach(function (item, idx) {
+      if (!item) return;
+      var status = 'lead-fallback';
+      var reason = '';
+      if (item.experienceId) {
+        if (expById.has(item.experienceId)) {
+          var exp = expById.get(item.experienceId);
+          if (exp.isActive === false) {
+            status = 'lead-fallback';
+            reason = 'experience inativa (isActive=false)';
+          } else {
+            status = 'CHECKOUT';
+            reason = 'experience ativa: ' + exp.id;
+          }
+        } else {
+          status = 'lead-fallback';
+          reason = 'experience_id=' + item.experienceId +
+            ' não encontrada em getVisibleExperiences (filtrada por cutoff/visibilidade?)';
+        }
+      } else {
+        reason = 'sem experience_id (item legado / "É comprável" desligado)';
+      }
+      console.info(
+        '[Elarah By Elarah] item ' + (idx + 1) + '/' + (allItems || []).length + ':',
+        item.nome || '?',
+        '→',
+        status,
+        '·',
+        reason
+      );
     });
 
     // Set de experience_ids referenciados por algum byelarah_item.
