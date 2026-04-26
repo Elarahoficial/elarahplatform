@@ -1532,10 +1532,26 @@
         vagasDisplay = '<span style="color:#888;">∞</span>';
       }
       const isActive = exp.isActive !== false;
-      const rowStyle = isActive ? '' : ' style="opacity:0.55;"';
-      const statusBadge = isActive
-        ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Visível</span>'
-        : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:600;">Oculta</span>';
+      // Status efetivo: três estados pra refletir o que o usuário vê
+      // de fato no site, não só a flag is_active.
+      //   - oculta_manual: admin escondeu (isActive=false)
+      //   - oculta_auto:   passou do horário ou dentro do cutoff de 24h
+      //   - visivel:       ativa e ainda dentro da janela de venda
+      // Auto-detecção reusa ElarahData.isPubliclyVisible — mesma regra
+      // do getVisibleExperiences que filtra a listagem pública.
+      const publicVisible =
+        window.ElarahData && typeof window.ElarahData.isPubliclyVisible === 'function'
+          ? window.ElarahData.isPubliclyVisible(exp)
+          : isActive;
+      let statusBadge;
+      if (!isActive) {
+        statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:600;">Oculta</span>';
+      } else if (!publicVisible) {
+        statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff4e0;color:#b07b00;font-size:11px;font-weight:600;" title="Ocultada automaticamente — horário já passou ou está dentro do bloqueio de 24h.">Oculta (passou)</span>';
+      } else {
+        statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Visível</span>';
+      }
+      const rowStyle = publicVisible ? '' : ' style="opacity:0.55;"';
       const toggleLabel = isActive ? 'Ocultar' : 'Reativar';
       const toggleClass = isActive ? 'admin__action-btn--hide' : 'admin__action-btn--show';
       return `
