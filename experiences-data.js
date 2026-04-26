@@ -357,35 +357,43 @@
     return Number.isFinite(ts) ? ts : null;
   }
 
-  // Lista pública: oculta automaticamente quando
-  //   1. isActive === false (admin marcou pra ocultar manualmente);
-  //   2. faltam menos que `cutoffHours` (default 24h) pro evento começar;
-  //   3. o horário do evento já passou (auto-expira sozinha).
-  // Os 3 critérios são checados pela mesma desigualdade
-  // `now + cutoff*1h <= eventTs` — qualquer eventTs no passado falha
-  // automaticamente porque eventTs < now < now + cutoff*1h.
+  // Decide se uma experiência é mostrada no site público. Regra única
+  // que cobre 3 motivos de ocultação:
+  //   1. isActive === false       (admin escondeu manualmente)
+  //   2. faltam < cutoffH horas   (bloqueio de venda — default 24h)
+  //   3. eventTs já passou        (auto-expira)
+  // Os critérios 2 e 3 colapsam em `now + cutoffH*1h <= eventTs`,
+  // porque qualquer eventTs no passado falha automaticamente. Quando
+  // não dá pra derivar eventTs ("Semanal" ou data inparseável), só o
+  // critério 1 vale.
+  // Exposta no window.ElarahData pra que o admin possa marcar status
+  // sem duplicar a lógica.
+  function isPubliclyVisible(exp, nowMs) {
+    if (!exp || exp.isActive === false) return false;
+    if (nowMs == null) nowMs = Date.now();
+    const cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    let eventTs = null;
+    if (exp.eventAt) {
+      const t = new Date(exp.eventAt).getTime();
+      if (!isNaN(t)) eventTs = t;
+    }
+    if (eventTs == null) {
+      eventTs = deriveEventTimestamp(
+        exp.data,
+        exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null),
+        nowMs,
+      );
+    }
+    if (eventTs == null) return true;
+    return nowMs + cutoffH * 60 * 60 * 1000 <= eventTs;
+  }
+
+  // Lista pública: aplica isPubliclyVisible em todas as experiências.
   // Admin continua usando getAllExperiences() pra ver tudo.
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
     const now = Date.now();
-    return all.filter(e => {
-      if (!e || e.isActive === false) return false;
-      const cutoffH = Number.isFinite(Number(e.cutoffHours)) ? Number(e.cutoffHours) : 24;
-      let eventTs = null;
-      if (e.eventAt) {
-        const t = new Date(e.eventAt).getTime();
-        if (!isNaN(t)) eventTs = t;
-      }
-      if (eventTs == null) {
-        eventTs = deriveEventTimestamp(
-          e.data,
-          e.horario || (Array.isArray(e.horarios) ? e.horarios[0] : null),
-          now,
-        );
-      }
-      if (eventTs == null) return true;
-      return now + cutoffH * 60 * 60 * 1000 <= eventTs;
-    });
+    return all.filter(e => isPubliclyVisible(e, now));
   }
   const getActiveExperiences = getVisibleExperiences;
 
@@ -712,6 +720,8 @@
     duplicateExperience,
     setExperienceActive,
     invalidateCache,
+    isPubliclyVisible,
+    deriveEventTimestamp,
     // Slots
     loadAllSlots,
     getSlotsForExperience,
