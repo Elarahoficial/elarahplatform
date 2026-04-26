@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v23 — atalho ✨ Criar Original comprável (1 clique do By Elarah pro form certo)');
+  console.info('[Elarah Admin] admin.js v24 — toggle "É comprável" no By Elarah cria/atualiza experience espelho');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -1722,7 +1722,16 @@
   }
 
   async function renderExperiences() {
-    const allExperiences = await getExperiences();
+    const allExperiencesRaw = await getExperiences();
+
+    // Esconde Elarah Originals da aba Experiências — eles são geridos
+    // exclusivamente pela aba "By Elarah" (toggle "É comprável" no
+    // form de By Elarah cria/atualiza essas experiences automaticamente).
+    // Sem isso, o admin veria o mesmo card em duas abas e poderia
+    // editar via Experiências, dessincronizando do byelarah_item.
+    const allExperiences = (allExperiencesRaw || []).filter(function (e) {
+      return e && e.isElarahOriginal !== true;
+    });
 
     // Constrói barra de filtro com TODAS as experiências (antes de filtrar)
     buildExpFilterBar(allExperiences);
@@ -1926,6 +1935,14 @@
     return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
   }
 
+  // Atualiza visibilidade da seção "comprável" baseado no toggle.
+  function byUpdatePurchasableVisibility() {
+    var section = document.getElementById('by-purchasable-section');
+    var checkbox = document.getElementById('by-is-purchasable');
+    if (!section || !checkbox) return;
+    section.style.display = checkbox.checked ? 'block' : 'none';
+  }
+
   async function openByModal(editId) {
     if (!byModal) return;
     const $ = (id) => document.getElementById(id);
@@ -1946,6 +1963,51 @@
       $('by-slug').value = item.slug || '';
       $('by-edit-id').value = editId;
       byRenderHorarios(item.horarios || []);
+
+      // Carrega flags + dados de checkout se há experience vinculada.
+      var purchEl = $('by-is-purchasable');
+      if (purchEl) purchEl.checked = !!item.experienceId;
+
+      // Reset campos de checkout (pode haver edição anterior em cache).
+      $('by-preco').value = '';
+      $('by-vagas-total').value = '';
+      $('by-event-at').value = '';
+      $('by-cutoff-hours').value = 24;
+      $('by-descricao-completa').value = '';
+      $('by-valor-cheio').value = '';
+      $('by-fornecedor-nome').value = '';
+      $('by-percentual-repasse').value = 90;
+
+      if (item.experienceId && window.ElarahData && ElarahData.getExperienceById) {
+        try {
+          var exp = await ElarahData.getExperienceById(item.experienceId);
+          if (exp) {
+            $('by-preco').value = exp.preco || '';
+            $('by-vagas-total').value = exp.vagasTotal != null ? exp.vagasTotal : '';
+            // event_at vem como ISO; o input datetime-local quer "YYYY-MM-DDTHH:MM"
+            if (exp.eventAt) {
+              try {
+                var d = new Date(exp.eventAt);
+                if (!isNaN(d.getTime())) {
+                  var pad = function (n) { return String(n).padStart(2, '0'); };
+                  $('by-event-at').value =
+                    d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+                    'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                }
+              } catch (e) {}
+            }
+            $('by-cutoff-hours').value = exp.cutoffHours != null ? exp.cutoffHours : 24;
+            $('by-descricao-completa').value = exp.descricao || '';
+            $('by-valor-cheio').value = exp.valorCheioCentavos != null
+              ? 'R$ ' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
+            $('by-fornecedor-nome').value = exp.fornecedorNome || '';
+            $('by-percentual-repasse').value = exp.percentualRepasse != null ? exp.percentualRepasse : 90;
+          }
+        } catch (e) {
+          console.warn('[Admin/By Elarah] falha ao carregar experience vinculada', e);
+        }
+      }
+      byUpdatePurchasableVisibility();
     } else {
       byModalTitle.textContent = 'Novo item By Elarah';
       bySubmitBtn.textContent = 'Salvar item';
@@ -1955,6 +2017,12 @@
       $('by-ativo').value = 'true';
       $('by-edit-id').value = '';
       byRenderHorarios(['']);
+      // Reset toggle e seção
+      var purchEl2 = $('by-is-purchasable');
+      if (purchEl2) purchEl2.checked = false;
+      $('by-cutoff-hours').value = 24;
+      $('by-percentual-repasse').value = 90;
+      byUpdatePurchasableVisibility();
     }
     byModal.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -1986,10 +2054,15 @@
       if (e.key === 'Escape' && byModal.classList.contains('open')) closeByModal();
     });
 
+    // Toggle "É comprável" mostra/esconde a seção de checkout.
+    var purchEl = document.getElementById('by-is-purchasable');
+    if (purchEl) purchEl.addEventListener('change', byUpdatePurchasableVisibility);
+
     byForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const $ = (id) => document.getElementById(id);
       const horarios = byCollectHorarios();
+      const isPurchasable = !!$('by-is-purchasable').checked;
       const data = {
         slug: $('by-slug').value.trim(),
         nome: $('by-nome').value.trim(),
@@ -1998,13 +2071,79 @@
         data: $('by-data').value.trim(),
         local: $('by-local').value.trim(),
         horarios: horarios,
-        tipo: $('by-tipo').value,
+        // Se ligar "comprável", força tipo=participar (botão "Quero
+        // participar"). Se desligar, respeita o que o admin escolheu.
+        tipo: isPurchasable ? 'participar' : $('by-tipo').value,
         ordem: parseInt($('by-ordem').value, 10) || 0,
         ativo: $('by-ativo').value === 'true'
       };
       const editId = $('by-edit-id').value;
       bySubmitBtn.disabled = true;
       try {
+        // ===== Sincronização byelarah_item ↔ experience =====
+        // 1. Carrega item atual (se for edição) pra saber se já tem
+        //    experience vinculada.
+        // 2. Se isPurchasable=true: cria/atualiza a experience espelho
+        //    com is_elarah_original=true e cta_mode='buy', e propaga
+        //    o experience_id pro data antes de salvar.
+        // 3. Se isPurchasable=false E havia experience: marca a
+        //    experience como is_active=false (preserva histórico) e
+        //    limpa experience_id no item.
+        let existingExpId = null;
+        if (editId) {
+          try {
+            const cur = await ElarahByElarah.getItemById(editId);
+            existingExpId = cur && cur.experienceId ? cur.experienceId : null;
+          } catch (e) {}
+        }
+
+        if (isPurchasable) {
+          const expData = byCollectExperienceData(data);
+          // Validações mínimas pra evitar criar experience inválida.
+          if (!expData.preco) {
+            alert('Preço é obrigatório quando "É comprável" está ligado.');
+            bySubmitBtn.disabled = false;
+            return;
+          }
+          if (!expData.descricao) {
+            alert('Descrição completa é obrigatória quando "É comprável" está ligado (ela aparece na modal de "Quero participar").');
+            bySubmitBtn.disabled = false;
+            return;
+          }
+
+          let savedExp = null;
+          try {
+            if (existingExpId && window.ElarahData && ElarahData.updateExperience) {
+              savedExp = await ElarahData.updateExperience(existingExpId, expData);
+            } else if (window.ElarahData && ElarahData.addExperience) {
+              savedExp = await ElarahData.addExperience(expData);
+            }
+          } catch (errExp) {
+            console.error('[Admin/By Elarah] falha ao sincronizar experience', errExp);
+            alert('Erro ao salvar dados de checkout. Veja o console.');
+            bySubmitBtn.disabled = false;
+            return;
+          }
+          if (savedExp && savedExp.id) {
+            data.experienceId = savedExp.id;
+          } else if (existingExpId) {
+            // updateExperience pode não retornar a row dependendo de
+            // RLS — mantemos o id existente.
+            data.experienceId = existingExpId;
+          }
+        } else {
+          // Toggle desligado: se havia experience, desativa (não deleta).
+          if (existingExpId && window.ElarahData && ElarahData.updateExperience) {
+            try {
+              await ElarahData.updateExperience(existingExpId, { isActive: false });
+              console.info('[Admin/By Elarah] experience desativada após desligar comprável', existingExpId);
+            } catch (e) {
+              console.warn('[Admin/By Elarah] falha ao desativar experience', e);
+            }
+          }
+          data.experienceId = null;
+        }
+
         if (editId) {
           await ElarahByElarah.updateItem(editId, data);
         } else {
@@ -2016,6 +2155,80 @@
       closeByModal();
       await renderByElarah();
     });
+  }
+
+  // Coleta os campos da seção "comprável" e monta payload pra
+  // ElarahData.addExperience / updateExperience. Reusa nome,
+  // imagem, local, horários do form principal.
+  function byCollectExperienceData(byData) {
+    const $ = (id) => document.getElementById(id);
+    const horariosArr = Array.isArray(byData.horarios) ? byData.horarios : [];
+
+    // Parse valor cheio: aceita "R$ 425", "425", "425,00".
+    const vcRaw = ($('by-valor-cheio').value || '').trim();
+    let valorCheio = null;
+    if (vcRaw) {
+      const cleaned = vcRaw.replace(/[R$\s]/gi, '').replace(',', '.');
+      const n = cleaned.includes('.') ? Math.round(Number(cleaned) * 100) : Number(cleaned) * 100;
+      if (Number.isFinite(n) && n > 0) valorCheio = n;
+    }
+
+    // event_at: input datetime-local devolve "YYYY-MM-DDTHH:MM"
+    // sem timezone. Converte pra ISO local (assume timezone do
+    // navegador, igual o form de Experiências).
+    const eventAtRaw = ($('by-event-at').value || '').trim();
+    let eventAtIso = null;
+    if (eventAtRaw) {
+      const d = new Date(eventAtRaw);
+      if (!isNaN(d.getTime())) eventAtIso = d.toISOString();
+    }
+
+    // Bairro/endereço: o form de By Elarah tem só "local"; espelha
+    // ele em ambos os campos da experience pra retrocompat com
+    // categoria.html (que mostra bairro separado).
+    const local = byData.local || '';
+
+    return {
+      // Identidade
+      nome: byData.nome,
+      categoria: 'Elarah Originals', // categoria default fixa pros Originals
+      // Conteúdo do card e modal
+      imagem: byData.imagem,
+      data: byData.data, // texto livre exibido no card
+      duracao: '',
+      bairro: local,
+      endereco: local,
+      inclui: '',
+      preco: ($('by-preco').value || '').trim(),
+      cor: '#f6d5a8,#f0a05e',
+      descricao: ($('by-descricao-completa').value || '').trim(),
+      horario: horariosArr[0] || '',
+      horarios: horariosArr,
+      // Checkout / vagas
+      vagasTotal: (function () {
+        const v = ($('by-vagas-total').value || '').trim();
+        if (!v) return null;
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) && n >= 0 ? n : null;
+      })(),
+      eventAt: eventAtIso,
+      cutoffHours: (function () {
+        const v = ($('by-cutoff-hours').value || '').trim();
+        if (!v) return 24;
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) ? n : 24;
+      })(),
+      // Visibilidade respeita o ativo do form By Elarah.
+      isActive: byData.ativo !== false,
+      // Fornecedor / financeiro
+      fornecedorNome: ($('by-fornecedor-nome').value || '').trim() || null,
+      valorCheioCentavos: valorCheio,
+      percentualRepasse: Number($('by-percentual-repasse').value || 90),
+      // Flags Elarah Original
+      isElarahOriginal: true,
+      hideFromCategorias: true, // Original By Elarah só aparece na By Elarah
+      ctaMode: 'buy'
+    };
   }
 
   // Chave de agrupamento estável: normaliza case/espaço pra que
