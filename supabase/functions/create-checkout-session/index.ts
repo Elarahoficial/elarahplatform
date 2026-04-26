@@ -272,7 +272,17 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
 // =============================================================
 // MODO A — reserva de experiência
 // =============================================================
+// Marcador único de versão. Mude esse valor a cada release pra
+// confirmar via logs do Supabase qual versão está rodando. Se você
+// ver esse marcador nos logs ao testar uma reserva, o deploy passou
+// e o código novo está ativo.
+const CHECKOUT_FN_VERSION = "v3-inventory-fallback-2026-04-26";
+
 async function handleExperienceCheckout(payload: Record<string, unknown>) {
+  console.info(
+    "[Elarah Payment] handleExperienceCheckout INICIO",
+    "version=" + CHECKOUT_FN_VERSION,
+  );
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
   const email = payload.email ? String(payload.email).trim() : null;
@@ -1116,6 +1126,17 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
 // ENTRY
 // =============================================================
 serve(async (req) => {
+  // Marcador no boot. Aparece nos logs do Supabase em CADA invocação,
+  // confirmando qual versão da função está atendendo a request. Se
+  // este log NÃO aparece quando o checkout é tentado, o deploy não
+  // chegou — a função antiga ainda está sendo servida (cache, projeto
+  // errado, build antigo). Diagnóstico imediato pelo log.
+  console.info(
+    "[Elarah Payment] create-checkout-session BOOT",
+    "version=" + CHECKOUT_FN_VERSION,
+    "method=" + req.method,
+  );
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -1149,8 +1170,33 @@ serve(async (req) => {
     });
   }
 
-  if (mode === "gift_card") {
-    return handleGiftCardPurchase(payload);
+  // ===== Wrapper de exceção =====
+  // Defesa final: se QUALQUER coisa lançar exceção dentro dos handlers
+  // (RPC indisponível, schema desatualizado, lib quebrada, etc.), a
+  // gente captura aqui e devolve 500 com um erro NOMEADO — nunca
+  // `vagas_check_failed`, nunca o stack trace cru. Garante que o
+  // checkout não trava por bugs de infraestrutura inesperados.
+  try {
+    if (mode === "gift_card") {
+      return await handleGiftCardPurchase(payload);
+    }
+    return await handleExperienceCheckout(payload);
+  } catch (e) {
+    console.error(
+      "[Elarah Payment] EXCEPTION inesperada — checkout abortado",
+      "version=" + CHECKOUT_FN_VERSION,
+      "mode=" + mode,
+      "error=" + (e instanceof Error ? e.message : String(e)),
+      "stack=" + (e instanceof Error ? e.stack : "(no stack)"),
+    );
+    return jsonResponse(
+      {
+        error: "checkout_unexpected_error",
+        message:
+          "Erro inesperado no checkout. Tente novamente em instantes ou " +
+          "entre em contato pelo WhatsApp.",
+      },
+      500,
+    );
   }
-  return handleExperienceCheckout(payload);
 });
