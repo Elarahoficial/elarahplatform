@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v20 — log de diagnóstico no By Elarah (mostra por que o card cai em lead vs checkout)');
+console.info('[Elarah] script.js v21 — varredura: resolve experience direto (sem filtro cutoff) + log no click do card');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -772,16 +772,27 @@ if (categoriaURL) activeCategoria = categoriaURL;
       btn.addEventListener('click', function (e) {
         var ctaMode = btn.getAttribute('data-cta-mode') || 'waitlist';
         var expId = btn.getAttribute('data-experience-id');
+        // Log loud — quando admin reportar que cliclu no botão e foi
+        // pro lead em vez do checkout, esse log diz exatamente por quê.
+        console.info(
+          '[Elarah By Elarah] CLICK em card →',
+          'experience=' + (btn.getAttribute('data-experience') || '?'),
+          'ctaMode=' + ctaMode,
+          'experienceId=' + (expId || '(nenhum)'),
+          'startCheckout disponível=' + (typeof startCheckout === 'function')
+        );
         // Compra direta: chama startCheckout direto — mesmo pipeline
         // dos cards regulares (qty>1, gift card, Stripe, PIX já
         // testados). Não simulamos click no botão pra evitar loop
         // com o próprio listener.
         if (ctaMode === 'buy' && expId && typeof startCheckout === 'function') {
+          console.info('[Elarah By Elarah] → fluxo CHECKOUT (startCheckout)');
           if (e && e.preventDefault) e.preventDefault();
           startCheckout(btn);
           return;
         }
         // Lista de espera / lead: modal de WhatsApp (comportamento atual).
+        console.info('[Elarah By Elarah] → fluxo LEAD (openOriginalsModal)');
         openOriginalsModal(
           btn.getAttribute('data-experience'),
           btn.getAttribute('data-type')
@@ -1019,10 +1030,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
   }
 
   async function loadByElarahCombined() {
-    // Carrega ambas as fontes em paralelo. As experiences puras (com
-    // is_elarah_original=true e SEM byelarah_item correspondente) são
-    // mantidas pra retrocompat; o caminho principal hoje é
-    // byelarah_item → experience_id.
+    // Carrega experiences "visíveis" (filtro de cutoff/is_active aplicado)
+    // E os byelarah_items em paralelo. Mas além disso, pra qualquer
+    // byelarah_item com experience_id, vamos resolver via
+    // getExperienceById diretamente (sem filtro) — assim, mesmo se a
+    // experience cair fora do getVisibleExperiences (ex: cutoff
+    // passado), o card abre o fluxo de checkout. Quem decide se a
+    // venda é permitida é o BACKEND (booking_guard valida cutoff
+    // novamente lá). UI confiar na fonte do dado, não no filtro.
     var [allExps, allItems] = await Promise.all([
       (window.ElarahData && ElarahData.getVisibleExperiences)
         ? ElarahData.getVisibleExperiences().catch(function () { return []; })
@@ -1032,24 +1047,40 @@ if (categoriaURL) activeCategoria = categoriaURL;
         : Promise.resolve([])
     ]);
 
-    // Mapa rápido id → experience pra resolver os byelarah_items
-    // que têm experience_id vinculado.
+    // Mapa rápido id → experience pra resolver os byelarah_items.
     var expById = new Map();
     (allExps || []).forEach(function (e) {
       if (e && e.id) expById.set(e.id, e);
     });
 
+    // Resolver experiences que NÃO vieram em getVisibleExperiences
+    // (ex: cutoff passado). Usa getExperienceById que retorna do cache
+    // de getAllExperiences (sem filtro). Se mesmo assim não achar,
+    // fallback em lead.
+    var experienceIdsFaltando = (allItems || [])
+      .map(function (i) { return i && i.experienceId; })
+      .filter(function (id) { return id && !expById.has(id); });
+
+    if (experienceIdsFaltando.length && window.ElarahData && ElarahData.getExperienceById) {
+      console.info(
+        '[Elarah By Elarah] resolvendo ' + experienceIdsFaltando.length +
+        ' experience(s) fora do filtro visible — busca direta via getAllExperiences'
+      );
+      for (var i = 0; i < experienceIdsFaltando.length; i++) {
+        try {
+          var resolvedExp = await ElarahData.getExperienceById(experienceIdsFaltando[i]);
+          if (resolvedExp && resolvedExp.id) {
+            expById.set(resolvedExp.id, resolvedExp);
+          }
+        } catch (e) { /* ignora */ }
+      }
+    }
+
     // ===== LOG DE DIAGNÓSTICO =====
-    // Mostra exatamente o estado de cada item By Elarah no console
-    // do navegador. Se o card está caindo no fluxo de lead quando
-    // deveria abrir checkout, esse log diz por quê:
-    //   - experienceId ausente → admin não ligou "É comprável" / item legado
-    //   - experienceId existe mas expById.has=false → experience não foi
-    //     carregada (filtro do getVisibleExperiences? cutoff passou? inativa?)
-    //   - exp.isActive=false → admin desligou "Visível no site" na experience
     console.info('[Elarah By Elarah] diagnóstico do load:', {
       total_items: (allItems || []).length,
       total_exps_visible: (allExps || []).length,
+      exps_resolvidas_total: expById.size,
       items_with_exp_id: (allItems || []).filter(function (i) { return i && i.experienceId; }).length,
     });
     (allItems || []).forEach(function (item, idx) {
@@ -1060,19 +1091,17 @@ if (categoriaURL) activeCategoria = categoriaURL;
         if (expById.has(item.experienceId)) {
           var exp = expById.get(item.experienceId);
           if (exp.isActive === false) {
-            status = 'lead-fallback';
-            reason = 'experience inativa (isActive=false)';
+            reason = 'experience inativa (isActive=false) — ative no admin';
           } else {
             status = 'CHECKOUT';
             reason = 'experience ativa: ' + exp.id;
           }
         } else {
-          status = 'lead-fallback';
           reason = 'experience_id=' + item.experienceId +
-            ' não encontrada em getVisibleExperiences (filtrada por cutoff/visibilidade?)';
+            ' NÃO encontrada (verificar se existe no banco)';
         }
       } else {
-        reason = 'sem experience_id (item legado / "É comprável" desligado)';
+        reason = 'sem experience_id (admin não ligou "É comprável" OU save falhou)';
       }
       console.info(
         '[Elarah By Elarah] item ' + (idx + 1) + '/' + (allItems || []).length + ':',
@@ -1085,8 +1114,6 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
 
     // Set de experience_ids referenciados por algum byelarah_item.
-    // Usado pra evitar duplicar cards (não mostrar a experience pura
-    // se já vai aparecer através do byelarah_item).
     var referencedExpIds = new Set();
     (allItems || []).forEach(function (it) {
       if (it && it.experienceId) referencedExpIds.add(it.experienceId);
