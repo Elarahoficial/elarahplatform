@@ -96,6 +96,69 @@ function parsePrecoToCents(raw: unknown): number | null {
   return Math.round(num * 100);
 }
 
+// Extrai o horário inicial ("19h00 – 21h00" -> {hh:19, mm:0}). Aceita
+// 'h' ou ':' como separador, separador de range '-', en-dash ou
+// em-dash. Retorna null se não conseguir parsear.
+function parseStartHour(raw: string | null | undefined): { hh: number; mm: number } | null {
+  if (!raw) return null;
+  const head = String(raw).split(/[–—\-]/)[0].trim();
+  const m = head.match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})/i);
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = m[2] ? Number(m[2]) : 0;
+  if (!Number.isFinite(hh) || hh < 0 || hh > 23) return null;
+  if (!Number.isFinite(mm) || mm < 0 || mm > 59) return null;
+  return { hh, mm };
+}
+
+// Deriva o timestamp absoluto do evento a partir dos campos `data`
+// (formato BR "DD/MM" ou "DD/MM/AAAA") e `horario` (ex.: "19h00 –
+// 21h00"). Usado como fallback quando `event_at` não está preenchido
+// no banco — sem isso, qualquer experiência criada antes da coluna
+// existir passaria sem cutoff. Retorna null pra valores que não
+// conseguimos resolver com segurança ("Semanal", string vazia, etc.).
+//
+// Fuso fixo America/Sao_Paulo (-03:00). Edge Functions Deno rodam em
+// UTC, então construir o ISO sem offset interpreta errado em 3h.
+function deriveEventTimestamp(
+  dataStr: string | null | undefined,
+  horarioStr: string | null | undefined,
+  nowMs: number = Date.now(),
+): number | null {
+  if (!dataStr) return null;
+  const trimmed = String(dataStr).trim();
+  const m = trimmed.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (!m) return null;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  if (!Number.isFinite(day) || day < 1 || day > 31) return null;
+  if (!Number.isFinite(month) || month < 1 || month > 12) return null;
+
+  const hasYear = !!m[3];
+  let year = hasYear
+    ? (Number(m[3]) < 100 ? Number(m[3]) + 2000 : Number(m[3]))
+    : new Date(nowMs).getFullYear();
+
+  const h = parseStartHour(horarioStr);
+  if (!h) return null;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const iso = (y: number) =>
+    `${y}-${pad(month)}-${pad(day)}T${pad(h.hh)}:${pad(h.mm)}:00-03:00`;
+
+  let ts = new Date(iso(year)).getTime();
+  if (!Number.isFinite(ts)) return null;
+
+  // Sem ano explícito e mais de 6h no passado → assume recorrência
+  // anual e usa o ano seguinte. Evita falso bloqueio quando o admin
+  // cadastrou "12/04" pensando em abril do ano que vem.
+  if (!hasYear && ts < nowMs - 6 * 60 * 60 * 1000) {
+    const nextTs = new Date(iso(year + 1)).getTime();
+    if (Number.isFinite(nextTs)) ts = nextTs;
+  }
+  return ts;
+}
+
 /**
  * Executa toda a validação + reserva de vaga + hold de cupom para um
  * checkout de experiência. Retorna um contexto rico com tudo que o
@@ -198,17 +261,34 @@ export async function reserveExperienceSlot(
   }
 
   // ===== 3. Cutoff =====
-  // Prioridade: event_at do slot > event_at da experiência
-  const effectiveEventAt = (useSlotVagas && slot?.event_at) ? slot.event_at : exp.event_at;
-  if (effectiveEventAt) {
-    const cutoffH = Number(exp.cutoff_hours ?? 24);
-    const eventTs = new Date(effectiveEventAt).getTime();
+  // Prioridade pra calcular o início do evento:
+  //   1. slot.event_at  (timestamptz exato do slot escolhido)
+  //   2. exp.event_at   (timestamptz exato da experiência)
+  //   3. derivado de exp.data + horário (DD/MM + HH'h'MM)
+  // O fallback (3) garante que experiências antigas — criadas antes
+  // de event_at virar coluna ou sem event_at preenchido — também
+  // respeitem o cutoff. Sem ele, era possível reservar à noite uma
+  // experiência que acontece no dia seguinte.
+  const cutoffH = Number(exp.cutoff_hours ?? 24);
+  let effectiveEventTs: number | null = null;
+  const sourceEventAt = (useSlotVagas && slot?.event_at) ? slot.event_at : exp.event_at;
+  if (sourceEventAt) {
+    const t = new Date(sourceEventAt).getTime();
+    if (Number.isFinite(t)) effectiveEventTs = t;
+  }
+  if (effectiveEventTs == null) {
+    effectiveEventTs = deriveEventTimestamp(
+      exp.data,
+      horarioInput || exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null),
+    );
+  }
+  if (effectiveEventTs != null) {
     const limit = Date.now() + cutoffH * 60 * 60 * 1000;
-    if (limit > eventTs) {
+    if (limit > effectiveEventTs) {
       return {
         ok: false,
         errorCode: "experience_cutoff_passed",
-        errorMessage: `As reservas para esta experiência encerraram ${cutoffH}h antes do evento.`,
+        errorMessage: `As reservas para esta experiência encerraram ${cutoffH}h antes do início.`,
         errorStatus: 409,
       };
     }
