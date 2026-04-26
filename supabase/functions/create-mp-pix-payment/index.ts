@@ -127,6 +127,10 @@ serve(async (req) => {
   const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
   const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
   const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
+  // Variantes (Pintura → Lagosta/Beijo/Olho grego). Persistidas em
+  // metadata.variant_label + metadata.variant_selected. Não afetam preço.
+  const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
+  const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
 
   const telefoneHuman = payload.telefone
     ? String(payload.telefone).trim()
@@ -385,6 +389,9 @@ serve(async (req) => {
     // Flag de auditoria: TRUE se o RPC de vagas falhou e o pagamento
     // prosseguiu sem decrementar estoque (fallback de emergência).
     inventory_skipped: inventorySkipped || undefined,
+    // Variantes (escolha extra do cliente, ex.: Pintura → Lagosta).
+    variant_label: variantLabel || undefined,
+    variant_selected: variantSelected || undefined,
   };
 
   // stripe_session_id é UNIQUE na tabela — como PIX não tem session

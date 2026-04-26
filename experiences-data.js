@@ -127,6 +127,14 @@
       isElarahOriginal: row.is_elarah_original === true,
       hideFromCategorias: row.hide_from_categorias === true,
       ctaMode: row.cta_mode === 'waitlist' ? 'waitlist' : 'buy',
+      // --- Variantes (escolha extra do cliente) ---
+      // Exemplo: Pintura com Cristal & Aperol → label="Modelo do quadro",
+      // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
+      // o front não renderiza seletor. sql/elarah_experiences_variants.sql.
+      variantLabel: row.variant_label || null,
+      variantOptions: Array.isArray(row.variant_options)
+        ? row.variant_options.filter(function (o) { return o && String(o).trim(); })
+        : [],
       // ------------------------
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
@@ -198,6 +206,24 @@
       cta_mode: (function () {
         var raw = exp.ctaMode != null ? exp.ctaMode : exp.cta_mode;
         return raw === 'waitlist' ? 'waitlist' : 'buy';
+      })(),
+      // --- Variantes ---
+      variant_label: (function () {
+        var raw = exp.variantLabel != null ? exp.variantLabel : exp.variant_label;
+        if (raw == null) return null;
+        var s = String(raw).trim();
+        return s ? s : null;
+      })(),
+      variant_options: (function () {
+        var raw = exp.variantOptions != null ? exp.variantOptions : exp.variant_options;
+        if (!raw) return [];
+        // Aceita array ou string com quebras de linha (textarea do admin).
+        if (Array.isArray(raw)) {
+          return raw.map(function (o) { return String(o || '').trim(); }).filter(Boolean);
+        }
+        return String(raw).split('\n')
+          .map(function (s) { return s.trim(); })
+          .filter(Boolean);
       })()
     };
     return filterKnownColumns(fullRow);

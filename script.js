@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v18 — byelarah_items.experience_id viram cards compráveis (mesmo card, fluxo de checkout)');
+console.info('[Elarah] script.js v19 — variantes de experiência (seletor pill no modal de reserva)');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -1387,6 +1387,16 @@ if (groupForm) {
             '<div id="erm-form-section">'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== SELETOR DE VARIANTE (escondido por padrão) =====
+            // Renderizado dinamicamente em openReservationModal quando
+            // ctx.variantOptions tem itens. Cliente escolhe 1 opção
+            // (ex: Lagosta / Beijo / Olho grego). Vai como
+            // variant_selected no payload do checkout.
+            '<div id="erm-variant-section" style="display:none;margin-bottom:14px;">'
+        +     '<label id="erm-variant-label" style="display:block;font-size:.85rem;color:#333;margin-bottom:8px;font-weight:600;"></label>'
+        +     '<div id="erm-variant-options" style="display:flex;flex-wrap:wrap;gap:8px;"></div>'
+        +     '<p id="erm-variant-msg" style="margin:6px 0 0;font-size:.78rem;color:#888;min-height:1em;"></p>'
+        +   '</div>'
         +   // ===== SELETOR DE QUANTIDADE =====
             '<div style="margin-bottom:14px;">'
         +     '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">Quantidade de vagas</label>'
@@ -1884,6 +1894,63 @@ if (groupForm) {
       ctx.cupomCentavos = 0;
       ctx.totalCentavos = ctx.precoCentavos;
 
+      // ===== Seletor de variante =====
+      // Quando a experiência tem variantOptions (ex: Pintura → Lagosta /
+      // Beijo / Olho grego), renderiza botões pill. O escolhido fica em
+      // ctx.variantSelected; vai como variant_selected no payload.
+      // Quando vazio, esconde a seção (zero ruído pras experiências
+      // sem variantes).
+      ctx.variantSelected = null;
+      var variantSection = root.querySelector('#erm-variant-section');
+      var variantLabelEl = root.querySelector('#erm-variant-label');
+      var variantOptsEl = root.querySelector('#erm-variant-options');
+      var variantMsgEl = root.querySelector('#erm-variant-msg');
+      if (
+        variantSection && variantOptsEl &&
+        ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
+      ) {
+        variantSection.style.display = 'block';
+        if (variantLabelEl) {
+          variantLabelEl.textContent = ctx.variantLabel + ' *';
+        }
+        variantOptsEl.innerHTML = '';
+        if (variantMsgEl) {
+          variantMsgEl.style.color = '#888';
+          variantMsgEl.textContent = 'Escolha uma opção pra continuar.';
+        }
+        ctx.variantOptions.forEach(function (opt) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'erm-variant-btn';
+          btn.dataset.value = opt;
+          btn.textContent = opt;
+          btn.style.cssText = 'padding:9px 16px;border:1.5px solid #ddd;background:#fff;color:#444;border-radius:999px;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s;';
+          btn.addEventListener('click', function () {
+            if (!currentReservationCtx) return;
+            currentReservationCtx.variantSelected = opt;
+            // Atualiza visual: o escolhido vira laranja, os demais voltam ao default.
+            variantOptsEl.querySelectorAll('.erm-variant-btn').forEach(function (b) {
+              if (b.dataset.value === opt) {
+                b.style.background = '#fff8ef';
+                b.style.borderColor = '#f0a05e';
+                b.style.color = '#1a1a1a';
+              } else {
+                b.style.background = '#fff';
+                b.style.borderColor = '#ddd';
+                b.style.color = '#444';
+              }
+            });
+            if (variantMsgEl) {
+              variantMsgEl.style.color = '#1a8a4a';
+              variantMsgEl.textContent = '✓ ' + ctx.variantLabel + ': ' + opt;
+            }
+          });
+          variantOptsEl.appendChild(btn);
+        });
+      } else if (variantSection) {
+        variantSection.style.display = 'none';
+      }
+
       // ===== Estado do método de pagamento =====
       // Default: cartão — preserva UX atual pra quem já tá acostumado.
       ctx.paymentMethod = ctx.paymentMethod || 'card';
@@ -2190,6 +2257,25 @@ if (groupForm) {
         ctx.cpf = cpfDigits;
       }
 
+      // ===== VALIDAÇÃO VARIANTE (Pintura: Lagosta/Beijo/Olho grego) =====
+      // Se a experiência tem variantOptions, escolha é obrigatória.
+      // Sem isso, cliente compraria sem definir o modelo do quadro.
+      if (ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length) {
+        if (!ctx.variantSelected) {
+          var vMsg = root.querySelector('#erm-variant-msg');
+          if (vMsg) {
+            vMsg.style.color = '#c0392b';
+            vMsg.textContent = 'Escolha uma opção de ' + ctx.variantLabel + ' pra continuar.';
+          }
+          var vSection = root.querySelector('#erm-variant-section');
+          if (vSection) {
+            try { vSection.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+          }
+          console.warn('[Elarah checkout] variante não selecionada bloqueou o submit:', ctx.variantLabel);
+          return;
+        }
+      }
+
       // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
       var participantes = [];
       if (ctx.quantidade > 1 && modalRoot) {
@@ -2275,6 +2361,8 @@ if (groupForm) {
             cupom: ctx.cupomCode || null,
             quantidade: ctx.quantidade || 1,
             participantes: ctx.participantes || [],
+            variant_label: ctx.variantLabel || null,
+            variant_selected: ctx.variantSelected || null,
           };
           console.log('[Elarah CHECKOUT FINAL] PIX payload:', JSON.stringify({
             selectedQuantity: ctx.quantidade,
@@ -2358,6 +2446,8 @@ if (groupForm) {
           payment_method: 'card',
           quantidade: ctx.quantidade || 1,
           participantes: ctx.participantes || [],
+          variant_label: ctx.variantLabel || null,
+          variant_selected: ctx.variantSelected || null,
         };
         console.log('[Elarah CHECKOUT FINAL] Stripe payload:', JSON.stringify({
           selectedQuantity: ctx.quantidade,
@@ -3083,11 +3173,16 @@ if (groupForm) {
       } catch (e) {}
 
       // Resolve preço (do botão, do card ou do cache de experiências).
+      // Sempre tenta buscar a experience pra ter acesso a campos
+      // dinâmicos (variantLabel, variantOptions) que nunca vêm via
+      // data-attributes do botão.
       let horario = readActiveHorario(btn);
       let precoLabel = btn.getAttribute('data-experience-preco') || readPrecoFromCard(btn);
       let precoCentavos = parsePrecoToCents(precoLabel);
+      let variantLabel = null;
+      let variantOptions = [];
 
-      if ((!precoCentavos || !horario) && window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
+      if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
           const exp = await ElarahData.getExperienceById(experienceId);
           if (exp) {
@@ -3097,6 +3192,10 @@ if (groupForm) {
             }
             if (!horario) {
               horario = (Array.isArray(exp.horarios) && exp.horarios.length) ? exp.horarios[0] : (exp.horario || null);
+            }
+            if (exp.variantLabel && Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
+              variantLabel = exp.variantLabel;
+              variantOptions = exp.variantOptions.slice();
             }
           }
         } catch (e) {}
@@ -3119,6 +3218,9 @@ if (groupForm) {
         // Pré-preenche com o nome do profile (se disponível). O usuário
         // ainda pode editar no modal antes de confirmar.
         nome: auth.nome || null,
+        // Variantes (escolha extra). Vazio = sem seletor no modal.
+        variantLabel: variantLabel,
+        variantOptions: variantOptions,
       });
     }
 

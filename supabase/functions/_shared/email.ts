@@ -268,6 +268,8 @@ export function bookingConfirmationEmailHtml(opts: {
   amountTotalCentavos?: number | null;
   participantes?: Array<{ nome?: string | null }> | null;
   bookingId?: string | null;
+  variantLabel?: string | null;
+  variantSelected?: string | null;
 }): string {
   const firstName = (opts.nome || "").trim().split(/\s+/)[0] || "";
   const greeting = firstName ? `Olá, ${firstName}!` : "Reserva confirmada!";
@@ -330,6 +332,7 @@ export function bookingConfirmationEmailHtml(opts: {
         ${linha("Horário", opts.horario)}
         ${linha("Endereço", enderecoFull)}
         ${linha("Pessoas", qtyLabel)}
+        ${linha(opts.variantLabel || "Variação", opts.variantSelected || null)}
         ${linha("Detalhe", subtotalDetailLabel)}
         ${linha("Valor pago", valorPagoLabel)}
       </table>

@@ -521,6 +521,8 @@ async function sendBookingConfirmation(booking: BookingRow) {
       ? ((meta as { participantes?: Array<{ nome?: string | null }> }).participantes ?? null)
       : null,
     bookingId: booking.id,
+    variantLabel: (meta.variant_label as string | undefined) ?? null,
+    variantSelected: (meta.variant_selected as string | undefined) ?? null,
   });
   const result = await sendEmail({
     to: booking.email,
