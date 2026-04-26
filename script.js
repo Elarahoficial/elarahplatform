@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v16 — descrição teaser truncada no card Original (modal mantém versão completa)');
+console.info('[Elarah] script.js v17 — horários dinâmicos no originals-modal + teaser com mais respiro');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -809,13 +809,18 @@ if (categoriaURL) activeCategoria = categoriaURL;
 
     // Tenta resolver a descrição real do item By Elarah (descricao do
     // banco/fallback seeds). Se não houver, cai pro texto genérico.
+    // Aproveita o lookup pra também popular dinamicamente o select
+    // de horários — antes era hardcoded ("10h às 13h" / "14h às 17h"),
+    // o que mostrava sempre os mesmos horários independente do que
+    // o admin tinha cadastrado. Agora reflete os horários reais.
     let customDesc = '';
+    let matchedItem = null;
     try {
       if (window.ElarahByElarah && typeof ElarahByElarah.getAllItems === 'function') {
         const items = await ElarahByElarah.getAllItems();
-        const match = items && items.find(function (i) { return i.nome === experienceName; });
-        if (match && match.descricao && String(match.descricao).trim()) {
-          customDesc = String(match.descricao).trim();
+        matchedItem = items && items.find(function (i) { return i.nome === experienceName; });
+        if (matchedItem && matchedItem.descricao && String(matchedItem.descricao).trim()) {
+          customDesc = String(matchedItem.descricao).trim();
           console.log('[Elarah Description Flow] originals: descrição encontrada para', experienceName);
         } else {
           console.warn('[Elarah Description Flow] originals: sem descrição para', experienceName);
@@ -823,6 +828,30 @@ if (categoriaURL) activeCategoria = categoriaURL;
       }
     } catch (err) {
       console.warn('[Elarah Description Flow] originals: falha ao buscar descrição', err);
+    }
+
+    // Popula horários dinamicamente. Se a experiência tem array
+    // `horarios` no banco, substitui as opções hardcoded do <select>.
+    // Se não tem (ou se o lookup falhou), preserva o que está no HTML
+    // pra não quebrar — fallback conservador.
+    var horarioSelect = document.getElementById('originals-horario');
+    if (horarioSelect && matchedItem && Array.isArray(matchedItem.horarios) && matchedItem.horarios.length) {
+      var validHorarios = matchedItem.horarios
+        .map(function (h) { return String(h || '').trim(); })
+        .filter(Boolean);
+      if (validHorarios.length) {
+        // Limpa opções antigas e injeta as do banco.
+        horarioSelect.innerHTML = '';
+        validHorarios.forEach(function (h) {
+          var opt = document.createElement('option');
+          opt.value = h;
+          opt.textContent = h;
+          horarioSelect.appendChild(opt);
+        });
+        console.log('[Elarah Originals] horários populados do banco:', validHorarios);
+      }
+    } else if (horarioSelect) {
+      console.warn('[Elarah Originals] sem horários no banco — mantendo opções hardcoded como fallback');
     }
 
     if (originalsModalDesc) {

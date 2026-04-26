@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v21 — preview de imagem no form de experiências');
+  console.info('[Elarah Admin] admin.js v22 — descrição completa: label/hint claros + aviso na aba By Elarah');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
