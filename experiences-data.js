@@ -331,6 +331,11 @@
   // "DD/MM/AAAA") + horário ("HH'h'MM ..."). Espelha a mesma lógica
   // de booking_guard.ts no backend pra que listagem pública e bloqueio
   // de reserva concordem. Fuso fixo America/Sao_Paulo (-03:00).
+  //
+  // "DD/MM" sem ano = ano atual. Se ficar no passado, getVisibleExperiences
+  // oculta a experiência (item solicitado: experiência expira sozinha
+  // depois do horário). Pra cadastrar evento futuro num ano específico,
+  // admin deve usar "DD/MM/AAAA".
   function deriveEventTimestamp(dataStr, horarioStr, nowMs) {
     if (nowMs == null) nowMs = Date.now();
     if (!dataStr) return null;
@@ -341,25 +346,25 @@
     const month = Number(m[2]);
     if (!Number.isFinite(day) || day < 1 || day > 31) return null;
     if (!Number.isFinite(month) || month < 1 || month > 12) return null;
-    const hasYear = !!m[3];
-    let year = hasYear
+    const year = m[3]
       ? (Number(m[3]) < 100 ? Number(m[3]) + 2000 : Number(m[3]))
       : new Date(nowMs).getFullYear();
     const h = parseStartHour(horarioStr);
     if (!h) return null;
     const pad = function (n) { return String(n).padStart(2, '0'); };
-    const buildIso = function (y) {
-      return y + '-' + pad(month) + '-' + pad(day) + 'T' + pad(h.hh) + ':' + pad(h.mm) + ':00-03:00';
-    };
-    let ts = new Date(buildIso(year)).getTime();
-    if (!Number.isFinite(ts)) return null;
-    if (!hasYear && ts < nowMs - 6 * 60 * 60 * 1000) {
-      const nextTs = new Date(buildIso(year + 1)).getTime();
-      if (Number.isFinite(nextTs)) ts = nextTs;
-    }
-    return ts;
+    const iso = year + '-' + pad(month) + '-' + pad(day) + 'T' + pad(h.hh) + ':' + pad(h.mm) + ':00-03:00';
+    const ts = new Date(iso).getTime();
+    return Number.isFinite(ts) ? ts : null;
   }
 
+  // Lista pública: oculta automaticamente quando
+  //   1. isActive === false (admin marcou pra ocultar manualmente);
+  //   2. faltam menos que `cutoffHours` (default 24h) pro evento começar;
+  //   3. o horário do evento já passou (auto-expira sozinha).
+  // Os 3 critérios são checados pela mesma desigualdade
+  // `now + cutoff*1h <= eventTs` — qualquer eventTs no passado falha
+  // automaticamente porque eventTs < now < now + cutoff*1h.
+  // Admin continua usando getAllExperiences() pra ver tudo.
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
     const now = Date.now();
