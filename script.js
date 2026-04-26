@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v21 — varredura: resolve experience direto (sem filtro cutoff) + log no click do card');
+console.info('[Elarah] script.js v22 — card comprável usa data-reserve (mesmo listener global dos cards regulares) + fallback por nome');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -727,12 +727,24 @@ if (categoriaURL) activeCategoria = categoriaURL;
       var imgFallback = resolveOnErrorFallback(it);
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
+      // CRÍTICO: cards compráveis recebem `data-reserve` — o listener
+      // delegado em document (registrado no startCheckout setup, capture
+      // phase, com stopImmediatePropagation) intercepta o click e chama
+      // startCheckout(btn) usando EXATAMENTE o mesmo pipeline dos cards
+      // regulares do site. Sem data-reserve no listener custom dos cards
+      // (abaixo), funcionava só se o handler local rodasse antes do global,
+      // e qualquer erro de cache/escopo derrubava pra fluxo de lead.
       var dataAttrs =
         ' data-experience="' + esc(it.nome) + '"' +
         ' data-cta-mode="' + esc(ctaMode) + '"' +
         ' data-type="' + esc(it.tipo || '') + '"';
       if (it.fromExperience && it.experienceId) {
         dataAttrs += ' data-experience-id="' + esc(it.experienceId) + '"';
+        // ✅ data-reserve = listener global vai pegar esse click e
+        // disparar startCheckout. Garantia de que cards compráveis
+        // SEMPRE caem no fluxo de checkout, sem dependência de
+        // funções no escopo local ou ordem de listeners.
+        dataAttrs += ' data-reserve';
       }
       if (it.precoLabel) {
         dataAttrs += ' data-experience-preco="' + esc(it.precoLabel) + '"';
@@ -768,31 +780,32 @@ if (categoriaURL) activeCategoria = categoriaURL;
     grid.innerHTML = html;
 
     // Re-vincula os cliques nos botões (porque substituímos o HTML).
+    // Cards COMPRÁVEIS (com data-reserve) NÃO precisam de listener
+    // local — o listener delegado em document, registrado no setup
+    // de startCheckout, intercepta em capture phase com
+    // stopImmediatePropagation. Aqui só tratamos os cards de lista
+    // de espera (lead via WhatsApp).
     grid.querySelectorAll('.originals__card-btn').forEach(function(btn) {
-      btn.addEventListener('click', function (e) {
-        var ctaMode = btn.getAttribute('data-cta-mode') || 'waitlist';
-        var expId = btn.getAttribute('data-experience-id');
-        // Log loud — quando admin reportar que cliclu no botão e foi
-        // pro lead em vez do checkout, esse log diz exatamente por quê.
+      // Se tem data-reserve, deixa o listener global tratar. Não
+      // adiciona handler local — qualquer handler local em bubble
+      // phase rodaria DEPOIS do global em capture, mas se o global
+      // chamou stopImmediatePropagation, este nunca dispara mesmo.
+      // Mantemos o early-return pra clareza de intenção.
+      if (btn.hasAttribute('data-reserve')) {
         console.info(
-          '[Elarah By Elarah] CLICK em card →',
-          'experience=' + (btn.getAttribute('data-experience') || '?'),
-          'ctaMode=' + ctaMode,
-          'experienceId=' + (expId || '(nenhum)'),
-          'startCheckout disponível=' + (typeof startCheckout === 'function')
+          '[Elarah By Elarah] card "' +
+          (btn.getAttribute('data-experience') || '?') +
+          '" tem data-reserve — listener global vai disparar startCheckout'
         );
-        // Compra direta: chama startCheckout direto — mesmo pipeline
-        // dos cards regulares (qty>1, gift card, Stripe, PIX já
-        // testados). Não simulamos click no botão pra evitar loop
-        // com o próprio listener.
-        if (ctaMode === 'buy' && expId && typeof startCheckout === 'function') {
-          console.info('[Elarah By Elarah] → fluxo CHECKOUT (startCheckout)');
-          if (e && e.preventDefault) e.preventDefault();
-          startCheckout(btn);
-          return;
-        }
-        // Lista de espera / lead: modal de WhatsApp (comportamento atual).
-        console.info('[Elarah By Elarah] → fluxo LEAD (openOriginalsModal)');
+        return;
+      }
+      // Lista de espera / lead: modal de WhatsApp (comportamento atual).
+      btn.addEventListener('click', function () {
+        console.info(
+          '[Elarah By Elarah] card "' +
+          (btn.getAttribute('data-experience') || '?') +
+          '" sem data-reserve → fluxo LEAD (openOriginalsModal)'
+        );
         openOriginalsModal(
           btn.getAttribute('data-experience'),
           btn.getAttribute('data-type')
@@ -1075,6 +1088,53 @@ if (categoriaURL) activeCategoria = categoriaURL;
         } catch (e) { /* ignora */ }
       }
     }
+
+    // ===== FALLBACK POR NOME =====
+    // Rede de segurança: pra qualquer byelarah_item COM tipo='participar'
+    // mas SEM experience_id resolvido (ex: admin marcou comprável mas
+    // o sync falhou OU é item legado que tem experience comprável de
+    // mesmo nome cadastrada manualmente), tenta achar uma experience
+    // visível com nome similar (case-insensitive + trim) e usa ela.
+    // Essa busca é em allExps (já carregadas) — sem custo extra de rede.
+    function normNome(s) {
+      return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+    var nameMap = new Map();
+    (allExps || []).forEach(function (e) {
+      if (e && e.nome && e.id) nameMap.set(normNome(e.nome), e);
+    });
+    // Também adiciona experiences do expById (já resolvidas) que podem
+    // não estar em allExps (resolved via getExperienceById direto).
+    expById.forEach(function (e) {
+      if (e && e.nome && e.id) {
+        var k = normNome(e.nome);
+        if (!nameMap.has(k)) nameMap.set(k, e);
+      }
+    });
+
+    (allItems || []).forEach(function (item) {
+      if (!item || !item.nome) return;
+      // Só tenta o fallback por nome se NÃO já tem experienceId resolvido
+      // — caso contrário, respeita o vínculo explícito do admin.
+      if (item.experienceId && expById.has(item.experienceId)) return;
+      // E só faz sentido pra items que querem ser compráveis (tipo='participar').
+      if (item.tipo !== 'participar') return;
+
+      var matchedExp = nameMap.get(normNome(item.nome));
+      if (matchedExp && matchedExp.isActive !== false) {
+        console.info(
+          '[Elarah By Elarah] FALLBACK POR NOME: item "' + item.nome +
+          '" sem experience_id resolvido — vinculando a experience "' +
+          matchedExp.nome + '" (id=' + matchedExp.id + ')'
+        );
+        // Sobrescreve experience_id em memória só (não persiste no banco).
+        // Próximo save no admin grava de verdade.
+        item.experienceId = matchedExp.id;
+        if (!expById.has(matchedExp.id)) {
+          expById.set(matchedExp.id, matchedExp);
+        }
+      }
+    });
 
     // ===== LOG DE DIAGNÓSTICO =====
     console.info('[Elarah By Elarah] diagnóstico do load:', {
