@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v15 — fix imagem trocada nos cards By Elarah (placeholder neutro)');
+console.info('[Elarah] script.js v16 — descrição teaser truncada no card Original (modal mantém versão completa)');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -584,6 +584,22 @@ if (categoriaURL) activeCategoria = categoriaURL;
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Trunca um texto perto do limite sem quebrar palavra ao meio.
+    // Estratégia: se já cabe inteiro, devolve como está. Senão, corta
+    // no último espaço ANTES do limite e adiciona "...". Garante que
+    // o teaser do card sempre termine em palavra completa.
+    function truncateAtWord(text, max) {
+      var s = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+      if (s.length <= max) return s;
+      var cut = s.slice(0, max);
+      // Não corta dentro de uma palavra: anda pra trás até achar espaço.
+      var lastSpace = cut.lastIndexOf(' ');
+      if (lastSpace > Math.floor(max * 0.6)) cut = cut.slice(0, lastSpace);
+      // Remove pontuação solta no fim antes do "..." pra ficar limpo.
+      cut = cut.replace(/[\s,;:.!?\-–—]+$/, '');
+      return cut + '…';
+    }
+
     // Mapa de fallback por slug/nome — usado SOMENTE pra cards do
     // legado (byelarah_items) que ainda não têm imagem cadastrada.
     // Cards vindos de `experiences` (it.fromExperience===true) NÃO
@@ -663,9 +679,28 @@ if (categoriaURL) activeCategoria = categoriaURL;
               : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' + esc(it.data)) +
           '</p>'
         : '';
-      var descHtml = it.descricao && it.tipo === 'espera'
-        ? '<p class="originals__card-detail originals__card-detail--highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' + esc(it.descricao) + '</p>'
-        : '';
+      // Descrição:
+      //   - tipo='espera' → mantém estilo highlight (estrelinha) usado
+      //     historicamente em cards de lista de espera.
+      //   - tipo='participar' (Originals compráveis) → teaser discreto
+      //     truncado, com a descrição COMPLETA reservada pra modal de
+      //     reserva (runDescriptionGate). Mesmo campo do banco, dois
+      //     tratamentos visuais distintos.
+      var descHtml = '';
+      var descRaw = it.descricao ? String(it.descricao).trim() : '';
+      if (descRaw) {
+        if (it.tipo === 'espera') {
+          descHtml = '<p class="originals__card-detail originals__card-detail--highlight">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
+            esc(descRaw) + '</p>';
+        } else {
+          // Truncamento inteligente: corta no espaço mais próximo de
+          // 120 chars pra não cortar palavra no meio. Se a descrição
+          // já cabe inteira, mostra sem "...".
+          descHtml = '<p class="originals__card-detail originals__card-detail--teaser">' +
+            esc(truncateAtWord(descRaw, 120)) + '</p>';
+        }
+      }
 
       // CTA dinâmico:
       //   - 'buy'      → checkout direto (botão laranja "Quero participar")
