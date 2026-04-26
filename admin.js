@@ -811,10 +811,37 @@
         valorComissao = Math.round(valorCheio * 0.20);
       }
 
+      // Renderiza acompanhantes (participantes adicionais) abaixo do
+      // nome do comprador, com WhatsApp clicável quando o telefone
+      // estiver disponível. O índice 0 do array é o próprio comprador
+      // (gravado pelo script.js no checkout) — ignoramos pra não
+      // duplicar com nomeResolved acima.
+      function renderAcompanhantes() {
+        if (!b.metadata || !Array.isArray(b.metadata.participantes)) return '';
+        if (b.metadata.participantes.length <= 1) return '';
+        const extras = b.metadata.participantes.slice(1);
+        if (!extras.length) return '';
+        const items = extras.map(function (p) {
+          const pNome = escapeHtml((p && p.nome) || '?');
+          const pTelRaw = String((p && (p.telefone || p.telefone_digits)) || '').trim();
+          if (!pTelRaw) {
+            return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + '</span>';
+          }
+          const pDigits = pTelRaw.replace(/\D+/g, '');
+          const pWa = pDigits.length >= 10 ? ('55' + pDigits.replace(/^55/, '')) : pDigits;
+          const pTelDisplay = escapeHtml(p.telefone || pDigits);
+          const link = pWa
+            ? '<a href="https://wa.me/' + pWa + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + pTelDisplay + '</a>'
+            : pTelDisplay;
+          return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + ' · ' + link + '</span>';
+        }).join('');
+        return '<br>' + items;
+      }
+
       return `
         <tr>
           <td>${escapeHtml(when)}</td>
-          <td>${escapeHtml(nomeResolved || '—')}${b.quantidade > 1 && b.metadata && Array.isArray(b.metadata.participantes) && b.metadata.participantes.length ? '<br>' + b.metadata.participantes.map(function(p, i) { return '<span style="font-size:.75rem;color:#888;">+' + escapeHtml(p.nome || '?') + '</span>'; }).join('<br>') : ''}</td>
+          <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
           <td>${escapeHtml(b.experiencia_nome || '—')}</td>
