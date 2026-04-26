@@ -119,6 +119,14 @@
       fornecedorNome: row.fornecedor_nome || null,
       valorCheioCentavos: row.valor_cheio_centavos != null ? Number(row.valor_cheio_centavos) : null,
       percentualRepasse: row.percentual_repasse != null ? Number(row.percentual_repasse) : 90,
+      // --- By Elarah Originals ---
+      // Estas 3 colunas vivem em sql/elarah_byelarah_originals.sql.
+      // Defaults retrocompatíveis: se a coluna ainda não existir no
+      // banco (migração não rodou), o JS lê undefined e cai nos
+      // defaults — comportamento atual mantido.
+      isElarahOriginal: row.is_elarah_original === true,
+      hideFromCategorias: row.hide_from_categorias === true,
+      ctaMode: row.cta_mode === 'waitlist' ? 'waitlist' : 'buy',
       // ------------------------
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
@@ -180,6 +188,16 @@
         if (raw == null || raw === '') return 90;
         var n = Number(raw);
         return Number.isFinite(n) ? n : 90;
+      })(),
+      // --- By Elarah Originals ---
+      // Aceita camelCase (do form do admin) ou snake_case. Se o
+      // banco ainda não tem essas colunas, filterKnownColumns dropa
+      // antes do INSERT/UPDATE — sem erro.
+      is_elarah_original: (exp.isElarahOriginal === true || exp.is_elarah_original === true),
+      hide_from_categorias: (exp.hideFromCategorias === true || exp.hide_from_categorias === true),
+      cta_mode: (function () {
+        var raw = exp.ctaMode != null ? exp.ctaMode : exp.cta_mode;
+        return raw === 'waitlist' ? 'waitlist' : 'buy';
       })()
     };
     return filterKnownColumns(fullRow);

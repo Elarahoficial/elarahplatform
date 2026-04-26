@@ -835,6 +835,33 @@
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Desmarque para ocultar a experiência do site sem excluí-la.</p>
         </div>
 
+        <!-- ===== BY ELARAH (ELARAH ORIGINALS) ===== -->
+        <div class="admin__form-field admin__form-field--full" style="border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
+          <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;display:block;">By Elarah / Originals</label>
+        </div>
+        <div class="admin__form-field admin__form-field--full">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="exp-is-elarah-original" style="width:auto;margin:0;">
+            <span>É um Elarah Original (aparece na aba "By Elarah" da home)</span>
+          </label>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Marque pra exibir esta experiência na seção destacada "By Elarah" da home, com badge premium.</p>
+        </div>
+        <div class="admin__form-field admin__form-field--full">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="exp-hide-from-categorias" style="width:auto;margin:0;">
+            <span>Esconder das categorias regulares</span>
+          </label>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Se marcado, a experiência só aparece na aba "By Elarah" — não vai aparecer em <code>categoria.html</code>. Útil pra Originals exclusivos.</p>
+        </div>
+        <div class="admin__form-field admin__form-field--full">
+          <label>Ação do botão (CTA)</label>
+          <select id="exp-cta-mode" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:.95rem;">
+            <option value="buy">Compra direta (checkout) — recomendado pra experiências com data definida</option>
+            <option value="waitlist">Lista de espera (lead) — pra experiências em pré-lançamento sem data</option>
+          </select>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">"Compra direta" abre o checkout normal; "Lista de espera" abre o formulário de lead que envia pro WhatsApp.</p>
+        </div>
+
         <!-- ===== FORNECEDOR / FINANCEIRO ===== -->
         <div class="admin__form-field admin__form-field--full" style="border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
           <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;display:block;">Fornecedor & Financeiro</label>
@@ -941,10 +968,10 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js?v=6"></script>
 <script src="auth.js?v=8"></script>
-<script src="experiences-data.js?v=14"></script>
+<script src="experiences-data.js?v=15"></script>
 <script src="byelarah-data.js?v=2"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=38"></script>
+<script src="admin.js?v=39"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

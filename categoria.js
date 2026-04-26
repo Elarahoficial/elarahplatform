@@ -13,6 +13,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     experiences = [];
   }
 
+  // Esconde Originals exclusivos: experiências marcadas com
+  // hide_from_categorias só aparecem na aba "By Elarah" da home,
+  // não nas listagens de categoria. Default false → comportamento
+  // antigo preservado pra todas as experiências existentes.
+  experiences = experiences.filter(function (e) {
+    return e && e.hideFromCategorias !== true;
+  });
+
   // ===== URL PARAMS =====
   const params = new URLSearchParams(window.location.search);
   let activeCategoria = params.get('cat') || '';

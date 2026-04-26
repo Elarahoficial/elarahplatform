@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v13 carregado — filtros dinâmicos de categoria/bairro');
+console.info('[Elarah] script.js v14 — By Elarah Originals (compra direta) + hide_from_categorias');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -19,6 +19,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('[Elarah] falha ao carregar experiências, seguindo com lista vazia', e);
     experiences = [];
   }
+
+  // Originals exclusivos (hideFromCategorias=true) só aparecem na
+  // seção By Elarah — não nas listagens de carrossel/categoria da home.
+  experiences = experiences.filter(function (e) {
+    return e && e.hideFromCategorias !== true;
+  });
 
   // Carrega disponibilidade por slot (vagas por horário)
   window._elarahSlotMap = {};
@@ -637,10 +643,24 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? '<p class="originals__card-detail originals__card-detail--highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' + esc(it.descricao) + '</p>'
         : '';
 
-      var btnClass = it.tipo === 'participar'
+      // CTA dinâmico:
+      //   - 'buy'      → checkout direto (botão laranja "Quero participar")
+      //   - 'waitlist' → lead via WhatsApp (botão "Entrar na lista de espera")
+      // Default: deriva do legado `tipo`. Se o item veio de
+      // experiences (it.ctaMode setado), usa ele direto.
+      var ctaMode = it.ctaMode === 'buy' || it.ctaMode === 'waitlist'
+        ? it.ctaMode
+        : (it.tipo === 'participar' ? 'buy' : 'waitlist');
+
+      // Cards de experiências compráveis (Originals) ganham o visual
+      // premium (borda dourada + shadow) pra destacar do legado.
+      var cardClass = it.fromExperience
+        ? 'originals__card originals__card--premium'
+        : 'originals__card';
+      var btnClass = ctaMode === 'buy'
         ? 'originals__card-btn'
         : 'originals__card-btn originals__card-btn--outline';
-      var btnLabel = it.tipo === 'participar'
+      var btnLabel = ctaMode === 'buy'
         ? 'Quero participar'
         : 'Entrar na lista de espera';
 
@@ -649,19 +669,33 @@ if (categoriaURL) activeCategoria = categoriaURL;
         || (it.nome && ORIGINALS_IMAGE_FALLBACKS[String(it.nome).toLowerCase()])
         || DEFAULT_ORIGINALS_IMAGE;
 
+      // Atributos data-* identificam o tipo de fluxo no click handler.
+      var dataAttrs =
+        ' data-experience="' + esc(it.nome) + '"' +
+        ' data-cta-mode="' + esc(ctaMode) + '"' +
+        ' data-type="' + esc(it.tipo || '') + '"';
+      if (it.fromExperience && it.experienceId) {
+        dataAttrs += ' data-experience-id="' + esc(it.experienceId) + '"';
+      }
+      if (it.precoLabel) {
+        dataAttrs += ' data-experience-preco="' + esc(it.precoLabel) + '"';
+      }
+
+      var badgeLabel = it.fromExperience ? '✨ By Elarah' : 'Original Elarah';
+
       return '' +
-        '<article class="originals__card">' +
+        '<article class="' + cardClass + '">' +
           '<div class="originals__card-image">' +
             '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
               'onerror="if(this.dataset.fb!==&quot;1&quot;){this.dataset.fb=&quot;1&quot;;this.src=&quot;' + esc(imgFallback) + '&quot;;}">' +
-            '<span class="originals__card-badge">Original Elarah</span>' +
+            '<span class="originals__card-badge">' + esc(badgeLabel) + '</span>' +
           '</div>' +
           '<div class="originals__card-body">' +
             '<h3 class="originals__card-title">' + esc(it.nome) + '</h3>' +
             '<div class="originals__card-details">' +
               descHtml + dataHtml + horariosHtml + localHtml +
             '</div>' +
-            '<button class="' + btnClass + '" data-experience="' + esc(it.nome) + '" data-type="' + esc(it.tipo) + '">' + esc(btnLabel) + '</button>' +
+            '<button class="' + btnClass + '"' + dataAttrs + '>' + esc(btnLabel) + '</button>' +
           '</div>' +
         '</article>';
     }).join('');
@@ -670,8 +704,23 @@ if (categoriaURL) activeCategoria = categoriaURL;
 
     // Re-vincula os cliques nos botões (porque substituímos o HTML).
     grid.querySelectorAll('.originals__card-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        openOriginalsModal(btn.dataset.experience, btn.dataset.type);
+      btn.addEventListener('click', function (e) {
+        var ctaMode = btn.getAttribute('data-cta-mode') || 'waitlist';
+        var expId = btn.getAttribute('data-experience-id');
+        // Compra direta: chama startCheckout direto — mesmo pipeline
+        // dos cards regulares (qty>1, gift card, Stripe, PIX já
+        // testados). Não simulamos click no botão pra evitar loop
+        // com o próprio listener.
+        if (ctaMode === 'buy' && expId && typeof startCheckout === 'function') {
+          if (e && e.preventDefault) e.preventDefault();
+          startCheckout(btn);
+          return;
+        }
+        // Lista de espera / lead: modal de WhatsApp (comportamento atual).
+        openOriginalsModal(
+          btn.getAttribute('data-experience'),
+          btn.getAttribute('data-type')
+        );
       });
     });
   }
@@ -835,13 +884,98 @@ if (categoriaURL) activeCategoria = categoriaURL;
     }
   });
 
-  // Hidrata os cards a partir do Supabase (se disponível).
-  // Mantém o HTML estático como fallback para não piscar.
-  if (window.ElarahByElarah && ElarahByElarah.getActiveItems) {
-    ElarahByElarah.getActiveItems().then(function(items) {
-      if (items && items.length) renderOriginalsGrid(items);
-    }).catch(function(){});
+  // ===== Hidratação combinada da seção By Elarah =====
+  // Combina DUAS fontes:
+  //   1. experiences com is_elarah_original = true → cards compráveis
+  //      (CTA = checkout direto via startCheckout).
+  //   2. byelarah_items (legado) → cards de lista de espera (lead).
+  //
+  // A fonte (1) é normalizada pro mesmo shape de (2) pra que o
+  // renderOriginalsGrid funcione sem precisar saber a origem.
+  // Dedup por slug/nome (case-insensitive) — se a mesma experiência
+  // existir nos dois lugares (durante a migração), prioriza a fonte
+  // de experiences (porque tem checkout). Cards compráveis vêm
+  // primeiro pra reforçar conversão visual.
+  function experienceToOriginalCard(exp) {
+    if (!exp || !exp.id) return null;
+    var horarios = Array.isArray(exp.horarios) && exp.horarios.length
+      ? exp.horarios.slice()
+      : (exp.horario ? [exp.horario] : []);
+    return {
+      // Identificação + aparência
+      id: 'exp-' + exp.id,
+      slug: (exp.nome || '').toLowerCase().replace(/\s+/g, '-'),
+      nome: exp.nome || '',
+      descricao: exp.descricao || '',
+      imagem: exp.imagem || '',
+      data: exp.data || '',
+      local: [exp.endereco, exp.bairro].filter(Boolean).join(' — '),
+      horarios: horarios,
+      // CTA: respeita cta_mode da experiência (default 'buy').
+      tipo: exp.ctaMode === 'waitlist' ? 'espera' : 'participar',
+      ctaMode: exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy',
+      ordem: 0,
+      ativo: exp.isActive !== false,
+      // Marcadores que o renderOriginalsGrid usa pra ligar checkout
+      // e aplicar o visual premium.
+      fromExperience: true,
+      experienceId: exp.id,
+      precoLabel: exp.preco || ''
+    };
   }
+
+  async function loadByElarahCombined() {
+    var promises = [];
+    // Source 1: experiences com is_elarah_original=true.
+    if (window.ElarahData && ElarahData.getVisibleExperiences) {
+      promises.push(
+        ElarahData.getVisibleExperiences()
+          .then(function (exps) {
+            return (exps || [])
+              .filter(function (e) { return e && e.isElarahOriginal === true; })
+              .map(experienceToOriginalCard)
+              .filter(Boolean);
+          })
+          .catch(function () { return []; })
+      );
+    } else {
+      promises.push(Promise.resolve([]));
+    }
+    // Source 2: byelarah_items legado.
+    if (window.ElarahByElarah && ElarahByElarah.getActiveItems) {
+      promises.push(
+        ElarahByElarah.getActiveItems().catch(function () { return []; })
+      );
+    } else {
+      promises.push(Promise.resolve([]));
+    }
+
+    var results = await Promise.all(promises);
+    var fromExp = results[0] || [];
+    var fromLegacy = results[1] || [];
+
+    // Dedup: se o mesmo nome (normalizado) aparece nas duas fontes,
+    // prioriza a versão de experiências (tem checkout). Útil durante
+    // a migração — admin pode duplicar antes de desativar o legado.
+    var seen = new Set();
+    function keyOf(it) {
+      return String(it.slug || it.nome || '').toLowerCase().trim();
+    }
+    var combined = [];
+    fromExp.forEach(function (it) {
+      var k = keyOf(it);
+      if (k && !seen.has(k)) { seen.add(k); combined.push(it); }
+    });
+    fromLegacy.forEach(function (it) {
+      var k = keyOf(it);
+      if (k && !seen.has(k)) { seen.add(k); combined.push(it); }
+    });
+
+    if (combined.length) renderOriginalsGrid(combined);
+  }
+  loadByElarahCombined().catch(function (e) {
+    console.warn('[Elarah] loadByElarahCombined falhou', e);
+  });
 
   // ===== GROUP SECTION =====
   var groupBtns = document.querySelectorAll('.group-section__btn');

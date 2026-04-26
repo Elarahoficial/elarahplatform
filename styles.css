@@ -1150,6 +1150,44 @@ select {
   border-color: transparent;
 }
 
+/* ===== Variant: Elarah Original premium (compráveis) =====
+   Cards vindos da tabela `experiences` com is_elarah_original=true
+   ganham um destaque visual reforçando o posicionamento premium.
+   Sutil — não muda layout, só adiciona presença. */
+.originals__card--premium {
+  border: 1.5px solid #f0a05e;
+  box-shadow: 0 4px 18px rgba(240, 160, 94, 0.12);
+  position: relative;
+}
+
+.originals__card--premium::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(240, 160, 94, 0.04) 0%, transparent 50%);
+  z-index: 0;
+}
+
+.originals__card--premium:hover {
+  border-color: #e08a3e;
+  box-shadow: 0 12px 32px rgba(240, 160, 94, 0.22);
+}
+
+.originals__card--premium .originals__card-badge {
+  background: linear-gradient(135deg, #f0a05e 0%, #e08a3e 100%);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  box-shadow: 0 2px 8px rgba(240, 160, 94, 0.4);
+}
+
+.originals__card--premium > * {
+  position: relative;
+  z-index: 1;
+}
+
 .originals__card-badge {
   position: absolute;
   top: 14px;
