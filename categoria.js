@@ -118,9 +118,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       : (exp.horario ? [exp.horario] : []);
     const hasMultipleHorarios = horarios.length > 1;
 
-    const imageContent = exp.imagem
-      ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
-      : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
+    // Normaliza path: nome solto vira "assets/...". URLs absolutas
+    // e paths absolutos passam direto. Mesmo helper usado na home
+    // (script.js) — duplicado pra manter categoria.js standalone.
+    const normalizeImg = function (p) {
+      const s = String(p == null ? '' : p).trim();
+      if (!s) return '';
+      if (/^(https?:\/\/|\/)/i.test(s)) return s;
+      if (/^(assets|images|img)\//i.test(s)) return s;
+      return 'assets/' + s;
+    };
+    const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
+    const imgSrc = normalizeImg(exp.imagem);
+    const imageContent = imgSrc
+      ? `<img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" loading="lazy" ` +
+        `onerror="if(this.dataset.fb!=='1'){this.dataset.fb='1';` +
+        `console.warn('[Elarah] imagem do card falhou (URL inválida ou inacessível): ' + this.dataset.originalSrc);` +
+        `this.outerHTML=this.dataset.fbHtml;}" ` +
+        `data-original-src="${imgSrc}" ` +
+        `data-fb-html="${placeholderHtml.replace(/"/g, '&quot;')}">`
+      : placeholderHtml;
 
     const horarioLine = hasMultipleHorarios
       ? `${exp.data || ''}`

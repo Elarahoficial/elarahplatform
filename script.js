@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v22 — card comprável usa data-reserve (mesmo listener global dos cards regulares) + fallback por nome');
+console.info('[Elarah] script.js v23 — badge unificado + Data em breve centralizada + onerror fallback de imagem');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -283,9 +283,27 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // Slot availability lookup (populated by loadSlotAvailability)
     var slotMap = (window._elarahSlotMap && window._elarahSlotMap[exp.id]) || {};
 
-    const imageContent = exp.imagem
-      ? `<img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">`
-      : `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria}</span></div>`;
+    // Normaliza path: nome solto (ex: "ceramica.jpg") vira "assets/ceramica.jpg".
+    // URLs absolutas (http/https) e paths absolutos (/...) passam direto.
+    const normalizeImg = function (p) {
+      const s = String(p == null ? '' : p).trim();
+      if (!s) return '';
+      if (/^(https?:\/\/|\/)/i.test(s)) return s;
+      if (/^(assets|images|img)\//i.test(s)) return s;
+      return 'assets/' + s;
+    };
+    // Placeholder gradient (usado quando imagem vazia OU falha ao carregar).
+    // Encodado em data-attribute pra que o onerror possa trocar inline.
+    const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
+    const imgSrc = normalizeImg(exp.imagem);
+    const imageContent = imgSrc
+      ? `<img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" loading="lazy" ` +
+        `onerror="if(this.dataset.fb!=='1'){this.dataset.fb='1';` +
+        `console.warn('[Elarah] imagem do card falhou (URL inválida ou inacessível): ' + this.dataset.originalSrc);` +
+        `this.outerHTML=this.dataset.fbHtml;}" ` +
+        `data-original-src="${imgSrc}" ` +
+        `data-fb-html="${placeholderHtml.replace(/"/g, '&quot;')}">`
+      : placeholderHtml;
 
     const horarioLine = hasMultipleHorarios
       ? `${exp.data}`
@@ -750,7 +768,12 @@ if (categoriaURL) activeCategoria = categoriaURL;
         dataAttrs += ' data-experience-preco="' + esc(it.precoLabel) + '"';
       }
 
-      var badgeLabel = it.fromExperience ? '✨ By Elarah' : 'Original Elarah';
+      // Badge unificado: TODOS os cards da seção By Elarah usam o
+      // mesmo label e estilo (gradient laranja premium). Antes
+      // tinha duas variantes ("✨ By Elarah" pros cards de experience
+      // e "Original Elarah" preto pros legados) — visualmente
+      // inconsistente. Agora é sempre '✨ BY ELARAH' laranja.
+      var badgeLabel = '✨ BY ELARAH';
 
       return '' +
         '<article class="' + cardClass + '">' +

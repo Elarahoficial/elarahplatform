@@ -1175,13 +1175,10 @@ select {
   box-shadow: 0 12px 32px rgba(240, 160, 94, 0.22);
 }
 
-.originals__card--premium .originals__card-badge {
-  background: linear-gradient(135deg, #f0a05e 0%, #e08a3e 100%);
-  color: #fff;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  box-shadow: 0 2px 8px rgba(240, 160, 94, 0.4);
-}
+/* Badge no premium agora reusa o estilo base (gradient laranja
+   já aplicado em .originals__card-badge). Mantemos a regra vazia
+   apenas pra clareza de intenção — pode ser removida se ninguém
+   usar futuramente. */
 
 .originals__card--premium > * {
   position: relative;
@@ -1192,8 +1189,10 @@ select {
   position: absolute;
   top: 14px;
   left: 14px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
+  /* Gradient laranja premium em TODOS os cards (uniformiza visual
+     da seção By Elarah). Antes era preto translúcido nos legados,
+     o que destoava dos cards de experience. */
+  background: linear-gradient(135deg, #f0a05e 0%, #e08a3e 100%);
   color: var(--white);
   font-size: 0.7rem;
   font-weight: 700;
@@ -1201,6 +1200,7 @@ select {
   letter-spacing: 0.08em;
   padding: 5px 12px;
   border-radius: var(--radius-full);
+  box-shadow: 0 2px 8px rgba(240, 160, 94, 0.4);
 }
 
 .originals__card-date {
@@ -1234,6 +1234,10 @@ select {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 18px;
+  /* Cresce pra ocupar todo o espaço disponível entre título e botão.
+     Crítico pra centralização vertical do "Data em breve" funcionar
+     (margin: auto 0 do --soon precisa de container com altura). */
+  flex: 1;
 }
 
 .originals__card-detail {
@@ -1260,10 +1264,27 @@ select {
   color: var(--orange);
 }
 
+/* "Data em breve" nos cards de lista de espera (sem data definida).
+   Antes era pequeno e alinhado à esquerda — visualmente sem peso
+   no card. Agora ocupa o espaço entre o teaser e o botão (flex:1
+   no container details + margin auto vertical no próprio elemento)
+   e fica centralizado horizontal+vertical com tamanho maior. */
 .originals__card-detail--soon {
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 700;
   color: var(--orange);
-  font-size: 0.8rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  /* margin auto vertical empurra pra ficar no meio do container */
+  margin: auto 0;
+  padding: 28px 0;
+  width: 100%;
+  /* Garante que o elemento se expanda pra capturar o espaço sobrando */
+  flex: 1 1 auto;
+  min-height: 60px;
 }
 
 /* Teaser: descrição curta no card de Originals compráveis.
