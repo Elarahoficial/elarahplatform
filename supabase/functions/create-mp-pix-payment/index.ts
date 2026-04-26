@@ -45,7 +45,11 @@ import {
   createPixPayment,
   isValidCpf,
 } from "../_shared/mercadopago.ts";
-import { reserveExperienceSlot } from "../_shared/booking_guard.ts";
+import {
+  reserveExperienceSlot,
+  computeChargeAmount,
+  assertExpectedTotal,
+} from "../_shared/booking_guard.ts";
 
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -271,11 +275,28 @@ serve(async (req) => {
   const bookingId = crypto.randomUUID();
   const { first: firstName, last: lastName } = splitName(resolvedNome || "Cliente Elarah");
 
+  // Sanity check final antes de chamar a MP. Mesmo o booking_guard
+  // já tendo calculado tudo, a checagem explícita serve de defesa
+  // contra qualquer regressão futura — nunca cobramos a menos.
+  const breakdown = computeChargeAmount(baseCents, guardQty, giftCardCentavos);
+  try {
+    assertExpectedTotal(breakdown, amountToChargeCents, "mp pix payment");
+  } catch (e) {
+    console.error("[Elarah Payment/MP] assertExpectedTotal falhou", e);
+    await rollback();
+    return jsonResponse(
+      { error: "amount_mismatch", message: "Erro interno no cálculo do total. Recarregue e tente novamente." },
+      500,
+    );
+  }
+
   console.info(
     "[Elarah Payment/MP] QUANTIDADE DEBUG",
     "payload.quantidade=" + payload.quantidade,
     "guardQty=" + guardQty,
     "baseCents=" + baseCents,
+    "subtotal=" + breakdown.subtotalCents,
+    "discount=" + breakdown.discountCents,
     "amountToChargeCents=" + amountToChargeCents,
     "giftCardCentavos=" + giftCardCentavos,
   );
@@ -347,7 +368,14 @@ serve(async (req) => {
     bairro: exp.bairro ?? null,
     endereco: exp.endereco ?? null,
     telefone_digits: telefoneDigits || null,
-    preco_total_centavos: baseCents,
+    // Breakdown pra auditoria — fonte única do guard.
+    unit_price_centavos: breakdown.unitCents,
+    subtotal_centavos: breakdown.subtotalCents,
+    discount_centavos: breakdown.discountCents,
+    total_after_discount_centavos: breakdown.totalCents,
+    // preco_total_centavos sempre = subtotal (unit × quantidade).
+    // Antes era baseCents, que é unitário — campo era enganoso.
+    preco_total_centavos: breakdown.subtotalCents,
     payment_method: "pix",
     payment_provider: "mercado_pago",
     cpf: cpfRaw,

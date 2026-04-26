@@ -96,6 +96,84 @@ function parsePrecoToCents(raw: unknown): number | null {
   return Math.round(num * 100);
 }
 
+// ===== computeChargeAmount =====
+// Fonte única da verdade pro cálculo do valor cobrado em qualquer
+// fluxo de pagamento (Stripe cartão, MP PIX, ou cobrança direta).
+// O cálculo é trivial mas centralizá-lo elimina o risco de um caller
+// esquecer a multiplicação por quantidade — bug crítico que cobraria
+// só uma vaga quando o cliente pediu várias.
+//
+// Garante:
+//   subtotal_cents = unit_cents * quantity   (sempre multiplica)
+//   discount_cents = min(gift_card_cents, subtotal_cents)
+//   total_cents    = max(0, subtotal_cents - discount_cents)
+//
+// Retorna o breakdown completo pra que callers persistam audit
+// trail. Lança erro pra entradas claramente inválidas (preço <= 0,
+// quantidade < 1) — checagem defensiva, valida no backend mesmo se
+// o frontend mandou lixo.
+export interface ChargeBreakdown {
+  unitCents: number;
+  quantity: number;
+  subtotalCents: number;
+  discountCents: number;
+  totalCents: number;
+}
+export function computeChargeAmount(
+  unitCents: unknown,
+  quantity: unknown,
+  giftCardCents: unknown = 0,
+): ChargeBreakdown {
+  const unit = Number(unitCents);
+  if (!Number.isFinite(unit) || unit <= 0) {
+    throw new Error("computeChargeAmount: unit_cents inválido (" + String(unitCents) + ")");
+  }
+  const qtyRaw = Number(quantity);
+  if (!Number.isFinite(qtyRaw)) {
+    throw new Error("computeChargeAmount: quantity inválido (" + String(quantity) + ")");
+  }
+  const qty = Math.max(1, Math.floor(qtyRaw));
+  const subtotal = Math.round(unit) * qty;
+  const giftRaw = Number(giftCardCents) || 0;
+  const discount = Math.max(0, Math.min(giftRaw, subtotal));
+  const total = Math.max(0, subtotal - discount);
+  return {
+    unitCents: Math.round(unit),
+    quantity: qty,
+    subtotalCents: subtotal,
+    discountCents: discount,
+    totalCents: total,
+  };
+}
+
+// ===== assertExpectedTotal =====
+// Sanity check que o caller chama imediatamente antes de submeter
+// a cobrança ao gateway de pagamento. Aborta se o valor a ser cobrado
+// for menor do que o subtotal esperado menos o desconto — protege
+// contra qualquer bug de cálculo manual que tenha esquecido a
+// multiplicação por quantidade.
+//
+// Aceita finalCharge >= expectedAfterDiscount (taxa de cartão pode
+// somar acima). Rejeita se finalCharge < expectedAfterDiscount.
+export function assertExpectedTotal(
+  breakdown: ChargeBreakdown,
+  finalChargeCents: number,
+  context: string,
+): void {
+  const expected = breakdown.totalCents;
+  if (finalChargeCents < expected) {
+    const msg =
+      "[Elarah Guard] AMOUNT MISMATCH em " + context + ": " +
+      "esperado >= " + expected + " (subtotal " + breakdown.subtotalCents +
+      " - desconto " + breakdown.discountCents + "), " +
+      "calculado " + finalChargeCents + " (qty=" + breakdown.quantity +
+      ", unit=" + breakdown.unitCents + "). Abortando pra não cobrar a menos.";
+    console.error(msg);
+    throw new Error("amount_mismatch");
+  }
+}
+
+
 // Extrai o horário inicial ("19h00 – 21h00" -> {hh:19, mm:0}). Aceita
 // 'h' ou ':' como separador, separador de range '-', en-dash ou
 // em-dash. Retorna null se não conseguir parsear.

@@ -49,6 +49,10 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import {
+  computeChargeAmount,
+  assertExpectedTotal,
+} from "../_shared/booking_guard.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -485,10 +489,13 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   }
 
   // ===== Hold gift card (se cupom enviado) =====
+  // Subtotal vem de computeChargeAmount — fonte única da verdade pra
+  // multiplicação unit × quantidade. Evita que esta função (que tem
+  // lógica duplicada do booking_guard) saia do passo do MP PIX.
+  const baseBreakdown = computeChargeAmount(cents, quantidade, 0);
+  const totalCents = baseBreakdown.subtotalCents;
   let giftCardId: string | null = null;
   let giftCardCentavos = 0;
-  const totalCents = cents * quantidade;
-  let amountToCharge = totalCents;
 
   if (cupomCode) {
     const { data: holdRows, error: holdErr } = await supabase.rpc(
@@ -511,8 +518,11 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     }
     giftCardId = hold.gift_card_id;
     giftCardCentavos = Number(hold.used_centavos || 0);
-    amountToCharge = Math.max(0, totalCents - giftCardCentavos);
   }
+
+  // Recalcula com o desconto pra ter o breakdown final auditável.
+  const breakdown = computeChargeAmount(cents, quantidade, giftCardCentavos);
+  let amountToCharge = breakdown.totalCents;
 
   console.info(
     "[Elarah Payment/Stripe] QUANTIDADE DEBUG",
@@ -520,6 +530,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     "unitCents=" + cents,
     "totalCents=" + totalCents,
     "giftCardCentavos=" + giftCardCentavos,
+    "subtotal=" + breakdown.subtotalCents,
+    "discount=" + breakdown.discountCents,
     "amountToCharge=" + amountToCharge,
   );
 
@@ -686,6 +698,28 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // create-mp-pix-payment (Mercado Pago). Pagamento síncrono: o
   // webhook recebe `checkout.session.completed` com payment_status
   // 'paid' e marca a booking como 'pago' imediatamente.
+
+  // Sanity check antes de bater no Stripe: se por qualquer motivo
+  // amountToCharge sair menor do que (unit*qty - desconto), aborta —
+  // evita cobrar a menos. Taxa do cartão pode somar acima, então a
+  // checagem é >= não ==.
+  try {
+    assertExpectedTotal(breakdown, amountToCharge, "stripe checkout session");
+  } catch (e) {
+    console.error("[create-checkout-session] assertExpectedTotal falhou", e);
+    if (giftCardId) {
+      await supabase.rpc("refund_gift_card", {
+        p_gift_card_id: giftCardId,
+        p_amount_centavos: giftCardCentavos,
+      });
+    }
+    await incrementVaga();
+    return jsonResponse(
+      { error: "amount_mismatch", message: "Erro interno no cálculo do total. Recarregue e tente novamente." },
+      500,
+    );
+  }
+
   let session;
   try {
     session = await stripe.checkout.sessions.create({
@@ -695,13 +729,23 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       customer_email: email || undefined,
       line_items: [
         {
+          // Usar quantity=1 e unit_amount=total dá o mesmo resultado
+          // financeiro que quantity=N e unit_amount=preço_unitário,
+          // porém mantemos quantity=1 porque o repasse de taxa do
+          // cartão (acima) é aplicado uma vez sobre o total. Se um
+          // dia mudar pra fee por unidade, vale revisitar.
           quantity: 1,
           price_data: {
             currency: "brl",
             unit_amount: amountToCharge,
             product_data: {
-              name: productName,
-              description: [exp.data, horario, exp.bairro]
+              name: productName + (quantidade > 1 ? " (x" + quantidade + ")" : ""),
+              description: [
+                quantidade > 1 ? quantidade + " vagas" : null,
+                exp.data,
+                horario,
+                exp.bairro,
+              ]
                 .filter(Boolean)
                 .join(" · ")
                 .slice(0, 380),
@@ -729,6 +773,13 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         gift_card_id: giftCardId ?? "",
         gift_card_centavos: String(giftCardCentavos),
         gift_card_code: cupomCode ?? "",
+        // Breakdown completo da cobrança — fonte única no metadata
+        // pra auditoria. Permite checar a qualquer momento que o
+        // valor total bate com unit × quantidade.
+        unit_price_centavos: String(breakdown.unitCents),
+        subtotal_centavos: String(breakdown.subtotalCents),
+        discount_centavos: String(breakdown.discountCents),
+        total_after_discount_centavos: String(breakdown.totalCents),
         // Método de pagamento + breakdown de taxa (auditoria/admin).
         payment_method: paymentMethod,
         base_before_fee_centavos: String(baseBeforeFeeCents),
