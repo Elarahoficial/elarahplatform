@@ -1,39 +1,42 @@
 -- =============================================================
--- ELARAH — Fix urgente: RPCs de vagas com p_qty
+-- ELARAH — Fix urgente: RPCs de vagas (com p_qty + sem ambiguidade)
 -- -------------------------------------------------------------
--- Resolve o erro `vagas_check_failed` que acontece quando o banco
--- ainda tem a versão antiga das funções de vagas (sem p_qty).
+-- Resolve dois problemas em sequência que estavam quebrando o
+-- checkout em produção:
 --
--- Causa raiz: `sql/elarah_extensions.sql` cria a versão `(uuid)` e
--- `sql/elarah_bookings_quantidade.sql` cria a versão `(uuid, integer)`.
--- Se só a antiga existe, a edge function (que sempre chama com p_qty)
--- bate em "function does not exist" e devolve `vagas_check_failed`.
+-- (A) Versão antiga das funções `decrement_*_vagas` no banco não
+--     aceitava o parâmetro p_qty. Edge functions chamavam com p_qty
+--     e batiam em "function does not exist" → vagas_check_failed.
 --
--- Este script:
---   1. Faz DROP explícito das versões antigas (sem p_qty).
---   2. Recria as quatro funções com p_qty (assinatura nova).
---   3. Faz GRANT execute pra service_role e refresca o cache do
---      PostgREST via NOTIFY pgrst.
+-- (B) Após criar as versões novas com p_qty, surgiu erro PostgreSQL
+--     42702 — "column reference vagas_restantes is ambiguous". Causa:
+--     `RETURNS TABLE(ok boolean, vagas_restantes integer)` declara
+--     `vagas_restantes` como variável OUTPUT da função; dentro do
+--     UPDATE, o lado direito da expressão `set vagas_restantes =
+--     vagas_restantes - v_qty` ficava ambíguo entre coluna da tabela
+--     e variável OUTPUT.
+--
+-- Esta versão corrigida:
+--   1. DROP explícito das versões antigas (sem p_qty).
+--   2. Recria as quatro funções com p_qty.
+--   3. UPDATE usa ALIAS da tabela e qualifica TODAS as referências
+--      (`set vagas_restantes = e.vagas_restantes - v_qty`), eliminando
+--      o erro 42702.
+--   4. GRANTs e NOTIFY pgrst pra refresh.
 --
 -- IDEMPOTENTE — pode rodar quantas vezes precisar.
 --
 -- Como rodar:
 --   Supabase Dashboard → SQL Editor → cola este arquivo → Run.
---
--- A edge function `create-checkout-session` já tem fallback que
--- evita derrubar o pagamento se o RPC falhar; este script é a
--- correção raiz pra que o controle de estoque volte a funcionar.
 -- =============================================================
 
 -- ===== 1. DROP versões antigas (se existirem) =====
--- Sem `if exists` no parâmetro: PostgreSQL exige o tipo exato do
--- arg pra dropar a versão certa. As novas (com integer) ficam.
 drop function if exists public.decrement_experience_vagas(uuid);
 drop function if exists public.increment_experience_vagas(uuid);
 drop function if exists public.decrement_slot_vagas(uuid);
 drop function if exists public.increment_slot_vagas(uuid);
 
--- ===== 2. (Re)cria versões com p_qty =====
+-- ===== 2. (Re)cria versões com p_qty + alias qualificado =====
 
 create or replace function public.decrement_slot_vagas(
   p_slot_id uuid,
@@ -60,6 +63,7 @@ begin
     return;
   end if;
 
+  -- Sem teto (ilimitado) → sempre OK, devolve restante atual.
   if v_total is null then
     return query select true, v_rest;
     return;
@@ -70,9 +74,13 @@ begin
     return;
   end if;
 
-  update public.experience_slots
-     set vagas_restantes = vagas_restantes - v_qty
-   where id = p_slot_id;
+  -- IMPORTANTE: alias `s` + qualificação `s.vagas_restantes` no lado
+  -- direito da expressão. Sem isso, PostgreSQL lança erro 42702 —
+  -- vagas_restantes é tanto coluna da tabela quanto variável OUTPUT
+  -- da função (declarada em RETURNS TABLE acima).
+  update public.experience_slots s
+     set vagas_restantes = s.vagas_restantes - v_qty
+   where s.id = p_slot_id;
 
   return query select true, (v_rest - v_qty);
 end;
@@ -90,13 +98,16 @@ as $$
 declare
   v_qty integer := greatest(1, coalesce(p_qty, 1));
 begin
-  update public.experience_slots
+  -- Embora esta função retorne void (sem variável OUTPUT colidindo),
+  -- mantemos o alias `s` por consistência com decrement_* e como
+  -- defesa contra futuras mudanças de assinatura.
+  update public.experience_slots s
      set vagas_restantes = least(
-           coalesce(vagas_restantes, 0) + v_qty,
-           coalesce(vagas_total, vagas_restantes + v_qty)
+           coalesce(s.vagas_restantes, 0) + v_qty,
+           coalesce(s.vagas_total, s.vagas_restantes + v_qty)
          )
-   where id = p_slot_id
-     and vagas_total is not null;
+   where s.id = p_slot_id
+     and s.vagas_total is not null;
 end;
 $$;
 
@@ -135,9 +146,10 @@ begin
     return;
   end if;
 
-  update public.experiences
-     set vagas_restantes = vagas_restantes - v_qty
-   where id = p_experience_id;
+  -- Mesma defesa contra ambiguidade que em decrement_slot_vagas.
+  update public.experiences e
+     set vagas_restantes = e.vagas_restantes - v_qty
+   where e.id = p_experience_id;
 
   return query select true, (v_rest - v_qty);
 end;
@@ -155,13 +167,13 @@ as $$
 declare
   v_qty integer := greatest(1, coalesce(p_qty, 1));
 begin
-  update public.experiences
+  update public.experiences e
      set vagas_restantes = least(
-           coalesce(vagas_restantes, 0) + v_qty,
-           coalesce(vagas_total, vagas_restantes + v_qty)
+           coalesce(e.vagas_restantes, 0) + v_qty,
+           coalesce(e.vagas_total, e.vagas_restantes + v_qty)
          )
-   where id = p_experience_id
-     and vagas_total is not null;
+   where e.id = p_experience_id
+     and e.vagas_total is not null;
 end;
 $$;
 
@@ -172,6 +184,4 @@ grant execute on function public.decrement_experience_vagas(uuid, integer) to se
 grant execute on function public.increment_experience_vagas(uuid, integer) to service_role;
 
 -- ===== 4. Refresh do cache do PostgREST =====
--- Sem isso, mesmo depois de criar a função, o PostgREST pode demorar
--- pra "ver" a nova assinatura. NOTIFY força o reload do schema.
 notify pgrst, 'reload schema';
