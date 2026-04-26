@@ -813,21 +813,49 @@
 
       // Renderiza acompanhantes (participantes adicionais) abaixo do
       // nome do comprador, com WhatsApp clicável quando o telefone
-      // estiver disponível. O índice 0 do array é o próprio comprador
-      // (gravado pelo script.js no checkout) — ignoramos pra não
-      // duplicar com nomeResolved acima.
+      // estiver disponível.
+      //
+      // Dedup defensivo: o checkout grava o próprio comprador como
+      // participantes[0]. Em vez de fazer slice(1) cego (que assumiria
+      // sempre essa ordem e poderia esconder dados de bookings antigas
+      // com formato diferente), filtramos por nome E telefone iguais
+      // aos do comprador. Cobre:
+      //   - bookings novas (comprador no índice 0) → filtra ele fora
+      //   - bookings antigas (sem comprador no array) → mostra tudo
+      //   - duplicatas acidentais → mostra cada pessoa uma vez
       function renderAcompanhantes() {
         if (!b.metadata || !Array.isArray(b.metadata.participantes)) return '';
-        if (b.metadata.participantes.length <= 1) return '';
-        const extras = b.metadata.participantes.slice(1);
+        if (!b.metadata.participantes.length) return '';
+
+        const norm = function (s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+        const onlyDigits = function (s) { return String(s || '').replace(/\D+/g, ''); };
+        const compradorNome = norm(nomeResolved);
+        const compradorTel = onlyDigits(telefone);
+
+        const seen = new Set();
+        const extras = b.metadata.participantes.filter(function (p) {
+          if (!p) return false;
+          const pNome = norm(p.nome);
+          const pTel = onlyDigits(p.telefone || p.telefone_digits || '');
+          if (!pNome && !pTel) return false;
+          // Pula se for o próprio comprador (mesmo nome OU mesmo telefone).
+          if (compradorNome && pNome && pNome === compradorNome) return false;
+          if (compradorTel && pTel && pTel === compradorTel) return false;
+          // Dedup entre acompanhantes (mesmo telefone gravado 2x, raro).
+          const key = pNome + '|' + pTel;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         if (!extras.length) return '';
+
         const items = extras.map(function (p) {
           const pNome = escapeHtml((p && p.nome) || '?');
           const pTelRaw = String((p && (p.telefone || p.telefone_digits)) || '').trim();
           if (!pTelRaw) {
             return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + '</span>';
           }
-          const pDigits = pTelRaw.replace(/\D+/g, '');
+          const pDigits = onlyDigits(pTelRaw);
           const pWa = pDigits.length >= 10 ? ('55' + pDigits.replace(/^55/, '')) : pDigits;
           const pTelDisplay = escapeHtml(p.telefone || pDigits);
           const link = pWa
