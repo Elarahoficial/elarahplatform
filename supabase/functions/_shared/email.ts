@@ -265,6 +265,7 @@ export function bookingConfirmationEmailHtml(opts: {
   bairro?: string | null;
   precoLabel?: string | null;
   quantidade?: number | null;
+  amountTotalCentavos?: number | null;
   participantes?: Array<{ nome?: string | null }> | null;
   bookingId?: string | null;
 }): string {
@@ -282,6 +283,20 @@ export function bookingConfirmationEmailHtml(opts: {
   // caso default — não precisa destacar.
   const qty = Number(opts.quantidade || 1);
   const qtyLabel = qty > 1 ? `${qty} pessoas` : null;
+  // "Valor pago" = valor REAL cobrado (amount_total). precoLabel é
+  // unitário e seria enganoso pra grupos (cliente vê "R$100" depois
+  // de pagar R$300). Quando temos amount_total, exibimos formatado;
+  // como fallback (booking antiga sem amount_total ou nulo), volta
+  // pro precoLabel pra não deixar a linha vazia.
+  const amountCents = Number(opts.amountTotalCentavos);
+  const valorPagoLabel = Number.isFinite(amountCents) && amountCents > 0
+    ? brl(amountCents)
+    : (opts.precoLabel || null);
+  // Detalhe "qty × precoLabel" pra grupo — aparece como linha extra
+  // pra deixar transparente que multiplicou. Só quando temos os dois.
+  const subtotalDetailLabel = qty > 1 && opts.precoLabel
+    ? `${qty} × ${opts.precoLabel}`
+    : null;
   // Lista de participantes: só mostra nomes extras (além do titular),
   // que são os acompanhantes do grupo. Se a lista tem o mesmo tamanho
   // que a quantidade, pega do 2º em diante.
@@ -315,7 +330,8 @@ export function bookingConfirmationEmailHtml(opts: {
         ${linha("Horário", opts.horario)}
         ${linha("Endereço", enderecoFull)}
         ${linha("Pessoas", qtyLabel)}
-        ${linha("Valor pago", opts.precoLabel)}
+        ${linha("Detalhe", subtotalDetailLabel)}
+        ${linha("Valor pago", valorPagoLabel)}
       </table>
       ${acompanhantesHtml}
     </div>

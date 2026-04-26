@@ -207,6 +207,10 @@ async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
     "booking=" + booking.id,
     "amount_cents=" + paidAmountCents,
   );
+  // Sincroniza o objeto local com o valor real cobrado antes de
+  // disparar o e-mail. Sem isso, em caso de mismatch (raro), o e-mail
+  // mostraria o valor esperado (pre-insert) em vez do real (MP).
+  booking.amount_total = paidAmountCents;
   // Dispara confirmação por e-mail.
   await sendBookingConfirmation(booking);
 }
@@ -278,6 +282,7 @@ async function sendBookingConfirmation(booking: BookingRow) {
     bairro: (meta.bairro as string | null) ?? null,
     precoLabel: booking.preco_label,
     quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
+    amountTotalCentavos: booking.amount_total ?? null,
     participantes: Array.isArray((meta as { participantes?: unknown }).participantes)
       ? ((meta as { participantes?: Array<{ nome?: string | null }> }).participantes ?? null)
       : null,
