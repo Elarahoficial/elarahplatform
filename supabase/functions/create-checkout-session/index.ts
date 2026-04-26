@@ -53,6 +53,10 @@ import {
   computeChargeAmount,
   assertExpectedTotal,
 } from "../_shared/booking_guard.ts";
+import {
+  computeFinancialBreakdown,
+  type SupplierRow,
+} from "../_shared/financial.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -720,14 +724,69 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     }
   };
 
-  // Auto-calcula repasse e comissao baseado no VALOR CHEIO
-  // Regra: repasse = valor_cheio * 70%, comissao = valor_cheio * 20%
-  // Os 10% restantes sao o desconto dado ao cliente
-  const valorCheioFinal = expValorCheioCentavos ? expValorCheioCentavos * quantidade : null;
-  const valorRepasseCentavos = valorCheioFinal
-    ? Math.round(valorCheioFinal * 0.70) : null;
-  const valorComissaoCentavos = valorCheioFinal
-    ? Math.round(valorCheioFinal * 0.20) : null;
+  // ===== Cálculo financeiro (mapa de divisão) =====
+  // Busca rows de experience_suppliers (modelo novo, 1:N). Se a
+  // experiência ainda usa o legado (1 fornecedor + percentual_repasse),
+  // computeFinancialBreakdown faz o fallback automático.
+  // Multiplica valor cheio por quantidade ANTES — cada vaga gera
+  // o mesmo repasse pra cada fornecedor.
+  const valorCheioFinal = expValorCheioCentavos
+    ? expValorCheioCentavos * quantidade
+    : null;
+
+  let suppliers: SupplierRow[] = [];
+  try {
+    const { data: supRows, error: supErr } = await supabase
+      .from("experience_suppliers")
+      .select("fornecedor_nome, share_type, share_value, ordem, notas")
+      .eq("experience_id", exp.id)
+      .order("ordem", { ascending: true });
+    if (supErr) {
+      console.warn(
+        "[Elarah Payment] experience_suppliers lookup falhou — fallback no legado",
+        supErr.message,
+      );
+    } else if (Array.isArray(supRows)) {
+      suppliers = supRows as SupplierRow[];
+    }
+  } catch (e) {
+    console.warn("[Elarah Payment] experience_suppliers exception", e);
+  }
+
+  const breakdownFin = valorCheioFinal != null
+    ? computeFinancialBreakdown(
+        valorCheioFinal,
+        suppliers,
+        {
+          type: (exp as { comissao_type?: string | null }).comissao_type ?? null,
+          value: (exp as { comissao_value?: number | null }).comissao_value ?? null,
+        },
+        {
+          fornecedorNome: fornecedorNome,
+          percentualRepasse: expPercentualRepasse,
+        },
+      )
+    : null;
+
+  const valorRepasseCentavos = breakdownFin ? breakdownFin.totalRepasseCentavos : null;
+  const valorComissaoCentavos = breakdownFin ? breakdownFin.comissaoCentavos : null;
+  // Mantém fornecedor_nome legado preenchido com o "principal"
+  // (primeiro da lista) pra retrocompat com painel antigo.
+  if (breakdownFin && breakdownFin.fornecedorPrincipal) {
+    fornecedorNome = breakdownFin.fornecedorPrincipal;
+  }
+  const repassesArray = breakdownFin ? breakdownFin.repasses : [];
+
+  if (breakdownFin) {
+    console.info(
+      "[Elarah Payment] mapa financeiro",
+      "valor_cheio=" + valorCheioFinal,
+      "n_suppliers=" + repassesArray.length,
+      "total_repasse=" + valorRepasseCentavos,
+      "comissao=" + valorComissaoCentavos,
+      "legacy_fallback=" + (breakdownFin.usedLegacyFallback ? "yes" : "no"),
+    );
+  }
 
   // ===== CASO 1: gift card cobre 100% — pula Stripe =====
   if (amountToCharge === 0) {
@@ -757,6 +816,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       valor_cheio_centavos: valorCheioFinal,
       valor_repasse_centavos: valorRepasseCentavos,
       valor_comissao_centavos: valorComissaoCentavos,
+      repasses: repassesArray.length ? repassesArray : null,
       status_fornecedor: "repasse_pendente",
       metadata: {
         bairro: exp.bairro ?? null,
@@ -1050,6 +1110,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     valor_cheio_centavos: valorCheioFinal,
     valor_repasse_centavos: valorRepasseCentavos,
     valor_comissao_centavos: valorComissaoCentavos,
+    repasses: repassesArray.length ? repassesArray : null,
     status_fornecedor: "repasse_pendente",
     metadata: { ...bookingMetadataBase, participantes },
   });
@@ -1091,6 +1152,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         valor_cheio_centavos: valorCheioFinal,
         valor_repasse_centavos: valorRepasseCentavos,
         valor_comissao_centavos: valorComissaoCentavos,
+        repasses: repassesArray.length ? repassesArray : null,
         status_fornecedor: "repasse_pendente",
         metadata: {
           ...bookingMetadataBase,
