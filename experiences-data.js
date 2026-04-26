@@ -115,10 +115,19 @@
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
       isActive: row.is_active === false ? false : true,
-      // --- fornecedor ---
+      // --- fornecedor (legado: 1 fornecedor + percentual_repasse) ---
+      // Mantido pra retrocompat. O modelo novo é experience_suppliers
+      // (1:N) carregado via getSuppliersForExperience.
       fornecedorNome: row.fornecedor_nome || null,
       valorCheioCentavos: row.valor_cheio_centavos != null ? Number(row.valor_cheio_centavos) : null,
       percentualRepasse: row.percentual_repasse != null ? Number(row.percentual_repasse) : 90,
+      // --- Comissão Elarah (opcional/manual ou null=residual) ---
+      // Sql/elarah_experience_suppliers.sql.
+      // null/undefined → residual (calculada como sobra no checkout).
+      comissaoType: row.comissao_type === 'percent' || row.comissao_type === 'fixed'
+        ? row.comissao_type : null,
+      comissaoValue: row.comissao_value != null && row.comissao_value !== ''
+        ? Number(row.comissao_value) : null,
       // --- By Elarah Originals ---
       // Estas 3 colunas vivem em sql/elarah_byelarah_originals.sql.
       // Defaults retrocompatíveis: se a coluna ainda não existir no
@@ -196,6 +205,18 @@
         if (raw == null || raw === '') return 90;
         var n = Number(raw);
         return Number.isFinite(n) ? n : 90;
+      })(),
+      // Comissão Elarah: aceita type='percent'/'fixed' ou null.
+      // Se type vazio OU value vazio, grava null/null (residual auto).
+      comissao_type: (function () {
+        var raw = exp.comissaoType != null ? exp.comissaoType : exp.comissao_type;
+        return raw === 'percent' || raw === 'fixed' ? raw : null;
+      })(),
+      comissao_value: (function () {
+        var raw = exp.comissaoValue != null ? exp.comissaoValue : exp.comissao_value;
+        if (raw == null || raw === '') return null;
+        var n = Number(raw);
+        return Number.isFinite(n) ? n : null;
       })(),
       // --- By Elarah Originals ---
       // Aceita camelCase (do form do admin) ou snake_case. Se o
@@ -753,6 +774,106 @@
     slotsCachePromise = null;
   }
 
+  // ============================================================
+  // FORNECEDORES (experience_suppliers — múltiplos por experience)
+  // ------------------------------------------------------------
+  // Sql/elarah_experience_suppliers.sql.
+  // Modelo:
+  //   { id, experienceId, fornecedorNome, shareType ('percent'|'fixed'),
+  //     shareValue, ordem, notas }
+  // ============================================================
+  const SUPPLIERS_TABLE = 'experience_suppliers';
+
+  function dbRowToSupplier(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      experienceId: row.experience_id,
+      fornecedorNome: row.fornecedor_nome || '',
+      shareType: row.share_type === 'fixed' ? 'fixed' : 'percent',
+      shareValue: row.share_value != null ? Number(row.share_value) : 0,
+      ordem: row.ordem != null ? Number(row.ordem) : 0,
+      notas: row.notas || null
+    };
+  }
+
+  async function getSuppliersForExperience(experienceId) {
+    const s = sb();
+    if (!s || !experienceId) return [];
+    try {
+      const { data, error } = await s
+        .from(SUPPLIERS_TABLE)
+        .select('*')
+        .eq('experience_id', experienceId)
+        .order('ordem', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.warn('[Elarah] getSuppliersForExperience: ' + (error.message || error));
+        return [];
+      }
+      return (data || []).map(dbRowToSupplier).filter(Boolean);
+    } catch (e) {
+      console.warn('[Elarah] getSuppliersForExperience exception:', e);
+      return [];
+    }
+  }
+
+  // Sincroniza array completo: cria novos, atualiza existentes,
+  // deleta os que não estão mais na lista. Padrão idêntico ao saveSlots.
+  async function saveSuppliers(experienceId, suppliersArray) {
+    const s = sb();
+    if (!s || !experienceId) return false;
+
+    // 1) Lista IDs atuais no banco
+    const { data: existing } = await s
+      .from(SUPPLIERS_TABLE)
+      .select('id')
+      .eq('experience_id', experienceId);
+    const existingIds = new Set((existing || []).map(function (r) { return r.id; }));
+
+    // 2) Monta payloads e separa keep/upsert/delete
+    const toUpsert = [];
+    const keepIds = new Set();
+    (suppliersArray || []).forEach(function (sup, idx) {
+      const nome = String((sup && sup.fornecedorNome) || '').trim();
+      if (!nome) return;
+      const sv = Number(sup.shareValue);
+      const row = {
+        experience_id: experienceId,
+        fornecedor_nome: nome,
+        share_type: sup.shareType === 'fixed' ? 'fixed' : 'percent',
+        share_value: Number.isFinite(sv) && sv >= 0 ? sv : 0,
+        ordem: Number.isFinite(+sup.ordem) ? +sup.ordem : idx,
+        notas: sup.notas ? String(sup.notas).trim() || null : null
+      };
+      if (sup.id && existingIds.has(sup.id)) {
+        row.id = sup.id;
+        keepIds.add(sup.id);
+      }
+      toUpsert.push(row);
+    });
+
+    // 3) Deleta os removidos
+    const toDelete = [];
+    existingIds.forEach(function (id) { if (!keepIds.has(id)) toDelete.push(id); });
+    if (toDelete.length) {
+      await s.from(SUPPLIERS_TABLE).delete().in('id', toDelete);
+    }
+
+    // 4) Upsert
+    if (toUpsert.length) {
+      const { error } = await s.from(SUPPLIERS_TABLE).upsert(toUpsert, {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
+      if (error) {
+        console.error('[Elarah] saveSuppliers upsert error:', error);
+        return false;
+      }
+    }
+    return true;
+  }
+
   window.ElarahData = {
     getAllExperiences,
     getVisibleExperiences,
@@ -770,6 +891,9 @@
     loadAllSlots,
     getSlotsForExperience,
     saveSlots,
-    invalidateSlotsCache
+    invalidateSlotsCache,
+    // Fornecedores (experience_suppliers — múltiplos por experience)
+    getSuppliersForExperience,
+    saveSuppliers
   };
 })(window);

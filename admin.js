@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v26 — variantes de experiência (Pintura: Lagosta/Beijo/Olho grego)');
+  console.info('[Elarah Admin] admin.js v27 — múltiplos fornecedores por experiência (mapa financeiro flexível)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -2007,6 +2007,213 @@
     section.style.display = checkbox.checked ? 'block' : 'none';
   }
 
+  // ============================================================
+  // SUPPLIERS UI (múltiplos fornecedores por experiência)
+  // Adiciona/edita/remove linhas dinâmicas + resumo live calculado
+  // a cada keystroke. Não bloqueia salvamento se a soma não bater
+  // 100% — só mostra badge amarelo (admin pode estar em edição).
+  // ============================================================
+  function bySuppliersListEl() { return document.getElementById('by-suppliers-list'); }
+
+  // Adiciona uma linha de fornecedor. Recebe objeto opcional com
+  // valores pré-preenchidos (vindo do banco em edição).
+  function byAddSupplierRow(supplier) {
+    var list = bySuppliersListEl();
+    if (!list) return;
+    var s = supplier || {};
+    var row = document.createElement('div');
+    row.className = 'admin__supplier-row';
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fafaf6;border:1px solid #ece4d6;border-radius:8px;padding:8px;';
+    row.innerHTML =
+      '<input type="text" class="by-supplier-nome" placeholder="Nome do fornecedor" ' +
+        'style="flex:1;min-width:140px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:.88rem;">' +
+      '<select class="by-supplier-type" ' +
+        'style="flex:0 0 100px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:.88rem;background:#fff;">' +
+        '<option value="percent">%</option>' +
+        '<option value="fixed">R$ fixo</option>' +
+      '</select>' +
+      '<input type="number" class="by-supplier-value" step="0.01" min="0" placeholder="60" ' +
+        'style="flex:0 0 90px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:.88rem;text-align:center;">' +
+      '<input type="text" class="by-supplier-notas" placeholder="Notas (opcional)" ' +
+        'style="flex:1.2;min-width:140px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;color:#666;">' +
+      '<button type="button" class="by-supplier-remove" aria-label="Remover" ' +
+        'style="flex:0 0 28px;background:none;border:none;font-size:1.2rem;color:#999;cursor:pointer;">&times;</button>';
+
+    var nomeEl = row.querySelector('.by-supplier-nome');
+    var typeEl = row.querySelector('.by-supplier-type');
+    var valEl = row.querySelector('.by-supplier-value');
+    var notasEl = row.querySelector('.by-supplier-notas');
+
+    nomeEl.value = s.fornecedorNome || '';
+    typeEl.value = s.shareType === 'fixed' ? 'fixed' : 'percent';
+    // Pra share_type='fixed', share_value vem em centavos do banco mas
+    // exibimos como R$ inteiros pro admin (ex: 12500 → 125).
+    if (s.shareType === 'fixed' && s.shareValue != null) {
+      valEl.value = (Number(s.shareValue) / 100).toFixed(2);
+    } else if (s.shareValue != null) {
+      valEl.value = s.shareValue;
+    }
+    notasEl.value = s.notas || '';
+    if (s.id) row.dataset.supplierId = s.id;
+
+    row.querySelector('.by-supplier-remove').addEventListener('click', function () {
+      row.remove();
+      bySuppliersUpdateResumo();
+    });
+
+    [nomeEl, typeEl, valEl, notasEl].forEach(function (el) {
+      el.addEventListener('input', bySuppliersUpdateResumo);
+      el.addEventListener('change', bySuppliersUpdateResumo);
+    });
+
+    list.appendChild(row);
+  }
+
+  function byRenderSuppliers(suppliers) {
+    var list = bySuppliersListEl();
+    if (!list) return;
+    list.innerHTML = '';
+    var arr = Array.isArray(suppliers) && suppliers.length ? suppliers : [];
+    if (arr.length) {
+      arr.forEach(function (s) { byAddSupplierRow(s); });
+    } else {
+      // Vazio: oferece 1 linha em branco pro admin começar.
+      byAddSupplierRow();
+    }
+    bySuppliersUpdateResumo();
+  }
+
+  // Coleta os fornecedores do form. Converte share_value pra
+  // formato do banco: 'percent' fica em %, 'fixed' converte
+  // de R$ inteiros pra centavos (×100).
+  function byCollectSuppliers() {
+    var list = bySuppliersListEl();
+    if (!list) return [];
+    var rows = list.querySelectorAll('.admin__supplier-row');
+    var out = [];
+    rows.forEach(function (row, idx) {
+      var nome = row.querySelector('.by-supplier-nome').value.trim();
+      if (!nome) return;
+      var shareType = row.querySelector('.by-supplier-type').value === 'fixed' ? 'fixed' : 'percent';
+      var rawVal = (row.querySelector('.by-supplier-value').value || '').trim();
+      var v = Number(rawVal);
+      if (!Number.isFinite(v) || v < 0) v = 0;
+      // 'fixed' do form vem em R$ inteiros — converte pra centavos.
+      var shareValue = shareType === 'fixed' ? Math.round(v * 100) : v;
+      out.push({
+        id: row.dataset.supplierId || null,
+        fornecedorNome: nome,
+        shareType: shareType,
+        shareValue: shareValue,
+        ordem: idx,
+        notas: row.querySelector('.by-supplier-notas').value.trim() || null
+      });
+    });
+    return out;
+  }
+
+  // Atualiza o resumo live. Mostra cada fornecedor + comissão Elarah
+  // + soma + badge (verde se bate valor cheio, amarelo se diverge).
+  function bySuppliersUpdateResumo() {
+    var resumoEl = document.getElementById('by-suppliers-resumo');
+    if (!resumoEl) return;
+    var $ = function (id) { return document.getElementById(id); };
+
+    // Valor cheio: vem do input "by-valor-cheio" (já está no form).
+    var vcRaw = ($('by-valor-cheio')?.value || '').trim();
+    var valorCheioCentavos = 0;
+    if (vcRaw) {
+      var cleaned = vcRaw.replace(/[R$\s]/gi, '').replace(',', '.');
+      var n = cleaned.includes('.') ? Math.round(Number(cleaned) * 100) : Number(cleaned) * 100;
+      if (Number.isFinite(n) && n > 0) valorCheioCentavos = n;
+    }
+
+    var suppliers = byCollectSuppliers();
+    var totalRepasse = 0;
+    var rows = suppliers.map(function (s) {
+      var v;
+      if (s.shareType === 'fixed') {
+        v = s.shareValue; // já em centavos
+      } else {
+        v = Math.round(valorCheioCentavos * (s.shareValue / 100));
+      }
+      totalRepasse += v;
+      var label = s.shareType === 'fixed'
+        ? 'R$ ' + (s.shareValue / 100).toFixed(2)
+        : (s.shareValue + '%');
+      return {
+        nome: s.fornecedorNome,
+        label: label,
+        valor: v
+      };
+    });
+
+    // Comissão Elarah
+    var cType = ($('by-comissao-type')?.value || '').trim();
+    var cValRaw = ($('by-comissao-value')?.value || '').trim();
+    var comissaoCentavos = 0;
+    var comissaoLabel = 'Resíduo automático';
+    if (cType === 'percent' && cValRaw) {
+      var cv = Number(cValRaw);
+      if (Number.isFinite(cv)) {
+        comissaoCentavos = Math.round(valorCheioCentavos * (cv / 100));
+        comissaoLabel = cv + '%';
+      }
+    } else if (cType === 'fixed' && cValRaw) {
+      var cv2 = Number(cValRaw);
+      if (Number.isFinite(cv2)) {
+        comissaoCentavos = Math.round(cv2 * 100);
+        comissaoLabel = 'R$ ' + cv2.toFixed(2) + ' fixo';
+      }
+    } else {
+      // Residual: o que sobra do valor cheio depois dos fornecedores
+      comissaoCentavos = Math.max(0, valorCheioCentavos - totalRepasse);
+    }
+
+    var soma = totalRepasse + comissaoCentavos;
+    var diff = valorCheioCentavos - soma;
+
+    function brl(c) {
+      return 'R$ ' + (c / 100).toFixed(2).replace('.', ',');
+    }
+
+    var html = '';
+    if (valorCheioCentavos > 0) {
+      html += '<div style="display:flex;justify-content:space-between;color:#666;">' +
+        '<span>Valor cheio</span><strong style="color:#1a1a1a;">' + brl(valorCheioCentavos) + '</strong></div>';
+    } else {
+      html += '<div style="color:#a07c4c;font-style:italic;">Preencha "Valor cheio" pra ver o detalhamento em R$.</div>';
+    }
+    rows.forEach(function (r) {
+      html += '<div style="display:flex;justify-content:space-between;color:#444;">' +
+        '<span>' + escapeHtml(r.nome || '?') + ' <span style="color:#888;font-size:.82rem;">(' + r.label + ')</span></span>' +
+        '<span>' + brl(r.valor) + '</span></div>';
+    });
+    html += '<div style="display:flex;justify-content:space-between;color:#444;border-top:1px dashed #eee;margin-top:6px;padding-top:6px;">' +
+      '<span>Comissão Elarah <span style="color:#888;font-size:.82rem;">(' + comissaoLabel + ')</span></span>' +
+      '<span>' + brl(comissaoCentavos) + '</span></div>';
+    html += '<div style="display:flex;justify-content:space-between;color:#1a1a1a;font-weight:700;border-top:1px solid #eee;margin-top:6px;padding-top:6px;">' +
+      '<span>Soma</span><span>' + brl(soma) + '</span></div>';
+
+    if (valorCheioCentavos > 0) {
+      var badgeBg, badgeColor, badgeText;
+      if (diff === 0) {
+        badgeBg = '#e6f4ea'; badgeColor = '#1a8a4a';
+        badgeText = '✓ Bate exatamente com o valor cheio';
+      } else if (diff > 0) {
+        badgeBg = '#fff8ee'; badgeColor = '#a07c4c';
+        badgeText = '⚠ Sobra ' + brl(diff) + ' (vira desconto cliente ou margem extra Elarah)';
+      } else {
+        badgeBg = '#fce8e6'; badgeColor = '#c0392b';
+        badgeText = '⚠ Excede o valor cheio em ' + brl(-diff) + ' — revisar divisão';
+      }
+      html += '<div style="margin-top:8px;padding:8px 10px;background:' + badgeBg + ';color:' + badgeColor +
+        ';border-radius:6px;font-size:.82rem;font-weight:600;">' + badgeText + '</div>';
+    }
+
+    resumoEl.innerHTML = html;
+  }
+
   async function openByModal(editId) {
     if (!byModal) return;
     const $ = (id) => document.getElementById(id);
@@ -2039,8 +2246,11 @@
       $('by-cutoff-hours').value = 24;
       $('by-descricao-completa').value = '';
       $('by-valor-cheio').value = '';
-      $('by-fornecedor-nome').value = '';
-      $('by-percentual-repasse').value = 90;
+      // Reset suppliers UI: começa com 1 linha em branco
+      byRenderSuppliers([]);
+      // Reset comissão Elarah: residual automático
+      if ($('by-comissao-type')) $('by-comissao-type').value = '';
+      if ($('by-comissao-value')) $('by-comissao-value').value = '';
       if ($('by-variant-label')) $('by-variant-label').value = '';
       if ($('by-variant-options')) $('by-variant-options').value = '';
 
@@ -2066,14 +2276,45 @@
             $('by-descricao-completa').value = exp.descricao || '';
             $('by-valor-cheio').value = exp.valorCheioCentavos != null
               ? 'R$ ' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
-            $('by-fornecedor-nome').value = exp.fornecedorNome || '';
-            $('by-percentual-repasse').value = exp.percentualRepasse != null ? exp.percentualRepasse : 90;
+            // Comissão Elarah: residual (null), percent ou fixed
+            if ($('by-comissao-type')) {
+              $('by-comissao-type').value = exp.comissaoType === 'percent' || exp.comissaoType === 'fixed'
+                ? exp.comissaoType : '';
+            }
+            if ($('by-comissao-value')) {
+              if (exp.comissaoType === 'fixed' && exp.comissaoValue != null) {
+                // Banco grava em centavos pra fixed; UI exibe em R$.
+                $('by-comissao-value').value = (Number(exp.comissaoValue) / 100).toFixed(2);
+              } else {
+                $('by-comissao-value').value = exp.comissaoValue != null ? exp.comissaoValue : '';
+              }
+            }
             // Variantes (Pintura: Lagosta/Beijo/Olho grego)
             if ($('by-variant-label')) $('by-variant-label').value = exp.variantLabel || '';
             if ($('by-variant-options')) {
               $('by-variant-options').value = Array.isArray(exp.variantOptions)
                 ? exp.variantOptions.join('\n')
                 : '';
+            }
+          }
+          // Carrega fornecedores via experience_suppliers
+          if (ElarahData.getSuppliersForExperience) {
+            try {
+              var sups = await ElarahData.getSuppliersForExperience(item.experienceId);
+              if (sups && sups.length) {
+                byRenderSuppliers(sups);
+              } else if (exp && exp.fornecedorNome) {
+                // Fallback: experience tem 1 fornecedor legado e ainda não
+                // foi migrado pra experience_suppliers (backfill não rodou).
+                byRenderSuppliers([{
+                  fornecedorNome: exp.fornecedorNome,
+                  shareType: 'percent',
+                  shareValue: exp.percentualRepasse != null ? exp.percentualRepasse : 70
+                }]);
+              }
+              bySuppliersUpdateResumo();
+            } catch (errSup) {
+              console.warn('[Admin/By Elarah] falha ao carregar suppliers', errSup);
             }
           }
           // Carrega slots (vagas por horário) — sobrescreve o render
@@ -2143,6 +2384,23 @@
     // Toggle "É comprável" mostra/esconde a seção de checkout.
     var purchEl = document.getElementById('by-is-purchasable');
     if (purchEl) purchEl.addEventListener('change', byUpdatePurchasableVisibility);
+
+    // Botão "+ Adicionar fornecedor"
+    var supplierAddBtn = document.getElementById('by-supplier-add-btn');
+    if (supplierAddBtn) {
+      supplierAddBtn.addEventListener('click', function () {
+        byAddSupplierRow();
+        bySuppliersUpdateResumo();
+      });
+    }
+    // Resumo recalcula quando admin mexe em valor cheio ou comissão.
+    ['by-valor-cheio', 'by-comissao-type', 'by-comissao-value'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', bySuppliersUpdateResumo);
+        el.addEventListener('change', bySuppliersUpdateResumo);
+      }
+    });
 
     byForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -2240,6 +2498,20 @@
               // fallback no checkout). Só loga pra admin investigar.
             }
           }
+
+          // Salva fornecedores (experience_suppliers — múltiplos por
+          // experience). Sincroniza array completo: cria/atualiza/
+          // deleta. Cálculo no checkout usa essas rows; se nenhuma,
+          // fallback no fornecedor_nome legado da experience.
+          if (resolvedExpId && window.ElarahData && ElarahData.saveSuppliers) {
+            var suppliersToSave = byCollectSuppliers();
+            try {
+              await ElarahData.saveSuppliers(resolvedExpId, suppliersToSave);
+              console.info('[Admin/By Elarah] suppliers salvos', resolvedExpId, suppliersToSave.length);
+            } catch (errSup) {
+              console.error('[Admin/By Elarah] saveSuppliers falhou', errSup);
+            }
+          }
         } else {
           // Toggle desligado: se havia experience, desativa (não deleta).
           if (existingExpId && window.ElarahData && ElarahData.updateExperience) {
@@ -2329,10 +2601,27 @@
       })(),
       // Visibilidade respeita o ativo do form By Elarah.
       isActive: byData.ativo !== false,
-      // Fornecedor / financeiro
-      fornecedorNome: ($('by-fornecedor-nome').value || '').trim() || null,
+      // Financeiro: valor cheio. Fornecedor (legado: 1 nome) é
+      // preenchido com o primeiro da lista, mas a fonte da verdade
+      // são as rows em experience_suppliers (gravadas separado abaixo).
+      // O percentual_repasse legado fica null porque agora cada
+      // fornecedor tem seu próprio share.
       valorCheioCentavos: valorCheio,
-      percentualRepasse: Number($('by-percentual-repasse').value || 90),
+      // Comissão Elarah (manual ou null=residual). Fixed: UI usa R$,
+      // banco grava em centavos.
+      comissaoType: (function () {
+        var t = ($('by-comissao-type')?.value || '').trim();
+        return t === 'percent' || t === 'fixed' ? t : null;
+      })(),
+      comissaoValue: (function () {
+        var t = ($('by-comissao-type')?.value || '').trim();
+        var v = ($('by-comissao-value')?.value || '').trim();
+        if (!t || !v) return null;
+        var n = Number(v);
+        if (!Number.isFinite(n)) return null;
+        // 'fixed' do form vem em R$ inteiros — converte pra centavos.
+        return t === 'fixed' ? Math.round(n * 100) : n;
+      })(),
       // Flags Elarah Original
       isElarahOriginal: true,
       hideFromCategorias: true, // Original By Elarah só aparece na By Elarah
@@ -2862,42 +3151,73 @@
 
     (bookings || []).forEach(b => {
       if (!b) return;
-      // Pega fornecedor do booking OU da experiência de fallback.
-      const exp = expById.get(b.experiencia_id);
-      const nome = (b.fornecedor_nome && b.fornecedor_nome.trim())
-        || (exp && exp.fornecedorNome) || '';
-      if (!nome) return;
-      const agg = ensureAgg(nome);
-      if (!agg) return;
-
       // Só conta valores pra bookings pagas.
       if (b.status !== 'pago') return;
 
-      agg.reservas += 1;
-
+      const exp = expById.get(b.experiencia_id);
       const qty = Math.max(1, Number(b.quantidade) || 1);
       let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
       if (!valorCheio && exp && exp.valorCheioCentavos) {
         valorCheio = Number(exp.valorCheioCentavos) * qty;
       }
-      let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-      if (!valorRepasse && valorCheio) valorRepasse = Math.round(valorCheio * 0.70);
       let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
       if (!valorComissao && valorCheio) valorComissao = Math.round(valorCheio * 0.20);
 
-      if (valorCheio) agg.faturamentoCents += valorCheio;
-      if (valorRepasse) {
-        agg.repasseTotalCents += valorRepasse;
-        if (b.status_fornecedor === 'repasse_feito') {
-          agg.repassePagoCents += valorRepasse;
-        } else {
-          agg.repassePendenteCents += valorRepasse;
+      // ===== AGREGA POR REPASSE (multi-fornecedor) =====
+      // bookings.repasses[] é o snapshot do mapa financeiro no momento
+      // da reserva. Cada item tem {fornecedor_nome, valor_centavos}.
+      // Cada fornecedor entra na sua agregação. Pra bookings antigas
+      // (sem repasses[]), cai no fallback legado: 1 fornecedor com
+      // valor_repasse_centavos cheio.
+      let repassesUsadas = [];
+      if (Array.isArray(b.repasses) && b.repasses.length) {
+        repassesUsadas = b.repasses
+          .filter(function (r) { return r && r.fornecedor_nome; })
+          .map(function (r) {
+            return {
+              nome: String(r.fornecedor_nome).trim(),
+              valor: Number(r.valor_centavos) || 0,
+            };
+          });
+      }
+      if (!repassesUsadas.length) {
+        // Legado: 1 fornecedor por booking.
+        const nomeLegado = (b.fornecedor_nome && b.fornecedor_nome.trim())
+          || (exp && exp.fornecedorNome) || '';
+        if (nomeLegado) {
+          let vRep = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
+          if (!vRep && valorCheio) vRep = Math.round(valorCheio * 0.70);
+          repassesUsadas = [{ nome: nomeLegado, valor: vRep || 0 }];
         }
       }
-      if (valorComissao) agg.comissaoCents += valorComissao;
 
-      const ts = b.created_at ? new Date(b.created_at).getTime() : 0;
-      if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
+      if (!repassesUsadas.length) return;
+
+      // Cada fornecedor incrementa sua própria agregação. Reservas é
+      // contado em todos os fornecedores que participam (cada um vê
+      // a reserva como sua).
+      repassesUsadas.forEach(function (r) {
+        const agg = ensureAgg(r.nome);
+        if (!agg) return;
+        agg.reservas += 1;
+        if (valorCheio) agg.faturamentoCents += valorCheio;
+        if (r.valor) {
+          agg.repasseTotalCents += r.valor;
+          if (b.status_fornecedor === 'repasse_feito') {
+            agg.repassePagoCents += r.valor;
+          } else {
+            agg.repassePendenteCents += r.valor;
+          }
+        }
+        // Comissão Elarah é uma vez por booking (não por fornecedor).
+        // Atribui pro fornecedor "principal" (primeiro do array) pra
+        // não duplicar no total global.
+        if (r === repassesUsadas[0] && valorComissao) {
+          agg.comissaoCents += valorComissao;
+        }
+        const ts = b.created_at ? new Date(b.created_at).getTime() : 0;
+        if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
+      });
     });
 
     const list = Array.from(aggByKey.values());

@@ -50,6 +50,10 @@ import {
   computeChargeAmount,
   assertExpectedTotal,
 } from "../_shared/booking_guard.ts";
+import {
+  computeFinancialBreakdown,
+  type SupplierRow,
+} from "../_shared/financial.ts";
 
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -204,14 +208,59 @@ serve(async (req) => {
     rollback,
   } = guard;
 
-  // Auto-calcula repasse e comissao baseado no VALOR CHEIO
-  // Regra: repasse = valor_cheio * 70%, comissao = valor_cheio * 20%
-  // Os 10% restantes sao o desconto dado ao cliente
+  // ===== Cálculo financeiro (mapa de divisão) =====
+  // Usa experience_suppliers (modelo novo, 1:N). Fallback automático
+  // pra experience.fornecedor_nome + percentual_repasse legado.
   const valorCheioFinal = valorCheioCentavos ? valorCheioCentavos * guardQty : null;
-  const valorRepasseCentavos = valorCheioFinal
-    ? Math.round(valorCheioFinal * 0.70) : null;
-  const valorComissaoCentavos = valorCheioFinal
-    ? Math.round(valorCheioFinal * 0.20) : null;
+
+  let suppliers: SupplierRow[] = [];
+  try {
+    const { data: supRows, error: supErr } = await supabase
+      .from("experience_suppliers")
+      .select("fornecedor_nome, share_type, share_value, ordem, notas")
+      .eq("experience_id", exp.id)
+      .order("ordem", { ascending: true });
+    if (supErr) {
+      console.warn(
+        "[Elarah Payment/MP] experience_suppliers lookup falhou — fallback no legado",
+        supErr.message,
+      );
+    } else if (Array.isArray(supRows)) {
+      suppliers = supRows as SupplierRow[];
+    }
+  } catch (e) {
+    console.warn("[Elarah Payment/MP] experience_suppliers exception", e);
+  }
+
+  const breakdownFin = valorCheioFinal != null
+    ? computeFinancialBreakdown(
+        valorCheioFinal,
+        suppliers,
+        {
+          type: (exp as { comissao_type?: string | null }).comissao_type ?? null,
+          value: (exp as { comissao_value?: number | null }).comissao_value ?? null,
+        },
+        {
+          fornecedorNome: fornecedorNome,
+          percentualRepasse: percentualRepasse,
+        },
+      )
+    : null;
+
+  const valorRepasseCentavos = breakdownFin ? breakdownFin.totalRepasseCentavos : null;
+  const valorComissaoCentavos = breakdownFin ? breakdownFin.comissaoCentavos : null;
+  const repassesArray = breakdownFin ? breakdownFin.repasses : [];
+
+  if (breakdownFin) {
+    console.info(
+      "[Elarah Payment/MP] mapa financeiro",
+      "valor_cheio=" + valorCheioFinal,
+      "n_suppliers=" + repassesArray.length,
+      "total_repasse=" + valorRepasseCentavos,
+      "comissao=" + valorComissaoCentavos,
+      "legacy_fallback=" + (breakdownFin.usedLegacyFallback ? "yes" : "no"),
+    );
+  }
 
   // ===== CASO especial: cupom cobre 100% — pula MP =====
   // Fluxo idêntico ao que create-checkout-session faz: grava direto
@@ -243,6 +292,7 @@ serve(async (req) => {
       valor_cheio_centavos: valorCheioFinal,
       valor_repasse_centavos: valorRepasseCentavos,
       valor_comissao_centavos: valorComissaoCentavos,
+      repasses: repassesArray.length ? repassesArray : null,
       status_fornecedor: "repasse_pendente",
       payment_provider: "mercado_pago",
       metadata: {
@@ -465,6 +515,7 @@ serve(async (req) => {
         valor_cheio_centavos: valorCheioFinal,
         valor_repasse_centavos: valorRepasseCentavos,
         valor_comissao_centavos: valorComissaoCentavos,
+        repasses: repassesArray.length ? repassesArray : null,
         status_fornecedor: "repasse_pendente",
         metadata: { ...bookingMetadata, participantes },
       });
