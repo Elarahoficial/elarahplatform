@@ -92,25 +92,16 @@ create policy "experience_suppliers public read"
 
 -- Escrita restrita a admins (mesmo padrão de outras tabelas do projeto).
 -- Se a tabela profiles ou a coluna role tiver outro nome, ajustar aqui.
+-- Usa o helper public.is_admin() definido em elarah_supabase_setup.sql
+-- (SECURITY DEFINER que checa profiles.role = 'admin' e abstrai o
+-- schema interno). É o mesmo padrão que bookings, gift_cards,
+-- fornecedores_metadata e analytics usam.
 drop policy if exists "experience_suppliers admin write" on public.experience_suppliers;
 create policy "experience_suppliers admin write"
   on public.experience_suppliers
   for all
-  to authenticated
-  using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid()
-        and (p.role = 'admin' or p.is_admin = true)
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid()
-        and (p.role = 'admin' or p.is_admin = true)
-    )
-  );
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- ===== 5. BACKFILL =====
 -- Cria 1 linha em experience_suppliers pra cada experiência que tem
