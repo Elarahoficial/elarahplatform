@@ -68,6 +68,10 @@ export interface GuardSuccess {
   fornecedorNome: string | null;
   valorCheioCentavos: number | null;
   percentualRepasse: number;
+  // TRUE quando o RPC de decremento falhou em todas as camadas e o
+  // pagamento prosseguiu sem decrementar vaga (fallback de emergência).
+  // Caller deve gravar no metadata da booking pra reconciliação posterior.
+  inventorySkipped: boolean;
   // Chamar se o caller falhar depois de reservar a vaga (ex.:
   // Stripe/MP retornar erro). Devolve vaga + saldo do cupom.
   rollback: () => Promise<void>;
@@ -486,8 +490,14 @@ export async function reserveExperienceSlot(
   const totalBaseCents = baseCents * quantidade;
   const amountToChargeCents = Math.max(0, totalBaseCents - giftCardCentavos);
 
-  // ===== 8. Decremento atômico de vaga =====
-  // Se temos slot → decrement_slot_vagas, senão → decrement_experience_vagas
+  // ===== 8. Decremento de vaga (com fallback robusto) =====
+  // Estratégia em 3 camadas — espelha create-checkout-session pra
+  // que ambos os fluxos (Stripe cartão + MP PIX) sobrevivam a schema
+  // desatualizado. Pagamento NUNCA é bloqueado por falha de RPC.
+  //
+  //   1ª: RPC moderno com p_qty (sql/elarah_bookings_quantidade.sql)
+  //   2ª: RPC legado sem p_qty em loop (sql/elarah_extensions.sql)
+  //   3ª: Pula o controle e segue — overbooking transitório > checkout fora do ar
   const refundGiftCard = async () => {
     if (giftCardId) {
       await supabase.rpc("refund_gift_card", {
@@ -497,72 +507,118 @@ export async function reserveExperienceSlot(
     }
   };
 
-  if (useSlotVagas) {
-    // Slot-level decrement
-    const { data: vagaRows, error: vagaErr } = await supabase.rpc(
-      "decrement_slot_vagas",
-      { p_slot_id: slotId, p_qty: quantidade },
-    );
-    if (vagaErr) {
-      console.error("[Elarah Guard] slot vagas decrement error", vagaErr);
-      await refundGiftCard();
-      return {
-        ok: false,
-        errorCode: "vagas_check_failed",
-        errorMessage: "Falha ao verificar vagas do horário.",
-        errorStatus: 500,
-      };
-    }
-    const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
+  const decrementRpc = useSlotVagas ? "decrement_slot_vagas" : "decrement_experience_vagas";
+  const incrementRpc = useSlotVagas ? "increment_slot_vagas" : "increment_experience_vagas";
+  const baseArg = useSlotVagas
+    ? { p_slot_id: slotId }
+    : { p_experience_id: exp.id };
+  const soldOutCode = useSlotVagas ? "slot_sold_out" : "experience_sold_out";
+  const soldOutMsg = useSlotVagas
+    ? "Este horário está esgotado."
+    : "Esta experiência está esgotada.";
+
+  // Acompanha vagas efetivamente decrementadas pra rollback correto.
+  let vagasDecrementadas = 0;
+  let inventorySkipped = false;
+
+  // Camada 1: moderno
+  const modern = await supabase.rpc(decrementRpc, {
+    ...baseArg,
+    p_qty: quantidade,
+  });
+  let resolvedDecrement = false;
+
+  if (!modern.error) {
+    const row = Array.isArray(modern.data) ? modern.data[0] : modern.data;
     // deno-lint-ignore no-explicit-any
-    const vr = vagaRow as any;
+    const vr = row as any;
     if (!vr || vr.ok === false) {
       await refundGiftCard();
       return {
         ok: false,
-        errorCode: "slot_sold_out",
-        errorMessage: "Este horário está esgotado.",
+        errorCode: soldOutCode,
+        errorMessage: soldOutMsg,
         errorStatus: 409,
       };
     }
+    vagasDecrementadas = quantidade;
+    resolvedDecrement = true;
     console.info(
-      "[Elarah Guard] slot vaga decrementada",
-      "slot=" + slotId,
-      "restantes=" + vr.vagas_restantes,
+      "[Elarah Guard] vagas decrementadas (moderno)",
+      "rpc=" + decrementRpc,
+      "qty=" + quantidade,
     );
   } else {
-    // Experience-level decrement (backward compat)
-    const { data: vagaRows, error: vagaErr } = await supabase.rpc(
-      "decrement_experience_vagas",
-      { p_experience_id: exp.id, p_qty: quantidade },
+    console.warn(
+      "[Elarah Guard] decrement com p_qty falhou — tentando legado",
+      "rpc=" + decrementRpc,
+      "error=" + JSON.stringify(modern.error),
+      "hint=rode sql/elarah_bookings_quantidade.sql no Supabase",
     );
-    if (vagaErr) {
-      console.error("[Elarah Guard] vagas decrement error", vagaErr);
-      await refundGiftCard();
-      return {
-        ok: false,
-        errorCode: "vagas_check_failed",
-        errorMessage: "Falha ao verificar vagas.",
-        errorStatus: 500,
-      };
+  }
+
+  // Camada 2: legado em loop
+  if (!resolvedDecrement) {
+    let decremented = 0;
+    let legacyOk = true;
+    for (let i = 0; i < quantidade; i++) {
+      const legacy = await supabase.rpc(decrementRpc, baseArg);
+      if (legacy.error) {
+        // Compensa parcial e cai pra camada 3
+        for (let j = 0; j < decremented; j++) {
+          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+        }
+        console.error(
+          "[Elarah Guard] decrement legacy também falhou — pulando estoque",
+          "rpc=" + decrementRpc,
+          "error=" + JSON.stringify(legacy.error),
+        );
+        legacyOk = false;
+        break;
+      }
+      const row = Array.isArray(legacy.data) ? legacy.data[0] : legacy.data;
+      // deno-lint-ignore no-explicit-any
+      const vr = row as any;
+      if (!vr || vr.ok === false) {
+        for (let j = 0; j < decremented; j++) {
+          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+        }
+        await refundGiftCard();
+        return {
+          ok: false,
+          errorCode: soldOutCode,
+          errorMessage: soldOutMsg,
+          errorStatus: 409,
+        };
+      }
+      decremented += 1;
     }
-    const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
-    // deno-lint-ignore no-explicit-any
-    const vr = vagaRow as any;
-    if (!vr || vr.ok === false) {
-      await refundGiftCard();
-      return {
-        ok: false,
-        errorCode: "experience_sold_out",
-        errorMessage: "Esta experiência está esgotada.",
-        errorStatus: 409,
-      };
+    if (legacyOk) {
+      vagasDecrementadas = decremented;
+      resolvedDecrement = true;
+      console.info(
+        "[Elarah Guard] vagas decrementadas (legacy loop)",
+        "rpc=" + decrementRpc,
+        "qty=" + decremented,
+      );
     }
   }
 
+  // Camada 3: estoque pulado, segue mesmo assim
+  if (!resolvedDecrement) {
+    inventorySkipped = true;
+    console.error(
+      "[Elarah Payment] CONTROLE DE ESTOQUE PULADO — pagamento prosseguindo sem decremento",
+      "experiencia=" + exp.id,
+      "slot=" + (slotId ?? "none"),
+      "quantidade=" + quantidade,
+      "ação=admin precisa rodar sql/elarah_bookings_quantidade.sql",
+    );
+  }
+
   // ===== 9. Rollback closure =====
-  // Caller chama se falhar depois desta função (ex: Stripe/MP erro).
-  // Idempotente — dá pra chamar mais de uma vez sem estourar.
+  // Best effort: tenta moderno, depois legado. Devolve só o que foi
+  // efetivamente decrementado. Se estoque foi pulado, no-op.
   let rolledBack = false;
   const rollback = async () => {
     if (rolledBack) return;
@@ -572,17 +628,17 @@ export async function reserveExperienceSlot(
       "exp=" + exp.id,
       "slot=" + (slotId ?? "none"),
       "cupom=" + (giftCardId ?? "none"),
+      "vagas_a_devolver=" + vagasDecrementadas,
     );
-    try {
-      if (useSlotVagas && slotId) {
-        await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId, p_qty: quantidade });
-      } else {
-        await supabase.rpc("increment_experience_vagas", {
-          p_experience_id: exp.id, p_qty: quantidade,
-        });
+    if (vagasDecrementadas > 0) {
+      const modernInc = await supabase
+        .rpc(incrementRpc, { ...baseArg, p_qty: vagasDecrementadas })
+        .catch((e) => ({ error: e }));
+      if (modernInc.error) {
+        for (let i = 0; i < vagasDecrementadas; i++) {
+          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+        }
       }
-    } catch (e) {
-      console.error("[Elarah Guard] rollback vagas falhou", e);
     }
     if (giftCardId) {
       try {
@@ -613,6 +669,7 @@ export async function reserveExperienceSlot(
     fornecedorNome: fornecedorNome || exp.fornecedor_nome || null,
     valorCheioCentavos: exp.valor_cheio_centavos ?? null,
     percentualRepasse: Number(exp.percentual_repasse ?? 90),
+    inventorySkipped,
     rollback,
   };
 }

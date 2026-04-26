@@ -196,6 +196,7 @@ serve(async (req) => {
     fornecedorNome,
     valorCheioCentavos,
     percentualRepasse,
+    inventorySkipped,
     rollback,
   } = guard;
 
@@ -381,6 +382,9 @@ serve(async (req) => {
     cpf: cpfRaw,
     mp_payment_id: String(payment.id),
     mp_expires_at: payment.date_of_expiration,
+    // Flag de auditoria: TRUE se o RPC de vagas falhou e o pagamento
+    // prosseguiu sem decrementar estoque (fallback de emergência).
+    inventory_skipped: inventorySkipped || undefined,
   };
 
   // stripe_session_id é UNIQUE na tabela — como PIX não tem session

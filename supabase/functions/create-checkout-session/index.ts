@@ -562,55 +562,146 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
-  // ===== Decremento atômico de vaga =====
-  // Só agora — depois do hold do cupom — pra evitar reservar vaga
-  // que vamos liberar logo em seguida se o cupom falhar.
-  // Usa slot-level se disponível, senão experience-level.
-  const decrementRpc = useSlotVagas ? "decrement_slot_vagas" : "decrement_experience_vagas";
-  const decrementArg = useSlotVagas
-    ? { p_slot_id: slotId, p_qty: quantidade }
-    : { p_experience_id: exp.id, p_qty: quantidade };
+  // ===== Decremento atômico de vaga (com fallback robusto) =====
+  // Estratégia em 3 camadas pra NUNCA derrubar o checkout por
+  // problema de schema/RPC. Se o controle de estoque falha por
+  // causa de versão antiga das funções no banco, pula o controle
+  // (loga ERROR alto pro admin agir) — pagamento tem que continuar.
+  //
+  //   1ª: RPC moderno `decrement_*_vagas(uuid, p_qty integer)`
+  //       — assinatura definida em sql/elarah_bookings_quantidade.sql
+  //   2ª: Se a 1ª falhar (ex.: função com p_qty não existe no banco),
+  //       cai pra versão legada `decrement_*_vagas(uuid)` em loop
+  //       (uma chamada por vaga)
+  //   3ª: Se mesmo a legada falhar, PULA o decremento, loga loud e
+  //       segue o pagamento. Pequeno risco de overbooking transitório
+  //       é PREFERÍVEL a quebrar o checkout inteiro em produção.
+  //
+  // O incrementVaga (rollback) usa a mesma estratégia na ordem inversa,
+  // sem disparar erro: rollback "best effort" — se não conseguir, loga.
+  const slotIdLocal = slotId;
+  const expIdLocal = exp.id;
+  const useSlotVagasLocal = useSlotVagas;
+  const quantidadeLocal = quantidade;
+  const decrementRpc = useSlotVagasLocal
+    ? "decrement_slot_vagas"
+    : "decrement_experience_vagas";
+  const incrementRpc = useSlotVagasLocal
+    ? "increment_slot_vagas"
+    : "increment_experience_vagas";
+  const baseArg = useSlotVagasLocal
+    ? { p_slot_id: slotIdLocal }
+    : { p_experience_id: expIdLocal };
 
-  const { data: vagaRows, error: vagaErr } = await supabase.rpc(
-    decrementRpc,
-    decrementArg,
-  );
-  if (vagaErr) {
-    console.error("[create-checkout-session] vagas decrement error", vagaErr);
-    if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
-        p_gift_card_id: giftCardId,
-        p_amount_centavos: giftCardCentavos,
-      });
+  type DecrementOutcome =
+    | { kind: "ok" }
+    | { kind: "sold_out" }
+    | { kind: "skipped"; reason: string };
+
+  async function tryDecrementVagasSafe(): Promise<DecrementOutcome> {
+    // Camada 1: tenta com p_qty (RPC moderno)
+    const modern = await supabase.rpc(decrementRpc, {
+      ...baseArg,
+      p_qty: quantidadeLocal,
+    });
+    if (!modern.error) {
+      const row = Array.isArray(modern.data) ? modern.data[0] : modern.data;
+      if (row && row.ok === false) return { kind: "sold_out" };
+      return { kind: "ok" };
     }
-    return jsonResponse({ error: "vagas_check_failed" }, 500);
+    console.warn(
+      "[create-checkout-session] decrement com p_qty falhou — tentando versão legada",
+      "rpc=" + decrementRpc,
+      "error=" + JSON.stringify(modern.error),
+      "hint=rode sql/elarah_bookings_quantidade.sql no Supabase pra atualizar",
+    );
+
+    // Camada 2: legada sem p_qty, em loop. Se ficar parcialmente
+    // feita, devolve as vagas que já decrementou pra evitar drift.
+    let decrementedSoFar = 0;
+    for (let i = 0; i < quantidadeLocal; i++) {
+      const legacy = await supabase.rpc(decrementRpc, baseArg);
+      if (legacy.error) {
+        // Compensa parcial best-effort
+        for (let j = 0; j < decrementedSoFar; j++) {
+          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+        }
+        console.error(
+          "[create-checkout-session] decrement legacy TAMBÉM falhou — pulando controle de estoque pra não derrubar pagamento",
+          "rpc=" + decrementRpc,
+          "error=" + JSON.stringify(legacy.error),
+        );
+        return {
+          kind: "skipped",
+          reason: String(legacy.error.message || "rpc_unavailable"),
+        };
+      }
+      const row = Array.isArray(legacy.data) ? legacy.data[0] : legacy.data;
+      if (row && row.ok === false) {
+        for (let j = 0; j < decrementedSoFar; j++) {
+          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+        }
+        return { kind: "sold_out" };
+      }
+      decrementedSoFar += 1;
+    }
+    return { kind: "ok" };
   }
-  const vagaRow = Array.isArray(vagaRows) ? vagaRows[0] : vagaRows;
-  if (!vagaRow || vagaRow.ok === false) {
+
+  // Acompanha quantas vagas o decremento efetivou pra que o rollback
+  // saiba o que devolver. "skipped" = nenhuma vaga decrementada → no-op.
+  let vagasDecrementadas = 0;
+  let estoquePulado = false;
+
+  const outcome = await tryDecrementVagasSafe();
+  if (outcome.kind === "sold_out") {
     if (giftCardId) {
       await supabase.rpc("refund_gift_card", {
         p_gift_card_id: giftCardId,
         p_amount_centavos: giftCardCentavos,
       });
     }
-    const soldOutMsg = useSlotVagas
+    const soldOutMsg = useSlotVagasLocal
       ? "Este horário está esgotado."
       : "Esta experiência está esgotada.";
     return jsonResponse(
       {
-        error: useSlotVagas ? "slot_sold_out" : "experience_sold_out",
+        error: useSlotVagasLocal ? "slot_sold_out" : "experience_sold_out",
         message: soldOutMsg,
       },
       409,
     );
   }
+  if (outcome.kind === "skipped") {
+    estoquePulado = true;
+    console.error(
+      "[Elarah Payment] CONTROLE DE ESTOQUE PULADO — pagamento prosseguindo sem decremento de vagas",
+      "experiencia=" + exp.id,
+      "slot=" + (slotIdLocal ?? "none"),
+      "quantidade=" + quantidadeLocal,
+      "reason=" + outcome.reason,
+      "ação=admin precisa rodar sql/elarah_bookings_quantidade.sql no Supabase",
+    );
+  } else {
+    vagasDecrementadas = quantidadeLocal;
+  }
 
-  // Helper pra rollback de vaga — slot ou experiência
+  // Helper pra rollback — best effort. Tenta moderna primeiro, depois
+  // legada em loop. Se nenhuma vaga foi decrementada (estoque pulado),
+  // não faz nada — manter consistente com o que efetivamente mudou.
   const incrementVaga = async () => {
-    if (useSlotVagas) {
-      await supabase.rpc("increment_slot_vagas", { p_slot_id: slotId, p_qty: quantidade });
-    } else {
-      await supabase.rpc("increment_experience_vagas", { p_experience_id: exp.id, p_qty: quantidade });
+    if (vagasDecrementadas <= 0) return;
+    const modern = await supabase
+      .rpc(incrementRpc, { ...baseArg, p_qty: vagasDecrementadas })
+      .catch((e) => ({ error: e }));
+    if (!modern.error) return;
+    console.warn(
+      "[create-checkout-session] increment com p_qty falhou — tentando legacy em loop",
+      "rpc=" + incrementRpc,
+      "error=" + JSON.stringify(modern.error),
+    );
+    for (let i = 0; i < vagasDecrementadas; i++) {
+      await supabase.rpc(incrementRpc, baseArg).catch(() => {});
     }
   };
 
@@ -908,6 +999,10 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     card_fee_percent_centavos: feeInfo.feePercentCents,
     card_fee_fixed_centavos: feeInfo.feeFixedCents,
     card_fee_total_centavos: feeInfo.feeTotalCents,
+    // Flag de auditoria: TRUE quando o controle de estoque foi pulado
+    // por falha na RPC. Admin pode filtrar por isso pra reconciliar
+    // depois de aplicar a migração SQL faltante.
+    inventory_skipped: estoquePulado || undefined,
   };
 
   const { error: insertErr } = await supabase.from("bookings").insert({
