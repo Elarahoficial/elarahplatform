@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v24 — toggle "É comprável" no By Elarah cria/atualiza experience espelho');
+  console.info('[Elarah Admin] admin.js v25 — vagas por horário no By Elarah (slots dedicados por horário)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -1905,34 +1905,87 @@
   let byForm, bySubmitBtn, byAddBtn;
   let byHorariosList, byHorariosAddBtn;
 
-  function byAddHorarioRow(value) {
+  // Adiciona uma linha de horário no form. slotObj é opcional e
+  // permite carregar valores existentes:
+  //   { id?, horario, vagasTotal, vagasRestantes }
+  // O input de vagas só aparece (visualmente útil) quando
+  // "É comprável" está ligado — pra cards de espera, vagas não fazem
+  // sentido. Mas o input fica sempre no DOM pra não complicar a UX
+  // de toggle (esconder/mostrar campos por linha causa flicker).
+  function byAddHorarioRow(slotObj) {
     if (!byHorariosList) return;
-    const row = document.createElement('div');
+    var s = (slotObj && typeof slotObj === 'object' && !Array.isArray(slotObj)) ? slotObj : {};
+    // Aceita também passar só uma string (legado: byRenderHorarios([''])).
+    if (typeof slotObj === 'string') s = { horario: slotObj };
+
+    var row = document.createElement('div');
     row.className = 'admin__horario-row';
-    row.innerHTML = `
-      <input type="text" class="admin__horario-input" placeholder="Ex: 10h às 13h">
-      <button type="button" class="admin__horario-remove" aria-label="Remover horário">&times;</button>
-    `;
-    row.querySelector('input').value = value || '';
-    row.querySelector('.admin__horario-remove').addEventListener('click', () => {
-      const rows = byHorariosList.querySelectorAll('.admin__horario-row');
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+    row.innerHTML =
+      '<input type="text" class="admin__horario-input" placeholder="Ex: 10h às 13h" style="flex:2;">' +
+      '<input type="number" class="admin__horario-vagas" min="0" step="1" placeholder="Vagas" title="Vagas totais deste horário (vazio = ilimitado)" style="flex:0 0 80px;text-align:center;">' +
+      '<span class="admin__horario-restantes" style="flex:0 0 60px;font-size:.8rem;color:#888;text-align:center;" title="Vagas restantes"></span>' +
+      '<button type="button" class="admin__horario-remove" aria-label="Remover horário" style="flex:0 0 28px;">&times;</button>';
+    row.querySelector('.admin__horario-input').value = s.horario || '';
+    row.querySelector('.admin__horario-vagas').value = s.vagasTotal != null ? s.vagasTotal : '';
+    var restEl = row.querySelector('.admin__horario-restantes');
+    if (s.vagasTotal != null && s.vagasRestantes != null) {
+      restEl.textContent = s.vagasRestantes + ' rest.';
+      var cor = s.vagasRestantes <= 0 ? '#c0392b' : (s.vagasRestantes <= 3 ? '#b07b00' : '#1a8a4a');
+      restEl.style.color = cor;
+      restEl.style.fontWeight = '600';
+    } else {
+      restEl.textContent = '∞';
+    }
+    if (s.id) row.dataset.slotId = s.id;
+    row.querySelector('.admin__horario-remove').addEventListener('click', function () {
+      var rows = byHorariosList.querySelectorAll('.admin__horario-row');
       if (rows.length > 1) row.remove();
-      else row.querySelector('input').value = '';
+      else {
+        row.querySelector('.admin__horario-input').value = '';
+        row.querySelector('.admin__horario-vagas').value = '';
+        restEl.textContent = '∞';
+        restEl.style.color = '#888';
+        delete row.dataset.slotId;
+      }
     });
     byHorariosList.appendChild(row);
   }
 
-  function byRenderHorarios(horarios) {
+  function byRenderHorarios(slots) {
     if (!byHorariosList) return;
     byHorariosList.innerHTML = '';
-    const initial = Array.isArray(horarios) && horarios.length ? horarios : [''];
-    initial.forEach(h => byAddHorarioRow(h));
+    var initial = Array.isArray(slots) && slots.length ? slots : [{ horario: '' }];
+    initial.forEach(function (s) { byAddHorarioRow(s); });
   }
 
+  // Lista flat dos horários (strings) — usado pra salvar no
+  // byelarah_items.horarios (campo array text[]).
   function byCollectHorarios() {
     if (!byHorariosList) return [];
-    const inputs = byHorariosList.querySelectorAll('.admin__horario-input');
-    return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+    var inputs = byHorariosList.querySelectorAll('.admin__horario-input');
+    return Array.from(inputs).map(function (i) { return i.value.trim(); }).filter(Boolean);
+  }
+
+  // Lista de slots {horario, vagasTotal, id} — usado quando
+  // "É comprável" está ligado pra criar/atualizar experience_slots.
+  function byCollectSlots() {
+    if (!byHorariosList) return [];
+    var rows = byHorariosList.querySelectorAll('.admin__horario-row');
+    var out = [];
+    rows.forEach(function (row) {
+      var h = row.querySelector('.admin__horario-input').value.trim();
+      if (!h) return;
+      var vRaw = row.querySelector('.admin__horario-vagas').value.trim();
+      out.push({
+        id: row.dataset.slotId || null,
+        horario: h,
+        vagasTotal: vRaw === '' ? null : Number(vRaw),
+        data: null,
+        eventAt: null
+      });
+    });
+    return out;
   }
 
   // Atualiza visibilidade da seção "comprável" baseado no toggle.
@@ -2002,6 +2055,19 @@
               ? 'R$ ' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
             $('by-fornecedor-nome').value = exp.fornecedorNome || '';
             $('by-percentual-repasse').value = exp.percentualRepasse != null ? exp.percentualRepasse : 90;
+          }
+          // Carrega slots (vagas por horário) — sobrescreve o render
+          // baseado em item.horarios pra que vagas restantes / id do
+          // slot existente apareçam corretamente.
+          if (ElarahData.getSlotsForExperience) {
+            try {
+              var slots = await ElarahData.getSlotsForExperience(item.experienceId);
+              if (Array.isArray(slots) && slots.length) {
+                byRenderHorarios(slots);
+              }
+            } catch (errSlots) {
+              console.warn('[Admin/By Elarah] falha ao carregar slots', errSlots);
+            }
           }
         } catch (e) {
           console.warn('[Admin/By Elarah] falha ao carregar experience vinculada', e);
@@ -2124,12 +2190,35 @@
             bySubmitBtn.disabled = false;
             return;
           }
-          if (savedExp && savedExp.id) {
-            data.experienceId = savedExp.id;
-          } else if (existingExpId) {
-            // updateExperience pode não retornar a row dependendo de
-            // RLS — mantemos o id existente.
-            data.experienceId = existingExpId;
+          var resolvedExpId = (savedExp && savedExp.id) || existingExpId || null;
+          if (resolvedExpId) data.experienceId = resolvedExpId;
+
+          // Salva slots (vagas por horário). Cada horário do form
+          // vira uma row em experience_slots. Se o admin não mexer
+          // no input de "Vagas" da linha, o slot fica como ilimitado.
+          // Decremento atômico em checkout vai usar o slot certo.
+          if (resolvedExpId && window.ElarahData && ElarahData.saveSlots) {
+            var slotsToSave = byCollectSlots().map(function (s) {
+              return {
+                id: s.id,
+                horario: s.horario,
+                vagasTotal: s.vagasTotal,
+                // data label e eventAt preenchidos com o que está
+                // no form da seção comprável — mantém slots e
+                // experience consistentes em data/cutoff.
+                data: expData.data || null,
+                eventAt: expData.eventAt || null
+              };
+            });
+            try {
+              await ElarahData.saveSlots(resolvedExpId, slotsToSave);
+              console.info('[Admin/By Elarah] slots salvos', resolvedExpId, slotsToSave.length);
+            } catch (errSlots) {
+              console.error('[Admin/By Elarah] saveSlots falhou', errSlots);
+              // Não aborta — o pagamento ainda funciona com vagas
+              // experience-level (vagasTotal do exp é usado como
+              // fallback no checkout). Só loga pra admin investigar.
+            }
           }
         } else {
           // Toggle desligado: se havia experience, desativa (não deleta).
