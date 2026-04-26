@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v28 — vagas: fonte única (slot OR global, sem duplicação)');
+  console.info('[Elarah Admin] admin.js v29 — varredura by elarah: badge "comprável" + alert se sync falha');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -2575,6 +2575,20 @@
           var resolvedExpId = (savedExp && savedExp.id) || existingExpId || null;
           if (resolvedExpId) data.experienceId = resolvedExpId;
 
+          console.info(
+            '[Admin/By Elarah] sincronização experience',
+            'savedExp_id=' + (savedExp ? savedExp.id : '(null)'),
+            'existingExpId=' + (existingExpId || '(novo)'),
+            'resolvedExpId=' + (resolvedExpId || '(NULO! save pode ter falhado)')
+          );
+          if (!resolvedExpId) {
+            alert(
+              'ATENÇÃO: A experiência espelho não foi salva. ' +
+              'O item By Elarah vai funcionar como LEAD (sem checkout). ' +
+              'Veja o console do navegador (F12) pra detalhes.'
+            );
+          }
+
           // Salva slots (vagas por horário). Cada horário do form
           // vira uma row em experience_slots. Se o admin não mexer
           // no input de "Vagas" da linha, o slot fica como ilimitado.
@@ -2970,8 +2984,17 @@
         group.rows.forEach(it => {
           const horariosStr = Array.isArray(it.horarios) && it.horarios.length
             ? it.horarios.join(' · ') : '—';
-          const tipoLabel = it.tipo === 'participar' ? 'Participar' : 'Lista de espera';
-          const tipoClass = it.tipo === 'participar' ? 'approved' : 'pending';
+          // Indicador "comprável vs lead": ✓ verde se vinculado a uma
+          // experience real (checkout direto); ⚠ amarelo se vai pro
+          // fluxo de lead. Pega o problema raiz "salvei comprável mas
+          // está caindo em lead" no admin antes de ir pra home testar.
+          const isPurchasable = !!it.experienceId;
+          const tipoLabel = isPurchasable
+            ? '💳 Comprável'
+            : (it.tipo === 'participar' ? '⚠ Participar (sem checkout)' : '📝 Lista de espera');
+          const tipoClass = isPurchasable
+            ? 'approved'
+            : (it.tipo === 'participar' ? 'pending' : 'pending');
           const statusLabel = it.ativo === false ? 'Oculto' : 'Ativo';
           const statusClass = it.ativo === false ? 'rejected' : 'approved';
           const imgHtml = it.imagem
