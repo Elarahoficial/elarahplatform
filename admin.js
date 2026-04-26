@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v19 — esconde experiências de teste do admin');
+  console.info('[Elarah Admin] admin.js v20 — By Elarah Originals: is_elarah_original + cta_mode + hide_from_categorias');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -1372,6 +1372,14 @@
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
 
+      // By Elarah / Originals fields
+      var ieoEl = document.getElementById('exp-is-elarah-original');
+      var hfcEl = document.getElementById('exp-hide-from-categorias');
+      var ctaEl = document.getElementById('exp-cta-mode');
+      if (ieoEl) ieoEl.checked = exp.isElarahOriginal === true;
+      if (hfcEl) hfcEl.checked = exp.hideFromCategorias === true;
+      if (ctaEl) ctaEl.value = exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy';
+
       // Fornecedor fields
       var fnEl = document.getElementById('exp-fornecedor-nome');
       var vcEl = document.getElementById('exp-valor-cheio');
@@ -1426,6 +1434,13 @@
       if (fnEl2) fnEl2.value = '';
       if (vcEl2) vcEl2.value = '';
       if (prEl2) prEl2.value = 90;
+      // By Elarah / Originals — defaults pra novo cadastro
+      var ieoEl2 = document.getElementById('exp-is-elarah-original');
+      var hfcEl2 = document.getElementById('exp-hide-from-categorias');
+      var ctaEl2 = document.getElementById('exp-cta-mode');
+      if (ieoEl2) ieoEl2.checked = false;
+      if (hfcEl2) hfcEl2.checked = false;
+      if (ctaEl2) ctaEl2.value = 'buy';
       document.getElementById('exp-edit-id').value = '';
     }
 
@@ -1511,7 +1526,14 @@
           if (raw.match(/^\d+$/)) n = Number(raw) * 100;
           return Number.isFinite(n) && n > 0 ? n : null;
         })(),
-        percentualRepasse: Number(document.getElementById('exp-percentual-repasse')?.value || 90)
+        percentualRepasse: Number(document.getElementById('exp-percentual-repasse')?.value || 90),
+        // By Elarah / Originals
+        isElarahOriginal: !!(document.getElementById('exp-is-elarah-original')?.checked),
+        hideFromCategorias: !!(document.getElementById('exp-hide-from-categorias')?.checked),
+        ctaMode: (function () {
+          var raw = (document.getElementById('exp-cta-mode')?.value || 'buy').trim();
+          return raw === 'waitlist' ? 'waitlist' : 'buy';
+        })()
       };
 
       const editId = document.getElementById('exp-edit-id').value;
