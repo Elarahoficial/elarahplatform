@@ -472,22 +472,27 @@
         </button>
       </div>
 
-      <!-- Aviso direcionando pro fluxo certo de checkout direto -->
-      <div style="background:#fff8ee;border:1.5px solid #f0a05e;border-radius:12px;padding:16px 20px;margin:16px 0 24px;">
-        <div style="display:flex;align-items:flex-start;gap:12px;">
-          <span style="font-size:1.4rem;line-height:1;">✨</span>
-          <div style="flex:1;">
-            <div style="font-weight:700;color:#1a1a1a;margin-bottom:4px;">
-              Quer cadastrar uma experiência <em>comprável</em> direto pelo site?
+      <!-- Aviso + atalho direto pro fluxo de checkout direto -->
+      <div style="background:#fff8ee;border:1.5px solid #f0a05e;border-radius:12px;padding:18px 22px;margin:16px 0 24px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+          <span style="font-size:1.5rem;line-height:1;">✨</span>
+          <div style="flex:1;min-width:280px;">
+            <div style="font-weight:700;color:#1a1a1a;margin-bottom:6px;font-size:1.02rem;">
+              Quer que o cliente <em>pague direto</em> pelo site?
             </div>
             <div style="font-size:.92rem;color:#3a3a3a;line-height:1.5;">
-              Use a aba <strong>Experiências</strong> e marque o checkbox
-              <strong>"É um Elarah Original"</strong>. Lá você define preço, vagas, horários,
-              data, descrição completa e o cliente paga direto (Stripe ou PIX).
-              Esta aba aqui é só pra cards de <strong>lista de espera</strong>
+              Esta aba aqui só cria cards de <strong>lista de espera</strong>
               (sem data definida — o cliente entra em contato pelo WhatsApp).
+              Pra checkout direto (Stripe / PIX) com preço, vagas, horários
+              e descrição completa, use o botão laranja abaixo. Ele abre o
+              formulário certo já configurado como Elarah Original comprável.
             </div>
           </div>
+          <button id="btn-add-elarah-original-shortcut"
+            style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:linear-gradient(135deg,#f0a05e 0%,#e08a3e 100%);color:#fff;border:none;border-radius:999px;font-weight:700;font-size:.92rem;cursor:pointer;box-shadow:0 3px 10px rgba(240,160,94,.35);white-space:nowrap;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ✨ Criar Original comprável
+          </button>
         </div>
       </div>
 
@@ -1008,7 +1013,7 @@
 <script src="experiences-data.js?v=15"></script>
 <script src="byelarah-data.js?v=2"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=41"></script>
+<script src="admin.js?v=42"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
