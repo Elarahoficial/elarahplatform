@@ -65,41 +65,113 @@
   }
 
   // ===== BOOT (async) =====
+  // Faz checagem em camadas e LOGA cada etapa, pra que o user veja
+  // exatamente onde travou em vez de redirect silencioso.
+  // Quando bloqueia, mostra tela de diagnóstico (não redirect cego)
+  // com instruções claras de como resolver.
   async function boot() {
-    // Espera auth hidratar antes de decidir se é admin.
+    console.info('[Admin BOOT] iniciando…');
+
+    // 1) Espera auth hidratar antes de decidir.
     if (window.ElarahAuth && ElarahAuth.ready) {
-      try { await ElarahAuth.ready; } catch {}
+      console.info('[Admin BOOT] aguardando ElarahAuth.ready…');
+      try { await ElarahAuth.ready; console.info('[Admin BOOT] ElarahAuth pronto.'); } catch (e) {
+        console.warn('[Admin BOOT] ElarahAuth.ready rejeitou:', e);
+      }
+    } else {
+      console.warn('[Admin BOOT] window.ElarahAuth indisponível.');
     }
 
-    let allowed = ElarahAuth.isAdmin();
+    let allowed = false;
+    let diagState = {
+      logged_in: false,
+      session_user_id: null,
+      session_email: null,
+      profile_found: false,
+      profile_role: null,
+      profile_email: null,
+      profile_query_error: null,
+      ephemeral: false,
+      reason: 'unknown',
+    };
 
-    // Defesa contra cache stale / fetchProfile falho:
-    // confirma diretamente no Supabase antes de redirecionar,
-    // evitando loop admin.html ↔ index.html quando a checagem
-    // do role em memória estiver desatualizada.
+    // 2) Estado em memória do ElarahAuth.
+    try {
+      const memUser = ElarahAuth.getCurrentUser && ElarahAuth.getCurrentUser();
+      if (memUser) {
+        diagState.logged_in = true;
+        diagState.session_email = memUser.email || null;
+        diagState.session_user_id = memUser.id || null;
+        diagState.profile_role = memUser.role || null;
+        if (memUser.role === 'admin') {
+          allowed = true;
+          diagState.reason = 'admin (cache em memória)';
+        }
+        console.info('[Admin BOOT] user em memória:', { email: memUser.email, role: memUser.role });
+      } else {
+        console.warn('[Admin BOOT] ElarahAuth.getCurrentUser retornou null.');
+      }
+    } catch (e) {
+      console.warn('[Admin BOOT] erro lendo currentUser em memória:', e);
+    }
+
+    // 3) Defesa contra cache stale: vai direto no Supabase.
     if (!allowed && window.supabaseClient) {
       try {
+        console.info('[Admin BOOT] consultando Supabase direto…');
         const { data: { session } } = await window.supabaseClient.auth.getSession();
-        if (session && session.user) {
+        if (!session || !session.user) {
+          diagState.reason = 'sem sessão Supabase (você não está logado)';
+          console.warn('[Admin BOOT] sem sessão.');
+        } else {
+          diagState.logged_in = true;
+          diagState.session_user_id = session.user.id;
+          diagState.session_email = session.user.email || null;
+          console.info('[Admin BOOT] sessão ativa:', { id: session.user.id, email: session.user.email });
+
           const { data: prof, error } = await window.supabaseClient
             .from('profiles')
-            .select('role')
+            .select('id, role, email, nome')
             .eq('id', session.user.id)
             .maybeSingle();
-          if (!error && prof && prof.role === 'admin') {
-            allowed = true;
+
+          if (error) {
+            diagState.profile_query_error = error.message || String(error);
+            diagState.reason = 'erro lendo profile: ' + diagState.profile_query_error;
+            console.error('[Admin BOOT] erro lendo profile:', error);
+          } else if (!prof) {
+            diagState.reason = 'profile não existe na tabela public.profiles para este user_id';
+            console.warn('[Admin BOOT] profile inexistente para user_id', session.user.id);
+          } else {
+            diagState.profile_found = true;
+            diagState.profile_role = prof.role || null;
+            diagState.profile_email = prof.email || null;
+            console.info('[Admin BOOT] profile encontrado:', prof);
+            if (prof.role === 'admin') {
+              allowed = true;
+              diagState.reason = 'admin (confirmado no banco)';
+            } else {
+              diagState.reason = 'profile existe mas role=' + JSON.stringify(prof.role) + ' (precisa ser "admin")';
+            }
           }
         }
       } catch (e) {
-        console.warn('[Admin] verificação direta de role falhou:', e);
+        diagState.profile_query_error = String(e && e.message || e);
+        diagState.reason = 'exceção consultando Supabase: ' + diagState.profile_query_error;
+        console.error('[Admin BOOT] exceção:', e);
       }
+    } else if (!allowed && !window.supabaseClient) {
+      diagState.reason = 'window.supabaseClient não inicializou (lib não carregou)';
+      console.error('[Admin BOOT] supabaseClient null.');
     }
 
     if (!allowed) {
-      window.location.href = 'index.html';
+      console.error('[Admin BOOT] ACESSO NEGADO. Motivo:', diagState.reason, diagState);
+      renderAdminAccessDenied(diagState);
       return;
     }
 
+    console.info('[Admin BOOT] acesso liberado, montando painéis…');
     wireNavigation();
     wireLogout();
     wireExperienceForm();
@@ -107,6 +179,85 @@
     wireAnalyticsControls();
     wireBookingsControls();
     await renderOverview();
+  }
+
+  // Tela de diagnóstico explícita quando o boot bloqueia o acesso.
+  // Substitui o redirect cego pra index.html que confundia o admin
+  // ("por que ele me joga pra fora sem dizer nada?").
+  function renderAdminAccessDenied(diag) {
+    const container = document.querySelector('.admin') || document.body;
+    const escape = function (s) {
+      const d = document.createElement('div'); d.textContent = String(s == null ? '—' : s); return d.innerHTML;
+    };
+    const sqlPromote =
+      "update public.profiles\n" +
+      "   set role = 'admin'\n" +
+      " where lower(email) = lower('" + (diag.session_email || diag.profile_email || 'SEU_EMAIL_AQUI') + "');";
+
+    const html =
+      '<div style="max-width:760px;margin:48px auto;padding:32px;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.08);font-family:inherit;">' +
+        '<h1 style="margin:0 0 8px;color:#b07b00;font-size:1.4rem;">Acesso ao admin negado</h1>' +
+        '<p style="margin:0 0 20px;color:#666;font-size:.92rem;">' +
+          'Identificamos por que você não consegue entrar. Veja abaixo e siga a instrução correspondente.' +
+        '</p>' +
+
+        '<div style="background:#fff8ef;border:1px solid #f0d9a8;border-radius:8px;padding:14px 16px;margin-bottom:20px;">' +
+          '<div style="font-size:.78rem;color:#7a6440;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Motivo identificado</div>' +
+          '<div style="font-weight:600;color:#1a1a1a;">' + escape(diag.reason) + '</div>' +
+        '</div>' +
+
+        '<table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:.88rem;">' +
+          '<tbody>' +
+            '<tr><td style="padding:6px 0;color:#666;width:42%;">Logado no Supabase</td><td style="padding:6px 0;font-weight:600;">' + (diag.logged_in ? 'Sim' : 'Não') + '</td></tr>' +
+            '<tr><td style="padding:6px 0;color:#666;">Email da sessão</td><td style="padding:6px 0;font-family:monospace;">' + escape(diag.session_email) + '</td></tr>' +
+            '<tr><td style="padding:6px 0;color:#666;">User ID</td><td style="padding:6px 0;font-family:monospace;font-size:.78rem;">' + escape(diag.session_user_id) + '</td></tr>' +
+            '<tr><td style="padding:6px 0;color:#666;">Profile existe na tabela</td><td style="padding:6px 0;font-weight:600;">' + (diag.profile_found ? 'Sim' : 'Não') + '</td></tr>' +
+            '<tr><td style="padding:6px 0;color:#666;">Role no banco</td><td style="padding:6px 0;font-family:monospace;font-weight:600;color:' + (diag.profile_role === 'admin' ? '#1a8a4a' : '#b00') + ';">' + escape(diag.profile_role) + '</td></tr>' +
+            (diag.profile_query_error ? '<tr><td style="padding:6px 0;color:#666;">Erro de query</td><td style="padding:6px 0;color:#b00;font-size:.82rem;">' + escape(diag.profile_query_error) + '</td></tr>' : '') +
+          '</tbody>' +
+        '</table>' +
+
+        '<div style="margin-bottom:24px;">' +
+          '<h3 style="margin:0 0 8px;font-size:1rem;">Como resolver agora</h3>' +
+          (!diag.logged_in
+            ? '<p style="margin:0;color:#444;">Você não está logado. Volte pra <a href="index.html" style="color:#b07b00;">index.html</a>, faça login com o email do admin e tente de novo.</p>'
+            : !diag.profile_found
+              ? '<p style="margin:0 0 12px;color:#444;">Seu user existe no auth.users mas não tem profile na tabela <code>public.profiles</code>. Rode no SQL Editor do Supabase:</p>' +
+                '<pre style="background:#1a1a1a;color:#fff;padding:12px;border-radius:6px;overflow:auto;font-size:.78rem;">' + escape(
+                  "insert into public.profiles (id, email, nome, role)\n" +
+                  "values ('" + (diag.session_user_id || 'USER_ID') + "', '" + (diag.session_email || 'SEU_EMAIL') + "', '', 'admin')\n" +
+                  "on conflict (id) do update set role = 'admin', email = excluded.email;"
+                ) + '</pre>'
+              : diag.profile_role !== 'admin'
+                ? '<p style="margin:0 0 12px;color:#444;">Seu profile existe mas o <code>role</code> está como <strong>' + escape(diag.profile_role || '(vazio)') + '</strong>. Rode no SQL Editor do Supabase:</p>' +
+                  '<pre style="background:#1a1a1a;color:#fff;padding:12px;border-radius:6px;overflow:auto;font-size:.78rem;">' + escape(sqlPromote) + '</pre>'
+                : '<p style="margin:0;color:#444;">Estado inesperado. Veja o console (F12) — todos os passos foram logados com prefixo <code>[Admin BOOT]</code>.</p>'
+          ) +
+        '</div>' +
+
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;">' +
+          '<button id="admin-retry-btn" type="button" style="padding:10px 18px;background:#f0a05e;color:#fff;border:0;border-radius:6px;font-weight:600;cursor:pointer;font-family:inherit;font-size:.92rem;">Tentar de novo</button>' +
+          '<a href="index.html" style="padding:10px 18px;background:#fff;color:#666;border:1px solid #ddd;border-radius:6px;font-weight:600;text-decoration:none;font-family:inherit;font-size:.92rem;">Voltar pra home</a>' +
+          '<button id="admin-logout-btn" type="button" style="padding:10px 18px;background:#fff;color:#b00;border:1px solid #b00;border-radius:6px;font-weight:600;cursor:pointer;font-family:inherit;font-size:.92rem;">Logout (limpar sessão)</button>' +
+        '</div>' +
+      '</div>';
+
+    container.innerHTML = html;
+
+    const retryBtn = document.getElementById('admin-retry-btn');
+    if (retryBtn) retryBtn.addEventListener('click', () => window.location.reload());
+
+    const logoutBtn = document.getElementById('admin-logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          if (window.ElarahAuth && ElarahAuth.logout) await ElarahAuth.logout();
+          else if (window.supabaseClient) await window.supabaseClient.auth.signOut();
+        } catch (e) { console.warn('[Admin BOOT] logout erro:', e); }
+        try { localStorage.removeItem('elarah-auth'); } catch {}
+        window.location.href = 'index.html';
+      });
+    }
   }
 
   // ===== NAVIGATION =====

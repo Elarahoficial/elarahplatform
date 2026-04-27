@@ -26,6 +26,9 @@ update public.experiences
  where percentual_repasse = 90.00;
 
 -- ===== 2. Função que preenche os campos do fornecedor =====
+-- Usa variáveis escalares (não record) pra que o caso "experiência
+-- não encontrada" não dispare 'record not assigned yet' ao acessar
+-- campos. Variáveis escalares ficam null por default.
 create or replace function public.bookings_autofill_fornecedor()
 returns trigger
 language plpgsql
@@ -33,71 +36,79 @@ security definer
 set search_path = public
 as $$
 declare
-  v_exp record;
-  v_profile record;
-  v_qty integer;
-  v_base_centavos integer;
+  v_exp_fornecedor_nome   text;
+  v_exp_valor_cheio       integer;
+  v_exp_created_by        uuid;
+  v_profile_nome          text;
+  v_profile_partner_data  jsonb;
+  v_qty                   integer;
+  v_base_centavos         integer;
 begin
   -- Só age em bookings pagas.
   if new.status is null or new.status <> 'pago' then
     return new;
   end if;
 
-  -- Só preenche se algo está faltando — não sobrescreve dados existentes.
+  -- Já tem tudo preenchido? Apenas garante status_fornecedor não-nulo.
   if (new.fornecedor_nome is not null and trim(new.fornecedor_nome) <> '')
      and new.valor_repasse_centavos is not null
      and new.valor_comissao_centavos is not null then
-    -- Garante status_fornecedor não-nulo (default já cuida em INSERT,
-    -- mas defensivo em UPDATE).
     if new.status_fornecedor is null then
       new.status_fornecedor := 'repasse_pendente';
     end if;
     return new;
   end if;
 
-  -- Busca experiência associada (pode ser null em bookings legados).
+  -- Busca dados da experiência (se houver). Variáveis escalares
+  -- continuam null se experiencia_id é null OU se a experiência
+  -- não existe — sem erro.
   if new.experiencia_id is not null then
-    select e.id, e.fornecedor_nome, e.valor_cheio_centavos, e.created_by
-      into v_exp
+    select e.fornecedor_nome,
+           e.valor_cheio_centavos,
+           e.created_by
+      into v_exp_fornecedor_nome,
+           v_exp_valor_cheio,
+           v_exp_created_by
       from public.experiences e
      where e.id = new.experiencia_id
      limit 1;
   end if;
 
-  -- Profile do dono da experiência (pra tirar partner_data->>'marca'
-  -- ou nome quando experiences.fornecedor_nome estiver vazio).
-  if v_exp.created_by is not null then
-    select p.id, p.nome, p.partner_data
-      into v_profile
+  -- Profile do dono da experiência (pra fallback de nome).
+  if v_exp_created_by is not null then
+    select p.nome,
+           p.partner_data
+      into v_profile_nome,
+           v_profile_partner_data
       from public.profiles p
-     where p.id = v_exp.created_by
+     where p.id = v_exp_created_by
      limit 1;
   end if;
 
   -- fornecedor_nome
   if new.fornecedor_nome is null or trim(new.fornecedor_nome) = '' then
     new.fornecedor_nome := coalesce(
-      nullif(trim(v_exp.fornecedor_nome), ''),
-      nullif(v_profile.partner_data ->> 'marca', ''),
-      nullif(v_profile.nome, ''),
+      nullif(trim(v_exp_fornecedor_nome), ''),
+      nullif(v_profile_partner_data ->> 'marca', ''),
+      nullif(v_profile_nome, ''),
       'Desconhecido'
     );
   end if;
 
   -- fornecedor_id
-  if new.fornecedor_id is null and v_exp.created_by is not null then
-    new.fornecedor_id := v_exp.created_by;
+  if new.fornecedor_id is null and v_exp_created_by is not null then
+    new.fornecedor_id := v_exp_created_by;
   end if;
 
   -- Quantidade pra cálculo do valor cheio.
   v_qty := greatest(coalesce(new.quantidade, 1), 1);
 
   -- valor_cheio_centavos: usa o do booking; senão usa o da experiência
-  -- × quantidade; senão usa amount_total como base mínima.
-  if new.valor_cheio_centavos is null then
-    if v_exp.valor_cheio_centavos is not null and v_exp.valor_cheio_centavos > 0 then
-      new.valor_cheio_centavos := v_exp.valor_cheio_centavos * v_qty;
-    end if;
+  -- × quantidade.
+  if new.valor_cheio_centavos is null
+     and v_exp_valor_cheio is not null
+     and v_exp_valor_cheio > 0 then
+    new.valor_cheio_centavos := v_exp_valor_cheio * v_qty;
   end if;
 
   -- Base de cálculo do repasse: prioriza valor cheio (preço de tabela
