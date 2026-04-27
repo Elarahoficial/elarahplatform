@@ -276,6 +276,35 @@
         </div>
       </div>
 
+      <!-- ===== CARD: Repasses pendentes por fornecedor =====
+           To-do de repasses: lista compras já PAGAS pelo cliente onde
+           o repasse ao fornecedor ainda está como "repasse_pendente".
+           Agrupado por fornecedor com total a pagar. Click no fornecedor
+           filtra a tabela abaixo. Some quando não há nada pendente. -->
+      <section id="repasse-pendente-card" class="admin__analytics-card"
+               style="margin-bottom:16px;border:1px solid #f0d9a8;background:#fffaf0;display:none;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+          <div>
+            <h3 class="admin__analytics-title" style="margin:0;color:#b07b00;">
+              Repasses pendentes por fornecedor
+            </h3>
+            <p style="margin:4px 0 0;color:#7a6440;font-size:.82rem;">
+              Compras pagas pelo cliente, repasse ao fornecedor ainda não realizado.
+              Clique em um fornecedor pra filtrar a tabela.
+            </p>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:.72rem;color:#7a6440;text-transform:uppercase;letter-spacing:.05em;">
+              Total a repassar
+            </div>
+            <div id="repasse-pendente-total" style="font-size:1.4rem;font-weight:700;color:#b07b00;">R$ 0</div>
+            <div id="repasse-pendente-count" style="font-size:.78rem;color:#7a6440;margin-top:2px;">0 reservas</div>
+          </div>
+        </div>
+        <div id="repasse-pendente-list" style="display:flex;flex-direction:column;gap:6px;">
+        </div>
+      </section>
+
       <div class="admin__analytics-grid">
         <section class="admin__analytics-card">
           <h3 class="admin__analytics-title">Reservas por experiência</h3>
@@ -1166,7 +1195,7 @@
 <script src="experiences-data.js?v=18"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=49"></script>
+<script src="admin.js?v=50"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
