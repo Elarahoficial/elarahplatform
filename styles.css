@@ -153,6 +153,26 @@ select {
   background: var(--cream);
 }
 
+/* Variante temática Dia das Mães — visível em todas as páginas pra
+   levar tráfego pra landing /dia-das-maes.html. Cor bordô/rosa em
+   vez do laranja padrão, com dot decorativo antes do texto. */
+.header__nav-link--ddm {
+  color: #5C2426 !important;
+}
+.header__nav-link--ddm::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E8B5AB 0%, #C97D6F 100%);
+  box-shadow: 0 0 0 3px rgba(232,181,171,0.25);
+}
+.header__nav-link--ddm:hover {
+  color: #4a1d1f !important;
+  background: #fbeeea;
+}
+
 .header__nav-chevron {
   width: 16px;
   height: 16px;
