@@ -412,6 +412,9 @@ const ElarahAuth = (function () {
       const senha = document.getElementById('auth-login-senha').value;
       const errorEl = document.getElementById('auth-login-error');
       errorEl.textContent = '';
+      // Limpa qualquer painel de network error anterior.
+      const oldPanel = document.getElementById('auth-network-error-panel');
+      if (oldPanel) oldPanel.remove();
 
       const result = await login(email, senha);
 
@@ -429,6 +432,39 @@ const ElarahAuth = (function () {
           return;
         }
         updateHeaderUI();
+      } else if (result.networkError) {
+        // Erro de rede (QUIC bloqueado, firewall, etc.). Mostra painel
+        // grande com workarounds em vez do "errorEl" pequeno.
+        errorEl.textContent = '';
+        const panel = document.createElement('div');
+        panel.id = 'auth-network-error-panel';
+        panel.style.cssText =
+          'background:#fff3cd;border:2px solid #f0a05e;border-radius:12px;' +
+          'padding:16px;margin:12px 0;font-size:.88rem;line-height:1.5;color:#1a1a1a;';
+        panel.innerHTML =
+          '<div style="font-weight:700;font-size:.95rem;margin-bottom:8px;color:#c0392b;">' +
+          '⚠ Sem conexão com o servidor</div>' +
+          '<div style="margin-bottom:10px;color:#3a3a3a;">' +
+          'Sua rede está bloqueando o acesso (geralmente <strong>HTTP/3 / QUIC</strong>). ' +
+          'Tente uma das opções abaixo, em ordem:</div>' +
+          '<ol style="padding-left:22px;margin:0 0 10px;color:#3a3a3a;">' +
+          '<li><strong>Desabilitar QUIC no Chrome</strong> (mais comum):<br>' +
+          '<code style="background:#fff;padding:2px 6px;border-radius:4px;font-size:.82rem;">chrome://flags/#enable-quic</code> ' +
+          '→ marca <em>Disabled</em> → reinicia o Chrome.</li>' +
+          '<li><strong>Trocar de rede</strong>: usa o 4G do celular como hotspot.</li>' +
+          '<li><strong>Outro navegador</strong>: tenta no Firefox ou Edge.</li>' +
+          '<li><strong>Desabilitar antivírus/extensões</strong> temporariamente.</li>' +
+          '</ol>' +
+          '<button type="button" id="auth-retry-btn" style="background:#f0a05e;color:#fff;' +
+          'border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:.88rem;">' +
+          'Tentar novamente</button>';
+        errorEl.parentNode.insertBefore(panel, errorEl.nextSibling);
+        const retryBtn = panel.querySelector('#auth-retry-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', function () {
+            div.querySelector('#auth-form-login').requestSubmit();
+          });
+        }
       } else {
         errorEl.textContent = result.error;
       }
