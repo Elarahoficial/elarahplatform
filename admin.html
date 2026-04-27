@@ -1160,8 +1160,10 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js?v=6"></script>
+<!-- Fixa versão e fallback pra jsdelivr se unpkg falhar -->
+<script src="https://unpkg.com/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"
+  onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js';s.onerror=function(){console.error('[Elarah] AMBOS os CDNs do Supabase falharam. Recarregue ou troque de rede.');};document.head.appendChild(s);"></script>
+<script src="supabase-client.js?v=7"></script>
 <script src="auth.js?v=8"></script>
 <script src="experiences-data.js?v=17"></script>
 <script src="byelarah-data.js?v=4"></script>
