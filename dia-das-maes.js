@@ -42,13 +42,22 @@
       .toLowerCase();
   }
 
-  // Critério: o NOME contém "mae" ou "maes" como palavra (não match
-  // dentro de outras palavras tipo "amamentar"). Usa \b regex.
+  // Critério: a experiência aparece se NOME, CATEGORIA ou DESCRIÇÃO
+  // contiverem "mae" / "maes" como palavra (não match dentro de
+  // outras palavras tipo "amamentar"). Assim experiências cujo nome
+  // não menciona "mãe" entram no filtro só por terem "Dia das Mães"
+  // na descrição — sem precisar renomear o produto.
   const motherRegex = /\b(mae|maes)\b/;
 
-  const filtered = experiences.filter(function (exp) {
-    return motherRegex.test(normalize(exp && exp.nome));
-  });
+  function matchesMother(exp) {
+    if (!exp) return false;
+    if (motherRegex.test(normalize(exp.nome))) return true;
+    if (motherRegex.test(normalize(exp.categoria))) return true;
+    if (motherRegex.test(normalize(exp.descricao))) return true;
+    return false;
+  }
+
+  const filtered = experiences.filter(matchesMother);
 
   console.info('[Elarah DDM] experiências encontradas:', filtered.length, 'de', experiences.length);
 
