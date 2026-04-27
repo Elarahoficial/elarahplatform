@@ -151,7 +151,21 @@ const ElarahAuth = (function () {
   }
 
   async function hydrate() {
-    const s = sb();
+    let s = sb();
+    // Se o vendor/supabase-js ainda não carregou (race condition do
+    // <script> async), aguarda até 8s pelo client ficar pronto antes
+    // de desistir. Sem isso, ElarahAuth.ready resolveria imediato e
+    // o admin.html acharia que estamos sem sessão.
+    if (!s && window.ElarahSupabase && typeof window.ElarahSupabase.waitClient === 'function') {
+      console.info('[Elarah AUTH] hydrate: aguardando supabase client (waitClient)…');
+      s = await window.ElarahSupabase.waitClient(8000);
+      if (s) {
+        supabase = s;
+        console.info('[Elarah AUTH] hydrate: client pronto.');
+      } else {
+        console.warn('[Elarah AUTH] hydrate: timeout esperando client — desistindo.');
+      }
+    }
     if (!s) {
       hydrated = true;
       readyResolve();

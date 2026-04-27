@@ -72,7 +72,24 @@
   async function boot() {
     console.info('[Admin BOOT] iniciando…');
 
-    // 1) Espera auth hidratar antes de decidir.
+    // 1a) Espera o supabase client carregar (vendor é async).
+    // Sem isso, no admin.html podemos checar window.supabaseClient
+    // antes do <script> do vendor terminar de baixar — daí "lib não
+    // carregou" mesmo com o banco saudável.
+    if (!window.supabaseClient
+        && window.ElarahSupabase
+        && typeof window.ElarahSupabase.waitClient === 'function') {
+      console.info('[Admin BOOT] aguardando supabase client (waitClient)…');
+      try {
+        const c = await window.ElarahSupabase.waitClient(8000);
+        if (c) console.info('[Admin BOOT] supabase client pronto.');
+        else console.warn('[Admin BOOT] timeout esperando supabase client.');
+      } catch (e) {
+        console.warn('[Admin BOOT] waitClient rejeitou:', e);
+      }
+    }
+
+    // 1b) Espera auth hidratar antes de decidir.
     if (window.ElarahAuth && ElarahAuth.ready) {
       console.info('[Admin BOOT] aguardando ElarahAuth.ready…');
       try { await ElarahAuth.ready; console.info('[Admin BOOT] ElarahAuth pronto.'); } catch (e) {
