@@ -118,14 +118,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       : (exp.horario ? [exp.horario] : []);
     const hasMultipleHorarios = horarios.length > 1;
 
-    // Normaliza path: nome solto vira "assets/...". URLs absolutas
-    // e paths absolutos passam direto. Mesmo helper usado na home
-    // (script.js) — duplicado pra manter categoria.js standalone.
+    // Normaliza path: nome solto vira "assets/...". URLs absolutas e
+    // paths absolutos passam direto. Aplica NFKD + remove diacríticos
+    // (cedilha/acento) pra bater com a convenção dos arquivos do
+    // projeto, que são sempre sem acento ("velamacadoamor.jpg" mesmo
+    // se admin cadastrou "velamaçadoamor.jpg").
     const normalizeImg = function (p) {
-      const s = String(p == null ? '' : p).trim();
+      let s = String(p == null ? '' : p).trim();
       if (!s) return '';
       if (/^(https?:\/\/|\/)/i.test(s)) return s;
-      if (/^(assets|images|img)\//i.test(s)) return s;
+      if (/^(assets|images|img)\//i.test(s)) {
+        s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+        return s;
+      }
+      s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
       return 'assets/' + s;
     };
     const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
