@@ -795,12 +795,13 @@
     // Experiências entram pra servir de fallback dos campos
     // fornecedor/valor_cheio/repasse/comissão quando o booking
     // foi criado antes do deploy que começou a gravar esses campos.
-    const [bookingsRaw, profiles, allExperiences] = await Promise.all([
+    const [bookingsRaw, profiles, allExperiences, fornecedoresMeta] = await Promise.all([
       getBookings(),
       getProfiles().catch(() => []),
       (window.ElarahData && ElarahData.getAllExperiences)
         ? ElarahData.getAllExperiences().catch(() => [])
         : Promise.resolve([]),
+      getFornecedoresMetadata().catch(() => []),
     ]);
     // Filtra experiências de teste UMA VEZ aqui — cascata pra dropdown,
     // stats globais, gráficos (reservas por exp / conversão) e tabela.
@@ -808,6 +809,14 @@
     const expById = new Map();
     (allExperiences || []).forEach(e => {
       if (e && e.id) expById.set(e.id, e);
+    });
+    // Mapa: fornecedor_key → metadata (whatsapp, data_entrada, ...).
+    // Centraliza o WhatsApp do fornecedor — antes ficava em
+    // experiences.fornecedor_whatsapp (duplicado por experiência),
+    // agora é 1 fonte da verdade vinculada por nome normalizado.
+    const fornecedoresMetaByKey = new Map();
+    (fornecedoresMeta || []).forEach(m => {
+      if (m && m.fornecedor_key) fornecedoresMetaByKey.set(m.fornecedor_key, m);
     });
     const telefonePorUserId = new Map();
     const telefonePorEmail = new Map();
@@ -882,11 +891,19 @@
       b._valorComissaoResolvido = valorComissao;
 
       // ===== WhatsApp do fornecedor =====
-      // Vem da experiência (campo fornecedor_whatsapp). Sem fallback
-      // porque é uma informação cadastrada explicitamente pelo admin.
-      b._fornecedorWhatsappResolvido = (exp && exp.fornecedorWhatsapp)
-        ? String(exp.fornecedorWhatsapp).trim()
-        : '';
+      // Centralizado em fornecedores_metadata.whatsapp, vinculado por
+      // nome normalizado (fornecedor_key). Cadastrado uma única vez
+      // no painel "Fornecedores" e reutilizado por todas as compras
+      // do mesmo fornecedor. Sem fallback — se não cadastrado, o
+      // botão "Avisar" mostra "— sem WhatsApp" e linka pro painel.
+      let fornecedorWhatsapp = '';
+      if (fornecedorNome) {
+        const meta = fornecedoresMetaByKey.get(
+          String(fornecedorNome).trim().toLowerCase().replace(/\s+/g, ' ')
+        );
+        if (meta && meta.whatsapp) fornecedorWhatsapp = String(meta.whatsapp).trim();
+      }
+      b._fornecedorWhatsappResolvido = fornecedorWhatsapp;
 
       // ===== Timestamp do evento + horas até o evento =====
       // Pra colorir o badge "Prazo" da linha. Lógica espelha a usada
@@ -1764,13 +1781,13 @@
       if (hfcEl) hfcEl.checked = exp.hideFromCategorias === true;
       if (ctaEl) ctaEl.value = exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy';
 
-      // Fornecedor fields
+      // Fornecedor fields. WhatsApp do fornecedor é centralizado no
+      // painel "Fornecedores" (fornecedores_metadata.whatsapp), não
+      // por experiência — evita duplicação.
       var fnEl = document.getElementById('exp-fornecedor-nome');
-      var fwEl = document.getElementById('exp-fornecedor-whatsapp');
       var vcEl = document.getElementById('exp-valor-cheio');
       var prEl = document.getElementById('exp-percentual-repasse');
       if (fnEl) fnEl.value = exp.fornecedorNome || '';
-      if (fwEl) fwEl.value = exp.fornecedorWhatsapp || '';
       if (vcEl) vcEl.value = exp.valorCheioCentavos != null ? 'R$' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
       if (prEl) prEl.value = exp.percentualRepasse != null ? exp.percentualRepasse : 70;
 
@@ -1819,11 +1836,9 @@
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = true;
       var fnEl2 = document.getElementById('exp-fornecedor-nome');
-      var fwEl2 = document.getElementById('exp-fornecedor-whatsapp');
       var vcEl2 = document.getElementById('exp-valor-cheio');
       var prEl2 = document.getElementById('exp-percentual-repasse');
       if (fnEl2) fnEl2.value = '';
-      if (fwEl2) fwEl2.value = '';
       if (vcEl2) vcEl2.value = '';
       if (prEl2) prEl2.value = 70;
       // By Elarah / Originals — defaults pra novo cadastro
@@ -1957,7 +1972,6 @@
         cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw),
         isActive: !!(document.getElementById('exp-is-active')?.checked ?? true),
         fornecedorNome: (document.getElementById('exp-fornecedor-nome')?.value || '').trim() || null,
-        fornecedorWhatsapp: (document.getElementById('exp-fornecedor-whatsapp')?.value || '').trim() || null,
         valorCheioCentavos: (function () {
           var raw = (document.getElementById('exp-valor-cheio')?.value || '').trim();
           if (!raw) return null;
@@ -3560,6 +3574,30 @@
     return fornecedoresMetaCache.slice();
   }
 
+  // Salva o WhatsApp do fornecedor em fornecedores_metadata.whatsapp.
+  // Fonte única — usada pelo botão "Avisar fornecedor" em Compras.
+  async function saveFornecedorWhatsapp(fornecedorNome, whatsappRaw) {
+    const s = window.supabaseClient;
+    if (!s) return { ok: false, error: 'Supabase client indisponível' };
+    const key = fornecedorKey(fornecedorNome);
+    if (!key) return { ok: false, error: 'Nome do fornecedor vazio' };
+    const wa = (whatsappRaw || '').trim();
+    const { error } = await s.from('fornecedores_metadata').upsert(
+      {
+        fornecedor_key: key,
+        fornecedor_nome: fornecedorNome,
+        whatsapp: wa || null,
+      },
+      { onConflict: 'fornecedor_key' }
+    );
+    if (error) {
+      console.error('[Admin] saveFornecedorWhatsapp error', error);
+      return { ok: false, error: error.message };
+    }
+    fornecedoresMetaCache = null;
+    return { ok: true };
+  }
+
   async function saveFornecedorDataEntrada(fornecedorNome, dataEntradaISO) {
     const s = window.supabaseClient;
     if (!s) return { ok: false, error: 'Supabase client indisponível' };
@@ -3818,13 +3856,14 @@
 
     const tbody = document.getElementById('fornecedores-body');
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
       return;
     }
 
     tbody.innerHTML = list.map(f => {
       const meta = metaByKey.get(f.key);
       const dataEntradaISO = meta && meta.data_entrada ? meta.data_entrada : '';
+      const whatsappVal = meta && meta.whatsapp ? meta.whatsapp : '';
       const parceiroHa = formatParceiroHa(dataEntradaISO);
       const experienciasLabel = f.experiencesAtivas === f.experiencesTotal
         ? f.experiencesTotal
@@ -3839,6 +3878,7 @@
         : '<span style="color:#bbb;">—</span>';
       return '<tr>' +
         '<td style="font-weight:600;">' + escapeHtml(f.nome) + '</td>' +
+        '<td><input type="tel" class="admin__forn-whatsapp" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(whatsappVal) + '" placeholder="(11) 99999-9999" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;width:140px;" title="WhatsApp do fornecedor — usado pelo botão Avisar em Compras"></td>' +
         '<td><input type="date" class="admin__forn-data-entrada" data-forn-key="' + escapeHtml(f.key) + '" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(dataEntradaISO) + '" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;"></td>' +
         '<td>' + parceiroHa + '</td>' +
         '<td>' + experienciasLabel + '</td>' +
@@ -3869,11 +3909,41 @@
           return;
         }
         // Recalcula "Parceiro há" na célula irmã sem re-renderizar tudo.
+        // Ordem das colunas: Fornecedor=0, WhatsApp=1, DataEntrada=2, ParceiroHá=3.
         const row = el.closest('tr');
         if (row) {
-          const parceiroCell = row.children[2];
+          const parceiroCell = row.children[3];
           if (parceiroCell) parceiroCell.innerHTML = formatParceiroHa(value);
         }
+      });
+    });
+
+    // WhatsApp por fornecedor (centralizado — usado pelo botão Avisar
+    // em Compras). Salva on-blur (em vez de on-change) pra dar tempo
+    // do operador digitar o número inteiro sem disparar a cada dígito.
+    tbody.querySelectorAll('.admin__forn-whatsapp').forEach(input => {
+      input.addEventListener('blur', async (e) => {
+        const el = e.target;
+        const nome = el.dataset.fornNome;
+        const original = el.defaultValue || '';
+        const value = el.value;
+        if (value === original) return; // nada mudou
+        el.disabled = true;
+        const res = await saveFornecedorWhatsapp(nome, value);
+        el.disabled = false;
+        if (!res.ok) {
+          alert('Não consegui salvar o WhatsApp. ' +
+            (res.error && res.error.includes('whatsapp')
+              ? 'A coluna whatsapp não existe ainda — rode sql/elarah_fornecedores_whatsapp.sql no SQL Editor do Supabase.'
+              : res.error || 'Verifique se você está logada como admin.'));
+          el.value = original;
+          return;
+        }
+        el.defaultValue = value;
+        // Feedback visual rápido (borda verde por 1s).
+        const prev = el.style.borderColor;
+        el.style.borderColor = '#1a8a4a';
+        setTimeout(() => { el.style.borderColor = prev; }, 1000);
       });
     });
   }

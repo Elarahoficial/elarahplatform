@@ -417,6 +417,7 @@
           <thead>
             <tr>
               <th>Fornecedor</th>
+              <th>WhatsApp</th>
               <th>Data de entrada</th>
               <th>Parceiro há</th>
               <th>Experiências</th>
@@ -428,7 +429,7 @@
             </tr>
           </thead>
           <tbody id="fornecedores-body">
-            <tr><td colspan="9" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
+            <tr><td colspan="10" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
           </tbody>
         </table>
       </div>
@@ -932,12 +933,7 @@
         <div class="admin__form-field">
           <label>Nome do fornecedor</label>
           <input type="text" id="exp-fornecedor-nome" placeholder="Ex: Receitaria SP">
-          <p class="admin__form-hint">Marca ou nome do parceiro que executa a experiência.</p>
-        </div>
-        <div class="admin__form-field">
-          <label>WhatsApp do fornecedor</label>
-          <input type="tel" id="exp-fornecedor-whatsapp" placeholder="(11) 99999-9999" inputmode="tel">
-          <p class="admin__form-hint">Usado pelo botão "Avisar fornecedor" no painel de Compras. DDD + número.</p>
+          <p class="admin__form-hint">Marca ou nome do parceiro que executa a experiência. O WhatsApp é cadastrado no painel <strong>Fornecedores</strong> — basta usar o mesmo nome aqui.</p>
         </div>
         <div class="admin__form-field">
           <label>Valor cheio (R$)</label>
@@ -1199,10 +1195,10 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=19"></script>
+<script src="experiences-data.js?v=20"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=53"></script>
+<script src="admin.js?v=54"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
