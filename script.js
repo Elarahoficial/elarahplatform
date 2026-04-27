@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v23 — badge unificado + Data em breve centralizada + onerror fallback de imagem');
+console.info('[Elarah] script.js v24 — normalize NFKD em path de imagem (cedilha/acento) + fixes anteriores');
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -285,11 +285,23 @@ if (categoriaURL) activeCategoria = categoriaURL;
 
     // Normaliza path: nome solto (ex: "ceramica.jpg") vira "assets/ceramica.jpg".
     // URLs absolutas (http/https) e paths absolutos (/...) passam direto.
+    // Aplica NFKD + remove diacríticos pra que arquivos cadastrados com
+    // cedilha/acento ("velamaçadoamor.jpg") busquem a versão normalizada
+    // ("velamacadoamor.jpg") — convenção dos arquivos do projeto é
+    // sempre sem acento. Espaços continuam como estão (URL-encoded
+    // pelo browser); admin precisa ajustar manualmente se o arquivo
+    // real usa hífen ou underscore no lugar.
     const normalizeImg = function (p) {
-      const s = String(p == null ? '' : p).trim();
+      let s = String(p == null ? '' : p).trim();
       if (!s) return '';
       if (/^(https?:\/\/|\/)/i.test(s)) return s;
-      if (/^(assets|images|img)\//i.test(s)) return s;
+      if (/^(assets|images|img)\//i.test(s)) {
+        // Mesmo com prefixo, normaliza diacríticos no nome do arquivo.
+        s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+        return s;
+      }
+      // Nome solto: prefixa assets/ + normaliza diacríticos.
+      s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
       return 'assets/' + s;
     };
     // Placeholder gradient (usado quando imagem vazia OU falha ao carregar).
