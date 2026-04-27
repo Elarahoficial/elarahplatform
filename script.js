@@ -291,18 +291,20 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // sempre sem acento. Espaços continuam como estão (URL-encoded
     // pelo browser); admin precisa ajustar manualmente se o arquivo
     // real usa hífen ou underscore no lugar.
+    // Também lowercase do basename pra cobrir admin que digitou
+    // "PERFUMES.jpg" — convenção do /assets é tudo minúsculo.
     const normalizeImg = function (p) {
       let s = String(p == null ? '' : p).trim();
       if (!s) return '';
       if (/^(https?:\/\/|\/)/i.test(s)) return s;
-      if (/^(assets|images|img)\//i.test(s)) {
-        // Mesmo com prefixo, normaliza diacríticos no nome do arquivo.
-        s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
-        return s;
-      }
-      // Nome solto: prefixa assets/ + normaliza diacríticos.
       s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
-      return 'assets/' + s;
+      const slash = s.lastIndexOf('/');
+      const dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+      const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+      if (/^(assets|images|img)\//i.test(s)) {
+        return dir.toLowerCase() + file;
+      }
+      return 'assets/' + file;
     };
     // Placeholder gradient (usado quando imagem vazia OU falha ao carregar).
     // Encodado em data-attribute pra que o onerror possa trocar inline.
@@ -657,10 +659,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
       if (/^https?:\/\//i.test(s)) return s;
       // path absoluto local — usa como está
       if (s.charAt(0) === '/') return s;
-      // já tem prefixo de pasta conhecido
-      if (/^(assets|images|img)\//i.test(s)) return s;
-      // nome de arquivo solto — assume assets/
-      return 'assets/' + s;
+      // Convenção do /assets: sem acento + tudo minúsculo no basename.
+      // Cobre admin que cadastrou "PERFUMES.jpg" / "velamaçadoamor.jpg".
+      s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+      var slash = s.lastIndexOf('/');
+      var dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+      var file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+      if (/^(assets|images|img)\//i.test(s)) {
+        return dir.toLowerCase() + file;
+      }
+      return 'assets/' + file;
     }
 
     function resolveImage(it) {

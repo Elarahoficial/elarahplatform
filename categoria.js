@@ -122,17 +122,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // paths absolutos passam direto. Aplica NFKD + remove diacríticos
     // (cedilha/acento) pra bater com a convenção dos arquivos do
     // projeto, que são sempre sem acento ("velamacadoamor.jpg" mesmo
-    // se admin cadastrou "velamaçadoamor.jpg").
+    // se admin cadastrou "velamaçadoamor.jpg"). Também lowercase do
+    // basename pra cobrir admin que digitou "PERFUMES.jpg".
     const normalizeImg = function (p) {
       let s = String(p == null ? '' : p).trim();
       if (!s) return '';
       if (/^(https?:\/\/|\/)/i.test(s)) return s;
-      if (/^(assets|images|img)\//i.test(s)) {
-        s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
-        return s;
-      }
       s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
-      return 'assets/' + s;
+      const slash = s.lastIndexOf('/');
+      const dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+      const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+      if (/^(assets|images|img)\//i.test(s)) {
+        return dir.toLowerCase() + file;
+      }
+      return 'assets/' + file;
     };
     const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
     const imgSrc = normalizeImg(exp.imagem);

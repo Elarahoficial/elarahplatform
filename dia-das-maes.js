@@ -74,15 +74,20 @@
   }
 
   // Normaliza path de imagem (mesmo NFKD do categoria.js — bate com
-  // arquivos sem acento em /assets).
+  // arquivos sem acento em /assets). Também lowercase do basename
+  // pra cobrir admin que digitou "PERFUMES.jpg".
   function normalizeImg(p) {
     let s = String(p == null ? '' : p).trim();
     if (!s) return '';
     if (/^(https?:\/\/|\/)/i.test(s)) return s;
+    s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    const slash = s.lastIndexOf('/');
+    const dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+    const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
     if (/^(assets|images|img)\//i.test(s)) {
-      return s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+      return dir.toLowerCase() + file;
     }
-    return 'assets/' + s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    return 'assets/' + file;
   }
 
   function escapeHtml(str) {

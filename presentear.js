@@ -1,5 +1,21 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
+  // Mesmo normalizador dos cards: NFKD + lowercase do basename pra
+  // tolerar admin que cadastrou "PERFUMES.jpg" ou "velamaçadoamor.jpg".
+  function normalizeImg(p) {
+    let s = String(p == null ? '' : p).trim();
+    if (!s) return '';
+    if (/^(https?:\/\/|\/)/i.test(s)) return s;
+    s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    const slash = s.lastIndexOf('/');
+    const dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+    const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+    if (/^(assets|images|img)\//i.test(s)) {
+      return dir.toLowerCase() + file;
+    }
+    return 'assets/' + file;
+  }
+
   // ===== GIFT EXPERIENCES DATA (shared source) =====
   let giftExperiences = [];
   try {
@@ -50,9 +66,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           ).join('')}</div>`
         : '';
 
+      const imgSrc = normalizeImg(exp.imagem);
       card.innerHTML = `
         <div class="card__image">
-          <img src="${exp.imagem}" alt="${exp.nome}" class="card__image-photo">
+          <img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" onerror="this.style.display='none'">
           <button class="card__favorite" aria-label="Favoritar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
