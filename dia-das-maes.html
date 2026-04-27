@@ -10,7 +10,7 @@
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="dia-das-maes.css?v=1">
+  <link rel="stylesheet" href="dia-das-maes.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -52,6 +52,7 @@
             <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
           </div>
         </div>
+        <a href="dia-das-maes.html" class="header__nav-link header__nav-link--ddm" aria-current="page">Dia das Mães</a>
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="oferecer.html" class="header__nav-link">Oferecer uma experiência</a>
       </nav>
@@ -170,11 +171,104 @@
     </div>
   </section>
 
-  <!-- ========== FAIXA FINAL ========== -->
-  <section class="ddm-footer-strip">
-    <div class="ddm-footer-strip__inner">
-      <p class="ddm-footer-strip__quote">
-        “O melhor presente é estar presente.”
+  <!-- ========== DEPOIMENTOS ========== -->
+  <section class="ddm-testimonials" aria-labelledby="ddm-testimonials-title">
+    <div class="ddm-testimonials__inner">
+      <span class="ddm-testimonials__kicker">Quem viveu, conta</span>
+      <h2 id="ddm-testimonials-title" class="ddm-testimonials__title">
+        Histórias de quem deu — e de quem recebeu
+      </h2>
+      <div class="ddm-testimonials__grid">
+        <figure class="ddm-testimonial">
+          <svg class="ddm-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddm-testimonial__text">
+            Foi um dos momentos mais especiais que já vivi com minha mãe. <span aria-hidden="true">🤍</span>
+          </blockquote>
+          <figcaption class="ddm-testimonial__author">
+            <span class="ddm-testimonial__name">Marina</span>
+            <span class="ddm-testimonial__detail">Workshop de Cerâmica</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ddm-testimonial">
+          <svg class="ddm-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddm-testimonial__text">
+            Experiência linda, diferente de qualquer presente tradicional.
+          </blockquote>
+          <figcaption class="ddm-testimonial__author">
+            <span class="ddm-testimonial__name">Carolina</span>
+            <span class="ddm-testimonial__detail">Pintura em Taça</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ddm-testimonial">
+          <svg class="ddm-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddm-testimonial__text">
+            A gente se divertiu, criou juntas e ainda levou uma lembrança pra casa.
+          </blockquote>
+          <figcaption class="ddm-testimonial__author">
+            <span class="ddm-testimonial__name">Beatriz</span>
+            <span class="ddm-testimonial__detail">Sabonete Artesanal</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FECHAMENTO DE CAMPANHA ========== -->
+  <section class="ddm-closer" aria-labelledby="ddm-closer-title">
+    <div class="ddm-closer__decor ddm-closer__decor--left" aria-hidden="true"></div>
+    <div class="ddm-closer__decor ddm-closer__decor--right" aria-hidden="true"></div>
+
+    <div class="ddm-closer__inner">
+      <div class="ddm-closer__quote-wrap">
+        <span class="ddm-closer__ornament" aria-hidden="true">
+          <svg viewBox="0 0 80 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <line x1="0" y1="6" x2="30" y2="6"/>
+            <circle cx="40" cy="6" r="3"/>
+            <line x1="50" y1="6" x2="80" y2="6"/>
+          </svg>
+        </span>
+        <p id="ddm-closer-title" class="ddm-closer__quote">
+          “O melhor presente é<br><em>estar presente.</em>”
+        </p>
+        <span class="ddm-closer__ornament ddm-closer__ornament--bottom" aria-hidden="true">
+          <svg viewBox="0 0 80 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <line x1="0" y1="6" x2="30" y2="6"/>
+            <circle cx="40" cy="6" r="3"/>
+            <line x1="50" y1="6" x2="80" y2="6"/>
+          </svg>
+        </span>
+      </div>
+
+      <p class="ddm-closer__lead">
+        Mais do que um presente, é um momento para viver juntas, criar memórias
+        e sair da rotina. <strong>Escolha como você quer viver esse Dia das Mães.</strong>
+      </p>
+
+      <div class="ddm-closer__ctas">
+        <a href="#ddm-experiencias" class="ddm-closer__cta ddm-closer__cta--primary">
+          Ver experiências de Dia das Mães
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+        <a href="presentear.html" class="ddm-closer__cta ddm-closer__cta--secondary">
+          Presentear agora
+        </a>
+        <a href="#ddm-experiencias" class="ddm-closer__cta ddm-closer__cta--ghost">
+          Reservar minha experiência
+        </a>
+      </div>
+
+      <p class="ddm-closer__finepoint">
+        Vagas limitadas · Reserva por experiência · Curadoria Elarah
       </p>
     </div>
   </section>
