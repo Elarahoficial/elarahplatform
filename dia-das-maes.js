@@ -74,15 +74,44 @@
   }
 
   // Normaliza path de imagem (mesmo NFKD do categoria.js — bate com
-  // arquivos sem acento em /assets).
+  // arquivos sem acento em /assets). Também lowercase do basename
+  // pra cobrir admin que digitou "PERFUMES.jpg".
   function normalizeImg(p) {
     let s = String(p == null ? '' : p).trim();
     if (!s) return '';
     if (/^(https?:\/\/|\/)/i.test(s)) return s;
+    s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    const slash = s.lastIndexOf('/');
+    const dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+    const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
     if (/^(assets|images|img)\//i.test(s)) {
-      return s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+      return dir.toLowerCase() + file;
     }
-    return 'assets/' + s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    return 'assets/' + file;
+  }
+
+  // Fallback por categoria: quando exp.imagem está vazia ou o arquivo
+  // não existe, o card cai pra uma foto representativa da categoria
+  // ao invés do quadrado colorido. Cada chave é a categoria
+  // normalizada (NFKD + lowercase) — adicionar nova categoria aqui
+  // basta criar a entrada com um arquivo presente em /assets.
+  const CATEGORY_DEFAULT_IMG = {
+    'sabonete':    'assets/sabonete.jpg',
+    'perfumaria':  'assets/perfumaria.jpg',
+    'ceramica':    'assets/ceramica-fria.jpg',
+    'tufting':     'assets/tufting1.jpg',
+    'pintura':     'assets/pinturataca.jpg',
+    'vela':        'assets/velaaromatica.jpg',
+    'gastronomia': 'assets/cookies.jpg',
+    'macrame':     'assets/macrameee.jpg',
+    'floral':      'assets/florseca.jpg',
+    'bartenderia': 'assets/drinks.jpg',
+  };
+
+  function defaultImgForCategory(cat) {
+    if (!cat) return '';
+    const key = String(cat).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    return CATEGORY_DEFAULT_IMG[key] || '';
   }
 
   function escapeHtml(str) {
@@ -101,14 +130,25 @@
     card.setAttribute('role', 'link');
     card.setAttribute('tabindex', '0');
 
-    const img = normalizeImg(exp.imagem);
+    const primary = normalizeImg(exp.imagem);
+    const catFallback = defaultImgForCategory(exp.categoria);
+    // Cadeia: primária → fallback de categoria → placeholder.
+    // Se a primária estiver vazia, já começamos pela de categoria.
+    const initialSrc = primary || catFallback;
     const placeholder =
       '<div class="ddm-card__placeholder">' + escapeHtml(exp.categoria || 'Experiência') + '</div>';
 
-    const mediaInner = img
-      ? '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(exp.nome || '') + '" loading="lazy" ' +
-        'onerror="if(this.dataset.fb!==\'1\'){this.dataset.fb=\'1\';this.outerHTML=this.dataset.fbHtml;}" ' +
-        'data-fb-html="' + placeholder.replace(/"/g, '&quot;') + '">'
+    const mediaInner = initialSrc
+      ? '<img src="' + escapeHtml(initialSrc) + '" alt="' + escapeHtml(exp.nome || '') + '" loading="lazy" ' +
+        'data-cat-fb="' + escapeHtml(catFallback) + '" ' +
+        'data-fb-html="' + placeholder.replace(/"/g, '&quot;') + '" ' +
+        'onerror="' +
+          'if(this.dataset.fbStep===\'final\'){return;}' +
+          'if(!this.dataset.fbStep&&this.dataset.catFb&&this.src.indexOf(this.dataset.catFb)===-1){' +
+            'this.dataset.fbStep=\'cat\';this.src=this.dataset.catFb;return;' +
+          '}' +
+          'this.dataset.fbStep=\'final\';this.outerHTML=this.dataset.fbHtml;' +
+        '">'
       : placeholder;
 
     const data = (exp.data || '').trim();

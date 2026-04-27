@@ -122,27 +122,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     // paths absolutos passam direto. Aplica NFKD + remove diacríticos
     // (cedilha/acento) pra bater com a convenção dos arquivos do
     // projeto, que são sempre sem acento ("velamacadoamor.jpg" mesmo
-    // se admin cadastrou "velamaçadoamor.jpg").
+    // se admin cadastrou "velamaçadoamor.jpg"). Também lowercase do
+    // basename pra cobrir admin que digitou "PERFUMES.jpg".
     const normalizeImg = function (p) {
       let s = String(p == null ? '' : p).trim();
       if (!s) return '';
       if (/^(https?:\/\/|\/)/i.test(s)) return s;
-      if (/^(assets|images|img)\//i.test(s)) {
-        s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
-        return s;
-      }
       s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
-      return 'assets/' + s;
+      const slash = s.lastIndexOf('/');
+      const dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+      const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+      if (/^(assets|images|img)\//i.test(s)) {
+        return dir.toLowerCase() + file;
+      }
+      return 'assets/' + file;
+    };
+    // Fallback por categoria (espelho do mesmo map em script.js etc.).
+    const CATEGORY_DEFAULT_IMG = {
+      'sabonete':    'assets/sabonete.jpg',
+      'perfumaria':  'assets/perfumaria.jpg',
+      'ceramica':    'assets/ceramica-fria.jpg',
+      'tufting':     'assets/tufting1.jpg',
+      'pintura':     'assets/pinturataca.jpg',
+      'vela':        'assets/velaaromatica.jpg',
+      'gastronomia': 'assets/cookies.jpg',
+      'macrame':     'assets/macrameee.jpg',
+      'floral':      'assets/florseca.jpg',
+      'bartenderia': 'assets/drinks.jpg',
+    };
+    const defaultImgForCategory = function (cat) {
+      if (!cat) return '';
+      const key = String(cat).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+      return CATEGORY_DEFAULT_IMG[key] || '';
     };
     const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
-    const imgSrc = normalizeImg(exp.imagem);
+    const primaryImg = normalizeImg(exp.imagem);
+    const catFallback = defaultImgForCategory(exp.categoria);
+    const imgSrc = primaryImg || catFallback;
     const imageContent = imgSrc
       ? `<img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" loading="lazy" ` +
-        `onerror="if(this.dataset.fb!=='1'){this.dataset.fb='1';` +
-        `console.warn('[Elarah] imagem do card falhou (URL inválida ou inacessível): ' + this.dataset.originalSrc);` +
-        `this.outerHTML=this.dataset.fbHtml;}" ` +
+        `data-cat-fb="${catFallback}" ` +
         `data-original-src="${imgSrc}" ` +
-        `data-fb-html="${placeholderHtml.replace(/"/g, '&quot;')}">`
+        `data-fb-html="${placeholderHtml.replace(/"/g, '&quot;')}" ` +
+        `onerror="` +
+          `if(this.dataset.fbStep==='final')return;` +
+          `if(!this.dataset.fbStep&&this.dataset.catFb&&this.src.indexOf(this.dataset.catFb)===-1){` +
+            `this.dataset.fbStep='cat';this.src=this.dataset.catFb;return;` +
+          `}` +
+          `console.warn('[Elarah] imagem do card falhou: '+this.dataset.originalSrc);` +
+          `this.dataset.fbStep='final';this.outerHTML=this.dataset.fbHtml;` +
+        `">`
       : placeholderHtml;
 
     const horarioLine = hasMultipleHorarios
