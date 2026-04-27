@@ -348,34 +348,9 @@ Falar com a Elarah
 </div>
 </footer>
 
-<!-- Loader multi-CDN: tenta unpkg, jsdelivr em sequência. Se um
-     falhar (ERR_QUIC_PROTOCOL_ERROR, 404, rede corporativa), tenta
-     o próximo. supabase-client.js faz polling até 8s aguardando
-     window.supabase aparecer — robusto contra qualquer ordem. -->
-<script>
-(function () {
-  var CDNS = [
-    'https://unpkg.com/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js',
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js'
-  ];
-  function tryLoad(i) {
-    if (i >= CDNS.length) {
-      console.error('[Elarah] Todos os CDNs do Supabase falharam.');
-      return;
-    }
-    var s = document.createElement('script');
-    s.src = CDNS[i];
-    s.onerror = function () {
-      console.warn('[Elarah] CDN falhou: ' + CDNS[i] + ' — tentando próximo');
-      tryLoad(i + 1);
-    };
-    document.head.appendChild(s);
-  }
-  tryLoad(0);
-})();
-</script>
-<script src="supabase-client.js?v=8"></script>
-<script src="auth.js?v=8"></script>
+<script src="supabase-loader.js?v=9"></script>
+<script src="supabase-client.js?v=9"></script>
+<script src="auth.js?v=9"></script>
 <script src="experiences-data.js?v=14"></script>
 <script src="analytics.js?v=1"></script>
 <script src="presentear.js?v=7"></script>

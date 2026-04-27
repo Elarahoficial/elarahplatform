@@ -28,6 +28,20 @@ const ElarahAuth = (function () {
     return supabase;
   }
 
+  // Detecta erros de rede (sem resposta HTTP) — distinguir desses
+  // os erros de credencial é importante pra dar mensagem útil.
+  function isNetworkError(e) {
+    if (!e) return false;
+    if (e.name === 'TypeError') return true;
+    const msg = String(e.message || e).toLowerCase();
+    return /failed to fetch|network ?error|load failed|err_|fetch ?error/i.test(msg);
+  }
+
+  function networkErrorMsg() {
+    return 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente. ' +
+           'Se persistir: tente outra rede (ex: 4G), aba anônima, ou desabilite extensões/antivírus.';
+  }
+
   // ===== Favorites (localStorage, per user) =====
   function favKey() {
     return currentProfile ? 'elarah_fav_' + currentProfile.id : null;
@@ -148,7 +162,11 @@ const ElarahAuth = (function () {
   // ===== Auth actions =====
   async function register({ nome, email, senha, telefone, cidade }) {
     const s = sb();
-    if (!s) return { success: false, error: 'Supabase indisponível.' };
+    if (!s) {
+      const bootErr = window.__elarahSupabaseBootError || window.__elarahSupabaseLoaderError;
+      if (bootErr) return { success: false, error: networkErrorMsg() };
+      return { success: false, error: 'Serviço indisponível. Recarregue a página (Ctrl+F5).' };
+    }
     try {
       const { data, error } = await s.auth.signUp({
         email: (email || '').trim().toLowerCase(),
@@ -162,6 +180,9 @@ const ElarahAuth = (function () {
         }
       });
       if (error) {
+        if (isNetworkError(error)) {
+          return { success: false, error: networkErrorMsg() };
+        }
         return { success: false, error: translateError(error) };
       }
       // Se o provedor exige confirmação por email, session vem null.
@@ -171,25 +192,41 @@ const ElarahAuth = (function () {
       }
       return { success: true, user: getCurrentUser(), needsEmailConfirm: !data.session };
     } catch (e) {
+      if (isNetworkError(e)) {
+        return { success: false, error: networkErrorMsg() };
+      }
       return { success: false, error: 'Erro ao criar conta.' };
     }
   }
 
   async function login(email, senha) {
     const s = sb();
-    if (!s) return { success: false, error: 'Supabase indisponível.' };
+    if (!s) {
+      // Diferencia entre "lib não carregou" e "carregou mas client null".
+      const bootErr = window.__elarahSupabaseBootError || window.__elarahSupabaseLoaderError;
+      if (bootErr) {
+        return { success: false, error: networkErrorMsg() };
+      }
+      return { success: false, error: 'Serviço indisponível. Recarregue a página (Ctrl+F5).' };
+    }
     try {
       const { data, error } = await s.auth.signInWithPassword({
         email: (email || '').trim().toLowerCase(),
         password: (senha || '').trim()
       });
       if (error) {
+        if (isNetworkError(error)) {
+          return { success: false, error: networkErrorMsg() };
+        }
         const msg = (error.message || '').toLowerCase();
         if (msg.includes('not confirmed') || msg.includes('email not confirmed')) {
           return { success: false, error: 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.' };
         }
         if (msg.includes('invalid login credentials') || msg.includes('invalid')) {
           return { success: false, error: 'E-mail ou senha incorretos.' };
+        }
+        if (msg.includes('failed to fetch') || msg.includes('network')) {
+          return { success: false, error: networkErrorMsg() };
         }
         return { success: false, error: error.message || 'E-mail ou senha incorretos.' };
       }
@@ -198,6 +235,9 @@ const ElarahAuth = (function () {
       const isAdminUser = !!currentProfile && currentProfile.role === 'admin';
       return { success: true, user: getCurrentUser(), isAdmin: isAdminUser };
     } catch (e) {
+      if (isNetworkError(e)) {
+        return { success: false, error: networkErrorMsg() };
+      }
       return { success: false, error: 'Erro ao entrar.' };
     }
   }
@@ -221,16 +261,32 @@ const ElarahAuth = (function () {
 
   async function resetPassword(email) {
     const s = sb();
-    if (!s) return { success: false, error: 'Supabase indisponível.' };
+    if (!s) {
+      const bootErr = window.__elarahSupabaseBootError || window.__elarahSupabaseLoaderError;
+      if (bootErr) return { success: false, error: networkErrorMsg() };
+      return { success: false, error: 'Serviço indisponível. Recarregue a página (Ctrl+F5).' };
+    }
     const base = (window.ElarahSupabase && window.ElarahSupabase.siteBase())
       || (window.location.origin + '/');
     const redirectTo = base + 'reset-password.html';
-    const { error } = await s.auth.resetPasswordForEmail(
-      (email || '').trim().toLowerCase(),
-      { redirectTo }
-    );
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    try {
+      const { error } = await s.auth.resetPasswordForEmail(
+        (email || '').trim().toLowerCase(),
+        { redirectTo }
+      );
+      if (error) {
+        if (isNetworkError(error)) {
+          return { success: false, error: networkErrorMsg() };
+        }
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (e) {
+      if (isNetworkError(e)) {
+        return { success: false, error: networkErrorMsg() };
+      }
+      return { success: false, error: 'Erro ao enviar link.' };
+    }
   }
 
   async function logout() {
