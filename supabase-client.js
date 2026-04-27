@@ -13,6 +13,14 @@
    Se window.supabase ainda não existe, faz polling
    a cada 100ms por até 8 segundos esperando o
    CDN finalizar (incluindo fallbacks).
+
+   Resiliência de rede: usa um fetch customizado
+   (resilientFetch) que faz retry com backoff em
+   falhas de rede (TypeError: Failed to fetch,
+   ERR_QUIC_PROTOCOL_ERROR, ERR_CONNECTION_RESET).
+   Após o 1º falha QUIC, o Chrome marca o domínio
+   como "broken" e cai pra HTTP/2 — então o retry
+   quase sempre passa.
    ============================================= */
 
 (function (window) {
@@ -20,6 +28,55 @@
 
   const SUPABASE_URL = 'https://nwijxjmenbfyehvscogs.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HKveTG-kF0ZDsbiHYvwBdA_Kg5PUOlJ';
+
+  // Fetch com retry em falhas de rede transitórias.
+  // Usado para todas as chamadas do Supabase (auth + REST).
+  // Não retenta em respostas HTTP de erro (4xx/5xx) — só em
+  // falhas onde o fetch lança (sem resposta).
+  async function resilientFetch(input, init) {
+    const maxAttempts = 4;
+    // 0ms (imediato), 700ms, 1500ms, 3000ms
+    const backoffs = [0, 700, 1500, 3000];
+    let lastError;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (backoffs[attempt] > 0) {
+        await new Promise((r) => setTimeout(r, backoffs[attempt]));
+      }
+      try {
+        // Acrescenta cache: 'no-store' apenas se não estiver definido.
+        // Não mexe nos headers nem no body — só passa adiante.
+        const res = await fetch(input, init);
+        return res;
+      } catch (e) {
+        lastError = e;
+        const msg = String((e && e.message) || e || '');
+        // Padrão de falha de rede transitória do Chrome/Firefox/Safari:
+        //   - TypeError: Failed to fetch (Chrome)
+        //   - TypeError: NetworkError when attempting to fetch resource (Firefox)
+        //   - TypeError: Load failed (Safari)
+        const isNetworkError =
+          (e && e.name === 'TypeError') ||
+          /failed to fetch|network ?error|load failed|err_/i.test(msg);
+
+        if (!isNetworkError) {
+          throw e;
+        }
+        if (attempt < maxAttempts - 1) {
+          console.warn(
+            '[Elarah] fetch falhou (' + (attempt + 1) + '/' + maxAttempts +
+            '): ' + msg + ' — retry em ' + backoffs[attempt + 1] + 'ms'
+          );
+        }
+      }
+    }
+    console.error(
+      '[Elarah] fetch falhou após ' + maxAttempts + ' tentativas. ' +
+      'Provavelmente bloqueio de rede (QUIC/firewall/antivírus). ' +
+      'Último erro: ' + ((lastError && lastError.message) || lastError)
+    );
+    throw lastError;
+  }
 
   // Tenta criar o client uma vez. Retorna:
   //   true  → conseguiu (ou já tinha sido criado)
@@ -42,6 +99,9 @@
           detectSessionInUrl: true,
           storageKey: 'elarah-auth',
           flowType: 'implicit'
+        },
+        global: {
+          fetch: resilientFetch
         }
       });
     } catch (e) {
@@ -58,6 +118,7 @@
     window.ElarahSupabase = {
       url: SUPABASE_URL,
       client: client,
+      resilientFetch: resilientFetch,
       siteBase: function () {
         const path = window.location.pathname.replace(/[^/]*$/, '');
         return window.location.origin + path;
