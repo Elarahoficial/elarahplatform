@@ -93,24 +93,61 @@ const ElarahAuth = (function () {
     // Retry uma vez em caso de falha transitória de rede.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
+        console.info('[Elarah AUTH] fetchProfile: tentando (attempt=' + (attempt + 1) + ', userId=' + userId + ')');
         const { data, error } = await s
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .maybeSingle();
         if (error) {
-          console.warn('[Elarah] fetchProfile error (tentativa ' + (attempt + 1) + ')', error);
+          console.warn('[Elarah AUTH] fetchProfile error (tentativa ' + (attempt + 1) + ')', error);
           if (attempt === 0) continue;
           return null;
         }
+        console.info('[Elarah AUTH] fetchProfile: resultado', data ? '(profile encontrado, role=' + data.role + ')' : '(profile NÃO existe na tabela profiles)');
         return data;
       } catch (e) {
-        console.warn('[Elarah] fetchProfile exception (tentativa ' + (attempt + 1) + ')', e);
+        console.warn('[Elarah AUTH] fetchProfile exception (tentativa ' + (attempt + 1) + ')', e);
         if (attempt === 0) continue;
         return null;
       }
     }
     return null;
+  }
+
+  // Tenta criar o profile que o trigger handle_new_user deveria ter
+  // criado. Cobre 2 cenários: (1) conta criada antes do trigger existir,
+  // (2) trigger falhou silenciosamente. Se a policy profiles_insert_own
+  // não estiver no banco, retorna null (RLS bloqueia) — mas pelo menos
+  // a sessão Auth fica válida.
+  async function ensureProfile(authUser) {
+    const s = sb();
+    if (!s || !authUser) return null;
+    const meta = authUser.user_metadata || {};
+    const payload = {
+      id: authUser.id,
+      email: authUser.email || '',
+      nome: meta.nome || meta.name || '',
+      telefone: meta.telefone || '',
+      cidade: meta.cidade || ''
+    };
+    try {
+      console.info('[Elarah AUTH] ensureProfile: upsert tentativo', { id: payload.id, email: payload.email });
+      const { data, error } = await s
+        .from('profiles')
+        .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
+        .select()
+        .maybeSingle();
+      if (error) {
+        console.warn('[Elarah AUTH] ensureProfile: upsert falhou (provável: faltam policies profiles_insert_own no banco)', error);
+        return null;
+      }
+      console.info('[Elarah AUTH] ensureProfile: profile criado/atualizado com sucesso, role=' + (data && data.role));
+      return data;
+    } catch (e) {
+      console.warn('[Elarah AUTH] ensureProfile exception', e);
+      return null;
+    }
   }
 
   async function hydrate() {
@@ -200,8 +237,10 @@ const ElarahAuth = (function () {
   }
 
   async function login(email, senha) {
+    console.info('[Elarah AUTH] login: início', { email: (email || '').trim().toLowerCase() });
     const s = sb();
     if (!s) {
+      console.error('[Elarah AUTH] login: supabase client indisponível');
       // Diferencia entre "lib não carregou" e "carregou mas client null".
       const bootErr = window.__elarahSupabaseBootError || window.__elarahSupabaseLoaderError;
       if (bootErr) {
@@ -210,11 +249,15 @@ const ElarahAuth = (function () {
       return { success: false, error: 'Serviço indisponível. Recarregue a página (Ctrl+F5).' };
     }
     try {
+      console.info('[Elarah AUTH] login: chamando signInWithPassword...');
+      const t0 = Date.now();
       const { data, error } = await s.auth.signInWithPassword({
         email: (email || '').trim().toLowerCase(),
         password: (senha || '').trim()
       });
+      console.info('[Elarah AUTH] login: signInWithPassword retornou em ' + (Date.now() - t0) + 'ms', { hasError: !!error, hasSession: !!(data && data.session), userId: data && data.user && data.user.id });
       if (error) {
+        console.warn('[Elarah AUTH] login: signInWithPassword erro', error);
         if (isNetworkError(error)) {
           return { success: false, error: networkErrorMsg() };
         }
@@ -232,13 +275,44 @@ const ElarahAuth = (function () {
       }
       currentSession = data.session;
       currentProfile = await fetchProfile(data.user.id);
-      const isAdminUser = !!currentProfile && currentProfile.role === 'admin';
+
+      // Se o profile não existe na tabela, tenta criar via upsert
+      // (trigger handle_new_user pode ter falhado, ou a conta é
+      // antiga e foi criada antes da migration). Se RLS bloquear,
+      // retorna null e a gente segue com perfil em memória.
+      if (!currentProfile) {
+        console.warn('[Elarah AUTH] login: profile não encontrado na tabela — chamando ensureProfile');
+        currentProfile = await ensureProfile(data.user);
+      }
+
+      // Última camada: perfil em memória pra ao menos a UI funcionar.
+      // Não vira admin (role=user), e não persiste no DB. Mas o
+      // usuário consegue navegar logado em vez de ficar travado.
+      if (!currentProfile) {
+        const meta = (data.user && data.user.user_metadata) || {};
+        currentProfile = {
+          id: data.user.id,
+          email: data.user.email || (email || '').trim().toLowerCase(),
+          nome: meta.nome || meta.name || '',
+          telefone: meta.telefone || '',
+          cidade: meta.cidade || '',
+          role: 'user',
+          partner_status: 'none',
+          partner_data: null,
+          __ephemeral: true
+        };
+        console.warn('[Elarah AUTH] login: usando perfil ephemeral em memória (NÃO PERSISTIDO). Banco precisa da policy profiles_insert_own. Veja sql/elarah_profiles_self_insert.sql');
+      }
+
+      const isAdminUser = currentProfile.role === 'admin';
+      console.info('[Elarah AUTH] login: SUCESSO', { isAdmin: isAdminUser, ephemeral: !!currentProfile.__ephemeral });
       return { success: true, user: getCurrentUser(), isAdmin: isAdminUser };
     } catch (e) {
+      console.error('[Elarah AUTH] login: exceção', e);
       if (isNetworkError(e)) {
         return { success: false, error: networkErrorMsg() };
       }
-      return { success: false, error: 'Erro ao entrar.' };
+      return { success: false, error: 'Erro ao entrar. Veja o console (F12) para diagnóstico.' };
     }
   }
 
@@ -446,29 +520,53 @@ const ElarahAuth = (function () {
     // Login form
     div.querySelector('#auth-form-login').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
+      const submitBtn = form.querySelector('button[type="submit"]');
       const email = document.getElementById('auth-login-email').value;
       const senha = document.getElementById('auth-login-senha').value;
       const errorEl = document.getElementById('auth-login-error');
       errorEl.textContent = '';
 
-      const result = await login(email, senha);
+      // Feedback visual: desabilita o botão e mostra "Entrando..."
+      const originalBtnText = submitBtn ? submitBtn.textContent : 'Entrar';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Entrando…';
+        submitBtn.style.opacity = '0.7';
+        submitBtn.style.cursor = 'wait';
+      }
 
-      if (result.success) {
-        if (result.isAdmin) {
+      try {
+        const result = await login(email, senha);
+
+        if (result.success) {
+          if (result.isAdmin) {
+            closeModal();
+            window.location.href = 'admin.html';
+            return;
+          }
+          const redirect = localStorage.getItem('postLoginRedirect');
           closeModal();
-          window.location.href = 'admin.html';
-          return;
+          if (redirect) {
+            localStorage.removeItem('postLoginRedirect');
+            window.location.href = redirect;
+            return;
+          }
+          updateHeaderUI();
+        } else {
+          errorEl.textContent = result.error;
         }
-        const redirect = localStorage.getItem('postLoginRedirect');
-        closeModal();
-        if (redirect) {
-          localStorage.removeItem('postLoginRedirect');
-          window.location.href = redirect;
-          return;
+      } catch (err) {
+        // Não deveria acontecer (login() captura erros), mas por segurança.
+        console.error('[Elarah AUTH] submit handler exception', err);
+        errorEl.textContent = 'Erro inesperado. Veja o console (F12).';
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+          submitBtn.style.opacity = '';
+          submitBtn.style.cursor = '';
         }
-        updateHeaderUI();
-      } else {
-        errorEl.textContent = result.error;
       }
     });
 
