@@ -1076,6 +1076,12 @@
     //   cinza   = sem data resolvível (ex: "Semanal") ou já passou
     function renderPrazoCell(b) {
       if (b.status !== 'pago') return '<td></td>';
+      // Repasse já realizado: contagem regressiva não se aplica mais.
+      // Mostra apenas um marcador sutil pra não poluir visualmente
+      // nem disparar alarme falso de "vermelho".
+      if (b.status_fornecedor === 'repasse_feito') {
+        return '<td><span style="font-size:.72rem;color:#bbb;" title="Repasse já realizado — prazo não se aplica">—</span></td>';
+      }
       const horas = b._horasParaEventoResolvido;
       if (horas == null) {
         return '<td><span style="font-size:.72rem;color:#888;" title="Sem data fixa pra calcular o prazo">—</span></td>';
@@ -1088,7 +1094,9 @@
         return '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;background:#fce8e6;color:#c0392b;font-size:.72rem;font-weight:700;" title="Faltam ' + horas.toFixed(1) + 'h pro evento — janela de repasse aberta">⚠ ' + horasInt + 'h</span></td>';
       }
       const dias = Math.floor(horas / 24);
-      const label = dias > 0 ? dias + 'd' : Math.round(horas) + 'h';
+      const label = dias > 0
+        ? dias + (dias === 1 ? ' dia' : ' dias')
+        : Math.round(horas) + 'h';
       return '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;background:#e6f4ea;color:#1a8a4a;font-size:.72rem;font-weight:600;" title="Mais de 48h pro evento — repasse ainda não é prioridade">' + label + '</span></td>';
     }
 
@@ -1394,6 +1402,10 @@
               sel.style.background = newStatus === 'repasse_feito' ? '#e6f4ea' : '#fff8ef';
               sel.style.color = newStatus === 'repasse_feito' ? '#1a8a4a' : '#b07b00';
               invalidateBookings();
+              // Re-renderiza pra que a célula Prazo (que agora respeita
+              // status_fornecedor) e o card de repasses pendentes
+              // atualizem na hora.
+              renderBookings();
             }
           }
         } catch (e) {
