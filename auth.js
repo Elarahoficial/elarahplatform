@@ -198,6 +198,24 @@ const ElarahAuth = (function () {
       const isAdminUser = !!currentProfile && currentProfile.role === 'admin';
       return { success: true, user: getCurrentUser(), isAdmin: isAdminUser };
     } catch (e) {
+      // Detecta erro de rede transitório (mais comum: ERR_QUIC_PROTOCOL_ERROR
+      // quando rede bloqueia HTTP/3, ou Failed to fetch genérico).
+      // Devolve mensagem específica com orientação clara em vez do
+      // "Erro ao entrar" genérico que confunde o usuário.
+      const msg = String((e && e.message) || e).toLowerCase();
+      if (/failed to fetch|network|quic|connection|timeout/.test(msg)) {
+        return {
+          success: false,
+          error:
+            'Sem conexão com nosso servidor. ' +
+            'Causa provável: rede bloqueando o site. ' +
+            'Tente: (1) outra rede (4G no celular como hotspot), ' +
+            '(2) outro navegador (Firefox), ' +
+            '(3) desabilitar antivírus/extensões temporariamente. ' +
+            'Se persistir, fale com o suporte (F12 → Console → print).',
+          networkError: true
+        };
+      }
       return { success: false, error: 'Erro ao entrar.' };
     }
   }

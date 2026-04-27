@@ -32,6 +32,57 @@
     }
     let client;
     try {
+      // Custom fetch wrapper: retry automático em ERR_QUIC_PROTOCOL_ERROR
+      // e outros "Failed to fetch" intermitentes. Browsers que tentam
+      // HTTP/3 (QUIC) podem falhar quando UDP é bloqueado por
+      // firewall/antivírus/extensão; o navegador faz fallback pra
+      // HTTP/2 sozinho na próxima tentativa, então o retry geralmente
+      // sucede. Backoff exponencial pequeno (200ms, 500ms, 1s).
+      const RETRY_DELAYS = [200, 500, 1000];
+      async function resilientFetch(input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        let lastErr;
+        for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+          try {
+            const resp = await fetch(input, init);
+            if (attempt > 0) {
+              console.info(
+                '[Elarah] fetch sucedeu na tentativa ' + (attempt + 1) +
+                ' (URL: ' + url.slice(0, 80) + ')'
+              );
+            }
+            return resp;
+          } catch (err) {
+            lastErr = err;
+            const msg = String((err && err.message) || err);
+            // Só faz retry em erros de rede transitórios. Outros
+            // erros (CORS, abort) propagam imediatamente.
+            const isTransient = /failed to fetch|network|quic|connection|timeout/i.test(msg);
+            if (!isTransient || attempt === RETRY_DELAYS.length) {
+              if (isTransient) {
+                console.error(
+                  '[Elarah] fetch falhou em todas as ' + (attempt + 1) +
+                  ' tentativas. Último erro: ' + msg + ' (URL: ' + url.slice(0, 80) + '). ' +
+                  'Causa provável: rede bloqueando HTTP/3 (QUIC). ' +
+                  'Workarounds: (1) chrome://flags → desabilitar QUIC, ' +
+                  '(2) trocar de rede (4G no celular), ' +
+                  '(3) desabilitar antivírus/extensões temporariamente, ' +
+                  '(4) usar Firefox.'
+                );
+              }
+              throw err;
+            }
+            console.warn(
+              '[Elarah] fetch falhou (tentativa ' + (attempt + 1) + '/' +
+              (RETRY_DELAYS.length + 1) + '): ' + msg + '. Retry em ' +
+              RETRY_DELAYS[attempt] + 'ms...'
+            );
+            await new Promise(function (r) { setTimeout(r, RETRY_DELAYS[attempt]); });
+          }
+        }
+        throw lastErr;
+      }
+
       // Implicit flow (hash tokens) é intencional: faz com que os
       // links de confirmação de email e de reset de senha funcionem
       // em qualquer navegador — não dependem do code_verifier PKCE.
@@ -42,6 +93,9 @@
           detectSessionInUrl: true,
           storageKey: 'elarah-auth',
           flowType: 'implicit'
+        },
+        global: {
+          fetch: resilientFetch
         }
       });
     } catch (e) {
