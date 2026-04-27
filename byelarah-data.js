@@ -129,8 +129,14 @@
     if (itemsCache) return itemsCache.slice();
     if (itemsPromise) return (await itemsPromise).slice();
 
-    const client = sb();
+    // Espera até 8s pelo supabaseClient ficar pronto (race condition:
+    // DOMContentLoaded vs vendor/supabase-js async).
+    let client = sb();
+    if (!client && window.ElarahSupabase && typeof window.ElarahSupabase.waitClient === 'function') {
+      client = await window.ElarahSupabase.waitClient(8000);
+    }
     if (!client) {
+      console.info('[ElarahByElarah] Supabase indisponível após espera — usando fallback de items.');
       itemsCache = FALLBACK_ITEMS.slice();
       return itemsCache.slice();
     }

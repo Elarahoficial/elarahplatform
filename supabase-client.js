@@ -78,6 +78,52 @@
     throw lastError;
   }
 
+  // Helper exposto pra outros módulos (experiences-data.js, byelarah-data.js,
+  // auth.js, admin.js) aguardarem o client ficar pronto antes de cair em
+  // fallback. Resolve race condition onde DOMContentLoaded dispara antes do
+  // <script> async do supabase-loader.js terminar de baixar.
+  //
+  // - Resolve com o client se já existe ou aparecer dentro do timeout
+  // - Resolve com null se o loader já reportou falha terminal (sem espera)
+  // - Resolve com null se o timeout estourar
+  function waitClient(timeoutMs) {
+    if (typeof timeoutMs !== 'number' || timeoutMs < 0) timeoutMs = 8000;
+    if (window.supabaseClient) return Promise.resolve(window.supabaseClient);
+    // Falha terminal já confirmada — não vale a pena esperar.
+    if (window.__elarahSupabaseBootError === 'create_failed' ||
+        window.__elarahSupabaseBootError === 'client_null' ||
+        window.__elarahSupabaseLoaderError === 'all_sources_failed') {
+      return Promise.resolve(null);
+    }
+    return new Promise(function (resolve) {
+      var done = false;
+      function finish(v) { if (!done) { done = true; resolve(v); } }
+      function onReady() { finish(window.supabaseClient || null); }
+      window.addEventListener('elarah:supabase-ready', onReady, { once: true });
+      // Polling de backup pra cobrir o caso do listener ter sido
+      // adicionado depois do dispatchEvent (scripts que rodam tarde).
+      var pollId = setInterval(function () {
+        if (window.supabaseClient) {
+          clearInterval(pollId);
+          finish(window.supabaseClient);
+        } else if (window.__elarahSupabaseBootError === 'create_failed' ||
+                   window.__elarahSupabaseBootError === 'client_null' ||
+                   window.__elarahSupabaseLoaderError === 'all_sources_failed') {
+          clearInterval(pollId);
+          finish(null);
+        }
+      }, 100);
+      setTimeout(function () { clearInterval(pollId); finish(window.supabaseClient || null); }, timeoutMs);
+    });
+  }
+
+  // Expõe waitClient cedo (mesmo antes do client existir), pra que módulos
+  // que carregam logo depois deste script possam usar imediatamente.
+  if (!window.ElarahSupabase) {
+    window.ElarahSupabase = {};
+  }
+  window.ElarahSupabase.waitClient = waitClient;
+
   // Tenta criar o client uma vez. Retorna:
   //   true  → conseguiu (ou já tinha sido criado)
   //   false → window.supabase ainda não disponível, retry
@@ -115,15 +161,19 @@
       return null;
     }
     window.supabaseClient = client;
-    window.ElarahSupabase = {
+    // Preserva waitClient e qualquer outra coisa que tenha sido posta
+    // antes da inicialização (objeto early populado acima).
+    var existing = window.ElarahSupabase || {};
+    window.ElarahSupabase = Object.assign(existing, {
       url: SUPABASE_URL,
       client: client,
       resilientFetch: resilientFetch,
+      waitClient: waitClient,
       siteBase: function () {
         const path = window.location.pathname.replace(/[^/]*$/, '');
         return window.location.origin + path;
       }
-    };
+    });
     console.info('[Elarah] Supabase client inicializado com sucesso.');
     // Dispara evento custom pra que outros scripts (auth.js etc.)
     // possam reagir se estavam aguardando.

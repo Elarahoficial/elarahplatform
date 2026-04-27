@@ -307,9 +307,17 @@
     if (cache) return cache.slice();
     if (cachePromise) return (await cachePromise).slice();
 
-    const s = sb();
+    // Espera até 8s pelo supabaseClient ficar pronto. Isso evita race
+    // condition: DOMContentLoaded dispara antes do <script> async do
+    // vendor/supabase-js terminar de baixar e antes do supabase-client.js
+    // criar o client. Sem essa espera, caímos no fallback (com datas
+    // antigas que auto-expiram) mesmo quando o banco está saudável.
+    let s = sb();
+    if (!s && window.ElarahSupabase && typeof window.ElarahSupabase.waitClient === 'function') {
+      s = await window.ElarahSupabase.waitClient(8000);
+    }
     if (!s) {
-      console.info('[Elarah] Supabase indisponível — usando fallback de experiências.');
+      console.info('[Elarah] Supabase indisponível após espera — usando fallback de experiências.');
       cache = FALLBACK_SEEDS.slice();
       return cache.slice();
     }
