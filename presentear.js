@@ -16,6 +16,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     return 'assets/' + file;
   }
 
+  // Fallback por categoria (espelho de script.js / categoria.js).
+  const CATEGORY_DEFAULT_IMG = {
+    'sabonete':    'assets/sabonete.jpg',
+    'perfumaria':  'assets/perfumaria.jpg',
+    'ceramica':    'assets/ceramica-fria.jpg',
+    'tufting':     'assets/tufting1.jpg',
+    'pintura':     'assets/pinturataca.jpg',
+    'vela':        'assets/velaaromatica.jpg',
+    'gastronomia': 'assets/cookies.jpg',
+    'macrame':     'assets/macrameee.jpg',
+    'floral':      'assets/florseca.jpg',
+    'bartenderia': 'assets/drinks.jpg',
+  };
+  function defaultImgForCategory(cat) {
+    if (!cat) return '';
+    const key = String(cat).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    return CATEGORY_DEFAULT_IMG[key] || '';
+  }
+
   // ===== GIFT EXPERIENCES DATA (shared source) =====
   let giftExperiences = [];
   try {
@@ -66,10 +85,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           ).join('')}</div>`
         : '';
 
-      const imgSrc = normalizeImg(exp.imagem);
+      const primaryImg = normalizeImg(exp.imagem);
+      const catFallback = defaultImgForCategory(exp.categoria);
+      const imgSrc = primaryImg || catFallback;
+      const onErr =
+        "if(this.dataset.fbStep==='final')return;" +
+        "if(!this.dataset.fbStep&&this.dataset.catFb&&this.src.indexOf(this.dataset.catFb)===-1){" +
+          "this.dataset.fbStep='cat';this.src=this.dataset.catFb;return;" +
+        "}" +
+        "this.dataset.fbStep='final';this.style.display='none';";
       card.innerHTML = `
         <div class="card__image">
-          <img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" onerror="this.style.display='none'">
+          <img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" data-cat-fb="${catFallback}" onerror="${onErr}">
           <button class="card__favorite" aria-label="Favoritar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>

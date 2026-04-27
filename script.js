@@ -306,17 +306,45 @@ if (categoriaURL) activeCategoria = categoriaURL;
       }
       return 'assets/' + file;
     };
+    // Fallback por categoria — quando exp.imagem está vazio ou o arquivo
+    // não existe, escolhe uma foto representativa da categoria. Sincronizar
+    // este map com dia-das-maes.js / categoria.js / presentear.js.
+    const CATEGORY_DEFAULT_IMG = {
+      'sabonete':    'assets/sabonete.jpg',
+      'perfumaria':  'assets/perfumaria.jpg',
+      'ceramica':    'assets/ceramica-fria.jpg',
+      'tufting':     'assets/tufting1.jpg',
+      'pintura':     'assets/pinturataca.jpg',
+      'vela':        'assets/velaaromatica.jpg',
+      'gastronomia': 'assets/cookies.jpg',
+      'macrame':     'assets/macrameee.jpg',
+      'floral':      'assets/florseca.jpg',
+      'bartenderia': 'assets/drinks.jpg',
+    };
+    const defaultImgForCategory = function (cat) {
+      if (!cat) return '';
+      const key = String(cat).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+      return CATEGORY_DEFAULT_IMG[key] || '';
+    };
     // Placeholder gradient (usado quando imagem vazia OU falha ao carregar).
     // Encodado em data-attribute pra que o onerror possa trocar inline.
     const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
-    const imgSrc = normalizeImg(exp.imagem);
+    const primaryImg = normalizeImg(exp.imagem);
+    const catFallback = defaultImgForCategory(exp.categoria);
+    const imgSrc = primaryImg || catFallback;
     const imageContent = imgSrc
       ? `<img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" loading="lazy" ` +
-        `onerror="if(this.dataset.fb!=='1'){this.dataset.fb='1';` +
-        `console.warn('[Elarah] imagem do card falhou (URL inválida ou inacessível): ' + this.dataset.originalSrc);` +
-        `this.outerHTML=this.dataset.fbHtml;}" ` +
+        `data-cat-fb="${catFallback}" ` +
         `data-original-src="${imgSrc}" ` +
-        `data-fb-html="${placeholderHtml.replace(/"/g, '&quot;')}">`
+        `data-fb-html="${placeholderHtml.replace(/"/g, '&quot;')}" ` +
+        `onerror="` +
+          `if(this.dataset.fbStep==='final')return;` +
+          `if(!this.dataset.fbStep&&this.dataset.catFb&&this.src.indexOf(this.dataset.catFb)===-1){` +
+            `this.dataset.fbStep='cat';this.src=this.dataset.catFb;return;` +
+          `}` +
+          `console.warn('[Elarah] imagem do card falhou: '+this.dataset.originalSrc);` +
+          `this.dataset.fbStep='final';this.outerHTML=this.dataset.fbHtml;` +
+        `">`
       : placeholderHtml;
 
     const horarioLine = hasMultipleHorarios

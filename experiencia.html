@@ -153,7 +153,7 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=20"></script>
 <script src="analytics.js?v=1"></script>
-<script src="script.js?v=35"></script>
+<script src="script.js?v=36"></script>
 <script>
 (function () {
   'use strict';
@@ -178,6 +178,25 @@
       return dir.toLowerCase() + file;
     }
     return 'assets/' + file;
+  }
+
+  // Fallback por categoria (espelho de script.js / categoria.js).
+  var CATEGORY_DEFAULT_IMG = {
+    'sabonete':    'assets/sabonete.jpg',
+    'perfumaria':  'assets/perfumaria.jpg',
+    'ceramica':    'assets/ceramica-fria.jpg',
+    'tufting':     'assets/tufting1.jpg',
+    'pintura':     'assets/pinturataca.jpg',
+    'vela':        'assets/velaaromatica.jpg',
+    'gastronomia': 'assets/cookies.jpg',
+    'macrame':     'assets/macrameee.jpg',
+    'floral':      'assets/florseca.jpg',
+    'bartenderia': 'assets/drinks.jpg'
+  };
+  function defaultImgForCategory(cat) {
+    if (!cat) return '';
+    var key = String(cat).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    return CATEGORY_DEFAULT_IMG[key] || '';
   }
 
   var params = new URLSearchParams(window.location.search);
@@ -224,13 +243,22 @@
 
     var colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
 
-    // Hero image
-    var heroSrc = normalizeImg(exp.imagem);
+    // Hero image — primary → fallback de categoria → placeholder.
+    var primaryHero = normalizeImg(exp.imagem);
+    var heroCatFb = defaultImgForCategory(exp.categoria);
+    var heroSrc = primaryHero || heroCatFb;
     var heroPlaceholder = '<div class="exp-detail__hero-placeholder" style="background:linear-gradient(135deg,' + esc(colors[0]) + ',' + esc(colors[1]) + ');">' + esc(exp.categoria) + '</div>';
+    var heroOnErr =
+      "if(this.dataset.fbStep==='final')return;" +
+      "if(!this.dataset.fbStep&&this.dataset.catFb&&this.src.indexOf(this.dataset.catFb)===-1){" +
+        "this.dataset.fbStep='cat';this.src=this.dataset.catFb;return;" +
+      "}" +
+      "this.dataset.fbStep='final';this.outerHTML=this.dataset.fbHtml;";
     var heroHtml = heroSrc
       ? '<img class="exp-detail__hero" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
-        'onerror="if(this.dataset.fb!==\'1\'){this.dataset.fb=\'1\';this.outerHTML=this.dataset.fbHtml;}" ' +
-        'data-fb-html="' + heroPlaceholder.replace(/"/g, '&quot;') + '">'
+        'data-cat-fb="' + esc(heroCatFb) + '" ' +
+        'data-fb-html="' + heroPlaceholder.replace(/"/g, '&quot;') + '" ' +
+        'onerror="' + heroOnErr + '">'
       : heroPlaceholder;
 
     // Horario buttons
