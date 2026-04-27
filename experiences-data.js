@@ -41,7 +41,7 @@
   //     → sql/elarah_experiences_visibility.sql
   const OPTIONAL_COLUMNS = new Set([
     'vagas_total', 'event_at', 'cutoff_hours', 'is_active',
-    'fornecedor_nome', 'valor_cheio_centavos', 'percentual_repasse'
+    'fornecedor_nome', 'fornecedor_whatsapp', 'valor_cheio_centavos', 'percentual_repasse'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -119,8 +119,9 @@
       // Mantido pra retrocompat. O modelo novo é experience_suppliers
       // (1:N) carregado via getSuppliersForExperience.
       fornecedorNome: row.fornecedor_nome || null,
+      fornecedorWhatsapp: row.fornecedor_whatsapp || '',
       valorCheioCentavos: row.valor_cheio_centavos != null ? Number(row.valor_cheio_centavos) : null,
-      percentualRepasse: row.percentual_repasse != null ? Number(row.percentual_repasse) : 90,
+      percentualRepasse: row.percentual_repasse != null ? Number(row.percentual_repasse) : 70,
       // --- Comissão Elarah (opcional/manual ou null=residual) ---
       // Sql/elarah_experience_suppliers.sql.
       // null/undefined → residual (calculada como sobra no checkout).
@@ -194,6 +195,7 @@
       cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
       is_active: isActive,
       fornecedor_nome: (exp.fornecedorNome || exp.fornecedor_nome || '').trim() || null,
+      fornecedor_whatsapp: (exp.fornecedorWhatsapp || exp.fornecedor_whatsapp || '').trim() || null,
       valor_cheio_centavos: (function () {
         var raw = exp.valorCheioCentavos != null ? exp.valorCheioCentavos : exp.valor_cheio_centavos;
         if (raw == null || raw === '') return null;
@@ -202,9 +204,9 @@
       })(),
       percentual_repasse: (function () {
         var raw = exp.percentualRepasse != null ? exp.percentualRepasse : exp.percentual_repasse;
-        if (raw == null || raw === '') return 90;
+        if (raw == null || raw === '') return 70;
         var n = Number(raw);
-        return Number.isFinite(n) ? n : 90;
+        return Number.isFinite(n) ? n : 70;
       })(),
       // Comissão Elarah: aceita type='percent'/'fixed' ou null.
       // Se type vazio OU value vazio, grava null/null (residual auto).

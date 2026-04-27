@@ -343,11 +343,13 @@
               <th>Repasse</th>
               <th>Comissão</th>
               <th>Status</th>
+              <th>Prazo</th>
               <th>Status fornecedor</th>
+              <th>Avisar fornecedor</th>
             </tr>
           </thead>
           <tbody id="purchases-body">
-            <tr><td colspan="15" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
+            <tr><td colspan="17" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
           </tbody>
         </table>
       </div>
@@ -933,14 +935,19 @@
           <p class="admin__form-hint">Marca ou nome do parceiro que executa a experiência.</p>
         </div>
         <div class="admin__form-field">
+          <label>WhatsApp do fornecedor</label>
+          <input type="tel" id="exp-fornecedor-whatsapp" placeholder="(11) 99999-9999" inputmode="tel">
+          <p class="admin__form-hint">Usado pelo botão "Avisar fornecedor" no painel de Compras. DDD + número.</p>
+        </div>
+        <div class="admin__form-field">
           <label>Valor cheio (R$)</label>
           <input type="text" id="exp-valor-cheio" placeholder="Ex: R$425" inputmode="decimal">
           <p class="admin__form-hint">Preço original antes do desconto Elarah. Formato: R$425 ou 425</p>
         </div>
         <div class="admin__form-field">
           <label>Repasse ao fornecedor (%)</label>
-          <input type="number" id="exp-percentual-repasse" min="0" max="100" step="0.01" value="90" placeholder="90">
-          <p class="admin__form-hint">Percentual do valor ELARAH que vai pro fornecedor. Ex: 90 = fornecedor recebe 90%, Elarah fica com 10%.</p>
+          <input type="number" id="exp-percentual-repasse" min="0" max="100" step="0.01" value="70" placeholder="70">
+          <p class="admin__form-hint">Percentual do valor ELARAH que vai pro fornecedor. Padrão Elarah: 70 (fornecedor 70%, Elarah 30%).</p>
         </div>
       </div>
 
@@ -1192,10 +1199,10 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=11"></script>
-<script src="experiences-data.js?v=18"></script>
+<script src="experiences-data.js?v=19"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=51"></script>
+<script src="admin.js?v=52"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
