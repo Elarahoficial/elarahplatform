@@ -863,6 +863,46 @@
       let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
       if (valorComissao == null && base) valorComissao = Math.round(base * 0.30);
       b._valorComissaoResolvido = valorComissao;
+
+      // ===== WhatsApp do fornecedor =====
+      // Vem da experiência (campo fornecedor_whatsapp). Sem fallback
+      // porque é uma informação cadastrada explicitamente pelo admin.
+      b._fornecedorWhatsappResolvido = (exp && exp.fornecedorWhatsapp)
+        ? String(exp.fornecedorWhatsapp).trim()
+        : '';
+
+      // ===== Timestamp do evento + horas até o evento =====
+      // Pra colorir o badge "Prazo" da linha. Lógica espelha a usada
+      // pelo isPubliclyVisible em experiences-data.js: usa exp.eventAt
+      // (se preenchido) OU deriva de exp.data + exp.horario.
+      let eventTs = null;
+      if (exp) {
+        if (exp.eventAt) {
+          const t = new Date(exp.eventAt).getTime();
+          if (!isNaN(t)) eventTs = t;
+        }
+        if (eventTs == null && window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+          eventTs = window.ElarahData.deriveEventTimestamp(
+            exp.data,
+            exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null),
+            Date.now(),
+          );
+        }
+      }
+      // Fallback: se a experiência não dá pra resolver, tenta com os
+      // campos do próprio booking (caso seja um booking legado e a
+      // experiência tenha sido editada/removida).
+      if (eventTs == null && window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+        eventTs = window.ElarahData.deriveEventTimestamp(
+          b.data,
+          b.horario,
+          Date.now(),
+        );
+      }
+      b._eventTsResolvido = eventTs;
+      b._horasParaEventoResolvido = eventTs != null
+        ? (eventTs - Date.now()) / (60 * 60 * 1000)
+        : null;
     });
 
     // Popula filtro de fornecedores
@@ -993,6 +1033,108 @@
       return ' <span title="' + escapeHtml(tooltip) +
         '" style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;' +
         'background:#fce8e6;color:#c0392b;font-size:.7rem;font-weight:700;cursor:help;">⚠ valor</span>';
+    }
+
+    // ===== Helpers de Prazo (48h) e WhatsApp do fornecedor =====
+    // Prazo: badge colorido baseado em horas até o evento.
+    //   verde = > 48h    (ainda não precisa repassar)
+    //   vermelho = <= 48h (precisa repassar)
+    //   cinza   = sem data resolvível (ex: "Semanal") ou já passou
+    function renderPrazoCell(b) {
+      if (b.status !== 'pago') return '<td></td>';
+      const horas = b._horasParaEventoResolvido;
+      if (horas == null) {
+        return '<td><span style="font-size:.72rem;color:#888;" title="Sem data fixa pra calcular o prazo">—</span></td>';
+      }
+      if (horas < 0) {
+        return '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;background:#eee;color:#555;font-size:.72rem;font-weight:600;" title="Evento já aconteceu">Passou</span></td>';
+      }
+      if (horas <= 48) {
+        const horasInt = Math.max(0, Math.round(horas));
+        return '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;background:#fce8e6;color:#c0392b;font-size:.72rem;font-weight:700;" title="Faltam ' + horas.toFixed(1) + 'h pro evento — janela de repasse aberta">⚠ ' + horasInt + 'h</span></td>';
+      }
+      const dias = Math.floor(horas / 24);
+      const label = dias > 0 ? dias + 'd' : Math.round(horas) + 'h';
+      return '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;background:#e6f4ea;color:#1a8a4a;font-size:.72rem;font-weight:600;" title="Mais de 48h pro evento — repasse ainda não é prioridade">' + label + '</span></td>';
+    }
+
+    // Coleta nomes (comprador + acompanhantes) deduped pra mensagem
+    // do WhatsApp. Espelha a lógica de dedup de renderAcompanhantes.
+    function collectParticipantNames(b, nomeResolved, telefone) {
+      const norm = function (s) {
+        return String(s || '').normalize('NFKC')
+          .replace(/[​-‍﻿ ]/g, ' ')
+          .toLowerCase().replace(/\s+/g, ' ').trim();
+      };
+      const onlyDigits = function (s) { return String(s || '').replace(/\D+/g, ''); };
+      const out = [];
+      const seen = new Set();
+      const compNome = (nomeResolved || '').trim();
+      const compTel = onlyDigits(telefone);
+      if (compNome) {
+        out.push(compNome);
+        seen.add(norm(compNome) + '|' + compTel);
+      }
+      if (b && b.metadata && Array.isArray(b.metadata.participantes)) {
+        b.metadata.participantes.forEach(function (p) {
+          if (!p) return;
+          const pNome = String(p.nome || '').trim();
+          const pTel = onlyDigits(p.telefone || p.telefone_digits || '');
+          if (!pNome && !pTel) return;
+          // Pula o próprio comprador.
+          const nomeIgual = norm(pNome) && norm(pNome) === norm(compNome);
+          const telIgual = compTel && pTel && pTel === compTel;
+          if (nomeIgual && telIgual) return;
+          if (nomeIgual && !pTel) return;
+          if (telIgual && !pNome) return;
+          // Dedup geral.
+          const key = norm(pNome) + '|' + pTel;
+          if (seen.has(key)) return;
+          seen.add(key);
+          if (pNome) out.push(pNome);
+        });
+      }
+      return out;
+    }
+
+    function joinNames(names) {
+      if (!names || !names.length) return '';
+      if (names.length === 1) return names[0];
+      if (names.length === 2) return names[0] + ' e ' + names[1];
+      return names.slice(0, -1).join(', ') + ' e ' + names[names.length - 1];
+    }
+
+    function buildSupplierWhatsappLink(b, nomeResolved, telefone) {
+      const wa = b._fornecedorWhatsappResolvido || '';
+      const digits = wa.replace(/\D+/g, '');
+      if (!digits) return null;
+      // Brasil: prepend 55 se não tem código do país.
+      const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const nomes = collectParticipantNames(b, nomeResolved, telefone);
+      const expNome = b.experiencia_nome || '(experiência)';
+      const data = b.data || '(data)';
+      const horario = b.horario || '(horário)';
+      const plural = nomes.length > 1;
+      const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
+      const lista = joinNames(nomes) || '(participante)';
+      const msg = 'Oi! Tudo bem? Passando para te avisar que você tem ' + aluno +
+        ' para a experiência *' + expNome + '* no dia *' + data +
+        '* às *' + horario + '*: *' + lista + '*.\n\n' +
+        'O repasse será feito até 48h antes do evento.';
+      return 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
+    }
+
+    function renderWhatsappCell(b, nomeResolved, telefone) {
+      if (b.status !== 'pago') return '<td></td>';
+      const link = buildSupplierWhatsappLink(b, nomeResolved, telefone);
+      if (!link) {
+        return '<td><span style="font-size:.7rem;color:#bbb;" title="Cadastre o WhatsApp do fornecedor na experiência">— sem WhatsApp</span></td>';
+      }
+      return '<td><a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" ' +
+        'style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:.74rem;font-weight:600;text-decoration:none;white-space:nowrap;" ' +
+        'title="Abre o WhatsApp do fornecedor com mensagem pronta">' +
+        '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
+        'Avisar</a></td>';
     }
 
     // Renderiza uma linha da tabela. Extraído pra reaproveitar em
@@ -1160,7 +1302,9 @@
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorComissao ? escapeHtml(formatCents(valorComissao, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${bookingStatusBadge(b.status)}</td>
+          ${renderPrazoCell(b)}
           <td>${b.status === 'pago' ? '<select class="admin__sf-select" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;' + ((b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;') + '"><option value="repasse_pendente"' + ((b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : '') + '>Repasse pendente</option><option value="repasse_feito"' + (b.status_fornecedor === 'repasse_feito' ? ' selected' : '') + '>Repasse feito</option></select>' : ''}</td>
+          ${renderWhatsappCell(b, nomeResolved, telefone)}
         </tr>
       `;
     }
@@ -1171,7 +1315,7 @@
     function renderGroupHeader(label, count) {
       return `
         <tr class="admin__table-group-header">
-          <td colspan="15" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
+          <td colspan="17" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
             ${escapeHtml(label)} <span style="color:#999;font-weight:500;margin-left:6px;">(${count})</span>
           </td>
         </tr>
@@ -1197,7 +1341,7 @@
     const sorted = sortByCreatedDesc(filtered);
     tbody.innerHTML = sorted.length
       ? sorted.map(renderBookingRow).join('')
-      : '<tr><td colspan="15" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
+      : '<tr><td colspan="17" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
 
     // Wire editable status_fornecedor dropdowns
     tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
@@ -1605,11 +1749,13 @@
 
       // Fornecedor fields
       var fnEl = document.getElementById('exp-fornecedor-nome');
+      var fwEl = document.getElementById('exp-fornecedor-whatsapp');
       var vcEl = document.getElementById('exp-valor-cheio');
       var prEl = document.getElementById('exp-percentual-repasse');
       if (fnEl) fnEl.value = exp.fornecedorNome || '';
+      if (fwEl) fwEl.value = exp.fornecedorWhatsapp || '';
       if (vcEl) vcEl.value = exp.valorCheioCentavos != null ? 'R$' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
-      if (prEl) prEl.value = exp.percentualRepasse != null ? exp.percentualRepasse : 90;
+      if (prEl) prEl.value = exp.percentualRepasse != null ? exp.percentualRepasse : 70;
 
       // Carrega slots do banco — cada horário com sua vaga
       var slotsFromDb = [];
@@ -1656,11 +1802,13 @@
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = true;
       var fnEl2 = document.getElementById('exp-fornecedor-nome');
+      var fwEl2 = document.getElementById('exp-fornecedor-whatsapp');
       var vcEl2 = document.getElementById('exp-valor-cheio');
       var prEl2 = document.getElementById('exp-percentual-repasse');
       if (fnEl2) fnEl2.value = '';
+      if (fwEl2) fwEl2.value = '';
       if (vcEl2) vcEl2.value = '';
-      if (prEl2) prEl2.value = 90;
+      if (prEl2) prEl2.value = 70;
       // By Elarah / Originals — defaults pra novo cadastro
       var ieoEl2 = document.getElementById('exp-is-elarah-original');
       var hfcEl2 = document.getElementById('exp-hide-from-categorias');
@@ -1792,6 +1940,7 @@
         cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw),
         isActive: !!(document.getElementById('exp-is-active')?.checked ?? true),
         fornecedorNome: (document.getElementById('exp-fornecedor-nome')?.value || '').trim() || null,
+        fornecedorWhatsapp: (document.getElementById('exp-fornecedor-whatsapp')?.value || '').trim() || null,
         valorCheioCentavos: (function () {
           var raw = (document.getElementById('exp-valor-cheio')?.value || '').trim();
           if (!raw) return null;
