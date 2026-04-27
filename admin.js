@@ -677,12 +677,49 @@
       });
     }
 
+    // ===== Normaliza fornecedor + valores financeiros com regra fixa =====
+    // Regra única da Elarah: fornecedor 70% / comissão Elarah 30%.
+    // Cada booking ganha campos "_resolvido" que aplicam o fallback
+    // booking → experiência. Tudo abaixo (dropdown, filtro, tabela,
+    // card de repasses pendentes) usa esses campos pra evitar
+    // inconsistência entre o que aparece na tabela e o que filtra.
+    bookings.forEach(b => {
+      if (!b) return;
+      const exp = expById.get(b.experiencia_id) || null;
+      const qty = Math.max(1, Number(b.quantidade) || 1);
+
+      // Nome do fornecedor: booking → experiência → '' (vazio).
+      const fornecedorNome = (b.fornecedor_nome && b.fornecedor_nome.trim())
+        || (exp && exp.fornecedorNome && String(exp.fornecedorNome).trim())
+        || '';
+      b._fornecedorResolvido = fornecedorNome;
+
+      // Valor cheio: booking → experiência × qty → null.
+      let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
+      if (!valorCheio && exp && exp.valorCheioCentavos) {
+        valorCheio = Number(exp.valorCheioCentavos) * qty;
+      }
+      b._valorCheioResolvido = valorCheio || null;
+
+      // Base de cálculo: valor cheio (preferido) ou amount_total como fallback.
+      const base = valorCheio || (b.amount_total != null ? Number(b.amount_total) : null);
+
+      // Repasse 70% / Comissão 30% — regra fixa, sem percentual_repasse.
+      let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
+      if (valorRepasse == null && base) valorRepasse = Math.round(base * 0.70);
+      b._valorRepasseResolvido = valorRepasse;
+
+      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
+      if (valorComissao == null && base) valorComissao = Math.round(base * 0.30);
+      b._valorComissaoResolvido = valorComissao;
+    });
+
     // Popula filtro de fornecedores
     const filterFornEl = document.getElementById('bookings-filter-fornecedor');
     if (filterFornEl && filterFornEl.options.length <= 1) {
       const seenForn = new Set();
       bookings.forEach(b => {
-        var fn = b.fornecedor_nome || '';
+        var fn = b._fornecedorResolvido || '';
         if (fn && !seenForn.has(fn)) {
           seenForn.add(fn);
           var opt = document.createElement('option');
@@ -704,8 +741,8 @@
     const filtered = bookings.filter(b => {
       if (b.status !== 'pago') return false;
       if (filterExp && b.experiencia_nome !== filterExp) return false;
-      if (filterForn && (b.fornecedor_nome || '') !== filterForn) return false;
-      if (filterSf && (b.status_fornecedor || '') !== filterSf) return false;
+      if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
+      if (filterSf && (b.status_fornecedor || 'repasse_pendente') !== filterSf) return false;
       return true;
     });
 
@@ -717,6 +754,12 @@
     document.getElementById('stat-bookings-paid').textContent = paid.length;
     document.getElementById('stat-bookings-pending').textContent = pending.length;
     document.getElementById('stat-bookings-revenue').textContent = formatCents(revenueCents, 'BRL');
+
+    // ===== Card "Repasses pendentes por fornecedor" =====
+    // Lista compras pagas com status_fornecedor='repasse_pendente',
+    // agrupadas por fornecedor. Não respeita os filtros da tabela —
+    // sempre mostra TODAS as pendências como visão executiva.
+    renderRepassesPendentesCard(bookings);
 
     // Conversão = pagas / cliques de Reservar (vem dos analytics_events).
     let conversionLabel = '—';
@@ -850,31 +893,14 @@
       } else {
         telefoneCell = '<span style="color:#bbb;">—</span>';
       }
-      // Fallback de fornecedor + valores: se o booking não tem esses
-      // campos (caso típico: experiência sem valor_cheio_centavos
-      // cadastrado OU booking criado antes do deploy que começou a
-      // gravar), puxa da experiência correspondente e calcula o
-      // repasse/comissão com a mesma fórmula da edge function
-      // (repasse = 70% do cheio, comissão = 20%). Se a experiência
-      // também estiver vazia, volta pra '—' — aí o admin sabe que
-      // precisa preencher o campo "Valor cheio" no formulário.
-      const exp = expById.get(b.experiencia_id) || null;
-      const qty = Math.max(1, Number(b.quantidade) || 1);
-      const fornecedorDisplay = (b.fornecedor_nome && b.fornecedor_nome.trim())
-        || (exp && exp.fornecedorNome && String(exp.fornecedorNome).trim())
-        || '';
-      let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
-      if (!valorCheio && exp && exp.valorCheioCentavos) {
-        valorCheio = Number(exp.valorCheioCentavos) * qty;
-      }
-      let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-      if (!valorRepasse && valorCheio) {
-        valorRepasse = Math.round(valorCheio * 0.70);
-      }
-      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (!valorComissao && valorCheio) {
-        valorComissao = Math.round(valorCheio * 0.20);
-      }
+      // Os campos _Resolvido vêm do bloco de normalização no início
+      // de renderBookings (regra fixa 70/30 com fallback booking →
+      // experiência). Usar os mesmos campos no display garante que
+      // o que aparece na tabela é exatamente o que o filtro vê.
+      const fornecedorDisplay = b._fornecedorResolvido || '';
+      const valorCheio = b._valorCheioResolvido;
+      const valorRepasse = b._valorRepasseResolvido;
+      const valorComissao = b._valorComissaoResolvido;
 
       // Renderiza acompanhantes (participantes adicionais) abaixo do
       // nome do comprador, com WhatsApp clicável quando o telefone
@@ -3238,6 +3264,93 @@
     return { ok: true };
   }
 
+  // Card "Repasses pendentes por fornecedor" no topo da tela Compras.
+  // Agrupa bookings pagas com status_fornecedor='repasse_pendente'
+  // (ou null = pendente por default) por fornecedor resolvido. Click
+  // numa linha aplica o filtro da tabela. Esconde quando não há
+  // pendências.
+  function renderRepassesPendentesCard(allBookings) {
+    const card = document.getElementById('repasse-pendente-card');
+    const listEl = document.getElementById('repasse-pendente-list');
+    const totalEl = document.getElementById('repasse-pendente-total');
+    const countEl = document.getElementById('repasse-pendente-count');
+    if (!card || !listEl || !totalEl) return;
+
+    const byForn = new Map();
+    let totalGlobal = 0;
+    let countGlobal = 0;
+    (allBookings || []).forEach(b => {
+      if (!b || b.status !== 'pago') return;
+      // Default do schema é 'repasse_pendente'; trata null/undefined como pendente.
+      const sf = b.status_fornecedor || 'repasse_pendente';
+      if (sf !== 'repasse_pendente') return;
+      const nomeRaw = (b._fornecedorResolvido || '').trim();
+      const nome = nomeRaw || '— sem fornecedor —';
+      const valor = Number(b._valorRepasseResolvido) || 0;
+      if (!byForn.has(nome)) byForn.set(nome, { nome, count: 0, total: 0, isUnknown: !nomeRaw });
+      const agg = byForn.get(nome);
+      agg.count += 1;
+      agg.total += valor;
+      totalGlobal += valor;
+      countGlobal += 1;
+    });
+
+    if (!byForn.size) {
+      card.style.display = 'none';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    card.style.display = '';
+    totalEl.textContent = formatCents(totalGlobal, 'BRL');
+    if (countEl) {
+      countEl.textContent = countGlobal + ' reserva' + (countGlobal !== 1 ? 's' : '');
+    }
+
+    const list = Array.from(byForn.values()).sort((a, b) => b.total - a.total);
+    listEl.innerHTML = list.map(f => {
+      return (
+        '<button type="button" class="admin__repasse-row" data-fornecedor="' +
+        escapeHtml(f.isUnknown ? '' : f.nome) + '" ' +
+        'style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #f0d9a8;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;text-align:left;width:100%;" ' +
+        'title="Clique pra filtrar a tabela por este fornecedor">' +
+        '<span style="flex:1;font-weight:600;color:' + (f.isUnknown ? '#a55' : '#1a1a1a') + ';">' +
+        escapeHtml(f.nome) + '</span>' +
+        '<span style="font-size:.78rem;color:#7a6440;min-width:90px;text-align:right;">' +
+        f.count + ' reserva' + (f.count !== 1 ? 's' : '') + '</span>' +
+        '<span style="font-weight:700;color:#b07b00;min-width:120px;text-align:right;">' +
+        escapeHtml(formatCents(f.total, 'BRL')) + '</span>' +
+        '</button>'
+      );
+    }).join('');
+
+    listEl.querySelectorAll('.admin__repasse-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nome = btn.getAttribute('data-fornecedor') || '';
+        const fornEl = document.getElementById('bookings-filter-fornecedor');
+        const sfEl = document.getElementById('bookings-filter-status-fornecedor');
+        if (fornEl) {
+          // Garante que o option existe (caso o dropdown ainda não
+          // tenha sido populado, ou o nome venha de fallback de
+          // experiência ainda não vista).
+          let found = false;
+          Array.from(fornEl.options).forEach(o => { if (o.value === nome) found = true; });
+          if (!found && nome) {
+            const opt = document.createElement('option');
+            opt.value = nome;
+            opt.textContent = nome;
+            fornEl.appendChild(opt);
+          }
+          fornEl.value = nome;
+        }
+        if (sfEl) sfEl.value = 'repasse_pendente';
+        renderBookings();
+        const tableWrap = document.querySelector('#panel-purchases .admin__table-wrap');
+        if (tableWrap) tableWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
   async function renderFornecedores() {
     if (!document.getElementById('fornecedores-body')) return;
 
@@ -3307,8 +3420,9 @@
       if (!valorCheio && exp && exp.valorCheioCentavos) {
         valorCheio = Number(exp.valorCheioCentavos) * qty;
       }
+      // Regra fixa Elarah: repasse 70% / comissão 30%.
       let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (!valorComissao && valorCheio) valorComissao = Math.round(valorCheio * 0.20);
+      if (!valorComissao && valorCheio) valorComissao = Math.round(valorCheio * 0.30);
 
       // ===== AGREGA POR REPASSE (multi-fornecedor) =====
       // bookings.repasses[] é o snapshot do mapa financeiro no momento
