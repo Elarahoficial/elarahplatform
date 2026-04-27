@@ -619,12 +619,67 @@
         </td>
       </tr>
     `).join('');
+
+    // Wire click handlers nos botões de WhatsApp: marca o usuário
+    // como contatado no banco (whatsapp_contacted_at = now) e
+    // atualiza visual local na hora — cor passa de laranja pra verde
+    // sem precisar reload. Como o <a> abre wa.me em nova aba (target
+    // _blank), o JavaScript continua rodando em paralelo, sem bloquear.
+    tbody.querySelectorAll('.admin__user-wa-trigger').forEach(el => {
+      el.addEventListener('click', () => {
+        const userId = el.dataset.userId;
+        if (!userId) return;
+        // Otimista: pinta verde já. Se a request falhar depois,
+        // recarrega o painel pra refletir o estado real.
+        markUserAsContactedVisually(tbody, userId);
+        markUserWhatsappContacted(userId).catch((e) => {
+          console.warn('[Admin] markUserWhatsappContacted falhou — recarregando lista', e);
+          renderUsers();
+        });
+      });
+    });
+  }
+
+  // Pinta todos os botões/links com este user-id como "já contatado".
+  function markUserAsContactedVisually(tbody, userId) {
+    const sel = '[data-user-id="' + (window.CSS && CSS.escape ? CSS.escape(userId) : userId) + '"]';
+    tbody.querySelectorAll(sel).forEach(el => {
+      if (el.classList.contains('admin__user-wa-btn')) {
+        el.style.background = '#25D366';
+        el.dataset.contacted = '1';
+        el.title = 'Já convidado agora — clique pra reenviar';
+      }
+    });
+  }
+
+  async function markUserWhatsappContacted(userId) {
+    const s = window.supabaseClient;
+    if (!s || !userId) return;
+    const { error } = await s
+      .from('profiles')
+      .update({ whatsapp_contacted_at: new Date().toISOString() })
+      .eq('id', userId);
+    if (error) {
+      // Coluna ainda não existe? Avisa explicitamente.
+      if (/column .* does not exist/i.test(error.message || '') ||
+          /whatsapp_contacted_at/i.test(error.message || '')) {
+        alert('A coluna whatsapp_contacted_at ainda não existe no banco. ' +
+              'Rode sql/elarah_users_whatsapp_contacted.sql no SQL Editor do Supabase.');
+      }
+      throw error;
+    }
+    // getProfiles() não tem cache local (vai direto no banco em cada
+    // call), então a próxima leitura já vê o valor atualizado.
   }
 
   // Monta a célula de telefone da lista de usuários: número visível + botão
   // verde ao lado que abre o WhatsApp com mensagem pronta convidando pro
   // grupo da Elarah. Usa o primeiro nome do usuário pra personalizar a
   // saudação. Sem telefone, mostra só o traço — sem botão.
+  //
+  // Cor do botão sinaliza se o admin já clicou:
+  //   verde (#25D366) → whatsapp_contacted_at preenchido
+  //   laranja (#f0a05e) → ainda não contatou — alvo prioritário
   function buildUserPhoneCell(u) {
     const tel = (u.telefone || '').trim();
     if (!tel) return '<span style="color:#bbb;">—</span>';
@@ -633,8 +688,17 @@
     const primeiroNome = String(u.nome || '').trim().split(/\s+/)[0] || 'tudo bem';
     const msg = 'Oii ' + primeiroNome + '! Você se cadastrou na Elarah e temos um grupo onde liberamos experiências antes de todo mundo (algumas esgotam só por lá). Entra aqui pra não perder: https://chat.whatsapp.com/LRqJa9F7zGWAIMlh2D2yjl';
     const href = 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(msg);
-    const numero = '<a href="' + href + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(tel) + '</a>';
-    const botao = '<a href="' + href + '" target="_blank" rel="noopener" title="Convidar para o grupo no WhatsApp" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 10px;background:#25D366;color:#fff;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;line-height:1;vertical-align:middle;">' +
+    const contatado = !!u.whatsapp_contacted_at;
+    const btnBg = contatado ? '#25D366' : '#f0a05e';
+    const tooltipBotao = contatado
+      ? 'Já convidado em ' + formatDate(u.whatsapp_contacted_at) + ' — clique pra reenviar'
+      : 'AINDA NÃO contatado — clique pra convidar pro grupo';
+    const userIdAttr = ' data-user-id="' + escapeHtml(u.id) + '"';
+    const numero = '<a href="' + href + '" target="_blank" rel="noopener" class="admin__user-wa-trigger"' + userIdAttr +
+      ' style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(tel) + '</a>';
+    const botao = '<a href="' + href + '" target="_blank" rel="noopener" class="admin__user-wa-trigger admin__user-wa-btn"' + userIdAttr +
+      ' title="' + escapeHtml(tooltipBotao) + '"' +
+      ' style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 10px;background:' + btnBg + ';color:#fff;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;line-height:1;vertical-align:middle;">' +
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.52 3.48A11.78 11.78 0 0 0 12.04 0C5.46 0 .12 5.34.12 11.92c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.65a11.9 11.9 0 0 0 5.77 1.47h.01c6.58 0 11.92-5.34 11.92-11.92 0-3.18-1.24-6.17-3.45-8.42zM12.05 21.8h-.01a9.86 9.86 0 0 1-5.03-1.38l-.36-.21-3.72.98 1-3.62-.23-.37a9.85 9.85 0 0 1-1.51-5.27c0-5.45 4.43-9.88 9.87-9.88 2.64 0 5.12 1.03 6.99 2.9a9.81 9.81 0 0 1 2.89 6.99c-.01 5.45-4.44 9.86-9.89 9.86zm5.42-7.39c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.09 3.2 5.07 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35z"/></svg>' +
       'WhatsApp</a>';
     return numero + botao;
