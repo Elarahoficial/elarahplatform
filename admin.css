@@ -787,3 +787,164 @@
 #byelarah-subs-body {
   min-width: 880px;
 }
+
+/* =============================================================
+   PAINEL DE CONTEÚDO
+   Cards de roteiro pré-pronto. Visual mais editorial (creme/bordô)
+   pra reforçar a identidade da curadoria, em vez de mais um painel
+   funcional padrão.
+   ============================================================= */
+.admin__persona-card {
+  margin: 16px 0 24px;
+  padding: 18px 22px;
+  background: linear-gradient(135deg, #FBF6F0 0%, #F5EBE0 100%);
+  border: 1px solid rgba(201,164,95,0.32);
+  border-radius: 14px;
+}
+.admin__persona-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+  color: #5C2426;
+}
+.admin__persona-card__badge {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #E8B5AB 0%, #C97D6F 100%);
+  border-radius: 9999px;
+}
+.admin__persona-card__text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #6B4F4D;
+}
+.admin__persona-card__text strong { color: #3F1F20; }
+.admin__persona-card__text em { font-style: italic; color: #5C2426; }
+
+.admin__content-summary {
+  margin: 0 0 18px;
+  font-size: 0.85rem;
+  color: #777;
+  letter-spacing: 0.02em;
+}
+
+.admin__content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 18px;
+}
+
+.admin__content-empty {
+  grid-column: 1 / -1;
+  padding: 40px 20px;
+  text-align: center;
+  color: #888;
+  font-size: 0.92rem;
+  background: #faf6f0;
+  border-radius: 12px;
+}
+
+.admin__content-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px 22px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 18px -10px rgba(0,0,0,0.12);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.admin__content-card:hover {
+  box-shadow: 0 12px 28px -14px rgba(0,0,0,0.18);
+  transform: translateY(-1px);
+}
+.admin__content-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.admin__content-card__format {
+  display: inline-block;
+  padding: 4px 11px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  color: #fff;
+}
+.admin__content-card__format--reels    { background: #C97D6F; }
+.admin__content-card__format--stories  { background: #d88a44; }
+.admin__content-card__format--feed     { background: #5C2426; }
+.admin__content-card__format--tiktok   { background: #1a1a1a; }
+.admin__content-card__format--linkedin { background: #2b6cb0; }
+
+.admin__content-card__copy {
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5C2426;
+  background: #fff;
+  border: 1.5px solid #C97D6F;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.admin__content-card__copy:hover {
+  background: #C97D6F;
+  color: #fff;
+}
+.admin__content-card__copy--ok {
+  background: #1a8a4a !important;
+  border-color: #1a8a4a !important;
+  color: #fff !important;
+}
+.admin__content-card__copy--err {
+  background: #c0392b !important;
+  border-color: #c0392b !important;
+  color: #fff !important;
+}
+
+.admin__content-card__title {
+  margin: 0;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.18rem;
+  line-height: 1.25;
+  color: #1a1a1a;
+}
+.admin__content-card__meta {
+  font-size: 0.78rem;
+  color: #888;
+  letter-spacing: 0.02em;
+}
+.admin__content-card__body {
+  margin: 4px 0 0;
+  padding: 14px 16px;
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #2c1f1f;
+  background: #faf6f0;
+  border-left: 3px solid #C97D6F;
+  border-radius: 0 10px 10px 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+@media (max-width: 760px) {
+  .admin__content-grid { grid-template-columns: 1fr; }
+}
