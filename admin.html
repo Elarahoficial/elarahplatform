@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=4">
+  <link rel="stylesheet" href="admin.css?v=5">
 </head>
 <body>
 
@@ -89,6 +89,16 @@
           <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
         </svg>
         <span>Gift Cards</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="content">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="9" y1="13" x2="15" y2="13"/>
+          <line x1="9" y1="17" x2="13" y2="17"/>
+        </svg>
+        <span>Conteúdo</span>
       </button>
 
       <button class="admin__nav-item" data-panel="analytics">
@@ -580,6 +590,60 @@
             <tr><td colspan="9" class="admin__table-empty">Nenhuma resposta registrada.</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ===== CONTENT PANEL ===== -->
+    <div class="admin__panel" id="panel-content">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Conteúdo da semana</h1>
+          <p class="admin__page-subtitle">
+            Roteiros prontos pra Reels, Stories, Feed, TikTok e LinkedIn —
+            puxando das experiências disponíveis e aplicando a voz da Elarah (persona “Carolina”).
+          </p>
+        </div>
+        <div class="admin__analytics-controls">
+          <label for="content-week" class="admin__form-hint" style="margin:0;">Janela:</label>
+          <select id="content-week" class="admin__analytics-select">
+            <option value="7" selected>Próximos 7 dias</option>
+            <option value="14">Próximos 14 dias</option>
+            <option value="30">Próximos 30 dias</option>
+            <option value="all">Todas as experiências ativas</option>
+          </select>
+          <label for="content-format" class="admin__form-hint" style="margin:0;">Formato:</label>
+          <select id="content-format" class="admin__analytics-select">
+            <option value="all" selected>Todos</option>
+            <option value="reels">Reels</option>
+            <option value="stories">Stories</option>
+            <option value="feed">Feed</option>
+            <option value="tiktok">TikTok</option>
+            <option value="linkedin">LinkedIn</option>
+          </select>
+          <button class="admin__add-btn" id="btn-refresh-content" type="button">Gerar agora</button>
+        </div>
+      </div>
+
+      <!-- Persona reference card — sempre visível pro time não esquecer pra quem
+           o conteúdo está falando. -->
+      <div class="admin__persona-card" id="content-persona-card">
+        <div class="admin__persona-card__head">
+          <span class="admin__persona-card__badge">Persona-alvo</span>
+          <strong>Carolina · 35–55 anos · SP zona oeste/sul · classe A/B+</strong>
+        </div>
+        <p class="admin__persona-card__text">
+          Compra <strong>presente afetivo</strong> pra mãe, filha ou amiga.
+          Conecta com <em>memória que fica</em>, <em>tempo de qualidade</em>, <em>curadoria confiável</em> e <em>beleza estética</em>.
+          Repele linguagem jovem demais, urgência forçada e desconto agressivo.
+        </p>
+      </div>
+
+      <!-- Resumo / contador — preenchido pelo JS. -->
+      <div id="content-summary" class="admin__content-summary"></div>
+
+      <!-- Grade de cards de conteúdo — preenchida pelo JS. -->
+      <div id="content-grid" class="admin__content-grid">
+        <p class="admin__content-empty">Carregando experiências…</p>
       </div>
     </div>
 
@@ -1198,7 +1262,8 @@
 <script src="experiences-data.js?v=20"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin.js?v=56"></script>
+<script src="admin-content.js?v=1"></script>
+<script src="admin.js?v=57"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
