@@ -194,10 +194,15 @@
       .from(ITEMS_TABLE)
       .insert(row)
       .select()
-      .single();
+      .maybeSingle();
     if (error) {
       console.error('[ElarahByElarah] addItem error', error);
       alert('Erro ao criar item: ' + error.message);
+      return null;
+    }
+    if (!data) {
+      console.error('[ElarahByElarah] addItem retornou 0 linhas (provável bloqueio de RLS / não-admin)');
+      alert('Erro ao criar item: nenhuma linha retornada. Verifique se você está logado como admin.');
       return null;
     }
     invalidate();
@@ -213,10 +218,15 @@
       .update(row)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) {
       console.error('[ElarahByElarah] updateItem error', error);
       alert('Erro ao atualizar item: ' + error.message);
+      return null;
+    }
+    if (!data) {
+      console.error('[ElarahByElarah] updateItem retornou 0 linhas (id inexistente ou bloqueio de RLS)');
+      alert('Erro ao atualizar item: nenhuma linha foi alterada. Verifique se o item ainda existe e se você é admin.');
       return null;
     }
     invalidate();

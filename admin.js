@@ -3109,9 +3109,12 @@
               console.info('[Admin/By Elarah] slots salvos', resolvedExpId, slotsToSave.length);
             } catch (errSlots) {
               console.error('[Admin/By Elarah] saveSlots falhou', errSlots);
-              // Não aborta — o pagamento ainda funciona com vagas
-              // experience-level (vagasTotal do exp é usado como
-              // fallback no checkout). Só loga pra admin investigar.
+              alert(
+                'ATENÇÃO: as vagas por horário NÃO foram salvas.\n' +
+                'Erro: ' + ((errSlots && errSlots.message) || errSlots) + '\n\n' +
+                'O checkout vai usar vagasTotal da experiência como fallback. ' +
+                'Edite o item de novo para tentar regravar os slots.'
+              );
             }
           }
 
@@ -3126,6 +3129,11 @@
               console.info('[Admin/By Elarah] suppliers salvos', resolvedExpId, suppliersToSave.length);
             } catch (errSup) {
               console.error('[Admin/By Elarah] saveSuppliers falhou', errSup);
+              alert(
+                'ATENÇÃO: os fornecedores NÃO foram salvos.\n' +
+                'Erro: ' + ((errSup && errSup.message) || errSup) + '\n\n' +
+                'O cálculo de repasse vai cair no fallback (fornecedor_nome legado da experience).'
+              );
             }
           }
         } else {
@@ -3141,10 +3149,18 @@
           data.experienceId = null;
         }
 
+        let savedRecord = null;
         if (editId) {
-          await ElarahByElarah.updateItem(editId, data);
+          savedRecord = await ElarahByElarah.updateItem(editId, data);
         } else {
-          await ElarahByElarah.addItem(data);
+          savedRecord = await ElarahByElarah.addItem(data);
+        }
+        if (!savedRecord) {
+          // updateItem/addItem já alertaram dentro do byelarah-data.js.
+          // Mantém o modal aberto para o admin reagir (corrigir input
+          // ou fechar manualmente) — antes fechava silenciosamente
+          // mesmo em erro.
+          return;
         }
       } finally {
         bySubmitBtn.disabled = false;
