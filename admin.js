@@ -4832,10 +4832,48 @@
     set('kpi-signups', (profiles || []).length.toString());
   }
 
+  // Mostra um banner de erro visível dentro do painel.
+  // Sem isso, qualquer exceção aborta silenciosamente e o admin
+  // fica olhando "—" sem saber o porquê.
+  function showAnalyticsError(msg) {
+    const root = document.getElementById('panel-analytics');
+    if (!root) return;
+    let banner = document.getElementById('ana-error-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'ana-error-banner';
+      banner.style.cssText = 'background:#fdecea;border:1px solid #c0392b;color:#7a1f12;padding:12px 16px;border-radius:8px;margin:0 0 18px;font-size:.88rem;line-height:1.45;';
+      const filterBar = root.querySelector('.ana-period-bar');
+      if (filterBar && filterBar.nextSibling) {
+        root.insertBefore(banner, filterBar.nextSibling);
+      } else {
+        root.appendChild(banner);
+      }
+    }
+    banner.innerHTML = '<strong>⚠ Erro ao carregar analytics:</strong> ' + escapeHtml(msg) +
+      '<br><span style="font-size:.78rem;color:#7a1f12;opacity:.8;">Detalhes completos no Console do navegador (F12).</span>';
+    banner.style.display = 'block';
+  }
+  function clearAnalyticsError() {
+    const banner = document.getElementById('ana-error-banner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  // Pinta KPIs vazios (R$ 0 / 0) antes do fetch — assim mesmo que algo
+  // dê errado o admin não vê só "—" sem entender o que aconteceu.
+  function paintEmptyKpis() {
+    setKpi('kpi-revenue', 'R$ 0', 'kpi-revenue-delta', { text: 'carregando…', cls: 'flat' });
+    setKpi('kpi-orders', '0', 'kpi-orders-delta', { text: 'carregando…', cls: 'flat' });
+    setKpi('kpi-ticket', '—', 'kpi-ticket-delta', { text: 'carregando…', cls: 'flat' });
+    setKpi('kpi-conv', '—', 'kpi-conv-delta', { text: 'carregando…', cls: 'flat' });
+  }
+
   // ===== Loop principal =====
   async function renderAnalytics(forceRefresh) {
     if (!document.getElementById('panel-analytics')) return;
     if (forceRefresh) invalidateBookings();
+    clearAnalyticsError();
+    paintEmptyKpis();
 
     const curr = getCurrentRange();
     const prev = getPreviousRange(curr);
@@ -4843,35 +4881,64 @@
     const labelEl = document.getElementById('ana-period-label');
     if (labelEl) labelEl.textContent = curr.label + ' · comparado com ' + prev.label;
 
-    // Carrega tudo em paralelo. Eventos: pega desde o início do período
-    // anterior pra ter dados pra comparação de conversão.
+    // Cada fetch tem seu try/catch — se um falha (RLS, network, etc),
+    // os outros ainda renderizam. Sem isso, qualquer falha em um
+    // serviço aborta o Promise.all inteiro.
+    const safeCall = async (label, fn) => {
+      try { return await fn(); }
+      catch (e) {
+        console.error('[Analytics] falha em ' + label + ':', e);
+        return null;
+      }
+    };
     const [bookingsAll, experiences, profiles, eventsAll] = await Promise.all([
-      getBookings(),
-      getExperiences(),
-      getProfiles(),
-      window.ElarahAnalytics
+      safeCall('getBookings', () => getBookings()),
+      safeCall('getExperiences', () => getExperiences()),
+      safeCall('getProfiles', () => getProfiles()),
+      safeCall('rawSelect(events)', () => window.ElarahAnalytics
         ? window.ElarahAnalytics.rawSelect({ since: prev.start.toISOString(), limit: 10000 })
-        : Promise.resolve([])
+        : Promise.resolve([]))
     ]);
 
-    const bookings = filterTestBookings(bookingsAll);
-    const expById = new Map();
-    (experiences || []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
+    // Diagnóstico no console (admin abre F12 e confere o que veio).
+    console.log('[Analytics] dados carregados:', {
+      bookings: Array.isArray(bookingsAll) ? bookingsAll.length : '(não-array)',
+      experiences: Array.isArray(experiences) ? experiences.length : '(não-array)',
+      profiles: Array.isArray(profiles) ? profiles.length : '(não-array)',
+      events: Array.isArray(eventsAll) ? eventsAll.length : '(não-array)',
+      periodo: { de: curr.start.toISOString(), ate: curr.end.toISOString(), label: curr.label }
+    });
 
-    const bookingsCurr = bookings.filter(b => inRange(b.created_at, curr));
-    const bookingsPrev = bookings.filter(b => inRange(b.created_at, prev));
-    const eventsCurr = (eventsAll || []).filter(e => inRange(e.created_at, curr));
-    const eventsPrev = (eventsAll || []).filter(e => inRange(e.created_at, prev));
+    try {
+      const bookings = withoutTestBookings(Array.isArray(bookingsAll) ? bookingsAll : []);
+      const expById = new Map();
+      (Array.isArray(experiences) ? experiences : []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
+      const profilesArr = Array.isArray(profiles) ? profiles : [];
+      const eventsArr = Array.isArray(eventsAll) ? eventsAll : [];
 
-    const kpiCurr = computeKpis(bookingsCurr, eventsCurr);
-    const kpiPrev = computeKpis(bookingsPrev, eventsPrev);
+      const bookingsCurr = bookings.filter(b => inRange(b.created_at, curr));
+      const bookingsPrev = bookings.filter(b => inRange(b.created_at, prev));
+      const eventsCurr = eventsArr.filter(e => inRange(e.created_at, curr));
+      const eventsPrev = eventsArr.filter(e => inRange(e.created_at, prev));
 
-    renderKpis(kpiCurr, kpiPrev);
-    renderEvolutionChart(bookingsCurr, curr);
-    renderFunnel(eventsCurr, bookingsCurr);
-    renderTopExperiences(bookingsCurr, eventsCurr, expById);
-    renderTopSuppliers(bookingsCurr, expById);
-    renderCustomers(bookingsCurr, bookings, profiles, curr);
+      const kpiCurr = computeKpis(bookingsCurr, eventsCurr);
+      const kpiPrev = computeKpis(bookingsPrev, eventsPrev);
+
+      renderKpis(kpiCurr, kpiPrev);
+      renderEvolutionChart(bookingsCurr, curr);
+      renderFunnel(eventsCurr, bookingsCurr);
+      renderTopExperiences(bookingsCurr, eventsCurr, expById);
+      renderTopSuppliers(bookingsCurr, expById);
+      renderCustomers(bookingsCurr, bookings, profilesArr, curr);
+
+      // Se TODAS as fontes falharam (provavelmente RLS/auth), avisa.
+      if (bookingsAll === null && experiences === null && profiles === null && eventsAll === null) {
+        showAnalyticsError('Não foi possível carregar nenhum dado. Verifique se você está logado como admin e se a sessão Supabase está ativa.');
+      }
+    } catch (e) {
+      console.error('[Analytics] erro ao renderizar:', e);
+      showAnalyticsError(e && e.message ? e.message : String(e));
+    }
   }
 
   // ===== START =====
