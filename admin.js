@@ -1869,6 +1869,10 @@
       var vcEl = document.getElementById('exp-valor-cheio');
       var prEl = document.getElementById('exp-percentual-repasse');
       if (fnEl) fnEl.value = exp.fornecedorNome || '';
+      if (window._expFornecedorCombobox) {
+        window._expFornecedorCombobox.setValue(exp.fornecedorNome || '');
+        window._expFornecedorCombobox.refresh();
+      }
       if (vcEl) vcEl.value = exp.valorCheioCentavos != null ? 'R$' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
       if (prEl) prEl.value = exp.percentualRepasse != null ? exp.percentualRepasse : 70;
 
@@ -1920,6 +1924,10 @@
       var vcEl2 = document.getElementById('exp-valor-cheio');
       var prEl2 = document.getElementById('exp-percentual-repasse');
       if (fnEl2) fnEl2.value = '';
+      if (window._expFornecedorCombobox) {
+        window._expFornecedorCombobox.setValue('');
+        window._expFornecedorCombobox.refresh();
+      }
       if (vcEl2) vcEl2.value = '';
       if (prEl2) prEl2.value = 70;
       // By Elarah / Originals — defaults pra novo cadastro
@@ -2002,6 +2010,19 @@
     }
     // Expõe pra que openExpModal chame depois de preencher o input.
     window._refreshImagePreview = refreshImagePreview;
+
+    // Combobox de fornecedor: substitui o input livre por um dropdown
+    // com busca + opção "adicionar novo". Mantém o <input type=hidden
+    // id="exp-fornecedor-nome"> pra preservar a leitura via getElementById
+    // no submit. Criado uma vez aqui; refresh é chamado em openExpModal.
+    var fornHost = document.getElementById('exp-fornecedor-combobox');
+    var fornHidden = document.getElementById('exp-fornecedor-nome');
+    if (fornHost && fornHidden) {
+      window._expFornecedorCombobox = createSupplierCombobox(fornHost, {
+        hiddenInput: fornHidden,
+        placeholder: 'Selecione ou digite o fornecedor…'
+      });
+    }
 
     addBtn.addEventListener('click', () => openExpModal(null));
     modalBackdrop.addEventListener('click', closeExpModal);
@@ -2622,8 +2643,8 @@
     row.className = 'admin__supplier-row';
     row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fafaf6;border:1px solid #ece4d6;border-radius:8px;padding:8px;';
     row.innerHTML =
-      '<input type="text" class="by-supplier-nome" placeholder="Nome do fornecedor" ' +
-        'style="flex:1;min-width:140px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:.88rem;">' +
+      '<div class="by-supplier-nome-host" style="flex:1;min-width:140px;"></div>' +
+      '<input type="hidden" class="by-supplier-nome">' +
       '<select class="by-supplier-type" ' +
         'style="flex:0 0 100px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:.88rem;background:#fff;">' +
         '<option value="percent">%</option>' +
@@ -2636,12 +2657,19 @@
       '<button type="button" class="by-supplier-remove" aria-label="Remover" ' +
         'style="flex:0 0 28px;background:none;border:none;font-size:1.2rem;color:#999;cursor:pointer;">&times;</button>';
 
-    var nomeEl = row.querySelector('.by-supplier-nome');
+    var nomeHost = row.querySelector('.by-supplier-nome-host');
+    var nomeHidden = row.querySelector('.by-supplier-nome');
     var typeEl = row.querySelector('.by-supplier-type');
     var valEl = row.querySelector('.by-supplier-value');
     var notasEl = row.querySelector('.by-supplier-notas');
 
-    nomeEl.value = s.fornecedorNome || '';
+    var combo = createSupplierCombobox(nomeHost, {
+      hiddenInput: nomeHidden,
+      compact: true,
+      placeholder: 'Nome do fornecedor',
+      onChange: function () { bySuppliersUpdateResumo(); }
+    });
+    if (s.fornecedorNome) combo.setValue(s.fornecedorNome);
     typeEl.value = s.shareType === 'fixed' ? 'fixed' : 'percent';
     // Pra share_type='fixed', share_value vem em centavos do banco mas
     // exibimos como R$ inteiros pro admin (ex: 12500 → 125).
@@ -2658,7 +2686,7 @@
       bySuppliersUpdateResumo();
     });
 
-    [nomeEl, typeEl, valEl, notasEl].forEach(function (el) {
+    [typeEl, valEl, notasEl].forEach(function (el) {
       el.addEventListener('input', bySuppliersUpdateResumo);
       el.addEventListener('change', bySuppliersUpdateResumo);
     });
@@ -3774,6 +3802,261 @@
     }
     fornecedoresMetaCache = null;
     return { ok: true };
+  }
+
+  // Cadastra um fornecedor novo em fornecedores_metadata só com o
+  // nome (sem whatsapp/data ainda). Usado pelo botão "Adicionar novo
+  // fornecedor" do combobox — garante que o nome aparece na próxima
+  // abertura mesmo que nenhuma experiência tenha sido salva ainda.
+  async function upsertFornecedorByName(fornecedorNome) {
+    const s = window.supabaseClient;
+    const key = fornecedorKey(fornecedorNome);
+    if (!key) return { ok: false, error: 'Nome do fornecedor vazio' };
+    if (!s) return { ok: false, error: 'Supabase client indisponível' };
+    const { error } = await s.from('fornecedores_metadata').upsert(
+      { fornecedor_key: key, fornecedor_nome: fornecedorNome },
+      { onConflict: 'fornecedor_key' }
+    );
+    if (error) {
+      // Tabela pode não existir; o nome ainda fica no input e é
+      // salvo via experiences.fornecedor_nome quando o admin salvar.
+      console.warn('[Admin] upsertFornecedorByName falhou (segue mesmo assim):', error.message);
+      return { ok: false, error: error.message };
+    }
+    fornecedoresMetaCache = null;
+    return { ok: true };
+  }
+
+  // Lista unificada de fornecedores conhecidos: junta nomes da tabela
+  // fornecedores_metadata com nomes presentes em experiences.fornecedor_nome.
+  // Dedup case-insensitive preservando a grafia original do primeiro hit.
+  // Ordena alfabético pt-BR. Usado pelo combobox.
+  async function getKnownSuppliers() {
+    const seen = new Map();
+    const add = function (nome) {
+      const trimmed = String(nome || '').trim();
+      if (!trimmed) return;
+      const k = trimmed.toLowerCase();
+      if (!seen.has(k)) seen.set(k, trimmed);
+    };
+    try {
+      const meta = await getFornecedoresMetadata();
+      (meta || []).forEach(function (m) { add(m && m.fornecedor_nome); });
+    } catch (e) { /* segue com experiences-only */ }
+    try {
+      const exps = await getExperiences();
+      (exps || []).forEach(function (e) { add(e && e.fornecedorNome); });
+    } catch (e) { /* segue mesmo sem experiences */ }
+    return Array.from(seen.values()).sort(function (a, b) {
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+  }
+
+  // ============================================================
+  // Supplier Combobox
+  // Combobox vanilla com busca + opção "Adicionar novo fornecedor".
+  // Renderiza dentro de `host` (um <div>). API: getValue, setValue,
+  // refresh, destroy. `opts.hiddenInput` é um <input type=hidden>
+  // opcional que recebe o valor selecionado — assim o form existente
+  // continua lendo via getElementById sem mudar.
+  // ============================================================
+  function createSupplierCombobox(host, opts) {
+    if (!host) return null;
+    opts = opts || {};
+    var hiddenInput = opts.hiddenInput || null;
+    var compact = !!opts.compact;
+    var placeholder = opts.placeholder || 'Selecione ou digite um fornecedor…';
+    var onChange = typeof opts.onChange === 'function' ? opts.onChange : function () {};
+
+    host.innerHTML = '';
+    var wrap = document.createElement('div');
+    wrap.className = 'admin__supplier-combobox';
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'admin__supplier-combobox__input' + (compact ? ' admin__supplier-combobox__input--compact' : '');
+    input.placeholder = placeholder;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    var menu = document.createElement('div');
+    menu.className = 'admin__supplier-combobox__menu';
+    wrap.appendChild(input);
+    wrap.appendChild(menu);
+    host.appendChild(wrap);
+
+    var suppliers = [];
+    var selectedValue = '';
+    var lastCommitted = '';
+    var activeIndex = -1;
+    var renderedItems = []; // { kind: 'item'|'add'|'empty', value }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function commit(val) {
+      selectedValue = val || '';
+      lastCommitted = selectedValue;
+      input.value = selectedValue;
+      if (hiddenInput) hiddenInput.value = selectedValue;
+      try { onChange(selectedValue); } catch (e) {}
+    }
+
+    function open() { wrap.classList.add('is-open'); render(input.value); }
+    function close() { wrap.classList.remove('is-open'); activeIndex = -1; }
+
+    function render(query) {
+      var q = String(query || '').trim().toLowerCase();
+      var matches = suppliers.filter(function (n) {
+        return !q || n.toLowerCase().indexOf(q) !== -1;
+      });
+      var html = '';
+      renderedItems = [];
+      if (matches.length === 0 && !q) {
+        html += '<div class="admin__supplier-combobox__item admin__supplier-combobox__item--empty">Nenhum fornecedor cadastrado ainda.</div>';
+        renderedItems.push({ kind: 'empty' });
+      } else if (matches.length === 0) {
+        html += '<div class="admin__supplier-combobox__item admin__supplier-combobox__item--empty">Nenhum resultado para "' + escapeHtml(q) + '".</div>';
+        renderedItems.push({ kind: 'empty' });
+      } else {
+        matches.forEach(function (n, i) {
+          html += '<div class="admin__supplier-combobox__item" data-idx="' + i + '">' + escapeHtml(n) + '</div>';
+          renderedItems.push({ kind: 'item', value: n });
+        });
+      }
+      // Botão "Adicionar novo" só aparece quando há texto digitado e
+      // ele não bate exatamente com nenhum fornecedor existente.
+      var typed = String(query || '').trim();
+      var exactMatch = !!typed && suppliers.some(function (n) {
+        return n.toLowerCase() === typed.toLowerCase();
+      });
+      if (typed && !exactMatch) {
+        html += '<div class="admin__supplier-combobox__item admin__supplier-combobox__item--add" data-add="1">+ Adicionar novo fornecedor: "' + escapeHtml(typed) + '"</div>';
+        renderedItems.push({ kind: 'add', value: typed });
+      }
+      menu.innerHTML = html;
+      activeIndex = -1;
+      // Wire clicks (mousedown pra disparar antes do blur do input).
+      Array.prototype.forEach.call(menu.querySelectorAll('.admin__supplier-combobox__item'), function (el) {
+        if (el.classList.contains('admin__supplier-combobox__item--empty')) return;
+        el.addEventListener('mousedown', function (ev) {
+          ev.preventDefault();
+          if (el.dataset.add) {
+            handleAdd(el.textContent.replace(/^\+\s+Adicionar novo fornecedor:\s*"|"$/g, ''));
+          } else {
+            commit(el.textContent);
+            close();
+          }
+        });
+      });
+    }
+
+    async function handleAdd(typedName) {
+      var name = String(typedName || '').trim();
+      if (!name) return;
+      // Otimista: já reflete no input e na lista local antes do upsert.
+      if (suppliers.indexOf(name) === -1) suppliers.push(name);
+      suppliers.sort(function (a, b) { return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }); });
+      commit(name);
+      close();
+      try { await upsertFornecedorByName(name); } catch (e) {}
+    }
+
+    input.addEventListener('focus', function () { open(); });
+    input.addEventListener('click', function () { open(); });
+    input.addEventListener('input', function () {
+      wrap.classList.add('is-open');
+      render(input.value);
+    });
+    input.addEventListener('blur', function () {
+      // Pequeno delay pra permitir que o mousedown do menu dispare antes.
+      setTimeout(function () {
+        if (!wrap.classList.contains('is-open')) return;
+        // Se digitou algo e não selecionou, restaura último valor commitado.
+        input.value = lastCommitted;
+        close();
+      }, 120);
+    });
+    input.addEventListener('keydown', function (e) {
+      var visible = renderedItems.filter(function (r) { return r.kind !== 'empty'; });
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!wrap.classList.contains('is-open')) open();
+        if (visible.length === 0) return;
+        activeIndex = Math.min(visible.length - 1, activeIndex + 1);
+        highlight();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(0, activeIndex - 1);
+        highlight();
+      } else if (e.key === 'Enter') {
+        if (!wrap.classList.contains('is-open')) return;
+        e.preventDefault();
+        var pickIdx = activeIndex;
+        if (pickIdx < 0) {
+          // Sem seleção via teclado: se houver "add", usa ele; senão primeiro item.
+          var addIdx = renderedItems.findIndex(function (r) { return r.kind === 'add'; });
+          if (addIdx >= 0) {
+            handleAdd(renderedItems[addIdx].value); return;
+          }
+          var firstItem = renderedItems.findIndex(function (r) { return r.kind === 'item'; });
+          if (firstItem < 0) return;
+          commit(renderedItems[firstItem].value);
+          close();
+          return;
+        }
+        var entry = visibleEntry(pickIdx);
+        if (!entry) return;
+        if (entry.kind === 'add') handleAdd(entry.value);
+        else { commit(entry.value); close(); }
+      } else if (e.key === 'Escape') {
+        input.value = lastCommitted;
+        close();
+      }
+    });
+
+    function visibleEntry(idx) {
+      var visible = renderedItems.filter(function (r) { return r.kind !== 'empty'; });
+      return visible[idx] || null;
+    }
+
+    function highlight() {
+      var els = menu.querySelectorAll('.admin__supplier-combobox__item:not(.admin__supplier-combobox__item--empty)');
+      Array.prototype.forEach.call(els, function (el, i) {
+        if (i === activeIndex) el.classList.add('is-active');
+        else el.classList.remove('is-active');
+      });
+      var activeEl = els[activeIndex];
+      if (activeEl && activeEl.scrollIntoView) {
+        activeEl.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    async function refresh() {
+      try { suppliers = await getKnownSuppliers(); } catch (e) { suppliers = []; }
+      // Garante que o valor atual aparece na lista mesmo que ainda não
+      // esteja em fornecedores_metadata (ex: experiência antiga).
+      if (selectedValue && suppliers.indexOf(selectedValue) === -1) {
+        suppliers.push(selectedValue);
+        suppliers.sort(function (a, b) { return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }); });
+      }
+      if (wrap.classList.contains('is-open')) render(input.value);
+    }
+
+    function setValue(val) {
+      commit(val || '');
+    }
+    function getValue() {
+      return selectedValue;
+    }
+    function destroy() {
+      host.innerHTML = '';
+    }
+
+    // Inicia carregando a lista em background.
+    refresh();
+
+    return { getValue: getValue, setValue: setValue, refresh: refresh, destroy: destroy };
   }
 
   // Card "Repasses pendentes por fornecedor" no topo da tela Compras.
