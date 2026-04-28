@@ -758,10 +758,16 @@
           <h1 class="admin__page-title">Experiências</h1>
           <p class="admin__page-subtitle">Gerencie as experiências da plataforma</p>
         </div>
-        <button class="admin__add-btn" id="btn-add-experience">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova experiência
-        </button>
+        <div class="admin__analytics-controls">
+          <select id="exp-filter-fornecedor" class="admin__analytics-select">
+            <option value="">Todos os fornecedores</option>
+          </select>
+          <button class="admin__add-btn" id="btn-refresh-experiences" type="button">Atualizar</button>
+          <button class="admin__add-btn" id="btn-add-experience">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nova experiência
+          </button>
+        </div>
       </div>
 
       <div class="admin__table-wrap">
@@ -1263,7 +1269,7 @@
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=1"></script>
 <script src="admin-content.js?v=3"></script>
-<script src="admin.js?v=57"></script>
+<script src="admin.js?v=58"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
