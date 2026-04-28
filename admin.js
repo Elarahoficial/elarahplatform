@@ -4389,27 +4389,15 @@
   }
 
   // =================================================
-  // ================== ANALYTICS ====================
+  // ============== ANALYTICS V2 =====================
+  // Painel de crescimento. KPIs com Δ% vs período anterior,
+  // funil de sessão, top experiências/fornecedores, segmentação
+  // de clientes. Agregação 100% client-side a partir das tabelas
+  // bookings + analytics_events + profiles.
   // =================================================
-  function wireAnalyticsControls() {
-    const btn = document.getElementById('btn-refresh-analytics');
-    const sel = document.getElementById('analytics-range');
-    if (btn) btn.addEventListener('click', () => renderAnalytics());
-    if (sel) sel.addEventListener('change', () => renderAnalytics());
-  }
 
-  function groupCount(items, keyFn, labelFn) {
-    const map = new Map();
-    items.forEach(it => {
-      const k = keyFn(it);
-      if (!k) return;
-      const prev = map.get(k);
-      if (prev) { prev.count += 1; }
-      else { map.set(k, { key: k, label: labelFn ? labelFn(it) : k, count: 1 }); }
-    });
-    return Array.from(map.values()).sort((a, b) => b.count - a.count);
-  }
-
+  // renderBars: usado também no painel Compras (booking conversion).
+  // Mantido aqui pra não dispersar. NÃO é mais usado pelo analytics.
   function renderBars(containerId, rows, emptyMsg) {
     const el = document.getElementById(containerId);
     if (!el) return;
@@ -4430,114 +4418,460 @@
     }).join('');
   }
 
-  async function renderAnalytics() {
-    if (!document.getElementById('panel-analytics')) return;
-    const sel = document.getElementById('analytics-range');
-    const days = sel ? parseInt(sel.value, 10) : 7;
-    const events = await ElarahAnalytics.getAllEvents(days || null);
+  // ===== Estado da UI =====
+  let _anaState = { preset: '7', customStart: null, customEnd: null };
+  let _anaChartEvolution = null;
 
-    // Stats
-    const totalEvents = events.length;
-    const pageviews = events.filter(e => e.event_name === 'page_view');
-    const sessions = new Set();
-    events.forEach(e => { if (e.session_id) sessions.add(e.session_id); });
-    const byConversions = events.filter(e => e.event_name === 'byelarah_submission').length;
-
-    document.getElementById('stat-ana-events').textContent = totalEvents;
-    document.getElementById('stat-ana-pageviews').textContent = pageviews.length;
-    document.getElementById('stat-ana-sessions').textContent = sessions.size;
-    document.getElementById('stat-ana-conversions').textContent = byConversions;
-
-    // Top pages (pageviews by page)
-    const topPages = groupCount(
-      pageviews,
-      e => e.page || e.path || '—',
-      e => (e.page || e.path || '—')
-    );
-    renderBars('ana-top-pages', topPages);
-
-    // Top experiences (experience_card_click + exp_detail_open + exp_cta_click)
-    // Esconde eventos de experiências de teste pra não poluir o ranking.
-    const expEvents = events.filter(e =>
-      (e.event_name === 'experience_card_click' ||
-        e.event_name === 'exp_detail_open' ||
-        e.event_name === 'exp_cta_click') &&
-      !isTestExperience(e.target_label || e.target_id)
-    );
-    const topExperiences = groupCount(
-      expEvents,
-      e => e.target_label || e.target_id || '—',
-      e => e.target_label || e.target_id || '—'
-    );
-    renderBars('ana-top-experiences', topExperiences);
-
-    // Top categories (category_nav_click + category filters)
-    const catEvents = events.filter(e =>
-      e.event_name === 'category_nav_click' ||
-      e.event_name === 'category_filter_click'
-    );
-    const topCategories = groupCount(
-      catEvents,
-      e => e.target_label || e.target_id || '—',
-      e => e.target_label || e.target_id || '—'
-    );
-    renderBars('ana-top-categories', topCategories);
-
-    // Top buttons & CTAs
-    const btnEvents = events.filter(e =>
-      e.category === 'cta' ||
-      e.category === 'click' ||
-      e.event_name === 'header_nav_click' ||
-      e.event_name === 'group_button_click'
-    );
-    const topButtons = groupCount(
-      btnEvents,
-      e => (e.target_label || e.event_name || '—'),
-      e => e.target_label || e.event_name || '—'
-    );
-    renderBars('ana-top-buttons', topButtons);
-
-    // By Elarah items
-    const byEvents = events.filter(e =>
-      e.event_name === 'byelarah_card_click' ||
-      e.event_name === 'byelarah_submission'
-    );
-    const topBy = groupCount(
-      byEvents,
-      e => e.target_label || e.target_id || '—',
-      e => e.target_label || e.target_id || '—'
-    );
-    renderBars('ana-byelarah-items', topBy);
-
-    // Event categories
-    const topCatEvents = groupCount(
-      events,
-      e => e.category || 'general',
-      e => e.category || 'general'
-    );
-    renderBars('ana-event-categories', topCatEvents);
-
-    // Recent events
-    const recentBody = document.getElementById('ana-recent-body');
-    const recent = events.slice(0, 30);
-    if (!recent.length) {
-      recentBody.innerHTML = '<tr><td colspan="5" class="admin__table-empty">Nenhum evento registrado.</td></tr>';
-    } else {
-      recentBody.innerHTML = recent.map(e => {
-        const when = e.created_at
-          ? new Date(e.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-          : '—';
-        return `
-          <tr>
-            <td>${escapeHtml(when)}</td>
-            <td>${escapeHtml(e.event_name || '—')}</td>
-            <td>${escapeHtml(e.category || '—')}</td>
-            <td>${escapeHtml(e.page || '—')}</td>
-            <td>${escapeHtml(e.target_label || e.target_id || '—')}</td>
-          </tr>
-        `;
-      }).join('');
+  // ===== Wire dos controles (chips, custom, refresh) =====
+  function wireAnalyticsControls() {
+    const chipsBar = document.getElementById('ana-period-chips');
+    if (chipsBar && !chipsBar._wired) {
+      chipsBar._wired = true;
+      chipsBar.addEventListener('click', e => {
+        const chip = e.target.closest('.ana-chip');
+        if (!chip) return;
+        chipsBar.querySelectorAll('.ana-chip').forEach(c => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        _anaState.preset = chip.dataset.range;
+        const customWrap = document.getElementById('ana-period-custom');
+        if (customWrap) customWrap.style.display = _anaState.preset === 'custom' ? 'flex' : 'none';
+        if (_anaState.preset !== 'custom') renderAnalytics();
+      });
     }
+    const applyBtn = document.getElementById('ana-custom-apply');
+    if (applyBtn && !applyBtn._wired) {
+      applyBtn._wired = true;
+      applyBtn.addEventListener('click', () => {
+        const s = document.getElementById('ana-custom-start').value;
+        const e = document.getElementById('ana-custom-end').value;
+        if (!s || !e) { alert('Selecione data início e fim.'); return; }
+        if (new Date(s) > new Date(e)) { alert('Data inicial precisa ser antes da final.'); return; }
+        _anaState.customStart = s;
+        _anaState.customEnd = e;
+        renderAnalytics();
+      });
+    }
+    const refresh = document.getElementById('btn-refresh-analytics');
+    if (refresh && !refresh._wired) {
+      refresh._wired = true;
+      refresh.addEventListener('click', () => renderAnalytics(true));
+    }
+  }
+
+  // ===== Helpers de período =====
+  function getCurrentRange() {
+    const now = new Date();
+    const preset = _anaState.preset;
+    if (preset === 'custom' && _anaState.customStart && _anaState.customEnd) {
+      const start = new Date(_anaState.customStart + 'T00:00:00');
+      const end = new Date(_anaState.customEnd + 'T23:59:59.999');
+      const days = Math.max(1, Math.round((end - start) / 86400000));
+      return { start, end, label: `${_anaState.customStart} a ${_anaState.customEnd}`, kind: 'custom', days };
+    }
+    if (preset === 'month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      return { start, end: now, label: 'Este mês', kind: 'month' };
+    }
+    const days = parseInt(preset, 10) || 7;
+    const start = new Date(now.getTime() - days * 86400000);
+    const labelMap = { 1: 'Últimas 24 horas', 7: 'Últimos 7 dias', 30: 'Últimos 30 dias' };
+    return { start, end: now, label: labelMap[days] || `Últimos ${days} dias`, kind: 'days', days };
+  }
+
+  function getPreviousRange(curr) {
+    if (curr.kind === 'month') {
+      const now = new Date();
+      const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0);
+      const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      return { start: prevStart, end: prevEnd, label: 'mês anterior' };
+    }
+    const span = curr.end.getTime() - curr.start.getTime();
+    const prevEnd = new Date(curr.start.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - span);
+    return { start: prevStart, end: prevEnd, label: 'período anterior' };
+  }
+
+  function inRange(dateStr, range) {
+    if (!dateStr) return false;
+    const t = new Date(dateStr).getTime();
+    return t >= range.start.getTime() && t <= range.end.getTime();
+  }
+
+  // ===== Helpers de formatação =====
+  function fmtBRL(centavos) {
+    if (centavos == null || isNaN(centavos)) return 'R$ 0';
+    return (centavos / 100).toLocaleString('pt-BR', {
+      style: 'currency', currency: 'BRL', maximumFractionDigits: 0
+    });
+  }
+  function fmtPct(num) {
+    if (num == null || isNaN(num)) return '—';
+    return (num * 100).toFixed(1).replace('.', ',') + '%';
+  }
+  function fmtDelta(curr, prev) {
+    if (prev == null || prev === 0) {
+      if (!curr) return { text: 'sem dados no período anterior', cls: 'flat' };
+      return { text: '↑ novo no período', cls: 'up' };
+    }
+    const pct = (curr - prev) / Math.abs(prev);
+    const cls = pct > 0.001 ? 'up' : pct < -0.001 ? 'down' : 'flat';
+    const arrow = pct > 0.001 ? '↑' : pct < -0.001 ? '↓' : '→';
+    return { text: `${arrow} ${(pct * 100).toFixed(1).replace('.', ',')}% vs período anterior`, cls };
+  }
+
+  // ===== KPIs =====
+  function computeKpis(bookingsInRange, eventsInRange) {
+    const paid = bookingsInRange.filter(b => b.status === 'pago');
+    const revenue = paid.reduce((s, b) => s + (Number(b.amount_total) || 0), 0);
+    const orders = paid.length;
+    const avgTicket = orders ? revenue / orders : 0;
+    // Conversão: compras pagas / sessões únicas que demonstraram intenção
+    // (clicaram em card de experiência ou abriram detalhe).
+    const intentSessions = new Set();
+    eventsInRange.forEach(e => {
+      if (e.event_name === 'experience_card_click' || e.event_name === 'exp_detail_open') {
+        if (e.session_id) intentSessions.add(e.session_id);
+      }
+    });
+    const conversion = intentSessions.size ? orders / intentSessions.size : null;
+    return { revenue, orders, avgTicket, conversion };
+  }
+
+  function renderKpis(curr, prev) {
+    setKpi('kpi-revenue', fmtBRL(curr.revenue), 'kpi-revenue-delta', fmtDelta(curr.revenue, prev.revenue));
+    setKpi('kpi-orders', curr.orders.toString(), 'kpi-orders-delta', fmtDelta(curr.orders, prev.orders));
+    setKpi('kpi-ticket', curr.orders ? fmtBRL(curr.avgTicket) : '—', 'kpi-ticket-delta', fmtDelta(curr.avgTicket, prev.avgTicket));
+    const convText = curr.conversion == null ? '—' : fmtPct(curr.conversion);
+    setKpi('kpi-conv', convText, 'kpi-conv-delta', fmtDelta(curr.conversion || 0, prev.conversion || 0));
+  }
+
+  function setKpi(valueId, valueText, deltaId, delta) {
+    const v = document.getElementById(valueId);
+    if (v) v.textContent = valueText;
+    const d = document.getElementById(deltaId);
+    if (!d) return;
+    d.textContent = delta.text;
+    d.classList.remove('ana-kpi__delta--up', 'ana-kpi__delta--down', 'ana-kpi__delta--flat');
+    d.classList.add('ana-kpi__delta--' + delta.cls);
+  }
+
+  // ===== Evolução (Chart.js) =====
+  function bucketStart(date, hourly) {
+    const d = new Date(date);
+    if (hourly) d.setMinutes(0, 0, 0);
+    else d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function renderEvolutionChart(bookingsInRange, range) {
+    const canvas = document.getElementById('ana-chart-evolution');
+    if (!canvas) return;
+    if (typeof Chart === 'undefined') {
+      // Chart.js ainda não carregou (CDN com defer). Tenta de novo em 300ms.
+      setTimeout(() => renderEvolutionChart(bookingsInRange, range), 300);
+      return;
+    }
+    const isHourly = range.kind === 'days' && range.days === 1;
+    const stepMs = isHourly ? 3600000 : 86400000;
+    const startB = bucketStart(range.start, isHourly);
+    const endB = bucketStart(range.end, isHourly);
+    const buckets = new Map();
+    for (let t = startB.getTime(); t <= endB.getTime(); t += stepMs) {
+      buckets.set(t, { revenue: 0, orders: 0 });
+    }
+    bookingsInRange.forEach(b => {
+      if (b.status !== 'pago') return;
+      const t = bucketStart(new Date(b.created_at), isHourly).getTime();
+      const bk = buckets.get(t);
+      if (!bk) return;
+      bk.revenue += (Number(b.amount_total) || 0) / 100;
+      bk.orders += 1;
+    });
+    const labels = [], revArr = [], ordArr = [];
+    Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]).forEach(([t, bk]) => {
+      const d = new Date(t);
+      labels.push(isHourly
+        ? d.getHours().toString().padStart(2, '0') + 'h'
+        : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+      revArr.push(bk.revenue);
+      ordArr.push(bk.orders);
+    });
+
+    if (_anaChartEvolution) { _anaChartEvolution.destroy(); _anaChartEvolution = null; }
+    _anaChartEvolution = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Faturamento',
+            data: revArr,
+            borderColor: '#f0a05e',
+            backgroundColor: 'rgba(240,160,94,0.12)',
+            fill: true, tension: 0.35, yAxisID: 'y',
+            pointRadius: 2, pointHoverRadius: 5, borderWidth: 2.5
+          },
+          {
+            label: 'Compras',
+            data: ordArr,
+            borderColor: '#1a8a4a',
+            backgroundColor: 'rgba(26,138,74,0)',
+            fill: false, tension: 0.35, yAxisID: 'y2',
+            pointRadius: 2, pointHoverRadius: 5, borderDash: [5, 4], borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 14, usePointStyle: true } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const v = ctx.parsed.y;
+                if (ctx.dataset.label === 'Faturamento') return ' Faturamento: R$ ' + v.toFixed(0);
+                return ' Compras: ' + v;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            type: 'linear', position: 'left', beginAtZero: true,
+            ticks: { callback: v => 'R$ ' + v }, grid: { color: '#f0ece4' }
+          },
+          y2: {
+            type: 'linear', position: 'right', beginAtZero: true,
+            ticks: { stepSize: 1, precision: 0 }, grid: { display: false }
+          },
+          x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } }
+        }
+      }
+    });
+  }
+
+  // ===== Funil =====
+  function renderFunnel(eventsInRange, bookingsInRange) {
+    const wrap = document.getElementById('ana-funnel');
+    const noteEl = document.getElementById('ana-funnel-note');
+    if (!wrap) return;
+
+    const cardClicks = new Set();
+    const detailViews = new Set();
+    const ctaClicks = new Set();
+    eventsInRange.forEach(e => {
+      if (!e.session_id) return;
+      if (e.event_name === 'experience_card_click') cardClicks.add(e.session_id);
+      else if (e.event_name === 'exp_detail_open') detailViews.add(e.session_id);
+      else if (e.event_name === 'exp_cta_click') ctaClicks.add(e.session_id);
+    });
+    const purchases = bookingsInRange.filter(b => b.status === 'pago').length;
+
+    const steps = [
+      { label: 'Clicou em experiência', count: cardClicks.size },
+      { label: 'Abriu o detalhe', count: detailViews.size },
+      { label: 'Clicou em reservar', count: ctaClicks.size },
+      { label: 'Comprou', count: purchases }
+    ];
+    if (steps.every(s => s.count === 0)) {
+      wrap.innerHTML = '<div class="ana-funnel__empty">Sem dados de funil para o período.</div>';
+      if (noteEl) noteEl.textContent = '';
+      return;
+    }
+
+    const max = Math.max(...steps.map(s => s.count), 1);
+    wrap.innerHTML = steps.map((s, i) => {
+      const pct = Math.max(2, Math.round((s.count / max) * 100));
+      const stepConv = (i > 0 && steps[i - 1].count > 0)
+        ? `<div class="ana-funnel__step-conv">↓ ${((s.count / steps[i - 1].count) * 100).toFixed(1).replace('.', ',')}% passa pra próxima etapa</div>`
+        : '';
+      const unit = (i === 3) ? 'compras' : 'sessões';
+      return stepConv + `
+        <div class="ana-funnel__row">
+          <div class="ana-funnel__label">${escapeHtml(s.label)}</div>
+          <div class="ana-funnel__bar"><div class="ana-funnel__fill" style="width:${pct}%"></div></div>
+          <div class="ana-funnel__count">${s.count.toLocaleString('pt-BR')}<small>${unit}</small></div>
+        </div>
+      `;
+    }).join('');
+
+    if (noteEl) {
+      noteEl.textContent = 'Etapas medidas por sessão (cliques no front). Próximo passo (Fase 2): adicionar evento dedicado de checkout iniciado pra fechar o funil de ponta a ponta.';
+    }
+  }
+
+  // ===== Top experiências =====
+  function renderTopExperiences(bookingsInRange, eventsInRange, expById) {
+    const tbody = document.getElementById('ana-top-experiences-body');
+    if (!tbody) return;
+    const stats = new Map();
+    bookingsInRange.forEach(b => {
+      if (b.status !== 'pago') return;
+      const key = b.experiencia_id || b.experiencia_nome || '—';
+      const exp = b.experiencia_id ? expById.get(b.experiencia_id) : null;
+      const nome = b.experiencia_nome || (exp && exp.nome) || '—';
+      if (isTestExperience(nome)) return;
+      const e = stats.get(key) || { nome, vendas: 0, receita: 0, views: 0 };
+      e.vendas += 1;
+      e.receita += Number(b.amount_total) || 0;
+      stats.set(key, e);
+    });
+    eventsInRange.forEach(ev => {
+      if (ev.event_name !== 'experience_card_click' && ev.event_name !== 'exp_detail_open') return;
+      const id = ev.target_id || ev.target_label;
+      if (!id) return;
+      const exp = expById.get(id);
+      const key = exp ? exp.id : id;
+      const nome = exp ? exp.nome : (ev.target_label || '—');
+      if (isTestExperience(nome)) return;
+      const e = stats.get(key) || { nome, vendas: 0, receita: 0, views: 0 };
+      e.views += 1;
+      stats.set(key, e);
+    });
+    const rows = Array.from(stats.values())
+      .sort((a, b) => b.receita - a.receita || b.vendas - a.vendas || b.views - a.views)
+      .slice(0, 10);
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="admin__table-empty">Sem vendas nem visualizações no período.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const conv = r.views > 0 ? r.vendas / r.views : null;
+      const convPill = conv == null
+        ? '<span class="ana-conv-pill">—</span>'
+        : (conv >= 0.05
+          ? `<span class="ana-conv-pill ana-conv-pill--good">${fmtPct(conv)}</span>`
+          : conv >= 0.01
+            ? `<span class="ana-conv-pill ana-conv-pill--warn">${fmtPct(conv)}</span>`
+            : `<span class="ana-conv-pill">${fmtPct(conv)}</span>`);
+      return `
+        <tr>
+          <td>${escapeHtml(r.nome)}</td>
+          <td class="ana-num">${r.vendas}</td>
+          <td class="ana-num">${fmtBRL(r.receita)}</td>
+          <td class="ana-num">${r.views || '—'}</td>
+          <td class="ana-num">${convPill}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ===== Top fornecedores =====
+  function renderTopSuppliers(bookingsInRange, expById) {
+    const tbody = document.getElementById('ana-top-suppliers-body');
+    if (!tbody) return;
+    const stats = new Map();
+    bookingsInRange.forEach(b => {
+      if (b.status !== 'pago') return;
+      const exp = b.experiencia_id ? expById.get(b.experiencia_id) : null;
+      const fn = (b.fornecedor_nome && b.fornecedor_nome.trim())
+        || (exp && exp.fornecedorNome && String(exp.fornecedorNome).trim())
+        || '';
+      if (!fn) return;
+      const k = fn.toLowerCase();
+      const e = stats.get(k) || { nome: fn, vendas: 0, receita: 0 };
+      e.vendas += 1;
+      e.receita += Number(b.amount_total) || 0;
+      stats.set(k, e);
+    });
+    const rows = Array.from(stats.values()).sort((a, b) => b.receita - a.receita).slice(0, 10);
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="admin__table-empty">Sem vendas com fornecedor identificado no período.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${escapeHtml(r.nome)}</td>
+        <td class="ana-num">${r.vendas}</td>
+        <td class="ana-num">${fmtBRL(r.receita)}</td>
+        <td class="ana-num">${fmtBRL(r.receita / r.vendas)}</td>
+      </tr>
+    `).join('');
+  }
+
+  // ===== Clientes =====
+  function renderCustomers(bookingsInRange, allBookings, profiles, range) {
+    const buyers = new Set();
+    bookingsInRange.forEach(b => {
+      if (b.status !== 'pago') return;
+      const k = b.user_id || b.email;
+      if (k) buyers.add(k);
+    });
+    // "Novo" = primeira compra paga é dentro do período.
+    // Identifica buyers que tinham compras pagas ANTES do início do período.
+    const priorBuyers = new Set();
+    allBookings.forEach(b => {
+      if (b.status !== 'pago') return;
+      const t = new Date(b.created_at).getTime();
+      if (t < range.start.getTime()) {
+        const k = b.user_id || b.email;
+        if (k) priorBuyers.add(k);
+      }
+    });
+    let novos = 0, recorrentes = 0;
+    buyers.forEach(k => {
+      if (priorBuyers.has(k)) recorrentes += 1;
+      else novos += 1;
+    });
+
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('kpi-buyers', buyers.size.toString());
+    set('kpi-buyers-hint', buyers.size === 0
+      ? '—'
+      : `${Math.round(novos / buyers.size * 100)}% novos · ${Math.round(recorrentes / buyers.size * 100)}% recorrentes`);
+    set('kpi-new', novos.toString());
+    set('kpi-recurring', recorrentes.toString());
+    const recHint = document.getElementById('kpi-recurring-hint');
+    if (recHint) {
+      recHint.textContent = priorBuyers.size > 0
+        ? `${Math.round(recorrentes / priorBuyers.size * 100)}% da base anterior voltou`
+        : 'já tinham comprado antes';
+    }
+    set('kpi-signups', (profiles || []).length.toString());
+  }
+
+  // ===== Loop principal =====
+  async function renderAnalytics(forceRefresh) {
+    if (!document.getElementById('panel-analytics')) return;
+    if (forceRefresh) invalidateBookings();
+
+    const curr = getCurrentRange();
+    const prev = getPreviousRange(curr);
+
+    const labelEl = document.getElementById('ana-period-label');
+    if (labelEl) labelEl.textContent = curr.label + ' · comparado com ' + prev.label;
+
+    // Carrega tudo em paralelo. Eventos: pega desde o início do período
+    // anterior pra ter dados pra comparação de conversão.
+    const [bookingsAll, experiences, profiles, eventsAll] = await Promise.all([
+      getBookings(),
+      getExperiences(),
+      getProfiles(),
+      window.ElarahAnalytics
+        ? window.ElarahAnalytics.rawSelect({ since: prev.start.toISOString(), limit: 10000 })
+        : Promise.resolve([])
+    ]);
+
+    const bookings = filterTestBookings(bookingsAll);
+    const expById = new Map();
+    (experiences || []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
+
+    const bookingsCurr = bookings.filter(b => inRange(b.created_at, curr));
+    const bookingsPrev = bookings.filter(b => inRange(b.created_at, prev));
+    const eventsCurr = (eventsAll || []).filter(e => inRange(e.created_at, curr));
+    const eventsPrev = (eventsAll || []).filter(e => inRange(e.created_at, prev));
+
+    const kpiCurr = computeKpis(bookingsCurr, eventsCurr);
+    const kpiPrev = computeKpis(bookingsPrev, eventsPrev);
+
+    renderKpis(kpiCurr, kpiPrev);
+    renderEvolutionChart(bookingsCurr, curr);
+    renderFunnel(eventsCurr, bookingsCurr);
+    renderTopExperiences(bookingsCurr, eventsCurr, expById);
+    renderTopSuppliers(bookingsCurr, expById);
+    renderCustomers(bookingsCurr, bookings, profiles, curr);
   }
 
   // ===== START =====
