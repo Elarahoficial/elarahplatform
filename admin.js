@@ -2128,8 +2128,59 @@
     });
   }
 
-  // ===== Filtro por categoria =====
+  // ===== Filtros do painel Experiências =====
+  // Dois filtros independentes que combinam em AND:
+  //   - activeExpFilter         → pílulas de categoria (Cerâmica, Vela…)
+  //   - activeExpFornecedorFilter → select de fornecedor no header
+  // Ambos persistem entre re-renders dentro da mesma sessão.
   let activeExpFilter = '';
+  let activeExpFornecedorFilter = '';
+
+  // Popula o <select id="exp-filter-fornecedor"> com os nomes únicos
+  // que aparecem em qualquer experiência. Compara case-insensitive
+  // pra não duplicar (ex: "accademia gastronomica" vs "Accademia
+  // Gastronomica") — preserva a versão com capitalização original.
+  function buildExpFornecedorFilter(experiences) {
+    const sel = document.getElementById('exp-filter-fornecedor');
+    if (!sel) return;
+    const seen = new Map();
+    (experiences || []).forEach(function (e) {
+      const nome = e && e.fornecedorNome ? String(e.fornecedorNome).trim() : '';
+      if (!nome) return;
+      const key = nome.toLowerCase();
+      if (!seen.has(key)) seen.set(key, nome);
+    });
+    const nomes = Array.from(seen.values()).sort(function (a, b) {
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+
+    // Preserva o valor atual (e o "Todos") sem destruir o estado se
+    // o admin já tinha selecionado algo. Re-cria o conjunto de
+    // <option> a cada render porque a lista de fornecedores muda
+    // conforme o admin cadastra/edita experiências.
+    const current = activeExpFornecedorFilter || '';
+    sel.innerHTML = '<option value="">Todos os fornecedores</option>' +
+      nomes.map(function (n) {
+        const selected = n.toLowerCase() === current.toLowerCase() ? ' selected' : '';
+        const safe = String(n).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return '<option value="' + safe + '"' + selected + '>' + safe + '</option>';
+      }).join('');
+
+    if (!sel._wired) {
+      sel._wired = true;
+      sel.addEventListener('change', function () {
+        activeExpFornecedorFilter = sel.value || '';
+        renderExperiences();
+      });
+    }
+
+    // Wire do botão Atualizar (idempotente).
+    const btn = document.getElementById('btn-refresh-experiences');
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', function () { renderExperiences(); });
+    }
+  }
 
   function buildExpFilterBar(experiences) {
     const bar = document.getElementById('exp-filter-bar');
@@ -2184,13 +2235,22 @@
 
     // Constrói barra de filtro com TODAS as experiências (antes de filtrar)
     buildExpFilterBar(allExperiences);
+    buildExpFornecedorFilter(allExperiences);
 
-    // Aplica filtro
-    const experiences = activeExpFilter
-      ? allExperiences.filter(function (e) {
-          return e && e.categoria && e.categoria.toLowerCase() === activeExpFilter.toLowerCase();
-        })
-      : allExperiences;
+    // Aplica filtros em AND: categoria (pílulas) + fornecedor (select).
+    // Pílulas e select são independentes — admin pode usar qualquer
+    // combinação ou nenhum.
+    const experiences = (allExperiences || []).filter(function (e) {
+      if (!e) return false;
+      if (activeExpFilter) {
+        if (!e.categoria || e.categoria.toLowerCase() !== activeExpFilter.toLowerCase()) return false;
+      }
+      if (activeExpFornecedorFilter) {
+        const nome = (e.fornecedorNome || '').toLowerCase();
+        if (nome !== activeExpFornecedorFilter.toLowerCase()) return false;
+      }
+      return true;
+    });
     const tbody = document.getElementById('experiences-body');
     const countEl = document.getElementById('experiences-count');
 
