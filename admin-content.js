@@ -763,3 +763,4 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
     PERSONA: PERSONA,
   };
 })();
+// trigger deploy
