@@ -1017,8 +1017,9 @@
         </div>
         <div class="admin__form-field">
           <label>Nome do fornecedor</label>
-          <input type="text" id="exp-fornecedor-nome" placeholder="Ex: Receitaria SP">
-          <p class="admin__form-hint">Marca ou nome do parceiro que executa a experiência. O WhatsApp é cadastrado no painel <strong>Fornecedores</strong> — basta usar o mesmo nome aqui.</p>
+          <div id="exp-fornecedor-combobox"></div>
+          <input type="hidden" id="exp-fornecedor-nome">
+          <p class="admin__form-hint">Selecione um fornecedor já cadastrado ou digite um nome novo e clique em <strong>Adicionar novo fornecedor</strong>. Isso evita variações de grafia que quebram relatórios.</p>
         </div>
         <div class="admin__form-field">
           <label>Valor cheio (R$)</label>
