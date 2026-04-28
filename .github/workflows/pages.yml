@@ -1,0 +1,50 @@
+name: Deploy site to GitHub Pages
+
+# Substitui o workflow auto-gerado "pages-build-deployment" do modo
+# legado "Deploy from a branch". Aqui o controle é explícito:
+#
+# - concurrency.cancel-in-progress=true: se um run anterior travar
+#   em "queued" ou "in_progress", o próximo push cancela ele
+#   automaticamente em vez de empilhar fila infinita.
+# - Sem Jekyll (vide .nojekyll na raiz): deploy direto dos arquivos
+#   estáticos, sem preprocessamento Liquid que pode quebrar em
+#   sintaxes `{{ }}` ou `{% %}` espalhadas pelos JS.
+# - Permissions mínimas: só pages:write + id-token:write (OIDC) +
+#   contents:read. Não toca em mais nada do repo.
+
+on:
+  push:
+    branches:
+      - claude/create-elarah-homepage-VsE5i
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
