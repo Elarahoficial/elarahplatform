@@ -131,22 +131,246 @@
     return base.join(' ');
   }
 
-  // Filtra experiências cuja data está dentro de N dias a partir de
-  // hoje. "Semanal" sempre passa. Datas não-parseáveis também passam
-  // (mostram tudo na dúvida).
-  function withinDays(exp, days) {
-    if (days === 'all' || !days) return true;
-    const d = String(exp.data || '').trim();
-    if (!d) return true;
-    if (/semanal/i.test(d)) return true;
-    const m = d.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-    if (!m) return true;
+  // ---------- DATAS ----------
+  // Parser tolerante: aceita "DD/MM" (ano corrente) ou "DD/MM/AAAA".
+  // "Semanal" / vazio devolve null — caller decide como tratar.
+  function parseExpDate(raw) {
+    if (!raw) return null;
+    const s = String(raw).trim();
+    if (/semanal/i.test(s)) return null;
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if (!m) return null;
     const day = +m[1], month = +m[2];
-    const year = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : new Date().getFullYear();
-    const ts = new Date(year, month - 1, day).getTime();
-    if (!Number.isFinite(ts)) return true;
-    const diffDays = (ts - Date.now()) / (1000 * 60 * 60 * 24);
-    return diffDays >= -1 && diffDays <= +days;
+    if (!(day >= 1 && day <= 31) || !(month >= 1 && month <= 12)) return null;
+    const year = m[3]
+      ? (m[3].length === 2 ? 2000 + +m[3] : +m[3])
+      : new Date().getFullYear();
+    const d = new Date(year, month - 1, day);
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  function startOfDay(d) {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  }
+  function addDays(d, n) {
+    const x = new Date(d);
+    x.setDate(x.getDate() + n);
+    return x;
+  }
+  function isoDay(d) { return startOfDay(d).toISOString().slice(0, 10); }
+  function diffDays(a, b) {
+    return Math.round((startOfDay(a) - startOfDay(b)) / 86400000);
+  }
+
+  const WEEKDAY_LABEL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  function brDateLabel(d, todayMs) {
+    const today = startOfDay(new Date(todayMs));
+    const target = startOfDay(d);
+    const delta = diffDays(target, today);
+    const dd = String(target.getDate()).padStart(2, '0');
+    const mm = String(target.getMonth() + 1).padStart(2, '0');
+    if (delta === 0) return 'Hoje · ' + dd + '/' + mm;
+    if (delta === 1) return 'Amanhã · ' + dd + '/' + mm;
+    if (delta > 1 && delta <= 6) return WEEKDAY_LABEL[target.getDay()] + ' · ' + dd + '/' + mm;
+    if (delta > 6 && delta <= 13) return WEEKDAY_LABEL[target.getDay()] + ' que vem · ' + dd + '/' + mm;
+    return WEEKDAY_LABEL[target.getDay()] + ' · ' + dd + '/' + mm;
+  }
+
+  // ---------- ATRIBUIÇÃO DE DIA DE POSTAGEM ----------
+  // Regra de negócio (curadoria, sem urgência fake):
+  //
+  //   Experiência com data marcada (ex: 30/04):
+  //     • REELS → posta 3 dias antes do evento (D-3) — peça principal
+  //     • FEED  → posta 2 dias antes (D-2) — reforço editorial
+  //     • TIKTOK → posta 4 dias antes (D-4) — descoberta
+  //     • STORIES → 1 dia antes (D-1) — última chamada elegante
+  //     • LINKEDIN → 5 dias antes (D-5) — institucional, B2B
+  //
+  //   Se o dia ideal já passou (evento muito próximo), o post cai
+  //   pra amanhã (não publicamos no passado), mas sinalizamos urgência.
+  //
+  //   "Semanal" / sem data: vira EVERGREEN. Distribuído como filler
+  //   nos dias com menos posts, garantindo pelo menos 1 reels/feed
+  //   por dia até onde der.
+  const FORMAT_LEAD_DAYS = {
+    linkedin: 5,
+    tiktok:   4,
+    reels:    3,
+    feed:     2,
+    stories:  1,
+  };
+
+  // Gera o calendário: { days: [{ date, label, posts: [block, ...] }, ...], stats }.
+  // Cada `block` é { exp, format, headline, body, leadLabel } pronto pro render.
+  function buildCalendar(experiences, opts) {
+    opts = opts || {};
+    const horizon = opts.horizon != null ? opts.horizon : 7; // dias visíveis a partir de amanhã
+    const formatFilter = opts.format && opts.format !== 'all' ? opts.format : null;
+    const formats = formatFilter
+      ? [formatFilter]
+      : ['reels', 'stories', 'feed', 'tiktok', 'linkedin'];
+
+    const today = startOfDay(new Date());
+    const tomorrow = addDays(today, 1);
+    const lastVisible = addDays(tomorrow, horizon - 1);
+
+    // Map: ISO day → { date, label, posts: [] }
+    const dayMap = {};
+    function ensureDay(d) {
+      const key = isoDay(d);
+      if (!dayMap[key]) {
+        dayMap[key] = { date: startOfDay(d), label: brDateLabel(d, today.getTime()), posts: [] };
+      }
+      return dayMap[key];
+    }
+    function pushPost(d, block) {
+      ensureDay(d).posts.push(block);
+    }
+
+    function makeBlock(exp, format, leadLabel) {
+      const voice = voiceFor(exp.categoria);
+      const gen = GENERATORS[format];
+      if (!gen) return null;
+      const out = gen(exp, voice);
+      return {
+        exp: exp,
+        format: format,
+        headline: out.headline,
+        body: out.body,
+        leadLabel: leadLabel || '',
+      };
+    }
+
+    // 1ª passada: experiências com DATA fixa.
+    const evergreen = []; // experiências sem data (Semanal / vazio)
+    let datedCount = 0;
+
+    (experiences || [])
+      .filter(e => e && e.isActive !== false)
+      .forEach(exp => {
+        const expDate = parseExpDate(exp.data);
+        if (!expDate) {
+          evergreen.push(exp);
+          return;
+        }
+        if (startOfDay(expDate) < today) return; // evento já passou — ignora
+        datedCount++;
+
+        formats.forEach(format => {
+          const lead = FORMAT_LEAD_DAYS[format] || 0;
+          let postDate = addDays(expDate, -lead);
+          let leadLabel = '';
+
+          // Se a data ideal de postagem já passou, joga pra amanhã
+          // com label de urgência (mas mantém o roteiro — o usuário
+          // edita se precisar de mais agressividade).
+          if (postDate < tomorrow) {
+            postDate = tomorrow;
+            const daysUntil = diffDays(expDate, tomorrow);
+            if (daysUntil <= 0)      leadLabel = 'Hoje é o dia da experiência';
+            else if (daysUntil === 1) leadLabel = 'Última chamada · evento amanhã';
+            else                       leadLabel = 'Curto prazo · evento em ' + daysUntil + 'd';
+          } else {
+            const daysUntil = diffDays(expDate, postDate);
+            leadLabel = 'Evento em ' + daysUntil + 'd';
+          }
+
+          // Só inclui se o dia de postagem está na janela visível.
+          if (postDate > lastVisible) return;
+
+          const block = makeBlock(exp, format, leadLabel);
+          if (block) pushPost(postDate, block);
+        });
+      });
+
+    // 2ª passada: distribui evergreen (Semanal) como filler nos dias
+    // com menos posts. Cada experiência evergreen entra com Reels +
+    // Feed em dias separados pra esticar a presença na semana.
+    // Round-robin sobre a janela visível.
+    if (evergreen.length && formats.length) {
+      const visibleDays = [];
+      for (let i = 0; i < horizon; i++) visibleDays.push(addDays(tomorrow, i));
+
+      // Embaralhamento estável (hash do id) pra que postagens
+      // evergreen não fiquem todas no mesmo dia toda semana.
+      function stableHash(s) {
+        let h = 0; const str = String(s || '');
+        for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+        return Math.abs(h);
+      }
+
+      // Pra cada evergreen, escolhe 1 ou 2 dias diferentes da semana
+      // (Reels primário + Feed secundário se ambos estão no filtro).
+      const useReels = formats.indexOf('reels') >= 0;
+      const useFeed = formats.indexOf('feed') >= 0;
+      const useStories = formats.indexOf('stories') >= 0;
+      // Stories evergreen só uma vez na semana — não precisa repetir
+      // sequência dia após dia.
+
+      evergreen.forEach((exp, idx) => {
+        const seed = stableHash(exp.id || exp.nome || idx);
+        const dayA = visibleDays[seed % visibleDays.length];
+        const dayB = visibleDays[(seed + 3) % visibleDays.length];
+        const dayC = visibleDays[(seed + 5) % visibleDays.length];
+
+        if (useReels) {
+          const b = makeBlock(exp, 'reels', 'Evergreen · turma semanal');
+          if (b) pushPost(dayA, b);
+        }
+        if (useFeed) {
+          const b = makeBlock(exp, 'feed', 'Evergreen · turma semanal');
+          if (b) pushPost(dayB, b);
+        }
+        if (useStories) {
+          const b = makeBlock(exp, 'stories', 'Evergreen · turma semanal');
+          if (b) pushPost(dayC, b);
+        }
+        // TikTok / LinkedIn evergreen são opcionais: só entram se o
+        // filtro for explícito (formatFilter === 'tiktok' p.ex.) —
+        // assim não inundamos a semana de posts institucionais.
+        if (formatFilter === 'tiktok') {
+          const b = makeBlock(exp, 'tiktok', 'Evergreen · turma semanal');
+          if (b) pushPost(visibleDays[(seed + 1) % visibleDays.length], b);
+        }
+        if (formatFilter === 'linkedin') {
+          const b = makeBlock(exp, 'linkedin', 'Evergreen · turma semanal');
+          if (b) pushPost(visibleDays[(seed + 2) % visibleDays.length], b);
+        }
+      });
+    }
+
+    // Monta a lista ordenada e filtra a janela [tomorrow, lastVisible].
+    const days = Object.keys(dayMap)
+      .map(k => dayMap[k])
+      .filter(d => d.date >= tomorrow && d.date <= lastVisible)
+      .sort((a, b) => a.date - b.date);
+
+    // Garante que dias sem post ainda apareçam (placeholder visual).
+    // Sem isso o time pode achar que o sistema "esqueceu" de uma data.
+    const allKeys = new Set(days.map(d => isoDay(d.date)));
+    for (let i = 0; i < horizon; i++) {
+      const d = addDays(tomorrow, i);
+      const key = isoDay(d);
+      if (!allKeys.has(key)) {
+        days.push({ date: startOfDay(d), label: brDateLabel(d, today.getTime()), posts: [] });
+      }
+    }
+    days.sort((a, b) => a.date - b.date);
+
+    let totalPosts = 0;
+    days.forEach(d => totalPosts += d.posts.length);
+
+    return {
+      days: days,
+      stats: {
+        datedExperiences: datedCount,
+        evergreenExperiences: evergreen.length,
+        totalPosts: totalPosts,
+        horizon: horizon,
+      },
+    };
   }
 
   // ---------- TEMPLATES POR FORMATO ----------
@@ -323,41 +547,6 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
     linkedin: linkedinTemplate,
   };
 
-  // ---------- GERAÇÃO ----------
-  // Recebe array de experiências + filtros, devolve array de blocos
-  // { exp, format, headline, body }. A view só renderiza.
-  function generate(experiences, opts) {
-    opts = opts || {};
-    const days = opts.days != null ? opts.days : 7;
-    const formatFilter = opts.format && opts.format !== 'all' ? opts.format : null;
-
-    const formats = formatFilter
-      ? [formatFilter]
-      : ['reels', 'stories', 'feed', 'tiktok', 'linkedin'];
-
-    const filtered = (experiences || [])
-      .filter(e => e && e.isActive !== false)
-      .filter(e => withinDays(e, days));
-
-    const blocks = [];
-    filtered.forEach(exp => {
-      const voice = voiceFor(exp.categoria);
-      formats.forEach(f => {
-        const gen = GENERATORS[f];
-        if (!gen) return;
-        const out = gen(exp, voice);
-        blocks.push({
-          exp: exp,
-          format: f,
-          headline: out.headline,
-          body: out.body,
-        });
-      });
-    });
-
-    return { blocks: blocks, expCount: filtered.length };
-  }
-
   // ---------- RENDER ----------
   function escapeHtml(s) {
     const d = document.createElement('div');
@@ -367,16 +556,22 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
 
   // Card visual. Inclui botão de copiar com fallback caso clipboard
   // API não esteja disponível (admin pode rodar em iframe sem perm).
-  function renderCard(block) {
+  // O índice é embutido como data-block-idx pra resolver clicks via
+  // delegation sem depender de DOM order.
+  function renderCard(block, blockIdx) {
     const exp = block.exp || {};
     const fmtBadge =
       '<span class="admin__content-card__format admin__content-card__format--' + block.format + '">' +
       escapeHtml(block.headline) +
       '</span>';
 
+    const lead = block.leadLabel
+      ? '<span class="admin__content-card__lead">' + escapeHtml(block.leadLabel) + '</span>'
+      : '';
+
     const meta = [];
     if (exp.categoria) meta.push(escapeHtml(exp.categoria));
-    if (exp.data) meta.push(escapeHtml(exp.data));
+    if (exp.data) meta.push('Evento ' + escapeHtml(exp.data));
     if (exp.bairro) meta.push(escapeHtml(exp.bairro));
     if (exp.preco) meta.push(escapeHtml(exp.preco));
     const metaLine = meta.length
@@ -384,15 +579,41 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
       : '';
 
     return (
-      '<article class="admin__content-card" data-format="' + block.format + '">' +
+      '<article class="admin__content-card" data-format="' + block.format + '" data-block-idx="' + blockIdx + '">' +
         '<header class="admin__content-card__head">' +
-          fmtBadge +
+          fmtBadge + lead +
           '<button type="button" class="admin__content-card__copy" data-action="copy">Copiar texto</button>' +
         '</header>' +
         '<h3 class="admin__content-card__title">' + escapeHtml(exp.nome || 'Experiência') + '</h3>' +
         metaLine +
         '<pre class="admin__content-card__body">' + escapeHtml(block.body) + '</pre>' +
       '</article>'
+    );
+  }
+
+  // Renderiza UMA seção de dia: header com data + grid interna de cards.
+  // `startIdx` é a posição global do primeiro card no array linear de
+  // blocks (usado pelo handler de copy via data-block-idx).
+  function renderDay(day, startIdx) {
+    const empty = !day.posts.length;
+    const countLabel = empty
+      ? 'Sem pauta atribuída — bom dia pra calendário em branco ou repostar conteúdo evergreen.'
+      : day.posts.length + ' post' + (day.posts.length !== 1 ? 's' : '') + ' previsto' + (day.posts.length !== 1 ? 's' : '');
+
+    const cardsHtml = empty
+      ? '<p class="admin__content-day__empty">Sem post programado pra esse dia.</p>'
+      : '<div class="admin__content-day__grid">' +
+        day.posts.map(function (b, i) { return renderCard(b, startIdx + i); }).join('') +
+        '</div>';
+
+    return (
+      '<section class="admin__content-day' + (empty ? ' admin__content-day--empty' : '') + '">' +
+        '<header class="admin__content-day__head">' +
+          '<h2 class="admin__content-day__label">' + escapeHtml(day.label) + '</h2>' +
+          '<span class="admin__content-day__count">' + escapeHtml(countLabel) + '</span>' +
+        '</header>' +
+        cardsHtml +
+      '</section>'
     );
   }
 
@@ -428,17 +649,19 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
     } catch (e) { done(false); }
   }
 
-  // Wira o click handler na grid. Idempotente.
-  function wireGridClicks(gridEl, blocks) {
-    if (!gridEl) return;
-    if (gridEl._elarahWired) return;
-    gridEl._elarahWired = true;
-    gridEl.addEventListener('click', function (ev) {
+  // Wira o click handler no container do calendário. Idempotente.
+  // Usa o data-block-idx do card (posição no array linear) pra
+  // resolver — funciona mesmo com a hierarquia day→grid→card.
+  function wireGridClicks(rootEl, blocks) {
+    if (!rootEl) return;
+    if (rootEl._elarahWired) return;
+    rootEl._elarahWired = true;
+    rootEl.addEventListener('click', function (ev) {
       const btn = ev.target.closest('[data-action="copy"]');
       if (!btn) return;
       const card = btn.closest('.admin__content-card');
       if (!card) return;
-      const idx = Array.prototype.indexOf.call(gridEl.children, card);
+      const idx = Number(card.getAttribute('data-block-idx'));
       const block = blocks[idx];
       if (!block) return;
       const text = '[' + block.headline + '] ' + (block.exp && block.exp.nome ? block.exp.nome : '') + '\n\n' + block.body;
@@ -448,7 +671,8 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
 
   // ---------- ENTRY POINT ----------
   // Função única chamada pelo admin.js no case 'content'. Lê os
-  // selects, busca experiências, gera blocos e renderiza.
+  // selects, busca experiências, monta o calendário e renderiza
+  // dia-a-dia começando por amanhã.
   async function render() {
     const grid = document.getElementById('content-grid');
     const summary = document.getElementById('content-summary');
@@ -458,9 +682,6 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
 
     grid.innerHTML = '<p class="admin__content-empty">Carregando experiências…</p>';
 
-    // Tenta usar o cache de experiências do admin (mesma fonte que
-    // o painel de Experiências usa). Se não houver, fallback pra
-    // ElarahData direto.
     let experiences = [];
     try {
       if (window.ElarahData && window.ElarahData.getAllExperiences) {
@@ -470,32 +691,41 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
       console.warn('[Elarah Content] falha ao buscar experiências', e);
     }
 
-    const days = weekSel ? weekSel.value : '7';
+    const horizonRaw = weekSel ? weekSel.value : '7';
+    const horizon = horizonRaw === 'all' ? 30 : Math.max(1, Number(horizonRaw) || 7);
     const format = fmtSel ? fmtSel.value : 'all';
-    const numericDays = days === 'all' ? 'all' : Number(days);
 
-    const { blocks, expCount } = generate(experiences, {
-      days: numericDays,
+    const { days, stats } = buildCalendar(experiences, {
+      horizon: horizon,
       format: format,
     });
 
     if (summary) {
-      if (!expCount) {
-        summary.textContent = 'Nenhuma experiência ativa na janela selecionada.';
-      } else {
-        summary.textContent =
-          expCount + ' experiência' + (expCount !== 1 ? 's' : '') +
-          ' · ' + blocks.length + ' bloco' + (blocks.length !== 1 ? 's' : '') + ' de conteúdo';
-      }
+      const fmtLabel = format === 'all' ? 'todos os formatos' : format;
+      summary.textContent =
+        stats.datedExperiences + ' experiência(s) com data + ' +
+        stats.evergreenExperiences + ' semanal(is) · ' +
+        stats.totalPosts + ' post(s) programado(s) nos próximos ' +
+        horizon + ' dias · ' + fmtLabel + '.';
     }
 
-    if (!blocks.length) {
-      grid.innerHTML = '<p class="admin__content-empty">Sem conteúdo para os filtros selecionados. Tente ampliar a janela ou cadastrar experiências com data.</p>';
+    if (!days.length) {
+      grid.innerHTML = '<p class="admin__content-empty">Sem dados pra montar calendário. Cadastre experiências com data ou use o filtro "Todas as experiências ativas".</p>';
       return;
     }
 
-    grid.innerHTML = blocks.map(renderCard).join('');
-    wireGridClicks(grid, blocks);
+    // Linearizamos os blocks pra que o handler de copy resolva por
+    // data-block-idx — independente da hierarquia day→grid→card.
+    const linearBlocks = [];
+    let html = '';
+    days.forEach(function (day) {
+      const startIdx = linearBlocks.length;
+      day.posts.forEach(function (b) { linearBlocks.push(b); });
+      html += renderDay(day, startIdx);
+    });
+
+    grid.innerHTML = html;
+    wireGridClicks(grid, linearBlocks);
   }
 
   // Wire dos selects e do botão "Gerar agora" — idempotente.
@@ -510,7 +740,7 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
 
   window.ElarahContent = {
     render: function () { wireControls(); return render(); },
-    generate: generate,        // exposto pra testes/uso externo
+    buildCalendar: buildCalendar, // exposto pra testes/uso externo
     PERSONA: PERSONA,
   };
 })();

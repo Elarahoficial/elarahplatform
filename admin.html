@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=5">
+  <link rel="stylesheet" href="admin.css?v=6">
 </head>
 <body>
 
@@ -597,19 +597,18 @@
     <div class="admin__panel" id="panel-content">
       <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 class="admin__page-title">Conteúdo da semana</h1>
+          <h1 class="admin__page-title">Calendário de conteúdo</h1>
           <p class="admin__page-subtitle">
-            Roteiros prontos pra Reels, Stories, Feed, TikTok e LinkedIn —
-            puxando das experiências disponíveis e aplicando a voz da Elarah (persona “Carolina”).
+            O que postar amanhã, depois e nos próximos dias — distribuído pelas datas das experiências.
+            Reels D-3, Feed D-2, Stories D-1 (última chamada). Voz da Elarah (persona “Carolina”).
           </p>
         </div>
         <div class="admin__analytics-controls">
-          <label for="content-week" class="admin__form-hint" style="margin:0;">Janela:</label>
+          <label for="content-week" class="admin__form-hint" style="margin:0;">Calendário:</label>
           <select id="content-week" class="admin__analytics-select">
             <option value="7" selected>Próximos 7 dias</option>
             <option value="14">Próximos 14 dias</option>
             <option value="30">Próximos 30 dias</option>
-            <option value="all">Todas as experiências ativas</option>
           </select>
           <label for="content-format" class="admin__form-hint" style="margin:0;">Formato:</label>
           <select id="content-format" class="admin__analytics-select">
@@ -1262,7 +1261,7 @@
 <script src="experiences-data.js?v=20"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin-content.js?v=1"></script>
+<script src="admin-content.js?v=2"></script>
 <script src="admin.js?v=57"></script>
 
 <!-- ==========================================================
