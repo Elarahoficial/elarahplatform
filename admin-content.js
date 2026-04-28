@@ -181,26 +181,35 @@
   // ---------- ATRIBUIÇÃO DE DIA DE POSTAGEM ----------
   // Regra de negócio (curadoria, sem urgência fake):
   //
-  //   Experiência com data marcada (ex: 30/04):
-  //     • REELS → posta 3 dias antes do evento (D-3) — peça principal
-  //     • FEED  → posta 2 dias antes (D-2) — reforço editorial
-  //     • TIKTOK → posta 4 dias antes (D-4) — descoberta
-  //     • STORIES → 1 dia antes (D-1) — última chamada elegante
-  //     • LINKEDIN → 5 dias antes (D-5) — institucional, B2B
+  //   Cutoff de reserva é 24h antes do evento — postar em D-1 ou
+  //   no próprio dia não converte (o usuário não consegue mais
+  //   reservar). Por isso o sistema NUNCA programa post a menos
+  //   de 3 dias do evento. Se a data ideal já passou, o post é
+  //   simplesmente DESCARTADO (não relocado pra amanhã, pra não
+  //   amontoar tudo num único dia).
   //
-  //   Se o dia ideal já passou (evento muito próximo), o post cai
-  //   pra amanhã (não publicamos no passado), mas sinalizamos urgência.
+  //   Experiência com data marcada (ex: 11/05):
+  //     • LINKEDIN → D-14 (B2B / decisão corporativa antecipada)
+  //     • TIKTOK   → D-10 (descoberta orgânica, lag de viralização)
+  //     • REELS    → D-7  (peça principal, semana de antecipação)
+  //     • FEED     → D-5  (reforço editorial mid-week)
+  //     • STORIES  → D-3  (último call útil — ainda 2 dias de janela
+  //                        de reserva antes do cutoff)
   //
-  //   "Semanal" / sem data: vira EVERGREEN. Distribuído como filler
-  //   nos dias com menos posts, garantindo pelo menos 1 reels/feed
-  //   por dia até onde der.
+  //   "Semanal" / sem data: vira EVERGREEN. Distribuído pelos dias
+  //   visíveis via hash estável do id, garantindo presença ao longo
+  //   da semana mesmo nos dias sem experiência datada.
   const FORMAT_LEAD_DAYS = {
-    linkedin: 5,
-    tiktok:   4,
-    reels:    3,
-    feed:     2,
-    stories:  1,
+    linkedin: 14,
+    tiktok:   10,
+    reels:    7,
+    feed:     5,
+    stories:  3,
   };
+  // Margem mínima entre post e evento. Eventos mais próximos que
+  // isso são considerados "fechados pra venda" (cutoff 24h + buffer
+  // pra decisão da Carolina).
+  const MIN_LEAD_DAYS = 3;
 
   // Gera o calendário: { days: [{ date, label, posts: [block, ...] }, ...], stats }.
   // Cada `block` é { exp, format, headline, body, leadLabel } pronto pro render.
@@ -245,7 +254,8 @@
 
     // 1ª passada: experiências com DATA fixa.
     const evergreen = []; // experiências sem data (Semanal / vazio)
-    let datedCount = 0;
+    let datedCount = 0;     // total elegível (data válida + lead suficiente)
+    let droppedTooClose = 0; // diagnóstico: data próxima demais pra postar
 
     (experiences || [])
       .filter(e => e && e.isActive !== false)
@@ -256,29 +266,29 @@
           return;
         }
         if (startOfDay(expDate) < today) return; // evento já passou — ignora
+
+        // Eventos a menos de MIN_LEAD_DAYS estão fechados pra venda
+        // (cutoff de 24h + buffer de decisão). Pula a experiência
+        // inteira — não programa nenhum post pra ela.
+        const daysUntilEvent = diffDays(expDate, today);
+        if (daysUntilEvent < MIN_LEAD_DAYS) {
+          droppedTooClose++;
+          return;
+        }
         datedCount++;
 
         formats.forEach(format => {
           const lead = FORMAT_LEAD_DAYS[format] || 0;
-          let postDate = addDays(expDate, -lead);
-          let leadLabel = '';
+          const postDate = addDays(expDate, -lead);
 
-          // Se a data ideal de postagem já passou, joga pra amanhã
-          // com label de urgência (mas mantém o roteiro — o usuário
-          // edita se precisar de mais agressividade).
-          if (postDate < tomorrow) {
-            postDate = tomorrow;
-            const daysUntil = diffDays(expDate, tomorrow);
-            if (daysUntil <= 0)      leadLabel = 'Hoje é o dia da experiência';
-            else if (daysUntil === 1) leadLabel = 'Última chamada · evento amanhã';
-            else                       leadLabel = 'Curto prazo · evento em ' + daysUntil + 'd';
-          } else {
-            const daysUntil = diffDays(expDate, postDate);
-            leadLabel = 'Evento em ' + daysUntil + 'd';
-          }
-
-          // Só inclui se o dia de postagem está na janela visível.
+          // Se a data ideal de postagem já passou OU está fora da
+          // janela visível, descarta. NÃO realoca pra amanhã: amontoar
+          // tudo num único dia destrói a leitura do calendário.
+          if (postDate < tomorrow) return;
           if (postDate > lastVisible) return;
+
+          const daysUntil = diffDays(expDate, postDate);
+          const leadLabel = 'Evento em ' + daysUntil + 'd';
 
           const block = makeBlock(exp, format, leadLabel);
           if (block) pushPost(postDate, block);
@@ -367,6 +377,7 @@
       stats: {
         datedExperiences: datedCount,
         evergreenExperiences: evergreen.length,
+        droppedTooClose: droppedTooClose,
         totalPosts: totalPosts,
         horizon: horizon,
       },
@@ -702,11 +713,19 @@ OBSERVAÇÃO: LinkedIn é canal-suporte, não principal. Use 1x por semana. Boa 
 
     if (summary) {
       const fmtLabel = format === 'all' ? 'todos os formatos' : format;
-      summary.textContent =
-        stats.datedExperiences + ' experiência(s) com data + ' +
-        stats.evergreenExperiences + ' semanal(is) · ' +
-        stats.totalPosts + ' post(s) programado(s) nos próximos ' +
-        horizon + ' dias · ' + fmtLabel + '.';
+      const parts = [
+        stats.datedExperiences + ' experiência(s) com data',
+        stats.evergreenExperiences + ' semanal(is)',
+        stats.totalPosts + ' post(s) programado(s) nos próximos ' + horizon + ' dias',
+        fmtLabel,
+      ];
+      if (stats.droppedTooClose > 0) {
+        parts.push(
+          stats.droppedTooClose +
+          ' experiência(s) ignorada(s) por estar(em) a menos de 3 dias do evento (cutoff de reserva 24h)'
+        );
+      }
+      summary.textContent = parts.join(' · ') + '.';
     }
 
     if (!days.length) {
