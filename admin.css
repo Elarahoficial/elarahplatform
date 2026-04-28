@@ -837,20 +837,85 @@
   letter-spacing: 0.02em;
 }
 
+/* Container do calendário: stack vertical de dias.
+   Cada dia tem seu próprio header (data) e grid interno de cards. */
 .admin__content-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .admin__content-empty {
-  grid-column: 1 / -1;
   padding: 40px 20px;
   text-align: center;
   color: #888;
   font-size: 0.92rem;
   background: #faf6f0;
   border-radius: 12px;
+}
+
+/* Seção de dia */
+.admin__content-day {
+  position: relative;
+  padding: 18px 18px 22px;
+  background: #fff;
+  border: 1px solid rgba(201,164,95,0.22);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px -10px rgba(92,36,38,0.10);
+}
+.admin__content-day--empty {
+  background: #fafaf6;
+  border-style: dashed;
+  box-shadow: none;
+}
+.admin__content-day__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(201,164,95,0.18);
+}
+.admin__content-day__label {
+  margin: 0;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.32rem;
+  letter-spacing: -0.01em;
+  color: #5C2426;
+}
+.admin__content-day__count {
+  font-size: 0.78rem;
+  color: #8a6e6c;
+  letter-spacing: 0.02em;
+}
+.admin__content-day__empty {
+  margin: 4px 0 0;
+  padding: 18px;
+  text-align: center;
+  font-size: 0.86rem;
+  color: #aa9695;
+  background: #fbf6f0;
+  border-radius: 10px;
+}
+.admin__content-day__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
+}
+
+/* Lead label dentro do card (ex: "Evento em 3d", "Última chamada · evento amanhã") */
+.admin__content-card__lead {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #6B4F4D;
+  background: #faf0e6;
+  border: 1px solid rgba(201,164,95,0.32);
+  border-radius: 9999px;
 }
 
 .admin__content-card {
