@@ -4854,7 +4854,7 @@
         : Promise.resolve([])
     ]);
 
-    const bookings = filterTestBookings(bookingsAll);
+    const bookings = withoutTestBookings(bookingsAll);
     const expById = new Map();
     (experiences || []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
 
