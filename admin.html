@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=7">
+  <link rel="stylesheet" href="admin.css?v=8">
 </head>
 <body>
 
@@ -98,14 +98,13 @@
         <span>Gift Cards</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="content">
+      <button class="admin__nav-item" data-panel="social">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="9" y1="13" x2="15" y2="13"/>
-          <line x1="9" y1="17" x2="13" y2="17"/>
+          <path d="M4 11a9 9 0 0 1 9 9"/>
+          <path d="M4 4a16 16 0 0 1 16 16"/>
+          <circle cx="5" cy="19" r="1.5"/>
         </svg>
-        <span>Conteúdo</span>
+        <span>Redes Sociais</span>
       </button>
 
       <button class="admin__nav-item" data-panel="analytics">
@@ -123,7 +122,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.60 · 2026-04-28
+        Admin v.61 · 2026-04-28
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -608,58 +607,303 @@
       </div>
     </div>
 
-    <!-- ===== CONTENT PANEL ===== -->
-    <div class="admin__panel" id="panel-content">
+    <!-- ===== REDES SOCIAIS PANEL =====
+         Painel de inteligência de redes sociais. Substituiu o antigo
+         "Calendário de conteúdo" (roteiros prontos), que não estava
+         gerando decisão. Agora a aba é um dashboard analítico de posts
+         já publicados (Instagram, TikTok, LinkedIn) com detecção de
+         padrão, comparativos semanais e geração de ideias baseada em
+         dados, não em achismo.
+         Dados ficam em localStorage (chave elarah.social.posts.v1) até
+         a integração direta com APIs das plataformas (roadmap). Suporta
+         input manual + import/export CSV pra evolução incremental. -->
+    <div class="admin__panel" id="panel-social">
       <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 class="admin__page-title">Calendário de conteúdo</h1>
+          <h1 class="admin__page-title">Redes Sociais</h1>
           <p class="admin__page-subtitle">
-            O que postar nos próximos dias — distribuído pelas datas dos eventos.
-            LinkedIn D-14, TikTok D-10, Reels D-7, Feed D-5, Stories D-3.
-            Eventos a menos de 3 dias são ignorados (cutoff de reserva 24h). Voz da Elarah (persona “Carolina”).
+            Inteligência de conteúdo: o que está performando, o que não está,
+            e o que escalar agora — baseado nos dados reais dos seus posts.
           </p>
         </div>
         <div class="admin__analytics-controls">
-          <label for="content-week" class="admin__form-hint" style="margin:0;">Calendário:</label>
-          <select id="content-week" class="admin__analytics-select">
-            <option value="7" selected>Próximos 7 dias</option>
-            <option value="14">Próximos 14 dias</option>
-            <option value="30">Próximos 30 dias</option>
-          </select>
-          <label for="content-format" class="admin__form-hint" style="margin:0;">Formato:</label>
-          <select id="content-format" class="admin__analytics-select">
-            <option value="all" selected>Todos</option>
-            <option value="reels">Reels</option>
-            <option value="stories">Stories</option>
-            <option value="feed">Feed</option>
+          <label for="social-platform" class="admin__form-hint" style="margin:0;">Plataforma:</label>
+          <select id="social-platform" class="admin__analytics-select">
+            <option value="all" selected>Todas</option>
+            <option value="instagram">Instagram</option>
             <option value="tiktok">TikTok</option>
             <option value="linkedin">LinkedIn</option>
           </select>
-          <button class="admin__add-btn" id="btn-refresh-content" type="button">Gerar agora</button>
+          <label for="social-range" class="admin__form-hint" style="margin:0;">Período:</label>
+          <select id="social-range" class="admin__analytics-select">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="all">Todos</option>
+          </select>
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-import" type="button" title="Importar CSV de posts">↑ Importar CSV</button>
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-export" type="button" title="Exportar todos os posts">↓ Exportar</button>
+          <button class="admin__add-btn" id="btn-social-add" type="button">+ Novo post</button>
+          <input type="file" id="social-csv-input" accept=".csv,text/csv" style="display:none;">
         </div>
       </div>
 
-      <!-- Persona reference card — sempre visível pro time não esquecer pra quem
-           o conteúdo está falando. -->
-      <div class="admin__persona-card" id="content-persona-card">
-        <div class="admin__persona-card__head">
-          <span class="admin__persona-card__badge">Persona-alvo</span>
-          <strong>Carolina · 35–55 anos · SP zona oeste/sul · classe A/B+</strong>
+      <!-- Estado vazio: aparece se não há nenhum post cadastrado.
+           Substituído automaticamente pelo dashboard quando entra dado. -->
+      <div id="social-empty" class="social-empty" style="display:none;">
+        <div class="social-empty__icon">📊</div>
+        <h2 class="social-empty__title">Comece registrando seus posts</h2>
+        <p class="social-empty__text">
+          Adicione manualmente ou importe um CSV com posts do Instagram, TikTok e LinkedIn.
+          Quanto mais dados, mais preciso o painel fica em apontar padrões e gerar ideias acionáveis.
+        </p>
+        <div class="social-empty__actions">
+          <button class="admin__add-btn" type="button" data-social-action="add">+ Adicionar primeiro post</button>
+          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="sample">Carregar dados de exemplo</button>
         </div>
-        <p class="admin__persona-card__text">
-          Compra <strong>presente afetivo</strong> pra mãe, filha ou amiga.
-          Conecta com <em>memória que fica</em>, <em>tempo de qualidade</em>, <em>curadoria confiável</em> e <em>beleza estética</em>.
-          Repele linguagem jovem demais, urgência forçada e desconto agressivo.
+        <p class="social-empty__hint">
+          CSV esperado: <code>platform,type,date,link,views,likes,comments,saves,shares,tags</code><br>
+          <span style="color:#999;">tags = palavras-chave separadas por vírgula entre aspas, ex: <code>"comida, vila madalena"</code></span>
         </p>
       </div>
 
-      <!-- Resumo / contador — preenchido pelo JS. -->
-      <div id="content-summary" class="admin__content-summary"></div>
+      <!-- Wrapper do dashboard (escondido se não há dados) -->
+      <div id="social-dashboard" style="display:none;">
 
-      <!-- Grade de cards de conteúdo — preenchida pelo JS. -->
-      <div id="content-grid" class="admin__content-grid">
-        <p class="admin__content-empty">Carregando experiências…</p>
+        <!-- KPIs principais: visão geral instantânea da saúde de conteúdo -->
+        <div class="social-kpi-grid">
+          <div class="social-kpi">
+            <div class="social-kpi__label">Posts no período</div>
+            <div class="social-kpi__value" id="social-kpi-posts">—</div>
+            <div class="social-kpi__delta" id="social-kpi-posts-delta">vs período anterior</div>
+          </div>
+          <div class="social-kpi">
+            <div class="social-kpi__label">Alcance total</div>
+            <div class="social-kpi__value" id="social-kpi-reach">—</div>
+            <div class="social-kpi__delta" id="social-kpi-reach-delta">vs período anterior</div>
+          </div>
+          <div class="social-kpi">
+            <div class="social-kpi__label">Engajamento médio</div>
+            <div class="social-kpi__value" id="social-kpi-eng">—</div>
+            <div class="social-kpi__delta" id="social-kpi-eng-delta">por post</div>
+          </div>
+          <div class="social-kpi">
+            <div class="social-kpi__label">Taxa de engajamento</div>
+            <div class="social-kpi__value" id="social-kpi-rate">—</div>
+            <div class="social-kpi__delta" id="social-kpi-rate-delta">eng/visualizações</div>
+          </div>
+        </div>
+
+        <!-- Insights: o coração do painel. Não são números, são frases.
+             O que dizer pra alguém olhando o painel pela primeira vez. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Insights</h2>
+            <p class="social-section__hint">Padrões detectados nos dados — leia isso primeiro.</p>
+          </div>
+          <div id="social-insights" class="social-insights">
+            <p class="social-insights__empty">Sem padrões claros ainda — adicione mais posts pra o sistema cruzar dados.</p>
+          </div>
+        </section>
+
+        <!-- Ideias da semana: 3 ideias acionáveis, com formato + gancho + execução,
+             tiradas das combinações de tags/tipos/plataformas com melhor performance. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Top 3 ideias da semana</h2>
+            <p class="social-section__hint">Baseado nos padrões que estão funcionando agora — não em achismo.</p>
+          </div>
+          <div id="social-ideas" class="social-ideas">
+            <p class="social-ideas__empty">Adicione mais posts (com tags) pra o sistema sugerir ideias.</p>
+          </div>
+        </section>
+
+        <!-- Performance por plataforma: qual rede está crescendo, qual está caindo. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Performance por plataforma</h2>
+            <p class="social-section__hint">Comparado ao período anterior. Verde sobe, vermelho cai.</p>
+          </div>
+          <div id="social-platforms" class="social-platforms">
+            <p class="social-section__empty">Sem dados.</p>
+          </div>
+        </section>
+
+        <!-- Performance por tipo de conteúdo (Reel vs Story vs Carrossel etc) -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Performance por tipo de conteúdo</h2>
+            <p class="social-section__hint">Onde cada formato é forte e onde é fraco.</p>
+          </div>
+          <div class="admin__table-wrap admin__table-wrap--flush">
+            <table class="admin__table social-table">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th class="social-num">Posts</th>
+                  <th class="social-num">Alcance médio</th>
+                  <th class="social-num">Eng. médio</th>
+                  <th class="social-num">Taxa eng.</th>
+                  <th class="social-num">Saves médios</th>
+                  <th class="social-num">Shares médios</th>
+                </tr>
+              </thead>
+              <tbody id="social-types-body">
+                <tr><td colspan="7" class="admin__table-empty">Sem dados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Evolução: linha simples de engajamento ao longo do tempo -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Evolução</h2>
+            <p class="social-section__hint">Engajamento ao longo do período selecionado.</p>
+          </div>
+          <div class="social-chart-wrap">
+            <canvas id="social-chart-evolution" height="240"></canvas>
+          </div>
+        </section>
+
+        <!-- Top posts e piores posts lado a lado -->
+        <div class="social-rank-grid">
+          <section class="social-section social-section--flush">
+            <div class="social-section__header">
+              <h2 class="social-section__title">Top posts</h2>
+              <p class="social-section__hint">Maior engajamento total — replicar padrão.</p>
+            </div>
+            <div id="social-top-posts" class="social-rank">
+              <p class="social-section__empty">Sem dados.</p>
+            </div>
+          </section>
+          <section class="social-section social-section--flush">
+            <div class="social-section__header">
+              <h2 class="social-section__title">Piores posts</h2>
+              <p class="social-section__hint">Menor engajamento — diagnosticar e parar de fazer.</p>
+            </div>
+            <div id="social-worst-posts" class="social-rank">
+              <p class="social-section__empty">Sem dados.</p>
+            </div>
+          </section>
+        </div>
+
+        <!-- Comparação semana a semana -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Semana atual vs anterior</h2>
+            <p class="social-section__hint">Movimento das últimas duas semanas — independente do filtro acima.</p>
+          </div>
+          <div id="social-wow" class="social-wow">
+            <p class="social-section__empty">Sem dados.</p>
+          </div>
+        </section>
+
+        <!-- Tabela com todos os posts: dá controle e edição. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Todos os posts</h2>
+            <p class="social-section__hint">Clica em editar pra atualizar números, ou remove o que não faz mais sentido.</p>
+          </div>
+          <div class="admin__table-wrap admin__table-wrap--flush">
+            <table class="admin__table social-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Plataforma</th>
+                  <th>Tipo</th>
+                  <th>Tags</th>
+                  <th class="social-num">Views</th>
+                  <th class="social-num">Likes</th>
+                  <th class="social-num">Coment.</th>
+                  <th class="social-num">Saves</th>
+                  <th class="social-num">Shares</th>
+                  <th class="social-num">Eng.</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="social-posts-body">
+                <tr><td colspan="11" class="admin__table-empty">Sem posts.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
       </div>
+
+      <!-- Modal: novo / editar post -->
+      <div class="social-modal" id="social-modal" style="display:none;">
+        <div class="social-modal__backdrop" data-social-close></div>
+        <div class="social-modal__card">
+          <div class="social-modal__head">
+            <h3 class="social-modal__title" id="social-modal-title">Novo post</h3>
+            <button type="button" class="social-modal__close" data-social-close aria-label="Fechar">×</button>
+          </div>
+          <form class="social-form" id="social-form" autocomplete="off">
+            <input type="hidden" id="social-form-id" value="">
+            <div class="social-form__row">
+              <label class="social-form__field">
+                <span>Plataforma</span>
+                <select id="social-form-platform" required>
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="linkedin">LinkedIn</option>
+                </select>
+              </label>
+              <label class="social-form__field">
+                <span>Tipo</span>
+                <select id="social-form-type" required>
+                  <option value="reel">Reel</option>
+                  <option value="story">Story</option>
+                  <option value="feed">Feed</option>
+                  <option value="carrossel">Carrossel</option>
+                  <option value="video">Vídeo</option>
+                </select>
+              </label>
+              <label class="social-form__field">
+                <span>Data</span>
+                <input type="date" id="social-form-date" required>
+              </label>
+            </div>
+            <label class="social-form__field">
+              <span>Link do post (opcional)</span>
+              <input type="url" id="social-form-link" placeholder="https://...">
+            </label>
+            <label class="social-form__field">
+              <span>Tags (separadas por vírgula — ex: comida, vila madalena, presente)</span>
+              <input type="text" id="social-form-tags" placeholder="comida, bairro, depoimento">
+            </label>
+            <div class="social-form__row social-form__row--metrics">
+              <label class="social-form__field">
+                <span>Visualizações</span>
+                <input type="number" id="social-form-views" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Curtidas</span>
+                <input type="number" id="social-form-likes" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Comentários</span>
+                <input type="number" id="social-form-comments" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Saves</span>
+                <input type="number" id="social-form-saves" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Shares</span>
+                <input type="number" id="social-form-shares" min="0" value="0">
+              </label>
+            </div>
+            <div class="social-form__actions">
+              <button type="button" class="admin__add-btn admin__add-btn--ghost" data-social-close>Cancelar</button>
+              <button type="button" class="admin__add-btn admin__add-btn--danger" id="social-form-delete" style="display:none;">Excluir</button>
+              <button type="submit" class="admin__add-btn">Salvar post</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
     </div>
 
     <!-- ===== ANALYTICS PANEL ===== -->
@@ -1333,10 +1577,10 @@
 <script src="experiences-data.js?v=20"></script>
 <script src="byelarah-data.js?v=6"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin-content.js?v=4"></script>
+<script src="admin-social.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=65"></script>
+<script src="admin.js?v=66"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

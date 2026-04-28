@@ -880,229 +880,526 @@
 }
 
 /* =============================================================
-   PAINEL DE CONTEÚDO
-   Cards de roteiro pré-pronto. Visual mais editorial (creme/bordô)
-   pra reforçar a identidade da curadoria, em vez de mais um painel
-   funcional padrão.
+   PAINEL DE REDES SOCIAIS
+   Dashboard analítico de posts publicados. Foco em decisão:
+   o que continuar, o que parar, o que escalar agora.
+   Estilo segue o padrão do painel de Analytics (cards brancos
+   com sombras leves) com toques editoriais (creme/bordô) nos
+   destaques (insights, ideias).
    ============================================================= */
-.admin__persona-card {
-  margin: 16px 0 24px;
-  padding: 18px 22px;
-  background: linear-gradient(135deg, #FBF6F0 0%, #F5EBE0 100%);
-  border: 1px solid rgba(201,164,95,0.32);
-  border-radius: 14px;
+
+/* Variante de botão destrutivo (excluir post) */
+.admin__add-btn--danger {
+  background: #fff;
+  color: #c0392b;
+  border: 1.5px solid #c0392b;
 }
-.admin__persona-card__head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
+.admin__add-btn--danger:hover {
+  background: #c0392b;
+  color: #fff;
+}
+
+/* Estado vazio quando ainda não há nenhum post cadastrado */
+.social-empty {
+  margin: 24px 0;
+  padding: 48px 32px;
+  text-align: center;
+  background: linear-gradient(135deg, #FBF6F0 0%, #F5EBE0 100%);
+  border: 1px dashed rgba(201,164,95,0.45);
+  border-radius: 18px;
+}
+.social-empty__icon {
+  font-size: 2.4rem;
+  margin-bottom: 12px;
+}
+.social-empty__title {
+  margin: 0 0 8px;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.6rem;
   color: #5C2426;
 }
-.admin__persona-card__badge {
-  display: inline-block;
-  padding: 3px 10px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fff;
-  background: linear-gradient(135deg, #E8B5AB 0%, #C97D6F 100%);
-  border-radius: 9999px;
-}
-.admin__persona-card__text {
-  margin: 0;
-  font-size: 0.88rem;
+.social-empty__text {
+  max-width: 540px;
+  margin: 0 auto 18px;
+  font-size: 0.94rem;
   line-height: 1.55;
   color: #6B4F4D;
 }
-.admin__persona-card__text strong { color: #3F1F20; }
-.admin__persona-card__text em { font-style: italic; color: #5C2426; }
-
-.admin__content-summary {
-  margin: 0 0 18px;
-  font-size: 0.85rem;
-  color: #777;
-  letter-spacing: 0.02em;
+.social-empty__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.social-empty__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8a6e6c;
+  line-height: 1.6;
+}
+.social-empty__hint code {
+  padding: 2px 6px;
+  background: #fff;
+  border: 1px solid rgba(201,164,95,0.32);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: #5C2426;
 }
 
-/* Container do calendário: stack vertical de dias.
-   Cada dia tem seu próprio header (data) e grid interno de cards. */
-.admin__content-grid {
+/* KPIs no topo do dashboard */
+.social-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 18px 0 28px;
+}
+.social-kpi {
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.social-kpi__label {
+  font-size: 0.78rem;
+  color: #888;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+.social-kpi__value {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.85rem;
+  color: #1a1a1a;
+  line-height: 1.1;
+}
+.social-kpi__delta {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #888;
+}
+.social-kpi__delta--up   { color: #1a8a4a; font-weight: 600; }
+.social-kpi__delta--down { color: #c0392b; font-weight: 600; }
+.social-kpi__delta--flat { color: #888; }
+
+/* Seções padrão (segue padrão do .ana-section do painel de crescimento) */
+.social-section {
+  margin: 0 0 28px;
+  padding: 22px 24px 24px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.social-section--flush {
+  padding: 18px 18px 22px;
+}
+.social-section__header {
+  margin-bottom: 16px;
+}
+.social-section__title {
+  margin: 0 0 4px;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.28rem;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+.social-section__hint {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #888;
+  line-height: 1.45;
+}
+.social-section__empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: #999;
+  font-size: 0.88rem;
+}
+
+/* Bloco de insights — estilo editorial (creme/bordô) */
+.social-insights {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 10px;
 }
-
-.admin__content-empty {
-  padding: 40px 20px;
+.social-insights__empty {
+  padding: 18px;
   text-align: center;
-  color: #888;
-  font-size: 0.92rem;
-  background: #faf6f0;
+  color: #999;
+  font-size: 0.88rem;
+  background: #fbf6f0;
+  border-radius: 10px;
+  margin: 0;
+}
+.social-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #FBF6F0 0%, #F5EBE0 100%);
+  border: 1px solid rgba(201,164,95,0.32);
   border-radius: 12px;
 }
-
-/* Seção de dia */
-.admin__content-day {
-  position: relative;
-  padding: 18px 18px 22px;
+.social-insight__icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   background: #fff;
-  border: 1px solid rgba(201,164,95,0.22);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px -10px rgba(92,36,38,0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border: 1px solid rgba(201,164,95,0.45);
 }
-.admin__content-day--empty {
-  background: #fafaf6;
-  border-style: dashed;
-  box-shadow: none;
+.social-insight--win .social-insight__icon  { color: #1a8a4a; border-color: rgba(26,138,74,0.4); }
+.social-insight--watch .social-insight__icon { color: #d88a44; }
+.social-insight--alert .social-insight__icon { color: #c0392b; border-color: rgba(192,57,43,0.4); }
+.social-insight__body {
+  flex: 1;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #3f1f20;
 }
-.admin__content-day__head {
+.social-insight__body strong { color: #5C2426; }
+.social-insight__meta {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #8a6e6c;
+}
+
+/* Ideias da semana — cards com gancho/execução */
+.social-ideas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.social-ideas__empty {
+  grid-column: 1 / -1;
+  padding: 18px;
+  text-align: center;
+  color: #999;
+  font-size: 0.88rem;
+  background: #fbf6f0;
+  border-radius: 10px;
+  margin: 0;
+}
+.social-idea {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 18px 20px;
+  background: #fff;
+  border: 1px solid rgba(201,164,95,0.32);
+  border-radius: 14px;
+  box-shadow: 0 4px 18px -12px rgba(92,36,38,0.18);
+}
+.social-idea__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(201,164,95,0.18);
+  gap: 8px;
 }
-.admin__content-day__label {
-  margin: 0;
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 1.32rem;
-  letter-spacing: -0.01em;
-  color: #5C2426;
+.social-idea__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E8B5AB 0%, #C97D6F 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
 }
-.admin__content-day__count {
-  font-size: 0.78rem;
-  color: #8a6e6c;
-  letter-spacing: 0.02em;
-}
-.admin__content-day__empty {
-  margin: 4px 0 0;
-  padding: 18px;
-  text-align: center;
-  font-size: 0.86rem;
-  color: #aa9695;
-  background: #fbf6f0;
-  border-radius: 10px;
-}
-.admin__content-day__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 14px;
-}
-
-/* Lead label dentro do card (ex: "Evento em 3d", "Última chamada · evento amanhã") */
-.admin__content-card__lead {
+.social-idea__format {
   display: inline-block;
   padding: 3px 10px;
   font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #6B4F4D;
-  background: #faf0e6;
-  border: 1px solid rgba(201,164,95,0.32);
-  border-radius: 9999px;
-}
-
-.admin__content-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 18px 20px 22px;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 14px;
-  box-shadow: 0 4px 18px -10px rgba(0,0,0,0.12);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-.admin__content-card:hover {
-  box-shadow: 0 12px 28px -14px rgba(0,0,0,0.18);
-  transform: translateY(-1px);
-}
-.admin__content-card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.admin__content-card__format {
-  display: inline-block;
-  padding: 4px 11px;
-  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border-radius: 9999px;
   color: #fff;
+  background: #5C2426;
 }
-.admin__content-card__format--reels    { background: #C97D6F; }
-.admin__content-card__format--stories  { background: #d88a44; }
-.admin__content-card__format--feed     { background: #5C2426; }
-.admin__content-card__format--tiktok   { background: #1a1a1a; }
-.admin__content-card__format--linkedin { background: #2b6cb0; }
-
-.admin__content-card__copy {
-  padding: 6px 14px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #5C2426;
-  background: #fff;
-  border: 1.5px solid #C97D6F;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.admin__content-card__copy:hover {
-  background: #C97D6F;
-  color: #fff;
-}
-.admin__content-card__copy--ok {
-  background: #1a8a4a !important;
-  border-color: #1a8a4a !important;
-  color: #fff !important;
-}
-.admin__content-card__copy--err {
-  background: #c0392b !important;
-  border-color: #c0392b !important;
-  color: #fff !important;
-}
-
-.admin__content-card__title {
+.social-idea__title {
   margin: 0;
   font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 1.18rem;
+  font-size: 1.1rem;
   line-height: 1.25;
   color: #1a1a1a;
 }
-.admin__content-card__meta {
+.social-idea__hook,
+.social-idea__exec {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #444;
+}
+.social-idea__hook strong,
+.social-idea__exec strong { color: #5C2426; }
+.social-idea__rationale {
+  margin: 4px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(201,164,95,0.32);
+  font-size: 0.78rem;
+  color: #8a6e6c;
+  font-style: italic;
+}
+
+/* Cards de plataforma (Instagram / TikTok / LinkedIn) */
+.social-platforms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.social-platform {
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+}
+.social-platform__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.social-platform__name {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: #1a1a1a;
+}
+.social-platform__badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+}
+.social-platform__badge--up   { background: #e7f5ec; color: #1a8a4a; }
+.social-platform__badge--down { background: #fdecea; color: #c0392b; }
+.social-platform__badge--flat { background: #f1f1f1; color: #888; }
+.social-platform__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  color: #555;
+  padding: 4px 0;
+}
+.social-platform__row + .social-platform__row {
+  border-top: 1px dashed #f0f0f0;
+}
+.social-platform__row span:last-child { color: #1a1a1a; font-weight: 600; }
+
+/* Tabelas (compartilha estilo com .ana-table mas com prefixo próprio) */
+.social-table th,
+.social-table td {
+  font-size: 0.86rem;
+}
+.social-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.social-tag {
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  padding: 2px 8px;
+  background: #f5ebe0;
+  color: #5C2426;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+}
+
+/* Wrapper do gráfico */
+.social-chart-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+}
+
+/* Ranking lado a lado (top vs piores) */
+.social-rank-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+@media (max-width: 920px) {
+  .social-rank-grid { grid-template-columns: 1fr; }
+}
+.social-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.social-rank-item {
+  padding: 12px 14px;
+  background: #fafaf6;
+  border: 1px solid #f0eadf;
+  border-radius: 10px;
+}
+.social-rank-item__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.social-rank-item__platform {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+.social-rank-item__platform--instagram { background: #C97D6F; }
+.social-rank-item__platform--tiktok    { background: #1a1a1a; }
+.social-rank-item__platform--linkedin  { background: #2b6cb0; }
+.social-rank-item__type {
   font-size: 0.78rem;
   color: #888;
-  letter-spacing: 0.02em;
+  text-transform: capitalize;
 }
-.admin__content-card__body {
-  margin: 4px 0 0;
-  padding: 14px 16px;
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-  font-size: 0.86rem;
-  line-height: 1.55;
-  color: #2c1f1f;
-  background: #faf6f0;
-  border-left: 3px solid #C97D6F;
-  border-radius: 0 10px 10px 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  max-height: 480px;
+.social-rank-item__metrics {
+  display: flex;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: #555;
+}
+.social-rank-item__metrics b { color: #1a1a1a; }
+.social-rank-item__date {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: #999;
+}
+
+/* Comparação semana vs semana */
+.social-wow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.social-wow-item {
+  padding: 12px 14px;
+  background: #fafaf6;
+  border-radius: 10px;
+  border: 1px solid #f0eadf;
+}
+.social-wow-item__label {
+  font-size: 0.74rem;
+  color: #888;
+  margin-bottom: 4px;
+}
+.social-wow-item__value {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.4rem;
+  color: #1a1a1a;
+}
+.social-wow-item__delta {
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
+
+/* Modal de novo / editar post */
+.social-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.social-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20,12,14,0.55);
+}
+.social-modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
   overflow-y: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px 26px 26px;
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.3);
+}
+.social-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.social-modal__title {
+  margin: 0;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.4rem;
+  color: #1a1a1a;
+}
+.social-modal__close {
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #888;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.social-modal__close:hover { color: #1a1a1a; }
+
+.social-form { display: flex; flex-direction: column; gap: 14px; }
+.social-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.social-form__row--metrics {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+@media (max-width: 600px) {
+  .social-form__row { grid-template-columns: 1fr; }
+}
+.social-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: #555;
+}
+.social-form__field span { font-weight: 500; }
+.social-form__field input,
+.social-form__field select {
+  padding: 9px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  color: #1a1a1a;
+}
+.social-form__field input:focus,
+.social-form__field select:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+.social-form__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
 }
 
 @media (max-width: 760px) {
-  .admin__content-grid { grid-template-columns: 1fr; }
+  .social-rank-grid { grid-template-columns: 1fr; }
 }
 
 /* =====================================================

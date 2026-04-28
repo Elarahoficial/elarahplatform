@@ -356,9 +356,9 @@
       case 'byelarah':    await renderByElarah(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'analytics':   await renderAnalytics(); break;
-      case 'content':
-        if (window.ElarahContent && window.ElarahContent.render) {
-          await window.ElarahContent.render();
+      case 'social':
+        if (window.ElarahSocial && window.ElarahSocial.render) {
+          await window.ElarahSocial.render();
         }
         break;
     }
