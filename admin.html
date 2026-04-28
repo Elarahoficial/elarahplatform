@@ -4,13 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow">
+  <!-- Anti-cache: o admin não pode servir HTML cacheado (filtros novos
+       não aparecem se o navegador segura a versão anterior). Combinado
+       com versionamento dos JS/CSS via ?v= isso garante que toda visita
+       puxe a versão atual sem precisar de hard reload manual. -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Admin — Elarah</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=6">
+  <link rel="stylesheet" href="admin.css?v=7">
 </head>
 <body>
 
@@ -110,6 +117,14 @@
     </nav>
 
     <div class="admin__nav-bottom">
+      <!-- Marcador de versão visível: serve pra confirmar a olho qual
+           versão do admin carregou (cache busting). Toda vez que sair
+           algo novo, esse número sobe. Se você não está vendo o filtro
+           novo de fornecedor, esse marcador deve estar igual ou maior
+           que v.60. Se está em 57 ou menor, é cache do navegador. -->
+      <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
+        Admin v.60 · 2026-04-28
+      </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -1268,8 +1283,8 @@
 <script src="experiences-data.js?v=20"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin-content.js?v=3"></script>
-<script src="admin.js?v=58"></script>
+<script src="admin-content.js?v=4"></script>
+<script src="admin.js?v=60"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
