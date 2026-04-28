@@ -666,104 +666,153 @@
     <div class="admin__panel" id="panel-analytics">
       <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 class="admin__page-title">Analytics</h1>
-          <p class="admin__page-subtitle">Visão geral de acessos, cliques e conversões</p>
+          <h1 class="admin__page-title">Painel de crescimento</h1>
+          <p class="admin__page-subtitle" id="ana-period-label">Carregando…</p>
         </div>
         <div class="admin__analytics-controls">
-          <label for="analytics-range" class="admin__form-hint" style="margin:0;">Período:</label>
-          <select id="analytics-range" class="admin__analytics-select">
-            <option value="1">Últimas 24h</option>
-            <option value="7" selected>Últimos 7 dias</option>
-            <option value="30">Últimos 30 dias</option>
-            <option value="90">Últimos 90 dias</option>
-            <option value="0">Tudo</option>
-          </select>
-          <button class="admin__add-btn" id="btn-refresh-analytics" type="button">Atualizar</button>
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-refresh-analytics" type="button" title="Recarregar dados">↻ Atualizar</button>
         </div>
       </div>
 
-      <div class="admin__stats">
-        <div class="admin__stat">
-          <div class="admin__stat-label">Eventos totais</div>
-          <div class="admin__stat-value" id="stat-ana-events">0</div>
+      <!-- Filtro de período: chips + custom -->
+      <div class="ana-period-bar">
+        <div class="ana-period-chips" id="ana-period-chips">
+          <button type="button" class="ana-chip" data-range="1">24 horas</button>
+          <button type="button" class="ana-chip is-active" data-range="7">7 dias</button>
+          <button type="button" class="ana-chip" data-range="30">30 dias</button>
+          <button type="button" class="ana-chip" data-range="month">Este mês</button>
+          <button type="button" class="ana-chip" data-range="custom">Personalizado</button>
         </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Pageviews</div>
-          <div class="admin__stat-value" id="stat-ana-pageviews">0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Sessões únicas</div>
-          <div class="admin__stat-value" id="stat-ana-sessions">0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Conversões By Elarah</div>
-          <div class="admin__stat-value admin__stat-value--orange" id="stat-ana-conversions">0</div>
+        <div class="ana-period-custom" id="ana-period-custom" style="display:none;">
+          <label>De <input type="date" id="ana-custom-start"></label>
+          <label>Até <input type="date" id="ana-custom-end"></label>
+          <button type="button" class="admin__add-btn" id="ana-custom-apply">Aplicar</button>
         </div>
       </div>
 
-      <div class="admin__analytics-grid">
-        <section class="admin__analytics-card">
-          <h3 class="admin__analytics-title">Páginas mais visitadas</h3>
-          <div id="ana-top-pages" class="admin__bars">
-            <p class="admin__analytics-empty">Sem dados para o período.</p>
-          </div>
-        </section>
-
-        <section class="admin__analytics-card">
-          <h3 class="admin__analytics-title">Experiências com mais cliques</h3>
-          <div id="ana-top-experiences" class="admin__bars">
-            <p class="admin__analytics-empty">Sem dados para o período.</p>
-          </div>
-        </section>
-
-        <section class="admin__analytics-card">
-          <h3 class="admin__analytics-title">Categorias mais clicadas</h3>
-          <div id="ana-top-categories" class="admin__bars">
-            <p class="admin__analytics-empty">Sem dados para o período.</p>
-          </div>
-        </section>
-
-        <section class="admin__analytics-card">
-          <h3 class="admin__analytics-title">Botões & CTAs mais clicados</h3>
-          <div id="ana-top-buttons" class="admin__bars">
-            <p class="admin__analytics-empty">Sem dados para o período.</p>
-          </div>
-        </section>
-
-        <section class="admin__analytics-card">
-          <h3 class="admin__analytics-title">By Elarah — itens com mais interesse</h3>
-          <div id="ana-byelarah-items" class="admin__bars">
-            <p class="admin__analytics-empty">Sem dados para o período.</p>
-          </div>
-        </section>
-
-        <section class="admin__analytics-card">
-          <h3 class="admin__analytics-title">Distribuição por categoria de evento</h3>
-          <div id="ana-event-categories" class="admin__bars">
-            <p class="admin__analytics-empty">Sem dados para o período.</p>
-          </div>
-        </section>
-
-        <section class="admin__analytics-card admin__analytics-card--wide">
-          <h3 class="admin__analytics-title">Eventos recentes</h3>
-          <div class="admin__table-wrap admin__table-wrap--flush">
-            <table class="admin__table">
-              <thead>
-                <tr>
-                  <th>Quando</th>
-                  <th>Evento</th>
-                  <th>Categoria</th>
-                  <th>Página</th>
-                  <th>Label</th>
-                </tr>
-              </thead>
-              <tbody id="ana-recent-body">
-                <tr><td colspan="5" class="admin__table-empty">Nenhum evento registrado.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+      <!-- KPIs principais (faturamento, compras, ticket, conversão) -->
+      <div class="ana-kpi-grid">
+        <div class="ana-kpi" data-metric="revenue">
+          <div class="ana-kpi__label">Faturamento</div>
+          <div class="ana-kpi__value" id="kpi-revenue">—</div>
+          <div class="ana-kpi__delta" id="kpi-revenue-delta">vs período anterior</div>
+        </div>
+        <div class="ana-kpi" data-metric="orders">
+          <div class="ana-kpi__label">Compras</div>
+          <div class="ana-kpi__value" id="kpi-orders">—</div>
+          <div class="ana-kpi__delta" id="kpi-orders-delta">vs período anterior</div>
+        </div>
+        <div class="ana-kpi" data-metric="ticket">
+          <div class="ana-kpi__label">Ticket médio</div>
+          <div class="ana-kpi__value" id="kpi-ticket">—</div>
+          <div class="ana-kpi__delta" id="kpi-ticket-delta">vs período anterior</div>
+        </div>
+        <div class="ana-kpi" data-metric="conv">
+          <div class="ana-kpi__label">Conversão (visualização → compra)</div>
+          <div class="ana-kpi__value" id="kpi-conv">—</div>
+          <div class="ana-kpi__delta" id="kpi-conv-delta">vs período anterior</div>
+        </div>
       </div>
+
+      <!-- Evolução: linha de receita + compras ao longo do tempo -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Evolução</h2>
+          <p class="ana-section__hint">Como o faturamento e o número de compras se moveram no período.</p>
+        </div>
+        <div class="ana-chart-wrap">
+          <canvas id="ana-chart-evolution" height="280"></canvas>
+        </div>
+      </section>
+
+      <!-- Funil -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Funil de conversão</h2>
+          <p class="ana-section__hint">Onde a galera está caindo. Quanto mais larga a perda entre etapas, maior o gargalo.</p>
+        </div>
+        <div class="ana-funnel" id="ana-funnel">
+          <div class="ana-funnel__empty">Sem dados.</div>
+        </div>
+        <p class="ana-funnel__note" id="ana-funnel-note"></p>
+      </section>
+
+      <!-- Top experiências -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Experiências que mais vendem</h2>
+          <p class="ana-section__hint">Ordenado por receita. Use isso pra decidir o que empurrar no marketing.</p>
+        </div>
+        <div class="admin__table-wrap admin__table-wrap--flush">
+          <table class="admin__table ana-table">
+            <thead>
+              <tr>
+                <th>Experiência</th>
+                <th class="ana-num">Vendas</th>
+                <th class="ana-num">Receita</th>
+                <th class="ana-num">Visualizações</th>
+                <th class="ana-num">Conversão</th>
+              </tr>
+            </thead>
+            <tbody id="ana-top-experiences-body">
+              <tr><td colspan="5" class="admin__table-empty">Sem dados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Top fornecedores -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Fornecedores que mais geram receita</h2>
+          <p class="ana-section__hint">Quem traz mais dinheiro pra plataforma. Base pra negociação e expansão.</p>
+        </div>
+        <div class="admin__table-wrap admin__table-wrap--flush">
+          <table class="admin__table ana-table">
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th class="ana-num">Vendas</th>
+                <th class="ana-num">Receita</th>
+                <th class="ana-num">Ticket médio</th>
+              </tr>
+            </thead>
+            <tbody id="ana-top-suppliers-body">
+              <tr><td colspan="4" class="admin__table-empty">Sem dados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Clientes -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Clientes</h2>
+          <p class="ana-section__hint">Quem está comprando — e se está voltando.</p>
+        </div>
+        <div class="ana-customers-grid">
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Compradores no período</div>
+            <div class="ana-mini-kpi__value" id="kpi-buyers">—</div>
+            <div class="ana-mini-kpi__hint" id="kpi-buyers-hint">—</div>
+          </div>
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Novos clientes</div>
+            <div class="ana-mini-kpi__value" id="kpi-new">—</div>
+            <div class="ana-mini-kpi__hint">primeira compra no período</div>
+          </div>
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Clientes recorrentes</div>
+            <div class="ana-mini-kpi__value" id="kpi-recurring">—</div>
+            <div class="ana-mini-kpi__hint" id="kpi-recurring-hint">já tinham comprado antes</div>
+          </div>
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Cadastros totais</div>
+            <div class="ana-mini-kpi__value" id="kpi-signups">—</div>
+            <div class="ana-mini-kpi__hint">conta criada no site</div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- ===== EXPERIENCES PANEL ===== -->
@@ -1285,7 +1334,9 @@
 <script src="byelarah-data.js?v=6"></script>
 <script src="analytics.js?v=1"></script>
 <script src="admin-content.js?v=4"></script>
-<script src="admin.js?v=62"></script>
+<!-- Chart.js (somente admin) — usado pelo painel de analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="admin.js?v=63"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

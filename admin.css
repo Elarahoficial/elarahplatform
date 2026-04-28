@@ -1104,3 +1104,287 @@
 @media (max-width: 760px) {
   .admin__content-grid { grid-template-columns: 1fr; }
 }
+
+/* =====================================================
+ * Painel de crescimento (Analytics v2)
+ * ===================================================== */
+
+.admin__add-btn--ghost {
+  background: #fff;
+  color: var(--orange);
+  border: 1.5px solid var(--orange);
+}
+.admin__add-btn--ghost:hover {
+  background: #fff5e9;
+}
+
+/* Filtro de período (chips) */
+.ana-period-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.ana-period-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #f1ece2;
+  padding: 4px;
+  border-radius: 10px;
+}
+.ana-chip {
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #6b5c45;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ana-chip:hover {
+  color: #1a1a1a;
+}
+.ana-chip.is-active {
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.ana-period-custom {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ana-period-custom label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #555;
+  font-weight: 500;
+}
+.ana-period-custom input[type="date"] {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+/* KPIs principais */
+.ana-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.ana-kpi {
+  background: #fff;
+  border: 1px solid #ece4d6;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.ana-kpi__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b5c45;
+  margin-bottom: 10px;
+}
+.ana-kpi__value {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+.ana-kpi__delta {
+  font-size: 0.82rem;
+  color: #888;
+  font-weight: 500;
+}
+.ana-kpi__delta--up {
+  color: #1a8a4a;
+}
+.ana-kpi__delta--down {
+  color: #c0392b;
+}
+.ana-kpi__delta--flat {
+  color: #888;
+}
+
+/* Seções */
+.ana-section {
+  background: #fff;
+  border: 1px solid #ece4d6;
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.ana-section__header {
+  margin-bottom: 18px;
+}
+.ana-section__title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.25rem;
+  color: #1a1a1a;
+  margin: 0 0 4px;
+}
+.ana-section__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+/* Gráfico de evolução */
+.ana-chart-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+}
+
+/* Funil */
+.ana-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ana-funnel__row {
+  display: grid;
+  grid-template-columns: 200px 1fr 120px;
+  align-items: center;
+  gap: 14px;
+}
+.ana-funnel__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.ana-funnel__bar {
+  height: 38px;
+  background: #f1ece2;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.ana-funnel__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f0a05e, #e88840);
+  border-radius: 10px;
+  transition: width 0.4s ease;
+}
+.ana-funnel__count {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: right;
+}
+.ana-funnel__count small {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #888;
+  margin-top: 2px;
+}
+.ana-funnel__step-conv {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  color: #888;
+  text-align: center;
+  padding: 2px 0 6px;
+  font-style: italic;
+}
+.ana-funnel__empty {
+  padding: 24px;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+}
+.ana-funnel__note {
+  margin: 14px 0 0;
+  font-size: 0.78rem;
+  color: #888;
+  font-style: italic;
+}
+
+/* Tabela analytics */
+.ana-table th, .ana-table td {
+  font-size: 0.88rem;
+}
+.ana-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ana-table tbody tr td:first-child {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.ana-conv-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #f1ece2;
+  color: #6b5c45;
+}
+.ana-conv-pill--good {
+  background: #e6f3ec;
+  color: #1a8a4a;
+}
+.ana-conv-pill--warn {
+  background: #fbeee0;
+  color: #b86a1c;
+}
+
+/* Mini KPIs (clientes) */
+.ana-customers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+.ana-mini-kpi {
+  background: #faf6f0;
+  border: 1px solid #ece4d6;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.ana-mini-kpi__label {
+  font-size: 0.78rem;
+  color: #6b5c45;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.ana-mini-kpi__value {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.7rem;
+  color: #1a1a1a;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.ana-mini-kpi__hint {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Mobile: funil colapsa */
+@media (max-width: 640px) {
+  .ana-funnel__row {
+    grid-template-columns: 1fr 100px;
+    grid-template-areas:
+      "label count"
+      "bar bar";
+  }
+  .ana-funnel__label { grid-area: label; }
+  .ana-funnel__count { grid-area: count; }
+  .ana-funnel__bar { grid-area: bar; }
+  .ana-kpi__value { font-size: 1.7rem; }
+}
