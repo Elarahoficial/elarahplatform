@@ -5,7 +5,49 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v24 — normalize NFKD em path de imagem (cedilha/acento) + fixes anteriores');
+console.info('[Elarah] script.js v25 — mobile header centralizado + fechamento robusto');
+
+// ===== MOBILE HEADER (compartilhado entre páginas) =====
+// Centraliza o comportamento do hambúrguer + dropdown Explorar.
+// Idempotente: chamar várias vezes não duplica listeners.
+// Usado em script.js (home/categoria/dia-das-mães/oferecer) e
+// inline em presentear.js (página standalone que não carrega script.js).
+window.initMobileHeader = function () {
+  const toggle = document.getElementById('mobile-toggle');
+  const nav = document.querySelector('.header__nav');
+  if (!toggle || !nav) return;
+  if (toggle.dataset.elarahHeaderInit === '1') return;
+  toggle.dataset.elarahHeaderInit = '1';
+
+  const closeMenu = () => nav.classList.remove('mobile-open');
+
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    nav.classList.toggle('mobile-open');
+  });
+
+  // Fecha ao clicar fora do menu E fora do botão.
+  document.addEventListener('click', (e) => {
+    if (!nav.classList.contains('mobile-open')) return;
+    if (nav.contains(e.target) || toggle.contains(e.target)) return;
+    closeMenu();
+  });
+
+  // Fecha ao clicar em qualquer link dentro do menu.
+  nav.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', closeMenu);
+  });
+
+  // Fecha ao rolar a página (mobile abre como overlay; rolar fecha).
+  window.addEventListener('scroll', () => {
+    if (nav.classList.contains('mobile-open')) closeMenu();
+  }, { passive: true });
+
+  // Fecha com ESC.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+  });
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
   let experiences = [];
@@ -602,14 +644,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
   }
 
-  const mobileToggle = document.getElementById('mobile-toggle');
-  const nav = document.querySelector('.header__nav');
-
-  if (mobileToggle && nav) {
-    mobileToggle.addEventListener('click', () => {
-      nav.classList.toggle('mobile-open');
-    });
-  }
+  initMobileHeader();
 
   document.querySelectorAll('a[href^="#"]').forEach((link) => {
     link.addEventListener('click', (e) => {

@@ -461,38 +461,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ===== INITIAL RENDER =====
   renderCards();
 
-  // ===== EXPLORAR DROPDOWN =====
-  const explorarBtn = document.getElementById('explorar-btn');
-  const explorarDropdown = document.getElementById('explorar-dropdown');
-
-  if (explorarBtn && explorarDropdown) {
-    explorarBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      explorarDropdown.classList.toggle('open');
-      const chevron = explorarBtn.querySelector('.header__nav-chevron');
-      if (chevron) chevron.style.transform = explorarDropdown.classList.contains('open') ? 'rotate(180deg)' : '';
-    });
-
-    document.addEventListener('click', () => {
-      explorarDropdown.classList.remove('open');
-      const chevron = explorarBtn.querySelector('.header__nav-chevron');
-      if (chevron) chevron.style.transform = '';
-    });
-  }
-
-  // ===== MOBILE MENU =====
-  const mobileToggle = document.getElementById('mobile-toggle');
-  const nav = document.querySelector('.header__nav');
-  if (mobileToggle && nav) {
-    mobileToggle.addEventListener('click', () => nav.classList.toggle('mobile-open'));
-  }
-
-  // ===== HEADER SHADOW =====
-  const header = document.querySelector('.header');
-  if (header) {
-    window.addEventListener('scroll', () => {
-      header.style.boxShadow = window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,0.06)' : 'none';
-    });
-  }
+  // Header (mobile menu, explorar dropdown, scroll shadow) já é
+  // inicializado por script.js, que esta página também carrega.
+  // Listeners duplicados aqui faziam o toggle se cancelar (add+remove
+  // no mesmo clique) — por isso o hambúrguer não abria.
 
 });

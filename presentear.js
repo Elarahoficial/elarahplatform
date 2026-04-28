@@ -248,9 +248,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ===== MOBILE MENU =====
-  if (mobileToggle && nav) {
-    mobileToggle.addEventListener('click', () => {
+  // Mesmo comportamento de script.js#initMobileHeader: fecha ao
+  // clicar fora, em link interno, ao rolar ou apertar ESC.
+  // Idempotente — flag elarahHeaderInit evita atachar 2x se o
+  // helper global existir.
+  if (mobileToggle && nav && mobileToggle.dataset.elarahHeaderInit !== '1') {
+    mobileToggle.dataset.elarahHeaderInit = '1';
+
+    const closeMenu = () => nav.classList.remove('mobile-open');
+
+    mobileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
       nav.classList.toggle('mobile-open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!nav.classList.contains('mobile-open')) return;
+      if (nav.contains(e.target) || mobileToggle.contains(e.target)) return;
+      closeMenu();
+    });
+
+    nav.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', closeMenu);
+    });
+
+    window.addEventListener('scroll', () => {
+      if (nav.classList.contains('mobile-open')) closeMenu();
+    }, { passive: true });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
     });
   }
 
