@@ -98,6 +98,16 @@
         <span>Gift Cards</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="coupons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 12V8H6a2 2 0 1 1 0-4h12v4"/>
+          <path d="M20 12v4H6a2 2 0 1 0 0 4h12v-4"/>
+          <circle cx="9" cy="9" r="1"/>
+          <circle cx="9" cy="15" r="1"/>
+        </svg>
+        <span>Cupons</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="social">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 11a9 9 0 0 1 9 9"/>
@@ -122,7 +132,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.61 · 2026-04-28
+        Admin v.62 · 2026-04-29 (cupons)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1136,7 +1146,135 @@
       </div>
     </div>
 
+    <!-- ===== PANEL CUPONS ===== -->
+    <div class="admin__panel" id="panel-coupons">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Cupons</h1>
+        <p class="admin__page-subtitle">Cupons promocionais (% ou valor fixo) com restrição por experiência, validade e limite de uso.</p>
+      </div>
+
+      <div style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="coupon-new-btn" class="admin__add-btn">+ Novo cupom</button>
+        <button type="button" id="coupon-refresh-btn" class="admin__add-btn">Atualizar lista</button>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Todos os cupons</span>
+          <span class="admin__table-count" id="coupons-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Desconto</th>
+              <th>Experiência</th>
+              <th>Validade</th>
+              <th>Usos</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="coupons-body">
+            <tr><td colspan="8" class="admin__table-empty">Nenhum cupom criado ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
+</div>
+
+<!-- ===== COUPON FORM MODAL ===== -->
+<div class="admin__modal" id="coupon-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:560px;">
+    <button class="admin__modal-close" id="coupon-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="coupon-modal-title">Novo cupom</h2>
+
+    <form id="coupon-form">
+      <input type="hidden" id="cp-id">
+
+      <div class="admin__form-grid">
+        <div class="admin__form-field">
+          <label>Código *</label>
+          <input type="text" id="cp-code" required style="text-transform:uppercase" placeholder="PINTURA10">
+          <p class="admin__form-hint">Sem espaço. Será comparado em CAIXA ALTA.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Nome interno (campanha)</label>
+          <input type="text" id="cp-nome" placeholder="Pintura — lista de interesse 10% OFF">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição (opcional)</label>
+          <input type="text" id="cp-descricao" placeholder="Ação focada em conversão pra leads que demonstraram interesse na 2ª edição.">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Tipo de desconto *</label>
+          <select id="cp-discount-type" required>
+            <option value="percent">Percentual (%)</option>
+            <option value="value">Valor fixo (R$)</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label id="cp-discount-value-label">Valor do desconto *</label>
+          <input type="number" id="cp-discount-value" required min="1" placeholder="10">
+          <p class="admin__form-hint" id="cp-discount-value-hint">Ex.: 10 = 10% OFF.</p>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Restringir a uma experiência específica (opcional)</label>
+          <select id="cp-experience-id">
+            <option value="">— Qualquer experiência —</option>
+          </select>
+          <p class="admin__form-hint">Se preenchido, o cupom só funciona nessa experiência.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Válido até *</label>
+          <input type="datetime-local" id="cp-valid-until" required>
+          <p class="admin__form-hint">Após essa data o cupom não funciona mais.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Limite de uso (opcional)</label>
+          <input type="number" id="cp-max-uses" min="1" placeholder="50">
+          <p class="admin__form-hint">Vazio = ilimitado.</p>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label class="admin__checkbox">
+            <input type="checkbox" id="cp-is-active" checked>
+            <span>Ativo (kill-switch — desmarque pra desativar instantaneamente)</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" id="cp-cancel" class="admin__add-btn">Cancelar</button>
+        <button type="submit" id="cp-save" class="admin__add-btn">Salvar</button>
+      </div>
+
+      <p id="cp-form-msg" style="margin-top:12px;font-size:.9rem;min-height:1.2em;"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ===== COUPON USES MODAL ===== -->
+<div class="admin__modal" id="coupon-uses-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:720px;">
+    <button class="admin__modal-close" id="coupon-uses-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="coupon-uses-title">Usos do cupom</h2>
+    <div id="coupon-uses-body" style="margin-top:16px;">
+      <p style="color:#888;">Carregando...</p>
+    </div>
+  </div>
 </div>
 
 <!-- ===== EXPERIENCE FORM MODAL ===== -->
@@ -1580,7 +1718,7 @@
 <script src="admin-social.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=66"></script>
+<script src="admin.js?v=67"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

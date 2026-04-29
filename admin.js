@@ -355,6 +355,7 @@
       case 'experiences': await renderExperiences(); break;
       case 'byelarah':    await renderByElarah(); break;
       case 'giftcards':   await renderGiftCards(); break;
+      case 'coupons':     await renderCoupons(); break;
       case 'analytics':   await renderAnalytics(); break;
       case 'social':
         if (window.ElarahSocial && window.ElarahSocial.render) {
@@ -480,6 +481,400 @@
     }
 
     tbody.innerHTML = giftCardRowsHtml(rows, 7);
+  }
+
+  // =====================================================
+  //  CUPONS PROMOCIONAIS (sistema novo, separado de gift cards)
+  // =====================================================
+  // CRUD completo + listagem de usos. Tabela `coupons` no DB.
+  // Diferente de gift_cards: aqui é instrumento de marketing
+  // (% ou valor fixo), com restrição opcional por experiência,
+  // validade temporal e limite global de uso.
+
+  let couponsCache = null;
+  let couponsExperiencesCache = null;
+
+  async function renderCoupons() {
+    const tbody = document.getElementById('coupons-body');
+    const countEl = document.getElementById('coupons-count');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Carregando cupons...</td></tr>';
+
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('id, code, nome, discount_type, discount_value, experience_id, valid_from, valid_until, max_uses, times_used, is_active, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      couponsCache = data || [];
+
+      // Carrega experiências pra resolver nome (uma vez, com cache)
+      if (!couponsExperiencesCache) {
+        const { data: exps } = await supabase
+          .from('experiences')
+          .select('id, nome')
+          .order('nome', { ascending: true });
+        couponsExperiencesCache = exps || [];
+      }
+      const expById = new Map((couponsExperiencesCache || []).map(e => [e.id, e.nome]));
+
+      if (countEl) countEl.textContent = couponsCache.length + ' cupons';
+
+      if (!couponsCache.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhum cupom criado ainda.</td></tr>';
+        return;
+      }
+
+      const fmtBRL = (cents) =>
+        (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      const fmtDate = (iso) => {
+        if (!iso) return '—';
+        try {
+          return new Date(iso).toLocaleDateString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: '2-digit',
+            hour: '2-digit', minute: '2-digit',
+          });
+        } catch { return iso; }
+      };
+
+      const now = Date.now();
+      tbody.innerHTML = couponsCache.map(c => {
+        const isExpired = c.valid_until && new Date(c.valid_until).getTime() < now;
+        const isExhausted = c.max_uses != null && c.times_used >= c.max_uses;
+        const statusActive = c.is_active && !isExpired && !isExhausted;
+        const statusLabel = !c.is_active
+          ? '<span style="color:#888;">Desativado</span>'
+          : isExpired
+            ? '<span style="color:#c0392b;">Expirado</span>'
+            : isExhausted
+              ? '<span style="color:#c0392b;">Esgotado</span>'
+              : '<span style="color:#1a8a4a;">Ativo</span>';
+
+        const desconto = c.discount_type === 'percent'
+          ? c.discount_value + '% OFF'
+          : fmtBRL(c.discount_value);
+
+        const expNome = c.experience_id
+          ? (expById.get(c.experience_id) || '(experiência removida)')
+          : '<span style="color:#888;">Qualquer</span>';
+
+        const usos = c.max_uses != null
+          ? c.times_used + ' / ' + c.max_uses
+          : c.times_used + ' / ∞';
+
+        return (
+          '<tr>' +
+            '<td><code style="background:#f4f0e8;padding:3px 8px;border-radius:6px;font-weight:600;">' +
+              escapeHtml(c.code) + '</code></td>' +
+            '<td>' + escapeHtml(c.nome || '—') + '</td>' +
+            '<td><strong>' + desconto + '</strong></td>' +
+            '<td style="font-size:.85rem;">' + expNome + '</td>' +
+            '<td style="font-size:.85rem;">' + fmtDate(c.valid_until) + '</td>' +
+            '<td>' + usos + '</td>' +
+            '<td>' + statusLabel + '</td>' +
+            '<td style="white-space:nowrap;">' +
+              '<button type="button" class="admin__add-btn" style="padding:4px 10px;font-size:.78rem;" data-coupon-uses="' + c.id + '">Ver usos</button> ' +
+              '<button type="button" class="admin__add-btn" style="padding:4px 10px;font-size:.78rem;" data-coupon-edit="' + c.id + '">Editar</button>' +
+            '</td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      // Wire row buttons
+      tbody.querySelectorAll('[data-coupon-edit]').forEach(btn => {
+        btn.addEventListener('click', () => openCouponModal(btn.dataset.couponEdit));
+      });
+      tbody.querySelectorAll('[data-coupon-uses]').forEach(btn => {
+        btn.addEventListener('click', () => showCouponUses(btn.dataset.couponUses));
+      });
+
+    } catch (e) {
+      console.error('[Admin/Coupons] erro ao listar', e);
+      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty" style="color:#c0392b;">Erro ao carregar cupons: ' + escapeHtml(e.message || String(e)) + '</td></tr>';
+    }
+  }
+
+  function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  // Abre o modal de criar/editar. Sem coupon_id = novo.
+  async function openCouponModal(couponId) {
+    const modal = document.getElementById('coupon-modal');
+    if (!modal) return;
+    const title = document.getElementById('coupon-modal-title');
+    const idField = document.getElementById('cp-id');
+    const codeField = document.getElementById('cp-code');
+    const nomeField = document.getElementById('cp-nome');
+    const descField = document.getElementById('cp-descricao');
+    const typeField = document.getElementById('cp-discount-type');
+    const valueField = document.getElementById('cp-discount-value');
+    const expField = document.getElementById('cp-experience-id');
+    const validField = document.getElementById('cp-valid-until');
+    const maxField = document.getElementById('cp-max-uses');
+    const activeField = document.getElementById('cp-is-active');
+    const msgEl = document.getElementById('cp-form-msg');
+
+    if (msgEl) msgEl.textContent = '';
+
+    // Popula dropdown de experiências (com cache)
+    if (!couponsExperiencesCache) {
+      const { data: exps } = await supabase.from('experiences').select('id, nome').order('nome');
+      couponsExperiencesCache = exps || [];
+    }
+    expField.innerHTML = '<option value="">— Qualquer experiência —</option>' +
+      (couponsExperiencesCache || []).map(e =>
+        '<option value="' + e.id + '">' + escapeHtml(e.nome) + '</option>'
+      ).join('');
+
+    if (couponId) {
+      title.textContent = 'Editar cupom';
+      const c = (couponsCache || []).find(x => x.id === couponId);
+      if (!c) { alert('Cupom não encontrado.'); return; }
+      idField.value = c.id;
+      codeField.value = c.code || '';
+      codeField.disabled = true; // não permite mudar código depois de criado
+      nomeField.value = c.nome || '';
+      descField.value = c.descricao || '';
+      typeField.value = c.discount_type;
+      valueField.value = c.discount_type === 'value'
+        ? (c.discount_value / 100)
+        : c.discount_value;
+      expField.value = c.experience_id || '';
+      // datetime-local: precisa "YYYY-MM-DDTHH:MM"
+      if (c.valid_until) {
+        const d = new Date(c.valid_until);
+        const tzOff = d.getTimezoneOffset() * 60000;
+        validField.value = new Date(d.getTime() - tzOff).toISOString().slice(0, 16);
+      }
+      maxField.value = c.max_uses ?? '';
+      activeField.checked = c.is_active !== false;
+    } else {
+      title.textContent = 'Novo cupom';
+      idField.value = '';
+      codeField.value = '';
+      codeField.disabled = false;
+      nomeField.value = '';
+      descField.value = '';
+      typeField.value = 'percent';
+      valueField.value = '';
+      expField.value = '';
+      // Default: 48h a partir de agora
+      const d = new Date(Date.now() + 48 * 3600 * 1000);
+      const tzOff = d.getTimezoneOffset() * 60000;
+      validField.value = new Date(d.getTime() - tzOff).toISOString().slice(0, 16);
+      maxField.value = '';
+      activeField.checked = true;
+    }
+
+    updateCouponDiscountValueHint();
+    modal.classList.add('open');
+  }
+
+  function closeCouponModal() {
+    const modal = document.getElementById('coupon-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function updateCouponDiscountValueHint() {
+    const type = document.getElementById('cp-discount-type').value;
+    const label = document.getElementById('cp-discount-value-label');
+    const hint = document.getElementById('cp-discount-value-hint');
+    const input = document.getElementById('cp-discount-value');
+    if (type === 'percent') {
+      label.textContent = 'Percentual de desconto (%) *';
+      hint.textContent = 'Ex.: 10 = 10% OFF (R$ 299 vira R$ 269,10).';
+      input.max = 100;
+      input.placeholder = '10';
+    } else {
+      label.textContent = 'Valor fixo de desconto (R$) *';
+      hint.textContent = 'Ex.: 30 = R$ 30 OFF.';
+      input.max = '';
+      input.placeholder = '30';
+    }
+  }
+
+  async function saveCoupon(ev) {
+    ev.preventDefault();
+    const msgEl = document.getElementById('cp-form-msg');
+    msgEl.style.color = '#888';
+    msgEl.textContent = 'Salvando...';
+
+    const id = document.getElementById('cp-id').value || null;
+    const code = document.getElementById('cp-code').value.trim().toUpperCase();
+    const nome = document.getElementById('cp-nome').value.trim() || null;
+    const descricao = document.getElementById('cp-descricao').value.trim() || null;
+    const discountType = document.getElementById('cp-discount-type').value;
+    let discountValueRaw = Number(document.getElementById('cp-discount-value').value);
+    const experienceId = document.getElementById('cp-experience-id').value || null;
+    const validUntilStr = document.getElementById('cp-valid-until').value;
+    const maxUsesRaw = document.getElementById('cp-max-uses').value.trim();
+    const isActive = document.getElementById('cp-is-active').checked;
+
+    if (!code) { msgEl.style.color = '#c0392b'; msgEl.textContent = 'Código é obrigatório.'; return; }
+    if (!Number.isFinite(discountValueRaw) || discountValueRaw <= 0) {
+      msgEl.style.color = '#c0392b'; msgEl.textContent = 'Valor do desconto inválido.'; return;
+    }
+    if (discountType === 'percent' && discountValueRaw > 100) {
+      msgEl.style.color = '#c0392b'; msgEl.textContent = 'Percentual não pode ser maior que 100.'; return;
+    }
+    if (!validUntilStr) { msgEl.style.color = '#c0392b'; msgEl.textContent = 'Validade é obrigatória.'; return; }
+
+    // Converte valor pra centavos se for tipo 'value'
+    const discountValue = discountType === 'value'
+      ? Math.round(discountValueRaw * 100)
+      : Math.round(discountValueRaw);
+
+    const maxUses = maxUsesRaw ? Math.max(1, Math.floor(Number(maxUsesRaw))) : null;
+
+    const payload = {
+      code,
+      nome,
+      descricao,
+      discount_type: discountType,
+      discount_value: discountValue,
+      experience_id: experienceId,
+      valid_until: new Date(validUntilStr).toISOString(),
+      max_uses: maxUses,
+      is_active: isActive,
+    };
+
+    try {
+      let res;
+      if (id) {
+        // Update — não muda code (campo disabled)
+        const { code: _ignore, ...patch } = payload;
+        res = await supabase.from('coupons').update(patch).eq('id', id);
+      } else {
+        res = await supabase.from('coupons').insert(payload);
+      }
+      if (res.error) throw res.error;
+      msgEl.style.color = '#1a8a4a';
+      msgEl.textContent = '✓ Cupom salvo.';
+      couponsCache = null;
+      setTimeout(() => {
+        closeCouponModal();
+        renderCoupons();
+      }, 600);
+    } catch (e) {
+      console.error('[Admin/Coupons] save erro', e);
+      msgEl.style.color = '#c0392b';
+      // Detecta violação de unique no code
+      const m = String(e.message || e);
+      if (m.toLowerCase().includes('coupons_code_key') || m.toLowerCase().includes('duplicate')) {
+        msgEl.textContent = 'Já existe um cupom com esse código.';
+      } else {
+        msgEl.textContent = 'Erro: ' + m;
+      }
+    }
+  }
+
+  async function showCouponUses(couponId) {
+    const modal = document.getElementById('coupon-uses-modal');
+    const titleEl = document.getElementById('coupon-uses-title');
+    const bodyEl = document.getElementById('coupon-uses-body');
+    if (!modal) return;
+    modal.classList.add('open');
+    bodyEl.innerHTML = '<p style="color:#888;">Carregando...</p>';
+
+    const c = (couponsCache || []).find(x => x.id === couponId);
+    titleEl.textContent = 'Usos do cupom ' + (c ? c.code : '');
+
+    try {
+      const { data, error } = await supabase
+        .from('coupon_uses')
+        .select('id, booking_id, email, amount_discount_centavos, used_at, experience_id')
+        .eq('coupon_id', couponId)
+        .order('used_at', { ascending: false });
+      if (error) throw error;
+
+      if (!data || !data.length) {
+        bodyEl.innerHTML = '<p style="color:#888;">Nenhum uso registrado ainda.</p>';
+        return;
+      }
+
+      const fmtBRL = (cents) =>
+        (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const fmtDateTime = (iso) => {
+        try {
+          return new Date(iso).toLocaleString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+          });
+        } catch { return iso; }
+      };
+
+      bodyEl.innerHTML =
+        '<table class="admin__table">' +
+          '<thead><tr><th>Data</th><th>E-mail</th><th>Desconto</th><th>Booking</th></tr></thead>' +
+          '<tbody>' +
+            data.map(u =>
+              '<tr>' +
+                '<td>' + fmtDateTime(u.used_at) + '</td>' +
+                '<td>' + escapeHtml(u.email || '—') + '</td>' +
+                '<td>' + fmtBRL(u.amount_discount_centavos || 0) + '</td>' +
+                '<td><code style="font-size:.75rem;">' +
+                  (u.booking_id ? u.booking_id.slice(0, 8) + '…' : '—') +
+                '</code></td>' +
+              '</tr>'
+            ).join('') +
+          '</tbody>' +
+        '</table>' +
+        '<p style="margin-top:14px;font-size:.85rem;color:#666;">' +
+          'Total: ' + data.length + ' uso(s) · ' +
+          'Desconto total: ' + fmtBRL(data.reduce((s, u) => s + (u.amount_discount_centavos || 0), 0)) +
+        '</p>';
+    } catch (e) {
+      bodyEl.innerHTML = '<p style="color:#c0392b;">Erro: ' + escapeHtml(e.message || String(e)) + '</p>';
+    }
+  }
+
+  function wireCouponPanel() {
+    const newBtn = document.getElementById('coupon-new-btn');
+    if (newBtn) newBtn.addEventListener('click', () => openCouponModal(null));
+    const refreshBtn = document.getElementById('coupon-refresh-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => {
+      couponsCache = null;
+      couponsExperiencesCache = null;
+      renderCoupons();
+    });
+    const closeBtn = document.getElementById('coupon-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeCouponModal);
+    const cancelBtn = document.getElementById('cp-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeCouponModal);
+    const form = document.getElementById('coupon-form');
+    if (form) form.addEventListener('submit', saveCoupon);
+    const typeSel = document.getElementById('cp-discount-type');
+    if (typeSel) typeSel.addEventListener('change', updateCouponDiscountValueHint);
+    const usesClose = document.getElementById('coupon-uses-modal-close');
+    if (usesClose) usesClose.addEventListener('click', () => {
+      const m = document.getElementById('coupon-uses-modal');
+      if (m) m.classList.remove('open');
+    });
+    // Click no backdrop fecha
+    const cpModal = document.getElementById('coupon-modal');
+    if (cpModal) {
+      const bd = cpModal.querySelector('.admin__modal-backdrop');
+      if (bd) bd.addEventListener('click', closeCouponModal);
+    }
+    const usesModal = document.getElementById('coupon-uses-modal');
+    if (usesModal) {
+      const bd = usesModal.querySelector('.admin__modal-backdrop');
+      if (bd) bd.addEventListener('click', () => usesModal.classList.remove('open'));
+    }
+  }
+
+  // Auto-wire quando o admin boota
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireCouponPanel);
+  } else {
+    wireCouponPanel();
   }
 
   // Tabela compacta injetada no painel de Compras pra o operador não
