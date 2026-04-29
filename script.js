@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v26 — checkout: tradução de erros técnicos pra PT-BR');
+console.info('[Elarah] script.js v27 — sistema de cupons promocionais (% / valor / restrição por experiência)');
 
 // ===== MOBILE HEADER (compartilhado entre páginas) =====
 // Centraliza o comportamento do hambúrguer + dropdown Explorar.
@@ -1522,6 +1522,7 @@ if (groupForm) {
       invalid_price: 'Preço da experiência inválido. Avise no WhatsApp para corrigirmos.',
       gift_card_invalid: 'Cupom inválido ou expirado.',
       gift_card_lookup_failed: 'Erro ao validar o cupom. Tente novamente.',
+      coupon_invalid: 'Cupom inválido, expirado ou não vale para esta experiência.',
       gift_card_save_failed:
         'Erro ao registrar o gift card. Tente novamente em instantes.',
       gift_card_min_value: 'Valor do gift card abaixo do mínimo (R$ 50).',
@@ -2441,6 +2442,7 @@ if (groupForm) {
           body: JSON.stringify({
             code: code,
             amount_centavos: currentReservationCtx.precoCentavos,
+            experiencia_id: currentReservationCtx.experienceId || null,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -2464,9 +2466,16 @@ if (groupForm) {
         currentReservationCtx.cupomCentavos = used;
 
         msg.style.color = '#1a8a4a';
-        msg.textContent = data.covers_full
-          ? 'Cupom cobre 100% — você não paga nada extra.'
-          : 'Cupom aplicado: ' + brl(used) + ' de desconto.';
+        // Mensagem amigável: pra cupom percentual mostra "X% OFF" também,
+        // pra reforçar o benefício pro cliente.
+        const isPercentCoupon = data.kind === 'coupon' && data.discount_type === 'percent';
+        if (data.covers_full) {
+          msg.textContent = 'Cupom cobre 100% — você não paga nada extra.';
+        } else if (isPercentCoupon) {
+          msg.textContent = '✓ ' + data.discount_value + '% OFF aplicado: ' + brl(used) + ' de desconto.';
+        } else {
+          msg.textContent = '✓ Cupom aplicado: ' + brl(used) + ' de desconto.';
+        }
         const drow = root.querySelector('#erm-discount-row');
         drow.style.display = 'flex';
         root.querySelector('#erm-discount').textContent = '- ' + brl(used);

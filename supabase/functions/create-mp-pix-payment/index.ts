@@ -101,7 +101,7 @@ function splitName(fullName: string): { first: string; last: string } {
 // Marcador único de versão. Mude a cada release pra confirmar via logs
 // do Supabase qual versão está rodando. Se você ver esse marcador nos
 // logs ao testar uma reserva, o deploy passou e o código novo está ativo.
-const PIX_FN_VERSION = "v2-toplevel-catch-2026-04-29";
+const PIX_FN_VERSION = "v3-coupons-system-2026-04-29";
 
 async function handlePixRequest(req: Request): Promise<Response> {
   if (!MP_ACCESS_TOKEN || !SUPABASE_URL || !SERVICE_ROLE) {
@@ -196,6 +196,8 @@ async function handlePixRequest(req: Request): Promise<Response> {
     baseCents,
     giftCardId,
     giftCardCentavos,
+    couponId,
+    couponDiscountCents,
     amountToChargeCents,
     slotId,
     quantidade: guardQty,
@@ -284,6 +286,9 @@ async function handlePixRequest(req: Request): Promise<Response> {
       gift_card_id: giftCardId,
       gift_card_centavos: giftCardCentavos,
       gift_card_code: cupomCode,
+      coupon_id: couponId,
+      coupon_code: couponId ? cupomCode : null,
+      coupon_discount_centavos: couponId ? couponDiscountCents : null,
       slot_id: slotId,
       quantidade: guardQty,
       fornecedor_nome: fornecedorNome,
@@ -466,6 +471,9 @@ async function handlePixRequest(req: Request): Promise<Response> {
     gift_card_id: giftCardId,
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
+    coupon_id: couponId,
+    coupon_code: couponId ? cupomCode : null,
+    coupon_discount_centavos: couponId ? couponDiscountCents : null,
     slot_id: slotId,
     quantidade: guardQty,
     fornecedor_nome: fornecedorNome,
@@ -507,6 +515,9 @@ async function handlePixRequest(req: Request): Promise<Response> {
         gift_card_id: giftCardId,
         gift_card_centavos: giftCardCentavos || null,
         gift_card_code: cupomCode,
+        coupon_id: couponId,
+        coupon_code: couponId ? cupomCode : null,
+        coupon_discount_centavos: couponId ? couponDiscountCents : null,
         slot_id: slotId,
         quantidade: guardQty,
         fornecedor_nome: fornecedorNome,

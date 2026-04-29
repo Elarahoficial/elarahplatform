@@ -63,6 +63,9 @@ interface BookingRow {
   status: string | null;
   gift_card_id: string | null;
   gift_card_centavos: number | null;
+  coupon_id: string | null;
+  coupon_discount_centavos: number | null;
+  user_id: string | null;
   metadata: Record<string, unknown> | null;
 }
 
@@ -70,7 +73,7 @@ async function getBookingBySession(sessionId: string): Promise<BookingRow | null
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
+      "id, email, nome, user_id, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, coupon_id, coupon_discount_centavos, slot_id, quantidade, metadata, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
     )
     .eq("stripe_session_id", sessionId)
     .maybeSingle();
@@ -140,7 +143,7 @@ async function refundReservationSideEffects(booking: BookingRow | null) {
         if (error) console.error("[stripe-webhook] vagas refund", error);
       });
   }
-  // Devolve saldo ao cupom usado
+  // Devolve saldo ao gift card usado (legado)
   if (booking.gift_card_id && booking.gift_card_centavos) {
     await supabase
       .rpc("refund_gift_card", {
@@ -149,6 +152,14 @@ async function refundReservationSideEffects(booking: BookingRow | null) {
       })
       .then(({ error }) => {
         if (error) console.error("[stripe-webhook] gift refund", error);
+      });
+  }
+  // Devolve uso ao cupom promocional (sistema novo)
+  if (booking.coupon_id) {
+    await supabase
+      .rpc("refund_coupon", { p_coupon_id: booking.coupon_id })
+      .then(({ error }) => {
+        if (error) console.error("[stripe-webhook] coupon refund", error);
       });
   }
 }
@@ -488,6 +499,28 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
       "[Elarah Payment] booking existe mas status=" + booking.status +
         " (esperado 'pago') — e-mail será enviado mesmo assim.",
     );
+  }
+  // Registra uso definitivo do cupom (se houve). Idempotente: o RPC
+  // dedup por booking_id, então rodar 2x não duplica registro.
+  if (booking.coupon_id) {
+    const { error: useErr } = await supabase.rpc("register_coupon_use", {
+      p_coupon_id: booking.coupon_id,
+      p_booking_id: booking.id,
+      p_user_id: booking.user_id,
+      p_email: booking.email,
+      p_experience_id: booking.experiencia_id,
+      p_amount_discount_centavos: booking.coupon_discount_centavos ?? 0,
+    });
+    if (useErr) {
+      console.error("[stripe-webhook] register_coupon_use falhou", useErr);
+    } else {
+      console.info(
+        "[stripe-webhook] uso de cupom registrado",
+        "coupon=" + booking.coupon_id,
+        "booking=" + booking.id,
+        "discount=" + (booking.coupon_discount_centavos ?? 0),
+      );
+    }
   }
   await sendBookingConfirmation(booking);
 }

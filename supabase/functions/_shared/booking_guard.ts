@@ -60,6 +60,14 @@ export interface GuardSuccess {
   baseCents: number;                  // preço cheio da experiência
   giftCardId: string | null;
   giftCardCentavos: number;
+  // Cupom promocional (sistema novo, tabela `coupons`). Quando preenchido,
+  // giftCardId é null e giftCardCentavos = couponDiscountCents (pra reuso
+  // do mesmo tracking de "valor abatido por código"). Caller deve gravar
+  // coupon_id + coupon_code + coupon_discount_centavos na booking, e o
+  // webhook chama register_coupon_use após confirmação.
+  couponId: string | null;
+  couponCode: string | null;
+  couponDiscountCents: number;
   amountToChargeCents: number;        // baseCents - giftCardCentavos
   cupomCode: string | null;
   slotId: string | null;              // UUID do slot reservado (null = experience-level)
@@ -453,38 +461,88 @@ export async function reserveExperienceSlot(
     }
   }
 
-  // ===== 7. Hold do cupom (se informado) =====
-  let giftCardId: string | null = null;
+  // ===== 7. Hold do cupom OU gift card (se informado) =====
+  // Tenta primeiro a tabela `coupons` (sistema novo de cupons promo:
+  // percentual, restrição por experiência, limite de uso, validade).
+  // Se NÃO for encontrado lá, cai pro `gift_cards` legado (saldo fixo).
+  // Backward compat: códigos antigos (ELRH-XXXX) continuam funcionando.
+  let giftCardId: string | null = null;        // legado — gift_card real
   let giftCardCentavos = 0;
+  let couponId: string | null = null;          // novo — cupom promocional
+  let couponCode: string | null = null;
+  let couponDiscountCents = 0;
 
   const totalBaseCentsForCupom = baseCents * quantidade;
   if (input.cupomCode) {
-    const { data: holdRows, error: holdErr } = await supabase.rpc(
-      "hold_gift_card",
-      { p_code: input.cupomCode, p_amount_centavos: totalBaseCentsForCupom },
+    // Tenta cupom novo primeiro
+    const { data: cpRows, error: cpErr } = await supabase.rpc(
+      "hold_coupon",
+      {
+        p_code: input.cupomCode,
+        p_experience_id: exp.id,
+        p_amount_centavos: totalBaseCentsForCupom,
+      },
     );
-    if (holdErr) {
-      console.error("[Elarah Guard] hold cupom error", holdErr);
-      return {
-        ok: false,
-        errorCode: "gift_card_lookup_failed",
-        errorMessage: "Não foi possível validar o cupom.",
-        errorStatus: 500,
-      };
+    if (cpErr) {
+      // RPC não existe ainda OU erro de permissão → tenta gift_card.
+      // Loga warn (não error) — fallback é esperado em deploys legados
+      // que ainda não rodaram sql/elarah_coupons.sql.
+      console.warn(
+        "[Elarah Guard] hold_coupon falhou, fallback pra gift_card",
+        cpErr.message,
+      );
+    } else {
+      const row = Array.isArray(cpRows) ? cpRows[0] : cpRows;
+      // deno-lint-ignore no-explicit-any
+      const h = row as any;
+      if (h && h.ok === true) {
+        couponId = h.coupon_id ?? null;
+        couponCode = input.cupomCode;
+        couponDiscountCents = Number(h.discount_centavos || 0);
+        giftCardCentavos = couponDiscountCents; // valor abatido — reaproveita o tracking
+      } else if (h && h.coupon_id) {
+        // Existe na tabela coupons mas inválido (expirado/restrito/esgotado).
+        // NÃO cai pro gift_card — o usuário digitou um código que ELE
+        // sabia que era cupom; mensagem específica é mais útil.
+        return {
+          ok: false,
+          errorCode: "coupon_invalid",
+          errorMessage: h?.message || "Cupom inválido.",
+          errorStatus: 422,
+        };
+      }
+      // h não encontrado (h.ok==false e h.coupon_id==null) → fallback
     }
-    const hold = Array.isArray(holdRows) ? holdRows[0] : holdRows;
-    // deno-lint-ignore no-explicit-any
-    const h = hold as any;
-    if (!h || !h.ok) {
-      return {
-        ok: false,
-        errorCode: "gift_card_invalid",
-        errorMessage: h?.message || "Cupom inválido.",
-        errorStatus: 422,
-      };
+
+    // Se não foi cupom, tenta gift card legado
+    if (!couponId) {
+      const { data: holdRows, error: holdErr } = await supabase.rpc(
+        "hold_gift_card",
+        { p_code: input.cupomCode, p_amount_centavos: totalBaseCentsForCupom },
+      );
+      if (holdErr) {
+        console.error("[Elarah Guard] hold gift_card error", holdErr);
+        return {
+          ok: false,
+          errorCode: "gift_card_lookup_failed",
+          errorMessage: "Não foi possível validar o cupom.",
+          errorStatus: 500,
+        };
+      }
+      const hold = Array.isArray(holdRows) ? holdRows[0] : holdRows;
+      // deno-lint-ignore no-explicit-any
+      const h = hold as any;
+      if (!h || !h.ok) {
+        return {
+          ok: false,
+          errorCode: "gift_card_invalid",
+          errorMessage: h?.message || "Cupom inválido.",
+          errorStatus: 422,
+        };
+      }
+      giftCardId = h.gift_card_id ?? null;
+      giftCardCentavos = Number(h.used_centavos || 0);
     }
-    giftCardId = h.gift_card_id ?? null;
-    giftCardCentavos = Number(h.used_centavos || 0);
   }
 
   const totalBaseCents = baseCents * quantidade;
@@ -504,6 +562,10 @@ export async function reserveExperienceSlot(
         p_gift_card_id: giftCardId,
         p_amount_centavos: giftCardCentavos,
       });
+    }
+    if (couponId) {
+      await supabase.rpc("refund_coupon", { p_coupon_id: couponId })
+        .catch((e) => console.warn("[Elarah Guard] refund_coupon falhou", e));
     }
   };
 
@@ -647,7 +709,14 @@ export async function reserveExperienceSlot(
           p_amount_centavos: giftCardCentavos,
         });
       } catch (e) {
-        console.error("[Elarah Guard] rollback cupom falhou", e);
+        console.error("[Elarah Guard] rollback gift_card falhou", e);
+      }
+    }
+    if (couponId) {
+      try {
+        await supabase.rpc("refund_coupon", { p_coupon_id: couponId });
+      } catch (e) {
+        console.error("[Elarah Guard] rollback coupon falhou", e);
       }
     }
   };
@@ -661,6 +730,9 @@ export async function reserveExperienceSlot(
     baseCents,
     giftCardId,
     giftCardCentavos,
+    couponId,
+    couponCode,
+    couponDiscountCents,
     amountToChargeCents,
     cupomCode: input.cupomCode,
     slotId,
