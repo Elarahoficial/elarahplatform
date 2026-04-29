@@ -280,7 +280,7 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
 // confirmar via logs do Supabase qual versão está rodando. Se você
 // ver esse marcador nos logs ao testar uma reserva, o deploy passou
 // e o código novo está ativo.
-const CHECKOUT_FN_VERSION = "v3-inventory-fallback-2026-04-26";
+const CHECKOUT_FN_VERSION = "v4-fix-purchase-errors-2026-04-29";
 
 async function handleExperienceCheckout(payload: Record<string, unknown>) {
   console.info(
