@@ -939,6 +939,7 @@
     'Por isso abrimos a segunda edição… e quem já tinha demonstrado ' +
     'interesse ganhou {DESCONTO_PERCENT}% OFF por 48h.\n\n' +
     'Você consegue garantir por R$ {PRECO_DESCONTO} em vez de R$ {PRECO_CHEIO}.\n\n' +
+    '🎁 Use o cupom *{CUPOM}* no checkout pra ativar o desconto.\n\n' +
     '👉🏻 garante aqui: {LINK}\n\n' +
     'As vagas são limitadas e na última edição esgotou rápido.'
   );
