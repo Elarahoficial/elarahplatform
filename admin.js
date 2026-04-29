@@ -939,7 +939,7 @@
     'Por isso abrimos a segunda edição… e quem já tinha demonstrado ' +
     'interesse ganhou {DESCONTO_PERCENT}% OFF por 48h.\n\n' +
     'Você consegue garantir por R$ {PRECO_DESCONTO} em vez de R$ {PRECO_CHEIO}.\n\n' +
-    '👉 garante aqui: {LINK}\n\n' +
+    '👉🏻 garante aqui: {LINK}\n\n' +
     'As vagas são limitadas e na última edição esgotou rápido.'
   );
 
@@ -1004,11 +1004,48 @@
     return out;
   }
 
-  // Constrói URL absoluta da experiência. Se a experiência tem
-  // experienceId vinculado (item By Elarah comprável), aponta pra
-  // experiencia.html?id=xxx. Senão, manda pra home âncora.
-  function buildExperienceUrl(experienceId, byelarahSlug) {
-    const origin = window.location.origin || 'https://elarah.com.br';
+  // Mapa de experiências com landing dedicada (preview correto no
+  // WhatsApp). Adicione uma entrada por campanha que ganhar página
+  // própria. Match por nome (case insensitive, contains de cada termo).
+  // O JS de cada landing redireciona dinamicamente pra experiencia.html
+  // — admin não precisa atualizar IDs aqui se a experiência for
+  // reimportada/duplicada.
+  //
+  // Estrutura: { keywords: ['termos','que','precisam','aparecer'], landing: '/aperol.html' }
+  const FOLLOWUP_LANDING_PAGES = [
+    {
+      keywords: ['pintura', 'cristal', 'aperol'],
+      landing: '/aperol.html',
+    },
+    // Próximas campanhas: copie o bloco acima.
+    // Ex.:
+    // { keywords: ['vela', 'aromatica'], landing: '/vela-promo.html' },
+  ];
+
+  function findLandingPageFor(experienceName) {
+    const norm = String(experienceName || '')
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '');
+    for (const p of FOLLOWUP_LANDING_PAGES) {
+      if (p.keywords.every(k => norm.includes(k))) return p.landing;
+    }
+    return null;
+  }
+
+  // Constrói URL absoluta pra colocar na mensagem.
+  // Prioridade:
+  //   1. Landing dedicada (preview correto no WhatsApp via og:image)
+  //   2. experiencia.html?id=<uuid> (preview genérico, mas funciona)
+  //   3. home com âncora By Elarah
+  // Sempre retorna URL absoluta com base em PUBLIC_SITE_URL — wa.me
+  // exige absoluta pro preview funcionar.
+  function buildExperienceUrl(experienceId, byelarahSlug, experienceName) {
+    const origin = (window.location.origin && /^https?:/.test(window.location.origin))
+      ? window.location.origin
+      : 'https://elarah.com.br';
+    const landing = findLandingPageFor(experienceName);
+    if (landing) return origin + landing;
     if (experienceId) {
       return origin + '/experiencia.html?id=' + encodeURIComponent(experienceId);
     }
@@ -1238,7 +1275,7 @@
     // Resolve placeholders
     const exp = followupCtx;
     const cup = exp.coupon;
-    const link = buildExperienceUrl(exp.experienceId, exp.byelarahSlug);
+    const link = buildExperienceUrl(exp.experienceId, exp.byelarahSlug, exp.experienceName);
 
     let precoCheioCents = exp.precoCheioCents;
     let descCents = 0;
