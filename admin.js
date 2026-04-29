@@ -933,7 +933,7 @@
   // O texto base é o que a campanha pediu — placeholders são
   // substituídos por pessoa antes de gerar o link.
   const FOLLOWUP_DEFAULT_TEMPLATE = (
-    'VOCÊ pediu e voltou 😭✨\n\n' +
+    'VOCÊ pediu e voltou 🍊✨\n\n' +
     'A experiência {EXPERIENCIA_NOME} (By Elarah) teve a primeira ' +
     'edição esgotada: e muita gente ficou de fora.\n\n' +
     'Por isso abrimos a segunda edição… e quem já tinha demonstrado ' +
