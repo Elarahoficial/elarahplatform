@@ -3,7 +3,6 @@ name: Deploy Supabase Edge Functions
 on:
   push:
     branches:
-      - main
       - claude/create-elarah-homepage-VsE5i
       - claude/fix-purchase-errors-2GrQL
     paths:
