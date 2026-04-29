@@ -932,15 +932,6 @@
   // Mensagem template default. Pode ser alterada inline no modal.
   // O texto base é o que a campanha pediu — placeholders são
   // substituídos por pessoa antes de gerar o link.
-  //
-  // IMPORTANTE: emojis usam escapes Unicode (😭 etc.) em
-  // vez de literais. Isso elimina qualquer risco de corrupção por
-  // encoding intermediário (CDN, minifier, edge proxy) que mexa
-  // com surrogate pairs. JS engine reconstrói o emoji corretamente
-  // antes de chamar encodeURIComponent.
-  //   😭 = 😭 (loud crying face)
-  //   ✨       = ✨ (sparkles)
-  //   👉 = 👉 (backhand index pointing right)
   const FOLLOWUP_DEFAULT_TEMPLATE = (
     'VOCÊ pediu e voltou 😭✨\n\n' +
     'A experiência {EXPERIENCIA_NOME} (By Elarah) teve a primeira ' +
