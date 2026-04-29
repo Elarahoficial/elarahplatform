@@ -1015,7 +1015,10 @@
   const FOLLOWUP_LANDING_PAGES = [
     {
       keywords: ['pintura', 'cristal', 'aperol'],
-      landing: '/aperol.html',
+      // pintura.html é a landing nova (URL fresh — WhatsApp gera
+      // preview do zero, sem cache). aperol.html ainda existe como
+      // fallback caso alguém tenha o link antigo.
+      landing: '/pintura.html',
     },
     // Próximas campanhas: copie o bloco acima.
     // Ex.:
