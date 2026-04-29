@@ -931,7 +931,7 @@
 
   // Mensagem template default. Pode ser alterada inline no modal.
   // O texto base é o que a campanha pediu — placeholders são
-  // substituídos por pessoa antes de gerar o link wa.me.
+  // substituídos por pessoa antes de gerar o link.
   const FOLLOWUP_DEFAULT_TEMPLATE = (
     'VOCÊ pediu e voltou 😭✨\n\n' +
     'A experiência {EXPERIENCIA_NOME} (By Elarah) teve a primeira ' +
@@ -1269,7 +1269,13 @@
       CUPOM: cupomCode,
     });
 
-    const url = 'https://wa.me/' + phoneNorm + '?text=' + encodeURIComponent(filled);
+    // Endpoint api.whatsapp.com/send (em vez de wa.me) — mais robusto
+    // pra emojis fora do BMP (😭 ✨ 👉 etc.). O wa.me em alguns clientes
+    // (Safari iOS, WhatsApp Web certos contextos) corrompe surrogate
+    // pairs e o emoji aparece como '��' pro destinatário. /send/?phone=
+    // não tem esse bug. Aceita o mesmo formato de telefone.
+    const url = 'https://api.whatsapp.com/send/?phone=' + phoneNorm +
+                '&text=' + encodeURIComponent(filled);
 
     // Abre PRIMEIRO (gesto do usuário) pra evitar bloqueio do popup
     window.open(url, '_blank', 'noopener');
