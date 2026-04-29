@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v27 — sistema de cupons promocionais (% / valor / restrição por experiência)');
+console.info('[Elarah] script.js v28 — cupons: validação via RPC direto (não depende de Edge Function deployada)');
 
 // ===== MOBILE HEADER (compartilhado entre páginas) =====
 // Centraliza o comportamento do hambúrguer + dropdown Explorar.
@@ -2431,6 +2431,86 @@ if (groupForm) {
       msg.style.color = '#666';
       msg.textContent = 'Validando...';
 
+      // ===== Estratégia em 2 camadas =====
+      // (1) Tenta direto via supabaseClient.rpc("preview_coupon") — não
+      //     depende de Edge Function nova estar deployada. RPC é
+      //     security definer, expõe pra anon, então funciona com a anon
+      //     key que já está no client.
+      // (2) Se a RPC falha (provavelmente porque sql/elarah_coupons.sql
+      //     ainda não rodou no banco), cai pro Edge Function antigo
+      //     redeem-gift-card que valida gift_cards legados.
+      //
+      // Antes era só (2). O problema: o redeem-gift-card deployado no
+      // Supabase pode ser uma versão antiga (sem o fallback pra
+      // preview_coupon), então um cupom novo aparecia como "código não
+      // encontrado". Chamando direto via RPC, ignoramos qualquer drift
+      // de deploy de Edge Function.
+
+      const amountCentavos = currentReservationCtx.precoCentavos;
+      const experienciaId = currentReservationCtx.experienceId || null;
+
+      // ----- Camada 1: preview_coupon via supabaseClient -----
+      let validatedCoupon = null;
+      try {
+        if (window.supabaseClient && experienciaId) {
+          const { data: cpData, error: cpErr } = await window.supabaseClient.rpc(
+            'preview_coupon',
+            {
+              p_code: code,
+              p_experience_id: experienciaId,
+              p_amount_centavos: amountCentavos,
+            }
+          );
+          if (!cpErr) {
+            const row = Array.isArray(cpData) ? cpData[0] : cpData;
+            if (row && row.found) {
+              validatedCoupon = row;
+              console.log('[Elarah checkout] preview_coupon ok', row);
+            }
+          } else {
+            console.warn('[Elarah checkout] preview_coupon RPC erro (fallback gift_card):', cpErr.message);
+          }
+        }
+      } catch (e) {
+        console.warn('[Elarah checkout] preview_coupon exceção (fallback gift_card):', e);
+      }
+
+      // Se achou cupom e é VÁLIDO, aplica direto e termina.
+      if (validatedCoupon && validatedCoupon.valid) {
+        const used = Number(validatedCoupon.discount_centavos || 0);
+        currentReservationCtx.cupomCode = code;
+        currentReservationCtx.cupomCentavos = used;
+        msg.style.color = '#1a8a4a';
+        const totalCents = amountCentavos;
+        const coversFull = used >= totalCents;
+        if (coversFull) {
+          msg.textContent = 'Cupom cobre 100% — você não paga nada extra.';
+        } else if (validatedCoupon.discount_type === 'percent') {
+          msg.textContent = '✓ ' + validatedCoupon.discount_value + '% OFF aplicado: ' + brl(used) + ' de desconto.';
+        } else {
+          msg.textContent = '✓ Cupom aplicado: ' + brl(used) + ' de desconto.';
+        }
+        const drow = root.querySelector('#erm-discount-row');
+        drow.style.display = 'flex';
+        root.querySelector('#erm-discount').textContent = '- ' + brl(used);
+        refreshPriceBreakdown();
+        return;
+      }
+
+      // Se achou cupom mas é INVÁLIDO (expirado/restrito/esgotado/desativado),
+      // mostra a mensagem do banco direto — não cai pro gift_card,
+      // porque o usuário digitou algo que ELE achava ser cupom.
+      if (validatedCoupon && !validatedCoupon.valid) {
+        msg.style.color = '#c0392b';
+        msg.textContent = validatedCoupon.message || 'Cupom inválido.';
+        currentReservationCtx.cupomCode = null;
+        currentReservationCtx.cupomCentavos = 0;
+        root.querySelector('#erm-discount-row').style.display = 'none';
+        refreshPriceBreakdown();
+        return;
+      }
+
+      // ----- Camada 2: gift_card legado via Edge Function -----
       try {
         const res = await fetch(REDEEM_FN_URL, {
           method: 'POST',
@@ -2441,15 +2521,15 @@ if (groupForm) {
           },
           body: JSON.stringify({
             code: code,
-            amount_centavos: currentReservationCtx.precoCentavos,
-            experiencia_id: currentReservationCtx.experienceId || null,
+            amount_centavos: amountCentavos,
+            experiencia_id: experienciaId,
           }),
         });
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok || !data || !data.ok) {
           msg.style.color = '#c0392b';
-          msg.textContent = (data && data.error) || 'Não foi possível validar o cupom.';
+          msg.textContent = (data && (data.message || data.error)) || 'Não foi possível validar o cupom.';
           return;
         }
         if (!data.valid) {
@@ -2466,8 +2546,6 @@ if (groupForm) {
         currentReservationCtx.cupomCentavos = used;
 
         msg.style.color = '#1a8a4a';
-        // Mensagem amigável: pra cupom percentual mostra "X% OFF" também,
-        // pra reforçar o benefício pro cliente.
         const isPercentCoupon = data.kind === 'coupon' && data.discount_type === 'percent';
         if (data.covers_full) {
           msg.textContent = 'Cupom cobre 100% — você não paga nada extra.';
@@ -2479,8 +2557,6 @@ if (groupForm) {
         const drow = root.querySelector('#erm-discount-row');
         drow.style.display = 'flex';
         root.querySelector('#erm-discount').textContent = '- ' + brl(used);
-        // Re-renderiza pra atualizar taxa + total corretamente
-        // (taxa é recalculada sobre o valor pós-cupom).
         refreshPriceBreakdown();
       } catch (e) {
         console.error('[Elarah checkout] validate cupom', e);
