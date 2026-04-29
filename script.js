@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v25 — mobile header centralizado + fechamento robusto');
+console.info('[Elarah] script.js v26 — checkout: tradução de erros técnicos pra PT-BR');
 
 // ===== MOBILE HEADER (compartilhado entre páginas) =====
 // Centraliza o comportamento do hambúrguer + dropdown Explorar.
@@ -1500,6 +1500,81 @@ if (groupForm) {
     const SUPABASE_ANON_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
 
+    // ===== Tradução de erros do checkout =====
+    // O backend pode retornar códigos técnicos (ex.: vagas_check_failed,
+    // experience_sold_out) — sem mensagem humana, isso vaza pro modal e
+    // assusta o cliente. Esta tabela traduz códigos conhecidos pra texto
+    // em PT-BR. Inclui códigos antigos que podem estar em deploys
+    // legados das Edge Functions, pra que NUNCA apareça código cru.
+    const CHECKOUT_ERROR_MESSAGES = {
+      vagas_check_failed:
+        'Não conseguimos verificar a disponibilidade de vagas agora. Recarregue a página e tente de novo, ou nos chame no WhatsApp.',
+      experience_sold_out: 'Esta experiência está esgotada.',
+      slot_sold_out: 'Este horário está esgotado. Escolha outro horário disponível.',
+      experience_cutoff_passed:
+        'As reservas para esta experiência já encerraram. Escolha outra data.',
+      experience_not_found: 'Experiência não encontrada. Recarregue a página.',
+      experience_unavailable: 'Esta experiência não está mais disponível.',
+      slot_unavailable: 'Este horário não está mais disponível. Escolha outro.',
+      experience_lookup_failed:
+        'Erro ao buscar a experiência. Tente novamente em instantes.',
+      experiencia_id_required: 'Experiência inválida. Recarregue a página.',
+      invalid_price: 'Preço da experiência inválido. Avise no WhatsApp para corrigirmos.',
+      gift_card_invalid: 'Cupom inválido ou expirado.',
+      gift_card_lookup_failed: 'Erro ao validar o cupom. Tente novamente.',
+      gift_card_save_failed:
+        'Erro ao registrar o gift card. Tente novamente em instantes.',
+      gift_card_min_value: 'Valor do gift card abaixo do mínimo (R$ 50).',
+      gift_card_max_value: 'Valor do gift card acima do máximo permitido.',
+      recipient_email_required: 'Informe o e-mail do presenteado.',
+      stripe_create_failed:
+        'Erro ao iniciar o pagamento no Stripe. Tente novamente ou pague no PIX.',
+      stripe_line_items_mismatch:
+        'Erro interno no cálculo do total. Recarregue a página e tente de novo.',
+      mp_create_failed:
+        'Não foi possível gerar o PIX agora. Tente de novo ou pague no cartão.',
+      mp_qr_missing:
+        'Mercado Pago não devolveu o QR code. Tente novamente ou pague no cartão.',
+      amount_mismatch:
+        'Erro interno no cálculo do total. Recarregue a página e tente novamente.',
+      booking_failed:
+        'Erro ao registrar sua reserva. Tente novamente ou nos chame no WhatsApp.',
+      cpf_required: 'CPF inválido. Use 11 dígitos — PIX exige CPF válido.',
+      email_required: 'E-mail é obrigatório para pagar via PIX.',
+      server_misconfigured:
+        'Pagamento temporariamente indisponível. Avise no WhatsApp.',
+      checkout_unexpected_error:
+        'Erro inesperado no checkout. Tente novamente em instantes ou nos chame no WhatsApp.',
+      method_not_allowed: 'Método inválido. Recarregue a página.',
+      invalid_json: 'Erro ao enviar os dados. Recarregue a página.',
+    };
+
+    // Recebe a resposta crua do backend (data) + um fallback humano e
+    // devolve SEMPRE uma mensagem em português pronta pra mostrar no
+    // erro do modal. Prioridade:
+    //   1. data.message (já vem em PT do backend novo)
+    //   2. tradução de data.error (códigos conhecidos)
+    //   3. fallback genérico
+    // Nunca devolve um código técnico (ex.: "vagas_check_failed") cru.
+    function translateCheckoutError(data, fallback) {
+      const fb = fallback || 'Não foi possível processar a reserva. Tente novamente.';
+      if (!data) return fb;
+      // Mensagem humana já veio do backend.
+      if (data.message && typeof data.message === 'string' && data.message.trim()) {
+        return data.message.trim();
+      }
+      const code = data.error;
+      if (!code) return fb;
+      const codeStr = String(code).trim();
+      if (Object.prototype.hasOwnProperty.call(CHECKOUT_ERROR_MESSAGES, codeStr)) {
+        return CHECKOUT_ERROR_MESSAGES[codeStr];
+      }
+      // Código desconhecido: loga pra diagnóstico mas mostra fallback
+      // genérico — nunca expõe o código cru pro usuário.
+      console.warn('[Elarah Payment] código de erro desconhecido do backend:', codeStr);
+      return fb;
+    }
+
     function readActiveHorario(triggerEl) {
       if (!triggerEl) return null;
       // Trigger pode trazer um data-horario explícito (ex.: ghost button
@@ -2623,7 +2698,7 @@ if (groupForm) {
           const data = await res.json().catch(() => null);
 
           if (!res.ok || !data) {
-            let msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            let msg = translateCheckoutError(data, 'Não foi possível gerar o PIX. Tente novamente ou pague no cartão.');
             if (data && data.detail) {
               const d = data.detail;
               const causes = Array.isArray(d.cause)
@@ -2709,8 +2784,18 @@ if (groupForm) {
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data) {
-          const msg = (data && (data.message || data.error)) || 'Não foi possível processar a reserva.';
+          const msg = translateCheckoutError(data, 'Não foi possível processar a reserva. Tente novamente.');
           errEl.textContent = msg;
+          confirmBtn.disabled = false;
+          refreshPriceBreakdown();
+          return;
+        }
+
+        // Defesa adicional: alguns deploys legados respondem 200 OK
+        // mesmo carregando { error: "..." } no corpo. Sem essa checagem
+        // o front segue como sucesso e tenta redirecionar pra undefined.
+        if (data.error && !data.url && data.direct !== true) {
+          errEl.textContent = translateCheckoutError(data, 'Não foi possível processar a reserva. Tente novamente.');
           confirmBtn.disabled = false;
           refreshPriceBreakdown();
           return;

@@ -98,13 +98,12 @@ function splitName(fullName: string): { first: string; last: string } {
   return { first: parts[0], last: parts.slice(1).join(" ") };
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-  if (req.method !== "POST") {
-    return jsonResponse({ error: "method_not_allowed" }, 405);
-  }
+// Marcador único de versão. Mude a cada release pra confirmar via logs
+// do Supabase qual versão está rodando. Se você ver esse marcador nos
+// logs ao testar uma reserva, o deploy passou e o código novo está ativo.
+const PIX_FN_VERSION = "v2-toplevel-catch-2026-04-29";
+
+async function handlePixRequest(req: Request): Promise<Response> {
   if (!MP_ACCESS_TOKEN || !SUPABASE_URL || !SERVICE_ROLE) {
     console.error(
       "[Elarah Payment/MP] env ausente",
@@ -547,4 +546,46 @@ serve(async (req) => {
     expires_at: payment.date_of_expiration,
     amount_total_centavos: amountToChargeCents,
   });
+}
+
+// =============================================================
+// ENTRY
+// =============================================================
+serve(async (req) => {
+  console.info(
+    "[Elarah Payment/MP] create-mp-pix-payment BOOT",
+    "version=" + PIX_FN_VERSION,
+    "method=" + req.method,
+  );
+
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "method_not_allowed" }, 405);
+  }
+
+  // Defesa final: se QUALQUER coisa lançar exceção dentro do handler
+  // (RPC indisponível, schema desatualizado, MP fora do ar, etc.), a
+  // gente captura aqui e devolve um erro NOMEADO + mensagem em PT —
+  // nunca stack trace cru, nunca código técnico vazado pro front.
+  try {
+    return await handlePixRequest(req);
+  } catch (e) {
+    console.error(
+      "[Elarah Payment/MP] EXCEPTION inesperada — checkout PIX abortado",
+      "version=" + PIX_FN_VERSION,
+      "error=" + (e instanceof Error ? e.message : String(e)),
+      "stack=" + (e instanceof Error ? e.stack : "(no stack)"),
+    );
+    return jsonResponse(
+      {
+        error: "checkout_unexpected_error",
+        message:
+          "Erro inesperado ao gerar o PIX. Tente novamente em instantes ou " +
+          "pague no cartão.",
+      },
+      500,
+    );
+  }
 });

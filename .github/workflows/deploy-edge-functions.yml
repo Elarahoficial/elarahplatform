@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - claude/create-elarah-homepage-VsE5i
+      - claude/fix-purchase-errors-2GrQL
     paths:
       - 'supabase/functions/**'
+  workflow_dispatch:
 
 jobs:
   deploy:
