@@ -114,9 +114,14 @@ $$;
 -- webhook do Stripe rodar 2x (acontece — Stripe re-envia se não
 -- recebe 200), o ON CONFLICT do trigger ignora a 2ª inserção e o
 -- contador não dobra.
+--
+-- IMPORTANTE: índice SEM `where` clause. Partial indexes não
+-- são reconhecidos por `ON CONFLICT (booking_id)` simples — daria
+-- erro 42P10. PostgreSQL trata NULLs como distintos por padrão em
+-- unique indexes, então múltiplas linhas com booking_id=NULL são
+-- aceitas naturalmente.
 create unique index if not exists coupon_uses_booking_id_unique
-  on public.coupon_uses(booking_id)
-  where booking_id is not null;
+  on public.coupon_uses(booking_id);
 
 -- ===== 3. Função do trigger =====
 -- Roda quando uma booking transita pra status='pago'. Detecta se
