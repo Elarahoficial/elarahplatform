@@ -196,6 +196,7 @@
     wireAnalyticsControls();
     wireBookingsControls();
     wireCouponPanel();
+    wireFollowupModal();
     await renderOverview();
   }
 
@@ -913,6 +914,419 @@
   }
 
   // wireCouponPanel é chamado dentro de boot() junto com os outros wires.
+
+  // =====================================================
+  //  FOLLOW-UP WHATSAPP — disparo de mensagens pra interessados
+  // =====================================================
+  // Modal genérico que serve qualquer experiência By Elarah.
+  // Lista byelarah_submissions filtradas pela experiência, com
+  // mensagem template editável (placeholders auto-substituídos
+  // pelos dados do cupom vinculado quando existe). Cada pessoa
+  // tem botão wa.me com mensagem preenchida — sem API oficial,
+  // suficiente pra disparo manual em massa.
+  //
+  // Fonte da verdade do "já contatado": coluna
+  // whatsapp_followup_sent_at em byelarah_submissions.
+  // Requer rodar sql/elarah_byelarah_followup_tracking.sql.
+
+  // Mensagem template default. Pode ser alterada inline no modal.
+  // O texto base é o que a campanha pediu — placeholders são
+  // substituídos por pessoa antes de gerar o link wa.me.
+  const FOLLOWUP_DEFAULT_TEMPLATE = (
+    'VOCÊ pediu e voltou 😭✨\n\n' +
+    'A experiência {EXPERIENCIA_NOME} (By Elarah) teve a primeira ' +
+    'edição esgotada: e muita gente ficou de fora.\n\n' +
+    'Por isso abrimos a segunda edição… e quem já tinha demonstrado ' +
+    'interesse ganhou {DESCONTO_PERCENT}% OFF por 48h.\n\n' +
+    'Você consegue garantir por R$ {PRECO_DESCONTO} em vez de R$ {PRECO_CHEIO}.\n\n' +
+    '👉 garante aqui: {LINK}\n\n' +
+    'As vagas são limitadas e na última edição esgotou rápido.'
+  );
+
+  // Estado do modal (cache da request atual)
+  let followupCtx = null;
+
+  // Normaliza telefone BR pra E.164 (55XXXXXXXXXXX) — formato
+  // que o wa.me aceita. Aceita "(11) 91234-5678", "11912345678",
+  // "+5511912345678", etc. Retorna null se inválido.
+  function normalizePhoneForWhatsApp(raw) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return null;
+    // Já vem com 55 (E.164 completo)
+    if (digits.length === 12 || digits.length === 13) {
+      if (digits.startsWith('55')) return digits;
+      return '55' + digits.slice(-11);
+    }
+    // 10 ou 11 dígitos: assume BR sem o 55
+    if (digits.length === 10 || digits.length === 11) {
+      return '55' + digits;
+    }
+    return null;
+  }
+
+  // "Maria Silva" → "Maria". Sem nome → "tudo bem!"
+  function firstName(full) {
+    const t = String(full || '').trim();
+    if (!t) return 'tudo bem!';
+    return t.split(/\s+/)[0];
+  }
+
+  // Parse "R$ 1.299,00" → 129900 cents. Reaproveita a mesma lógica
+  // do checkout (parsePrecoToCents) — admin não importa esse helper.
+  function precoLabelToCents(raw) {
+    if (raw == null) return null;
+    const text = String(raw).replace(/\s/g, '').replace(/^R\$/i, '');
+    if (!text) return null;
+    const normalized = text.includes(',')
+      ? text.replace(/\./g, '').replace(',', '.')
+      : text;
+    const num = Number(normalized);
+    if (!isFinite(num) || num <= 0) return null;
+    return Math.round(num * 100);
+  }
+
+  function centsToBRL(cents) {
+    return (cents / 100).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  // Substitui placeholders no template. Mantém placeholders vazios
+  // como literal pra ficar visível que algo não foi preenchido
+  // (ex.: cupom não vinculado).
+  function fillTemplate(template, vars) {
+    let out = String(template || '');
+    Object.entries(vars).forEach(([k, v]) => {
+      const re = new RegExp('\\{' + k + '\\}', 'g');
+      out = out.replace(re, v == null ? '' : String(v));
+    });
+    return out;
+  }
+
+  // Constrói URL absoluta da experiência. Se a experiência tem
+  // experienceId vinculado (item By Elarah comprável), aponta pra
+  // experiencia.html?id=xxx. Senão, manda pra home âncora.
+  function buildExperienceUrl(experienceId, byelarahSlug) {
+    const origin = window.location.origin || 'https://elarah.com.br';
+    if (experienceId) {
+      return origin + '/experiencia.html?id=' + encodeURIComponent(experienceId);
+    }
+    if (byelarahSlug) {
+      return origin + '/index.html#by-elarah-' + encodeURIComponent(byelarahSlug);
+    }
+    return origin + '/index.html';
+  }
+
+  // Abre o modal pra uma experiência específica. Carrega:
+  //   - submissions (byelarah_submissions WHERE experiencia ILIKE nome
+  //     OR item_slug = slug)
+  //   - cupom vinculado (coupons WHERE experience_id = id)
+  //   - dados da experience real (preço cheio)
+  async function openFollowupModal(opts) {
+    const modal = document.getElementById('followup-modal');
+    if (!modal) return;
+    const sb = window.supabaseClient;
+    if (!sb) {
+      alert('Cliente Supabase não inicializado. Recarregue a página.');
+      return;
+    }
+
+    const experienceName = opts.experienceName || '';
+    const experienceId = opts.experienceId || null;     // experiência real comprável
+    const byelarahSlug = opts.byelarahSlug || null;     // slug do item By Elarah
+
+    // Reset
+    document.getElementById('followup-msg').textContent = '';
+    document.getElementById('followup-list').innerHTML =
+      '<p style="padding:24px;color:#888;text-align:center;">Carregando interessados...</p>';
+    document.getElementById('followup-counter').textContent = '—';
+    document.getElementById('followup-coupon-info').style.display = 'none';
+    document.getElementById('followup-subtitle').textContent = experienceName;
+
+    modal.classList.add('open');
+
+    followupCtx = {
+      experienceName,
+      experienceId,
+      byelarahSlug,
+      submissions: [],
+      coupon: null,
+      precoCheioCents: null,
+    };
+
+    // Carrega tudo em paralelo
+    const submissionsPromise = (async () => {
+      // Filtro: por slug OU por nome. Slug é o caminho preferencial
+      // (mais estável que comparar texto livre); nome é fallback.
+      let query = sb.from('byelarah_submissions')
+        .select('id, nome, email, telefone, created_at, status, whatsapp_followup_sent_at, whatsapp_followup_count, item_slug, experiencia')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (byelarahSlug) {
+        query = query.or(
+          'item_slug.eq.' + byelarahSlug + ',experiencia.ilike.' +
+          '%' + experienceName.replace(/[%_]/g, ' ') + '%'
+        );
+      } else {
+        query = query.ilike('experiencia',
+          '%' + experienceName.replace(/[%_]/g, ' ') + '%');
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    })();
+
+    const couponPromise = experienceId
+      ? sb.from('coupons')
+          .select('code, discount_type, discount_value, valid_until, max_uses, times_used, is_active, experience_id')
+          .eq('experience_id', experienceId)
+          .eq('is_active', true)
+          .order('valid_until', { ascending: false })
+          .limit(1)
+          .then(({ data }) => (data && data[0]) || null)
+          .catch(() => null)
+      : Promise.resolve(null);
+
+    const expPromise = experienceId
+      ? sb.from('experiences')
+          .select('id, nome, preco')
+          .eq('id', experienceId)
+          .maybeSingle()
+          .then(({ data }) => data || null)
+          .catch(() => null)
+      : Promise.resolve(null);
+
+    let submissions, coupon, exp;
+    try {
+      [submissions, coupon, exp] = await Promise.all([
+        submissionsPromise, couponPromise, expPromise,
+      ]);
+    } catch (e) {
+      console.error('[Admin/Followup] erro ao carregar', e);
+      document.getElementById('followup-list').innerHTML =
+        '<p style="padding:24px;color:#c0392b;text-align:center;">Erro ao carregar: ' +
+        escapeHtml(e.message || String(e)) + '</p>';
+      return;
+    }
+
+    followupCtx.submissions = submissions;
+    followupCtx.coupon = coupon;
+    followupCtx.precoCheioCents = exp ? precoLabelToCents(exp.preco) : null;
+
+    // Box de info do cupom (auto-preenche template)
+    const infoEl = document.getElementById('followup-coupon-info');
+    if (coupon) {
+      const couponLabel = coupon.discount_type === 'percent'
+        ? coupon.discount_value + '% OFF'
+        : 'R$ ' + centsToBRL(coupon.discount_value) + ' OFF';
+      const validUntilFmt = coupon.valid_until
+        ? new Date(coupon.valid_until).toLocaleString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+          })
+        : '—';
+      infoEl.innerHTML =
+        '✓ <strong>Cupom vinculado:</strong> <code>' + escapeHtml(coupon.code) +
+        '</code> — ' + escapeHtml(couponLabel) +
+        ' · válido até ' + escapeHtml(validUntilFmt) +
+        ' · ' + coupon.times_used + ' / ' +
+        (coupon.max_uses == null ? '∞' : coupon.max_uses) + ' usos.';
+      infoEl.style.display = 'block';
+    } else if (experienceId) {
+      infoEl.innerHTML =
+        '⚠ Nenhum cupom ativo encontrado pra essa experiência. ' +
+        'Crie um na aba Cupons antes de disparar (ou os placeholders ' +
+        '{CUPOM} / {DESCONTO_PERCENT} / {PRECO_DESCONTO} ficam vazios).';
+      infoEl.style.background = '#fff8e8';
+      infoEl.style.borderLeftColor = '#d49b2c';
+      infoEl.style.color = '#7a5a00';
+      infoEl.style.display = 'block';
+    }
+
+    // Carrega template default na textarea (a usuária pode editar)
+    document.getElementById('followup-message').value = FOLLOWUP_DEFAULT_TEMPLATE;
+
+    // Render lista
+    renderFollowupList();
+  }
+
+  function renderFollowupList() {
+    if (!followupCtx) return;
+    const listEl = document.getElementById('followup-list');
+    const counterEl = document.getElementById('followup-counter');
+    const hideContacted = document.getElementById('followup-hide-contacted').checked;
+
+    let visible = followupCtx.submissions.slice();
+    if (hideContacted) {
+      visible = visible.filter(s => !s.whatsapp_followup_sent_at);
+    }
+
+    const total = followupCtx.submissions.length;
+    const contacted = followupCtx.submissions.filter(s => s.whatsapp_followup_sent_at).length;
+    counterEl.textContent =
+      total + ' interessado(s) · ' + contacted + ' já contatado(s)' +
+      (hideContacted ? ' · ' + visible.length + ' visíveis' : '');
+
+    if (!visible.length) {
+      listEl.innerHTML =
+        '<p style="padding:24px;color:#888;text-align:center;">' +
+        (total === 0
+          ? 'Nenhum interessado cadastrado nessa experiência.'
+          : 'Todos já foram contatados. Desmarque "Esconder já contatados" pra reenviar.') +
+        '</p>';
+      return;
+    }
+
+    listEl.innerHTML = visible.map((s, idx) => {
+      const phoneNorm = normalizePhoneForWhatsApp(s.telefone);
+      const sent = s.whatsapp_followup_sent_at;
+      const sentFmt = sent
+        ? new Date(sent).toLocaleString('pt-BR', {
+            day: '2-digit', month: '2-digit',
+            hour: '2-digit', minute: '2-digit',
+          })
+        : null;
+      const phoneHtml = phoneNorm
+        ? '<code style="font-size:.78rem;color:#666;">+' + phoneNorm + '</code>'
+        : '<span style="color:#c0392b;font-size:.78rem;">telefone inválido</span>';
+      const statusBadge = sent
+        ? '<span style="font-size:.7rem;color:#1a8a4a;background:#e6f5e9;padding:2px 8px;border-radius:999px;">✓ contatado ' + sentFmt + (s.whatsapp_followup_count > 1 ? ' (' + s.whatsapp_followup_count + 'x)' : '') + '</span>'
+        : '<span style="font-size:.7rem;color:#888;background:#f4f0e8;padding:2px 8px;border-radius:999px;">novo</span>';
+      const btnHtml = phoneNorm
+        ? '<button type="button" data-followup-send="' + s.id + '" data-idx="' + idx + '" class="admin__add-btn" style="background:#25D366;border-color:#25D366;font-size:.82rem;padding:7px 14px;white-space:nowrap;">' +
+            (sent ? 'Reenviar' : 'Abrir WhatsApp') +
+          '</button>'
+        : '<span style="font-size:.78rem;color:#888;">sem WhatsApp</span>';
+
+      return (
+        '<div style="padding:12px 14px;border-bottom:1px solid #f4f0e8;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+          '<div style="flex:1;min-width:200px;">' +
+            '<div style="font-weight:600;font-size:.92rem;">' + escapeHtml(s.nome || '—') + '</div>' +
+            '<div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+              phoneHtml +
+              statusBadge +
+            '</div>' +
+          '</div>' +
+          btnHtml +
+        '</div>'
+      );
+    }).join('');
+
+    // Wire dos botões
+    listEl.querySelectorAll('[data-followup-send]').forEach(btn => {
+      btn.addEventListener('click', () => sendFollowupForSubmission(btn.dataset.followupSend));
+    });
+  }
+
+  // Gera URL wa.me + abre em nova aba + marca como contatado.
+  // Usa window.open com target=_blank — alguns navegadores podem
+  // bloquear se for chamado fora de gesto do usuário, mas como
+  // estamos dentro de um onclick está OK.
+  async function sendFollowupForSubmission(submissionId) {
+    if (!followupCtx) return;
+    const sub = followupCtx.submissions.find(s => s.id === submissionId);
+    if (!sub) return;
+    const phoneNorm = normalizePhoneForWhatsApp(sub.telefone);
+    if (!phoneNorm) {
+      alert('Telefone inválido pra essa pessoa.');
+      return;
+    }
+
+    const template = document.getElementById('followup-message').value;
+
+    // Resolve placeholders
+    const exp = followupCtx;
+    const cup = exp.coupon;
+    const link = buildExperienceUrl(exp.experienceId, exp.byelarahSlug);
+
+    let precoCheioCents = exp.precoCheioCents;
+    let descCents = 0;
+    let descPercent = '';
+    let cupomCode = '';
+    if (cup) {
+      cupomCode = cup.code || '';
+      if (cup.discount_type === 'percent') {
+        descPercent = String(cup.discount_value);
+        if (precoCheioCents) {
+          descCents = Math.floor(precoCheioCents * cup.discount_value / 100);
+        }
+      } else {
+        descCents = Number(cup.discount_value) || 0;
+      }
+    }
+    const precoDescontoCents = precoCheioCents != null
+      ? Math.max(0, precoCheioCents - descCents)
+      : null;
+
+    const filled = fillTemplate(template, {
+      NOME_PRIMEIRO: firstName(sub.nome),
+      EXPERIENCIA_NOME: exp.experienceName || '',
+      LINK: link,
+      PRECO_CHEIO: precoCheioCents != null ? centsToBRL(precoCheioCents) : '',
+      PRECO_DESCONTO: precoDescontoCents != null ? centsToBRL(precoDescontoCents) : '',
+      DESCONTO_PERCENT: descPercent,
+      CUPOM: cupomCode,
+    });
+
+    const url = 'https://wa.me/' + phoneNorm + '?text=' + encodeURIComponent(filled);
+
+    // Abre PRIMEIRO (gesto do usuário) pra evitar bloqueio do popup
+    window.open(url, '_blank', 'noopener');
+
+    // Atualiza tracking no DB (não bloqueia se falhar)
+    const sb = window.supabaseClient;
+    try {
+      const { error } = await sb
+        .from('byelarah_submissions')
+        .update({
+          whatsapp_followup_sent_at: new Date().toISOString(),
+          whatsapp_followup_count: (Number(sub.whatsapp_followup_count) || 0) + 1,
+        })
+        .eq('id', submissionId);
+      if (error) {
+        console.error('[Admin/Followup] update tracking falhou', error);
+        const msgEl = document.getElementById('followup-msg');
+        if (/whatsapp_followup_sent_at/i.test(error.message || '')) {
+          msgEl.style.color = '#c0392b';
+          msgEl.textContent = 'Coluna de tracking não existe. Rode sql/elarah_byelarah_followup_tracking.sql.';
+        } else {
+          msgEl.style.color = '#c0392b';
+          msgEl.textContent = 'WhatsApp aberto, mas não consegui marcar como contatado: ' + error.message;
+        }
+        return;
+      }
+      // Atualiza estado local
+      sub.whatsapp_followup_sent_at = new Date().toISOString();
+      sub.whatsapp_followup_count = (Number(sub.whatsapp_followup_count) || 0) + 1;
+      const msgEl = document.getElementById('followup-msg');
+      msgEl.style.color = '#1a8a4a';
+      msgEl.textContent = '✓ ' + firstName(sub.nome) + ' marcado como contatado.';
+      renderFollowupList();
+    } catch (e) {
+      console.error('[Admin/Followup] erro ao atualizar tracking', e);
+    }
+  }
+
+  function closeFollowupModal() {
+    const m = document.getElementById('followup-modal');
+    if (m) m.classList.remove('open');
+    followupCtx = null;
+  }
+
+  function wireFollowupModal() {
+    const closeBtn = document.getElementById('followup-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeFollowupModal);
+    const closeBtn2 = document.getElementById('followup-close-btn');
+    if (closeBtn2) closeBtn2.addEventListener('click', closeFollowupModal);
+    const backdrop = document.querySelector('#followup-modal .admin__modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', closeFollowupModal);
+    const hideToggle = document.getElementById('followup-hide-contacted');
+    if (hideToggle) hideToggle.addEventListener('change', renderFollowupList);
+  }
+
+  // Expõe pro listener da tabela By Elarah (ver wireByElarahTableListeners)
+  window._adminOpenFollowupModal = openFollowupModal;
 
   // Tabela compacta injetada no painel de Compras pra o operador não
   // precisar navegar até o menu Gift Cards. Mesma fonte de dados.
@@ -3876,6 +4290,19 @@
           await ElarahByElarah.deleteItem(delBtn.dataset.byDelete);
           await renderByElarah();
         }
+        return;
+      }
+      // Botão de follow-up no header de cada grupo
+      const followupBtn = target.closest('[data-followup-name]');
+      if (followupBtn) {
+        if (typeof window._adminOpenFollowupModal === 'function') {
+          window._adminOpenFollowupModal({
+            experienceName: followupBtn.dataset.followupName || '',
+            experienceId: followupBtn.dataset.followupExpId || null,
+            byelarahSlug: followupBtn.dataset.followupSlug || null,
+          });
+        }
+        return;
       }
     });
 
@@ -3945,12 +4372,32 @@
         const headerStyle = 'background:linear-gradient(90deg,#fff8ee 0%,#fdf4e3 100%);border-top:3px solid #f0a05e;border-bottom:1px solid #f0cfa0;padding:18px 16px 14px;';
         const titleStyle = "font-family:'DM Serif Display',serif;font-size:1.1rem;color:#1a1a1a;";
         const pillStyle = 'display:inline-block;padding:4px 12px;border-radius:999px;background:#f0a05e;color:#fff;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-left:12px;vertical-align:middle;';
+
+        // Botão de follow-up WhatsApp — pega o primeiro item do grupo
+        // pra resolver experienceId + slug. Todos os items do mesmo
+        // grupo apontam pra mesma experiência (mesmo nome), então o
+        // primeiro é representativo.
+        const firstItem = group.rows[0] || {};
+        const followupExpId = firstItem.experienceId || '';
+        const followupSlug = firstItem.slug || '';
+        const followupBtnStyle = 'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:#25D366;color:#fff;font-size:.74rem;font-weight:600;border:none;cursor:pointer;margin-left:8px;vertical-align:middle;';
+        const followupBtnHtml =
+          '<button type="button" class="admin__followup-trigger" ' +
+            'data-followup-name="' + escapeHtml(group.nome) + '" ' +
+            'data-followup-exp-id="' + escapeHtml(followupExpId) + '" ' +
+            'data-followup-slug="' + escapeHtml(followupSlug) + '" ' +
+            'style="' + followupBtnStyle + '" ' +
+            'title="Disparar follow-up por WhatsApp para os interessados nessa experiência">' +
+            '📱 Follow-up WhatsApp' +
+          '</button>';
+
         html.push(
           '<tr class="admin__group-header">' +
             '<td colspan="8" style="' + headerStyle + '">' +
               '<div class="admin__group-header-inner" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
                 '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
                 '<span class="admin__group-header-pill" style="' + pillStyle + '">' + escapeHtml(sessoesLabel) + '</span>' +
+                followupBtnHtml +
               '</div>' +
             '</td>' +
           '</tr>'
