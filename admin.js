@@ -195,6 +195,7 @@
     wireByElarahForm();
     wireAnalyticsControls();
     wireBookingsControls();
+    wireCouponPanel();
     await renderOverview();
   }
 
@@ -501,8 +502,14 @@
 
     tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Carregando cupons...</td></tr>';
 
+    const sb = window.supabaseClient;
+    if (!sb) {
+      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty" style="color:#c0392b;">Cliente Supabase não inicializado. Recarregue a página.</td></tr>';
+      return;
+    }
+
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('coupons')
         .select('id, code, nome, discount_type, discount_value, experience_id, valid_from, valid_until, max_uses, times_used, is_active, created_at')
         .order('created_at', { ascending: false });
@@ -512,7 +519,7 @@
 
       // Carrega experiências pra resolver nome (uma vez, com cache)
       if (!couponsExperiencesCache) {
-        const { data: exps } = await supabase
+        const { data: exps } = await sb
           .from('experiences')
           .select('id, nome')
           .order('nome', { ascending: true });
@@ -593,7 +600,25 @@
 
     } catch (e) {
       console.error('[Admin/Coupons] erro ao listar', e);
-      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty" style="color:#c0392b;">Erro ao carregar cupons: ' + escapeHtml(e.message || String(e)) + '</td></tr>';
+      const errMsg = String(e.message || e);
+      // Detecta tabela ausente — admin precisa rodar a migration.
+      const tableMissing =
+        errMsg.toLowerCase().includes('relation') ||
+        errMsg.toLowerCase().includes('does not exist') ||
+        errMsg.toLowerCase().includes('schema cache') ||
+        (e.code && (e.code === '42P01' || e.code === 'PGRST205'));
+      if (tableMissing) {
+        tbody.innerHTML =
+          '<tr><td colspan="8" class="admin__table-empty" style="color:#c0392b;text-align:left;padding:20px;">' +
+            '<strong>Tabela de cupons ainda não foi criada no banco.</strong><br><br>' +
+            'Rode no <em>Supabase Dashboard → SQL Editor</em> o arquivo ' +
+            '<code style="background:#fff;padding:2px 6px;border-radius:4px;">sql/elarah_coupons.sql</code> ' +
+            'e depois recarregue esta página.<br><br>' +
+            '<span style="color:#888;font-size:.8rem;">Detalhe técnico: ' + escapeHtml(errMsg) + '</span>' +
+          '</td></tr>';
+      } else {
+        tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty" style="color:#c0392b;">Erro ao carregar cupons: ' + escapeHtml(errMsg) + '</td></tr>';
+      }
     }
   }
 
@@ -608,6 +633,11 @@
   async function openCouponModal(couponId) {
     const modal = document.getElementById('coupon-modal');
     if (!modal) return;
+    const sb = window.supabaseClient;
+    if (!sb) {
+      alert('Cliente Supabase não inicializado. Recarregue a página.');
+      return;
+    }
     const title = document.getElementById('coupon-modal-title');
     const idField = document.getElementById('cp-id');
     const codeField = document.getElementById('cp-code');
@@ -625,7 +655,7 @@
 
     // Popula dropdown de experiências (com cache)
     if (!couponsExperiencesCache) {
-      const { data: exps } = await supabase.from('experiences').select('id, nome').order('nome');
+      const { data: exps } = await sb.from('experiences').select('id, nome').order('nome');
       couponsExperiencesCache = exps || [];
     }
     expField.innerHTML = '<option value="">— Qualquer experiência —</option>' +
@@ -745,14 +775,20 @@
       is_active: isActive,
     };
 
+    const sb = window.supabaseClient;
+    if (!sb) {
+      msgEl.style.color = '#c0392b';
+      msgEl.textContent = 'Cliente Supabase não inicializado. Recarregue a página.';
+      return;
+    }
     try {
       let res;
       if (id) {
         // Update — não muda code (campo disabled)
         const { code: _ignore, ...patch } = payload;
-        res = await supabase.from('coupons').update(patch).eq('id', id);
+        res = await sb.from('coupons').update(patch).eq('id', id);
       } else {
-        res = await supabase.from('coupons').insert(payload);
+        res = await sb.from('coupons').insert(payload);
       }
       if (res.error) throw res.error;
       msgEl.style.color = '#1a8a4a';
@@ -786,8 +822,14 @@
     const c = (couponsCache || []).find(x => x.id === couponId);
     titleEl.textContent = 'Usos do cupom ' + (c ? c.code : '');
 
+    const sb = window.supabaseClient;
+    if (!sb) {
+      bodyEl.innerHTML = '<p style="color:#c0392b;">Cliente Supabase não inicializado. Recarregue a página.</p>';
+      return;
+    }
+
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('coupon_uses')
         .select('id, booking_id, email, amount_discount_centavos, used_at, experience_id')
         .eq('coupon_id', couponId)
@@ -870,12 +912,7 @@
     }
   }
 
-  // Auto-wire quando o admin boota
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', wireCouponPanel);
-  } else {
-    wireCouponPanel();
-  }
+  // wireCouponPanel é chamado dentro de boot() junto com os outros wires.
 
   // Tabela compacta injetada no painel de Compras pra o operador não
   // precisar navegar até o menu Gift Cards. Mesma fonte de dados.
