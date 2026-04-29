@@ -132,7 +132,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.63 · 2026-04-29 (cupons fix)
+        Admin v.64 · 2026-04-29 (follow-up WhatsApp)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1277,6 +1277,60 @@
   </div>
 </div>
 
+<!-- ===== FOLLOW-UP WHATSAPP MODAL ===== -->
+<!-- Genérico: serve qualquer experiência By Elarah. Lista de
+     interessados (byelarah_submissions filtradas por experiência),
+     mensagem template editável com placeholders auto-substituídos
+     pelos valores do cupom vinculado, e botão wa.me por pessoa
+     que abre o WhatsApp já preenchido + marca como contatado. -->
+<div class="admin__modal" id="followup-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:900px;">
+    <button class="admin__modal-close" id="followup-modal-close">&times;</button>
+    <h2 class="admin__modal-title">📱 Disparar follow-up por WhatsApp</h2>
+    <p style="margin:6px 0 18px;color:#666;font-size:.9rem;" id="followup-subtitle">—</p>
+
+    <!-- Box de info do cupom vinculado (se existir) -->
+    <div id="followup-coupon-info" style="display:none;margin-bottom:16px;padding:12px 14px;background:#f4faf0;border-left:3px solid #1a8a4a;border-radius:6px;font-size:.86rem;color:#1a4a1a;"></div>
+
+    <!-- Editor da mensagem template -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:.85rem;font-weight:600;margin-bottom:6px;">
+        Mensagem (placeholders são substituídos por pessoa)
+      </label>
+      <textarea id="followup-message" rows="10" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;line-height:1.5;resize:vertical;box-sizing:border-box;"></textarea>
+      <p style="margin:6px 0 0;font-size:.78rem;color:#888;">
+        Placeholders disponíveis:
+        <code>{NOME_PRIMEIRO}</code>, <code>{EXPERIENCIA_NOME}</code>,
+        <code>{LINK}</code>, <code>{PRECO_CHEIO}</code>,
+        <code>{PRECO_DESCONTO}</code>, <code>{DESCONTO_PERCENT}</code>,
+        <code>{CUPOM}</code>
+      </p>
+    </div>
+
+    <!-- Filtros + ações em massa -->
+    <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer;">
+        <input type="checkbox" id="followup-hide-contacted" checked>
+        Esconder já contatados
+      </label>
+      <span style="flex:1;"></span>
+      <span id="followup-counter" style="font-size:.85rem;color:#666;">—</span>
+    </div>
+
+    <!-- Lista de pessoas -->
+    <div id="followup-list" style="max-height:50vh;overflow-y:auto;border:1px solid #eee;border-radius:8px;">
+      <p style="padding:24px;color:#888;text-align:center;">Carregando...</p>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;align-items:center;">
+      <span id="followup-msg" style="flex:1;font-size:.85rem;color:#888;"></span>
+      <button type="button" id="followup-close-btn" class="admin__add-btn" style="background:#fff;color:#666;border:1px solid #ddd;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== EXPERIENCE FORM MODAL ===== -->
 <div class="admin__modal" id="experience-modal">
   <div class="admin__modal-backdrop"></div>
@@ -1718,7 +1772,7 @@
 <script src="admin-social.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=68"></script>
+<script src="admin.js?v=69"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
