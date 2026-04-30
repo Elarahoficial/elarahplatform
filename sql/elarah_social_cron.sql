@@ -7,23 +7,35 @@
 -- Pré-requisitos no Supabase (Database → Extensions):
 --   * pg_cron → ON
 --   * pg_net  → ON
+--   * vault   → ON (já é nativa, geralmente já está ligada)
 --
 -- Como o pg_cron chama a Edge Function:
 --   pg_net.http_post() faz uma requisição HTTP do banco pra
---   URL pública da Edge Function. O header Authorization leva
---   a service_role key — sync-instagram e refresh-tokens
---   reconhecem ela e tratam a chamada como cron (sem JWT de admin).
+--   URL pública da Edge Function. O header Authorization carrega
+--   a service_role key, lida do Supabase Vault em runtime.
 --
--- IMPORTANTE — preencha as duas variáveis abaixo antes de rodar:
---   * project_url       → URL do seu projeto Supabase (sem barra final)
---   * service_role_key  → Settings → API → service_role key
+-- Antes de rodar essa migration, salve a service_role key no
+-- Vault UMA ÚNICA VEZ (use o SQL Editor):
 --
--- A service_role key fica armazenada no banco. Isso é aceitável
--- porque tabelas de cron já são restritas ao postgres role
--- (ninguém via PostgREST/Supabase JS consegue ler de cron.job).
+--   select vault.create_secret(
+--     'eyJhbGciOi...',                         -- a key (Settings → API → service_role)
+--     'elarah_service_role_key',               -- nome lógico
+--     'Service role key usada pelos jobs de cron de redes sociais'
+--   );
+--
+-- Confirma com:
+--   select count(*) from vault.secrets where name = 'elarah_service_role_key';
+--   -- Esperado: 1
+--
+-- Pra rotacionar a key no futuro:
+--   select vault.update_secret(
+--     (select id from vault.secrets where name = 'elarah_service_role_key'),
+--     'eyJ_NOVA_KEY...'
+--   );
 -- =========================================================
 
--- Limpa schedules antigos (idempotência)
+
+-- Limpa schedules antigos (idempotência — pode rodar a migration várias vezes)
 do $$
 begin
   perform cron.unschedule(jobname)
@@ -51,7 +63,12 @@ select cron.schedule(
       url     := 'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/sync-instagram',
       headers := jsonb_build_object(
         'Content-Type',  'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.elarah_service_role_key', true)
+        'Authorization', 'Bearer ' || (
+          select decrypted_secret
+            from vault.decrypted_secrets
+           where name = 'elarah_service_role_key'
+           limit 1
+        )
       ),
       body    := '{"trigger":"cron"}'::jsonb,
       timeout_milliseconds := 60000
@@ -71,7 +88,12 @@ select cron.schedule(
       url     := 'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/refresh-tokens',
       headers := jsonb_build_object(
         'Content-Type',  'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.elarah_service_role_key', true)
+        'Authorization', 'Bearer ' || (
+          select decrypted_secret
+            from vault.decrypted_secrets
+           where name = 'elarah_service_role_key'
+           limit 1
+        )
       ),
       body    := '{}'::jsonb,
       timeout_milliseconds := 60000
@@ -91,32 +113,14 @@ select cron.schedule(
 
 
 -- =========================================================
--- 4) IMPORTANTE: configurar a service_role key
+-- VERIFICAÇÃO
 -- =========================================================
--- Os jobs acima leem `app.elarah_service_role_key` como custom
--- GUC. Você precisa setar esse parâmetro UMA VEZ no banco:
+-- Lista os jobs ativos:
+--   select jobid, jobname, schedule, active from cron.job
+--    where jobname like 'elarah-%' order by jobname;
 --
---   ALTER DATABASE postgres
---     SET app.elarah_service_role_key = 'eyJhbGciOi...';   -- service_role key
---
--- Pega a key em:
---   Supabase Dashboard → Settings → API → "service_role" (secret)
---
--- Depois desse ALTER DATABASE, as próximas conexões já enxergam
--- a variável. Para validar:
---   select current_setting('app.elarah_service_role_key');
---
--- Se você prefere não armazenar a service_role key dessa forma,
--- alternativa é hardcodar dentro do `headers := jsonb_build_object(...)`
--- de cada job — mas o ALTER DATABASE é mais limpo e permite
--- rotacionar a key sem editar 3 jobs.
+-- Histórico das últimas execuções:
+--   select * from cron.job_run_details
+--    where jobid in (select jobid from cron.job where jobname like 'elarah-%')
+--    order by start_time desc limit 20;
 -- =========================================================
-
-
--- =========================================================
--- Útil pra debug: ver os jobs e últimas execuções
--- =========================================================
--- select jobid, jobname, schedule, active from cron.job order by jobname;
--- select * from cron.job_run_details
---   where jobid in (select jobid from cron.job where jobname like 'elarah-%')
---   order by start_time desc limit 20;

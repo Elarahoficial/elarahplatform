@@ -90,21 +90,33 @@ supabase functions deploy refresh-tokens
 
 ### Migrations da Fase 3
 
-Aplicar **depois** das functions estarem deployadas:
+Aplicar **depois** das functions estarem deployadas, na ordem:
 
-1. `sql/elarah_social_cron.sql` — agenda os jobs do pg_cron
-   (sync 4x/dia, refresh tokens 1x/mês, purge OAuth states 1x/dia).
+**1. Salvar a service_role key no Vault (UMA VEZ):**
 
-   Antes de rodar essa migration, execute uma vez no SQL Editor:
+   No SQL Editor:
 
    ```sql
-   ALTER DATABASE postgres
-     SET app.elarah_service_role_key = 'eyJhbGciOi...';
+   select vault.create_secret(
+     'eyJhbGciOi...',                  -- service_role key (Settings → API)
+     'elarah_service_role_key',
+     'Service role key usada pelos jobs de cron de redes sociais'
+   );
    ```
 
-   Substitua pela `service_role` key do projeto (Settings → API).
-   Sem isso, os jobs do cron rodam mas as Edge Functions retornam
-   401 — porque a key não chega no header Authorization.
+   Confirma:
+   ```sql
+   select count(*) from vault.secrets where name = 'elarah_service_role_key';
+   -- Esperado: 1
+   ```
+
+**2. Aplicar `sql/elarah_social_cron.sql`** — agenda os jobs do
+   pg_cron (sync 4x/dia, refresh tokens 1x/mês, purge OAuth states
+   1x/dia). O SQL lê a service_role key do Vault em runtime.
+
+> ⚠️ **Não use `ALTER DATABASE postgres SET app.* = ...`** — o
+> Supabase managed bloqueia isso pra usuários não-superuser. Vault
+> é o caminho oficialmente suportado.
 
 Após o deploy, a URL final é:
 
