@@ -198,9 +198,13 @@ async function syncOneAccount(account: AccountRow, trigger: string): Promise<Syn
   const runId = runRow?.id as number | undefined;
 
   try {
-    const pageTokenEnc = (account.meta as Record<string, unknown>)?.page_access_token_enc as string | undefined;
-    if (!pageTokenEnc) throw new Error("page_access_token_enc ausente em meta");
-    const client = new MetaGraphClient(pageTokenEnc);
+    // Login direto pelo Instagram: usa access_token_encrypted (long-lived
+    // user token). Fallback pra page_access_token_enc só pra contas
+    // legadas conectadas via Facebook Login antes da migração.
+    const igTokenEnc = (account.access_token_encrypted as string | undefined)
+      || ((account.meta as Record<string, unknown>)?.page_access_token_enc as string | undefined);
+    if (!igTokenEnc) throw new Error("Token de acesso ausente — reconecte a conta.");
+    const client = new MetaGraphClient(igTokenEnc);
 
     // Fetch posts (media + reels)
     const mediaItems = await client.paginate<IgMediaListItem>(
@@ -388,7 +392,7 @@ serve(async (req) => {
     const sb = getServiceClient();
     const query = sb
       .from("social_accounts")
-      .select("id, provider, external_id, username, status, meta")
+      .select("id, provider, external_id, username, status, meta, access_token_encrypted")
       .eq("provider", "instagram")
       .eq("status", "active");
     if (body.account_id) query.eq("id", body.account_id);

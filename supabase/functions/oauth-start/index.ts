@@ -32,8 +32,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
-  META_INSTAGRAM_SCOPES,
-  META_OAUTH_DIALOG_URL,
+  IG_INSTAGRAM_SCOPES,
+  IG_OAUTH_DIALOG_URL,
   requireEnv,
   SUPPORTED_PROVIDERS,
   type SocialProvider,
@@ -55,7 +55,7 @@ interface StartBody {
 function scopesFor(provider: SocialProvider): readonly string[] {
   switch (provider) {
     case "instagram":
-      return META_INSTAGRAM_SCOPES;
+      return IG_INSTAGRAM_SCOPES;
     // tiktok / linkedin: adicionar quando suas Edge Functions vierem.
     default:
       return [];
@@ -68,14 +68,17 @@ function authUrlFor(
   redirectUri: string,
 ): string {
   if (provider === "instagram") {
+    // Login direto pelo Instagram (apps tipo Empresa). Usa
+    // INSTAGRAM_APP_ID, que é diferente do META_APP_ID — o
+    // Instagram tem App ID/Secret próprios dentro do mesmo app.
     const params = new URLSearchParams({
-      client_id: requireEnv("META_APP_ID"),
+      client_id: requireEnv("INSTAGRAM_APP_ID"),
       redirect_uri: redirectUri,
       state,
       scope: scopesFor(provider).join(","),
       response_type: "code",
     });
-    return `${META_OAUTH_DIALOG_URL}?${params.toString()}`;
+    return `${IG_OAUTH_DIALOG_URL}?${params.toString()}`;
   }
   throw new Error(`Provider não suportado ainda: ${provider}`);
 }

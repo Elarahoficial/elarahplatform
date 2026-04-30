@@ -8,30 +8,39 @@
 // =============================================================
 
 // -----------------------------------------------------------
-// META (Instagram + Facebook Login for Business)
+// INSTAGRAM (Login direto via Instagram Business — sem Facebook)
 // -----------------------------------------------------------
-export const META_API_VERSION = "v21.0";
-
-export const META_OAUTH_DIALOG_URL =
-  `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`;
-
-export const META_GRAPH_BASE =
-  `https://graph.facebook.com/${META_API_VERSION}`;
-
-// Escopos mínimos pra ler insights de Instagram Business.
+// Apps tipo "Empresa" criados após 2024 usam o login direto pelo
+// Instagram (não pelo Facebook Login). O fluxo é:
+//   1. Authorization: https://www.instagram.com/oauth/authorize
+//   2. Token short-lived: POST https://api.instagram.com/oauth/access_token
+//   3. Token long-lived (60d): GET https://graph.instagram.com/access_token
+//   4. Chamadas: https://graph.instagram.com/v21.0/...
 // Documentação: https://developers.facebook.com/docs/instagram-platform/
-//
-// `business_management` foi removido propositalmente: ele exige que o
-// usuário testador faça parte de um Business Manager e costuma disparar
-// erro de permissão em apps tipo Empresa em modo desenvolvimento mesmo
-// com Testadores do Instagram já aceitos. Os 4 escopos abaixo são o
-// suficiente pra ler dados de Instagram Business via Facebook Login.
-export const META_INSTAGRAM_SCOPES: readonly string[] = [
-  "instagram_basic",
-  "instagram_manage_insights",
-  "pages_show_list",
-  "pages_read_engagement",
+//               instagram-api-with-instagram-login
+export const IG_API_VERSION = "v21.0";
+
+export const IG_OAUTH_DIALOG_URL = "https://www.instagram.com/oauth/authorize";
+export const IG_TOKEN_EXCHANGE_URL = "https://api.instagram.com/oauth/access_token";
+export const IG_GRAPH_BASE = `https://graph.instagram.com/${IG_API_VERSION}`;
+// Endpoint sem versão p/ trocar/refresh do long-lived token:
+export const IG_GRAPH_BASE_NOVERSION = "https://graph.instagram.com";
+
+// Escopos mínimos pra ler conteúdo + insights via login direto do IG.
+// Esses são DIFERENTES dos scopes via Facebook Login — começam com
+// "instagram_business_*" em vez de "instagram_*".
+export const IG_INSTAGRAM_SCOPES: readonly string[] = [
+  "instagram_business_basic",
+  "instagram_business_manage_insights",
 ];
+
+// Aliases legados — o resto do código ainda referencia META_GRAPH_BASE
+// (sync-instagram, social_meta_client). Apontamos pro Instagram Graph
+// pra não quebrar tudo de uma vez.
+export const META_API_VERSION = IG_API_VERSION;
+export const META_GRAPH_BASE = IG_GRAPH_BASE;
+export const META_OAUTH_DIALOG_URL = IG_OAUTH_DIALOG_URL;
+export const META_INSTAGRAM_SCOPES = IG_INSTAGRAM_SCOPES;
 
 // -----------------------------------------------------------
 // PROVIDERS suportados (extensível)
