@@ -32,9 +32,14 @@ export function getServiceClient(): SupabaseClient {
 // Validação de admin
 // -----------------------------------------------------------
 // Recebe o Bearer token enviado pelo frontend (JWT do
-// supabase-js). Decodifica via supabase auth, depois verifica
-// flag is_admin na tabela profiles. Retorna o user_id se admin,
-// null caso contrário.
+// supabase-js). Decodifica via supabase auth, depois chama a
+// function public.is_admin() (que já existe no banco e checa
+// profiles.role='admin'). Retorna o user_id se admin, null
+// caso contrário.
+//
+// Importante: usa a function is_admin() em vez de ler
+// profiles.is_admin diretamente — o campo no banco é `role`
+// (text), não `is_admin` (boolean).
 // -----------------------------------------------------------
 export async function authorizeAdmin(authHeader: string | null): Promise<string | null> {
   if (!authHeader) return null;
@@ -54,16 +59,12 @@ export async function authorizeAdmin(authHeader: string | null): Promise<string 
   if (error || !userData?.user) return null;
   const userId = userData.user.id;
 
-  // Confere is_admin na tabela profiles. Usa o cliente
-  // autenticado pelo próprio JWT (RLS aplicada — admin lê o
-  // próprio profile mesmo).
-  const { data: profile, error: pErr } = await client
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", userId)
-    .maybeSingle();
+  // Usa o helper SECURITY DEFINER do banco. Isso garante que
+  // funcionamos com qualquer mudança futura do esquema (campo
+  // 'role' migrar pra outra tabela, virar permissão por linha, etc).
+  const { data: isAdmin, error: rpcErr } = await client.rpc("is_admin");
+  if (rpcErr || !isAdmin) return null;
 
-  if (pErr || !profile?.is_admin) return null;
   return userId;
 }
 
