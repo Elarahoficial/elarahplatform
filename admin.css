@@ -1415,6 +1415,103 @@
   background: #fff5e9;
 }
 
+/* =============================================================
+   PAINEL DE CONEXÃO COM REDES SOCIAIS
+   Card que aparece dentro do dashboard de Redes Sociais quando
+   há ao menos uma conta conectada via API. Mostra status do
+   token, último sync e botão de re-sync manual.
+   ============================================================= */
+
+.social-connections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 18px 0 24px;
+}
+.social-connection {
+  padding: 14px 16px 16px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.social-connection__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.social-connection__platform {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: #1a1a1a;
+}
+.social-connection__handle {
+  margin-left: 8px;
+  color: #888;
+  font-size: 0.84rem;
+}
+.social-connection__status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+.social-connection__status--active {
+  background: #e7f5ec;
+  color: #1a8a4a;
+}
+.social-connection__status--error {
+  background: #fdecea;
+  color: #c0392b;
+}
+.social-connection__status--disconnected {
+  background: #f1f1f1;
+  color: #888;
+}
+.social-connection__meta {
+  font-size: 0.82rem;
+  color: #555;
+  line-height: 1.5;
+}
+.social-connection__meta strong { color: #1a1a1a; }
+.social-connection__error {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  background: #fdecea;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: #c0392b;
+}
+.social-connection__actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Toast pós-OAuth (sucesso ou erro) */
+.social-toast {
+  margin: 14px 0 18px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.social-toast--ok {
+  background: #e7f5ec;
+  color: #1a8a4a;
+  border-color: rgba(26,138,74,0.25);
+}
+.social-toast--error {
+  background: #fdecea;
+  color: #c0392b;
+  border-color: rgba(192,57,43,0.25);
+}
+
 /* Filtro de período (chips) */
 .ana-period-bar {
   display: flex;

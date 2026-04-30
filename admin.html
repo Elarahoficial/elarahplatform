@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=8">
+  <link rel="stylesheet" href="admin.css?v=9">
 </head>
 <body>
 
@@ -122,7 +122,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.61 · 2026-04-28
+        Admin v.62 · 2026-04-30
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -643,6 +643,7 @@
           </select>
           <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-import" type="button" title="Importar CSV de posts">↑ Importar CSV</button>
           <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-export" type="button" title="Exportar todos os posts">↓ Exportar</button>
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-connect-instagram" type="button" title="Conectar conta do Instagram">📷 Conectar Instagram</button>
           <button class="admin__add-btn" id="btn-social-add" type="button">+ Novo post</button>
           <input type="file" id="social-csv-input" accept=".csv,text/csv" style="display:none;">
         </div>
@@ -658,8 +659,9 @@
           Quanto mais dados, mais preciso o painel fica em apontar padrões e gerar ideias acionáveis.
         </p>
         <div class="social-empty__actions">
-          <button class="admin__add-btn" type="button" data-social-action="add">+ Adicionar primeiro post</button>
-          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="sample">Carregar dados de exemplo</button>
+          <button class="admin__add-btn" type="button" data-social-action="connect-instagram">📷 Conectar Instagram</button>
+          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="add">+ Adicionar post manual</button>
+          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="sample">Dados de exemplo</button>
         </div>
         <p class="social-empty__hint">
           CSV esperado: <code>platform,type,date,link,views,likes,comments,saves,shares,tags</code><br>
@@ -669,6 +671,14 @@
 
       <!-- Wrapper do dashboard (escondido se não há dados) -->
       <div id="social-dashboard" style="display:none;">
+
+        <!-- Painel de status das conexões (Instagram/TikTok/LinkedIn).
+             Aparece só se há ao menos uma conta plugada via API. -->
+        <div id="social-connections" class="social-connections" style="display:none;"></div>
+
+        <!-- Banner temporário pós-OAuth (sucesso ou erro). Limpado
+             após alguns segundos pelo JS. -->
+        <div id="social-toast" class="social-toast" style="display:none;"></div>
 
         <!-- KPIs principais: visão geral instantânea da saúde de conteúdo -->
         <div class="social-kpi-grid">
@@ -1577,7 +1587,7 @@
 <script src="experiences-data.js?v=20"></script>
 <script src="byelarah-data.js?v=6"></script>
 <script src="analytics.js?v=1"></script>
-<script src="admin-social.js?v=1"></script>
+<script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=66"></script>

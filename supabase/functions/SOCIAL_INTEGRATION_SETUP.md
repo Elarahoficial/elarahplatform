@@ -83,9 +83,28 @@ Painel do app no Meta for Developers → Facebook Login for Business
 supabase functions deploy oauth-start
 supabase functions deploy oauth-callback
 
-# Fase 3 (próxima) — sync de posts
-# supabase functions deploy sync-instagram
+# Fase 3 — sync de posts e renovação de tokens
+supabase functions deploy sync-instagram
+supabase functions deploy refresh-tokens
 ```
+
+### Migrations da Fase 3
+
+Aplicar **depois** das functions estarem deployadas:
+
+1. `sql/elarah_social_cron.sql` — agenda os jobs do pg_cron
+   (sync 4x/dia, refresh tokens 1x/mês, purge OAuth states 1x/dia).
+
+   Antes de rodar essa migration, execute uma vez no SQL Editor:
+
+   ```sql
+   ALTER DATABASE postgres
+     SET app.elarah_service_role_key = 'eyJhbGciOi...';
+   ```
+
+   Substitua pela `service_role` key do projeto (Settings → API).
+   Sem isso, os jobs do cron rodam mas as Edge Functions retornam
+   401 — porque a key não chega no header Authorization.
 
 Após o deploy, a URL final é:
 
