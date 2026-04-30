@@ -63,6 +63,9 @@ serve(async (req) => {
 
   const code = String(payload.code ?? "").trim();
   const amountCentavos = Number(payload.amount_centavos ?? 0);
+  const experienceId = payload.experiencia_id
+    ? String(payload.experiencia_id).trim()
+    : (payload.experience_id ? String(payload.experience_id).trim() : null);
 
   if (!code) {
     return jsonResponse({ ok: false, error: "code_required" }, 400);
@@ -71,11 +74,58 @@ serve(async (req) => {
     return jsonResponse({ ok: false, error: "invalid_amount" }, 400);
   }
 
+  // ===== Tenta cupom promocional primeiro =====
+  // Se a tabela `coupons` ainda não existe (migration sql/elarah_coupons.sql
+  // não rodou) o RPC falha — caímos no preview_gift_card legado.
+  try {
+    const { data: cpData, error: cpErr } = await supabase.rpc(
+      "preview_coupon",
+      {
+        p_code: code,
+        p_experience_id: experienceId,
+        p_amount_centavos: amountCentavos,
+      },
+    );
+    if (!cpErr) {
+      const cpRow = Array.isArray(cpData) ? cpData[0] : cpData;
+      if (cpRow && cpRow.found) {
+        if (cpRow.valid) {
+          const used = Number(cpRow.discount_centavos || 0);
+          return jsonResponse({
+            ok: true,
+            valid: true,
+            kind: "coupon",
+            discount_type: cpRow.discount_type,
+            discount_value: cpRow.discount_value,
+            used_centavos: used,
+            remaining_centavos: 0,
+            covers_full: used >= amountCentavos,
+            message: cpRow.message || "OK",
+          });
+        }
+        // Existe na tabela coupons mas inválido (expirado/restrito/esgotado).
+        // Não cai pro gift_card — devolve mensagem do cupom direto.
+        return jsonResponse({
+          ok: true,
+          valid: false,
+          kind: "coupon",
+          message: cpRow.message || "Cupom inválido.",
+        });
+      }
+      // cpRow.found === false → não está na tabela coupons → tenta gift_card
+    } else {
+      console.warn("[redeem-gift-card] preview_coupon falhou, fallback gift_card", cpErr.message);
+    }
+  } catch (e) {
+    console.warn("[redeem-gift-card] preview_coupon exceção, fallback gift_card", e);
+  }
+
+  // ===== Fallback: gift card legado =====
   const { data, error } = await supabase
     .rpc("preview_gift_card", { p_code: code });
 
   if (error) {
-    console.error("[redeem-gift-card] preview error", error);
+    console.error("[redeem-gift-card] preview gift_card error", error);
     return jsonResponse({ ok: false, error: "lookup_failed" }, 500);
   }
 
@@ -84,7 +134,7 @@ serve(async (req) => {
     return jsonResponse({
       ok: true,
       valid: false,
-      message: "Código de gift card não encontrado.",
+      message: "Código não encontrado.",
     });
   }
 
@@ -92,6 +142,7 @@ serve(async (req) => {
     return jsonResponse({
       ok: true,
       valid: false,
+      kind: "gift_card",
       status: row.status,
       saldo_centavos: row.saldo_centavos ?? 0,
       message: row.message ?? "Gift card indisponível.",
@@ -106,6 +157,7 @@ serve(async (req) => {
   return jsonResponse({
     ok: true,
     valid: true,
+    kind: "gift_card",
     status: "active",
     saldo_centavos: saldo,
     used_centavos: used,

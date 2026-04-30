@@ -280,7 +280,7 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
 // confirmar via logs do Supabase qual versão está rodando. Se você
 // ver esse marcador nos logs ao testar uma reserva, o deploy passou
 // e o código novo está ativo.
-const CHECKOUT_FN_VERSION = "v3-inventory-fallback-2026-04-26";
+const CHECKOUT_FN_VERSION = "v6-coupons-redeploy-2026-04-29";
 
 async function handleExperienceCheckout(payload: Record<string, unknown>) {
   console.info(
@@ -507,37 +507,88 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
-  // ===== Hold gift card (se cupom enviado) =====
-  // Subtotal vem de computeChargeAmount — fonte única da verdade pra
-  // multiplicação unit × quantidade. Evita que esta função (que tem
-  // lógica duplicada do booking_guard) saia do passo do MP PIX.
+  // ===== Hold cupom OU gift card (se cupom enviado) =====
+  // Tenta primeiro o sistema novo `coupons` (percentual, restrição por
+  // experiência, validade, limite de uso). Se não encontrar, cai pro
+  // gift_cards legado. Backward compat preservada.
   const baseBreakdown = computeChargeAmount(cents, quantidade, 0);
   const totalCents = baseBreakdown.subtotalCents;
   let giftCardId: string | null = null;
   let giftCardCentavos = 0;
+  let couponId: string | null = null;
+  let couponDiscountCents = 0;
 
   if (cupomCode) {
-    const { data: holdRows, error: holdErr } = await supabase.rpc(
-      "hold_gift_card",
-      { p_code: cupomCode, p_amount_centavos: totalCents },
+    // Tenta cupom novo primeiro
+    const { data: cpRows, error: cpErr } = await supabase.rpc(
+      "hold_coupon",
+      {
+        p_code: cupomCode,
+        p_experience_id: exp.id,
+        p_amount_centavos: totalCents,
+      },
     );
-    if (holdErr) {
-      console.error("[create-checkout-session] hold error", holdErr);
-      return jsonResponse({ error: "gift_card_lookup_failed" }, 500);
-    }
-    const hold = Array.isArray(holdRows) ? holdRows[0] : holdRows;
-    if (!hold || !hold.ok) {
-      return jsonResponse(
-        {
-          error: "gift_card_invalid",
-          message: hold?.message || "Cupom inválido.",
-        },
-        422,
+    if (cpErr) {
+      console.warn(
+        "[create-checkout-session] hold_coupon falhou, fallback pra gift_card",
+        cpErr.message,
       );
+    } else {
+      const row = Array.isArray(cpRows) ? cpRows[0] : cpRows;
+      if (row && row.ok === true) {
+        couponId = row.coupon_id ?? null;
+        couponDiscountCents = Number(row.discount_centavos || 0);
+        giftCardCentavos = couponDiscountCents; // mesmo tracking de "valor abatido"
+      } else if (row && row.coupon_id) {
+        // Existe na tabela coupons mas inválido — não cai pro gift_card.
+        return jsonResponse(
+          {
+            error: "coupon_invalid",
+            message: row?.message || "Cupom inválido.",
+          },
+          422,
+        );
+      }
     }
-    giftCardId = hold.gift_card_id;
-    giftCardCentavos = Number(hold.used_centavos || 0);
+
+    if (!couponId) {
+      const { data: holdRows, error: holdErr } = await supabase.rpc(
+        "hold_gift_card",
+        { p_code: cupomCode, p_amount_centavos: totalCents },
+      );
+      if (holdErr) {
+        console.error("[create-checkout-session] hold gift_card error", holdErr);
+        return jsonResponse({ error: "gift_card_lookup_failed" }, 500);
+      }
+      const hold = Array.isArray(holdRows) ? holdRows[0] : holdRows;
+      if (!hold || !hold.ok) {
+        return jsonResponse(
+          {
+            error: "gift_card_invalid",
+            message: hold?.message || "Cupom inválido.",
+          },
+          422,
+        );
+      }
+      giftCardId = hold.gift_card_id;
+      giftCardCentavos = Number(hold.used_centavos || 0);
+    }
   }
+
+  // Helper unificado de rollback do código aplicado (cupom OU gift_card).
+  // Usado em todos os pontos onde a função aborta após ter feito o hold.
+  const refundCupomAplicado = async () => {
+    if (giftCardId) {
+      await supabase.rpc("refund_gift_card", {
+        p_gift_card_id: giftCardId,
+        p_amount_centavos: giftCardCentavos,
+      }).catch((e) => console.warn("[create-checkout-session] refund_gift_card falhou", e));
+    }
+    if (couponId) {
+      await supabase.rpc("refund_coupon", { p_coupon_id: couponId })
+        .catch((e) => console.warn("[create-checkout-session] refund_coupon falhou", e));
+    }
+  };
 
   // Recalcula com o desconto pra ter o breakdown final auditável.
   const breakdown = computeChargeAmount(cents, quantidade, giftCardCentavos);
@@ -674,12 +725,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
 
   const outcome = await tryDecrementVagasSafe();
   if (outcome.kind === "sold_out") {
-    if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
-        p_gift_card_id: giftCardId,
-        p_amount_centavos: giftCardCentavos,
-      });
-    }
+    await refundCupomAplicado();
     const soldOutMsg = useSlotVagasLocal
       ? "Este horário está esgotado."
       : "Esta experiência está esgotada.";
@@ -809,6 +855,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       gift_card_id: giftCardId,
       gift_card_centavos: giftCardCentavos,
       gift_card_code: cupomCode,
+      coupon_id: couponId,
+      coupon_code: couponId ? cupomCode : null,
+      coupon_discount_centavos: couponId ? couponDiscountCents : null,
       slot_id: slotId,
       quantidade: quantidade,
       fornecedor_nome: fornecedorNome,
@@ -833,12 +882,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         directErr,
       );
       // Rollback: devolve cupom + vaga.
-      if (giftCardId) {
-        await supabase.rpc("refund_gift_card", {
-          p_gift_card_id: giftCardId,
-          p_amount_centavos: giftCardCentavos,
-        });
-      }
+      await refundCupomAplicado();
       await incrementVaga();
       return jsonResponse({ error: "booking_failed" }, 500);
     }
@@ -873,12 +917,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     assertExpectedTotal(breakdown, amountToCharge, "stripe checkout session");
   } catch (e) {
     console.error("[create-checkout-session] assertExpectedTotal falhou", e);
-    if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
-        p_gift_card_id: giftCardId,
-        p_amount_centavos: giftCardCentavos,
-      });
-    }
+    await refundCupomAplicado();
     await incrementVaga();
     return jsonResponse(
       { error: "amount_mismatch", message: "Erro interno no cálculo do total. Recarregue e tente novamente." },
@@ -966,12 +1005,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       "discount=" + breakdown.discountCents,
       "fee=" + feeInfo.feeTotalCents,
     );
-    if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
-        p_gift_card_id: giftCardId,
-        p_amount_centavos: giftCardCentavos,
-      });
-    }
+    await refundCupomAplicado();
     await incrementVaga();
     return jsonResponse(
       {
@@ -1012,6 +1046,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         gift_card_id: giftCardId ?? "",
         gift_card_centavos: String(giftCardCentavos),
         gift_card_code: cupomCode ?? "",
+        coupon_id: couponId ?? "",
+        coupon_code: couponId ? (cupomCode ?? "") : "",
+        coupon_discount_centavos: String(couponDiscountCents),
         // Breakdown completo da cobrança — fonte única no metadata
         // pra auditoria. Permite checar a qualquer momento que o
         // valor total bate com unit × quantidade.
@@ -1039,12 +1076,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     });
   } catch (e) {
     console.error("[Elarah Payment] stripe create error", e);
-    if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
-        p_gift_card_id: giftCardId,
-        p_amount_centavos: giftCardCentavos,
-      });
-    }
+    await refundCupomAplicado();
     await incrementVaga();
     return jsonResponse({ error: "stripe_create_failed" }, 502);
   }
@@ -1103,6 +1135,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     gift_card_id: giftCardId,
     gift_card_centavos: giftCardCentavos || null,
     gift_card_code: cupomCode,
+    coupon_id: couponId,
+    coupon_code: couponId ? cupomCode : null,
+    coupon_discount_centavos: couponId ? couponDiscountCents : null,
     slot_id: slotId,
     quantidade: quantidade,
     fornecedor_nome: fornecedorNome,
@@ -1145,6 +1180,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         gift_card_id: giftCardId,
         gift_card_centavos: giftCardCentavos || null,
         gift_card_code: cupomCode,
+        coupon_id: couponId,
+        coupon_code: couponId ? cupomCode : null,
+        coupon_discount_centavos: couponId ? couponDiscountCents : null,
         slot_id: slotId,
         quantidade: quantidade,
         fornecedor_nome: fornecedorNome,

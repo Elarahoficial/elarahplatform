@@ -5,7 +5,7 @@
    log no console do navegador, o browser ou CDN está servindo
    um script.js antigo.
    ============================================================= */
-console.info('[Elarah] script.js v25 — mobile header centralizado + fechamento robusto');
+console.info('[Elarah] script.js v28 — cupons: validação via RPC direto (não depende de Edge Function deployada)');
 
 // ===== MOBILE HEADER (compartilhado entre páginas) =====
 // Centraliza o comportamento do hambúrguer + dropdown Explorar.
@@ -1500,6 +1500,82 @@ if (groupForm) {
     const SUPABASE_ANON_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
 
+    // ===== Tradução de erros do checkout =====
+    // O backend pode retornar códigos técnicos (ex.: vagas_check_failed,
+    // experience_sold_out) — sem mensagem humana, isso vaza pro modal e
+    // assusta o cliente. Esta tabela traduz códigos conhecidos pra texto
+    // em PT-BR. Inclui códigos antigos que podem estar em deploys
+    // legados das Edge Functions, pra que NUNCA apareça código cru.
+    const CHECKOUT_ERROR_MESSAGES = {
+      vagas_check_failed:
+        'Não conseguimos verificar a disponibilidade de vagas agora. Recarregue a página e tente de novo, ou nos chame no WhatsApp.',
+      experience_sold_out: 'Esta experiência está esgotada.',
+      slot_sold_out: 'Este horário está esgotado. Escolha outro horário disponível.',
+      experience_cutoff_passed:
+        'As reservas para esta experiência já encerraram. Escolha outra data.',
+      experience_not_found: 'Experiência não encontrada. Recarregue a página.',
+      experience_unavailable: 'Esta experiência não está mais disponível.',
+      slot_unavailable: 'Este horário não está mais disponível. Escolha outro.',
+      experience_lookup_failed:
+        'Erro ao buscar a experiência. Tente novamente em instantes.',
+      experiencia_id_required: 'Experiência inválida. Recarregue a página.',
+      invalid_price: 'Preço da experiência inválido. Avise no WhatsApp para corrigirmos.',
+      gift_card_invalid: 'Cupom inválido ou expirado.',
+      gift_card_lookup_failed: 'Erro ao validar o cupom. Tente novamente.',
+      coupon_invalid: 'Cupom inválido, expirado ou não vale para esta experiência.',
+      gift_card_save_failed:
+        'Erro ao registrar o gift card. Tente novamente em instantes.',
+      gift_card_min_value: 'Valor do gift card abaixo do mínimo (R$ 50).',
+      gift_card_max_value: 'Valor do gift card acima do máximo permitido.',
+      recipient_email_required: 'Informe o e-mail do presenteado.',
+      stripe_create_failed:
+        'Erro ao iniciar o pagamento no Stripe. Tente novamente ou pague no PIX.',
+      stripe_line_items_mismatch:
+        'Erro interno no cálculo do total. Recarregue a página e tente de novo.',
+      mp_create_failed:
+        'Não foi possível gerar o PIX agora. Tente de novo ou pague no cartão.',
+      mp_qr_missing:
+        'Mercado Pago não devolveu o QR code. Tente novamente ou pague no cartão.',
+      amount_mismatch:
+        'Erro interno no cálculo do total. Recarregue a página e tente novamente.',
+      booking_failed:
+        'Erro ao registrar sua reserva. Tente novamente ou nos chame no WhatsApp.',
+      cpf_required: 'CPF inválido. Use 11 dígitos — PIX exige CPF válido.',
+      email_required: 'E-mail é obrigatório para pagar via PIX.',
+      server_misconfigured:
+        'Pagamento temporariamente indisponível. Avise no WhatsApp.',
+      checkout_unexpected_error:
+        'Erro inesperado no checkout. Tente novamente em instantes ou nos chame no WhatsApp.',
+      method_not_allowed: 'Método inválido. Recarregue a página.',
+      invalid_json: 'Erro ao enviar os dados. Recarregue a página.',
+    };
+
+    // Recebe a resposta crua do backend (data) + um fallback humano e
+    // devolve SEMPRE uma mensagem em português pronta pra mostrar no
+    // erro do modal. Prioridade:
+    //   1. data.message (já vem em PT do backend novo)
+    //   2. tradução de data.error (códigos conhecidos)
+    //   3. fallback genérico
+    // Nunca devolve um código técnico (ex.: "vagas_check_failed") cru.
+    function translateCheckoutError(data, fallback) {
+      const fb = fallback || 'Não foi possível processar a reserva. Tente novamente.';
+      if (!data) return fb;
+      // Mensagem humana já veio do backend.
+      if (data.message && typeof data.message === 'string' && data.message.trim()) {
+        return data.message.trim();
+      }
+      const code = data.error;
+      if (!code) return fb;
+      const codeStr = String(code).trim();
+      if (Object.prototype.hasOwnProperty.call(CHECKOUT_ERROR_MESSAGES, codeStr)) {
+        return CHECKOUT_ERROR_MESSAGES[codeStr];
+      }
+      // Código desconhecido: loga pra diagnóstico mas mostra fallback
+      // genérico — nunca expõe o código cru pro usuário.
+      console.warn('[Elarah Payment] código de erro desconhecido do backend:', codeStr);
+      return fb;
+    }
+
     function readActiveHorario(triggerEl) {
       if (!triggerEl) return null;
       // Trigger pode trazer um data-horario explícito (ex.: ghost button
@@ -2355,6 +2431,86 @@ if (groupForm) {
       msg.style.color = '#666';
       msg.textContent = 'Validando...';
 
+      // ===== Estratégia em 2 camadas =====
+      // (1) Tenta direto via supabaseClient.rpc("preview_coupon") — não
+      //     depende de Edge Function nova estar deployada. RPC é
+      //     security definer, expõe pra anon, então funciona com a anon
+      //     key que já está no client.
+      // (2) Se a RPC falha (provavelmente porque sql/elarah_coupons.sql
+      //     ainda não rodou no banco), cai pro Edge Function antigo
+      //     redeem-gift-card que valida gift_cards legados.
+      //
+      // Antes era só (2). O problema: o redeem-gift-card deployado no
+      // Supabase pode ser uma versão antiga (sem o fallback pra
+      // preview_coupon), então um cupom novo aparecia como "código não
+      // encontrado". Chamando direto via RPC, ignoramos qualquer drift
+      // de deploy de Edge Function.
+
+      const amountCentavos = currentReservationCtx.precoCentavos;
+      const experienciaId = currentReservationCtx.experienceId || null;
+
+      // ----- Camada 1: preview_coupon via supabaseClient -----
+      let validatedCoupon = null;
+      try {
+        if (window.supabaseClient && experienciaId) {
+          const { data: cpData, error: cpErr } = await window.supabaseClient.rpc(
+            'preview_coupon',
+            {
+              p_code: code,
+              p_experience_id: experienciaId,
+              p_amount_centavos: amountCentavos,
+            }
+          );
+          if (!cpErr) {
+            const row = Array.isArray(cpData) ? cpData[0] : cpData;
+            if (row && row.found) {
+              validatedCoupon = row;
+              console.log('[Elarah checkout] preview_coupon ok', row);
+            }
+          } else {
+            console.warn('[Elarah checkout] preview_coupon RPC erro (fallback gift_card):', cpErr.message);
+          }
+        }
+      } catch (e) {
+        console.warn('[Elarah checkout] preview_coupon exceção (fallback gift_card):', e);
+      }
+
+      // Se achou cupom e é VÁLIDO, aplica direto e termina.
+      if (validatedCoupon && validatedCoupon.valid) {
+        const used = Number(validatedCoupon.discount_centavos || 0);
+        currentReservationCtx.cupomCode = code;
+        currentReservationCtx.cupomCentavos = used;
+        msg.style.color = '#1a8a4a';
+        const totalCents = amountCentavos;
+        const coversFull = used >= totalCents;
+        if (coversFull) {
+          msg.textContent = 'Cupom cobre 100% — você não paga nada extra.';
+        } else if (validatedCoupon.discount_type === 'percent') {
+          msg.textContent = '✓ ' + validatedCoupon.discount_value + '% OFF aplicado: ' + brl(used) + ' de desconto.';
+        } else {
+          msg.textContent = '✓ Cupom aplicado: ' + brl(used) + ' de desconto.';
+        }
+        const drow = root.querySelector('#erm-discount-row');
+        drow.style.display = 'flex';
+        root.querySelector('#erm-discount').textContent = '- ' + brl(used);
+        refreshPriceBreakdown();
+        return;
+      }
+
+      // Se achou cupom mas é INVÁLIDO (expirado/restrito/esgotado/desativado),
+      // mostra a mensagem do banco direto — não cai pro gift_card,
+      // porque o usuário digitou algo que ELE achava ser cupom.
+      if (validatedCoupon && !validatedCoupon.valid) {
+        msg.style.color = '#c0392b';
+        msg.textContent = validatedCoupon.message || 'Cupom inválido.';
+        currentReservationCtx.cupomCode = null;
+        currentReservationCtx.cupomCentavos = 0;
+        root.querySelector('#erm-discount-row').style.display = 'none';
+        refreshPriceBreakdown();
+        return;
+      }
+
+      // ----- Camada 2: gift_card legado via Edge Function -----
       try {
         const res = await fetch(REDEEM_FN_URL, {
           method: 'POST',
@@ -2365,14 +2521,15 @@ if (groupForm) {
           },
           body: JSON.stringify({
             code: code,
-            amount_centavos: currentReservationCtx.precoCentavos,
+            amount_centavos: amountCentavos,
+            experiencia_id: experienciaId,
           }),
         });
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok || !data || !data.ok) {
           msg.style.color = '#c0392b';
-          msg.textContent = (data && data.error) || 'Não foi possível validar o cupom.';
+          msg.textContent = (data && (data.message || data.error)) || 'Não foi possível validar o cupom.';
           return;
         }
         if (!data.valid) {
@@ -2389,14 +2546,17 @@ if (groupForm) {
         currentReservationCtx.cupomCentavos = used;
 
         msg.style.color = '#1a8a4a';
-        msg.textContent = data.covers_full
-          ? 'Cupom cobre 100% — você não paga nada extra.'
-          : 'Cupom aplicado: ' + brl(used) + ' de desconto.';
+        const isPercentCoupon = data.kind === 'coupon' && data.discount_type === 'percent';
+        if (data.covers_full) {
+          msg.textContent = 'Cupom cobre 100% — você não paga nada extra.';
+        } else if (isPercentCoupon) {
+          msg.textContent = '✓ ' + data.discount_value + '% OFF aplicado: ' + brl(used) + ' de desconto.';
+        } else {
+          msg.textContent = '✓ Cupom aplicado: ' + brl(used) + ' de desconto.';
+        }
         const drow = root.querySelector('#erm-discount-row');
         drow.style.display = 'flex';
         root.querySelector('#erm-discount').textContent = '- ' + brl(used);
-        // Re-renderiza pra atualizar taxa + total corretamente
-        // (taxa é recalculada sobre o valor pós-cupom).
         refreshPriceBreakdown();
       } catch (e) {
         console.error('[Elarah checkout] validate cupom', e);
@@ -2623,7 +2783,7 @@ if (groupForm) {
           const data = await res.json().catch(() => null);
 
           if (!res.ok || !data) {
-            let msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            let msg = translateCheckoutError(data, 'Não foi possível gerar o PIX. Tente novamente ou pague no cartão.');
             if (data && data.detail) {
               const d = data.detail;
               const causes = Array.isArray(d.cause)
@@ -2709,8 +2869,18 @@ if (groupForm) {
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data) {
-          const msg = (data && (data.message || data.error)) || 'Não foi possível processar a reserva.';
+          const msg = translateCheckoutError(data, 'Não foi possível processar a reserva. Tente novamente.');
           errEl.textContent = msg;
+          confirmBtn.disabled = false;
+          refreshPriceBreakdown();
+          return;
+        }
+
+        // Defesa adicional: alguns deploys legados respondem 200 OK
+        // mesmo carregando { error: "..." } no corpo. Sem essa checagem
+        // o front segue como sucesso e tenta redirecionar pra undefined.
+        if (data.error && !data.url && data.direct !== true) {
+          errEl.textContent = translateCheckoutError(data, 'Não foi possível processar a reserva. Tente novamente.');
           confirmBtn.disabled = false;
           refreshPriceBreakdown();
           return;

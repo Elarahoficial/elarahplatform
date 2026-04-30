@@ -59,6 +59,9 @@ interface BookingRow {
   status: string | null;
   gift_card_id: string | null;
   gift_card_centavos: number | null;
+  coupon_id: string | null;
+  coupon_discount_centavos: number | null;
+  user_id: string | null;
   metadata: Record<string, unknown> | null;
   mp_payment_id: string | null;
   payment_provider: string | null;
@@ -79,7 +82,7 @@ async function findBookingByMpPaymentId(
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
+      "id, email, nome, user_id, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, coupon_id, coupon_discount_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
     )
     .eq("mp_payment_id", paymentId)
     .maybeSingle();
@@ -94,7 +97,7 @@ async function findBookingByMpPaymentId(
   const { data: data2 } = await supabase
     .from("bookings")
     .select(
-      "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
+      "id, email, nome, user_id, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, coupon_id, coupon_discount_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
     )
     .eq("stripe_session_id", "MP-" + paymentId)
     .maybeSingle();
@@ -211,6 +214,27 @@ async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
   // disparar o e-mail. Sem isso, em caso de mismatch (raro), o e-mail
   // mostraria o valor esperado (pre-insert) em vez do real (MP).
   booking.amount_total = paidAmountCents;
+  // Registra uso definitivo do cupom (idempotente — RPC dedup por booking_id).
+  if (booking.coupon_id) {
+    const { error: useErr } = await supabase.rpc("register_coupon_use", {
+      p_coupon_id: booking.coupon_id,
+      p_booking_id: booking.id,
+      p_user_id: booking.user_id,
+      p_email: booking.email,
+      p_experience_id: booking.experiencia_id,
+      p_amount_discount_centavos: booking.coupon_discount_centavos ?? 0,
+    });
+    if (useErr) {
+      console.error("[Elarah Payment/MP] register_coupon_use falhou", useErr);
+    } else {
+      console.info(
+        "[Elarah Payment/MP] uso de cupom registrado",
+        "coupon=" + booking.coupon_id,
+        "booking=" + booking.id,
+        "discount=" + (booking.coupon_discount_centavos ?? 0),
+      );
+    }
+  }
   // Dispara confirmação por e-mail.
   await sendBookingConfirmation(booking);
 }
@@ -246,7 +270,7 @@ async function cancelBooking(booking: BookingRow, newStatus: string) {
         if (error) console.error("[Elarah Payment/MP] refund vagas", error);
       });
   }
-  // Devolve cupom
+  // Devolve gift card (legado)
   if (booking.gift_card_id && booking.gift_card_centavos) {
     await supabase
       .rpc("refund_gift_card", {
@@ -254,7 +278,15 @@ async function cancelBooking(booking: BookingRow, newStatus: string) {
         p_amount_centavos: booking.gift_card_centavos,
       })
       .then(({ error }) => {
-        if (error) console.error("[Elarah Payment/MP] refund cupom", error);
+        if (error) console.error("[Elarah Payment/MP] refund gift_card", error);
+      });
+  }
+  // Devolve uso do cupom promocional (sistema novo)
+  if (booking.coupon_id) {
+    await supabase
+      .rpc("refund_coupon", { p_coupon_id: booking.coupon_id })
+      .then(({ error }) => {
+        if (error) console.error("[Elarah Payment/MP] refund coupon", error);
       });
   }
   console.info(
@@ -414,7 +446,7 @@ serve(async (req) => {
     const { data: byExt } = await supabase
       .from("bookings")
       .select(
-        "id, email, nome, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
+        "id, email, nome, user_id, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, coupon_id, coupon_discount_centavos, slot_id, quantidade, metadata, mp_payment_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor",
       )
       .eq("id", payment.external_reference)
       .maybeSingle();
