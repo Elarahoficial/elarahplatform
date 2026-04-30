@@ -3,36 +3,36 @@
 // -------------------------------------------------------------
 // GET /functions/v1/oauth-callback?code=...&state=...
 //
-// Endpoint chamado pela Meta após o admin autorizar o app.
+// Endpoint chamado pelo Instagram após o admin autorizar o app.
 // Não recebe JWT — é redirect do navegador. Autenticidade é
 // garantida pelo `state` que foi criado no oauth-start (CSRF).
 //
-// Fluxo (Instagram via Facebook Login for Business):
+// Fluxo (Login direto pelo Instagram — apps tipo Empresa):
 //   1. Valida state (consome a linha em social_oauth_states).
-//   2. Troca `code` por short-lived USER access token.
-//   3. Troca short-lived → long-lived (60 dias).
-//   4. GET /me/accounts → lista as Pages do user.
-//   5. Pra cada Page, GET ?fields=instagram_business_account.
-//   6. Pega a primeira Page que tem IG Business conectado.
-//   7. GET /{ig_user_id}?fields=username,name pra pegar o handle.
-//   8. Criptografa o long-lived USER token (via Web Crypto AES-GCM).
-//   9. Upsert em social_accounts com provider=instagram +
-//      meta = { page_id, page_access_token_enc, ig_user_id }.
-//  10. Redireciona o navegador pra return_to com ?social_connected=instagram.
+//   2. Troca `code` por short-lived USER access token via
+//      POST https://api.instagram.com/oauth/access_token.
+//   3. Troca short-lived → long-lived (60 dias) via
+//      GET https://graph.instagram.com/access_token?grant_type=ig_exchange_token.
+//   4. GET /me?fields=user_id,username,name,account_type pra
+//      pegar o handle e o id da conta.
+//   5. Criptografa o long-lived token (Web Crypto AES-GCM).
+//   6. Upsert em social_accounts com provider=instagram.
+//   7. Redireciona o navegador pra return_to com ?social_connected=1.
 //
-// Notas:
-//   - Token armazenado é o USER long-lived (60 dias). Page Access
-//     Tokens são derivados sob demanda no sync — eles herdam o
-//     prazo do user token.
-//   - Se algo dá errado, redireciona com ?social_error=<motivo>
-//     e marca a conta como status='error' (se a conta já existir).
+// Diferenças do fluxo via Facebook Login (legado):
+//   - Não busca Página do FB.
+//   - Não há instagram_business_account separado — o user_id já É
+//     o id da conta business.
+//   - Token armazenado é o IG long-lived (60 dias), refreshable.
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
-  META_GRAPH_BASE,
-  META_INSTAGRAM_SCOPES,
+  IG_GRAPH_BASE,
+  IG_GRAPH_BASE_NOVERSION,
+  IG_INSTAGRAM_SCOPES,
+  IG_TOKEN_EXCHANGE_URL,
   requireEnv,
 } from "../_shared/social_config.ts";
 import { encryptToken } from "../_shared/social_crypto.ts";
@@ -43,34 +43,49 @@ import {
 } from "../_shared/social_db.ts";
 
 // -----------------------------------------------------------
-// Helpers de fetch à Graph API com tratamento de erro uniforme.
+// Tipos da Instagram API
 // -----------------------------------------------------------
-interface GraphErrorBody {
+interface ShortTokenResponse {
+  access_token: string;
+  user_id: number | string;
+  permissions?: string[];
+}
+
+interface LongTokenResponse {
+  access_token: string;
+  token_type?: string;
+  expires_in?: number;
+}
+
+interface IgMeResponse {
+  user_id?: string;
+  id?: string;
+  username?: string;
+  name?: string;
+  account_type?: string;
+}
+
+interface IgErrorBody {
+  error_type?: string;
+  error_message?: string;
   error?: { message?: string; type?: string; code?: number };
+  message?: string;
 }
 
-async function graphGet<T>(path: string, params: Record<string, string>): Promise<T> {
-  const url = new URL(`${META_GRAPH_BASE}${path}`);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url.toString());
+// -----------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------
+async function readError(res: Response): Promise<string> {
   const text = await res.text();
-  if (!res.ok) {
-    let msg = text;
-    try {
-      const j = JSON.parse(text) as GraphErrorBody;
-      msg = j.error?.message || text;
-    } catch { /* keep raw */ }
-    throw new Error(`Graph ${path} ${res.status}: ${msg}`);
+  try {
+    const j = JSON.parse(text) as IgErrorBody;
+    return j.error?.message || j.error_message || j.message || text;
+  } catch {
+    return text;
   }
-  return JSON.parse(text) as T;
 }
 
-// -----------------------------------------------------------
-// Redirect helpers
-// -----------------------------------------------------------
 function buildReturnUrl(state: OAuthStateRow | null, params: Record<string, string>): string {
-  // Fallback: se return_to vier vazio (ou state inválido), volta
-  // pra um URL configurado em env. Última camada de proteção.
   const fallback = Deno.env.get("ADMIN_FALLBACK_RETURN_URL")
     || "https://elarah.com.br/admin.html";
   const base = state?.return_to || fallback;
@@ -95,35 +110,6 @@ function redirect(url: string): Response {
 }
 
 // -----------------------------------------------------------
-// Tipos da Graph API
-// -----------------------------------------------------------
-interface TokenExchangeResponse {
-  access_token: string;
-  token_type?: string;
-  expires_in?: number;
-}
-
-interface MeAccountsResponse {
-  data: Array<{
-    id: string;
-    name: string;
-    access_token: string;
-    category?: string;
-  }>;
-}
-
-interface PageInstagramResponse {
-  instagram_business_account?: { id: string };
-  id: string;
-}
-
-interface IgUserResponse {
-  id: string;
-  username: string;
-  name?: string;
-}
-
-// -----------------------------------------------------------
 // Handler principal
 // -----------------------------------------------------------
 serve(async (req) => {
@@ -137,7 +123,6 @@ serve(async (req) => {
   const errorParam = url.searchParams.get("error");
   const errorDesc = url.searchParams.get("error_description");
 
-  // O usuário pode ter clicado "Cancelar" na tela do Facebook.
   if (errorParam) {
     const stateRow = stateParam ? await consumeOAuthState(stateParam) : null;
     return redirect(buildReturnUrl(stateRow, {
@@ -149,11 +134,10 @@ serve(async (req) => {
   if (!code || !stateParam) {
     return redirect(buildReturnUrl(null, {
       social_connected: "0",
-      social_error: "Resposta inválida da Meta (sem code/state).",
+      social_error: "Resposta inválida do Instagram (sem code/state).",
     }));
   }
 
-  // 1) Valida e consome o state (one-shot)
   const stateRow = await consumeOAuthState(stateParam);
   if (!stateRow) {
     return redirect(buildReturnUrl(null, {
@@ -169,105 +153,89 @@ serve(async (req) => {
   }
 
   try {
-    const appId = requireEnv("META_APP_ID");
-    const appSecret = requireEnv("META_APP_SECRET");
+    const appId = requireEnv("INSTAGRAM_APP_ID");
+    const appSecret = requireEnv("INSTAGRAM_APP_SECRET");
     const redirectUri = stateRow.redirect_uri;
 
-    // 2) Troca code por short-lived user token (válido ~1h).
-    const shortToken = await graphGet<TokenExchangeResponse>("/oauth/access_token", {
+    // 1) Troca code por short-lived token (POST x-www-form-urlencoded)
+    const shortBody = new URLSearchParams({
       client_id: appId,
       client_secret: appSecret,
+      grant_type: "authorization_code",
       redirect_uri: redirectUri,
       code,
     });
-
-    // 3) Troca short-lived → long-lived (válido ~60 dias).
-    const longToken = await graphGet<TokenExchangeResponse>("/oauth/access_token", {
-      grant_type: "fb_exchange_token",
-      client_id: appId,
-      client_secret: appSecret,
-      fb_exchange_token: shortToken.access_token,
+    const shortRes = await fetch(IG_TOKEN_EXCHANGE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: shortBody.toString(),
     });
+    if (!shortRes.ok) {
+      throw new Error(`Troca de code → token falhou: ${await readError(shortRes)}`);
+    }
+    const shortToken = await shortRes.json() as ShortTokenResponse;
+    if (!shortToken.access_token || !shortToken.user_id) {
+      throw new Error("Resposta sem access_token/user_id");
+    }
+    const igUserId = String(shortToken.user_id);
 
+    // 2) Troca short-lived → long-lived (60 dias)
+    const longUrl = new URL(`${IG_GRAPH_BASE_NOVERSION}/access_token`);
+    longUrl.searchParams.set("grant_type", "ig_exchange_token");
+    longUrl.searchParams.set("client_secret", appSecret);
+    longUrl.searchParams.set("access_token", shortToken.access_token);
+    const longRes = await fetch(longUrl.toString());
+    if (!longRes.ok) {
+      throw new Error(`Troca short→long falhou: ${await readError(longRes)}`);
+    }
+    const longToken = await longRes.json() as LongTokenResponse;
+    if (!longToken.access_token) {
+      throw new Error("Long-lived sem access_token");
+    }
     const expiresAt = longToken.expires_in
       ? new Date(Date.now() + longToken.expires_in * 1000).toISOString()
       : null;
 
-    // 4) Lista as Pages do user
-    const pages = await graphGet<MeAccountsResponse>("/me/accounts", {
-      access_token: longToken.access_token,
-      fields: "id,name,access_token,category",
-    });
-
-    if (!pages.data || pages.data.length === 0) {
-      throw new Error(
-        "Nenhuma Página do Facebook encontrada nessa conta. Confirme que o " +
-        "Instagram está vinculado a uma Página do FB que você administra.",
-      );
+    // 3) Pega info do usuário
+    const meUrl = new URL(`${IG_GRAPH_BASE}/me`);
+    meUrl.searchParams.set("fields", "user_id,username,name,account_type");
+    meUrl.searchParams.set("access_token", longToken.access_token);
+    const meRes = await fetch(meUrl.toString());
+    if (!meRes.ok) {
+      throw new Error(`GET /me falhou: ${await readError(meRes)}`);
     }
+    const me = await meRes.json() as IgMeResponse;
+    const username = me.username || null;
+    const displayName = me.name || username;
+    const accountType = me.account_type || null;
 
-    // 5+6) Procura a Page que tem Instagram Business conectado
-    let igUserId: string | null = null;
-    let pageId: string | null = null;
-    let pageName: string | null = null;
-    let pageAccessToken: string | null = null;
-
-    for (const page of pages.data) {
-      const pageInfo = await graphGet<PageInstagramResponse>(`/${page.id}`, {
-        access_token: page.access_token,
-        fields: "instagram_business_account",
-      });
-      if (pageInfo.instagram_business_account?.id) {
-        igUserId = pageInfo.instagram_business_account.id;
-        pageId = page.id;
-        pageName = page.name;
-        pageAccessToken = page.access_token;
-        break;
-      }
-    }
-
-    if (!igUserId || !pageAccessToken) {
-      throw new Error(
-        "Nenhuma Página tem Instagram Business conectado. Vincule o Instagram " +
-        "à Página antes de tentar conectar de novo.",
-      );
-    }
-
-    // 7) Pega o handle do Instagram pra exibição amigável
-    const igUser = await graphGet<IgUserResponse>(`/${igUserId}`, {
-      access_token: pageAccessToken,
-      fields: "username,name",
-    });
-
-    // 8) Criptografa o user long-lived token e o page token
+    // 4) Criptografa o long-lived token
     const accessTokenEnc = await encryptToken(longToken.access_token);
-    const pageTokenEnc = await encryptToken(pageAccessToken);
 
-    // 9) Upsert em social_accounts
+    // 5) Upsert em social_accounts
     await upsertSocialAccount({
       provider: "instagram",
       externalId: igUserId,
-      username: igUser.username || null,
-      displayName: igUser.name || pageName,
+      username,
+      displayName,
       accessTokenEncrypted: accessTokenEnc,
       refreshTokenEncrypted: null,
       tokenExpiresAt: expiresAt,
-      scopes: [...META_INSTAGRAM_SCOPES],
+      scopes: [...IG_INSTAGRAM_SCOPES],
       meta: {
-        page_id: pageId,
-        page_name: pageName,
-        page_access_token_enc: pageTokenEnc,
+        login_method: "instagram_direct",
+        account_type: accountType,
         connected_by: stateRow.admin_user_id,
         connected_at: new Date().toISOString(),
-        api_version: META_GRAPH_BASE.split("/").pop(),
+        api_version: IG_GRAPH_BASE.split("/").pop(),
       },
     });
 
-    // 10) Sucesso → volta pro admin
+    // 6) Sucesso → volta pro admin
     return redirect(buildReturnUrl(stateRow, {
       social_connected: "1",
       social_provider: "instagram",
-      social_username: igUser.username || "",
+      social_username: username || "",
     }));
   } catch (err) {
     console.error("[oauth-callback] erro:", err);
