@@ -10,3 +10,10 @@ verify_jwt = false
 
 [functions.mp-webhook]
 verify_jwt = false
+
+# OAuth callback da Meta — chamado por redirect do navegador
+# (sem header Authorization). A autenticidade é garantida pelo
+# `state` aleatório criado em oauth-start (validado em uma tabela
+# com TTL). Ver supabase/functions/oauth-callback/index.ts.
+[functions.oauth-callback]
+verify_jwt = false
