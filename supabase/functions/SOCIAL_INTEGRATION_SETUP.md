@@ -83,9 +83,40 @@ Painel do app no Meta for Developers → Facebook Login for Business
 supabase functions deploy oauth-start
 supabase functions deploy oauth-callback
 
-# Fase 3 (próxima) — sync de posts
-# supabase functions deploy sync-instagram
+# Fase 3 — sync de posts e renovação de tokens
+supabase functions deploy sync-instagram
+supabase functions deploy refresh-tokens
 ```
+
+### Migrations da Fase 3
+
+Aplicar **depois** das functions estarem deployadas, na ordem:
+
+**1. Salvar a service_role key no Vault (UMA VEZ):**
+
+   No SQL Editor:
+
+   ```sql
+   select vault.create_secret(
+     'eyJhbGciOi...',                  -- service_role key (Settings → API)
+     'elarah_service_role_key',
+     'Service role key usada pelos jobs de cron de redes sociais'
+   );
+   ```
+
+   Confirma:
+   ```sql
+   select count(*) from vault.secrets where name = 'elarah_service_role_key';
+   -- Esperado: 1
+   ```
+
+**2. Aplicar `sql/elarah_social_cron.sql`** — agenda os jobs do
+   pg_cron (sync 4x/dia, refresh tokens 1x/mês, purge OAuth states
+   1x/dia). O SQL lê a service_role key do Vault em runtime.
+
+> ⚠️ **Não use `ALTER DATABASE postgres SET app.* = ...`** — o
+> Supabase managed bloqueia isso pra usuários não-superuser. Vault
+> é o caminho oficialmente suportado.
 
 Após o deploy, a URL final é:
 

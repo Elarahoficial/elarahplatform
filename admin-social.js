@@ -290,6 +290,296 @@
   }
 
   // ============================================================
+  // BLOCO 1.5 — REMOTE (Supabase + Edge Functions)
+  // ------------------------------------------------------------
+  // Camada nova que pluga o painel ao backend de integração com
+  // redes sociais. Quando há ao menos uma conta conectada via API
+  // (Instagram pra começar), `loadPosts()` passa a devolver os
+  // posts vindos do banco em vez do localStorage. Posts manuais
+  // continuam funcionando (campo is_manual no banco).
+  //
+  // Compatibilidade:
+  //   - Se window.supabaseClient não existir (offline / dev sem
+  //     Supabase configurado), tudo recai pro localStorage. Zero
+  //     regressão pro modo manual.
+  //   - O cache `_remoteCache` é populado por `hydrateFromRemote()`
+  //     antes de cada render. As funções de leitura síncrona
+  //     (loadPosts) lêem desse cache.
+  // ============================================================
+
+  // Edge Functions vivem na mesma origem do Supabase.
+  function getSupabaseUrl() {
+    // Preferência: cliente já configurado.
+    const sb = window.supabaseClient;
+    if (sb && typeof sb.supabaseUrl === 'string') return sb.supabaseUrl;
+    // Fallback: globais setados em supabase-client.js.
+    if (typeof window.SUPABASE_URL === 'string') return window.SUPABASE_URL;
+    return null;
+  }
+
+  function getSb() {
+    return window.supabaseClient || null;
+  }
+
+  // Cache em memória do estado vindo do banco. Hidratado por
+  // hydrateFromRemote(). loadPosts() lê daqui se há conexão ativa.
+  const _remoteCache = {
+    accounts: [],          // [{ id, provider, username, status, last_sync_at, ... }]
+    posts:    [],          // posts já normalizados pro formato do painel
+    loadedAt: 0,
+    available: false,      // true se Supabase respondeu com sucesso ao menos 1x
+  };
+
+  // Converte uma linha de v_social_posts_enriched pro formato
+  // que o resto do painel já consome.
+  function remoteRowToPost(row) {
+    if (!row) return null;
+    const date = row.posted_at ? String(row.posted_at).slice(0, 10) : '';
+    return {
+      id:        row.id,
+      platform: row.provider,
+      type:     row.type,
+      date,
+      link:     row.permalink || '',
+      tags:     Array.isArray(row.tags) ? row.tags : [],
+      views:    Number(row.views)    || 0,
+      likes:    Number(row.likes)    || 0,
+      comments: Number(row.comments) || 0,
+      saves:    Number(row.saves)    || 0,
+      shares:   Number(row.shares)   || 0,
+      _remote:  true,
+      _isManual: !!row.is_manual,
+    };
+  }
+
+  async function hydrateFromRemote() {
+    const sb = getSb();
+    if (!sb) return false;
+
+    try {
+      // Contas conectadas (view sem credenciais)
+      const { data: accs, error: aErr } = await sb
+        .from('v_social_accounts_safe')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (aErr) throw aErr;
+      _remoteCache.accounts = accs || [];
+
+      // Posts vindos da API + manuais salvos no banco
+      const { data: posts, error: pErr } = await sb
+        .from('v_social_posts_enriched')
+        .select('id, account_id, provider, external_id, permalink, type, posted_at, caption, views, likes, comments, saves, shares, tags, is_manual')
+        .order('posted_at', { ascending: false })
+        .limit(500);
+      if (pErr) throw pErr;
+      _remoteCache.posts = (posts || []).map(remoteRowToPost).filter(Boolean);
+      _remoteCache.loadedAt = Date.now();
+      _remoteCache.available = true;
+      return true;
+    } catch (err) {
+      console.warn('[ElarahSocial] hidratação remota falhou — caindo no localStorage.', err);
+      _remoteCache.available = false;
+      return false;
+    }
+  }
+
+  // Substitui loadPosts() quando há conexão ativa. Estratégia:
+  //   - Conta conectada → usa banco (read-only pra posts da API)
+  //   - Senão → localStorage (modo manual original)
+  function effectivePostsSource() {
+    if (_remoteCache.available && hasConnectedAccount()) return 'remote';
+    return 'local';
+  }
+
+  function hasConnectedAccount() {
+    return _remoteCache.accounts.some(a => a.status === 'active');
+  }
+
+  function getInstagramAccount() {
+    return _remoteCache.accounts.find(
+      a => a.provider === 'instagram' && a.status === 'active'
+    ) || null;
+  }
+
+  // -----------------------------------------------------------
+  // OAuth — inicia a conexão com Instagram via oauth-start.
+  // -----------------------------------------------------------
+  async function connectInstagram() {
+    const sb = getSb();
+    if (!sb) {
+      alert('Cliente Supabase não está disponível nessa página.');
+      return;
+    }
+    let session;
+    try {
+      const r = await sb.auth.getSession();
+      session = r.data?.session;
+    } catch {/* ignore */}
+    if (!session) {
+      alert('Sessão expirou. Faça login no admin novamente.');
+      return;
+    }
+
+    const url = getSupabaseUrl();
+    if (!url) { alert('SUPABASE_URL não encontrada.'); return; }
+
+    try {
+      const res = await fetch(`${url}/functions/v1/oauth-start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          provider: 'instagram',
+          return_to: window.location.href.split('?')[0],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('[ElarahSocial] conectar Instagram falhou:', err);
+      alert('Não foi possível iniciar a conexão: ' + (err.message || err));
+    }
+  }
+
+  // -----------------------------------------------------------
+  // Sync manual — chama sync-instagram e renderiza de novo.
+  // -----------------------------------------------------------
+  async function syncNow(accountId) {
+    const sb = getSb();
+    if (!sb) return;
+    let session;
+    try {
+      const r = await sb.auth.getSession();
+      session = r.data?.session;
+    } catch {/* ignore */}
+    if (!session) { alert('Sessão expirou.'); return; }
+
+    const url = getSupabaseUrl();
+    const btn = document.getElementById('btn-social-sync');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
+
+    try {
+      const res = await fetch(`${url}/functions/v1/sync-instagram`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ account_id: accountId, trigger: 'manual' }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      const totals = (data.results || []).reduce(
+        (a, r) => ({
+          inserted: a.inserted + (r.inserted || 0),
+          updated:  a.updated  + (r.updated  || 0),
+        }),
+        { inserted: 0, updated: 0 },
+      );
+      showToast('ok',
+        `Sincronizado: ${totals.inserted} novos · ${totals.updated} atualizados.`);
+      await render();
+    } catch (err) {
+      console.error('[ElarahSocial] sync falhou:', err);
+      showToast('error', 'Falha ao sincronizar: ' + (err.message || err));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar agora'; }
+    }
+  }
+
+  // -----------------------------------------------------------
+  // Toast / banner pós-OAuth
+  // -----------------------------------------------------------
+  let _toastTimer = null;
+  function showToast(kind, message) {
+    const el = document.getElementById('social-toast');
+    if (!el) return;
+    el.className = 'social-toast social-toast--' + kind;
+    el.textContent = message;
+    el.style.display = 'block';
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 6000);
+  }
+
+  function consumeOAuthRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('social_connected');
+    if (connected === null) return false;
+
+    const provider = params.get('social_provider') || 'plataforma';
+    const username = params.get('social_username') || '';
+    const error    = params.get('social_error') || '';
+
+    if (connected === '1') {
+      showToast('ok',
+        `${provider === 'instagram' ? 'Instagram' : provider} conectado${username ? ' como @' + username : ''}.`);
+    } else {
+      showToast('error', 'Conexão falhou: ' + (error || 'erro desconhecido.'));
+    }
+    // Limpa a URL pra não disparar de novo num refresh
+    const clean = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, clean);
+    return true;
+  }
+
+  // -----------------------------------------------------------
+  // Renderiza o card de status da(s) conexão(ões).
+  // -----------------------------------------------------------
+  function renderConnections() {
+    const root = document.getElementById('social-connections');
+    if (!root) return;
+    if (!_remoteCache.accounts.length) {
+      root.style.display = 'none';
+      root.innerHTML = '';
+      return;
+    }
+    root.style.display = '';
+    const html = _remoteCache.accounts.map(acc => {
+      const lastSync = acc.last_sync_at
+        ? new Date(acc.last_sync_at).toLocaleString('pt-BR')
+        : 'nunca';
+      const expires = acc.token_expires_at
+        ? new Date(acc.token_expires_at).toLocaleDateString('pt-BR')
+        : '—';
+      const statusClass = 'social-connection__status--' + (acc.status || 'unknown');
+      const errorRow = acc.last_sync_error
+        ? `<div class="social-connection__error">⚠ ${escapeHTML(acc.last_sync_error)}</div>`
+        : '';
+      return `
+        <div class="social-connection">
+          <div class="social-connection__head">
+            <div>
+              <span class="social-connection__platform">${escapeHTML(PLATFORM_LABEL[acc.provider] || acc.provider)}</span>
+              ${acc.username ? `<span class="social-connection__handle">@${escapeHTML(acc.username)}</span>` : ''}
+            </div>
+            <span class="social-connection__status ${statusClass}">${escapeHTML(acc.status || '?')}</span>
+          </div>
+          <div class="social-connection__meta">
+            Último sync: <strong>${escapeHTML(lastSync)}</strong> · Token expira em <strong>${escapeHTML(expires)}</strong>
+          </div>
+          ${errorRow}
+          <div class="social-connection__actions">
+            <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-sync" type="button"
+                    data-sync-account="${escapeHTML(acc.id)}">↻ Sincronizar agora</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    root.innerHTML = html;
+
+    // Wire dos botões
+    root.querySelectorAll('[data-sync-account]').forEach(btn => {
+      btn.addEventListener('click', () => syncNow(btn.getAttribute('data-sync-account')));
+    });
+  }
+
+
+  // ============================================================
   // BLOCO 2 — FILTRAGEM, AGREGAÇÕES E DETECÇÃO DE PADRÃO
   // ============================================================
 
@@ -1281,6 +1571,9 @@
     const addBtn = document.getElementById('btn-social-add');
     if (addBtn) addBtn.addEventListener('click', () => openModal(null));
 
+    const igBtn = document.getElementById('btn-social-connect-instagram');
+    if (igBtn) igBtn.addEventListener('click', connectInstagram);
+
     const exportBtn = document.getElementById('btn-social-export');
     if (exportBtn) exportBtn.addEventListener('click', () => {
       const posts = loadPosts();
@@ -1306,6 +1599,7 @@
         const action = btn.getAttribute('data-social-action');
         if (action === 'add') openModal(null);
         else if (action === 'sample') loadSampleData();
+        else if (action === 'connect-instagram') connectInstagram();
       });
     });
 
@@ -1352,17 +1646,33 @@
   async function render() {
     bindUI();
 
-    const allPosts = loadPosts();
+    // Hidrata dados remotos (silencioso — se falhar, segue
+    // funcionando com localStorage).
+    await hydrateFromRemote();
+
+    // Consome ?social_connected=... se voltou de OAuth.
+    consumeOAuthRedirect();
+
+    // Decide a fonte: banco (se conectado) ou localStorage.
+    const allPosts = effectivePostsSource() === 'remote'
+      ? _remoteCache.posts
+      : loadPosts();
+
     const empty = document.getElementById('social-empty');
     const dash  = document.getElementById('social-dashboard');
 
-    if (!allPosts.length) {
+    // Mostra dashboard se há posts OU conta conectada (mesmo sem
+    // posts ainda — cron pode estar pra rodar).
+    const showDash = allPosts.length > 0 || hasConnectedAccount();
+    if (!showDash) {
       if (empty) empty.style.display = 'block';
       if (dash)  dash.style.display = 'none';
       return;
     }
     if (empty) empty.style.display = 'none';
     if (dash)  dash.style.display = 'block';
+
+    renderConnections();
 
     const platform = (document.getElementById('social-platform') || {}).value || 'all';
     const range    = (document.getElementById('social-range') || {}).value    || '30';
@@ -1400,13 +1710,26 @@
 
   // Bind também no DOMContentLoaded pra garantir os listeners
   // antes do usuário clicar na aba (caso a renderização da aba
-  // seja preguiçosa).
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindUI);
-  } else {
-    bindUI();
+  // seja preguiçosa). Também: se o admin acabou de voltar de
+  // OAuth (?social_connected=...), ativa a aba Redes Sociais
+  // automaticamente — senão o toast de sucesso some sem ser visto.
+  function autoOpenAfterOAuth() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('social_connected')) return;
+    const navBtn = document.querySelector('.admin__nav-item[data-panel="social"]');
+    if (navBtn) navBtn.click();
   }
 
-  window.ElarahSocial = { render, loadSampleData };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      bindUI();
+      autoOpenAfterOAuth();
+    });
+  } else {
+    bindUI();
+    autoOpenAfterOAuth();
+  }
+
+  window.ElarahSocial = { render, loadSampleData, connectInstagram, syncNow };
 
 })();
