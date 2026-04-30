@@ -20,12 +20,17 @@ export const META_GRAPH_BASE =
 
 // Escopos mínimos pra ler insights de Instagram Business.
 // Documentação: https://developers.facebook.com/docs/instagram-platform/
+//
+// `business_management` foi removido propositalmente: ele exige que o
+// usuário testador faça parte de um Business Manager e costuma disparar
+// erro de permissão em apps tipo Empresa em modo desenvolvimento mesmo
+// com Testadores do Instagram já aceitos. Os 4 escopos abaixo são o
+// suficiente pra ler dados de Instagram Business via Facebook Login.
 export const META_INSTAGRAM_SCOPES: readonly string[] = [
   "instagram_basic",
   "instagram_manage_insights",
   "pages_show_list",
   "pages_read_engagement",
-  "business_management",
 ];
 
 // -----------------------------------------------------------
