@@ -1782,3 +1782,68 @@
   .ana-funnel__bar { grid-area: bar; }
   .ana-kpi__value { font-size: 1.7rem; }
 }
+
+/* =========================================================
+   CONTABILIDADE / FINANCEIRO
+   --------------------------------------------------------- */
+#panel-contabilidade .admin__stat {
+  background: #fff;
+  border: 1px solid #f0e6d8;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+#panel-contabilidade .admin__stat-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #999;
+  margin-bottom: 6px;
+}
+
+#panel-contabilidade .admin__stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+#panel-contabilidade .admin__table th {
+  white-space: nowrap;
+}
+
+#panel-contabilidade .admin__table-wrap {
+  overflow-x: auto;
+}
+
+#fin-ledger-search {
+  font-family: inherit;
+}
+
+#fin-ledger-search:focus {
+  outline: none;
+  border-color: var(--orange, #f0a05e);
+}
+
+/* Mobile: cards em coluna única e tabelas com scroll horizontal nativo */
+@media (max-width: 720px) {
+  #panel-contabilidade .admin__analytics-controls {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  #panel-contabilidade .admin__analytics-controls > * {
+    width: 100%;
+  }
+  #panel-contabilidade .admin__stat-value {
+    font-size: 1.2rem;
+  }
+  #fin-cards {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #fin-cards {
+    grid-template-columns: 1fr !important;
+  }
+}

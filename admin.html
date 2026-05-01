@@ -108,6 +108,17 @@
         <span>Cupons</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="contabilidade">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h18v4H3z"/>
+          <path d="M5 7v14h14V7"/>
+          <path d="M9 11h6"/>
+          <path d="M9 15h6"/>
+          <path d="M9 19h3"/>
+        </svg>
+        <span>Contabilidade</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="social">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 11a9 9 0 0 1 9 9"/>
@@ -291,6 +302,8 @@
             <option value="repasse_pendente">Repasse pendente</option>
             <option value="repasse_feito">Repasse feito</option>
           </select>
+          <button class="admin__add-btn" id="btn-register-manual-sale" type="button"
+                  style="background:#1a8a4a;color:#fff;border:0;">+ Registrar venda manual</button>
           <button class="admin__add-btn" id="btn-refresh-bookings" type="button">Atualizar</button>
         </div>
       </div>
@@ -367,6 +380,7 @@
         <table class="admin__table">
           <thead>
             <tr>
+              <th>Origem</th>
               <th>Quando</th>
               <th>Nome</th>
               <th>E-mail</th>
@@ -387,7 +401,7 @@
             </tr>
           </thead>
           <tbody id="purchases-body">
-            <tr><td colspan="17" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
+            <tr><td colspan="18" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1197,6 +1211,217 @@
       </div>
     </div>
 
+    <!-- ===== CONTABILIDADE PANEL ===== -->
+    <div class="admin__panel" id="panel-contabilidade">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Contabilidade</h1>
+          <p class="admin__page-subtitle">Visão financeira completa: receitas, gastos, repasses e resultado por experiência</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <select id="fin-filter-period" class="admin__analytics-select">
+            <option value="today">Hoje</option>
+            <option value="this-week">Esta semana</option>
+            <option value="this-month" selected>Este mês</option>
+            <option value="last-month">Mês passado</option>
+            <option value="all">Tudo</option>
+            <option value="custom">Personalizado</option>
+          </select>
+          <input type="date" id="fin-filter-from" class="admin__analytics-select" style="display:none;">
+          <input type="date" id="fin-filter-to" class="admin__analytics-select" style="display:none;">
+          <select id="fin-filter-experience" class="admin__analytics-select">
+            <option value="">Todas as experiências</option>
+          </select>
+          <select id="fin-filter-supplier" class="admin__analytics-select">
+            <option value="">Todos os fornecedores</option>
+          </select>
+          <button class="admin__add-btn" id="btn-fin-refresh" type="button">Atualizar</button>
+        </div>
+      </div>
+
+      <!-- ===== CARDS DE RESUMO ===== -->
+      <div class="admin__stats" id="fin-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita confirmada</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="fin-card-receita-confirmada">R$ 0</div>
+          <div class="admin__stat-sub" id="fin-card-receita-confirmada-sub" style="font-size:.72rem;color:#888;margin-top:4px;">— vendas</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita pendente</div>
+          <div class="admin__stat-value" id="fin-card-receita-pendente">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Gastos pagos</div>
+          <div class="admin__stat-value" id="fin-card-gastos-pagos">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Gastos pendentes</div>
+          <div class="admin__stat-value" id="fin-card-gastos-pendentes">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Lucro estimado</div>
+          <div class="admin__stat-value" id="fin-card-lucro" style="color:#1a8a4a;">R$ 0</div>
+          <div class="admin__stat-sub" id="fin-card-lucro-sub" style="font-size:.72rem;color:#888;margin-top:4px;">receita − gastos − repasses</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Repasses pendentes</div>
+          <div class="admin__stat-value" id="fin-card-repasses-pendentes" style="color:#b07b00;">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Resultado do mês</div>
+          <div class="admin__stat-value" id="fin-card-mes">R$ 0</div>
+          <div class="admin__stat-sub" id="fin-card-mes-sub" style="font-size:.72rem;color:#888;margin-top:4px;">(mês corrente)</div>
+        </div>
+      </div>
+
+      <!-- ===== AÇÕES ===== -->
+      <div style="margin:18px 0 8px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="btn-fin-new-expense" class="admin__add-btn"
+                style="background:#1a8a4a;color:#fff;border:0;">+ Novo gasto</button>
+        <button type="button" id="btn-fin-new-manual-sale" class="admin__add-btn"
+                style="background:#1a8a4a;color:#fff;border:0;">+ Nova venda manual</button>
+        <button type="button" id="btn-fin-export" class="admin__add-btn">Exportar lançamentos (CSV)</button>
+      </div>
+
+      <!-- ===== TABELA: LANÇAMENTOS UNIFICADOS ===== -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Lançamentos financeiros</span>
+          <span class="admin__table-count" id="fin-ledger-count"></span>
+        </div>
+        <input type="search" id="fin-ledger-search" placeholder="Buscar (nome, experiência, descrição...)"
+               style="margin:8px 12px;padding:8px 10px;width:calc(100% - 24px);box-sizing:border-box;border:1px solid #ddd;border-radius:6px;font-size:.9rem;">
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Origem</th>
+              <th>Tipo</th>
+              <th>Descrição / Cliente</th>
+              <th>Experiência</th>
+              <th>Fornecedor</th>
+              <th style="text-align:right;">Valor</th>
+              <th style="text-align:right;">Repasse</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="fin-ledger-body">
+            <tr><td colspan="9" class="admin__table-empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: GASTOS ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Gastos</span>
+          <span class="admin__table-count" id="fin-expenses-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Experiência</th>
+              <th>Fornecedor</th>
+              <th>Pagamento</th>
+              <th style="text-align:right;">Valor</th>
+              <th>Status</th>
+              <th>Comprovante</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fin-expenses-body">
+            <tr><td colspan="10" class="admin__table-empty">Nenhum gasto registrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: VENDAS MANUAIS ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Vendas manuais (fora do site)</span>
+          <span class="admin__table-count" id="fin-sales-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Cliente</th>
+              <th>Experiência</th>
+              <th>Slot</th>
+              <th>Qtd</th>
+              <th style="text-align:right;">Valor</th>
+              <th>Pagamento</th>
+              <th>Fonte</th>
+              <th>Status</th>
+              <th>Repasse</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fin-sales-body">
+            <tr><td colspan="11" class="admin__table-empty">Nenhuma venda manual registrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: RESULTADO POR EXPERIÊNCIA ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Resultado por experiência</span>
+          <span class="admin__table-count" id="fin-byexp-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Experiência</th>
+              <th style="text-align:right;">Site</th>
+              <th style="text-align:right;">Manual</th>
+              <th style="text-align:right;">Receita</th>
+              <th style="text-align:right;">Repasse</th>
+              <th style="text-align:right;">Gastos</th>
+              <th style="text-align:right;">Lucro Elarah</th>
+              <th style="text-align:right;">Margem</th>
+            </tr>
+          </thead>
+          <tbody id="fin-byexp-body">
+            <tr><td colspan="8" class="admin__table-empty">Sem dados no período.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: REPASSES ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Repasses (bookings + vendas manuais)</span>
+          <span class="admin__table-count" id="fin-payouts-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Data origem</th>
+              <th>Origem</th>
+              <th>Cliente</th>
+              <th>Experiência</th>
+              <th>Fornecedor</th>
+              <th style="text-align:right;">Valor repasse</th>
+              <th>Status</th>
+              <th>Prazo (48h)</th>
+            </tr>
+          </thead>
+          <tbody id="fin-payouts-body">
+            <tr><td colspan="8" class="admin__table-empty">Sem repasses no período.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:24px;color:#888;font-size:.78rem;">
+        Dados confirmados consideram <strong>bookings.status = 'pago'</strong> + <strong>manual_sales.payment_status = 'pago'</strong>.
+        Pendentes/cancelados/reembolsados aparecem nas tabelas com seus respectivos status, mas não somam ao card "Receita confirmada".
+      </p>
+    </div>
+
   </main>
 </div>
 
@@ -1777,6 +2002,253 @@
   </div>
 </div>
 
+<!-- ===== EXPENSE FORM MODAL (Contabilidade) ===== -->
+<div class="admin__modal" id="expense-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:640px;">
+    <button class="admin__modal-close" id="expense-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="expense-modal-title">Novo gasto</h2>
+
+    <form id="expense-form">
+      <input type="hidden" id="exp-fin-id">
+
+      <div class="admin__form-grid">
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição *</label>
+          <input type="text" id="exp-fin-description" required placeholder="Ex.: Material da pintura — 12/04">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Valor (R$) *</label>
+          <input type="text" id="exp-fin-amount" required placeholder="120,50" inputmode="decimal">
+          <p class="admin__form-hint">Use vírgula. Será salvo em centavos.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data do gasto *</label>
+          <input type="date" id="exp-fin-date" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Categoria</label>
+          <select id="exp-fin-category">
+            <option value="">— Sem categoria —</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Forma de pagamento</label>
+          <select id="exp-fin-payment-method">
+            <option value="">—</option>
+            <option value="pix">Pix</option>
+            <option value="cartao">Cartão</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="transferencia">Transferência</option>
+            <option value="boleto">Boleto</option>
+            <option value="infinitypay">InfinityPay</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Experiência (opcional)</label>
+          <select id="exp-fin-experience">
+            <option value="">— Não vinculado —</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Fornecedor (opcional)</label>
+          <input type="text" id="exp-fin-supplier" placeholder="Nome do fornecedor">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Status *</label>
+          <select id="exp-fin-status" required>
+            <option value="pago">Pago</option>
+            <option value="pendente">Pendente</option>
+            <option value="reembolsado">Reembolsado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Observações</label>
+          <input type="text" id="exp-fin-notes" placeholder="Notas internas">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Comprovante (foto / PDF, até 10 MB)</label>
+          <input type="file" id="exp-fin-attachment" accept="image/*,application/pdf">
+          <p class="admin__form-hint" id="exp-fin-attachment-current" style="margin-top:4px;"></p>
+          <button type="button" id="exp-fin-ocr-btn" disabled
+                  title="Em breve: leitura automática de nota fiscal por IA"
+                  style="margin-top:8px;padding:6px 12px;border:1px dashed #bbb;background:#f7f7f7;color:#999;border-radius:6px;cursor:not-allowed;font-size:.82rem;">
+            Ler nota fiscal automaticamente (em breve)
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" id="exp-fin-cancel" class="admin__add-btn">Cancelar</button>
+        <button type="submit" id="exp-fin-save" class="admin__add-btn">Salvar</button>
+      </div>
+
+      <p id="exp-fin-msg" style="margin-top:12px;font-size:.9rem;min-height:1.2em;"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MANUAL SALE FORM MODAL (Compras / Contabilidade) ===== -->
+<div class="admin__modal" id="manual-sale-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:720px;">
+    <button class="admin__modal-close" id="manual-sale-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="manual-sale-modal-title">Registrar venda manual</h2>
+    <p style="margin:0 0 14px;color:#888;font-size:.85rem;">
+      Use para vendas feitas fora do site (WhatsApp, Pix direto, dinheiro, InfinityPay etc).
+      Aparecerá em Compras com badge "Venda manual" e na Contabilidade.
+    </p>
+
+    <form id="manual-sale-form">
+      <input type="hidden" id="ms-id">
+
+      <div class="admin__form-grid">
+        <div class="admin__form-field">
+          <label>Nome do cliente *</label>
+          <input type="text" id="ms-customer-name" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>E-mail</label>
+          <input type="email" id="ms-customer-email">
+        </div>
+
+        <div class="admin__form-field">
+          <label>WhatsApp / Telefone</label>
+          <input type="tel" id="ms-customer-phone" placeholder="(11) 99999-9999">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Fonte da venda</label>
+          <select id="ms-source">
+            <option value="">—</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="instagram">Instagram</option>
+            <option value="indicacao">Indicação</option>
+            <option value="presencial">Presencial</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Experiência *</label>
+          <select id="ms-experience" required>
+            <option value="">— Selecione —</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data do evento</label>
+          <input type="date" id="ms-slot-date">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Horário</label>
+          <input type="text" id="ms-slot-time" placeholder="Ex: 19h00">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Quantidade *</label>
+          <input type="number" id="ms-quantity" required min="1" value="1">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Valor unitário (R$) *</label>
+          <input type="text" id="ms-unit-price" required inputmode="decimal" placeholder="120,00">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Cupom / desconto (opcional)</label>
+          <input type="text" id="ms-coupon-code" placeholder="Código">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Desconto (R$)</label>
+          <input type="text" id="ms-discount" inputmode="decimal" placeholder="0,00" value="0">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Total (R$)</label>
+          <input type="text" id="ms-total" readonly style="background:#f5f5f5;">
+          <p class="admin__form-hint">Calculado: (qty × unit) − desconto.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Forma de pagamento</label>
+          <select id="ms-payment-method">
+            <option value="">—</option>
+            <option value="pix">Pix</option>
+            <option value="cartao">Cartão</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="transferencia">Transferência</option>
+            <option value="boleto">Boleto</option>
+            <option value="infinitypay">InfinityPay</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Status do pagamento *</label>
+          <select id="ms-payment-status" required>
+            <option value="pago">Pago</option>
+            <option value="pendente">Pendente</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="reembolsado">Reembolsado</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full" style="border-top:1px dashed #ddd;padding-top:12px;margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
+            <input type="checkbox" id="ms-has-payout" style="width:16px;height:16px;margin:0;">
+            <span>Esta venda gera repasse a fornecedor</span>
+          </label>
+        </div>
+
+        <div class="admin__form-field" id="ms-payout-supplier-wrap" style="display:none;">
+          <label>Fornecedor</label>
+          <input type="text" id="ms-payout-supplier" placeholder="Nome do fornecedor">
+        </div>
+
+        <div class="admin__form-field" id="ms-payout-amount-wrap" style="display:none;">
+          <label>Valor do repasse (R$)</label>
+          <input type="text" id="ms-payout-amount" inputmode="decimal" placeholder="0,00">
+        </div>
+
+        <div class="admin__form-field" id="ms-payout-status-wrap" style="display:none;">
+          <label>Status do repasse</label>
+          <select id="ms-payout-status">
+            <option value="pendente">Pendente</option>
+            <option value="pago">Pago</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Observações</label>
+          <input type="text" id="ms-notes">
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" id="ms-cancel" class="admin__add-btn">Cancelar</button>
+        <button type="submit" id="ms-save" class="admin__add-btn">Salvar venda</button>
+      </div>
+
+      <p id="ms-msg" style="margin-top:12px;font-size:.9rem;min-height:1.2em;"></p>
+    </form>
+  </div>
+</div>
+
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
@@ -1786,7 +2258,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=74"></script>
+<script src="admin.js?v=75"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
