@@ -6140,14 +6140,15 @@
     const exps = await ElarahData.getAllExperiences().catch(() => []);
     _finExpById = new Map();
     (exps || []).forEach(e => { if (e && e.id) _finExpById.set(e.id, e); });
-    const targets = [
+
+    // <select> targets — mantêm placeholder, listam por id (filtros e
+    // gasto). NÃO inclui ms-experience aqui: virou input + datalist.
+    const selectTargets = [
       document.getElementById('fin-filter-experience'),
       document.getElementById('exp-fin-experience'),
-      document.getElementById('ms-experience'),
     ].filter(Boolean);
-    targets.forEach(sel => {
+    selectTargets.forEach(sel => {
       const current = sel.value;
-      // Mantém a 1ª opção (placeholder) e re-popula
       const placeholder = sel.querySelector('option');
       sel.innerHTML = '';
       if (placeholder) sel.appendChild(placeholder);
@@ -6160,6 +6161,113 @@
       });
       if (current) sel.value = current;
     });
+
+    // Datalist da venda manual — buscável por nome. Hidden #ms-experience
+    // guarda o id resolvido pela função _finOnExperienceSearchChange.
+    const dl = document.getElementById('ms-experience-datalist');
+    if (dl) {
+      dl.innerHTML = (exps || [])
+        .filter(e => e && e.id && (e.nome || '').trim())
+        .map(e => '<option value="' + _finEsc(e.nome) + '"></option>')
+        .join('');
+    }
+  }
+
+  // ===== Experience search → resolve id, auto-fill horário/fornecedor/preço =====
+  async function _finOnExperienceSearchChange() {
+    const inputEl = document.getElementById('ms-experience-search');
+    const hidden = document.getElementById('ms-experience');
+    const hint = document.getElementById('ms-experience-hint');
+    if (!inputEl || !hidden) return;
+    const name = (inputEl.value || '').trim();
+    if (!name) {
+      hidden.value = '';
+      if (hint) { hint.textContent = ''; hint.style.color = ''; }
+      return;
+    }
+    const want = name.toLowerCase();
+    let found = null;
+    for (const exp of _finExpById.values()) {
+      if ((exp.nome || '').trim().toLowerCase() === want) { found = exp; break; }
+    }
+    if (!found) {
+      hidden.value = '';
+      if (hint) {
+        hint.textContent = 'Selecione uma experiência da lista.';
+        hint.style.color = '#c0392b';
+      }
+      return;
+    }
+    const previousId = hidden.value;
+    hidden.value = found.id;
+    if (hint) {
+      hint.textContent = '✓ Selecionado: ' + found.nome;
+      hint.style.color = '#1a8a4a';
+    }
+    // Só auto-preenche se mudou de experiência (evita sobrescrever
+    // edições manuais quando o usuário só desfocar o campo).
+    if (previousId !== found.id) {
+      await _finAutoFillFromExperience(found);
+    }
+  }
+
+  // Puxa horários, fornecedor e preço da experiência selecionada.
+  // Não sobrescreve campos já preenchidos pelo usuário.
+  async function _finAutoFillFromExperience(exp) {
+    if (!exp) return;
+    const $ = (id) => document.getElementById(id);
+
+    // Horários — popula datalist; auto-fill se houver exatamente 1.
+    const slotInput = $('ms-slot-time');
+    const slotDl = $('ms-slot-time-datalist');
+    const horarios = Array.isArray(exp.horarios) ? exp.horarios : [];
+    const horariosLabels = horarios
+      .map(h => typeof h === 'string' ? h : (h && (h.label || h.horario)) || '')
+      .filter(Boolean);
+    if (slotDl) {
+      slotDl.innerHTML = horariosLabels
+        .map(h => '<option value="' + _finEsc(h) + '"></option>')
+        .join('');
+    }
+    if (slotInput && !slotInput.value && horariosLabels.length === 1) {
+      slotInput.value = horariosLabels[0];
+    }
+
+    // Preço unitário — extrai o número do campo `preco` (ex.: "R$383").
+    if (exp.preco) {
+      const unitInput = $('ms-unit-price');
+      if (unitInput && !unitInput.value) {
+        const numStr = String(exp.preco).replace(/[^\d.,]/g, '');
+        if (numStr) {
+          unitInput.value = numStr;
+          _finRecalcManualSaleTotal();
+        }
+      }
+    }
+
+    // Fornecedor — primeiro experiences.fornecedor_nome (legado/atual);
+    // fallback: experience_suppliers (modelo multi-fornecedor).
+    let supplierName = (exp.fornecedor_nome || '').trim() || null;
+    if (!supplierName) {
+      const sb = window.supabaseClient;
+      if (sb) {
+        try {
+          const { data } = await sb.from('experience_suppliers')
+            .select('fornecedor_nome')
+            .eq('experience_id', exp.id)
+            .order('ordem', { ascending: true })
+            .limit(1);
+          if (data && data.length) supplierName = (data[0].fornecedor_nome || '').trim() || null;
+        } catch (e) { /* silencioso — tabela pode não existir em ambientes legados */ }
+      }
+    }
+    if (supplierName) {
+      const hasPayoutEl = $('ms-has-payout');
+      const supplierEl = $('ms-payout-supplier');
+      if (hasPayoutEl && !hasPayoutEl.checked) hasPayoutEl.checked = true;
+      _finTogglePayoutFields(true);
+      if (supplierEl && !supplierEl.value) supplierEl.value = supplierName;
+    }
   }
 
   async function _finPopulateSupplierDropdown() {
@@ -6635,6 +6743,26 @@
       $('ms-customer-phone').value = data.customer_phone || '';
       $('ms-source').value = data.sale_source || '';
       $('ms-experience').value = data.experience_id || '';
+      const expEdit = data.experience_id && _finExpById.has(data.experience_id)
+        ? _finExpById.get(data.experience_id) : null;
+      $('ms-experience-search').value = (expEdit && expEdit.nome) || data.experience_name || '';
+      const hintEditEl = $('ms-experience-hint');
+      if (hintEditEl && data.experience_id) {
+        hintEditEl.textContent = '✓ Selecionado: ' + ($('ms-experience-search').value);
+        hintEditEl.style.color = '#1a8a4a';
+      }
+      // Popula datalist de horários sem sobrescrever slot_time atual
+      if (expEdit) {
+        const horarios = Array.isArray(expEdit.horarios) ? expEdit.horarios : [];
+        const dl = $('ms-slot-time-datalist');
+        if (dl) {
+          dl.innerHTML = horarios
+            .map(h => typeof h === 'string' ? h : (h && (h.label || h.horario)) || '')
+            .filter(Boolean)
+            .map(h => '<option value="' + _finEsc(h) + '"></option>')
+            .join('');
+        }
+      }
       $('ms-slot-date').value = data.slot_date || '';
       $('ms-slot-time').value = data.slot_time || '';
       $('ms-quantity').value = data.quantity || 1;
@@ -6657,6 +6785,12 @@
       $('manual-sale-modal-title').textContent = 'Registrar venda manual';
       $('ms-id').value = '';
       $('manual-sale-form').reset();
+      $('ms-experience').value = '';
+      $('ms-experience-search').value = '';
+      const hintNewEl = $('ms-experience-hint');
+      if (hintNewEl) { hintNewEl.textContent = ''; hintNewEl.style.color = ''; }
+      const slotDlNew = $('ms-slot-time-datalist');
+      if (slotDlNew) slotDlNew.innerHTML = '';
       $('ms-quantity').value = '1';
       $('ms-payment-status').value = 'pago';
       $('ms-discount').value = '0';
@@ -6876,6 +7010,15 @@
       document.getElementById(id)?.addEventListener('input', _finRecalcManualSaleTotal);
     });
     document.getElementById('ms-has-payout')?.addEventListener('change', (e) => _finTogglePayoutFields(e.target.checked));
+
+    // Busca de experiência: resolve nome → id e dispara auto-fill
+    // (horários, fornecedor, preço unitário). 'change' cobre seleção
+    // pelo datalist; 'input' cobre digitação completa sem clicar.
+    const expSearch = document.getElementById('ms-experience-search');
+    if (expSearch) {
+      expSearch.addEventListener('change', _finOnExperienceSearchChange);
+      expSearch.addEventListener('input', _finOnExperienceSearchChange);
+    }
 
     // Delegação: editar/excluir/ver comprovante (panel + Compras)
     document.body.addEventListener('click', async (e) => {

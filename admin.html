@@ -2143,9 +2143,11 @@
 
         <div class="admin__form-field admin__form-field--full">
           <label>Experiência *</label>
-          <select id="ms-experience" required>
-            <option value="">— Selecione —</option>
-          </select>
+          <input type="text" id="ms-experience-search" list="ms-experience-datalist"
+                 autocomplete="off" placeholder="Digite para buscar a experiência..." required>
+          <datalist id="ms-experience-datalist"></datalist>
+          <input type="hidden" id="ms-experience">
+          <p class="admin__form-hint" id="ms-experience-hint" style="margin-top:4px;font-size:.78rem;min-height:1.1em;"></p>
         </div>
 
         <div class="admin__form-field">
@@ -2155,7 +2157,9 @@
 
         <div class="admin__form-field">
           <label>Horário</label>
-          <input type="text" id="ms-slot-time" placeholder="Ex: 19h00">
+          <input type="text" id="ms-slot-time" list="ms-slot-time-datalist"
+                 autocomplete="off" placeholder="Ex: 19h00">
+          <datalist id="ms-slot-time-datalist"></datalist>
         </div>
 
         <div class="admin__form-field">
@@ -2258,7 +2262,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=75"></script>
+<script src="admin.js?v=76"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
