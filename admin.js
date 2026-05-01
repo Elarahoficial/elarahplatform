@@ -358,6 +358,7 @@
       case 'byelarah':    await renderByElarah(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
+      case 'contabilidade': await renderContabilidade(); break;
       case 'analytics':   await renderAnalytics(); break;
       case 'social':
         if (window.ElarahSocial && window.ElarahSocial.render) {
@@ -2003,7 +2004,11 @@
     countEl.textContent = filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : '');
 
     if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="18" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
+      // Mesmo com bookings vazios, mostra vendas manuais (cliente pode
+      // ter cadastrado só venda manual num período).
+      appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
+        .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases (empty) falhou:', e && e.message));
       return;
     }
 
@@ -2292,6 +2297,7 @@
 
       return `
         <tr>
+          <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Site</span></td>
           <td>${escapeHtml(when)}</td>
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
@@ -2319,7 +2325,7 @@
     function renderGroupHeader(label, count) {
       return `
         <tr class="admin__table-group-header">
-          <td colspan="17" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
+          <td colspan="18" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
             ${escapeHtml(label)} <span style="color:#999;font-weight:500;margin-left:6px;">(${count})</span>
           </td>
         </tr>
@@ -2345,7 +2351,13 @@
     const sorted = sortByCreatedDesc(filtered);
     tbody.innerHTML = sorted.length
       ? sorted.map(renderBookingRow).join('')
-      : '<tr><td colspan="17" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
+      : '<tr><td colspan="18" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
+
+    // Append vendas manuais pagas no mesmo tbody (badge "Venda manual").
+    // Não bloqueia o render principal — se a tabela manual_sales não
+    // existir (migration não rodada), apenas loga e segue.
+    appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
+      .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases falhou (ok se migration não rodou):', e && e.message));
 
     // Wire editable status_fornecedor dropdowns
     tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
@@ -5866,6 +5878,1038 @@
       showAnalyticsError(e && e.message ? e.message : String(e));
     }
   }
+
+  // =========================================================
+  // ===== CONTABILIDADE / FINANCEIRO =====
+  // ---------------------------------------------------------
+  // Módulo isolado: 5 migrations + bucket de storage devem ter
+  // sido rodados antes (sql/elarah_financial_*.sql). Se as
+  // tabelas/RPC não existirem, o painel mostra um aviso amigável
+  // ao invés de quebrar o admin todo.
+  // =========================================================
+
+  let _finCategoriesCache = null;
+  let _finWired = false;
+  let _finExpById = new Map();          // experience_id → exp object (preenche em populate)
+  let _finCurrentLedgerRows = [];       // pra busca + export CSV
+  let _finCurrentExpenses = [];
+  let _finCurrentManualSales = [];
+
+  function _finFmtBRL(centavos) {
+    const n = Number(centavos) || 0;
+    return (n / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  // Aceita "120,50", "120.50", "1.234,56", "R$ 120" — devolve centavos (int).
+  function _finParseBRL(str) {
+    if (str == null) return 0;
+    let s = String(str).trim().replace(/^R\$\s*/i, '').replace(/\s+/g, '');
+    if (!s) return 0;
+    // Se tem vírgula, vírgula é decimal e ponto é milhar.
+    if (s.indexOf(',') >= 0) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    }
+    const f = parseFloat(s);
+    if (!isFinite(f)) return 0;
+    return Math.round(f * 100);
+  }
+
+  function _finCentsToInput(centavos) {
+    const n = Number(centavos) || 0;
+    return (n / 100).toFixed(2).replace('.', ',');
+  }
+
+  function _finEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function _finToday() {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function _finStartOfWeek() {
+    const d = _finToday();
+    const dow = d.getDay();                            // 0 (dom) .. 6 (sáb)
+    const diff = (dow + 6) % 7;                        // segunda como início
+    d.setDate(d.getDate() - diff);
+    return d;
+  }
+  function _finStartOfMonth(offset) {
+    const d = _finToday();
+    return new Date(d.getFullYear(), d.getMonth() + (offset || 0), 1);
+  }
+  function _finEndOfMonth(offset) {
+    const d = _finStartOfMonth((offset || 0) + 1);
+    d.setMilliseconds(-1);
+    return d;
+  }
+
+  function _finResolveRange(period, customFrom, customTo) {
+    const now = new Date();
+    if (period === 'today') {
+      const start = _finToday();
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+      return { from: start, to: end };
+    }
+    if (period === 'this-week') {
+      const start = _finStartOfWeek();
+      const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+      return { from: start, to: end };
+    }
+    if (period === 'last-month') {
+      return { from: _finStartOfMonth(-1), to: _finEndOfMonth(-1) };
+    }
+    if (period === 'all') {
+      return { from: null, to: null };
+    }
+    if (period === 'custom') {
+      const f = customFrom ? new Date(customFrom + 'T00:00:00') : null;
+      const t = customTo ? new Date(customTo + 'T23:59:59.999') : null;
+      return { from: f, to: t };
+    }
+    // default: this-month
+    return { from: _finStartOfMonth(0), to: _finEndOfMonth(0) };
+  }
+
+  function _finGetFilters() {
+    const period = document.getElementById('fin-filter-period')?.value || 'this-month';
+    const cFrom = document.getElementById('fin-filter-from')?.value || '';
+    const cTo = document.getElementById('fin-filter-to')?.value || '';
+    const range = _finResolveRange(period, cFrom, cTo);
+    return {
+      period,
+      from: range.from,
+      to: range.to,
+      experience: document.getElementById('fin-filter-experience')?.value || '',
+      supplier: document.getElementById('fin-filter-supplier')?.value || '',
+    };
+  }
+
+  function _finFromIso(d) { return d ? d.toISOString() : null; }
+
+  // ===== Categorias =====
+  async function _finFetchCategories() {
+    if (_finCategoriesCache) return _finCategoriesCache;
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('financial_categories')
+      .select('id, slug, label, kind, is_active, ordem')
+      .eq('is_active', true)
+      .order('ordem', { ascending: true });
+    if (error) {
+      console.warn('[Contabilidade] categories load error:', error.message);
+      return [];
+    }
+    _finCategoriesCache = data || [];
+    return _finCategoriesCache;
+  }
+
+  // ===== Summary RPC =====
+  async function _finFetchSummary(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return null;
+    const { data, error } = await sb.rpc('financial_summary', {
+      p_date_from: _finFromIso(filters.from),
+      p_date_to:   _finFromIso(filters.to),
+      p_experience: filters.experience || null,
+      p_supplier:   filters.supplier || null,
+    });
+    if (error) {
+      console.error('[Contabilidade] financial_summary error:', error.message);
+      return null;
+    }
+    return (data && data[0]) || null;
+  }
+
+  async function _finFetchByExperience(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb.rpc('financial_by_experience', {
+      p_date_from: _finFromIso(filters.from),
+      p_date_to:   _finFromIso(filters.to),
+    });
+    if (error) {
+      console.error('[Contabilidade] financial_by_experience error:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function _finFetchLedger(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    let q = sb.from('v_financial_ledger')
+      .select('*')
+      .order('occurred_at', { ascending: false })
+      .limit(2000);
+    if (filters.from) q = q.gte('occurred_at', filters.from.toISOString());
+    if (filters.to)   q = q.lte('occurred_at', filters.to.toISOString());
+    if (filters.experience) q = q.eq('experience_id', filters.experience);
+    const { data, error } = await q;
+    if (error) {
+      console.error('[Contabilidade] v_financial_ledger error:', error.message);
+      return [];
+    }
+    let rows = data || [];
+    if (filters.supplier) {
+      const want = String(filters.supplier).trim().toLowerCase();
+      rows = rows.filter(r => (r.supplier_name || '').trim().toLowerCase() === want);
+    }
+    return rows;
+  }
+
+  async function _finFetchExpenses(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    let q = sb.from('financial_expenses')
+      .select('*, financial_categories(label, slug)')
+      .order('expense_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (filters.from) q = q.gte('expense_date', filters.from.toISOString().slice(0, 10));
+    if (filters.to)   q = q.lte('expense_date', filters.to.toISOString().slice(0, 10));
+    if (filters.experience) q = q.eq('experience_id', filters.experience);
+    const { data, error } = await q;
+    if (error) {
+      console.error('[Contabilidade] expenses load error:', error.message);
+      return [];
+    }
+    let rows = data || [];
+    if (filters.supplier) {
+      const want = String(filters.supplier).trim().toLowerCase();
+      rows = rows.filter(r => (r.supplier_name || r.supplier_key || '').trim().toLowerCase() === want);
+    }
+    return rows;
+  }
+
+  async function _finFetchManualSales(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    let q = sb.from('manual_sales').select('*')
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (filters.from) q = q.gte('created_at', filters.from.toISOString());
+    if (filters.to)   q = q.lte('created_at', filters.to.toISOString());
+    if (filters.experience) q = q.eq('experience_id', filters.experience);
+    const { data, error } = await q;
+    if (error) {
+      console.error('[Contabilidade] manual_sales load error:', error.message);
+      return [];
+    }
+    let rows = data || [];
+    if (filters.supplier) {
+      const want = String(filters.supplier).trim().toLowerCase();
+      rows = rows.filter(r => (r.supplier_name || r.supplier_key || '').trim().toLowerCase() === want);
+    }
+    return rows;
+  }
+
+  // ===== Storage =====
+  async function _finUploadAttachment(file, prefix) {
+    const sb = window.supabaseClient;
+    if (!sb || !file) return null;
+    const safeName = file.name.replace(/[^a-zA-Z0-9_.-]+/g, '_');
+    const path = (prefix || 'misc') + '/' + Date.now() + '_' + safeName;
+    const { error } = await sb.storage
+      .from('financial-attachments')
+      .upload(path, file, { upsert: false, contentType: file.type || undefined });
+    if (error) throw error;
+    return path;
+  }
+
+  async function _finSignedUrl(path) {
+    if (!path) return null;
+    const sb = window.supabaseClient;
+    if (!sb) return null;
+    const { data, error } = await sb.storage
+      .from('financial-attachments')
+      .createSignedUrl(path, 60 * 60);     // 1h
+    if (error) {
+      console.warn('[Contabilidade] signed url error:', error.message);
+      return null;
+    }
+    return data && data.signedUrl;
+  }
+
+  // ===== Populate filter dropdowns =====
+  async function _finPopulateExperienceDropdowns() {
+    if (!(window.ElarahData && ElarahData.getAllExperiences)) return;
+    const exps = await ElarahData.getAllExperiences().catch(() => []);
+    _finExpById = new Map();
+    (exps || []).forEach(e => { if (e && e.id) _finExpById.set(e.id, e); });
+    const targets = [
+      document.getElementById('fin-filter-experience'),
+      document.getElementById('exp-fin-experience'),
+      document.getElementById('ms-experience'),
+    ].filter(Boolean);
+    targets.forEach(sel => {
+      const current = sel.value;
+      // Mantém a 1ª opção (placeholder) e re-popula
+      const placeholder = sel.querySelector('option');
+      sel.innerHTML = '';
+      if (placeholder) sel.appendChild(placeholder);
+      (exps || []).forEach(e => {
+        if (!e || !e.id) return;
+        const opt = document.createElement('option');
+        opt.value = e.id;
+        opt.textContent = e.nome || '(sem nome)';
+        sel.appendChild(opt);
+      });
+      if (current) sel.value = current;
+    });
+  }
+
+  async function _finPopulateSupplierDropdown() {
+    const sb = window.supabaseClient;
+    const sel = document.getElementById('fin-filter-supplier');
+    if (!sel || !sb) return;
+    // Reaproveita: bookings.fornecedor_nome distinct + manual_sales.supplier_name
+    const [b, m] = await Promise.all([
+      sb.from('bookings').select('fornecedor_nome').not('fornecedor_nome', 'is', null).limit(1000),
+      sb.from('manual_sales').select('supplier_name').not('supplier_name', 'is', null).limit(1000)
+        .then(r => r.error ? { data: [] } : r),
+    ]);
+    const set = new Set();
+    (b.data || []).forEach(r => { if (r.fornecedor_nome) set.add(r.fornecedor_nome.trim()); });
+    (m.data || []).forEach(r => { if (r.supplier_name) set.add(r.supplier_name.trim()); });
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Todos os fornecedores</option>';
+    Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    if (current) sel.value = current;
+  }
+
+  async function _finPopulateCategoriesDropdown() {
+    const cats = await _finFetchCategories();
+    const sel = document.getElementById('exp-fin-category');
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— Sem categoria —</option>';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.label;
+      sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+  }
+
+  // ===== Renderers =====
+  function _finBadgeStatus(status, kind) {
+    // kind: 'income' | 'expense' | 'manual_sale'
+    const s = String(status || '').toLowerCase();
+    let bg = '#eee', fg = '#666';
+    if (s === 'pago')         { bg = '#e6f4ea'; fg = '#1a8a4a'; }
+    else if (s === 'pending' || s === 'pendente')  { bg = '#fff8ef'; fg = '#b07b00'; }
+    else if (s === 'cancelado' || s === 'expirado') { bg = '#fce8e6'; fg = '#c0392b'; }
+    else if (s === 'reembolsado')                  { bg = '#f0e6fa'; fg = '#7144a8'; }
+    return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:' + bg +
+      ';color:' + fg + ';font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">' +
+      _finEsc(s || '—') + '</span>';
+  }
+
+  function _finBadgeOrigem(source) {
+    const map = {
+      booking:     { label: 'Site',          bg: '#eef4fb', fg: '#3068a8' },
+      manual_sale: { label: 'Venda manual',  bg: '#fff4e6', fg: '#a05a00' },
+      expense:     { label: 'Gasto',         bg: '#fdecec', fg: '#a83030' },
+    };
+    const o = map[source] || { label: source || '—', bg: '#eee', fg: '#666' };
+    return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:' + o.bg +
+      ';color:' + o.fg + ';font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">' +
+      _finEsc(o.label) + '</span>';
+  }
+
+  function _finRenderCards(s) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    if (!s) {
+      ['fin-card-receita-confirmada','fin-card-receita-pendente','fin-card-gastos-pagos',
+       'fin-card-gastos-pendentes','fin-card-lucro','fin-card-repasses-pendentes','fin-card-mes']
+        .forEach(id => set(id, 'R$ 0'));
+      set('fin-card-receita-confirmada-sub', '— vendas');
+      return;
+    }
+    set('fin-card-receita-confirmada', _finFmtBRL(s.receita_confirmada_centavos));
+    set('fin-card-receita-pendente',   _finFmtBRL(s.receita_pendente_centavos));
+    set('fin-card-gastos-pagos',       _finFmtBRL(s.gastos_pagos_centavos));
+    set('fin-card-gastos-pendentes',   _finFmtBRL(s.gastos_pendentes_centavos));
+    set('fin-card-lucro',              _finFmtBRL(s.lucro_estimado_centavos));
+    set('fin-card-repasses-pendentes', _finFmtBRL(s.repasses_pendentes_centavos));
+    const totalVendas = (Number(s.qty_bookings_pagos) || 0) + (Number(s.qty_manual_sales_pagas) || 0);
+    set('fin-card-receita-confirmada-sub',
+      totalVendas + ' venda' + (totalVendas !== 1 ? 's' : '') +
+      ' · ' + (s.qty_bookings_pagos || 0) + ' site / ' + (s.qty_manual_sales_pagas || 0) + ' manual');
+    // Cor do lucro
+    const lucroEl = document.getElementById('fin-card-lucro');
+    if (lucroEl) lucroEl.style.color = (Number(s.lucro_estimado_centavos) || 0) >= 0 ? '#1a8a4a' : '#c0392b';
+  }
+
+  async function _finRenderResultadoMes() {
+    // Card "Resultado do mês" sempre mostra o mês corrente (não o filtro).
+    const filters = {
+      from: _finStartOfMonth(0),
+      to:   _finEndOfMonth(0),
+      experience: '',
+      supplier: '',
+    };
+    const s = await _finFetchSummary(filters);
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    if (!s) { set('fin-card-mes', 'R$ 0'); return; }
+    set('fin-card-mes', _finFmtBRL(s.lucro_estimado_centavos));
+    const el = document.getElementById('fin-card-mes');
+    if (el) el.style.color = (Number(s.lucro_estimado_centavos) || 0) >= 0 ? '#1a8a4a' : '#c0392b';
+  }
+
+  function _finRenderLedgerTable(rows) {
+    const tbody = document.getElementById('fin-ledger-body');
+    const countEl = document.getElementById('fin-ledger-count');
+    if (!tbody) return;
+    const search = (document.getElementById('fin-ledger-search')?.value || '').trim().toLowerCase();
+    let filtered = rows;
+    if (search) {
+      filtered = rows.filter(r => {
+        const hay = [r.experience_name, r.customer_name, r.customer_email, r.supplier_name, r.description, r.category_slug]
+          .map(x => String(x || '').toLowerCase()).join(' ');
+        return hay.includes(search);
+      });
+    }
+    if (countEl) countEl.textContent = filtered.length + ' lançamento' + (filtered.length !== 1 ? 's' : '');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Sem lançamentos para esses filtros.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filtered.map(r => {
+      const dt = r.occurred_at ? new Date(r.occurred_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const desc = r.source === 'expense'
+        ? _finEsc(r.description || '—')
+        : _finEsc(r.customer_name || r.customer_email || '—');
+      const expName = r.experience_name ? _finEsc(r.experience_name) : '<span style="color:#bbb;">—</span>';
+      const supplier = r.supplier_name ? _finEsc(r.supplier_name) : '<span style="color:#bbb;">—</span>';
+      const tipo = r.kind === 'expense' ? 'Despesa' : 'Receita';
+      const valorColor = r.kind === 'expense' ? '#c0392b' : '#1a8a4a';
+      const valorPrefix = r.kind === 'expense' ? '−' : '+';
+      const repasse = (r.payout_centavos && Number(r.payout_centavos) > 0)
+        ? _finFmtBRL(r.payout_centavos)
+        : '<span style="color:#bbb;">—</span>';
+      return '<tr>' +
+        '<td style="white-space:nowrap;font-size:.82rem;">' + _finEsc(dt) + '</td>' +
+        '<td>' + _finBadgeOrigem(r.source) + '</td>' +
+        '<td style="font-size:.82rem;">' + tipo + '</td>' +
+        '<td>' + desc + '</td>' +
+        '<td style="font-size:.82rem;">' + expName + '</td>' +
+        '<td style="font-size:.82rem;">' + supplier + '</td>' +
+        '<td style="text-align:right;font-weight:600;color:' + valorColor + ';">' +
+          valorPrefix + ' ' + _finFmtBRL(r.amount_centavos) + '</td>' +
+        '<td style="text-align:right;font-size:.82rem;">' + repasse + '</td>' +
+        '<td>' + _finBadgeStatus(r.status) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function _finRenderExpensesTable(rows) {
+    const tbody = document.getElementById('fin-expenses-body');
+    const countEl = document.getElementById('fin-expenses-count');
+    if (!tbody) return;
+    if (countEl) countEl.textContent = rows.length + ' gasto' + (rows.length !== 1 ? 's' : '');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhum gasto registrado neste período.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const dt = r.expense_date ? new Date(r.expense_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+      const cat = (r.financial_categories && r.financial_categories.label) || '<span style="color:#bbb;">—</span>';
+      const exp = r.experience_id && _finExpById.has(r.experience_id)
+        ? _finEsc(_finExpById.get(r.experience_id).nome || '')
+        : '<span style="color:#bbb;">—</span>';
+      const supplier = r.supplier_name ? _finEsc(r.supplier_name) : '<span style="color:#bbb;">—</span>';
+      const pay = r.payment_method ? _finEsc(r.payment_method) : '<span style="color:#bbb;">—</span>';
+      const att = r.attachment_path
+        ? '<a href="#" data-fin-att="' + _finEsc(r.attachment_path) + '" style="color:#3068a8;">ver</a>'
+        : '<span style="color:#bbb;">—</span>';
+      return '<tr data-fin-expense-id="' + _finEsc(r.id) + '">' +
+        '<td style="white-space:nowrap;">' + _finEsc(dt) + '</td>' +
+        '<td>' + _finEsc(r.description || '—') + '</td>' +
+        '<td>' + cat + '</td>' +
+        '<td style="font-size:.82rem;">' + exp + '</td>' +
+        '<td style="font-size:.82rem;">' + supplier + '</td>' +
+        '<td style="font-size:.82rem;">' + pay + '</td>' +
+        '<td style="text-align:right;font-weight:600;color:#c0392b;">' + _finFmtBRL(r.amount_centavos) + '</td>' +
+        '<td>' + _finBadgeStatus(r.status) + '</td>' +
+        '<td>' + att + '</td>' +
+        '<td style="white-space:nowrap;">' +
+          '<button type="button" class="admin__add-btn" data-fin-edit-expense="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;">Editar</button> ' +
+          '<button type="button" class="admin__add-btn" data-fin-del-expense="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;background:#fff;color:#c0392b;border:1px solid #c0392b;">Excluir</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function _finRenderManualSalesTable(rows) {
+    const tbody = document.getElementById('fin-sales-body');
+    const countEl = document.getElementById('fin-sales-count');
+    if (!tbody) return;
+    if (countEl) countEl.textContent = rows.length + ' venda' + (rows.length !== 1 ? 's' : '');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhuma venda manual neste período.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const exp = r.experience_id && _finExpById.has(r.experience_id)
+        ? _finEsc(_finExpById.get(r.experience_id).nome || '')
+        : _finEsc(r.experience_name || '—');
+      const slot = (r.slot_date ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—') +
+                   (r.slot_time ? ' · ' + _finEsc(r.slot_time) : '');
+      const payout = r.payout_status === 'nao_aplicavel'
+        ? '<span style="color:#bbb;">—</span>'
+        : _finBadgeStatus(r.payout_status === 'pago' ? 'pago' : 'pendente') +
+          ' <span style="font-size:.78rem;color:#666;margin-left:4px;">' + _finFmtBRL(r.payout_amount_centavos) + '</span>';
+      return '<tr data-fin-sale-id="' + _finEsc(r.id) + '">' +
+        '<td style="white-space:nowrap;font-size:.82rem;">' + _finEsc(dt) + '</td>' +
+        '<td>' + _finEsc(r.customer_name || '—') +
+          (r.customer_email ? '<br><span style="font-size:.7rem;color:#888;">' + _finEsc(r.customer_email) + '</span>' : '') +
+        '</td>' +
+        '<td>' + exp + '</td>' +
+        '<td style="font-size:.82rem;">' + slot + '</td>' +
+        '<td style="text-align:center;">' + (r.quantity || 1) + '</td>' +
+        '<td style="text-align:right;font-weight:600;">' + _finFmtBRL(r.total_amount_centavos) + '</td>' +
+        '<td style="font-size:.82rem;">' + (r.payment_method ? _finEsc(r.payment_method) : '—') + '</td>' +
+        '<td style="font-size:.82rem;">' + (r.sale_source ? _finEsc(r.sale_source) : '—') + '</td>' +
+        '<td>' + _finBadgeStatus(r.payment_status) + '</td>' +
+        '<td>' + payout + '</td>' +
+        '<td style="white-space:nowrap;">' +
+          '<button type="button" class="admin__add-btn" data-fin-edit-sale="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;">Editar</button> ' +
+          '<button type="button" class="admin__add-btn" data-fin-del-sale="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;background:#fff;color:#c0392b;border:1px solid #c0392b;">Excluir</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function _finRenderByExperienceTable(rows) {
+    const tbody = document.getElementById('fin-byexp-body');
+    const countEl = document.getElementById('fin-byexp-count');
+    if (!tbody) return;
+    if (countEl) countEl.textContent = rows.length + ' experiência' + (rows.length !== 1 ? 's' : '');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Sem dados no período.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const receita = Number(r.receita_centavos) || 0;
+      const lucro = Number(r.lucro_centavos) || 0;
+      const margem = receita > 0 ? (lucro / receita) : null;
+      const margemStr = margem == null
+        ? '<span style="color:#bbb;">—</span>'
+        : (margem * 100).toFixed(1).replace('.', ',') + '%';
+      const lucroColor = lucro >= 0 ? '#1a8a4a' : '#c0392b';
+      const expName = _finEsc(r.experience_name || '(sem nome)');
+      return '<tr>' +
+        '<td>' + expName + '</td>' +
+        '<td style="text-align:right;">' + (r.qty_site || 0) + '</td>' +
+        '<td style="text-align:right;">' + (r.qty_manual || 0) + '</td>' +
+        '<td style="text-align:right;font-weight:600;">' + _finFmtBRL(receita) + '</td>' +
+        '<td style="text-align:right;color:#b07b00;">' + _finFmtBRL(r.repasse_centavos) + '</td>' +
+        '<td style="text-align:right;color:#c0392b;">' + _finFmtBRL(r.gastos_centavos) + '</td>' +
+        '<td style="text-align:right;font-weight:700;color:' + lucroColor + ';">' + _finFmtBRL(lucro) + '</td>' +
+        '<td style="text-align:right;font-weight:600;color:' + lucroColor + ';">' + margemStr + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function _finRenderPayoutsTable(ledgerRows) {
+    const tbody = document.getElementById('fin-payouts-body');
+    const countEl = document.getElementById('fin-payouts-count');
+    if (!tbody) return;
+    // Filtra: apenas linhas de receita (booking/manual_sale) confirmadas com repasse_status setado
+    const rows = ledgerRows.filter(r =>
+      r.kind === 'income' && r.status === 'pago' &&
+      Number(r.payout_centavos) > 0 && r.payout_status
+    );
+    if (countEl) countEl.textContent = rows.length + ' repasse' + (rows.length !== 1 ? 's' : '');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Sem repasses no período.</td></tr>';
+      return;
+    }
+    const now = Date.now();
+    tbody.innerHTML = rows.map(r => {
+      const dt = r.occurred_at ? new Date(r.occurred_at).toLocaleString('pt-BR', { dateStyle: 'short' }) : '—';
+      // Prazo 48h a partir de occurred_at (heurística — bookings já têm
+      // formatPrazoCell mais sofisticado; aqui é só sinalização visual).
+      const ageH = r.occurred_at ? (now - new Date(r.occurred_at).getTime()) / (1000 * 60 * 60) : null;
+      let prazo = '<span style="color:#bbb;">—</span>';
+      if (ageH != null) {
+        if (r.payout_status === 'repasse_feito') {
+          prazo = '<span style="color:#1a8a4a;font-size:.78rem;">✓ feito</span>';
+        } else if (ageH < 48) {
+          const restH = Math.max(0, 48 - ageH);
+          prazo = '<span style="color:#c0392b;font-weight:700;font-size:.78rem;">' + restH.toFixed(0) + 'h restantes</span>';
+        } else {
+          prazo = '<span style="color:#b07b00;font-size:.78rem;">+48h</span>';
+        }
+      }
+      return '<tr>' +
+        '<td style="white-space:nowrap;font-size:.82rem;">' + _finEsc(dt) + '</td>' +
+        '<td>' + _finBadgeOrigem(r.source) + '</td>' +
+        '<td style="font-size:.82rem;">' + _finEsc(r.customer_name || r.customer_email || '—') + '</td>' +
+        '<td style="font-size:.82rem;">' + _finEsc(r.experience_name || '—') + '</td>' +
+        '<td>' + _finEsc(r.supplier_name || '—') + '</td>' +
+        '<td style="text-align:right;font-weight:600;color:#b07b00;">' + _finFmtBRL(r.payout_centavos) + '</td>' +
+        '<td>' + _finBadgeStatus(r.payout_status === 'repasse_feito' ? 'pago' : 'pendente') + '</td>' +
+        '<td>' + prazo + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // ===== CSV export =====
+  function _finExportCSV(rows) {
+    const header = ['data','origem','tipo','descricao','cliente','experiencia','fornecedor','valor_brl','repasse_brl','status'];
+    const lines = [header.join(',')];
+    rows.forEach(r => {
+      const dt = r.occurred_at ? new Date(r.occurred_at).toISOString() : '';
+      const desc = r.source === 'expense' ? (r.description || '') : '';
+      const cli = r.source === 'expense' ? '' : (r.customer_name || r.customer_email || '');
+      const valor = ((Number(r.amount_centavos) || 0) / 100).toFixed(2).replace('.', ',');
+      const repasse = ((Number(r.payout_centavos) || 0) / 100).toFixed(2).replace('.', ',');
+      const cells = [dt, r.source || '', r.kind || '', desc, cli,
+                     r.experience_name || '', r.supplier_name || '', valor, repasse, r.status || ''];
+      lines.push(cells.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(','));
+    });
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'elarah-financeiro-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  }
+
+  // ===== Modal: Gasto =====
+  async function _finOpenExpenseModal(expenseId) {
+    const modal = document.getElementById('expense-modal');
+    if (!modal) return;
+    await Promise.all([_finPopulateCategoriesDropdown(), _finPopulateExperienceDropdowns()]);
+    const $ = (id) => document.getElementById(id);
+    const msgEl = $('exp-fin-msg'); if (msgEl) msgEl.textContent = '';
+    const currentEl = $('exp-fin-attachment-current'); if (currentEl) currentEl.textContent = '';
+    if (expenseId) {
+      $('expense-modal-title').textContent = 'Editar gasto';
+      const sb = window.supabaseClient;
+      const { data, error } = await sb.from('financial_expenses').select('*').eq('id', expenseId).maybeSingle();
+      if (error || !data) {
+        if (msgEl) { msgEl.textContent = 'Erro ao carregar: ' + (error && error.message); msgEl.style.color = '#c0392b'; }
+        return;
+      }
+      $('exp-fin-id').value = data.id;
+      $('exp-fin-description').value = data.description || '';
+      $('exp-fin-amount').value = _finCentsToInput(data.amount_centavos);
+      $('exp-fin-date').value = data.expense_date || '';
+      $('exp-fin-category').value = data.category_id || '';
+      $('exp-fin-payment-method').value = data.payment_method || '';
+      $('exp-fin-experience').value = data.experience_id || '';
+      $('exp-fin-supplier').value = data.supplier_name || '';
+      $('exp-fin-status').value = data.status || 'pago';
+      $('exp-fin-notes').value = data.notes || '';
+      if (data.attachment_path && currentEl) {
+        const u = await _finSignedUrl(data.attachment_path);
+        currentEl.innerHTML = u
+          ? 'Comprovante atual: <a href="' + _finEsc(u) + '" target="_blank" style="color:#3068a8;">ver</a>'
+          : 'Comprovante atual: ' + _finEsc(data.attachment_path);
+      }
+    } else {
+      $('expense-modal-title').textContent = 'Novo gasto';
+      $('exp-fin-id').value = '';
+      $('expense-form').reset();
+      $('exp-fin-date').value = new Date().toISOString().slice(0, 10);
+      $('exp-fin-status').value = 'pago';
+    }
+    modal.classList.add('open');
+  }
+
+  function _finCloseExpenseModal() {
+    document.getElementById('expense-modal')?.classList.remove('open');
+  }
+
+  async function _finSaveExpense(ev) {
+    ev.preventDefault();
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const $ = (id) => document.getElementById(id);
+    const msgEl = $('exp-fin-msg');
+    const id = $('exp-fin-id').value || null;
+    const file = $('exp-fin-attachment').files && $('exp-fin-attachment').files[0];
+    const supplierName = ($('exp-fin-supplier').value || '').trim();
+    const payload = {
+      description: $('exp-fin-description').value.trim(),
+      amount_centavos: _finParseBRL($('exp-fin-amount').value),
+      expense_date: $('exp-fin-date').value,
+      category_id: $('exp-fin-category').value || null,
+      payment_method: $('exp-fin-payment-method').value || null,
+      experience_id: $('exp-fin-experience').value || null,
+      supplier_name: supplierName || null,
+      supplier_key: supplierName ? supplierName.toLowerCase().replace(/\s+/g, ' ') : null,
+      status: $('exp-fin-status').value,
+      notes: $('exp-fin-notes').value || null,
+    };
+    if (!payload.description) {
+      msgEl.textContent = 'Descrição obrigatória.'; msgEl.style.color = '#c0392b'; return;
+    }
+    if (payload.amount_centavos <= 0) {
+      msgEl.textContent = 'Valor deve ser maior que zero.'; msgEl.style.color = '#c0392b'; return;
+    }
+    msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
+    try {
+      if (file) {
+        const path = await _finUploadAttachment(file, 'expenses');
+        if (path) payload.attachment_path = path;
+      }
+      let res;
+      if (id) {
+        res = await sb.from('financial_expenses').update(payload).eq('id', id);
+      } else {
+        const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
+        if (user) payload.created_by = user.id;
+        res = await sb.from('financial_expenses').insert(payload);
+      }
+      if (res.error) throw res.error;
+      msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      setTimeout(() => { _finCloseExpenseModal(); renderContabilidade(); }, 400);
+    } catch (e) {
+      console.error('[Contabilidade] save expense:', e);
+      msgEl.textContent = 'Erro: ' + (e.message || e);
+      msgEl.style.color = '#c0392b';
+    }
+  }
+
+  async function _finDeleteExpense(id) {
+    if (!confirm('Excluir este gasto? Esta ação não pode ser desfeita.')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('financial_expenses').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    renderContabilidade();
+  }
+
+  // ===== Modal: Venda Manual =====
+  function _finRecalcManualSaleTotal() {
+    const $ = (id) => document.getElementById(id);
+    const qty = parseInt($('ms-quantity').value, 10) || 0;
+    const unit = _finParseBRL($('ms-unit-price').value);
+    const disc = _finParseBRL($('ms-discount').value);
+    const total = Math.max(0, qty * unit - disc);
+    $('ms-total').value = _finCentsToInput(total);
+    return total;
+  }
+
+  function _finTogglePayoutFields(show) {
+    ['ms-payout-supplier-wrap','ms-payout-amount-wrap','ms-payout-status-wrap'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = show ? '' : 'none';
+    });
+  }
+
+  async function _finOpenManualSaleModal(saleId) {
+    const modal = document.getElementById('manual-sale-modal');
+    if (!modal) return;
+    await _finPopulateExperienceDropdowns();
+    const $ = (id) => document.getElementById(id);
+    const msgEl = $('ms-msg'); if (msgEl) msgEl.textContent = '';
+    if (saleId) {
+      $('manual-sale-modal-title').textContent = 'Editar venda manual';
+      const sb = window.supabaseClient;
+      const { data, error } = await sb.from('manual_sales').select('*').eq('id', saleId).maybeSingle();
+      if (error || !data) {
+        if (msgEl) { msgEl.textContent = 'Erro: ' + (error && error.message); msgEl.style.color = '#c0392b'; }
+        return;
+      }
+      $('ms-id').value = data.id;
+      $('ms-customer-name').value = data.customer_name || '';
+      $('ms-customer-email').value = data.customer_email || '';
+      $('ms-customer-phone').value = data.customer_phone || '';
+      $('ms-source').value = data.sale_source || '';
+      $('ms-experience').value = data.experience_id || '';
+      $('ms-slot-date').value = data.slot_date || '';
+      $('ms-slot-time').value = data.slot_time || '';
+      $('ms-quantity').value = data.quantity || 1;
+      $('ms-unit-price').value = _finCentsToInput(data.unit_price_centavos);
+      $('ms-coupon-code').value = data.coupon_code || '';
+      $('ms-discount').value = _finCentsToInput(data.discount_centavos);
+      $('ms-payment-method').value = data.payment_method || '';
+      $('ms-payment-status').value = data.payment_status || 'pago';
+      $('ms-notes').value = data.notes || '';
+      const hasPayout = data.payout_status && data.payout_status !== 'nao_aplicavel';
+      $('ms-has-payout').checked = !!hasPayout;
+      _finTogglePayoutFields(!!hasPayout);
+      if (hasPayout) {
+        $('ms-payout-supplier').value = data.supplier_name || '';
+        $('ms-payout-amount').value = _finCentsToInput(data.payout_amount_centavos);
+        $('ms-payout-status').value = data.payout_status === 'pago' ? 'pago' : 'pendente';
+      }
+      _finRecalcManualSaleTotal();
+    } else {
+      $('manual-sale-modal-title').textContent = 'Registrar venda manual';
+      $('ms-id').value = '';
+      $('manual-sale-form').reset();
+      $('ms-quantity').value = '1';
+      $('ms-payment-status').value = 'pago';
+      $('ms-discount').value = '0';
+      _finTogglePayoutFields(false);
+      _finRecalcManualSaleTotal();
+    }
+    modal.classList.add('open');
+  }
+
+  function _finCloseManualSaleModal() {
+    document.getElementById('manual-sale-modal')?.classList.remove('open');
+  }
+
+  async function _finSaveManualSale(ev) {
+    ev.preventDefault();
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const $ = (id) => document.getElementById(id);
+    const msgEl = $('ms-msg');
+    const id = $('ms-id').value || null;
+    const expId = $('ms-experience').value || null;
+    const expSnapshot = expId && _finExpById.has(expId) ? (_finExpById.get(expId).nome || null) : null;
+    const qty = Math.max(1, parseInt($('ms-quantity').value, 10) || 1);
+    const unit = _finParseBRL($('ms-unit-price').value);
+    const disc = _finParseBRL($('ms-discount').value);
+    const total = Math.max(0, qty * unit - disc);
+    const hasPayout = $('ms-has-payout').checked;
+    const supplierName = ($('ms-payout-supplier').value || '').trim();
+    const payload = {
+      customer_name: $('ms-customer-name').value.trim(),
+      customer_email: $('ms-customer-email').value.trim() || null,
+      customer_phone: $('ms-customer-phone').value.trim() || null,
+      experience_id: expId,
+      experience_name: expSnapshot,
+      slot_date: $('ms-slot-date').value || null,
+      slot_time: $('ms-slot-time').value || null,
+      quantity: qty,
+      unit_price_centavos: unit,
+      total_amount_centavos: total,
+      payment_method: $('ms-payment-method').value || null,
+      payment_status: $('ms-payment-status').value,
+      sale_source: $('ms-source').value || null,
+      coupon_code: $('ms-coupon-code').value.trim() || null,
+      discount_centavos: disc,
+      supplier_key: hasPayout && supplierName ? supplierName.toLowerCase().replace(/\s+/g, ' ') : null,
+      supplier_name: hasPayout ? (supplierName || null) : null,
+      payout_amount_centavos: hasPayout ? _finParseBRL($('ms-payout-amount').value) : 0,
+      payout_status: hasPayout ? ($('ms-payout-status').value || 'pendente') : 'nao_aplicavel',
+      notes: $('ms-notes').value || null,
+    };
+    if (!payload.customer_name) {
+      msgEl.textContent = 'Nome do cliente é obrigatório.'; msgEl.style.color = '#c0392b'; return;
+    }
+    if (!payload.experience_id) {
+      msgEl.textContent = 'Selecione a experiência.'; msgEl.style.color = '#c0392b'; return;
+    }
+    if (payload.unit_price_centavos < 0) {
+      msgEl.textContent = 'Valor unitário inválido.'; msgEl.style.color = '#c0392b'; return;
+    }
+    msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
+    try {
+      let res;
+      if (id) {
+        res = await sb.from('manual_sales').update(payload).eq('id', id);
+      } else {
+        const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
+        if (user) payload.created_by = user.id;
+        res = await sb.from('manual_sales').insert(payload);
+      }
+      if (res.error) throw res.error;
+      msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      setTimeout(() => {
+        _finCloseManualSaleModal();
+        // Atualiza Contabilidade se aberto, e Compras (cache de bookings não é afetado).
+        if (document.getElementById('panel-contabilidade')?.classList.contains('admin__panel--active')) {
+          renderContabilidade();
+        }
+        if (document.getElementById('panel-purchases')?.classList.contains('admin__panel--active')) {
+          renderBookings();
+        }
+      }, 400);
+    } catch (e) {
+      console.error('[Contabilidade] save manual sale:', e);
+      msgEl.textContent = 'Erro: ' + (e.message || e);
+      msgEl.style.color = '#c0392b';
+    }
+  }
+
+  async function _finDeleteManualSale(id) {
+    if (!confirm('Excluir esta venda manual? Esta ação não pode ser desfeita.')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('manual_sales').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    if (document.getElementById('panel-contabilidade')?.classList.contains('admin__panel--active')) {
+      renderContabilidade();
+    }
+    if (document.getElementById('panel-purchases')?.classList.contains('admin__panel--active')) {
+      renderBookings();
+    }
+  }
+
+  // ===== Append manual_sales rows in Compras tab (merge visual) =====
+  // Renderiza rows extras no purchases-body com badge "Venda manual".
+  // Mantém o filtro de experiência (mesmo dropdown da aba Compras).
+  // Se a tabela manual_sales não existir, lança erro (caller faz catch).
+  async function appendManualSalesRowsInPurchases(tbody, expFilter) {
+    if (!tbody) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    let q = sb.from('manual_sales').select('*')
+      .eq('payment_status', 'pago')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (expFilter) q = q.eq('experience_id', expFilter);
+    const { data, error } = await q;
+    if (error) throw error;
+    const rows = data || [];
+    if (!rows.length) return;
+    // Limpa um eventual placeholder "Nenhuma reserva"
+    const placeholder = tbody.querySelector('tr td.admin__table-empty');
+    if (placeholder && placeholder.parentElement) placeholder.parentElement.remove();
+    const html = rows.map(r => {
+      const when = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const phone = r.customer_phone ? _finEsc(r.customer_phone) : '<span style="color:#bbb;">—</span>';
+      const expName = r.experience_name ||
+        (r.experience_id && _finExpById.has(r.experience_id) ? _finExpById.get(r.experience_id).nome : '—');
+      const slotDate = r.slot_date ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+      const repasseCell = r.payout_amount_centavos > 0 ? _finFmtBRL(r.payout_amount_centavos) : '—';
+      const sfBadge = r.payout_status === 'pago'
+        ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">Repasse feito</span>'
+        : (r.payout_status === 'pendente'
+            ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8ef;color:#b07b00;font-size:.7rem;font-weight:700;">Repasse pendente</span>'
+            : '<span style="color:#bbb;">—</span>');
+      return '<tr style="background:#fffaf2;">' +
+        '<td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff4e6;color:#a05a00;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Venda manual</span></td>' +
+        '<td>' + _finEsc(when) + '</td>' +
+        '<td>' + _finEsc(r.customer_name || '—') + '</td>' +
+        '<td>' + _finEsc(r.customer_email || '—') + '</td>' +
+        '<td>' + phone + '</td>' +
+        '<td>' + _finEsc(expName) + '</td>' +
+        '<td>' + _finEsc(slotDate) + '</td>' +
+        '<td>' + (r.slot_time ? _finEsc(r.slot_time) : '—') + '</td>' +
+        '<td>' + (r.quantity || 1) + '</td>' +
+        '<td>' + _finFmtBRL(r.total_amount_centavos) + '</td>' +
+        '<td style="font-size:.82rem;">' + _finEsc(r.supplier_name || '—') + '</td>' +
+        '<td>—</td>' +
+        '<td>' + repasseCell + '</td>' +
+        '<td>—</td>' +
+        '<td>' + _finBadgeStatus('pago') + '</td>' +
+        '<td></td>' +
+        '<td>' + sfBadge + '</td>' +
+        '<td>' +
+          '<button type="button" class="admin__add-btn" data-fin-edit-sale="' + _finEsc(r.id) + '" style="padding:3px 8px;font-size:.72rem;">Editar</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+    tbody.insertAdjacentHTML('beforeend', html);
+  }
+
+  // ===== Render principal =====
+  async function renderContabilidade() {
+    if (!document.getElementById('panel-contabilidade')) return;
+    if (!_finWired) { _finWireControls(); _finWired = true; }
+    await Promise.all([_finPopulateExperienceDropdowns(), _finPopulateSupplierDropdown()]);
+    const filters = _finGetFilters();
+    // Toggle custom date inputs
+    const showCustom = filters.period === 'custom';
+    const fromInput = document.getElementById('fin-filter-from');
+    const toInput = document.getElementById('fin-filter-to');
+    if (fromInput) fromInput.style.display = showCustom ? '' : 'none';
+    if (toInput) toInput.style.display = showCustom ? '' : 'none';
+
+    // 5 fetches em paralelo
+    const [summary, byExp, ledger, expenses, sales] = await Promise.all([
+      _finFetchSummary(filters),
+      _finFetchByExperience(filters),
+      _finFetchLedger(filters),
+      _finFetchExpenses(filters),
+      _finFetchManualSales(filters),
+    ]);
+    _finCurrentLedgerRows = ledger;
+    _finCurrentExpenses = expenses;
+    _finCurrentManualSales = sales;
+    _finRenderCards(summary);
+    _finRenderResultadoMes();
+    _finRenderLedgerTable(ledger);
+    _finRenderExpensesTable(expenses);
+    _finRenderManualSalesTable(sales);
+    _finRenderByExperienceTable(byExp);
+    _finRenderPayoutsTable(ledger);
+  }
+
+  function _finWireControls() {
+    const onChangeRefresh = () => renderContabilidade();
+    document.getElementById('fin-filter-period')?.addEventListener('change', onChangeRefresh);
+    document.getElementById('fin-filter-from')?.addEventListener('change', onChangeRefresh);
+    document.getElementById('fin-filter-to')?.addEventListener('change', onChangeRefresh);
+    document.getElementById('fin-filter-experience')?.addEventListener('change', onChangeRefresh);
+    document.getElementById('fin-filter-supplier')?.addEventListener('change', onChangeRefresh);
+    document.getElementById('btn-fin-refresh')?.addEventListener('click', onChangeRefresh);
+    document.getElementById('fin-ledger-search')?.addEventListener('input', () => _finRenderLedgerTable(_finCurrentLedgerRows));
+    document.getElementById('btn-fin-export')?.addEventListener('click', () => _finExportCSV(_finCurrentLedgerRows));
+    document.getElementById('btn-fin-new-expense')?.addEventListener('click', () => _finOpenExpenseModal(null));
+    document.getElementById('btn-fin-new-manual-sale')?.addEventListener('click', () => _finOpenManualSaleModal(null));
+
+    // Modais — wire uma vez
+    document.getElementById('expense-modal-close')?.addEventListener('click', _finCloseExpenseModal);
+    document.getElementById('exp-fin-cancel')?.addEventListener('click', _finCloseExpenseModal);
+    document.getElementById('expense-form')?.addEventListener('submit', _finSaveExpense);
+    document.querySelector('#expense-modal .admin__modal-backdrop')?.addEventListener('click', _finCloseExpenseModal);
+
+    document.getElementById('manual-sale-modal-close')?.addEventListener('click', _finCloseManualSaleModal);
+    document.getElementById('ms-cancel')?.addEventListener('click', _finCloseManualSaleModal);
+    document.getElementById('manual-sale-form')?.addEventListener('submit', _finSaveManualSale);
+    document.querySelector('#manual-sale-modal .admin__modal-backdrop')?.addEventListener('click', _finCloseManualSaleModal);
+    ['ms-quantity','ms-unit-price','ms-discount'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', _finRecalcManualSaleTotal);
+    });
+    document.getElementById('ms-has-payout')?.addEventListener('change', (e) => _finTogglePayoutFields(e.target.checked));
+
+    // Delegação: editar/excluir/ver comprovante (panel + Compras)
+    document.body.addEventListener('click', async (e) => {
+      const t = e.target;
+      if (!t || !t.dataset) return;
+      if (t.dataset.finEditExpense) { e.preventDefault(); _finOpenExpenseModal(t.dataset.finEditExpense); }
+      else if (t.dataset.finDelExpense) { e.preventDefault(); _finDeleteExpense(t.dataset.finDelExpense); }
+      else if (t.dataset.finEditSale) { e.preventDefault(); _finOpenManualSaleModal(t.dataset.finEditSale); }
+      else if (t.dataset.finDelSale) { e.preventDefault(); _finDeleteManualSale(t.dataset.finDelSale); }
+      else if (t.dataset.finAtt) {
+        e.preventDefault();
+        const u = await _finSignedUrl(t.dataset.finAtt);
+        if (u) window.open(u, '_blank');
+        else alert('Não foi possível abrir o comprovante.');
+      }
+    });
+
+    // Botão "Registrar venda manual" no header de Compras
+    document.getElementById('btn-register-manual-sale')?.addEventListener('click', () => _finOpenManualSaleModal(null));
+  }
+
+  // Wire o botão de Compras imediatamente (não depende de o painel
+  // Contabilidade ter sido aberto antes). Faz lazy-init da fixture
+  // de experiências.
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btn-register-manual-sale');
+    if (btn && !btn.dataset._finWired) {
+      btn.dataset._finWired = '1';
+      btn.addEventListener('click', async () => {
+        await _finPopulateExperienceDropdowns();
+        _finOpenManualSaleModal(null);
+      });
+    }
+  });
 
   // ===== START =====
   if (document.readyState === 'loading') {
