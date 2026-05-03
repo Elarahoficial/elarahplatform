@@ -6546,7 +6546,11 @@
       return;
     }
     tbody.innerHTML = rows.map(r => {
-      const dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      // "Quando" prioriza sale_date (data efetiva da venda); cai pra
+      // created_at quando ausente (vendas antigas pré-coluna sale_date).
+      const dt = r.sale_date
+        ? new Date(r.sale_date + 'T00:00:00').toLocaleDateString('pt-BR')
+        : (r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
       const expObj = r.experience_id && _finExpById.has(r.experience_id) ? _finExpById.get(r.experience_id) : null;
       const exp = (expObj && _finEsc(expObj.nome || '')) || _finEsc(r.experience_name || '—');
       // Fallback fornecedor: se a venda não teve supplier salvo mas a
@@ -6835,6 +6839,7 @@
         hintEditEl.textContent = '✓ Selecionado: ' + ($('ms-experience-search').value);
         hintEditEl.style.color = '#1a8a4a';
       }
+      $('ms-sale-date').value = data.sale_date || (data.created_at ? new Date(data.created_at).toISOString().slice(0, 10) : '');
       $('ms-slot-date').value = data.slot_date || '';
       $('ms-slot-time').value = data.slot_time || '';
       $('ms-quantity').value = data.quantity || 1;
@@ -6871,6 +6876,7 @@
       $('ms-quantity').value = '1';
       $('ms-payment-status').value = 'pago';
       $('ms-discount').value = '0';
+      $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
       _finTogglePayoutFields(false);
       _finRecalcManualSaleTotal();
     }
@@ -6902,6 +6908,7 @@
       customer_phone: $('ms-customer-phone').value.trim() || null,
       experience_id: expId,
       experience_name: expSnapshot,
+      sale_date: $('ms-sale-date').value || null,
       slot_date: $('ms-slot-date').value || null,
       slot_time: $('ms-slot-time').value || null,
       quantity: qty,
@@ -6923,6 +6930,9 @@
     }
     if (!payload.experience_id) {
       msgEl.textContent = 'Selecione a experiência.'; msgEl.style.color = '#c0392b'; return;
+    }
+    if (!payload.sale_date) {
+      msgEl.textContent = 'Data da venda é obrigatória.'; msgEl.style.color = '#c0392b'; return;
     }
     if (payload.unit_price_centavos < 0) {
       msgEl.textContent = 'Valor unitário inválido.'; msgEl.style.color = '#c0392b'; return;
