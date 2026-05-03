@@ -6067,6 +6067,18 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // Máscara progressiva pra telefone BR. Mantém só dígitos (até 11) e
+  // formata: (xx) xxxx-xxxx (10 dígitos) ou (xx) xxxxx-xxxx (11 dígitos
+  // = celular com 9). Aceita parcial enquanto o usuário digita.
+  function _finMaskPhone(value) {
+    const d = String(value || '').replace(/\D+/g, '').slice(0, 11);
+    if (!d) return '';
+    if (d.length <= 2) return '(' + d;
+    if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+    if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+    return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+  }
+
   function _finToday() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -7109,7 +7121,7 @@
       $('ms-id').value = mode === 'edit' ? data.id : '';
       $('ms-customer-name').value = data.customer_name || '';
       $('ms-customer-email').value = data.customer_email || '';
-      $('ms-customer-phone').value = data.customer_phone || '';
+      $('ms-customer-phone').value = _finMaskPhone(data.customer_phone || '');
       $('ms-source').value = data.sale_source || '';
       $('ms-experience').value = data.experience_id || '';
       const expRef = data.experience_id && _finExpById.has(data.experience_id)
@@ -7495,6 +7507,17 @@
       document.getElementById(id)?.addEventListener('input', _finRecalcManualSaleTotal);
     });
     document.getElementById('ms-has-payout')?.addEventListener('change', (e) => _finTogglePayoutFields(e.target.checked));
+
+    // Máscara de telefone — formata enquanto digita, mantém o cursor no
+    // fim (pra simplificar, não preserva posição do cursor — o usuário
+    // edita o final na maioria das vezes).
+    const phoneEl = document.getElementById('ms-customer-phone');
+    if (phoneEl) {
+      phoneEl.addEventListener('input', (e) => {
+        const masked = _finMaskPhone(e.target.value);
+        if (masked !== e.target.value) e.target.value = masked;
+      });
+    }
 
     // Busca de experiência: resolve nome → id e dispara auto-fill
     // (horários, fornecedor, preço unitário). 'change' cobre seleção
