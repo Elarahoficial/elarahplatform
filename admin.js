@@ -7007,10 +7007,17 @@
   // Mostra gift cards comprados (status active/used/expired) como
   // linhas extras no purchases-body. A sub-tabela "Gift cards
   // comprados" continua existindo abaixo para detalhe (saldo etc).
+  // Esconde quando há filtro de fornecedor/status_fornecedor ativo —
+  // gift card não tem fornecedor nem repasse.
   async function appendGiftCardRowsInPurchases(tbody) {
     if (!tbody) return;
     const sb = window.supabaseClient;
     if (!sb) return;
+    // Se admin filtrou por fornecedor ou status_fornecedor (que só faz
+    // sentido pra coisas que têm repasse), gift cards não devem entrar.
+    const filterForn = (document.getElementById('bookings-filter-fornecedor')?.value || '').trim();
+    const filterSf = (document.getElementById('bookings-filter-status-fornecedor')?.value || '').trim();
+    if (filterForn || filterSf) return;
     const { data, error } = await sb.from('gift_cards')
       .select('id, code, valor_inicial_centavos, status, comprador_nome, comprador_email, destinatario_nome, created_at')
       .in('status', ['active', 'used', 'expired'])
@@ -7057,14 +7064,37 @@
     if (!tbody) return;
     const sb = window.supabaseClient;
     if (!sb) return;
+    // Lê filtros adicionais da aba Compras (fornecedor + status_fornecedor)
+    // pra que vendas manuais respeitem o mesmo recorte que bookings.
+    const filterFornRaw = (document.getElementById('bookings-filter-fornecedor')?.value || '').trim();
+    const filterSf = (document.getElementById('bookings-filter-status-fornecedor')?.value || '').trim();
     let q = sb.from('manual_sales').select('*')
       .eq('payment_status', 'pago')
       .order('created_at', { ascending: false })
       .limit(500);
     if (expFilter) q = q.eq('experience_id', expFilter);
+    // status_fornecedor → manual_sales.payout_status
+    //   repasse_pendente → 'pendente'
+    //   repasse_feito    → 'pago'
+    // Vendas com payout_status='nao_aplicavel' são sempre excluídas
+    // quando há qualquer filtro de status_fornecedor ativo.
+    if (filterSf === 'repasse_pendente') q = q.eq('payout_status', 'pendente');
+    else if (filterSf === 'repasse_feito') q = q.eq('payout_status', 'pago');
     const { data, error } = await q;
     if (error) throw error;
-    const rows = data || [];
+    let rows = data || [];
+    // Filtro de fornecedor: aplicado client-side pra cobrir tanto
+    // vendas com supplier_name salvo quanto vendas que herdam o
+    // fornecedor da experiência (sem supplier_name no DB).
+    if (filterFornRaw) {
+      const want = filterFornRaw.toLowerCase();
+      rows = rows.filter(r => {
+        const expObj = r.experience_id && _finExpById.has(r.experience_id) ? _finExpById.get(r.experience_id) : null;
+        const resolved = ((r.supplier_name && r.supplier_name.trim()) ||
+          (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '').toLowerCase().trim();
+        return resolved === want;
+      });
+    }
     if (!rows.length) return;
     // Limpa um eventual placeholder "Nenhuma reserva"
     const placeholder = tbody.querySelector('tr td.admin__table-empty');
