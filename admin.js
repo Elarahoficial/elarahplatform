@@ -6966,12 +6966,15 @@
       category_id: $('exp-fin-category').value || null,
       payment_method: $('exp-fin-payment-method').value || null,
       experience_id: experience_id,
-      byelarah_item_id: byelarah_item_id,
       supplier_name: supplierName || null,
       supplier_key: supplierName ? supplierName.toLowerCase().replace(/\s+/g, ' ') : null,
       status: $('exp-fin-status').value,
       notes: $('exp-fin-notes').value || null,
     };
+    // Só inclui byelarah_item_id no payload se houver valor — assim
+    // ambientes que não rodaram a migration sql/elarah_financial_expenses_byelarah.sql
+    // continuam salvando despesas normais sem erro de "column does not exist".
+    if (byelarah_item_id) payload.byelarah_item_id = byelarah_item_id;
     if (!payload.description) {
       msgEl.textContent = 'Descrição obrigatória.'; msgEl.style.color = '#c0392b'; return;
     }
@@ -6984,13 +6987,37 @@
         const path = await _finUploadAttachment(file, 'expenses');
         if (path) payload.attachment_path = path;
       }
-      let res;
-      if (id) {
-        res = await sb.from('financial_expenses').update(payload).eq('id', id);
-      } else {
+      // Helper: roda insert/update e, se falhar com "column not found"
+      // pra colunas opcionais (byelarah_item_id, ocr_raw), retira a
+      // coluna do payload e tenta de novo. Útil em ambientes onde a
+      // migration ainda não foi rodada.
+      const tryWrite = async (p) => {
+        if (id) return sb.from('financial_expenses').update(p).eq('id', id);
+        return sb.from('financial_expenses').insert(p);
+      };
+      const isMissingColumn = (err, col) => {
+        const m = String((err && (err.message || err.details || err.hint)) || '').toLowerCase();
+        return m.includes(col.toLowerCase()) &&
+          (m.includes('does not exist') || m.includes('schema cache') || m.includes('column'));
+      };
+
+      if (!id) {
         const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
         if (user) payload.created_by = user.id;
-        res = await sb.from('financial_expenses').insert(payload);
+      }
+      let res = await tryWrite(payload);
+      if (res.error && isMissingColumn(res.error, 'byelarah_item_id') && payload.byelarah_item_id) {
+        // Migration nova não rodou ainda. Avisa e desiste do vínculo
+        // By Elarah pra não bloquear o cadastro do gasto.
+        msgEl.textContent = 'Vínculo By Elarah ignorado (rode sql/elarah_financial_expenses_byelarah.sql). Salvando sem...';
+        msgEl.style.color = '#b07b00';
+        delete payload.byelarah_item_id;
+        res = await tryWrite(payload);
+      } else if (res.error && isMissingColumn(res.error, 'byelarah_item_id')) {
+        // Mesmo sem byelarah_item_id no payload, alguma constraint
+        // herdada falhou — apenas reseta a mensagem e segue.
+        delete payload.byelarah_item_id;
+        res = await tryWrite(payload);
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
