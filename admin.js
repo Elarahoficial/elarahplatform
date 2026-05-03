@@ -1947,7 +1947,8 @@
     // Lista compras pagas com status_fornecedor='repasse_pendente',
     // agrupadas por fornecedor. Não respeita os filtros da tabela —
     // sempre mostra TODAS as pendências como visão executiva.
-    renderRepassesPendentesCard(bookings);
+    renderRepassesPendentesCard(bookings).catch(e =>
+      console.warn('[admin] renderRepassesPendentesCard error', e));
 
     // Conversão = pagas / cliques de Reservar (vem dos analytics_events).
     let conversionLabel = '—';
@@ -2005,10 +2006,11 @@
 
     if (filtered.length === 0) {
       tbody.innerHTML = '<tr><td colspan="18" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
-      // Mesmo com bookings vazios, mostra vendas manuais (cliente pode
-      // ter cadastrado só venda manual num período).
+      // Mesmo com bookings vazios, mostra vendas manuais e gift cards.
       appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
         .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases (empty) falhou:', e && e.message));
+      appendGiftCardRowsInPurchases(tbody)
+        .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases (empty) falhou:', e && e.message));
       return;
     }
 
@@ -2358,6 +2360,8 @@
     // existir (migration não rodada), apenas loga e segue.
     appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
       .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases falhou (ok se migration não rodou):', e && e.message));
+    appendGiftCardRowsInPurchases(tbody)
+      .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases falhou:', e && e.message));
 
     // Wire editable status_fornecedor dropdowns
     tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
@@ -5002,7 +5006,7 @@
   // (ou null = pendente por default) por fornecedor resolvido. Click
   // numa linha aplica o filtro da tabela. Esconde quando não há
   // pendências.
-  function renderRepassesPendentesCard(allBookings) {
+  async function renderRepassesPendentesCard(allBookings) {
     const card = document.getElementById('repasse-pendente-card');
     const listEl = document.getElementById('repasse-pendente-list');
     const totalEl = document.getElementById('repasse-pendente-total');
@@ -5027,6 +5031,42 @@
       totalGlobal += valor;
       countGlobal += 1;
     });
+
+    // ===== Inclui manual_sales pagas com payout pendente =====
+    // Falha silenciosa se a tabela não existir (migration não rodada).
+    try {
+      const sb = window.supabaseClient;
+      if (sb) {
+        const { data: msRows, error: msErr } = await sb.from('manual_sales')
+          .select('id, supplier_name, payout_amount_centavos, payout_status, experience_id')
+          .eq('payment_status', 'pago')
+          .eq('payout_status', 'pendente');
+        if (!msErr && Array.isArray(msRows)) {
+          // Mapa exp → fornecedor (usa o cache _finExpById se disponível,
+          // senão tenta ElarahData.getAllExperiences). Preserva semântica
+          // de fallback: supplier_name salvo > fornecedor da experiência.
+          const expById = (typeof _finExpById !== 'undefined' && _finExpById && _finExpById.size)
+            ? _finExpById
+            : new Map();
+          msRows.forEach(r => {
+            const valor = Number(r.payout_amount_centavos) || 0;
+            if (valor <= 0) return;
+            const expObj = r.experience_id && expById.has(r.experience_id) ? expById.get(r.experience_id) : null;
+            const nomeRaw = (r.supplier_name && r.supplier_name.trim()) ||
+              (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
+            const nome = nomeRaw || '— sem fornecedor —';
+            if (!byForn.has(nome)) byForn.set(nome, { nome, count: 0, total: 0, isUnknown: !nomeRaw });
+            const agg = byForn.get(nome);
+            agg.count += 1;
+            agg.total += valor;
+            totalGlobal += valor;
+            countGlobal += 1;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[admin] manual_sales repasse aggregation skipped:', e && e.message);
+    }
 
     if (!byForn.size) {
       card.style.display = 'none';
@@ -5213,6 +5253,43 @@
         if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
       });
     });
+
+    // ===== Inclui manual_sales pagas com payout no agregado =====
+    // Falha silenciosa se a tabela não existir (migration não rodada).
+    // Só conta vendas com payout_amount > 0 (i.e., repasse explícito).
+    try {
+      const sb = window.supabaseClient;
+      if (sb) {
+        const { data: msRows } = await sb.from('manual_sales')
+          .select('id, supplier_name, payout_amount_centavos, payout_status, total_amount_centavos, experience_id, created_at')
+          .eq('payment_status', 'pago');
+        (msRows || []).forEach(ms => {
+          const exp = expById.get(ms.experience_id);
+          // Resolve fornecedor: snapshot na venda > fornecedor da experiência.
+          const nome = (ms.supplier_name && ms.supplier_name.trim()) ||
+            (exp && (exp.fornecedorNome || exp.fornecedor_nome)) || '';
+          if (!nome) return;
+          const valorRep = Number(ms.payout_amount_centavos) || 0;
+          if (valorRep <= 0) return;
+          const agg = ensureAgg(nome);
+          if (!agg) return;
+          agg.reservas += 1;
+          // Faturamento: total da venda manual entra no faturamento do
+          // fornecedor (mesma semântica de bookings).
+          agg.faturamentoCents += Number(ms.total_amount_centavos) || 0;
+          agg.repasseTotalCents += valorRep;
+          if (ms.payout_status === 'pago') agg.repassePagoCents += valorRep;
+          else agg.repassePendenteCents += valorRep;
+          // Comissão Elarah da venda manual = total - repasse (positivo).
+          const comissao = Math.max(0, (Number(ms.total_amount_centavos) || 0) - valorRep);
+          agg.comissaoCents += comissao;
+          const ts = ms.created_at ? new Date(ms.created_at).getTime() : 0;
+          if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
+        });
+      }
+    } catch (e) {
+      console.warn('[admin] manual_sales aggregation in fornecedores skipped:', e && e.message);
+    }
 
     const list = Array.from(aggByKey.values());
     // Ordena por faturamento desc (fornecedor mais rentável primeiro).
@@ -6140,14 +6217,15 @@
     const exps = await ElarahData.getAllExperiences().catch(() => []);
     _finExpById = new Map();
     (exps || []).forEach(e => { if (e && e.id) _finExpById.set(e.id, e); });
-    const targets = [
+
+    // <select> targets — mantêm placeholder, listam por id (filtros e
+    // gasto). NÃO inclui ms-experience aqui: virou input + datalist.
+    const selectTargets = [
       document.getElementById('fin-filter-experience'),
       document.getElementById('exp-fin-experience'),
-      document.getElementById('ms-experience'),
     ].filter(Boolean);
-    targets.forEach(sel => {
+    selectTargets.forEach(sel => {
       const current = sel.value;
-      // Mantém a 1ª opção (placeholder) e re-popula
       const placeholder = sel.querySelector('option');
       sel.innerHTML = '';
       if (placeholder) sel.appendChild(placeholder);
@@ -6160,6 +6238,110 @@
       });
       if (current) sel.value = current;
     });
+
+    // Datalist da venda manual — buscável por nome. Hidden #ms-experience
+    // guarda o id resolvido pela função _finOnExperienceSearchChange.
+    const dl = document.getElementById('ms-experience-datalist');
+    if (dl) {
+      dl.innerHTML = (exps || [])
+        .filter(e => e && e.id && (e.nome || '').trim())
+        .map(e => '<option value="' + _finEsc(e.nome) + '"></option>')
+        .join('');
+    }
+  }
+
+  // ===== Experience search → resolve id, auto-fill horário/fornecedor/preço =====
+  async function _finOnExperienceSearchChange() {
+    const inputEl = document.getElementById('ms-experience-search');
+    const hidden = document.getElementById('ms-experience');
+    const hint = document.getElementById('ms-experience-hint');
+    if (!inputEl || !hidden) return;
+    const name = (inputEl.value || '').trim();
+    if (!name) {
+      hidden.value = '';
+      if (hint) { hint.textContent = ''; hint.style.color = ''; }
+      return;
+    }
+    const want = name.toLowerCase();
+    let found = null;
+    for (const exp of _finExpById.values()) {
+      if ((exp.nome || '').trim().toLowerCase() === want) { found = exp; break; }
+    }
+    if (!found) {
+      hidden.value = '';
+      if (hint) {
+        hint.textContent = 'Selecione uma experiência da lista.';
+        hint.style.color = '#c0392b';
+      }
+      return;
+    }
+    hidden.value = found.id;
+    if (hint) {
+      hint.textContent = '✓ Selecionado: ' + found.nome;
+      hint.style.color = '#1a8a4a';
+    }
+    // Sempre dispara auto-fill — a função só preenche campos vazios,
+    // então não sobrescreve nada que o usuário já tenha digitado.
+    await _finAutoFillFromExperience(found);
+  }
+
+  // Puxa horários, fornecedor e preço da experiência selecionada.
+  // Não sobrescreve campos já preenchidos pelo usuário.
+  async function _finAutoFillFromExperience(exp) {
+    if (!exp) return;
+    const $ = (id) => document.getElementById(id);
+
+    // Horários — popula datalist; auto-fill se houver exatamente 1.
+    const slotInput = $('ms-slot-time');
+    const slotDl = $('ms-slot-time-datalist');
+    const horarios = Array.isArray(exp.horarios) ? exp.horarios : [];
+    const horariosLabels = horarios
+      .map(h => typeof h === 'string' ? h : (h && (h.label || h.horario)) || '')
+      .filter(Boolean);
+    if (slotDl) {
+      slotDl.innerHTML = horariosLabels
+        .map(h => '<option value="' + _finEsc(h) + '"></option>')
+        .join('');
+    }
+    if (slotInput && !slotInput.value && horariosLabels.length === 1) {
+      slotInput.value = horariosLabels[0];
+    }
+
+    // Preço unitário — extrai o número do campo `preco` (ex.: "R$383").
+    if (exp.preco) {
+      const unitInput = $('ms-unit-price');
+      if (unitInput && !unitInput.value) {
+        const numStr = String(exp.preco).replace(/[^\d.,]/g, '');
+        if (numStr) {
+          unitInput.value = numStr;
+          _finRecalcManualSaleTotal();
+        }
+      }
+    }
+
+    // Fornecedor — primeiro experiences.fornecedorNome (camelCase do
+    // ElarahData) / fornecedor_nome (raw); fallback: experience_suppliers.
+    let supplierName = (exp.fornecedorNome || exp.fornecedor_nome || '').trim() || null;
+    if (!supplierName) {
+      const sb = window.supabaseClient;
+      if (sb) {
+        try {
+          const { data } = await sb.from('experience_suppliers')
+            .select('fornecedor_nome')
+            .eq('experience_id', exp.id)
+            .order('ordem', { ascending: true })
+            .limit(1);
+          if (data && data.length) supplierName = (data[0].fornecedor_nome || '').trim() || null;
+        } catch (e) { /* silencioso — tabela pode não existir em ambientes legados */ }
+      }
+    }
+    if (supplierName) {
+      const hasPayoutEl = $('ms-has-payout');
+      const supplierEl = $('ms-payout-supplier');
+      if (hasPayoutEl && !hasPayoutEl.checked) hasPayoutEl.checked = true;
+      _finTogglePayoutFields(true);
+      if (supplierEl && !supplierEl.value) supplierEl.value = supplierName;
+    }
   }
 
   async function _finPopulateSupplierDropdown() {
@@ -6220,6 +6402,7 @@
     const map = {
       booking:     { label: 'Site',          bg: '#eef4fb', fg: '#3068a8' },
       manual_sale: { label: 'Venda manual',  bg: '#fff4e6', fg: '#a05a00' },
+      giftcard:    { label: 'Gift Card',     bg: '#f0e6fa', fg: '#6b3aa0' },
       expense:     { label: 'Gasto',         bg: '#fdecec', fg: '#a83030' },
     };
     const o = map[source] || { label: source || '—', bg: '#eee', fg: '#666' };
@@ -6228,7 +6411,7 @@
       _finEsc(o.label) + '</span>';
   }
 
-  function _finRenderCards(s) {
+  function _finRenderCards(s, ledger) {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     if (!s) {
       ['fin-card-receita-confirmada','fin-card-receita-pendente','fin-card-gastos-pagos',
@@ -6243,10 +6426,18 @@
     set('fin-card-gastos-pendentes',   _finFmtBRL(s.gastos_pendentes_centavos));
     set('fin-card-lucro',              _finFmtBRL(s.lucro_estimado_centavos));
     set('fin-card-repasses-pendentes', _finFmtBRL(s.repasses_pendentes_centavos));
-    const totalVendas = (Number(s.qty_bookings_pagos) || 0) + (Number(s.qty_manual_sales_pagas) || 0);
+    const qtyGift = Array.isArray(ledger)
+      ? ledger.filter(r => r.source === 'giftcard' && r.status === 'pago').length
+      : 0;
+    const totalVendas = (Number(s.qty_bookings_pagos) || 0) +
+                        (Number(s.qty_manual_sales_pagas) || 0) + qtyGift;
+    const partes = [
+      (s.qty_bookings_pagos || 0) + ' site',
+      (s.qty_manual_sales_pagas || 0) + ' manual',
+    ];
+    if (qtyGift > 0) partes.push(qtyGift + ' gift card' + (qtyGift !== 1 ? 's' : ''));
     set('fin-card-receita-confirmada-sub',
-      totalVendas + ' venda' + (totalVendas !== 1 ? 's' : '') +
-      ' · ' + (s.qty_bookings_pagos || 0) + ' site / ' + (s.qty_manual_sales_pagas || 0) + ' manual');
+      totalVendas + ' venda' + (totalVendas !== 1 ? 's' : '') + ' · ' + partes.join(' / '));
     // Cor do lucro
     const lucroEl = document.getElementById('fin-card-lucro');
     if (lucroEl) lucroEl.style.color = (Number(s.lucro_estimado_centavos) || 0) >= 0 ? '#1a8a4a' : '#c0392b';
@@ -6292,7 +6483,12 @@
         ? _finEsc(r.description || '—')
         : _finEsc(r.customer_name || r.customer_email || '—');
       const expName = r.experience_name ? _finEsc(r.experience_name) : '<span style="color:#bbb;">—</span>';
-      const supplier = r.supplier_name ? _finEsc(r.supplier_name) : '<span style="color:#bbb;">—</span>';
+      // Fallback do fornecedor via experiência cadastrada (caso supplier_name
+      // venha null da view — vendas manuais antigas, ou view v1 sem coalesce).
+      const expObjLed = r.experience_id && _finExpById.has(r.experience_id) ? _finExpById.get(r.experience_id) : null;
+      const supplierResolved = (r.supplier_name && r.supplier_name.trim()) ||
+        (expObjLed && (expObjLed.fornecedorNome || expObjLed.fornecedor_nome)) || '';
+      const supplier = supplierResolved ? _finEsc(supplierResolved) : '<span style="color:#bbb;">—</span>';
       const tipo = r.kind === 'expense' ? 'Despesa' : 'Receita';
       const valorColor = r.kind === 'expense' ? '#c0392b' : '#1a8a4a';
       const valorPrefix = r.kind === 'expense' ? '−' : '+';
@@ -6362,16 +6558,28 @@
       return;
     }
     tbody.innerHTML = rows.map(r => {
-      const dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
-      const exp = r.experience_id && _finExpById.has(r.experience_id)
-        ? _finEsc(_finExpById.get(r.experience_id).nome || '')
-        : _finEsc(r.experience_name || '—');
+      // "Quando" prioriza sale_date (data efetiva da venda); cai pra
+      // created_at quando ausente (vendas antigas pré-coluna sale_date).
+      const dt = r.sale_date
+        ? new Date(r.sale_date + 'T00:00:00').toLocaleDateString('pt-BR')
+        : (r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
+      const expObj = r.experience_id && _finExpById.has(r.experience_id) ? _finExpById.get(r.experience_id) : null;
+      const exp = (expObj && _finEsc(expObj.nome || '')) || _finEsc(r.experience_name || '—');
+      // Fallback fornecedor: se a venda não teve supplier salvo mas a
+      // experiência tem fornecedor cadastrado, mostra o da experiência.
+      const supplierFallback = (r.supplier_name && r.supplier_name.trim()) ||
+        (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
       const slot = (r.slot_date ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—') +
                    (r.slot_time ? ' · ' + _finEsc(r.slot_time) : '');
-      const payout = r.payout_status === 'nao_aplicavel'
-        ? '<span style="color:#bbb;">—</span>'
+      const payoutBadge = r.payout_status === 'nao_aplicavel'
+        ? (supplierFallback
+            ? '<span style="color:#bbb;font-size:.72rem;">sem repasse</span>'
+            : '<span style="color:#bbb;">—</span>')
         : _finBadgeStatus(r.payout_status === 'pago' ? 'pago' : 'pendente') +
           ' <span style="font-size:.78rem;color:#666;margin-left:4px;">' + _finFmtBRL(r.payout_amount_centavos) + '</span>';
+      const payout = supplierFallback
+        ? '<div style="font-size:.72rem;color:#888;">' + _finEsc(supplierFallback) + '</div>' + payoutBadge
+        : payoutBadge;
       return '<tr data-fin-sale-id="' + _finEsc(r.id) + '">' +
         '<td style="white-space:nowrap;font-size:.82rem;">' + _finEsc(dt) + '</td>' +
         '<td>' + _finEsc(r.customer_name || '—') +
@@ -6635,6 +6843,15 @@
       $('ms-customer-phone').value = data.customer_phone || '';
       $('ms-source').value = data.sale_source || '';
       $('ms-experience').value = data.experience_id || '';
+      const expEdit = data.experience_id && _finExpById.has(data.experience_id)
+        ? _finExpById.get(data.experience_id) : null;
+      $('ms-experience-search').value = (expEdit && expEdit.nome) || data.experience_name || '';
+      const hintEditEl = $('ms-experience-hint');
+      if (hintEditEl && data.experience_id) {
+        hintEditEl.textContent = '✓ Selecionado: ' + ($('ms-experience-search').value);
+        hintEditEl.style.color = '#1a8a4a';
+      }
+      $('ms-sale-date').value = data.sale_date || (data.created_at ? new Date(data.created_at).toISOString().slice(0, 10) : '');
       $('ms-slot-date').value = data.slot_date || '';
       $('ms-slot-time').value = data.slot_time || '';
       $('ms-quantity').value = data.quantity || 1;
@@ -6653,13 +6870,25 @@
         $('ms-payout-status').value = data.payout_status === 'pago' ? 'pago' : 'pendente';
       }
       _finRecalcManualSaleTotal();
+      // Auto-fill retroativo: para vendas antigas (criadas antes da v76)
+      // que não têm fornecedor preenchido mas a experiência tem,
+      // sugere o fornecedor da experiência. Não sobrescreve campos já
+      // preenchidos pelo usuário.
+      if (expEdit) await _finAutoFillFromExperience(expEdit);
     } else {
       $('manual-sale-modal-title').textContent = 'Registrar venda manual';
       $('ms-id').value = '';
       $('manual-sale-form').reset();
+      $('ms-experience').value = '';
+      $('ms-experience-search').value = '';
+      const hintNewEl = $('ms-experience-hint');
+      if (hintNewEl) { hintNewEl.textContent = ''; hintNewEl.style.color = ''; }
+      const slotDlNew = $('ms-slot-time-datalist');
+      if (slotDlNew) slotDlNew.innerHTML = '';
       $('ms-quantity').value = '1';
       $('ms-payment-status').value = 'pago';
       $('ms-discount').value = '0';
+      $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
       _finTogglePayoutFields(false);
       _finRecalcManualSaleTotal();
     }
@@ -6691,6 +6920,7 @@
       customer_phone: $('ms-customer-phone').value.trim() || null,
       experience_id: expId,
       experience_name: expSnapshot,
+      sale_date: $('ms-sale-date').value || null,
       slot_date: $('ms-slot-date').value || null,
       slot_time: $('ms-slot-time').value || null,
       quantity: qty,
@@ -6712,6 +6942,9 @@
     }
     if (!payload.experience_id) {
       msgEl.textContent = 'Selecione a experiência.'; msgEl.style.color = '#c0392b'; return;
+    }
+    if (!payload.sale_date) {
+      msgEl.textContent = 'Data da venda é obrigatória.'; msgEl.style.color = '#c0392b'; return;
     }
     if (payload.unit_price_centavos < 0) {
       msgEl.textContent = 'Valor unitário inválido.'; msgEl.style.color = '#c0392b'; return;
@@ -6758,6 +6991,52 @@
     }
   }
 
+  // ===== Append gift_cards rows in Compras tab (merge visual) =====
+  // Mostra gift cards comprados (status active/used/expired) como
+  // linhas extras no purchases-body. A sub-tabela "Gift cards
+  // comprados" continua existindo abaixo para detalhe (saldo etc).
+  async function appendGiftCardRowsInPurchases(tbody) {
+    if (!tbody) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { data, error } = await sb.from('gift_cards')
+      .select('id, code, valor_inicial_centavos, status, comprador_nome, comprador_email, destinatario_nome, created_at')
+      .in('status', ['active', 'used', 'expired'])
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    const rows = data || [];
+    if (!rows.length) return;
+    const placeholder = tbody.querySelector('tr td.admin__table-empty');
+    if (placeholder && placeholder.parentElement) placeholder.parentElement.remove();
+    const html = rows.map(g => {
+      const when = g.created_at ? new Date(g.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const codeLabel = 'Gift Card' + (g.code ? ' ' + g.code : '');
+      const destLabel = g.destinatario_nome ? '<br><span style="font-size:.7rem;color:#888;">→ ' + _finEsc(g.destinatario_nome) + '</span>' : '';
+      return '<tr style="background:#fbf7ff;">' +
+        '<td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#f0e6fa;color:#6b3aa0;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Gift Card</span></td>' +
+        '<td>' + _finEsc(when) + '</td>' +
+        '<td>' + _finEsc(g.comprador_nome || '—') + destLabel + '</td>' +
+        '<td>' + _finEsc(g.comprador_email || '—') + '</td>' +
+        '<td><span style="color:#bbb;">—</span></td>' +
+        '<td style="font-style:italic;">' + _finEsc(codeLabel) + '</td>' +
+        '<td>—</td>' +
+        '<td>—</td>' +
+        '<td>1</td>' +
+        '<td>' + _finFmtBRL(g.valor_inicial_centavos) + '</td>' +
+        '<td><span style="color:#bbb;">—</span></td>' +
+        '<td>—</td>' +
+        '<td>—</td>' +
+        '<td>—</td>' +
+        '<td>' + _finBadgeStatus('pago') + '</td>' +
+        '<td></td>' +
+        '<td><span style="color:#bbb;">—</span></td>' +
+        '<td></td>' +
+        '</tr>';
+    }).join('');
+    tbody.insertAdjacentHTML('beforeend', html);
+  }
+
   // ===== Append manual_sales rows in Compras tab (merge visual) =====
   // Renderiza rows extras no purchases-body com badge "Venda manual".
   // Mantém o filtro de experiência (mesmo dropdown da aba Compras).
@@ -6781,8 +7060,12 @@
     const html = rows.map(r => {
       const when = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
       const phone = r.customer_phone ? _finEsc(r.customer_phone) : '<span style="color:#bbb;">—</span>';
-      const expName = r.experience_name ||
-        (r.experience_id && _finExpById.has(r.experience_id) ? _finExpById.get(r.experience_id).nome : '—');
+      const expObj = r.experience_id && _finExpById.has(r.experience_id) ? _finExpById.get(r.experience_id) : null;
+      const expName = r.experience_name || (expObj && expObj.nome) || '—';
+      // Fornecedor: prioriza supplier_name salvo na venda; cai pro
+      // fornecedor cadastrado na experiência (display only).
+      const supplierDisplay = (r.supplier_name && r.supplier_name.trim()) ||
+        (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
       const slotDate = r.slot_date ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
       const repasseCell = r.payout_amount_centavos > 0 ? _finFmtBRL(r.payout_amount_centavos) : '—';
       const sfBadge = r.payout_status === 'pago'
@@ -6801,7 +7084,7 @@
         '<td>' + (r.slot_time ? _finEsc(r.slot_time) : '—') + '</td>' +
         '<td>' + (r.quantity || 1) + '</td>' +
         '<td>' + _finFmtBRL(r.total_amount_centavos) + '</td>' +
-        '<td style="font-size:.82rem;">' + _finEsc(r.supplier_name || '—') + '</td>' +
+        '<td style="font-size:.82rem;">' + _finEsc(supplierDisplay || '—') + '</td>' +
         '<td>—</td>' +
         '<td>' + repasseCell + '</td>' +
         '<td>—</td>' +
@@ -6840,7 +7123,7 @@
     _finCurrentLedgerRows = ledger;
     _finCurrentExpenses = expenses;
     _finCurrentManualSales = sales;
-    _finRenderCards(summary);
+    _finRenderCards(summary, ledger);
     _finRenderResultadoMes();
     _finRenderLedgerTable(ledger);
     _finRenderExpensesTable(expenses);
@@ -6876,6 +7159,15 @@
       document.getElementById(id)?.addEventListener('input', _finRecalcManualSaleTotal);
     });
     document.getElementById('ms-has-payout')?.addEventListener('change', (e) => _finTogglePayoutFields(e.target.checked));
+
+    // Busca de experiência: resolve nome → id e dispara auto-fill
+    // (horários, fornecedor, preço unitário). 'change' cobre seleção
+    // pelo datalist; 'input' cobre digitação completa sem clicar.
+    const expSearch = document.getElementById('ms-experience-search');
+    if (expSearch) {
+      expSearch.addEventListener('change', _finOnExperienceSearchChange);
+      expSearch.addEventListener('input', _finOnExperienceSearchChange);
+    }
 
     // Delegação: editar/excluir/ver comprovante (panel + Compras)
     document.body.addEventListener('click', async (e) => {
