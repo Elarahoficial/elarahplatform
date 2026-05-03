@@ -2227,7 +2227,9 @@
 
         <div class="admin__form-field" id="ms-payout-supplier-wrap" style="display:none;">
           <label>Fornecedor</label>
-          <input type="text" id="ms-payout-supplier" placeholder="Nome do fornecedor">
+          <input type="text" id="ms-payout-supplier" list="ms-payout-supplier-datalist"
+                 autocomplete="off" placeholder="Digite ou selecione...">
+          <datalist id="ms-payout-supplier-datalist"></datalist>
         </div>
 
         <div class="admin__form-field" id="ms-payout-amount-wrap" style="display:none;">
@@ -2268,7 +2270,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=82"></script>
+<script src="admin.js?v=84"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
