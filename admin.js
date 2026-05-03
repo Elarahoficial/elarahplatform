@@ -1869,32 +1869,35 @@
       b._fornecedorWhatsappResolvido = fornecedorWhatsapp;
 
       // ===== Timestamp do evento + horas até o evento =====
-      // Pra colorir o badge "Prazo" da linha. Lógica espelha a usada
-      // pelo isPubliclyVisible em experiences-data.js: usa exp.eventAt
-      // (se preenchido) OU deriva de exp.data + exp.horario.
+      // Pra colorir o badge "Prazo" da linha. Prioridade:
+      //   1. Snapshot do booking (b.data + b.horario) — o que o cliente
+      //      efetivamente reservou. Mais confiável: se admin editou a
+      //      experiência depois (mudou data, atualizou eventAt pra outro
+      //      mês), o booking original continua referenciando a data
+      //      certa.
+      //   2. exp.data + exp.horario (deriva da experiência atual).
+      //   3. exp.eventAt — só se nada acima funcionou. Pode estar
+      //      desatualizado em experiências legadas.
       let eventTs = null;
-      if (exp) {
-        if (exp.eventAt) {
-          const t = new Date(exp.eventAt).getTime();
-          if (!isNaN(t)) eventTs = t;
-        }
-        if (eventTs == null && window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+      if (window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+        eventTs = window.ElarahData.deriveEventTimestamp(
+          b.data,
+          b.horario,
+          Date.now(),
+        );
+      }
+      if (eventTs == null && exp) {
+        if (window.ElarahData && window.ElarahData.deriveEventTimestamp) {
           eventTs = window.ElarahData.deriveEventTimestamp(
             exp.data,
             exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null),
             Date.now(),
           );
         }
-      }
-      // Fallback: se a experiência não dá pra resolver, tenta com os
-      // campos do próprio booking (caso seja um booking legado e a
-      // experiência tenha sido editada/removida).
-      if (eventTs == null && window.ElarahData && window.ElarahData.deriveEventTimestamp) {
-        eventTs = window.ElarahData.deriveEventTimestamp(
-          b.data,
-          b.horario,
-          Date.now(),
-        );
+        if (eventTs == null && exp.eventAt) {
+          const t = new Date(exp.eventAt).getTime();
+          if (!isNaN(t)) eventTs = t;
+        }
       }
       b._eventTsResolvido = eventTs;
       b._horasParaEventoResolvido = eventTs != null
