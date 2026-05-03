@@ -1715,6 +1715,15 @@ if (groupForm) {
             '<div id="erm-form-section">'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== SELETOR DE HORÁRIO (escondido por padrão) =====
+            // Renderizado em openReservationModal quando exp.horarios > 1.
+            // Sem isso, usuário ficava preso no horário escolhido fora do
+            // modal e não conseguia trocar. Botões pill, mesmo padrão do
+            // seletor de variante. ctx.horario reflete o escolhido.
+            '<div id="erm-horario-section" style="display:none;margin-bottom:14px;">'
+        +     '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:8px;font-weight:600;">Horário *</label>'
+        +     '<div id="erm-horario-options" style="display:flex;flex-wrap:wrap;gap:8px;"></div>'
+        +   '</div>'
         +   // ===== SELETOR DE VARIANTE (escondido por padrão) =====
             // Renderizado dinamicamente em openReservationModal quando
             // ctx.variantOptions tem itens. Cliente escolhe 1 opção
@@ -2221,6 +2230,56 @@ if (groupForm) {
       ctx.cupomCode = null;
       ctx.cupomCentavos = 0;
       ctx.totalCentavos = ctx.precoCentavos;
+
+      // ===== Seletor de horário =====
+      // Quando a experiência tem múltiplos horários, renderiza botões
+      // pill pra usuário trocar dentro do modal. ctx.horario começa
+      // com o que foi clicado fora (ou o primeiro) e atualiza on-click.
+      var horarioSection = root.querySelector('#erm-horario-section');
+      var horarioOptsEl = root.querySelector('#erm-horario-options');
+      var horariosList = Array.isArray(ctx.horarios) ? ctx.horarios : [];
+      if (horarioSection && horarioOptsEl && horariosList.length > 1) {
+        horarioSection.style.display = 'block';
+        horarioOptsEl.innerHTML = '';
+        horariosList.forEach(function (h) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'erm-horario-btn';
+          b.dataset.value = h;
+          b.textContent = h;
+          var isActive = h === ctx.horario;
+          b.style.cssText = 'padding:9px 16px;border:1.5px solid ' +
+            (isActive ? '#f0a05e' : '#ddd') + ';background:' +
+            (isActive ? '#fff8ef' : '#fff') + ';color:' +
+            (isActive ? '#1a1a1a' : '#444') +
+            ';border-radius:999px;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s;';
+          b.addEventListener('click', function () {
+            if (!currentReservationCtx) return;
+            currentReservationCtx.horario = h;
+            // Atualiza linha de meta com o novo horário.
+            var metaEl = root.querySelector('#erm-meta');
+            if (metaEl) {
+              metaEl.textContent = [h, currentReservationCtx.precoLabel]
+                .filter(Boolean).join(' · ');
+            }
+            // Reset visual e marca o escolhido.
+            horarioOptsEl.querySelectorAll('.erm-horario-btn').forEach(function (other) {
+              if (other.dataset.value === h) {
+                other.style.background = '#fff8ef';
+                other.style.borderColor = '#f0a05e';
+                other.style.color = '#1a1a1a';
+              } else {
+                other.style.background = '#fff';
+                other.style.borderColor = '#ddd';
+                other.style.color = '#444';
+              }
+            });
+          });
+          horarioOptsEl.appendChild(b);
+        });
+      } else if (horarioSection) {
+        horarioSection.style.display = 'none';
+      }
 
       // ===== Seletor de variante =====
       // Quando a experiência tem variantOptions (ex: Pintura → Lagosta /
@@ -3603,6 +3662,7 @@ if (groupForm) {
       let precoCentavos = parsePrecoToCents(precoLabel);
       let variantLabel = null;
       let variantOptions = [];
+      let horariosArr = [];
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
@@ -3612,8 +3672,13 @@ if (groupForm) {
               precoLabel = exp.preco || precoLabel;
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
             }
+            if (Array.isArray(exp.horarios) && exp.horarios.length) {
+              horariosArr = exp.horarios.slice();
+            } else if (exp.horario) {
+              horariosArr = [exp.horario];
+            }
             if (!horario) {
-              horario = (Array.isArray(exp.horarios) && exp.horarios.length) ? exp.horarios[0] : (exp.horario || null);
+              horario = horariosArr[0] || (exp.horario || null);
             }
             if (exp.variantLabel && Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
               variantLabel = exp.variantLabel;
@@ -3634,6 +3699,9 @@ if (groupForm) {
         experienceId: experienceId,
         experienceNome: experienceNome,
         horario: horario,
+        // Lista completa de horários — se > 1, modal renderiza seletor
+        // pra usuário trocar antes de confirmar.
+        horarios: horariosArr,
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
         email: auth.email,
