@@ -6371,27 +6371,52 @@
 
   async function _finPopulateSupplierDropdown() {
     const sb = window.supabaseClient;
-    const sel = document.getElementById('fin-filter-supplier');
-    if (!sel || !sb) return;
-    // Reaproveita: bookings.fornecedor_nome distinct + manual_sales.supplier_name
-    const [b, m] = await Promise.all([
-      sb.from('bookings').select('fornecedor_nome').not('fornecedor_nome', 'is', null).limit(1000),
-      sb.from('manual_sales').select('supplier_name').not('supplier_name', 'is', null).limit(1000)
+    if (!sb) return;
+    // Coleta nomes distintos de 4 fontes pra UX consistente:
+    //   - bookings.fornecedor_nome (vendas do site)
+    //   - manual_sales.supplier_name (vendas fora do site)
+    //   - fornecedores_metadata (cadastro central)
+    //   - experiences.fornecedor_nome (legado)
+    const [b, m, fm, exps] = await Promise.all([
+      sb.from('bookings').select('fornecedor_nome').not('fornecedor_nome', 'is', null).limit(2000),
+      sb.from('manual_sales').select('supplier_name').not('supplier_name', 'is', null).limit(2000)
+        .then(r => r.error ? { data: [] } : r),
+      sb.from('fornecedores_metadata').select('fornecedor_nome').limit(2000)
+        .then(r => r.error ? { data: [] } : r),
+      sb.from('experiences').select('fornecedor_nome').not('fornecedor_nome', 'is', null).limit(2000)
         .then(r => r.error ? { data: [] } : r),
     ]);
     const set = new Set();
     (b.data || []).forEach(r => { if (r.fornecedor_nome) set.add(r.fornecedor_nome.trim()); });
     (m.data || []).forEach(r => { if (r.supplier_name) set.add(r.supplier_name.trim()); });
-    const current = sel.value;
-    sel.innerHTML = '<option value="">Todos os fornecedores</option>';
-    Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'))
-      .forEach(name => {
+    (fm.data || []).forEach(r => { if (r.fornecedor_nome) set.add(r.fornecedor_nome.trim()); });
+    (exps.data || []).forEach(r => { if (r.fornecedor_nome) set.add(r.fornecedor_nome.trim()); });
+    const sortedNames = Array.from(set)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    // Filtro <select> da Contabilidade
+    const sel = document.getElementById('fin-filter-supplier');
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML = '<option value="">Todos os fornecedores</option>';
+      sortedNames.forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
         opt.textContent = name;
         sel.appendChild(opt);
       });
-    if (current) sel.value = current;
+      if (current) sel.value = current;
+    }
+
+    // Datalist do campo Fornecedor (modal de venda manual) — input com
+    // autocomplete por digitação, listagem ao clicar.
+    const dl = document.getElementById('ms-payout-supplier-datalist');
+    if (dl) {
+      dl.innerHTML = sortedNames
+        .map(name => '<option value="' + _finEsc(name) + '"></option>')
+        .join('');
+    }
   }
 
   async function _finPopulateCategoriesDropdown() {
@@ -6620,6 +6645,7 @@
         '<td>' + payout + '</td>' +
         '<td style="white-space:nowrap;">' +
           '<button type="button" class="admin__add-btn" data-fin-edit-sale="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;">Editar</button> ' +
+          '<button type="button" class="admin__add-btn" data-fin-dup-sale="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;background:#fff;color:#3068a8;border:1px solid #3068a8;">Duplicar</button> ' +
           '<button type="button" class="admin__add-btn" data-fin-del-sale="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;background:#fff;color:#c0392b;border:1px solid #c0392b;">Excluir</button>' +
         '</td>' +
         '</tr>';
@@ -6848,35 +6874,64 @@
     });
   }
 
-  async function _finOpenManualSaleModal(saleId) {
+  async function _finOpenManualSaleModal(saleId, prefillData) {
     const modal = document.getElementById('manual-sale-modal');
     if (!modal) return;
-    await _finPopulateExperienceDropdowns();
+    // Popula experiências e fornecedores em paralelo (datalists do modal).
+    await Promise.all([
+      _finPopulateExperienceDropdowns(),
+      _finPopulateSupplierDropdown().catch(e => console.warn('[Contabilidade] supplier datalist:', e && e.message)),
+    ]);
     const $ = (id) => document.getElementById(id);
     const msgEl = $('ms-msg'); if (msgEl) msgEl.textContent = '';
+
+    // Resolve a fonte dos dados:
+    //   - saleId → fetch do DB (modo Editar)
+    //   - prefillData → usa direto (modo Duplicar — id em branco)
+    //   - nenhum → modo Novo (form em branco)
+    let data = null;
+    let mode = 'new';
     if (saleId) {
-      $('manual-sale-modal-title').textContent = 'Editar venda manual';
+      mode = 'edit';
       const sb = window.supabaseClient;
-      const { data, error } = await sb.from('manual_sales').select('*').eq('id', saleId).maybeSingle();
-      if (error || !data) {
-        if (msgEl) { msgEl.textContent = 'Erro: ' + (error && error.message); msgEl.style.color = '#c0392b'; }
+      const res = await sb.from('manual_sales').select('*').eq('id', saleId).maybeSingle();
+      if (res.error || !res.data) {
+        if (msgEl) {
+          msgEl.textContent = 'Erro: ' + ((res.error && res.error.message) || 'venda não encontrada');
+          msgEl.style.color = '#c0392b';
+        }
         return;
       }
-      $('ms-id').value = data.id;
+      data = res.data;
+    } else if (prefillData) {
+      mode = 'duplicate';
+      data = prefillData;
+    }
+
+    if (mode === 'edit' || mode === 'duplicate') {
+      $('manual-sale-modal-title').textContent =
+        mode === 'edit' ? 'Editar venda manual' : 'Duplicar venda manual';
+      // Em duplicar não preserva o id (gera novo registro ao salvar).
+      $('ms-id').value = mode === 'edit' ? data.id : '';
       $('ms-customer-name').value = data.customer_name || '';
       $('ms-customer-email').value = data.customer_email || '';
       $('ms-customer-phone').value = data.customer_phone || '';
       $('ms-source').value = data.sale_source || '';
       $('ms-experience').value = data.experience_id || '';
-      const expEdit = data.experience_id && _finExpById.has(data.experience_id)
+      const expRef = data.experience_id && _finExpById.has(data.experience_id)
         ? _finExpById.get(data.experience_id) : null;
-      $('ms-experience-search').value = (expEdit && expEdit.nome) || data.experience_name || '';
-      const hintEditEl = $('ms-experience-hint');
-      if (hintEditEl && data.experience_id) {
-        hintEditEl.textContent = '✓ Selecionado: ' + ($('ms-experience-search').value);
-        hintEditEl.style.color = '#1a8a4a';
+      $('ms-experience-search').value = (expRef && expRef.nome) || data.experience_name || '';
+      const hintRefEl = $('ms-experience-hint');
+      if (hintRefEl && data.experience_id) {
+        hintRefEl.textContent = '✓ Selecionado: ' + ($('ms-experience-search').value);
+        hintRefEl.style.color = '#1a8a4a';
       }
-      $('ms-sale-date').value = data.sale_date || (data.created_at ? new Date(data.created_at).toISOString().slice(0, 10) : '');
+      // Em duplicar, data da venda = hoje. Em editar, mantém a original.
+      if (mode === 'duplicate') {
+        $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
+      } else {
+        $('ms-sale-date').value = data.sale_date || (data.created_at ? new Date(data.created_at).toISOString().slice(0, 10) : '');
+      }
       $('ms-slot-date').value = data.slot_date || '';
       $('ms-slot-time').value = data.slot_time || '';
       $('ms-quantity').value = data.quantity || 1;
@@ -6892,14 +6947,14 @@
       if (hasPayout) {
         $('ms-payout-supplier').value = data.supplier_name || '';
         $('ms-payout-amount').value = _finCentsToInput(data.payout_amount_centavos);
-        $('ms-payout-status').value = data.payout_status === 'pago' ? 'pago' : 'pendente';
+        // Duplicar: status do repasse volta pra 'pendente' por default
+        // (faz sentido — é uma venda nova, não tem pagamento ainda).
+        $('ms-payout-status').value = mode === 'duplicate'
+          ? 'pendente'
+          : (data.payout_status === 'pago' ? 'pago' : 'pendente');
       }
       _finRecalcManualSaleTotal();
-      // Auto-fill retroativo: para vendas antigas (criadas antes da v76)
-      // que não têm fornecedor preenchido mas a experiência tem,
-      // sugere o fornecedor da experiência. Não sobrescreve campos já
-      // preenchidos pelo usuário.
-      if (expEdit) await _finAutoFillFromExperience(expEdit);
+      if (expRef) await _finAutoFillFromExperience(expRef);
     } else {
       $('manual-sale-modal-title').textContent = 'Registrar venda manual';
       $('ms-id').value = '';
@@ -7011,6 +7066,20 @@
       msgEl.textContent = 'Erro: ' + (e.message || e);
       msgEl.style.color = '#c0392b';
     }
+  }
+
+  // Duplica: lê a venda original do banco e abre o modal pré-preenchido
+  // com tudo, exceto o id (vai gerar registro novo) e a data da venda
+  // (vira hoje, faz sentido pra venda nova).
+  async function _finDuplicateManualSale(id) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { data, error } = await sb.from('manual_sales').select('*').eq('id', id).maybeSingle();
+    if (error || !data) {
+      alert('Erro ao carregar venda: ' + ((error && error.message) || 'não encontrada'));
+      return;
+    }
+    await _finOpenManualSaleModal(null, data);
   }
 
   async function _finDeleteManualSale(id) {
@@ -7241,6 +7310,7 @@
       if (t.dataset.finEditExpense) { e.preventDefault(); _finOpenExpenseModal(t.dataset.finEditExpense); }
       else if (t.dataset.finDelExpense) { e.preventDefault(); _finDeleteExpense(t.dataset.finDelExpense); }
       else if (t.dataset.finEditSale) { e.preventDefault(); _finOpenManualSaleModal(t.dataset.finEditSale); }
+      else if (t.dataset.finDupSale) { e.preventDefault(); _finDuplicateManualSale(t.dataset.finDupSale); }
       else if (t.dataset.finDelSale) { e.preventDefault(); _finDeleteManualSale(t.dataset.finDelSale); }
       else if (t.dataset.finAtt) {
         e.preventDefault();
