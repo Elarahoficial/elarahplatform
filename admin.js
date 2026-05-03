@@ -5991,6 +5991,7 @@
   let _finCategoriesCache = null;
   let _finWired = false;
   let _finExpById = new Map();          // experience_id → exp object (preenche em populate)
+  let _finByElarahById = new Map();     // byelarah_item_id → item object
   let _finCurrentLedgerRows = [];       // pra busca + export CSV
   let _finCurrentExpenses = [];
   let _finCurrentManualSales = [];
@@ -6278,33 +6279,77 @@
   // ===== Populate filter dropdowns =====
   async function _finPopulateExperienceDropdowns() {
     if (!(window.ElarahData && ElarahData.getAllExperiences)) return;
-    const exps = await ElarahData.getAllExperiences().catch(() => []);
+    // Carrega experiências e items By Elarah em paralelo. Items By
+    // Elarah ficam disponíveis no dropdown de gasto (vinculam via
+    // financial_expenses.byelarah_item_id), mas NÃO no filtro
+    // (Resultado por Experiência usa apenas experiences).
+    const [exps, byeItems] = await Promise.all([
+      ElarahData.getAllExperiences().catch(() => []),
+      (window.ElarahByElarah && ElarahByElarah.getAllItems)
+        ? ElarahByElarah.getAllItems().catch(() => [])
+        : Promise.resolve([]),
+    ]);
     _finExpById = new Map();
     (exps || []).forEach(e => { if (e && e.id) _finExpById.set(e.id, e); });
+    _finByElarahById = new Map();
+    (byeItems || []).forEach(i => { if (i && i.id) _finByElarahById.set(i.id, i); });
 
-    // <select> targets — mantêm placeholder, listam por id (filtros e
-    // gasto). NÃO inclui ms-experience aqui: virou input + datalist.
-    const selectTargets = [
-      document.getElementById('fin-filter-experience'),
-      document.getElementById('exp-fin-experience'),
-    ].filter(Boolean);
-    selectTargets.forEach(sel => {
-      const current = sel.value;
-      const placeholder = sel.querySelector('option');
-      sel.innerHTML = '';
-      if (placeholder) sel.appendChild(placeholder);
+    // Filtro de Contabilidade: só experiências (mantém escopo
+    // Resultado por Experiência intacto).
+    const filterSel = document.getElementById('fin-filter-experience');
+    if (filterSel) {
+      const current = filterSel.value;
+      const placeholder = filterSel.querySelector('option');
+      filterSel.innerHTML = '';
+      if (placeholder) filterSel.appendChild(placeholder);
       (exps || []).forEach(e => {
         if (!e || !e.id) return;
         const opt = document.createElement('option');
         opt.value = e.id;
         opt.textContent = e.nome || '(sem nome)';
-        sel.appendChild(opt);
+        filterSel.appendChild(opt);
       });
-      if (current) sel.value = current;
-    });
+      if (current) filterSel.value = current;
+    }
 
-    // Datalist da venda manual — buscável por nome. Hidden #ms-experience
-    // guarda o id resolvido pela função _finOnExperienceSearchChange.
+    // Modal de Gasto: experiências + items By Elarah misturados.
+    // Prefix no value distingue: 'exp:<uuid>' / 'bye:<uuid>'.
+    // Optgroup separa visualmente os 2 grupos.
+    const expFinSel = document.getElementById('exp-fin-experience');
+    if (expFinSel) {
+      const current = expFinSel.value;
+      const placeholder = expFinSel.querySelector('option');
+      expFinSel.innerHTML = '';
+      if (placeholder) expFinSel.appendChild(placeholder);
+      if ((exps || []).length) {
+        const group = document.createElement('optgroup');
+        group.label = 'Experiências';
+        (exps || []).forEach(e => {
+          if (!e || !e.id) return;
+          const opt = document.createElement('option');
+          opt.value = 'exp:' + e.id;
+          opt.textContent = e.nome || '(sem nome)';
+          group.appendChild(opt);
+        });
+        expFinSel.appendChild(group);
+      }
+      if ((byeItems || []).length) {
+        const group = document.createElement('optgroup');
+        group.label = 'By Elarah';
+        (byeItems || []).forEach(i => {
+          if (!i || !i.id) return;
+          const opt = document.createElement('option');
+          opt.value = 'bye:' + i.id;
+          opt.textContent = i.nome || '(sem nome)';
+          group.appendChild(opt);
+        });
+        expFinSel.appendChild(group);
+      }
+      if (current) expFinSel.value = current;
+    }
+
+    // Datalist da venda manual — buscável por nome. Só experiências
+    // (vendas manuais não vinculam a By Elarah via UI atual).
     const dl = document.getElementById('ms-experience-datalist');
     if (dl) {
       dl.innerHTML = (exps || [])
@@ -6624,9 +6669,20 @@
     const rowsHtml = visible.map(r => {
       const dt = r.expense_date ? new Date(r.expense_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
       const cat = (r.financial_categories && r.financial_categories.label) || '<span style="color:#bbb;">—</span>';
-      const exp = r.experience_id && _finExpById.has(r.experience_id)
-        ? _finEsc(_finExpById.get(r.experience_id).nome || '')
-        : '<span style="color:#bbb;">—</span>';
+      // Vínculo: prioriza By Elarah (badge lilás) → experience → vazio
+      let exp;
+      if (r.byelarah_item_id && _finByElarahById.has(r.byelarah_item_id)) {
+        const item = _finByElarahById.get(r.byelarah_item_id);
+        exp = '<span style="display:inline-block;padding:1px 6px;border-radius:8px;background:#f0e6fa;color:#6b3aa0;font-size:.68rem;font-weight:700;margin-right:4px;">By Elarah</span>' +
+              _finEsc(item.nome || '');
+      } else if (r.experience_id && _finExpById.has(r.experience_id)) {
+        exp = _finEsc(_finExpById.get(r.experience_id).nome || '');
+      } else if (r.byelarah_item_id) {
+        // FK setado mas item não encontrado no cache (item deletado)
+        exp = '<span style="color:#bbb;">By Elarah (item removido)</span>';
+      } else {
+        exp = '<span style="color:#bbb;">—</span>';
+      }
       const supplier = r.supplier_name ? _finEsc(r.supplier_name) : '<span style="color:#bbb;">—</span>';
       const pay = r.payment_method ? _finEsc(r.payment_method) : '<span style="color:#bbb;">—</span>';
       const att = r.attachment_path
@@ -6856,7 +6912,15 @@
         : (data.expense_date || '');
       $('exp-fin-category').value = data.category_id || '';
       $('exp-fin-payment-method').value = data.payment_method || '';
-      $('exp-fin-experience').value = data.experience_id || '';
+      // Vínculo: usa o prefixo certo. byelarah_item_id tem prioridade
+      // (se preenchido); senão experience_id.
+      if (data.byelarah_item_id) {
+        $('exp-fin-experience').value = 'bye:' + data.byelarah_item_id;
+      } else if (data.experience_id) {
+        $('exp-fin-experience').value = 'exp:' + data.experience_id;
+      } else {
+        $('exp-fin-experience').value = '';
+      }
       $('exp-fin-supplier').value = data.supplier_name || '';
       $('exp-fin-status').value = data.status || 'pago';
       $('exp-fin-notes').value = data.notes || '';
@@ -6890,13 +6954,19 @@
     const id = $('exp-fin-id').value || null;
     const file = $('exp-fin-attachment').files && $('exp-fin-attachment').files[0];
     const supplierName = ($('exp-fin-supplier').value || '').trim();
+    // Vínculo: 'exp:<uuid>' → experience_id; 'bye:<uuid>' → byelarah_item_id.
+    const linkRaw = $('exp-fin-experience').value || '';
+    let experience_id = null, byelarah_item_id = null;
+    if (linkRaw.indexOf('exp:') === 0) experience_id = linkRaw.slice(4);
+    else if (linkRaw.indexOf('bye:') === 0) byelarah_item_id = linkRaw.slice(4);
     const payload = {
       description: $('exp-fin-description').value.trim(),
       amount_centavos: _finParseBRL($('exp-fin-amount').value),
       expense_date: $('exp-fin-date').value,
       category_id: $('exp-fin-category').value || null,
       payment_method: $('exp-fin-payment-method').value || null,
-      experience_id: $('exp-fin-experience').value || null,
+      experience_id: experience_id,
+      byelarah_item_id: byelarah_item_id,
       supplier_name: supplierName || null,
       supplier_key: supplierName ? supplierName.toLowerCase().replace(/\s+/g, ' ') : null,
       status: $('exp-fin-status').value,
