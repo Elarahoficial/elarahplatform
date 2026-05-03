@@ -1949,13 +1949,45 @@
       return true;
     });
 
-    // Stats sobre TODAS as bookings (não filtradas).
+    // Stats sobre TODAS as bookings (não filtradas) + vendas manuais.
     const paid = bookings.filter(b => b.status === 'pago');
     const pending = bookings.filter(b => b.status === 'pending');
-    const revenueCents = paid.reduce((sum, b) => sum + (b.amount_total || 0), 0);
+    let revenueCents = paid.reduce((sum, b) => sum + (b.amount_total || 0), 0);
 
-    document.getElementById('stat-bookings-paid').textContent = paid.length;
-    document.getElementById('stat-bookings-pending').textContent = pending.length;
+    // Vendas manuais entram no contador de "Reservas pagas/pendentes" e
+    // na "Receita confirmada" da Compras (mesma semântica de receita,
+    // apenas captação fora do site). Falha silenciosa se a tabela
+    // manual_sales não existir.
+    let manualPaidCount = 0, manualPendingCount = 0;
+    try {
+      const sb = window.supabaseClient;
+      if (sb) {
+        const { data: msAll } = await sb.from('manual_sales')
+          .select('payment_status, total_amount_centavos')
+          .limit(2000);
+        (msAll || []).forEach(m => {
+          if (m.payment_status === 'pago') {
+            manualPaidCount += 1;
+            revenueCents += Number(m.total_amount_centavos) || 0;
+          } else if (m.payment_status === 'pendente') {
+            manualPendingCount += 1;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[admin] manual_sales stats skipped:', e && e.message);
+    }
+    const totalPaid = paid.length + manualPaidCount;
+    const totalPending = pending.length + manualPendingCount;
+    const paidLabel = manualPaidCount > 0
+      ? totalPaid + ' (' + paid.length + ' site / ' + manualPaidCount + ' manual)'
+      : String(totalPaid);
+    const pendingLabel = manualPendingCount > 0
+      ? totalPending + ' (' + pending.length + ' site / ' + manualPendingCount + ' manual)'
+      : String(totalPending);
+
+    document.getElementById('stat-bookings-paid').textContent = paidLabel;
+    document.getElementById('stat-bookings-pending').textContent = pendingLabel;
     document.getElementById('stat-bookings-revenue').textContent = formatCents(revenueCents, 'BRL');
 
     // ===== Card "Repasses pendentes por fornecedor" =====
@@ -5929,14 +5961,60 @@
         return null;
       }
     };
-    const [bookingsAll, experiences, profiles, eventsAll] = await Promise.all([
+    const [bookingsAll, experiences, profiles, eventsAll, manualSalesAll] = await Promise.all([
       safeCall('getBookings', () => getBookings()),
       safeCall('getExperiences', () => getExperiences()),
       safeCall('getProfiles', () => getProfiles()),
       safeCall('rawSelect(events)', () => window.ElarahAnalytics
         ? window.ElarahAnalytics.rawSelect({ since: prev.start.toISOString(), limit: 10000 })
-        : Promise.resolve([]))
+        : Promise.resolve([])),
+      safeCall('manual_sales', async () => {
+        const sb = window.supabaseClient;
+        if (!sb) return [];
+        const { data, error } = await sb.from('manual_sales')
+          .select('*')
+          .gte('created_at', prev.start.toISOString())
+          .limit(5000);
+        if (error) return [];
+        return data || [];
+      }),
     ]);
+
+    // Converte vendas manuais em "fake bookings" pra que toda a lógica
+    // de KPIs/evolução/top experiências/top fornecedores/clientes
+    // continue funcionando sem precisar duplicar código. Mapping:
+    //   manual_sales.payment_status='pago'      → status='pago'
+    //   manual_sales.payment_status='pendente'  → status='pending'
+    //   manual_sales.payment_status='cancelado' → status='cancelado'
+    //   manual_sales.payment_status='reembolsado' → status='reembolsado'
+    function manualSaleToBooking(ms) {
+      const statusMap = { pago: 'pago', pendente: 'pending', cancelado: 'cancelado', reembolsado: 'reembolsado' };
+      return {
+        id: 'ms_' + ms.id,
+        status: statusMap[ms.payment_status] || ms.payment_status,
+        amount_total: ms.total_amount_centavos || 0,
+        currency: 'BRL',
+        // sale_date prevalece sobre created_at pra que filtros de
+        // período batam com a data efetiva da venda (mesma lógica
+        // da view v_financial_ledger).
+        created_at: ms.sale_date
+          ? new Date(ms.sale_date + 'T00:00:00').toISOString()
+          : ms.created_at,
+        experiencia_id: ms.experience_id,
+        experiencia_nome: ms.experience_name,
+        fornecedor_nome: ms.supplier_name,
+        valor_repasse_centavos: ms.payout_amount_centavos || 0,
+        valor_cheio_centavos: ms.total_amount_centavos || 0,
+        nome: ms.customer_name,
+        email: ms.customer_email,
+        telefone: ms.customer_phone,
+        data: ms.slot_date,
+        horario: ms.slot_time,
+        quantidade: ms.quantity || 1,
+        _isManualSale: true,
+      };
+    }
+    const manualAsBookings = (Array.isArray(manualSalesAll) ? manualSalesAll : []).map(manualSaleToBooking);
 
     // Diagnóstico no console (admin abre F12 e confere o que veio).
     console.log('[Analytics] dados carregados:', {
@@ -5944,11 +6022,16 @@
       experiences: Array.isArray(experiences) ? experiences.length : '(não-array)',
       profiles: Array.isArray(profiles) ? profiles.length : '(não-array)',
       events: Array.isArray(eventsAll) ? eventsAll.length : '(não-array)',
+      manual_sales: manualAsBookings.length,
       periodo: { de: curr.start.toISOString(), ate: curr.end.toISOString(), label: curr.label }
     });
 
     try {
-      const bookings = withoutTestBookings(Array.isArray(bookingsAll) ? bookingsAll : []);
+      const bookingsRaw = Array.isArray(bookingsAll) ? bookingsAll : [];
+      // Merge: site bookings + manual sales (já no formato de booking).
+      // Vendas manuais entram em todos os agregados do Analytics — KPIs,
+      // evolução, top experiências, top fornecedores, clientes.
+      const bookings = withoutTestBookings([...bookingsRaw, ...manualAsBookings]);
       const expById = new Map();
       (Array.isArray(experiences) ? experiences : []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
       const profilesArr = Array.isArray(profiles) ? profiles : [];
