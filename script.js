@@ -1583,14 +1583,28 @@ if (groupForm) {
       if (triggerEl.dataset && triggerEl.dataset.horario) {
         return triggerEl.dataset.horario;
       }
+      // Card-based pages (home, categoria, presentear) — botões dentro
+      // do card da experiência.
       const card = triggerEl.closest && triggerEl.closest('.card, .originals__card, .exp-card');
-      if (!card) return null;
-      const active = card.querySelector('.card__horario-btn--active');
-      if (active && active.dataset && active.dataset.horario) {
-        return active.dataset.horario;
+      if (card) {
+        const active = card.querySelector('.card__horario-btn--active');
+        if (active && active.dataset && active.dataset.horario) {
+          return active.dataset.horario;
+        }
+        const first = card.querySelector('.card__horario-btn');
+        if (first && first.dataset) return first.dataset.horario || null;
+        return null;
       }
-      const first = card.querySelector('.card__horario-btn');
-      if (first && first.dataset) return first.dataset.horario || null;
+      // Detail page (experiencia.html) — botões vivem fora de cards,
+      // como filhos diretos do container .exp-detail. Sem essa busca,
+      // usuário escolhia 1 dos 3 horários mas o modal sempre cobrava o
+      // primeiro (bug visual: parecia que não dava pra selecionar).
+      const detailActive = document.querySelector('.exp-detail__horario-btn--active:not([disabled])');
+      if (detailActive && detailActive.dataset && detailActive.dataset.horario) {
+        return detailActive.dataset.horario;
+      }
+      const detailFirst = document.querySelector('.exp-detail__horario-btn:not([disabled])');
+      if (detailFirst && detailFirst.dataset) return detailFirst.dataset.horario || null;
       return null;
     }
 
