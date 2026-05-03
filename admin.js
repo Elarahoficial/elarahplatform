@@ -2006,10 +2006,11 @@
 
     if (filtered.length === 0) {
       tbody.innerHTML = '<tr><td colspan="18" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
-      // Mesmo com bookings vazios, mostra vendas manuais (cliente pode
-      // ter cadastrado só venda manual num período).
+      // Mesmo com bookings vazios, mostra vendas manuais e gift cards.
       appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
         .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases (empty) falhou:', e && e.message));
+      appendGiftCardRowsInPurchases(tbody)
+        .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases (empty) falhou:', e && e.message));
       return;
     }
 
@@ -2359,6 +2360,8 @@
     // existir (migration não rodada), apenas loga e segue.
     appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
       .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases falhou (ok se migration não rodou):', e && e.message));
+    appendGiftCardRowsInPurchases(tbody)
+      .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases falhou:', e && e.message));
 
     // Wire editable status_fornecedor dropdowns
     tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
@@ -6399,6 +6402,7 @@
     const map = {
       booking:     { label: 'Site',          bg: '#eef4fb', fg: '#3068a8' },
       manual_sale: { label: 'Venda manual',  bg: '#fff4e6', fg: '#a05a00' },
+      giftcard:    { label: 'Gift Card',     bg: '#f0e6fa', fg: '#6b3aa0' },
       expense:     { label: 'Gasto',         bg: '#fdecec', fg: '#a83030' },
     };
     const o = map[source] || { label: source || '—', bg: '#eee', fg: '#666' };
@@ -6407,7 +6411,7 @@
       _finEsc(o.label) + '</span>';
   }
 
-  function _finRenderCards(s) {
+  function _finRenderCards(s, ledger) {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     if (!s) {
       ['fin-card-receita-confirmada','fin-card-receita-pendente','fin-card-gastos-pagos',
@@ -6422,10 +6426,18 @@
     set('fin-card-gastos-pendentes',   _finFmtBRL(s.gastos_pendentes_centavos));
     set('fin-card-lucro',              _finFmtBRL(s.lucro_estimado_centavos));
     set('fin-card-repasses-pendentes', _finFmtBRL(s.repasses_pendentes_centavos));
-    const totalVendas = (Number(s.qty_bookings_pagos) || 0) + (Number(s.qty_manual_sales_pagas) || 0);
+    const qtyGift = Array.isArray(ledger)
+      ? ledger.filter(r => r.source === 'giftcard' && r.status === 'pago').length
+      : 0;
+    const totalVendas = (Number(s.qty_bookings_pagos) || 0) +
+                        (Number(s.qty_manual_sales_pagas) || 0) + qtyGift;
+    const partes = [
+      (s.qty_bookings_pagos || 0) + ' site',
+      (s.qty_manual_sales_pagas || 0) + ' manual',
+    ];
+    if (qtyGift > 0) partes.push(qtyGift + ' gift card' + (qtyGift !== 1 ? 's' : ''));
     set('fin-card-receita-confirmada-sub',
-      totalVendas + ' venda' + (totalVendas !== 1 ? 's' : '') +
-      ' · ' + (s.qty_bookings_pagos || 0) + ' site / ' + (s.qty_manual_sales_pagas || 0) + ' manual');
+      totalVendas + ' venda' + (totalVendas !== 1 ? 's' : '') + ' · ' + partes.join(' / '));
     // Cor do lucro
     const lucroEl = document.getElementById('fin-card-lucro');
     if (lucroEl) lucroEl.style.color = (Number(s.lucro_estimado_centavos) || 0) >= 0 ? '#1a8a4a' : '#c0392b';
@@ -6979,6 +6991,52 @@
     }
   }
 
+  // ===== Append gift_cards rows in Compras tab (merge visual) =====
+  // Mostra gift cards comprados (status active/used/expired) como
+  // linhas extras no purchases-body. A sub-tabela "Gift cards
+  // comprados" continua existindo abaixo para detalhe (saldo etc).
+  async function appendGiftCardRowsInPurchases(tbody) {
+    if (!tbody) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { data, error } = await sb.from('gift_cards')
+      .select('id, code, valor_inicial_centavos, status, comprador_nome, comprador_email, destinatario_nome, created_at')
+      .in('status', ['active', 'used', 'expired'])
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    const rows = data || [];
+    if (!rows.length) return;
+    const placeholder = tbody.querySelector('tr td.admin__table-empty');
+    if (placeholder && placeholder.parentElement) placeholder.parentElement.remove();
+    const html = rows.map(g => {
+      const when = g.created_at ? new Date(g.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const codeLabel = 'Gift Card' + (g.code ? ' ' + g.code : '');
+      const destLabel = g.destinatario_nome ? '<br><span style="font-size:.7rem;color:#888;">→ ' + _finEsc(g.destinatario_nome) + '</span>' : '';
+      return '<tr style="background:#fbf7ff;">' +
+        '<td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#f0e6fa;color:#6b3aa0;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Gift Card</span></td>' +
+        '<td>' + _finEsc(when) + '</td>' +
+        '<td>' + _finEsc(g.comprador_nome || '—') + destLabel + '</td>' +
+        '<td>' + _finEsc(g.comprador_email || '—') + '</td>' +
+        '<td><span style="color:#bbb;">—</span></td>' +
+        '<td style="font-style:italic;">' + _finEsc(codeLabel) + '</td>' +
+        '<td>—</td>' +
+        '<td>—</td>' +
+        '<td>1</td>' +
+        '<td>' + _finFmtBRL(g.valor_inicial_centavos) + '</td>' +
+        '<td><span style="color:#bbb;">—</span></td>' +
+        '<td>—</td>' +
+        '<td>—</td>' +
+        '<td>—</td>' +
+        '<td>' + _finBadgeStatus('pago') + '</td>' +
+        '<td></td>' +
+        '<td><span style="color:#bbb;">—</span></td>' +
+        '<td></td>' +
+        '</tr>';
+    }).join('');
+    tbody.insertAdjacentHTML('beforeend', html);
+  }
+
   // ===== Append manual_sales rows in Compras tab (merge visual) =====
   // Renderiza rows extras no purchases-body com badge "Venda manual".
   // Mantém o filtro de experiência (mesmo dropdown da aba Compras).
@@ -7065,7 +7123,7 @@
     _finCurrentLedgerRows = ledger;
     _finCurrentExpenses = expenses;
     _finCurrentManualSales = sales;
-    _finRenderCards(summary);
+    _finRenderCards(summary, ledger);
     _finRenderResultadoMes();
     _finRenderLedgerTable(ledger);
     _finRenderExpensesTable(expenses);
