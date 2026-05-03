@@ -5995,6 +5995,47 @@
   let _finCurrentExpenses = [];
   let _finCurrentManualSales = [];
 
+  // Paginação simples: 5 linhas por tabela + "Ver todas". Estado por
+  // tabela. Resetado a cada renderContabilidade().
+  const FIN_PAGE_SIZE = 5;
+  const _finExpand = {
+    ledger: false,
+    expenses: false,
+    sales: false,
+    payouts: false,
+  };
+
+  // Helper que monta a linha "Ver todas (N) ↓" / "Mostrar menos ↑"
+  // dentro do tbody (colspan = total de colunas da tabela).
+  function _finExpandRow(key, totalRows, colspan) {
+    if (totalRows <= FIN_PAGE_SIZE) return '';
+    const expanded = _finExpand[key];
+    const label = expanded
+      ? '↑ Mostrar apenas ' + FIN_PAGE_SIZE
+      : '↓ Ver todas (' + totalRows + ')';
+    return '<tr><td colspan="' + colspan + '" style="text-align:center;padding:10px;background:#fafafa;">' +
+      '<button type="button" data-fin-expand="' + key + '" ' +
+      'style="background:transparent;border:1px dashed #aaa;color:#3068a8;padding:6px 18px;' +
+      'border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600;font-family:inherit;">' +
+      label + '</button>' +
+      '</td></tr>';
+  }
+
+  // Aplica corte de paginação se não expandido.
+  function _finPaginate(rows, key) {
+    if (_finExpand[key] || rows.length <= FIN_PAGE_SIZE) return rows;
+    return rows.slice(0, FIN_PAGE_SIZE);
+  }
+
+  // Filtro padrão: esconde status que indicam ausência de receita
+  // (cancelado / expirado / reembolsado). Aplicado em Lançamentos
+  // e Vendas Manuais — usuário pediu pra remover essas linhas que
+  // estavam "aparecendo em verde" e bagunçando a leitura.
+  function _finIsActiveRevenueStatus(status) {
+    const s = String(status || '').toLowerCase();
+    return s !== 'cancelado' && s !== 'expirado' && s !== 'reembolsado';
+  }
+
   function _finFmtBRL(centavos) {
     const n = Number(centavos) || 0;
     return (n / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -6514,20 +6555,29 @@
     const countEl = document.getElementById('fin-ledger-count');
     if (!tbody) return;
     const search = (document.getElementById('fin-ledger-search')?.value || '').trim().toLowerCase();
-    let filtered = rows;
+    // Esconde canceladas/reembolsadas/expiradas por default — usuário
+    // não considera receita; tirar reduz ruído. Despesas mantêm todos
+    // os status (gastos cancelados podem ser úteis pra auditoria).
+    let filtered = rows.filter(r => r.kind === 'expense' || _finIsActiveRevenueStatus(r.status));
     if (search) {
-      filtered = rows.filter(r => {
+      filtered = filtered.filter(r => {
         const hay = [r.experience_name, r.customer_name, r.customer_email, r.supplier_name, r.description, r.category_slug]
           .map(x => String(x || '').toLowerCase()).join(' ');
         return hay.includes(search);
       });
     }
-    if (countEl) countEl.textContent = filtered.length + ' lançamento' + (filtered.length !== 1 ? 's' : '');
-    if (!filtered.length) {
+    const totalShown = filtered.length;
+    const visible = _finPaginate(filtered, 'ledger');
+    if (countEl) {
+      const hidden = rows.length - totalShown;
+      countEl.textContent = totalShown + ' lançamento' + (totalShown !== 1 ? 's' : '') +
+        (hidden > 0 ? ' (' + hidden + ' canceladas/reembolsadas ocultas)' : '');
+    }
+    if (!visible.length) {
       tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Sem lançamentos para esses filtros.</td></tr>';
       return;
     }
-    tbody.innerHTML = filtered.map(r => {
+    const rowsHtml = visible.map(r => {
       const dt = r.occurred_at ? new Date(r.occurred_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
       const desc = r.source === 'expense'
         ? _finEsc(r.description || '—')
@@ -6558,6 +6608,7 @@
         '<td>' + _finBadgeStatus(r.status) + '</td>' +
         '</tr>';
     }).join('');
+    tbody.innerHTML = rowsHtml + _finExpandRow('ledger', totalShown, 9);
   }
 
   function _finRenderExpensesTable(rows) {
@@ -6569,7 +6620,8 @@
       tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhum gasto registrado neste período.</td></tr>';
       return;
     }
-    tbody.innerHTML = rows.map(r => {
+    const visible = _finPaginate(rows, 'expenses');
+    const rowsHtml = visible.map(r => {
       const dt = r.expense_date ? new Date(r.expense_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
       const cat = (r.financial_categories && r.financial_categories.label) || '<span style="color:#bbb;">—</span>';
       const exp = r.experience_id && _finExpById.has(r.experience_id)
@@ -6592,22 +6644,31 @@
         '<td>' + att + '</td>' +
         '<td style="white-space:nowrap;">' +
           '<button type="button" class="admin__add-btn" data-fin-edit-expense="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;">Editar</button> ' +
+          '<button type="button" class="admin__add-btn" data-fin-dup-expense="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;background:#fff;color:#3068a8;border:1px solid #3068a8;">Duplicar</button> ' +
           '<button type="button" class="admin__add-btn" data-fin-del-expense="' + _finEsc(r.id) + '" style="padding:4px 10px;font-size:.78rem;background:#fff;color:#c0392b;border:1px solid #c0392b;">Excluir</button>' +
         '</td>' +
         '</tr>';
     }).join('');
+    tbody.innerHTML = rowsHtml + _finExpandRow('expenses', rows.length, 10);
   }
 
   function _finRenderManualSalesTable(rows) {
     const tbody = document.getElementById('fin-sales-body');
     const countEl = document.getElementById('fin-sales-count');
     if (!tbody) return;
-    if (countEl) countEl.textContent = rows.length + ' venda' + (rows.length !== 1 ? 's' : '');
-    if (!rows.length) {
+    // Filtra canceladas/reembolsadas — usuário pediu pra esconder.
+    const filtered = rows.filter(r => _finIsActiveRevenueStatus(r.payment_status));
+    const hidden = rows.length - filtered.length;
+    if (countEl) {
+      countEl.textContent = filtered.length + ' venda' + (filtered.length !== 1 ? 's' : '') +
+        (hidden > 0 ? ' (' + hidden + ' canceladas/reembolsadas ocultas)' : '');
+    }
+    if (!filtered.length) {
       tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhuma venda manual neste período.</td></tr>';
       return;
     }
-    tbody.innerHTML = rows.map(r => {
+    const visible = _finPaginate(filtered, 'sales');
+    const rowsHtml = visible.map(r => {
       // "Quando" prioriza sale_date (data efetiva da venda); cai pra
       // created_at quando ausente (vendas antigas pré-coluna sale_date).
       const dt = r.sale_date
@@ -6650,6 +6711,7 @@
         '</td>' +
         '</tr>';
     }).join('');
+    tbody.innerHTML = rowsHtml + _finExpandRow('sales', filtered.length, 11);
   }
 
   function _finRenderByExperienceTable(rows) {
@@ -6697,8 +6759,9 @@
       tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Sem repasses no período.</td></tr>';
       return;
     }
+    const visible = _finPaginate(rows, 'payouts');
     const now = Date.now();
-    tbody.innerHTML = rows.map(r => {
+    const rowsHtml = visible.map(r => {
       const dt = r.occurred_at ? new Date(r.occurred_at).toLocaleString('pt-BR', { dateStyle: 'short' }) : '—';
       // Prazo 48h a partir de occurred_at (heurística — bookings já têm
       // formatPrazoCell mais sofisticado; aqui é só sinalização visual).
@@ -6725,6 +6788,7 @@
         '<td>' + prazo + '</td>' +
         '</tr>';
     }).join('');
+    tbody.innerHTML = rowsHtml + _finExpandRow('payouts', rows.length, 8);
   }
 
   // ===== CSV export =====
@@ -6752,32 +6816,52 @@
   }
 
   // ===== Modal: Gasto =====
-  async function _finOpenExpenseModal(expenseId) {
+  // saleId omitido + prefillData = modo Duplicar (id em branco, data = hoje)
+  async function _finOpenExpenseModal(expenseId, prefillData) {
     const modal = document.getElementById('expense-modal');
     if (!modal) return;
     await Promise.all([_finPopulateCategoriesDropdown(), _finPopulateExperienceDropdowns()]);
     const $ = (id) => document.getElementById(id);
     const msgEl = $('exp-fin-msg'); if (msgEl) msgEl.textContent = '';
     const currentEl = $('exp-fin-attachment-current'); if (currentEl) currentEl.textContent = '';
+
+    // Determina o modo
+    let data = null;
+    let mode = 'new';
     if (expenseId) {
-      $('expense-modal-title').textContent = 'Editar gasto';
+      mode = 'edit';
       const sb = window.supabaseClient;
-      const { data, error } = await sb.from('financial_expenses').select('*').eq('id', expenseId).maybeSingle();
-      if (error || !data) {
-        if (msgEl) { msgEl.textContent = 'Erro ao carregar: ' + (error && error.message); msgEl.style.color = '#c0392b'; }
+      const res = await sb.from('financial_expenses').select('*').eq('id', expenseId).maybeSingle();
+      if (res.error || !res.data) {
+        if (msgEl) {
+          msgEl.textContent = 'Erro ao carregar: ' + ((res.error && res.error.message) || 'gasto não encontrado');
+          msgEl.style.color = '#c0392b';
+        }
         return;
       }
-      $('exp-fin-id').value = data.id;
+      data = res.data;
+    } else if (prefillData) {
+      mode = 'duplicate';
+      data = prefillData;
+    }
+
+    if (mode === 'edit' || mode === 'duplicate') {
+      $('expense-modal-title').textContent = mode === 'edit' ? 'Editar gasto' : 'Duplicar gasto';
+      $('exp-fin-id').value = mode === 'edit' ? data.id : '';
       $('exp-fin-description').value = data.description || '';
       $('exp-fin-amount').value = _finCentsToInput(data.amount_centavos);
-      $('exp-fin-date').value = data.expense_date || '';
+      // Em duplicar, data do gasto vira hoje. Editar mantém original.
+      $('exp-fin-date').value = mode === 'duplicate'
+        ? new Date().toISOString().slice(0, 10)
+        : (data.expense_date || '');
       $('exp-fin-category').value = data.category_id || '';
       $('exp-fin-payment-method').value = data.payment_method || '';
       $('exp-fin-experience').value = data.experience_id || '';
       $('exp-fin-supplier').value = data.supplier_name || '';
       $('exp-fin-status').value = data.status || 'pago';
       $('exp-fin-notes').value = data.notes || '';
-      if (data.attachment_path && currentEl) {
+      // Comprovante: só na edição. Duplicar começa sem anexo.
+      if (mode === 'edit' && data.attachment_path && currentEl) {
         const u = await _finSignedUrl(data.attachment_path);
         currentEl.innerHTML = u
           ? 'Comprovante atual: <a href="' + _finEsc(u) + '" target="_blank" style="color:#3068a8;">ver</a>'
@@ -6854,6 +6938,19 @@
     const { error } = await sb.from('financial_expenses').delete().eq('id', id);
     if (error) { alert('Erro: ' + error.message); return; }
     renderContabilidade();
+  }
+
+  // Duplica gasto: lê o original e abre o modal pré-preenchido,
+  // com id em branco e data = hoje. Comprovante não é copiado.
+  async function _finDuplicateExpense(id) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { data, error } = await sb.from('financial_expenses').select('*').eq('id', id).maybeSingle();
+    if (error || !data) {
+      alert('Erro ao carregar gasto: ' + ((error && error.message) || 'não encontrado'));
+      return;
+    }
+    await _finOpenExpenseModal(null, data);
   }
 
   // ===== Modal: Venda Manual =====
@@ -7234,9 +7331,17 @@
   }
 
   // ===== Render principal =====
-  async function renderContabilidade() {
+  async function renderContabilidade(opts) {
     if (!document.getElementById('panel-contabilidade')) return;
     if (!_finWired) { _finWireControls(); _finWired = true; }
+    // Reset paginação ao trocar filtro/atualizar — exceto em re-render
+    // disparado pelo próprio botão de expandir (mantém o estado).
+    if (!opts || !opts.preserveExpand) {
+      _finExpand.ledger = false;
+      _finExpand.expenses = false;
+      _finExpand.sales = false;
+      _finExpand.payouts = false;
+    }
     await Promise.all([_finPopulateExperienceDropdowns(), _finPopulateSupplierDropdown()]);
     const filters = _finGetFilters();
     // Toggle custom date inputs
@@ -7312,6 +7417,21 @@
       else if (t.dataset.finEditSale) { e.preventDefault(); _finOpenManualSaleModal(t.dataset.finEditSale); }
       else if (t.dataset.finDupSale) { e.preventDefault(); _finDuplicateManualSale(t.dataset.finDupSale); }
       else if (t.dataset.finDelSale) { e.preventDefault(); _finDeleteManualSale(t.dataset.finDelSale); }
+      else if (t.dataset.finDupExpense) { e.preventDefault(); _finDuplicateExpense(t.dataset.finDupExpense); }
+      else if (t.dataset.finExpand) {
+        e.preventDefault();
+        const key = t.dataset.finExpand;
+        if (_finExpand.hasOwnProperty(key)) {
+          _finExpand[key] = !_finExpand[key];
+          // Re-render apenas a tabela afetada (mais leve que renderContabilidade
+          // todo). Lança fallback se faltar dado — só re-renderiza tabelas
+          // com dados em cache.
+          if (key === 'ledger') _finRenderLedgerTable(_finCurrentLedgerRows);
+          else if (key === 'expenses') _finRenderExpensesTable(_finCurrentExpenses);
+          else if (key === 'sales') _finRenderManualSalesTable(_finCurrentManualSales);
+          else if (key === 'payouts') _finRenderPayoutsTable(_finCurrentLedgerRows);
+        }
+      }
       else if (t.dataset.finAtt) {
         e.preventDefault();
         const u = await _finSignedUrl(t.dataset.finAtt);
