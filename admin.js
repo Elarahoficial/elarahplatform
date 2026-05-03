@@ -6270,8 +6270,10 @@
     if (!found) {
       hidden.value = '';
       if (hint) {
-        hint.textContent = 'Selecione uma experiência da lista.';
-        hint.style.color = '#c0392b';
+        // Não bloqueia: salva como texto livre (útil pra experiências
+        // antigas/encerradas que não aparecem na lista).
+        hint.textContent = 'ⓘ Não está na lista — será salvo como texto livre (sem repasse automático).';
+        hint.style.color = '#b07b00';
       }
       return;
     }
@@ -6907,7 +6909,13 @@
     const msgEl = $('ms-msg');
     const id = $('ms-id').value || null;
     const expId = $('ms-experience').value || null;
-    const expSnapshot = expId && _finExpById.has(expId) ? (_finExpById.get(expId).nome || null) : null;
+    // Snapshot do nome: se a experiência foi resolvida pelo datalist usa
+    // o nome canônico; senão, usa o texto livre digitado pelo usuário
+    // (suporta experiências antigas/encerradas fora da lista).
+    const typedExpName = ($('ms-experience-search').value || '').trim();
+    const expSnapshot = expId && _finExpById.has(expId)
+      ? (_finExpById.get(expId).nome || null)
+      : (typedExpName || null);
     const qty = Math.max(1, parseInt($('ms-quantity').value, 10) || 1);
     const unit = _finParseBRL($('ms-unit-price').value);
     const disc = _finParseBRL($('ms-discount').value);
@@ -6940,8 +6948,12 @@
     if (!payload.customer_name) {
       msgEl.textContent = 'Nome do cliente é obrigatório.'; msgEl.style.color = '#c0392b'; return;
     }
-    if (!payload.experience_id) {
-      msgEl.textContent = 'Selecione a experiência.'; msgEl.style.color = '#c0392b'; return;
+    // Não exige experience_id — aceita texto livre. Mas exige pelo menos
+    // o nome (na lista ou digitado), pra não salvar venda sem rastreio.
+    if (!payload.experience_id && !payload.experience_name) {
+      msgEl.textContent = 'Informe o nome da experiência (selecione da lista ou digite).';
+      msgEl.style.color = '#c0392b';
+      return;
     }
     if (!payload.sale_date) {
       msgEl.textContent = 'Data da venda é obrigatória.'; msgEl.style.color = '#c0392b'; return;
