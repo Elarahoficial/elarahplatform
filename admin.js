@@ -1844,13 +1844,25 @@
       // Base de cálculo: valor cheio (preferido) ou amount_total como fallback.
       const base = valorCheio || (b.amount_total != null ? Number(b.amount_total) : null);
 
-      // Repasse 70% / Comissão 30% — regra fixa, sem percentual_repasse.
+      // Repasse: prioriza snapshot do booking (valor_repasse_centavos);
+      // se ausente, deriva da config da experiência. Suporta:
+      //   - exp.percentualRepasse (legado, default 70)
+      //   - 70% como fallback final
+      // Comissão Elarah espelha (base − repasse) pra fechar 100%.
       let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-      if (valorRepasse == null && base) valorRepasse = Math.round(base * 0.70);
+      if (valorRepasse == null && base) {
+        const pct = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
+          ? Number(exp.percentualRepasse)
+          : 70;
+        valorRepasse = Math.round(base * (pct / 100));
+      }
       b._valorRepasseResolvido = valorRepasse;
 
       let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (valorComissao == null && base) valorComissao = Math.round(base * 0.30);
+      if (valorComissao == null && base) {
+        // Comissão = base − repasse (mantém soma exata, evita arredondamento duplo).
+        valorComissao = valorRepasse != null ? Math.max(0, base - valorRepasse) : Math.round(base * 0.30);
+      }
       b._valorComissaoResolvido = valorComissao;
 
       // ===== WhatsApp do fornecedor =====
@@ -5196,9 +5208,15 @@
       if (!valorCheio && exp && exp.valorCheioCentavos) {
         valorCheio = Number(exp.valorCheioCentavos) * qty;
       }
-      // Regra fixa Elarah: repasse 70% / comissão 30%.
+      // Repasse / comissão derivados de exp.percentualRepasse (default 70).
+      // Se booking tem snapshot, usa direto; senão deriva do percentual.
+      const pctRepasse = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
+        ? Number(exp.percentualRepasse)
+        : 70;
       let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (!valorComissao && valorCheio) valorComissao = Math.round(valorCheio * 0.30);
+      if (!valorComissao && valorCheio) {
+        valorComissao = Math.round(valorCheio * ((100 - pctRepasse) / 100));
+      }
 
       // ===== AGREGA POR REPASSE (multi-fornecedor) =====
       // bookings.repasses[] é o snapshot do mapa financeiro no momento
@@ -5218,12 +5236,14 @@
           });
       }
       if (!repassesUsadas.length) {
-        // Legado: 1 fornecedor por booking.
+        // Legado: 1 fornecedor por booking. Usa o percentual configurado
+        // na experiência (exp.percentualRepasse) — antes era 70% fixo,
+        // o que ignorava configs como 53.25% e dava repasse errado.
         const nomeLegado = (b.fornecedor_nome && b.fornecedor_nome.trim())
           || (exp && exp.fornecedorNome) || '';
         if (nomeLegado) {
           let vRep = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-          if (!vRep && valorCheio) vRep = Math.round(valorCheio * 0.70);
+          if (!vRep && valorCheio) vRep = Math.round(valorCheio * (pctRepasse / 100));
           repassesUsadas = [{ nome: nomeLegado, valor: vRep || 0 }];
         }
       }
