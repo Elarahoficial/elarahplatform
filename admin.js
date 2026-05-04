@@ -944,7 +944,7 @@
     '* experiência sensorial completa\n\n' +
     'É o tipo de momento que você não compra… você vive.\n\n' +
     'E as vagas são bem limitadas 👀\n\n' +
-    '👉 garante sua vaga aqui: {LINK}\n\n' +
+    '👉🏻 garante sua vaga aqui: {LINK}\n\n' +
     'Se você sentiu vontade agora… não ignora.\n' +
     'Essas são as experiências que marcam 💫'
   );
