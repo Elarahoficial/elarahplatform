@@ -1028,11 +1028,14 @@
     },
     {
       // Oficina de Perfumaria Criativa + Brunch & Meditação Guiada (By Elarah).
-      // Landing perfumes.html serve a imagem PERFUMES.jpg como og:image
+      // Landing perfumes.html serve a imagem perfumes.jpg como og:image
       // pro preview do WhatsApp; redireciona usuários humanos pra
       // experiencia.html?id=d2f000df-7691-4319-a4a1-f87220e6a636.
+      // ?v=2 quebra o cache do WhatsApp (qualquer query param diferente
+      // força o crawler a reler og:* — depois do fix de case-sensitive
+      // do nome da imagem, o preview antigo cacheado seguia sem foto).
       keywords: ['perfumaria'],
-      landing: '/perfumes.html',
+      landing: '/perfumes.html?v=2',
     },
     // Próximas campanhas: copie o bloco acima.
   ];
