@@ -3243,6 +3243,9 @@
   // Ambos persistem entre re-renders dentro da mesma sessão.
   let activeExpFilter = '';
   let activeExpFornecedorFilter = '';
+  // Busca de texto (input search no header da aba Experiências).
+  // Filtra contra nome, categoria, bairro e descrição (case-insensitive).
+  let activeExpSearch = '';
 
   // Popula o <select id="exp-filter-fornecedor"> com os nomes únicos
   // que aparecem em qualquer experiência. Compara case-insensitive
@@ -3287,6 +3290,18 @@
     if (btn && !btn._wired) {
       btn._wired = true;
       btn.addEventListener('click', function () { renderExperiences(); });
+    }
+
+    // Wire do input de busca (idempotente). Re-renderiza a cada
+    // tecla — barato, lista é client-side.
+    const searchInput = document.getElementById('exp-search');
+    if (searchInput && !searchInput._wired) {
+      searchInput._wired = true;
+      searchInput.value = activeExpSearch;
+      searchInput.addEventListener('input', function () {
+        activeExpSearch = searchInput.value || '';
+        renderExperiences();
+      });
     }
   }
 
@@ -3345,9 +3360,9 @@
     buildExpFilterBar(allExperiences);
     buildExpFornecedorFilter(allExperiences);
 
-    // Aplica filtros em AND: categoria (pílulas) + fornecedor (select).
-    // Pílulas e select são independentes — admin pode usar qualquer
-    // combinação ou nenhum.
+    // Aplica filtros em AND: categoria (pílulas) + fornecedor (select)
+    // + busca livre (input).
+    const searchNorm = (activeExpSearch || '').trim().toLowerCase();
     const experiences = (allExperiences || []).filter(function (e) {
       if (!e) return false;
       if (activeExpFilter) {
@@ -3356,6 +3371,12 @@
       if (activeExpFornecedorFilter) {
         const nome = (e.fornecedorNome || '').toLowerCase();
         if (nome !== activeExpFornecedorFilter.toLowerCase()) return false;
+      }
+      if (searchNorm) {
+        const hay = [e.nome, e.categoria, e.bairro, e.descricao, e.fornecedorNome]
+          .map(function (s) { return String(s || '').toLowerCase(); })
+          .join(' ');
+        if (hay.indexOf(searchNorm) === -1) return false;
       }
       return true;
     });
