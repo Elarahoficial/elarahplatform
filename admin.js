@@ -931,18 +931,22 @@
   // Requer rodar sql/elarah_byelarah_followup_tracking.sql.
 
   // Mensagem template default. Pode ser alterada inline no modal.
-  // O texto base é o que a campanha pediu — placeholders são
-  // substituídos por pessoa antes de gerar o link.
+  // Campanha atual: Oficina de Perfumaria Criativa + Brunch &
+  // Meditação Guiada (By Elarah) — anúncio de experiência nova.
+  // {LINK} é resolvido via FOLLOWUP_LANDING_PAGES (perfumes.html)
+  // pro WhatsApp gerar preview com a imagem PERFUMES.jpg.
   const FOLLOWUP_DEFAULT_TEMPLATE = (
-    'VOCÊ pediu e voltou 🍊✨\n\n' +
-    'A experiência {EXPERIENCIA_NOME} (By Elarah) teve a primeira ' +
-    'edição esgotada: e muita gente ficou de fora.\n\n' +
-    'Por isso abrimos a segunda edição… e quem já tinha demonstrado ' +
-    'interesse ganhou {DESCONTO_PERCENT}% OFF por 48h.\n\n' +
-    'Você consegue garantir por R$ {PRECO_DESCONTO} em vez de R$ {PRECO_CHEIO}.\n\n' +
-    '🎁 Use o cupom *{CUPOM}* no checkout pra ativar o desconto.\n\n' +
-    '👉🏻 garante aqui: {LINK}\n\n' +
-    'As vagas são limitadas e na última edição esgotou rápido.'
+    'Acabamos de abrir uma experiência nova… e ela tá diferente de tudo que você já viu ✨🌿\n\n' +
+    'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
+    'Imagina criar o seu próprio perfume do zero, com notas que traduzem quem você é… enquanto desacelera, se reconecta e vive uma manhã leve, bonita e fora do automático 🕊️🌸\n\n' +
+    '* meditação guiada\n' +
+    '* brunch especial\n' +
+    '* experiência sensorial completa\n\n' +
+    'É o tipo de momento que você não compra… você vive.\n\n' +
+    'E as vagas são bem limitadas 👀\n\n' +
+    '👉 garante sua vaga aqui: {LINK}\n\n' +
+    'Se você sentiu vontade agora… não ignora.\n' +
+    'Essas são as experiências que marcam 💫'
   );
 
   // Estado do modal (cache da request atual)
@@ -1022,9 +1026,15 @@
       // fallback caso alguém tenha o link antigo.
       landing: '/pintura.html',
     },
+    {
+      // Oficina de Perfumaria Criativa + Brunch & Meditação Guiada (By Elarah).
+      // Landing perfumes.html serve a imagem PERFUMES.jpg como og:image
+      // pro preview do WhatsApp; redireciona usuários humanos pra
+      // experiencia.html?id=d2f000df-7691-4319-a4a1-f87220e6a636.
+      keywords: ['perfumaria'],
+      landing: '/perfumes.html',
+    },
     // Próximas campanhas: copie o bloco acima.
-    // Ex.:
-    // { keywords: ['vela', 'aromatica'], landing: '/vela-promo.html' },
   ];
 
   function findLandingPageFor(experienceName) {
