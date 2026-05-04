@@ -267,7 +267,24 @@ if (categoriaURL) activeCategoria = categoriaURL;
     if (oldLink) oldLink.remove();
 
     const isFiltered = activeCategoria || activeBairro || activeBusca;
-    const toShow = isFiltered ? filtered.slice(0, MAX_HOME_CARDS) : filtered.slice(0, MAX_HOME_CARDS * 3);
+    // Modo feed (admin → /feed.html): sem limite de cards e com
+    // shuffle opcional. Ativado via window.__elarahFeedMode antes
+    // do script.js carregar. Sem efeito quando flag não está setada
+    // (home segue mostrando MAX_HOME_CARDS * 3 = 9 cards).
+    const isFeedMode = window.__elarahFeedMode === true;
+    let toShow;
+    if (isFeedMode) {
+      const arr = filtered.slice();
+      if (window.__elarahFeedShuffle === true) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+      }
+      toShow = arr;
+    } else {
+      toShow = isFiltered ? filtered.slice(0, MAX_HOME_CARDS) : filtered.slice(0, MAX_HOME_CARDS * 3);
+    }
 
     toShow.forEach((exp) => {
       grid.appendChild(createCard(exp));
@@ -310,6 +327,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         }
       });
     });
+  }
+
+  // Hook pra modo feed (admin/feed.html): permite re-render externo
+  // (ex: clique no botão "Embaralhar" troca window.__elarahFeedShuffle
+  // e chama essa função). Sem efeito em outros contextos.
+  if (typeof window !== 'undefined') {
+    window.__elarahRenderCards = renderCards;
   }
 
   function createCard(exp) {
