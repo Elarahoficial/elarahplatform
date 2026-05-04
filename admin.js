@@ -64,6 +64,27 @@
     return div.innerHTML;
   }
 
+  // Formata telefone BR pra exibição: (xx) xxxxx-xxxx (celular) ou
+  // (xx) xxxx-xxxx (fixo). Aceita qualquer formato de entrada (raw,
+  // com/sem máscara, com/sem +55, com/sem espaços) — extrai dígitos
+  // e formata. Casos não-padrão (menos de 10 dígitos, número
+  // internacional, etc.) volta o texto original sem máscara.
+  function formatPhoneBR(raw) {
+    if (raw == null) return '';
+    const all = String(raw).replace(/\D+/g, '');
+    // Tira o 55 inicial se vier no formato internacional (BR DDI).
+    const d = all.length > 11 && all.startsWith('55')
+      ? all.slice(2)
+      : all;
+    if (d.length === 11) {
+      return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+    }
+    if (d.length === 10) {
+      return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+    }
+    return String(raw);
+  }
+
   // ===== BOOT (async) =====
   // Faz checagem em camadas e LOGA cada etapa, pra que o user veja
   // exatamente onde travou em vez de redirect silencioso.
@@ -1243,7 +1264,7 @@
           })
         : null;
       const phoneHtml = phoneNorm
-        ? '<code style="font-size:.78rem;color:#666;">+' + phoneNorm + '</code>'
+        ? '<code style="font-size:.78rem;color:#666;">' + escapeHtml(formatPhoneBR(phoneNorm)) + '</code>'
         : '<span style="color:#c0392b;font-size:.78rem;">telefone inválido</span>';
       const statusBadge = sent
         ? '<span style="font-size:.7rem;color:#1a8a4a;background:#e6f5e9;padding:2px 8px;border-radius:999px;">✓ contatado ' + sentFmt + (s.whatsapp_followup_count > 1 ? ' (' + s.whatsapp_followup_count + 'x)' : '') + '</span>'
@@ -1607,7 +1628,7 @@
       : 'AINDA NÃO contatado — clique pra convidar pro grupo';
     const userIdAttr = ' data-user-id="' + escapeHtml(u.id) + '"';
     const numero = '<a href="' + href + '" target="_blank" rel="noopener" class="admin__user-wa-trigger"' + userIdAttr +
-      ' style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(tel) + '</a>';
+      ' style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(formatPhoneBR(tel)) + '</a>';
     const botao = '<a href="' + href + '" target="_blank" rel="noopener" class="admin__user-wa-trigger admin__user-wa-btn"' + userIdAttr +
       ' title="' + escapeHtml(tooltipBotao) + '"' +
       ' style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 10px;background:' + btnBg + ';color:#fff;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;line-height:1;vertical-align:middle;">' +
@@ -2292,9 +2313,10 @@
         const digits = String(telefone).replace(/\D+/g, '');
         const waDigits = digits.length >= 10 ? ('55' + digits.replace(/^55/, '')) : digits;
         const href = waDigits ? 'https://wa.me/' + waDigits : '';
+        const telDisplay = formatPhoneBR(telefone);
         telefoneCell = href
-          ? '<a href="' + href + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(telefone) + '</a>'
-          : escapeHtml(telefone);
+          ? '<a href="' + href + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(telDisplay) + '</a>'
+          : escapeHtml(telDisplay);
       } else {
         telefoneCell = '<span style="color:#bbb;">—</span>';
       }
@@ -2378,7 +2400,7 @@
           }
           const pDigits = onlyDigits(pTelRaw);
           const pWa = pDigits.length >= 10 ? ('55' + pDigits.replace(/^55/, '')) : pDigits;
-          const pTelDisplay = escapeHtml(p.telefone || pDigits);
+          const pTelDisplay = escapeHtml(formatPhoneBR(p.telefone || pDigits));
           const link = pWa
             ? '<a href="https://wa.me/' + pWa + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + pTelDisplay + '</a>'
             : pTelDisplay;
@@ -2634,7 +2656,7 @@
       if (!nomeResolved && b.email) { var nk = String(b.email).toLowerCase(); if (nomePorEmail.has(nk)) nomeResolved = nomePorEmail.get(nk); }
       var when = b.created_at ? new Date(b.created_at).toLocaleDateString('pt-BR') : '—';
       var telefoneCell = telefone
-        ? '<a href="https://wa.me/55' + String(telefone).replace(/\D+/g, '').replace(/^55/, '') + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(telefone) + '</a>'
+        ? '<a href="https://wa.me/55' + String(telefone).replace(/\D+/g, '').replace(/^55/, '') + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(formatPhoneBR(telefone)) + '</a>'
         : '<span style="color:#bbb;">—</span>';
       var fuStatus = b.followup_status || 'nenhum';
       var fuBadge = '';
@@ -4777,7 +4799,7 @@
                 <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
                 <td>${escapeHtml(s.nome || '—')}</td>
                 <td>${escapeHtml(s.email || '—')}</td>
-                <td>${escapeHtml(s.telefone || '—')}</td>
+                <td>${escapeHtml(s.telefone ? formatPhoneBR(s.telefone) : '—')}</td>
                 <td>${escapeHtml(s.horario || '—')}</td>
                 <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
                 <td>
