@@ -1803,17 +1803,39 @@
     });
 
     // Popula filtro de experiências (apenas uma vez por load).
+    // Fontes: bookings.experiencia_nome (vendas existentes) +
+    // todas as experiences (incluindo By Elarah originais sem
+    // venda ainda) + byelarah_items (workshops/mentorias).
+    // Deduplica por nome (case-insensitive) e ordena pt-BR.
     const filterExpEl = document.getElementById('bookings-filter-exp');
     if (filterExpEl && filterExpEl.options.length <= 1) {
-      const seen = new Set();
-      bookings.forEach(b => {
-        if (b.experiencia_nome && !seen.has(b.experiencia_nome)) {
-          seen.add(b.experiencia_nome);
-          const opt = document.createElement('option');
-          opt.value = b.experiencia_nome;
-          opt.textContent = b.experiencia_nome;
-          filterExpEl.appendChild(opt);
+      const collected = new Map();   // lowercaseName → originalName
+      const addName = (raw) => {
+        const trimmed = String(raw || '').trim();
+        if (!trimmed) return;
+        const key = trimmed.toLowerCase();
+        if (!collected.has(key)) collected.set(key, trimmed);
+      };
+      bookings.forEach(b => addName(b.experiencia_nome));
+      try {
+        if (window.ElarahData && ElarahData.getAllExperiences) {
+          const allExps = await ElarahData.getAllExperiences();
+          (allExps || []).forEach(e => addName(e && e.nome));
         }
+      } catch (e) { /* ok */ }
+      try {
+        if (window.ElarahByElarah && ElarahByElarah.getAllItems) {
+          const items = await ElarahByElarah.getAllItems();
+          (items || []).forEach(i => addName(i && i.nome));
+        }
+      } catch (e) { /* ok */ }
+      const sorted = Array.from(collected.values())
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      sorted.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        filterExpEl.appendChild(opt);
       });
     }
 
@@ -7453,7 +7475,6 @@
       .eq('payment_status', 'pago')
       .order('created_at', { ascending: false })
       .limit(500);
-    if (expFilter) q = q.eq('experience_id', expFilter);
     // status_fornecedor → manual_sales.payout_status
     //   repasse_pendente → 'pendente'
     //   repasse_feito    → 'pago'
@@ -7464,6 +7485,24 @@
     const { data, error } = await q;
     if (error) throw error;
     let rows = data || [];
+    // Filtro de experiência: o dropdown da aba Compras usa o NOME
+    // (não o UUID) como value. Aplicamos client-side por nome,
+    // fazendo match contra:
+    //   - manual_sales.experience_name (snapshot salvo)
+    //   - experiences.nome via _finExpById (caso o snapshot esteja
+    //     vazio em vendas antigas)
+    if (expFilter) {
+      const want = String(expFilter).trim().toLowerCase();
+      rows = rows.filter(r => {
+        const direct = (r.experience_name || '').trim().toLowerCase();
+        if (direct === want) return true;
+        if (r.experience_id && _finExpById && _finExpById.has(r.experience_id)) {
+          const fromExp = (_finExpById.get(r.experience_id).nome || '').trim().toLowerCase();
+          if (fromExp === want) return true;
+        }
+        return false;
+      });
+    }
     // Filtro de fornecedor: aplicado client-side pra cobrir tanto
     // vendas com supplier_name salvo quanto vendas que herdam o
     // fornecedor da experiência (sem supplier_name no DB).
