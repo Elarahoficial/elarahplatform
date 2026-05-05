@@ -1079,6 +1079,11 @@
       keywords: ['alianca'],  // sem cedilha — findLandingPageFor normaliza, mas garantia extra
       landing: '/joias.html?v=1',
     },
+    {
+      // "Ourivesaria" — termo que a campanha de Dia dos Namorados usa.
+      keywords: ['ourivesaria'],
+      landing: '/joias.html?v=1',
+    },
     // Próximas campanhas: copie o bloco acima.
   ];
 
