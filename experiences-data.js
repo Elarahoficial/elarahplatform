@@ -462,11 +462,29 @@
   }
 
   // Lista pública: aplica isPubliclyVisible em todas as experiências.
-  // Admin continua usando getAllExperiences() pra ver tudo.
+  // Dedup defensivo: se houver registros duplicados (mesmo
+  // nome+data+horário+bairro+preço), mantém só o mais recente
+  // (primeiro do array já vem ordenado por created_at desc).
+  // Sem isso, a home/categoria mostraria o mesmo card 2x.
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
     const now = Date.now();
-    return all.filter(e => isPubliclyVisible(e, now));
+    const visible = all.filter(e => isPubliclyVisible(e, now));
+    const seen = new Set();
+    const out = [];
+    visible.forEach(function (e) {
+      var sig = [
+        String(e.nome || '').trim().toLowerCase(),
+        String(e.data || '').trim().toLowerCase(),
+        String((Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '').trim().toLowerCase(),
+        String(e.bairro || '').trim().toLowerCase(),
+        String(e.preco || '').trim().toLowerCase(),
+      ].join('|');
+      if (seen.has(sig)) return;
+      seen.add(sig);
+      out.push(e);
+    });
+    return out;
   }
   const getActiveExperiences = getVisibleExperiences;
 
