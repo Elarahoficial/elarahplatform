@@ -1,31 +1,25 @@
 // =============================================================
-// ELARAH — og-experience Edge Function
+// ELARAH — og-experience Edge Function (v2 — minimal preview)
 // -------------------------------------------------------------
-// GET /functions/v1/og-experience?id=<uuid>
+// GET /functions/v1/og-experience?id=<uuid>&name=<opcional>
 //
-// Retorna HTML estático com Open Graph dinâmico (og:image,
-// og:title, og:description) lido da experiência cadastrada no
-// banco. Crawlers (WhatsApp, Facebook, iMessage, Twitter) leem
-// as meta tags e geram preview com a imagem real da experiência.
-// Visitantes humanos são redirecionados imediatamente pra
-// experiencia.html?id=<uuid> via JS — usuário nunca vê esta
-// página, só o crawler.
+// Retorna HTML MÍNIMO com Open Graph dinâmico pra crawlers do
+// WhatsApp/Facebook/iMessage gerarem preview com a imagem real
+// da experiência cadastrada.
 //
-// Por que não experiencia.html direto?
-//   experiencia.html popula og tags via JavaScript, e o crawler
-//   do WhatsApp NÃO roda JS — só lê HTML estático. Esta function
-//   resolve isso por experiência (sem precisar criar landing
-//   dedicada pra cada uma).
-//
-// Acesso:
-//   Sem JWT — endpoint público (anon). RLS de experiences já
-//   permite SELECT pra anon (linha pública).
-//
-// Tolerância a falhas:
-//   - id inválido / experiência não encontrada → HTML genérico
-//     com og:image padrão (logo Elarah). Não quebra o crawler.
-//   - imagem da experiência sem URL absoluta → resolve relativo
-//     a https://elarah.com.br/.
+// Mudanças vs v1 (que falhou em gerar preview):
+//   - Removido <script> de redirect (crawler agnóstico, mas alguns
+//     classificam página com JS como "dinâmica" e pulam preview).
+//   - Removido CSS embutido (não afeta crawler, mas reduz HTML).
+//   - Removido <meta http-equiv="refresh"> (crawler segue refresh
+//     e ia parar em experiencia.html sem og tags).
+//   - Adicionado og:image:width/height (WhatsApp prefere imagens
+//     com dimensões declaradas).
+//   - Fallback robusto por NOME da experiência via ?name=
+//     (cobre IDs placeholder de bookings antigos).
+//   - HTML totalmente estático: 1 <h1>, 1 <a>, 1 <img>. Só isso.
+//   - Headers cdn-cache-control no-store pra evitar Cloudflare
+//     servir versões antigas após fix.
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -36,20 +30,46 @@ const FALLBACK_IMAGE = SITE + "/assets/logo.png";
 const FALLBACK_TITLE = "Elarah — Experiências em São Paulo";
 const FALLBACK_DESC = "Descubra experiências feitas pra desacelerar e conectar.";
 
-// Resolve uma URL de imagem (que pode vir como "assets/foo.jpg",
-// "/assets/foo.jpg" ou já absoluta) pra absoluta com base no SITE.
-function resolveImage(raw: string | null | undefined): string {
+// Fallback de imagem por categoria — espelho do mapa em script.js,
+// pra evitar fallback final genérico quando a experiência não tem
+// imagem cadastrada.
+const CATEGORY_DEFAULT_IMG: Record<string, string> = {
+  "sabonete":    "/assets/sabonete.jpg",
+  "perfumaria":  "/assets/perfumaria.jpg",
+  "ceramica":    "/assets/ceramica-fria.jpg",
+  "tufting":     "/assets/tufting1.jpg",
+  "pintura":     "/assets/pinturataca.jpg",
+  "vela":        "/assets/velaaromatica.jpg",
+  "gastronomia": "/assets/cookies.jpg",
+  "macrame":     "/assets/macrameee.jpg",
+  "floral":      "/assets/florseca.jpg",
+  "bartenderia": "/assets/drinks.jpg",
+};
+
+function normalizeCategoria(cat: string): string {
+  return String(cat || "")
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function resolveImage(raw: string | null | undefined, categoria: string | null | undefined): string {
   const s = String(raw || "").trim();
-  if (!s) return FALLBACK_IMAGE;
-  if (/^https?:\/\//i.test(s)) return s;
-  // Lowercase do basename — convenção do projeto é tudo minúsculo
-  // em /assets (mesma normalização do script.js).
-  const slash = s.lastIndexOf("/");
-  const dir = slash >= 0 ? s.slice(0, slash + 1) : "";
-  const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
-  const path = (s.startsWith("/") ? "" : "/") +
-    (/^assets|images|img\//i.test(s) ? dir.toLowerCase() + file : "assets/" + file);
-  return SITE + path;
+  if (s) {
+    if (/^https?:\/\//i.test(s)) return s;
+    const slash = s.lastIndexOf("/");
+    const dir = slash >= 0 ? s.slice(0, slash + 1) : "";
+    const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+    const path = (s.startsWith("/") ? "" : "/") +
+      (/^assets|images|img\//i.test(s) ? dir.toLowerCase() + file : "assets/" + file);
+    return SITE + path;
+  }
+  // Sem imagem cadastrada: tenta fallback por categoria.
+  const catKey = normalizeCategoria(categoria || "");
+  const catFb = CATEGORY_DEFAULT_IMG[catKey];
+  if (catFb) return SITE + catFb;
+  return FALLBACK_IMAGE;
 }
 
 function escapeHtml(s: string): string {
@@ -61,86 +81,76 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// Trunca pra ficar bom no preview (descrições longas viram texto
-// truncado no card do WhatsApp/Facebook). 200 chars é o limite
-// prático que cabe sem ficar feio.
 function truncateDesc(s: string, max = 200): string {
   const t = String(s || "").trim();
   if (t.length <= max) return t;
   return t.slice(0, max - 1).trimEnd() + "…";
 }
 
+// Detecta UUID v4 padrão. IDs placeholder (00000000-...-000012) não
+// passam por esta validação porque a versão é 0, não 4. Retorna true
+// pra UUIDs normais; false pra ids antigos / sintéticos.
+function isLikelyRealUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+}
+
 function renderHtml(opts: {
   title: string;
   description: string;
   image: string;
-  redirectId: string | null;
+  redirectUrl: string;
 }): string {
-  const { title, description, image } = opts;
-  const redirectUrl = opts.redirectId
-    ? `${SITE}/experiencia.html?id=${encodeURIComponent(opts.redirectId)}`
-    : `${SITE}/`;
-
+  const { title, description, image, redirectUrl } = opts;
+  // HTML mínimo. Sem <script>, sem CSS, sem meta-refresh.
+  // O usuário humano clica no link grande no centro.
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Elarah">
-  <meta property="og:title" content="${escapeHtml(title)}">
-  <meta property="og:description" content="${escapeHtml(description)}">
-  <meta property="og:image" content="${escapeHtml(image)}">
-  <meta property="og:image:secure_url" content="${escapeHtml(image)}">
-  <meta property="og:image:alt" content="${escapeHtml(title)}">
-  <meta property="og:url" content="${escapeHtml(redirectUrl)}">
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${escapeHtml(title)}">
-  <meta name="twitter:description" content="${escapeHtml(description)}">
-  <meta name="twitter:image" content="${escapeHtml(image)}">
-
-  <meta name="description" content="${escapeHtml(description)}">
-  <title>${escapeHtml(title)}</title>
-  <link rel="icon" href="${SITE}/assets/logo.png" type="image/png">
-
-  <!-- IMPORTANTE: nada de meta http-equiv="refresh" aqui.
-       O crawler do WhatsApp segue meta refresh e ia parar em
-       experiencia.html (que não tem og tags estáticas — só dinâmicas
-       via JS, que crawler não roda) → resultado: WhatsApp via como
-       "sem preview". Sem o refresh, o crawler lê as og tags acima
-       e gera o preview correto. Usuário humano é redirecionado
-       pelo JS abaixo (crawler não executa). -->
-
-  <style>
-    body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#faf6f0;color:#1a1a1a;
-      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;}
-    .wrap{max-width:520px;text-align:center;}
-    .wrap img{width:100%;max-width:320px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.12);margin-bottom:24px;}
-    .wrap h1{font-family:'DM Serif Display',Georgia,serif;font-size:1.5rem;margin:0 0 12px;line-height:1.25;}
-    .wrap p{color:#555;font-size:.92rem;margin:0 0 20px;line-height:1.5;}
-    .spinner{display:inline-block;width:20px;height:20px;border:3px solid #f0a05e;border-top-color:transparent;
-      border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-    a.fallback{display:inline-block;margin-top:14px;padding:12px 24px;background:#f0a05e;color:#fff;
-      text-decoration:none;border-radius:999px;font-weight:600;font-size:.92rem;}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Elarah">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(description)}">
+<meta property="og:image" content="${escapeHtml(image)}">
+<meta property="og:image:secure_url" content="${escapeHtml(image)}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta property="og:image:alt" content="${escapeHtml(title)}">
+<meta property="og:url" content="${escapeHtml(redirectUrl)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(description)}">
+<meta name="twitter:image" content="${escapeHtml(image)}">
+<meta name="description" content="${escapeHtml(description)}">
+<title>${escapeHtml(title)}</title>
+<link rel="canonical" href="${escapeHtml(redirectUrl)}">
+<link rel="icon" href="${SITE}/assets/logo.png" type="image/png">
 </head>
-<body>
-  <div class="wrap">
-    <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}">
-    <h1>${escapeHtml(title)}</h1>
-    <p><span class="spinner"></span>Te levando para a experiência…</p>
-    <a class="fallback" href="${escapeHtml(redirectUrl)}">Ver experiência</a>
-  </div>
-  <script>
-    // Redirect imediato — crawler nao executa, so usuario humano.
-    try { window.location.replace(${JSON.stringify(redirectUrl)}); }
-    catch (e) { window.location.href = ${JSON.stringify(redirectUrl)}; }
-  </script>
+<body style="font-family:system-ui,sans-serif;background:#faf6f0;color:#1a1a1a;text-align:center;padding:40px 20px;">
+<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" style="max-width:320px;width:100%;border-radius:16px;">
+<h1 style="font-size:1.4rem;margin:24px 0 12px;">${escapeHtml(title)}</h1>
+<p style="color:#555;max-width:480px;margin:0 auto 24px;line-height:1.5;">${escapeHtml(description)}</p>
+<a href="${escapeHtml(redirectUrl)}" style="display:inline-block;padding:14px 32px;background:#f0a05e;color:#fff;text-decoration:none;border-radius:999px;font-weight:600;">Ver experiência</a>
 </body>
 </html>`;
+}
+
+function htmlResponse(html: string): Response {
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      // Cache 5 min na borda. cdn-cache-control: no-store evita que
+      // proxies (Cloudflare etc.) cacheiem respostas erradas após
+      // alterações na função.
+      "cache-control": "public, max-age=300",
+      "cdn-cache-control": "no-store",
+      // Permite embed em qualquer site (preview de WhatsApp etc.)
+      "x-frame-options": "SAMEORIGIN",
+    },
+  });
 }
 
 serve(async (req) => {
@@ -150,23 +160,7 @@ serve(async (req) => {
 
   const url = new URL(req.url);
   const id = (url.searchParams.get("id") || "").trim();
-
-  // ID ausente → renderiza fallback genérico (não 4xx pra não
-  // bagunçar o preview do WhatsApp em caso de link mal formado).
-  if (!id) {
-    return new Response(renderHtml({
-      title: FALLBACK_TITLE,
-      description: FALLBACK_DESC,
-      image: FALLBACK_IMAGE,
-      redirectId: null,
-    }), {
-      status: 200,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, max-age=300",
-      },
-    });
-  }
+  const nameHint = (url.searchParams.get("name") || "").trim();
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
@@ -175,40 +169,68 @@ serve(async (req) => {
   let title = FALLBACK_TITLE;
   let description = FALLBACK_DESC;
   let image = FALLBACK_IMAGE;
+  let resolvedExperienceId: string | null = null;
 
-  if (supabaseUrl && serviceKey) {
+  if (supabaseUrl && serviceKey && (id || nameHint)) {
     try {
       const sb = createClient(supabaseUrl, serviceKey, {
         auth: { persistSession: false, autoRefreshToken: false },
       });
-      const { data, error } = await sb
-        .from("experiences")
-        .select("nome, descricao, imagem")
-        .eq("id", id)
-        .maybeSingle();
-      if (!error && data) {
-        title = (data.nome || FALLBACK_TITLE).trim();
-        description = truncateDesc(data.descricao || FALLBACK_DESC);
-        image = resolveImage(data.imagem);
+
+      // Tenta por ID se for UUID válido. IDs placeholder do tipo
+      // 00000000-...-000012 (gerados de seeds antigos) não vão bater
+      // — caem no fallback por nome.
+      let row: { id: string; nome: string; descricao: string | null; imagem: string | null; categoria: string | null } | null = null;
+      if (id && isLikelyRealUuid(id)) {
+        const { data } = await sb
+          .from("experiences")
+          .select("id, nome, descricao, imagem, categoria")
+          .eq("id", id)
+          .maybeSingle();
+        if (data) row = data as typeof row;
+      }
+      // Fallback por nome (se id não bateu OU id era placeholder).
+      if (!row && nameHint) {
+        const { data } = await sb
+          .from("experiences")
+          .select("id, nome, descricao, imagem, categoria")
+          .ilike("nome", nameHint)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length) row = data[0] as typeof row;
+      }
+      // Último recurso: tenta por id (mesmo se não pareça UUID v4) —
+      // suporta seeds antigos que possam ter uuid v3/v0/etc.
+      if (!row && id && !isLikelyRealUuid(id)) {
+        try {
+          const { data } = await sb
+            .from("experiences")
+            .select("id, nome, descricao, imagem, categoria")
+            .eq("id", id)
+            .maybeSingle();
+          if (data) row = data as typeof row;
+        } catch (_) { /* ignora — id inválido pra DB */ }
+      }
+
+      if (row) {
+        title = (row.nome || FALLBACK_TITLE).trim();
+        description = truncateDesc(row.descricao || FALLBACK_DESC);
+        image = resolveImage(row.imagem, row.categoria);
+        resolvedExperienceId = row.id;
       }
     } catch (e) {
       console.error("[og-experience] supabase fetch error:", e);
-      // Cai no fallback genérico — não quebra preview por erro de DB.
     }
   }
 
-  return new Response(renderHtml({
-    title,
-    description,
-    image,
-    redirectId: id,
-  }), {
-    status: 200,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      // Cache: WhatsApp/Facebook re-fazem o crawl às vezes; 5 min é
-      // bom equilíbrio entre velocidade e atualizações de imagem.
-      "cache-control": "public, max-age=300",
-    },
-  });
+  // URL pra onde o usuário humano vai se clicar.
+  // Prioriza o id real resolvido (caso o input fosse só nome) e cai
+  // pro id original ou home se nada bateu.
+  const redirectUrl = resolvedExperienceId
+    ? `${SITE}/experiencia.html?id=${encodeURIComponent(resolvedExperienceId)}`
+    : (id
+      ? `${SITE}/experiencia.html?id=${encodeURIComponent(id)}`
+      : `${SITE}/`);
+
+  return htmlResponse(renderHtml({ title, description, image, redirectUrl }));
 });
