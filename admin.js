@@ -1058,6 +1058,27 @@
       keywords: ['perfumaria'],
       landing: '/perfumes.html?v=2',
     },
+    {
+      // Workshop de Joalheria em Ouro (anel/aliança). Landing
+      // joias.html serve a imagem + texto emocional ("Crie a joia
+      // que vai marcar o seu amor"). Match em qualquer das keywords
+      // — admin pode chamar a experiência de "Joalheria", "Anel",
+      // "Aliança em ouro", etc. e o link sai certo.
+      keywords: ['joia'],
+      landing: '/joias.html?v=1',
+    },
+    {
+      keywords: ['anel'],
+      landing: '/joias.html?v=1',
+    },
+    {
+      keywords: ['aliança'],
+      landing: '/joias.html?v=1',
+    },
+    {
+      keywords: ['alianca'],  // sem cedilha — findLandingPageFor normaliza, mas garantia extra
+      landing: '/joias.html?v=1',
+    },
     // Próximas campanhas: copie o bloco acima.
   ];
 
