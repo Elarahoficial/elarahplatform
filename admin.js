@@ -5811,6 +5811,12 @@
       const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
       return { start, end: now, label: 'Este mês', kind: 'month' };
     }
+    if (preset === 'all') {
+      // Janela "tudo": data bem antiga (2020) até agora. Permite ver
+      // todos os dados históricos sem limite de período.
+      const start = new Date('2020-01-01T00:00:00');
+      return { start, end: now, label: 'Tudo (desde sempre)', kind: 'all' };
+    }
     const days = parseInt(preset, 10) || 7;
     const start = new Date(now.getTime() - days * 86400000);
     const labelMap = { 1: 'Últimas 24 horas', 7: 'Últimos 7 dias', 30: 'Últimos 30 dias' };
@@ -5818,6 +5824,12 @@
   }
 
   function getPreviousRange(curr) {
+    if (curr.kind === 'all') {
+      // Não há "período anterior" pra 'tudo' — devolve um range vazio
+      // (start=end=agora) pra que comparações com período anterior
+      // simplesmente fiquem zeradas (não quebra os deltas).
+      return { start: new Date(), end: new Date(), label: '—' };
+    }
     if (curr.kind === 'month') {
       const now = new Date();
       const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0);
