@@ -154,7 +154,7 @@
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=20"></script>
-<script src="analytics.js?v=1"></script>
+<script src="analytics.js?v=2"></script>
 <script src="script.js?v=43"></script>
 <script>
 (function () {
@@ -230,6 +230,23 @@
     document.getElementById('page-title').textContent = exp.nome + ' — Elarah';
     var metaDesc = document.getElementById('meta-desc');
     if (metaDesc) metaDesc.content = (exp.descricao || exp.nome || '').slice(0, 160);
+
+    // Funnel step 3 — usuário abriu o detalhe da experiência. Crítico
+    // pro funil do admin (page_view → card_click → detail_view → cta).
+    try {
+      if (window.ElarahAnalytics && ElarahAnalytics.track) {
+        ElarahAnalytics.track('experience_detail_view', {
+          category: 'experience',
+          targetId: exp.id || expId,
+          targetLabel: (exp.nome || '').slice(0, 120),
+          metadata: {
+            experiencia_categoria: exp.categoria || null,
+            experiencia_bairro: exp.bairro || null,
+            preco: exp.preco || null,
+          },
+        });
+      }
+    } catch (e) { /* silencioso */ }
 
     // Load slots for availability
     var slotMap = {};

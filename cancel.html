@@ -76,11 +76,16 @@
     <a href="/" class="checkout-result__btn">Voltar para as experiências</a>
   </div><script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
-  <script src="analytics.js?v=1"></script>
+  <script src="analytics.js?v=2"></script>
   <script>
     try {
       if (window.ElarahAnalytics && ElarahAnalytics.track) {
-        ElarahAnalytics.track('checkout_cancel_view', { category: 'booking' });
+        // Mantém o evento legado + dispara payment_failed (nome
+        // canônico usado no funil do admin).
+        const params = new URLSearchParams(window.location.search);
+        const meta = { reason: params.get('reason') || 'user_cancel' };
+        ElarahAnalytics.track('checkout_cancel_view', { category: 'checkout', metadata: meta });
+        ElarahAnalytics.track('payment_failed', { category: 'checkout', metadata: meta });
       }
     } catch {}
   </script>

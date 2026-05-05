@@ -17,6 +17,12 @@
   const TABLE = 'analytics_events';
   const SESSION_KEY = 'elarah_analytics_session';
   const SESSION_TTL_MS = 30 * 60 * 1000; // 30 min
+  // Contexto de tráfego/UTM persistido na sessão. Capturado da PRIMEIRA
+  // página da sessão (referrer + utm_*) e enviado em TODOS os eventos
+  // até a sessão expirar. Crítico pra atribuição: queremos saber se
+  // o usuário que comprou veio de Instagram ads, orgânico, link direto
+  // de WhatsApp, etc.
+  const TRAFFIC_KEY = 'elarah_analytics_traffic';
 
   function sb() {
     return window.supabaseClient || null;
@@ -30,6 +36,104 @@
     if (match) return match[1].toLowerCase();
     if (path.endsWith('/') || path === '') return 'index.html';
     return path.toLowerCase();
+  }
+
+  // Detecta device/browser/OS do user-agent. Heurística leve — sem
+  // dependência externa. Resultado é apenas pra agrupar no admin
+  // (mobile vs desktop, Chrome vs Safari, etc.) — precisão de 90%
+  // é suficiente.
+  function parseDevice(ua) {
+    const u = String(ua || '').toLowerCase();
+    let device = 'desktop';
+    if (/mobi|iphone|ipod|android.*mobile|blackberry|windows phone/.test(u)) device = 'mobile';
+    else if (/ipad|tablet|android(?!.*mobile)/.test(u)) device = 'tablet';
+    let browser = 'other';
+    if (/edg\//.test(u)) browser = 'edge';
+    else if (/chrome\//.test(u) && !/edg\//.test(u)) browser = 'chrome';
+    else if (/firefox\//.test(u)) browser = 'firefox';
+    else if (/safari\//.test(u) && !/chrome\//.test(u)) browser = 'safari';
+    else if (/opr\//.test(u)) browser = 'opera';
+    let os = 'other';
+    if (/windows/.test(u)) os = 'windows';
+    else if (/mac os/.test(u)) os = 'mac';
+    else if (/iphone|ipad|ipod/.test(u)) os = 'ios';
+    else if (/android/.test(u)) os = 'android';
+    else if (/linux/.test(u)) os = 'linux';
+    return { device, browser, os };
+  }
+
+  // Extrai UTM params + alias comuns (gclid, fbclid). Retorna objeto
+  // com chaves só pros params presentes — assim o metadata fica enxuto.
+  function extractUtmFromUrl(href) {
+    try {
+      const u = new URL(href);
+      const out = {};
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
+        .forEach(k => { const v = u.searchParams.get(k); if (v) out[k] = v.slice(0, 100); });
+      const gclid = u.searchParams.get('gclid');
+      if (gclid) out.gclid = gclid.slice(0, 200);
+      const fbclid = u.searchParams.get('fbclid');
+      if (fbclid) out.fbclid = fbclid.slice(0, 200);
+      return out;
+    } catch { return {}; }
+  }
+
+  // Source bonita derivada do referrer quando não há utm_source.
+  // Permite no admin ver "instagram", "whatsapp", "google" sem
+  // depender de tagueamento perfeito.
+  function deriveSourceFromReferrer(ref) {
+    if (!ref) return null;
+    const r = String(ref).toLowerCase();
+    if (/instagram\.com/.test(r)) return 'instagram';
+    if (/wa\.me|whatsapp\.com/.test(r)) return 'whatsapp';
+    if (/facebook\.com|fb\.com/.test(r)) return 'facebook';
+    if (/google\./.test(r)) return 'google';
+    if (/bing\./.test(r)) return 'bing';
+    if (/tiktok\.com/.test(r)) return 'tiktok';
+    if (/twitter\.com|x\.com/.test(r)) return 'twitter';
+    if (/youtube\.com/.test(r)) return 'youtube';
+    if (/linkedin\.com/.test(r)) return 'linkedin';
+    return 'referral';
+  }
+
+  // Captura o contexto de tráfego na PRIMEIRA visita da sessão.
+  // Subsequentes hits dentro da mesma sessão preservam a origem
+  // original — um usuário que entrou via UTM do Instagram e
+  // navegou pelo site continua atribuído ao Instagram até a sessão
+  // expirar (30min de inatividade).
+  function ensureTrafficContext() {
+    try {
+      const raw = sessionStorage.getItem(TRAFFIC_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.captured_at) return parsed;
+      }
+    } catch {}
+    const utm = extractUtmFromUrl(window.location.href);
+    const referrer = document.referrer || '';
+    const utmSource = utm.utm_source || deriveSourceFromReferrer(referrer) || (referrer ? null : 'direct');
+    const ctx = {
+      captured_at: nowISO(),
+      landing_page: pageKey(),
+      landing_path: (window.location.pathname || '') + (window.location.search || ''),
+      referrer: referrer.slice(0, 500),
+      utm_source: utmSource,
+      utm_medium: utm.utm_medium || (referrer ? 'referral' : (utmSource === 'direct' ? 'none' : null)),
+      utm_campaign: utm.utm_campaign || null,
+      utm_term: utm.utm_term || null,
+      utm_content: utm.utm_content || null,
+      gclid: utm.gclid || null,
+      fbclid: utm.fbclid || null,
+    };
+    try { sessionStorage.setItem(TRAFFIC_KEY, JSON.stringify(ctx)); } catch {}
+    return ctx;
+  }
+
+  function getViewport() {
+    return {
+      w: window.innerWidth || document.documentElement.clientWidth || 0,
+      h: window.innerHeight || document.documentElement.clientHeight || 0,
+    };
   }
 
   function getSessionId() {
@@ -74,6 +178,37 @@
       if (!client) return; // no-op sem Supabase
 
       opts = opts || {};
+      // Contexto automático: contexto de tráfego (UTM/referrer) +
+      // device/browser/OS + viewport. Vai em TODO evento pra que o
+      // admin consiga atribuir compras a campanhas/origens sem
+      // precisar de queries malucas.
+      const traffic = ensureTrafficContext();
+      const ua = navigator.userAgent || '';
+      const dev = parseDevice(ua);
+      const vp = getViewport();
+      const baseMeta = {
+        utm_source: traffic.utm_source,
+        utm_medium: traffic.utm_medium,
+        utm_campaign: traffic.utm_campaign,
+        utm_term: traffic.utm_term,
+        utm_content: traffic.utm_content,
+        gclid: traffic.gclid,
+        fbclid: traffic.fbclid,
+        referrer: traffic.referrer,
+        landing_page: traffic.landing_page,
+        device: dev.device,
+        browser: dev.browser,
+        os: dev.os,
+        viewport_w: vp.w,
+        viewport_h: vp.h,
+      };
+      // Caller metadata wins (caso queira sobrescrever algum campo).
+      const metadata = Object.assign({}, baseMeta, opts.metadata || {});
+      // Limpa null/undefined pra deixar o jsonb enxuto.
+      Object.keys(metadata).forEach(k => {
+        if (metadata[k] == null || metadata[k] === '') delete metadata[k];
+      });
+
       const row = {
         event_name: String(eventName),
         category: String(opts.category || 'general'),
@@ -83,8 +218,8 @@
         path: (window.location.pathname || '') + (window.location.search || ''),
         session_id: getSessionId(),
         user_id: currentUserId,
-        metadata: opts.metadata || {},
-        user_agent: (navigator.userAgent || '').slice(0, 300)
+        metadata: metadata,
+        user_agent: ua.slice(0, 300)
       };
 
       const { error } = await client.from(TABLE).insert(row);
@@ -207,6 +342,43 @@
             targetLabel: groupBtn.getAttribute('data-event') || (groupBtn.textContent || '').trim().slice(0, 120)
           });
           return;
+        }
+
+        // WhatsApp clicks — qualquer link wa.me OU api.whatsapp.com.
+        // Importante pra entender se WhatsApp gera mais conversão
+        // do que outros canais de saída.
+        const waLink = target.closest('a[href*="wa.me/"], a[href*="api.whatsapp.com"]');
+        if (waLink) {
+          track('whatsapp_click', {
+            category: 'outbound',
+            targetLabel: (waLink.textContent || '').trim().slice(0, 80) || 'whatsapp',
+            metadata: { href: (waLink.getAttribute('href') || '').slice(0, 200) }
+          });
+          // Não return — pode ter outras heurísticas relevantes pra
+          // mesma URL (ex: data-analytics no link).
+        }
+
+        // Gift card clicks — botões/links em /presentear, /grupos,
+        // ou em qualquer card de gift card.
+        const giftEl = target.closest('[data-gift-card], .gift-card-btn, [href*="presentear"]');
+        if (giftEl) {
+          track('gift_card_click', {
+            category: 'gift_card',
+            targetLabel: (giftEl.textContent || '').trim().slice(0, 80) || 'gift_card',
+            targetId: giftEl.getAttribute('data-gift-card') || null
+          });
+        }
+
+        // Favorite (coração nos cards). Já tem listener próprio em
+        // script.js que chama ElarahAuth — adicionamos só o tracking
+        // sem mexer naquela lógica.
+        const favBtn = target.closest('.card__favorite');
+        if (favBtn) {
+          track('favorite_click', {
+            category: 'engagement',
+            targetId: favBtn.getAttribute('data-id') || null,
+            targetLabel: (favBtn.getAttribute('aria-label') || 'Favoritar').slice(0, 80)
+          });
         }
       } catch {}
     }, true);

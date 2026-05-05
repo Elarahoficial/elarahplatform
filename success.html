@@ -94,7 +94,7 @@
   </div><script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
   <script src="auth.js?v=12"></script>
-  <script src="analytics.js?v=1"></script>
+  <script src="analytics.js?v=2"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -103,6 +103,25 @@
       const isDirect  = params.get('direct') === '1';
       const directBookingId = params.get('booking_id');
       const detailsEl = document.getElementById('result-details');
+
+      // Funnel step final — pagamento aprovado. Dispara cedo (antes de
+      // qualquer fetch) pra garantir registro mesmo se a pagina falhar
+      // depois. Metadata inclui session_id (Stripe) ou booking_id (PIX
+      // direto/MP) pra deduplicar no admin.
+      try {
+        if (window.ElarahAnalytics && window.ElarahAnalytics.track) {
+          window.ElarahAnalytics.track('payment_approved', {
+            category: 'checkout',
+            targetId: directBookingId || sessionId || null,
+            targetLabel: isGift ? 'Gift card' : 'Reserva',
+            metadata: {
+              flow: isGift ? 'gift_card' : (isDirect ? 'pix_direct' : 'stripe_session'),
+              stripe_session_id: sessionId || null,
+              booking_id: directBookingId || null,
+            },
+          });
+        }
+      } catch (_) {}
 
       // Mensagem específica para compra de gift card
       if (isGift) {
