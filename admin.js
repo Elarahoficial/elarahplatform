@@ -951,12 +951,26 @@
   // whatsapp_followup_sent_at em byelarah_submissions.
   // Requer rodar sql/elarah_byelarah_followup_tracking.sql.
 
-  // Mensagem template default. Pode ser alterada inline no modal.
-  // Campanha atual: Oficina de Perfumaria Criativa + Brunch &
-  // Meditação Guiada (By Elarah) — anúncio de experiência nova.
-  // {LINK} é resolvido via FOLLOWUP_LANDING_PAGES (perfumes.html)
-  // pro WhatsApp gerar preview com a imagem PERFUMES.jpg.
-  const FOLLOWUP_DEFAULT_TEMPLATE = (
+  // Templates por campanha. {LINK} é resolvido via findCampaignFor →
+  // landing dedicada (preview correto no WhatsApp via og:image).
+  //
+  // Genérico: usado quando não há match com nenhuma campanha. Não cita
+  // nada específico — assim, se uma campanha nova for cadastrada antes
+  // de ganhar template próprio, a mensagem não fica falando de outra
+  // experiência (bug que já aconteceu com a campanha de joia puxando
+  // texto de perfume).
+  const FOLLOWUP_TEMPLATE_GENERIC = (
+    'Acabamos de abrir uma experiência nova… e ela é diferente de tudo que você já viu ✨\n\n' +
+    'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
+    'É o tipo de momento que você não compra… você vive.\n\n' +
+    'E as vagas são bem limitadas 👀\n\n' +
+    '👉🏻 garante sua vaga aqui: {LINK}\n\n' +
+    'Se você sentiu vontade agora… não ignora.\n' +
+    'Essas são as experiências que marcam 💫'
+  );
+
+  // Oficina de Perfumaria Criativa + Brunch & Meditação Guiada.
+  const FOLLOWUP_TEMPLATE_PERFUMARIA = (
     'Acabamos de abrir uma experiência nova… e ela tá diferente de tudo que você já viu ✨🌿\n\n' +
     'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
     'Imagina criar o seu próprio perfume do zero, com notas que traduzem quem você é… enquanto desacelera, se reconecta e vive uma manhã leve, bonita e fora do automático 🕊️🌸\n\n' +
@@ -968,6 +982,23 @@
     '👉🏻 garante sua vaga aqui: {LINK}\n\n' +
     'Se você sentiu vontade agora… não ignora.\n' +
     'Essas são as experiências que marcam 💫'
+  );
+
+  // Workshop de Ourivesaria — Crie sua joia em ouro (Dia dos Namorados).
+  // Apelo emocional: anel/aliança feita a quatro mãos, peça única,
+  // "história em ouro". Sem qualquer menção a perfume / brunch.
+  const FOLLOWUP_TEMPLATE_JOIA = (
+    'Acabamos de abrir uma experiência nova… e ela é diferente de tudo que você já viu 🤍✨\n\n' +
+    'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
+    'Imagina passar uma tarde criando, com as suas próprias mãos, uma joia em ouro que vai marcar a história de vocês — anel, aliança, peça única… daquelas que ficam pra sempre 💍\n\n' +
+    '* atelier de ourivesaria com mestre joalheiro\n' +
+    '* joia em ouro feita por você (a quatro mãos, se quiser)\n' +
+    '* experiência completa, do desenho à peça pronta\n\n' +
+    'É o tipo de presente que não se compra — se vive (e se usa pra sempre).\n\n' +
+    'E pro Dia dos Namorados, as vagas são contadíssimas 👀\n\n' +
+    '👉🏻 garante a sua aqui: {LINK}\n\n' +
+    'Se você sentiu vontade agora… não ignora.\n' +
+    'Essa é a experiência que vira história 🤍'
   );
 
   // Estado do modal (cache da request atual)
@@ -1031,71 +1062,91 @@
     return out;
   }
 
-  // Mapa de experiências com landing dedicada (preview correto no
-  // WhatsApp). Adicione uma entrada por campanha que ganhar página
-  // própria. Match por nome (case insensitive, contains de cada termo).
-  // O JS de cada landing redireciona dinamicamente pra experiencia.html
+  // Mapa de campanhas: cada entrada associa um conjunto de keywords
+  // (que precisam aparecer no nome da experiência) a uma landing
+  // dedicada (preview correto no WhatsApp via og:image) + um template
+  // de mensagem específico. Match por nome (case insensitive, contains
+  // de cada termo). O JS de cada landing redireciona pra experiencia.html
   // — admin não precisa atualizar IDs aqui se a experiência for
   // reimportada/duplicada.
   //
-  // Estrutura: { keywords: ['termos','que','precisam','aparecer'], landing: '/aperol.html' }
-  const FOLLOWUP_LANDING_PAGES = [
+  // ⚠️ Antes era 2 estruturas separadas (landing + template default
+  // global). Isso causou um bug em que a campanha de joia puxava o
+  // texto de perfume. Agora landing e template andam juntos, garantindo
+  // que cada campanha use o conteúdo certo.
+  //
+  // Estrutura: { keywords: [...], landing: '/X.html', template: TEMPLATE_X }
+  const FOLLOWUP_CAMPAIGNS = [
     {
-      keywords: ['pintura', 'cristal', 'aperol'],
       // pintura.html é a landing nova (URL fresh — WhatsApp gera
       // preview do zero, sem cache). aperol.html ainda existe como
       // fallback caso alguém tenha o link antigo.
+      keywords: ['pintura', 'cristal', 'aperol'],
       landing: '/pintura.html',
+      template: FOLLOWUP_TEMPLATE_GENERIC,
     },
     {
       // Oficina de Perfumaria Criativa + Brunch & Meditação Guiada (By Elarah).
       // Landing perfumes.html serve a imagem perfumes.jpg como og:image
       // pro preview do WhatsApp; redireciona usuários humanos pra
       // experiencia.html?id=d2f000df-7691-4319-a4a1-f87220e6a636.
-      // ?v=2 quebra o cache do WhatsApp (qualquer query param diferente
-      // força o crawler a reler og:* — depois do fix de case-sensitive
-      // do nome da imagem, o preview antigo cacheado seguia sem foto).
+      // ?v=2 quebra o cache do WhatsApp.
       keywords: ['perfumaria'],
       landing: '/perfumes.html?v=2',
+      template: FOLLOWUP_TEMPLATE_PERFUMARIA,
     },
+    // Workshop de Ourivesaria / Joalheria — Dia dos Namorados.
+    // Landing joias.html serve ANEL.jpg como og:image. Match em
+    // qualquer das keywords — admin pode chamar de "Joalheria",
+    // "Anel", "Aliança em ouro", etc. e o link/texto saem certos.
     {
-      // Workshop de Joalheria em Ouro (anel/aliança). Landing
-      // joias.html serve a imagem + texto emocional ("Crie a joia
-      // que vai marcar o seu amor"). Match em qualquer das keywords
-      // — admin pode chamar a experiência de "Joalheria", "Anel",
-      // "Aliança em ouro", etc. e o link sai certo.
       keywords: ['joia'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
       keywords: ['anel'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
       keywords: ['aliança'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
-      keywords: ['alianca'],  // sem cedilha — findLandingPageFor normaliza, mas garantia extra
-      landing: '/joias.html?v=1',
+      keywords: ['alianca'],
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
-      // "Ourivesaria" — termo que a campanha de Dia dos Namorados usa.
       keywords: ['ourivesaria'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
-    // Próximas campanhas: copie o bloco acima.
+    // Próximas campanhas: copie o bloco acima e crie um TEMPLATE_X
+    // específico — não reutilize um template de outra campanha.
   ];
 
-  function findLandingPageFor(experienceName) {
+  function findCampaignFor(experienceName) {
     const norm = String(experienceName || '')
       .toLowerCase()
       .normalize('NFKD')
       .replace(/[̀-ͯ]/g, '');
-    for (const p of FOLLOWUP_LANDING_PAGES) {
-      if (p.keywords.every(k => norm.includes(k))) return p.landing;
+    for (const c of FOLLOWUP_CAMPAIGNS) {
+      if (c.keywords.every(k => norm.includes(k))) return c;
     }
     return null;
+  }
+
+  function findLandingPageFor(experienceName) {
+    const c = findCampaignFor(experienceName);
+    return c ? c.landing : null;
+  }
+
+  function findTemplateFor(experienceName) {
+    const c = findCampaignFor(experienceName);
+    return c && c.template ? c.template : FOLLOWUP_TEMPLATE_GENERIC;
   }
 
   // Constrói URL absoluta pra colocar na mensagem.
@@ -1246,8 +1297,10 @@
       infoEl.style.display = 'block';
     }
 
-    // Carrega template default na textarea (a usuária pode editar)
-    document.getElementById('followup-message').value = FOLLOWUP_DEFAULT_TEMPLATE;
+    // Carrega template da campanha que casa com o nome da experiência
+    // (a usuária pode editar inline). Se nenhuma campanha bater, usa
+    // o template genérico — sem nunca cair em texto de outra campanha.
+    document.getElementById('followup-message').value = findTemplateFor(experienceName);
 
     // Render lista
     renderFollowupList();
