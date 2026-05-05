@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- =====================================================
+       PÁGINA DE LANDING — Oficina de Perfumaria Criativa
+       + Brunch & Meditação Guiada (By Elarah)
+       -----------------------------------------------------
+       Esta página existe SOMENTE para servir o preview correto
+       no WhatsApp/Facebook/iMessage quando o link é compartilhado
+       no follow-up da campanha. Crawlers leem as meta tags og:* e
+       mostram a imagem da capa + título + descrição.
+
+       Visitantes humanos são redirecionados imediatamente pra
+       experiencia.html?id=<UUID> via JS. UUID hardcoded (vem do
+       admin) — sem busca no banco, redirecionamento instantâneo.
+
+       Por que landing dedicada e não experiencia.html direto?
+       experiencia.html popula og tags via JS, e o crawler do
+       WhatsApp não roda JS — só lê HTML estático.
+       ===================================================== -->
+
+  <!-- ===== Open Graph (WhatsApp / Facebook / iMessage) ===== -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Elarah">
+  <meta property="og:title" content="Oficina de Perfumaria Criativa + Brunch & Meditação Guiada">
+  <meta property="og:description" content="Crie seu próprio perfume do zero, com brunch especial e meditação guiada. Vagas limitadas.">
+  <meta property="og:image" content="https://elarah.com.br/assets/perfumes.jpg">
+  <meta property="og:image:secure_url" content="https://elarah.com.br/assets/perfumes.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:alt" content="Oficina de Perfumaria Criativa + Brunch & Meditação Guiada (By Elarah)">
+  <meta property="og:url" content="https://elarah.com.br/perfumes.html">
+
+  <!-- ===== Twitter Card ===== -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Oficina de Perfumaria Criativa + Brunch & Meditação Guiada">
+  <meta name="twitter:description" content="Crie seu próprio perfume do zero, com brunch especial e meditação guiada. Vagas limitadas.">
+  <meta name="twitter:image" content="https://elarah.com.br/assets/perfumes.jpg">
+
+  <meta name="description" content="Crie seu próprio perfume do zero, com brunch especial e meditação guiada. Vagas limitadas.">
+
+  <title>Oficina de Perfumaria Criativa + Brunch & Meditação Guiada — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+
+  <!-- Fallback meta refresh (caso JS falhe). Aponta direto pra
+       experiencia.html?id=<UUID> conhecido. -->
+  <meta http-equiv="refresh" content="2;url=experiencia.html?id=d2f000df-7691-4319-a4a1-f87220e6a636">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #faf6f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .wrap {
+      max-width: 520px;
+      text-align: center;
+    }
+    .wrap img {
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.12);
+      margin-bottom: 24px;
+    }
+    .wrap h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.6rem;
+      margin: 0 0 12px;
+      color: #1a1a1a;
+      line-height: 1.25;
+    }
+    .wrap p {
+      color: #555;
+      font-size: .96rem;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #f0a05e;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fallback-btn {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 12px 24px;
+      background: #f0a05e;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: .92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img src="assets/perfumes.jpg" alt="Oficina de Perfumaria Criativa + Brunch & Meditação Guiada">
+    <h1>Oficina de Perfumaria Criativa + Brunch & Meditação Guiada</h1>
+    <p><span class="spinner"></span>Te levando para a página da experiência…</p>
+    <a href="experiencia.html?id=d2f000df-7691-4319-a4a1-f87220e6a636" class="fallback-btn" id="fallback-btn">Ver experiência</a>
+  </div>
+
+  <!-- ============================================================
+       REDIRECT IMEDIATO
+       ------------------------------------------------------------
+       UUID conhecido — redireciona direto sem buscar no banco.
+       Crawler do WhatsApp não executa este JS; só lê as meta tags
+       og:* acima pra gerar a preview com a imagem perfumes.jpg.
+       ============================================================ -->
+  <script>
+  (function () {
+    'use strict';
+    var EXPERIENCE_ID = 'd2f000df-7691-4319-a4a1-f87220e6a636';
+    try {
+      // location.replace pra não poluir histórico
+      window.location.replace('experiencia.html?id=' + encodeURIComponent(EXPERIENCE_ID));
+    } catch (e) {
+      window.location.href = 'experiencia.html?id=' + encodeURIComponent(EXPERIENCE_ID);
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Presenteie quem você ama com experiências marcantes — gift cards e vivências curadas pela Elarah.">
+  <title>Presentear — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="presentear.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+     <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+         <div class="header__dropdown" id="explorar-dropdown">
+  <a href="categoria.html" class="header__dropdown-item">Todas</a>
+  <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+  <a href="categoria.html?cat=Cerâmica" class="header__dropdown-item">Cerâmica</a>
+  <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+  <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+  <a href="categoria.html?cat=Macramê" class="header__dropdown-item">Macramê</a>
+  <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+  <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+  <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+  <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+</div>
+        </div>
+        <a href="dia-das-maes.html" class="header__nav-link header__nav-link--ddm">Dia das Mães</a>
+        <a href="presentear.html" class="header__nav-link header__nav-link--active">Presentear</a>
+        <a href="oferecer.html" class="header__nav-link">Oferecer uma experiência</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="gift-hero">
+    <div class="gift-hero__inner">
+      <div class="gift-hero__content">
+        <span class="gift-hero__tag">Presente criativo</span>
+        <h1 class="gift-hero__title">Dê algo que ninguém<br>esquece: uma experiência.</h1>
+        <p class="gift-hero__text">Surpreenda quem você ama com momentos únicos, feitos à mão, offline e cheios de significado. Muito melhor que qualquer coisa dentro de uma caixa.</p>
+        <a href="#gift-options" class="gift-hero__cta">Escolher presente</a>
+      </div>
+      <div class="gift-hero__visual">
+  <div class="gift-card-stack">
+    <div class="gift-card-back">
+      <div class="gift-card-back__logo">Elarah</div>
+    </div>
+
+    <div class="gift-card-front">
+      <div class="gift-card-front__logo">Elarah</div>
+      <div class="gift-card-front__title">Gift Card</div>
+      <div class="gift-card-front__footer">
+        <span class="gift-card-front__site">elarah.com.br</span>
+        <span class="gift-card-front__value">R$300</span>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+  </section>
+
+  <!-- ========== COMO FUNCIONA ========== -->
+  <section class="gift-steps">
+    <div class="gift-steps__inner">
+      <h2 class="gift-steps__title">Como funciona</h2>
+      <p class="gift-steps__subtitle">Presentear com a Elarah é simples, rápido e especial.</p>
+      <div class="gift-steps__grid">
+        <div class="gift-steps__item">
+          <div class="gift-steps__number">1</div>
+          <h3 class="gift-steps__name">Escolha o presente</h3>
+          <p class="gift-steps__desc">Selecione um gift card com valor livre ou escolha uma experiência específica para presentear.</p>
+        </div>
+        <div class="gift-steps__item">
+          <div class="gift-steps__number">2</div>
+          <h3 class="gift-steps__name">Personalize e envie</h3>
+          <p class="gift-steps__desc">Adicione uma mensagem especial e envie por e-mail ou WhatsApp na hora que quiser.</p>
+        </div>
+        <div class="gift-steps__item">
+          <div class="gift-steps__number">3</div>
+          <h3 class="gift-steps__name">A pessoa escolhe e vive</h3>
+          <p class="gift-steps__desc">Quem receber pode trocar o gift card por qualquer experiência ou usar a que você escolheu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== OPÇÕES DE PRESENTE ========== -->
+  <section class="gift-options" id="gift-options">
+    <div class="gift-options__inner">
+      <h2 class="gift-options__title">Escolha como presentear</h2>
+      <div class="gift-options__grid">
+
+        <div class="gift-option-card">
+          <div class="gift-option-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="3"/>
+              <path d="M2 10h20"/>
+            </svg>
+          </div>
+          <h3 class="gift-option-card__title">Gift Card de valor livre</h3>
+          <p class="gift-option-card__desc">Escolha qualquer valor a partir de R$50. A pessoa presenteada decide qual experiência viver.</p>
+          <ul class="gift-option-card__perks">
+            <li>Válido por 12 meses</li>
+            <li>Qualquer experiência</li>
+            <li>Envio imediato por e-mail</li>
+          </ul>
+          <button type="button" class="gift-option-card__btn" data-open-giftcard-form>Comprar gift card</button>
+        </div>
+
+        <div class="gift-option-card gift-option-card--featured">
+          <div class="gift-option-card__badge">Mais escolhido</div>
+          <div class="gift-option-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 12v10H4V12"/>
+              <path d="M2 7h20v5H2z"/>
+              <path d="M12 22V7"/>
+              <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/>
+              <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>
+            </svg>
+          </div>
+          <h3 class="gift-option-card__title">Presente de experiência</h3>
+          <p class="gift-option-card__desc">Escolha uma experiência específica e surpreenda com algo pensado especialmente para a pessoa.</p>
+          <ul class="gift-option-card__perks">
+            <li>Experiência garantida</li>
+            <li>Mensagem personalizada</li>
+            <li>Troca de data flexível</li>
+          </ul>
+          <a href="#gift-experiences" class="gift-option-card__btn">Escolher experiência</a>
+        </div>
+
+        <div class="gift-option-card">
+          <div class="gift-option-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <h3 class="gift-option-card__title">Não sabe o que escolher?</h3>
+          <p class="gift-option-card__desc">Conte um pouco sobre a pessoa e nosso time sugere a experiência perfeita para ela.</p>
+          <ul class="gift-option-card__perks">
+            <li>Curadoria personalizada</li>
+            <li>Resposta em até 24h</li>
+            <li>Sem compromisso</li>
+          </ul>
+         <a href="https://wa.me/5511914455930?text=Oi!%20Vim%20pelo%20site%20e%20quero%20ajuda%20para%20escolher%20um%20presente%20na%20Elarah!"
+class="gift-option-card__btn gift-option-card__btn--outline"
+target="_blank">
+Falar com a Elarah
+</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIÊNCIAS PARA PRESENTEAR ========== -->
+  <section class="gift-experiences" id="gift-experiences">
+    <div class="gift-experiences__inner">
+      <div class="gift-experiences__header">
+        <h2 class="gift-experiences__title">Experiências que combinam com presente</h2>
+        <p class="gift-experiences__subtitle">As mais escolhidas para surpreender alguém especial.</p>
+      </div>
+      <div class="gift-experiences__filters">
+        <button class="gift-filter-btn gift-filter-btn--active" data-filter="">Todas</button>
+        <button class="gift-filter-btn" data-filter="Gastronomia">Gastronomia</button>
+        <button class="gift-filter-btn" data-filter="Pintura">Pintura</button>
+        <button class="gift-filter-btn" data-filter="Vela">Vela</button>
+        <button class="gift-filter-btn" data-filter="Sabonete">Sabonete</button>
+        <button class="gift-filter-btn" data-filter="Tufting">Tufting</button>
+      </div>
+      <div class="gift-experiences__grid" id="gift-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section class="gift-faq">
+    <div class="gift-faq__inner">
+      <h2 class="gift-faq__title">Dúvidas frequentes</h2>
+      <div class="gift-faq__list">
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">O gift card tem validade?</summary>
+          <p class="gift-faq__answer">Sim, o gift card da Elarah é válido por 12 meses a partir da data da compra. Dentro desse período, a pessoa pode escolher qualquer experiência disponível.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">Posso trocar a data da experiência depois?</summary>
+          <p class="gift-faq__answer">Claro! A troca de data pode ser feita até 48 horas antes da experiência agendada, sem custo adicional. Basta entrar em contato com a Elarah.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">Como a pessoa recebe o presente?</summary>
+          <p class="gift-faq__answer">Você escolhe: pode enviar por e-mail com uma mensagem personalizada ou compartilhar um link direto pelo WhatsApp. O envio é imediato ou pode ser agendado para uma data especial.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">E se a pessoa quiser escolher outra experiência?</summary>
+          <p class="gift-faq__answer">Se você comprou um gift card de valor livre, a pessoa pode escolher qualquer experiência. Se comprou uma experiência específica, é possível trocar por outra de mesmo valor.</p>
+        </details>
+
+        <details class="gift-faq__item">
+          <summary class="gift-faq__question">Posso presentear mais de uma pessoa?</summary>
+          <p class="gift-faq__answer">Sim! Você pode comprar quantos gift cards ou experiências quiser, cada um com uma mensagem personalizada diferente.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA FINAL ========== -->
+  <section class="gift-cta">
+    <div class="gift-cta__inner">
+      <div class="gift-cta__content">
+        <h2 class="gift-cta__title">O melhor presente é uma memória.</h2>
+        <p class="gift-cta__text">Esqueça o óbvio. Dê algo que se sente, se vive e se lembra para sempre.</p>
+        <div class="gift-cta__actions">
+          <a href="#gift-options" class="gift-cta__btn">Presentear agora</a>
+          <a href="/" class="gift-cta__btn gift-cta__btn--outline">Ver todas as experiências</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+
+    <!-- LOGO + FRASE -->
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+
+        <!-- INSTAGRAM -->
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/>
+          </svg>
+        </a>
+
+        <!-- WHATSAPP -->
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/>
+          </svg>
+        </a>
+
+        <!-- TIKTOK -->
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/>
+          </svg>
+        </a>
+
+        <!-- LINKEDIN -->
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- EXPLORAR -->
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting">Tufting</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <!-- ELARAH -->
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <!-- INFORMAÇÕES -->
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+
+  </div>
+
+ <div class="footer__bottom">
+  <p>© 2026 Elarah. Todos os direitos reservados.</p>
+</div>
+</footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=22"></script>
+<script src="analytics.js?v=2"></script>
+<script src="presentear.js?v=11"></script>
+</body>
+</html>

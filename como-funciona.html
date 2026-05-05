@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Como funciona a Elarah — descubra, reserve e viva experiências curadas por nossa plataforma.">
+  <title>Como funciona — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header__inner">
+    <a href="/" class="header__logo" title="Ir para página inicial">
+      <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+    </a>
+
+    <div class="header__search">
+      <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+    </div>
+
+    <nav class="header__nav">
+      <div class="header__nav-item header__nav-dropdown">
+        <button class="header__nav-link" id="explorar-btn" type="button">
+          Explorar
+          <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="header__dropdown" id="explorar-dropdown">
+          <a href="/" class="header__dropdown-item">Todas</a>
+          <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+          <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
+          <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+          <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+          <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macramê</a>
+          <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+          <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+          <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+          <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+        </div>
+      </div>
+      <a href="dia-das-maes.html" class="header__nav-link header__nav-link--ddm">Dia das Mães</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+      <a href="oferecer.html" class="header__nav-link">Oferecer uma experiência</a>
+    </nav>
+
+    <div class="header__actions">
+      <button class="header__action-btn" aria-label="Favoritos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </button>
+      <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Entrar
+      </button>
+    </div>
+
+    <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle" type="button">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="how-hero">
+  <div class="how-container">
+    <h1 class="how-title">
+      Descubra, reserve e viva.
+    </h1>
+    <p class="how-subtitle">
+      A Elarah conecta você a experiências criativas para sair da rotina e viver algo diferente.
+    </p>
+  </div>
+</section>
+
+<!-- PASSOS -->
+<section class="how-steps">
+  <div class="how-container">
+
+    <div class="how-step">
+      <span class="how-number">01</span>
+      <h2>Explore experiências</h2>
+      <p>
+        Navegue pelas categorias e descubra workshops e vivências criativas em São Paulo.
+        Cerâmica, gastronomia, pintura, velas e muito mais.
+      </p>
+    </div>
+
+    <div class="how-step">
+      <span class="how-number">02</span>
+      <h2>Escolha a sua</h2>
+      <p>
+        Veja os detalhes, entenda a proposta e escolha a experiência que mais combina com você.
+      </p>
+    </div>
+
+    <div class="how-step">
+      <span class="how-number">03</span>
+      <h2>Garanta sua vaga</h2>
+      <p>
+        Reserve sua experiência de forma simples e rápida.
+        Em poucos cliques, sua vaga está garantida.
+      </p>
+    </div>
+
+    <div class="how-step">
+      <span class="how-number">04</span>
+      <h2>Viva o momento</h2>
+      <p>
+        Compareça, desconecte do digital e aproveite uma experiência real,
+        criativa e memorável.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- PARA QUEM É -->
+<section class="how-section how-section--soft">
+  <div class="how-container">
+
+    <h2 class="how-section-title">Para quem é a Elarah?</h2>
+
+    <div class="how-grid">
+      <div class="how-card">
+        <h3>Para você</h3>
+        <p>Que quer sair da rotina e viver algo novo.</p>
+      </div>
+
+      <div class="how-card">
+        <h3>Para encontros</h3>
+        <p>Com amigos, dates ou momentos especiais.</p>
+      </div>
+
+      <div class="how-card">
+        <h3>Para presentear</h3>
+        <p>Uma experiência vale mais que qualquer objeto.</p>
+      </div>
+
+      <div class="how-card">
+        <h3>Para empresas</h3>
+        <p>Momentos de conexão entre equipes.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="how-cta">
+  <div class="how-container how-cta-inner">
+
+    <div>
+      <h2>Pronta para viver algo diferente?</h2>
+      <p>Explore experiências e saia do óbvio.</p>
+    </div>
+
+    <div class="how-actions">
+      <a href="/categoria.html" class="how-btn">Explorar experiências</a>
+      <a href="/oferecer.html" class="how-btn how-btn--outline">Oferecer experiência</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+
+    <!-- LOGO + FRASE -->
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+
+        <!-- INSTAGRAM -->
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/>
+          </svg>
+        </a>
+
+        <!-- WHATSAPP -->
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/>
+          </svg>
+        </a>
+
+        <!-- TIKTOK -->
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/>
+          </svg>
+        </a>
+
+        <!-- LINKEDIN -->
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- EXPLORAR -->
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting">Tufting</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <!-- ELARAH -->
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <!-- INFORMAÇÕES -->
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+
+  </div>
+
+  <div class="footer__bottom">
+    <p>© 2026 Elarah. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="auth.js?v=12"></script>
+<script src="analytics.js?v=2"></script>
+</body>
+</html>

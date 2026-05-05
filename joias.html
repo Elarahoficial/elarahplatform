@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- =====================================================
+       PÁGINA DE LANDING — Workshop de Joalheria (Ouro)
+       -----------------------------------------------------
+       Existe SOMENTE para servir o preview correto no WhatsApp/
+       Facebook/iMessage quando o link é compartilhado em campanha.
+       Crawler lê og:* daqui (HTML estático) e gera preview com
+       imagem + título + descrição. Visitante humano é redirecionado
+       imediatamente pra experiencia.html?id=<UUID> via JS.
+
+       ⚠️ ANTES DE PUBLICAR EM CAMPANHA, AJUSTE 2 PLACEHOLDERS:
+         1. EXPERIENCE_ID (linha do <meta refresh> e do <script>)
+            → UUID real da experiência no Supabase.
+         2. og:image / <img src> / twitter:image
+            → caminho do arquivo (ex: assets/joias.jpg).
+       Sem isso, o link cai pra home como fallback e a imagem
+       fica com o logo Elarah em vez da capa da experiência.
+       ===================================================== -->
+
+  <!-- ===== Open Graph (WhatsApp / Facebook / iMessage) =====
+       Texto pensado pra apelar emocionalmente. Algumas histórias
+       merecem mais que palavras — merecem ouro. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Elarah">
+  <meta property="og:title" content="Esse Dia dos Namorados, criem juntos a joia que vai marcar vocês pra sempre 🤍">
+  <meta property="og:description" content="Não é só um anel — é uma tarde de cumplicidade, em ouro, feita pelas próprias mãos. Vocês desenham, forjam e saem com uma peça única que vira a história de vocês. Vagas contadas. Antes que acabe.">
+  <meta property="og:image" content="https://elarah.com.br/assets/ANEL.jpg">
+  <meta property="og:image:secure_url" content="https://elarah.com.br/assets/ANEL.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="1200">
+  <meta property="og:image:alt" content="Workshop de Ourivesaria — Crie sua joia em ouro · Elarah">
+  <meta property="og:url" content="https://elarah.com.br/joias.html">
+
+  <!-- ===== Twitter Card ===== -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Esse Dia dos Namorados, criem juntos a joia que vai marcar vocês pra sempre 🤍">
+  <meta name="twitter:description" content="Não é só um anel — é uma tarde de cumplicidade, em ouro, feita pelas próprias mãos. Vagas contadas.">
+  <meta name="twitter:image" content="https://elarah.com.br/assets/ANEL.jpg">
+
+  <meta name="description" content="Workshop de Ourivesaria — Dia dos Namorados na Elarah. Vocês criam, a quatro mãos, uma joia em ouro que vira a história de vocês. Vagas limitadíssimas.">
+
+  <title>Criem juntos a joia que vai marcar vocês pra sempre · Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+
+  <!-- Fallback meta refresh (caso JS falhe). Sem o redirect, o
+       crawler do WhatsApp não segue (não roda JS), só humano.
+       ⚠️ TODO: troque ID_DA_EXPERIENCIA pelo UUID real. -->
+  <meta http-equiv="refresh" content="2;url=experiencia.html?id=ID_DA_EXPERIENCIA">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #faf6f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .wrap {
+      max-width: 520px;
+      text-align: center;
+    }
+    .wrap img {
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.12);
+      margin-bottom: 24px;
+    }
+    .wrap h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.6rem;
+      margin: 0 0 12px;
+      color: #1a1a1a;
+      line-height: 1.25;
+    }
+    .wrap p {
+      color: #555;
+      font-size: .96rem;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #f0a05e;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fallback-btn {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 12px 24px;
+      background: #f0a05e;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: .92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img src="assets/ANEL.jpg" alt="Workshop de Ourivesaria — Crie sua joia em ouro">
+    <h1>Não é só um anel.<br>É a história de vocês — em ouro 🤍</h1>
+    <p>Esse Dia dos Namorados, vocês criam <strong>a quatro mãos</strong> a joia que vai marcar a história de vocês. Vagas contadas — te levando pra reservar…</p>
+    <a href="experiencia.html?id=ID_DA_EXPERIENCIA" class="fallback-btn" id="fallback-btn">Ver experiência</a>
+  </div>
+
+  <!-- ============================================================
+       REDIRECT IMEDIATO (humano apenas — crawler não executa JS)
+       ⚠️ TODO: troque ID_DA_EXPERIENCIA pelo UUID real.
+       ============================================================ -->
+  <script>
+  (function () {
+    'use strict';
+    var EXPERIENCE_ID = 'ID_DA_EXPERIENCIA';
+    try {
+      window.location.replace('experiencia.html?id=' + encodeURIComponent(EXPERIENCE_ID));
+    } catch (e) {
+      window.location.href = 'experiencia.html?id=' + encodeURIComponent(EXPERIENCE_ID);
+    }
+  })();
+  </script>
+</body>
+</html>

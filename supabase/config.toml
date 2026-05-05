@@ -1,0 +1,25 @@
+project_id = "nwijxjmenbfyehvscogs"
+
+# Webhooks chamados por serviços externos (Stripe, Mercado Pago).
+# Eles NÃO mandam JWT do Supabase — autenticam com a própria
+# assinatura (stripe-signature / x-signature). Se verify_jwt ficar
+# true (default), o Supabase responde 401 antes do código rodar, e
+# a Stripe/MP registram falha — foi exatamente o que aconteceu.
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.mp-webhook]
+verify_jwt = false
+
+# OAuth callback da Meta — chamado por redirect do navegador
+# (sem header Authorization). A autenticidade é garantida pelo
+# `state` aleatório criado em oauth-start (validado em uma tabela
+# com TTL). Ver supabase/functions/oauth-callback/index.ts.
+[functions.oauth-callback]
+verify_jwt = false
+
+# og-experience — página HTML pública lida pelo crawler do
+# WhatsApp/Facebook/etc. Sem JWT por design (link compartilhável).
+# Não retorna dados sensíveis: só os campos públicos da experiência.
+[functions.og-experience]
+verify_jwt = false

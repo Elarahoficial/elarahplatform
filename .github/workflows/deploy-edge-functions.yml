@@ -1,0 +1,68 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches:
+      - claude/create-elarah-homepage-VsE5i
+      - claude/fix-purchase-errors-2GrQL
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Sanity check: aborta cedo com mensagem clara se algum secret
+      # estiver faltando, em vez de cair num "supabase: command failed"
+      # opaco depois.
+      - name: Validar secrets
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN não configurado nos Secrets do repositório"
+            exit 1
+          fi
+          if [ -z "$PROJECT_REF" ]; then
+            echo "::error::SUPABASE_PROJECT_REF não configurado nos Secrets do repositório"
+            exit 1
+          fi
+          echo "✓ Secrets presentes (project_ref=${PROJECT_REF:0:6}...)"
+
+      # Deploy direto, sem `supabase link` — passar --project-ref em
+      # cada deploy é o jeito recomendado pela Supabase pra CI/CD,
+      # porque `link` exige SUPABASE_DB_PASSWORD que não é necessário
+      # pra deploy de Edge Function.
+      #
+      # `set -e` garante que qualquer função que falhe aborta o job —
+      # sem isso o workflow ficaria "verde" mesmo com função quebrada.
+      - name: Deploy das Edge Functions
+        run: |
+          set -e
+          echo "→ create-checkout-session"
+          supabase functions deploy create-checkout-session \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ create-mp-pix-payment"
+          supabase functions deploy create-mp-pix-payment \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ stripe-webhook"
+          supabase functions deploy stripe-webhook \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ mp-webhook"
+          supabase functions deploy mp-webhook \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ check-mp-payment-status"
+          supabase functions deploy check-mp-payment-status \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ redeem-gift-card"
+          supabase functions deploy redeem-gift-card \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "✓ Deploy completo"
