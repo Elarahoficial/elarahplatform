@@ -952,17 +952,16 @@
   // Requer rodar sql/elarah_byelarah_followup_tracking.sql.
 
   // Mensagem template default. Pode ser alterada inline no modal.
-  // Campanha atual: Oficina de Perfumaria Criativa + Brunch &
-  // Meditação Guiada (By Elarah) — anúncio de experiência nova.
-  // {LINK} é resolvido via FOLLOWUP_LANDING_PAGES (perfumes.html)
-  // pro WhatsApp gerar preview com a imagem PERFUMES.jpg.
+  // Campanha atual: By Elarah, Ourivesaria — anúncio de experiência nova.
+  // {LINK} é resolvido via FOLLOWUP_LANDING_PAGES (joias.html)
+  // pro WhatsApp gerar preview com a imagem ANEL.jpg.
   const FOLLOWUP_DEFAULT_TEMPLATE = (
     'Acabamos de abrir uma experiência nova… e ela tá diferente de tudo que você já viu ✨🌿\n\n' +
     'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
-    'Imagina criar o seu próprio perfume do zero, com notas que traduzem quem você é… enquanto desacelera, se reconecta e vive uma manhã leve, bonita e fora do automático 🕊️🌸\n\n' +
-    '* meditação guiada\n' +
-    '* brunch especial\n' +
-    '* experiência sensorial completa\n\n' +
+    'Imagina criar a sua própria joia do zero, com um design que traduz quem você é… enquanto desacelera, se reconecta e vive um momento leve, bonito e fora do automático 🕊️💍\n\n' +
+    '* experiência de ourivesaria guiada\n' +
+    '* sua joia criada pelas suas próprias mãos\n' +
+    '* momento sensorial completo\n\n' +
     'É o tipo de momento que você não compra… você vive.\n\n' +
     'E as vagas são bem limitadas 👀\n\n' +
     '👉🏻 garante sua vaga aqui: {LINK}\n\n' +
