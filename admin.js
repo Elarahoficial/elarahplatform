@@ -2765,8 +2765,14 @@
         var sbUrl = (window.ElarahSupabase && window.ElarahSupabase.url) || '';
         var expLink = '';
         if (b.experiencia_id) {
+          // _t=timestamp: WhatsApp cacheia preview por URL exata. Sem
+          // o param, se um preview "vazio" foi cacheado uma vez (ex:
+          // antes do og-experience estar deployado), todos os clientes
+          // receberiam o mesmo preview vazio. Com _t único por
+          // disparo, cada follow-up tem URL nova → re-crawl forçado.
+          var cacheBuster = '&_t=' + Date.now();
           expLink = sbUrl
-            ? (sbUrl.replace(/\/$/, '') + '/functions/v1/og-experience?id=' + encodeURIComponent(b.experiencia_id))
+            ? (sbUrl.replace(/\/$/, '') + '/functions/v1/og-experience?id=' + encodeURIComponent(b.experiencia_id) + cacheBuster)
             : ('https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(b.experiencia_id));
         }
         var msgLines = [

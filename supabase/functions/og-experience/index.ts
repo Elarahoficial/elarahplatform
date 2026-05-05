@@ -105,8 +105,13 @@ function renderHtml(opts: {
   <title>${escapeHtml(title)}</title>
   <link rel="icon" href="${SITE}/assets/logo.png" type="image/png">
 
-  <!-- Fallback caso JS falhe -->
-  <meta http-equiv="refresh" content="1;url=${escapeHtml(redirectUrl)}">
+  <!-- IMPORTANTE: nada de meta http-equiv="refresh" aqui.
+       O crawler do WhatsApp segue meta refresh e ia parar em
+       experiencia.html (que não tem og tags estáticas — só dinâmicas
+       via JS, que crawler não roda) → resultado: WhatsApp via como
+       "sem preview". Sem o refresh, o crawler lê as og tags acima
+       e gera o preview correto. Usuário humano é redirecionado
+       pelo JS abaixo (crawler não executa). -->
 
   <style>
     body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#faf6f0;color:#1a1a1a;
