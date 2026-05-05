@@ -2762,20 +2762,18 @@
         // no WhatsApp pra QUALQUER experiência (não só landings dedicadas).
         // Fallback pra experiencia.html se a function URL não tiver sido
         // resolvida (ambiente sem Supabase pronto).
-        var sbUrl = (window.ElarahSupabase && window.ElarahSupabase.url) || '';
+        // Link de preview: usa landing estática em elarah.com.br/og/<uuid>.html.
+        // WhatsApp gera preview com imagem cadastrada da experiência via og:*
+        // do HTML estático. Esses arquivos são gerados pelo script
+        // scripts/build-og-pages.mjs (rodar quando experiência muda) ou
+        // pelo workflow GitHub Actions "Build OG landing pages".
+        // _t=timestamp busta cache de preview do WhatsApp por URL.
         var expLink = '';
-        if (b.experiencia_id || b.experiencia_nome) {
-          // _t=timestamp busta cache de preview do WhatsApp por URL.
-          // ?name= cobre bookings antigos com experiencia_id placeholder
-          // (ex: 00000000-...-000012, gerados de seeds antigos) — a
-          // função busca por id E por nome, retorna a real.
-          var qs = [];
-          if (b.experiencia_id) qs.push('id=' + encodeURIComponent(b.experiencia_id));
-          if (b.experiencia_nome) qs.push('name=' + encodeURIComponent(b.experiencia_nome));
-          qs.push('_t=' + Date.now());
-          expLink = sbUrl
-            ? (sbUrl.replace(/\/$/, '') + '/functions/v1/og-experience?' + qs.join('&'))
-            : ('https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(b.experiencia_id || ''));
+        if (b.experiencia_id) {
+          expLink = 'https://elarah.com.br/og/' + encodeURIComponent(b.experiencia_id) + '.html?_t=' + Date.now();
+        } else if (b.experiencia_nome) {
+          // Fallback: se não tem id (booking muito antigo), manda pra home.
+          expLink = 'https://elarah.com.br/?_t=' + Date.now();
         }
         var msgLines = [
           'Oii ' + firstName + ' 🧡',
