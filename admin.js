@@ -5991,52 +5991,128 @@
   }
 
   // ===== Funil =====
+  // Funil completo de 6 etapas + insights automáticos.
+  // Cada etapa é contada por sessão única (Set de session_id).
+  // Última etapa (compra) usa bookings.status='pago' do período.
+  // Aceita eventos legados (alias) pra retrocompat com dados antigos.
   function renderFunnel(eventsInRange, bookingsInRange) {
     const wrap = document.getElementById('ana-funnel');
     const noteEl = document.getElementById('ana-funnel-note');
     if (!wrap) return;
 
+    const sessions = new Set();
     const cardClicks = new Set();
     const detailViews = new Set();
     const ctaClicks = new Set();
-    eventsInRange.forEach(e => {
-      if (!e.session_id) return;
-      if (e.event_name === 'experience_card_click') cardClicks.add(e.session_id);
-      else if (e.event_name === 'exp_detail_open') detailViews.add(e.session_id);
-      else if (e.event_name === 'exp_cta_click') ctaClicks.add(e.session_id);
+    const checkoutStarted = new Set();
+    const checkoutSubmits = new Set();
+    const checkoutErrors = []; // não dedup por sessão — quero contar todos
+
+    (eventsInRange || []).forEach(e => {
+      if (!e || !e.session_id) return;
+      const sid = e.session_id;
+      if (e.event_name === 'page_view') sessions.add(sid);
+      else if (e.event_name === 'experience_card_click') cardClicks.add(sid);
+      else if (e.event_name === 'experience_detail_view' || e.event_name === 'exp_detail_open') detailViews.add(sid);
+      else if (e.event_name === 'cta_click' || e.event_name === 'reserve_click' || e.event_name === 'exp_cta_click') ctaClicks.add(sid);
+      else if (e.event_name === 'checkout_started') checkoutStarted.add(sid);
+      else if (e.event_name === 'checkout_submit') checkoutSubmits.add(sid);
+      else if (e.event_name === 'checkout_error') checkoutErrors.push(e);
     });
-    const purchases = bookingsInRange.filter(b => b.status === 'pago').length;
+
+    // Sessions também conta sessões que tiveram QUALQUER evento — pra
+    // não "perder" sessões em que page_view falhou (RLS no início,
+    // adblock etc.). Conservador: usa o maior set entre page_view
+    // declarado e união de todas as sessions vistas.
+    (eventsInRange || []).forEach(e => { if (e && e.session_id) sessions.add(e.session_id); });
+
+    const purchases = (bookingsInRange || []).filter(b => b.status === 'pago').length;
 
     const steps = [
-      { label: 'Clicou em experiência', count: cardClicks.size },
-      { label: 'Abriu o detalhe', count: detailViews.size },
-      { label: 'Clicou em reservar', count: ctaClicks.size },
-      { label: 'Comprou', count: purchases }
+      { key: 'sessions',   label: 'Visitantes (sessões)',    count: sessions.size,         unit: 'sessões' },
+      { key: 'card',       label: 'Clicou em uma experiência', count: cardClicks.size,    unit: 'sessões' },
+      { key: 'detail',     label: 'Abriu o detalhe da exp.',   count: detailViews.size,   unit: 'sessões' },
+      { key: 'cta',        label: 'Clicou em "Reservar"',    count: ctaClicks.size,        unit: 'sessões' },
+      { key: 'started',    label: 'Iniciou o checkout',      count: checkoutStarted.size,  unit: 'sessões' },
+      { key: 'submit',     label: 'Confirmou pagamento',     count: checkoutSubmits.size,  unit: 'sessões' },
+      { key: 'paid',       label: 'Pagamento aprovado',      count: purchases,             unit: 'compras' },
     ];
+
     if (steps.every(s => s.count === 0)) {
-      wrap.innerHTML = '<div class="ana-funnel__empty">Sem dados de funil para o período.</div>';
+      wrap.innerHTML = '<div class="ana-funnel__empty">Sem dados de funil para o período. Faça uma navegação de teste e volte aqui.</div>';
       if (noteEl) noteEl.textContent = '';
       return;
+    }
+
+    // Detecta o MAIOR drop entre etapas consecutivas pra highlight.
+    // (a → b): drop = 1 - b/a. Só conta etapas com count > 0.
+    let biggestDropIdx = -1;
+    let biggestDropPct = 0;
+    for (let i = 1; i < steps.length; i++) {
+      if (steps[i - 1].count <= 0) continue;
+      const drop = 1 - (steps[i].count / steps[i - 1].count);
+      if (drop > biggestDropPct) {
+        biggestDropPct = drop;
+        biggestDropIdx = i;
+      }
     }
 
     const max = Math.max(...steps.map(s => s.count), 1);
     wrap.innerHTML = steps.map((s, i) => {
       const pct = Math.max(2, Math.round((s.count / max) * 100));
-      const stepConv = (i > 0 && steps[i - 1].count > 0)
-        ? `<div class="ana-funnel__step-conv">↓ ${((s.count / steps[i - 1].count) * 100).toFixed(1).replace('.', ',')}% passa pra próxima etapa</div>`
+      const isBigDrop = i === biggestDropIdx;
+      const stepConvHtml = (i > 0 && steps[i - 1].count > 0)
+        ? `<div class="ana-funnel__step-conv" style="${isBigDrop ? 'color:#c0392b;font-weight:700;' : ''}">↓ ${((s.count / steps[i - 1].count) * 100).toFixed(1).replace('.', ',')}% passa pra próxima${isBigDrop ? ' &nbsp;⚠ maior queda' : ''}</div>`
         : '';
-      const unit = (i === 3) ? 'compras' : 'sessões';
-      return stepConv + `
+      const fillStyle = `width:${pct}%${isBigDrop ? ';background:#c0392b;' : ''}`;
+      return stepConvHtml + `
         <div class="ana-funnel__row">
           <div class="ana-funnel__label">${escapeHtml(s.label)}</div>
-          <div class="ana-funnel__bar"><div class="ana-funnel__fill" style="width:${pct}%"></div></div>
-          <div class="ana-funnel__count">${s.count.toLocaleString('pt-BR')}<small>${unit}</small></div>
+          <div class="ana-funnel__bar"><div class="ana-funnel__fill" style="${fillStyle}"></div></div>
+          <div class="ana-funnel__count">${s.count.toLocaleString('pt-BR')}<small>${escapeHtml(s.unit)}</small></div>
         </div>
       `;
     }).join('');
 
+    // ===== Insights automáticos (regra simples) =====
     if (noteEl) {
-      noteEl.textContent = 'Etapas medidas por sessão (cliques no front). Próximo passo (Fase 2): adicionar evento dedicado de checkout iniciado pra fechar o funil de ponta a ponta.';
+      const insights = [];
+      const conv = (a, b) => (a > 0 ? (b / a) : 0);
+
+      const detailToCta = conv(steps[2].count, steps[3].count);
+      const ctaToStarted = conv(steps[3].count, steps[4].count);
+      const submitToPaid = conv(steps[5].count, steps[6].count);
+      const startedToSubmit = conv(steps[4].count, steps[5].count);
+
+      if (steps[2].count >= 10 && detailToCta < 0.15) {
+        insights.push('🟠 Muitas visualizações de experiência mas poucos cliques no botão "Reservar". Possível causa: preço alto pro perfil de quem vê, descrição pouco persuasiva, ou imagem que não converte. Revisar páginas das experiências mais vistas.');
+      }
+      if (steps[3].count >= 5 && ctaToStarted < 0.5) {
+        insights.push('🟠 Muitos cliques no CTA mas poucos chegaram ao checkout. Possível causa: erro técnico no modal, modal lento pra abrir, ou exigência de login bloqueando. Conferir console do navegador.');
+      }
+      if (steps[4].count >= 5 && startedToSubmit < 0.4) {
+        insights.push('🟠 Muitos abriram o checkout mas poucos clicaram em "Confirmar e pagar". Possível causa: formulário pedindo info demais, taxa de cartão exibida assustando, falta de confiança na hora de digitar dados.');
+      }
+      if (steps[5].count >= 5 && submitToPaid < 0.6) {
+        insights.push('🔴 Muitos confirmaram mas poucos pagamentos foram aprovados. Possível causa: cartão recusado, PIX expirando, erro no provider de pagamento. Conferir aba "Pendentes" + erros de checkout.');
+      }
+      if (checkoutErrors.length > 0) {
+        const reasons = new Map();
+        checkoutErrors.forEach(e => {
+          const r = (e.metadata && (e.metadata.error_message || e.metadata.reason)) || 'unknown';
+          reasons.set(r, (reasons.get(r) || 0) + 1);
+        });
+        const top = Array.from(reasons.entries()).sort((a, b) => b[1] - a[1])[0];
+        if (top) insights.push(`🔴 ${checkoutErrors.length} erro(s) de checkout no período. Mais comum: "${top[0]}" (${top[1]}x).`);
+      }
+      if (purchases >= 1 && steps[0].count > 0) {
+        const overall = (purchases / steps[0].count * 100).toFixed(2).replace('.', ',');
+        insights.push(`✅ Conversão geral (compras/sessões): ${overall}%`);
+      }
+      if (!insights.length) {
+        insights.push('Sem alertas — siga acompanhando volume e conversão.');
+      }
+      noteEl.innerHTML = insights.map(s => `<div style="margin-bottom:6px;">${escapeHtml(s)}</div>`).join('');
     }
   }
 

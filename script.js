@@ -527,6 +527,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
         const text = link.textContent.trim();
         activeCategoria = text === 'Todas' ? '' : text;
         filterCategoria.value = activeCategoria;
+        try {
+          if (window.ElarahAnalytics && ElarahAnalytics.track) {
+            ElarahAnalytics.track('category_filter_used', {
+              category: 'navigation',
+              targetLabel: text.slice(0, 60),
+              targetId: activeCategoria || 'todas',
+              metadata: { ui: 'category_link' },
+            });
+          }
+        } catch (_) {}
 
         renderCards();
       });
@@ -541,6 +551,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
 
       activeBairro = filterBairro.value;
       activeCategoria = filterCategoria.value;
+      try {
+        if (window.ElarahAnalytics && ElarahAnalytics.track) {
+          ElarahAnalytics.track('category_filter_used', {
+            category: 'navigation',
+            targetLabel: (activeCategoria || 'todas').slice(0, 60),
+            targetId: activeCategoria || 'todas',
+            metadata: { ui: 'select', bairro: activeBairro || null },
+          });
+        }
+      } catch (_) {}
 
       if (categoryLinks.length) {
         categoryLinks.forEach((c) => {
@@ -589,6 +609,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
   function executarBusca() {
     const valor = searchInput?.value.trim();
     if (!valor) return;
+    // Tracking — termo de busca (truncado pra evitar PII longa).
+    try {
+      if (window.ElarahAnalytics && ElarahAnalytics.track) {
+        ElarahAnalytics.track('search_used', {
+          category: 'navigation',
+          targetLabel: valor.slice(0, 80),
+          metadata: { term: valor.slice(0, 80) },
+        });
+      }
+    } catch (_) {}
     window.location.href = '/?busca=' + encodeURIComponent(valor);
   }
 
@@ -2423,6 +2453,25 @@ if (groupForm) {
       root.style.display = 'flex';
       document.body.style.overflow = 'hidden';
 
+      // Funil step 5 — checkout iniciado (modal abriu). Quem chega
+      // até aqui já passou por: page_view → card_click → detail_view
+      // → cta_click. Próximas etapas: checkout_submit → payment_*.
+      try {
+        if (window.ElarahAnalytics && ElarahAnalytics.track) {
+          ElarahAnalytics.track('checkout_started', {
+            category: 'checkout',
+            targetId: ctx.experienceId || null,
+            targetLabel: (ctx.experienceNome || '').slice(0, 120),
+            metadata: {
+              preco_centavos: ctx.precoCentavos || 0,
+              horario: ctx.horario || null,
+              has_variants: !!(ctx.variantOptions && ctx.variantOptions.length),
+              has_horarios: !!(ctx.horarios && ctx.horarios.length > 1),
+            },
+          });
+        }
+      } catch (e) {}
+
       // Pré-preenche nome + telefone se o usuário já tiver cadastrado
       // no perfil. Usa fetch async sem bloquear o render — se der erro
       // ou demorar, o usuário digita manualmente. Só pré-preenche se o
@@ -2811,6 +2860,26 @@ if (groupForm) {
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Processando...';
 
+      // Funil step 6 — usuário confirmou no formulário e estamos
+      // chamando a edge function de pagamento. Diferencia de
+      // checkout_started (modal só abriu) — captura intenção real.
+      try {
+        if (window.ElarahAnalytics && ElarahAnalytics.track) {
+          ElarahAnalytics.track('checkout_submit', {
+            category: 'checkout',
+            targetId: ctx.experienceId || null,
+            targetLabel: (ctx.experienceNome || '').slice(0, 120),
+            metadata: {
+              payment_method: ctx.paymentMethod || 'card',
+              total_centavos: ctx.totalCentavos || ctx.precoCentavos || 0,
+              quantidade: ctx.quantidade || 1,
+              has_cupom: !!ctx.cupomCode,
+              variant_selected: ctx.variantSelected || null,
+            },
+          });
+        }
+      } catch (e) {}
+
       try {
         const auth = await getAuthInfo();
         const headers = {
@@ -2924,6 +2993,23 @@ if (groupForm) {
             return;
           }
 
+          // Funil — PIX gerado com sucesso, esperando pagamento.
+          // Distingue de payment_approved (que vem em success.html).
+          try {
+            if (window.ElarahAnalytics && ElarahAnalytics.track) {
+              ElarahAnalytics.track('payment_pending', {
+                category: 'checkout',
+                targetId: ctx.experienceId || null,
+                targetLabel: (ctx.experienceNome || '').slice(0, 120),
+                metadata: {
+                  payment_method: 'pix',
+                  booking_id: data.booking_id,
+                  total_centavos: ctx.totalCentavos || 0,
+                },
+              });
+            }
+          } catch (_) {}
+
           // Troca o modal pro painel de QR code e começa o polling.
           showPixPanel(data, ctx);
           return;
@@ -2999,6 +3085,22 @@ if (groupForm) {
         errEl.textContent = 'Erro ao confirmar. Tente novamente.';
         confirmBtn.disabled = false;
         refreshPriceBreakdown();
+        // Funnel — checkout falhou. Captura motivo (mensagem do erro
+        // truncada) pra agrupar no admin: "top motivos de erro".
+        try {
+          if (window.ElarahAnalytics && ElarahAnalytics.track) {
+            ElarahAnalytics.track('checkout_error', {
+              category: 'checkout',
+              targetId: ctx.experienceId || null,
+              targetLabel: (ctx.experienceNome || '').slice(0, 120),
+              metadata: {
+                payment_method: ctx.paymentMethod || 'card',
+                error_message: String((e && e.message) || e || 'unknown').slice(0, 200),
+                stage: 'confirm_exception',
+              },
+            });
+          }
+        } catch (_) {}
       }
     }
 
@@ -3666,14 +3768,19 @@ if (groupForm) {
         return;
       }
 
-      // Tracking opcional
+      // Tracking — funil step 4 (CTA click). Disparamos AMBOS:
+      //   - cta_click  (nome canônico usado no funil do admin)
+      //   - reserve_click (legado, mantido por retrocompat)
       try {
         if (window.ElarahAnalytics && ElarahAnalytics.track) {
-          ElarahAnalytics.track('reserve_click', {
+          const trackPayload = {
             category: 'booking',
             targetId: experienceId,
             targetLabel: experienceNome,
-          });
+            metadata: { cta_label: 'Reservar', source_page: (location.pathname || '').replace(/^\//, '') || 'index.html' },
+          };
+          ElarahAnalytics.track('cta_click', trackPayload);
+          ElarahAnalytics.track('reserve_click', trackPayload);
         }
       } catch (e) {}
 
