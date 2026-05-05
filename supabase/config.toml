@@ -17,3 +17,9 @@ verify_jwt = false
 # com TTL). Ver supabase/functions/oauth-callback/index.ts.
 [functions.oauth-callback]
 verify_jwt = false
+
+# og-experience — página HTML pública lida pelo crawler do
+# WhatsApp/Facebook/etc. Sem JWT por design (link compartilhável).
+# Não retorna dados sensíveis: só os campos públicos da experiência.
+[functions.og-experience]
+verify_jwt = false

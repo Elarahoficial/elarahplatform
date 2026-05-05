@@ -2612,12 +2612,85 @@
     var filterFuEl = document.getElementById('pending-filter-followup');
     var filterFu = filterFuEl ? filterFuEl.value : '';
 
-    // Only non-paid bookings
+    // ===== Detecção de conversão (pendente → pago) =====
+    // Cruza pendentes com bookings pagos por:
+    //   1. email + experience_id  (forte)
+    //   2. telefone (digits) + experience_id  (forte)
+    // NÃO usa nome — falso positivo é caro (esconde uma quase-compra
+    // real só porque tem um xará que pagou outra coisa).
+    // Marca b._convertedTo com o booking pago correspondente.
+    const paidBookings = bookings.filter(function (b) { return b.status === 'pago'; });
+    const paidByEmailExp = new Map();   // chave: lower(email) + '::' + exp_id
+    const paidByPhoneExp = new Map();   // chave: digitos(tel) + '::' + exp_id
+    const phoneDigits = function (raw) { return String(raw || '').replace(/\D+/g, '').replace(/^55/, ''); };
+    paidBookings.forEach(function (pb) {
+      if (!pb.experiencia_id) return;
+      const em = (pb.email || '').trim().toLowerCase();
+      if (em) {
+        const k = em + '::' + pb.experiencia_id;
+        if (!paidByEmailExp.has(k)) paidByEmailExp.set(k, pb);
+      }
+      // Resolve telefone do paid: coluna direta → metadata → profile.
+      let tel = pb.telefone || (pb.metadata && (pb.metadata.telefone || pb.metadata.telefone_digits)) || null;
+      if (!tel && pb.user_id && telPorUserId.has(pb.user_id)) tel = telPorUserId.get(pb.user_id);
+      if (!tel && em && telPorEmail.has(em)) tel = telPorEmail.get(em);
+      const td = phoneDigits(tel);
+      if (td) {
+        const k2 = td + '::' + pb.experiencia_id;
+        if (!paidByPhoneExp.has(k2)) paidByPhoneExp.set(k2, pb);
+      }
+    });
+
+    // Marca cada booking com _convertedTo (referência ao pago) ou null.
+    bookings.forEach(function (b) {
+      b._convertedTo = null;
+      if (b.status === 'pago') return;
+      if (!b.experiencia_id) return;
+      const em = (b.email || '').trim().toLowerCase();
+      if (em) {
+        const k = em + '::' + b.experiencia_id;
+        const hit = paidByEmailExp.get(k);
+        if (hit && hit.id !== b.id) {
+          // Só conta como conversão se o pago veio DEPOIS do pendente
+          // (caso contrário pode ser histórico antigo, e a "pendente"
+          // atual é uma nova tentativa que ainda vale follow-up).
+          const tPend = b.created_at ? new Date(b.created_at).getTime() : 0;
+          const tPaid = hit.created_at ? new Date(hit.created_at).getTime() : 0;
+          if (tPaid >= tPend) { b._convertedTo = hit; b._convertedBy = 'email'; }
+        }
+      }
+      if (!b._convertedTo) {
+        let tel = b.telefone || (b.metadata && (b.metadata.telefone || b.metadata.telefone_digits)) || null;
+        if (!tel && b.user_id && telPorUserId.has(b.user_id)) tel = telPorUserId.get(b.user_id);
+        if (!tel && em && telPorEmail.has(em)) tel = telPorEmail.get(em);
+        const td = phoneDigits(tel);
+        if (td) {
+          const k2 = td + '::' + b.experiencia_id;
+          const hit = paidByPhoneExp.get(k2);
+          if (hit && hit.id !== b.id) {
+            const tPend = b.created_at ? new Date(b.created_at).getTime() : 0;
+            const tPaid = hit.created_at ? new Date(hit.created_at).getTime() : 0;
+            if (tPaid >= tPend) { b._convertedTo = hit; b._convertedBy = 'telefone'; }
+          }
+        }
+      }
+    });
+
+    // Only non-paid bookings (pendentes/cancelados/expirados/reembolsados)
+    // + lógica de conversão. Por default convertidas ficam ocultas;
+    // filtro 'convertida' mostra apenas elas.
     var filtered = bookings.filter(function (b) {
       if (b.status === 'pago') return false;
       if (filterExp && b.experiencia_nome !== filterExp) return false;
       if (filterStatus && b.status !== filterStatus) return false;
-      if (filterFu && (b.followup_status || 'nenhum') !== filterFu) return false;
+      if (filterFu === 'convertida') {
+        // Filtro "Convertidas" → só mostra convertidas.
+        if (!b._convertedTo) return false;
+      } else {
+        // Default: esconde convertidas (a menos que o filtro peça).
+        if (b._convertedTo) return false;
+        if (filterFu && (b.followup_status || 'nenhum') !== filterFu) return false;
+      }
       return true;
     });
 
@@ -2660,20 +2733,58 @@
         : '<span style="color:#bbb;">—</span>';
       var fuStatus = b.followup_status || 'nenhum';
       var fuBadge = '';
-      if (fuStatus === 'nenhum') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8ef;color:#b07b00;font-size:11px;font-weight:600;">Sem follow-up</span>';
+      if (b._convertedTo) {
+        // Pendente que virou compra paga (cruzamento por email+exp ou
+        // telefone+exp). Badge verde "Convertida em DD/MM" pra contexto.
+        const convAt = b._convertedTo.created_at ? new Date(b._convertedTo.created_at) : null;
+        const convStr = convAt && !isNaN(convAt.getTime())
+          ? convAt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+          : '';
+        const matchLabel = b._convertedBy === 'email' ? 'e-mail' : 'telefone';
+        fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:700;" ' +
+          'title="Cliente concluiu a compra ' + (convStr ? 'em ' + convStr + ' ' : '') + '(match por ' + matchLabel + '). Não precisa de follow-up.">' +
+          '✓ Convertida' + (convStr ? ' ' + convStr : '') + '</span>';
+      }
+      else if (fuStatus === 'nenhum') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8ef;color:#b07b00;font-size:11px;font-weight:600;">Sem follow-up</span>';
       else if (fuStatus === 'primeiro_enviado') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e8f0fe;color:#1a73e8;font-size:11px;font-weight:600;">1º enviado</span>';
       else if (fuStatus === 'segundo_enviado') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fce8e6;color:#c0392b;font-size:11px;font-weight:600;">2º enviado</span>';
       else if (fuStatus === 'recuperado') fuBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Recuperado</span>';
       else fuBadge = '<span style="font-size:11px;color:#888;">' + escapeHtml(fuStatus) + '</span>';
 
       var waBtn = '';
-      if (b.status === 'pending' && telefone && fuStatus !== 'segundo_enviado') {
+      // Convertida não precisa de follow-up — esconde o botão.
+      if (b._convertedTo) {
+        waBtn = '<span style="font-size:.72rem;color:#1a8a4a;" title="Cliente já comprou — sem follow-up">—</span>';
+      } else if (b.status === 'pending' && telefone && fuStatus !== 'segundo_enviado') {
         var firstName = (nomeResolved || '').split(' ')[0] || 'Oi';
-        var msg = 'Oi, ' + firstName + '! Vimos que você quase reservou a experiência *' + (b.experiencia_nome || '') + '* ✨\n' +
-          'As vagas estão nas últimas e essa pode ser sua última chance de garantir.\n' +
-          'Se quiser, posso te mandar o link para finalizar sua reserva 💛';
+        // Link via og-experience: Edge Function retorna HTML com og:image
+        // dinâmico (imagem cadastrada da experiência) → preview correto
+        // no WhatsApp pra QUALQUER experiência (não só landings dedicadas).
+        // Fallback pra experiencia.html se a function URL não tiver sido
+        // resolvida (ambiente sem Supabase pronto).
+        var sbUrl = (window.ElarahSupabase && window.ElarahSupabase.url) || '';
+        var expLink = '';
+        if (b.experiencia_id) {
+          expLink = sbUrl
+            ? (sbUrl.replace(/\/$/, '') + '/functions/v1/og-experience?id=' + encodeURIComponent(b.experiencia_id))
+            : ('https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(b.experiencia_id));
+        }
+        var msgLines = [
+          'Oii ' + firstName + ' 🧡',
+          '',
+          'Vi que você quase reservou *' + (b.experiencia_nome || 'a experiência') + '* ✨',
+          'As vagas estão nas últimas e essa pode ser a sua chance de garantir.',
+        ];
+        if (expLink) {
+          msgLines.push('');
+          msgLines.push('Garante aqui: ' + expLink);
+        }
+        var msg = msgLines.join('\n');
         var waDigits = String(telefone).replace(/\D+/g, '').replace(/^55/, '');
-        var waUrl = 'https://wa.me/55' + waDigits + '?text=' + encodeURIComponent(msg);
+        // api.whatsapp.com/send/?phone= é mais robusto pra emojis fora
+        // do BMP que wa.me — alguns clientes (Safari iOS, WhatsApp Web)
+        // corrompem surrogate pairs no wa.me. Aceita o mesmo formato.
+        var waUrl = 'https://api.whatsapp.com/send/?phone=55' + waDigits + '&text=' + encodeURIComponent(msg);
         var btnLabel = fuStatus === 'nenhum' ? '1º Follow-up' : '2º Follow-up';
         waBtn = '<button class="admin__fu-btn" data-booking-id="' + escapeHtml(b.id) + '" data-fu-next="' + (fuStatus === 'nenhum' ? 'primeiro_enviado' : 'segundo_enviado') + '" data-wa-url="' + escapeHtml(waUrl) + '" style="padding:4px 10px;border:1px solid #1a8a4a;background:#fff;color:#1a8a4a;border-radius:8px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">' + btnLabel + '</button>';
       }
