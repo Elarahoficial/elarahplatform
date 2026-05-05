@@ -984,6 +984,16 @@
           <label>Até <input type="date" id="ana-custom-end"></label>
           <button type="button" class="admin__add-btn" id="ana-custom-apply">Aplicar</button>
         </div>
+        <!-- Filtro de FONTE: separado do período. Default="all" inclui
+             site (bookings) + vendas manuais + gift cards. "site"
+             mostra só compras feitas no checkout do site. -->
+        <div class="ana-period-chips" id="ana-source-chips" style="margin-top:10px;">
+          <span style="font-size:.78rem;color:#888;margin-right:8px;align-self:center;">Fonte:</span>
+          <button type="button" class="ana-chip is-active" data-source="all">Tudo</button>
+          <button type="button" class="ana-chip" data-source="site">Apenas site</button>
+          <button type="button" class="ana-chip" data-source="manual">Apenas vendas manuais</button>
+          <button type="button" class="ana-chip" data-source="giftcard">Apenas gift cards</button>
+        </div>
       </div>
 
       <!-- KPIs principais (faturamento, compras, ticket, conversão) -->
@@ -2286,7 +2296,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=102"></script>
+<script src="admin.js?v=103"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
