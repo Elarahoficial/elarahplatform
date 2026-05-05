@@ -1,0 +1,34 @@
+name: Build OG landing pages
+
+# Disparado manualmente pelo botão "Run workflow" na aba Actions
+# do GitHub. Use sempre que cadastrar/editar uma experiência no
+# admin pra regenerar as landings de preview.
+on:
+  workflow_dispatch:
+
+# Permissões pra commitar de volta no repo.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate landing pages
+        run: node scripts/build-og-pages.mjs
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add og/
+          git diff --cached --quiet || git commit -m "chore: regen og landing pages [skip ci]"
+          git push
