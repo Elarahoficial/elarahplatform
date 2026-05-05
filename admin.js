@@ -3025,6 +3025,15 @@
       document.getElementById('exp-inclui').value = exp.inclui || '';
       document.getElementById('exp-imagem').value = exp.imagem || '';
       document.getElementById('exp-descricao').value = exp.descricao || '';
+      // Variações (escolha extra do cliente, ex: modelo do quadro).
+      const vLabelEl = document.getElementById('exp-variant-label');
+      const vOptsEl = document.getElementById('exp-variant-options');
+      if (vLabelEl) vLabelEl.value = exp.variantLabel || '';
+      if (vOptsEl) {
+        vOptsEl.value = Array.isArray(exp.variantOptions)
+          ? exp.variantOptions.join('\n')
+          : '';
+      }
       // Atualiza o preview de imagem (se já wireado).
       if (typeof window._refreshImagePreview === 'function') {
         try { window._refreshImagePreview(); } catch (e) {}
@@ -3272,6 +3281,26 @@
         inclui: document.getElementById('exp-inclui').value.trim(),
         imagem: document.getElementById('exp-imagem').value.trim(),
         descricao: document.getElementById('exp-descricao').value.trim(),
+        // Variações: label vazio = sem seletor. Opções split por linha,
+        // dedup, trimmed. Mantemos só se houver label E pelo menos 1
+        // opção — caso contrário grava null/null pra não criar estado
+        // inconsistente (label sem opções OU vice-versa).
+        variantLabel: (function () {
+          const lbl = (document.getElementById('exp-variant-label')?.value || '').trim();
+          const optsRaw = (document.getElementById('exp-variant-options')?.value || '').trim();
+          const opts = optsRaw
+            ? optsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+            : [];
+          return (lbl && opts.length) ? lbl : null;
+        })(),
+        variantOptions: (function () {
+          const lbl = (document.getElementById('exp-variant-label')?.value || '').trim();
+          const optsRaw = (document.getElementById('exp-variant-options')?.value || '').trim();
+          const opts = optsRaw
+            ? optsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+            : [];
+          return (lbl && opts.length) ? Array.from(new Set(opts)) : null;
+        })(),
         cor: cor1 + ',' + cor2,
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,
@@ -5758,7 +5787,10 @@
   }
 
   // ===== Estado da UI =====
-  let _anaState = { preset: '7', customStart: null, customEnd: null };
+  // Estado da aba Analytics. preset = período (24h/7d/30d/mês/all/custom).
+  // source = filtro de fonte (all/site/manual/giftcard) — default "all"
+  // que une bookings do site + vendas manuais + gift cards no funil/KPIs.
+  let _anaState = { preset: '7', customStart: null, customEnd: null, source: 'all' };
   let _anaChartEvolution = null;
 
   // ===== Wire dos controles (chips, custom, refresh) =====
@@ -5794,6 +5826,19 @@
     if (refresh && !refresh._wired) {
       refresh._wired = true;
       refresh.addEventListener('click', () => renderAnalytics(true));
+    }
+    // Wire dos chips de fonte (Tudo / Apenas site / etc).
+    const sourceBar = document.getElementById('ana-source-chips');
+    if (sourceBar && !sourceBar._wired) {
+      sourceBar._wired = true;
+      sourceBar.addEventListener('click', e => {
+        const chip = e.target.closest('.ana-chip');
+        if (!chip) return;
+        sourceBar.querySelectorAll('.ana-chip').forEach(c => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        _anaState.source = chip.dataset.source || 'all';
+        renderAnalytics();
+      });
     }
   }
 
@@ -6318,7 +6363,7 @@
         return null;
       }
     };
-    const [bookingsAll, experiences, profiles, eventsAll, manualSalesAll] = await Promise.all([
+    const [bookingsAll, experiences, profiles, eventsAll, manualSalesAll, giftCardsAll] = await Promise.all([
       safeCall('getBookings', () => getBookings()),
       safeCall('getExperiences', () => getExperiences()),
       safeCall('getProfiles', () => getProfiles()),
@@ -6330,6 +6375,19 @@
         if (!sb) return [];
         const { data, error } = await sb.from('manual_sales')
           .select('*')
+          .gte('created_at', prev.start.toISOString())
+          .limit(5000);
+        if (error) return [];
+        return data || [];
+      }),
+      // Gift cards entram no Analytics como "fake bookings" também —
+      // mesma estrategia das vendas manuais. valor_inicial_centavos é
+      // o que entrou no caixa quando o cliente comprou o card.
+      safeCall('gift_cards', async () => {
+        const sb = window.supabaseClient;
+        if (!sb) return [];
+        const { data, error } = await sb.from('gift_cards')
+          .select('id, code, valor_inicial_centavos, status, comprador_email, comprador_nome, created_at')
           .gte('created_at', prev.start.toISOString())
           .limit(5000);
         if (error) return [];
@@ -6373,22 +6431,73 @@
     }
     const manualAsBookings = (Array.isArray(manualSalesAll) ? manualSalesAll : []).map(manualSaleToBooking);
 
+    // Converte gift_cards em fake bookings. Mapping de status:
+    //   active/used/expired → pago (foi cobrado, está ativo/consumido)
+    //   pending → pending  (checkout não confirmou ainda)
+    //   cancelled → cancelado
+    function giftCardToBooking(g) {
+      const statusMap = {
+        active: 'pago', used: 'pago', expired: 'pago',
+        pending: 'pending', cancelled: 'cancelado',
+      };
+      const label = 'Gift Card' + (g.code ? ' ' + g.code : '');
+      return {
+        id: 'gc_' + g.id,
+        status: statusMap[g.status] || g.status,
+        amount_total: g.valor_inicial_centavos || 0,
+        currency: 'BRL',
+        created_at: g.created_at,
+        experiencia_id: null,
+        experiencia_nome: label,
+        fornecedor_nome: null,
+        valor_repasse_centavos: 0,
+        valor_cheio_centavos: g.valor_inicial_centavos || 0,
+        nome: g.comprador_nome || '',
+        email: g.comprador_email || '',
+        quantidade: 1,
+        _isGiftCard: true,
+      };
+    }
+    const giftCardAsBookings = (Array.isArray(giftCardsAll) ? giftCardsAll : []).map(giftCardToBooking);
+
+    // Aplica filtro de FONTE selecionado nos chips do header.
+    //   all      → bookings + manual_sales + gift_cards
+    //   site     → só bookings
+    //   manual   → só manual_sales
+    //   giftcard → só gift_cards
+    const source = (_anaState && _anaState.source) || 'all';
+    let mergedBookings;
+    if (source === 'site') {
+      mergedBookings = Array.isArray(bookingsAll) ? bookingsAll.slice() : [];
+    } else if (source === 'manual') {
+      mergedBookings = manualAsBookings.slice();
+    } else if (source === 'giftcard') {
+      mergedBookings = giftCardAsBookings.slice();
+    } else {
+      mergedBookings = [
+        ...(Array.isArray(bookingsAll) ? bookingsAll : []),
+        ...manualAsBookings,
+        ...giftCardAsBookings,
+      ];
+    }
+
     // Diagnóstico no console (admin abre F12 e confere o que veio).
     console.log('[Analytics] dados carregados:', {
+      source: source,
       bookings: Array.isArray(bookingsAll) ? bookingsAll.length : '(não-array)',
       experiences: Array.isArray(experiences) ? experiences.length : '(não-array)',
       profiles: Array.isArray(profiles) ? profiles.length : '(não-array)',
       events: Array.isArray(eventsAll) ? eventsAll.length : '(não-array)',
       manual_sales: manualAsBookings.length,
+      gift_cards: giftCardAsBookings.length,
+      merged: mergedBookings.length,
       periodo: { de: curr.start.toISOString(), ate: curr.end.toISOString(), label: curr.label }
     });
 
     try {
-      const bookingsRaw = Array.isArray(bookingsAll) ? bookingsAll : [];
-      // Merge: site bookings + manual sales (já no formato de booking).
-      // Vendas manuais entram em todos os agregados do Analytics — KPIs,
-      // evolução, top experiências, top fornecedores, clientes.
-      const bookings = withoutTestBookings([...bookingsRaw, ...manualAsBookings]);
+      // mergedBookings já respeita o filtro de fonte (Tudo / Apenas
+      // site / Apenas manual / Apenas gift card) escolhido nos chips.
+      const bookings = withoutTestBookings(mergedBookings);
       const expById = new Map();
       (Array.isArray(experiences) ? experiences : []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
       const profilesArr = Array.isArray(profiles) ? profiles : [];
