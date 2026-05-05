@@ -2764,16 +2764,18 @@
         // resolvida (ambiente sem Supabase pronto).
         var sbUrl = (window.ElarahSupabase && window.ElarahSupabase.url) || '';
         var expLink = '';
-        if (b.experiencia_id) {
-          // _t=timestamp: WhatsApp cacheia preview por URL exata. Sem
-          // o param, se um preview "vazio" foi cacheado uma vez (ex:
-          // antes do og-experience estar deployado), todos os clientes
-          // receberiam o mesmo preview vazio. Com _t único por
-          // disparo, cada follow-up tem URL nova → re-crawl forçado.
-          var cacheBuster = '&_t=' + Date.now();
+        if (b.experiencia_id || b.experiencia_nome) {
+          // _t=timestamp busta cache de preview do WhatsApp por URL.
+          // ?name= cobre bookings antigos com experiencia_id placeholder
+          // (ex: 00000000-...-000012, gerados de seeds antigos) — a
+          // função busca por id E por nome, retorna a real.
+          var qs = [];
+          if (b.experiencia_id) qs.push('id=' + encodeURIComponent(b.experiencia_id));
+          if (b.experiencia_nome) qs.push('name=' + encodeURIComponent(b.experiencia_nome));
+          qs.push('_t=' + Date.now());
           expLink = sbUrl
-            ? (sbUrl.replace(/\/$/, '') + '/functions/v1/og-experience?id=' + encodeURIComponent(b.experiencia_id) + cacheBuster)
-            : ('https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(b.experiencia_id));
+            ? (sbUrl.replace(/\/$/, '') + '/functions/v1/og-experience?' + qs.join('&'))
+            : ('https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(b.experiencia_id || ''));
         }
         var msgLines = [
           'Oii ' + firstName + ' 🧡',
