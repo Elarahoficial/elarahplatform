@@ -3025,6 +3025,15 @@
       document.getElementById('exp-inclui').value = exp.inclui || '';
       document.getElementById('exp-imagem').value = exp.imagem || '';
       document.getElementById('exp-descricao').value = exp.descricao || '';
+      // Variações (escolha extra do cliente, ex: modelo do quadro).
+      const vLabelEl = document.getElementById('exp-variant-label');
+      const vOptsEl = document.getElementById('exp-variant-options');
+      if (vLabelEl) vLabelEl.value = exp.variantLabel || '';
+      if (vOptsEl) {
+        vOptsEl.value = Array.isArray(exp.variantOptions)
+          ? exp.variantOptions.join('\n')
+          : '';
+      }
       // Atualiza o preview de imagem (se já wireado).
       if (typeof window._refreshImagePreview === 'function') {
         try { window._refreshImagePreview(); } catch (e) {}
@@ -3272,6 +3281,26 @@
         inclui: document.getElementById('exp-inclui').value.trim(),
         imagem: document.getElementById('exp-imagem').value.trim(),
         descricao: document.getElementById('exp-descricao').value.trim(),
+        // Variações: label vazio = sem seletor. Opções split por linha,
+        // dedup, trimmed. Mantemos só se houver label E pelo menos 1
+        // opção — caso contrário grava null/null pra não criar estado
+        // inconsistente (label sem opções OU vice-versa).
+        variantLabel: (function () {
+          const lbl = (document.getElementById('exp-variant-label')?.value || '').trim();
+          const optsRaw = (document.getElementById('exp-variant-options')?.value || '').trim();
+          const opts = optsRaw
+            ? optsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+            : [];
+          return (lbl && opts.length) ? lbl : null;
+        })(),
+        variantOptions: (function () {
+          const lbl = (document.getElementById('exp-variant-label')?.value || '').trim();
+          const optsRaw = (document.getElementById('exp-variant-options')?.value || '').trim();
+          const opts = optsRaw
+            ? optsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+            : [];
+          return (lbl && opts.length) ? Array.from(new Set(opts)) : null;
+        })(),
         cor: cor1 + ',' + cor2,
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,

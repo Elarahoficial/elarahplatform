@@ -1702,6 +1702,29 @@
           </p>
         </div>
 
+        <!-- ===== VARIAÇÕES (escolha do cliente) =====
+             Quando preenchido, o modal de reserva mostra um seletor
+             com essas opções e o cliente é OBRIGADO a escolher uma
+             antes de pagar. A escolha vai junto pro checkout, fica
+             em bookings.metadata.variant_selected, aparece no email
+             de confirmação e na aba Compras do admin.
+             Deixar AMBOS em branco = experiência sem variação. -->
+        <div class="admin__form-field">
+          <label>Rótulo da variação (opcional)</label>
+          <input type="text" id="exp-variant-label" placeholder="Ex: Modelo do quadro, Tipo de aliança">
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+            Vazio = sem seletor. Preenchido = obriga o cliente a escolher uma das opções abaixo.
+          </p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Opções (uma por linha)</label>
+          <textarea id="exp-variant-options" rows="4" placeholder="Lagosta&#10;Beijo&#10;Olho grego"></textarea>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+            Cada linha vira um botão no modal. Mesmo preço pra todas. Pra ter preço diferente por variação, fala com o desenvolvedor.
+          </p>
+        </div>
+
         <div class="admin__form-field">
           <label>Vagas totais</label>
           <input type="number" id="exp-vagas-total" min="0" step="1" placeholder="Em branco = sem limite">
@@ -2296,7 +2319,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=103"></script>
+<script src="admin.js?v=104"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
