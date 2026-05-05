@@ -902,6 +902,46 @@
     invalidateSlotsCache,
     // Fornecedores (experience_suppliers — múltiplos por experience)
     getSuppliersForExperience,
-    saveSuppliers
+    saveSuppliers,
+    // Formatador padrão de preço pra exibição. Garante que TODA página
+    // renderize "R$ 383", "R$ 1.380,00" etc. — independente de como o
+    // admin digitou ("383", "R$383", "R$ 383", "1.380,00", etc.).
+    formatPrecoBR: formatPrecoBR,
   };
+
+  // Normaliza qualquer formato de preço pra "R$ X" no display.
+  // Casos cobertos:
+  //   "383"          → "R$ 383"
+  //   "R$383"        → "R$ 383"
+  //   "R$ 383"       → "R$ 383"
+  //   "1380"         → "R$ 1.380"      (toLocaleString reformata milhares)
+  //   "1.380"        → "R$ 1.380"
+  //   "1380,00"      → "R$ 1.380"      (decimais zero ficam invisíveis)
+  //   "1380,50"      → "R$ 1.380,50"
+  //   "R$ 1.380,00"  → "R$ 1.380"
+  //   "A partir de R$300" → "R$ 300"   (extrai o número e adiciona prefixo)
+  //   ""             → ""              (mantém vazio)
+  //   "Sob consulta" → "Sob consulta"  (texto livre sem número, mantém)
+  function formatPrecoBR(raw) {
+    if (raw == null) return '';
+    var s = String(raw).trim();
+    if (!s) return '';
+    // Extrai o último número formatado (com possíveis pontos/vírgulas)
+    // do texto. Pega o último pra cobrir "A partir de R$300".
+    var match = s.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*$/);
+    if (!match) return s; // sem número (ex: "Sob consulta") → não toca
+    var num = match[1];
+    // Normaliza: remove pontos de milhar, troca vírgula por ponto decimal.
+    var hasDecimal = /,\d{1,2}$/.test(num);
+    var clean = num.replace(/\./g, '').replace(/\s+/g, '').replace(',', '.');
+    var n = parseFloat(clean);
+    if (!isFinite(n)) return s;
+    var formatted;
+    if (hasDecimal && (n % 1 !== 0)) {
+      formatted = n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+      formatted = n.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+    }
+    return 'R$ ' + formatted;
+  }
 })(window);
