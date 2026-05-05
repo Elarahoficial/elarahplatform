@@ -984,15 +984,15 @@
     'Essas são as experiências que marcam 💫'
   );
 
-  // Workshop de Ourivesaria — Crie sua joia em ouro (Dia dos Namorados).
-  // Apelo emocional: anel/aliança feita a quatro mãos, peça única,
-  // "história em ouro". Sem qualquer menção a perfume / brunch.
+  // Workshop de Ourivesaria — Crie sua joia (Dia dos Namorados).
+  // Apelo emocional: anel/aliança feito a quatro mãos, peça única,
+  // "história que vira joia". Sem qualquer menção a perfume / brunch.
   const FOLLOWUP_TEMPLATE_JOIA = (
     'Acabamos de abrir uma experiência nova… e ela é diferente de tudo que você já viu 🤍✨\n\n' +
     'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
-    'Imagina passar uma tarde criando, com as suas próprias mãos, uma joia em ouro que vai marcar a história de vocês — anel, aliança, peça única… daquelas que ficam pra sempre 💍\n\n' +
+    'Imagina passar uma tarde criando, com as suas próprias mãos, uma joia que vai marcar a história de vocês — anel, aliança, peça única… daquelas que ficam pra sempre 💍\n\n' +
     '* atelier de ourivesaria com mestre joalheiro\n' +
-    '* joia em ouro feita por você (a quatro mãos, se quiser)\n' +
+    '* joia feita por você (a quatro mãos, se quiser)\n' +
     '* experiência completa, do desenho à peça pronta\n\n' +
     'É o tipo de presente que não se compra — se vive (e se usa pra sempre).\n\n' +
     'E pro Dia dos Namorados, as vagas são contadíssimas 👀\n\n' +
@@ -1098,7 +1098,7 @@
     // Workshop de Ourivesaria / Joalheria — Dia dos Namorados.
     // Landing joias.html serve ANEL.jpg como og:image. Match em
     // qualquer das keywords — admin pode chamar de "Joalheria",
-    // "Anel", "Aliança em ouro", etc. e o link/texto saem certos.
+    // "Anel", "Aliança", etc. e o link/texto saem certos.
     {
       keywords: ['joia'],
       landing: '/joias.html?v=2',
