@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </p>
         </div>
         <div class="card__footer">
-          <p class="card__price"><strong>${exp.preco || ''}</strong></p>
+          <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco || '') : (exp.preco || ''))}</strong></p>
           <button type="button" class="card__reserve-btn"
             data-reserve
             data-experience-id="${exp.id || ''}"

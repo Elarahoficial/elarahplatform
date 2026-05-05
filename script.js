@@ -459,7 +459,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
           </p>
         </div>
         <div class="card__footer">
-          <p class="card__price"><strong>${exp.preco}</strong></p>
+          <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
           <button type="button" class="card__reserve-btn"
             data-reserve
             data-experience-id="${exp.id}"
@@ -2232,7 +2232,8 @@ if (groupForm) {
       const root = buildReservationModal();
       currentReservationCtx = ctx;
       root.querySelector('#erm-exp').textContent = ctx.experienceNome || 'Experiência';
-      root.querySelector('#erm-meta').textContent = [ctx.horario, ctx.precoLabel]
+      var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(ctx.precoLabel) : ctx.precoLabel;
+      root.querySelector('#erm-meta').textContent = [ctx.horario, precoFmt]
         .filter(Boolean).join(' · ');
       root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-total').textContent = brl(ctx.precoCentavos);
@@ -2313,8 +2314,10 @@ if (groupForm) {
             // Atualiza linha de meta com o novo horário.
             var metaEl = root.querySelector('#erm-meta');
             if (metaEl) {
-              metaEl.textContent = [h, currentReservationCtx.precoLabel]
-                .filter(Boolean).join(' · ');
+              var preco2 = (window.ElarahData && ElarahData.formatPrecoBR)
+                ? ElarahData.formatPrecoBR(currentReservationCtx.precoLabel)
+                : currentReservationCtx.precoLabel;
+              metaEl.textContent = [h, preco2].filter(Boolean).join(' · ');
             }
             // Reset visual e marca o escolhido.
             horarioOptsEl.querySelectorAll('.erm-horario-btn').forEach(function (other) {
@@ -3566,7 +3569,9 @@ if (groupForm) {
         priceLabelEl.textContent = 'Valor';
         priceLabelEl.style.cssText = 'font-size:.68rem;color:#999;text-transform:uppercase;letter-spacing:.5px;font-weight:600;';
         const priceValEl = document.createElement('strong');
-        priceValEl.textContent = precoLabel;
+        priceValEl.textContent = (window.ElarahData && ElarahData.formatPrecoBR)
+          ? ElarahData.formatPrecoBR(precoLabel)
+          : precoLabel;
         priceValEl.style.cssText = 'font-size:1.15rem;color:#1a1a1a;font-weight:700;';
         priceTag.appendChild(priceLabelEl);
         priceTag.appendChild(priceValEl);

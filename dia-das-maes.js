@@ -154,7 +154,10 @@
     const data = (exp.data || '').trim();
     const horario = (exp.horario || '').trim();
     const bairro = (exp.bairro || '').trim();
-    const preco = (exp.preco || '').trim();
+    const precoRaw = (exp.preco || '').trim();
+    const preco = (window.ElarahData && ElarahData.formatPrecoBR)
+      ? ElarahData.formatPrecoBR(precoRaw)
+      : precoRaw;
 
     const metaItems = [];
     if (data) {

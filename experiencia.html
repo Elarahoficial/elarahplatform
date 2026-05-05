@@ -153,9 +153,9 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=20"></script>
+<script src="experiences-data.js?v=21"></script>
 <script src="analytics.js?v=2"></script>
-<script src="script.js?v=43"></script>
+<script src="script.js?v=44"></script>
 <script>
 (function () {
   'use strict';
@@ -326,7 +326,7 @@
         (exp.bairro ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + esc(exp.bairro) + '</span>' : '') +
         (exp.endereco ? '<span class="exp-detail__meta-item">' + esc(exp.endereco) + '</span>' : '') +
       '</div>' +
-      '<div class="exp-detail__price">' + esc(exp.preco) + '</div>' +
+      '<div class="exp-detail__price">' + esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) + '</div>' +
       horariosHtml +
       includesHtml +
       descHtml +
