@@ -374,6 +374,7 @@
       case 'partners':    await renderPartners(); break;
       case 'purchases':   await renderBookings(); break;
       case 'fornecedores': await renderFornecedores(); break;
+      case 'prospects':   await renderProspects(); break;
       case 'purchases-pending': await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
       case 'byelarah':    await renderByElarah(); break;
@@ -6752,6 +6753,732 @@
     });
     const conversion = intentSessions.size ? orders / intentSessions.size : null;
     return { revenue, orders, avgTicket, conversion };
+  }
+
+  // =========================================================
+  // ===== PROSPECCAO (CRM de parceiros) =====
+  // ---------------------------------------------------------
+  // Aba dedicada à prospecção comercial. Tabelas:
+  //   prospects               — empresas/locais
+  //   prospect_interactions   — timeline (mensagem, resposta, etc)
+  //   prospect_templates      — mensagens-base com {{variáveis}}
+  //
+  // Schema/RPCs definidos em sql/elarah_crm_prospects.sql.
+  // Mantive o estado mínimo no escopo do módulo (filtros, prospect
+  // ativo no modal de timeline). Nada de cache pesado: queries
+  // são pequenas, refetch é barato e mantém UI sempre fresca.
+  // =========================================================
+  const PROSPECT_STATUS_LABELS = {
+    nao_contatado:    { label: 'Não contatado',    bg: '#f4f4f4', fg: '#666' },
+    mensagem_enviada: { label: 'Msg. enviada',     bg: '#e6f0fa', fg: '#3068a8' },
+    respondeu:        { label: 'Respondeu',        bg: '#fff4d6', fg: '#a87a00' },
+    reuniao_marcada:  { label: 'Reunião marcada',  bg: '#f0e6fa', fg: '#6b3aa0' },
+    parceria_fechada: { label: 'Parceria fechada', bg: '#e6f4ea', fg: '#1a8a4a' },
+    recusou:          { label: 'Recusou',          bg: '#fdecec', fg: '#a83030' },
+  };
+  const PROSPECT_INTERACTION_LABELS = {
+    mensagem_enviada:  '📤 Mensagem enviada',
+    respondeu:         '💬 Respondeu',
+    follow_up:         '🔁 Follow-up',
+    reuniao_marcada:   '📅 Reunião marcada',
+    reuniao_realizada: '✅ Reunião realizada',
+    parceria_fechada:  '🎉 Parceria fechada',
+    recusou:           '❌ Recusou',
+    observacao:        '📝 Observação',
+  };
+
+  let _prospectsCache = null;
+  let _prospectsTemplatesCache = null;
+  let _prospectsState = {
+    search: '',
+    categoria: '',
+    status: '',
+    bairro: '',
+    activeId: null,            // prospect aberto no modal de timeline
+  };
+  let _prospectsWired = false;
+
+  function _propEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function _propStripAccents(s) {
+    // ̀–ͯ cobre os diacríticos combinantes que NFD gera.
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  // Limpa um WhatsApp pra wa.me/<digits>. Aceita "(11) 99999-9999",
+  // "+55 11 99999 9999", "11999999999". Adiciona DDI 55 se ausente
+  // (assume Brasil).
+  function _propWhatsappLink(raw) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return null;
+    const withCountry = digits.length <= 11 ? '55' + digits : digits;
+    return 'https://wa.me/' + withCountry;
+  }
+
+  function _propInstagramLink(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    const handle = v.replace(/^@/, '').replace(/\s+/g, '');
+    return 'https://instagram.com/' + handle;
+  }
+
+  // Substitui {{nome}} / {{categoria}} / {{bairro}} no template.
+  // Sem variável presente no prospect → fallback razoável (ex.
+  // categoria vazia vira "experiência manual").
+  function _propRenderTemplate(template, prospect) {
+    if (!template) return '';
+    const cat = prospect && prospect.categoria
+      ? prospect.categoria
+      : 'experiência manual';
+    const bairro = prospect && prospect.bairro ? prospect.bairro : 'São Paulo';
+    return String(template)
+      .replaceAll('{{nome}}',      prospect && prospect.nome ? prospect.nome : 'vocês')
+      .replaceAll('{{categoria}}', cat)
+      .replaceAll('{{bairro}}',    bairro);
+  }
+
+  async function _propFetchProspects() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('prospects')
+      .select('*, prospect_interactions(occurred_at, tipo)')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    if (error) {
+      console.error('[Prospects] load error:', error.message);
+      return [];
+    }
+    // Compute "última interação" cliente-side (mais simples que LATERAL
+    // join no schema; volume baixo).
+    return (data || []).map(p => {
+      const interactions = Array.isArray(p.prospect_interactions) ? p.prospect_interactions : [];
+      const last = interactions.reduce((acc, i) => {
+        const t = i && i.occurred_at ? new Date(i.occurred_at).getTime() : 0;
+        if (t > acc.t) return { t, tipo: i.tipo };
+        return acc;
+      }, { t: 0, tipo: null });
+      return Object.assign({}, p, {
+        _lastInteractionTs: last.t,
+        _lastInteractionTipo: last.tipo,
+      });
+    });
+  }
+
+  async function _propFetchTemplates() {
+    if (_prospectsTemplatesCache) return _prospectsTemplatesCache.slice();
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb.from('prospect_templates')
+      .select('*')
+      .eq('is_active', true)
+      .order('ordem', { ascending: true });
+    if (error) {
+      console.warn('[Prospects] templates load error:', error.message);
+      return [];
+    }
+    _prospectsTemplatesCache = data || [];
+    return _prospectsTemplatesCache.slice();
+  }
+
+  function _propPickTemplate(templates, categoria) {
+    if (!templates || !templates.length) return null;
+    if (categoria) {
+      const byCat = templates.find(t => t.categoria === categoria);
+      if (byCat) return byCat;
+    }
+    return templates.find(t => t.is_default) || templates[0];
+  }
+
+  function _propFiltered(list) {
+    const s = _prospectsState;
+    const search = _propStripAccents((s.search || '').toLowerCase()).trim();
+    const cat = (s.categoria || '').toLowerCase().trim();
+    const status = (s.status || '').toLowerCase().trim();
+    const bairro = _propStripAccents((s.bairro || '').toLowerCase()).trim();
+    return (list || []).filter(p => {
+      if (cat    && (p.categoria || '').toLowerCase() !== cat) return false;
+      if (status && (p.status    || '').toLowerCase() !== status) return false;
+      if (bairro) {
+        const pb = _propStripAccents((p.bairro || '').toLowerCase());
+        if (pb.indexOf(bairro) === -1) return false;
+      }
+      if (search) {
+        const hay = _propStripAccents([
+          p.nome, p.observacoes, p.categoria, p.bairro, p.email, p.instagram, p.whatsapp,
+        ].map(x => String(x || '').toLowerCase()).join(' '));
+        if (hay.indexOf(search) === -1) return false;
+      }
+      return true;
+    });
+  }
+
+  function _propRenderStats(list) {
+    const total = list.length;
+    const contatados = list.filter(p => p.status !== 'nao_contatado').length;
+    const fechadas = list.filter(p => p.status === 'parceria_fechada').length;
+    const respondeu = list.filter(p => ['respondeu','reuniao_marcada','parceria_fechada'].includes(p.status)).length;
+    const enviadas = list.filter(p => p.status !== 'nao_contatado').length;
+    const taxaResposta = enviadas > 0
+      ? Math.round((respondeu / enviadas) * 100) + '%'
+      : '—';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('stat-prospects-total',       total);
+    set('stat-prospects-contatados',  contatados);
+    set('stat-prospects-fechadas',    fechadas);
+    set('stat-prospects-resposta',    taxaResposta);
+  }
+
+  function _propRenderBairrosDatalist(list) {
+    const dl = document.getElementById('prospects-bairros-list');
+    if (!dl) return;
+    const set = new Set();
+    (list || []).forEach(p => { if (p.bairro) set.add(String(p.bairro).trim()); });
+    const sorted = Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    dl.innerHTML = sorted.map(b => '<option value="' + _propEsc(b) + '"></option>').join('');
+  }
+
+  function _propStatusBadge(status) {
+    const cfg = PROSPECT_STATUS_LABELS[status] || { label: status || '—', bg: '#eee', fg: '#666' };
+    return '<span style="display:inline-block;padding:3px 10px;border-radius:10px;background:' + cfg.bg +
+      ';color:' + cfg.fg + ';font-size:.72rem;font-weight:700;letter-spacing:.02em;">' +
+      _propEsc(cfg.label) + '</span>';
+  }
+
+  function _propContactIcons(p) {
+    const out = [];
+    if (p.whatsapp) {
+      const link = _propWhatsappLink(p.whatsapp);
+      if (link) out.push('<a href="' + _propEsc(link) + '" target="_blank" rel="noopener" title="WhatsApp" style="display:inline-block;padding:4px 6px;background:#e6f4ea;color:#1a8a4a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">WA</a>');
+    }
+    if (p.instagram) {
+      const link = _propInstagramLink(p.instagram);
+      if (link) out.push('<a href="' + _propEsc(link) + '" target="_blank" rel="noopener" title="Instagram" style="display:inline-block;padding:4px 6px;background:#fce8f1;color:#c0397a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">IG</a>');
+    }
+    if (p.email) {
+      out.push('<a href="mailto:' + _propEsc(p.email) + '" title="Email" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
+    }
+    if (p.site) {
+      out.push('<a href="' + _propEsc(p.site) + '" target="_blank" rel="noopener" title="Site" style="display:inline-block;padding:4px 6px;background:#f4f0e6;color:#866d1a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">🌐</a>');
+    }
+    return out.length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + out.join('') + '</div>' : '<span style="color:#bbb;">—</span>';
+  }
+
+  async function renderProspects() {
+    if (!document.getElementById('panel-prospects')) return;
+    _propWireOnce();
+    const list = await _propFetchProspects();
+    _prospectsCache = list;
+    _propRenderStats(list);
+    _propRenderBairrosDatalist(list);
+    _propRenderTable();
+  }
+
+  function _propRenderTable() {
+    const tbody = document.getElementById('prospects-body');
+    const countEl = document.getElementById('prospects-count');
+    if (!tbody) return;
+    const filtered = _propFiltered(_prospectsCache || []);
+    if (countEl) countEl.textContent = filtered.length + ' prospect' + (filtered.length !== 1 ? 's' : '');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhum prospect para esses filtros. Clique em "+ Novo prospect" pra começar.</td></tr>';
+      return;
+    }
+    const fmtTs = (ts) => ts ? new Date(ts).toLocaleDateString('pt-BR') : '<span style="color:#bbb;">—</span>';
+    tbody.innerHTML = filtered.map(p => {
+      const cat = p.categoria ? '<span style="font-size:.78rem;background:#f4f4f4;color:#444;padding:2px 8px;border-radius:6px;">' + _propEsc(p.categoria) + '</span>' : '<span style="color:#bbb;">—</span>';
+      const bairro = p.bairro ? _propEsc(p.bairro) : '<span style="color:#bbb;">—</span>';
+      const lastTipo = p._lastInteractionTipo ? PROSPECT_INTERACTION_LABELS[p._lastInteractionTipo] || p._lastInteractionTipo : null;
+      const lastInteraction = p._lastInteractionTs
+        ? fmtTs(p._lastInteractionTs) + (lastTipo ? '<br><span style="font-size:.7rem;color:#888;">' + _propEsc(lastTipo) + '</span>' : '')
+        : '<span style="color:#bbb;">—</span>';
+      const waLink = p.whatsapp ? _propWhatsappLink(p.whatsapp) : null;
+      return '<tr>' +
+        '<td style="font-weight:600;">' + _propEsc(p.nome) + '</td>' +
+        '<td>' + cat + '</td>' +
+        '<td style="font-size:.85rem;">' + bairro + '</td>' +
+        '<td>' + _propContactIcons(p) + '</td>' +
+        '<td>' + _propStatusBadge(p.status) + '</td>' +
+        '<td style="font-size:.82rem;">' + lastInteraction + '</td>' +
+        '<td>' +
+          (waLink ? '<a href="' + _propEsc(waLink) + '" target="_blank" rel="noopener" style="display:inline-block;margin-right:6px;padding:5px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;">WhatsApp</a>' : '') +
+          '<button type="button" data-prospect-action="timeline" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:6px;">Timeline</button>' +
+          '<button type="button" data-prospect-action="edit" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;">Editar</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ===== Wire (uma vez por carregamento) =====
+  function _propWireOnce() {
+    if (_prospectsWired) return;
+    _prospectsWired = true;
+
+    const onChange = () => _propRenderTable();
+    const search   = document.getElementById('prospects-filter-search');
+    const cat      = document.getElementById('prospects-filter-categoria');
+    const status   = document.getElementById('prospects-filter-status');
+    const bairro   = document.getElementById('prospects-filter-bairro');
+    if (search) search.addEventListener('input',  e => { _prospectsState.search   = e.target.value; onChange(); });
+    if (cat)    cat.addEventListener('change',    e => { _prospectsState.categoria = e.target.value; onChange(); });
+    if (status) status.addEventListener('change', e => { _prospectsState.status    = e.target.value; onChange(); });
+    if (bairro) bairro.addEventListener('input',  e => { _prospectsState.bairro    = e.target.value; onChange(); });
+
+    const btnNew = document.getElementById('btn-prospect-new');
+    if (btnNew) btnNew.addEventListener('click', () => _propOpenEditModal(null));
+
+    const btnTpl = document.getElementById('btn-prospect-templates');
+    if (btnTpl) btnTpl.addEventListener('click', () => _propOpenTemplatesModal());
+
+    const btnImport = document.getElementById('btn-prospect-import');
+    const csvInput  = document.getElementById('prospects-csv-input');
+    if (btnImport && csvInput) {
+      btnImport.addEventListener('click', () => csvInput.click());
+      csvInput.addEventListener('change', _propHandleCsvImport);
+    }
+
+    const btnExport = document.getElementById('btn-prospect-export');
+    if (btnExport) btnExport.addEventListener('click', _propExportCsv);
+
+    // Delegação dos botões da tabela
+    const tbody = document.getElementById('prospects-body');
+    if (tbody) {
+      tbody.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest('button[data-prospect-action]');
+        if (!btn) return;
+        const id = btn.dataset.prospectId;
+        const action = btn.dataset.prospectAction;
+        if (action === 'edit') _propOpenEditModal(id);
+        else if (action === 'timeline') _propOpenTimelineModal(id);
+      });
+    }
+
+    // Wire dos modais
+    _propWireEditModal();
+    _propWireTimelineModal();
+    _propWireTemplatesModal();
+  }
+
+  // ===== Modal: Editar/Criar prospect =====
+  function _propOpenEditModal(id) {
+    const modal = document.getElementById('prospect-edit-modal');
+    if (!modal) return;
+    const p = id && _prospectsCache ? _prospectsCache.find(x => x.id === id) : null;
+    document.getElementById('prospect-edit-title').textContent = p ? 'Editar prospect' : 'Novo prospect';
+    document.getElementById('prospect-edit-subtitle').textContent = p
+      ? 'Editando "' + (p.nome || '') + '"'
+      : 'Cadastre um possível parceiro pra começar a prospecção.';
+    document.getElementById('prospect-edit-id').value          = p ? p.id : '';
+    document.getElementById('prospect-edit-nome').value        = p ? (p.nome || '') : '';
+    document.getElementById('prospect-edit-categoria').value   = p ? (p.categoria || '') : '';
+    document.getElementById('prospect-edit-status').value      = p ? (p.status || 'nao_contatado') : 'nao_contatado';
+    document.getElementById('prospect-edit-instagram').value   = p ? (p.instagram || '') : '';
+    document.getElementById('prospect-edit-whatsapp').value    = p ? (p.whatsapp || '') : '';
+    document.getElementById('prospect-edit-email').value       = p ? (p.email || '') : '';
+    document.getElementById('prospect-edit-site').value        = p ? (p.site || '') : '';
+    document.getElementById('prospect-edit-bairro').value      = p ? (p.bairro || '') : '';
+    document.getElementById('prospect-edit-cidade').value      = p ? (p.cidade || 'São Paulo') : 'São Paulo';
+    document.getElementById('prospect-edit-observacoes').value = p ? (p.observacoes || '') : '';
+    document.getElementById('prospect-edit-msg').textContent = '';
+    document.getElementById('prospect-edit-delete').style.display = p ? '' : 'none';
+    modal.style.display = 'flex';
+  }
+
+  function _propCloseEditModal() {
+    const modal = document.getElementById('prospect-edit-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function _propWireEditModal() {
+    const cancel = document.getElementById('prospect-edit-cancel');
+    const save   = document.getElementById('prospect-edit-save');
+    const del    = document.getElementById('prospect-edit-delete');
+    if (cancel) cancel.addEventListener('click', _propCloseEditModal);
+    if (save)   save.addEventListener('click',   _propSaveEditModal);
+    if (del)    del.addEventListener('click',    _propDeleteFromModal);
+  }
+
+  async function _propSaveEditModal() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msgEl = document.getElementById('prospect-edit-msg');
+    const id = document.getElementById('prospect-edit-id').value || null;
+    const nome = document.getElementById('prospect-edit-nome').value.trim();
+    if (!nome) { msgEl.textContent = 'Nome é obrigatório.'; msgEl.style.color = '#c0392b'; return; }
+    const payload = {
+      nome,
+      categoria:    document.getElementById('prospect-edit-categoria').value || null,
+      status:       document.getElementById('prospect-edit-status').value,
+      instagram:    document.getElementById('prospect-edit-instagram').value.trim() || null,
+      whatsapp:     document.getElementById('prospect-edit-whatsapp').value.trim() || null,
+      email:        document.getElementById('prospect-edit-email').value.trim() || null,
+      site:         document.getElementById('prospect-edit-site').value.trim() || null,
+      bairro:       document.getElementById('prospect-edit-bairro').value.trim() || null,
+      cidade:       document.getElementById('prospect-edit-cidade').value.trim() || null,
+      observacoes:  document.getElementById('prospect-edit-observacoes').value.trim() || null,
+    };
+    msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
+    try {
+      let res;
+      if (id) {
+        res = await sb.from('prospects').update(payload).eq('id', id);
+      } else {
+        const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
+        if (user) payload.created_by = user.id;
+        res = await sb.from('prospects').insert(payload);
+      }
+      if (res.error) throw res.error;
+      msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      setTimeout(() => { _propCloseEditModal(); renderProspects(); }, 350);
+    } catch (e) {
+      console.error('[Prospects] save:', e);
+      msgEl.textContent = 'Erro: ' + (e.message || e); msgEl.style.color = '#c0392b';
+    }
+  }
+
+  async function _propDeleteFromModal() {
+    const id = document.getElementById('prospect-edit-id').value;
+    if (!id) return;
+    if (!confirm('Excluir este prospect? Toda a timeline associada também será removida.')) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { error } = await sb.from('prospects').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _propCloseEditModal();
+    renderProspects();
+  }
+
+  // ===== Modal: Timeline + interações =====
+  async function _propOpenTimelineModal(id) {
+    const modal = document.getElementById('prospect-timeline-modal');
+    if (!modal) return;
+    _prospectsState.activeId = id;
+    const p = _prospectsCache && _prospectsCache.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('prospect-timeline-title').textContent = p.nome || 'Prospect';
+    const partes = [];
+    if (p.categoria) partes.push(p.categoria);
+    if (p.bairro)    partes.push(p.bairro);
+    document.getElementById('prospect-timeline-subtitle').textContent = partes.join(' · ') || '—';
+
+    const waBtn = document.getElementById('prospect-timeline-wa');
+    const igBtn = document.getElementById('prospect-timeline-ig');
+    const waLink = _propWhatsappLink(p.whatsapp);
+    const igLink = _propInstagramLink(p.instagram);
+    waBtn.style.display = waLink ? '' : 'none';
+    if (waLink) waBtn.onclick = () => window.open(waLink, '_blank', 'noopener');
+    igBtn.style.display = igLink ? '' : 'none';
+    if (igLink) igBtn.onclick = () => window.open(igLink, '_blank', 'noopener');
+
+    // Templates pré-carregados (1 vez)
+    const templates = await _propFetchTemplates();
+    const select = document.getElementById('prospect-timeline-template-select');
+    if (select) {
+      const initial = _propPickTemplate(templates, p.categoria);
+      select.innerHTML = templates.map(t => {
+        const isSel = initial && t.id === initial.id;
+        const labelCat = t.categoria ? ' (' + t.categoria + ')' : ' (global)';
+        return '<option value="' + _propEsc(t.id) + '"' + (isSel ? ' selected' : '') + '>' +
+          _propEsc(t.nome) + labelCat + '</option>';
+      }).join('');
+      _propUpdateMsgPreview(p, templates, select.value);
+      select.onchange = () => _propUpdateMsgPreview(p, templates, select.value);
+    }
+    modal.style.display = 'flex';
+
+    // Carrega interações
+    await _propRefreshTimelineList(id);
+  }
+
+  function _propUpdateMsgPreview(prospect, templates, selectedId) {
+    const tpl = templates.find(t => t.id === selectedId) || _propPickTemplate(templates, prospect.categoria);
+    const pre = document.getElementById('prospect-timeline-msg-preview');
+    if (pre) pre.textContent = tpl ? _propRenderTemplate(tpl.conteudo, prospect) : '(sem template configurado)';
+  }
+
+  function _propCloseTimelineModal() {
+    const modal = document.getElementById('prospect-timeline-modal');
+    if (modal) modal.style.display = 'none';
+    _prospectsState.activeId = null;
+  }
+
+  async function _propRefreshTimelineList(prospectId) {
+    const sb = window.supabaseClient;
+    const wrap = document.getElementById('prospect-timeline-list');
+    if (!sb || !wrap) return;
+    const { data, error } = await sb.from('prospect_interactions')
+      .select('*')
+      .eq('prospect_id', prospectId)
+      .order('occurred_at', { ascending: false })
+      .limit(500);
+    if (error) {
+      wrap.innerHTML = '<div style="color:#c0392b;">Erro: ' + _propEsc(error.message) + '</div>';
+      return;
+    }
+    if (!data || !data.length) {
+      wrap.innerHTML = '<div style="color:#888;font-size:.85rem;text-align:center;padding:20px;">Nenhuma interação registrada ainda. Use o formulário acima pra começar.</div>';
+      return;
+    }
+    wrap.innerHTML = data.map(i => {
+      const dt = i.occurred_at ? new Date(i.occurred_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+      const label = PROSPECT_INTERACTION_LABELS[i.tipo] || i.tipo;
+      return '<div style="border-left:3px solid #ddd;padding:8px 12px;background:#fafafa;border-radius:6px;">' +
+        '<div style="font-size:.82rem;font-weight:600;">' + _propEsc(label) + '</div>' +
+        '<div style="font-size:.74rem;color:#888;margin-top:2px;">' + _propEsc(dt) + '</div>' +
+        (i.descricao ? '<div style="font-size:.85rem;margin-top:6px;color:#333;">' + _propEsc(i.descricao) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function _propWireTimelineModal() {
+    const close = document.getElementById('prospect-timeline-close');
+    if (close) close.addEventListener('click', _propCloseTimelineModal);
+
+    const copy = document.getElementById('prospect-timeline-copy-msg');
+    if (copy) copy.addEventListener('click', async () => {
+      const pre = document.getElementById('prospect-timeline-msg-preview');
+      if (!pre) return;
+      try {
+        await navigator.clipboard.writeText(pre.textContent || '');
+        copy.textContent = '✓ Copiado!';
+        setTimeout(() => { copy.textContent = '📋 Copiar mensagem (template)'; }, 2000);
+      } catch (e) {
+        alert('Não consegui copiar pro clipboard. ' + (e && e.message || ''));
+      }
+    });
+
+    const promote = document.getElementById('prospect-timeline-promote');
+    if (promote) promote.addEventListener('click', _propPromoteToFornecedor);
+
+    const addBtn = document.getElementById('prospect-interaction-add');
+    if (addBtn) addBtn.addEventListener('click', _propAddInteraction);
+  }
+
+  async function _propAddInteraction() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const id = _prospectsState.activeId;
+    if (!id) return;
+    const tipo = document.getElementById('prospect-interaction-tipo').value;
+    const descEl = document.getElementById('prospect-interaction-desc');
+    const desc = descEl.value.trim();
+    const { error } = await sb.rpc('log_prospect_interaction', {
+      p_prospect_id: id,
+      p_tipo: tipo,
+      p_descricao: desc || null,
+      p_occurred_at: null,
+    });
+    if (error) { alert('Erro: ' + error.message); return; }
+    descEl.value = '';
+    await _propRefreshTimelineList(id);
+    // Atualiza tabela em background (status pode ter mudado)
+    renderProspects();
+  }
+
+  async function _propPromoteToFornecedor() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const id = _prospectsState.activeId;
+    if (!id) return;
+    if (!confirm('Promover este prospect a fornecedor? Vai criar/atualizar o cadastro em Fornecedores e marcar como parceria fechada.')) return;
+    const { data, error } = await sb.rpc('promote_prospect_to_fornecedor', { p_prospect_id: id });
+    if (error) { alert('Erro: ' + error.message); return; }
+    const row = data && data[0];
+    if (row && row.ok) {
+      alert(row.message || 'Promovido!');
+      _propCloseTimelineModal();
+      renderProspects();
+    } else {
+      alert((row && row.message) || 'Falha desconhecida.');
+    }
+  }
+
+  // ===== Modal: Templates =====
+  async function _propOpenTemplatesModal() {
+    _prospectsTemplatesCache = null;             // força refresh
+    const templates = await _propFetchTemplates();
+    const wrap = document.getElementById('prospect-templates-list');
+    const modal = document.getElementById('prospect-templates-modal');
+    if (!wrap || !modal) return;
+    wrap.innerHTML = templates.map(t => _propRenderTemplateCard(t)).join('') ||
+      '<div style="color:#888;text-align:center;padding:20px;">Nenhum template ainda. Clique em "+ Novo template".</div>';
+    modal.style.display = 'flex';
+  }
+
+  function _propRenderTemplateCard(t) {
+    const cat = t.categoria
+      ? '<span style="font-size:.72rem;background:#f4f4f4;padding:2px 8px;border-radius:6px;">' + _propEsc(t.categoria) + '</span>'
+      : '<span style="font-size:.72rem;background:#e6f4ea;color:#1a8a4a;padding:2px 8px;border-radius:6px;">global</span>';
+    const def = t.is_default ? ' <span style="font-size:.7rem;color:#a87a00;font-weight:700;">★ default</span>' : '';
+    return '<div style="border:1px solid #e8e8e8;border-radius:8px;padding:12px;" data-tpl-id="' + _propEsc(t.id) + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">' +
+        '<div><strong>' + _propEsc(t.nome) + '</strong> ' + cat + def + '</div>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<button type="button" data-tpl-action="edit" style="padding:4px 10px;background:#fff;border:1px solid #999;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Editar</button>' +
+          '<button type="button" data-tpl-action="delete" style="padding:4px 10px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Excluir</button>' +
+        '</div>' +
+      '</div>' +
+      '<pre style="margin:0;font-family:inherit;font-size:.82rem;white-space:pre-wrap;color:#444;background:#fafafa;padding:8px;border-radius:4px;">' + _propEsc(t.conteudo) + '</pre>' +
+      '</div>';
+  }
+
+  function _propWireTemplatesModal() {
+    const close = document.getElementById('prospect-templates-close');
+    if (close) close.addEventListener('click', () => {
+      const modal = document.getElementById('prospect-templates-modal');
+      if (modal) modal.style.display = 'none';
+    });
+    const newBtn = document.getElementById('prospect-template-new');
+    if (newBtn) newBtn.addEventListener('click', () => _propEditTemplatePrompt(null));
+    const wrap = document.getElementById('prospect-templates-list');
+    if (wrap) wrap.addEventListener('click', (e) => {
+      const btn = e.target && e.target.closest('button[data-tpl-action]');
+      if (!btn) return;
+      const card = btn.closest('[data-tpl-id]');
+      const tplId = card && card.dataset.tplId;
+      const action = btn.dataset.tplAction;
+      if (action === 'edit')   _propEditTemplatePrompt(tplId);
+      if (action === 'delete') _propDeleteTemplate(tplId);
+    });
+  }
+
+  // Editor "barebones" via prompt — usável e simples. Pra um editor
+  // completo (markdown / preview live), abrimos um issue separado.
+  async function _propEditTemplatePrompt(tplId) {
+    const tpl = tplId ? (_prospectsTemplatesCache || []).find(t => t.id === tplId) : null;
+    const nome = prompt('Nome do template:', tpl ? tpl.nome : '');
+    if (nome == null) return;
+    const categoria = prompt('Categoria (vazio = global):', tpl ? (tpl.categoria || '') : '');
+    if (categoria == null) return;
+    const conteudo = prompt('Conteúdo (use {{nome}}, {{categoria}}, {{bairro}}):', tpl ? tpl.conteudo : '');
+    if (conteudo == null) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const payload = {
+      nome: nome.trim(),
+      categoria: categoria.trim() ? categoria.trim() : null,
+      conteudo: conteudo,
+    };
+    let res;
+    if (tplId) res = await sb.from('prospect_templates').update(payload).eq('id', tplId);
+    else       res = await sb.from('prospect_templates').insert(payload);
+    if (res.error) { alert('Erro: ' + res.error.message); return; }
+    _prospectsTemplatesCache = null;
+    _propOpenTemplatesModal();
+  }
+
+  async function _propDeleteTemplate(tplId) {
+    if (!confirm('Excluir este template?')) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { error } = await sb.from('prospect_templates').delete().eq('id', tplId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _prospectsTemplatesCache = null;
+    _propOpenTemplatesModal();
+  }
+
+  // ===== CSV Import =====
+  // Parser MUITO simples (não trata aspas duplas escapadas — admin
+  // controla o input). Espera headers no formato:
+  // nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes
+  // Linhas com nome vazio são ignoradas. Conflito por nome NÃO é
+  // tratado — duplica se existir; deixa pro admin limpar manualmente.
+  function _propParseCsv(text) {
+    const lines = String(text || '').split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (!lines.length) return [];
+    const split = (line) => {
+      // Suporta vírgula como separador e aspas duplas envolvendo campo.
+      const out = [];
+      let cur = '', inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if (ch === ',' && !inQuotes) { out.push(cur); cur = ''; continue; }
+        cur += ch;
+      }
+      out.push(cur);
+      return out.map(s => s.trim());
+    };
+    const headers = split(lines[0]).map(h => h.toLowerCase().trim());
+    const idx = (key) => headers.indexOf(key);
+    const colNome   = idx('nome');
+    if (colNome < 0) {
+      throw new Error('CSV precisa ter coluna "nome" no header.');
+    }
+    const rows = [];
+    for (let li = 1; li < lines.length; li++) {
+      const cols = split(lines[li]);
+      const get = (key) => { const i = idx(key); return i >= 0 ? (cols[i] || '').trim() : ''; };
+      const nome = (cols[colNome] || '').trim();
+      if (!nome) continue;
+      rows.push({
+        nome,
+        categoria:   get('categoria') || null,
+        instagram:   get('instagram') || null,
+        whatsapp:    get('whatsapp') || null,
+        email:       get('email') || null,
+        site:        get('site') || null,
+        bairro:      get('bairro') || null,
+        cidade:      get('cidade') || 'São Paulo',
+        observacoes: get('observacoes') || get('observação') || null,
+      });
+    }
+    return rows;
+  }
+
+  async function _propHandleCsvImport(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    e.target.value = '';                                // permite re-uso
+    const text = await file.text();
+    let rows;
+    try { rows = _propParseCsv(text); }
+    catch (err) { alert('CSV inválido: ' + err.message); return; }
+    if (!rows.length) { alert('Nenhum prospect encontrado no CSV.'); return; }
+    if (!confirm('Importar ' + rows.length + ' prospects? (Linhas duplicadas serão criadas — verifique antes de importar arquivos grandes.)')) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    // Insere em lotes pequenos pra evitar payload grande
+    let inserted = 0, errors = 0;
+    const batchSize = 100;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const { error } = await sb.from('prospects').insert(batch);
+      if (error) { console.error('[Prospects] csv import batch error:', error); errors += batch.length; }
+      else       { inserted += batch.length; }
+    }
+    alert('Importado: ' + inserted + ' / ' + rows.length + (errors ? ' (' + errors + ' erros)' : ''));
+    renderProspects();
+  }
+
+  // ===== CSV Export =====
+  function _propExportCsv() {
+    const list = _propFiltered(_prospectsCache || []);
+    if (!list.length) { alert('Nenhum prospect pra exportar com os filtros atuais.'); return; }
+    const headers = ['nome','categoria','instagram','whatsapp','email','site','bairro','cidade','status','observacoes','created_at'];
+    const escCell = (v) => {
+      const s = String(v == null ? '' : v);
+      if (/[,"\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+    const lines = [headers.join(',')];
+    list.forEach(p => {
+      lines.push(headers.map(h => escCell(p[h] != null ? p[h] : '')).join(','));
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'prospects-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // =========================================================
