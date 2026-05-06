@@ -18,6 +18,26 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="admin.css?v=10">
+  <!-- Auto-bust de cache: se a versão local divergir da esperada,
+       força reload limpo via location.replace com query string única.
+       Resolve quando admin.html é cacheado pelo CDN/navegador apontando
+       pra versão antiga do admin.js. Roda 1x por sessão. -->
+  <script>
+    (function () {
+      var EXPECTED = 116;
+      try {
+        var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
+        if (stored === EXPECTED) return;                  // já está na versão certa
+        sessionStorage.setItem('elarah_admin_v', String(EXPECTED));
+        // Se já tinha versão antiga gravada E essa página foi carregada SEM
+        // query de cache-bust, força reload com query única. Isso evita loop
+        // (a query muda → próximo load não dispara de novo).
+        if (stored > 0 && stored < EXPECTED && !location.search.includes('cb=')) {
+          location.replace(location.pathname + '?cb=' + Date.now() + location.hash);
+        }
+      } catch (e) { /* sessionStorage indisponível: ignora */ }
+    })();
+  </script>
 </head>
 <body>
 
@@ -2796,7 +2816,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=115"></script>
+<script src="admin.js?v=116"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
