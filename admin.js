@@ -9730,6 +9730,14 @@
     document.getElementById('painel-semanal-subtitle').textContent =
       'Resumo da operação — semana de ' + _opFmtRange(ws);
 
+    // Garante que a semana atual já tem tarefas geradas (template +
+    // experience-based). Idempotente — só insere o que falta.
+    try {
+      await sb.rpc('ensure_routine_week', { p_week_start: wsIso });
+    } catch (e) {
+      console.warn('[Painel] ensure_routine_week falhou:', e && e.message);
+    }
+
     // Carrega tudo em paralelo. Cada falha vira fallback null/zero.
     const [tasks, contents, prospects, summary] = await Promise.all([
       sb.from('routine_tasks')
@@ -9931,19 +9939,20 @@
     const grid = document.getElementById('rotina-grid');
     if (!grid) return;
     const tasksByDay = {};
-    for (let i = 0; i < 5; i++) tasksByDay[i] = [];
+    for (let i = 0; i < 7; i++) tasksByDay[i] = [];
     _rotinaState.tasks.forEach(t => {
-      if (t.week_day >= 0 && t.week_day <= 4) tasksByDay[t.week_day].push(t);
+      if (t.week_day >= 0 && t.week_day <= 6) tasksByDay[t.week_day].push(t);
     });
 
     const weekStart = _rotinaState.weekStart;
     const colsHtml = [];
-    for (let day = 0; day < 5; day++) {
+    for (let day = 0; day < 7; day++) {
       const date = _opAddDays(weekStart, day);
       const tasks = tasksByDay[day];
+      const isWeekend = day >= 5;
       const taskRows = tasks.map(t => _rotinaTaskRow(t)).join('');
       colsHtml.push(
-        '<div class="op-day-col">' +
+        '<div class="op-day-col' + (isWeekend ? ' op-day-col--weekend' : '') + '">' +
           '<div class="op-day-col__header">' +
             '<div>' +
               '<div class="op-day-col__label">' + OP_DAY_NAMES[day] + '</div>' +
@@ -9985,11 +9994,18 @@
   function _rotinaTaskRow(t) {
     const done = t.status === 'concluido';
     const cls = 'op-task' + (done ? ' op-task--done' : '');
-    return '<div class="' + cls + '" data-task-id="' + _opEsc(t.id) + '">' +
+    // Tarefas geradas a partir de experiência ganham um marcador
+    // visual sutil (kind='experience'). Title já vem com emoji do tipo.
+    const isExp = t.kind === 'experience';
+    const expBadge = isExp
+      ? '<span style="font-size:.62rem;background:#fff4d6;color:#a87a00;padding:1px 6px;border-radius:4px;font-weight:700;letter-spacing:.02em;">★ EXPERIÊNCIA</span>'
+      : '';
+    return '<div class="' + cls + (isExp ? ' op-task--exp' : '') + '" data-task-id="' + _opEsc(t.id) + '">' +
       '<input type="checkbox" class="op-task-check"' + (done ? ' checked' : '') + '>' +
       '<div style="flex:1;">' +
         '<div class="op-task-title">' + _opEsc(t.titulo) + '</div>' +
         '<div class="op-task-meta">' + _opRespBadge(t.responsavel) +
+          (isExp ? expBadge : '') +
           (t.status === 'em_andamento' ? '<span style="color:#a87a00;">em andamento</span>' : '') +
         '</div>' +
       '</div>' +
@@ -10033,6 +10049,7 @@
     document.getElementById('rotina-task-notas').value = t ? (t.notas || '') : '';
     document.getElementById('rotina-task-msg').textContent = '';
     document.getElementById('rotina-task-delete').style.display = t ? '' : 'none';
+    document.getElementById('rotina-task-duplicate').style.display = t ? '' : 'none';
     modal.style.display = 'flex';
     setTimeout(() => document.getElementById('rotina-task-titulo').focus(), 50);
   }
@@ -10043,9 +10060,36 @@
     const cancel = document.getElementById('rotina-task-cancel');
     const save = document.getElementById('rotina-task-save');
     const del = document.getElementById('rotina-task-delete');
+    const dup = document.getElementById('rotina-task-duplicate');
     if (cancel) cancel.addEventListener('click', _rotinaCloseTaskModal);
     if (save) save.addEventListener('click', _rotinaSaveTask);
     if (del) del.addEventListener('click', _rotinaDeleteTask);
+    if (dup) dup.addEventListener('click', _rotinaDuplicateTask);
+  }
+  // Duplica a tarefa atual: cria uma cópia com kind='manual',
+  // template_id/experience_id zerados (nova tarefa, sem vínculo)
+  // e ordem +1. Útil pra criar variações rápidas.
+  async function _rotinaDuplicateTask() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const id = document.getElementById('rotina-task-id').value;
+    if (!id) return;
+    const t = _rotinaState.tasks.find(x => x.id === id);
+    if (!t) return;
+    const payload = {
+      week_start: t.week_start,
+      week_day: t.week_day,
+      titulo: t.titulo + ' (cópia)',
+      responsavel: t.responsavel,
+      status: 'pendente',
+      notas: t.notas,
+      ordem: (t.ordem || 0) + 1,
+      kind: 'manual',          // cópia vira manual mesmo se original era de exp/template
+    };
+    const { error } = await sb.from('routine_tasks').insert(payload);
+    if (error) { alert('Erro ao duplicar: ' + error.message); return; }
+    _rotinaCloseTaskModal();
+    _rotinaLoadAndRender();
   }
   async function _rotinaSaveTask() {
     const sb = window.supabaseClient;
