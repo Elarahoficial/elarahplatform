@@ -5926,10 +5926,11 @@
           return;
         }
         // Recalcula "Parceiro há" na célula irmã sem re-renderizar tudo.
-        // Ordem das colunas: Fornecedor=0, WhatsApp=1, DataEntrada=2, ParceiroHá=3.
+        // Ordem REAL das colunas (após PR #155 adicionar Tipo):
+        // Fornecedor=0, Tipo=1, WhatsApp=2, DataEntrada=3, ParceiroHá=4.
         const row = el.closest('tr');
         if (row) {
-          const parceiroCell = row.children[3];
+          const parceiroCell = row.children[4];
           if (parceiroCell) parceiroCell.innerHTML = formatParceiroHa(value);
         }
       });
