@@ -311,8 +311,8 @@
         </div>
       </div>
 
-      <!-- Grid 5 colunas (Seg-Sex) — vira 1 coluna no mobile -->
-      <div id="rotina-grid" class="op-week-grid" style="display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:12px;">
+      <!-- Grid 7 colunas (Seg-Dom) — vira 1 coluna no mobile -->
+      <div id="rotina-grid" class="op-week-grid" style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:10px;">
         <!-- preenchido via JS -->
       </div>
     </div>
@@ -383,6 +383,7 @@
         <div id="rotina-task-msg" style="margin-top:10px;font-size:.85rem;"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
           <button type="button" id="rotina-task-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="rotina-task-duplicate" style="padding:8px 14px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Duplicar</button>
           <button type="button" id="rotina-task-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
           <button type="button" id="rotina-task-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
         </div>
@@ -461,6 +462,10 @@
       .op-day-col {
         background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;min-height:200px;
       }
+      /* Fim de semana: leve tom diferente pra não competir com Seg-Sex */
+      .op-day-col--weekend { background:#f5f3ee; }
+      /* Tarefa auto-gerada por experiência: faixa lateral colorida */
+      .op-task--exp { border-left:3px solid #e0a437; }
       .op-day-col__header {
         display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
         padding-bottom:8px;border-bottom:1px solid #e8e8e8;
@@ -2791,7 +2796,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=114"></script>
+<script src="admin.js?v=115"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
