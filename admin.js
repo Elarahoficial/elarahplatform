@@ -41,6 +41,25 @@
     return arr.filter(function (b) { return !isTestExperience(b && b.experiencia_nome); });
   }
 
+  // Soma a quantidade de vagas/participantes de uma lista de bookings.
+  // 1 booking com quantidade=3 → contribui 3. Default 1 quando faltar.
+  // Usado em todos os contadores de volume (compras pagas, conversão,
+  // top experiências, funil, etc.) pra refletir vagas vendidas.
+  function sumQuantity(arr) {
+    if (!Array.isArray(arr)) return 0;
+    let total = 0;
+    for (let i = 0; i < arr.length; i++) {
+      const b = arr[i];
+      const q = b && b.quantidade != null ? Number(b.quantidade) : 1;
+      total += Math.max(1, Number.isFinite(q) ? q : 1);
+    }
+    return total;
+  }
+  function bookingQty(b) {
+    const q = b && b.quantidade != null ? Number(b.quantidade) : 1;
+    return Math.max(1, Number.isFinite(q) ? q : 1);
+  }
+
   // ===== HELPERS =====
   function getFromStorage(key) {
     try { return JSON.parse(localStorage.getItem(key)) || []; }
@@ -1561,9 +1580,10 @@
     // Esconde bookings de experiências de teste do contador da home.
     const bookings = withoutTestBookings(bookingsRaw);
 
-    // "Compras" no overview = reservas pagas via Stripe + gift cards
-    // ativos. Antes lia de localStorage (legado) e sempre mostrava 0.
-    const bookingsPaid = (bookings || []).filter(b => b.status === 'pago').length;
+    // "Compras" no overview = vagas pagas via Stripe + gift cards
+    // ativos. 1 booking com quantidade=3 conta como 3 vagas (alinhado
+    // com a aba Compras / Analytics / Fornecedores).
+    const bookingsPaid = sumQuantity((bookings || []).filter(b => b.status === 'pago'));
     const giftCardsActive = (giftCardsResult.rows || []).filter(
       g => g.status === 'active' || g.status === 'used'
     ).length;
@@ -2273,10 +2293,9 @@
     });
 
     // Stats globais (não-filtradas) vêm da fonte única (RPC financial_summary).
-    // Receita confirmada inclui gift cards vendidos (alinhado com Contabilidade
-    // e com o glossário canônico). Reservas pagas/pendentes contam só
-    // booking + manual_sale (gift card não é reserva).
-    const paid = bookings.filter(b => b.status === 'pago');           // mantido pra conversão e gráfico
+    // qty_*_pagos do RPC já reflete sum(quantidade) — 1 booking com 3
+    // vagas conta 3. Pendentes do site também usa sum(quantidade).
+    const paid = bookings.filter(b => b.status === 'pago');           // mantido pra gráfico/repasses
     const pending = bookings.filter(b => b.status === 'pending');
     const summary = await fetchFinancialSummary({
       sources: ['booking', 'manual_sale', 'giftcard'],
@@ -2286,7 +2305,7 @@
     const qtyM = summary ? Number(summary.qty_manual_sales_pagas) || 0 : 0;
     const qtyG = summary ? Number(summary.qty_giftcards_pagos) || 0 : 0;
     const totalPaid = qtyB + qtyM;
-    const totalPending = pending.length;                               // pendentes do site
+    const totalPending = sumQuantity(pending);                         // vagas pendentes (não nº de reservas)
     const partesPaid = [];
     if (qtyB) partesPaid.push(qtyB + ' site');
     if (qtyM) partesPaid.push(qtyM + ' manual');
@@ -2320,7 +2339,8 @@
     renderRepassesPendentesCard(bookings).catch(e =>
       console.warn('[admin] renderRepassesPendentesCard error', e));
 
-    // Conversão = pagas / cliques de Reservar (vem dos analytics_events).
+    // Conversão = vagas pagas / cliques de Reservar. Antes era nº de
+    // bookings — agora reflete vagas vendidas (1 booking qty=3 = 3 vagas).
     let conversionLabel = '—';
     try {
       if (window.ElarahAnalytics && ElarahAnalytics.rawSelect) {
@@ -2331,24 +2351,25 @@
           return !isTestExperience(c && (c.target_label || c.target_id));
         });
         if (clicks && clicks.length) {
-          const rate = (paid.length / clicks.length) * 100;
-          conversionLabel = rate.toFixed(1) + '% (' + paid.length + '/' + clicks.length + ')';
+          const paidQty = sumQuantity(paid);
+          const rate = (paidQty / clicks.length) * 100;
+          conversionLabel = rate.toFixed(1) + '% (' + paidQty + '/' + clicks.length + ')';
 
-          // Conversão por experiência
+          // Conversão por experiência (vagas pagas / cliques)
           const clicksByExp = new Map();
           clicks.forEach(c => {
             const k = c.target_label || c.target_id || '—';
             clicksByExp.set(k, (clicksByExp.get(k) || 0) + 1);
           });
-          const paidByExp = new Map();
+          const paidQtyByExp = new Map();
           paid.forEach(b => {
             const k = b.experiencia_nome || '—';
-            paidByExp.set(k, (paidByExp.get(k) || 0) + 1);
+            paidQtyByExp.set(k, (paidQtyByExp.get(k) || 0) + bookingQty(b));
           });
           const rows = Array.from(clicksByExp.entries()).map(([k, totalClicks]) => {
-            const totalPaid = paidByExp.get(k) || 0;
-            const r = totalClicks > 0 ? Math.round((totalPaid / totalClicks) * 100) : 0;
-            return { key: k, label: k + ' — ' + totalPaid + '/' + totalClicks + ' (' + r + '%)', count: r };
+            const totalPaidQty = paidQtyByExp.get(k) || 0;
+            const r = totalClicks > 0 ? Math.round((totalPaidQty / totalClicks) * 100) : 0;
+            return { key: k, label: k + ' — ' + totalPaidQty + '/' + totalClicks + ' (' + r + '%)', count: r };
           }).sort((a, b) => b.count - a.count);
           renderBars('bookings-conversion-list', rows);
         }
@@ -2358,11 +2379,12 @@
     }
     document.getElementById('stat-bookings-conversion').textContent = conversionLabel;
 
-    // Reservas por experiência (pagas + pendentes contam aqui).
+    // Vagas por experiência (pagas + pendentes). Reflete vagas, não
+    // bookings — alinhado com a nova semântica.
     const byExp = new Map();
     bookings.forEach(b => {
       const k = b.experiencia_nome || '—';
-      byExp.set(k, (byExp.get(k) || 0) + 1);
+      byExp.set(k, (byExp.get(k) || 0) + bookingQty(b));
     });
     const byExpRows = Array.from(byExp.entries())
       .map(([k, c]) => ({ key: k, label: k, count: c }))
@@ -6130,13 +6152,13 @@
   }
 
   // ===== KPIs =====
+  // orders agora reflete sum(quantidade) — vagas vendidas, não nº de
+  // bookings. 1 booking qty=3 conta 3. Ticket médio = receita/vagas.
   function computeKpis(bookingsInRange, eventsInRange) {
     const paid = bookingsInRange.filter(b => b.status === 'pago');
     const revenue = paid.reduce((s, b) => s + (Number(b.amount_total) || 0), 0);
-    const orders = paid.length;
+    const orders = sumQuantity(paid);
     const avgTicket = orders ? revenue / orders : 0;
-    // Conversão: compras pagas / sessões únicas que demonstraram intenção
-    // (clicaram em card de experiência ou abriram detalhe).
     const intentSessions = new Set();
     eventsInRange.forEach(e => {
       if (e.event_name === 'experience_card_click' || e.event_name === 'exp_detail_open') {
@@ -6195,7 +6217,7 @@
       const bk = buckets.get(t);
       if (!bk) return;
       bk.revenue += (Number(b.amount_total) || 0) / 100;
-      bk.orders += 1;
+      bk.orders += bookingQty(b);                     // vagas, não bookings
     });
     const labels = [], revArr = [], ordArr = [];
     Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]).forEach(([t, bk]) => {
@@ -6297,7 +6319,9 @@
     // declarado e união de todas as sessions vistas.
     (eventsInRange || []).forEach(e => { if (e && e.session_id) sessions.add(e.session_id); });
 
-    const purchases = (bookingsInRange || []).filter(b => b.status === 'pago').length;
+    // Agora conta VAGAS vendidas (sum quantidade), não bookings.
+    // Coerente com KPIs e Compras: 1 booking qty=3 contabiliza 3.
+    const purchases = sumQuantity((bookingsInRange || []).filter(b => b.status === 'pago'));
 
     const steps = [
       { key: 'sessions',   label: 'Visitantes (sessões)',    count: sessions.size,         unit: 'sessões' },
@@ -6399,7 +6423,7 @@
       const nome = b.experiencia_nome || (exp && exp.nome) || '—';
       if (isTestExperience(nome)) return;
       const e = stats.get(key) || { nome, vendas: 0, receita: 0, views: 0 };
-      e.vendas += 1;
+      e.vendas += bookingQty(b);                       // vagas vendidas
       e.receita += Number(b.amount_total) || 0;
       stats.set(key, e);
     });
@@ -6458,7 +6482,7 @@
       if (!fn) return;
       const k = fn.toLowerCase();
       const e = stats.get(k) || { nome: fn, vendas: 0, receita: 0 };
-      e.vendas += 1;
+      e.vendas += bookingQty(b);                       // vagas vendidas
       e.receita += Number(b.amount_total) || 0;
       stats.set(k, e);
     });
@@ -8552,7 +8576,7 @@
       ['fin-card-receita-confirmada','fin-card-receita-pendente','fin-card-gastos-pagos',
        'fin-card-gastos-pendentes','fin-card-lucro','fin-card-repasses-pendentes','fin-card-mes']
         .forEach(id => set(id, 'R$ 0'));
-      set('fin-card-receita-confirmada-sub', '— vendas');
+      set('fin-card-receita-confirmada-sub', '— vagas');
       return;
     }
     set('fin-card-receita-confirmada', _finFmtBRL(s.receita_confirmada_centavos));
@@ -8561,18 +8585,17 @@
     set('fin-card-gastos-pendentes',   _finFmtBRL(s.gastos_pendentes_centavos));
     set('fin-card-lucro',              _finFmtBRL(s.lucro_estimado_centavos));
     set('fin-card-repasses-pendentes', _finFmtBRL(s.repasses_pendentes_centavos));
-    const qtyGift = Array.isArray(ledger)
-      ? ledger.filter(r => r.source === 'giftcard' && r.status === 'pago').length
-      : 0;
-    const totalVendas = (Number(s.qty_bookings_pagos) || 0) +
-                        (Number(s.qty_manual_sales_pagas) || 0) + qtyGift;
+    const qtyGift = Number(s.qty_giftcards_pagos) || 0;
+    // qty_*_pagos do RPC reflete sum(quantidade) — vagas vendidas, não bookings.
+    const totalVagas = (Number(s.qty_bookings_pagos) || 0) +
+                       (Number(s.qty_manual_sales_pagas) || 0) + qtyGift;
     const partes = [
       (s.qty_bookings_pagos || 0) + ' site',
       (s.qty_manual_sales_pagas || 0) + ' manual',
     ];
     if (qtyGift > 0) partes.push(qtyGift + ' gift card' + (qtyGift !== 1 ? 's' : ''));
     set('fin-card-receita-confirmada-sub',
-      totalVendas + ' venda' + (totalVendas !== 1 ? 's' : '') + ' · ' + partes.join(' / '));
+      totalVagas + ' vaga' + (totalVagas !== 1 ? 's' : '') + ' · ' + partes.join(' / '));
     // Cor do lucro
     const lucroEl = document.getElementById('fin-card-lucro');
     if (lucroEl) lucroEl.style.color = (Number(s.lucro_estimado_centavos) || 0) >= 0 ? '#1a8a4a' : '#c0392b';
