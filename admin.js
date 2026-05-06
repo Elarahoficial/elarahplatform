@@ -1805,10 +1805,13 @@
     if (bookingsCache) return bookingsCache.slice();
     const s = window.supabaseClient;
     if (!s) return [];
+    // limit explícito: PostgREST corta em 1000 por default. Sem .limit()
+    // o admin pararia de enxergar bookings antigas conforme o volume crescer.
     const { data, error } = await s
       .from('bookings')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50000);
     if (error) {
       console.error('[Admin] getBookings error', error);
       return [];
@@ -1817,7 +1820,191 @@
     return bookingsCache.slice();
   }
 
-  function invalidateBookings() { bookingsCache = null; }
+  function invalidateBookings() {
+    bookingsCache = null;
+    // Limpa também o cache das RPCs financeiras: qualquer mudança em
+    // bookings reflete imediatamente em Compras/Fornecedores/Analytics
+    // sem esperar o TTL natural de 60s.
+    if (typeof _financeCache !== 'undefined') _financeCache.clear();
+  }
+
+  // ============================================================
+  // FONTE ÚNICA DE VERDADE FINANCEIRA — wrappers das RPCs.
+  // Compras, Fornecedores, Contabilidade e Analytics consomem
+  // estas funções. Adicione filtros aqui, NÃO em cada aba.
+  //
+  // Garantias:
+  //   - Mesmos parâmetros → mesmo resultado em todas as abas.
+  //   - p_include_test default false (esconde experiência teste).
+  //   - p_sources controla quais fontes entram (booking, manual_sale,
+  //     giftcard). null = todas.
+  //
+  // Cache: leve (60s) por chave de filtro. Invalidado em
+  // invalidateFinancialCaches() junto com bookingsCache.
+  // ============================================================
+  const _financeCache = new Map();
+  const _FINANCE_CACHE_TTL_MS = 60 * 1000;
+
+  function _financeKey(name, args) {
+    return name + '|' + JSON.stringify(args || {});
+  }
+  function _financeCacheGet(key) {
+    const e = _financeCache.get(key);
+    if (!e) return null;
+    if (Date.now() - e.t > _FINANCE_CACHE_TTL_MS) { _financeCache.delete(key); return null; }
+    return e.v;
+  }
+  function _financeCachePut(key, v) {
+    _financeCache.set(key, { v: v, t: Date.now() });
+  }
+
+  function invalidateFinancialCaches() {
+    _financeCache.clear();
+    invalidateBookings();
+  }
+  // Exponível pra outros pontos do admin (ex: salvar venda manual,
+  // mudar status de booking, criar gasto) chamarem após mutação.
+  window.__elarahInvalidateFinancials = invalidateFinancialCaches;
+
+  // Filtros canônicos. Todos opcionais.
+  //   { from: Date|null, to: Date|null, experience: uuid|'', supplier: ''|str,
+  //     sources: ['booking','manual_sale','giftcard']|null, includeTest: false }
+  function _financeNormalizeFilters(f) {
+    f = f || {};
+    return {
+      from: f.from instanceof Date ? f.from : (f.from ? new Date(f.from) : null),
+      to:   f.to   instanceof Date ? f.to   : (f.to   ? new Date(f.to)   : null),
+      experience: f.experience || null,
+      supplier:   f.supplier   || null,
+      sources:    Array.isArray(f.sources) && f.sources.length ? f.sources.slice() : null,
+      includeTest: f.includeTest === true,
+    };
+  }
+  function _isoOrNull(d) { return d instanceof Date ? d.toISOString() : null; }
+
+  async function fetchFinancialSummary(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return null;
+    const f = _financeNormalizeFilters(filters);
+    const key = _financeKey('summary', f);
+    const cached = _financeCacheGet(key);
+    if (cached) return cached;
+    const { data, error } = await sb.rpc('financial_summary', {
+      p_date_from: _isoOrNull(f.from),
+      p_date_to:   _isoOrNull(f.to),
+      p_experience: f.experience,
+      p_supplier:   f.supplier,
+      p_sources:    f.sources,
+      p_include_test: f.includeTest,
+    });
+    if (error) {
+      console.error('[Finance] financial_summary error:', error.message);
+      return null;
+    }
+    const row = (data && data[0]) || null;
+    _financeCachePut(key, row);
+    return row;
+  }
+
+  async function fetchFinancialBySupplier(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const f = _financeNormalizeFilters(filters);
+    const key = _financeKey('by_supplier', { from: f.from, to: f.to, includeTest: f.includeTest });
+    const cached = _financeCacheGet(key);
+    if (cached) return cached;
+    const { data, error } = await sb.rpc('financial_by_supplier', {
+      p_date_from: _isoOrNull(f.from),
+      p_date_to:   _isoOrNull(f.to),
+      p_include_test: f.includeTest,
+    });
+    if (error) {
+      console.error('[Finance] financial_by_supplier error:', error.message);
+      return [];
+    }
+    const rows = data || [];
+    _financeCachePut(key, rows);
+    return rows;
+  }
+
+  async function fetchFinancialEvolution(filters, bucket) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const f = _financeNormalizeFilters(filters);
+    const b = (bucket === 'hour' ? 'hour' : 'day');
+    const key = _financeKey('evolution', { from: f.from, to: f.to, sources: f.sources, includeTest: f.includeTest, b: b });
+    const cached = _financeCacheGet(key);
+    if (cached) return cached;
+    const { data, error } = await sb.rpc('financial_evolution', {
+      p_date_from: _isoOrNull(f.from),
+      p_date_to:   _isoOrNull(f.to),
+      p_sources:    f.sources,
+      p_include_test: f.includeTest,
+      p_bucket:     b,
+    });
+    if (error) {
+      console.error('[Finance] financial_evolution error:', error.message);
+      return [];
+    }
+    const rows = data || [];
+    _financeCachePut(key, rows);
+    return rows;
+  }
+
+  // ============================================================
+  // SELF-CHECK CONSOLE HELPER
+  // Roda no F12 do admin: window.elarahFinanceCheck()
+  //
+  // Compara, lado a lado, a "Receita confirmada" calculada por:
+  //   - Compras  (RPC sources=booking+manual_sale+giftcard, exclui teste)
+  //   - Fornecedores (RPC sources=booking+manual_sale, exclui teste — sem gift card)
+  //   - Contabilidade (RPC sem filtro de source = todas)
+  //   - Analytics Tudo (RPC sources=booking+manual_sale+giftcard, exclui teste, sem período)
+  //
+  // Esperado: Compras == Contabilidade == Analytics (mesmas fontes).
+  // Fornecedores < eles porque exclui gift card. O delta é mostrado.
+  // Imprime tabela no console e avisa se algo estiver fora.
+  // ============================================================
+  async function elarahFinanceCheck() {
+    const fmt = (c) => 'R$ ' + ((Number(c) || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const [compras, fornecedores, contabilidade, analyticsTudo] = await Promise.all([
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale', 'giftcard'], includeTest: false }),
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale'], includeTest: false }),
+      fetchFinancialSummary({ sources: null, includeTest: false }),
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale', 'giftcard'], includeTest: false }),
+    ]);
+    const cv = compras  && compras.receita_confirmada_centavos;
+    const fv = fornecedores && fornecedores.receita_confirmada_centavos;
+    const ctv = contabilidade && contabilidade.receita_confirmada_centavos;
+    const av = analyticsTudo && analyticsTudo.receita_confirmada_centavos;
+    const fgrossv = fornecedores && fornecedores.gross_confirmado_centavos;
+    const giftcardCents = compras && fornecedores
+      ? (Number(compras.receita_confirmada_centavos) || 0) - (Number(fornecedores.receita_confirmada_centavos) || 0)
+      : 0;
+    const rows = [
+      { aba: 'Compras (booking+manual+gift)',         centavos: cv,   reais: fmt(cv) },
+      { aba: 'Fornecedores receita (booking+manual)', centavos: fv,   reais: fmt(fv) },
+      { aba: 'Fornecedores faturamento bruto',        centavos: fgrossv, reais: fmt(fgrossv) },
+      { aba: 'Contabilidade (todas as fontes)',       centavos: ctv,  reais: fmt(ctv) },
+      { aba: 'Analytics Tudo (booking+manual+gift)',  centavos: av,   reais: fmt(av) },
+      { aba: '─ Diferença Compras − Fornecedores ─',  centavos: giftcardCents, reais: fmt(giftcardCents) + '  (= gift cards inclusos)' },
+    ];
+    console.table(rows);
+
+    const ok = (cv === ctv) && (cv === av);
+    if (ok) {
+      console.log('%c[SELF-CHECK] ✓ Compras == Contabilidade == Analytics (centavo a centavo).', 'color:#1a8a4a;font-weight:600;');
+    } else {
+      console.warn('[SELF-CHECK] ✗ DIVERGÊNCIA detectada: as 3 abas equivalentes (sources=booking+manual+gift) não bateram.');
+      console.warn('  Compras:        ' + cv);
+      console.warn('  Contabilidade:  ' + ctv);
+      console.warn('  Analytics:      ' + av);
+    }
+    return rows;
+  }
+  // Expõe globalmente. Não dispara automaticamente — admin chama no console.
+  window.elarahFinanceCheck = elarahFinanceCheck;
+  // ============================================================
 
   function formatCents(amountCents, currency) {
     if (amountCents == null) return '—';
@@ -2084,46 +2271,46 @@
       return true;
     });
 
-    // Stats sobre TODAS as bookings (não filtradas) + vendas manuais.
-    const paid = bookings.filter(b => b.status === 'pago');
+    // Stats globais (não-filtradas) vêm da fonte única (RPC financial_summary).
+    // Receita confirmada inclui gift cards vendidos (alinhado com Contabilidade
+    // e com o glossário canônico). Reservas pagas/pendentes contam só
+    // booking + manual_sale (gift card não é reserva).
+    const paid = bookings.filter(b => b.status === 'pago');           // mantido pra conversão e gráfico
     const pending = bookings.filter(b => b.status === 'pending');
-    let revenueCents = paid.reduce((sum, b) => sum + (b.amount_total || 0), 0);
-
-    // Vendas manuais entram no contador de "Reservas pagas/pendentes" e
-    // na "Receita confirmada" da Compras (mesma semântica de receita,
-    // apenas captação fora do site). Falha silenciosa se a tabela
-    // manual_sales não existir.
-    let manualPaidCount = 0, manualPendingCount = 0;
-    try {
-      const sb = window.supabaseClient;
-      if (sb) {
-        const { data: msAll } = await sb.from('manual_sales')
-          .select('payment_status, total_amount_centavos')
-          .limit(2000);
-        (msAll || []).forEach(m => {
-          if (m.payment_status === 'pago') {
-            manualPaidCount += 1;
-            revenueCents += Number(m.total_amount_centavos) || 0;
-          } else if (m.payment_status === 'pendente') {
-            manualPendingCount += 1;
-          }
-        });
-      }
-    } catch (e) {
-      console.warn('[admin] manual_sales stats skipped:', e && e.message);
-    }
-    const totalPaid = paid.length + manualPaidCount;
-    const totalPending = pending.length + manualPendingCount;
-    const paidLabel = manualPaidCount > 0
-      ? totalPaid + ' (' + paid.length + ' site / ' + manualPaidCount + ' manual)'
-      : String(totalPaid);
-    const pendingLabel = manualPendingCount > 0
-      ? totalPending + ' (' + pending.length + ' site / ' + manualPendingCount + ' manual)'
-      : String(totalPending);
+    const summary = await fetchFinancialSummary({
+      sources: ['booking', 'manual_sale', 'giftcard'],
+      includeTest: false,
+    });
+    const qtyB = summary ? Number(summary.qty_bookings_pagos) || 0 : 0;
+    const qtyM = summary ? Number(summary.qty_manual_sales_pagas) || 0 : 0;
+    const qtyG = summary ? Number(summary.qty_giftcards_pagos) || 0 : 0;
+    const totalPaid = qtyB + qtyM;
+    const totalPending = pending.length;                               // pendentes do site
+    const partesPaid = [];
+    if (qtyB) partesPaid.push(qtyB + ' site');
+    if (qtyM) partesPaid.push(qtyM + ' manual');
+    const paidLabel = partesPaid.length > 1 ? totalPaid + ' (' + partesPaid.join(' / ') + ')' : String(totalPaid);
+    const pendingLabel = String(totalPending);
+    const revenueCents = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
 
     document.getElementById('stat-bookings-paid').textContent = paidLabel;
     document.getElementById('stat-bookings-pending').textContent = pendingLabel;
     document.getElementById('stat-bookings-revenue').textContent = formatCents(revenueCents, 'BRL');
+    // Sub-linha discreta exibindo gift cards inclusos na receita (se existirem).
+    const revenueEl = document.getElementById('stat-bookings-revenue');
+    if (revenueEl && qtyG > 0 && !revenueEl.dataset.subWired) {
+      const sub = document.createElement('div');
+      sub.id = 'stat-bookings-revenue-sub';
+      sub.style.cssText = 'font-size:.72rem;color:#888;margin-top:4px;';
+      revenueEl.parentNode && revenueEl.parentNode.appendChild(sub);
+      revenueEl.dataset.subWired = '1';
+    }
+    const subEl = document.getElementById('stat-bookings-revenue-sub');
+    if (subEl) {
+      subEl.textContent = qtyG > 0
+        ? '+ ' + qtyG + ' gift card' + (qtyG !== 1 ? 's' : '') + ' inclusos'
+        : '';
+    }
 
     // ===== Card "Repasses pendentes por fornecedor" =====
     // Lista compras pagas com status_fornecedor='repasse_pendente',
@@ -5551,187 +5738,89 @@
   async function renderFornecedores() {
     if (!document.getElementById('fornecedores-body')) return;
 
-    const [bookingsRaw, allExperiences, metadata] = await Promise.all([
-      getBookings(),
+    // Fonte única: RPC financial_by_supplier (agrega bookings + manual_sales
+    // pagos, com tratamento correto de multi-fornecedor) + RPC
+    // financial_summary pros totais globais (sem dupla contagem).
+    const [supplierRows, summary, allExperiences, metadata] = await Promise.all([
+      fetchFinancialBySupplier({ includeTest: false }),
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale'], includeTest: false }),
       (window.ElarahData && ElarahData.getAllExperiences)
         ? ElarahData.getAllExperiences().catch(() => [])
         : Promise.resolve([]),
       getFornecedoresMetadata(),
     ]);
-    // Esconde bookings de teste pra não inflar faturamento/repasse
-    // do fornecedor associado.
-    const bookings = withoutTestBookings(bookingsRaw);
 
     const metaByKey = new Map();
     (metadata || []).forEach(m => {
       if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m);
     });
 
-    // Agrega por fornecedor_key. Começa pelas experiences pra
-    // capturar fornecedores com 0 vendas.
-    const aggByKey = new Map();
-    function ensureAgg(nomeRaw) {
+    // Conta experiências por fornecedor (inclui fornecedores com 0 vendas).
+    const expCountByKey = new Map();
+    function bumpExp(nomeRaw, isActive) {
       const nome = String(nomeRaw || '').trim();
-      if (!nome) return null;
+      if (!nome) return;
       const key = fornecedorKey(nome);
-      if (!aggByKey.has(key)) {
-        aggByKey.set(key, {
-          key,
-          nome,
-          experiencesTotal: 0,
-          experiencesAtivas: 0,
-          reservas: 0,
-          faturamentoCents: 0,
-          repasseTotalCents: 0,
-          repassePagoCents: 0,
-          repassePendenteCents: 0,
-          comissaoCents: 0,
-          lastBookingTs: 0,
-        });
-      }
-      return aggByKey.get(key);
+      let entry = expCountByKey.get(key);
+      if (!entry) { entry = { nome, total: 0, ativas: 0 }; expCountByKey.set(key, entry); }
+      entry.total += 1;
+      if (isActive !== false) entry.ativas += 1;
     }
+    (allExperiences || []).forEach(e => { if (e) bumpExp(e.fornecedorNome, e.isActive); });
 
-    (allExperiences || []).forEach(e => {
-      if (!e) return;
-      const agg = ensureAgg(e.fornecedorNome);
-      if (!agg) return;
-      agg.experiencesTotal += 1;
-      if (e.isActive !== false) agg.experiencesAtivas += 1;
+    // Mescla a contagem de experiências com as linhas vindas da RPC.
+    const aggByKey = new Map();
+    (supplierRows || []).forEach(r => {
+      if (!r || !r.supplier_key) return;
+      const key = r.supplier_key;
+      const expEntry = expCountByKey.get(key);
+      const lastTs = r.ultima_venda ? new Date(r.ultima_venda).getTime() : 0;
+      aggByKey.set(key, {
+        key,
+        nome: r.supplier_name || (expEntry && expEntry.nome) || key,
+        experiencesTotal: expEntry ? expEntry.total : 0,
+        experiencesAtivas: expEntry ? expEntry.ativas : 0,
+        reservas: Number(r.qty_reservas) || 0,
+        faturamentoCents: Number(r.faturamento_centavos) || 0,
+        repasseTotalCents: Number(r.repasse_total_centavos) || 0,
+        repassePagoCents: Number(r.repasse_pago_centavos) || 0,
+        repassePendenteCents: Number(r.repasse_pendente_centavos) || 0,
+        comissaoCents: Number(r.comissao_centavos) || 0,
+        lastBookingTs: lastTs,
+      });
     });
-
-    // Para fallback de valores: map experience id → exp object.
-    const expById = new Map();
-    (allExperiences || []).forEach(e => {
-      if (e && e.id) expById.set(e.id, e);
-    });
-
-    (bookings || []).forEach(b => {
-      if (!b) return;
-      // Só conta valores pra bookings pagas.
-      if (b.status !== 'pago') return;
-
-      const exp = expById.get(b.experiencia_id);
-      const qty = Math.max(1, Number(b.quantidade) || 1);
-      let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
-      if (!valorCheio && exp && exp.valorCheioCentavos) {
-        valorCheio = Number(exp.valorCheioCentavos) * qty;
-      }
-      // Repasse / comissão derivados de exp.percentualRepasse (default 70).
-      // Se booking tem snapshot, usa direto; senão deriva do percentual.
-      const pctRepasse = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
-        ? Number(exp.percentualRepasse)
-        : 70;
-      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (!valorComissao && valorCheio) {
-        valorComissao = Math.round(valorCheio * ((100 - pctRepasse) / 100));
-      }
-
-      // ===== AGREGA POR REPASSE (multi-fornecedor) =====
-      // bookings.repasses[] é o snapshot do mapa financeiro no momento
-      // da reserva. Cada item tem {fornecedor_nome, valor_centavos}.
-      // Cada fornecedor entra na sua agregação. Pra bookings antigas
-      // (sem repasses[]), cai no fallback legado: 1 fornecedor com
-      // valor_repasse_centavos cheio.
-      let repassesUsadas = [];
-      if (Array.isArray(b.repasses) && b.repasses.length) {
-        repassesUsadas = b.repasses
-          .filter(function (r) { return r && r.fornecedor_nome; })
-          .map(function (r) {
-            return {
-              nome: String(r.fornecedor_nome).trim(),
-              valor: Number(r.valor_centavos) || 0,
-            };
-          });
-      }
-      if (!repassesUsadas.length) {
-        // Legado: 1 fornecedor por booking. Usa o percentual configurado
-        // na experiência (exp.percentualRepasse) — antes era 70% fixo,
-        // o que ignorava configs como 53.25% e dava repasse errado.
-        const nomeLegado = (b.fornecedor_nome && b.fornecedor_nome.trim())
-          || (exp && exp.fornecedorNome) || '';
-        if (nomeLegado) {
-          let vRep = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-          if (!vRep && valorCheio) vRep = Math.round(valorCheio * (pctRepasse / 100));
-          repassesUsadas = [{ nome: nomeLegado, valor: vRep || 0 }];
-        }
-      }
-
-      if (!repassesUsadas.length) return;
-
-      // Cada fornecedor incrementa sua própria agregação. Reservas é
-      // contado em todos os fornecedores que participam (cada um vê
-      // a reserva como sua).
-      repassesUsadas.forEach(function (r) {
-        const agg = ensureAgg(r.nome);
-        if (!agg) return;
-        agg.reservas += 1;
-        if (valorCheio) agg.faturamentoCents += valorCheio;
-        if (r.valor) {
-          agg.repasseTotalCents += r.valor;
-          if (b.status_fornecedor === 'repasse_feito') {
-            agg.repassePagoCents += r.valor;
-          } else {
-            agg.repassePendenteCents += r.valor;
-          }
-        }
-        // Comissão Elarah é uma vez por booking (não por fornecedor).
-        // Atribui pro fornecedor "principal" (primeiro do array) pra
-        // não duplicar no total global.
-        if (r === repassesUsadas[0] && valorComissao) {
-          agg.comissaoCents += valorComissao;
-        }
-        const ts = b.created_at ? new Date(b.created_at).getTime() : 0;
-        if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
+    // Adiciona fornecedores com experiências mas sem vendas (não vêm da RPC).
+    expCountByKey.forEach((entry, key) => {
+      if (aggByKey.has(key)) return;
+      aggByKey.set(key, {
+        key,
+        nome: entry.nome,
+        experiencesTotal: entry.total,
+        experiencesAtivas: entry.ativas,
+        reservas: 0,
+        faturamentoCents: 0,
+        repasseTotalCents: 0,
+        repassePagoCents: 0,
+        repassePendenteCents: 0,
+        comissaoCents: 0,
+        lastBookingTs: 0,
       });
     });
 
-    // ===== Inclui manual_sales pagas com payout no agregado =====
-    // Falha silenciosa se a tabela não existir (migration não rodada).
-    // Só conta vendas com payout_amount > 0 (i.e., repasse explícito).
-    try {
-      const sb = window.supabaseClient;
-      if (sb) {
-        const { data: msRows } = await sb.from('manual_sales')
-          .select('id, supplier_name, payout_amount_centavos, payout_status, total_amount_centavos, experience_id, created_at')
-          .eq('payment_status', 'pago');
-        (msRows || []).forEach(ms => {
-          const exp = expById.get(ms.experience_id);
-          // Resolve fornecedor: snapshot na venda > fornecedor da experiência.
-          const nome = (ms.supplier_name && ms.supplier_name.trim()) ||
-            (exp && (exp.fornecedorNome || exp.fornecedor_nome)) || '';
-          if (!nome) return;
-          const valorRep = Number(ms.payout_amount_centavos) || 0;
-          if (valorRep <= 0) return;
-          const agg = ensureAgg(nome);
-          if (!agg) return;
-          agg.reservas += 1;
-          // Faturamento: total da venda manual entra no faturamento do
-          // fornecedor (mesma semântica de bookings).
-          agg.faturamentoCents += Number(ms.total_amount_centavos) || 0;
-          agg.repasseTotalCents += valorRep;
-          if (ms.payout_status === 'pago') agg.repassePagoCents += valorRep;
-          else agg.repassePendenteCents += valorRep;
-          // Comissão Elarah da venda manual = total - repasse (positivo).
-          const comissao = Math.max(0, (Number(ms.total_amount_centavos) || 0) - valorRep);
-          agg.comissaoCents += comissao;
-          const ts = ms.created_at ? new Date(ms.created_at).getTime() : 0;
-          if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
-        });
-      }
-    } catch (e) {
-      console.warn('[admin] manual_sales aggregation in fornecedores skipped:', e && e.message);
-    }
-
     const list = Array.from(aggByKey.values());
-    // Ordena por faturamento desc (fornecedor mais rentável primeiro).
     list.sort((a, b) => b.faturamentoCents - a.faturamentoCents);
 
-    // Stats globais.
+    // Totais GLOBAIS vêm da RPC financial_summary (não da soma das linhas).
+    // Isso garante que multi-fornecedor não duplica no header.
     const totalCount = list.length;
-    const totalGross = list.reduce((s, f) => s + f.faturamentoCents, 0);
-    const totalComissao = list.reduce((s, f) => s + f.comissaoCents, 0);
-    const totalPendente = list.reduce((s, f) => s + f.repassePendenteCents, 0);
+    const totalGross = summary ? Number(summary.gross_confirmado_centavos) || 0 : 0;
+    const totalReceita = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
+    const totalRepassesAll = summary
+      ? (Number(summary.repasses_pagos_centavos) || 0) +
+        (Number(summary.repasses_pendentes_centavos) || 0)
+      : 0;
+    const totalComissao = Math.max(0, totalReceita - totalRepassesAll);
+    const totalPendente = summary ? Number(summary.repasses_pendentes_centavos) || 0 : 0;
 
     document.getElementById('stat-fornecedores-count').textContent = totalCount;
     document.getElementById('stat-fornecedores-gross').textContent = formatCents(totalGross, 'BRL');
@@ -5949,10 +6038,14 @@
 
   function getPreviousRange(curr) {
     if (curr.kind === 'all') {
-      // Não há "período anterior" pra 'tudo' — devolve um range vazio
-      // (start=end=agora) pra que comparações com período anterior
-      // simplesmente fiquem zeradas (não quebra os deltas).
-      return { start: new Date(), end: new Date(), label: '—' };
+      // Não há "período anterior" pra 'tudo'. Devolvemos um range
+      // bem antigo e zerado pra que (a) os deltas % fiquem 0/null
+      // e (b) o fetch de dados respeite o curr.start sem cortar dados.
+      // ATENÇÃO: ANTES isso devolvia { start: new Date() } e fazia o
+      // fetch de manual_sales/gift_cards usar gte('created_at', NOW),
+      // zerando esses arrays no preset Tudo (Bug A do diagnóstico).
+      const epoch = new Date('1970-01-01T00:00:00.000Z');
+      return { start: epoch, end: epoch, label: '—' };
     }
     if (curr.kind === 'month') {
       const now = new Date();
@@ -6452,9 +6545,13 @@
       safeCall('manual_sales', async () => {
         const sb = window.supabaseClient;
         if (!sb) return [];
+        // Sem filtro por created_at no SQL: manual_sales têm sale_date
+        // (data efetiva da venda) que pode divergir de created_at — o
+        // JS abaixo usa sale_date como timestamp do bucket. Filtrar
+        // por created_at aqui descartaria vendas registradas hoje pra
+        // datas passadas, ou vice-versa (Bug B do diagnóstico).
         const { data, error } = await sb.from('manual_sales')
           .select('*')
-          .gte('created_at', prev.start.toISOString())
           .limit(5000);
         if (error) return [];
         return data || [];
@@ -6467,7 +6564,6 @@
         if (!sb) return [];
         const { data, error } = await sb.from('gift_cards')
           .select('id, code, valor_inicial_centavos, status, comprador_email, comprador_nome, created_at')
-          .gte('created_at', prev.start.toISOString())
           .limit(5000);
         if (error) return [];
         return data || [];
@@ -6587,8 +6683,35 @@
       const eventsCurr = eventsArr.filter(e => inRange(e.created_at, curr));
       const eventsPrev = eventsArr.filter(e => inRange(e.created_at, prev));
 
-      const kpiCurr = computeKpis(bookingsCurr, eventsCurr);
-      const kpiPrev = computeKpis(bookingsPrev, eventsPrev);
+      // Mapa source-chip → fontes da RPC. Mantém o mesmo conceito dos
+      // chips do header: Tudo / Apenas site / Apenas manual / Apenas gift.
+      const sourceMap = {
+        all:      ['booking', 'manual_sale', 'giftcard'],
+        site:     ['booking'],
+        manual:   ['manual_sale'],
+        giftcard: ['giftcard'],
+      };
+      const rpcSources = sourceMap[source] || sourceMap.all;
+
+      // KPIs vêm da fonte única (financial_summary), garantindo que o
+      // card "Faturamento" do Analytics bate centavo a centavo com
+      // Compras (sources=booking+manual_sale+giftcard) e Contabilidade
+      // (sources=null = todas) quando os filtros equivalentes coincidem.
+      // Conversão continua sendo derivada de analytics_events em JS
+      // (a RPC não tem visibilidade de sessões/intent).
+      const isAllPreset = curr.kind === 'all';
+      const summaryCurr = await fetchFinancialSummary({
+        from: curr.start, to: curr.end,
+        sources: rpcSources, includeTest: false,
+      });
+      const summaryPrev = isAllPreset ? null : await fetchFinancialSummary({
+        from: prev.start, to: prev.end,
+        sources: rpcSources, includeTest: false,
+      });
+      const kpiCurr = _anaKpisFromSummary(summaryCurr, eventsCurr, bookingsCurr);
+      const kpiPrev = isAllPreset
+        ? { revenue: 0, orders: 0, avgTicket: 0, conversion: null }
+        : _anaKpisFromSummary(summaryPrev, eventsPrev, bookingsPrev);
 
       renderKpis(kpiCurr, kpiPrev);
       renderEvolutionChart(bookingsCurr, curr);
@@ -6605,6 +6728,30 @@
       console.error('[Analytics] erro ao renderizar:', e);
       showAnalyticsError(e && e.message ? e.message : String(e));
     }
+  }
+
+  // Constrói os KPIs do Analytics a partir do retorno da RPC
+  // financial_summary. revenue/orders/avgTicket vêm direto do servidor
+  // (consistência com Compras/Fornecedores/Contabilidade); conversion
+  // continua sendo derivada de analytics_events porque a RPC não tem
+  // visibilidade de sessões. Se a RPC falhar, cai no compute legacy
+  // pra não deixar a UI sem KPIs.
+  function _anaKpisFromSummary(summary, eventsInRange, bookingsInRangeFallback) {
+    if (!summary) return computeKpis(bookingsInRangeFallback || [], eventsInRange || []);
+    const revenue = Number(summary.receita_confirmada_centavos) || 0;
+    const orders = (Number(summary.qty_bookings_pagos) || 0)
+      + (Number(summary.qty_manual_sales_pagas) || 0)
+      + (Number(summary.qty_giftcards_pagos) || 0);
+    const avgTicket = orders ? revenue / orders : 0;
+    const intentSessions = new Set();
+    (eventsInRange || []).forEach(e => {
+      if (!e) return;
+      if (e.event_name === 'experience_card_click' || e.event_name === 'exp_detail_open') {
+        if (e.session_id) intentSessions.add(e.session_id);
+      }
+    });
+    const conversion = intentSessions.size ? orders / intentSessions.size : null;
+    return { revenue, orders, avgTicket, conversion };
   }
 
   // =========================================================
@@ -6790,6 +6937,10 @@
   }
 
   // ===== Summary RPC =====
+  // Passa p_sources/p_include_test explicitamente. Default exclui
+  // experiência teste (alinhado com Compras, Fornecedores e Analytics).
+  // Pra incluir teste em uma análise específica, basta passar
+  // filters.includeTest=true (ainda não exposto na UI — flag interna).
   async function _finFetchSummary(filters) {
     const sb = window.supabaseClient;
     if (!sb) return null;
@@ -6798,6 +6949,8 @@
       p_date_to:   _finFromIso(filters.to),
       p_experience: filters.experience || null,
       p_supplier:   filters.supplier || null,
+      p_sources:    null,                          // null = todas as fontes
+      p_include_test: filters.includeTest === true,
     });
     if (error) {
       console.error('[Contabilidade] financial_summary error:', error.message);
@@ -7661,6 +7814,8 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      // Gasto afeta lucro estimado em todas as abas via RPC.
+      invalidateBookings();
       setTimeout(() => { _finCloseExpenseModal(); renderContabilidade(); }, 400);
     } catch (e) {
       console.error('[Contabilidade] save expense:', e);
@@ -7674,6 +7829,7 @@
     const sb = window.supabaseClient;
     const { error } = await sb.from('financial_expenses').delete().eq('id', id);
     if (error) { alert('Erro: ' + error.message); return; }
+    invalidateBookings();
     renderContabilidade();
   }
 
@@ -7885,9 +8041,11 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      // Mutação em manual_sales afeta Compras/Fornecedores/Analytics
+      // via RPC. Limpa o cache pra refletir imediatamente.
+      invalidateBookings();
       setTimeout(() => {
         _finCloseManualSaleModal();
-        // Atualiza Contabilidade se aberto, e Compras (cache de bookings não é afetado).
         if (document.getElementById('panel-contabilidade')?.classList.contains('admin__panel--active')) {
           renderContabilidade();
         }
@@ -7921,6 +8079,7 @@
     const sb = window.supabaseClient;
     const { error } = await sb.from('manual_sales').delete().eq('id', id);
     if (error) { alert('Erro: ' + error.message); return; }
+    invalidateBookings();
     if (document.getElementById('panel-contabilidade')?.classList.contains('admin__panel--active')) {
       renderContabilidade();
     }
