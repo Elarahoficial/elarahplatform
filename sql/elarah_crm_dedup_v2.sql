@@ -357,19 +357,31 @@ grant execute on function public.promote_prospect_to_fornecedor(uuid)
 -- Roda 1x: pra cada prospect, se houver match em fornecedor_metadata
 -- ou experience, marca como 'ja_parceiro' com snapshot da chave.
 -- Não sobrescreve quem já está com status mais avançado.
+--
+-- Implementação em 2 passos via CTE: PostgreSQL não permite LATERAL
+-- na FROM-clause de um UPDATE referenciando a tabela atualizada.
+with matched as (
+  select
+    p.id              as prospect_id,
+    m.fornecedor_key
+  from public.prospects p,
+       lateral (
+         select fornecedor_key
+         from public.find_matching_fornecedor(
+           p.nome, p.instagram, p.whatsapp, p.email, p.site, p.id
+         )
+         where source in ('experience', 'fornecedor_metadata')
+         limit 1
+       ) m
+  where p.status not in ('parceria_fechada', 'ja_parceiro', 'recusou')
+    and m.fornecedor_key is not null
+)
 update public.prospects p
    set status                    = 'ja_parceiro',
        promoted_to_fornecedor_at = coalesce(p.promoted_to_fornecedor_at, now()),
-       promoted_supplier_key     = m.fornecedor_key
-  from lateral (
-    select * from public.find_matching_fornecedor(
-      p.nome, p.instagram, p.whatsapp, p.email, p.site, p.id
-    )
-    where source in ('experience', 'fornecedor_metadata')
-    limit 1
-  ) m
- where p.status not in ('parceria_fechada', 'ja_parceiro', 'recusou')
-   and m.fornecedor_key is not null;
+       promoted_supplier_key     = matched.fornecedor_key
+  from matched
+ where p.id = matched.prospect_id;
 
 
 notify pgrst, 'reload schema';
