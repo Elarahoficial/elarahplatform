@@ -540,13 +540,25 @@
         <select id="prospects-filter-categoria" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
           <option value="">Todas as categorias</option>
           <option value="ceramica">Cerâmica</option>
+          <option value="vidro">Vidro</option>
+          <option value="mosaico">Mosaico</option>
+          <option value="marcenaria">Marcenaria</option>
+          <option value="tufting">Tufting</option>
           <option value="pintura">Pintura</option>
+          <option value="bordado">Bordado</option>
+          <option value="encadernacao">Encadernação</option>
+          <option value="floral">Floral</option>
+          <option value="perfumaria">Perfumaria</option>
+          <option value="vela">Vela</option>
+          <option value="aromaterapia">Aromaterapia</option>
           <option value="joalheria">Joalheria</option>
           <option value="gastronomia">Gastronomia</option>
-          <option value="tufting">Tufting</option>
-          <option value="vela">Vela</option>
-          <option value="perfumaria">Perfumaria</option>
-          <option value="floral">Floral</option>
+          <option value="doceria">Doceria</option>
+          <option value="cafe">Café</option>
+          <option value="degustacao">Degustação</option>
+          <option value="fermentacao">Fermentação</option>
+          <option value="sensorial">Sensorial / Experiência rara</option>
+          <option value="autoral">Autoral / Outro</option>
           <option value="outro">Outro</option>
         </select>
         <select id="prospects-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
@@ -603,7 +615,7 @@
           <input type="hidden" id="prospect-edit-id">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome do local/empresa *<input type="text" id="prospect-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
-            <label style="font-size:.82rem;font-weight:600;">Categoria<select id="prospect-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="ceramica">Cerâmica</option><option value="pintura">Pintura</option><option value="joalheria">Joalheria</option><option value="gastronomia">Gastronomia</option><option value="tufting">Tufting</option><option value="vela">Vela</option><option value="perfumaria">Perfumaria</option><option value="floral">Floral</option><option value="outro">Outro</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Categoria<select id="prospect-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="ceramica">Cerâmica</option><option value="vidro">Vidro</option><option value="mosaico">Mosaico</option><option value="marcenaria">Marcenaria</option><option value="tufting">Tufting</option><option value="pintura">Pintura</option><option value="bordado">Bordado</option><option value="encadernacao">Encadernação</option><option value="floral">Floral</option><option value="perfumaria">Perfumaria</option><option value="vela">Vela</option><option value="aromaterapia">Aromaterapia</option><option value="joalheria">Joalheria</option><option value="gastronomia">Gastronomia</option><option value="doceria">Doceria</option><option value="cafe">Café</option><option value="degustacao">Degustação</option><option value="fermentacao">Fermentação</option><option value="sensorial">Sensorial</option><option value="autoral">Autoral</option><option value="outro">Outro</option></select></label>
             <label style="font-size:.82rem;font-weight:600;">Status<select id="prospect-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="parceria_fechada">Parceria fechada</option><option value="recusou">Recusou</option></select></label>
             <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="prospect-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
             <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="prospect-edit-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
@@ -2503,7 +2515,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=108"></script>
+<script src="admin.js?v=109"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
