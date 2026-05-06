@@ -38,6 +38,32 @@
         <span>Visão geral</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="painel-semanal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3-9 4 18 3-9h4"/>
+        </svg>
+        <span>Painel semanal</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="rotina">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <path d="M9 14l2 2 4-4"/>
+        </svg>
+        <span>Rotina</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="conteudo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          <polygon points="10 8 16 11 10 14 10 8" fill="currentColor"/>
+        </svg>
+        <span>Conteúdo</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="users">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -233,6 +259,253 @@
         </table>
       </div>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- ===== SISTEMA OPERACIONAL SEMANAL — 3 abas novas ========== -->
+    <!-- ============================================================ -->
+
+    <!-- ===== PAINEL SEMANAL ===== -->
+    <div class="admin__panel" id="panel-painel-semanal">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Painel semanal</h1>
+          <p class="admin__page-subtitle" id="painel-semanal-subtitle">Resumo da operação da semana</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" id="painel-prev-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">← Semana anterior</button>
+          <button type="button" id="painel-this-week" class="admin__btn" style="padding:6px 12px;background:#fff8ef;border:1px solid #b07b00;color:#7a4f00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Esta semana</button>
+          <button type="button" id="painel-next-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">Próxima →</button>
+          <button type="button" id="painel-refresh" class="admin__btn" style="padding:6px 12px;background:transparent;border:1px dashed #999;color:#666;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">↻</button>
+        </div>
+      </div>
+
+      <!-- 9 cards em grid responsivo -->
+      <div id="painel-semanal-grid" class="op-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px;">
+        <!-- preenchido via JS -->
+      </div>
+
+      <!-- Lista de pendências da semana -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Pendências para resolver</span>
+          <span class="admin__table-count" id="painel-pendencias-count"></span>
+        </div>
+        <div id="painel-pendencias" style="padding:12px 16px;font-size:.9rem;line-height:1.6;color:#444;">
+          <em style="color:#888;">Carregando…</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ROTINA ===== -->
+    <div class="admin__panel" id="panel-rotina">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Rotina semanal</h1>
+          <p class="admin__page-subtitle" id="rotina-subtitle">Tarefas da semana — clique para marcar como concluída</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" id="rotina-prev-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">← Anterior</button>
+          <button type="button" id="rotina-this-week" class="admin__btn" style="padding:6px 12px;background:#fff8ef;border:1px solid #b07b00;color:#7a4f00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Esta semana</button>
+          <button type="button" id="rotina-next-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">Próxima →</button>
+          <button type="button" id="rotina-templates-btn" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">⚙️ Templates</button>
+        </div>
+      </div>
+
+      <!-- Grid 5 colunas (Seg-Sex) — vira 1 coluna no mobile -->
+      <div id="rotina-grid" class="op-week-grid" style="display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:12px;">
+        <!-- preenchido via JS -->
+      </div>
+    </div>
+
+    <!-- ===== CONTEUDO (KANBAN) ===== -->
+    <div class="admin__panel" id="panel-conteudo">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Conteúdo</h1>
+          <p class="admin__page-subtitle">Kanban de produção — Ideia → Roteiro → Gravado → Editado → Agendado → Postado → Reaproveitado</p>
+        </div>
+        <button type="button" id="conteudo-new-btn" class="admin__btn" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">+ Novo conteúdo</button>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <select id="conteudo-filter-tipo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos os tipos</option>
+          <option value="Reels">Reels</option>
+          <option value="Story">Story</option>
+          <option value="TikTok">TikTok</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Post">Post</option>
+          <option value="Grupo WhatsApp">Grupo WhatsApp</option>
+        </select>
+        <select id="conteudo-filter-objetivo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos os objetivos</option>
+          <option value="venda">Venda</option>
+          <option value="bastidor">Bastidor</option>
+          <option value="branding">Branding</option>
+          <option value="prova_social">Prova social</option>
+          <option value="lancamento">Lançamento</option>
+          <option value="urgencia">Urgência</option>
+          <option value="autoridade">Autoridade</option>
+        </select>
+        <select id="conteudo-filter-responsavel" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos responsáveis</option>
+          <option value="voce">Você</option>
+          <option value="socia">Sócia</option>
+          <option value="ambas">Ambas</option>
+        </select>
+        <input type="search" id="conteudo-filter-search" placeholder="Buscar título…" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
+      </div>
+
+      <!-- Kanban com scroll horizontal no mobile -->
+      <div id="conteudo-kanban" class="op-kanban" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;">
+        <!-- preenchido via JS -->
+      </div>
+    </div>
+
+    <!-- ===== MODALS Sistema Operacional ===== -->
+
+    <!-- Modal: editar/criar tarefa de rotina -->
+    <div id="rotina-task-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 12px;font-size:1.2rem;" id="rotina-task-modal-title">Tarefa</h2>
+        <input type="hidden" id="rotina-task-id">
+        <input type="hidden" id="rotina-task-week-start">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+          <label style="font-size:.82rem;font-weight:600;">Título *<input type="text" id="rotina-task-titulo" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Dia<select id="rotina-task-week-day" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="0">Segunda</option><option value="1">Terça</option><option value="2">Quarta</option><option value="3">Quinta</option><option value="4">Sexta</option><option value="5">Sábado</option><option value="6">Domingo</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="rotina-task-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+          </div>
+          <label style="font-size:.82rem;font-weight:600;">Status<select id="rotina-task-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="pendente">Pendente</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option></select></label>
+          <label style="font-size:.82rem;font-weight:600;">Notas<textarea id="rotina-task-notas" rows="3" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+        </div>
+        <div id="rotina-task-msg" style="margin-top:10px;font-size:.85rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="rotina-task-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="rotina-task-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+          <button type="button" id="rotina-task-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: gerenciar templates da rotina -->
+    <div id="rotina-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.2rem;">Templates da rotina</h2>
+        <p style="margin:0 0 14px;font-size:.82rem;color:#666;">Tarefas recorrentes que aparecem em todas as semanas. Mudanças NÃO afetam semanas já criadas — só novas.</p>
+        <button type="button" id="rotina-template-new" style="margin-bottom:12px;padding:6px 12px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+        <div id="rotina-templates-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="rotina-templates-close" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: editar/criar conteúdo -->
+    <div id="conteudo-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 12px;font-size:1.2rem;" id="conteudo-modal-title">Conteúdo</h2>
+        <input type="hidden" id="conteudo-id">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+          <label style="font-size:.82rem;font-weight:600;">Título *<input type="text" id="conteudo-titulo" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;">Tipos (1+ selecionados)
+            <div id="conteudo-tipos-checks" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;font-weight:400;">
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Reels"> Reels</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Story"> Story</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="TikTok"> TikTok</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="LinkedIn"> LinkedIn</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Post"> Post</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Grupo WhatsApp"> Grupo WhatsApp</label>
+            </div>
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Objetivo<select id="conteudo-objetivo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="venda">Venda</option><option value="bastidor">Bastidor</option><option value="branding">Branding</option><option value="prova_social">Prova social</option><option value="lancamento">Lançamento</option><option value="urgencia">Urgência</option><option value="autoridade">Autoridade</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="conteudo-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Status<select id="conteudo-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="ideia">💡 Ideia</option><option value="roteiro">✍️ Roteiro</option><option value="gravado">🎥 Gravado</option><option value="editado">✂️ Editado</option><option value="agendado">📅 Agendado</option><option value="postado">✅ Postado</option><option value="reaproveitado">🔁 Reaproveitado</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Experiência (opcional)<select id="conteudo-experience" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option></select></label>
+          </div>
+          <label style="font-size:.82rem;font-weight:600;">Data agendada (se aplicável)<input type="datetime-local" id="conteudo-scheduled-at" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;">Notas / Copy / Roteiro<textarea id="conteudo-notas" rows="4" placeholder="Cola aqui a copy, link do Drive, ou anotações livres" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+        </div>
+        <div id="conteudo-msg" style="margin-top:10px;font-size:.85rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="conteudo-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="conteudo-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+          <button type="button" id="conteudo-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CSS responsivo do Sistema Operacional Semanal -->
+    <style>
+      /* Mobile: rotina vira 1 coluna por dia, kanban segue scroll horizontal */
+      @media (max-width: 768px) {
+        .op-week-grid { grid-template-columns: 1fr !important; }
+        .op-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      }
+      /* Cards do painel */
+      .op-card {
+        background:#fff;border:1px solid #eee;border-radius:10px;padding:14px;
+        box-shadow:0 1px 3px rgba(0,0,0,.04);cursor:pointer;transition:transform .12s, box-shadow .12s;
+      }
+      .op-card:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.08); }
+      .op-card-label { font-size:.7rem;text-transform:uppercase;color:#888;letter-spacing:.04em;margin-bottom:6px;font-weight:700; }
+      .op-card-value { font-size:1.5rem;font-weight:700;color:#222; }
+      .op-card-sub   { font-size:.72rem;color:#888;margin-top:4px; }
+      .op-card--alert .op-card-value { color:#c0392b; }
+      .op-card--good  .op-card-value { color:#1a8a4a; }
+      /* Coluna de dia (rotina) */
+      .op-day-col {
+        background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;min-height:200px;
+      }
+      .op-day-col__header {
+        display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
+        padding-bottom:8px;border-bottom:1px solid #e8e8e8;
+      }
+      .op-day-col__label { font-size:.85rem;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:.04em; }
+      .op-day-col__date  { font-size:.7rem;color:#888; }
+      .op-task {
+        display:flex;align-items:flex-start;gap:8px;padding:8px;border-radius:6px;margin-bottom:6px;
+        background:#fff;border:1px solid #eee;cursor:pointer;transition:background .12s;
+      }
+      .op-task:hover { background:#fcfcfc; }
+      .op-task--done { opacity:.55; }
+      .op-task--done .op-task-title { text-decoration:line-through; }
+      .op-task-check { margin-top:2px; }
+      .op-task-title { font-size:.82rem;color:#222;line-height:1.3;flex:1; }
+      .op-task-meta  { font-size:.65rem;color:#666;margin-top:2px;display:flex;gap:6px;flex-wrap:wrap; }
+      .op-resp-badge { display:inline-block;padding:1px 6px;border-radius:6px;font-size:.65rem;font-weight:700; }
+      .op-resp-badge--voce  { background:#e6f0fa;color:#1f4d80; }
+      .op-resp-badge--socia { background:#fce8f1;color:#a05a7a; }
+      .op-resp-badge--ambas { background:#f0e6fa;color:#6b3aa0; }
+      /* Kanban */
+      .op-kan-col {
+        background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;
+        min-width:240px;max-width:280px;flex:0 0 auto;
+      }
+      .op-kan-col__header {
+        display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
+        padding-bottom:8px;border-bottom:1px solid #e8e8e8;
+      }
+      .op-kan-col__label { font-size:.78rem;font-weight:700;color:#444; }
+      .op-kan-col__count { font-size:.72rem;color:#888;background:#fff;padding:2px 8px;border-radius:10px; }
+      .op-kan-card {
+        background:#fff;border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px;
+        cursor:pointer;transition:box-shadow .12s,transform .12s;
+      }
+      .op-kan-card:hover { box-shadow:0 3px 8px rgba(0,0,0,.06); transform:translateY(-1px); }
+      .op-kan-card__title { font-size:.85rem;font-weight:600;color:#222;margin-bottom:6px;line-height:1.3; }
+      .op-kan-card__chips { display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px; }
+      .op-chip {
+        font-size:.65rem;padding:2px 6px;border-radius:6px;font-weight:600;letter-spacing:.02em;
+      }
+      .op-chip--tipo { background:#e6f4ea;color:#1a8a4a; }
+      .op-chip--obj  { background:#fff4d6;color:#a87a00; }
+      .op-kan-card__meta { font-size:.7rem;color:#888;display:flex;justify-content:space-between;align-items:center;gap:6px; }
+    </style>
 
     <!-- ===== USERS PANEL ===== -->
     <div class="admin__panel" id="panel-users">
@@ -2518,7 +2791,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=113"></script>
+<script src="admin.js?v=114"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

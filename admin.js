@@ -388,7 +388,10 @@
 
   async function refreshPanel(name) {
     switch (name) {
-      case 'overview':    await renderOverview(); break;
+      case 'overview':         await renderOverview(); break;
+      case 'painel-semanal':   await renderPainelSemanal(); break;
+      case 'rotina':           await renderRotina(); break;
+      case 'conteudo':         await renderConteudo(); break;
       case 'users':       await renderUsers(); break;
       case 'partners':    await renderPartners(); break;
       case 'purchases':   await renderBookings(); break;
@@ -9610,6 +9613,768 @@
       });
     }
   });
+
+  // =============================================================
+  // === SISTEMA OPERACIONAL SEMANAL — Painel + Rotina + Conteúdo
+  // -------------------------------------------------------------
+  // 3 abas novas (Fase 1):
+  //   - Painel semanal: dashboard agregando rotina + conteúdo +
+  //     dados existentes (prospects, bookings)
+  //   - Rotina: cronograma semanal de tarefas com responsável
+  //   - Conteúdo: kanban de produção de conteúdo (7 status)
+  //
+  // Schema: sql/elarah_op_semanal.sql
+  // =============================================================
+
+  // ===== Constantes compartilhadas =====
+  const OP_DAY_NAMES = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const OP_DAY_NAMES_LONG = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  const OP_RESP_LABELS = { voce: 'Você', socia: 'Sócia', ambas: 'Ambas' };
+  const OP_CONTENT_STATUSES = ['ideia', 'roteiro', 'gravado', 'editado', 'agendado', 'postado', 'reaproveitado'];
+  const OP_CONTENT_STATUS_LABELS = {
+    ideia:         '💡 Ideia',
+    roteiro:       '✍️ Roteiro',
+    gravado:       '🎥 Gravado',
+    editado:       '✂️ Editado',
+    agendado:      '📅 Agendado',
+    postado:       '✅ Postado',
+    reaproveitado: '🔁 Reaproveitado',
+  };
+  const OP_OBJ_LABELS = {
+    venda:        'Venda',
+    bastidor:     'Bastidor',
+    branding:     'Branding',
+    prova_social: 'Prova social',
+    lancamento:   'Lançamento',
+    urgencia:     'Urgência',
+    autoridade:   'Autoridade',
+  };
+
+  // ===== Helpers de semana =====
+  function _opStartOfWeek(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const dow = d.getDay();              // 0=dom..6=sab
+    const diff = (dow + 6) % 7;          // dias desde a segunda
+    d.setDate(d.getDate() - diff);
+    return d;
+  }
+  function _opAddDays(date, n) {
+    const d = new Date(date); d.setDate(d.getDate() + n); return d;
+  }
+  function _opIsoDate(date) {
+    // YYYY-MM-DD em fuso local — usado pra week_start (date column)
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+  function _opFmtDateBR(date) {
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+  function _opFmtRange(weekStart) {
+    const end = _opAddDays(weekStart, 4);
+    return _opFmtDateBR(weekStart) + ' a ' + _opFmtDateBR(end);
+  }
+  function _opEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function _opRespBadge(resp) {
+    const cls = 'op-resp-badge op-resp-badge--' + (resp || 'ambas');
+    return '<span class="' + cls + '">' + _opEsc(OP_RESP_LABELS[resp] || resp) + '</span>';
+  }
+
+
+  // =============================================================
+  // === PAINEL SEMANAL ==========================================
+  // =============================================================
+  let _painelState = { weekStart: _opStartOfWeek(new Date()), wired: false };
+
+  async function renderPainelSemanal() {
+    if (!document.getElementById('panel-painel-semanal')) return;
+    _painelWireOnce();
+    await _painelRender();
+  }
+
+  function _painelWireOnce() {
+    if (_painelState.wired) return;
+    _painelState.wired = true;
+    const prev = document.getElementById('painel-prev-week');
+    const next = document.getElementById('painel-next-week');
+    const today = document.getElementById('painel-this-week');
+    const refresh = document.getElementById('painel-refresh');
+    if (prev) prev.addEventListener('click', () => {
+      _painelState.weekStart = _opAddDays(_painelState.weekStart, -7); _painelRender();
+    });
+    if (next) next.addEventListener('click', () => {
+      _painelState.weekStart = _opAddDays(_painelState.weekStart, 7); _painelRender();
+    });
+    if (today) today.addEventListener('click', () => {
+      _painelState.weekStart = _opStartOfWeek(new Date()); _painelRender();
+    });
+    if (refresh) refresh.addEventListener('click', () => _painelRender());
+  }
+
+  async function _painelRender() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const ws = _painelState.weekStart;
+    const wsIso = _opIsoDate(ws);
+    const weekEnd = _opAddDays(ws, 6);
+    const weekEndIso = _opIsoDate(weekEnd);
+    const weekStartTs = ws.toISOString();
+    const weekEndTs = new Date(_opAddDays(ws, 7).getTime() - 1).toISOString();
+
+    document.getElementById('painel-semanal-subtitle').textContent =
+      'Resumo da operação — semana de ' + _opFmtRange(ws);
+
+    // Carrega tudo em paralelo. Cada falha vira fallback null/zero.
+    const [tasks, contents, prospects, summary] = await Promise.all([
+      sb.from('routine_tasks')
+        .select('id, week_day, status, week_start')
+        .eq('week_start', wsIso)
+        .then(r => r.data || []),
+      sb.from('content_pieces')
+        .select('id, status, scheduled_at, posted_at, titulo')
+        .then(r => r.data || []),
+      sb.from('prospects')
+        .select('id, status, prospect_interactions(occurred_at)')
+        .in('status', ['mensagem_enviada', 'respondeu', 'reuniao_marcada'])
+        .then(r => r.data || []),
+      typeof fetchFinancialSummary === 'function'
+        ? fetchFinancialSummary({
+            from: ws,
+            to: new Date(_opAddDays(ws, 7).getTime() - 1),
+            sources: ['booking', 'manual_sale', 'giftcard'],
+            includeTest: false,
+          })
+        : Promise.resolve(null),
+    ]);
+
+    // ===== Cards =====
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayDow = (today.getDay() + 6) % 7;
+    const isThisWeek = wsIso === _opIsoDate(_opStartOfWeek(new Date()));
+    const tasksToday = isThisWeek ? tasks.filter(t => t.week_day === todayDow) : [];
+    const tasksTodayDone = tasksToday.filter(t => t.status === 'concluido').length;
+    const tasksWeekDone = tasks.filter(t => t.status === 'concluido').length;
+
+    // Atrasadas: tarefas semanas anteriores ainda não-concluídas
+    const { data: atrasadas } = await sb.from('routine_tasks')
+      .select('id', { count: 'exact', head: true })
+      .lt('week_start', wsIso)
+      .neq('status', 'concluido');
+    const qtyAtrasadas = atrasadas == null
+      ? (await sb.from('routine_tasks').select('id').lt('week_start', wsIso).neq('status','concluido').then(r => (r.data||[]).length))
+      : atrasadas;
+
+    // Conteúdos
+    const contentScheduled3d = contents.filter(c =>
+      c.status === 'agendado' && c.scheduled_at &&
+      new Date(c.scheduled_at) >= new Date() &&
+      new Date(c.scheduled_at) <= _opAddDays(new Date(), 3)
+    );
+    const contentPostedWeek = contents.filter(c =>
+      (c.status === 'postado' || c.status === 'reaproveitado') &&
+      c.posted_at && c.posted_at >= weekStartTs && c.posted_at <= weekEndTs
+    );
+    const contentTodo = contents.filter(c =>
+      c.status !== 'postado' && c.status !== 'reaproveitado'
+    );
+
+    // Prospects parados (5+ dias sem interação)
+    const fiveDaysAgo = _opAddDays(new Date(), -5).getTime();
+    const prospectsParados = prospects.filter(p => {
+      const last = (p.prospect_interactions || [])
+        .reduce((mx, i) => Math.max(mx, i.occurred_at ? new Date(i.occurred_at).getTime() : 0), 0);
+      return !last || last < fiveDaysAgo;
+    }).length;
+
+    // Reuniões marcadas
+    const reunMarcadas = prospects.filter(p => p.status === 'reuniao_marcada').length;
+
+    // Vagas vendidas semana
+    const vagasVendidas = summary
+      ? (Number(summary.qty_bookings_pagos) || 0) +
+        (Number(summary.qty_manual_sales_pagas) || 0) +
+        (Number(summary.qty_giftcards_pagos) || 0)
+      : 0;
+    const receitaSemana = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
+    const fmtBRL = (c) => 'R$ ' + (c / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+    const cards = [
+      { label: 'Tarefas hoje',           value: isThisWeek ? (tasksTodayDone + ' / ' + tasksToday.length) : '—',
+        sub: isThisWeek ? 'feitas' : 'só na semana atual', target: 'rotina' },
+      { label: 'Tarefas semana',         value: tasksWeekDone + ' / ' + tasks.length,
+        sub: 'concluídas', target: 'rotina' },
+      { label: 'Atrasadas',              value: String(qtyAtrasadas || 0),
+        sub: 'semanas anteriores', alert: (qtyAtrasadas || 0) > 0, target: 'rotina' },
+      { label: 'Conteúdos agendados 3d', value: String(contentScheduled3d.length),
+        sub: 'próximos 3 dias', target: 'conteudo' },
+      { label: 'Postados na semana',     value: String(contentPostedWeek.length),
+        sub: 'feed + stories', good: contentPostedWeek.length >= 5, target: 'conteudo' },
+      { label: 'Conteúdos por fazer',    value: String(contentTodo.length),
+        sub: 'todo o pipeline', target: 'conteudo' },
+      { label: 'Prospects parados 5+d',  value: String(prospectsParados),
+        sub: 'precisa follow-up', alert: prospectsParados > 0, target: 'prospects' },
+      { label: 'Reuniões marcadas',      value: String(reunMarcadas),
+        sub: 'no CRM', target: 'prospects' },
+      { label: 'Vagas vendidas semana',  value: String(vagasVendidas),
+        sub: fmtBRL(receitaSemana), good: vagasVendidas > 0, target: 'purchases' },
+    ];
+
+    const grid = document.getElementById('painel-semanal-grid');
+    if (grid) {
+      grid.innerHTML = cards.map(c => {
+        const cls = 'op-card' +
+          (c.alert ? ' op-card--alert' : '') +
+          (c.good  ? ' op-card--good'  : '');
+        return '<div class="' + cls + '" data-target="' + c.target + '">' +
+          '<div class="op-card-label">' + _opEsc(c.label) + '</div>' +
+          '<div class="op-card-value">' + _opEsc(c.value) + '</div>' +
+          '<div class="op-card-sub">' + _opEsc(c.sub) + '</div>' +
+        '</div>';
+      }).join('');
+      grid.querySelectorAll('.op-card').forEach(el => {
+        el.addEventListener('click', () => {
+          const target = el.dataset.target;
+          if (target) _opGoToPanel(target);
+        });
+      });
+    }
+
+    // ===== Pendências (lista) =====
+    const pendencias = [];
+    if ((qtyAtrasadas || 0) > 0) pendencias.push('• ' + qtyAtrasadas + ' tarefa' + (qtyAtrasadas !== 1 ? 's' : '') + ' atrasada' + (qtyAtrasadas !== 1 ? 's' : '') + ' de semanas anteriores');
+    if (prospectsParados > 0) pendencias.push('• ' + prospectsParados + ' prospect' + (prospectsParados !== 1 ? 's' : '') + ' sem follow-up há 5+ dias');
+    if (contentScheduled3d.length > 0) pendencias.push('• ' + contentScheduled3d.length + ' conteúdo' + (contentScheduled3d.length !== 1 ? 's' : '') + ' agendado' + (contentScheduled3d.length !== 1 ? 's' : '') + ' pra próximos 3 dias');
+    if (reunMarcadas > 0) pendencias.push('• ' + reunMarcadas + ' reunião' + (reunMarcadas !== 1 ? 'ões' : '') + ' marcada' + (reunMarcadas !== 1 ? 's' : '') + ' no CRM');
+    const wrap = document.getElementById('painel-pendencias');
+    const countEl = document.getElementById('painel-pendencias-count');
+    if (countEl) countEl.textContent = pendencias.length + ' item' + (pendencias.length !== 1 ? 's' : '');
+    if (wrap) {
+      wrap.innerHTML = pendencias.length
+        ? pendencias.join('<br>')
+        : '<em style="color:#888;">Tudo em ordem por aqui — bom trabalho!</em>';
+    }
+  }
+
+  function _opGoToPanel(panelId) {
+    const btn = document.querySelector('button.admin__nav-item[data-panel="' + panelId + '"]');
+    if (btn) btn.click();
+  }
+
+
+  // =============================================================
+  // === ROTINA ==================================================
+  // =============================================================
+  let _rotinaState = { weekStart: _opStartOfWeek(new Date()), wired: false, tasks: [] };
+
+  async function renderRotina() {
+    if (!document.getElementById('panel-rotina')) return;
+    _rotinaWireOnce();
+    await _rotinaLoadAndRender();
+  }
+
+  function _rotinaWireOnce() {
+    if (_rotinaState.wired) return;
+    _rotinaState.wired = true;
+    const prev = document.getElementById('rotina-prev-week');
+    const next = document.getElementById('rotina-next-week');
+    const today = document.getElementById('rotina-this-week');
+    const tplBtn = document.getElementById('rotina-templates-btn');
+    if (prev) prev.addEventListener('click', () => {
+      _rotinaState.weekStart = _opAddDays(_rotinaState.weekStart, -7); _rotinaLoadAndRender();
+    });
+    if (next) next.addEventListener('click', () => {
+      _rotinaState.weekStart = _opAddDays(_rotinaState.weekStart, 7); _rotinaLoadAndRender();
+    });
+    if (today) today.addEventListener('click', () => {
+      _rotinaState.weekStart = _opStartOfWeek(new Date()); _rotinaLoadAndRender();
+    });
+    if (tplBtn) tplBtn.addEventListener('click', () => _rotinaOpenTemplatesModal());
+    _rotinaWireTaskModal();
+    _rotinaWireTemplatesModal();
+  }
+
+  async function _rotinaLoadAndRender() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const wsIso = _opIsoDate(_rotinaState.weekStart);
+
+    // Garante que a semana tem tasks (gera do template se for a primeira visita)
+    try {
+      await sb.rpc('ensure_routine_week', { p_week_start: wsIso });
+    } catch (e) {
+      console.warn('[Rotina] ensure_routine_week falhou:', e && e.message);
+    }
+
+    const { data, error } = await sb.from('routine_tasks')
+      .select('*')
+      .eq('week_start', wsIso)
+      .order('week_day', { ascending: true })
+      .order('ordem', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error('[Rotina] load error:', error.message);
+      return;
+    }
+    _rotinaState.tasks = data || [];
+    _rotinaRenderGrid();
+    document.getElementById('rotina-subtitle').textContent =
+      'Semana de ' + _opFmtRange(_rotinaState.weekStart) + ' — clique numa tarefa pra editar, no checkbox pra concluir';
+  }
+
+  function _rotinaRenderGrid() {
+    const grid = document.getElementById('rotina-grid');
+    if (!grid) return;
+    const tasksByDay = {};
+    for (let i = 0; i < 5; i++) tasksByDay[i] = [];
+    _rotinaState.tasks.forEach(t => {
+      if (t.week_day >= 0 && t.week_day <= 4) tasksByDay[t.week_day].push(t);
+    });
+
+    const weekStart = _rotinaState.weekStart;
+    const colsHtml = [];
+    for (let day = 0; day < 5; day++) {
+      const date = _opAddDays(weekStart, day);
+      const tasks = tasksByDay[day];
+      const taskRows = tasks.map(t => _rotinaTaskRow(t)).join('');
+      colsHtml.push(
+        '<div class="op-day-col">' +
+          '<div class="op-day-col__header">' +
+            '<div>' +
+              '<div class="op-day-col__label">' + OP_DAY_NAMES[day] + '</div>' +
+              '<div class="op-day-col__date">' + _opFmtDateBR(date) + '</div>' +
+            '</div>' +
+            '<button type="button" class="op-add-task" data-day="' + day + '" ' +
+              'style="background:transparent;border:1px dashed #aaa;color:#666;border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:.8rem;font-family:inherit;padding:0;" ' +
+              'title="Adicionar tarefa">+</button>' +
+          '</div>' +
+          '<div class="op-day-col__tasks">' +
+            (taskRows || '<div style="font-size:.75rem;color:#bbb;text-align:center;padding:8px 0;">Sem tarefas</div>') +
+          '</div>' +
+        '</div>'
+      );
+    }
+    grid.innerHTML = colsHtml.join('');
+
+    // Wire dos checkboxes (toggle status) e clicks no título (editar)
+    grid.querySelectorAll('[data-task-id]').forEach(el => {
+      const taskId = el.dataset.taskId;
+      const toggle = el.querySelector('.op-task-check');
+      if (toggle) {
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          _rotinaToggleStatus(taskId);
+        });
+      }
+      el.addEventListener('click', () => _rotinaOpenTaskModal(taskId));
+    });
+    grid.querySelectorAll('.op-add-task').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const day = Number(btn.dataset.day);
+        _rotinaOpenTaskModal(null, day);
+      });
+    });
+  }
+
+  function _rotinaTaskRow(t) {
+    const done = t.status === 'concluido';
+    const cls = 'op-task' + (done ? ' op-task--done' : '');
+    return '<div class="' + cls + '" data-task-id="' + _opEsc(t.id) + '">' +
+      '<input type="checkbox" class="op-task-check"' + (done ? ' checked' : '') + '>' +
+      '<div style="flex:1;">' +
+        '<div class="op-task-title">' + _opEsc(t.titulo) + '</div>' +
+        '<div class="op-task-meta">' + _opRespBadge(t.responsavel) +
+          (t.status === 'em_andamento' ? '<span style="color:#a87a00;">em andamento</span>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  async function _rotinaToggleStatus(taskId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const t = _rotinaState.tasks.find(x => x.id === taskId);
+    if (!t) return;
+    const newStatus = t.status === 'concluido' ? 'pendente' : 'concluido';
+    const completedAt = newStatus === 'concluido' ? new Date().toISOString() : null;
+    // Otimista: atualiza local e re-renderiza
+    t.status = newStatus; t.completed_at = completedAt;
+    _rotinaRenderGrid();
+    const { error } = await sb.from('routine_tasks')
+      .update({ status: newStatus, completed_at: completedAt })
+      .eq('id', taskId);
+    if (error) {
+      console.error('[Rotina] toggle error:', error.message);
+      // Reverte se falhou
+      t.status = newStatus === 'concluido' ? 'pendente' : 'concluido';
+      _rotinaRenderGrid();
+      alert('Erro ao salvar: ' + error.message);
+    }
+  }
+
+  // ===== Modal: editar/criar tarefa =====
+  function _rotinaOpenTaskModal(taskId, defaultDay) {
+    const modal = document.getElementById('rotina-task-modal');
+    if (!modal) return;
+    const t = taskId ? _rotinaState.tasks.find(x => x.id === taskId) : null;
+    document.getElementById('rotina-task-modal-title').textContent = t ? 'Editar tarefa' : 'Nova tarefa';
+    document.getElementById('rotina-task-id').value = t ? t.id : '';
+    document.getElementById('rotina-task-week-start').value = _opIsoDate(_rotinaState.weekStart);
+    document.getElementById('rotina-task-titulo').value = t ? (t.titulo || '') : '';
+    document.getElementById('rotina-task-week-day').value = String(t ? t.week_day : (defaultDay != null ? defaultDay : 0));
+    document.getElementById('rotina-task-responsavel').value = t ? (t.responsavel || 'ambas') : 'ambas';
+    document.getElementById('rotina-task-status').value = t ? (t.status || 'pendente') : 'pendente';
+    document.getElementById('rotina-task-notas').value = t ? (t.notas || '') : '';
+    document.getElementById('rotina-task-msg').textContent = '';
+    document.getElementById('rotina-task-delete').style.display = t ? '' : 'none';
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('rotina-task-titulo').focus(), 50);
+  }
+  function _rotinaCloseTaskModal() {
+    const m = document.getElementById('rotina-task-modal'); if (m) m.style.display = 'none';
+  }
+  function _rotinaWireTaskModal() {
+    const cancel = document.getElementById('rotina-task-cancel');
+    const save = document.getElementById('rotina-task-save');
+    const del = document.getElementById('rotina-task-delete');
+    if (cancel) cancel.addEventListener('click', _rotinaCloseTaskModal);
+    if (save) save.addEventListener('click', _rotinaSaveTask);
+    if (del) del.addEventListener('click', _rotinaDeleteTask);
+  }
+  async function _rotinaSaveTask() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msg = document.getElementById('rotina-task-msg');
+    const id = document.getElementById('rotina-task-id').value || null;
+    const titulo = document.getElementById('rotina-task-titulo').value.trim();
+    if (!titulo) { msg.textContent = 'Título obrigatório.'; msg.style.color = '#c0392b'; return; }
+    const payload = {
+      week_start: document.getElementById('rotina-task-week-start').value,
+      week_day: Number(document.getElementById('rotina-task-week-day').value),
+      titulo,
+      responsavel: document.getElementById('rotina-task-responsavel').value,
+      status: document.getElementById('rotina-task-status').value,
+      notas: document.getElementById('rotina-task-notas').value.trim() || null,
+    };
+    if (payload.status === 'concluido') payload.completed_at = new Date().toISOString();
+    msg.textContent = 'Salvando…'; msg.style.color = '#666';
+    let res;
+    if (id) res = await sb.from('routine_tasks').update(payload).eq('id', id);
+    else    res = await sb.from('routine_tasks').insert(payload);
+    if (res.error) { msg.textContent = 'Erro: ' + res.error.message; msg.style.color = '#c0392b'; return; }
+    _rotinaCloseTaskModal();
+    _rotinaLoadAndRender();
+  }
+  async function _rotinaDeleteTask() {
+    const id = document.getElementById('rotina-task-id').value;
+    if (!id) return;
+    if (!confirm('Excluir esta tarefa?')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('routine_tasks').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _rotinaCloseTaskModal();
+    _rotinaLoadAndRender();
+  }
+
+  // ===== Modal: gerenciar templates =====
+  async function _rotinaOpenTemplatesModal() {
+    const modal = document.getElementById('rotina-templates-modal');
+    if (!modal) return;
+    const sb = window.supabaseClient;
+    const { data, error } = await sb.from('routine_templates')
+      .select('*')
+      .order('week_day', { ascending: true })
+      .order('ordem', { ascending: true });
+    if (error) { alert('Erro: ' + error.message); return; }
+    const list = document.getElementById('rotina-templates-list');
+    list.innerHTML = (data || []).map(t => _rotinaTemplateRow(t)).join('') ||
+      '<div style="color:#888;text-align:center;padding:20px;">Nenhum template ainda.</div>';
+    list.querySelectorAll('button[data-tpl-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.tplAction;
+        const tplId = btn.closest('[data-tpl-id]').dataset.tplId;
+        if (action === 'edit')   _rotinaEditTemplatePrompt(tplId, data);
+        if (action === 'delete') _rotinaDeleteTemplate(tplId);
+        if (action === 'toggle') _rotinaToggleTemplate(tplId, data);
+      });
+    });
+    modal.style.display = 'flex';
+  }
+  function _rotinaTemplateRow(t) {
+    const dia = OP_DAY_NAMES_LONG[t.week_day] || ('Dia ' + t.week_day);
+    const off = t.is_active ? '' : ' (desativado)';
+    const opacity = t.is_active ? '' : 'opacity:.55;';
+    return '<div data-tpl-id="' + _opEsc(t.id) + '" style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid #eee;border-radius:6px;align-items:center;' + opacity + '">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:.85rem;font-weight:600;color:#222;">' + _opEsc(t.titulo) + off + '</div>' +
+        '<div style="font-size:.7rem;color:#888;margin-top:2px;">' + dia + ' · ' + _opEsc(OP_RESP_LABELS[t.responsavel] || t.responsavel) + ' · ordem ' + t.ordem + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px;">' +
+        '<button type="button" data-tpl-action="toggle" style="padding:4px 8px;background:#fff;border:1px solid #999;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:inherit;">' + (t.is_active ? 'Desativar' : 'Ativar') + '</button>' +
+        '<button type="button" data-tpl-action="edit" style="padding:4px 8px;background:#fff;border:1px solid #999;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:inherit;">Editar</button>' +
+        '<button type="button" data-tpl-action="delete" style="padding:4px 8px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:inherit;">Excluir</button>' +
+      '</div>' +
+    '</div>';
+  }
+  function _rotinaWireTemplatesModal() {
+    const close = document.getElementById('rotina-templates-close');
+    const newBtn = document.getElementById('rotina-template-new');
+    if (close) close.addEventListener('click', () => {
+      const m = document.getElementById('rotina-templates-modal'); if (m) m.style.display = 'none';
+    });
+    if (newBtn) newBtn.addEventListener('click', () => _rotinaEditTemplatePrompt(null, null));
+  }
+  async function _rotinaEditTemplatePrompt(tplId, allTpls) {
+    const tpl = tplId && allTpls ? allTpls.find(x => x.id === tplId) : null;
+    const titulo = prompt('Título da tarefa:', tpl ? tpl.titulo : '');
+    if (titulo == null || !titulo.trim()) return;
+    const dayStr = prompt('Dia da semana (0=Seg, 1=Ter, 2=Qua, 3=Qui, 4=Sex):', tpl ? tpl.week_day : '0');
+    if (dayStr == null) return;
+    const day = Number(dayStr);
+    if (!(day >= 0 && day <= 6)) { alert('Dia inválido'); return; }
+    const resp = prompt('Responsável (voce / socia / ambas):', tpl ? tpl.responsavel : 'ambas');
+    if (resp == null) return;
+    if (!['voce','socia','ambas'].includes(resp)) { alert('Responsável inválido'); return; }
+    const sb = window.supabaseClient;
+    const payload = { titulo: titulo.trim(), week_day: day, responsavel: resp };
+    let res;
+    if (tplId) res = await sb.from('routine_templates').update(payload).eq('id', tplId);
+    else       res = await sb.from('routine_templates').insert(payload);
+    if (res.error) { alert('Erro: ' + res.error.message); return; }
+    _rotinaOpenTemplatesModal();
+  }
+  async function _rotinaDeleteTemplate(tplId) {
+    if (!confirm('Excluir este template? Não afeta semanas já criadas.')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('routine_templates').delete().eq('id', tplId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _rotinaOpenTemplatesModal();
+  }
+  async function _rotinaToggleTemplate(tplId, allTpls) {
+    const tpl = allTpls.find(x => x.id === tplId);
+    if (!tpl) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('routine_templates')
+      .update({ is_active: !tpl.is_active }).eq('id', tplId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _rotinaOpenTemplatesModal();
+  }
+
+
+  // =============================================================
+  // === CONTEUDO (Kanban) =======================================
+  // =============================================================
+  let _conteudoState = {
+    wired: false,
+    cache: [],
+    filters: { tipo: '', objetivo: '', responsavel: '', search: '' },
+    expsCache: null,
+  };
+
+  async function renderConteudo() {
+    if (!document.getElementById('panel-conteudo')) return;
+    _conteudoWireOnce();
+    await _conteudoLoadAndRender();
+  }
+
+  async function _conteudoFetchExperiences() {
+    if (_conteudoState.expsCache) return _conteudoState.expsCache;
+    if (window.ElarahData && ElarahData.getAllExperiences) {
+      try {
+        const exps = await ElarahData.getAllExperiences();
+        _conteudoState.expsCache = (exps || []).filter(e => e && !e.isTest);
+        return _conteudoState.expsCache;
+      } catch (e) { /* fall through */ }
+    }
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data } = await sb.from('experiences').select('id, nome').order('nome');
+    _conteudoState.expsCache = data || [];
+    return _conteudoState.expsCache;
+  }
+
+  function _conteudoWireOnce() {
+    if (_conteudoState.wired) return;
+    _conteudoState.wired = true;
+    const newBtn = document.getElementById('conteudo-new-btn');
+    if (newBtn) newBtn.addEventListener('click', () => _conteudoOpenModal(null));
+    const tipo = document.getElementById('conteudo-filter-tipo');
+    const obj = document.getElementById('conteudo-filter-objetivo');
+    const resp = document.getElementById('conteudo-filter-responsavel');
+    const search = document.getElementById('conteudo-filter-search');
+    const refresh = () => _conteudoRenderKanban();
+    if (tipo)   tipo.addEventListener('change', e => { _conteudoState.filters.tipo = e.target.value; refresh(); });
+    if (obj)    obj.addEventListener('change',  e => { _conteudoState.filters.objetivo = e.target.value; refresh(); });
+    if (resp)   resp.addEventListener('change', e => { _conteudoState.filters.responsavel = e.target.value; refresh(); });
+    if (search) search.addEventListener('input', e => { _conteudoState.filters.search = e.target.value; refresh(); });
+    _conteudoWireModal();
+  }
+
+  async function _conteudoLoadAndRender() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { data, error } = await sb.from('content_pieces')
+      .select('*, experiences(id, nome)')
+      .order('updated_at', { ascending: false })
+      .limit(2000);
+    if (error) { console.error('[Conteúdo] load:', error.message); return; }
+    _conteudoState.cache = data || [];
+    _conteudoRenderKanban();
+  }
+
+  function _conteudoRenderKanban() {
+    const wrap = document.getElementById('conteudo-kanban');
+    if (!wrap) return;
+    const f = _conteudoState.filters;
+    const filtered = (_conteudoState.cache || []).filter(c => {
+      if (f.tipo && !(Array.isArray(c.tipos) && c.tipos.indexOf(f.tipo) !== -1)) return false;
+      if (f.objetivo && c.objetivo !== f.objetivo) return false;
+      if (f.responsavel && c.responsavel !== f.responsavel) return false;
+      if (f.search) {
+        const s = f.search.toLowerCase();
+        if (!(String(c.titulo || '').toLowerCase().includes(s)
+              || String(c.notas  || '').toLowerCase().includes(s))) return false;
+      }
+      return true;
+    });
+    const byStatus = {};
+    OP_CONTENT_STATUSES.forEach(st => byStatus[st] = []);
+    filtered.forEach(c => {
+      const st = OP_CONTENT_STATUSES.indexOf(c.status) >= 0 ? c.status : 'ideia';
+      byStatus[st].push(c);
+    });
+    wrap.innerHTML = OP_CONTENT_STATUSES.map(st => {
+      const items = byStatus[st];
+      const cardsHtml = items.map(c => _conteudoCard(c)).join('') ||
+        '<div style="font-size:.72rem;color:#bbb;text-align:center;padding:8px 0;">—</div>';
+      return '<div class="op-kan-col">' +
+        '<div class="op-kan-col__header">' +
+          '<div class="op-kan-col__label">' + _opEsc(OP_CONTENT_STATUS_LABELS[st]) + '</div>' +
+          '<div class="op-kan-col__count">' + items.length + '</div>' +
+        '</div>' +
+        '<div>' + cardsHtml + '</div>' +
+      '</div>';
+    }).join('');
+    wrap.querySelectorAll('[data-content-id]').forEach(el => {
+      el.addEventListener('click', () => _conteudoOpenModal(el.dataset.contentId));
+    });
+  }
+
+  function _conteudoCard(c) {
+    const tipos = Array.isArray(c.tipos) ? c.tipos : [];
+    const tipoChips = tipos.slice(0, 2).map(t =>
+      '<span class="op-chip op-chip--tipo">' + _opEsc(t) + '</span>'
+    ).join('');
+    const objChip = c.objetivo
+      ? '<span class="op-chip op-chip--obj">' + _opEsc(OP_OBJ_LABELS[c.objetivo] || c.objetivo) + '</span>'
+      : '';
+    const dataChip = c.scheduled_at && c.status === 'agendado'
+      ? '<span style="font-size:.7rem;color:#1f4d80;">📅 ' + new Date(c.scheduled_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) + '</span>'
+      : '';
+    return '<div class="op-kan-card" data-content-id="' + _opEsc(c.id) + '">' +
+      '<div class="op-kan-card__title">' + _opEsc(c.titulo) + '</div>' +
+      '<div class="op-kan-card__chips">' + tipoChips + objChip + '</div>' +
+      '<div class="op-kan-card__meta">' + _opRespBadge(c.responsavel) + dataChip + '</div>' +
+    '</div>';
+  }
+
+  // ===== Modal: editar/criar conteúdo =====
+  async function _conteudoOpenModal(contentId) {
+    const modal = document.getElementById('conteudo-modal');
+    if (!modal) return;
+    const item = contentId ? _conteudoState.cache.find(x => x.id === contentId) : null;
+    document.getElementById('conteudo-modal-title').textContent = item ? 'Editar conteúdo' : 'Novo conteúdo';
+    document.getElementById('conteudo-id').value = item ? item.id : '';
+    document.getElementById('conteudo-titulo').value = item ? (item.titulo || '') : '';
+    document.getElementById('conteudo-objetivo').value = item ? (item.objetivo || '') : '';
+    document.getElementById('conteudo-responsavel').value = item ? (item.responsavel || 'ambas') : 'ambas';
+    document.getElementById('conteudo-status').value = item ? (item.status || 'ideia') : 'ideia';
+    document.getElementById('conteudo-notas').value = item ? (item.notas || '') : '';
+    const sched = document.getElementById('conteudo-scheduled-at');
+    if (item && item.scheduled_at) {
+      sched.value = new Date(item.scheduled_at).toISOString().slice(0, 16);
+    } else {
+      sched.value = '';
+    }
+    // Tipos: marca os selecionados
+    const tipos = item && Array.isArray(item.tipos) ? item.tipos : [];
+    document.querySelectorAll('#conteudo-tipos-checks input[type=checkbox]').forEach(cb => {
+      cb.checked = tipos.indexOf(cb.value) !== -1;
+    });
+    // Experiências dropdown
+    const expSelect = document.getElementById('conteudo-experience');
+    const exps = await _conteudoFetchExperiences();
+    expSelect.innerHTML = '<option value="">—</option>' + exps.map(e =>
+      '<option value="' + _opEsc(e.id) + '">' + _opEsc(e.nome) + '</option>'
+    ).join('');
+    expSelect.value = item ? (item.experience_id || '') : '';
+    document.getElementById('conteudo-msg').textContent = '';
+    document.getElementById('conteudo-delete').style.display = item ? '' : 'none';
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('conteudo-titulo').focus(), 50);
+  }
+  function _conteudoCloseModal() {
+    const m = document.getElementById('conteudo-modal'); if (m) m.style.display = 'none';
+  }
+  function _conteudoWireModal() {
+    const cancel = document.getElementById('conteudo-cancel');
+    const save = document.getElementById('conteudo-save');
+    const del = document.getElementById('conteudo-delete');
+    if (cancel) cancel.addEventListener('click', _conteudoCloseModal);
+    if (save) save.addEventListener('click', _conteudoSave);
+    if (del) del.addEventListener('click', _conteudoDelete);
+  }
+  async function _conteudoSave() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msg = document.getElementById('conteudo-msg');
+    const id = document.getElementById('conteudo-id').value || null;
+    const titulo = document.getElementById('conteudo-titulo').value.trim();
+    if (!titulo) { msg.textContent = 'Título obrigatório.'; msg.style.color = '#c0392b'; return; }
+    const tipos = Array.from(document.querySelectorAll('#conteudo-tipos-checks input[type=checkbox]:checked'))
+      .map(cb => cb.value);
+    const status = document.getElementById('conteudo-status').value;
+    const schedRaw = document.getElementById('conteudo-scheduled-at').value;
+    const payload = {
+      titulo,
+      tipos,
+      objetivo: document.getElementById('conteudo-objetivo').value || null,
+      responsavel: document.getElementById('conteudo-responsavel').value,
+      status,
+      experience_id: document.getElementById('conteudo-experience').value || null,
+      notas: document.getElementById('conteudo-notas').value.trim() || null,
+      scheduled_at: schedRaw ? new Date(schedRaw).toISOString() : null,
+    };
+    // posted_at: setado quando vai pra postado (se não tiver)
+    if (status === 'postado' || status === 'reaproveitado') {
+      const cur = id ? _conteudoState.cache.find(x => x.id === id) : null;
+      if (!cur || !cur.posted_at) payload.posted_at = new Date().toISOString();
+    }
+    msg.textContent = 'Salvando…'; msg.style.color = '#666';
+    let res;
+    if (id) res = await sb.from('content_pieces').update(payload).eq('id', id);
+    else    res = await sb.from('content_pieces').insert(payload);
+    if (res.error) { msg.textContent = 'Erro: ' + res.error.message; msg.style.color = '#c0392b'; return; }
+    _conteudoCloseModal();
+    _conteudoLoadAndRender();
+  }
+  async function _conteudoDelete() {
+    const id = document.getElementById('conteudo-id').value;
+    if (!id) return;
+    if (!confirm('Excluir este conteúdo?')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('content_pieces').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _conteudoCloseModal();
+    _conteudoLoadAndRender();
+  }
+
 
   // ===== START =====
   if (document.readyState === 'loading') {
