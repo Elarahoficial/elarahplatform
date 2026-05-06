@@ -5833,7 +5833,7 @@
 
     const tbody = document.getElementById('fornecedores-body');
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
       return;
     }
 
@@ -5841,6 +5841,7 @@
       const meta = metaByKey.get(f.key);
       const dataEntradaISO = meta && meta.data_entrada ? meta.data_entrada : '';
       const whatsappVal = meta && meta.whatsapp ? meta.whatsapp : '';
+      const tipoVal = meta && meta.tipo_parceria ? meta.tipo_parceria : '';
       const parceiroHa = formatParceiroHa(dataEntradaISO);
       const experienciasLabel = f.experiencesAtivas === f.experiencesTotal
         ? f.experiencesTotal
@@ -5853,8 +5854,19 @@
       const lastBookingLabel = f.lastBookingTs
         ? new Date(f.lastBookingTs).toLocaleDateString('pt-BR')
         : '<span style="color:#bbb;">—</span>';
+      // Select inline pra tipo_parceria. Salva on-change.
+      const tipoSelect =
+        '<select class="admin__forn-tipo" data-forn-key="' + escapeHtml(f.key) +
+          '" data-forn-nome="' + escapeHtml(f.nome) +
+          '" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:.78rem;font-family:inherit;background:#fff;">' +
+          '<option value=""' + (tipoVal === '' ? ' selected' : '') + '>—</option>' +
+          '<option value="elarah"' + (tipoVal === 'elarah' ? ' selected' : '') + '>Elarah</option>' +
+          '<option value="byelarah"' + (tipoVal === 'byelarah' ? ' selected' : '') + '>By Elarah</option>' +
+          '<option value="ambos"' + (tipoVal === 'ambos' ? ' selected' : '') + '>Elarah + By Elarah</option>' +
+        '</select>';
       return '<tr>' +
         '<td style="font-weight:600;">' + escapeHtml(f.nome) + '</td>' +
+        '<td>' + tipoSelect + '</td>' +
         '<td><input type="tel" class="admin__forn-whatsapp" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(whatsappVal) + '" placeholder="(11) 99999-9999" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;width:140px;" title="WhatsApp do fornecedor — usado pelo botão Avisar em Compras"></td>' +
         '<td><input type="date" class="admin__forn-data-entrada" data-forn-key="' + escapeHtml(f.key) + '" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(dataEntradaISO) + '" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;"></td>' +
         '<td>' + parceiroHa + '</td>' +
@@ -5866,6 +5878,34 @@
         '<td>' + lastBookingLabel + '</td>' +
       '</tr>';
     }).join('');
+
+    // Wire dos selects de tipo_parceria. Salva on-change via upsert
+    // em fornecedores_metadata (cria a linha se ainda não existir).
+    tbody.querySelectorAll('.admin__forn-tipo').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const el = e.target;
+        const key = el.dataset.fornKey;
+        const nome = el.dataset.fornNome;
+        const value = el.value || null;
+        el.disabled = true;
+        const sb = window.supabaseClient;
+        try {
+          // Upsert pela chave fornecedor_key
+          const { error } = await sb.from('fornecedores_metadata')
+            .upsert({ fornecedor_key: key, fornecedor_nome: nome, tipo_parceria: value },
+                    { onConflict: 'fornecedor_key' });
+          if (error) throw error;
+          // Feedback visual rápido
+          const prev = el.style.borderColor;
+          el.style.borderColor = '#1a8a4a';
+          setTimeout(() => { el.style.borderColor = prev; }, 800);
+        } catch (err) {
+          alert('Não consegui salvar o tipo de parceria. ' + (err.message || err));
+        } finally {
+          el.disabled = false;
+        }
+      });
+    });
 
     // Wire edit handlers. Uses delegation via querySelectorAll —
     // acceptable aqui porque o tbody é inteiro re-renderizado a
@@ -6774,7 +6814,13 @@
     respondeu:        { label: 'Respondeu',        bg: '#fff4d6', fg: '#a87a00' },
     reuniao_marcada:  { label: 'Reunião marcada',  bg: '#f0e6fa', fg: '#6b3aa0' },
     parceria_fechada: { label: 'Parceria fechada', bg: '#e6f4ea', fg: '#1a8a4a' },
+    ja_parceiro:      { label: '⭐ Já parceiro',    bg: '#cce8d4', fg: '#0e6b34' },
     recusou:          { label: 'Recusou',          bg: '#fdecec', fg: '#a83030' },
+  };
+  const TIPO_PARCERIA_LABELS = {
+    elarah:   'Elarah',
+    byelarah: 'By Elarah',
+    ambos:    'Elarah + By Elarah',
   };
   const PROSPECT_INTERACTION_LABELS = {
     mensagem_enviada:  '📤 Mensagem enviada',
@@ -6841,6 +6887,186 @@
       .replaceAll('{{categoria}}', cat)
       .replaceAll('{{bairro}}',    bairro);
   }
+
+  // ===== Dedup: detecção de parceiros existentes =====
+  // Cliente da RPC find_matching_fornecedor. Devolve os matches
+  // com prioridade: experience > fornecedor_metadata > prospect.
+  // Filtra duplicatas por ref_id+match_reason.
+  async function _propFindMatches(prospect, excludeId) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb.rpc('find_matching_fornecedor', {
+      p_nome:      prospect.nome      || null,
+      p_instagram: prospect.instagram || null,
+      p_whatsapp:  prospect.whatsapp  || null,
+      p_email:     prospect.email     || null,
+      p_site:      prospect.site      || null,
+      p_exclude_prospect_id: excludeId || null,
+    });
+    if (error) {
+      // Fallback gracioso: se a RPC ainda não existir (migração não rodada),
+      // retorna sem dedup ao invés de quebrar o save. Avisa só no console.
+      if (String(error.message || '').includes('find_matching_fornecedor')) {
+        console.warn('[Prospects] dedup RPC ausente — rode sql/elarah_crm_dedup_v2.sql');
+        return [];
+      }
+      console.error('[Prospects] dedup error:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  // Pra batch dedup no CSV import: faz dedup local com snapshot
+  // pré-carregado das 3 fontes (mais rápido que 1 RPC por linha).
+  // Usa as mesmas regras de normalização do SQL.
+  async function _propPreloadDedupContext() {
+    const sb = window.supabaseClient;
+    if (!sb) return null;
+    const [{ data: exps }, { data: forn }, { data: pros }] = await Promise.all([
+      sb.from('experiences').select('id, fornecedor_nome, is_active, is_test').limit(20000),
+      sb.from('fornecedores_metadata').select('id, fornecedor_key, fornecedor_nome, instagram, whatsapp, email, site').limit(5000),
+      sb.from('prospects').select('id, nome, instagram, whatsapp, email, site').limit(20000),
+    ]);
+    return {
+      experiences: (exps || []).filter(e =>
+        e && e.fornecedor_nome &&
+        e.is_active !== false &&
+        e.is_test !== true
+      ),
+      fornecedores: forn || [],
+      prospects: pros || [],
+    };
+  }
+
+  // Normalizadores espelhados do SQL (_norm_*). MANTER em sincronia
+  // com sql/elarah_crm_dedup_v2.sql ao mudar regras.
+  function _propNormText(s) {
+    if (!s) return null;
+    const v = String(s).trim();
+    if (!v) return null;
+    return _propStripAccents(v.toLowerCase()).replace(/\s+/g, ' ');
+  }
+  function _propNormHandle(s) {
+    if (!s) return null;
+    const v = String(s).trim()
+      .replace(/^https?:\/\/(www\.)?(instagram\.com\/)?/i, '')
+      .replace(/[@\s/]/g, '')
+      .toLowerCase();
+    return v || null;
+  }
+  function _propNormPhone(s) {
+    if (!s) return null;
+    const digits = String(s).replace(/\D+/g, '');
+    if (!digits) return null;
+    // Remove DDI 55 quando o resultado tem 10 ou 11 dígitos
+    return digits.replace(/^55(\d{10,11})$/, '$1');
+  }
+  function _propNormEmail(s) {
+    if (!s) return null;
+    const v = String(s).trim().toLowerCase();
+    return v || null;
+  }
+  function _propNormSite(s) {
+    if (!s) return null;
+    const v = String(s).trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/[/?#].*$/, '')
+      .toLowerCase();
+    return v || null;
+  }
+
+  // Indexa o snapshot pra lookups O(1) no CSV import.
+  function _propBuildDedupIndex(ctx) {
+    const idx = {
+      byName: new Map(),       // norm_text → { source, ref_id, ref_nome, fornecedor_key }
+      byHandle: new Map(),
+      byPhone: new Map(),
+      byEmail: new Map(),
+      bySite: new Map(),
+    };
+    // Helpers pra inserir mantendo prioridade experience > metadata > prospect
+    const priority = { experience: 3, fornecedor_metadata: 2, prospect: 1 };
+    const put = (map, key, entry) => {
+      if (!key) return;
+      const existing = map.get(key);
+      if (!existing || priority[entry.source] > priority[existing.source]) {
+        map.set(key, entry);
+      }
+    };
+    (ctx.experiences || []).forEach(e => {
+      const entry = {
+        source: 'experience',
+        ref_id: e.id,
+        ref_nome: e.fornecedor_nome,
+        fornecedor_key: _propNormText(e.fornecedor_nome),
+      };
+      put(idx.byName, _propNormText(e.fornecedor_nome), entry);
+    });
+    (ctx.fornecedores || []).forEach(f => {
+      const entry = {
+        source: 'fornecedor_metadata',
+        ref_id: f.id,
+        ref_nome: f.fornecedor_nome,
+        fornecedor_key: f.fornecedor_key || _propNormText(f.fornecedor_nome),
+      };
+      put(idx.byName,   _propNormText(f.fornecedor_nome), entry);
+      put(idx.byHandle, _propNormHandle(f.instagram),     entry);
+      put(idx.byPhone,  _propNormPhone(f.whatsapp),       entry);
+      put(idx.byEmail,  _propNormEmail(f.email),          entry);
+      put(idx.bySite,   _propNormSite(f.site),            entry);
+    });
+    (ctx.prospects || []).forEach(p => {
+      const entry = {
+        source: 'prospect',
+        ref_id: p.id,
+        ref_nome: p.nome,
+        fornecedor_key: _propNormText(p.nome),
+      };
+      put(idx.byName,   _propNormText(p.nome),       entry);
+      put(idx.byHandle, _propNormHandle(p.instagram), entry);
+      put(idx.byPhone,  _propNormPhone(p.whatsapp),   entry);
+      put(idx.byEmail,  _propNormEmail(p.email),      entry);
+      put(idx.bySite,   _propNormSite(p.site),        entry);
+    });
+    return idx;
+  }
+
+  // Match local. Retorna o melhor (highest priority) match ou null.
+  function _propMatchAgainstIndex(idx, row) {
+    const tries = [
+      { key: _propNormText(row.nome),       map: idx.byName,   reason: 'name' },
+      { key: _propNormHandle(row.instagram), map: idx.byHandle, reason: 'instagram' },
+      { key: _propNormPhone(row.whatsapp),   map: idx.byPhone,  reason: 'whatsapp' },
+      { key: _propNormEmail(row.email),      map: idx.byEmail,  reason: 'email' },
+      { key: _propNormSite(row.site),        map: idx.bySite,   reason: 'site' },
+    ];
+    let best = null;
+    const priority = { experience: 3, fornecedor_metadata: 2, prospect: 1 };
+    for (const t of tries) {
+      if (!t.key) continue;
+      const hit = t.map.get(t.key);
+      if (!hit) continue;
+      if (!best || priority[hit.source] > priority[best.source]) {
+        best = Object.assign({ match_reason: t.reason }, hit);
+      }
+    }
+    return best;
+  }
+
+  // Texto amigável pra mensagens de aviso na UI
+  const DEDUP_REASON_LABELS = {
+    name: 'mesmo nome',
+    instagram: 'mesmo Instagram',
+    whatsapp: 'mesmo WhatsApp',
+    email: 'mesmo email',
+    site: 'mesmo site',
+  };
+  const DEDUP_SOURCE_LABELS = {
+    experience: 'fornecedor com experiência cadastrada',
+    fornecedor_metadata: 'fornecedor cadastrado',
+    prospect: 'prospect duplicado',
+  };
 
   async function _propFetchProspects() {
     const sb = window.supabaseClient;
@@ -7086,6 +7312,9 @@
     document.getElementById('prospect-edit-observacoes').value = p ? (p.observacoes || '') : '';
     document.getElementById('prospect-edit-msg').textContent = '';
     document.getElementById('prospect-edit-delete').style.display = p ? '' : 'none';
+    // Limpa o aviso de dedup ao abrir/reabrir o modal
+    const warn = document.getElementById('prospect-edit-dup-warning');
+    if (warn) { warn.style.display = 'none'; warn.innerHTML = ''; }
     modal.style.display = 'flex';
   }
 
@@ -7122,6 +7351,40 @@
       cidade:       document.getElementById('prospect-edit-cidade').value.trim() || null,
       observacoes:  document.getElementById('prospect-edit-observacoes').value.trim() || null,
     };
+    msgEl.textContent = 'Verificando duplicatas...'; msgEl.style.color = '#666';
+
+    // Dedup check ANTES de salvar. Se achar match com fornecedor já
+    // cadastrado, oferece vincular como 'ja_parceiro'. Match com outro
+    // prospect bloqueia (sem dupla criação).
+    const matches = await _propFindMatches(payload, id);
+    const fornecedorMatch = (matches || []).find(m =>
+      m.source === 'experience' || m.source === 'fornecedor_metadata');
+    const prospectMatch = (matches || []).find(m => m.source === 'prospect');
+
+    if (fornecedorMatch && payload.status !== 'ja_parceiro') {
+      const reason = DEDUP_REASON_LABELS[fornecedorMatch.match_reason] || fornecedorMatch.match_reason;
+      const proceedAsParceiro = confirm(
+        '⭐ "' + fornecedorMatch.ref_nome + '" já é ' +
+        DEDUP_SOURCE_LABELS[fornecedorMatch.source] + ' (match: ' + reason + ').\n\n' +
+        'OK = vincular este prospect como "Já parceiro" (não duplica).\n' +
+        'Cancelar = voltar pro modal pra revisar.'
+      );
+      if (!proceedAsParceiro) {
+        msgEl.textContent = 'Verifique os dados pra evitar duplicar fornecedor.';
+        msgEl.style.color = '#a87a00';
+        return;
+      }
+      payload.status = 'ja_parceiro';
+      payload.promoted_supplier_key = fornecedorMatch.fornecedor_key;
+      payload.promoted_to_fornecedor_at = new Date().toISOString();
+    } else if (prospectMatch && !id) {
+      // Só bloqueia em CRIAÇÃO (não em edição que volta pra mesmo prospect).
+      const reason = DEDUP_REASON_LABELS[prospectMatch.match_reason] || prospectMatch.match_reason;
+      msgEl.textContent = 'Já existe prospect "' + prospectMatch.ref_nome + '" (' + reason + '). Cancele e edite o existente.';
+      msgEl.style.color = '#c0392b';
+      return;
+    }
+
     msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
     try {
       let res;
@@ -7188,6 +7451,20 @@
       }).join('');
       _propUpdateMsgPreview(p, templates, select.value);
       select.onchange = () => _propUpdateMsgPreview(p, templates, select.value);
+    }
+
+    // Botão "Promover a fornecedor": esconde quando já é parceiro
+    // (status=ja_parceiro ou parceria_fechada com snapshot). Evita
+    // dupla promoção e mostra que esse passo já foi resolvido.
+    const promoteBtn = document.getElementById('prospect-timeline-promote');
+    if (promoteBtn) {
+      const alreadyPartner = p.status === 'ja_parceiro' ||
+        (p.status === 'parceria_fechada' && p.promoted_to_fornecedor_at);
+      if (alreadyPartner) {
+        promoteBtn.style.display = 'none';
+      } else {
+        promoteBtn.style.display = '';
+      }
     }
     modal.style.display = 'flex';
 
@@ -7440,19 +7717,90 @@
     try { rows = _propParseCsv(text); }
     catch (err) { alert('CSV inválido: ' + err.message); return; }
     if (!rows.length) { alert('Nenhum prospect encontrado no CSV.'); return; }
-    if (!confirm('Importar ' + rows.length + ' prospects? (Linhas duplicadas serão criadas — verifique antes de importar arquivos grandes.)')) return;
     const sb = window.supabaseClient;
     if (!sb) return;
+
+    // Pré-carrega snapshot pra dedup local (mais rápido que 1 RPC por linha).
+    // Inclui experiences ativas, fornecedores_metadata e prospects existentes.
+    const ctx = await _propPreloadDedupContext();
+    const idx = ctx ? _propBuildDedupIndex(ctx) : null;
+
+    // Classifica cada linha do CSV em 1 de 3 buckets:
+    //   - novo: nenhum match → insere com status='nao_contatado'
+    //   - ja_parceiro: bate com fornecedor (experience ou metadata) →
+    //     insere com status='ja_parceiro', promoted_supplier_key, promoted_at
+    //   - duplicado: bate com prospect existente → SKIP
+    // Inclui dedup intra-CSV: se 2 linhas do CSV têm mesmo IG/WA/email/etc,
+    // só a primeira entra; as outras viram 'duplicado'.
+    const bucketNovo = [];
+    const bucketJaParceiro = [];
+    const bucketDuplicado = [];
+    const seenName  = new Set();
+    const seenHand  = new Set();
+    const seenPhone = new Set();
+    const seenMail  = new Set();
+    const seenSite  = new Set();
+    const sawSelf = (row) => {
+      const n  = _propNormText(row.nome);
+      const ig = _propNormHandle(row.instagram);
+      const wa = _propNormPhone(row.whatsapp);
+      const em = _propNormEmail(row.email);
+      const st = _propNormSite(row.site);
+      if (n  && seenName.has(n))   return true;
+      if (ig && seenHand.has(ig))  return true;
+      if (wa && seenPhone.has(wa)) return true;
+      if (em && seenMail.has(em))  return true;
+      if (st && seenSite.has(st))  return true;
+      if (n)  seenName.add(n);
+      if (ig) seenHand.add(ig);
+      if (wa) seenPhone.add(wa);
+      if (em) seenMail.add(em);
+      if (st) seenSite.add(st);
+      return false;
+    };
+    const nowIso = new Date().toISOString();
+    rows.forEach(row => {
+      if (sawSelf(row)) { bucketDuplicado.push(row); return; }
+      const m = idx ? _propMatchAgainstIndex(idx, row) : null;
+      if (m && (m.source === 'experience' || m.source === 'fornecedor_metadata')) {
+        bucketJaParceiro.push(Object.assign({}, row, {
+          status: 'ja_parceiro',
+          promoted_supplier_key: m.fornecedor_key,
+          promoted_to_fornecedor_at: nowIso,
+        }));
+      } else if (m && m.source === 'prospect') {
+        bucketDuplicado.push(row);
+      } else {
+        bucketNovo.push(row);
+      }
+    });
+
+    const total = rows.length;
+    const summary =
+      total + ' do CSV:\n' +
+      '  • ' + bucketNovo.length + ' novos\n' +
+      '  • ' + bucketJaParceiro.length + ' marcados como "Já parceiro" (já são fornecedores)\n' +
+      '  • ' + bucketDuplicado.length + ' duplicados ignorados\n\n' +
+      'Confirmar importação?';
+    if (!confirm(summary)) return;
+
     // Insere em lotes pequenos pra evitar payload grande
+    const toInsert = bucketNovo.concat(bucketJaParceiro);
     let inserted = 0, errors = 0;
     const batchSize = 100;
-    for (let i = 0; i < rows.length; i += batchSize) {
-      const batch = rows.slice(i, i + batchSize);
+    for (let i = 0; i < toInsert.length; i += batchSize) {
+      const batch = toInsert.slice(i, i + batchSize);
       const { error } = await sb.from('prospects').insert(batch);
       if (error) { console.error('[Prospects] csv import batch error:', error); errors += batch.length; }
       else       { inserted += batch.length; }
     }
-    alert('Importado: ' + inserted + ' / ' + rows.length + (errors ? ' (' + errors + ' erros)' : ''));
+    const lines = [
+      'Relatório da importação:',
+      '  ✓ ' + inserted + ' importados (' + bucketNovo.length + ' novos + ' + bucketJaParceiro.length + ' já parceiro)',
+      '  ⊘ ' + bucketDuplicado.length + ' duplicados ignorados',
+    ];
+    if (errors) lines.push('  ✗ ' + errors + ' erros (ver console F12)');
+    alert(lines.join('\n'));
     renderProspects();
   }
 
