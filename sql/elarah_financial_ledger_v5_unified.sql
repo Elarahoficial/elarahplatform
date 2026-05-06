@@ -46,6 +46,9 @@ create index if not exists experiences_is_test_idx
 
 
 -- ===== 2. v_financial_ledger v5 =====
+-- IMPORTANTE: a ordem das colunas existentes (v4) é PRESERVADA.
+-- PostgreSQL só permite ADICIONAR colunas no FINAL via CREATE OR
+-- REPLACE VIEW — qualquer reordenação dispara erro 42P16.
 create or replace view public.v_financial_ledger as
 
 -- Bookings: gross = valor_cheio (preço de tabela, antes de desconto).
@@ -58,14 +61,6 @@ select
   'income'::text                                      as kind,
   b.created_at                                        as occurred_at,
   coalesce(b.amount_total, 0)                         as amount_centavos,
-  coalesce(
-    b.valor_cheio_centavos,
-    coalesce(b.amount_total, 0)
-      + coalesce(b.coupon_discount_centavos, 0)
-      + coalesce(b.gift_card_centavos, 0)
-  )                                                   as gross_centavos,
-  (coalesce(b.coupon_discount_centavos, 0)
-   + coalesce(b.gift_card_centavos, 0))               as discount_centavos,
   b.status                                            as status,
   b.experiencia_id                                    as experience_id,
   b.experiencia_nome                                  as experience_name,
@@ -83,9 +78,16 @@ select
   coalesce(b.nome, '')                                as customer_name,
   null::text                                          as category_slug,
   null::text                                          as description,
-  -- is_test: nome legado OU flag explícita na experiência. Mantém os
-  -- dois caminhos pra que bookings antigas (sem experiencia_id) não
-  -- escapem do filtro.
+  -- NOVAS COLUNAS (sempre no final):
+  coalesce(
+    b.valor_cheio_centavos,
+    coalesce(b.amount_total, 0)
+      + coalesce(b.coupon_discount_centavos, 0)
+      + coalesce(b.gift_card_centavos, 0)
+  )                                                   as gross_centavos,
+  (coalesce(b.coupon_discount_centavos, 0)
+   + coalesce(b.gift_card_centavos, 0))               as discount_centavos,
+  -- is_test: nome legado OU flag explícita na experiência.
   (lower(coalesce(b.experiencia_nome, '')) in ('teste', 'teste 1')
    or coalesce(eb.is_test, false))                    as is_test
 from public.bookings b
@@ -93,17 +95,13 @@ left join public.experiences eb on eb.id = b.experiencia_id
 
 union all
 
--- Vendas manuais: gross = total + discount (reconstrói o "antes do
--- desconto"). discount vem da própria coluna manual_sales.discount.
+-- Vendas manuais
 select
   ms.id::text                                         as id,
   'manual_sale'::text                                 as source,
   'income'::text                                      as kind,
   coalesce(ms.sale_date::timestamptz, ms.created_at)  as occurred_at,
   coalesce(ms.total_amount_centavos, 0)               as amount_centavos,
-  (coalesce(ms.total_amount_centavos, 0)
-   + coalesce(ms.discount_centavos, 0))               as gross_centavos,
-  coalesce(ms.discount_centavos, 0)                   as discount_centavos,
   ms.payment_status                                   as status,
   ms.experience_id                                    as experience_id,
   coalesce(ms.experience_name, ems.nome)              as experience_name,
@@ -118,23 +116,23 @@ select
   ms.customer_name                                    as customer_name,
   null::text                                          as category_slug,
   null::text                                          as description,
-  -- Manual sales não tem nome próprio confiável — bate só pela flag
-  -- da experiência (se vinculada). Sem experiência → não é teste.
+  -- NOVAS COLUNAS:
+  (coalesce(ms.total_amount_centavos, 0)
+   + coalesce(ms.discount_centavos, 0))               as gross_centavos,
+  coalesce(ms.discount_centavos, 0)                   as discount_centavos,
   coalesce(ems.is_test, false)                        as is_test
 from public.manual_sales ms
 left join public.experiences ems on ems.id = ms.experience_id
 
 union all
 
--- Despesas: gross = amount, discount = 0 (não tem semântica de desconto).
+-- Despesas
 select
   fe.id::text                                         as id,
   'expense'::text                                     as source,
   'expense'::text                                     as kind,
   (fe.expense_date::timestamptz)                      as occurred_at,
   coalesce(fe.amount_centavos, 0)                     as amount_centavos,
-  coalesce(fe.amount_centavos, 0)                     as gross_centavos,
-  0                                                   as discount_centavos,
   fe.status                                           as status,
   fe.experience_id                                    as experience_id,
   null::text                                          as experience_name,
@@ -145,6 +143,9 @@ select
   null::text                                          as customer_name,
   fc.slug                                             as category_slug,
   fe.description                                      as description,
+  -- NOVAS COLUNAS:
+  coalesce(fe.amount_centavos, 0)                     as gross_centavos,
+  0                                                   as discount_centavos,
   coalesce(efe.is_test, false)                        as is_test
 from public.financial_expenses fe
 left join public.financial_categories fc on fc.id = fe.category_id
@@ -152,15 +153,13 @@ left join public.experiences efe on efe.id = fe.experience_id
 
 union all
 
--- Gift Cards: gross = amount = valor_inicial. Sem desconto.
+-- Gift Cards
 select
   g.id::text                                          as id,
   'giftcard'::text                                    as source,
   'income'::text                                      as kind,
   g.created_at                                        as occurred_at,
   coalesce(g.valor_inicial_centavos, 0)               as amount_centavos,
-  coalesce(g.valor_inicial_centavos, 0)               as gross_centavos,
-  0                                                   as discount_centavos,
   case g.status
     when 'active'    then 'pago'
     when 'used'      then 'pago'
@@ -178,6 +177,9 @@ select
   coalesce(g.comprador_nome, '')                      as customer_name,
   null::text                                          as category_slug,
   null::text                                          as description,
+  -- NOVAS COLUNAS:
+  coalesce(g.valor_inicial_centavos, 0)               as gross_centavos,
+  0                                                   as discount_centavos,
   false                                               as is_test
 from public.gift_cards g;
 
