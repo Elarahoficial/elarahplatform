@@ -490,6 +490,7 @@
           <thead>
             <tr>
               <th>Fornecedor</th>
+              <th>Tipo</th>
               <th>WhatsApp</th>
               <th>Data de entrada</th>
               <th>Parceiro há</th>
@@ -502,7 +503,7 @@
             </tr>
           </thead>
           <tbody id="fornecedores-body">
-            <tr><td colspan="10" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
+            <tr><td colspan="11" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
           </tbody>
         </table>
       </div>
@@ -568,6 +569,7 @@
           <option value="respondeu">Respondeu</option>
           <option value="reuniao_marcada">Reunião marcada</option>
           <option value="parceria_fechada">Parceria fechada</option>
+          <option value="ja_parceiro">Já parceiro</option>
           <option value="recusou">Recusou</option>
         </select>
         <input type="text" id="prospects-filter-bairro" placeholder="Bairro" list="prospects-bairros-list" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;width:140px;">
@@ -611,12 +613,13 @@
       <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
         <h2 style="margin:0 0 6px;font-size:1.3rem;" id="prospect-edit-title">Novo prospect</h2>
         <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="prospect-edit-subtitle">Cadastre um possível parceiro pra começar a prospecção.</p>
+        <div id="prospect-edit-dup-warning" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fff8ef;border:1px solid #f0c97a;font-size:.85rem;color:#7a4f00;"></div>
         <form id="prospect-edit-form" onsubmit="return false;">
           <input type="hidden" id="prospect-edit-id">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome do local/empresa *<input type="text" id="prospect-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
             <label style="font-size:.82rem;font-weight:600;">Categoria<select id="prospect-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="ceramica">Cerâmica</option><option value="vidro">Vidro</option><option value="mosaico">Mosaico</option><option value="marcenaria">Marcenaria</option><option value="tufting">Tufting</option><option value="pintura">Pintura</option><option value="bordado">Bordado</option><option value="encadernacao">Encadernação</option><option value="floral">Floral</option><option value="perfumaria">Perfumaria</option><option value="vela">Vela</option><option value="aromaterapia">Aromaterapia</option><option value="joalheria">Joalheria</option><option value="gastronomia">Gastronomia</option><option value="doceria">Doceria</option><option value="cafe">Café</option><option value="degustacao">Degustação</option><option value="fermentacao">Fermentação</option><option value="sensorial">Sensorial</option><option value="autoral">Autoral</option><option value="outro">Outro</option></select></label>
-            <label style="font-size:.82rem;font-weight:600;">Status<select id="prospect-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="parceria_fechada">Parceria fechada</option><option value="recusou">Recusou</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Status<select id="prospect-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="parceria_fechada">Parceria fechada</option><option value="ja_parceiro">Já parceiro</option><option value="recusou">Recusou</option></select></label>
             <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="prospect-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
             <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="prospect-edit-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
             <label style="font-size:.82rem;font-weight:600;">Email<input type="email" id="prospect-edit-email" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
@@ -2515,7 +2518,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=109"></script>
+<script src="admin.js?v=110"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
