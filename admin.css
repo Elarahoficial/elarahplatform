@@ -47,7 +47,23 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Permite rolar o menu quando passa da altura da tela.
+     Logo (topo) e área de logout (base) ficam fixos; só o nav rola. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;     /* iOS scroll nativo suave */
+  scrollbar-width: thin;                 /* Firefox: barrinha discreta */
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
 }
+
+/* WebKit (Chrome/Safari/Edge): scrollbar fina e quase invisível,
+   pra combinar com o tema escuro do sidebar sem chamar atenção. */
+.admin__nav::-webkit-scrollbar { width: 6px; }
+.admin__nav::-webkit-scrollbar-track { background: transparent; }
+.admin__nav::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+}
+.admin__nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
 
 .admin__nav-item {
   display: flex;
