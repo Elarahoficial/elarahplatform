@@ -7198,11 +7198,78 @@
   async function renderProspects() {
     if (!document.getElementById('panel-prospects')) return;
     _propWireOnce();
-    const list = await _propFetchProspects();
+    // Carrega prospects + tipo_parceria de cada parceiro vinculado.
+    // Sem cache local pra que mudanças (promoção, edição de tipo)
+    // apareçam imediatamente.
+    const [list, fornecedoresMap] = await Promise.all([
+      _propFetchProspects(),
+      _propFetchFornecedoresTipoMap(),
+    ]);
     _prospectsCache = list;
+    _prospectsTipoMap = fornecedoresMap;
     _propRenderStats(list);
     _propRenderBairrosDatalist(list);
     _propRenderTable();
+  }
+
+  // Map<fornecedor_key, tipo_parceria>: usado pra exibir o badge
+  // Elarah/By Elarah/Ambos na linha do prospect na seção Parceiros.
+  // Falha silenciosa se a coluna não existir (migration v2 não rodou).
+  let _prospectsTipoMap = new Map();
+  async function _propFetchFornecedoresTipoMap() {
+    const sb = window.supabaseClient;
+    if (!sb) return new Map();
+    const { data, error } = await sb.from('fornecedores_metadata')
+      .select('fornecedor_key, tipo_parceria')
+      .limit(5000);
+    if (error) {
+      console.warn('[Prospects] tipo_parceria load skipped:', error.message);
+      return new Map();
+    }
+    const m = new Map();
+    (data || []).forEach(r => {
+      if (r && r.fornecedor_key) m.set(r.fornecedor_key, r.tipo_parceria || null);
+    });
+    return m;
+  }
+
+  // Pipeline operacional. Define a ordem das seções na lista, o
+  // header (cor + ícone + label) de cada uma e quais status caem
+  // em qual bucket. Pendentes vem PRIMEIRO e mais destacado pra
+  // virar foco visual da operação. Cada bucket ganha um <tr> de
+  // header com colspan=7.
+  const PROSPECT_SECTIONS = [
+    {
+      key: 'pendentes',
+      label: '🔥 Pendentes',
+      sub: 'Locais ainda não contatados — prioridade máxima',
+      bg: '#fff4e6', headerBg: '#fff0d6', fg: '#8b4500',
+      statuses: ['nao_contatado'],
+    },
+    {
+      key: 'enviadas',
+      label: '📨 Mensagens enviadas',
+      sub: 'Já receberam mensagem (inclui responderam e reunião marcada)',
+      bg: '#eef4fb', headerBg: '#dceaf6', fg: '#1f4d80',
+      statuses: ['mensagem_enviada', 'respondeu', 'reuniao_marcada'],
+    },
+    {
+      key: 'parceiros',
+      label: '⭐ Parceiros',
+      sub: 'Parcerias fechadas + locais que já eram parceiros',
+      bg: '#e8f5ec', headerBg: '#d4ebd9', fg: '#0e6b34',
+      statuses: ['parceria_fechada', 'ja_parceiro'],
+    },
+    {
+      key: 'recusados',
+      label: '❌ Recusados',
+      sub: 'Recusaram a parceria ou não fazem sentido',
+      bg: '#f4f4f4', headerBg: '#ebebeb', fg: '#666',
+      statuses: ['recusou'],
+    },
+  ];
+  function _propSectionForStatus(status) {
+    return PROSPECT_SECTIONS.find(s => s.statuses.indexOf(status) !== -1);
   }
 
   function _propRenderTable() {
@@ -7215,21 +7282,51 @@
       tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhum prospect para esses filtros. Clique em "+ Novo prospect" pra começar.</td></tr>';
       return;
     }
+
+    // Agrupa por seção e ordena: Pendentes → Enviadas → Parceiros → Recusados
+    // Dentro de cada seção, ordena por created_at desc (mais recente em cima).
+    const buckets = new Map();
+    PROSPECT_SECTIONS.forEach(s => buckets.set(s.key, []));
+    const orphan = [];                                 // status fora da lista (legacy)
+    filtered.forEach(p => {
+      const sec = _propSectionForStatus(p.status);
+      if (sec) buckets.get(sec.key).push(p);
+      else     orphan.push(p);
+    });
+    buckets.forEach(arr => arr.sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
+    }));
+
     const fmtTs = (ts) => ts ? new Date(ts).toLocaleDateString('pt-BR') : '<span style="color:#bbb;">—</span>';
-    tbody.innerHTML = filtered.map(p => {
-      const cat = p.categoria ? '<span style="font-size:.78rem;background:#f4f4f4;color:#444;padding:2px 8px;border-radius:6px;">' + _propEsc(p.categoria) + '</span>' : '<span style="color:#bbb;">—</span>';
+
+    const renderRow = (p, sec) => {
+      const cat = p.categoria
+        ? '<span style="font-size:.78rem;background:#f4f4f4;color:#444;padding:2px 8px;border-radius:6px;">' + _propEsc(p.categoria) + '</span>'
+        : '<span style="color:#bbb;">—</span>';
       const bairro = p.bairro ? _propEsc(p.bairro) : '<span style="color:#bbb;">—</span>';
       const lastTipo = p._lastInteractionTipo ? PROSPECT_INTERACTION_LABELS[p._lastInteractionTipo] || p._lastInteractionTipo : null;
       const lastInteraction = p._lastInteractionTs
         ? fmtTs(p._lastInteractionTs) + (lastTipo ? '<br><span style="font-size:.7rem;color:#888;">' + _propEsc(lastTipo) + '</span>' : '')
         : '<span style="color:#bbb;">—</span>';
       const waLink = p.whatsapp ? _propWhatsappLink(p.whatsapp) : null;
-      return '<tr>' +
+      // Status cell: badge padrão + (na seção Parceiros) badge de tipo_parceria
+      let statusCell = _propStatusBadge(p.status);
+      if (sec && sec.key === 'parceiros' && p.promoted_supplier_key) {
+        const tipo = _prospectsTipoMap.get(p.promoted_supplier_key) || null;
+        const tipoLabel = tipo ? (TIPO_PARCERIA_LABELS[tipo] || tipo) : '—';
+        const tipoColor = tipo === 'ambos' ? '#6b3aa0' : (tipo === 'byelarah' ? '#a05a00' : (tipo === 'elarah' ? '#1a8a4a' : '#999'));
+        statusCell += '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:6px;background:#fff;border:1px solid ' + tipoColor + ';color:' + tipoColor + ';font-size:.68rem;font-weight:700;">' + _propEsc(tipoLabel) + '</span>';
+      }
+      // Linha com fundo levemente colorido pra reforçar a seção
+      const rowBg = sec ? sec.bg : '#fff';
+      return '<tr style="background:' + rowBg + ';">' +
         '<td style="font-weight:600;">' + _propEsc(p.nome) + '</td>' +
         '<td>' + cat + '</td>' +
         '<td style="font-size:.85rem;">' + bairro + '</td>' +
         '<td>' + _propContactIcons(p) + '</td>' +
-        '<td>' + _propStatusBadge(p.status) + '</td>' +
+        '<td>' + statusCell + '</td>' +
         '<td style="font-size:.82rem;">' + lastInteraction + '</td>' +
         '<td>' +
           (waLink ? '<a href="' + _propEsc(waLink) + '" target="_blank" rel="noopener" style="display:inline-block;margin-right:6px;padding:5px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;">WhatsApp</a>' : '') +
@@ -7237,7 +7334,29 @@
           '<button type="button" data-prospect-action="edit" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;">Editar</button>' +
         '</td>' +
       '</tr>';
-    }).join('');
+    };
+
+    const sectionHeader = (sec, count) =>
+      '<tr><td colspan="7" style="background:' + sec.headerBg + ';color:' + sec.fg + ';padding:10px 14px;border-top:2px solid ' + sec.fg + ';">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+          '<div><strong style="font-size:.92rem;letter-spacing:.02em;">' + sec.label + '</strong> ' +
+          '<span style="font-size:.78rem;color:' + sec.fg + ';opacity:.8;">— ' + sec.sub + '</span></div>' +
+          '<span style="font-size:.85rem;font-weight:700;background:#fff;color:' + sec.fg + ';padding:3px 10px;border-radius:10px;">' + count + '</span>' +
+        '</div>' +
+      '</td></tr>';
+
+    const out = [];
+    PROSPECT_SECTIONS.forEach(sec => {
+      const rows = buckets.get(sec.key);
+      if (!rows.length) return;
+      out.push(sectionHeader(sec, rows.length));
+      rows.forEach(p => out.push(renderRow(p, sec)));
+    });
+    if (orphan.length) {
+      out.push('<tr><td colspan="7" style="background:#f8f0f8;padding:8px 14px;color:#6b3aa0;font-size:.82rem;"><strong>Outros</strong> — status não-pipeline (' + orphan.length + ')</td></tr>');
+      orphan.forEach(p => out.push(renderRow(p, null)));
+    }
+    tbody.innerHTML = out.join('');
   }
 
   // ===== Wire (uma vez por carregamento) =====
@@ -7569,7 +7688,18 @@
     if (row && row.ok) {
       alert(row.message || 'Promovido!');
       _propCloseTimelineModal();
+      // Invalida caches financeiros + bookings (afeta Fornecedores
+      // e qualquer aba que mostre o fornecedor recém-criado).
+      if (typeof invalidateBookings === 'function') {
+        try { invalidateBookings(); } catch (e) { /* ok */ }
+      }
       renderProspects();
+      // Se a aba Fornecedores está aberta, re-renderiza pra mostrar
+      // o novo parceiro imediatamente (sem esperar o usuário trocar
+      // de aba).
+      if (document.getElementById('panel-fornecedores')?.classList.contains('admin__panel--active')) {
+        if (typeof renderFornecedores === 'function') renderFornecedores();
+      }
     } else {
       alert((row && row.message) || 'Falha desconhecida.');
     }
