@@ -7268,6 +7268,13 @@
   // header com colspan=7.
   const PROSPECT_SECTIONS = [
     {
+      key: 'reunioes',
+      label: '📅 Reuniões marcadas',
+      sub: 'Encontros agendados — prepare antes',
+      bg: '#f5edfc', headerBg: '#e9dcf5', fg: '#6b3aa0',
+      statuses: ['reuniao_marcada'],
+    },
+    {
       key: 'pendentes',
       label: '🔥 Pendentes',
       sub: 'Locais ainda não contatados — prioridade máxima',
@@ -7277,9 +7284,9 @@
     {
       key: 'enviadas',
       label: '📨 Mensagens enviadas',
-      sub: 'Já receberam mensagem (inclui responderam e reunião marcada)',
+      sub: 'Já receberam mensagem (incluindo responderam)',
       bg: '#eef4fb', headerBg: '#dceaf6', fg: '#1f4d80',
-      statuses: ['mensagem_enviada', 'respondeu', 'reuniao_marcada'],
+      statuses: ['mensagem_enviada', 'respondeu'],
     },
     {
       key: 'parceiros',
