@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 118;
+      var EXPECTED = 119;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -399,6 +399,13 @@
           </div>
           <label style="font-size:.82rem;font-weight:600;">Status<select id="rotina-task-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="pendente">Pendente</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option></select></label>
           <label style="font-size:.82rem;font-weight:600;">Notas<textarea id="rotina-task-notas" rows="3" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          <!-- Checkbox de recorrência: só aparece em criação. Marcar
+               cria também um template (vira tarefa fixa toda semana
+               no mesmo dia). -->
+          <label id="rotina-task-recorrente-wrap" style="font-size:.85rem;display:flex;align-items:center;gap:8px;padding:10px;background:#f5edfc;border:1px solid #d9c5ee;border-radius:6px;cursor:pointer;">
+            <input type="checkbox" id="rotina-task-recorrente" style="width:16px;height:16px;cursor:pointer;">
+            <span><strong>🔁 Repetir toda semana</strong> — cria um template e essa tarefa volta automaticamente nas próximas semanas no mesmo dia</span>
+          </label>
         </div>
         <div id="rotina-task-msg" style="margin-top:10px;font-size:.85rem;"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
@@ -2816,7 +2823,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=118"></script>
+<script src="admin.js?v=119"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
