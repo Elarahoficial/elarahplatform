@@ -10061,6 +10061,13 @@
     document.getElementById('rotina-task-msg').textContent = '';
     document.getElementById('rotina-task-delete').style.display = t ? '' : 'none';
     document.getElementById('rotina-task-duplicate').style.display = t ? '' : 'none';
+    // Checkbox "Repetir toda semana" só faz sentido em CRIAÇÃO.
+    // Em edição, esconde — pra editar recorrência o user usa
+    // ⚙️ Templates (separação de responsabilidades).
+    const recWrap = document.getElementById('rotina-task-recorrente-wrap');
+    const recCheck = document.getElementById('rotina-task-recorrente');
+    if (recWrap) recWrap.style.display = t ? 'none' : '';
+    if (recCheck) recCheck.checked = false;
     modal.style.display = 'flex';
     setTimeout(() => document.getElementById('rotina-task-titulo').focus(), 50);
   }
@@ -10120,8 +10127,43 @@
     if (payload.status === 'concluido') payload.completed_at = new Date().toISOString();
     msg.textContent = 'Salvando…'; msg.style.color = '#666';
     let res;
-    if (id) res = await sb.from('routine_tasks').update(payload).eq('id', id);
-    else    res = await sb.from('routine_tasks').insert(payload);
+    if (id) {
+      res = await sb.from('routine_tasks').update(payload).eq('id', id);
+    } else {
+      // Em CRIAÇÃO, verifica se marcou "Repetir toda semana".
+      // Se sim: cria template primeiro (vira recorrente em todas
+      // as semanas) e a task da semana atual herda template_id.
+      // Se não: insert direto como tarefa pontual (kind='manual').
+      const recCheck = document.getElementById('rotina-task-recorrente');
+      const isRecurring = recCheck && recCheck.checked;
+      if (isRecurring) {
+        // Cria template. Ordem: max + 10 entre os ativos do mesmo dia.
+        const { data: maxRow } = await sb.from('routine_templates')
+          .select('ordem')
+          .eq('week_day', payload.week_day)
+          .eq('is_active', true)
+          .order('ordem', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const nextOrdem = (maxRow && Number(maxRow.ordem)) ? Number(maxRow.ordem) + 10 : 10;
+        const tplRes = await sb.from('routine_templates')
+          .insert({
+            week_day: payload.week_day,
+            titulo: payload.titulo,
+            responsavel: payload.responsavel,
+            ordem: nextOrdem,
+            is_active: true,
+          })
+          .select('id')
+          .single();
+        if (tplRes.error) { msg.textContent = 'Erro ao criar template: ' + tplRes.error.message; msg.style.color = '#c0392b'; return; }
+        // Adiciona template_id e kind ao payload da task
+        payload.template_id = tplRes.data.id;
+        payload.kind = 'template';
+        payload.ordem = nextOrdem;
+      }
+      res = await sb.from('routine_tasks').insert(payload);
+    }
     if (res.error) { msg.textContent = 'Erro: ' + res.error.message; msg.style.color = '#c0392b'; return; }
     _rotinaCloseTaskModal();
     _rotinaLoadAndRender();
