@@ -289,7 +289,7 @@ subGroups.forEach(group => {
         '<td>' + escapeHtml(s.nome) + '</td>' +
         '<td>' + escapeHtml(s.email) + '</td>' +
         '<td>' + escapeHtml(s.telefone) + '</td>' +
-        '<td>' + escapeHtml(s.horario || '—') + '</td>' +
+        '<td>' + escapeHtml((window.elarahFormatHorario || function(x){return x;})(s.horario || '') || '—') + '</td>' +
       '</tr>'
     );
   });

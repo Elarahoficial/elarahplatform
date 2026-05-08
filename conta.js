@@ -436,7 +436,7 @@ renderFavoritos();
   function renderBookingCard(booking, group) {
     const nome = booking.experiencia_nome || 'Experiência';
     const data = booking.data || '';
-    const horario = booking.horario || '';
+    const horario = (window.elarahFormatHorario || ((s) => s))(booking.horario || '');
     const priceLabel = booking.preco_label ||
       (booking.amount_total ? formatBrlCents(booking.amount_total) : '');
     const status = booking.status || 'pending';

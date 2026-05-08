@@ -152,7 +152,7 @@
       : placeholder;
 
     const data = (exp.data || '').trim();
-    const horario = (exp.horario || '').trim();
+    const horario = (window.elarahFormatHorario || function(s){return s;})((exp.horario || '').trim());
     const bairro = (exp.bairro || '').trim();
     const precoRaw = (exp.preco || '').trim();
     const preco = (window.ElarahData && ElarahData.formatPrecoBR)

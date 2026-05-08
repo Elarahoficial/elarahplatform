@@ -78,6 +78,9 @@
     } else if (typeof row.horarios === 'string') {
       try { horarios = JSON.parse(row.horarios); } catch { horarios = []; }
     }
+    // Padroniza pra formato Elarah (14h30 / 10h / 19h45)
+    var fmt = window.elarahFormatHorario || function (s) { return s; };
+    horarios = (horarios || []).map(function (h) { return fmt(String(h || '').trim()); }).filter(Boolean);
     return {
       id: row.id,
       slug: row.slug || '',
