@@ -2519,7 +2519,7 @@
       const nomes = collectParticipantNames(b, nomeResolved, telefone);
       const expNome = b.experiencia_nome || '(experiência)';
       const data = b.data || '(data)';
-      const horario = b.horario || '(horário)';
+      const horario = (window.elarahFormatHorario || ((s) => s))(b.horario || '') || '(horário)';
       const plural = nomes.length > 1;
       const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
       const lista = joinNames(nomes) || '(participante)';
@@ -2721,7 +2721,7 @@
           <td>${telefoneCell}</td>
           <td>${escapeHtml(b.experiencia_nome || '—')}${variantCell}</td>
           <td>${escapeHtml(b.data || '—')}</td>
-          <td>${escapeHtml(b.horario || '—')}</td>
+          <td>${escapeHtml((window.elarahFormatHorario || ((s) => s))(b.horario || '') || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b.amount_total, b.currency))}${mismatchBadge(b)}</td>
           <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
@@ -3094,7 +3094,7 @@
         '<td>' + telefoneCell + '</td>' +
         '<td>' + escapeHtml(b.experiencia_nome || '—') + '</td>' +
         '<td>' + escapeHtml(b.data || '—') + '</td>' +
-        '<td>' + escapeHtml(b.horario || '—') + '</td>' +
+        '<td>' + escapeHtml((window.elarahFormatHorario || ((s) => s))(b.horario || '') || '—') + '</td>' +
         '<td>' + (b.quantidade > 1 ? b.quantidade : '1') + '</td>' +
         '<td>' + escapeHtml(formatCents(b.amount_total, b.currency)) + '</td>' +
         '<td>' + bookingStatusBadge(b.status) + '</td>' +

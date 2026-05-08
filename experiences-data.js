@@ -13,6 +13,26 @@
 
   const TABLE = 'experiences';
   let cache = null;
+
+  // ===== formatHorario =====
+  // Padroniza qualquer horário pra formato Elarah:
+  //   14:30  → 14h30
+  //   10:00  → 10h
+  //   19:45  → 19h45
+  //   14h30  → 14h30  (idempotente)
+  //   "19h00 - 21h30" → "19h - 21h30"  (range, ambos lados)
+  //   "Semanal" / null / "" → passthrough sem mexer
+  // Regex captura cada par HH(:|h)MM e reescreve. Aplica /g pra ranges.
+  function formatHorario(raw) {
+    if (raw == null) return '';
+    return String(raw).replace(/(\d{1,2})\s*[h:]\s*(\d{0,2})/g, function (_, hh, mm) {
+      if (!mm || mm === '00' || mm === '0') return hh + 'h';
+      return hh + 'h' + (mm.length === 1 ? '0' + mm : mm);
+    });
+  }
+  // Expõe globalmente — outros scripts (conta.js, admin.js, etc.) usam
+  // o mesmo helper sem reimplementar a regex.
+  window.elarahFormatHorario = formatHorario;
   let cachePromise = null;
 
   // Set de colunas conhecidamente existentes na tabela. Detectado na
@@ -89,8 +109,12 @@
 
   function dbRowToExperience(row) {
     if (!row) return null;
-    const horarios = Array.isArray(row.horarios) ? row.horarios.slice() : [];
-    const horario = horarios[0] || row.horario || '';
+    // Normaliza pra padrão visual Elarah (14h30 / 10h / 19h45) ao
+    // entrar nos objetos da app. Display, comparações e slot keys
+    // ficam consistentes independente de como o admin digitou.
+    const rawHorarios = Array.isArray(row.horarios) ? row.horarios.slice() : [];
+    const horarios = rawHorarios.map(formatHorario);
+    const horario = horarios[0] || formatHorario(row.horario || '');
     return {
       id: row.id,
       nome: row.nome || '',
@@ -684,7 +708,7 @@
       id: row.id,
       experienceId: row.experience_id,
       data: row.data || null,
-      horario: row.horario || '',
+      horario: formatHorario(row.horario || ''),
       vagasTotal: row.vagas_total != null ? Number(row.vagas_total) : null,
       vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
       eventAt: row.event_at || null,
