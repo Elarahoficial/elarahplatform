@@ -463,7 +463,11 @@ select {
 
 .categories__inner {
   display: flex;
+  /* Centraliza quando cabe na tela; alinha no início quando passa
+     da largura do viewport. Sem o "safe", o overflow esconde o início
+     da lista (Bartenderia ficava cortada). */
   justify-content: center;
+  justify-content: safe center;
   align-items: center;
   width: 100%;
   padding: 32px 48px;
@@ -471,6 +475,7 @@ select {
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 48px;
 }
 
 .categories__inner::-webkit-scrollbar {
