@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 120;
+      var EXPECTED = 121;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -334,6 +334,31 @@
       <!-- Grid 7 colunas (Seg-Dom) — vira 1 coluna no mobile -->
       <div id="rotina-grid" class="op-week-grid" style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:10px;">
         <!-- preenchido via JS -->
+      </div>
+
+      <!-- ===== Observações (bloco abaixo do grid) ===== -->
+      <div style="margin-top:24px;background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2 style="margin:0;font-size:1.05rem;">📝 Observações</h2>
+            <span style="font-size:.78rem;color:#888;">aprendizados, ideias, prioridades — auto-salva</span>
+          </div>
+          <!-- Toggle entre semana/mês -->
+          <div style="display:flex;gap:0;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+            <button type="button" id="rotina-notas-tab-semana"
+              style="padding:6px 14px;background:#2c5e3f;color:#fff;border:none;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">
+              Esta semana
+            </button>
+            <button type="button" id="rotina-notas-tab-mes"
+              style="padding:6px 14px;background:#fff;color:#444;border:none;font-family:inherit;font-size:.82rem;cursor:pointer;border-left:1px solid #ddd;">
+              Este mês
+            </button>
+          </div>
+        </div>
+        <textarea id="rotina-notas-textarea"
+          placeholder="Escreva o que importa pra essa semana — aprendizados, ajustes, ideias de conteúdo, prioridades, observações de fornecedores ou experiências…"
+          style="width:100%;min-height:160px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;line-height:1.5;resize:vertical;background:#fafafa;"></textarea>
+        <div id="rotina-notas-status" style="margin-top:6px;font-size:.74rem;color:#888;text-align:right;">—</div>
       </div>
     </div>
 
@@ -2823,7 +2848,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=120"></script>
+<script src="admin.js?v=121"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

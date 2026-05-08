@@ -9943,7 +9943,10 @@
     _rotinaState.tasks = data || [];
     _rotinaRenderGrid();
     document.getElementById('rotina-subtitle').textContent =
-      'Semana de ' + _opFmtRange(_rotinaState.weekStart) + ' — clique numa tarefa pra editar, no checkbox pra concluir';
+      'Semana de ' + _opFmtRange(_rotinaState.weekStart) + ' — clique numa tarefa pra editar, arraste pra mover de dia';
+    // Carrega observações da semana e do mês em paralelo. Não trava
+    // se falhar (tabela ausente, RLS, etc.).
+    _rotinaLoadNotesForCurrentWeek().catch(() => {});
   }
 
   function _rotinaRenderGrid() {
@@ -9963,7 +9966,7 @@
       const isWeekend = day >= 5;
       const taskRows = tasks.map(t => _rotinaTaskRow(t)).join('');
       colsHtml.push(
-        '<div class="op-day-col' + (isWeekend ? ' op-day-col--weekend' : '') + '">' +
+        '<div class="op-day-col' + (isWeekend ? ' op-day-col--weekend' : '') + '" data-day="' + day + '">' +
           '<div class="op-day-col__header">' +
             '<div>' +
               '<div class="op-day-col__label">' + OP_DAY_NAMES[day] + '</div>' +
@@ -9973,7 +9976,7 @@
               'style="background:transparent;border:1px dashed #aaa;color:#666;border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:.8rem;font-family:inherit;padding:0;" ' +
               'title="Adicionar tarefa">+</button>' +
           '</div>' +
-          '<div class="op-day-col__tasks">' +
+          '<div class="op-day-col__tasks" data-drop-day="' + day + '">' +
             (taskRows || '<div style="font-size:.75rem;color:#bbb;text-align:center;padding:8px 0;">Sem tarefas</div>') +
           '</div>' +
         '</div>'
@@ -9981,7 +9984,7 @@
     }
     grid.innerHTML = colsHtml.join('');
 
-    // Wire dos checkboxes (toggle status) e clicks no título (editar)
+    // Wire dos checkboxes (toggle status), clicks (editar) e DRAG & DROP
     grid.querySelectorAll('[data-task-id]').forEach(el => {
       const taskId = el.dataset.taskId;
       const toggle = el.querySelector('.op-task-check');
@@ -9991,7 +9994,29 @@
           _rotinaToggleStatus(taskId);
         });
       }
-      el.addEventListener('click', () => _rotinaOpenTaskModal(taskId));
+      el.addEventListener('click', (e) => {
+        // Se acabou de arrastar, não abre modal (evita modal ao soltar)
+        if (el.dataset.justDragged === '1') {
+          el.dataset.justDragged = '0';
+          return;
+        }
+        _rotinaOpenTaskModal(taskId);
+      });
+
+      // ===== Drag and drop nativo HTML5 =====
+      // Em mobile (touch), drag não dispara — user usa modal pra
+      // mudar dia. Em desktop, arrasta pra outra coluna.
+      el.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/task-id', taskId);
+        e.dataTransfer.effectAllowed = 'move';
+        el.style.opacity = '0.4';
+      });
+      el.addEventListener('dragend', () => {
+        el.style.opacity = '';
+        el.dataset.justDragged = '1';
+        // limpa o flag depois de 200ms (após o click event passar)
+        setTimeout(() => { el.dataset.justDragged = '0'; }, 200);
+      });
     });
     grid.querySelectorAll('.op-add-task').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -10000,6 +10025,49 @@
         _rotinaOpenTaskModal(null, day);
       });
     });
+
+    // Wire dos drop targets (área de tasks de cada coluna)
+    grid.querySelectorAll('[data-drop-day]').forEach(zone => {
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();                  // permite drop
+        e.dataTransfer.dropEffect = 'move';
+        zone.style.background = 'rgba(43, 94, 63, 0.08)';
+      });
+      zone.addEventListener('dragleave', () => {
+        zone.style.background = '';
+      });
+      zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        zone.style.background = '';
+        const taskId = e.dataTransfer.getData('text/task-id');
+        if (!taskId) return;
+        const newDay = Number(zone.dataset.dropDay);
+        const t = _rotinaState.tasks.find(x => x.id === taskId);
+        if (!t || t.week_day === newDay) return;   // mesmo dia, no-op
+        await _rotinaMoveTaskToDay(taskId, newDay);
+      });
+    });
+  }
+
+  // Move tarefa pra outro dia da semana atual.
+  // Otimista: atualiza state local + re-render, depois persiste no DB.
+  // Reverte se UPDATE falhar.
+  async function _rotinaMoveTaskToDay(taskId, newDay) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const t = _rotinaState.tasks.find(x => x.id === taskId);
+    if (!t) return;
+    const prevDay = t.week_day;
+    t.week_day = newDay;
+    _rotinaRenderGrid();
+    const { error } = await sb.from('routine_tasks')
+      .update({ week_day: newDay }).eq('id', taskId);
+    if (error) {
+      console.error('[Rotina] move error:', error.message);
+      t.week_day = prevDay;
+      _rotinaRenderGrid();
+      alert('Não consegui mover: ' + error.message);
+    }
   }
 
   function _rotinaTaskRow(t) {
@@ -10011,7 +10079,9 @@
     const expBadge = isExp
       ? '<span style="font-size:.62rem;background:#fff4d6;color:#a87a00;padding:1px 6px;border-radius:4px;font-weight:700;letter-spacing:.02em;">★ EXPERIÊNCIA</span>'
       : '';
-    return '<div class="' + cls + (isExp ? ' op-task--exp' : '') + '" data-task-id="' + _opEsc(t.id) + '">' +
+    return '<div class="' + cls + (isExp ? ' op-task--exp' : '') +
+      '" draggable="true" data-task-id="' + _opEsc(t.id) +
+      '" data-current-day="' + t.week_day + '">' +
       '<input type="checkbox" class="op-task-check"' + (done ? ' checked' : '') + '>' +
       '<div style="flex:1;">' +
         '<div class="op-task-title">' + _opEsc(t.titulo) + '</div>' +
@@ -10290,6 +10360,135 @@
       .update({ is_active: !tpl.is_active }).eq('id', tplId);
     if (error) { alert('Erro: ' + error.message); return; }
     _rotinaOpenTemplatesModal();
+  }
+
+
+  // =============================================================
+  // === ROTINA: OBSERVAÇÕES (notas livres semana/mês) ==========
+  // =============================================================
+  // Estado: scope ativo + cache da nota atual (id + last save).
+  let _notasState = {
+    scope: 'semana',      // 'semana' | 'mes'
+    saveTimer: null,
+    wired: false,
+    lastSavedAt: null,
+  };
+
+  // Helpers de período:
+  //   semana → period_anchor = segunda-feira da semana
+  //   mes    → period_anchor = primeiro dia do mês corrente
+  function _notasAnchorFor(scope, weekStart) {
+    if (scope === 'mes') {
+      const d = new Date(weekStart);
+      d.setDate(1);
+      return _opIsoDate(d);
+    }
+    return _opIsoDate(weekStart);
+  }
+  function _notasFmtSavedAt(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return 'Salvo ' + d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
+  function _rotinaWireNotesOnce() {
+    if (_notasState.wired) return;
+    _notasState.wired = true;
+    const tabSemana = document.getElementById('rotina-notas-tab-semana');
+    const tabMes    = document.getElementById('rotina-notas-tab-mes');
+    const ta        = document.getElementById('rotina-notas-textarea');
+
+    if (tabSemana) tabSemana.addEventListener('click', () => _rotinaSetNotesScope('semana'));
+    if (tabMes)    tabMes.addEventListener('click',    () => _rotinaSetNotesScope('mes'));
+
+    if (ta) {
+      // Auto-save com debounce 800ms enquanto digita.
+      ta.addEventListener('input', () => {
+        if (_notasState.saveTimer) clearTimeout(_notasState.saveTimer);
+        const status = document.getElementById('rotina-notas-status');
+        if (status) { status.textContent = 'Salvando…'; status.style.color = '#a87a00'; }
+        _notasState.saveTimer = setTimeout(() => _rotinaSaveNotes(), 800);
+      });
+      // Se sair do campo, salva imediatamente.
+      ta.addEventListener('blur', () => {
+        if (_notasState.saveTimer) { clearTimeout(_notasState.saveTimer); _notasState.saveTimer = null; }
+        _rotinaSaveNotes();
+      });
+    }
+  }
+
+  function _rotinaSetNotesScope(scope) {
+    _notasState.scope = scope;
+    // Atualiza visual dos toggle buttons
+    const ts = document.getElementById('rotina-notas-tab-semana');
+    const tm = document.getElementById('rotina-notas-tab-mes');
+    if (ts && tm) {
+      ts.style.background = scope === 'semana' ? '#2c5e3f' : '#fff';
+      ts.style.color      = scope === 'semana' ? '#fff'    : '#444';
+      ts.style.fontWeight = scope === 'semana' ? '600'     : '400';
+      tm.style.background = scope === 'mes'    ? '#2c5e3f' : '#fff';
+      tm.style.color      = scope === 'mes'    ? '#fff'    : '#444';
+      tm.style.fontWeight = scope === 'mes'    ? '600'     : '400';
+    }
+    // Atualiza placeholder pra contexto correto
+    const ta = document.getElementById('rotina-notas-textarea');
+    if (ta) {
+      ta.placeholder = scope === 'mes'
+        ? 'Anotações do mês — visão estratégica, aprendizados, padrões, ajustes maiores…'
+        : 'Escreva o que importa pra essa semana — aprendizados, ajustes, ideias de conteúdo, prioridades, observações de fornecedores ou experiências…';
+    }
+    _rotinaLoadNotesForCurrentWeek();
+  }
+
+  async function _rotinaLoadNotesForCurrentWeek() {
+    _rotinaWireNotesOnce();
+    const sb = window.supabaseClient;
+    const ta = document.getElementById('rotina-notas-textarea');
+    const status = document.getElementById('rotina-notas-status');
+    if (!sb || !ta) return;
+    const anchor = _notasAnchorFor(_notasState.scope, _rotinaState.weekStart);
+    const { data, error } = await sb.from('routine_notes')
+      .select('id, conteudo, updated_at')
+      .eq('scope', _notasState.scope)
+      .eq('period_anchor', anchor)
+      .maybeSingle();
+    if (error && !String(error.message || '').includes('routine_notes')) {
+      // Tabela presente mas erro real — log e ignora
+      console.warn('[Rotina/notas] load:', error.message);
+    }
+    if (data) {
+      ta.value = data.conteudo || '';
+      _notasState.lastSavedAt = data.updated_at;
+      if (status) { status.textContent = _notasFmtSavedAt(data.updated_at); status.style.color = '#888'; }
+    } else {
+      ta.value = '';
+      _notasState.lastSavedAt = null;
+      if (status) { status.textContent = '—'; status.style.color = '#888'; }
+    }
+  }
+
+  async function _rotinaSaveNotes() {
+    const sb = window.supabaseClient;
+    const ta = document.getElementById('rotina-notas-textarea');
+    const status = document.getElementById('rotina-notas-status');
+    if (!sb || !ta) return;
+    const conteudo = ta.value.trim() || null;
+    const anchor = _notasAnchorFor(_notasState.scope, _rotinaState.weekStart);
+    // UPSERT: insert ou update conforme unique (scope, period_anchor)
+    const { data, error } = await sb.from('routine_notes')
+      .upsert(
+        { scope: _notasState.scope, period_anchor: anchor, conteudo: conteudo },
+        { onConflict: 'scope,period_anchor' }
+      )
+      .select('updated_at')
+      .single();
+    if (error) {
+      console.error('[Rotina/notas] save:', error.message);
+      if (status) { status.textContent = '⚠ Erro ao salvar'; status.style.color = '#c0392b'; }
+      return;
+    }
+    _notasState.lastSavedAt = data && data.updated_at;
+    if (status) { status.textContent = _notasFmtSavedAt(_notasState.lastSavedAt); status.style.color = '#1a8a4a'; }
   }
 
 
