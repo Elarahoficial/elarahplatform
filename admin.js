@@ -9750,6 +9750,7 @@
       sb.from('routine_tasks')
         .select('id, week_day, status, week_start')
         .eq('week_start', wsIso)
+        .is('dismissed_at', null)
         .then(r => r.data || []),
       sb.from('content_pieces')
         .select('id, status, scheduled_at, posted_at, titulo')
@@ -9777,12 +9778,14 @@
     const tasksWeekDone = tasks.filter(t => t.status === 'concluido').length;
 
     // Atrasadas: tarefas semanas anteriores ainda não-concluídas
+    // (filtra soft-deleted via dismissed_at IS NULL)
     const { data: atrasadas } = await sb.from('routine_tasks')
       .select('id', { count: 'exact', head: true })
       .lt('week_start', wsIso)
-      .neq('status', 'concluido');
+      .neq('status', 'concluido')
+      .is('dismissed_at', null);
     const qtyAtrasadas = atrasadas == null
-      ? (await sb.from('routine_tasks').select('id').lt('week_start', wsIso).neq('status','concluido').then(r => (r.data||[]).length))
+      ? (await sb.from('routine_tasks').select('id').lt('week_start', wsIso).neq('status','concluido').is('dismissed_at', null).then(r => (r.data||[]).length))
       : atrasadas;
 
     // Conteúdos
@@ -9929,6 +9932,7 @@
     const { data, error } = await sb.from('routine_tasks')
       .select('*')
       .eq('week_start', wsIso)
+      .is('dismissed_at', null)              // soft delete: filtra excluídas
       .order('week_day', { ascending: true })
       .order('ordem', { ascending: true })
       .order('created_at', { ascending: true });
@@ -10125,9 +10129,16 @@
   async function _rotinaDeleteTask() {
     const id = document.getElementById('rotina-task-id').value;
     if (!id) return;
-    if (!confirm('Excluir esta tarefa?')) return;
+    if (!confirm('Excluir esta tarefa? (Ela some da rotina dessa semana — próximas semanas continuam normalmente.)')) return;
     const sb = window.supabaseClient;
-    const { error } = await sb.from('routine_tasks').delete().eq('id', id);
+    // Soft delete: marca dismissed_at. Hard delete causaria a tarefa
+    // ser RE-INSERIDA pelo ensure_routine_week na próxima carga
+    // (template ainda ativo, week_start vazia). Com dismissed_at, a row
+    // continua existindo, a unique constraint impede re-insert e a UI
+    // filtra dismissed_at IS NOT NULL.
+    const { error } = await sb.from('routine_tasks')
+      .update({ dismissed_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) { alert('Erro: ' + error.message); return; }
     _rotinaCloseTaskModal();
     _rotinaLoadAndRender();
