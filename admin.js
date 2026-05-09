@@ -2717,10 +2717,23 @@
       //      precisar abrir cada booking.
       //   2. Booking individual ou booking antiga (variante única
       //      compartilhada) → badge legado lendo metadata.variant_*.
+      // Além disso, quando a experiência tem variant_options
+      // configurado E a booking está paga, exibe um botão "✏️ Quadros"
+      // pra o admin registrar manualmente as escolhas (útil pras
+      // reservas antigas, anteriores ao deploy do seletor no checkout).
       const variantLabel = b.metadata && b.metadata.variant_label;
       const variantSelectedSingle = b.metadata && b.metadata.variant_selected;
+      const expForBooking = expById.get(b.experiencia_id);
+      const expVariantOptions = (expForBooking && Array.isArray(expForBooking.variantOptions))
+        ? expForBooking.variantOptions
+        : [];
+      const expVariantLabel = (expForBooking && expForBooking.variantLabel) || variantLabel || '';
+      const canEditVariants = b.status === 'pago' && expVariantLabel && expVariantOptions.length > 0;
       function buildVariantCell() {
-        if (!variantLabel) return '';
+        const editBtn = canEditVariants
+          ? '<button type="button" class="admin__edit-variants-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Editar quadros escolhidos por cada pessoa" style="display:inline-block;margin:6px 0 0;padding:3px 9px;border:1px solid #d4b794;background:#fff8ef;color:#a07c4c;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">✏️ Quadros</button>'
+          : '';
+        if (!variantLabel && !canEditVariants) return '';
         const arr = (b.metadata && Array.isArray(b.metadata.participantes))
           ? b.metadata.participantes
           : [];
@@ -2737,14 +2750,23 @@
               '</span>';
           }).join('');
           return '<br><span style="font-size:.7rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">' +
-            escapeHtml(variantLabel) +
-            '</span>' + linhas;
+            escapeHtml(expVariantLabel) +
+            '</span>' + linhas +
+            (editBtn ? '<br>' + editBtn : '');
         }
-        // Fallback legado: badge único.
+        // Fluxo legado (variante única compartilhada).
         if (variantSelectedSingle) {
           return '<br><span style="font-size:.75rem;color:#a07c4c;font-weight:600;">' +
-            escapeHtml(variantLabel) + ': ' + escapeHtml(variantSelectedSingle) +
-            '</span>';
+            escapeHtml(expVariantLabel) + ': ' + escapeHtml(variantSelectedSingle) +
+            '</span>' +
+            (editBtn ? '<br>' + editBtn : '');
+        }
+        // Sem nada salvo ainda — só mostra o botão "Adicionar quadros"
+        // quando a experiência tem variantes configuradas. Visualmente
+        // discreto, mas explícito o suficiente pra o admin saber que
+        // tem como registrar a info que faltou.
+        if (canEditVariants) {
+          return '<br><span style="font-size:.7rem;color:#bbb;font-style:italic;">sem quadros registrados</span><br>' + editBtn;
         }
         return '';
       }
@@ -2816,6 +2838,209 @@
     appendGiftCardRowsInPurchases(tbody)
       .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases falhou:', e && e.message));
 
+    // ===== Editor manual de variantes (quadros) =====
+    // Abre um modal listando cada Pessoa do array participantes com
+    // botões pill pra escolher entre as variantOptions configuradas
+    // na experiência. Ao salvar, persiste:
+    //   - participantes[i].variant_selected (lugar canônico que a
+    //     tabela já lê pra mostrar "Pessoa N → Quadro X")
+    //   - variant_label + variant_selected no top-level do metadata
+    //     (compat com badge legado / email / Stripe metadata)
+    // Suporta tanto reservas que NÃO têm participantes no metadata
+    // (booking sem o array — fluxo antigo): nesse caso, monta uma lista
+    // sintética com 1 entry pelo nome do comprador, OU N entries
+    // genéricas ("Pessoa 1", "Pessoa 2") respeitando b.quantidade.
+    function openVariantsEditorModal(booking, exp) {
+      var existing = document.getElementById('admin-variants-editor');
+      if (existing) existing.remove();
+
+      // Monta a lista de pessoas pra edição. Prioridade:
+      //   1. participantes[] do metadata (preserva nomes reais)
+      //   2. fallback: comprador (nome da booking) + N-1 placeholders
+      var meta = (booking && booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+      var rawList = Array.isArray(meta.participantes) ? meta.participantes.slice() : [];
+      var qty = Number(booking.quantidade || rawList.length || 1);
+      // Se faltam entries (booking antiga só com nome do comprador),
+      // completa com placeholders pra que o admin consiga registrar
+      // a escolha de cada Pessoa N mesmo sem ter o nome dela no banco.
+      while (rawList.length < qty) {
+        if (rawList.length === 0 && booking.nome) {
+          rawList.push({ nome: booking.nome });
+        } else {
+          rawList.push({ nome: 'Pessoa ' + (rawList.length + 1) });
+        }
+      }
+      // Defesa: se mesmo assim ficou vazio (qty=0 / nome ausente),
+      // garante pelo menos 1 entry.
+      if (!rawList.length) rawList.push({ nome: booking.nome || 'Pessoa 1' });
+
+      var variantLabel = exp.variantLabel;
+      var variantOptions = exp.variantOptions.slice();
+
+      // Estado local de edição — espelha rawList mas só com a chave
+      // que vamos editar. Mantemos o array original intacto até salvar.
+      var draft = rawList.map(function (p) {
+        return {
+          nome: (p && p.nome) || '',
+          email: (p && p.email) || null,
+          telefone: (p && p.telefone) || null,
+          telefone_digits: (p && p.telefone_digits) || null,
+          variant_selected: (p && p.variant_selected) || null,
+        };
+      });
+
+      var modal = document.createElement('div');
+      modal.id = 'admin-variants-editor';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+      modal.innerHTML =
+        '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.2);">' +
+          '<div style="padding:18px 22px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:12px;">' +
+            '<div>' +
+              '<div style="font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Registrar quadros</div>' +
+              '<div style="font-size:1rem;color:#1a1a1a;font-weight:700;margin-top:2px;">' + escapeHtml(booking.experiencia_nome || '—') + '</div>' +
+              '<div style="font-size:.78rem;color:#666;margin-top:2px;">' + escapeHtml(booking.nome || booking.email || '') +
+                (booking.data ? ' · ' + escapeHtml(booking.data) : '') +
+                (booking.horario ? ' · ' + escapeHtml(booking.horario) : '') +
+              '</div>' +
+            '</div>' +
+            '<button type="button" id="admin-variants-close" style="border:none;background:transparent;font-size:1.6rem;line-height:1;color:#888;cursor:pointer;padding:0 4px;">×</button>' +
+          '</div>' +
+          '<div id="admin-variants-body" style="padding:18px 22px;"></div>' +
+          '<div style="padding:14px 22px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;">' +
+            '<button type="button" id="admin-variants-cancel" style="padding:9px 16px;border:1px solid #ddd;background:#fff;color:#444;border-radius:9px;font-weight:600;font-size:.85rem;cursor:pointer;">Cancelar</button>' +
+            '<button type="button" id="admin-variants-save" style="padding:9px 18px;border:none;background:#f0a05e;color:#fff;border-radius:9px;font-weight:700;font-size:.85rem;cursor:pointer;">Salvar</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+
+      var body = modal.querySelector('#admin-variants-body');
+
+      // Renderiza cada pessoa com um row de pills. Funções inline porque
+      // o modal é descartável (próxima abertura recria tudo).
+      function renderRows() {
+        body.innerHTML = '';
+        body.appendChild((function () {
+          var hint = document.createElement('p');
+          hint.style.cssText = 'margin:0 0 14px;font-size:.78rem;color:#666;';
+          hint.textContent = 'Marque o quadro escolhido por cada pessoa. Pode deixar em branco se não souber ainda — só pessoas com escolha vão aparecer na tabela.';
+          return hint;
+        })());
+        draft.forEach(function (p, idx) {
+          var row = document.createElement('div');
+          row.style.cssText = 'background:#faf6f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;';
+          var nomeRow = document.createElement('div');
+          nomeRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;';
+          var nomeSpan = document.createElement('span');
+          nomeSpan.style.cssText = 'font-size:.88rem;font-weight:700;color:#1a1a1a;';
+          nomeSpan.textContent = 'Pessoa ' + (idx + 1) + ' — ' + (p.nome || '(sem nome)');
+          var clearBtn = document.createElement('button');
+          clearBtn.type = 'button';
+          clearBtn.style.cssText = 'border:none;background:transparent;color:#888;font-size:.72rem;cursor:pointer;text-decoration:underline;';
+          clearBtn.textContent = 'limpar';
+          clearBtn.addEventListener('click', function () {
+            draft[idx].variant_selected = null;
+            renderRows();
+          });
+          nomeRow.appendChild(nomeSpan);
+          nomeRow.appendChild(clearBtn);
+          row.appendChild(nomeRow);
+
+          var labelEl = document.createElement('div');
+          labelEl.style.cssText = 'font-size:.74rem;color:#666;margin-bottom:6px;';
+          labelEl.textContent = variantLabel;
+          row.appendChild(labelEl);
+
+          var pillsWrap = document.createElement('div');
+          pillsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
+          variantOptions.forEach(function (opt) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = opt;
+            var selected = String(p.variant_selected || '').trim() === String(opt).trim();
+            btn.style.cssText = 'padding:6px 12px;border:1.5px solid ' + (selected ? '#f0a05e' : '#ddd') +
+              ';background:' + (selected ? '#fff8ef' : '#fff') +
+              ';color:' + (selected ? '#1a1a1a' : '#444') +
+              ';border-radius:999px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;';
+            btn.addEventListener('click', function () {
+              draft[idx].variant_selected = opt;
+              renderRows();
+            });
+            pillsWrap.appendChild(btn);
+          });
+          row.appendChild(pillsWrap);
+          body.appendChild(row);
+        });
+      }
+      renderRows();
+
+      function close() { modal.remove(); }
+      modal.querySelector('#admin-variants-close').addEventListener('click', close);
+      modal.querySelector('#admin-variants-cancel').addEventListener('click', close);
+      // ESC e clique no fundo também fecham.
+      modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+      var escHandler = function (e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); }
+      };
+      document.addEventListener('keydown', escHandler);
+
+      modal.querySelector('#admin-variants-save').addEventListener('click', async function () {
+        var saveBtn = modal.querySelector('#admin-variants-save');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+        try {
+          var s = window.supabaseClient;
+          if (!s) {
+            alert('Supabase indisponível. Recarregue a página e tente de novo.');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar';
+            return;
+          }
+          // Constrói o novo metadata preservando todos os campos
+          // existentes. Substitui só participantes (com variant_selected
+          // por entry) e atualiza variant_label/variant_selected
+          // top-level (compat com email/badge legado/Stripe metadata).
+          // Pessoa 1 vira a fonte da verdade do top-level.
+          var newMeta = Object.assign({}, meta);
+          newMeta.participantes = draft.map(function (p) {
+            var entry = { nome: p.nome || null };
+            if (p.email) entry.email = p.email;
+            if (p.telefone) entry.telefone = p.telefone;
+            if (p.telefone_digits) entry.telefone_digits = p.telefone_digits;
+            if (p.variant_selected) entry.variant_selected = p.variant_selected;
+            return entry;
+          });
+          newMeta.variant_label = variantLabel;
+          if (draft[0] && draft[0].variant_selected) {
+            newMeta.variant_selected = draft[0].variant_selected;
+          } else if (newMeta.variant_selected) {
+            // Se a Pessoa 1 ficou em branco mas havia escolha legada,
+            // remove pra não confundir o admin com info desatualizada.
+            delete newMeta.variant_selected;
+          }
+          var update = await s.from('bookings').update({ metadata: newMeta }).eq('id', booking.id);
+          if (update.error) {
+            console.error('[Admin] erro ao salvar quadros:', update.error);
+            alert('Erro ao salvar: ' + (update.error.message || 'erro desconhecido'));
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar';
+            return;
+          }
+          // Atualiza o objeto em memória pra a re-renderização não
+          // depender de novo fetch do banco (evita flash de dados velhos).
+          booking.metadata = newMeta;
+          invalidateBookings();
+          close();
+          document.removeEventListener('keydown', escHandler);
+          renderBookings();
+        } catch (e) {
+          console.error('[Admin] exceção ao salvar quadros:', e);
+          alert('Erro inesperado ao salvar. Veja o console.');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Salvar';
+        }
+      });
+    }
+
     // Wire editable status_fornecedor dropdowns
     tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
       sel.addEventListener('change', async function () {
@@ -2843,6 +3068,30 @@
           console.error('[Admin] status_fornecedor exception', e);
         }
         sel.disabled = false;
+      });
+    });
+
+    // Wire "✏️ Quadros" — editor manual de variantes por pessoa.
+    // Caso de uso principal: bookings antigas, anteriores ao deploy do
+    // seletor no checkout, que precisaram coletar a escolha por fora
+    // (WhatsApp, e-mail). O admin agora consegue registrar essas
+    // escolhas no metadata da booking, e a tabela passa a exibir
+    // exatamente como exibe pra reservas novas — sem distinção visual
+    // entre escolha registrada manualmente vs. escolhida no checkout.
+    tbody.querySelectorAll('.admin__edit-variants-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var bookingId = btn.dataset.bookingId;
+        var booking = bookings.find(function (b) { return b && b.id === bookingId; });
+        if (!booking) {
+          console.warn('[Admin] booking não encontrada pra editar quadros:', bookingId);
+          return;
+        }
+        var exp = expById.get(booking.experiencia_id);
+        if (!exp || !exp.variantLabel || !Array.isArray(exp.variantOptions) || !exp.variantOptions.length) {
+          alert('Esta experiência não tem variantes configuradas. Configure em Experiências → editar.');
+          return;
+        }
+        openVariantsEditorModal(booking, exp);
       });
     });
 
