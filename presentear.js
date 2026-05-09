@@ -311,11 +311,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   // =================================================
   const CHECKOUT_FN_URL =
     'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/create-checkout-session';
+  // PIX vai pro Mercado Pago (mesma function usada pelo checkout
+  // de experiências, agora com mode=gift_card). Cartão segue indo
+  // pra Stripe via create-checkout-session.
+  const MP_PIX_FN_URL =
+    'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/create-mp-pix-payment';
+  const MP_CHECK_STATUS_FN_URL =
+    'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/check-mp-payment-status';
   const SUPABASE_ANON_KEY =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
 
   function brl(centavos) {
     return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
+  }
+
+  // Validador CPF (algoritmo dos dígitos verificadores). Espelha o
+  // isValidCpfFront do script.js — sem dependência cruzada porque
+  // presentear.js é carregado em página própria (presentear.html).
+  function isValidCpfDigits(raw) {
+    var d = String(raw || '').replace(/\D+/g, '');
+    if (d.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(d)) return false;
+    var sum = 0;
+    for (var i = 0; i < 9; i++) sum += parseInt(d[i], 10) * (10 - i);
+    var v1 = (sum * 10) % 11;
+    if (v1 === 10) v1 = 0;
+    if (v1 !== parseInt(d[9], 10)) return false;
+    sum = 0;
+    for (var j = 0; j < 10; j++) sum += parseInt(d[j], 10) * (11 - j);
+    var v2 = (sum * 10) % 11;
+    if (v2 === 10) v2 = 0;
+    return v2 === parseInt(d[10], 10);
   }
 
   let giftModal = null;
@@ -327,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     giftModal.innerHTML = ''
       + '<div style="background:#fff;border-radius:18px;max-width:480px;width:100%;padding:28px 28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:92vh;overflow-y:auto;">'
       +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;">'
-      +     '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.45rem;color:#1a1a1a;margin:0;">Comprar gift card</h3>'
+      +     '<h3 id="gcm-title" style="font-family:\'DM Serif Display\',serif;font-size:1.45rem;color:#1a1a1a;margin:0;">Comprar gift card</h3>'
       +     '<button type="button" id="gcm-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;padding:0 4px;">&times;</button>'
       +   '</div>'
       +   '<form id="gcm-form">'
@@ -349,6 +375,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       +     '<input type="email" id="gcm-rec-email" placeholder="presenteado@email" required style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;">'
       +     '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Mensagem (opcional)</label>'
       +     '<textarea id="gcm-msg" rows="3" placeholder="Uma mensagem carinhosa para acompanhar o presente" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;resize:vertical;margin-bottom:14px;font-family:inherit;"></textarea>'
+      +     // ===== Forma de pagamento =====
+      +     // Cartão = Stripe (atual). PIX = Mercado Pago (novo).
+      +     // PIX exige CPF do pagador — o campo aparece dinamicamente.
+      +     '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;font-weight:600;">Forma de pagamento</label>'
+      +     '<div id="gcm-pm-group" style="display:flex;gap:8px;margin-bottom:10px;">'
+      +       '<button type="button" class="gcm-pm-btn" data-pm="card" style="flex:1;padding:11px 10px;border:1px solid #f0a05e;background:#fff8ef;color:#1a1a1a;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;">Cartão</button>'
+      +       '<button type="button" class="gcm-pm-btn" data-pm="pix" style="flex:1;padding:11px 10px;border:1px solid #ddd;background:#fff;color:#666;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;">PIX</button>'
+      +     '</div>'
+      +     '<div id="gcm-cpf-wrap" style="display:none;margin-bottom:10px;">'
+      +       '<label for="gcm-cpf" style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">CPF <span style="color:#c0392b;">*</span></label>'
+      +       '<input type="text" id="gcm-cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;">'
+      +       '<p style="margin:6px 0 0;font-size:.78rem;color:#888;">Exigido pelo Mercado Pago pra gerar o PIX.</p>'
+      +     '</div>'
       +     '<div style="background:#faf6f0;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
       +       '<span style="color:#666;font-size:.9rem;">Total</span>'
       +       '<span id="gcm-total" style="color:#1a1a1a;font-weight:700;font-size:1.1rem;">R$ 0,00</span>'
@@ -357,13 +396,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       +     '<p id="gcm-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>'
       +     '<p style="color:#888;font-size:.78rem;margin:12px 0 0;text-align:center;">O código será enviado por e-mail logo após a confirmação do pagamento.</p>'
       +   '</form>'
+      +   // ===== Painel PIX (escondido por padrão; aparece após gerar QR) =====
+      +   '<div id="gcm-pix-panel" style="display:none;">'
+      +     '<p style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;">Pague com PIX pra liberar o gift card</p>'
+      +     '<p id="gcm-pix-exp" style="margin:0 0 14px;color:#666;font-size:.85rem;">Validade: 30 minutos</p>'
+      +     '<div style="background:#faf6f0;border-radius:12px;padding:16px;margin-bottom:14px;text-align:center;">'
+      +       '<img id="gcm-pix-qr" alt="QR Code PIX" style="max-width:220px;width:100%;height:auto;margin:0 auto 10px;display:block;background:#fff;border-radius:8px;padding:8px;">'
+      +       '<p style="margin:0;font-size:.82rem;color:#666;">Escaneie com o app do seu banco</p>'
+      +     '</div>'
+      +     '<label style="display:block;font-size:.78rem;color:#666;margin-bottom:6px;">Ou copie e cole o código:</label>'
+      +     '<div style="display:flex;gap:6px;margin-bottom:14px;">'
+      +       '<input type="text" id="gcm-pix-code" readonly style="flex:1;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.78rem;font-family:Menlo,Consolas,monospace;background:#fff;">'
+      +       '<button type="button" id="gcm-pix-copy" style="padding:10px 14px;border:1px solid #f0a05e;background:#fff;color:#f0a05e;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer;white-space:nowrap;">Copiar</button>'
+      +     '</div>'
+      +     '<div id="gcm-pix-status" style="background:#fff8ef;border-radius:10px;padding:10px 14px;color:#a4663b;font-size:.84rem;margin-bottom:10px;text-align:center;">⏳ Aguardando confirmação do pagamento...</div>'
+      +     '<button type="button" id="gcm-pix-cancel" style="width:100%;padding:11px;border:1px solid #ddd;background:#fff;color:#666;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;">Cancelar</button>'
+      +   '</div>'
+      +   // ===== Sucesso =====
+      +   '<div id="gcm-success-panel" style="display:none;text-align:center;padding:10px 0;">'
+      +     '<div style="font-size:48px;line-height:1;margin-bottom:10px;">✅</div>'
+      +     '<h4 style="font-family:\'DM Serif Display\',serif;font-size:1.3rem;color:#1a8a4a;margin:0 0 8px;">Pagamento confirmado!</h4>'
+      +     '<p style="margin:0 0 14px;color:#444;font-size:.92rem;">O gift card foi enviado por e-mail pro destinatário e uma cópia pra você.</p>'
+      +     '<button type="button" id="gcm-success-close" style="padding:11px 22px;border:none;background:#f0a05e;color:#fff;border-radius:10px;font-weight:600;font-size:.9rem;cursor:pointer;">Fechar</button>'
+      +   '</div>'
       + '</div>';
 
-    // Estilo dos botões de valor
+    // Estilo dos botões de valor + de método de pagamento (estado ativo).
     const styleEl = document.createElement('style');
     styleEl.textContent =
       '#gcm-values .gcm-val{padding:11px 6px;border:1.5px solid #e5d8c5;background:#fff;border-radius:10px;font-weight:600;font-size:.9rem;cursor:pointer;color:#3a3a3a;}'
-      + '#gcm-values .gcm-val.gcm-val--active{border-color:#f0a05e;background:#fff8ee;color:#a4663b;}';
+      + '#gcm-values .gcm-val.gcm-val--active{border-color:#f0a05e;background:#fff8ee;color:#a4663b;}'
+      + '.gcm-pm-btn{transition:all .15s;}'
+      + '.gcm-pm-btn[data-active="1"]{border-color:#f0a05e !important;background:#fff8ef !important;color:#1a1a1a !important;}';
     giftModal.appendChild(styleEl);
 
     document.body.appendChild(giftModal);
@@ -373,10 +437,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     giftModal.querySelector('#gcm-close').addEventListener('click', closeGiftModal);
 
-    // Estado do valor selecionado
+    // Estado
     let selectedCentavos = 0;
+    let paymentMethod = 'card';                  // 'card' | 'pix'
+    let pixPollingTimer = null;                  // setInterval handle
+    let pixGiftCardId = null;                    // id retornado por create-mp-pix-payment
+    let pixExpiresAtMs = 0;                      // timestamp de expiração do PIX
+    let pixExpiryCountdown = null;               // setInterval do contador
     const totalEl = giftModal.querySelector('#gcm-total');
     const customEl = giftModal.querySelector('#gcm-custom');
+    const cpfWrap = giftModal.querySelector('#gcm-cpf-wrap');
+    const cpfInput = giftModal.querySelector('#gcm-cpf');
+    const formEl = giftModal.querySelector('#gcm-form');
+    const pixPanel = giftModal.querySelector('#gcm-pix-panel');
+    const successPanel = giftModal.querySelector('#gcm-success-panel');
 
     function updateTotal() {
       totalEl.textContent = brl(selectedCentavos);
@@ -399,7 +473,151 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateTotal();
     });
 
-    giftModal.querySelector('#gcm-form').addEventListener('submit', async function (e) {
+    // ===== Toggle Cartão / PIX =====
+    function updatePaymentMethodUI() {
+      giftModal.querySelectorAll('.gcm-pm-btn').forEach(function (b) {
+        if (b.dataset.pm === paymentMethod) {
+          b.dataset.active = '1';
+        } else {
+          delete b.dataset.active;
+        }
+      });
+      // CPF é obrigatório só pra PIX (regra MP). Cartão (Stripe) não pede.
+      cpfWrap.style.display = paymentMethod === 'pix' ? 'block' : 'none';
+    }
+    giftModal.querySelectorAll('.gcm-pm-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        paymentMethod = btn.dataset.pm || 'card';
+        updatePaymentMethodUI();
+      });
+    });
+    updatePaymentMethodUI();
+
+    // Máscara leve de CPF (000.000.000-00) — só visual, validação usa
+    // só dígitos. Não bloqueia digitação, só formata enquanto digita.
+    cpfInput.addEventListener('input', function () {
+      const d = (cpfInput.value || '').replace(/\D+/g, '').slice(0, 11);
+      if (d.length <= 3) cpfInput.value = d;
+      else if (d.length <= 6) cpfInput.value = d.slice(0, 3) + '.' + d.slice(3);
+      else if (d.length <= 9) cpfInput.value = d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6);
+      else cpfInput.value = d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
+    });
+
+    // ===== Painel PIX (QR + polling) =====
+    function showPixPanel(resp) {
+      formEl.style.display = 'none';
+      successPanel.style.display = 'none';
+      pixPanel.style.display = 'block';
+      pixGiftCardId = resp.gift_card_id;
+      const qrImg = giftModal.querySelector('#gcm-pix-qr');
+      const codeInput = giftModal.querySelector('#gcm-pix-code');
+      const expEl = giftModal.querySelector('#gcm-pix-exp');
+      const statusEl = giftModal.querySelector('#gcm-pix-status');
+      const copyBtn = giftModal.querySelector('#gcm-pix-copy');
+      const cancelBtn = giftModal.querySelector('#gcm-pix-cancel');
+
+      qrImg.src = 'data:image/png;base64,' + resp.qr_code_base64;
+      codeInput.value = resp.qr_code || '';
+      statusEl.textContent = '⏳ Aguardando confirmação do pagamento...';
+      statusEl.style.background = '#fff8ef';
+      statusEl.style.color = '#a4663b';
+
+      // Contador de expiração
+      pixExpiresAtMs = resp.expires_at ? new Date(resp.expires_at).getTime() : (Date.now() + 30 * 60 * 1000);
+      function tickExpiry() {
+        const ms = pixExpiresAtMs - Date.now();
+        if (ms <= 0) {
+          expEl.textContent = '⚠ QR code expirado. Cancele e gere um novo.';
+          expEl.style.color = '#c0392b';
+          stopPolling();
+          return;
+        }
+        const m = Math.floor(ms / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        expEl.textContent = 'Expira em ' + m + ':' + (s < 10 ? '0' : '') + s;
+        expEl.style.color = '#666';
+      }
+      clearInterval(pixExpiryCountdown);
+      tickExpiry();
+      pixExpiryCountdown = setInterval(tickExpiry, 1000);
+
+      copyBtn.onclick = function () {
+        codeInput.select();
+        try {
+          navigator.clipboard.writeText(codeInput.value);
+          copyBtn.textContent = 'Copiado!';
+          setTimeout(function () { copyBtn.textContent = 'Copiar'; }, 1500);
+        } catch (e) {
+          document.execCommand && document.execCommand('copy');
+          copyBtn.textContent = 'Copiado!';
+          setTimeout(function () { copyBtn.textContent = 'Copiar'; }, 1500);
+        }
+      };
+      cancelBtn.onclick = function () {
+        stopPolling();
+        closeGiftModal();
+      };
+
+      // Polling: a cada 4s, pergunta pra check-mp-payment-status se
+      // já caiu o pagamento. Quando vier active, mostra sucesso.
+      // Ouvir webhook diretamente do front exigiria realtime + RLS
+      // aberta — polling é mais simples e cobre o caso de webhook
+      // atrasar (a function reconcilia direto na MP se necessário).
+      startPolling(pixGiftCardId);
+    }
+
+    function startPolling(giftCardId) {
+      stopPolling();
+      pixPollingTimer = setInterval(async function () {
+        try {
+          const r = await fetch(MP_CHECK_STATUS_FN_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ gift_card_id: giftCardId }),
+          });
+          const d = await r.json().catch(() => null);
+          if (!d) return;
+          if (d.gift_card_status === 'active') {
+            stopPolling();
+            showSuccessPanel();
+          } else if (d.gift_card_status === 'cancelled') {
+            stopPolling();
+            const statusEl = giftModal.querySelector('#gcm-pix-status');
+            if (statusEl) {
+              statusEl.textContent = '✗ Pagamento recusado ou cancelado. Tente novamente.';
+              statusEl.style.background = '#fdecea';
+              statusEl.style.color = '#c0392b';
+            }
+          }
+        } catch (e) {
+          // Ignora erros transitórios; o próximo tick tenta de novo.
+          console.warn('[Elarah gift PIX] polling falhou (próximo tick tenta de novo):', e);
+        }
+      }, 4000);
+    }
+    function stopPolling() {
+      if (pixPollingTimer) { clearInterval(pixPollingTimer); pixPollingTimer = null; }
+      if (pixExpiryCountdown) { clearInterval(pixExpiryCountdown); pixExpiryCountdown = null; }
+    }
+
+    function showSuccessPanel() {
+      pixPanel.style.display = 'none';
+      formEl.style.display = 'none';
+      successPanel.style.display = 'block';
+      const closeBtn = giftModal.querySelector('#gcm-success-close');
+      closeBtn.onclick = function () {
+        closeGiftModal();
+        // Reset pra próxima abertura
+        formEl.style.display = '';
+        successPanel.style.display = 'none';
+      };
+    }
+
+    formEl.addEventListener('submit', async function (e) {
       e.preventDefault();
       const errEl = giftModal.querySelector('#gcm-error');
       const submitBtn = giftModal.querySelector('#gcm-submit');
@@ -410,6 +628,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const recEmail   = (giftModal.querySelector('#gcm-rec-email').value || '').trim();
       const recNome    = (giftModal.querySelector('#gcm-rec-nome').value || '').trim();
       const mensagem   = (giftModal.querySelector('#gcm-msg').value || '').trim();
+      const cpfDigits  = (cpfInput.value || '').replace(/\D+/g, '');
 
       if (selectedCentavos < 5000) {
         errEl.textContent = 'O valor mínimo do gift card é R$ 50.';
@@ -427,25 +646,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         errEl.textContent = 'Informe seu e-mail — é nele que você recebe a cópia do gift card.';
         return;
       }
+      if (paymentMethod === 'pix' && !isValidCpfDigits(cpfDigits)) {
+        errEl.textContent = 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
+        try { cpfInput.focus({ preventScroll: true }); } catch (e) {}
+        return;
+      }
 
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Abrindo pagamento...';
+      submitBtn.textContent = paymentMethod === 'pix' ? 'Gerando PIX...' : 'Abrindo pagamento...';
 
       try {
-        // Auth opcional — comprar gift card não exige login.
-        // Sempre usa anon key (JWT válido, nunca expira) para as
-        // Edge Functions — elas usam service role internamente.
-        let prefilledEmail = buyerEmail;
-        if (!prefilledEmail && window.supabaseClient && window.supabaseClient.auth) {
-          try {
-            const { data } = await window.supabaseClient.auth.getSession();
-            const session = data && data.session;
-            if (session && session.user) {
-              prefilledEmail = session.user.email || prefilledEmail;
-            }
-          } catch {}
+        // ===== Branch: PIX (Mercado Pago) =====
+        if (paymentMethod === 'pix') {
+          const res = await fetch(MP_PIX_FN_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({
+              mode: 'gift_card',
+              gift_card_value_centavos: selectedCentavos,
+              buyer_email: buyerEmail,
+              buyer_nome: buyerNome,
+              recipient_email: recEmail,
+              recipient_nome: recNome,
+              mensagem: mensagem,
+              cpf: cpfDigits,
+            }),
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data || !data.qr_code_base64) {
+            const msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            errEl.textContent = msg;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pagar e enviar gift card';
+            return;
+          }
+          showPixPanel(data);
+          return;
         }
 
+        // ===== Branch: Cartão (Stripe) — fluxo existente =====
         const res = await fetch(CHECKOUT_FN_URL, {
           method: 'POST',
           headers: {
@@ -456,7 +699,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify({
             mode: 'gift_card',
             gift_card_value_centavos: selectedCentavos,
-            buyer_email: prefilledEmail,
+            buyer_email: buyerEmail,
             buyer_nome: buyerNome,
             recipient_email: recEmail,
             recipient_nome: recNome,
@@ -479,6 +722,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    // Quando o modal fechar (X / clique fundo / cancelar PIX), garante
+    // que o polling pare pra não vazar timers entre aberturas.
+    giftModal.addEventListener('elarah-gift-closing', stopPolling);
+
     return giftModal;
   }
 
@@ -489,6 +736,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   function closeGiftModal() {
     if (!giftModal) return;
+    // Notifica handlers internos (parar polling, limpar contadores).
+    try { giftModal.dispatchEvent(new CustomEvent('elarah-gift-closing')); } catch (e) {}
     giftModal.style.display = 'none';
     document.body.style.overflow = '';
   }

@@ -101,26 +101,231 @@ function splitName(fullName: string): { first: string; last: string } {
 // Marcador único de versão. Mude a cada release pra confirmar via logs
 // do Supabase qual versão está rodando. Se você ver esse marcador nos
 // logs ao testar uma reserva, o deploy passou e o código novo está ativo.
-const PIX_FN_VERSION = "v3-coupons-system-2026-04-29";
+const PIX_FN_VERSION = "v4-gift-card-pix-2026-05-09";
 
-async function handlePixRequest(req: Request): Promise<Response> {
-  if (!MP_ACCESS_TOKEN || !SUPABASE_URL || !SERVICE_ROLE) {
-    console.error(
-      "[Elarah Payment/MP] env ausente",
-      "MP_TOKEN=" + (MP_ACCESS_TOKEN ? "ok" : "MISSING"),
-      "SUPABASE_URL=" + (SUPABASE_URL ? "ok" : "MISSING"),
-      "SERVICE_ROLE=" + (SERVICE_ROLE ? "ok" : "MISSING"),
+// =============================================================
+// MODO B — gift card via PIX (Mercado Pago)
+// -------------------------------------------------------------
+// Espelha o handleGiftCardPurchase de create-checkout-session, mas
+// gera PIX em vez de redirecionar pra Stripe Checkout. O frontend
+// recebe o QR + payment_id e exibe inline (igual fluxo de
+// experiência via PIX). Quando a MP confirmar, mp-webhook detecta
+// que o external_reference começa com "GIFT-" e dispara a ativação
+// do gift_card (gera código, atualiza status, manda os e-mails).
+//
+// Pre-grava em gift_cards com status='pending' antes de bater na
+// MP — mesmo princípio do Stripe: se o pre-insert falhar, aborta
+// pra não criar pagamento órfão sem rastro no banco.
+// =============================================================
+async function handleGiftCardPixRequest(
+  payload: Record<string, unknown>,
+): Promise<Response> {
+  const valor = Number(payload.gift_card_value_centavos ?? 0);
+  const buyerEmail = String(payload.buyer_email ?? "").trim();
+  const buyerNome = String(payload.buyer_nome ?? "").trim();
+  const recipientEmail = String(payload.recipient_email ?? "").trim();
+  const recipientNome = String(payload.recipient_nome ?? "").trim();
+  const mensagem = String(payload.mensagem ?? "").trim();
+  const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
+
+  if (!Number.isFinite(valor) || valor < 5000) {
+    return jsonResponse({ error: "gift_card_min_value" }, 400);
+  }
+  if (valor > 500000) {
+    return jsonResponse({ error: "gift_card_max_value" }, 400);
+  }
+  if (!recipientEmail || !/.+@.+\..+/.test(recipientEmail)) {
+    return jsonResponse({ error: "recipient_email_required" }, 400);
+  }
+  // PIX exige e-mail E CPF do pagador (regra MP). Stripe não exige
+  // — daí a divergência de validações entre os dois modos.
+  if (!buyerEmail || !/.+@.+\..+/.test(buyerEmail)) {
+    return jsonResponse(
+      {
+        error: "buyer_email_required",
+        message:
+          "Informe seu e-mail — exigido pela Mercado Pago pra gerar o PIX.",
+      },
+      400,
     );
-    return jsonResponse({ error: "server_misconfigured" }, 500);
+  }
+  if (!isValidCpf(cpfRaw)) {
+    return jsonResponse(
+      {
+        error: "cpf_required",
+        message: "CPF inválido. PIX via Mercado Pago exige CPF válido.",
+      },
+      400,
+    );
   }
 
-  let payload: Record<string, unknown>;
-  try {
-    payload = await req.json();
-  } catch {
-    return jsonResponse({ error: "invalid_json" }, 400);
+  // Resolve user_id do comprador (opcional, igual Stripe)
+  let buyerUserId: string | null = null;
+  if (buyerEmail) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", buyerEmail)
+      .maybeSingle();
+    if (prof) buyerUserId = (prof as { id?: string }).id ?? null;
   }
 
+  // Gera id antecipado pra usar como external_reference (com prefixo
+  // "GIFT-" pra o webhook reconhecer que é gift card e não booking).
+  const giftCardId = crypto.randomUUID();
+  const externalReference = "GIFT-" + giftCardId;
+  const sessionPlaceholder = "MP-GIFT-" + giftCardId;
+
+  // Pré-grava gift_card como pending — se o webhook não rodar por
+  // qualquer motivo, o admin ainda vê a tentativa no banco. Status
+  // 'pending' impede uso prematuro do código.
+  const giftCardRow = {
+    id: giftCardId,
+    code: "PENDING-MP-" + giftCardId.slice(-12).toUpperCase(),
+    valor_inicial_centavos: valor,
+    saldo_centavos: valor,
+    status: "pending",
+    comprador_user_id: buyerUserId,
+    comprador_email: buyerEmail || null,
+    comprador_nome: buyerNome || null,
+    destinatario_email: recipientEmail,
+    destinatario_nome: recipientNome || null,
+    mensagem: mensagem || null,
+    stripe_session_id: sessionPlaceholder,
+    expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    metadata: {
+      payment_method: "pix",
+      payment_provider: "mercado_pago",
+      cpf: cpfRaw,
+    },
+  };
+
+  const { error: insertErr } = await supabase
+    .from("gift_cards")
+    .insert(giftCardRow);
+
+  if (insertErr) {
+    console.error(
+      "[Elarah Payment/MP gift] FALHA CRÍTICA ao pré-gravar gift card",
+      "error=" + JSON.stringify(insertErr),
+    );
+    return jsonResponse(
+      {
+        error: "gift_card_save_failed",
+        message:
+          "Não foi possível registrar o gift card antes do pagamento. " +
+          "Detalhe: " + (insertErr.message || "erro desconhecido"),
+        hint:
+          "Verifique se a migration sql/elarah_extensions.sql foi executada " +
+          "no Supabase e se a tabela public.gift_cards existe.",
+        detail: insertErr,
+      },
+      500,
+    );
+  }
+
+  // Cria PIX na MP com external_reference="GIFT-<uuid>" — o webhook
+  // mp-webhook usa esse prefixo pra rotear pra ativação de gift card
+  // em vez do fluxo de booking.
+  const { first: firstName, last: lastName } = splitName(
+    buyerNome || "Cliente Elarah",
+  );
+
+  const mpResult = await createPixPayment(MP_ACCESS_TOKEN, {
+    transactionAmountCents: valor,
+    description: ("Gift Card Elarah para " +
+      (recipientNome || recipientEmail)).slice(0, 250),
+    externalReference: externalReference,
+    payerEmail: buyerEmail,
+    payerFirstName: firstName,
+    payerLastName: lastName,
+    payerCpf: cpfRaw,
+    expiresInMinutes: 30,
+    notificationUrl: buildMpNotificationUrl(),
+    idempotencyKey: giftCardId,
+  });
+
+  if (!mpResult.ok || !mpResult.payment) {
+    console.error(
+      "[Elarah Payment/MP gift] MP retornou erro, cancelando pre-insert",
+      "status=" + mpResult.errorStatus,
+      "body=" + JSON.stringify(mpResult.errorBody),
+    );
+    // Cancela o gift_card pra não ficar pending órfão.
+    await supabase
+      .from("gift_cards")
+      .update({ status: "cancelled" })
+      .eq("id", giftCardId);
+    return jsonResponse(
+      {
+        error: "mp_create_failed",
+        message:
+          "Não foi possível gerar o PIX. Tente novamente ou pague no cartão.",
+        detail: mpResult.errorBody,
+      },
+      502,
+    );
+  }
+
+  const payment = mpResult.payment;
+  const qrCode =
+    payment.point_of_interaction?.transaction_data?.qr_code ?? null;
+  const qrCodeBase64 =
+    payment.point_of_interaction?.transaction_data?.qr_code_base64 ?? null;
+  const ticketUrl =
+    payment.point_of_interaction?.transaction_data?.ticket_url ?? null;
+
+  if (!qrCode || !qrCodeBase64) {
+    if (!ticketUrl) {
+      console.error(
+        "[Elarah Payment/MP gift] resposta sem QR nem ticket_url",
+        JSON.stringify(payment),
+      );
+      await supabase
+        .from("gift_cards")
+        .update({ status: "cancelled" })
+        .eq("id", giftCardId);
+      return jsonResponse(
+        { error: "mp_qr_missing", message: "MP respondeu sem QR code." },
+        502,
+      );
+    }
+  }
+
+  // Atualiza metadata com mp_payment_id (pro check-mp-payment-status
+  // poder reconciliar via id depois) e expiração.
+  await supabase
+    .from("gift_cards")
+    .update({
+      metadata: {
+        payment_method: "pix",
+        payment_provider: "mercado_pago",
+        cpf: cpfRaw,
+        mp_payment_id: String(payment.id),
+        mp_expires_at: payment.date_of_expiration,
+      },
+    })
+    .eq("id", giftCardId);
+
+  console.info(
+    "[Elarah Payment/MP gift] gift card pre-saved + QR gerado",
+    "gift_card_id=" + giftCardId,
+    "mp_payment=" + payment.id,
+    "valor_centavos=" + valor,
+  );
+
+  return jsonResponse({
+    gift_card_id: giftCardId,
+    payment_id: String(payment.id),
+    qr_code: qrCode,
+    qr_code_base64: qrCodeBase64,
+    ticket_url: ticketUrl,
+    expires_at: payment.date_of_expiration,
+    amount_total_centavos: valor,
+  });
+}
+
+async function handlePixRequest(payload: Record<string, unknown>): Promise<Response> {
   // ===== Parse do payload =====
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
@@ -575,17 +780,39 @@ serve(async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "method_not_allowed" }, 405);
   }
+  if (!MP_ACCESS_TOKEN || !SUPABASE_URL || !SERVICE_ROLE) {
+    console.error(
+      "[Elarah Payment/MP] env ausente",
+      "MP_TOKEN=" + (MP_ACCESS_TOKEN ? "ok" : "MISSING"),
+      "SUPABASE_URL=" + (SUPABASE_URL ? "ok" : "MISSING"),
+      "SERVICE_ROLE=" + (SERVICE_ROLE ? "ok" : "MISSING"),
+    );
+    return jsonResponse({ error: "server_misconfigured" }, 500);
+  }
+
+  let payload: Record<string, unknown>;
+  try {
+    payload = await req.json();
+  } catch {
+    return jsonResponse({ error: "invalid_json" }, 400);
+  }
+
+  const mode = String(payload.mode ?? "experience");
 
   // Defesa final: se QUALQUER coisa lançar exceção dentro do handler
   // (RPC indisponível, schema desatualizado, MP fora do ar, etc.), a
   // gente captura aqui e devolve um erro NOMEADO + mensagem em PT —
   // nunca stack trace cru, nunca código técnico vazado pro front.
   try {
-    return await handlePixRequest(req);
+    if (mode === "gift_card") {
+      return await handleGiftCardPixRequest(payload);
+    }
+    return await handlePixRequest(payload);
   } catch (e) {
     console.error(
       "[Elarah Payment/MP] EXCEPTION inesperada — checkout PIX abortado",
       "version=" + PIX_FN_VERSION,
+      "mode=" + mode,
       "error=" + (e instanceof Error ? e.message : String(e)),
       "stack=" + (e instanceof Error ? e.stack : "(no stack)"),
     );
