@@ -2338,25 +2338,42 @@ if (groupForm) {
         horarioSection.style.display = 'none';
       }
 
-      // ===== Seletor de variante =====
+      // ===== Seletor de variante (Pessoa 1 = comprador) =====
       // Quando a experiência tem variantOptions (ex: Pintura → Lagosta /
-      // Beijo / Olho grego), renderiza botões pill. O escolhido fica em
-      // ctx.variantSelected; vai como variant_selected no payload.
-      // Quando vazio, esconde a seção (zero ruído pras experiências
-      // sem variantes).
+      // Beijo / Olho grego), renderiza botões pill pro comprador. Cada
+      // participante adicional tem o próprio seletor dentro do card dele
+      // (renderizado em renderParticipantFields). A escolha do comprador
+      // vai em ctx.variantSelected (top-level, mantida pra compat com
+      // metadata do Stripe e badge antigo do admin) E em
+      // ctx.variantByParticipant[1] (índice 1 = Pessoa 1 = comprador;
+      // 2..N = participantes adicionais). Cada participantes[i] também
+      // recebe variant_selected antes do submit.
       ctx.variantSelected = null;
+      ctx.variantByParticipant = {};
       var variantSection = root.querySelector('#erm-variant-section');
       var variantLabelEl = root.querySelector('#erm-variant-label');
       var variantOptsEl = root.querySelector('#erm-variant-options');
       var variantMsgEl = root.querySelector('#erm-variant-msg');
-      if (
-        variantSection && variantOptsEl &&
+      var hasVariantsForExp = !!(
         ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
-      ) {
-        variantSection.style.display = 'block';
-        if (variantLabelEl) {
+      );
+
+      // Helper: atualiza o rótulo do seletor do comprador conforme a
+      // quantidade. Quando qty > 1, deixa explícito que esta escolha é
+      // a da Pessoa 1 (o comprador); cada outra pessoa escolhe no card
+      // dela. Quando qty = 1, só "Modelo do quadro *" basta.
+      function updateBuyerVariantLabel() {
+        if (!variantLabelEl || !hasVariantsForExp) return;
+        if ((ctx.quantidade || 1) > 1) {
+          variantLabelEl.textContent = 'Pessoa 1 (você) — ' + ctx.variantLabel + ' *';
+        } else {
           variantLabelEl.textContent = ctx.variantLabel + ' *';
         }
+      }
+
+      if (variantSection && variantOptsEl && hasVariantsForExp) {
+        variantSection.style.display = 'block';
+        updateBuyerVariantLabel();
         variantOptsEl.innerHTML = '';
         if (variantMsgEl) {
           variantMsgEl.style.color = '#888';
@@ -2372,6 +2389,11 @@ if (groupForm) {
           btn.addEventListener('click', function () {
             if (!currentReservationCtx) return;
             currentReservationCtx.variantSelected = opt;
+            // Pessoa 1 (comprador) sempre fica no índice 1 em
+            // variantByParticipant. Mantém paridade com a numeração que
+            // o usuário vê na UI ("Pessoa 1", "Pessoa 2", ...).
+            currentReservationCtx.variantByParticipant = currentReservationCtx.variantByParticipant || {};
+            currentReservationCtx.variantByParticipant[1] = opt;
             // Atualiza visual: o escolhido vira laranja, os demais voltam ao default.
             variantOptsEl.querySelectorAll('.erm-variant-btn').forEach(function (b) {
               if (b.dataset.value === opt) {
@@ -2428,12 +2450,68 @@ if (groupForm) {
         for (var i = 2; i <= ctx.quantidade; i++) {
           var div = document.createElement('div');
           div.style.cssText = 'background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:10px;';
-          div.innerHTML =
-            '<p style="margin:0 0 8px;font-size:.85rem;font-weight:600;color:#1a1a1a;">Participante ' + i + '</p>' +
+          var html =
+            '<p style="margin:0 0 8px;font-size:.85rem;font-weight:600;color:#1a1a1a;">Pessoa ' + i + '</p>' +
             '<input type="text" class="erm-part-nome" placeholder="Nome completo *" data-idx="' + i + '" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:8px;box-sizing:border-box;">' +
             '<input type="tel" class="erm-part-telefone" placeholder="WhatsApp *" data-idx="' + i + '" inputmode="tel" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:6px;box-sizing:border-box;">' +
             '<input type="email" class="erm-part-email" placeholder="E-mail (opcional)" data-idx="' + i + '" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;box-sizing:border-box;">';
+          // Seletor de variante do participante: cada Pessoa 2..N escolhe
+          // o seu próprio quadro/variante. Sem isso, todo mundo herdava
+          // a escolha da Pessoa 1 (comprador), o que confundia a operação
+          // no dia da experiência.
+          if (hasVariantsForExp) {
+            html +=
+              '<div class="erm-part-variant" data-idx="' + i + '" style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5dccd;">' +
+                '<label style="display:block;font-size:.78rem;color:#555;margin-bottom:6px;font-weight:600;">' +
+                  htmlEscape(ctx.variantLabel) + ' *' +
+                '</label>' +
+                '<div class="erm-part-variant-options" data-idx="' + i + '" style="display:flex;flex-wrap:wrap;gap:6px;"></div>' +
+                '<p class="erm-part-variant-msg" data-idx="' + i + '" style="margin:6px 0 0;font-size:.74rem;color:#888;min-height:1em;">Escolha pra continuar.</p>' +
+              '</div>';
+          }
+          div.innerHTML = html;
           participantsEl.appendChild(div);
+
+          // Adiciona os botões de variante via JS (closure no idx) pra
+          // que cada botão saiba pra qual pessoa está votando. innerHTML
+          // não preserva listeners, então tem que ser depois do append.
+          if (hasVariantsForExp) {
+            (function (capIdx) {
+              var optsEl = div.querySelector('.erm-part-variant-options');
+              var msgEl = div.querySelector('.erm-part-variant-msg');
+              if (!optsEl) return;
+              ctx.variantOptions.forEach(function (opt) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'erm-part-variant-btn';
+                b.dataset.value = opt;
+                b.dataset.idx = String(capIdx);
+                b.textContent = opt;
+                b.style.cssText = 'padding:7px 14px;border:1.5px solid #ddd;background:#fff;color:#444;border-radius:999px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;';
+                b.addEventListener('click', function () {
+                  if (!currentReservationCtx) return;
+                  currentReservationCtx.variantByParticipant = currentReservationCtx.variantByParticipant || {};
+                  currentReservationCtx.variantByParticipant[capIdx] = opt;
+                  optsEl.querySelectorAll('.erm-part-variant-btn').forEach(function (other) {
+                    if (other.dataset.value === opt) {
+                      other.style.background = '#fff8ef';
+                      other.style.borderColor = '#f0a05e';
+                      other.style.color = '#1a1a1a';
+                    } else {
+                      other.style.background = '#fff';
+                      other.style.borderColor = '#ddd';
+                      other.style.color = '#444';
+                    }
+                  });
+                  if (msgEl) {
+                    msgEl.style.color = '#1a8a4a';
+                    msgEl.textContent = '✓ ' + ctx.variantLabel + ': ' + opt;
+                  }
+                });
+                optsEl.appendChild(b);
+              });
+            })(i);
+          }
         }
       }
 
@@ -2443,7 +2521,19 @@ if (groupForm) {
         ctx.quantidade = newQty;
         if (qtyEl) qtyEl.textContent = String(newQty);
         console.log('[Elarah QTY] quantidade atualizada para', newQty);
+        // renderParticipantFields() abaixo wipe os cards de Pessoa 2..N
+        // (innerHTML zerado), então nome/telefone/email se perdem
+        // visualmente. Pra manter o estado dos dados consistente com o
+        // visual, descarta as escolhas de variante das Pessoas 2..N.
+        // A escolha da Pessoa 1 (índice 1) sobrevive porque o seletor
+        // dela vive no topo do modal e não é re-renderizado.
+        if (ctx.variantByParticipant) {
+          Object.keys(ctx.variantByParticipant).forEach(function (k) {
+            if (Number(k) >= 2) delete ctx.variantByParticipant[k];
+          });
+        }
         renderParticipantFields();
+        updateBuyerVariantLabel();
         refreshPriceBreakdown();
       }
 
@@ -2805,9 +2895,13 @@ if (groupForm) {
       }
 
       // ===== VALIDAÇÃO VARIANTE (Pintura: Lagosta/Beijo/Olho grego) =====
-      // Se a experiência tem variantOptions, escolha é obrigatória.
-      // Sem isso, cliente compraria sem definir o modelo do quadro.
-      if (ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length) {
+      // Cada pessoa precisa ter escolhido sua variante. Pessoa 1 (você)
+      // usa o seletor do topo; Pessoa 2..N usa o seletor dentro do card.
+      // Antes só a Pessoa 1 conseguia escolher e o resto herdava — virava
+      // bagunça operacional no dia da experiência.
+      var hasVariants = !!(ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length);
+      if (hasVariants) {
+        // Pessoa 1
         if (!ctx.variantSelected) {
           var vMsg = root.querySelector('#erm-variant-msg');
           if (vMsg) {
@@ -2818,9 +2912,14 @@ if (groupForm) {
           if (vSection) {
             try { vSection.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
           }
-          console.warn('[Elarah checkout] variante não selecionada bloqueou o submit:', ctx.variantLabel);
+          console.warn('[Elarah checkout] variante (Pessoa 1) não selecionada bloqueou o submit:', ctx.variantLabel);
           return;
         }
+        // Mantém variantByParticipant[1] em sincronia com variantSelected
+        // (caso o handler do clique não tenha rodado por algum motivo).
+        ctx.variantByParticipant = ctx.variantByParticipant || {};
+        ctx.variantByParticipant[1] = ctx.variantSelected;
+        // Pessoa 2..N (validação acontece no loop abaixo, junto com nome/telefone)
       }
 
       // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
@@ -2834,9 +2933,10 @@ if (groupForm) {
           var pNome = partNomes[pi].value.trim();
           var pTel = partTels[pi] ? partTels[pi].value.trim() : '';
           var pEmail = partEmails[pi] ? partEmails[pi].value.trim() : '';
+          var pIdx = pi + 2; // Pessoa 2 em diante (Pessoa 1 é o comprador)
           if (!pNome || pNome.length < 3) {
             partNomes[pi].style.borderColor = '#c0392b';
-            errEl.textContent = 'Preencha o nome do Participante ' + (pi + 2) + '.';
+            errEl.textContent = 'Preencha o nome da Pessoa ' + pIdx + '.';
             try { partNomes[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
             break;
@@ -2845,19 +2945,57 @@ if (groupForm) {
           var pTelNorm = normalizePhoneBR(pTel);
           if (!pTelNorm) {
             partTels[pi].style.borderColor = '#c0392b';
-            errEl.textContent = 'Informe o WhatsApp do Participante ' + (pi + 2) + '.';
+            errEl.textContent = 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
             try { partTels[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
             break;
           }
           partTels[pi].style.borderColor = '#ddd';
-          participantes.push({ nome: pNome, telefone: pTel, telefone_digits: pTelNorm, email: pEmail || null });
+          // Variante por pessoa: bloqueia o submit se faltou alguma.
+          var pVariant = null;
+          if (hasVariants) {
+            pVariant = (ctx.variantByParticipant && ctx.variantByParticipant[pIdx]) || null;
+            if (!pVariant) {
+              errEl.textContent = 'Escolha o ' + ctx.variantLabel + ' da Pessoa ' + pIdx + '.';
+              // Destaca a seção da pessoa
+              var partVariantMsg = modalRoot.querySelector('.erm-part-variant-msg[data-idx="' + pIdx + '"]');
+              if (partVariantMsg) {
+                partVariantMsg.style.color = '#c0392b';
+                partVariantMsg.textContent = 'Escolha pra continuar.';
+              }
+              var partVariantSec = modalRoot.querySelector('.erm-part-variant[data-idx="' + pIdx + '"]');
+              if (partVariantSec) {
+                try { partVariantSec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+              }
+              console.warn('[Elarah checkout] variante (Pessoa ' + pIdx + ') não selecionada bloqueou o submit');
+              partValid = false;
+              break;
+            }
+          }
+          participantes.push({
+            nome: pNome,
+            telefone: pTel,
+            telefone_digits: pTelNorm,
+            email: pEmail || null,
+            // variant_selected fica como undefined quando a experiência
+            // não tem variantes — não polui metadata pra experiências
+            // sem essa feature.
+            variant_selected: pVariant || undefined,
+          });
         }
         if (!partValid) return;
       }
-      // Inclui o comprador como Participante 1
-      var allParticipantes = [{ nome: nomeRaw, telefone: telefoneRaw, telefone_digits: telefoneNormalized, email: null }];
-      allParticipantes = allParticipantes.concat(participantes);
+      // Inclui o comprador como Pessoa 1 (índice 0 do array, mas Pessoa 1
+      // na UI). Quando a experiência tem variantes, anexa a escolha do
+      // comprador. Esse array vira metadata.participantes no booking.
+      var compradorEntry = {
+        nome: nomeRaw,
+        telefone: telefoneRaw,
+        telefone_digits: telefoneNormalized,
+        email: null,
+        variant_selected: hasVariants ? (ctx.variantSelected || null) : undefined,
+      };
+      var allParticipantes = [compradorEntry].concat(participantes);
       ctx.participantes = allParticipantes;
 
       confirmBtn.disabled = true;
