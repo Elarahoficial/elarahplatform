@@ -2687,8 +2687,16 @@
         const items = extras.map(function (p) {
           const pNome = escapeHtml((p && p.nome) || '?');
           const pTelRaw = String((p && (p.telefone || p.telefone_digits)) || '').trim();
+          // Variante individual (ex.: Lagosta/Beijo/Olho grego) — só
+          // aparece quando o checkout novo gravou variant_selected
+          // por pessoa. Bookings antigas (variante única) caem sem
+          // essa linha e ainda mostram o badge único do bloco abaixo.
+          const pVariant = (p && p.variant_selected) ? String(p.variant_selected).trim() : '';
+          const variantSpan = pVariant
+            ? ' · <span style="color:#a07c4c;font-weight:600;">' + escapeHtml(pVariant) + '</span>'
+            : '';
           if (!pTelRaw) {
-            return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + '</span>';
+            return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + variantSpan + '</span>';
           }
           const pDigits = onlyDigits(pTelRaw);
           const pWa = pDigits.length >= 10 ? ('55' + pDigits.replace(/^55/, '')) : pDigits;
@@ -2696,21 +2704,51 @@
           const link = pWa
             ? '<a href="https://wa.me/' + pWa + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + pTelDisplay + '</a>'
             : pTelDisplay;
-          return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + ' · ' + link + '</span>';
+          return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + ' · ' + link + variantSpan + '</span>';
         }).join('');
         return '<br>' + items;
       }
 
       // Variante escolhida pelo cliente (ex.: Pintura → Lagosta).
-      // Aparece como sub-linha discreta abaixo do nome da experiência
-      // pra o admin saber o que preparar sem entrar em cada booking.
+      // Estratégia em 2 camadas:
+      //   1. Booking de grupo com variant_selected POR pessoa →
+      //      lista cada Pessoa N e seu quadro abaixo do nome da
+      //      experiência, pra o operador preparar tudo no dia sem
+      //      precisar abrir cada booking.
+      //   2. Booking individual ou booking antiga (variante única
+      //      compartilhada) → badge legado lendo metadata.variant_*.
       const variantLabel = b.metadata && b.metadata.variant_label;
-      const variantSelected = b.metadata && b.metadata.variant_selected;
-      const variantCell = (variantLabel && variantSelected)
-        ? '<br><span style="font-size:.75rem;color:#a07c4c;font-weight:600;">' +
-            escapeHtml(variantLabel) + ': ' + escapeHtml(variantSelected) +
-          '</span>'
-        : '';
+      const variantSelectedSingle = b.metadata && b.metadata.variant_selected;
+      function buildVariantCell() {
+        if (!variantLabel) return '';
+        const arr = (b.metadata && Array.isArray(b.metadata.participantes))
+          ? b.metadata.participantes
+          : [];
+        const perPerson = arr.filter(function (p) {
+          return p && p.variant_selected && String(p.variant_selected).trim();
+        });
+        // 2+ entries com variant_selected indica fluxo novo (cada um
+        // escolheu o próprio quadro). Mostra lista organizada.
+        if (perPerson.length >= 2) {
+          const linhas = perPerson.map(function (p, idx) {
+            const nm = String((p && p.nome) || ('Pessoa ' + (idx + 1))).trim() || ('Pessoa ' + (idx + 1));
+            return '<span style="display:block;font-size:.72rem;color:#a07c4c;font-weight:600;">' +
+              escapeHtml(nm) + ' → ' + escapeHtml(String(p.variant_selected)) +
+              '</span>';
+          }).join('');
+          return '<br><span style="font-size:.7rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">' +
+            escapeHtml(variantLabel) +
+            '</span>' + linhas;
+        }
+        // Fallback legado: badge único.
+        if (variantSelectedSingle) {
+          return '<br><span style="font-size:.75rem;color:#a07c4c;font-weight:600;">' +
+            escapeHtml(variantLabel) + ': ' + escapeHtml(variantSelectedSingle) +
+            '</span>';
+        }
+        return '';
+      }
+      const variantCell = buildVariantCell();
 
       return `
         <tr>
