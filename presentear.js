@@ -505,6 +505,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ===== Painel PIX (QR + polling) =====
     function showPixPanel(resp) {
+      // Defesa: nunca mostrar o painel sem dados mínimos. Se o backend
+      // devolver resposta vazia ou faltando QR, aborta cedo e mantém
+      // o form visível com mensagem de erro — em vez de renderizar
+      // QR quebrado / "NaN" / códigos vazios.
+      if (!resp || !resp.qr_code_base64 || !resp.gift_card_id) {
+        const errEl = giftModal.querySelector('#gcm-error');
+        if (errEl) {
+          errEl.textContent = 'Resposta inválida do servidor. Recarregue a página e tente de novo.';
+        }
+        console.error('[Elarah gift PIX] showPixPanel chamado com resposta inválida:', resp);
+        return;
+      }
       formEl.style.display = 'none';
       successPanel.style.display = 'none';
       pixPanel.style.display = 'block';
@@ -731,6 +743,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function openGiftModal() {
     const m = buildGiftModal();
+    // Reset visual: garante que o modal sempre abre no formulário,
+    // não em algum painel residual (PIX/sucesso) de uma abertura
+    // anterior. Sem isso, se o user fechou no meio do PIX, a próxima
+    // abertura começava nele.
+    const formEl = m.querySelector('#gcm-form');
+    const pixPanel = m.querySelector('#gcm-pix-panel');
+    const successPanel = m.querySelector('#gcm-success-panel');
+    const errEl = m.querySelector('#gcm-error');
+    if (formEl) formEl.style.display = '';
+    if (pixPanel) pixPanel.style.display = 'none';
+    if (successPanel) successPanel.style.display = 'none';
+    if (errEl) errEl.textContent = '';
     m.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }
