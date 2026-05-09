@@ -504,11 +504,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ===== Painel PIX (QR + polling) =====
+    // Defesa: valida que o resp tem o mínimo (qr_code_base64 + gift_card_id)
+    // ANTES de mostrar o painel. Se faltar qualquer um, mantém o form
+    // visível com mensagem de erro — em vez de renderizar QR quebrado,
+    // código vazio e contador "NaN" como acontecia antes.
     function showPixPanel(resp) {
+      const qrB64 = resp && typeof resp.qr_code_base64 === 'string'
+        ? resp.qr_code_base64.trim()
+        : '';
+      const qrCode = resp && typeof resp.qr_code === 'string'
+        ? resp.qr_code.trim()
+        : '';
+      const gcId = resp && typeof resp.gift_card_id === 'string'
+        ? resp.gift_card_id.trim()
+        : '';
+      if (!qrB64 || !gcId) {
+        const errEl = giftModal.querySelector('#gcm-error');
+        if (errEl) {
+          errEl.textContent = 'Resposta inválida do servidor (sem QR code). ' +
+            'Recarregue a página e tente novamente, ou pague no cartão.';
+        }
+        // Garante que o painel PIX NÃO aparece com dados ruins.
+        pixPanel.style.display = 'none';
+        formEl.style.display = '';
+        const submitBtn = giftModal.querySelector('#gcm-submit');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Pagar e enviar gift card';
+        }
+        // Loga a resposta crua pra debug se isso acontecer em produção.
+        console.error('[Elarah gift PIX] showPixPanel chamado com resposta inválida:', JSON.stringify(resp));
+        return;
+      }
       formEl.style.display = 'none';
       successPanel.style.display = 'none';
       pixPanel.style.display = 'block';
-      pixGiftCardId = resp.gift_card_id;
+      pixGiftCardId = gcId;
       const qrImg = giftModal.querySelector('#gcm-pix-qr');
       const codeInput = giftModal.querySelector('#gcm-pix-code');
       const expEl = giftModal.querySelector('#gcm-pix-exp');
@@ -516,17 +547,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       const copyBtn = giftModal.querySelector('#gcm-pix-copy');
       const cancelBtn = giftModal.querySelector('#gcm-pix-cancel');
 
-      qrImg.src = 'data:image/png;base64,' + resp.qr_code_base64;
-      codeInput.value = resp.qr_code || '';
+      qrImg.src = 'data:image/png;base64,' + qrB64;
+      codeInput.value = qrCode;
       statusEl.textContent = '⏳ Aguardando confirmação do pagamento...';
       statusEl.style.background = '#fff8ef';
       statusEl.style.color = '#a4663b';
 
-      // Contador de expiração
-      pixExpiresAtMs = resp.expires_at ? new Date(resp.expires_at).getTime() : (Date.now() + 30 * 60 * 1000);
+      // Contador de expiração — defaulta pra 30min se a MP não mandar
+      // expires_at (caso raro mas observado em alguns retornos).
+      const expiresMs = resp.expires_at
+        ? new Date(resp.expires_at).getTime()
+        : NaN;
+      pixExpiresAtMs = isFinite(expiresMs) && expiresMs > Date.now()
+        ? expiresMs
+        : (Date.now() + 30 * 60 * 1000);
       function tickExpiry() {
         const ms = pixExpiresAtMs - Date.now();
-        if (ms <= 0) {
+        if (!isFinite(ms) || ms <= 0) {
           expEl.textContent = '⚠ QR code expirado. Cancele e gere um novo.';
           expEl.style.color = '#c0392b';
           stopPolling();
@@ -677,8 +714,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             }),
           });
           const data = await res.json().catch(() => null);
-          if (!res.ok || !data || !data.qr_code_base64) {
-            const msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+          // Diagnóstico: log estruturado de TUDO que veio do backend.
+          // Se algo der errado em produção (qr vazio, gift_card_id
+          // ausente, etc.), o admin abre o console e vê exatamente
+          // a forma da resposta — sem precisar reproduzir local.
+          console.log('[Elarah gift PIX] response status=' + res.status, {
+            ok: res.ok,
+            keys: data ? Object.keys(data) : null,
+            qr_code_base64_len: data && typeof data.qr_code_base64 === 'string' ? data.qr_code_base64.length : null,
+            qr_code_present: !!(data && data.qr_code),
+            gift_card_id_present: !!(data && data.gift_card_id),
+            error: data && data.error,
+          });
+          // Validação estrita: status OK + payload com QR base64 truthy
+          // E gift_card_id (necessário pro polling). Qualquer falha cai
+          // no error path com mensagem traduzida (ou cru se não houver).
+          const qrB64Raw = data && typeof data.qr_code_base64 === 'string'
+            ? data.qr_code_base64.trim() : '';
+          const gcIdRaw = data && typeof data.gift_card_id === 'string'
+            ? data.gift_card_id.trim() : '';
+          if (!res.ok || !data || !qrB64Raw || !gcIdRaw) {
+            let msg = (data && (data.message || data.error)) || 'Não foi possível gerar o PIX.';
+            // Casos específicos com mensagem mais amigável.
+            if (data && data.error === 'cpf_required') {
+              msg = 'CPF inválido. Confirme o número e tente de novo.';
+            } else if (data && data.error === 'mp_create_failed') {
+              msg = 'Mercado Pago não conseguiu gerar o PIX agora. ' +
+                    'Tente novamente em alguns segundos ou pague no cartão.';
+            } else if (data && data.error === 'mp_qr_missing') {
+              msg = 'Mercado Pago respondeu sem QR code. ' +
+                    'Tente novamente ou pague no cartão.';
+            } else if (res.ok && data && (!qrB64Raw || !gcIdRaw)) {
+              // Resposta 200 mas faltando campo crítico — bug de servidor.
+              msg = 'Resposta inválida do servidor. Tente de novo ou pague no cartão.';
+            }
             errEl.textContent = msg;
             submitBtn.disabled = false;
             submitBtn.textContent = 'Pagar e enviar gift card';
@@ -731,6 +800,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function openGiftModal() {
     const m = buildGiftModal();
+    // Reset visual: sempre abre no formulário, nunca em painel residual.
+    // Sem isso, se o user fechou no meio do PIX, a próxima abertura
+    // mantinha QR antigo / status zoado. Limpa também error text e
+    // o src do QR pra eliminar ghosts visuais.
+    const formEl = m.querySelector('#gcm-form');
+    const pixPanel = m.querySelector('#gcm-pix-panel');
+    const successPanel = m.querySelector('#gcm-success-panel');
+    const errEl = m.querySelector('#gcm-error');
+    const qrImg = m.querySelector('#gcm-pix-qr');
+    const codeInput = m.querySelector('#gcm-pix-code');
+    if (formEl) formEl.style.display = '';
+    if (pixPanel) pixPanel.style.display = 'none';
+    if (successPanel) successPanel.style.display = 'none';
+    if (errEl) errEl.textContent = '';
+    if (qrImg) qrImg.removeAttribute('src');
+    if (codeInput) codeInput.value = '';
     m.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }
