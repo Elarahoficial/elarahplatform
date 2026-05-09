@@ -641,9 +641,10 @@
           <p class="admin__page-subtitle">Reservas finalizadas com controle financeiro e fornecedor</p>
         </div>
         <div class="admin__analytics-controls">
-          <select id="bookings-filter-exp" class="admin__analytics-select">
-            <option value="">Todas as experiências</option>
-          </select>
+          <input type="text" id="bookings-filter-exp" class="admin__analytics-select"
+                 list="bookings-filter-exp-list" placeholder="Buscar experiência…"
+                 autocomplete="off" aria-label="Filtrar por experiência">
+          <datalist id="bookings-filter-exp-list"></datalist>
           <select id="bookings-filter-fornecedor" class="admin__analytics-select">
             <option value="">Todos os fornecedores</option>
           </select>
