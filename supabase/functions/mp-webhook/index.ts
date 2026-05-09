@@ -24,6 +24,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   bookingConfirmationEmailHtml,
+  generateGiftCardCode,
+  giftCardEmailHtml,
   sendEmail,
 } from "../_shared/email.ts";
 import {
@@ -338,6 +340,249 @@ async function sendBookingConfirmation(booking: BookingRow) {
   }
 }
 
+// ===== Gift card via PIX =====
+// Espelha o handler de gift card do stripe-webhook: gera código único,
+// ativa a linha gift_cards (estava 'pending' do create-mp-pix-payment),
+// envia e-mail pro destinatário e cópia pro comprador. Idempotente —
+// se já tá ativo, reaproveita o code existente sem regenerar nem
+// reenviar e-mail.
+//
+// deno-lint-ignore no-explicit-any
+async function processGiftCardPayment(giftCardId: string, payment: any): Promise<Response> {
+  console.info(
+    "[Elarah Payment/MP gift] processando gift card",
+    "gift_card_id=" + giftCardId,
+    "mp_payment=" + payment.id,
+    "status=" + payment.status,
+  );
+
+  // Busca a linha pré-criada em create-mp-pix-payment.
+  const { data: gc, error: gcErr } = await supabase
+    .from("gift_cards")
+    .select(
+      "id, code, status, valor_inicial_centavos, comprador_email, comprador_nome, " +
+        "destinatario_email, destinatario_nome, mensagem, expires_at, email_sent_at, " +
+        "stripe_session_id",
+    )
+    .eq("id", giftCardId)
+    .maybeSingle();
+
+  if (gcErr || !gc) {
+    console.error(
+      "[Elarah Payment/MP gift] gift_card não encontrado pelo id",
+      "gift_card_id=" + giftCardId,
+      "err=" + (gcErr ? JSON.stringify(gcErr) : "row missing"),
+    );
+    // 200 mesmo assim — retry da MP não vai ressuscitar a linha.
+    return new Response(
+      JSON.stringify({ received: true, gift_card_not_found: true }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  // Status do pagamento → ação no gift_card.
+  switch (payment.status) {
+    case "approved":
+    case "authorized":
+      // Continua abaixo (ativação).
+      break;
+    case "rejected":
+    case "cancelled": {
+      if (gc.status !== "cancelled" && gc.status !== "active") {
+        await supabase
+          .from("gift_cards")
+          .update({ status: "cancelled" })
+          .eq("id", giftCardId);
+      }
+      return new Response(
+        JSON.stringify({ received: true, gift_card_cancelled: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    default: {
+      // pending/in_process/etc — só registra e segue. Quando vier o
+      // approved a gente ativa.
+      console.info(
+        "[Elarah Payment/MP gift] status intermediário, aguardando aprovação",
+        "status=" + payment.status,
+      );
+      return new Response(
+        JSON.stringify({ received: true, gift_card_pending: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+  }
+
+  // ----- Idempotência: se já ativo, reaproveita o code -----
+  let code = "";
+  let expiresAtIso = "";
+  let isReplay = false;
+
+  if (gc.status === "active" && gc.code && !gc.code.startsWith("PENDING-")) {
+    code = gc.code;
+    expiresAtIso = gc.expires_at ||
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    isReplay = true;
+    console.info(
+      "[Elarah Payment/MP gift] gift card já ativo, reusando code",
+      "gift_card_id=" + giftCardId,
+      "code=" + code,
+    );
+  } else {
+    // Gera código único — até 5 tentativas.
+    for (let i = 0; i < 5; i++) {
+      const candidate = generateGiftCardCode();
+      const { data: collision } = await supabase
+        .from("gift_cards")
+        .select("id")
+        .eq("code", candidate)
+        .maybeSingle();
+      if (!collision) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) {
+      console.error(
+        "[Elarah Payment/MP gift] não consegui gerar code único",
+        "gift_card_id=" + giftCardId,
+      );
+      return new Response("code_generation_failed", { status: 500 });
+    }
+
+    expiresAtIso = gc.expires_at ||
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: updated, error: updErr } = await supabase
+      .from("gift_cards")
+      .update({
+        code,
+        status: "active",
+        expires_at: expiresAtIso,
+        email_sent_at: null,
+      })
+      .eq("id", giftCardId)
+      .eq("status", "pending")
+      .select()
+      .maybeSingle();
+
+    if (updErr || !updated) {
+      console.error(
+        "[Elarah Payment/MP gift] update gift_card pra active falhou",
+        "gift_card_id=" + giftCardId,
+        "err=" + (updErr ? JSON.stringify(updErr) : "row not pending"),
+      );
+      // Talvez tenha sido ativado por outro handler — re-fetch e tenta seguir.
+      const { data: refetched } = await supabase
+        .from("gift_cards")
+        .select("code, status, expires_at, email_sent_at")
+        .eq("id", giftCardId)
+        .maybeSingle();
+      if (refetched && refetched.status === "active" && refetched.code) {
+        code = refetched.code;
+        expiresAtIso = refetched.expires_at || expiresAtIso;
+        isReplay = !!refetched.email_sent_at;
+      } else {
+        return new Response("activation_failed", { status: 500 });
+      }
+    }
+  }
+
+  // ----- E-mails -----
+  // Pula se já mandou (email_sent_at preenchido) — evita duplicados.
+  if (isReplay && gc.email_sent_at) {
+    console.info(
+      "[Elarah Payment/MP gift] e-mail já enviado, ignorando reenvio",
+      "gift_card_id=" + giftCardId,
+    );
+    return new Response(
+      JSON.stringify({ received: true, gift_card_active: true, idempotent: true }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const valor = Number(gc.valor_inicial_centavos || 0);
+  const recipient = String(gc.destinatario_email ?? "").trim();
+  const recipientNome = (gc.destinatario_nome ?? "").trim() || null;
+  const buyerEmail = (gc.comprador_email ?? "").trim() || null;
+  const buyerNome = (gc.comprador_nome ?? "").trim() || null;
+  const mensagem = (gc.mensagem ?? "").trim() || null;
+  const expiresAtLabel = expiresAtIso
+    ? new Date(expiresAtIso).toLocaleDateString("pt-BR")
+    : "1 ano";
+
+  if (recipient) {
+    const html = giftCardEmailHtml({
+      recipientName: recipientNome,
+      buyerName: buyerNome,
+      code,
+      valorCentavos: valor,
+      message: mensagem,
+      expiresAt: expiresAtLabel,
+    });
+    const result = await sendEmail({
+      to: recipient,
+      subject: "Você recebeu um gift card da Elarah ✨",
+      html,
+    });
+    if (result.ok) {
+      await supabase
+        .from("gift_cards")
+        .update({ email_sent_at: new Date().toISOString() })
+        .eq("id", giftCardId);
+    } else {
+      console.error(
+        "[Elarah Payment/MP gift] FALHA ao enviar gift card pro destinatário",
+        "gift_card_id=" + giftCardId,
+        "to=" + recipient,
+        "skipped=" + (result.skipped ? "true" : "false"),
+        "status=" + (result.status ?? "?"),
+        "error=" + (result.error ?? "?"),
+      );
+    }
+  } else {
+    console.error(
+      "[Elarah Payment/MP gift] gift card sem destinatario_email",
+      "gift_card_id=" + giftCardId,
+    );
+  }
+
+  // Cópia pro comprador (se diferente do destinatário).
+  if (
+    buyerEmail &&
+    recipient &&
+    buyerEmail.toLowerCase() !== recipient.toLowerCase()
+  ) {
+    const htmlBuyer = giftCardEmailHtml({
+      recipientName: buyerNome,
+      buyerName: buyerNome,
+      code,
+      valorCentavos: valor,
+      message: "Cópia para você. O código original foi enviado para " +
+        recipient + ".",
+      expiresAt: expiresAtLabel,
+    });
+    const buyerResult = await sendEmail({
+      to: buyerEmail,
+      subject: "Sua compra de gift card Elarah foi confirmada",
+      html: htmlBuyer,
+    });
+    if (!buyerResult.ok) {
+      console.error(
+        "[Elarah Payment/MP gift] FALHA ao enviar cópia pro comprador",
+        "gift_card_id=" + giftCardId,
+        "to=" + buyerEmail,
+        "error=" + (buyerResult.error ?? "?"),
+      );
+    }
+  }
+
+  return new Response(
+    JSON.stringify({ received: true, gift_card_active: true }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+}
+
 // ===== Handler =====
 serve(async (req) => {
   if (req.method !== "POST") {
@@ -438,6 +683,16 @@ serve(async (req) => {
     "status_detail=" + payment.status_detail,
     "external_reference=" + (payment.external_reference ?? "?"),
   );
+
+  // Roteamento: external_reference com prefixo "GIFT-" significa que
+  // este pagamento é de uma compra de gift card via PIX (não uma
+  // reserva de experiência). Despacha pro handler dedicado, que
+  // ativa o gift_card e dispara os e-mails (destinatário + comprador).
+  const extRef = String(payment.external_reference ?? "");
+  if (extRef.startsWith("GIFT-")) {
+    const giftCardId = extRef.slice(5);
+    return await processGiftCardPayment(giftCardId, payment);
+  }
 
   // Busca a booking via mp_payment_id primeiro; fallback pra
   // external_reference (que é o booking.id gerado por nós).
