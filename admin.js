@@ -2057,7 +2057,18 @@
       invalidateGiftCardsCache();
       renderBookings();
     });
-    if (filterExp) filterExp.addEventListener('change', () => renderBookings());
+    if (filterExp) {
+      // 'input' (não 'change') pra filtrar conforme o admin digita —
+      // sem precisar dar Tab/Enter pra aplicar. Cobre tanto digitação
+      // direta quanto seleção de uma opção do datalist (que dispara
+      // 'input' também). Debounce leve de 80ms pra evitar re-render
+      // a cada tecla em listas longas.
+      let _expFilterTimer = null;
+      filterExp.addEventListener('input', () => {
+        clearTimeout(_expFilterTimer);
+        _expFilterTimer = setTimeout(() => renderBookings(), 80);
+      });
+    }
     if (filterStatus) filterStatus.addEventListener('change', () => renderBookings());
     var filterFornInit = document.getElementById('bookings-filter-fornecedor');
     var filterSfInit = document.getElementById('bookings-filter-status-fornecedor');
@@ -2131,8 +2142,16 @@
     // todas as experiences (incluindo By Elarah originais sem
     // venda ainda) + byelarah_items (workshops/mentorias).
     // Deduplica por nome (case-insensitive) e ordena pt-BR.
+    //
+    // Renderiza em um <datalist> ligado ao <input list="...">. O input
+    // suporta busca por digitação parcial: ao filtrar, comparamos por
+    // substring case-insensitive (ver loop principal abaixo). Quando o
+    // admin escolhe uma opção do dropdown nativo, o input recebe o nome
+    // completo e o filtro vira exact match implícito.
     const filterExpEl = document.getElementById('bookings-filter-exp');
-    if (filterExpEl && filterExpEl.options.length <= 1) {
+    const filterExpListEl = document.getElementById('bookings-filter-exp-list');
+    // Só popula uma vez por load: se já tem filhos, presume populado.
+    if (filterExpListEl && filterExpListEl.children.length === 0) {
       const collected = new Map();   // lowercaseName → originalName
       const addName = (raw) => {
         const trimmed = String(raw || '').trim();
@@ -2158,8 +2177,7 @@
       sorted.forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
-        opt.textContent = name;
-        filterExpEl.appendChild(opt);
+        filterExpListEl.appendChild(opt);
       });
     }
 
@@ -2279,7 +2297,13 @@
       });
     }
 
-    const filterExp = filterExpEl ? filterExpEl.value : '';
+    // Filtro de experiência: agora é input com busca. Compara por
+    // substring case-insensitive — assim "pintura" filtra todas as
+    // Pinturas, "aperol" filtra qualquer experiência que mencione
+    // Aperol no nome, etc. Quando o admin escolhe uma opção exata
+    // do datalist, vira match completo (substring de si mesmo).
+    const filterExpRaw = filterExpEl ? String(filterExpEl.value || '').trim() : '';
+    const filterExp = filterExpRaw.toLowerCase();
     const filterStatusEl = document.getElementById('bookings-filter-status');
     const filterStatus = filterStatusEl ? filterStatusEl.value : '';
     const filterForn = filterFornEl ? filterFornEl.value : '';
@@ -2289,7 +2313,7 @@
     // Este painel só mostra bookings PAGAS
     const filtered = bookings.filter(b => {
       if (b.status !== 'pago') return false;
-      if (filterExp && b.experiencia_nome !== filterExp) return false;
+      if (filterExp && !String(b.experiencia_nome || '').toLowerCase().includes(filterExp)) return false;
       if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
       if (filterSf && (b.status_fornecedor || 'repasse_pendente') !== filterSf) return false;
       return true;
@@ -9451,13 +9475,15 @@
     //   - experiences.nome via _finExpById (caso o snapshot esteja
     //     vazio em vendas antigas)
     if (expFilter) {
+      // Substring match (consistente com o filtro de bookings novo,
+      // que também é case-insensitive contains). Antes era exact ===.
       const want = String(expFilter).trim().toLowerCase();
       rows = rows.filter(r => {
         const direct = (r.experience_name || '').trim().toLowerCase();
-        if (direct === want) return true;
+        if (direct.includes(want)) return true;
         if (r.experience_id && _finExpById && _finExpById.has(r.experience_id)) {
           const fromExp = (_finExpById.get(r.experience_id).nome || '').trim().toLowerCase();
-          if (fromExp === want) return true;
+          if (fromExp.includes(want)) return true;
         }
         return false;
       });
