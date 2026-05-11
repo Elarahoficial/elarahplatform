@@ -7182,6 +7182,8 @@
     status: '',
     bairro: '',
     activeId: null,            // prospect aberto no modal de timeline
+    templates: [],             // cache dos templates ativos pro botão "📋 Msg ▾"
+    prospectsById: new Map(),  // lookup rápido pra copiar mensagem da linha
   };
   let _prospectsWired = false;
 
@@ -7217,6 +7219,49 @@
   // Substitui {{nome}} / {{categoria}} / {{bairro}} no template.
   // Sem variável presente no prospect → fallback razoável (ex.
   // categoria vazia vira "experiência manual").
+  // Copia mensagem do template clicado, já renderizada com as
+  // variáveis do prospect. Chamada pela delegação de click no
+  // tbody (botão dentro do dropdown "📋 Msg ▾" da linha). Mostra
+  // feedback visual ("✓ Copiado!") por 1.5s e fecha o <details>.
+  async function _propCopyMessageFromRow(btn, prospectId, tplId) {
+    const prospect = _prospectsState.prospectsById.get(prospectId);
+    const tpl = (_prospectsState.templates || []).find(t => t.id === tplId);
+    if (!prospect || !tpl) {
+      console.warn('[Elarah Prospects] msg copy: prospect ou template não encontrado', { prospectId, tplId });
+      return;
+    }
+    const text = _propRenderTemplate(tpl.conteudo, prospect);
+    const origHtml = btn.innerHTML;
+    const origBg = btn.style.background;
+    const origColor = btn.style.color;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      // Fallback: textarea temporário + execCommand (browsers antigos)
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    }
+    btn.innerHTML = '✓ Copiado!';
+    btn.style.background = '#e6f4ea';
+    btn.style.color = '#1a8a4a';
+    btn.style.fontWeight = '700';
+    setTimeout(() => {
+      btn.innerHTML = origHtml;
+      btn.style.background = origBg || 'transparent';
+      btn.style.color = origColor || '#333';
+      btn.style.fontWeight = '';
+      // Fecha o <details> pai pra limpar a UI
+      const details = btn.closest('details');
+      if (details) details.open = false;
+    }, 1200);
+  }
+
   function _propRenderTemplate(template, prospect) {
     if (!template) return '';
     const cat = prospect && prospect.categoria
@@ -7541,13 +7586,21 @@
     _propWireOnce();
     // Carrega prospects + tipo_parceria de cada parceiro vinculado.
     // Sem cache local pra que mudanças (promoção, edição de tipo)
-    // apareçam imediatamente.
-    const [list, fornecedoresMap] = await Promise.all([
+    // apareçam imediatamente. Templates carregados em paralelo
+    // pro dropdown "📋 Msg ▾" da linha (1 fetch só, reaproveita
+    // entre todas as linhas — não 1 fetch por click).
+    const [list, fornecedoresMap, templates] = await Promise.all([
       _propFetchProspects(),
       _propFetchFornecedoresTipoMap(),
+      _propFetchTemplates(),
     ]);
     _prospectsCache = list;
     _prospectsTipoMap = fornecedoresMap;
+    _prospectsState.templates = templates || [];
+    // Map id → prospect pro botão "📋 Msg ▾" achar o registro
+    // sem percorrer o array a cada clique.
+    _prospectsState.prospectsById = new Map();
+    (list || []).forEach(p => _prospectsState.prospectsById.set(p.id, p));
     _propRenderStats(list);
     _propRenderBairrosDatalist(list);
     _propRenderTable();
@@ -7667,6 +7720,38 @@
         const tipoColor = tipo === 'ambos' ? '#6b3aa0' : (tipo === 'byelarah' ? '#a05a00' : (tipo === 'elarah' ? '#1a8a4a' : '#999'));
         statusCell += '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:6px;background:#fff;border:1px solid ' + tipoColor + ';color:' + tipoColor + ';font-size:.68rem;font-weight:700;">' + _propEsc(tipoLabel) + '</span>';
       }
+      // Dropdown "📋 Msg ▾" — lista todos os templates ativos, cada
+      // um já renderizado com {{nome}}/{{categoria}}/{{bairro}} ao
+      // copiar (zero edição manual). Prioriza templates da categoria
+      // do prospect no topo (se houver). Usa <details>/<summary> que
+      // é nativo HTML — toggle automático sem JS extra.
+      const tpls = _prospectsState.templates || [];
+      const sortedTpls = tpls.slice().sort((a, b) => {
+        // Templates da categoria do prospect aparecem primeiro,
+        // depois globais (categoria=null), por ordem.
+        const aMatch = a.categoria && p.categoria && a.categoria === p.categoria;
+        const bMatch = b.categoria && p.categoria && b.categoria === p.categoria;
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+        return (a.ordem || 0) - (b.ordem || 0);
+      });
+      const msgDropdown = sortedTpls.length
+        ? '<details class="prospect-msg-dropdown" style="display:inline-block;position:relative;margin-right:6px;vertical-align:middle;">' +
+            '<summary style="list-style:none;cursor:pointer;padding:5px 10px;background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;border-radius:6px;font-size:.78rem;font-weight:600;display:inline-block;user-select:none;" title="Copiar mensagem pronta">📋 Msg ▾</summary>' +
+            '<div style="position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12);padding:6px;min-width:260px;max-width:340px;z-index:1000;font-family:inherit;">' +
+              sortedTpls.map(t => {
+                const isCatMatch = t.categoria && p.categoria && t.categoria === p.categoria;
+                const labelCat = t.categoria
+                  ? '<span style="margin-left:6px;font-size:.68rem;color:' + (isCatMatch ? '#1a8a4a' : '#888') + ';text-transform:uppercase;letter-spacing:.04em;font-weight:700;">' + (isCatMatch ? '✓ ' : '') + _propEsc(t.categoria) + '</span>'
+                  : '<span style="margin-left:6px;font-size:.68rem;color:#aaa;text-transform:uppercase;letter-spacing:.04em;">global</span>';
+                return '<button type="button" data-prospect-msg-copy="' + _propEsc(p.id) + '" data-prospect-tpl="' + _propEsc(t.id) + '" style="display:block;width:100%;padding:8px 10px;background:transparent;border:none;text-align:left;font-size:.82rem;color:#333;cursor:pointer;border-radius:6px;font-family:inherit;" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'transparent\'">' +
+                  _propEsc(t.nome) + labelCat +
+                '</button>';
+              }).join('') +
+            '</div>' +
+          '</details>'
+        : '';
+
       // Linha com fundo levemente colorido pra reforçar a seção
       const rowBg = sec ? sec.bg : '#fff';
       return '<tr style="background:' + rowBg + ';">' +
@@ -7677,9 +7762,10 @@
         '<td>' + statusCell + '</td>' +
         '<td style="font-size:.82rem;">' + lastInteraction + '</td>' +
         '<td>' +
-          (waLink ? '<a href="' + _propEsc(waLink) + '" target="_blank" rel="noopener" style="display:inline-block;margin-right:6px;padding:5px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;">WhatsApp</a>' : '') +
-          '<button type="button" data-prospect-action="timeline" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:6px;">Timeline</button>' +
-          '<button type="button" data-prospect-action="edit" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;">Editar</button>' +
+          (waLink ? '<a href="' + _propEsc(waLink) + '" target="_blank" rel="noopener" style="display:inline-block;margin-right:6px;padding:5px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;vertical-align:middle;">WhatsApp</a>' : '') +
+          msgDropdown +
+          '<button type="button" data-prospect-action="timeline" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:6px;vertical-align:middle;">Timeline</button>' +
+          '<button type="button" data-prospect-action="edit" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;vertical-align:middle;">Editar</button>' +
         '</td>' +
       '</tr>';
     };
@@ -7743,11 +7829,22 @@
     if (tbody) {
       tbody.addEventListener('click', (e) => {
         const btn = e.target && e.target.closest('button[data-prospect-action]');
-        if (!btn) return;
-        const id = btn.dataset.prospectId;
-        const action = btn.dataset.prospectAction;
-        if (action === 'edit') _propOpenEditModal(id);
-        else if (action === 'timeline') _propOpenTimelineModal(id);
+        if (btn) {
+          const id = btn.dataset.prospectId;
+          const action = btn.dataset.prospectAction;
+          if (action === 'edit') _propOpenEditModal(id);
+          else if (action === 'timeline') _propOpenTimelineModal(id);
+          return;
+        }
+        // Dropdown "📋 Msg ▾" — copia template renderizado com
+        // {{nome}}/{{categoria}}/{{bairro}} substituídos. Feedback
+        // visual no botão clicado + fecha o <details> pai.
+        const msgBtn = e.target && e.target.closest('button[data-prospect-msg-copy]');
+        if (msgBtn) {
+          const prospectId = msgBtn.dataset.prospectMsgCopy;
+          const tplId = msgBtn.dataset.prospectTpl;
+          _propCopyMessageFromRow(msgBtn, prospectId, tplId);
+        }
       });
     }
 
