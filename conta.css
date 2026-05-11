@@ -581,3 +581,35 @@
   font-weight: 600;
   color: var(--gray-900, #1a1a1a);
 }
+
+/* Linha do endereço/local da experiência (logo abaixo da meta de
+   data/horário/preço). Mostra "📍 endereço — bairro" pra que o
+   cliente identifique rápido onde será a experiência sem precisar
+   abrir o e-mail de confirmação. */
+.purchase-card__location {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--gray-500, #888);
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  line-height: 1.35;
+}
+
+.purchase-card__location-icon {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+/* line-clamp em 2 linhas pra endereços longos não estourarem o card.
+   webkit-line-clamp é suportado em todos os browsers modernos
+   (Chrome, Edge, Firefox 68+, Safari). Hover mostra o tooltip
+   (title attribute) com o endereço completo. */
+.purchase-card__location-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}

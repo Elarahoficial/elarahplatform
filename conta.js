@@ -441,10 +441,34 @@ renderFavoritos();
       (booking.amount_total ? formatBrlCents(booking.amount_total) : '');
     const status = booking.status || 'pending';
     const statusLabel = bookingStatusLabel(status);
+    // Endereço da experiência — salvo em metadata pelas edge functions
+    // de checkout (create-checkout-session / create-mp-pix-payment).
+    // Usuário acessa essa tela como referência rápida antes do evento;
+    // sem isso, precisa caçar no e-mail de confirmação. Exibido como
+    // linha separada com pin pra destacar visualmente do meta padrão.
+    const meta = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+    const endereco = String(meta.endereco || '').trim();
+    const bairro = String(meta.bairro || '').trim();
+    // Combina endereco + bairro com separador " — " quando os dois
+    // existem. Se só um, usa só ele. Mesma lógica do email de
+    // confirmação (_shared/email.ts), pra manter consistência entre
+    // o que o usuário vê na tela e o que recebeu por e-mail.
+    const localFull = endereco && bairro
+      ? endereco + ' — ' + bairro
+      : (endereco || bairro || '');
     const metaParts = [];
     if (data) metaParts.push('<span class="purchase-card__meta-item">📅 ' + escapeHtmlLocal(data) + '</span>');
     if (horario) metaParts.push('<span class="purchase-card__meta-item">⏱ ' + escapeHtmlLocal(horario) + '</span>');
     if (priceLabel) metaParts.push('<span class="purchase-card__meta-item purchase-card__price">' + escapeHtmlLocal(priceLabel) + '</span>');
+    // Linha do local: só renderiza quando há endereço/bairro disponível.
+    // Bookings antigas ou de gift card direto podem não ter — nesse
+    // caso o card mantém o layout enxuto sem espaço vazio.
+    const localHtml = localFull
+      ? '<p class="purchase-card__location" title="' + escapeHtmlLocal(localFull) + '">' +
+          '<span class="purchase-card__location-icon" aria-hidden="true">📍</span>' +
+          '<span class="purchase-card__location-text">' + escapeHtmlLocal(localFull) + '</span>' +
+        '</p>'
+      : '';
 
     return (
       '<article class="purchase-card purchase-card--experience' + (group === 'past' ? ' purchase-card--past' : '') + '">' +
@@ -460,6 +484,7 @@ renderFavoritos();
           '</div>' +
           '<h3 class="purchase-card__title">' + escapeHtmlLocal(nome) + '</h3>' +
           '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
+          localHtml +
         '</div>' +
       '</article>'
     );
@@ -546,7 +571,7 @@ renderFavoritos();
       // (RLS: gift_cards_owner_read cobre ambos via e-mail).
       const [bookingsRes, giftCardsRes] = await Promise.all([
         sb.from('bookings')
-          .select('id, experiencia_nome, data, horario, preco_label, amount_total, status, created_at, stripe_session_id')
+          .select('id, experiencia_nome, data, horario, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
           .order('created_at', { ascending: false })
           .limit(200),
         sb.from('gift_cards')
