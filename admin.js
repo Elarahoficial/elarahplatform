@@ -11125,6 +11125,27 @@
     return d.innerHTML;
   }
 
+  // Transforma URL de empresa do LinkedIn em URL da aba "Pessoas"
+  // com keywords pré-filtradas (people OR rh OR cultura OR talent OR
+  // gente OR pessoas). Funciona pra slugs comuns:
+  //   https://www.linkedin.com/company/cobli/
+  //     → https://www.linkedin.com/company/cobli/people/?keywords=...
+  // Fallback: se a URL não casa com o padrão /company/<slug>/, devolve
+  // ela como está pra não quebrar.
+  function _b2bLinkedInPeopleSearchUrl(linkedinEmpresa) {
+    const raw = String(linkedinEmpresa || '').trim();
+    if (!raw) return null;
+    // Detecta /company/<slug> e injeta /people/ na URL
+    const match = raw.match(/^(https?:\/\/(?:www\.)?linkedin\.com\/company\/[^/?#]+)\/?/i);
+    if (!match) return raw;
+    const base = match[1].replace(/\/$/, '');
+    // Keywords cobrindo nomenclaturas comuns de cargos de People/RH em PT/EN:
+    //   people, RH, cultura, talent, gente, pessoas
+    // OR não é case-sensitive no LinkedIn search.
+    const kw = encodeURIComponent('people OR rh OR cultura OR talent OR gente OR pessoas');
+    return base + '/people/?keywords=' + kw;
+  }
+
   // ----- Chips de contato (WA · IG · @ · in · 🌐) -----
   // Mesma lógica visual do _propContactIcons (CRM de parceiros), mas
   // adaptada pra B2B: usa contato_whatsapp/contato_email da pessoa e
@@ -11144,11 +11165,16 @@
       out.push('<a href="mailto:' + _b2bEsc(p.contato_email) + '" title="E-mail do contato" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
     }
     // LinkedIn: prioriza pessoa (decisor real) se existir, senão da empresa.
-    // Hover do título diferencia pra o admin saber o que vai abrir.
+    // Quando aponta pra EMPRESA, transforma a URL em /people/?keywords=...
+    // pra cair direto na aba "Pessoas" já filtrada por People/RH/Cultura/
+    // Talent. Operacional: clica → vê quem é decisor → DM em 1 clique.
+    // Sem isso, o admin caía na home da empresa e tinha que abrir Pessoas
+    // → filtrar → 3-4 cliques extras por lead.
     if (p.contato_linkedin) {
       out.push('<a href="' + _b2bEsc(p.contato_linkedin) + '" target="_blank" rel="noopener" title="LinkedIn do contato (decisor)" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
     } else if (p.linkedin_empresa) {
-      out.push('<a href="' + _b2bEsc(p.linkedin_empresa) + '" target="_blank" rel="noopener" title="LinkedIn da empresa" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
+      const peopleUrl = _b2bLinkedInPeopleSearchUrl(p.linkedin_empresa);
+      out.push('<a href="' + _b2bEsc(peopleUrl) + '" target="_blank" rel="noopener" title="LinkedIn — Pessoas da empresa filtradas por People/RH/Cultura/Talent" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
     }
     if (p.site) {
       const link = _b2bUrlOrEmpty(p.site);
