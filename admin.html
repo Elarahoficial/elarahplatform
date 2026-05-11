@@ -145,6 +145,15 @@
         <span>Experiências</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="experiencias-foco">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        <span>Experiências foco</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="byelarah">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2l2.39 6.97H21l-5.3 3.85 2.02 6.21L12 15.1l-5.72 3.93 2.02-6.21L3 8.97h6.61z"/>
@@ -1955,6 +1964,62 @@
       </div>
     </div>
 
+    <!-- =========================================================
+         EXPERIÊNCIAS FOCO — divulgação semanal
+         ========================================================= -->
+    <div class="admin__panel" id="panel-experiencias-foco">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Experiências foco</h1>
+        <p class="admin__page-subtitle">O que divulgar essa semana. Foco em experiências que acontecem em ~2 semanas, By Elarah (sempre) e vagas críticas.</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Semana de</div>
+          <div class="admin__stat-value" id="stat-foco-semana" style="font-size:1.05rem;">—</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Foco da semana</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-foco-week-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">By Elarah ativas</div>
+          <div class="admin__stat-value" id="stat-foco-byelarah-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Vagas críticas</div>
+          <div class="admin__stat-value" id="stat-foco-critical-count">0</div>
+        </div>
+      </div>
+
+      <div style="background:#fffaf2;border:1px solid #f0d9aa;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;">
+          <strong style="font-size:.88rem;color:#1a1a1a;">Template de mensagem</strong>
+          <button type="button" id="foco-tpl-reset" style="padding:4px 10px;border:1px solid #ddd;background:#fff;color:#666;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Restaurar padrão</button>
+        </div>
+        <p style="margin:0 0 8px;font-size:.78rem;color:#888;">Variáveis: <code>{{nome}}</code>, <code>{{data}}</code>, <code>{{horario}}</code>, <code>{{bairro}}</code>, <code>{{vagas}}</code>, <code>{{link}}</code>, <code>{{preco}}</code>. Salvo só no seu navegador.</p>
+        <textarea id="foco-tpl" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🎯 Foco da semana</h2>
+        <p id="foco-week-desc" style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências que acontecem entre <strong>10 e 16 dias</strong> a partir de hoje. Janela ideal pra começar a divulgar.</p>
+        <div id="foco-week-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">✨ By Elarah — divulgação contínua</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências exclusivas Elarah Originals. Mantém na régua semanal.</p>
+        <div id="foco-byelarah-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <section style="margin-bottom:14px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🔥 Vagas críticas</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências com menos de 30% das vagas restantes e evento no próximo mês. Use urgência (“últimas vagas”).</p>
+        <div id="foco-critical-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+    </div>
+
     <!-- ===== GIFT CARDS PANEL ===== -->
     <div class="admin__panel" id="panel-giftcards">
       <div class="admin__header">
@@ -3105,7 +3170,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=123"></script>
+<script src="admin.js?v=124"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
