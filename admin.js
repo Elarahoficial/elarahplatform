@@ -11097,6 +11097,67 @@
     observacao: '📝 Observação',
   };
 
+  // ----- Helpers de link (espelham _propWhatsappLink/_propInstagramLink) -----
+  // Replicados pra B2B porque o módulo é independente do CRM de parceiros.
+  function _b2bWhatsappLink(raw) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return null;
+    const withCountry = digits.length <= 11 ? '55' + digits : digits;
+    return 'https://wa.me/' + withCountry;
+  }
+  function _b2bInstagramLink(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    const handle = v.replace(/^@/, '').replace(/\s+/g, '');
+    return 'https://instagram.com/' + handle;
+  }
+  function _b2bUrlOrEmpty(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    return 'https://' + v;
+  }
+  function _b2bEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  // ----- Chips de contato (WA · IG · @ · in · 🌐) -----
+  // Mesma lógica visual do _propContactIcons (CRM de parceiros), mas
+  // adaptada pra B2B: usa contato_whatsapp/contato_email da pessoa e
+  // instagram/linkedin_empresa/site da empresa. Cada chip vira clique
+  // direto pro canal correspondente. Quando nada existe, mostra "—".
+  function _b2bContactIcons(p) {
+    const out = [];
+    if (p.contato_whatsapp) {
+      const link = _b2bWhatsappLink(p.contato_whatsapp);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="WhatsApp do contato" style="display:inline-block;padding:4px 6px;background:#e6f4ea;color:#1a8a4a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">WA</a>');
+    }
+    if (p.instagram) {
+      const link = _b2bInstagramLink(p.instagram);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="Instagram da empresa" style="display:inline-block;padding:4px 6px;background:#fce8f1;color:#c0397a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">IG</a>');
+    }
+    if (p.contato_email) {
+      out.push('<a href="mailto:' + _b2bEsc(p.contato_email) + '" title="E-mail do contato" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
+    }
+    // LinkedIn: prioriza pessoa (decisor real) se existir, senão da empresa.
+    // Hover do título diferencia pra o admin saber o que vai abrir.
+    if (p.contato_linkedin) {
+      out.push('<a href="' + _b2bEsc(p.contato_linkedin) + '" target="_blank" rel="noopener" title="LinkedIn do contato (decisor)" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
+    } else if (p.linkedin_empresa) {
+      out.push('<a href="' + _b2bEsc(p.linkedin_empresa) + '" target="_blank" rel="noopener" title="LinkedIn da empresa" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
+    }
+    if (p.site) {
+      const link = _b2bUrlOrEmpty(p.site);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="Site da empresa" style="display:inline-block;padding:4px 6px;background:#f4f0e6;color:#866d1a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">🌐</a>');
+    }
+    return out.length
+      ? '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + out.join('') + '</div>'
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+  }
+
   // ----- Helpers de "sinais" (badges visuais por linha) -----
   // Calcula sinais derivados do estado atual + última interação.
   // Cada sinal tem: label, tooltip, e cor. Renderizado como pills
@@ -11331,7 +11392,7 @@
     if (countEl) countEl.textContent = filtered.length + ' empresa' + (filtered.length === 1 ? '' : 's');
 
     if (!filtered.length) {
-      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma empresa encontrada.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhuma empresa encontrada.</td></tr>';
       return;
     }
 
@@ -11375,6 +11436,10 @@
         (p.contato_cargo ? '<br><span style="font-size:.72rem;color:#888;">' + _esc(p.contato_cargo) + '</span>' : '')
       : '<span style="color:#bbb;">—</span>';
 
+    // Coluna "Canais" — chips WA/IG/@/in/🌐 clicáveis pra cada canal
+    // disponível da empresa/contato. Mesma UX do CRM de parceiros.
+    const canaisCell = _b2bContactIcons(p);
+
     const statusColor = B2B_STATUS_COLOR[p.status_comercial] || { bg:'#f4f4f4', fg:'#666' };
     const statusCell = '<span style="display:inline-block;padding:3px 9px;border-radius:8px;background:' +
       statusColor.bg + ';color:' + statusColor.fg + ';font-size:.74rem;font-weight:700;white-space:nowrap;">' +
@@ -11406,6 +11471,7 @@
       '<td>' + tipoCell + '</td>' +
       '<td>' + funcCell + '</td>' +
       '<td>' + contatoCell + '</td>' +
+      '<td>' + canaisCell + '</td>' +
       '<td>' + statusCell + '</td>' +
       '<td>' + potCell + '</td>' +
       '<td>' + signalsCell + '</td>' +
