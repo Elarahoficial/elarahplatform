@@ -400,6 +400,7 @@
       case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
+      case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
@@ -11978,6 +11979,328 @@
     a.download = 'b2b-prospects-' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // =================================================================
+  // ===== EXPERIÊNCIAS FOCO — divulgação semanal ==================
+  // -----------------------------------------------------------------
+  // Painel operacional: mostra o que divulgar essa semana, em 3 grupos:
+  //   1. Foco da semana — eventos em 10-16 dias (sweet spot pra
+  //      começar divulgação: gera urgência mas dá tempo de comprar).
+  //   2. By Elarah Originals — sempre na régua, divulgação contínua.
+  //   3. Vagas críticas — <30% vagas + evento próximo (esgotando).
+  //
+  // Cada card tem botão de copiar mensagem pronta (template editável,
+  // persistido em localStorage) com variáveis preenchidas, e atalho
+  // direto pro modal de edição em "Experiências".
+  //
+  // Dados: usa o mesmo ElarahData.getAllExperiences() que outras abas.
+  // Sem nova query SQL — agrega/recorta no client.
+  // =================================================================
+
+  // Janela de "foco da semana" — 2 semanas é o sweet spot:
+  // <2 semanas = pouco tempo, >2 semanas = ainda longe.
+  // Janela de 7 dias (10-16) cobre a 2ª semana à frente com folga.
+  const FOCO_WEEK_MIN_DAYS = 10;
+  const FOCO_WEEK_MAX_DAYS = 16;
+  const FOCO_CRITICAL_DAYS = 30;     // próximo mês
+  const FOCO_CRITICAL_PCT = 0.30;    // <30% vagas restantes
+
+  // Template padrão (persistido em localStorage como `elarah_foco_tpl`)
+  const FOCO_TPL_DEFAULT =
+    '🎨 {{nome}}\n' +
+    '📅 {{data}} · {{horario}}\n' +
+    '📍 {{bairro}}\n\n' +
+    '✨ {{vagas}}\n' +
+    '💛 {{preco}}\n\n' +
+    '👉 Reserve sua vaga: {{link}}';
+
+  function _focoTpl() {
+    try { return localStorage.getItem('elarah_foco_tpl') || FOCO_TPL_DEFAULT; }
+    catch (e) { return FOCO_TPL_DEFAULT; }
+  }
+  function _focoSaveTpl(v) {
+    try { localStorage.setItem('elarah_foco_tpl', v); } catch (e) {}
+  }
+
+  // Parse defensivo do timestamp do evento. Prioridade:
+  // 1. event_at (timestamptz canônico) — quando disponível
+  // 2. data "DD/MM" ou "DD/MM/AAAA" (legado) — assume ano corrente se omitido
+  // Devolve { date: Date|null, daysFromNow: number|null }.
+  function _focoParseEventDate(exp) {
+    const now = new Date();
+    if (exp && exp.eventAt) {
+      const d = new Date(exp.eventAt);
+      if (!isNaN(d.getTime())) {
+        const days = Math.floor((d.getTime() - now.getTime()) / 86400000);
+        return { date: d, daysFromNow: days };
+      }
+    }
+    if (exp && exp.data) {
+      const m = String(exp.data).match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+      if (m) {
+        const day = Number(m[1]);
+        const month = Number(m[2]);
+        let year = m[3] ? Number(m[3]) : now.getFullYear();
+        if (year < 100) year += 2000;
+        // Tenta extrair hora do campo horario ("19h00 – 22h00")
+        let hh = 12, mm = 0;
+        const hm = String(exp.horario || '').match(/(\d{1,2})\s*h\s*(\d{0,2})/i);
+        if (hm) {
+          hh = Number(hm[1]);
+          mm = hm[2] ? Number(hm[2]) : 0;
+        }
+        const d = new Date(year, month - 1, day, hh, mm, 0);
+        if (!isNaN(d.getTime())) {
+          // Se a data caiu no passado e veio sem ano explícito, assume próximo ano
+          if (!m[3] && d.getTime() < now.getTime() - 86400000) {
+            d.setFullYear(year + 1);
+          }
+          const days = Math.floor((d.getTime() - now.getTime()) / 86400000);
+          return { date: d, daysFromNow: days };
+        }
+      }
+    }
+    return { date: null, daysFromNow: null };
+  }
+
+  function _focoEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  // Monta os dados pro template a partir da experiência.
+  function _focoBuildVars(exp) {
+    const parsed = _focoParseEventDate(exp);
+    const dataLabel = parsed.date
+      ? parsed.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      : (exp.data || '');
+    const vagasRest = Number(exp.vagasRestantes);
+    const vagasTot = Number(exp.vagasTotal);
+    const vagasLabel = (isFinite(vagasRest) && vagasRest > 0)
+      ? (vagasRest === 1 ? 'Última vaga!' : 'Restam ' + vagasRest + ' vagas')
+      : 'Vagas limitadas';
+    const link = 'https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(exp.id || '');
+    const preco = exp.preco || '';
+    return {
+      nome: exp.nome || '',
+      data: dataLabel,
+      horario: exp.horario || '',
+      bairro: exp.bairro || 'São Paulo',
+      vagas: vagasLabel,
+      link: link,
+      preco: preco,
+    };
+  }
+
+  function _focoRenderTemplate(tpl, exp) {
+    const vars = _focoBuildVars(exp);
+    return String(tpl)
+      .replaceAll('{{nome}}', vars.nome)
+      .replaceAll('{{data}}', vars.data)
+      .replaceAll('{{horario}}', vars.horario)
+      .replaceAll('{{bairro}}', vars.bairro)
+      .replaceAll('{{vagas}}', vars.vagas)
+      .replaceAll('{{link}}', vars.link)
+      .replaceAll('{{preco}}', vars.preco);
+  }
+
+  // Renderiza 1 card de experiência. Inclui badge do motivo (FOCO 2 SEM /
+  // BY ELARAH / VAGAS CRÍTICAS), data/horário com dias restantes,
+  // bairro, vagas, e botões de ação (copiar mensagem, editar, abrir
+  // página pública).
+  function _focoRenderCard(exp, opts) {
+    const parsed = _focoParseEventDate(exp);
+    const daysLabel = parsed.daysFromNow != null
+      ? (parsed.daysFromNow === 0 ? 'hoje'
+         : parsed.daysFromNow === 1 ? 'amanhã'
+         : parsed.daysFromNow < 0 ? Math.abs(parsed.daysFromNow) + 'd atrás'
+         : 'em ' + parsed.daysFromNow + 'd')
+      : '—';
+    const vagasRest = Number(exp.vagasRestantes);
+    const vagasTot = Number(exp.vagasTotal);
+    const hasVagas = isFinite(vagasRest) && isFinite(vagasTot) && vagasTot > 0;
+    const vagasPct = hasVagas ? vagasRest / vagasTot : 1;
+    const vagasColor = vagasPct < 0.3 ? '#c0392b' : (vagasPct < 0.6 ? '#a4663b' : '#1a8a4a');
+    const vagasText = hasVagas
+      ? vagasRest + ' / ' + vagasTot
+      : (isFinite(vagasRest) ? String(vagasRest) : '—');
+
+    // Badge do grupo (vermelho/laranja/azul conforme motivo)
+    const badge = opts && opts.badge
+      ? '<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:' +
+        opts.badgeBg + ';color:' + opts.badgeFg + ';">' + _focoEsc(opts.badge) + '</span>'
+      : '';
+
+    const imgUrl = (exp.imagem || '').trim();
+    const imgHtml = imgUrl
+      ? '<div style="width:100%;height:120px;background:#f4f0e6 url(\'' + _focoEsc(imgUrl) + '\') center/cover no-repeat;border-radius:8px;margin-bottom:10px;"></div>'
+      : '';
+
+    return '<article style="background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;">' +
+      imgHtml +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+        badge +
+        '<span style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.04em;">' + _focoEsc(exp.categoria || '—') + '</span>' +
+      '</div>' +
+      '<h3 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a1a;line-height:1.3;">' + _focoEsc(exp.nome || 'Experiência') + '</h3>' +
+      '<div style="font-size:.82rem;color:#444;line-height:1.5;">' +
+        '<div>📅 <strong>' + _focoEsc(exp.data || '—') + '</strong> · <span style="color:#a4663b;">' + _focoEsc(daysLabel) + '</span></div>' +
+        (exp.horario ? '<div>⏱ ' + _focoEsc(exp.horario) + '</div>' : '') +
+        (exp.bairro ? '<div>📍 ' + _focoEsc(exp.bairro) + '</div>' : '') +
+        '<div>🎟 Vagas: <strong style="color:' + vagasColor + ';">' + _focoEsc(vagasText) + '</strong>' +
+          (hasVagas ? ' <span style="color:#888;font-size:.78rem;">(' + Math.round(vagasPct * 100) + '%)</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">' +
+        '<button type="button" data-foco-copy="' + _focoEsc(exp.id) + '" style="flex:1;min-width:120px;padding:8px 10px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">📋 Copiar mensagem</button>' +
+        '<a href="https://elarah.com.br/experiencia.html?id=' + _focoEsc(exp.id) + '" target="_blank" rel="noopener" title="Abrir página pública" style="padding:8px 12px;background:#fff;border:1px solid #ddd;color:#444;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;">🔗</a>' +
+        '<button type="button" data-foco-edit="' + _focoEsc(exp.id) + '" title="Ir para Experiências e editar" style="padding:8px 12px;background:#fff;border:1px solid #ddd;color:#444;border-radius:8px;font-size:.82rem;cursor:pointer;">✏️</button>' +
+      '</div>' +
+    '</article>';
+  }
+
+  async function renderExperienciasFoco() {
+    const panel = document.getElementById('panel-experiencias-foco');
+    if (!panel) return;
+
+    const weekListEl = document.getElementById('foco-week-list');
+    const byelarahListEl = document.getElementById('foco-byelarah-list');
+    const criticalListEl = document.getElementById('foco-critical-list');
+    if (!weekListEl || !byelarahListEl || !criticalListEl) return;
+
+    weekListEl.innerHTML = '<p style="color:#888;font-size:.85rem;">Carregando…</p>';
+    byelarahListEl.innerHTML = '';
+    criticalListEl.innerHTML = '';
+
+    // Janela de datas pro stat "Semana de"
+    const now = new Date();
+    const start = new Date(now); start.setDate(now.getDate() + FOCO_WEEK_MIN_DAYS);
+    const end = new Date(now); end.setDate(now.getDate() + FOCO_WEEK_MAX_DAYS);
+    const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const semanaLabel = fmt(start) + ' – ' + fmt(end);
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('stat-foco-semana', semanaLabel);
+
+    // Wire template textarea + reset (uma vez)
+    const tplEl = document.getElementById('foco-tpl');
+    const tplResetBtn = document.getElementById('foco-tpl-reset');
+    if (tplEl && !tplEl.dataset.wired) {
+      tplEl.value = _focoTpl();
+      tplEl.addEventListener('input', () => _focoSaveTpl(tplEl.value));
+      tplEl.dataset.wired = '1';
+    }
+    if (tplResetBtn && !tplResetBtn.dataset.wired) {
+      tplResetBtn.addEventListener('click', () => {
+        if (tplEl) tplEl.value = FOCO_TPL_DEFAULT;
+        _focoSaveTpl(FOCO_TPL_DEFAULT);
+      });
+      tplResetBtn.dataset.wired = '1';
+    }
+
+    // Carrega experiências
+    let allExps = [];
+    try {
+      if (window.ElarahData && ElarahData.getAllExperiences) {
+        allExps = await ElarahData.getAllExperiences();
+      }
+    } catch (e) {
+      console.warn('[Elarah Foco] erro ao carregar experiências:', e);
+    }
+
+    // Filtra ativas e não-ocultas. Mesmo critério da home.
+    const active = (allExps || []).filter(e => e && e.isActive !== false);
+
+    // Computa grupos
+    const focoSemana = [];
+    const byelarah = [];
+    const critical = [];
+
+    active.forEach(exp => {
+      const parsed = _focoParseEventDate(exp);
+      const days = parsed.daysFromNow;
+
+      // Grupo 1: foco da semana (10-16 dias)
+      if (days != null && days >= FOCO_WEEK_MIN_DAYS && days <= FOCO_WEEK_MAX_DAYS) {
+        focoSemana.push({ exp, days });
+      }
+
+      // Grupo 2: By Elarah Originals (sempre, sem filtro de data)
+      if (exp.isElarahOriginal === true) {
+        byelarah.push({ exp, days });
+      }
+
+      // Grupo 3: Vagas críticas (<30% vagas E evento no próximo mês)
+      const vagasRest = Number(exp.vagasRestantes);
+      const vagasTot = Number(exp.vagasTotal);
+      if (isFinite(vagasRest) && isFinite(vagasTot) && vagasTot > 0 &&
+          (vagasRest / vagasTot) < FOCO_CRITICAL_PCT &&
+          days != null && days >= 0 && days <= FOCO_CRITICAL_DAYS) {
+        critical.push({ exp, days });
+      }
+    });
+
+    // Ordena por data (mais próximas primeiro)
+    const sortByDays = (a, b) => (a.days == null ? 9999 : a.days) - (b.days == null ? 9999 : b.days);
+    focoSemana.sort(sortByDays);
+    byelarah.sort(sortByDays);
+    critical.sort(sortByDays);
+
+    setText('stat-foco-week-count', focoSemana.length);
+    setText('stat-foco-byelarah-count', byelarah.length);
+    setText('stat-foco-critical-count', critical.length);
+
+    // Render dos 3 grupos
+    weekListEl.innerHTML = focoSemana.length
+      ? focoSemana.map(o => _focoRenderCard(o.exp, {
+          badge: '🎯 Foco semana', badgeBg: '#fff8ef', badgeFg: '#a4663b',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência marcada pra esta semana de divulgação. Atualize a data de eventos em <strong>Experiências</strong> ou aguarde a próxima janela.</p>';
+
+    byelarahListEl.innerHTML = byelarah.length
+      ? byelarah.map(o => _focoRenderCard(o.exp, {
+          badge: '✨ By Elarah', badgeBg: '#fcefef', badgeFg: '#a04500',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência marcada como <em>By Elarah Original</em>. Marque na aba <strong>Experiências</strong> → editar → seção "By Elarah".</p>';
+
+    criticalListEl.innerHTML = critical.length
+      ? critical.map(o => _focoRenderCard(o.exp, {
+          badge: '🔥 Vagas críticas', badgeBg: '#fdecea', badgeFg: '#9c2f22',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência com vagas críticas. Bom sinal — sem nada esgotando às pressas.</p>';
+
+    // Wire ações em todos os cards (delegação por click)
+    panel.querySelectorAll('[data-foco-copy]').forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.focoCopy;
+        const exp = active.find(e => e.id === id);
+        if (!exp) return;
+        const tpl = (document.getElementById('foco-tpl') || {}).value || _focoTpl();
+        const text = _focoRenderTemplate(tpl, exp);
+        try {
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = '✓ Copiado!';
+            btn.style.background = '#1a8a4a';
+            setTimeout(() => { btn.textContent = orig; btn.style.background = '#f0a05e'; }, 1500);
+          }, () => alert(text));
+        } catch (e) { alert(text); }
+      });
+    });
+    panel.querySelectorAll('[data-foco-edit]').forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => {
+        // Atalho: leva pra aba Experiências. O admin abre o filtro
+        // por nome lá. Sem deep-link específico pra evitar acoplamento
+        // entre módulos.
+        const navBtn = document.querySelector('.admin__nav-item[data-panel="experiences"]');
+        if (navBtn) navBtn.click();
+      });
+    });
   }
 
   // ===== START =====
