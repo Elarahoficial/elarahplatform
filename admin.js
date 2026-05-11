@@ -397,6 +397,7 @@
       case 'purchases':   await renderBookings(); break;
       case 'fornecedores': await renderFornecedores(); break;
       case 'prospects':   await renderProspects(); break;
+      case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
       case 'byelarah':    await renderByElarah(); break;
@@ -11013,6 +11014,905 @@
     _conteudoLoadAndRender();
   }
 
+
+  // =================================================================
+  // ===== B2B PROSPECTS — CRM de empresas (RH/People/Cultura)
+  // -----------------------------------------------------------------
+  // Espelha a arquitetura do CRM de parceiros (renderProspects) mas
+  // voltada pra prospecção comercial em empresas. Tabelas:
+  //   b2b_prospects · b2b_prospect_interactions · b2b_prospect_templates
+  //
+  // Recursos chave:
+  //   - Visões rápidas (ações pra hoje, follow-up atrasado, quentes, parados)
+  //   - Sinais visuais por linha (badges) sem precisar abrir o lead
+  //   - Timeline de interações dentro do modal de edição
+  //   - Templates B2B com substituição de {{empresa}} {{contato}} {{cargo}}
+  //     {{segmento}} {{cidade}}
+  //   - Import/export CSV pra acelerar prospecção em massa
+  //   - Highlight visual pra sweet spot (50-500 funcionários)
+  // =================================================================
+
+  // ----- Helpers de label (id → texto legível pro UI) -----
+  const B2B_STATUS_LABEL = {
+    nao_contatado: 'Não contatado',
+    mensagem_enviada: 'Mensagem enviada',
+    respondeu: 'Respondeu',
+    reuniao_marcada: 'Reunião marcada',
+    proposta_enviada: 'Proposta enviada',
+    negociacao: 'Negociação',
+    fechado: 'Fechado (ação pontual)',
+    cliente_ativo: 'Cliente ativo',
+    pausado: 'Pausado',
+    recusou: 'Recusou',
+  };
+  const B2B_STATUS_COLOR = {
+    nao_contatado: { bg:'#f4f4f4', fg:'#666' },
+    mensagem_enviada: { bg:'#eef4fb', fg:'#3068a8' },
+    respondeu: { bg:'#e6f4ea', fg:'#1a8a4a' },
+    reuniao_marcada: { bg:'#fff8ef', fg:'#a4663b' },
+    proposta_enviada: { bg:'#fff3e0', fg:'#b07b00' },
+    negociacao: { bg:'#fdf2e9', fg:'#a04500' },
+    fechado: { bg:'#e8f5e9', fg:'#2e7d32' },
+    cliente_ativo: { bg:'#fff8ef', fg:'#d97706' },
+    pausado: { bg:'#f4f4f4', fg:'#888' },
+    recusou: { bg:'#fdecea', fg:'#9c2f22' },
+  };
+  const B2B_TIPO_LABEL = {
+    tech: 'Tech',
+    agencia: 'Agência',
+    coworking: 'Coworking',
+    construtora: 'Construtora',
+    startup: 'Startup',
+    escritorio: 'Escritório',
+    imobiliaria: 'Imobiliária',
+    arquitetura_design: 'Arquitetura/Design',
+    escritorio_juridico: 'Esc. jurídico',
+    clinica: 'Clínica',
+    industria_leve: 'Indústria leve',
+    outro: 'Outro',
+  };
+  const B2B_FUNC_LABEL = {
+    '1_49': '1–49',
+    '50_100': '50–100',
+    '101_250': '101–250',
+    '251_500': '251–500',
+    '500_plus': '500+',
+  };
+  // Sweet spot da Elarah: 50-500 funcionários (médio porte, decisor
+  // acessível, budget disponível, valoriza cultura). Highlight visual.
+  const B2B_FUNC_SWEET_SPOT = new Set(['50_100', '101_250', '251_500']);
+  const B2B_POTENCIAL_LABEL = { baixo: 'Baixo', medio: 'Médio', alto: '🔥 Alto' };
+  const B2B_INT_TIPO_LABEL = {
+    mensagem_enviada: '📤 Mensagem enviada',
+    respondeu: '💬 Respondeu',
+    reuniao_marcada: '📅 Reunião marcada',
+    reuniao_realizada: '✅ Reunião realizada',
+    proposta_enviada: '📋 Proposta enviada',
+    negociacao: '💼 Negociação',
+    fechado: '🎉 Fechado',
+    cliente_ativo: '⭐ Cliente ativo',
+    pausado: '⏸️ Pausado',
+    recusou: '❌ Recusou',
+    follow_up: '🔁 Follow-up',
+    observacao: '📝 Observação',
+  };
+
+  // ----- Helpers de "sinais" (badges visuais por linha) -----
+  // Calcula sinais derivados do estado atual + última interação.
+  // Cada sinal tem: label, tooltip, e cor. Renderizado como pills
+  // pequenos na coluna "Sinais" da tabela.
+  function b2bComputeSignals(prospect, lastInteractionAt) {
+    const signals = [];
+    const now = Date.now();
+    const lastMs = lastInteractionAt ? new Date(lastInteractionAt).getTime() : null;
+    const createdMs = prospect.created_at ? new Date(prospect.created_at).getTime() : now;
+    const proximaMs = prospect.proxima_acao_at ? new Date(prospect.proxima_acao_at).getTime() : null;
+    const daysSinceLast = lastMs ? Math.floor((now - lastMs) / 86400000) : null;
+    const daysSinceCreate = Math.floor((now - createdMs) / 86400000);
+
+    // Potencial alto — sempre destaca
+    if (prospect.potencial === 'alto') {
+      signals.push({ label:'🔥 Alto potencial', bg:'#fff3e0', fg:'#b07b00' });
+    }
+    // Follow-up atrasado (proxima_acao_at < hoje)
+    if (proximaMs && proximaMs < now &&
+        prospect.status_comercial !== 'fechado' &&
+        prospect.status_comercial !== 'cliente_ativo' &&
+        prospect.status_comercial !== 'recusou') {
+      const atrasoDias = Math.floor((now - proximaMs) / 86400000);
+      signals.push({
+        label: '⚠️ Atrasado ' + (atrasoDias > 0 ? atrasoDias + 'd' : ''),
+        bg:'#fdecea', fg:'#9c2f22',
+        title: 'Próxima ação prevista pra ' + new Date(proximaMs).toLocaleDateString('pt-BR'),
+      });
+    }
+    // Lead quente — respondeu ou reunião marcada nos últimos 7 dias
+    const hotStatuses = new Set(['respondeu', 'reuniao_marcada', 'proposta_enviada', 'negociacao']);
+    if (hotStatuses.has(prospect.status_comercial) && lastMs && daysSinceLast <= 7) {
+      signals.push({ label:'🔥 Quente', bg:'#fff8ef', fg:'#a4663b' });
+    }
+    // Lead parado — sem interação > 14 dias E status não-terminal
+    const terminalStatuses = new Set(['fechado', 'cliente_ativo', 'recusou']);
+    if (!terminalStatuses.has(prospect.status_comercial)) {
+      if (lastMs && daysSinceLast > 14) {
+        signals.push({
+          label: '🥶 Parado ' + daysSinceLast + 'd',
+          bg:'#eef4fb', fg:'#3068a8',
+          title: 'Última interação há ' + daysSinceLast + ' dias',
+        });
+      } else if (!lastMs && daysSinceCreate > 14) {
+        signals.push({
+          label:'🥶 Sem contato',
+          bg:'#eef4fb', fg:'#3068a8',
+          title: 'Cadastrado há ' + daysSinceCreate + ' dias e nunca contatado',
+        });
+      }
+    }
+    // Resposta recente — interação 'respondeu' < 3 dias (sinal extra de urgência)
+    if (lastMs && daysSinceLast !== null && daysSinceLast <= 3 &&
+        prospect.status_comercial === 'respondeu') {
+      signals.push({ label:'💬 Respondeu há ' + (daysSinceLast === 0 ? 'hoje' : daysSinceLast + 'd'),
+        bg:'#e6f4ea', fg:'#1a8a4a' });
+    }
+    return signals;
+  }
+
+  // ----- Substituição de variáveis nos templates -----
+  function _b2bRenderTemplate(template, prospect) {
+    if (!template) return '';
+    return String(template)
+      .replaceAll('{{empresa}}',  (prospect && prospect.nome) || 'a empresa')
+      .replaceAll('{{contato}}',  (prospect && prospect.contato_nome) || 'time')
+      .replaceAll('{{cargo}}',    (prospect && prospect.contato_cargo) || '')
+      .replaceAll('{{segmento}}', (prospect && prospect.segmento) || 'do seu segmento')
+      .replaceAll('{{cidade}}',   (prospect && prospect.cidade) || 'São Paulo');
+  }
+
+  // ----- Fetch -----
+  async function _b2bFetchProspects() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('b2b_prospects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) {
+      console.error('[Elarah B2B] fetch prospects error', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function _b2bFetchInteractionsByProspect(prospectIds) {
+    const sb = window.supabaseClient;
+    if (!sb || !prospectIds.length) return new Map();
+    const { data, error } = await sb
+      .from('b2b_prospect_interactions')
+      .select('id, prospect_id, tipo, descricao, occurred_at')
+      .in('prospect_id', prospectIds)
+      .order('occurred_at', { ascending: false });
+    if (error) {
+      console.warn('[Elarah B2B] interactions fetch falhou:', error.message);
+      return new Map();
+    }
+    // Agrupa por prospect_id, mais recente primeiro
+    const map = new Map();
+    (data || []).forEach(row => {
+      if (!map.has(row.prospect_id)) map.set(row.prospect_id, []);
+      map.get(row.prospect_id).push(row);
+    });
+    return map;
+  }
+
+  async function _b2bFetchTemplates() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('b2b_prospect_templates')
+      .select('*')
+      .eq('is_active', true)
+      .order('ordem', { ascending: true });
+    if (error) {
+      console.warn('[Elarah B2B] templates fetch falhou:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  // ----- Estado local de filtros -----
+  const _b2bState = {
+    view: 'todos',         // todos | acoes-hoje | atrasados | quentes | parados
+    cache: null,           // prospects array
+    interactions: new Map(),
+    templates: [],
+  };
+
+  // ----- Render principal -----
+  async function renderB2BProspects() {
+    const tbody = document.getElementById('b2b-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Carregando...</td></tr>';
+
+    const [prospects, templates] = await Promise.all([
+      _b2bFetchProspects(),
+      _b2bFetchTemplates(),
+    ]);
+    _b2bState.cache = prospects;
+    _b2bState.templates = templates;
+
+    // Busca interações em batch (mais recente por prospect)
+    const ids = prospects.map(p => p.id);
+    _b2bState.interactions = await _b2bFetchInteractionsByProspect(ids);
+
+    _b2bWireFilters();
+    _b2bRenderTable();
+    _b2bRenderStats();
+    _b2bRenderCidadesDatalist();
+  }
+
+  function _b2bRenderCidadesDatalist() {
+    const list = document.getElementById('b2b-cidades-list');
+    if (!list) return;
+    const seen = new Set();
+    list.innerHTML = '';
+    (_b2bState.cache || []).forEach(p => {
+      if (p.cidade && !seen.has(p.cidade)) {
+        seen.add(p.cidade);
+        const opt = document.createElement('option');
+        opt.value = p.cidade;
+        list.appendChild(opt);
+      }
+    });
+  }
+
+  function _b2bApplyFilters(rows) {
+    const search = (document.getElementById('b2b-filter-search')?.value || '').toLowerCase().trim();
+    const status = document.getElementById('b2b-filter-status')?.value || '';
+    const tipo = document.getElementById('b2b-filter-tipo')?.value || '';
+    const func = document.getElementById('b2b-filter-funcionarios')?.value || '';
+    const potencial = document.getElementById('b2b-filter-potencial')?.value || '';
+    const cidade = (document.getElementById('b2b-filter-cidade')?.value || '').toLowerCase().trim();
+    const now = Date.now();
+    const view = _b2bState.view;
+
+    return rows.filter(p => {
+      // Search: empresa, contato_nome, segmento, observacoes
+      if (search) {
+        const hay = (p.nome + ' ' + (p.contato_nome || '') + ' ' + (p.segmento || '') + ' ' + (p.observacoes || '')).toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      if (status && p.status_comercial !== status) return false;
+      if (tipo && p.tipo_empresa !== tipo) return false;
+      if (potencial && p.potencial !== potencial) return false;
+      if (cidade && (p.cidade || '').toLowerCase().indexOf(cidade) === -1) return false;
+      if (func) {
+        if (func === 'sweet_spot') {
+          if (!B2B_FUNC_SWEET_SPOT.has(p.funcionarios_faixa)) return false;
+        } else if (p.funcionarios_faixa !== func) return false;
+      }
+      // Visões rápidas (sobrepõem outros filtros pra cenário operacional)
+      if (view === 'acoes-hoje') {
+        if (!p.proxima_acao_at) return false;
+        const proxMs = new Date(p.proxima_acao_at).getTime();
+        // Hoje: do início do dia ao final do dia (timezone local)
+        const start = new Date(); start.setHours(0,0,0,0);
+        const end = new Date(); end.setHours(23,59,59,999);
+        if (proxMs < start.getTime() || proxMs > end.getTime()) return false;
+      } else if (view === 'atrasados') {
+        if (!p.proxima_acao_at) return false;
+        if (new Date(p.proxima_acao_at).getTime() >= now) return false;
+        if (['fechado','cliente_ativo','recusou'].includes(p.status_comercial)) return false;
+      } else if (view === 'quentes') {
+        const hot = new Set(['respondeu','reuniao_marcada','proposta_enviada','negociacao']);
+        if (!hot.has(p.status_comercial)) return false;
+        const ints = _b2bState.interactions.get(p.id) || [];
+        const last = ints[0];
+        if (!last) return false;
+        const days = Math.floor((now - new Date(last.occurred_at).getTime()) / 86400000);
+        if (days > 7) return false;
+      } else if (view === 'parados') {
+        if (['fechado','cliente_ativo','recusou'].includes(p.status_comercial)) return false;
+        const ints = _b2bState.interactions.get(p.id) || [];
+        const last = ints[0];
+        const baseMs = last ? new Date(last.occurred_at).getTime() : new Date(p.created_at).getTime();
+        const days = Math.floor((now - baseMs) / 86400000);
+        if (days <= 14) return false;
+      }
+      return true;
+    });
+  }
+
+  function _b2bRenderTable() {
+    const tbody = document.getElementById('b2b-body');
+    const countEl = document.getElementById('b2b-count');
+    if (!tbody) return;
+    const filtered = _b2bApplyFilters(_b2bState.cache || []);
+    if (countEl) countEl.textContent = filtered.length + ' empresa' + (filtered.length === 1 ? '' : 's');
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Nenhuma empresa encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(p => _b2bRenderRow(p)).join('');
+
+    // Wire row actions
+    tbody.querySelectorAll('[data-b2b-edit]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bOpenEditModal(btn.dataset.b2bEdit));
+    });
+    tbody.querySelectorAll('[data-b2b-copy-msg]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bCopyMessage(btn.dataset.b2bCopyMsg));
+    });
+    tbody.querySelectorAll('[data-b2b-quick-int]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bQuickLogInteraction(btn.dataset.b2bQuickInt, btn.dataset.tipo));
+    });
+  }
+
+  function _b2bRenderRow(p) {
+    const escapeHtml = window.__elarahEscapeHtml || (function(){ return function(s){ const d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }; })();
+    const _esc = escapeHtml;
+    const ints = _b2bState.interactions.get(p.id) || [];
+    const lastInt = ints[0];
+    const lastIntAt = lastInt ? lastInt.occurred_at : null;
+    const signals = b2bComputeSignals(p, lastIntAt);
+
+    // Empresa (com badge sweet spot)
+    const isSweet = B2B_FUNC_SWEET_SPOT.has(p.funcionarios_faixa);
+    const nomeCell = '<strong>' + _esc(p.nome) + '</strong>' +
+      (p.cidade ? '<br><span style="font-size:.75rem;color:#888;">' + _esc(p.cidade) + '</span>' : '') +
+      (p.segmento ? '<br><span style="font-size:.72rem;color:#a4663b;font-style:italic;">' + _esc(p.segmento) + '</span>' : '');
+
+    const tipoCell = p.tipo_empresa ? _esc(B2B_TIPO_LABEL[p.tipo_empresa] || p.tipo_empresa) : '—';
+
+    const funcLabel = p.funcionarios_faixa ? (B2B_FUNC_LABEL[p.funcionarios_faixa] || '—') : '—';
+    const funcCell = isSweet
+      ? '<span style="background:#fff8ef;color:#a4663b;padding:2px 8px;border-radius:6px;font-size:.78rem;font-weight:600;" title="Sweet spot da Elarah">⭐ ' + _esc(funcLabel) + '</span>'
+      : '<span style="color:#666;">' + _esc(funcLabel) + '</span>';
+
+    const contatoCell = p.contato_nome
+      ? '<strong>' + _esc(p.contato_nome) + '</strong>' +
+        (p.contato_cargo ? '<br><span style="font-size:.72rem;color:#888;">' + _esc(p.contato_cargo) + '</span>' : '')
+      : '<span style="color:#bbb;">—</span>';
+
+    const statusColor = B2B_STATUS_COLOR[p.status_comercial] || { bg:'#f4f4f4', fg:'#666' };
+    const statusCell = '<span style="display:inline-block;padding:3px 9px;border-radius:8px;background:' +
+      statusColor.bg + ';color:' + statusColor.fg + ';font-size:.74rem;font-weight:700;white-space:nowrap;">' +
+      _esc(B2B_STATUS_LABEL[p.status_comercial] || p.status_comercial) + '</span>';
+
+    const potColor = p.potencial === 'alto' ? '#b07b00' : (p.potencial === 'baixo' ? '#999' : '#444');
+    const potCell = '<span style="color:' + potColor + ';font-weight:600;font-size:.82rem;">' +
+      _esc(B2B_POTENCIAL_LABEL[p.potencial] || p.potencial || '—') + '</span>';
+
+    const signalsCell = signals.length
+      ? signals.map(s => '<span title="' + _esc(s.title || s.label) + '" style="display:inline-block;margin:2px 3px 0 0;padding:2px 7px;border-radius:6px;background:' + s.bg + ';color:' + s.fg + ';font-size:.7rem;font-weight:600;white-space:nowrap;">' + _esc(s.label) + '</span>').join('')
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+
+    const proximaCell = p.proxima_acao
+      ? '<strong style="font-size:.82rem;">' + _esc(p.proxima_acao) + '</strong>' +
+        (p.proxima_acao_at ? '<br><span style="font-size:.72rem;color:#888;">' +
+          new Date(p.proxima_acao_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) +
+          '</span>' : '')
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+
+    // Ações: editar, copiar mensagem (primeiro template), log rápido
+    const acoesCell =
+      '<button type="button" data-b2b-edit="' + _esc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #f0a05e;color:#a4663b;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;">Editar</button>' +
+      ' <button type="button" data-b2b-copy-msg="' + _esc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;" title="Copiar mensagem do template padrão com variáveis preenchidas">📋 Msg</button>' +
+      ' <button type="button" data-b2b-quick-int="' + _esc(p.id) + '" data-tipo="mensagem_enviada" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;" title="Registrar mensagem enviada">+ msg</button>';
+
+    return '<tr>' +
+      '<td>' + nomeCell + '</td>' +
+      '<td>' + tipoCell + '</td>' +
+      '<td>' + funcCell + '</td>' +
+      '<td>' + contatoCell + '</td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td>' + potCell + '</td>' +
+      '<td>' + signalsCell + '</td>' +
+      '<td>' + proximaCell + '</td>' +
+      '<td>' + acoesCell + '</td>' +
+    '</tr>';
+  }
+
+  function _b2bRenderStats() {
+    const list = _b2bState.cache || [];
+    const total = list.length;
+    const contatados = list.filter(p => p.status_comercial !== 'nao_contatado').length;
+    const respostas = list.filter(p =>
+      ['respondeu','reuniao_marcada','proposta_enviada','negociacao','fechado','cliente_ativo'].includes(p.status_comercial)
+    ).length;
+    const reunioes = list.filter(p =>
+      ['reuniao_marcada','proposta_enviada','negociacao'].includes(p.status_comercial)
+    ).length;
+    const clientes = list.filter(p => p.status_comercial === 'cliente_ativo').length;
+    // Ações pra hoje
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date(); end.setHours(23,59,59,999);
+    const acoesHoje = list.filter(p => {
+      if (!p.proxima_acao_at) return false;
+      const ms = new Date(p.proxima_acao_at).getTime();
+      return ms >= start.getTime() && ms <= end.getTime();
+    }).length;
+    const taxa = contatados > 0
+      ? Math.round((respostas / contatados) * 100) + '%'
+      : '—';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('stat-b2b-total', total);
+    set('stat-b2b-acoes-hoje', acoesHoje);
+    set('stat-b2b-reunioes', reunioes);
+    set('stat-b2b-clientes', clientes);
+    set('stat-b2b-resposta', taxa);
+  }
+
+  // ----- Wire de filtros + visões + ações principais -----
+  let _b2bWired = false;
+  function _b2bWireFilters() {
+    if (_b2bWired) return;
+    _b2bWired = true;
+
+    // Filtros — re-render ao mudar
+    ['b2b-filter-search','b2b-filter-status','b2b-filter-tipo','b2b-filter-funcionarios','b2b-filter-potencial','b2b-filter-cidade']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const evt = el.tagName === 'INPUT' ? 'input' : 'change';
+        el.addEventListener(evt, () => _b2bRenderTable());
+      });
+
+    // Visões rápidas (chips)
+    document.querySelectorAll('.b2b-view-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        _b2bState.view = chip.dataset.view || 'todos';
+        // Estado visual: chip ativo destacado
+        document.querySelectorAll('.b2b-view-chip').forEach(c => {
+          const isActive = c.dataset.view === _b2bState.view;
+          c.style.borderColor = isActive ? '#f0a05e' : '#ddd';
+          c.style.background = isActive ? '#fff8ef' : '#fff';
+          c.style.color = isActive ? '#a4663b' : '#666';
+        });
+        _b2bRenderTable();
+      });
+    });
+
+    // Botões principais
+    const btnNew = document.getElementById('btn-b2b-new');
+    if (btnNew) btnNew.addEventListener('click', () => _b2bOpenEditModal(null));
+    const btnTemplates = document.getElementById('btn-b2b-templates');
+    if (btnTemplates) btnTemplates.addEventListener('click', () => _b2bOpenTemplatesModal());
+    const btnImport = document.getElementById('btn-b2b-import');
+    if (btnImport) btnImport.addEventListener('click', () => {
+      document.getElementById('b2b-csv-input')?.click();
+    });
+    const csvInput = document.getElementById('b2b-csv-input');
+    if (csvInput) csvInput.addEventListener('change', _b2bHandleCsvImport);
+    const btnExport = document.getElementById('btn-b2b-export');
+    if (btnExport) btnExport.addEventListener('click', _b2bExportCsv);
+
+    // Modal edit — wire de save/cancel/delete
+    document.getElementById('b2b-edit-cancel')?.addEventListener('click', _b2bCloseEditModal);
+    document.getElementById('b2b-edit-save')?.addEventListener('click', _b2bSaveProspect);
+    document.getElementById('b2b-edit-delete')?.addEventListener('click', _b2bDeleteProspect);
+    document.getElementById('b2b-int-add')?.addEventListener('click', _b2bAddInteractionFromModal);
+
+    // Modal templates
+    document.getElementById('b2b-templates-close')?.addEventListener('click', () => {
+      const m = document.getElementById('b2b-templates-modal');
+      if (m) m.style.display = 'none';
+    });
+    document.getElementById('b2b-template-new')?.addEventListener('click', () => _b2bOpenTemplateEdit(null));
+    document.getElementById('b2b-template-filter-categoria')?.addEventListener('change', _b2bRenderTemplatesList);
+    document.getElementById('b2b-template-edit-cancel')?.addEventListener('click', () => {
+      const m = document.getElementById('b2b-template-edit-modal');
+      if (m) m.style.display = 'none';
+    });
+    document.getElementById('b2b-template-edit-save')?.addEventListener('click', _b2bSaveTemplate);
+    document.getElementById('b2b-template-edit-delete')?.addEventListener('click', _b2bDeleteTemplate);
+  }
+
+  // ----- Modal de edição -----
+  let _b2bEditingId = null;
+  async function _b2bOpenEditModal(id) {
+    const m = document.getElementById('b2b-edit-modal');
+    if (!m) return;
+    _b2bEditingId = id;
+    const isNew = !id;
+    const p = isNew ? {} : ((_b2bState.cache || []).find(x => x.id === id) || {});
+
+    document.getElementById('b2b-edit-title').textContent = isNew ? 'Nova empresa' : 'Editar empresa';
+    document.getElementById('b2b-edit-subtitle').textContent = isNew
+      ? 'Cadastre uma empresa-alvo pra prospecção comercial.'
+      : 'Atualize informações + registre interações na timeline.';
+
+    const set = (sel, v) => { const el = m.querySelector(sel); if (el) el.value = v == null ? '' : v; };
+    set('#b2b-edit-id', p.id || '');
+    set('#b2b-edit-nome', p.nome);
+    set('#b2b-edit-tipo', p.tipo_empresa);
+    set('#b2b-edit-funcionarios', p.funcionarios_faixa);
+    set('#b2b-edit-segmento', p.segmento);
+    set('#b2b-edit-cidade', p.cidade || 'São Paulo');
+    set('#b2b-edit-site', p.site);
+    set('#b2b-edit-linkedin-empresa', p.linkedin_empresa);
+    set('#b2b-edit-instagram', p.instagram);
+    set('#b2b-edit-contato-nome', p.contato_nome);
+    set('#b2b-edit-contato-cargo', p.contato_cargo);
+    set('#b2b-edit-contato-email', p.contato_email);
+    set('#b2b-edit-contato-whatsapp', p.contato_whatsapp);
+    set('#b2b-edit-contato-linkedin', p.contato_linkedin);
+    set('#b2b-edit-status', p.status_comercial || 'nao_contatado');
+    set('#b2b-edit-potencial', p.potencial || 'medio');
+    set('#b2b-edit-proxima-acao', p.proxima_acao);
+    // datetime-local format: YYYY-MM-DDTHH:MM
+    if (p.proxima_acao_at) {
+      const d = new Date(p.proxima_acao_at);
+      const pad = n => String(n).padStart(2,'0');
+      set('#b2b-edit-proxima-acao-at',
+        d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+        'T' + pad(d.getHours()) + ':' + pad(d.getMinutes())
+      );
+    } else {
+      set('#b2b-edit-proxima-acao-at', '');
+    }
+    set('#b2b-edit-observacoes', p.observacoes);
+
+    // Botão excluir só em edit mode
+    const delBtn = m.querySelector('#b2b-edit-delete');
+    if (delBtn) delBtn.style.display = isNew ? 'none' : 'inline-block';
+
+    // Timeline só em edit mode
+    const timelineWrap = m.querySelector('#b2b-edit-timeline-wrap');
+    if (timelineWrap) timelineWrap.style.display = isNew ? 'none' : 'block';
+    if (!isNew) await _b2bRefreshTimeline(id);
+
+    const msg = m.querySelector('#b2b-edit-msg');
+    if (msg) msg.textContent = '';
+
+    m.style.display = 'flex';
+  }
+  function _b2bCloseEditModal() {
+    const m = document.getElementById('b2b-edit-modal');
+    if (m) m.style.display = 'none';
+    _b2bEditingId = null;
+  }
+
+  async function _b2bRefreshTimeline(prospectId) {
+    const sb = window.supabaseClient;
+    const ul = document.getElementById('b2b-edit-timeline');
+    if (!ul || !sb) return;
+    const { data, error } = await sb
+      .from('b2b_prospect_interactions')
+      .select('id, tipo, descricao, occurred_at')
+      .eq('prospect_id', prospectId)
+      .order('occurred_at', { ascending: false })
+      .limit(50);
+    if (error) {
+      ul.innerHTML = '<li style="color:#c0392b;">Erro ao carregar timeline.</li>';
+      return;
+    }
+    if (!data || !data.length) {
+      ul.innerHTML = '<li style="color:#888;font-style:italic;padding:6px 0;">Nenhuma interação registrada ainda.</li>';
+      return;
+    }
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+    ul.innerHTML = data.map(r =>
+      '<li style="padding:8px 0;border-bottom:1px dashed #eee;">' +
+        '<strong>' + esc(B2B_INT_TIPO_LABEL[r.tipo] || r.tipo) + '</strong>' +
+        ' <span style="color:#888;font-size:.78rem;">· ' + new Date(r.occurred_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) + '</span>' +
+        (r.descricao ? '<div style="font-size:.85rem;color:#444;margin-top:3px;">' + esc(r.descricao) + '</div>' : '') +
+      '</li>'
+    ).join('');
+  }
+
+  async function _b2bAddInteractionFromModal() {
+    if (!_b2bEditingId) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const tipo = document.getElementById('b2b-int-tipo').value;
+    const desc = (document.getElementById('b2b-int-desc').value || '').trim();
+    const { error } = await sb.from('b2b_prospect_interactions').insert({
+      prospect_id: _b2bEditingId,
+      tipo,
+      descricao: desc || null,
+    });
+    if (error) { alert('Erro ao registrar: ' + error.message); return; }
+    document.getElementById('b2b-int-desc').value = '';
+    await _b2bRefreshTimeline(_b2bEditingId);
+    // Reload pra atualizar sinais na tabela
+    renderB2BProspects();
+  }
+
+  async function _b2bSaveProspect() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const m = document.getElementById('b2b-edit-modal');
+    const msg = m.querySelector('#b2b-edit-msg');
+    msg.textContent = '';
+
+    const nome = (m.querySelector('#b2b-edit-nome').value || '').trim();
+    if (!nome) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Nome é obrigatório.';
+      return;
+    }
+    const get = (sel) => { const el = m.querySelector(sel); return el ? (el.value || '').trim() : ''; };
+    const proximaAt = get('#b2b-edit-proxima-acao-at');
+    const payload = {
+      nome,
+      tipo_empresa: get('#b2b-edit-tipo') || null,
+      funcionarios_faixa: get('#b2b-edit-funcionarios') || null,
+      segmento: get('#b2b-edit-segmento') || null,
+      cidade: get('#b2b-edit-cidade') || null,
+      site: get('#b2b-edit-site') || null,
+      linkedin_empresa: get('#b2b-edit-linkedin-empresa') || null,
+      instagram: get('#b2b-edit-instagram') || null,
+      contato_nome: get('#b2b-edit-contato-nome') || null,
+      contato_cargo: get('#b2b-edit-contato-cargo') || null,
+      contato_email: get('#b2b-edit-contato-email') || null,
+      contato_whatsapp: get('#b2b-edit-contato-whatsapp') || null,
+      contato_linkedin: get('#b2b-edit-contato-linkedin') || null,
+      status_comercial: get('#b2b-edit-status') || 'nao_contatado',
+      potencial: get('#b2b-edit-potencial') || 'medio',
+      proxima_acao: get('#b2b-edit-proxima-acao') || null,
+      proxima_acao_at: proximaAt ? new Date(proximaAt).toISOString() : null,
+      observacoes: get('#b2b-edit-observacoes') || null,
+    };
+
+    const id = get('#b2b-edit-id');
+    let res;
+    if (id) {
+      res = await sb.from('b2b_prospects').update(payload).eq('id', id).select().maybeSingle();
+    } else {
+      res = await sb.from('b2b_prospects').insert(payload).select().maybeSingle();
+    }
+    if (res.error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + res.error.message;
+      return;
+    }
+    msg.style.color = '#1a8a4a';
+    msg.textContent = id ? '✓ Atualizado' : '✓ Empresa cadastrada';
+    setTimeout(() => { _b2bCloseEditModal(); renderB2BProspects(); }, 350);
+  }
+
+  async function _b2bDeleteProspect() {
+    if (!_b2bEditingId) return;
+    if (!confirm('Excluir essa empresa e todo o histórico de interações? Não dá pra desfazer.')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('b2b_prospects').delete().eq('id', _b2bEditingId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _b2bCloseEditModal();
+    renderB2BProspects();
+  }
+
+  // ----- Copiar mensagem (template padrão com variáveis) -----
+  async function _b2bCopyMessage(prospectId) {
+    const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+    if (!p) return;
+    const tpl = _b2bState.templates.find(t => t.is_default) || _b2bState.templates[0];
+    if (!tpl) { alert('Nenhum template cadastrado. Abra "Templates B2B" pra criar.'); return; }
+    const text = _b2bRenderTemplate(tpl.conteudo, p);
+    try {
+      await navigator.clipboard.writeText(text);
+      // Feedback visual rápido
+      const btn = document.querySelector('[data-b2b-copy-msg="' + prospectId + '"]');
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = 'Copiado!';
+        btn.style.background = '#e6f4ea';
+        btn.style.borderColor = '#1a8a4a';
+        btn.style.color = '#1a8a4a';
+        setTimeout(() => { btn.textContent = orig; btn.style.background = '#fff'; btn.style.borderColor = '#ddd'; btn.style.color = '#444'; }, 1500);
+      }
+    } catch (e) {
+      alert('Mensagem (copie manualmente):\n\n' + text);
+    }
+  }
+
+  // ----- Log rápido de interação direto da linha -----
+  async function _b2bQuickLogInteraction(prospectId, tipo) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { error } = await sb.from('b2b_prospect_interactions').insert({
+      prospect_id: prospectId,
+      tipo,
+      descricao: null,
+    });
+    if (error) { alert('Erro: ' + error.message); return; }
+    // Atualiza status se for mensagem_enviada
+    if (tipo === 'mensagem_enviada') {
+      const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+      if (p && p.status_comercial === 'nao_contatado') {
+        await sb.from('b2b_prospects').update({ status_comercial: 'mensagem_enviada' }).eq('id', prospectId);
+      }
+    }
+    renderB2BProspects();
+  }
+
+  // ----- Templates: list + edit -----
+  function _b2bOpenTemplatesModal() {
+    const m = document.getElementById('b2b-templates-modal');
+    if (!m) return;
+    _b2bRenderTemplatesList();
+    m.style.display = 'flex';
+  }
+  function _b2bRenderTemplatesList() {
+    const ul = document.getElementById('b2b-templates-list');
+    if (!ul) return;
+    const cat = document.getElementById('b2b-template-filter-categoria')?.value || '';
+    const items = (_b2bState.templates || []).filter(t => !cat || t.categoria === cat);
+    if (!items.length) {
+      ul.innerHTML = '<li style="color:#888;font-style:italic;padding:10px 0;">Nenhum template nessa categoria.</li>';
+      return;
+    }
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+    ul.innerHTML = items.map(t =>
+      '<li style="padding:12px 0;border-bottom:1px solid #eee;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+          '<div><strong>' + esc(t.nome) + '</strong>' +
+            (t.categoria ? '<span style="margin-left:8px;font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.04em;">' + esc(t.categoria.replace(/_/g,' ')) + '</span>' : '') +
+            (t.is_default ? '<span style="margin-left:6px;font-size:.7rem;color:#a4663b;font-weight:700;">PADRÃO</span>' : '') +
+          '</div>' +
+          '<button type="button" data-b2b-tpl-edit="' + esc(t.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;">Editar</button>' +
+        '</div>' +
+        '<pre style="margin:8px 0 0;font-family:inherit;font-size:.82rem;color:#444;background:#fafafa;padding:10px;border-radius:6px;white-space:pre-wrap;max-height:120px;overflow:auto;">' + esc(t.conteudo) + '</pre>' +
+      '</li>'
+    ).join('');
+    ul.querySelectorAll('[data-b2b-tpl-edit]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bOpenTemplateEdit(btn.dataset.b2bTplEdit));
+    });
+  }
+  function _b2bOpenTemplateEdit(id) {
+    const m = document.getElementById('b2b-template-edit-modal');
+    if (!m) return;
+    const t = id ? (_b2bState.templates.find(x => x.id === id) || {}) : {};
+    document.getElementById('b2b-template-edit-title').textContent = id ? 'Editar template' : 'Novo template';
+    const set = (sel, v) => { const el = m.querySelector(sel); if (el) el.value = v == null ? '' : v; };
+    set('#b2b-template-edit-id', t.id || '');
+    set('#b2b-template-edit-nome', t.nome);
+    set('#b2b-template-edit-categoria', t.categoria);
+    set('#b2b-template-edit-conteudo', t.conteudo);
+    document.getElementById('b2b-template-edit-default').checked = !!t.is_default;
+    document.getElementById('b2b-template-edit-msg').textContent = '';
+    document.getElementById('b2b-template-edit-delete').style.display = id ? 'inline-block' : 'none';
+    m.style.display = 'flex';
+  }
+  async function _b2bSaveTemplate() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const m = document.getElementById('b2b-template-edit-modal');
+    const msg = m.querySelector('#b2b-template-edit-msg');
+    msg.textContent = '';
+    const id = m.querySelector('#b2b-template-edit-id').value;
+    const nome = (m.querySelector('#b2b-template-edit-nome').value || '').trim();
+    const conteudo = (m.querySelector('#b2b-template-edit-conteudo').value || '').trim();
+    if (!nome || !conteudo) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Nome e conteúdo são obrigatórios.';
+      return;
+    }
+    const isDefault = m.querySelector('#b2b-template-edit-default').checked;
+    // Se marcar como default, primeiro desmarca outros (constraint UNIQUE)
+    if (isDefault) {
+      await sb.from('b2b_prospect_templates').update({ is_default: false }).eq('is_default', true);
+    }
+    const payload = {
+      nome,
+      categoria: (m.querySelector('#b2b-template-edit-categoria').value || '').trim() || null,
+      conteudo,
+      is_default: isDefault,
+    };
+    let res;
+    if (id) {
+      res = await sb.from('b2b_prospect_templates').update(payload).eq('id', id);
+    } else {
+      res = await sb.from('b2b_prospect_templates').insert(payload);
+    }
+    if (res.error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + res.error.message;
+      return;
+    }
+    m.style.display = 'none';
+    _b2bState.templates = await _b2bFetchTemplates();
+    _b2bRenderTemplatesList();
+  }
+  async function _b2bDeleteTemplate() {
+    const m = document.getElementById('b2b-template-edit-modal');
+    const id = m.querySelector('#b2b-template-edit-id').value;
+    if (!id) return;
+    if (!confirm('Excluir esse template?')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('b2b_prospect_templates').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    m.style.display = 'none';
+    _b2bState.templates = await _b2bFetchTemplates();
+    _b2bRenderTemplatesList();
+  }
+
+  // ----- CSV import/export -----
+  // Colunas esperadas no CSV (header obrigatório, ordem livre):
+  //   nome, tipo_empresa, funcionarios_faixa, segmento, cidade, site,
+  //   linkedin_empresa, contato_nome, contato_cargo, contato_email,
+  //   contato_whatsapp, potencial, status_comercial, observacoes
+  function _b2bParseCsv(text) {
+    // Parser simples: handles quoted fields with embedded commas.
+    const rows = [];
+    let cur = [''];
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i+1] === '"') { cur[cur.length-1] += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { cur[cur.length-1] += c; }
+      } else {
+        if (c === '"') { inQuotes = true; }
+        else if (c === ',') { cur.push(''); }
+        else if (c === '\n') { rows.push(cur); cur = ['']; }
+        else if (c === '\r') { /* skip */ }
+        else { cur[cur.length-1] += c; }
+      }
+    }
+    if (cur.length > 1 || cur[0]) rows.push(cur);
+    if (!rows.length) return [];
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    return rows.slice(1).filter(r => r.some(c => c && c.trim())).map(r => {
+      const obj = {};
+      header.forEach((h, i) => { obj[h] = (r[i] || '').trim(); });
+      return obj;
+    });
+  }
+  async function _b2bHandleCsvImport(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const rows = _b2bParseCsv(text);
+    if (!rows.length) { alert('CSV vazio ou inválido.'); return; }
+    if (!confirm(`Importar ${rows.length} empresa(s)?`)) {
+      e.target.value = '';
+      return;
+    }
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    // Filtra apenas chaves permitidas pra evitar payload com lixo
+    const allowed = new Set(['nome','tipo_empresa','funcionarios_faixa','segmento','cidade','site',
+      'linkedin_empresa','instagram','contato_nome','contato_cargo','contato_email','contato_whatsapp',
+      'contato_linkedin','potencial','status_comercial','proxima_acao','observacoes']);
+    const cleaned = rows
+      .map(r => {
+        const out = {};
+        Object.keys(r).forEach(k => { if (allowed.has(k) && r[k]) out[k] = r[k]; });
+        return out;
+      })
+      .filter(r => r.nome);  // nome é obrigatório
+    if (!cleaned.length) { alert('Nenhuma linha válida (precisa pelo menos da coluna "nome").'); e.target.value = ''; return; }
+    const { error } = await sb.from('b2b_prospects').insert(cleaned);
+    if (error) { alert('Erro no import: ' + error.message); e.target.value = ''; return; }
+    alert('✓ ' + cleaned.length + ' empresa(s) importada(s).');
+    e.target.value = '';
+    renderB2BProspects();
+  }
+  function _b2bExportCsv() {
+    const list = _b2bState.cache || [];
+    if (!list.length) { alert('Nada pra exportar.'); return; }
+    const cols = ['nome','tipo_empresa','funcionarios_faixa','segmento','cidade','site',
+      'linkedin_empresa','instagram','contato_nome','contato_cargo','contato_email','contato_whatsapp',
+      'contato_linkedin','status_comercial','potencial','proxima_acao','proxima_acao_at','observacoes','created_at'];
+    const escape = (v) => {
+      if (v == null) return '';
+      const s = String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replaceAll('"', '""') + '"';
+      return s;
+    };
+    const lines = [cols.join(',')];
+    list.forEach(p => lines.push(cols.map(c => escape(p[c])).join(',')));
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'b2b-prospects-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // ===== START =====
   if (document.readyState === 'loading') {
