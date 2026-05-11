@@ -11161,8 +11161,15 @@
       const link = _b2bInstagramLink(p.instagram);
       if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="Instagram da empresa" style="display:inline-block;padding:4px 6px;background:#fce8f1;color:#c0397a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">IG</a>');
     }
+    // Chip @ (email): SEMPRE renderiza, mesmo sem email cadastrado.
+    // - Com email: estilo cheio (azul saturado), click abre mailto:.
+    // - Sem email: estilo "vazio" (mais clarinho com ponto interrogação),
+    //   click abre prompt pra preencher rápido sem precisar abrir o modal
+    //   de edição completo. Salva direto no banco e atualiza a linha.
     if (p.contato_email) {
-      out.push('<a href="mailto:' + _b2bEsc(p.contato_email) + '" title="E-mail do contato" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
+      out.push('<a href="mailto:' + _b2bEsc(p.contato_email) + '" title="E-mail do contato — ' + _b2bEsc(p.contato_email) + '" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
+    } else {
+      out.push('<button type="button" data-b2b-add-email="' + _b2bEsc(p.id) + '" title="Clique pra adicionar e-mail do contato" style="display:inline-block;padding:4px 6px;background:#f4f4f4;color:#aaa;border:1px dashed #ccc;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:700;font-family:inherit;line-height:1;">@</button>');
     }
     // LinkedIn: prioriza pessoa (decisor real) se existir, senão da empresa.
     // Quando aponta pra EMPRESA, transforma a URL em /people/?keywords=...
@@ -11434,6 +11441,10 @@
     });
     tbody.querySelectorAll('[data-b2b-quick-int]').forEach(btn => {
       btn.addEventListener('click', () => _b2bQuickLogInteraction(btn.dataset.b2bQuickInt, btn.dataset.tipo));
+    });
+    // Chip @ vazio — abre prompt pra adicionar email rápido
+    tbody.querySelectorAll('[data-b2b-add-email]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bQuickAddEmail(btn.dataset.b2bAddEmail));
     });
   }
 
@@ -11817,6 +11828,32 @@
         await sb.from('b2b_prospects').update({ status_comercial: 'mensagem_enviada' }).eq('id', prospectId);
       }
     }
+    renderB2BProspects();
+  }
+
+  // ----- Quick add email (chip @ vazio) -----
+  // Prompt simples + save direto no banco. Cobre o caso de adicionar
+  // email enquanto vê a linha, sem abrir o modal de edição completo.
+  // Validação: formato básico de e-mail antes de salvar. Erro = alert.
+  async function _b2bQuickAddEmail(prospectId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+    const nome = (p && p.nome) ? p.nome : 'esta empresa';
+    const input = prompt('E-mail do contato em ' + nome + ':');
+    if (input == null) return;        // user cancelou
+    const email = String(input).trim();
+    if (!email) return;
+    if (!/.+@.+\..+/.test(email)) {
+      alert('E-mail inválido. Use o formato nome@dominio.com');
+      return;
+    }
+    const { error } = await sb.from('b2b_prospects')
+      .update({ contato_email: email })
+      .eq('id', prospectId);
+    if (error) { alert('Erro ao salvar: ' + error.message); return; }
+    // Atualiza estado local pra re-render imediato (sem refetch da rede)
+    if (p) p.contato_email = email;
     renderB2BProspects();
   }
 
