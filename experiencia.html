@@ -169,7 +169,7 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=23"></script>
 <script src="analytics.js?v=2"></script>
-<script src="script.js?v=48"></script>
+<script src="script.js?v=49"></script>
 <script>
 (function () {
   'use strict';
@@ -275,10 +275,26 @@
     // Slots futuros agrupados por data (event_at).
     // Inclui slots manuais E recorrentes — `recurrence_rule_id` é
     // irrelevante na renderização (cliente só precisa ver data+horario).
+    //
+    // CAMPANHA: se vem com ?campaign=dia-dos-namorados, filtra slots
+    // pra mostrar SÓ os dentro da janela 14/05–06/07.
     var now = new Date();
+    var urlParams = new URLSearchParams(window.location.search);
+    var campaignParam = urlParams.get('campaign');
+    var ddnStart = null, ddnEnd = null;
+    if (campaignParam === 'dia-dos-namorados') {
+      ddnStart = new Date('2026-05-14T00:00:00');
+      ddnEnd = new Date('2026-07-06T00:00:00');
+    }
     var futureSlots = allSlots
       .filter(function (s) { return s.isActive !== false; })
-      .filter(function (s) { return s.eventAt && new Date(s.eventAt) >= now; })
+      .filter(function (s) {
+        if (!s.eventAt) return false;
+        var d = new Date(s.eventAt);
+        if (d < now) return false;
+        if (ddnStart && (d < ddnStart || d >= ddnEnd)) return false;
+        return true;
+      })
       .filter(function (s) {
         if (s.vagasTotal == null) return true;
         var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
@@ -393,7 +409,13 @@
         });
       }) || dateOrder[0];
 
-      horariosHtml =
+      var campaignBanner = ddnStart
+        ? '<div style="background:#fff8ef;border:1px solid #f0a05e;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#a4663b;">' +
+            '🤍 Mostrando apenas datas da <strong>campanha Dia dos Namorados</strong>. ' +
+            '<a href="experiencia.html?id=' + esc(expId) + '" style="color:#a4663b;font-weight:600;text-decoration:underline;">Ver todas as datas →</a>' +
+          '</div>'
+        : '';
+      horariosHtml = campaignBanner +
         '<div class="exp-detail__schedule">' +
           '<div class="exp-detail__schedule-block">' +
             '<div class="exp-detail__schedule-label">Escolha uma data</div>' +
