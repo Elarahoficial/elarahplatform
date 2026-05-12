@@ -737,15 +737,22 @@
   // Salva (upsert) slots pra uma experiência. Recebe array de objetos:
   //   [{ id?, data, horario, vagasTotal, eventAt }]
   // Slots que existiam mas não estão no array são deletados.
+  //
+  // CRÍTICO: ignora slots com recurrence_rule_id IS NOT NULL.
+  // Esses slots são gerenciados pela feature de Recorrência semanal
+  // (CRUD separado no painel "Recorrência"). Tocar neles aqui apagaria
+  // os 8 slots que a regra acabou de materializar — bug reportado.
   async function saveSlots(experienceId, slotsArray) {
     const s = sb();
     if (!s || !experienceId) return false;
 
-    // 1) Busca os slots atuais do banco pra esta experiência
+    // 1) Busca os slots MANUAIS atuais (recurrence_rule_id IS NULL).
+    //    Slots de recorrência ficam intocados.
     const { data: existing } = await s
       .from(SLOTS_TABLE)
       .select('id, horario, data')
-      .eq('experience_id', experienceId);
+      .eq('experience_id', experienceId)
+      .is('recurrence_rule_id', null);
     const existingIds = new Set((existing || []).map(function (r) { return r.id; }));
 
     // 2) Separa upserts dos deletes
@@ -770,11 +777,16 @@
       toUpsert.push(row);
     });
 
-    // 3) Deleta slots removidos do form
+    // 3) Deleta slots removidos do form — restrito a manuais.
+    //    .is('recurrence_rule_id', null) é segurança dupla: mesmo que
+    //    existingIds vaze algo de recorrência (não pode, mas defesa
+    //    em profundidade), o DELETE só apaga manual.
     const toDelete = [];
     existingIds.forEach(function (id) { if (!keepIds.has(id)) toDelete.push(id); });
     if (toDelete.length) {
-      await s.from(SLOTS_TABLE).delete().in('id', toDelete);
+      await s.from(SLOTS_TABLE).delete()
+        .in('id', toDelete)
+        .is('recurrence_rule_id', null);
     }
 
     // 4) Upsert os que ficaram/foram adicionados
