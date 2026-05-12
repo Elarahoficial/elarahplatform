@@ -13088,23 +13088,34 @@
 
     // Busca: overrides + slots NA JANELA + experiences.event_at NA JANELA.
     // Só essas experiências ficam visíveis no painel — filtra o resto.
+    //
+    // IMPORTANTE: range(0, 9999) força limit alto. Por default,
+    // PostgREST limita resposta a 1000 rows — se houver mais slots
+    // na janela, alguns ficam de fora e a experiência some.
+    // .not('is_active', 'is', false) cobre slot.is_active=true E null
+    // (true/null = ativo, só false = inativo).
     var [overridesRes, slotsRes, expsEventRes] = await Promise.all([
       sb.from('campaign_overrides')
         .select('id, experience_id, titulo_custom, subtitulo_custom, descricao_custom, badge_text, is_featured, display_order, imagem_custom')
         .eq('campaign_slug', slug),
       sb.from('experience_slots')
         .select('experience_id, event_at')
-        .eq('is_active', true)
+        .not('is_active', 'is', false)
         .gte('event_at', ddnStartIso)
         .lt('event_at', ddnEndIso)
-        .order('event_at'),
+        .order('event_at')
+        .range(0, 9999),
       sb.from('experiences')
         .select('id, event_at')
         .eq('is_active', true)
         .not('event_at', 'is', null)
         .gte('event_at', ddnStartIso)
-        .lt('event_at', ddnEndIso),
+        .lt('event_at', ddnEndIso)
+        .range(0, 9999),
     ]);
+
+    console.info('[Campanhas] slots na janela:', (slotsRes.data || []).length,
+      '| experiences event_at na janela:', (expsEventRes.data || []).length);
 
     // IDs de experiências que TÊM data na janela (qualquer fonte)
     var expIdsNaJanela = new Set();
