@@ -3732,6 +3732,15 @@
       if (cor2El) cor2El.value = cores.cor2;
 
       document.getElementById('exp-edit-id').value = editId;
+
+      // Carrega e renderiza as regras de recorrência semanal desta
+      // experiência (Fase 2 da feature). Seção fica visível só em
+      // modo edição — em "nova experiência" ela some porque precisa
+      // do experienceId pra cadastrar regras. Falha gracioso se a
+      // tabela ainda não existe no banco (Fase 1 não rodada).
+      _recurrenceLoadAndRender(editId).catch(function (e) {
+        console.warn('[Elarah Recurrence] load falhou (ok se SQL Fase 1 não rodou):', e && e.message);
+      });
     } else {
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
@@ -3769,6 +3778,11 @@
       if (hfcEl2) hfcEl2.checked = false;
       if (ctaEl2) ctaEl2.value = 'buy';
       document.getElementById('exp-edit-id').value = '';
+
+      // Esconde a seção de recorrência em "nova experiência" — só
+      // dá pra cadastrar regras depois que a experiência tem id.
+      var recSec = document.getElementById('exp-recurrence-section');
+      if (recSec) recSec.style.display = 'none';
     }
 
     modal.classList.add('open');
@@ -12377,6 +12391,466 @@
         if (navBtn) navBtn.click();
       });
     });
+  }
+
+  // =================================================================
+  // ===== RECORRÊNCIA SEMANAL (Fase 2 — admin UI) ==================
+  // -----------------------------------------------------------------
+  // CRUD das experience_recurrence_rules + listagem das próximas
+  // datas materializadas + cancelar/reativar exceções.
+  //
+  // Dependências:
+  //   - SQL elarah_experience_recurrence_rules.sql rodado (Fase 1)
+  //   - Modal de edição de experiência aberto em modo EDIÇÃO
+  //
+  // A trigger SQL materialize_recurrence_after_change cuida da geração
+  // dos slots — admin só precisa criar/editar a regra. UI mostra
+  // feedback visual do que foi gerado.
+  // =================================================================
+
+  // Mapa weekday → label PT-BR (convenção PostgreSQL extract(dow))
+  const RECURRENCE_WEEKDAYS = [
+    { v: 0, label: 'Domingo' },
+    { v: 1, label: 'Segunda-feira' },
+    { v: 2, label: 'Terça-feira' },
+    { v: 3, label: 'Quarta-feira' },
+    { v: 4, label: 'Quinta-feira' },
+    { v: 5, label: 'Sexta-feira' },
+    { v: 6, label: 'Sábado' },
+  ];
+
+  function _recurrenceEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  function _recurrenceWeekdayLabel(v) {
+    const item = RECURRENCE_WEEKDAYS.find(w => w.v === v);
+    return item ? item.label : '—';
+  }
+
+  // Converte time "HH:MM:SS" do banco pro input type=time ("HH:MM").
+  function _recurrenceTimeForInput(t) {
+    if (!t) return '';
+    const s = String(t).trim();
+    if (s.length >= 5) return s.slice(0, 5);
+    return s;
+  }
+
+  // Carrega regras + slots futuros e renderiza no painel.
+  async function _recurrenceLoadAndRender(experienceId) {
+    if (!experienceId) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const section = document.getElementById('exp-recurrence-section');
+    if (!section) return;
+
+    // Mostra a seção e limpa msg
+    section.style.display = '';
+    const msgEl = document.getElementById('exp-recurrence-msg');
+    if (msgEl) msgEl.textContent = '';
+
+    // Busca regras + slots futuros em paralelo
+    const [rulesRes, slotsRes] = await Promise.all([
+      sb.from('experience_recurrence_rules')
+        .select('id, weekday, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
+        .eq('experience_id', experienceId)
+        .order('created_at', { ascending: true }),
+      sb.from('experience_slots')
+        .select('id, data, horario, vagas_total, vagas_restantes, event_at, is_active, recurrence_rule_id')
+        .eq('experience_id', experienceId)
+        .gte('event_at', new Date().toISOString())
+        .order('event_at', { ascending: true })
+        .limit(40),
+    ]);
+
+    if (rulesRes.error) {
+      console.error('[Elarah Recurrence] load rules error:', rulesRes.error);
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Erro ao carregar regras: ' + (rulesRes.error.message || rulesRes.error.code);
+      }
+      return;
+    }
+
+    const rules = rulesRes.data || [];
+    const slots = slotsRes.error ? [] : (slotsRes.data || []);
+
+    _recurrenceRenderRules(experienceId, rules);
+    _recurrenceRenderSlots(rules, slots);
+  }
+
+  function _recurrenceRenderRules(experienceId, rules) {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+
+    if (!rules.length) {
+      listEl.innerHTML = '<p style="margin:0;color:#888;font-size:.85rem;font-style:italic;">Nenhuma regra cadastrada. Clique em "+ Adicionar regra de recorrência" pra criar a primeira.</p>';
+      _recurrenceWireAddBtn(experienceId);
+      return;
+    }
+
+    listEl.innerHTML = rules.map(r => _recurrenceRuleCard(r)).join('');
+    _recurrenceWireRuleCards(experienceId, rules);
+    _recurrenceWireAddBtn(experienceId);
+  }
+
+  // Card editável inline pra uma regra. Status visual claro: ativa
+  // (laranja) vs inativa (cinza). Edit/Salvar/Desativar inline.
+  function _recurrenceRuleCard(r) {
+    const isActive = r.is_active !== false;
+    const bg = isActive ? '#fffaf2' : '#f4f4f4';
+    const border = isActive ? '#f0a05e' : '#ccc';
+    const labelOpacity = isActive ? '1' : '.55';
+
+    return '<div class="rec-rule-card" data-rec-rule-id="' + _recurrenceEsc(r.id) + '" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + labelOpacity + ';">' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Dia da semana' +
+          '<select data-rec-field="weekday" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;background:#fff;">' +
+            RECURRENCE_WEEKDAYS.map(w =>
+              '<option value="' + w.v + '"' + (w.v === r.weekday ? ' selected' : '') + '>' + w.label + '</option>'
+            ).join('') +
+          '</select>' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Início' +
+          '<input type="time" data-rec-field="hora_inicio" value="' + _recurrenceEsc(_recurrenceTimeForInput(r.hora_inicio)) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Fim (opcional)' +
+          '<input type="time" data-rec-field="hora_fim" value="' + _recurrenceEsc(_recurrenceTimeForInput(r.hora_fim)) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Vagas' +
+          '<input type="number" data-rec-field="vagas_total" min="1" step="1" value="' + _recurrenceEsc(r.vagas_total) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Horizon (semanas)' +
+          '<input type="number" data-rec-field="horizon_weeks" min="1" max="52" step="1" value="' + _recurrenceEsc(r.horizon_weeks) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;">Rótulo do horário' +
+          '<input type="text" data-rec-field="horario_label" value="' + _recurrenceEsc(r.horario_label) + '" placeholder="Ex: 19h00 – 22h00" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+        '<button type="button" data-rec-action="save" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Salvar regra</button>' +
+        (isActive
+          ? '<button type="button" data-rec-action="deactivate" style="padding:7px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Desativar</button>'
+          : '<button type="button" data-rec-action="reactivate" style="padding:7px 14px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Reativar</button>'
+        ) +
+        '<button type="button" data-rec-action="materialize" title="Gerar slots manualmente (já roda auto ao salvar; use só pra recriar horizon)" style="padding:7px 14px;background:#fff;border:1px solid #ddd;color:#666;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">↻ Materializar</button>' +
+      '</div>' +
+      '<div data-rec-rule-msg style="margin-top:6px;font-size:.78rem;min-height:1em;"></div>' +
+    '</div>';
+  }
+
+  function _recurrenceWireAddBtn(experienceId) {
+    const addBtn = document.getElementById('exp-recurrence-add-btn');
+    if (!addBtn || addBtn.dataset.wired) return;
+    addBtn.dataset.wired = '1';
+    addBtn.addEventListener('click', () => _recurrenceCreateNew(experienceId));
+  }
+
+  function _recurrenceWireRuleCards(experienceId, rules) {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+    // Delegação por card pra não vazar handlers em re-renders
+    listEl.querySelectorAll('.rec-rule-card').forEach(card => {
+      if (card.dataset.wired) return;
+      card.dataset.wired = '1';
+      const ruleId = card.dataset.recRuleId;
+      card.addEventListener('click', async (e) => {
+        const btn = e.target && e.target.closest('button[data-rec-action]');
+        if (!btn) return;
+        const action = btn.dataset.recAction;
+        if (action === 'save') {
+          await _recurrenceSaveCard(card, ruleId, experienceId, rules);
+        } else if (action === 'deactivate') {
+          await _recurrenceSetActive(card, ruleId, experienceId, false);
+        } else if (action === 'reactivate') {
+          await _recurrenceSetActive(card, ruleId, experienceId, true);
+        } else if (action === 'materialize') {
+          await _recurrenceMaterialize(card, ruleId, experienceId);
+        }
+      });
+    });
+  }
+
+  // Cria uma regra nova com defaults sensatos. Trigger SQL gera os
+  // slots automaticamente após o INSERT.
+  async function _recurrenceCreateNew(experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msgEl = document.getElementById('exp-recurrence-msg');
+    if (msgEl) msgEl.textContent = '';
+
+    // Defaults: quinta 19h00, 12 vagas, horizon 8 semanas
+    const payload = {
+      experience_id: experienceId,
+      weekday: 4,
+      hora_inicio: '19:00:00',
+      horario_label: '19h00 – 22h00',
+      vagas_total: 12,
+      horizon_weeks: 8,
+      is_active: true,
+    };
+    const { error } = await sb.from('experience_recurrence_rules').insert(payload);
+    if (error) {
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Erro ao criar regra: ' + (error.message || error.code);
+      }
+      console.error('[Elarah Recurrence] create error:', error);
+      return;
+    }
+    // Re-render — trigger SQL já materializou os slots automaticamente
+    await _recurrenceLoadAndRender(experienceId);
+    if (msgEl) {
+      msgEl.style.color = '#1a8a4a';
+      msgEl.textContent = '✓ Regra criada e slots gerados';
+      setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 2500);
+    }
+  }
+
+  // Salva mudanças num card. Estratégia: lê o estado novo, busca o
+  // estado atual no banco, compara. Se horario_label ou weekday
+  // mudaram, faz cleanup de slots futuros SEM bookings que tenham
+  // o horario antigo (vira órfão). Slots COM bookings ficam (viram
+  // "manuais" depois que a regra remateurializa nova série).
+  async function _recurrenceSaveCard(card, ruleId, experienceId, rulesCache) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+
+    const oldRule = (rulesCache || []).find(r => r.id === ruleId) || null;
+    const getVal = (field) => {
+      const el = card.querySelector('[data-rec-field="' + field + '"]');
+      return el ? el.value : '';
+    };
+
+    const newWeekday = Number(getVal('weekday'));
+    const newHoraInicio = getVal('hora_inicio');
+    const newHoraFim = getVal('hora_fim') || null;
+    const newHorarioLabel = (getVal('horario_label') || '').trim();
+    const newVagasTotal = Number(getVal('vagas_total'));
+    const newHorizonWeeks = Number(getVal('horizon_weeks'));
+
+    if (!newHoraInicio) { _recurrenceCardErr(cardMsg, 'Hora início obrigatória.'); return; }
+    if (!newHorarioLabel) { _recurrenceCardErr(cardMsg, 'Rótulo do horário obrigatório.'); return; }
+    if (!isFinite(newVagasTotal) || newVagasTotal < 1) { _recurrenceCardErr(cardMsg, 'Vagas deve ser inteiro >= 1.'); return; }
+    if (!isFinite(newHorizonWeeks) || newHorizonWeeks < 1 || newHorizonWeeks > 52) { _recurrenceCardErr(cardMsg, 'Horizon entre 1 e 52 semanas.'); return; }
+
+    // Cleanup proativo de órfãos ANTES de salvar.
+    // Quando horario_label OU weekday muda, os slots FUTUROS que a
+    // regra criou com valores antigos ficam órfãos (cliente vê dois
+    // horários no mesmo dia). Solução conservadora:
+    //   1. Lista slots futuros desta regra com horário/dow antigos
+    //   2. Pra cada, checa se tem booking (paid) referenciando
+    //   3. Sem bookings → apaga (limpa)
+    //   4. Com bookings → preserva, mas desliga recurrence_rule_id
+    //      (vira manual) — usuário cuida no admin se quiser
+    const horarioChanged = oldRule && oldRule.horario_label !== newHorarioLabel;
+    const weekdayChanged = oldRule && oldRule.weekday !== newWeekday;
+    if ((horarioChanged || weekdayChanged) && oldRule) {
+      try {
+        const cleaned = await _recurrenceCleanupOrphans(experienceId, oldRule);
+        if (cleaned > 0) {
+          console.info('[Elarah Recurrence] cleanup: ' + cleaned + ' slot(s) órfão(s) removidos/desligados');
+        }
+      } catch (e) {
+        console.warn('[Elarah Recurrence] cleanup falhou (segue mesmo assim):', e && e.message);
+      }
+    }
+
+    const patch = {
+      weekday: newWeekday,
+      hora_inicio: newHoraInicio,
+      hora_fim: newHoraFim,
+      horario_label: newHorarioLabel,
+      vagas_total: newVagasTotal,
+      horizon_weeks: newHorizonWeeks,
+    };
+    const { error } = await sb.from('experience_recurrence_rules').update(patch).eq('id', ruleId);
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro ao salvar: ' + (error.message || error.code));
+      console.error('[Elarah Recurrence] save error:', error);
+      return;
+    }
+    _recurrenceCardOk(cardMsg, '✓ Salvo. Slots atualizados.');
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Desativa OU reativa uma regra. Soft-delete: trigger materialize
+  // não dispara em desativação, mas dispara em reativação (e gera
+  // slots novos pro horizon).
+  async function _recurrenceSetActive(card, ruleId, experienceId, active) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+
+    if (!active) {
+      const yes = confirm('Desativar essa regra? Os slots já gerados continuam ativos (pra honrar reservas), mas novos slots não serão criados.');
+      if (!yes) return;
+    }
+    const { error } = await sb.from('experience_recurrence_rules')
+      .update({ is_active: active })
+      .eq('id', ruleId);
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro: ' + (error.message || error.code));
+      return;
+    }
+    _recurrenceCardOk(cardMsg, active ? '✓ Reativada' : '✓ Desativada');
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Chama materialize_recurrence_slots RPC manualmente. Útil pra
+  // estender horizon após cron quebrar, ou pra forçar re-cálculo.
+  async function _recurrenceMaterialize(card, ruleId, experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+    const { data, error } = await sb.rpc('materialize_recurrence_slots', { p_rule_id: ruleId });
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro materialize: ' + (error.message || error.code));
+      return;
+    }
+    const n = typeof data === 'number' ? data : (data && data[0]) || 0;
+    _recurrenceCardOk(cardMsg, '✓ Materialize OK (' + n + ' slot' + (n === 1 ? '' : 's') + ' novo' + (n === 1 ? '' : 's') + ')');
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Apaga (ou desliga recurrence_rule_id) slots órfãos quando o
+  // horario_label ou weekday muda. Slots COM bookings são preservados
+  // virando "manuais" (recurrence_rule_id=null) — admin cuida.
+  // Retorna número de slots tratados.
+  async function _recurrenceCleanupOrphans(experienceId, oldRule) {
+    const sb = window.supabaseClient;
+    if (!sb || !oldRule) return 0;
+
+    // Lista slots futuros desta regra com horario antigo
+    const { data: candidates, error: err1 } = await sb
+      .from('experience_slots')
+      .select('id, data, horario, event_at')
+      .eq('experience_id', experienceId)
+      .eq('recurrence_rule_id', oldRule.id)
+      .eq('horario', oldRule.horario_label)
+      .gte('event_at', new Date().toISOString());
+    if (err1 || !candidates || !candidates.length) return 0;
+
+    let cleaned = 0;
+    for (const slot of candidates) {
+      // Checa se tem booking ativo apontando pra esse slot
+      const { count, error: errCount } = await sb
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('slot_id', slot.id);
+      if (errCount) {
+        console.warn('[Elarah Recurrence] cleanup count error:', errCount.message);
+        continue;
+      }
+      if ((count || 0) > 0) {
+        // Tem booking — desliga rule_id (vira manual, preserva tudo)
+        await sb.from('experience_slots')
+          .update({ recurrence_rule_id: null })
+          .eq('id', slot.id);
+      } else {
+        // Sem booking — apaga (é um órfão real)
+        await sb.from('experience_slots').delete().eq('id', slot.id);
+      }
+      cleaned += 1;
+    }
+    return cleaned;
+  }
+
+  function _recurrenceCardErr(el, txt) { if (el) { el.style.color = '#c0392b'; el.textContent = txt; } }
+  function _recurrenceCardOk(el, txt)  { if (el) { el.style.color = '#1a8a4a'; el.textContent = txt; } }
+
+  // Render da lista de slots futuros (próximas datas geradas).
+  function _recurrenceRenderSlots(rules, slots) {
+    const wrap = document.getElementById('exp-recurrence-slots-wrap');
+    const listEl = document.getElementById('exp-recurrence-slots-list');
+    if (!wrap || !listEl) return;
+
+    // Mostra só slots vinculados a regras (recurrence_rule_id != null)
+    const recSlots = (slots || []).filter(s => s.recurrence_rule_id);
+    if (!recSlots.length) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+
+    // Agrupa por rule_id pra mostrar de qual regra cada slot veio
+    const ruleById = new Map();
+    (rules || []).forEach(r => ruleById.set(r.id, r));
+
+    listEl.innerHTML = recSlots.map(s => _recurrenceSlotRow(s, ruleById.get(s.recurrence_rule_id))).join('');
+
+    // Wire toggle/active de cada slot
+    listEl.querySelectorAll('[data-slot-toggle]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const slotId = btn.dataset.slotToggle;
+        const targetActive = btn.dataset.slotTargetActive === '1';
+        await _recurrenceToggleSlot(slotId, targetActive);
+      });
+    });
+  }
+
+  function _recurrenceSlotRow(slot, rule) {
+    const evt = slot.event_at ? new Date(slot.event_at) : null;
+    const dataLabel = evt
+      ? evt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', weekday: 'short' })
+      : (slot.data || '—');
+    const horarioLabel = slot.horario || '—';
+    const vagasRest = Number(slot.vagas_restantes);
+    const vagasTot = Number(slot.vagas_total);
+    const reservadas = (isFinite(vagasRest) && isFinite(vagasTot)) ? Math.max(0, vagasTot - vagasRest) : null;
+    const isActive = slot.is_active !== false;
+
+    const ruleHint = rule ? ('Regra: ' + _recurrenceWeekdayLabel(rule.weekday) + ' ' + (rule.horario_label || '')) : '';
+
+    const statusBadge = isActive
+      ? '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">ATIVA</span>'
+      : '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#fdecea;color:#9c2f22;font-size:.7rem;font-weight:700;">CANCELADA</span>';
+
+    const vagasInfo = (reservadas !== null)
+      ? (reservadas > 0
+          ? '<span style="color:#a4663b;font-weight:600;">' + reservadas + ' reserva' + (reservadas === 1 ? '' : 's') + '</span> · ' + vagasRest + '/' + vagasTot + ' vagas'
+          : vagasRest + '/' + vagasTot + ' vagas livres')
+      : (isFinite(vagasRest) ? vagasRest + ' vagas' : 'vagas indef.');
+
+    const toggleBtn = isActive
+      ? '<button type="button" data-slot-toggle="' + _recurrenceEsc(slot.id) + '" data-slot-target-active="0" title="Cancelar essa data específica (mantém regra ativa). Não volta depois." style="padding:5px 10px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancelar data</button>'
+      : '<button type="button" data-slot-toggle="' + _recurrenceEsc(slot.id) + '" data-slot-target-active="1" title="Reativar essa data" style="padding:5px 10px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">Reativar</button>';
+
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #eee;border-radius:8px;flex-wrap:wrap;">' +
+      '<div style="display:flex;flex-direction:column;gap:2px;">' +
+        '<div style="font-size:.88rem;color:#1a1a1a;font-weight:600;">' + _recurrenceEsc(dataLabel) + ' · ' + _recurrenceEsc(horarioLabel) + ' ' + statusBadge + '</div>' +
+        '<div style="font-size:.74rem;color:#888;">' + _recurrenceEsc(vagasInfo) + (ruleHint ? ' · <em>' + _recurrenceEsc(ruleHint) + '</em>' : '') + '</div>' +
+      '</div>' +
+      toggleBtn +
+    '</div>';
+  }
+
+  // Cancelar/reativar 1 slot específico (exceção).
+  async function _recurrenceToggleSlot(slotId, targetActive) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    if (!targetActive) {
+      const yes = confirm('Cancelar essa data específica? A regra continua ativa, mas essa data não será recriada mesmo após nova materialização. Se houver reservas pagas nessa data, elas continuam válidas no banco — você precisa contatar os clientes separadamente.');
+      if (!yes) return;
+    }
+    const { error } = await sb.from('experience_slots')
+      .update({ is_active: targetActive })
+      .eq('id', slotId);
+    if (error) {
+      alert('Erro: ' + (error.message || error.code));
+      return;
+    }
+    // Re-render só a parte de slots da experiência aberta
+    const expId = document.getElementById('exp-edit-id') && document.getElementById('exp-edit-id').value;
+    if (expId) _recurrenceLoadAndRender(expId);
   }
 
   // ===== START =====
