@@ -121,11 +121,27 @@
       }
 
       var expIds = overrides.map(function (o) { return o.experience_id; });
-      var { data: exps, error: eErr } = await sb
-        .from('experiences')
-        .select('id, nome, categoria, preco, duracao, bairro, imagem, vagas_total, vagas_restantes, is_active')
-        .in('id', expIds)
-        .eq('is_active', true);
+
+      // Janela estratégica DDN — 14/05 a 06/07 (corresponde ao SQL)
+      var DDN_START = '2026-05-14T00:00:00';
+      var DDN_END   = '2026-07-06T00:00:00';
+
+      var [expsRes2, slotsRes] = await Promise.all([
+        sb.from('experiences')
+          .select('id, nome, categoria, preco, duracao, bairro, imagem, vagas_total, vagas_restantes, is_active')
+          .in('id', expIds)
+          .eq('is_active', true),
+        // Slots disponíveis NA JANELA DDN (não absolutos)
+        sb.from('experience_slots')
+          .select('experience_id, event_at, vagas_total, vagas_restantes')
+          .in('experience_id', expIds)
+          .eq('is_active', true)
+          .gte('event_at', DDN_START)
+          .lt('event_at', DDN_END)
+          .order('event_at', { ascending: true }),
+      ]);
+      var exps = expsRes2.data;
+      var eErr = expsRes2.error;
 
       if (eErr) {
         console.error('[DDN] experiences erro:', eErr);
@@ -133,6 +149,15 @@
         return;
       }
       console.info('[DDN] experiences retornou:', exps && exps.length, 'ativas (de', expIds.length, 'overrides)');
+
+      // Mapa: experience_id → primeira data DENTRO da janela DDN
+      var firstDateInDDN = new Map();
+      (slotsRes.data || []).forEach(function (s) {
+        if (firstDateInDDN.has(s.experience_id)) return;
+        var rest = s.vagas_total == null ? null : (s.vagas_restantes != null ? s.vagas_restantes : s.vagas_total);
+        if (rest !== null && rest <= 0) return; // pula esgotados
+        firstDateInDDN.set(s.experience_id, s.event_at);
+      });
 
       var expById = new Map();
       (exps || []).forEach(function (e) { expById.set(e.id, e); });
@@ -146,7 +171,19 @@
         var titulo = (o.titulo_custom && o.titulo_custom.trim()) || e.nome;
         var badge = (o.badge_text && o.badge_text.trim()) || 'Especial Dia dos Namorados';
         var preco = e.preco || '';
+
+        // Próxima data NA JANELA DDN (não absoluta — esconde 18/05 etc.)
+        var nextDateInDDN = firstDateInDDN.get(e.id);
+        var dataChip = '';
+        if (nextDateInDDN) {
+          var dt = new Date(nextDateInDDN);
+          var labelData = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          var wd = dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+          dataChip = '<span class="ddn-card__meta-item" style="background:#fff8ef;color:#a4663b;font-weight:700;">📅 ' + esc(wd) + ', ' + esc(labelData) + '</span>';
+        }
+
         var meta = [];
+        if (dataChip) meta.push(dataChip);
         if (e.duracao) meta.push('<span class="ddn-card__meta-item">' + esc(e.duracao) + '</span>');
         if (e.bairro) meta.push('<span class="ddn-card__meta-item">' + esc(e.bairro) + '</span>');
         if (e.vagas_total) meta.push('<span class="ddn-card__meta-item">' + esc(e.vagas_total) + ' vagas</span>');
@@ -174,7 +211,7 @@
                 '<div class="ddn-card__price-label">A partir de</div>' +
                 '<div class="ddn-card__price-value">' + esc(preco) + '</div>' +
               '</div>' +
-              '<a href="experiencia.html?id=' + encodeURIComponent(e.id) + '" class="ddn-card__price-cta">Ver experiência →</a>' +
+              '<a href="experiencia.html?id=' + encodeURIComponent(e.id) + '&campaign=dia-dos-namorados" class="ddn-card__price-cta">Ver experiência →</a>' +
             '</div>' +
           '</div>' +
         '</article>';
