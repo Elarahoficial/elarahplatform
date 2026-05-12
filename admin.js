@@ -4185,15 +4185,42 @@
         ? exp.horarios.join(' · ')
         : (exp.horario || '');
 
-      // Vagas: mostra por slot se existirem, senão experience-level
+      // Vagas: mostra por slot se existirem, senão experience-level.
+      // Agrupa por horario textual — evita listar 10 linhas iguais
+      // "19h00 – 21h00: 12/12" quando há vários slots do mesmo
+      // horário em datas diferentes. 1 linha por horário único,
+      // somando vagas e contando datas.
       var expSlots = allSlotsMap.get(exp.id) || [];
       let vagasDisplay = '';
       if (expSlots.length) {
-        vagasDisplay = expSlots.map(function (sl) {
-          if (sl.vagasTotal == null) return '<span style="color:#888;font-size:.8rem;">' + escapeHtml(sl.horario) + ': ∞</span>';
-          var rest = sl.vagasRestantes != null ? sl.vagasRestantes : sl.vagasTotal;
-          var cor = rest <= 0 ? '#c0392b' : (rest <= 3 ? '#b07b00' : '#1a8a4a');
-          return '<span style="color:' + cor + ';font-weight:600;font-size:.8rem;">' + escapeHtml(sl.horario) + ': ' + rest + '/' + sl.vagasTotal + '</span>';
+        const byHorario = new Map();
+        expSlots.forEach(function (sl) {
+          const key = (sl.horario || '').trim();
+          if (!byHorario.has(key)) {
+            byHorario.set(key, {
+              horario: key,
+              totalSum: 0,
+              restSum: 0,
+              ilimitado: false,
+              count: 0,
+            });
+          }
+          const grp = byHorario.get(key);
+          grp.count += 1;
+          if (sl.vagasTotal == null) {
+            grp.ilimitado = true;
+          } else {
+            grp.totalSum += Number(sl.vagasTotal) || 0;
+            grp.restSum += (sl.vagasRestantes != null ? Number(sl.vagasRestantes) : Number(sl.vagasTotal)) || 0;
+          }
+        });
+        vagasDisplay = Array.from(byHorario.values()).map(function (grp) {
+          const sufixo = grp.count > 1 ? ' <span style="color:#888;font-weight:400;">(' + grp.count + ' datas)</span>' : '';
+          if (grp.ilimitado) {
+            return '<span style="color:#888;font-size:.8rem;">' + escapeHtml(grp.horario) + ': ∞' + sufixo + '</span>';
+          }
+          const cor = grp.restSum <= 0 ? '#c0392b' : (grp.restSum <= 3 ? '#b07b00' : '#1a8a4a');
+          return '<span style="color:' + cor + ';font-weight:600;font-size:.8rem;">' + escapeHtml(grp.horario) + ': ' + grp.restSum + '/' + grp.totalSum + sufixo + '</span>';
         }).join('<br>');
       } else if (exp.vagasTotal != null) {
         const rest = exp.vagasRestantes != null ? exp.vagasRestantes : exp.vagasTotal;
