@@ -12672,6 +12672,22 @@
     });
   }
 
+  // Invalida caches globais (slots + experiências) depois de qualquer
+  // CRUD de recorrência. Sem isso, renderExperiences usa cache em
+  // memória e admin não vê os slots novos na listagem principal.
+  function _recurrenceInvalidateCaches() {
+    try {
+      if (window.ElarahData && typeof ElarahData.invalidateSlotsCache === 'function') {
+        ElarahData.invalidateSlotsCache();
+      }
+      if (window.ElarahData && typeof ElarahData.invalidateCache === 'function') {
+        ElarahData.invalidateCache();
+      }
+    } catch (e) {
+      console.warn('[Elarah Recurrence] cache invalidate falhou:', e && e.message);
+    }
+  }
+
   // Cria uma regra nova com defaults sensatos. Trigger SQL gera os
   // slots automaticamente após o INSERT.
   async function _recurrenceCreateNew(experienceId) {
@@ -12719,6 +12735,7 @@
       return;
     }
     // Re-render — trigger SQL já materializou os slots automaticamente
+    _recurrenceInvalidateCaches();
     await _recurrenceLoadAndRender(experienceId);
     if (msgEl) {
       msgEl.style.color = '#1a8a4a';
@@ -12805,6 +12822,7 @@
       return;
     }
     _recurrenceCardOk(cardMsg, '✓ Salvo. Slots atualizados.');
+    _recurrenceInvalidateCaches();
     setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
   }
 
@@ -12829,6 +12847,7 @@
       return;
     }
     _recurrenceCardOk(cardMsg, active ? '✓ Reativada' : '✓ Desativada');
+    _recurrenceInvalidateCaches();
     setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
   }
 
@@ -12846,6 +12865,7 @@
     }
     const n = typeof data === 'number' ? data : (data && data[0]) || 0;
     _recurrenceCardOk(cardMsg, '✓ Materialize OK (' + n + ' slot' + (n === 1 ? '' : 's') + ' novo' + (n === 1 ? '' : 's') + ')');
+    _recurrenceInvalidateCaches();
     setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
   }
 
@@ -12977,6 +12997,7 @@
       return;
     }
     // Re-render só a parte de slots da experiência aberta
+    _recurrenceInvalidateCaches();
     const expId = document.getElementById('exp-edit-id') && document.getElementById('exp-edit-id').value;
     if (expId) _recurrenceLoadAndRender(expId);
   }
