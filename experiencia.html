@@ -169,7 +169,7 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=23"></script>
 <script src="analytics.js?v=2"></script>
-<script src="script.js?v=49"></script>
+<script src="script.js?v=50"></script>
 <script>
 (function () {
   'use strict';
@@ -283,8 +283,10 @@
     var campaignParam = urlParams.get('campaign');
     var ddnStart = null, ddnEnd = null;
     if (campaignParam === 'dia-dos-namorados') {
-      ddnStart = new Date('2026-05-14T00:00:00');
-      ddnEnd = new Date('2026-07-06T00:00:00');
+      // Janela DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte
+      var _now = new Date();
+      ddnStart = new Date(_now.getFullYear(), _now.getMonth(), 25);
+      ddnEnd = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
     }
     var futureSlots = allSlots
       .filter(function (s) { return s.isActive !== false; })

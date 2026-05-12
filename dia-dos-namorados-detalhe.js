@@ -12,8 +12,11 @@
   'use strict';
 
   var CAMPAIGN_SLUG = 'dia-dos-namorados';
-  var DDN_START = new Date('2026-05-14T00:00:00');
-  var DDN_END   = new Date('2026-07-06T00:00:00');
+  // Janela DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte
+  // (mesma regra do admin pra consistência).
+  var _now = new Date();
+  var DDN_START = new Date(_now.getFullYear(), _now.getMonth(), 25);
+  var DDN_END   = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {

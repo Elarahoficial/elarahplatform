@@ -122,9 +122,11 @@
 
       var expIds = overrides.map(function (o) { return o.experience_id; });
 
-      // Janela estratégica DDN — 14/05 a 06/07 (corresponde ao SQL)
-      var DDN_START = '2026-05-14T00:00:00';
-      var DDN_END   = '2026-07-06T00:00:00';
+      // Janela DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte
+      // (mesma regra do admin → consistência entre admin/landing/detalhe).
+      var _now = new Date();
+      var DDN_START = new Date(_now.getFullYear(), _now.getMonth(), 25).toISOString();
+      var DDN_END   = new Date(_now.getFullYear(), _now.getMonth() + 1, 25).toISOString();
 
       var [expsRes2, slotsRes] = await Promise.all([
         sb.from('experiences')
