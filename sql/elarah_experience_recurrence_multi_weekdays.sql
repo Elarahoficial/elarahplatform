@@ -92,7 +92,12 @@ begin
   end if;
 end $$;
 
--- CHECK: array não-vazio + todos elementos entre 0 e 6
+-- CHECK: array não-vazio + todos elementos entre 0 e 6.
+-- PostgreSQL não aceita subquery em CHECK constraint, então usa o
+-- operador `<@` ("está contido em"): weekdays <@ array[0,1,2,3,4,5,6]
+-- garante que TODOS os elementos do array estão no conjunto válido.
+-- Como bônus, limita o tamanho a 7 (não dá pra ter mais que 7 dias
+-- da semana únicos no array).
 do $$
 begin
   if not exists (
@@ -105,9 +110,8 @@ begin
       add constraint recurrence_rules_weekdays_valid
       check (
         array_length(weekdays, 1) >= 1
-        and not exists (
-          select 1 from unnest(weekdays) as wd where wd < 0 or wd > 6
-        )
+        and array_length(weekdays, 1) <= 7
+        and weekdays <@ array[0,1,2,3,4,5,6]
       );
   end if;
 end $$;
