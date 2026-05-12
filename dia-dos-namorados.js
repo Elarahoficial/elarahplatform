@@ -115,6 +115,13 @@
       }
       console.info('[DDN] overrides retornou:', overrides && overrides.length, 'destaques');
 
+      // Landing mostra SÓ 6 — premium e curado. Resto fica em
+      // dia-dos-namorados-todas.html (catálogo completo).
+      var totalFeatured = overrides ? overrides.length : 0;
+      if (overrides && overrides.length > 6) overrides = overrides.slice(0, 6);
+      var verTodasBtn = document.getElementById('ddn-ver-todas');
+      if (verTodasBtn && totalFeatured > 6) verTodasBtn.style.display = 'inline-flex';
+
       if (!overrides || !overrides.length) {
         renderEmptyState(grid);
         return;
@@ -173,7 +180,10 @@
         }
         var titulo = (o.titulo_custom && o.titulo_custom.trim()) || e.nome;
         var badge = (o.badge_text && o.badge_text.trim()) || 'Especial Dia dos Namorados';
-        var preco = e.preco || '';
+        // Padronização: usa formatPrecoBR pra garantir "R$ 248" / "R$ 1.290"
+        var preco = (window.ElarahData && ElarahData.formatPrecoBR)
+          ? ElarahData.formatPrecoBR(e.preco)
+          : (e.preco || '');
 
         // Próxima data NA JANELA DDN (não absoluta — esconde 18/05 etc.)
         var nextDateInDDN = firstDateInDDN.get(e.id);
@@ -359,6 +369,14 @@
       var tel = document.getElementById('ddn-waitlist-tel').value.trim();
       if (!email || email.length < 5) {
         alert('Informe um e-mail válido.');
+        return;
+      }
+      // Telefone obrigatório — comercial precisa contactar leads
+      var telDigits = String(tel || '').replace(/\D+/g, '');
+      if (telDigits.length < 10) {
+        alert('Telefone obrigatório (com DDD). Ex: (11) 91234-5678');
+        var telInput = document.getElementById('ddn-waitlist-tel');
+        if (telInput) telInput.focus();
         return;
       }
 

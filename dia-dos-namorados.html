@@ -168,24 +168,6 @@
     </div>
   </section>
 
-  <!-- ========== EXPERIÊNCIAS CURADAS ========== -->
-  <section id="ddn-experiencias" class="ddn-experiences">
-    <div class="ddn-experiences__inner">
-      <header class="ddn-experiences__head">
-        <span class="ddn-experiences__kicker">Vitrine a dois</span>
-        <h2 class="ddn-experiences__title">Experiências para viver <em>juntos</em></h2>
-        <p class="ddn-experiences__sub">
-          Selecionadas pensando em casais — íntimas, criativas, gastronômicas.
-          Cada uma promete algumas horas verdadeiramente de vocês.
-        </p>
-      </header>
-
-      <div class="ddn-experiences__grid" id="ddn-grid">
-        <p style="grid-column:1/-1;text-align:center;color:#888;padding:40px 20px;font-style:italic;">Carregando experiências…</p>
-      </div>
-    </div>
-  </section>
-
   <!-- ========== EM BREVE / LISTA DE ESPERA ========== -->
   <section class="ddn-upcoming">
     <div class="ddn-upcoming__inner">
@@ -255,6 +237,32 @@
       </div>
     </div>
   </section>
+  <!-- ========== EXPERIÊNCIAS CURADAS ========== -->
+  <section id="ddn-experiencias" class="ddn-experiences">
+    <div class="ddn-experiences__inner">
+      <header class="ddn-experiences__head">
+        <span class="ddn-experiences__kicker">Vitrine a dois</span>
+        <h2 class="ddn-experiences__title">Experiências para viver <em>juntos</em></h2>
+        <p class="ddn-experiences__sub">
+          Selecionadas pensando em casais — íntimas, criativas, gastronômicas.
+          Cada uma promete algumas horas verdadeiramente de vocês.
+        </p>
+      </header>
+
+      <div class="ddn-experiences__grid" id="ddn-grid">
+        <p style="grid-column:1/-1;text-align:center;color:#888;padding:40px 20px;font-style:italic;">Carregando experiências…</p>
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="dia-dos-namorados-todas.html" class="ddn-cta-secondary" id="ddn-ver-todas" style="display:none;">
+          Ver todas as experiências da campanha
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:4px;">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
 
   <!-- ========== DEPOIMENTOS ========== -->
   <section class="ddn-testimonials" aria-labelledby="ddn-test-title">
@@ -338,8 +346,8 @@
             <input type="email" class="ddn-waitlist-modal__input" id="ddn-waitlist-email" required placeholder="seu@email.com">
           </div>
           <div class="ddn-waitlist-modal__field">
-            <label class="ddn-waitlist-modal__label">Telefone <span style="opacity:.6;text-transform:none;">(opcional)</span></label>
-            <input type="tel" class="ddn-waitlist-modal__input" id="ddn-waitlist-tel" placeholder="(11) 91234-5678">
+            <label class="ddn-waitlist-modal__label">Telefone *</label>
+            <input type="tel" class="ddn-waitlist-modal__input" id="ddn-waitlist-tel" required placeholder="(11) 91234-5678">
           </div>
           <button type="submit" class="ddn-waitlist-modal__submit">Entrar na lista de espera</button>
         </form>
@@ -387,6 +395,6 @@
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=23"></script>
-<script src="dia-dos-namorados.js?v=9"></script>
+<script src="dia-dos-namorados.js?v=10"></script>
 </body>
 </html>
