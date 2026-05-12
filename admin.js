@@ -12459,8 +12459,8 @@
     const msgEl = document.getElementById('exp-recurrence-msg');
     if (msgEl) msgEl.textContent = '';
 
-    // Busca regras + slots futuros em paralelo
-    const [rulesRes, slotsRes] = await Promise.all([
+    // Busca regras + slots futuros + nome da experiência em paralelo
+    const [rulesRes, slotsRes, expRes] = await Promise.all([
       sb.from('experience_recurrence_rules')
         .select('id, weekdays, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
         .eq('experience_id', experienceId)
@@ -12471,7 +12471,26 @@
         .gte('event_at', new Date().toISOString())
         .order('event_at', { ascending: true })
         .limit(40),
+      sb.from('experiences').select('id, nome').eq('id', experienceId).maybeSingle(),
     ]);
+
+    // Header visível: qual experiência está sendo editada agora.
+    // Defesa contra "criei regra na experiência errada" — admin
+    // sempre vê o nome em destaque ANTES de salvar.
+    const headerEl = document.getElementById('exp-recurrence-header');
+    if (headerEl) {
+      const expNome = (expRes && expRes.data && expRes.data.nome) || '(experiência sem nome)';
+      headerEl.innerHTML =
+        '<div style="background:#fff8ef;border:2px solid #f0a05e;border-radius:8px;padding:10px 14px;margin-bottom:14px;">' +
+        '<span style="font-size:.78rem;color:#a4663b;text-transform:uppercase;letter-spacing:.5px;font-weight:600;">Regras desta experiência:</span><br>' +
+        '<strong style="font-size:1rem;color:#a4663b;">' +
+        _recurrenceEsc(expNome) +
+        '</strong>' +
+        '<span style="font-size:.72rem;color:#a4663b;opacity:.7;margin-left:8px;">' +
+        _recurrenceEsc(experienceId) +
+        '</span>' +
+        '</div>';
+    }
 
     if (rulesRes.error) {
       console.error('[Elarah Recurrence] load rules error:', rulesRes.error);
@@ -12573,9 +12592,12 @@
 
   function _recurrenceWireAddBtn(experienceId) {
     const addBtn = document.getElementById('exp-recurrence-add-btn');
-    if (!addBtn || addBtn.dataset.wired) return;
-    addBtn.dataset.wired = '1';
-    addBtn.addEventListener('click', () => _recurrenceCreateNew(experienceId));
+    if (!addBtn) return;
+    // CRÍTICO: usa .onclick (substitui handler) em vez de addEventListener
+    // (acumula). Antes, abrir modal A wirava experienceId=A; abrir B em
+    // seguida não re-wirava (dataset.wired travava) — clicar "+" em B
+    // criava regra na experiência A. Vazamento cross-experience visual.
+    addBtn.onclick = () => _recurrenceCreateNew(experienceId);
   }
 
   function _recurrenceWireRuleCards(experienceId, rules) {
@@ -12630,6 +12652,24 @@
     if (!sb) return;
     const msgEl = document.getElementById('exp-recurrence-msg');
     if (msgEl) msgEl.textContent = '';
+
+    // Confirmação dupla: re-lê o nome da experiência DO BANCO (não
+    // do cache), garantindo que o experienceId capturado no closure
+    // ainda aponta pra experiência que o admin acha que está editando.
+    const expCheck = await sb.from('experiences')
+      .select('id, nome').eq('id', experienceId).maybeSingle();
+    if (!expCheck || !expCheck.data) {
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Experiência não encontrada (id: ' + experienceId + ')';
+      }
+      return;
+    }
+    const okConfirm = window.confirm(
+      'Criar nova regra de recorrência na experiência:\n\n"' +
+      expCheck.data.nome + '"\n\n(id: ' + experienceId + ')\n\nConfirma?'
+    );
+    if (!okConfirm) return;
 
     // Defaults: quinta 19h00, 12 vagas, horizon 8 semanas
     // weekdays é array — admin pode marcar mais dias depois (Ter/Qui/Sex, etc.)
