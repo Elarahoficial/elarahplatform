@@ -2549,9 +2549,22 @@
       const plural = nomes.length > 1;
       const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
       const lista = joinNames(nomes) || '(participante)';
+      // Local da experiência (endereço + bairro). Mesma fonte dos
+      // dados que aparecem no e-mail de confirmação e em Minhas
+      // compras: bookings.metadata.endereco + bookings.metadata.bairro.
+      // CRÍTICO pra fornecedores que atendem em múltiplos locais nas
+      // mesmas datas/horários — sem isso o fornecedor não sabe pra
+      // onde ir e pode aparecer no endereço errado.
+      const meta = (b && b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
+      const endereco = String(meta.endereco || '').trim();
+      const bairro = String(meta.bairro || '').trim();
+      const localFull = endereco && bairro
+        ? endereco + ' — ' + bairro
+        : (endereco || bairro || '');
+      const localLine = localFull ? '\n📍 *Local:* ' + localFull : '';
       const msg = 'Oi! Tudo bem? Passando para te avisar que você tem ' + aluno +
         ' para a experiência *' + expNome + '* no dia *' + data +
-        '* às *' + horario + '*: *' + lista + '*.\n\n' +
+        '* às *' + horario + '*: *' + lista + '*.' + localLine + '\n\n' +
         'O repasse será feito até 48h antes do evento.';
       return 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
     }
