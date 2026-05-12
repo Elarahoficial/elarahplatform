@@ -13079,24 +13079,31 @@
 
     var nowIso = new Date().toISOString();
     var horizon = new Date();
-    horizon.setDate(horizon.getDate() + 45);
+    horizon.setDate(horizon.getDate() + 90);
     var horizonIso = horizon.toISOString();
 
-    var [overridesRes, expsRes, slotsRes] = await Promise.all([
+    var [overridesRes, expsRes, slotsRes, expsEventRes] = await Promise.all([
       sb.from('campaign_overrides')
         .select('id, experience_id, titulo_custom, badge_text, is_featured, display_order')
         .eq('campaign_slug', slug),
       sb.from('experiences')
-        .select('id, nome, categoria, imagem, is_active')
+        .select('id, nome, categoria, imagem, is_active, event_at, data')
         .eq('is_active', true)
         .order('nome'),
-      // Próxima data disponível por experiência (até 45 dias)
+      // Próxima data via slots (90 dias)
       sb.from('experience_slots')
         .select('experience_id, event_at')
         .eq('is_active', true)
         .gte('event_at', nowIso)
         .lte('event_at', horizonIso)
         .order('event_at'),
+      // Próxima data via experiences.event_at direto (90 dias)
+      sb.from('experiences')
+        .select('id, event_at')
+        .eq('is_active', true)
+        .not('event_at', 'is', null)
+        .gte('event_at', nowIso)
+        .lte('event_at', horizonIso),
     ]);
 
     if (overridesRes.error) {
@@ -13106,11 +13113,18 @@
 
     var overrides = overridesRes.data || [];
     var exps = expsRes.data || [];
-    var slotsByExp = new Map();
+    // Mapa de próxima data: combina slots + experiences.event_at, fica
+    // com a menor das duas pra cada experience.
+    var dateByExp = new Map();
     (slotsRes.data || []).forEach(function (s) {
-      if (!slotsByExp.has(s.experience_id)) {
-        slotsByExp.set(s.experience_id, s.event_at);
-      }
+      if (!s.event_at) return;
+      var cur = dateByExp.get(s.experience_id);
+      if (!cur || s.event_at < cur) dateByExp.set(s.experience_id, s.event_at);
+    });
+    (expsEventRes.data || []).forEach(function (e) {
+      if (!e.event_at) return;
+      var cur = dateByExp.get(e.id);
+      if (!cur || e.event_at < cur) dateByExp.set(e.id, e.event_at);
     });
     var overrideByExp = new Map();
     overrides.forEach(function (o) { overrideByExp.set(o.experience_id, o); });
@@ -13145,19 +13159,24 @@
     rowsHost.innerHTML = exps.map(function (e) {
       var o = overrideByExp.get(e.id);
       var included = !!o;
-      var nextDateRaw = slotsByExp.get(e.id);
+      // Próxima data — combina experience_slots + experiences.event_at
+      // + fallback pra experiences.data (formato BR "DD/MM").
+      var nextDateRaw = dateByExp.get(e.id);
       var nextDateChip = '';
       if (nextDateRaw) {
         var dt = new Date(nextDateRaw);
         var ddmm = String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
         var diffDays = Math.round((dt - new Date()) / 86400000);
-        // Destaca em verde quando a data está no janela do Dia dos Namorados
-        var inDDN = diffDays >= 0 && diffDays <= 45;
+        var inDDN = diffDays >= -1 && diffDays <= 60;
         var color = inDDN ? '#1a8a4a' : '#888';
         var bg = inDDN ? '#e6f4ea' : '#f3f3f3';
-        nextDateChip = '<span title="Próxima data disponível" style="display:inline-flex;align-items:center;gap:3px;background:' + bg + ';color:' + color + ';font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📅 ' + ddmm + '</span>';
+        nextDateChip = '<span title="Próxima data: ' + dt.toLocaleDateString('pt-BR') + '" style="display:inline-flex;align-items:center;gap:3px;background:' + bg + ';color:' + color + ';font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📅 ' + ddmm + '</span>';
+      } else if (e.data && String(e.data).trim()) {
+        // Fallback: campo experiences.data ("DD/MM" texto livre)
+        var dataLabel = String(e.data).trim();
+        nextDateChip = '<span title="Data cadastrada na experiência (sem slot futuro)" style="display:inline-flex;align-items:center;gap:3px;background:#fff8ef;color:#a4663b;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📅 ' + _campEsc(dataLabel) + '</span>';
       } else {
-        nextDateChip = '<span title="Sem datas nas próximas 6 semanas" style="display:inline-flex;align-items:center;gap:3px;background:#fdecea;color:#c0392b;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">⚠ sem data</span>';
+        nextDateChip = '<span title="Sem data futura nos próximos 90 dias" style="display:inline-flex;align-items:center;gap:3px;background:#fdecea;color:#c0392b;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">⚠ sem data</span>';
       }
       return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
         '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">' +
@@ -13268,14 +13287,20 @@
       return;
     }
     listEl.innerHTML = rows.map(function (r) {
-      return '<div class="camp-upcoming-row" data-row-id="' + _campEsc(r.id) + '" style="background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">' +
+      var imgUrl = _campEsc(r.imagem || '');
+      var imgPreview = r.imagem
+        ? '<img src="' + imgUrl + '" alt="preview" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid #eee;">'
+        : '<div style="width:100%;height:90px;border:1.5px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.74rem;text-align:center;padding:8px;">cole uma URL pra ver o preview</div>';
+      return '<div class="camp-upcoming-row" data-row-id="' + _campEsc(r.id) + '" data-dirty="0" style="background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;position:relative;">' +
+        '<div data-camp-up-dirty-dot style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:#f0a05e;display:none;" title="Alterações não salvas"></div>' +
         '<div style="flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:6px;">' +
           '<input type="text" data-camp-up-nome placeholder="Nome" value="' + _campEsc(r.nome) + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;font-weight:600;">' +
           '<input type="text" data-camp-up-cat placeholder="Categoria" value="' + _campEsc(r.categoria || '') + '" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
           '<textarea data-camp-up-desc placeholder="Descrição curta" rows="2" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;resize:vertical;">' + _campEsc(r.descricao_curta || '') + '</textarea>' +
         '</div>' +
         '<div style="flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:6px;">' +
-          '<input type="text" data-camp-up-img placeholder="URL da imagem (opcional)" value="' + _campEsc(r.imagem || '') + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<div data-camp-up-img-preview>' + imgPreview + '</div>' +
+          '<input type="text" data-camp-up-img placeholder="URL da imagem (opcional)" value="' + imgUrl + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
           '<input type="text" data-camp-up-label placeholder="Status (ex: em breve)" value="' + _campEsc(r.expected_label || '') + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
           '<input type="number" data-camp-up-order placeholder="Ordem" value="' + (r.display_order || 100) + '" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
           '<label style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:#666;cursor:pointer;"><input type="checkbox" data-camp-up-active' + (r.is_active !== false ? ' checked' : '') + '> Visível na landing</label>' +
@@ -13283,10 +13308,42 @@
         '<div style="display:flex;flex-direction:column;gap:6px;align-self:stretch;justify-content:space-between;">' +
           '<button type="button" data-camp-up-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>' +
           '<button type="button" data-camp-up-del style="padding:7px 14px;background:#fff;color:#c0392b;border:1px solid #c0392b;border-radius:6px;font-family:inherit;font-weight:600;font-size:.78rem;cursor:pointer;">Excluir</button>' +
-          '<span data-camp-up-msg style="font-size:.74rem;min-height:1em;text-align:center;"></span>' +
+          '<span data-camp-up-msg style="font-size:.74rem;min-height:1em;text-align:center;color:#888;">salvo</span>' +
         '</div>' +
       '</div>';
     }).join('');
+
+    // Auto-save no blur dos inputs + indicador "alterações não salvas"
+    listEl.querySelectorAll('.camp-upcoming-row').forEach(function (row) {
+      var dot = row.querySelector('[data-camp-up-dirty-dot]');
+      var msg = row.querySelector('[data-camp-up-msg]');
+      var inputs = row.querySelectorAll('input,textarea');
+      inputs.forEach(function (inp) {
+        inp.addEventListener('input', function () {
+          row.dataset.dirty = '1';
+          if (dot) dot.style.display = 'block';
+          if (msg) { msg.style.color = '#c89060'; msg.textContent = '● alterando'; }
+        });
+        inp.addEventListener('blur', async function () {
+          if (row.dataset.dirty === '1') {
+            await _campUpcomingSave(row);
+          }
+        });
+      });
+      // Preview da imagem ao colar/digitar URL
+      var imgInput = row.querySelector('[data-camp-up-img]');
+      var imgPreviewEl = row.querySelector('[data-camp-up-img-preview]');
+      if (imgInput && imgPreviewEl) {
+        imgInput.addEventListener('input', function () {
+          var url = imgInput.value.trim();
+          if (!url) {
+            imgPreviewEl.innerHTML = '<div style="width:100%;height:90px;border:1.5px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.74rem;">cole uma URL pra ver o preview</div>';
+          } else {
+            imgPreviewEl.innerHTML = '<img src="' + url.replace(/"/g,'&quot;') + '" alt="preview" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid #eee;">';
+          }
+        });
+      }
+    });
 
     listEl.querySelectorAll('[data-camp-up-save]').forEach(function (btn) {
       btn.addEventListener('click', async function () {
@@ -13306,22 +13363,34 @@
 
   async function _campUpcomingAdd(slug) {
     var sb = window.supabaseClient;
-    var { error } = await sb.from('campaign_upcoming_experiences').insert({
+    // is_active SEMPRE true por default — visível imediatamente na
+    // landing depois que admin editar o nome.
+    var payload = {
       campaign_slug: slug,
       nome: 'Nova experiência em breve',
-      categoria: '',
-      descricao_curta: '',
+      categoria: null,
+      descricao_curta: null,
+      imagem: null,
       expected_label: 'em breve',
       is_active: true,
       display_order: 100,
-    });
-    if (error) { alert('Erro: ' + (error.message || error.code)); return; }
+    };
+    console.info('[Elarah Campanhas] add upcoming', payload);
+    var { data, error } = await sb.from('campaign_upcoming_experiences')
+      .insert(payload).select().single();
+    if (error) {
+      console.error('[Elarah Campanhas] add error:', error);
+      alert('Erro ao criar: ' + (error.message || error.code));
+      return;
+    }
+    console.info('[Elarah Campanhas] added OK', data && data.id);
     await _campLoadUpcoming(slug);
   }
 
   async function _campUpcomingSave(row) {
     var sb = window.supabaseClient;
     var msg = row.querySelector('[data-camp-up-msg]');
+    var dot = row.querySelector('[data-camp-up-dirty-dot]');
     var patch = {
       nome: row.querySelector('[data-camp-up-nome]').value.trim(),
       categoria: row.querySelector('[data-camp-up-cat]').value.trim() || null,
@@ -13331,15 +13400,27 @@
       display_order: Number(row.querySelector('[data-camp-up-order]').value) || 100,
       is_active: row.querySelector('[data-camp-up-active]').checked,
     };
-    if (!patch.nome) { msg.style.color = '#c0392b'; msg.textContent = 'Nome obrigatório.'; return; }
+    if (!patch.nome) {
+      msg.style.color = '#c0392b';
+      msg.textContent = '⚠ nome obrigatório';
+      console.warn('[Elarah Campanhas] save abortado: nome vazio. row=', row.dataset.rowId);
+      return;
+    }
+    console.info('[Elarah Campanhas] saving upcoming', row.dataset.rowId, patch);
     var { error } = await sb.from('campaign_upcoming_experiences').update(patch).eq('id', row.dataset.rowId);
     if (error) {
       msg.style.color = '#c0392b';
-      msg.textContent = (error.message || error.code).slice(0, 30);
+      msg.textContent = '⚠ ' + (error.message || error.code).slice(0, 40);
+      console.error('[Elarah Campanhas] save error:', error);
     } else {
       msg.style.color = '#1a8a4a';
-      msg.textContent = '✓';
-      setTimeout(function () { msg.textContent = ''; }, 1800);
+      msg.textContent = '✓ salvo';
+      row.dataset.dirty = '0';
+      if (dot) dot.style.display = 'none';
+      console.info('[Elarah Campanhas] saved OK', row.dataset.rowId);
+      setTimeout(function () {
+        if (row.dataset.dirty === '0' && msg) { msg.style.color = '#888'; msg.textContent = 'salvo'; }
+      }, 2200);
     }
   }
 
