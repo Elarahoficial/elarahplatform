@@ -9,11 +9,105 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="auth.css">
   <link rel="stylesheet" href="presentear.css">
+  <link rel="stylesheet" href="dia-dos-namorados.css?v=4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    /* TEMA DIA DOS NAMORADOS — aplicado quando body.ddn-mode
+       (visitas via ?campaign=dia-dos-namorados). Overrides cosméticos:
+       cores vinho/rosa/dourado + tipografia DM Serif + voltar-link. */
+    body.ddn-mode {
+      background: var(--ddn-bg, #fbf6ee);
+      color: var(--ddn-ink, #2a1410);
+    }
+    body.ddn-mode .header {
+      background: rgba(255, 248, 243, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--ddn-line, #e9d9c8);
+    }
+    body.ddn-mode .presentear-hero,
+    body.ddn-mode .presentear-bonus,
+    body.ddn-mode .presentear-section,
+    body.ddn-mode section[class*="presentear"] {
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(201, 134, 149, 0.2), transparent 60%),
+        var(--ddn-bg, #fbf6ee) !important;
+    }
+    body.ddn-mode h1,
+    body.ddn-mode h2,
+    body.ddn-mode h3 {
+      font-family: 'DM Serif Display', serif !important;
+      color: var(--ddn-ink, #2a1410) !important;
+    }
+    body.ddn-mode h1 em,
+    body.ddn-mode h2 em,
+    body.ddn-mode h3 em {
+      color: var(--ddn-wine, #6b1f2e) !important;
+      font-style: italic;
+    }
+    body.ddn-mode button[class*="primary"],
+    body.ddn-mode button[class*="cta"],
+    body.ddn-mode .btn-primary,
+    body.ddn-mode [class*="continuar"],
+    body.ddn-mode [class*="presentear-btn"] {
+      background: var(--ddn-wine, #6b1f2e) !important;
+      color: #fff !important;
+      box-shadow: 0 12px 28px rgba(107, 31, 46, 0.28) !important;
+      border-color: var(--ddn-wine, #6b1f2e) !important;
+    }
+    body.ddn-mode button[class*="primary"]:hover,
+    body.ddn-mode .btn-primary:hover {
+      background: var(--ddn-wine-dark, #4a1622) !important;
+    }
+    /* Badge promocional DDN — banner no topo */
+    body.ddn-mode::before {
+      content: "🤍 Gift Card · Especial Dia dos Namorados";
+      display: block;
+      text-align: center;
+      padding: 10px 20px;
+      background: linear-gradient(90deg, var(--ddn-wine, #6b1f2e), var(--ddn-wine-dark, #4a1622));
+      color: var(--ddn-gold-soft, #e6d3a8);
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    body.ddn-mode .ddn-back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ddn-wine, #6b1f2e);
+      font-size: .85rem;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 14px 24px;
+      background: var(--ddn-bg-warm, #f5ebe0);
+    }
+    body.ddn-mode .ddn-back-link:hover { color: var(--ddn-wine-dark); }
+  </style>
 </head>
 <body>
+
+  <script>
+    // Tema Dia dos Namorados — aplicado quando vier da campanha.
+    // Aceita ?campaign=dia-dos-namorados OU ?theme=casal (legado).
+    (function () {
+      var p = new URLSearchParams(window.location.search);
+      var camp = p.get('campaign');
+      var theme = p.get('theme');
+      if (camp === 'dia-dos-namorados' || theme === 'casal') {
+        document.body.classList.add('ddn-mode');
+        // Title + meta
+        document.title = 'Gift Card · Especial Dia dos Namorados — Elarah';
+        var meta = document.querySelector('meta[name="description"]');
+        if (meta) meta.content = 'Cartão-presente Especial Dia dos Namorados — vivam juntos uma experiência Elarah.';
+      }
+    })();
+  </script>
 
   <!-- ========== HEADER ========== -->
   <header class="header">

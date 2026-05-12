@@ -222,6 +222,7 @@
           scheduleHtml +
           '<button type="button" id="ddn-det-reservar" class="ddn-det__reservar"' +
             ' data-reserve' +
+            ' data-skip-description="true"' +
             ' data-experience-id="' + esc(exp.id) + '"' +
             ' data-experience-nome="' + esc(titulo) + '"' +
             ' data-experience-preco="' + esc(exp.preco || '') + '"' +
