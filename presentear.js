@@ -74,9 +74,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const card = document.createElement('article');
       card.className = 'card';
 
-      const horarios = Array.isArray(exp.horarios) && exp.horarios.length
+      const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
         ? exp.horarios
         : (exp.horario ? [exp.horario] : []);
+      // Dedup textual — recorrência popula horarios com 1 entrada por slot.
+      const seenH = new Set();
+      const horarios = [];
+      horariosRaw.forEach(function (h) {
+        const k = String(h || '').trim();
+        if (!k || seenH.has(k)) return;
+        seenH.add(k);
+        horarios.push(h);
+      });
       const hasMultipleHorarios = horarios.length > 1;
 
       const horariosBlock = hasMultipleHorarios
