@@ -12798,7 +12798,7 @@
        oldWeekdays.some((v, i) => v !== newWeekdays[i]));
     if ((horarioChanged || weekdaysChanged) && oldRule) {
       try {
-        const cleaned = await _recurrenceCleanupOrphans(experienceId, oldRule);
+        const cleaned = await _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays);
         if (cleaned > 0) {
           console.info('[Elarah Recurrence] cleanup: ' + cleaned + ' slot(s) órfão(s) removidos/desligados');
         }
@@ -12870,42 +12870,73 @@
   }
 
   // Apaga (ou desliga recurrence_rule_id) slots órfãos quando o
-  // horario_label ou weekday muda. Slots COM bookings são preservados
+  // horario_label ou weekdays mudam. Slots COM bookings são preservados
   // virando "manuais" (recurrence_rule_id=null) — admin cuida.
   // Retorna número de slots tratados.
-  async function _recurrenceCleanupOrphans(experienceId, oldRule) {
+  //
+  // ESTRATÉGIA (corrige bug de edição sequencial):
+  //   Lista TODOS os slots futuros da regra e marca como órfão qualquer
+  //   slot cujo (horario, weekday do event_at) não bate com o estado
+  //   NOVO esperado (newHorarioLabel + newWeekdays). Antes filtrava
+  //   por oldRule.horario_label, mas em 2 edições seguidas o oldRule
+  //   já refletia o 1º save — slots de label anterior ainda mais antigo
+  //   ficavam órfãos invisíveis. Comparar contra o estado NOVO é a
+  //   única forma robusta.
+  async function _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays) {
     const sb = window.supabaseClient;
-    if (!sb || !oldRule) return 0;
+    if (!sb || !ruleId) return 0;
 
-    // Lista slots futuros desta regra com horario antigo
+    const expectedLabel = (newHorarioLabel || '').trim();
+    const expectedWdSet = new Set((newWeekdays || []).map(Number));
+
+    // Lista TODOS os slots futuros desta regra (sem filtrar por horario)
     const { data: candidates, error: err1 } = await sb
       .from('experience_slots')
       .select('id, data, horario, event_at')
       .eq('experience_id', experienceId)
-      .eq('recurrence_rule_id', oldRule.id)
-      .eq('horario', oldRule.horario_label)
+      .eq('recurrence_rule_id', ruleId)
       .gte('event_at', new Date().toISOString());
     if (err1 || !candidates || !candidates.length) return 0;
 
     let cleaned = 0;
     for (const slot of candidates) {
-      // Checa se tem booking ativo apontando pra esse slot
+      // Decide se o slot diverge do estado novo
+      const slotHorario = (slot.horario || '').trim();
+      const slotDow = slot.event_at ? new Date(slot.event_at).getDay() : null;
+      const horarioDiverge = slotHorario !== expectedLabel;
+      const weekdayDiverge = slotDow !== null && expectedWdSet.size > 0 && !expectedWdSet.has(slotDow);
+      if (!horarioDiverge && !weekdayDiverge) continue; // slot está alinhado, mantém
+
+      // Checa booking ativo
       const { count, error: errCount } = await sb
         .from('bookings')
         .select('id', { count: 'exact', head: true })
-        .eq('slot_id', slot.id);
+        .eq('slot_id', slot.id)
+        .in('status', ['pending', 'pago']);
       if (errCount) {
         console.warn('[Elarah Recurrence] cleanup count error:', errCount.message);
         continue;
       }
       if ((count || 0) > 0) {
-        // Tem booking — desliga rule_id (vira manual, preserva tudo)
-        await sb.from('experience_slots')
+        // Tem booking — desliga rule_id (vira manual, preserva reserva)
+        const { error: errUpd } = await sb.from('experience_slots')
           .update({ recurrence_rule_id: null })
           .eq('id', slot.id);
+        if (errUpd) console.warn('[Elarah Recurrence] cleanup detach error:', errUpd.message);
       } else {
-        // Sem booking — apaga (é um órfão real)
-        await sb.from('experience_slots').delete().eq('id', slot.id);
+        // Sem booking — desliga rule_id PRIMEIRO (libera trigger
+        // BEFORE DELETE do guard SQL), depois deleta. O trigger
+        // bloqueia DELETE de slot com recurrence_rule_id != null;
+        // virar manual antes é caminho seguro.
+        const { error: errUnlink } = await sb.from('experience_slots')
+          .update({ recurrence_rule_id: null })
+          .eq('id', slot.id);
+        if (errUnlink) {
+          console.warn('[Elarah Recurrence] cleanup unlink-before-delete error:', errUnlink.message);
+          continue;
+        }
+        const { error: errDel } = await sb.from('experience_slots').delete().eq('id', slot.id);
+        if (errDel) console.warn('[Elarah Recurrence] cleanup delete error:', errDel.message);
       }
       cleaned += 1;
     }
