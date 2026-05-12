@@ -13077,7 +13077,12 @@
     if (!listEl) return;
     listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Carregando…</p>';
 
-    var [overridesRes, expsRes] = await Promise.all([
+    var nowIso = new Date().toISOString();
+    var horizon = new Date();
+    horizon.setDate(horizon.getDate() + 45);
+    var horizonIso = horizon.toISOString();
+
+    var [overridesRes, expsRes, slotsRes] = await Promise.all([
       sb.from('campaign_overrides')
         .select('id, experience_id, titulo_custom, badge_text, is_featured, display_order')
         .eq('campaign_slug', slug),
@@ -13085,6 +13090,13 @@
         .select('id, nome, categoria, imagem, is_active')
         .eq('is_active', true)
         .order('nome'),
+      // Próxima data disponível por experiência (até 45 dias)
+      sb.from('experience_slots')
+        .select('experience_id, event_at')
+        .eq('is_active', true)
+        .gte('event_at', nowIso)
+        .lte('event_at', horizonIso)
+        .order('event_at'),
     ]);
 
     if (overridesRes.error) {
@@ -13094,6 +13106,12 @@
 
     var overrides = overridesRes.data || [];
     var exps = expsRes.data || [];
+    var slotsByExp = new Map();
+    (slotsRes.data || []).forEach(function (s) {
+      if (!slotsByExp.has(s.experience_id)) {
+        slotsByExp.set(s.experience_id, s.event_at);
+      }
+    });
     var overrideByExp = new Map();
     overrides.forEach(function (o) { overrideByExp.set(o.experience_id, o); });
 
@@ -13127,11 +13145,25 @@
     rowsHost.innerHTML = exps.map(function (e) {
       var o = overrideByExp.get(e.id);
       var included = !!o;
+      var nextDateRaw = slotsByExp.get(e.id);
+      var nextDateChip = '';
+      if (nextDateRaw) {
+        var dt = new Date(nextDateRaw);
+        var ddmm = String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
+        var diffDays = Math.round((dt - new Date()) / 86400000);
+        // Destaca em verde quando a data está no janela do Dia dos Namorados
+        var inDDN = diffDays >= 0 && diffDays <= 45;
+        var color = inDDN ? '#1a8a4a' : '#888';
+        var bg = inDDN ? '#e6f4ea' : '#f3f3f3';
+        nextDateChip = '<span title="Próxima data disponível" style="display:inline-flex;align-items:center;gap:3px;background:' + bg + ';color:' + color + ';font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📅 ' + ddmm + '</span>';
+      } else {
+        nextDateChip = '<span title="Sem datas nas próximas 6 semanas" style="display:inline-flex;align-items:center;gap:3px;background:#fdecea;color:#c0392b;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">⚠ sem data</span>';
+      }
       return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
         '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">' +
           '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;flex:1 1 240px;min-width:0;">' +
             '<input type="checkbox" data-camp-include' + (included ? ' checked' : '') + ' style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">' +
-            '<span style="overflow:hidden;text-overflow:ellipsis;">' + _campEsc(e.nome) + ' <span style="color:#888;font-weight:400;font-size:.82rem;">(' + _campEsc(e.categoria || '—') + ')</span></span>' +
+            '<span style="overflow:hidden;text-overflow:ellipsis;">' + _campEsc(e.nome) + ' <span style="color:#888;font-weight:400;font-size:.82rem;">(' + _campEsc(e.categoria || '—') + ')</span>' + nextDateChip + '</span>' +
           '</label>' +
           (included
             ? '<label style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:' + (o.is_featured ? '#fff4e0' : '#fff') + ';border:1.5px solid ' + (o.is_featured ? '#f0a05e' : '#ccc') + ';border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;color:' + (o.is_featured ? '#a4663b' : '#666') + ';white-space:nowrap;" title="Marcar como destaque — aparece na landing pública">' +
