@@ -13077,37 +13077,59 @@
     if (!listEl) return;
     listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Carregando…</p>';
 
-    var nowIso = new Date().toISOString();
-    // Janela estratégica DDN: 21/05 a 30/06 do ano corrente
-    var ddnStart = new Date(new Date().getFullYear() + '-05-21T00:00:00');
-    var ddnEnd = new Date(new Date().getFullYear() + '-07-01T00:00:00');
-    var horizon = new Date();
-    horizon.setDate(horizon.getDate() + 90);
-    var horizonIso = horizon.toISOString();
+    // JANELA ESTRATÉGICA DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte.
+    // Hoje 12/05 → janela 25/05 a 25/06. Hoje 03/08 → janela 25/08 a 25/09.
+    var _now = new Date();
+    var ddnStart = new Date(_now.getFullYear(), _now.getMonth(), 25);
+    var ddnEnd = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
+    var nowIso = _now.toISOString();
+    var ddnStartIso = ddnStart.toISOString();
+    var ddnEndIso = ddnEnd.toISOString();
 
-    var [overridesRes, expsRes, slotsRes, expsEventRes] = await Promise.all([
+    // Busca: overrides + slots NA JANELA + experiences.event_at NA JANELA.
+    // Só essas experiências ficam visíveis no painel — filtra o resto.
+    var [overridesRes, slotsRes, expsEventRes] = await Promise.all([
       sb.from('campaign_overrides')
         .select('id, experience_id, titulo_custom, subtitulo_custom, descricao_custom, badge_text, is_featured, display_order, imagem_custom')
         .eq('campaign_slug', slug),
-      sb.from('experiences')
-        .select('id, nome, categoria, imagem, is_active, event_at, data')
-        .eq('is_active', true)
-        .order('nome'),
-      // Próxima data via slots (90 dias)
       sb.from('experience_slots')
         .select('experience_id, event_at')
         .eq('is_active', true)
-        .gte('event_at', nowIso)
-        .lte('event_at', horizonIso)
+        .gte('event_at', ddnStartIso)
+        .lt('event_at', ddnEndIso)
         .order('event_at'),
-      // Próxima data via experiences.event_at direto (90 dias)
       sb.from('experiences')
         .select('id, event_at')
         .eq('is_active', true)
         .not('event_at', 'is', null)
-        .gte('event_at', nowIso)
-        .lte('event_at', horizonIso),
+        .gte('event_at', ddnStartIso)
+        .lt('event_at', ddnEndIso),
     ]);
+
+    // IDs de experiências que TÊM data na janela (qualquer fonte)
+    var expIdsNaJanela = new Set();
+    (slotsRes.data || []).forEach(function (s) { expIdsNaJanela.add(s.experience_id); });
+    (expsEventRes.data || []).forEach(function (e) { expIdsNaJanela.add(e.id); });
+
+    // IDs que JÁ TÊM override (mesmo fora da janela — mostra pra admin gerenciar)
+    var overrideIds = new Set((overridesRes.data || []).map(function (o) { return o.experience_id; }));
+
+    // Lista final: experiências NA JANELA + experiências JÁ NO OVERRIDE
+    var allIds = Array.from(new Set([
+      ...Array.from(expIdsNaJanela),
+      ...Array.from(overrideIds),
+    ]));
+
+    var expsRes;
+    if (allIds.length === 0) {
+      expsRes = { data: [], error: null };
+    } else {
+      expsRes = await sb.from('experiences')
+        .select('id, nome, categoria, imagem, is_active, event_at, data')
+        .in('id', allIds)
+        .eq('is_active', true)
+        .order('nome');
+    }
 
     if (overridesRes.error) {
       listEl.innerHTML = '<p style="color:#c0392b;font-size:.85rem;">Erro: ' + _campEsc(overridesRes.error.message) + '</p>';
@@ -13133,8 +13155,9 @@
     overrides.forEach(function (o) { overrideByExp.set(o.experience_id, o); });
 
     var featuredCount = overrides.filter(function (o) { return o.is_featured; }).length;
+    var fmt = function (d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); };
     var counterHtml =
-      '<div style="background:#fff8ef;border:1px solid #f0cfa0;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+      '<div style="background:#fff8ef;border:1px solid #f0cfa0;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
         '<div>' +
           '<strong style="color:#a4663b;">' + featuredCount + '</strong> ' +
           '<span style="color:#666;font-size:.88rem;">experiência' + (featuredCount === 1 ? '' : 's') + ' marcada' + (featuredCount === 1 ? '' : 's') + ' como destaque' +
@@ -13144,7 +13167,11 @@
            ' ✓ bom número pra landing curada') +
           '</span>' +
         '</div>' +
-        '<small style="color:#888;">' + overrides.length + ' total na campanha</small>' +
+        '<small style="color:#888;">' + exps.length + ' na janela (de ' + overrides.length + ' total)</small>' +
+      '</div>' +
+      '<div style="background:#e6f4ea;border:1px solid #c6e7d2;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:.82rem;color:#1a8a4a;">' +
+        '📅 Mostrando só experiências com data entre <strong>' + fmt(ddnStart) + '</strong> e <strong>' + fmt(ddnEnd) + '</strong>' +
+        ' — janela estratégica da campanha. Experiências fora dessa janela ficam ocultas (mas se já estavam no override, aparecem pra você gerenciar).' +
       '</div>';
     listEl.innerHTML = counterHtml + '<div data-camp-rows-host></div>';
     var rowsHost = listEl.querySelector('[data-camp-rows-host]');
