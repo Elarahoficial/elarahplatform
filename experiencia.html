@@ -169,7 +169,7 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=23"></script>
 <script src="analytics.js?v=2"></script>
-<script src="script.js?v=47"></script>
+<script src="script.js?v=48"></script>
 <script>
 (function () {
   'use strict';
@@ -373,7 +373,7 @@
           var cls = 'exp-detail__horario-btn';
           if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
           else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
-          var label = s.horario + (soldOut ? ' (esgotado)' : (rest !== null ? ' · ' + rest + ' vagas' : ''));
+          var label = s.horario + (soldOut ? ' (esgotado)' : '');
           html += '<button type="button" class="' + cls + '"' +
                   (soldOut ? ' disabled' : '') +
                   ' data-horario="' + esc(s.horario) + '"' +
