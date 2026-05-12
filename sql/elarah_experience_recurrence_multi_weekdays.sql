@@ -118,17 +118,29 @@ end $$;
 
 
 -- =============================================================
--- 4. DROP coluna antiga `weekday`
+-- 4. DROP da trigger antiga (Fase 1) — ela referencia weekday
 -- -------------------------------------------------------------
--- Só dropa se ainda existe (idempotente). Se já foi removida em
--- run anterior, pula sem erro.
+-- A trigger materialize_recurrence_after_change foi criada na
+-- Fase 1 com "AFTER UPDATE OF weekday, ...". Postgres não deixa
+-- dropar uma coluna referenciada por trigger. Solução: drop da
+-- trigger primeiro, recriar depois com weekdays (passo 6 abaixo).
+--
+-- Idempotente (IF EXISTS).
+-- =============================================================
+drop trigger if exists materialize_recurrence_after_change on public.experience_recurrence_rules;
+
+
+-- =============================================================
+-- 5. DROP coluna antiga `weekday`
+-- -------------------------------------------------------------
+-- Agora sem dependências, pode dropar. Idempotente.
 -- =============================================================
 alter table public.experience_recurrence_rules
   drop column if exists weekday;
 
 
 -- =============================================================
--- 5. Atualiza função materialize_recurrence_slots
+-- 6. Atualiza função materialize_recurrence_slots
 -- -------------------------------------------------------------
 -- Itera pelos weekdays do array E pelas semanas do horizon.
 -- Pra cada combinação (weekday, semana_offset), calcula a data
@@ -206,7 +218,7 @@ $$;
 
 
 -- =============================================================
--- 6. Trigger — atualiza pra incluir weekdays nas colunas observadas
+-- 7. Recria trigger — agora com weekdays nas colunas observadas
 -- -------------------------------------------------------------
 -- DROP + CREATE pra garantir que pega a nova lista de colunas
 -- (UPDATE OF é fixado no momento do CREATE).
@@ -220,7 +232,7 @@ create trigger materialize_recurrence_after_change
 
 
 -- =============================================================
--- 7. Sanity check
+-- 8. Sanity check
 -- -------------------------------------------------------------
 -- Roda essa query depois pra confirmar:
 --
