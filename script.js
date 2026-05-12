@@ -3696,6 +3696,174 @@ if (groupForm) {
         body.appendChild(enderecoWrap);
       }
 
+      // ===== BLOCO DE SCHEDULE (data + horário) =====
+      // Carrega slots futuros e renderiza chips de data → horário.
+      // Usuário escolhe data primeiro, depois horário daquela data.
+      // Selecionado é guardado em scope local — footer button lê esse
+      // estado antes de continuar pro checkout.
+      var modalSchedSel = { data: null, horario: null, slotId: null, dataLabel: null };
+      var schedSection = document.createElement('div');
+      schedSection.style.cssText = 'margin-top:28px;';
+      body.appendChild(schedSection);
+
+      (async function loadSchedule() {
+        var allSlots = [];
+        try {
+          if (window.ElarahData && ElarahData.getSlotsForExperience) {
+            allSlots = await ElarahData.getSlotsForExperience(exp.id) || [];
+          }
+        } catch (e) { /* tabela ausente */ }
+
+        var now = new Date();
+        var futureSlots = allSlots
+          .filter(function (s) { return s.isActive !== false; })
+          .filter(function (s) { return s.eventAt && new Date(s.eventAt) >= now; })
+          .filter(function (s) {
+            if (s.vagasTotal == null) return true;
+            var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+            return rest > 0;
+          })
+          .sort(function (a, b) { return new Date(a.eventAt) - new Date(b.eventAt); });
+
+        if (!futureSlots.length) {
+          // Fallback: experiência sem slot configurado → mantém UX antiga
+          // (botão Continuar dispara checkout com horario default da experiência)
+          schedSection.style.display = 'none';
+          return;
+        }
+
+        // Agrupa por data (YYYY-MM-DD)
+        var byDate = {};
+        var dateOrder = [];
+        futureSlots.forEach(function (s) {
+          var d = new Date(s.eventAt);
+          var key = d.getFullYear() + '-' +
+                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0');
+          if (!byDate[key]) {
+            byDate[key] = {
+              key: key,
+              dt: d,
+              wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+              dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+              slots: [],
+            };
+            dateOrder.push(key);
+          }
+          byDate[key].slots.push(s);
+        });
+
+        // Estilos comuns (inline pra não depender de CSS externo)
+        var chipCss = function (active) {
+          return [
+            'padding:10px 14px',
+            'border:1.5px solid ' + (active ? '#f0a05e' : '#ddd'),
+            'border-radius:999px',
+            'background:' + (active ? '#f0a05e' : '#fff'),
+            'color:' + (active ? '#fff' : '#555'),
+            'font-size:.82rem',
+            'font-weight:600',
+            'cursor:pointer',
+            'font-family:inherit',
+            'line-height:1.1',
+            'min-width:88px',
+            'text-align:center',
+            'transition:all .15s',
+          ].join(';');
+        };
+        var horarioChipCss = function (active, soldOut) {
+          return [
+            'padding:8px 14px',
+            'border:1.5px solid ' + (active ? '#f0a05e' : '#ddd'),
+            'border-radius:10px',
+            'background:' + (active ? '#f0a05e' : '#fff'),
+            'color:' + (active ? '#fff' : '#555'),
+            'font-size:.85rem',
+            'font-weight:600',
+            'cursor:' + (soldOut ? 'not-allowed' : 'pointer'),
+            'opacity:' + (soldOut ? '.45' : '1'),
+            'font-family:inherit',
+            'transition:all .15s',
+          ].join(';');
+        };
+
+        // ===== CHIPS DE DATA =====
+        var dataLabel = document.createElement('div');
+        dataLabel.textContent = 'Escolha uma data';
+        dataLabel.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
+        schedSection.appendChild(dataLabel);
+
+        var datasWrap = document.createElement('div');
+        datasWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;';
+
+        // ===== CHIPS DE HORÁRIO (re-renderizado on date change) =====
+        var horarioLabel = document.createElement('div');
+        horarioLabel.textContent = 'Escolha um horário';
+        horarioLabel.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
+        var horariosWrap = document.createElement('div');
+        horariosWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+
+        function renderHorarios(dateKey) {
+          horariosWrap.innerHTML = '';
+          var g = byDate[dateKey];
+          if (!g) return;
+          var firstActive = true;
+          g.slots.forEach(function (s, i) {
+            var rest = s.vagasTotal == null ? null : (s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal);
+            var soldOut = rest !== null && rest <= 0;
+            var active = !soldOut && firstActive;
+            if (active) firstActive = false;
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.style.cssText = horarioChipCss(active, soldOut);
+            btn.textContent = s.horario + (soldOut ? ' (esgotado)' : (rest !== null ? ' · ' + rest + ' vagas' : ''));
+            btn.disabled = soldOut;
+            if (active) {
+              modalSchedSel.horario = s.horario;
+              modalSchedSel.slotId = s.id;
+              modalSchedSel.data = s.data || g.dm;
+              modalSchedSel.dataLabel = g.wd + ', ' + g.dm;
+            }
+            btn.addEventListener('click', function () {
+              if (soldOut) return;
+              Array.from(horariosWrap.children).forEach(function (c) {
+                c.style.cssText = horarioChipCss(false, c.disabled);
+              });
+              btn.style.cssText = horarioChipCss(true, false);
+              modalSchedSel.horario = s.horario;
+              modalSchedSel.slotId = s.id;
+              modalSchedSel.data = s.data || g.dm;
+              modalSchedSel.dataLabel = g.wd + ', ' + g.dm;
+            });
+            horariosWrap.appendChild(btn);
+          });
+        }
+
+        // Renderiza chips de data
+        dateOrder.forEach(function (k, i) {
+          var g = byDate[k];
+          var active = i === 0;
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.style.cssText = chipCss(active);
+          btn.innerHTML = '<strong>' + g.wd + '</strong><br><small style="font-size:.68rem;opacity:.75;">' + g.dm + '</small>';
+          btn.addEventListener('click', function () {
+            Array.from(datasWrap.children).forEach(function (c) {
+              c.style.cssText = chipCss(false);
+            });
+            btn.style.cssText = chipCss(true);
+            renderHorarios(k);
+          });
+          datasWrap.appendChild(btn);
+        });
+        schedSection.appendChild(datasWrap);
+        schedSection.appendChild(horarioLabel);
+        schedSection.appendChild(horariosWrap);
+
+        // Estado inicial: primeira data → primeiro horário ativo
+        renderHorarios(dateOrder[0]);
+      })();
+
       // Spacer pra o conteúdo poder rolar além do footer
       const spacer = document.createElement('div');
       spacer.style.cssText = 'height:20px;';
@@ -3703,6 +3871,9 @@ if (groupForm) {
 
       scrollContainer.appendChild(hero);
       scrollContainer.appendChild(body);
+
+      // Expõe a seleção pro botão "Continuar" ler na hora do click
+      root.__elarahSched = modalSchedSel;
 
       // ===== FOOTER STICKY =====
       // FORA do scrollContainer, sempre visível.
@@ -3833,7 +4004,26 @@ if (groupForm) {
           document.body.style.overflow = '';
         }
         if (typeof wasResolve === 'function') {
-          try { wasResolve(confirmed === true); } catch (e) {}
+          // Se confirmou E tem seleção de schedule, passa o objeto
+          // pra o caller setar nos data-attrs do botão (UI nova).
+          // Senão, passa true (fluxo legado).
+          var payload;
+          if (confirmed === true) {
+            if (modalSchedSel && modalSchedSel.horario) {
+              payload = {
+                confirmed: true,
+                horario: modalSchedSel.horario,
+                data: modalSchedSel.data,
+                dataLabel: modalSchedSel.dataLabel,
+                slotId: modalSchedSel.slotId,
+              };
+            } else {
+              payload = true;
+            }
+          } else {
+            payload = false;
+          }
+          try { wasResolve(payload); } catch (e) {}
         }
       }
 
@@ -3911,6 +4101,15 @@ if (groupForm) {
           // Usuário fechou a modal sem continuar OU modal já estava
           // aberta pra outra experiência — não damos sequência.
           return;
+        }
+        // Se modal retornou objeto com schedule, propaga pro btn pra
+        // que readActiveSchedule pegue data + horario + slot_id do
+        // checkout. true (sem objeto) = fluxo legado sem seleção.
+        if (proceed && typeof proceed === 'object') {
+          if (proceed.horario) btn.dataset.horario = proceed.horario;
+          if (proceed.data) btn.dataset.data = proceed.data;
+          if (proceed.dataLabel) btn.dataset.dataLabel = proceed.dataLabel;
+          if (proceed.slotId) btn.dataset.slotId = proceed.slotId;
         }
         // Chegou aqui = usuário clicou "Continuar para pagamento".
       }
