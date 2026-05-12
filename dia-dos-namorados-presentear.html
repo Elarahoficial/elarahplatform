@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Gift Card Especial Dia dos Namorados — Elarah. Uma experiência a dois, escolhida juntos.">
+  <title>Gift Card · Especial Dia dos Namorados — Elarah</title>
+  <meta property="og:title" content="Gift Card Dia dos Namorados — Elarah">
+  <meta property="og:description" content="Cartão-presente romântico para vocês escolherem juntos.">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="presentear.css">
+  <link rel="stylesheet" href="dia-dos-namorados.css?v=4">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    /* Página dedicada de Gift Card · Dia dos Namorados */
+    .ddngift-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 100px 24px 80px;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(201, 134, 149, 0.28), transparent 60%),
+        radial-gradient(ellipse 60% 80% at 90% 110%, rgba(107, 31, 46, 0.22), transparent 60%),
+        linear-gradient(180deg, #fef1ed 0%, var(--ddn-bg) 100%);
+    }
+    .ddngift-hero__inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .ddngift-hero__kicker {
+      display:inline-block;font-size:.76rem;letter-spacing:2.4px;text-transform:uppercase;
+      color:var(--ddn-wine);font-weight:700;margin-bottom:18px;
+      padding:6px 16px;background:rgba(255,255,255,0.75);
+      border:1px solid var(--ddn-rose-soft);border-radius:999px;
+    }
+    .ddngift-hero__title {
+      font-family:'DM Serif Display',serif;
+      font-size: clamp(2rem, 4.5vw, 3.2rem);
+      color: var(--ddn-ink);
+      margin: 0 0 18px;
+      font-weight: 400;
+      line-height: 1.08;
+    }
+    .ddngift-hero__title em { color: var(--ddn-wine); font-style: italic; }
+    .ddngift-hero__sub {
+      font-size: 1.05rem; color: var(--ddn-ink-soft);
+      max-width: 520px; margin: 0 0 28px; line-height: 1.6;
+    }
+    .ddngift-hero__cta {
+      display:inline-flex;align-items:center;gap:10px;
+      background: var(--ddn-wine);color:#fff;
+      padding: 16px 32px;border-radius: 999px;
+      font-weight: 700;font-size:1rem;text-decoration:none;
+      box-shadow: 0 14px 32px rgba(107, 31, 46, 0.32);
+      transition: transform .15s, background .15s;
+      border: none; cursor: pointer; font-family: inherit;
+    }
+    .ddngift-hero__cta:hover {
+      background: var(--ddn-wine-dark);
+      transform: translateY(-2px);
+    }
+    .ddngift-hero__back {
+      display:inline-flex;align-items:center;gap:6px;
+      color:var(--ddn-wine);font-size:.85rem;font-weight:600;
+      text-decoration:none;margin-bottom:24px;
+    }
+    .ddngift-hero__back:hover { color: var(--ddn-wine-dark); }
+    .ddngift-card-visual {
+      position: relative;
+      display: flex; justify-content: center;
+    }
+    .ddngift-card {
+      background: linear-gradient(135deg, #fff8f0 0%, var(--ddn-rose-soft) 100%);
+      border-radius: 24px;
+      padding: 36px 32px;
+      color: var(--ddn-ink);
+      transform: rotate(-3deg);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+      border: 2px solid rgba(176, 137, 69, 0.4);
+      max-width: 320px;
+      width: 100%;
+    }
+    .ddngift-card__brand {
+      font-size: .62rem;letter-spacing: 2px;text-transform: uppercase;
+      color: var(--ddn-wine);font-weight: 800;margin-bottom: 16px;
+    }
+    .ddngift-card__title {
+      font-family:'DM Serif Display',serif;
+      font-size: 1.6rem;line-height:1.15;
+      color: var(--ddn-ink);
+      margin: 0 0 18px;
+    }
+    .ddngift-card__title em { color: var(--ddn-wine); font-style: italic; }
+    .ddngift-card__value {
+      font-family:'DM Serif Display',serif;
+      font-size: 2.4rem;font-weight: 400;
+      color: var(--ddn-wine);
+      margin-bottom: 8px;
+    }
+    .ddngift-card__note {
+      font-size: .8rem;color: var(--ddn-ink-soft);font-style: italic;
+    }
+
+    /* Storytelling */
+    .ddngift-story {
+      padding: 80px 24px;
+      max-width: 920px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .ddngift-story__kicker {
+      display:inline-block;font-size:.72rem;letter-spacing:2.4px;text-transform:uppercase;
+      color:var(--ddn-gold);font-weight:700;margin-bottom:16px;
+    }
+    .ddngift-story__title {
+      font-family:'DM Serif Display',serif;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      color: var(--ddn-ink);
+      margin: 0 0 28px;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+    .ddngift-story__title em { color: var(--ddn-wine); font-style: italic; }
+    .ddngift-story__grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      margin-top: 36px;
+    }
+    .ddngift-pillar {
+      padding: 28px 22px;
+      background: #fff;
+      border: 1px solid var(--ddn-line);
+      border-radius: 18px;
+      text-align: center;
+    }
+    .ddngift-pillar__icon {
+      width: 52px; height: 52px;
+      background: var(--ddn-rose-soft);
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ddn-wine);
+    }
+    .ddngift-pillar__icon svg { width: 28px; height: 28px; }
+    .ddngift-pillar__title {
+      font-family:'DM Serif Display',serif;font-size: 1.15rem;
+      color: var(--ddn-ink);margin: 0 0 6px;font-weight: 400;
+    }
+    .ddngift-pillar__text {
+      color: var(--ddn-ink-soft);font-size: .88rem;line-height: 1.55;margin: 0;
+    }
+
+    /* Valores sugeridos */
+    .ddngift-valores {
+      padding: 60px 24px;
+      max-width: 1080px;
+      margin: 0 auto;
+      background: var(--ddn-bg-warm);
+      border-radius: 28px;
+    }
+    .ddngift-valores__head {
+      text-align: center; margin-bottom: 32px;
+    }
+    .ddngift-valores__title {
+      font-family:'DM Serif Display',serif;
+      font-size: clamp(1.5rem, 2.6vw, 2rem);
+      color: var(--ddn-ink);
+      margin: 0 0 10px;
+      font-weight: 400;
+    }
+    .ddngift-valores__sub {
+      color: var(--ddn-ink-soft); font-size: .95rem;
+    }
+    .ddngift-valores__grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .ddngift-valor-chip {
+      background: #fff;
+      border: 1.5px solid var(--ddn-line);
+      padding: 22px 16px;
+      border-radius: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+    }
+    .ddngift-valor-chip:hover {
+      border-color: var(--ddn-wine);
+      transform: translateY(-2px);
+    }
+    .ddngift-valor-chip--featured {
+      background: var(--ddn-wine);
+      border-color: var(--ddn-wine);
+      color: #fff;
+      position: relative;
+    }
+    .ddngift-valor-chip--featured::before {
+      content: "Mais escolhido";
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      background: var(--ddn-gold); color: var(--ddn-ink);
+      font-size: .62rem; letter-spacing: 1.2px; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 999px; font-weight: 700;
+    }
+    .ddngift-valor-chip__valor {
+      font-family:'DM Serif Display',serif;
+      font-size: 1.6rem; font-weight: 400;
+      color: var(--ddn-wine);
+    }
+    .ddngift-valor-chip--featured .ddngift-valor-chip__valor { color: var(--ddn-gold-soft); }
+    .ddngift-valor-chip__label {
+      font-size: .72rem;color: var(--ddn-ink-soft);
+      margin-top: 4px;
+    }
+    .ddngift-valor-chip--featured .ddngift-valor-chip__label { color: rgba(255,255,255,0.85); }
+    .ddngift-valores__cta-wrap { text-align: center; }
+
+    /* CTA Final */
+    .ddngift-cta-final {
+      padding: 80px 24px 100px;
+      text-align: center;
+      background:
+        radial-gradient(ellipse 60% 80% at 50% 50%, rgba(201, 134, 149, 0.22), transparent 60%),
+        var(--ddn-bg);
+    }
+    .ddngift-cta-final__title {
+      font-family:'DM Serif Display',serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      color: var(--ddn-ink);
+      margin: 0 0 16px;
+      font-weight: 400;
+      line-height: 1.15;
+    }
+    .ddngift-cta-final__title em { color: var(--ddn-wine); font-style: italic; }
+    .ddngift-cta-final__sub {
+      color: var(--ddn-ink-soft);
+      font-size: 1rem;
+      max-width: 540px; margin: 0 auto 28px; line-height: 1.6;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .ddngift-hero__inner { grid-template-columns: 1fr; gap: 32px; }
+      .ddngift-hero { padding: 72px 22px 56px; }
+      .ddngift-card { transform: rotate(-2deg); max-width: 280px; }
+      .ddngift-story__grid { grid-template-columns: 1fr; gap: 16px; }
+      .ddngift-valores__grid { grid-template-columns: repeat(2, 1fr); }
+      .ddngift-valores { padding: 48px 22px; border-radius: 18px; }
+    }
+  </style>
+</head>
+<body class="ddn-body">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+      <nav class="header__nav">
+        <a href="dia-dos-namorados.html" class="header__nav-link header__nav-link--ddn">Dia dos Namorados</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+      </nav>
+      <div class="header__actions">
+        <button class="header__login-btn" aria-label="Entrar" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Entrar
+        </button>
+      </div>
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="ddngift-hero">
+    <div class="ddngift-hero__inner">
+      <div>
+        <a href="dia-dos-namorados.html" class="ddngift-hero__back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar para a campanha
+        </a>
+        <span class="ddngift-hero__kicker">Gift Card · Dia dos Namorados</span>
+        <h1 class="ddngift-hero__title">
+          Não sabe ainda o que vão viver?<br>
+          <em>Deixem essa escolha pra vocês dois.</em>
+        </h1>
+        <p class="ddngift-hero__sub">
+          Um cartão-presente que vale qualquer experiência Elarah —
+          gastronomia, pintura, cerâmica, vela aromática. Vocês decidem
+          juntos, vivem juntos. Sem prazo de validade, sem pressão.
+        </p>
+        <button type="button" class="ddngift-hero__cta" data-open-giftcard-form>
+          Presentear nosso amor
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </div>
+      <div class="ddngift-card-visual">
+        <div class="ddngift-card">
+          <div class="ddngift-card__brand">Elarah · Especial Dia dos Namorados</div>
+          <div class="ddngift-card__title">Pra a gente<br><em>viver junto.</em></div>
+          <div class="ddngift-card__value" id="ddngift-card-value">R$ 500</div>
+          <div class="ddngift-card__note">Vocês escolhem a experiência.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STORYTELLING / PILARES -->
+  <section class="ddngift-story">
+    <span class="ddngift-story__kicker">Por que um gift card a dois</span>
+    <h2 class="ddngift-story__title">
+      Em vez de adivinhar o presente,<br>
+      <em>vocês escolhem juntos</em> o momento.
+    </h2>
+    <div class="ddngift-story__grid">
+      <div class="ddngift-pillar">
+        <div class="ddngift-pillar__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </div>
+        <h3 class="ddngift-pillar__title">Sem riscos</h3>
+        <p class="ddngift-pillar__text">A pessoa escolhe a vivência que tem mais a ver com vocês — pintura, drinks, gastronomia.</p>
+      </div>
+      <div class="ddngift-pillar">
+        <div class="ddngift-pillar__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <h3 class="ddngift-pillar__title">Sem prazo</h3>
+        <p class="ddngift-pillar__text">Validade flexível — usem no Dia dos Namorados ou guardem para um aniversário especial.</p>
+      </div>
+      <div class="ddngift-pillar">
+        <div class="ddngift-pillar__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+        </div>
+        <h3 class="ddngift-pillar__title">Entrega digital</h3>
+        <p class="ddngift-pillar__text">Compra agora, recebe imediatamente. Personalize a mensagem e surpreenda no momento certo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALORES SUGERIDOS -->
+  <section class="ddngift-valores">
+    <div class="ddngift-valores__head">
+      <h2 class="ddngift-valores__title">Escolha um valor</h2>
+      <p class="ddngift-valores__sub">Sugestões pra vocês viverem algo proporcional ao tamanho do dia.</p>
+    </div>
+    <div class="ddngift-valores__grid">
+      <button type="button" class="ddngift-valor-chip" data-valor="250">
+        <div class="ddngift-valor-chip__valor">R$ 250</div>
+        <div class="ddngift-valor-chip__label">Um momento a dois</div>
+      </button>
+      <button type="button" class="ddngift-valor-chip ddngift-valor-chip--featured" data-valor="500">
+        <div class="ddngift-valor-chip__valor">R$ 500</div>
+        <div class="ddngift-valor-chip__label">Experiência completa</div>
+      </button>
+      <button type="button" class="ddngift-valor-chip" data-valor="750">
+        <div class="ddngift-valor-chip__valor">R$ 750</div>
+        <div class="ddngift-valor-chip__label">Premium a dois</div>
+      </button>
+      <button type="button" class="ddngift-valor-chip" data-valor="1000">
+        <div class="ddngift-valor-chip__valor">R$ 1.000</div>
+        <div class="ddngift-valor-chip__label">Inesquecível</div>
+      </button>
+    </div>
+    <div class="ddngift-valores__cta-wrap">
+      <button type="button" class="ddngift-hero__cta" data-open-giftcard-form>
+        Presentear nosso amor
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="ddngift-cta-final">
+    <h2 class="ddngift-cta-final__title">
+      Esse ano,<br>
+      <em>presenteia o tempo juntos.</em>
+    </h2>
+    <p class="ddngift-cta-final__sub">
+      Compra agora, escolham juntos, vivam quando fizer sentido.
+      Sem pressão, sem pressa — só o momento de vocês.
+    </p>
+    <button type="button" class="ddngift-hero__cta" data-open-giftcard-form>
+      Presentear nosso amor
+    </button>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo"><img src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
+        <p class="footer__tagline">Offline is a feeling.</p>
+      </div>
+    </div>
+    <div class="footer__bottom"><p>&copy; 2026 Elarah. Todos os direitos reservados.</p></div>
+  </footer>
+
+  <!-- Hidden grid pra evitar erro do presentear.js -->
+  <div id="gift-grid" style="display:none;"></div>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=23"></script>
+<script src="presentear.js?v=13"></script>
+<script>
+  // Sincroniza valor sugerido com card preview
+  document.querySelectorAll('.ddngift-valor-chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('.ddngift-valor-chip').forEach(function (c) {
+        c.classList.remove('ddngift-valor-chip--featured');
+      });
+      chip.classList.add('ddngift-valor-chip--featured');
+      var valor = chip.dataset.valor;
+      var preview = document.getElementById('ddngift-card-value');
+      if (preview && valor) {
+        preview.textContent = 'R$ ' + Number(valor).toLocaleString('pt-BR');
+      }
+    });
+  });
+</script>
+</body>
+</html>
