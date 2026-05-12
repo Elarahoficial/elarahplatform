@@ -161,6 +161,14 @@
         <span>By Elarah</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="campanhas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/>
+          <line x1="10" y1="12" x2="14" y2="12"/>
+        </svg>
+        <span>Campanhas</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="giftcards">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 12 20 22 4 22 4 12"/>
@@ -1965,6 +1973,54 @@
     </div>
 
     <!-- =========================================================
+         CAMPANHAS SAZONAIS — Dia dos Namorados, etc.
+         Gestão de overrides (vitrine), upcoming (em breve)
+         e visualização de waitlist (leads).
+         Estrutura genérica por campaign_slug — escalável pra
+         próximas campanhas sazonais.
+         ========================================================= -->
+    <div class="admin__panel" id="panel-campanhas">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Campanhas sazonais</h1>
+        <p class="admin__page-subtitle">Curadoria de experiências, gestão de "em breve" e lista de espera por campanha.</p>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;flex-wrap:wrap;">
+        <label style="font-size:.78rem;text-transform:uppercase;color:#666;font-weight:700;letter-spacing:.5px;">Campanha:</label>
+        <select id="campanhas-select" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit;font-size:.92rem;background:#fff;">
+          <option value="dia-dos-namorados">Dia dos Namorados</option>
+        </select>
+        <span id="campanhas-msg" style="font-size:.85rem;color:#1a8a4a;margin-left:8px;"></span>
+      </div>
+
+      <!-- ===== Vitrine curada ===== -->
+      <section style="margin-bottom:36px;">
+        <h2 style="font-size:1.15rem;color:#1a1a1a;margin:0 0 6px;font-weight:700;">Vitrine curada</h2>
+        <p style="color:#666;font-size:.88rem;margin:0 0 14px;">Marque as experiências reais que entram na landing. Título customizado aparece SÓ na campanha — não muda o nome global.</p>
+        <div id="campanhas-overrides-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </section>
+
+      <!-- ===== Em breve / Lista de espera ===== -->
+      <section style="margin-bottom:36px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="font-size:1.15rem;color:#1a1a1a;margin:0 0 6px;font-weight:700;">Em breve (cards aspiracionais)</h2>
+            <p style="color:#666;font-size:.88rem;margin:0;">Experiências sem id real ainda. Visíveis na landing com botão "Avise-me".</p>
+          </div>
+          <button type="button" id="campanhas-upcoming-add" style="padding:10px 18px;background:#fff;border:1px dashed #f0a05e;color:#a4663b;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Adicionar "em breve"</button>
+        </div>
+        <div id="campanhas-upcoming-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </section>
+
+      <!-- ===== Lista de leads (waitlist) ===== -->
+      <section>
+        <h2 style="font-size:1.15rem;color:#1a1a1a;margin:0 0 6px;font-weight:700;">Lista de espera (leads captados)</h2>
+        <p style="color:#666;font-size:.88rem;margin:0 0 14px;">Pessoas que clicaram "Avise-me" — exporte ou contate manualmente.</p>
+        <div id="campanhas-waitlist-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </section>
+    </div>
+
+    <!-- =========================================================
          EXPERIÊNCIAS FOCO — divulgação semanal
          ========================================================= -->
     <div class="admin__panel" id="panel-experiencias-foco">
@@ -3191,7 +3247,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=135"></script>
+<script src="admin.js?v=136"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
