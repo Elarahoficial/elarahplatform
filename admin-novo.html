@@ -121,6 +121,16 @@
         <span>Prospecção</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="b2b-prospects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"/>
+          <path d="M5 21V7l8-4v18"/>
+          <path d="M19 21V11l-6-4"/>
+          <path d="M9 9h.01"/><path d="M9 12h.01"/><path d="M9 15h.01"/><path d="M9 18h.01"/>
+        </svg>
+        <span>Prospecção B2B</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="purchases-pending">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
@@ -133,6 +143,15 @@
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
         <span>Experiências</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="experiencias-foco">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        <span>Experiências foco</span>
       </button>
 
       <button class="admin__nav-item" data-panel="byelarah">
@@ -609,9 +628,10 @@
           <p class="admin__page-subtitle">Reservas finalizadas com controle financeiro e fornecedor</p>
         </div>
         <div class="admin__analytics-controls">
-          <select id="bookings-filter-exp" class="admin__analytics-select">
-            <option value="">Todas as experiências</option>
-          </select>
+          <input type="text" id="bookings-filter-exp" class="admin__analytics-select"
+                 list="bookings-filter-exp-list" placeholder="Buscar experiência…"
+                 autocomplete="off" aria-label="Filtrar por experiência">
+          <datalist id="bookings-filter-exp-list"></datalist>
           <select id="bookings-filter-fornecedor" class="admin__analytics-select">
             <option value="">Todos os fornecedores</option>
           </select>
@@ -993,6 +1013,269 @@
         <div style="display:flex;justify-content:flex-end;margin-top:18px;">
           <button type="button" id="prospect-templates-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         PROSPECÇÃO B2B PANEL — CRM de empresas (RH/People/Cultura)
+         Espelha a estrutura de prospects (parceiros) com campos
+         específicos B2B: tipo_empresa, funcionarios_faixa, contato_nome,
+         potencial, proxima_acao. Cor laranja Elarah pra diferenciar
+         visualmente do verde de parceiros.
+         ========================================================= -->
+    <div class="admin__panel" id="panel-b2b-prospects">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Prospecção B2B</h1>
+        <p class="admin__page-subtitle">CRM de empresas — experiências corporativas, gift cards, benefícios pra colaboradores</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total empresas</div>
+          <div class="admin__stat-value" id="stat-b2b-total">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Ações pra hoje</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-b2b-acoes-hoje">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Reuniões marcadas</div>
+          <div class="admin__stat-value" id="stat-b2b-reunioes">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Clientes ativos</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-b2b-clientes">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Taxa resposta</div>
+          <div class="admin__stat-value" id="stat-b2b-resposta">—</div>
+        </div>
+      </div>
+
+      <!-- Filtros principais -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+        <input type="search" id="b2b-filter-search" placeholder="Buscar por empresa, contato, segmento..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+        <select id="b2b-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os status</option>
+          <option value="nao_contatado">Não contatado</option>
+          <option value="mensagem_enviada">Mensagem enviada</option>
+          <option value="respondeu">Respondeu</option>
+          <option value="reuniao_marcada">Reunião marcada</option>
+          <option value="proposta_enviada">Proposta enviada</option>
+          <option value="negociacao">Negociação</option>
+          <option value="fechado">Fechado (ação pontual)</option>
+          <option value="cliente_ativo">Cliente ativo</option>
+          <option value="pausado">Pausado</option>
+          <option value="recusou">Recusou</option>
+        </select>
+        <select id="b2b-filter-tipo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os tipos</option>
+          <option value="tech">Tech</option>
+          <option value="agencia">Agência</option>
+          <option value="coworking">Coworking</option>
+          <option value="construtora">Construtora</option>
+          <option value="startup">Startup</option>
+          <option value="escritorio">Escritório</option>
+          <option value="imobiliaria">Imobiliária</option>
+          <option value="arquitetura_design">Arquitetura/Design</option>
+          <option value="escritorio_juridico">Escritório jurídico</option>
+          <option value="clinica">Clínica</option>
+          <option value="industria_leve">Indústria leve</option>
+          <option value="outro">Outro</option>
+        </select>
+        <select id="b2b-filter-funcionarios" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todas as faixas</option>
+          <option value="1_49">1–49 funcionários</option>
+          <option value="50_100">50–100 ⭐</option>
+          <option value="101_250">101–250 ⭐</option>
+          <option value="251_500">251–500 ⭐</option>
+          <option value="500_plus">500+</option>
+          <option value="sweet_spot">⭐ Sweet spot (50–500)</option>
+        </select>
+        <select id="b2b-filter-potencial" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os potenciais</option>
+          <option value="alto">🔥 Alto</option>
+          <option value="medio">Médio</option>
+          <option value="baixo">Baixo</option>
+        </select>
+        <input type="text" id="b2b-filter-cidade" placeholder="Cidade" list="b2b-cidades-list" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;width:140px;">
+        <datalist id="b2b-cidades-list"></datalist>
+      </div>
+
+      <!-- Visões rápidas: filtros pré-definidos que viram a tela operacional -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+        <span style="font-size:.8rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Visões rápidas:</span>
+        <button type="button" class="b2b-view-chip" data-view="acoes-hoje" style="padding:6px 12px;border:1px solid #f0a05e;background:#fff8ef;color:#a4663b;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">📅 Ações pra hoje</button>
+        <button type="button" class="b2b-view-chip" data-view="atrasados" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">⚠️ Follow-up atrasado</button>
+        <button type="button" class="b2b-view-chip" data-view="quentes" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">🔥 Leads quentes</button>
+        <button type="button" class="b2b-view-chip" data-view="parados" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">🥶 Parados &gt; 14d</button>
+        <button type="button" class="b2b-view-chip" data-view="todos" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Todos</button>
+      </div>
+
+      <!-- Ações principais -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-b2b-new" class="admin__btn admin__btn--primary" style="background:#f0a05e;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">+ Nova empresa</button>
+        <button type="button" id="btn-b2b-import" class="admin__btn" style="background:#fff;border:1px solid #f0a05e;color:#a4663b;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Importar CSV</button>
+        <button type="button" id="btn-b2b-templates" class="admin__btn" style="background:#fff;border:1px solid #888;color:#444;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Templates B2B</button>
+        <button type="button" id="btn-b2b-export" class="admin__btn" style="background:transparent;border:1px dashed #aaa;color:#666;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;cursor:pointer;">Exportar CSV</button>
+        <input type="file" id="b2b-csv-input" accept=".csv" style="display:none;">
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Empresas-alvo</span>
+          <span class="admin__table-count" id="b2b-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Tipo</th>
+              <th>Funcionários</th>
+              <th>Contato</th>
+              <th>Canais</th>
+              <th>Status</th>
+              <th>Potencial</th>
+              <th>Sinais</th>
+              <th>Próxima ação</th>
+              <th style="width:240px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="b2b-body">
+            <tr><td colspan="10" class="admin__table-empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== B2B PROSPECT EDIT MODAL ===== -->
+    <div id="b2b-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;" id="b2b-edit-title">Nova empresa</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="b2b-edit-subtitle">Cadastre uma empresa-alvo pra prospecção comercial.</p>
+        <div id="b2b-edit-dup-warning" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fff8ef;border:1px solid #f0c97a;font-size:.85rem;color:#7a4f00;"></div>
+        <form id="b2b-edit-form" onsubmit="return false;">
+          <input type="hidden" id="b2b-edit-id">
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Empresa</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome da empresa *<input type="text" id="b2b-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Tipo<select id="b2b-edit-tipo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="tech">Tech</option><option value="agencia">Agência</option><option value="coworking">Coworking</option><option value="construtora">Construtora</option><option value="startup">Startup</option><option value="escritorio">Escritório</option><option value="imobiliaria">Imobiliária</option><option value="arquitetura_design">Arquitetura/Design</option><option value="escritorio_juridico">Escritório jurídico</option><option value="clinica">Clínica</option><option value="industria_leve">Indústria leve</option><option value="outro">Outro</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Funcionários<select id="b2b-edit-funcionarios" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="1_49">1–49</option><option value="50_100">50–100 ⭐ sweet spot</option><option value="101_250">101–250 ⭐ sweet spot</option><option value="251_500">251–500 ⭐ sweet spot</option><option value="500_plus">500+</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Segmento<input type="text" id="b2b-edit-segmento" placeholder="SaaS B2B, construção residencial..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Cidade<input type="text" id="b2b-edit-cidade" value="São Paulo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Site<input type="url" id="b2b-edit-site" placeholder="https://..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">LinkedIn empresa<input type="url" id="b2b-edit-linkedin-empresa" placeholder="https://linkedin.com/company/..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="b2b-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Contato principal <span style="color:#888;font-weight:400;font-size:.78rem;">(RH / People / decisor)</span></h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;">Nome<input type="text" id="b2b-edit-contato-nome" placeholder="Maria Silva" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Cargo<input type="text" id="b2b-edit-contato-cargo" placeholder="Head of People" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">E-mail<input type="email" id="b2b-edit-contato-email" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="b2b-edit-contato-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">LinkedIn pessoal<input type="url" id="b2b-edit-contato-linkedin" placeholder="https://linkedin.com/in/..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Pipeline</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;">Status comercial<select id="b2b-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="proposta_enviada">Proposta enviada</option><option value="negociacao">Negociação</option><option value="fechado">Fechado (ação pontual)</option><option value="cliente_ativo">Cliente ativo</option><option value="pausado">Pausado</option><option value="recusou">Recusou</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Potencial<select id="b2b-edit-potencial" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="baixo">Baixo</option><option value="medio" selected>Médio</option><option value="alto">🔥 Alto</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Próxima ação<input type="text" id="b2b-edit-proxima-acao" placeholder="Ligar terça, enviar proposta..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Quando<input type="datetime-local" id="b2b-edit-proxima-acao-at" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Observações<textarea id="b2b-edit-observacoes" rows="3" placeholder="Dor, contexto, histórico..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          </div>
+
+          <!-- Timeline de interações (só edit mode) -->
+          <div id="b2b-edit-timeline-wrap" style="display:none;margin-top:16px;border-top:1px solid #eee;padding-top:16px;">
+            <h3 style="margin:0 0 10px;font-size:.95rem;color:#444;">Timeline de interações</h3>
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <select id="b2b-int-tipo" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+                <option value="mensagem_enviada">📤 Mensagem enviada</option>
+                <option value="respondeu">💬 Respondeu</option>
+                <option value="reuniao_marcada">📅 Reunião marcada</option>
+                <option value="reuniao_realizada">✅ Reunião realizada</option>
+                <option value="proposta_enviada">📋 Proposta enviada</option>
+                <option value="negociacao">💼 Negociação</option>
+                <option value="follow_up">🔁 Follow-up</option>
+                <option value="observacao">📝 Observação</option>
+                <option value="fechado">🎉 Fechado</option>
+                <option value="cliente_ativo">⭐ Cliente ativo</option>
+                <option value="pausado">⏸️ Pausado</option>
+                <option value="recusou">❌ Recusou</option>
+              </select>
+              <input type="text" id="b2b-int-desc" placeholder="Descrição (opcional)" style="flex:1;min-width:180px;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">
+              <button type="button" id="b2b-int-add" style="padding:8px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Registrar</button>
+            </div>
+            <ul id="b2b-edit-timeline" style="list-style:none;padding:0;margin:0;max-height:200px;overflow-y:auto;font-size:.85rem;"></ul>
+          </div>
+
+          <div id="b2b-edit-msg" style="margin-top:12px;font-size:.85rem;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" id="b2b-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="b2b-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="b2b-edit-save" style="padding:8px 16px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== B2B TEMPLATES MODAL ===== -->
+    <div id="b2b-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;">Templates B2B</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;">Mensagens reutilizáveis. Variáveis disponíveis: <code>{{empresa}}</code>, <code>{{contato}}</code>, <code>{{cargo}}</code>, <code>{{segmento}}</code>, <code>{{cidade}}</code>.</p>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+          <button type="button" id="b2b-template-new" style="padding:8px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+          <select id="b2b-template-filter-categoria" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+            <option value="">Todas as categorias</option>
+            <option value="primeiro_contato">Primeiro contato</option>
+            <option value="follow_up">Follow-up</option>
+            <option value="pos_reuniao">Pós reunião</option>
+            <option value="convite_experiencia">Convite experiência</option>
+            <option value="data_comemorativa">Data comemorativa</option>
+            <option value="beneficio_corporativo">Benefício corporativo</option>
+            <option value="acao_equipe">Ação pra equipe</option>
+            <option value="gift_card_corporativo">Gift card corporativo</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <ul id="b2b-templates-list" style="list-style:none;padding:0;margin:0;"></ul>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+          <button type="button" id="b2b-templates-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== B2B TEMPLATE EDIT MODAL ===== -->
+    <div id="b2b-template-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 14px;font-size:1.15rem;" id="b2b-template-edit-title">Novo template</h2>
+        <form id="b2b-template-edit-form" onsubmit="return false;">
+          <input type="hidden" id="b2b-template-edit-id">
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Nome *<input type="text" id="b2b-template-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Categoria<select id="b2b-template-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="primeiro_contato">Primeiro contato</option><option value="follow_up">Follow-up</option><option value="pos_reuniao">Pós reunião</option><option value="convite_experiencia">Convite experiência</option><option value="data_comemorativa">Data comemorativa</option><option value="beneficio_corporativo">Benefício corporativo</option><option value="acao_equipe">Ação pra equipe</option><option value="gift_card_corporativo">Gift card corporativo</option><option value="outro">Outro</option></select></label>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Conteúdo *<textarea id="b2b-template-edit-conteudo" rows="9" required placeholder="Olá {{contato}}, ..." style="margin-top:4px;width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          <label style="font-size:.85rem;display:flex;align-items:center;gap:8px;margin-bottom:14px;"><input type="checkbox" id="b2b-template-edit-default"> Marcar como padrão (abre por default em novos prospects)</label>
+          <div id="b2b-template-edit-msg" style="font-size:.85rem;margin-bottom:10px;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" id="b2b-template-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="b2b-template-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="b2b-template-edit-save" style="padding:8px 16px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -1666,6 +1949,72 @@
       </div>
     </div>
 
+    <!-- =========================================================
+         EXPERIÊNCIAS FOCO — divulgação semanal
+         O que priorizar pra divulgar essa semana. 3 grupos:
+           1. Foco da semana: experiências acontecendo em ~2 semanas
+              (10-16 dias). Sweet spot: dá tempo de comprar + gera
+              urgência. Recortes definidos no admin.js.
+           2. By Elarah: divulgação contínua, sempre na régua semanal.
+           3. Vagas críticas: <30% vagas + evento próximo (esgotando).
+         ========================================================= -->
+    <div class="admin__panel" id="panel-experiencias-foco">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Experiências foco</h1>
+        <p class="admin__page-subtitle">O que divulgar essa semana. Foco em experiências que acontecem em ~2 semanas, By Elarah (sempre) e vagas críticas.</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Semana de</div>
+          <div class="admin__stat-value" id="stat-foco-semana" style="font-size:1.05rem;">—</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Foco da semana</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-foco-week-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">By Elarah ativas</div>
+          <div class="admin__stat-value" id="stat-foco-byelarah-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Vagas críticas</div>
+          <div class="admin__stat-value" id="stat-foco-critical-count">0</div>
+        </div>
+      </div>
+
+      <!-- Mensagem-template editável: aparece no botão "Copiar mensagem" -->
+      <div style="background:#fffaf2;border:1px solid #f0d9aa;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;">
+          <strong style="font-size:.88rem;color:#1a1a1a;">Template de mensagem</strong>
+          <button type="button" id="foco-tpl-reset" style="padding:4px 10px;border:1px solid #ddd;background:#fff;color:#666;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Restaurar padrão</button>
+        </div>
+        <p style="margin:0 0 8px;font-size:.78rem;color:#888;">Variáveis: <code>{{nome}}</code>, <code>{{data}}</code>, <code>{{horario}}</code>, <code>{{bairro}}</code>, <code>{{vagas}}</code>, <code>{{link}}</code>, <code>{{preco}}</code>. Salvo só no seu navegador.</p>
+        <textarea id="foco-tpl" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+
+      <!-- Grupo 1: FOCO DA SEMANA -->
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🎯 Foco da semana</h2>
+        <p id="foco-week-desc" style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências que acontecem entre <strong>10 e 16 dias</strong> a partir de hoje. Janela ideal pra começar a divulgar.</p>
+        <div id="foco-week-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <!-- Grupo 2: BY ELARAH -->
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">✨ By Elarah — divulgação contínua</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências exclusivas Elarah Originals. Mantém na régua semanal.</p>
+        <div id="foco-byelarah-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <!-- Grupo 3: VAGAS CRÍTICAS -->
+      <section style="margin-bottom:14px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🔥 Vagas críticas</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências com menos de 30% das vagas restantes e evento no próximo mês. Use urgência (“últimas vagas”).</p>
+        <div id="foco-critical-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+    </div>
+
     <!-- ===== GIFT CARDS PANEL ===== -->
     <div class="admin__panel" id="panel-giftcards">
       <div class="admin__header">
@@ -2281,6 +2630,20 @@
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">"Compra direta" abre o checkout normal; "Lista de espera" abre o formulário de lead que envia pro WhatsApp.</p>
         </div>
 
+        <!-- ===== RECORRÊNCIA SEMANAL ===== -->
+        <div class="admin__form-field admin__form-field--full" id="exp-recurrence-section" style="display:none;border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
+          <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block;">Recorrência semanal</label>
+          <p class="admin__form-hint" style="margin:0 0 14px;font-size:12px;color:#666;">Cadastre uma regra "toda quinta às 19h, 12 vagas" e o sistema gera as próximas 8 semanas automaticamente. Você não precisa cadastrar cada data manualmente.</p>
+          <div id="exp-recurrence-rules-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;"></div>
+          <button type="button" id="exp-recurrence-add-btn" style="padding:10px 16px;background:#fff;border:1px dashed #f0a05e;color:#a4663b;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Adicionar regra de recorrência</button>
+          <div id="exp-recurrence-slots-wrap" style="margin-top:16px;display:none;">
+            <h4 style="margin:0 0 6px;font-size:.92rem;color:#1a1a1a;font-weight:700;">📅 Próximas datas geradas</h4>
+            <p class="admin__form-hint" style="margin:0 0 10px;font-size:12px;color:#888;">Cada linha vem de uma regra ativa. Cancelar uma data específica não recria mesmo após nova materialização.</p>
+            <div id="exp-recurrence-slots-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+          <div id="exp-recurrence-msg" style="margin-top:8px;font-size:.85rem;min-height:1em;"></div>
+        </div>
+
         <!-- ===== FORNECEDOR / FINANCEIRO ===== -->
         <div class="admin__form-field admin__form-field--full" style="border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
           <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;display:block;">Fornecedor & Financeiro</label>
@@ -2816,7 +3179,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=116"></script>
+<script src="admin.js?v=131"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

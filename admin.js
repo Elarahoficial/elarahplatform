@@ -397,8 +397,10 @@
       case 'purchases':   await renderBookings(); break;
       case 'fornecedores': await renderFornecedores(); break;
       case 'prospects':   await renderProspects(); break;
+      case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
+      case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
@@ -2057,7 +2059,18 @@
       invalidateGiftCardsCache();
       renderBookings();
     });
-    if (filterExp) filterExp.addEventListener('change', () => renderBookings());
+    if (filterExp) {
+      // 'input' (não 'change') pra filtrar conforme o admin digita —
+      // sem precisar dar Tab/Enter pra aplicar. Cobre tanto digitação
+      // direta quanto seleção de uma opção do datalist (que dispara
+      // 'input' também). Debounce leve de 80ms pra evitar re-render
+      // a cada tecla em listas longas.
+      let _expFilterTimer = null;
+      filterExp.addEventListener('input', () => {
+        clearTimeout(_expFilterTimer);
+        _expFilterTimer = setTimeout(() => renderBookings(), 80);
+      });
+    }
     if (filterStatus) filterStatus.addEventListener('change', () => renderBookings());
     var filterFornInit = document.getElementById('bookings-filter-fornecedor');
     var filterSfInit = document.getElementById('bookings-filter-status-fornecedor');
@@ -2131,8 +2144,16 @@
     // todas as experiences (incluindo By Elarah originais sem
     // venda ainda) + byelarah_items (workshops/mentorias).
     // Deduplica por nome (case-insensitive) e ordena pt-BR.
+    //
+    // Renderiza em um <datalist> ligado ao <input list="...">. O input
+    // suporta busca por digitação parcial: ao filtrar, comparamos por
+    // substring case-insensitive (ver loop principal abaixo). Quando o
+    // admin escolhe uma opção do dropdown nativo, o input recebe o nome
+    // completo e o filtro vira exact match implícito.
     const filterExpEl = document.getElementById('bookings-filter-exp');
-    if (filterExpEl && filterExpEl.options.length <= 1) {
+    const filterExpListEl = document.getElementById('bookings-filter-exp-list');
+    // Só popula uma vez por load: se já tem filhos, presume populado.
+    if (filterExpListEl && filterExpListEl.children.length === 0) {
       const collected = new Map();   // lowercaseName → originalName
       const addName = (raw) => {
         const trimmed = String(raw || '').trim();
@@ -2158,8 +2179,7 @@
       sorted.forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
-        opt.textContent = name;
-        filterExpEl.appendChild(opt);
+        filterExpListEl.appendChild(opt);
       });
     }
 
@@ -2279,7 +2299,13 @@
       });
     }
 
-    const filterExp = filterExpEl ? filterExpEl.value : '';
+    // Filtro de experiência: agora é input com busca. Compara por
+    // substring case-insensitive — assim "pintura" filtra todas as
+    // Pinturas, "aperol" filtra qualquer experiência que mencione
+    // Aperol no nome, etc. Quando o admin escolhe uma opção exata
+    // do datalist, vira match completo (substring de si mesmo).
+    const filterExpRaw = filterExpEl ? String(filterExpEl.value || '').trim() : '';
+    const filterExp = filterExpRaw.toLowerCase();
     const filterStatusEl = document.getElementById('bookings-filter-status');
     const filterStatus = filterStatusEl ? filterStatusEl.value : '';
     const filterForn = filterFornEl ? filterFornEl.value : '';
@@ -2289,7 +2315,7 @@
     // Este painel só mostra bookings PAGAS
     const filtered = bookings.filter(b => {
       if (b.status !== 'pago') return false;
-      if (filterExp && b.experiencia_nome !== filterExp) return false;
+      if (filterExp && !String(b.experiencia_nome || '').toLowerCase().includes(filterExp)) return false;
       if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
       if (filterSf && (b.status_fornecedor || 'repasse_pendente') !== filterSf) return false;
       return true;
@@ -2523,9 +2549,22 @@
       const plural = nomes.length > 1;
       const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
       const lista = joinNames(nomes) || '(participante)';
+      // Local da experiência (endereço + bairro). Mesma fonte dos
+      // dados que aparecem no e-mail de confirmação e em Minhas
+      // compras: bookings.metadata.endereco + bookings.metadata.bairro.
+      // CRÍTICO pra fornecedores que atendem em múltiplos locais nas
+      // mesmas datas/horários — sem isso o fornecedor não sabe pra
+      // onde ir e pode aparecer no endereço errado.
+      const meta = (b && b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
+      const endereco = String(meta.endereco || '').trim();
+      const bairro = String(meta.bairro || '').trim();
+      const localFull = endereco && bairro
+        ? endereco + ' — ' + bairro
+        : (endereco || bairro || '');
+      const localLine = localFull ? '\n📍 *Local:* ' + localFull : '';
       const msg = 'Oi! Tudo bem? Passando para te avisar que você tem ' + aluno +
         ' para a experiência *' + expNome + '* no dia *' + data +
-        '* às *' + horario + '*: *' + lista + '*.\n\n' +
+        '* às *' + horario + '*: *' + lista + '*.' + localLine + '\n\n' +
         'O repasse será feito até 48h antes do evento.';
       return 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
     }
@@ -3693,6 +3732,15 @@
       if (cor2El) cor2El.value = cores.cor2;
 
       document.getElementById('exp-edit-id').value = editId;
+
+      // Carrega e renderiza as regras de recorrência semanal desta
+      // experiência (Fase 2 da feature). Seção fica visível só em
+      // modo edição — em "nova experiência" ela some porque precisa
+      // do experienceId pra cadastrar regras. Falha gracioso se a
+      // tabela ainda não existe no banco (Fase 1 não rodada).
+      _recurrenceLoadAndRender(editId).catch(function (e) {
+        console.warn('[Elarah Recurrence] load falhou (ok se SQL Fase 1 não rodou):', e && e.message);
+      });
     } else {
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
@@ -3730,6 +3778,11 @@
       if (hfcEl2) hfcEl2.checked = false;
       if (ctaEl2) ctaEl2.value = 'buy';
       document.getElementById('exp-edit-id').value = '';
+
+      // Esconde a seção de recorrência em "nova experiência" — só
+      // dá pra cadastrar regras depois que a experiência tem id.
+      var recSec = document.getElementById('exp-recurrence-section');
+      if (recSec) recSec.style.display = 'none';
     }
 
     modal.classList.add('open');
@@ -9700,13 +9753,15 @@
     //   - experiences.nome via _finExpById (caso o snapshot esteja
     //     vazio em vendas antigas)
     if (expFilter) {
+      // Substring match (consistente com o filtro de bookings novo,
+      // que também é case-insensitive contains). Antes era exact ===.
       const want = String(expFilter).trim().toLowerCase();
       rows = rows.filter(r => {
         const direct = (r.experience_name || '').trim().toLowerCase();
-        if (direct === want) return true;
+        if (direct.includes(want)) return true;
         if (r.experience_id && _finExpById && _finExpById.has(r.experience_id)) {
           const fromExp = (_finExpById.get(r.experience_id).nome || '').trim().toLowerCase();
-          if (fromExp === want) return true;
+          if (fromExp.includes(want)) return true;
         }
         return false;
       });
@@ -10987,6 +11042,1877 @@
     _conteudoLoadAndRender();
   }
 
+
+  // =================================================================
+  // ===== B2B PROSPECTS — CRM de empresas (RH/People/Cultura)
+  // -----------------------------------------------------------------
+  // Espelha a arquitetura do CRM de parceiros (renderProspects) mas
+  // voltada pra prospecção comercial em empresas. Tabelas:
+  //   b2b_prospects · b2b_prospect_interactions · b2b_prospect_templates
+  //
+  // Recursos chave:
+  //   - Visões rápidas (ações pra hoje, follow-up atrasado, quentes, parados)
+  //   - Sinais visuais por linha (badges) sem precisar abrir o lead
+  //   - Timeline de interações dentro do modal de edição
+  //   - Templates B2B com substituição de {{empresa}} {{contato}} {{cargo}}
+  //     {{segmento}} {{cidade}}
+  //   - Import/export CSV pra acelerar prospecção em massa
+  //   - Highlight visual pra sweet spot (50-500 funcionários)
+  // =================================================================
+
+  // ----- Helpers de label (id → texto legível pro UI) -----
+  const B2B_STATUS_LABEL = {
+    nao_contatado: 'Não contatado',
+    mensagem_enviada: 'Mensagem enviada',
+    respondeu: 'Respondeu',
+    reuniao_marcada: 'Reunião marcada',
+    proposta_enviada: 'Proposta enviada',
+    negociacao: 'Negociação',
+    fechado: 'Fechado (ação pontual)',
+    cliente_ativo: 'Cliente ativo',
+    pausado: 'Pausado',
+    recusou: 'Recusou',
+  };
+  const B2B_STATUS_COLOR = {
+    nao_contatado: { bg:'#f4f4f4', fg:'#666' },
+    mensagem_enviada: { bg:'#eef4fb', fg:'#3068a8' },
+    respondeu: { bg:'#e6f4ea', fg:'#1a8a4a' },
+    reuniao_marcada: { bg:'#fff8ef', fg:'#a4663b' },
+    proposta_enviada: { bg:'#fff3e0', fg:'#b07b00' },
+    negociacao: { bg:'#fdf2e9', fg:'#a04500' },
+    fechado: { bg:'#e8f5e9', fg:'#2e7d32' },
+    cliente_ativo: { bg:'#fff8ef', fg:'#d97706' },
+    pausado: { bg:'#f4f4f4', fg:'#888' },
+    recusou: { bg:'#fdecea', fg:'#9c2f22' },
+  };
+  const B2B_TIPO_LABEL = {
+    tech: 'Tech',
+    agencia: 'Agência',
+    coworking: 'Coworking',
+    construtora: 'Construtora',
+    startup: 'Startup',
+    escritorio: 'Escritório',
+    imobiliaria: 'Imobiliária',
+    arquitetura_design: 'Arquitetura/Design',
+    escritorio_juridico: 'Esc. jurídico',
+    clinica: 'Clínica',
+    industria_leve: 'Indústria leve',
+    outro: 'Outro',
+  };
+  const B2B_FUNC_LABEL = {
+    '1_49': '1–49',
+    '50_100': '50–100',
+    '101_250': '101–250',
+    '251_500': '251–500',
+    '500_plus': '500+',
+  };
+  // Sweet spot da Elarah: 50-500 funcionários (médio porte, decisor
+  // acessível, budget disponível, valoriza cultura). Highlight visual.
+  const B2B_FUNC_SWEET_SPOT = new Set(['50_100', '101_250', '251_500']);
+  const B2B_POTENCIAL_LABEL = { baixo: 'Baixo', medio: 'Médio', alto: '🔥 Alto' };
+  const B2B_INT_TIPO_LABEL = {
+    mensagem_enviada: '📤 Mensagem enviada',
+    respondeu: '💬 Respondeu',
+    reuniao_marcada: '📅 Reunião marcada',
+    reuniao_realizada: '✅ Reunião realizada',
+    proposta_enviada: '📋 Proposta enviada',
+    negociacao: '💼 Negociação',
+    fechado: '🎉 Fechado',
+    cliente_ativo: '⭐ Cliente ativo',
+    pausado: '⏸️ Pausado',
+    recusou: '❌ Recusou',
+    follow_up: '🔁 Follow-up',
+    observacao: '📝 Observação',
+  };
+
+  // ----- Helpers de link (espelham _propWhatsappLink/_propInstagramLink) -----
+  // Replicados pra B2B porque o módulo é independente do CRM de parceiros.
+  function _b2bWhatsappLink(raw) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return null;
+    const withCountry = digits.length <= 11 ? '55' + digits : digits;
+    return 'https://wa.me/' + withCountry;
+  }
+  function _b2bInstagramLink(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    const handle = v.replace(/^@/, '').replace(/\s+/g, '');
+    return 'https://instagram.com/' + handle;
+  }
+  function _b2bUrlOrEmpty(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    return 'https://' + v;
+  }
+  function _b2bEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  // Transforma URL de empresa do LinkedIn em URL da aba "Pessoas"
+  // com keywords pré-filtradas (people OR rh OR cultura OR talent OR
+  // gente OR pessoas). Funciona pra slugs comuns:
+  //   https://www.linkedin.com/company/cobli/
+  //     → https://www.linkedin.com/company/cobli/people/?keywords=...
+  // Fallback: se a URL não casa com o padrão /company/<slug>/, devolve
+  // ela como está pra não quebrar.
+  function _b2bLinkedInPeopleSearchUrl(linkedinEmpresa) {
+    const raw = String(linkedinEmpresa || '').trim();
+    if (!raw) return null;
+    // Detecta /company/<slug> e injeta /people/ na URL
+    const match = raw.match(/^(https?:\/\/(?:www\.)?linkedin\.com\/company\/[^/?#]+)\/?/i);
+    if (!match) return raw;
+    const base = match[1].replace(/\/$/, '');
+    // Keywords cobrindo nomenclaturas comuns de cargos de People/RH em PT/EN:
+    //   people, RH, cultura, talent, gente, pessoas
+    // OR não é case-sensitive no LinkedIn search.
+    const kw = encodeURIComponent('people OR rh OR cultura OR talent OR gente OR pessoas');
+    return base + '/people/?keywords=' + kw;
+  }
+
+  // ----- Chips de contato (WA · IG · @ · in · 🌐) -----
+  // Mesma lógica visual do _propContactIcons (CRM de parceiros), mas
+  // adaptada pra B2B: usa contato_whatsapp/contato_email da pessoa e
+  // instagram/linkedin_empresa/site da empresa. Cada chip vira clique
+  // direto pro canal correspondente. Quando nada existe, mostra "—".
+  function _b2bContactIcons(p) {
+    const out = [];
+    if (p.contato_whatsapp) {
+      const link = _b2bWhatsappLink(p.contato_whatsapp);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="WhatsApp do contato" style="display:inline-block;padding:4px 6px;background:#e6f4ea;color:#1a8a4a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">WA</a>');
+    }
+    if (p.instagram) {
+      const link = _b2bInstagramLink(p.instagram);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="Instagram da empresa" style="display:inline-block;padding:4px 6px;background:#fce8f1;color:#c0397a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">IG</a>');
+    }
+    // Chip @ (email): SEMPRE renderiza, mesmo sem email cadastrado.
+    // - Com email: estilo cheio (azul saturado), click abre mailto:.
+    // - Sem email: estilo "vazio" (mais clarinho com ponto interrogação),
+    //   click abre prompt pra preencher rápido sem precisar abrir o modal
+    //   de edição completo. Salva direto no banco e atualiza a linha.
+    if (p.contato_email) {
+      out.push('<a href="mailto:' + _b2bEsc(p.contato_email) + '" title="E-mail do contato — ' + _b2bEsc(p.contato_email) + '" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
+    } else {
+      out.push('<button type="button" data-b2b-add-email="' + _b2bEsc(p.id) + '" title="Clique pra adicionar e-mail do contato" style="display:inline-block;padding:4px 6px;background:#f4f4f4;color:#aaa;border:1px dashed #ccc;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:700;font-family:inherit;line-height:1;">@</button>');
+    }
+    // LinkedIn: prioriza pessoa (decisor real) se existir, senão da empresa.
+    // Quando aponta pra EMPRESA, transforma a URL em /people/?keywords=...
+    // pra cair direto na aba "Pessoas" já filtrada por People/RH/Cultura/
+    // Talent. Operacional: clica → vê quem é decisor → DM em 1 clique.
+    // Sem isso, o admin caía na home da empresa e tinha que abrir Pessoas
+    // → filtrar → 3-4 cliques extras por lead.
+    if (p.contato_linkedin) {
+      out.push('<a href="' + _b2bEsc(p.contato_linkedin) + '" target="_blank" rel="noopener" title="LinkedIn do contato (decisor)" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
+    } else if (p.linkedin_empresa) {
+      const peopleUrl = _b2bLinkedInPeopleSearchUrl(p.linkedin_empresa);
+      out.push('<a href="' + _b2bEsc(peopleUrl) + '" target="_blank" rel="noopener" title="LinkedIn — Pessoas da empresa filtradas por People/RH/Cultura/Talent" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
+    }
+    if (p.site) {
+      const link = _b2bUrlOrEmpty(p.site);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="Site da empresa" style="display:inline-block;padding:4px 6px;background:#f4f0e6;color:#866d1a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">🌐</a>');
+    }
+    return out.length
+      ? '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + out.join('') + '</div>'
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+  }
+
+  // ----- Helpers de "sinais" (badges visuais por linha) -----
+  // Calcula sinais derivados do estado atual + última interação.
+  // Cada sinal tem: label, tooltip, e cor. Renderizado como pills
+  // pequenos na coluna "Sinais" da tabela.
+  function b2bComputeSignals(prospect, lastInteractionAt) {
+    const signals = [];
+    const now = Date.now();
+    const lastMs = lastInteractionAt ? new Date(lastInteractionAt).getTime() : null;
+    const createdMs = prospect.created_at ? new Date(prospect.created_at).getTime() : now;
+    const proximaMs = prospect.proxima_acao_at ? new Date(prospect.proxima_acao_at).getTime() : null;
+    const daysSinceLast = lastMs ? Math.floor((now - lastMs) / 86400000) : null;
+    const daysSinceCreate = Math.floor((now - createdMs) / 86400000);
+
+    // Potencial alto — sempre destaca
+    if (prospect.potencial === 'alto') {
+      signals.push({ label:'🔥 Alto potencial', bg:'#fff3e0', fg:'#b07b00' });
+    }
+    // Follow-up atrasado (proxima_acao_at < hoje)
+    if (proximaMs && proximaMs < now &&
+        prospect.status_comercial !== 'fechado' &&
+        prospect.status_comercial !== 'cliente_ativo' &&
+        prospect.status_comercial !== 'recusou') {
+      const atrasoDias = Math.floor((now - proximaMs) / 86400000);
+      signals.push({
+        label: '⚠️ Atrasado ' + (atrasoDias > 0 ? atrasoDias + 'd' : ''),
+        bg:'#fdecea', fg:'#9c2f22',
+        title: 'Próxima ação prevista pra ' + new Date(proximaMs).toLocaleDateString('pt-BR'),
+      });
+    }
+    // Lead quente — respondeu ou reunião marcada nos últimos 7 dias
+    const hotStatuses = new Set(['respondeu', 'reuniao_marcada', 'proposta_enviada', 'negociacao']);
+    if (hotStatuses.has(prospect.status_comercial) && lastMs && daysSinceLast <= 7) {
+      signals.push({ label:'🔥 Quente', bg:'#fff8ef', fg:'#a4663b' });
+    }
+    // Lead parado — sem interação > 14 dias E status não-terminal
+    const terminalStatuses = new Set(['fechado', 'cliente_ativo', 'recusou']);
+    if (!terminalStatuses.has(prospect.status_comercial)) {
+      if (lastMs && daysSinceLast > 14) {
+        signals.push({
+          label: '🥶 Parado ' + daysSinceLast + 'd',
+          bg:'#eef4fb', fg:'#3068a8',
+          title: 'Última interação há ' + daysSinceLast + ' dias',
+        });
+      } else if (!lastMs && daysSinceCreate > 14) {
+        signals.push({
+          label:'🥶 Sem contato',
+          bg:'#eef4fb', fg:'#3068a8',
+          title: 'Cadastrado há ' + daysSinceCreate + ' dias e nunca contatado',
+        });
+      }
+    }
+    // Resposta recente — interação 'respondeu' < 3 dias (sinal extra de urgência)
+    if (lastMs && daysSinceLast !== null && daysSinceLast <= 3 &&
+        prospect.status_comercial === 'respondeu') {
+      signals.push({ label:'💬 Respondeu há ' + (daysSinceLast === 0 ? 'hoje' : daysSinceLast + 'd'),
+        bg:'#e6f4ea', fg:'#1a8a4a' });
+    }
+    return signals;
+  }
+
+  // ----- Substituição de variáveis nos templates -----
+  function _b2bRenderTemplate(template, prospect) {
+    if (!template) return '';
+    return String(template)
+      .replaceAll('{{empresa}}',  (prospect && prospect.nome) || 'a empresa')
+      .replaceAll('{{contato}}',  (prospect && prospect.contato_nome) || 'time')
+      .replaceAll('{{cargo}}',    (prospect && prospect.contato_cargo) || '')
+      .replaceAll('{{segmento}}', (prospect && prospect.segmento) || 'do seu segmento')
+      .replaceAll('{{cidade}}',   (prospect && prospect.cidade) || 'São Paulo');
+  }
+
+  // ----- Fetch -----
+  async function _b2bFetchProspects() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('b2b_prospects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) {
+      console.error('[Elarah B2B] fetch prospects error', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function _b2bFetchInteractionsByProspect(prospectIds) {
+    const sb = window.supabaseClient;
+    if (!sb || !prospectIds.length) return new Map();
+    const { data, error } = await sb
+      .from('b2b_prospect_interactions')
+      .select('id, prospect_id, tipo, descricao, occurred_at')
+      .in('prospect_id', prospectIds)
+      .order('occurred_at', { ascending: false });
+    if (error) {
+      console.warn('[Elarah B2B] interactions fetch falhou:', error.message);
+      return new Map();
+    }
+    // Agrupa por prospect_id, mais recente primeiro
+    const map = new Map();
+    (data || []).forEach(row => {
+      if (!map.has(row.prospect_id)) map.set(row.prospect_id, []);
+      map.get(row.prospect_id).push(row);
+    });
+    return map;
+  }
+
+  async function _b2bFetchTemplates() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('b2b_prospect_templates')
+      .select('*')
+      .eq('is_active', true)
+      .order('ordem', { ascending: true });
+    if (error) {
+      console.warn('[Elarah B2B] templates fetch falhou:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  // ----- Estado local de filtros -----
+  const _b2bState = {
+    view: 'todos',         // todos | acoes-hoje | atrasados | quentes | parados
+    cache: null,           // prospects array
+    interactions: new Map(),
+    templates: [],
+  };
+
+  // ----- Render principal -----
+  async function renderB2BProspects() {
+    const tbody = document.getElementById('b2b-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Carregando...</td></tr>';
+
+    const [prospects, templates] = await Promise.all([
+      _b2bFetchProspects(),
+      _b2bFetchTemplates(),
+    ]);
+    _b2bState.cache = prospects;
+    _b2bState.templates = templates;
+
+    // Busca interações em batch (mais recente por prospect)
+    const ids = prospects.map(p => p.id);
+    _b2bState.interactions = await _b2bFetchInteractionsByProspect(ids);
+
+    _b2bWireFilters();
+    _b2bRenderTable();
+    _b2bRenderStats();
+    _b2bRenderCidadesDatalist();
+  }
+
+  function _b2bRenderCidadesDatalist() {
+    const list = document.getElementById('b2b-cidades-list');
+    if (!list) return;
+    const seen = new Set();
+    list.innerHTML = '';
+    (_b2bState.cache || []).forEach(p => {
+      if (p.cidade && !seen.has(p.cidade)) {
+        seen.add(p.cidade);
+        const opt = document.createElement('option');
+        opt.value = p.cidade;
+        list.appendChild(opt);
+      }
+    });
+  }
+
+  function _b2bApplyFilters(rows) {
+    const search = (document.getElementById('b2b-filter-search')?.value || '').toLowerCase().trim();
+    const status = document.getElementById('b2b-filter-status')?.value || '';
+    const tipo = document.getElementById('b2b-filter-tipo')?.value || '';
+    const func = document.getElementById('b2b-filter-funcionarios')?.value || '';
+    const potencial = document.getElementById('b2b-filter-potencial')?.value || '';
+    const cidade = (document.getElementById('b2b-filter-cidade')?.value || '').toLowerCase().trim();
+    const now = Date.now();
+    const view = _b2bState.view;
+
+    return rows.filter(p => {
+      // Search: empresa, contato_nome, segmento, observacoes
+      if (search) {
+        const hay = (p.nome + ' ' + (p.contato_nome || '') + ' ' + (p.segmento || '') + ' ' + (p.observacoes || '')).toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      if (status && p.status_comercial !== status) return false;
+      if (tipo && p.tipo_empresa !== tipo) return false;
+      if (potencial && p.potencial !== potencial) return false;
+      if (cidade && (p.cidade || '').toLowerCase().indexOf(cidade) === -1) return false;
+      if (func) {
+        if (func === 'sweet_spot') {
+          if (!B2B_FUNC_SWEET_SPOT.has(p.funcionarios_faixa)) return false;
+        } else if (p.funcionarios_faixa !== func) return false;
+      }
+      // Visões rápidas (sobrepõem outros filtros pra cenário operacional)
+      if (view === 'acoes-hoje') {
+        if (!p.proxima_acao_at) return false;
+        const proxMs = new Date(p.proxima_acao_at).getTime();
+        // Hoje: do início do dia ao final do dia (timezone local)
+        const start = new Date(); start.setHours(0,0,0,0);
+        const end = new Date(); end.setHours(23,59,59,999);
+        if (proxMs < start.getTime() || proxMs > end.getTime()) return false;
+      } else if (view === 'atrasados') {
+        if (!p.proxima_acao_at) return false;
+        if (new Date(p.proxima_acao_at).getTime() >= now) return false;
+        if (['fechado','cliente_ativo','recusou'].includes(p.status_comercial)) return false;
+      } else if (view === 'quentes') {
+        const hot = new Set(['respondeu','reuniao_marcada','proposta_enviada','negociacao']);
+        if (!hot.has(p.status_comercial)) return false;
+        const ints = _b2bState.interactions.get(p.id) || [];
+        const last = ints[0];
+        if (!last) return false;
+        const days = Math.floor((now - new Date(last.occurred_at).getTime()) / 86400000);
+        if (days > 7) return false;
+      } else if (view === 'parados') {
+        if (['fechado','cliente_ativo','recusou'].includes(p.status_comercial)) return false;
+        const ints = _b2bState.interactions.get(p.id) || [];
+        const last = ints[0];
+        const baseMs = last ? new Date(last.occurred_at).getTime() : new Date(p.created_at).getTime();
+        const days = Math.floor((now - baseMs) / 86400000);
+        if (days <= 14) return false;
+      }
+      return true;
+    });
+  }
+
+  function _b2bRenderTable() {
+    const tbody = document.getElementById('b2b-body');
+    const countEl = document.getElementById('b2b-count');
+    if (!tbody) return;
+    const filtered = _b2bApplyFilters(_b2bState.cache || []);
+    if (countEl) countEl.textContent = filtered.length + ' empresa' + (filtered.length === 1 ? '' : 's');
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhuma empresa encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(p => _b2bRenderRow(p)).join('');
+
+    // Wire row actions
+    tbody.querySelectorAll('[data-b2b-edit]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bOpenEditModal(btn.dataset.b2bEdit));
+    });
+    tbody.querySelectorAll('[data-b2b-copy-msg]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bCopyMessage(btn.dataset.b2bCopyMsg));
+    });
+    tbody.querySelectorAll('[data-b2b-quick-int]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bQuickLogInteraction(btn.dataset.b2bQuickInt, btn.dataset.tipo));
+    });
+    // Chip @ vazio — abre prompt pra adicionar email rápido
+    tbody.querySelectorAll('[data-b2b-add-email]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bQuickAddEmail(btn.dataset.b2bAddEmail));
+    });
+  }
+
+  function _b2bRenderRow(p) {
+    const escapeHtml = window.__elarahEscapeHtml || (function(){ return function(s){ const d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }; })();
+    const _esc = escapeHtml;
+    const ints = _b2bState.interactions.get(p.id) || [];
+    const lastInt = ints[0];
+    const lastIntAt = lastInt ? lastInt.occurred_at : null;
+    const signals = b2bComputeSignals(p, lastIntAt);
+
+    // Empresa (com badge sweet spot)
+    const isSweet = B2B_FUNC_SWEET_SPOT.has(p.funcionarios_faixa);
+    const nomeCell = '<strong>' + _esc(p.nome) + '</strong>' +
+      (p.cidade ? '<br><span style="font-size:.75rem;color:#888;">' + _esc(p.cidade) + '</span>' : '') +
+      (p.segmento ? '<br><span style="font-size:.72rem;color:#a4663b;font-style:italic;">' + _esc(p.segmento) + '</span>' : '');
+
+    const tipoCell = p.tipo_empresa ? _esc(B2B_TIPO_LABEL[p.tipo_empresa] || p.tipo_empresa) : '—';
+
+    const funcLabel = p.funcionarios_faixa ? (B2B_FUNC_LABEL[p.funcionarios_faixa] || '—') : '—';
+    const funcCell = isSweet
+      ? '<span style="background:#fff8ef;color:#a4663b;padding:2px 8px;border-radius:6px;font-size:.78rem;font-weight:600;" title="Sweet spot da Elarah">⭐ ' + _esc(funcLabel) + '</span>'
+      : '<span style="color:#666;">' + _esc(funcLabel) + '</span>';
+
+    const contatoCell = p.contato_nome
+      ? '<strong>' + _esc(p.contato_nome) + '</strong>' +
+        (p.contato_cargo ? '<br><span style="font-size:.72rem;color:#888;">' + _esc(p.contato_cargo) + '</span>' : '')
+      : '<span style="color:#bbb;">—</span>';
+
+    // Coluna "Canais" — chips WA/IG/@/in/🌐 clicáveis pra cada canal
+    // disponível da empresa/contato. Mesma UX do CRM de parceiros.
+    const canaisCell = _b2bContactIcons(p);
+
+    const statusColor = B2B_STATUS_COLOR[p.status_comercial] || { bg:'#f4f4f4', fg:'#666' };
+    const statusCell = '<span style="display:inline-block;padding:3px 9px;border-radius:8px;background:' +
+      statusColor.bg + ';color:' + statusColor.fg + ';font-size:.74rem;font-weight:700;white-space:nowrap;">' +
+      _esc(B2B_STATUS_LABEL[p.status_comercial] || p.status_comercial) + '</span>';
+
+    const potColor = p.potencial === 'alto' ? '#b07b00' : (p.potencial === 'baixo' ? '#999' : '#444');
+    const potCell = '<span style="color:' + potColor + ';font-weight:600;font-size:.82rem;">' +
+      _esc(B2B_POTENCIAL_LABEL[p.potencial] || p.potencial || '—') + '</span>';
+
+    const signalsCell = signals.length
+      ? signals.map(s => '<span title="' + _esc(s.title || s.label) + '" style="display:inline-block;margin:2px 3px 0 0;padding:2px 7px;border-radius:6px;background:' + s.bg + ';color:' + s.fg + ';font-size:.7rem;font-weight:600;white-space:nowrap;">' + _esc(s.label) + '</span>').join('')
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+
+    const proximaCell = p.proxima_acao
+      ? '<strong style="font-size:.82rem;">' + _esc(p.proxima_acao) + '</strong>' +
+        (p.proxima_acao_at ? '<br><span style="font-size:.72rem;color:#888;">' +
+          new Date(p.proxima_acao_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) +
+          '</span>' : '')
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+
+    // Ações: editar, copiar mensagem (primeiro template), log rápido
+    const acoesCell =
+      '<button type="button" data-b2b-edit="' + _esc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #f0a05e;color:#a4663b;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;">Editar</button>' +
+      ' <button type="button" data-b2b-copy-msg="' + _esc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;" title="Copiar mensagem do template padrão com variáveis preenchidas">📋 Msg</button>' +
+      ' <button type="button" data-b2b-quick-int="' + _esc(p.id) + '" data-tipo="mensagem_enviada" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;" title="Registrar mensagem enviada">+ msg</button>';
+
+    return '<tr>' +
+      '<td>' + nomeCell + '</td>' +
+      '<td>' + tipoCell + '</td>' +
+      '<td>' + funcCell + '</td>' +
+      '<td>' + contatoCell + '</td>' +
+      '<td>' + canaisCell + '</td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td>' + potCell + '</td>' +
+      '<td>' + signalsCell + '</td>' +
+      '<td>' + proximaCell + '</td>' +
+      '<td>' + acoesCell + '</td>' +
+    '</tr>';
+  }
+
+  function _b2bRenderStats() {
+    const list = _b2bState.cache || [];
+    const total = list.length;
+    const contatados = list.filter(p => p.status_comercial !== 'nao_contatado').length;
+    const respostas = list.filter(p =>
+      ['respondeu','reuniao_marcada','proposta_enviada','negociacao','fechado','cliente_ativo'].includes(p.status_comercial)
+    ).length;
+    const reunioes = list.filter(p =>
+      ['reuniao_marcada','proposta_enviada','negociacao'].includes(p.status_comercial)
+    ).length;
+    const clientes = list.filter(p => p.status_comercial === 'cliente_ativo').length;
+    // Ações pra hoje
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date(); end.setHours(23,59,59,999);
+    const acoesHoje = list.filter(p => {
+      if (!p.proxima_acao_at) return false;
+      const ms = new Date(p.proxima_acao_at).getTime();
+      return ms >= start.getTime() && ms <= end.getTime();
+    }).length;
+    const taxa = contatados > 0
+      ? Math.round((respostas / contatados) * 100) + '%'
+      : '—';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('stat-b2b-total', total);
+    set('stat-b2b-acoes-hoje', acoesHoje);
+    set('stat-b2b-reunioes', reunioes);
+    set('stat-b2b-clientes', clientes);
+    set('stat-b2b-resposta', taxa);
+  }
+
+  // ----- Wire de filtros + visões + ações principais -----
+  let _b2bWired = false;
+  function _b2bWireFilters() {
+    if (_b2bWired) return;
+    _b2bWired = true;
+
+    // Filtros — re-render ao mudar
+    ['b2b-filter-search','b2b-filter-status','b2b-filter-tipo','b2b-filter-funcionarios','b2b-filter-potencial','b2b-filter-cidade']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const evt = el.tagName === 'INPUT' ? 'input' : 'change';
+        el.addEventListener(evt, () => _b2bRenderTable());
+      });
+
+    // Visões rápidas (chips)
+    document.querySelectorAll('.b2b-view-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        _b2bState.view = chip.dataset.view || 'todos';
+        // Estado visual: chip ativo destacado
+        document.querySelectorAll('.b2b-view-chip').forEach(c => {
+          const isActive = c.dataset.view === _b2bState.view;
+          c.style.borderColor = isActive ? '#f0a05e' : '#ddd';
+          c.style.background = isActive ? '#fff8ef' : '#fff';
+          c.style.color = isActive ? '#a4663b' : '#666';
+        });
+        _b2bRenderTable();
+      });
+    });
+
+    // Botões principais
+    const btnNew = document.getElementById('btn-b2b-new');
+    if (btnNew) btnNew.addEventListener('click', () => _b2bOpenEditModal(null));
+    const btnTemplates = document.getElementById('btn-b2b-templates');
+    if (btnTemplates) btnTemplates.addEventListener('click', () => _b2bOpenTemplatesModal());
+    const btnImport = document.getElementById('btn-b2b-import');
+    if (btnImport) btnImport.addEventListener('click', () => {
+      document.getElementById('b2b-csv-input')?.click();
+    });
+    const csvInput = document.getElementById('b2b-csv-input');
+    if (csvInput) csvInput.addEventListener('change', _b2bHandleCsvImport);
+    const btnExport = document.getElementById('btn-b2b-export');
+    if (btnExport) btnExport.addEventListener('click', _b2bExportCsv);
+
+    // Modal edit — wire de save/cancel/delete
+    document.getElementById('b2b-edit-cancel')?.addEventListener('click', _b2bCloseEditModal);
+    document.getElementById('b2b-edit-save')?.addEventListener('click', _b2bSaveProspect);
+    document.getElementById('b2b-edit-delete')?.addEventListener('click', _b2bDeleteProspect);
+    document.getElementById('b2b-int-add')?.addEventListener('click', _b2bAddInteractionFromModal);
+
+    // Modal templates
+    document.getElementById('b2b-templates-close')?.addEventListener('click', () => {
+      const m = document.getElementById('b2b-templates-modal');
+      if (m) m.style.display = 'none';
+    });
+    document.getElementById('b2b-template-new')?.addEventListener('click', () => _b2bOpenTemplateEdit(null));
+    document.getElementById('b2b-template-filter-categoria')?.addEventListener('change', _b2bRenderTemplatesList);
+    document.getElementById('b2b-template-edit-cancel')?.addEventListener('click', () => {
+      const m = document.getElementById('b2b-template-edit-modal');
+      if (m) m.style.display = 'none';
+    });
+    document.getElementById('b2b-template-edit-save')?.addEventListener('click', _b2bSaveTemplate);
+    document.getElementById('b2b-template-edit-delete')?.addEventListener('click', _b2bDeleteTemplate);
+  }
+
+  // ----- Modal de edição -----
+  let _b2bEditingId = null;
+  async function _b2bOpenEditModal(id) {
+    const m = document.getElementById('b2b-edit-modal');
+    if (!m) return;
+    _b2bEditingId = id;
+    const isNew = !id;
+    const p = isNew ? {} : ((_b2bState.cache || []).find(x => x.id === id) || {});
+
+    document.getElementById('b2b-edit-title').textContent = isNew ? 'Nova empresa' : 'Editar empresa';
+    document.getElementById('b2b-edit-subtitle').textContent = isNew
+      ? 'Cadastre uma empresa-alvo pra prospecção comercial.'
+      : 'Atualize informações + registre interações na timeline.';
+
+    const set = (sel, v) => { const el = m.querySelector(sel); if (el) el.value = v == null ? '' : v; };
+    set('#b2b-edit-id', p.id || '');
+    set('#b2b-edit-nome', p.nome);
+    set('#b2b-edit-tipo', p.tipo_empresa);
+    set('#b2b-edit-funcionarios', p.funcionarios_faixa);
+    set('#b2b-edit-segmento', p.segmento);
+    set('#b2b-edit-cidade', p.cidade || 'São Paulo');
+    set('#b2b-edit-site', p.site);
+    set('#b2b-edit-linkedin-empresa', p.linkedin_empresa);
+    set('#b2b-edit-instagram', p.instagram);
+    set('#b2b-edit-contato-nome', p.contato_nome);
+    set('#b2b-edit-contato-cargo', p.contato_cargo);
+    set('#b2b-edit-contato-email', p.contato_email);
+    set('#b2b-edit-contato-whatsapp', p.contato_whatsapp);
+    set('#b2b-edit-contato-linkedin', p.contato_linkedin);
+    set('#b2b-edit-status', p.status_comercial || 'nao_contatado');
+    set('#b2b-edit-potencial', p.potencial || 'medio');
+    set('#b2b-edit-proxima-acao', p.proxima_acao);
+    // datetime-local format: YYYY-MM-DDTHH:MM
+    if (p.proxima_acao_at) {
+      const d = new Date(p.proxima_acao_at);
+      const pad = n => String(n).padStart(2,'0');
+      set('#b2b-edit-proxima-acao-at',
+        d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+        'T' + pad(d.getHours()) + ':' + pad(d.getMinutes())
+      );
+    } else {
+      set('#b2b-edit-proxima-acao-at', '');
+    }
+    set('#b2b-edit-observacoes', p.observacoes);
+
+    // Botão excluir só em edit mode
+    const delBtn = m.querySelector('#b2b-edit-delete');
+    if (delBtn) delBtn.style.display = isNew ? 'none' : 'inline-block';
+
+    // Timeline só em edit mode
+    const timelineWrap = m.querySelector('#b2b-edit-timeline-wrap');
+    if (timelineWrap) timelineWrap.style.display = isNew ? 'none' : 'block';
+    if (!isNew) await _b2bRefreshTimeline(id);
+
+    const msg = m.querySelector('#b2b-edit-msg');
+    if (msg) msg.textContent = '';
+
+    m.style.display = 'flex';
+  }
+  function _b2bCloseEditModal() {
+    const m = document.getElementById('b2b-edit-modal');
+    if (m) m.style.display = 'none';
+    _b2bEditingId = null;
+  }
+
+  async function _b2bRefreshTimeline(prospectId) {
+    const sb = window.supabaseClient;
+    const ul = document.getElementById('b2b-edit-timeline');
+    if (!ul || !sb) return;
+    const { data, error } = await sb
+      .from('b2b_prospect_interactions')
+      .select('id, tipo, descricao, occurred_at')
+      .eq('prospect_id', prospectId)
+      .order('occurred_at', { ascending: false })
+      .limit(50);
+    if (error) {
+      ul.innerHTML = '<li style="color:#c0392b;">Erro ao carregar timeline.</li>';
+      return;
+    }
+    if (!data || !data.length) {
+      ul.innerHTML = '<li style="color:#888;font-style:italic;padding:6px 0;">Nenhuma interação registrada ainda.</li>';
+      return;
+    }
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+    ul.innerHTML = data.map(r =>
+      '<li style="padding:8px 0;border-bottom:1px dashed #eee;">' +
+        '<strong>' + esc(B2B_INT_TIPO_LABEL[r.tipo] || r.tipo) + '</strong>' +
+        ' <span style="color:#888;font-size:.78rem;">· ' + new Date(r.occurred_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) + '</span>' +
+        (r.descricao ? '<div style="font-size:.85rem;color:#444;margin-top:3px;">' + esc(r.descricao) + '</div>' : '') +
+      '</li>'
+    ).join('');
+  }
+
+  async function _b2bAddInteractionFromModal() {
+    if (!_b2bEditingId) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const tipo = document.getElementById('b2b-int-tipo').value;
+    const desc = (document.getElementById('b2b-int-desc').value || '').trim();
+    const { error } = await sb.from('b2b_prospect_interactions').insert({
+      prospect_id: _b2bEditingId,
+      tipo,
+      descricao: desc || null,
+    });
+    if (error) { alert('Erro ao registrar: ' + error.message); return; }
+    document.getElementById('b2b-int-desc').value = '';
+    await _b2bRefreshTimeline(_b2bEditingId);
+    // Reload pra atualizar sinais na tabela
+    renderB2BProspects();
+  }
+
+  async function _b2bSaveProspect() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const m = document.getElementById('b2b-edit-modal');
+    const msg = m.querySelector('#b2b-edit-msg');
+    msg.textContent = '';
+
+    const nome = (m.querySelector('#b2b-edit-nome').value || '').trim();
+    if (!nome) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Nome é obrigatório.';
+      return;
+    }
+    const get = (sel) => { const el = m.querySelector(sel); return el ? (el.value || '').trim() : ''; };
+    const proximaAt = get('#b2b-edit-proxima-acao-at');
+    const payload = {
+      nome,
+      tipo_empresa: get('#b2b-edit-tipo') || null,
+      funcionarios_faixa: get('#b2b-edit-funcionarios') || null,
+      segmento: get('#b2b-edit-segmento') || null,
+      cidade: get('#b2b-edit-cidade') || null,
+      site: get('#b2b-edit-site') || null,
+      linkedin_empresa: get('#b2b-edit-linkedin-empresa') || null,
+      instagram: get('#b2b-edit-instagram') || null,
+      contato_nome: get('#b2b-edit-contato-nome') || null,
+      contato_cargo: get('#b2b-edit-contato-cargo') || null,
+      contato_email: get('#b2b-edit-contato-email') || null,
+      contato_whatsapp: get('#b2b-edit-contato-whatsapp') || null,
+      contato_linkedin: get('#b2b-edit-contato-linkedin') || null,
+      status_comercial: get('#b2b-edit-status') || 'nao_contatado',
+      potencial: get('#b2b-edit-potencial') || 'medio',
+      proxima_acao: get('#b2b-edit-proxima-acao') || null,
+      proxima_acao_at: proximaAt ? new Date(proximaAt).toISOString() : null,
+      observacoes: get('#b2b-edit-observacoes') || null,
+    };
+
+    const id = get('#b2b-edit-id');
+    let res;
+    if (id) {
+      res = await sb.from('b2b_prospects').update(payload).eq('id', id).select().maybeSingle();
+    } else {
+      res = await sb.from('b2b_prospects').insert(payload).select().maybeSingle();
+    }
+    if (res.error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + res.error.message;
+      return;
+    }
+    msg.style.color = '#1a8a4a';
+    msg.textContent = id ? '✓ Atualizado' : '✓ Empresa cadastrada';
+    setTimeout(() => { _b2bCloseEditModal(); renderB2BProspects(); }, 350);
+  }
+
+  async function _b2bDeleteProspect() {
+    if (!_b2bEditingId) return;
+    if (!confirm('Excluir essa empresa e todo o histórico de interações? Não dá pra desfazer.')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('b2b_prospects').delete().eq('id', _b2bEditingId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _b2bCloseEditModal();
+    renderB2BProspects();
+  }
+
+  // ----- Copiar mensagem (template padrão com variáveis) -----
+  async function _b2bCopyMessage(prospectId) {
+    const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+    if (!p) return;
+    const tpl = _b2bState.templates.find(t => t.is_default) || _b2bState.templates[0];
+    if (!tpl) { alert('Nenhum template cadastrado. Abra "Templates B2B" pra criar.'); return; }
+    const text = _b2bRenderTemplate(tpl.conteudo, p);
+    try {
+      await navigator.clipboard.writeText(text);
+      // Feedback visual rápido
+      const btn = document.querySelector('[data-b2b-copy-msg="' + prospectId + '"]');
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = 'Copiado!';
+        btn.style.background = '#e6f4ea';
+        btn.style.borderColor = '#1a8a4a';
+        btn.style.color = '#1a8a4a';
+        setTimeout(() => { btn.textContent = orig; btn.style.background = '#fff'; btn.style.borderColor = '#ddd'; btn.style.color = '#444'; }, 1500);
+      }
+    } catch (e) {
+      alert('Mensagem (copie manualmente):\n\n' + text);
+    }
+  }
+
+  // ----- Log rápido de interação direto da linha -----
+  async function _b2bQuickLogInteraction(prospectId, tipo) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { error } = await sb.from('b2b_prospect_interactions').insert({
+      prospect_id: prospectId,
+      tipo,
+      descricao: null,
+    });
+    if (error) { alert('Erro: ' + error.message); return; }
+    // Atualiza status se for mensagem_enviada
+    if (tipo === 'mensagem_enviada') {
+      const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+      if (p && p.status_comercial === 'nao_contatado') {
+        await sb.from('b2b_prospects').update({ status_comercial: 'mensagem_enviada' }).eq('id', prospectId);
+      }
+    }
+    renderB2BProspects();
+  }
+
+  // ----- Quick add email (chip @ vazio) -----
+  // Prompt simples + save direto no banco. Cobre o caso de adicionar
+  // email enquanto vê a linha, sem abrir o modal de edição completo.
+  // Validação: formato básico de e-mail antes de salvar. Erro = alert.
+  async function _b2bQuickAddEmail(prospectId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+    const nome = (p && p.nome) ? p.nome : 'esta empresa';
+    const input = prompt('E-mail do contato em ' + nome + ':');
+    if (input == null) return;        // user cancelou
+    const email = String(input).trim();
+    if (!email) return;
+    if (!/.+@.+\..+/.test(email)) {
+      alert('E-mail inválido. Use o formato nome@dominio.com');
+      return;
+    }
+    const { error } = await sb.from('b2b_prospects')
+      .update({ contato_email: email })
+      .eq('id', prospectId);
+    if (error) { alert('Erro ao salvar: ' + error.message); return; }
+    // Atualiza estado local pra re-render imediato (sem refetch da rede)
+    if (p) p.contato_email = email;
+    renderB2BProspects();
+  }
+
+  // ----- Templates: list + edit -----
+  function _b2bOpenTemplatesModal() {
+    const m = document.getElementById('b2b-templates-modal');
+    if (!m) return;
+    _b2bRenderTemplatesList();
+    m.style.display = 'flex';
+  }
+  function _b2bRenderTemplatesList() {
+    const ul = document.getElementById('b2b-templates-list');
+    if (!ul) return;
+    const cat = document.getElementById('b2b-template-filter-categoria')?.value || '';
+    const items = (_b2bState.templates || []).filter(t => !cat || t.categoria === cat);
+    if (!items.length) {
+      ul.innerHTML = '<li style="color:#888;font-style:italic;padding:10px 0;">Nenhum template nessa categoria.</li>';
+      return;
+    }
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+    ul.innerHTML = items.map(t =>
+      '<li style="padding:12px 0;border-bottom:1px solid #eee;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+          '<div><strong>' + esc(t.nome) + '</strong>' +
+            (t.categoria ? '<span style="margin-left:8px;font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.04em;">' + esc(t.categoria.replace(/_/g,' ')) + '</span>' : '') +
+            (t.is_default ? '<span style="margin-left:6px;font-size:.7rem;color:#a4663b;font-weight:700;">PADRÃO</span>' : '') +
+          '</div>' +
+          '<button type="button" data-b2b-tpl-edit="' + esc(t.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;">Editar</button>' +
+        '</div>' +
+        '<pre style="margin:8px 0 0;font-family:inherit;font-size:.82rem;color:#444;background:#fafafa;padding:10px;border-radius:6px;white-space:pre-wrap;max-height:120px;overflow:auto;">' + esc(t.conteudo) + '</pre>' +
+      '</li>'
+    ).join('');
+    ul.querySelectorAll('[data-b2b-tpl-edit]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bOpenTemplateEdit(btn.dataset.b2bTplEdit));
+    });
+  }
+  function _b2bOpenTemplateEdit(id) {
+    const m = document.getElementById('b2b-template-edit-modal');
+    if (!m) return;
+    const t = id ? (_b2bState.templates.find(x => x.id === id) || {}) : {};
+    document.getElementById('b2b-template-edit-title').textContent = id ? 'Editar template' : 'Novo template';
+    const set = (sel, v) => { const el = m.querySelector(sel); if (el) el.value = v == null ? '' : v; };
+    set('#b2b-template-edit-id', t.id || '');
+    set('#b2b-template-edit-nome', t.nome);
+    set('#b2b-template-edit-categoria', t.categoria);
+    set('#b2b-template-edit-conteudo', t.conteudo);
+    document.getElementById('b2b-template-edit-default').checked = !!t.is_default;
+    document.getElementById('b2b-template-edit-msg').textContent = '';
+    document.getElementById('b2b-template-edit-delete').style.display = id ? 'inline-block' : 'none';
+    m.style.display = 'flex';
+  }
+  async function _b2bSaveTemplate() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const m = document.getElementById('b2b-template-edit-modal');
+    const msg = m.querySelector('#b2b-template-edit-msg');
+    msg.textContent = '';
+    const id = m.querySelector('#b2b-template-edit-id').value;
+    const nome = (m.querySelector('#b2b-template-edit-nome').value || '').trim();
+    const conteudo = (m.querySelector('#b2b-template-edit-conteudo').value || '').trim();
+    if (!nome || !conteudo) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Nome e conteúdo são obrigatórios.';
+      return;
+    }
+    const isDefault = m.querySelector('#b2b-template-edit-default').checked;
+    // Se marcar como default, primeiro desmarca outros (constraint UNIQUE)
+    if (isDefault) {
+      await sb.from('b2b_prospect_templates').update({ is_default: false }).eq('is_default', true);
+    }
+    const payload = {
+      nome,
+      categoria: (m.querySelector('#b2b-template-edit-categoria').value || '').trim() || null,
+      conteudo,
+      is_default: isDefault,
+    };
+    let res;
+    if (id) {
+      res = await sb.from('b2b_prospect_templates').update(payload).eq('id', id);
+    } else {
+      res = await sb.from('b2b_prospect_templates').insert(payload);
+    }
+    if (res.error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + res.error.message;
+      return;
+    }
+    m.style.display = 'none';
+    _b2bState.templates = await _b2bFetchTemplates();
+    _b2bRenderTemplatesList();
+  }
+  async function _b2bDeleteTemplate() {
+    const m = document.getElementById('b2b-template-edit-modal');
+    const id = m.querySelector('#b2b-template-edit-id').value;
+    if (!id) return;
+    if (!confirm('Excluir esse template?')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('b2b_prospect_templates').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    m.style.display = 'none';
+    _b2bState.templates = await _b2bFetchTemplates();
+    _b2bRenderTemplatesList();
+  }
+
+  // ----- CSV import/export -----
+  // Colunas esperadas no CSV (header obrigatório, ordem livre):
+  //   nome, tipo_empresa, funcionarios_faixa, segmento, cidade, site,
+  //   linkedin_empresa, contato_nome, contato_cargo, contato_email,
+  //   contato_whatsapp, potencial, status_comercial, observacoes
+  function _b2bParseCsv(text) {
+    // Parser simples: handles quoted fields with embedded commas.
+    const rows = [];
+    let cur = [''];
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i+1] === '"') { cur[cur.length-1] += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { cur[cur.length-1] += c; }
+      } else {
+        if (c === '"') { inQuotes = true; }
+        else if (c === ',') { cur.push(''); }
+        else if (c === '\n') { rows.push(cur); cur = ['']; }
+        else if (c === '\r') { /* skip */ }
+        else { cur[cur.length-1] += c; }
+      }
+    }
+    if (cur.length > 1 || cur[0]) rows.push(cur);
+    if (!rows.length) return [];
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    return rows.slice(1).filter(r => r.some(c => c && c.trim())).map(r => {
+      const obj = {};
+      header.forEach((h, i) => { obj[h] = (r[i] || '').trim(); });
+      return obj;
+    });
+  }
+  async function _b2bHandleCsvImport(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const rows = _b2bParseCsv(text);
+    if (!rows.length) { alert('CSV vazio ou inválido.'); return; }
+    if (!confirm(`Importar ${rows.length} empresa(s)?`)) {
+      e.target.value = '';
+      return;
+    }
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    // Filtra apenas chaves permitidas pra evitar payload com lixo
+    const allowed = new Set(['nome','tipo_empresa','funcionarios_faixa','segmento','cidade','site',
+      'linkedin_empresa','instagram','contato_nome','contato_cargo','contato_email','contato_whatsapp',
+      'contato_linkedin','potencial','status_comercial','proxima_acao','observacoes']);
+    const cleaned = rows
+      .map(r => {
+        const out = {};
+        Object.keys(r).forEach(k => { if (allowed.has(k) && r[k]) out[k] = r[k]; });
+        return out;
+      })
+      .filter(r => r.nome);  // nome é obrigatório
+    if (!cleaned.length) { alert('Nenhuma linha válida (precisa pelo menos da coluna "nome").'); e.target.value = ''; return; }
+    const { error } = await sb.from('b2b_prospects').insert(cleaned);
+    if (error) { alert('Erro no import: ' + error.message); e.target.value = ''; return; }
+    alert('✓ ' + cleaned.length + ' empresa(s) importada(s).');
+    e.target.value = '';
+    renderB2BProspects();
+  }
+  function _b2bExportCsv() {
+    const list = _b2bState.cache || [];
+    if (!list.length) { alert('Nada pra exportar.'); return; }
+    const cols = ['nome','tipo_empresa','funcionarios_faixa','segmento','cidade','site',
+      'linkedin_empresa','instagram','contato_nome','contato_cargo','contato_email','contato_whatsapp',
+      'contato_linkedin','status_comercial','potencial','proxima_acao','proxima_acao_at','observacoes','created_at'];
+    const escape = (v) => {
+      if (v == null) return '';
+      const s = String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replaceAll('"', '""') + '"';
+      return s;
+    };
+    const lines = [cols.join(',')];
+    list.forEach(p => lines.push(cols.map(c => escape(p[c])).join(',')));
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'b2b-prospects-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // =================================================================
+  // ===== EXPERIÊNCIAS FOCO — divulgação semanal ==================
+  // -----------------------------------------------------------------
+  // Painel operacional: mostra o que divulgar essa semana, em 3 grupos:
+  //   1. Foco da semana — eventos em 10-16 dias (sweet spot pra
+  //      começar divulgação: gera urgência mas dá tempo de comprar).
+  //   2. By Elarah Originals — sempre na régua, divulgação contínua.
+  //   3. Vagas críticas — <30% vagas + evento próximo (esgotando).
+  //
+  // Cada card tem botão de copiar mensagem pronta (template editável,
+  // persistido em localStorage) com variáveis preenchidas, e atalho
+  // direto pro modal de edição em "Experiências".
+  //
+  // Dados: usa o mesmo ElarahData.getAllExperiences() que outras abas.
+  // Sem nova query SQL — agrega/recorta no client.
+  // =================================================================
+
+  // Janela de "foco da semana" — 2 semanas é o sweet spot:
+  // <2 semanas = pouco tempo, >2 semanas = ainda longe.
+  // Janela de 7 dias (10-16) cobre a 2ª semana à frente com folga.
+  const FOCO_WEEK_MIN_DAYS = 10;
+  const FOCO_WEEK_MAX_DAYS = 16;
+  const FOCO_CRITICAL_DAYS = 30;     // próximo mês
+  const FOCO_CRITICAL_PCT = 0.30;    // <30% vagas restantes
+
+  // Template padrão (persistido em localStorage como `elarah_foco_tpl`)
+  const FOCO_TPL_DEFAULT =
+    '🎨 {{nome}}\n' +
+    '📅 {{data}} · {{horario}}\n' +
+    '📍 {{bairro}}\n\n' +
+    '✨ {{vagas}}\n' +
+    '💛 {{preco}}\n\n' +
+    '👉 Reserve sua vaga: {{link}}';
+
+  function _focoTpl() {
+    try { return localStorage.getItem('elarah_foco_tpl') || FOCO_TPL_DEFAULT; }
+    catch (e) { return FOCO_TPL_DEFAULT; }
+  }
+  function _focoSaveTpl(v) {
+    try { localStorage.setItem('elarah_foco_tpl', v); } catch (e) {}
+  }
+
+  // Parse defensivo do timestamp do evento. Prioridade:
+  // 1. event_at (timestamptz canônico) — quando disponível
+  // 2. data "DD/MM" ou "DD/MM/AAAA" (legado) — assume ano corrente se omitido
+  // Devolve { date: Date|null, daysFromNow: number|null }.
+  function _focoParseEventDate(exp) {
+    const now = new Date();
+    if (exp && exp.eventAt) {
+      const d = new Date(exp.eventAt);
+      if (!isNaN(d.getTime())) {
+        const days = Math.floor((d.getTime() - now.getTime()) / 86400000);
+        return { date: d, daysFromNow: days };
+      }
+    }
+    if (exp && exp.data) {
+      const m = String(exp.data).match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+      if (m) {
+        const day = Number(m[1]);
+        const month = Number(m[2]);
+        let year = m[3] ? Number(m[3]) : now.getFullYear();
+        if (year < 100) year += 2000;
+        // Tenta extrair hora do campo horario ("19h00 – 22h00")
+        let hh = 12, mm = 0;
+        const hm = String(exp.horario || '').match(/(\d{1,2})\s*h\s*(\d{0,2})/i);
+        if (hm) {
+          hh = Number(hm[1]);
+          mm = hm[2] ? Number(hm[2]) : 0;
+        }
+        const d = new Date(year, month - 1, day, hh, mm, 0);
+        if (!isNaN(d.getTime())) {
+          // Se a data caiu no passado e veio sem ano explícito, assume próximo ano
+          if (!m[3] && d.getTime() < now.getTime() - 86400000) {
+            d.setFullYear(year + 1);
+          }
+          const days = Math.floor((d.getTime() - now.getTime()) / 86400000);
+          return { date: d, daysFromNow: days };
+        }
+      }
+    }
+    return { date: null, daysFromNow: null };
+  }
+
+  function _focoEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  // Monta os dados pro template a partir da experiência.
+  function _focoBuildVars(exp) {
+    const parsed = _focoParseEventDate(exp);
+    const dataLabel = parsed.date
+      ? parsed.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      : (exp.data || '');
+    const vagasRest = Number(exp.vagasRestantes);
+    const vagasTot = Number(exp.vagasTotal);
+    const vagasLabel = (isFinite(vagasRest) && vagasRest > 0)
+      ? (vagasRest === 1 ? 'Última vaga!' : 'Restam ' + vagasRest + ' vagas')
+      : 'Vagas limitadas';
+    const link = 'https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(exp.id || '');
+    const preco = exp.preco || '';
+    return {
+      nome: exp.nome || '',
+      data: dataLabel,
+      horario: exp.horario || '',
+      bairro: exp.bairro || 'São Paulo',
+      vagas: vagasLabel,
+      link: link,
+      preco: preco,
+    };
+  }
+
+  function _focoRenderTemplate(tpl, exp) {
+    const vars = _focoBuildVars(exp);
+    return String(tpl)
+      .replaceAll('{{nome}}', vars.nome)
+      .replaceAll('{{data}}', vars.data)
+      .replaceAll('{{horario}}', vars.horario)
+      .replaceAll('{{bairro}}', vars.bairro)
+      .replaceAll('{{vagas}}', vars.vagas)
+      .replaceAll('{{link}}', vars.link)
+      .replaceAll('{{preco}}', vars.preco);
+  }
+
+  // Renderiza 1 card de experiência. Inclui badge do motivo (FOCO 2 SEM /
+  // BY ELARAH / VAGAS CRÍTICAS), data/horário com dias restantes,
+  // bairro, vagas, e botões de ação (copiar mensagem, editar, abrir
+  // página pública).
+  function _focoRenderCard(exp, opts) {
+    const parsed = _focoParseEventDate(exp);
+    const daysLabel = parsed.daysFromNow != null
+      ? (parsed.daysFromNow === 0 ? 'hoje'
+         : parsed.daysFromNow === 1 ? 'amanhã'
+         : parsed.daysFromNow < 0 ? Math.abs(parsed.daysFromNow) + 'd atrás'
+         : 'em ' + parsed.daysFromNow + 'd')
+      : '—';
+    const vagasRest = Number(exp.vagasRestantes);
+    const vagasTot = Number(exp.vagasTotal);
+    const hasVagas = isFinite(vagasRest) && isFinite(vagasTot) && vagasTot > 0;
+    const vagasPct = hasVagas ? vagasRest / vagasTot : 1;
+    const vagasColor = vagasPct < 0.3 ? '#c0392b' : (vagasPct < 0.6 ? '#a4663b' : '#1a8a4a');
+    const vagasText = hasVagas
+      ? vagasRest + ' / ' + vagasTot
+      : (isFinite(vagasRest) ? String(vagasRest) : '—');
+
+    // Badge do grupo (vermelho/laranja/azul conforme motivo)
+    const badge = opts && opts.badge
+      ? '<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:' +
+        opts.badgeBg + ';color:' + opts.badgeFg + ';">' + _focoEsc(opts.badge) + '</span>'
+      : '';
+
+    const imgUrl = (exp.imagem || '').trim();
+    const imgHtml = imgUrl
+      ? '<div style="width:100%;height:120px;background:#f4f0e6 url(\'' + _focoEsc(imgUrl) + '\') center/cover no-repeat;border-radius:8px;margin-bottom:10px;"></div>'
+      : '';
+
+    return '<article style="background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;">' +
+      imgHtml +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+        badge +
+        '<span style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.04em;">' + _focoEsc(exp.categoria || '—') + '</span>' +
+      '</div>' +
+      '<h3 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a1a;line-height:1.3;">' + _focoEsc(exp.nome || 'Experiência') + '</h3>' +
+      '<div style="font-size:.82rem;color:#444;line-height:1.5;">' +
+        '<div>📅 <strong>' + _focoEsc(exp.data || '—') + '</strong> · <span style="color:#a4663b;">' + _focoEsc(daysLabel) + '</span></div>' +
+        (exp.horario ? '<div>⏱ ' + _focoEsc(exp.horario) + '</div>' : '') +
+        (exp.bairro ? '<div>📍 ' + _focoEsc(exp.bairro) + '</div>' : '') +
+        '<div>🎟 Vagas: <strong style="color:' + vagasColor + ';">' + _focoEsc(vagasText) + '</strong>' +
+          (hasVagas ? ' <span style="color:#888;font-size:.78rem;">(' + Math.round(vagasPct * 100) + '%)</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">' +
+        '<button type="button" data-foco-copy="' + _focoEsc(exp.id) + '" style="flex:1;min-width:120px;padding:8px 10px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">📋 Copiar mensagem</button>' +
+        '<a href="https://elarah.com.br/experiencia.html?id=' + _focoEsc(exp.id) + '" target="_blank" rel="noopener" title="Abrir página pública" style="padding:8px 12px;background:#fff;border:1px solid #ddd;color:#444;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;">🔗</a>' +
+        '<button type="button" data-foco-edit="' + _focoEsc(exp.id) + '" title="Ir para Experiências e editar" style="padding:8px 12px;background:#fff;border:1px solid #ddd;color:#444;border-radius:8px;font-size:.82rem;cursor:pointer;">✏️</button>' +
+      '</div>' +
+    '</article>';
+  }
+
+  async function renderExperienciasFoco() {
+    const panel = document.getElementById('panel-experiencias-foco');
+    if (!panel) return;
+
+    const weekListEl = document.getElementById('foco-week-list');
+    const byelarahListEl = document.getElementById('foco-byelarah-list');
+    const criticalListEl = document.getElementById('foco-critical-list');
+    if (!weekListEl || !byelarahListEl || !criticalListEl) return;
+
+    weekListEl.innerHTML = '<p style="color:#888;font-size:.85rem;">Carregando…</p>';
+    byelarahListEl.innerHTML = '';
+    criticalListEl.innerHTML = '';
+
+    // Janela de datas pro stat "Semana de"
+    const now = new Date();
+    const start = new Date(now); start.setDate(now.getDate() + FOCO_WEEK_MIN_DAYS);
+    const end = new Date(now); end.setDate(now.getDate() + FOCO_WEEK_MAX_DAYS);
+    const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const semanaLabel = fmt(start) + ' – ' + fmt(end);
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('stat-foco-semana', semanaLabel);
+
+    // Wire template textarea + reset (uma vez)
+    const tplEl = document.getElementById('foco-tpl');
+    const tplResetBtn = document.getElementById('foco-tpl-reset');
+    if (tplEl && !tplEl.dataset.wired) {
+      tplEl.value = _focoTpl();
+      tplEl.addEventListener('input', () => _focoSaveTpl(tplEl.value));
+      tplEl.dataset.wired = '1';
+    }
+    if (tplResetBtn && !tplResetBtn.dataset.wired) {
+      tplResetBtn.addEventListener('click', () => {
+        if (tplEl) tplEl.value = FOCO_TPL_DEFAULT;
+        _focoSaveTpl(FOCO_TPL_DEFAULT);
+      });
+      tplResetBtn.dataset.wired = '1';
+    }
+
+    // Carrega experiências
+    let allExps = [];
+    try {
+      if (window.ElarahData && ElarahData.getAllExperiences) {
+        allExps = await ElarahData.getAllExperiences();
+      }
+    } catch (e) {
+      console.warn('[Elarah Foco] erro ao carregar experiências:', e);
+    }
+
+    // Filtra ativas e não-ocultas. Mesmo critério da home.
+    const active = (allExps || []).filter(e => e && e.isActive !== false);
+
+    // Computa grupos
+    const focoSemana = [];
+    const byelarah = [];
+    const critical = [];
+
+    active.forEach(exp => {
+      const parsed = _focoParseEventDate(exp);
+      const days = parsed.daysFromNow;
+
+      // Grupo 1: foco da semana (10-16 dias)
+      if (days != null && days >= FOCO_WEEK_MIN_DAYS && days <= FOCO_WEEK_MAX_DAYS) {
+        focoSemana.push({ exp, days });
+      }
+
+      // Grupo 2: By Elarah Originals (sempre, sem filtro de data)
+      if (exp.isElarahOriginal === true) {
+        byelarah.push({ exp, days });
+      }
+
+      // Grupo 3: Vagas críticas (<30% vagas E evento no próximo mês)
+      const vagasRest = Number(exp.vagasRestantes);
+      const vagasTot = Number(exp.vagasTotal);
+      if (isFinite(vagasRest) && isFinite(vagasTot) && vagasTot > 0 &&
+          (vagasRest / vagasTot) < FOCO_CRITICAL_PCT &&
+          days != null && days >= 0 && days <= FOCO_CRITICAL_DAYS) {
+        critical.push({ exp, days });
+      }
+    });
+
+    // Ordena por data (mais próximas primeiro)
+    const sortByDays = (a, b) => (a.days == null ? 9999 : a.days) - (b.days == null ? 9999 : b.days);
+    focoSemana.sort(sortByDays);
+    byelarah.sort(sortByDays);
+    critical.sort(sortByDays);
+
+    setText('stat-foco-week-count', focoSemana.length);
+    setText('stat-foco-byelarah-count', byelarah.length);
+    setText('stat-foco-critical-count', critical.length);
+
+    // Render dos 3 grupos
+    weekListEl.innerHTML = focoSemana.length
+      ? focoSemana.map(o => _focoRenderCard(o.exp, {
+          badge: '🎯 Foco semana', badgeBg: '#fff8ef', badgeFg: '#a4663b',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência marcada pra esta semana de divulgação. Atualize a data de eventos em <strong>Experiências</strong> ou aguarde a próxima janela.</p>';
+
+    byelarahListEl.innerHTML = byelarah.length
+      ? byelarah.map(o => _focoRenderCard(o.exp, {
+          badge: '✨ By Elarah', badgeBg: '#fcefef', badgeFg: '#a04500',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência marcada como <em>By Elarah Original</em>. Marque na aba <strong>Experiências</strong> → editar → seção "By Elarah".</p>';
+
+    criticalListEl.innerHTML = critical.length
+      ? critical.map(o => _focoRenderCard(o.exp, {
+          badge: '🔥 Vagas críticas', badgeBg: '#fdecea', badgeFg: '#9c2f22',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência com vagas críticas. Bom sinal — sem nada esgotando às pressas.</p>';
+
+    // Wire ações em todos os cards (delegação por click)
+    panel.querySelectorAll('[data-foco-copy]').forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.focoCopy;
+        const exp = active.find(e => e.id === id);
+        if (!exp) return;
+        const tpl = (document.getElementById('foco-tpl') || {}).value || _focoTpl();
+        const text = _focoRenderTemplate(tpl, exp);
+        try {
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = '✓ Copiado!';
+            btn.style.background = '#1a8a4a';
+            setTimeout(() => { btn.textContent = orig; btn.style.background = '#f0a05e'; }, 1500);
+          }, () => alert(text));
+        } catch (e) { alert(text); }
+      });
+    });
+    panel.querySelectorAll('[data-foco-edit]').forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => {
+        // Atalho: leva pra aba Experiências. O admin abre o filtro
+        // por nome lá. Sem deep-link específico pra evitar acoplamento
+        // entre módulos.
+        const navBtn = document.querySelector('.admin__nav-item[data-panel="experiences"]');
+        if (navBtn) navBtn.click();
+      });
+    });
+  }
+
+  // =================================================================
+  // ===== RECORRÊNCIA SEMANAL (Fase 2 — admin UI) ==================
+  // -----------------------------------------------------------------
+  // CRUD das experience_recurrence_rules + listagem das próximas
+  // datas materializadas + cancelar/reativar exceções.
+  //
+  // Dependências:
+  //   - SQL elarah_experience_recurrence_rules.sql rodado (Fase 1)
+  //   - Modal de edição de experiência aberto em modo EDIÇÃO
+  //
+  // A trigger SQL materialize_recurrence_after_change cuida da geração
+  // dos slots — admin só precisa criar/editar a regra. UI mostra
+  // feedback visual do que foi gerado.
+  // =================================================================
+
+  // Mapa weekday → label PT-BR (convenção PostgreSQL extract(dow))
+  const RECURRENCE_WEEKDAYS = [
+    { v: 0, label: 'Domingo' },
+    { v: 1, label: 'Segunda-feira' },
+    { v: 2, label: 'Terça-feira' },
+    { v: 3, label: 'Quarta-feira' },
+    { v: 4, label: 'Quinta-feira' },
+    { v: 5, label: 'Sexta-feira' },
+    { v: 6, label: 'Sábado' },
+  ];
+
+  function _recurrenceEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  function _recurrenceWeekdayLabel(v) {
+    const item = RECURRENCE_WEEKDAYS.find(w => w.v === v);
+    return item ? item.label : '—';
+  }
+
+  // Versão curta dos labels pra exibir múltiplos dias compactos:
+  // [4, 2, 5] → "Ter, Qui, Sex" (ordenado por dia)
+  const WEEKDAY_SHORT = { 0: 'Dom', 1: 'Seg', 2: 'Ter', 3: 'Qua', 4: 'Qui', 5: 'Sex', 6: 'Sáb' };
+  function _recurrenceWeekdaysShortList(arr) {
+    if (!Array.isArray(arr) || !arr.length) return '—';
+    return arr.slice().sort((a, b) => a - b).map(v => WEEKDAY_SHORT[v] || '?').join(', ');
+  }
+
+  // Converte time "HH:MM:SS" do banco pro input type=time ("HH:MM").
+  function _recurrenceTimeForInput(t) {
+    if (!t) return '';
+    const s = String(t).trim();
+    if (s.length >= 5) return s.slice(0, 5);
+    return s;
+  }
+
+  // Carrega regras + slots futuros e renderiza no painel.
+  async function _recurrenceLoadAndRender(experienceId) {
+    if (!experienceId) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const section = document.getElementById('exp-recurrence-section');
+    if (!section) return;
+
+    // Mostra a seção e limpa msg
+    section.style.display = '';
+    const msgEl = document.getElementById('exp-recurrence-msg');
+    if (msgEl) msgEl.textContent = '';
+
+    // Busca regras + slots futuros em paralelo
+    const [rulesRes, slotsRes] = await Promise.all([
+      sb.from('experience_recurrence_rules')
+        .select('id, weekdays, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
+        .eq('experience_id', experienceId)
+        .order('created_at', { ascending: true }),
+      sb.from('experience_slots')
+        .select('id, data, horario, vagas_total, vagas_restantes, event_at, is_active, recurrence_rule_id')
+        .eq('experience_id', experienceId)
+        .gte('event_at', new Date().toISOString())
+        .order('event_at', { ascending: true })
+        .limit(40),
+    ]);
+
+    if (rulesRes.error) {
+      console.error('[Elarah Recurrence] load rules error:', rulesRes.error);
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Erro ao carregar regras: ' + (rulesRes.error.message || rulesRes.error.code);
+      }
+      return;
+    }
+
+    const rules = rulesRes.data || [];
+    const slots = slotsRes.error ? [] : (slotsRes.data || []);
+
+    _recurrenceRenderRules(experienceId, rules);
+    _recurrenceRenderSlots(rules, slots);
+  }
+
+  function _recurrenceRenderRules(experienceId, rules) {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+
+    if (!rules.length) {
+      listEl.innerHTML = '<p style="margin:0;color:#888;font-size:.85rem;font-style:italic;">Nenhuma regra cadastrada. Clique em "+ Adicionar regra de recorrência" pra criar a primeira.</p>';
+      _recurrenceWireAddBtn(experienceId);
+      return;
+    }
+
+    listEl.innerHTML = rules.map(r => _recurrenceRuleCard(r)).join('');
+    _recurrenceWireRuleCards(experienceId, rules);
+    _recurrenceWireAddBtn(experienceId);
+  }
+
+  // Card editável inline pra uma regra. Status visual claro: ativa
+  // (laranja) vs inativa (cinza). Edit/Salvar/Desativar inline.
+  // Suporta múltiplos dias da semana — admin marca checkboxes pra
+  // criar 1 regra "terça + quinta + sexta às 19h, 12 vagas".
+  function _recurrenceRuleCard(r) {
+    const isActive = r.is_active !== false;
+    const bg = isActive ? '#fffaf2' : '#f4f4f4';
+    const border = isActive ? '#f0a05e' : '#ccc';
+    const labelOpacity = isActive ? '1' : '.55';
+
+    // Set de weekdays selecionados — aceita weekdays (array novo) ou
+    // weekday (campo antigo, retrocompat). Vazio = default quinta.
+    const selected = new Set();
+    if (Array.isArray(r.weekdays)) {
+      r.weekdays.forEach(v => selected.add(Number(v)));
+    } else if (typeof r.weekday === 'number') {
+      selected.add(r.weekday);  // backfill em memória
+    }
+
+    const checkboxesHtml = RECURRENCE_WEEKDAYS.map(w => {
+      const checked = selected.has(w.v) ? ' checked' : '';
+      const labelBg = selected.has(w.v) ? '#fff8ef' : '#fff';
+      const labelBorder = selected.has(w.v) ? '#f0a05e' : '#ddd';
+      const labelColor = selected.has(w.v) ? '#a4663b' : '#666';
+      return '<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:' + labelBg + ';border:1px solid ' + labelBorder + ';border-radius:999px;cursor:pointer;font-size:.78rem;font-weight:600;color:' + labelColor + ';">' +
+        '<input type="checkbox" data-rec-field="weekday-check" data-weekday="' + w.v + '" value="' + w.v + '"' + checked + ' style="margin:0;cursor:pointer;">' +
+        w.label.replace('-feira', '') +
+      '</label>';
+    }).join('');
+
+    return '<div class="rec-rule-card" data-rec-rule-id="' + _recurrenceEsc(r.id) + '" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + labelOpacity + ';">' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;margin-bottom:6px;">Dias da semana</label>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;" data-rec-field="weekdays-container">' + checkboxesHtml + '</div>' +
+        '<p style="margin:6px 0 0;font-size:.72rem;color:#888;font-style:italic;">Marque um ou mais dias. Cada dia marcado gera 8 slots (8 semanas × N dias = total).</p>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Início' +
+          '<input type="time" data-rec-field="hora_inicio" value="' + _recurrenceEsc(_recurrenceTimeForInput(r.hora_inicio)) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Fim (opcional)' +
+          '<input type="time" data-rec-field="hora_fim" value="' + _recurrenceEsc(_recurrenceTimeForInput(r.hora_fim)) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Vagas' +
+          '<input type="number" data-rec-field="vagas_total" min="1" step="1" value="' + _recurrenceEsc(r.vagas_total) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Horizon (semanas)' +
+          '<input type="number" data-rec-field="horizon_weeks" min="1" max="52" step="1" value="' + _recurrenceEsc(r.horizon_weeks) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;width:100%;">Rótulo do horário' +
+          '<input type="text" data-rec-field="horario_label" value="' + _recurrenceEsc(r.horario_label) + '" placeholder="Ex: 19h00 – 22h00" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+        '<button type="button" data-rec-action="save" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Salvar regra</button>' +
+        (isActive
+          ? '<button type="button" data-rec-action="deactivate" style="padding:7px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Desativar</button>'
+          : '<button type="button" data-rec-action="reactivate" style="padding:7px 14px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Reativar</button>'
+        ) +
+        '<button type="button" data-rec-action="materialize" title="Gerar slots manualmente (já roda auto ao salvar; use só pra recriar horizon)" style="padding:7px 14px;background:#fff;border:1px solid #ddd;color:#666;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">↻ Materializar</button>' +
+      '</div>' +
+      '<div data-rec-rule-msg style="margin-top:6px;font-size:.78rem;min-height:1em;"></div>' +
+    '</div>';
+  }
+
+  function _recurrenceWireAddBtn(experienceId) {
+    const addBtn = document.getElementById('exp-recurrence-add-btn');
+    if (!addBtn || addBtn.dataset.wired) return;
+    addBtn.dataset.wired = '1';
+    addBtn.addEventListener('click', () => _recurrenceCreateNew(experienceId));
+  }
+
+  function _recurrenceWireRuleCards(experienceId, rules) {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+    // Delegação por card pra não vazar handlers em re-renders
+    listEl.querySelectorAll('.rec-rule-card').forEach(card => {
+      if (card.dataset.wired) return;
+      card.dataset.wired = '1';
+      const ruleId = card.dataset.recRuleId;
+
+      card.addEventListener('click', async (e) => {
+        const btn = e.target && e.target.closest('button[data-rec-action]');
+        if (!btn) return;
+        const action = btn.dataset.recAction;
+        if (action === 'save') {
+          await _recurrenceSaveCard(card, ruleId, experienceId, rules);
+        } else if (action === 'deactivate') {
+          await _recurrenceSetActive(card, ruleId, experienceId, false);
+        } else if (action === 'reactivate') {
+          await _recurrenceSetActive(card, ruleId, experienceId, true);
+        } else if (action === 'materialize') {
+          await _recurrenceMaterialize(card, ruleId, experienceId);
+        }
+      });
+
+      // Atualiza visual do label da checkbox ao marcar/desmarcar
+      // (laranja quando marcado, cinza quando desmarcado). Visual
+      // imediato sem precisar salvar.
+      card.addEventListener('change', (e) => {
+        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"]') ? e.target : null;
+        if (!cb) return;
+        const lbl = cb.closest('label');
+        if (!lbl) return;
+        if (cb.checked) {
+          lbl.style.background = '#fff8ef';
+          lbl.style.borderColor = '#f0a05e';
+          lbl.style.color = '#a4663b';
+        } else {
+          lbl.style.background = '#fff';
+          lbl.style.borderColor = '#ddd';
+          lbl.style.color = '#666';
+        }
+      });
+    });
+  }
+
+  // Cria uma regra nova com defaults sensatos. Trigger SQL gera os
+  // slots automaticamente após o INSERT.
+  async function _recurrenceCreateNew(experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msgEl = document.getElementById('exp-recurrence-msg');
+    if (msgEl) msgEl.textContent = '';
+
+    // Defaults: quinta 19h00, 12 vagas, horizon 8 semanas
+    // weekdays é array — admin pode marcar mais dias depois (Ter/Qui/Sex, etc.)
+    const payload = {
+      experience_id: experienceId,
+      weekdays: [4],
+      hora_inicio: '19:00:00',
+      horario_label: '19h00 – 22h00',
+      vagas_total: 12,
+      horizon_weeks: 8,
+      is_active: true,
+    };
+    const { error } = await sb.from('experience_recurrence_rules').insert(payload);
+    if (error) {
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Erro ao criar regra: ' + (error.message || error.code);
+      }
+      console.error('[Elarah Recurrence] create error:', error);
+      return;
+    }
+    // Re-render — trigger SQL já materializou os slots automaticamente
+    await _recurrenceLoadAndRender(experienceId);
+    if (msgEl) {
+      msgEl.style.color = '#1a8a4a';
+      msgEl.textContent = '✓ Regra criada e slots gerados';
+      setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 2500);
+    }
+  }
+
+  // Salva mudanças num card. Estratégia: lê o estado novo, busca o
+  // estado atual no banco, compara. Se horario_label ou weekday
+  // mudaram, faz cleanup de slots futuros SEM bookings que tenham
+  // o horario antigo (vira órfão). Slots COM bookings ficam (viram
+  // "manuais" depois que a regra remateurializa nova série).
+  async function _recurrenceSaveCard(card, ruleId, experienceId, rulesCache) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+
+    const oldRule = (rulesCache || []).find(r => r.id === ruleId) || null;
+    const getVal = (field) => {
+      const el = card.querySelector('[data-rec-field="' + field + '"]');
+      return el ? el.value : '';
+    };
+
+    // Lê array de weekdays marcados nos checkboxes
+    const newWeekdays = Array.from(
+      card.querySelectorAll('[data-rec-field="weekday-check"]:checked')
+    ).map(cb => Number(cb.value)).filter(v => v >= 0 && v <= 6).sort((a, b) => a - b);
+    const newHoraInicio = getVal('hora_inicio');
+    const newHoraFim = getVal('hora_fim') || null;
+    const newHorarioLabel = (getVal('horario_label') || '').trim();
+    const newVagasTotal = Number(getVal('vagas_total'));
+    const newHorizonWeeks = Number(getVal('horizon_weeks'));
+
+    if (!newWeekdays.length) { _recurrenceCardErr(cardMsg, 'Marque pelo menos 1 dia da semana.'); return; }
+    if (!newHoraInicio) { _recurrenceCardErr(cardMsg, 'Hora início obrigatória.'); return; }
+    if (!newHorarioLabel) { _recurrenceCardErr(cardMsg, 'Rótulo do horário obrigatório.'); return; }
+    if (!isFinite(newVagasTotal) || newVagasTotal < 1) { _recurrenceCardErr(cardMsg, 'Vagas deve ser inteiro >= 1.'); return; }
+    if (!isFinite(newHorizonWeeks) || newHorizonWeeks < 1 || newHorizonWeeks > 52) { _recurrenceCardErr(cardMsg, 'Horizon entre 1 e 52 semanas.'); return; }
+
+    // Cleanup proativo de órfãos ANTES de salvar.
+    // Quando horario_label OU weekday muda, os slots FUTUROS que a
+    // regra criou com valores antigos ficam órfãos (cliente vê dois
+    // horários no mesmo dia). Solução conservadora:
+    //   1. Lista slots futuros desta regra com horário/dow antigos
+    //   2. Pra cada, checa se tem booking (paid) referenciando
+    //   3. Sem bookings → apaga (limpa)
+    //   4. Com bookings → preserva, mas desliga recurrence_rule_id
+    //      (vira manual) — usuário cuida no admin se quiser
+    // Detecta mudança em horario_label OU em weekdays (comparação de arrays).
+    // Se mudou, cleanup remove slots futuros com valores antigos (sem
+    // bookings = delete; com bookings = vira manual via recurrence_rule_id=NULL).
+    const horarioChanged = oldRule && oldRule.horario_label !== newHorarioLabel;
+    const oldWeekdays = Array.isArray(oldRule && oldRule.weekdays)
+      ? oldRule.weekdays.slice().sort((a, b) => a - b)
+      : (oldRule && typeof oldRule.weekday === 'number' ? [oldRule.weekday] : []);
+    const weekdaysChanged = oldRule &&
+      (oldWeekdays.length !== newWeekdays.length ||
+       oldWeekdays.some((v, i) => v !== newWeekdays[i]));
+    if ((horarioChanged || weekdaysChanged) && oldRule) {
+      try {
+        const cleaned = await _recurrenceCleanupOrphans(experienceId, oldRule);
+        if (cleaned > 0) {
+          console.info('[Elarah Recurrence] cleanup: ' + cleaned + ' slot(s) órfão(s) removidos/desligados');
+        }
+      } catch (e) {
+        console.warn('[Elarah Recurrence] cleanup falhou (segue mesmo assim):', e && e.message);
+      }
+    }
+
+    const patch = {
+      weekdays: newWeekdays,
+      hora_inicio: newHoraInicio,
+      hora_fim: newHoraFim,
+      horario_label: newHorarioLabel,
+      vagas_total: newVagasTotal,
+      horizon_weeks: newHorizonWeeks,
+    };
+    const { error } = await sb.from('experience_recurrence_rules').update(patch).eq('id', ruleId);
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro ao salvar: ' + (error.message || error.code));
+      console.error('[Elarah Recurrence] save error:', error);
+      return;
+    }
+    _recurrenceCardOk(cardMsg, '✓ Salvo. Slots atualizados.');
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Desativa OU reativa uma regra. Soft-delete: trigger materialize
+  // não dispara em desativação, mas dispara em reativação (e gera
+  // slots novos pro horizon).
+  async function _recurrenceSetActive(card, ruleId, experienceId, active) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+
+    if (!active) {
+      const yes = confirm('Desativar essa regra? Os slots já gerados continuam ativos (pra honrar reservas), mas novos slots não serão criados.');
+      if (!yes) return;
+    }
+    const { error } = await sb.from('experience_recurrence_rules')
+      .update({ is_active: active })
+      .eq('id', ruleId);
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro: ' + (error.message || error.code));
+      return;
+    }
+    _recurrenceCardOk(cardMsg, active ? '✓ Reativada' : '✓ Desativada');
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Chama materialize_recurrence_slots RPC manualmente. Útil pra
+  // estender horizon após cron quebrar, ou pra forçar re-cálculo.
+  async function _recurrenceMaterialize(card, ruleId, experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+    const { data, error } = await sb.rpc('materialize_recurrence_slots', { p_rule_id: ruleId });
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro materialize: ' + (error.message || error.code));
+      return;
+    }
+    const n = typeof data === 'number' ? data : (data && data[0]) || 0;
+    _recurrenceCardOk(cardMsg, '✓ Materialize OK (' + n + ' slot' + (n === 1 ? '' : 's') + ' novo' + (n === 1 ? '' : 's') + ')');
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Apaga (ou desliga recurrence_rule_id) slots órfãos quando o
+  // horario_label ou weekday muda. Slots COM bookings são preservados
+  // virando "manuais" (recurrence_rule_id=null) — admin cuida.
+  // Retorna número de slots tratados.
+  async function _recurrenceCleanupOrphans(experienceId, oldRule) {
+    const sb = window.supabaseClient;
+    if (!sb || !oldRule) return 0;
+
+    // Lista slots futuros desta regra com horario antigo
+    const { data: candidates, error: err1 } = await sb
+      .from('experience_slots')
+      .select('id, data, horario, event_at')
+      .eq('experience_id', experienceId)
+      .eq('recurrence_rule_id', oldRule.id)
+      .eq('horario', oldRule.horario_label)
+      .gte('event_at', new Date().toISOString());
+    if (err1 || !candidates || !candidates.length) return 0;
+
+    let cleaned = 0;
+    for (const slot of candidates) {
+      // Checa se tem booking ativo apontando pra esse slot
+      const { count, error: errCount } = await sb
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('slot_id', slot.id);
+      if (errCount) {
+        console.warn('[Elarah Recurrence] cleanup count error:', errCount.message);
+        continue;
+      }
+      if ((count || 0) > 0) {
+        // Tem booking — desliga rule_id (vira manual, preserva tudo)
+        await sb.from('experience_slots')
+          .update({ recurrence_rule_id: null })
+          .eq('id', slot.id);
+      } else {
+        // Sem booking — apaga (é um órfão real)
+        await sb.from('experience_slots').delete().eq('id', slot.id);
+      }
+      cleaned += 1;
+    }
+    return cleaned;
+  }
+
+  function _recurrenceCardErr(el, txt) { if (el) { el.style.color = '#c0392b'; el.textContent = txt; } }
+  function _recurrenceCardOk(el, txt)  { if (el) { el.style.color = '#1a8a4a'; el.textContent = txt; } }
+
+  // Render da lista de slots futuros (próximas datas geradas).
+  function _recurrenceRenderSlots(rules, slots) {
+    const wrap = document.getElementById('exp-recurrence-slots-wrap');
+    const listEl = document.getElementById('exp-recurrence-slots-list');
+    if (!wrap || !listEl) return;
+
+    // Mostra só slots vinculados a regras (recurrence_rule_id != null)
+    const recSlots = (slots || []).filter(s => s.recurrence_rule_id);
+    if (!recSlots.length) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+
+    // Agrupa por rule_id pra mostrar de qual regra cada slot veio
+    const ruleById = new Map();
+    (rules || []).forEach(r => ruleById.set(r.id, r));
+
+    listEl.innerHTML = recSlots.map(s => _recurrenceSlotRow(s, ruleById.get(s.recurrence_rule_id))).join('');
+
+    // Wire toggle/active de cada slot
+    listEl.querySelectorAll('[data-slot-toggle]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const slotId = btn.dataset.slotToggle;
+        const targetActive = btn.dataset.slotTargetActive === '1';
+        await _recurrenceToggleSlot(slotId, targetActive);
+      });
+    });
+  }
+
+  function _recurrenceSlotRow(slot, rule) {
+    const evt = slot.event_at ? new Date(slot.event_at) : null;
+    const dataLabel = evt
+      ? evt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', weekday: 'short' })
+      : (slot.data || '—');
+    const horarioLabel = slot.horario || '—';
+    const vagasRest = Number(slot.vagas_restantes);
+    const vagasTot = Number(slot.vagas_total);
+    const reservadas = (isFinite(vagasRest) && isFinite(vagasTot)) ? Math.max(0, vagasTot - vagasRest) : null;
+    const isActive = slot.is_active !== false;
+
+    const ruleHint = rule ? ('Regra: ' + _recurrenceWeekdayLabel(rule.weekday) + ' ' + (rule.horario_label || '')) : '';
+
+    const statusBadge = isActive
+      ? '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">ATIVA</span>'
+      : '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#fdecea;color:#9c2f22;font-size:.7rem;font-weight:700;">CANCELADA</span>';
+
+    const vagasInfo = (reservadas !== null)
+      ? (reservadas > 0
+          ? '<span style="color:#a4663b;font-weight:600;">' + reservadas + ' reserva' + (reservadas === 1 ? '' : 's') + '</span> · ' + vagasRest + '/' + vagasTot + ' vagas'
+          : vagasRest + '/' + vagasTot + ' vagas livres')
+      : (isFinite(vagasRest) ? vagasRest + ' vagas' : 'vagas indef.');
+
+    const toggleBtn = isActive
+      ? '<button type="button" data-slot-toggle="' + _recurrenceEsc(slot.id) + '" data-slot-target-active="0" title="Cancelar essa data específica (mantém regra ativa). Não volta depois." style="padding:5px 10px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancelar data</button>'
+      : '<button type="button" data-slot-toggle="' + _recurrenceEsc(slot.id) + '" data-slot-target-active="1" title="Reativar essa data" style="padding:5px 10px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">Reativar</button>';
+
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #eee;border-radius:8px;flex-wrap:wrap;">' +
+      '<div style="display:flex;flex-direction:column;gap:2px;">' +
+        '<div style="font-size:.88rem;color:#1a1a1a;font-weight:600;">' + _recurrenceEsc(dataLabel) + ' · ' + _recurrenceEsc(horarioLabel) + ' ' + statusBadge + '</div>' +
+        '<div style="font-size:.74rem;color:#888;">' + _recurrenceEsc(vagasInfo) + (ruleHint ? ' · <em>' + _recurrenceEsc(ruleHint) + '</em>' : '') + '</div>' +
+      '</div>' +
+      toggleBtn +
+    '</div>';
+  }
+
+  // Cancelar/reativar 1 slot específico (exceção).
+  async function _recurrenceToggleSlot(slotId, targetActive) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    if (!targetActive) {
+      const yes = confirm('Cancelar essa data específica? A regra continua ativa, mas essa data não será recriada mesmo após nova materialização. Se houver reservas pagas nessa data, elas continuam válidas no banco — você precisa contatar os clientes separadamente.');
+      if (!yes) return;
+    }
+    const { error } = await sb.from('experience_slots')
+      .update({ is_active: targetActive })
+      .eq('id', slotId);
+    if (error) {
+      alert('Erro: ' + (error.message || error.code));
+      return;
+    }
+    // Re-render só a parte de slots da experiência aberta
+    const expId = document.getElementById('exp-edit-id') && document.getElementById('exp-edit-id').value;
+    if (expId) _recurrenceLoadAndRender(expId);
+  }
 
   // ===== START =====
   if (document.readyState === 'loading') {
