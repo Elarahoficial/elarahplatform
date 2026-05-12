@@ -28,6 +28,20 @@
     .exp-detail__horario-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
     .exp-detail__horario-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
     .exp-detail__horario-btn--sold-out { opacity: .45; text-decoration: line-through; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__schedule { margin-bottom: 24px; }
+    .exp-detail__schedule-block { margin-bottom: 16px; }
+    .exp-detail__schedule-block:last-child { margin-bottom: 0; }
+    .exp-detail__schedule-label { font-size: .72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+    .exp-detail__datas { display: flex; flex-wrap: wrap; gap: 8px; }
+    .exp-detail__data-btn { padding: 10px 14px; font-size: .82rem; font-weight: 600; border: 1.5px solid #ddd; border-radius: 999px; background: #fff; color: #555; cursor: pointer; transition: all .15s; white-space: nowrap; font-family: inherit; line-height: 1.1; text-align: center; min-width: 88px; }
+    .exp-detail__data-btn:hover:not(:disabled) { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
+    .exp-detail__data-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
+    .exp-detail__data-btn--sold-out { opacity: .45; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__data-btn small { display: block; font-size: .68rem; opacity: .75; font-weight: 500; margin-top: 2px; }
+    @media (max-width: 600px) {
+      .exp-detail__data-btn { padding: 8px 12px; font-size: .78rem; min-width: 80px; }
+      .exp-detail__horario-btn { padding: 8px 14px; font-size: .82rem; }
+    }
     .exp-detail__includes { font-size: .9rem; color: #666; margin-bottom: 24px; padding: 14px 18px; background: #faf6f0; border-radius: 12px; }
     .exp-detail__includes strong { color: #1a1a1a; }
     .exp-detail__desc { font-size: .95rem; line-height: 1.7; color: #444; white-space: pre-line; margin-bottom: 32px; }
@@ -155,7 +169,7 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=23"></script>
 <script src="analytics.js?v=2"></script>
-<script src="script.js?v=44"></script>
+<script src="script.js?v=45"></script>
 <script>
 (function () {
   'use strict';
@@ -250,12 +264,29 @@
 
     // Load slots for availability
     var slotMap = {};
+    var allSlots = [];
     try {
       if (ElarahData.getSlotsForExperience) {
-        var slots = await ElarahData.getSlotsForExperience(expId);
-        slots.forEach(function (sl) { slotMap[sl.horario] = sl; });
+        allSlots = await ElarahData.getSlotsForExperience(expId) || [];
+        allSlots.forEach(function (sl) { slotMap[sl.horario] = sl; });
       }
     } catch (e) { /* ok */ }
+
+    // Slots futuros agrupados por data (event_at).
+    // Inclui slots manuais E recorrentes — `recurrence_rule_id` é
+    // irrelevante na renderização (cliente só precisa ver data+horario).
+    var now = new Date();
+    var futureSlots = allSlots
+      .filter(function (s) { return s.isActive !== false; })
+      .filter(function (s) { return s.eventAt && new Date(s.eventAt) >= now; })
+      .filter(function (s) {
+        if (s.vagasTotal == null) return true;
+        var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+        return rest > 0;
+      });
+    futureSlots.sort(function (a, b) {
+      return new Date(a.eventAt) - new Date(b.eventAt);
+    });
 
     var horarios = Array.isArray(exp.horarios) && exp.horarios.length
       ? exp.horarios : (exp.horario ? [exp.horario] : []);
@@ -280,10 +311,111 @@
         'onerror="' + heroOnErr + '">'
       : heroPlaceholder;
 
-    // Horario buttons
+    // Renderização da agenda — chips de DATA → chips de HORÁRIO.
+    // Cliente escolhe primeiro a data e depois o horário daquela data.
+    // Funciona com slots recorrentes E manuais (não distingue).
+    // Fallback: se experiência não tem slot futuro algum, usa o array
+    // legado exp.horarios (sem datas) — preserva fluxo antigo.
     var firstAvailable = -1;
     var horariosHtml = '';
-    if (horarios.length > 0) {
+    var useScheduleNew = futureSlots.length > 0;
+
+    if (useScheduleNew) {
+      // Agrupa por data (chave: YYYY-MM-DD do event_at).
+      var byDate = {};
+      var dateOrder = [];
+      futureSlots.forEach(function (s) {
+        var d = new Date(s.eventAt);
+        var key = d.getFullYear() + '-' +
+                  String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                  String(d.getDate()).padStart(2, '0');
+        if (!byDate[key]) {
+          byDate[key] = {
+            key: key,
+            dt: d,
+            wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+            dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+            slots: [],
+          };
+          dateOrder.push(key);
+        }
+        byDate[key].slots.push(s);
+      });
+
+      // HTML dos chips de data
+      var datasHtml = dateOrder.map(function (k, i) {
+        var g = byDate[k];
+        var anyAvailable = g.slots.some(function (s) {
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+          return rest > 0;
+        });
+        var cls = 'exp-detail__data-btn';
+        if (!anyAvailable) cls += ' exp-detail__data-btn--sold-out';
+        else if (i === 0) cls += ' exp-detail__data-btn--active';
+        return '<button type="button" class="' + cls + '"' +
+               (anyAvailable ? '' : ' disabled') +
+               ' data-date-key="' + esc(k) + '">' +
+               '<strong>' + esc(g.wd) + '</strong>' +
+               '<small>' + esc(g.dm) + '</small>' +
+               '</button>';
+      }).join('');
+
+      // HTML dos horários da primeira data (renderizado dinâmico via onClick)
+      function renderHorariosFor(dateKey) {
+        var g = byDate[dateKey];
+        if (!g) return '';
+        var html = '';
+        var picked = false;
+        g.slots.forEach(function (s, i) {
+          var rest = s.vagasTotal == null ? null : (s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal);
+          var soldOut = rest !== null && rest <= 0;
+          var cls = 'exp-detail__horario-btn';
+          if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
+          else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
+          var label = s.horario + (soldOut ? ' (esgotado)' : (rest !== null ? ' · ' + rest + ' vagas' : ''));
+          html += '<button type="button" class="' + cls + '"' +
+                  (soldOut ? ' disabled' : '') +
+                  ' data-horario="' + esc(s.horario) + '"' +
+                  ' data-data="' + esc(s.data || g.dm) + '"' +
+                  ' data-data-label="' + esc(g.wd + ', ' + g.dm) + '"' +
+                  ' data-slot-id="' + esc(s.id) + '">' + esc(label) + '</button>';
+        });
+        return html;
+      }
+
+      // Estado inicial: primeira data disponível
+      var initialKey = dateOrder.find(function (k) {
+        return byDate[k].slots.some(function (s) {
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+          return rest > 0;
+        });
+      }) || dateOrder[0];
+
+      horariosHtml =
+        '<div class="exp-detail__schedule">' +
+          '<div class="exp-detail__schedule-block">' +
+            '<div class="exp-detail__schedule-label">Escolha uma data</div>' +
+            '<div class="exp-detail__datas">' + datasHtml + '</div>' +
+          '</div>' +
+          '<div class="exp-detail__schedule-block">' +
+            '<div class="exp-detail__schedule-label">Escolha um horário</div>' +
+            '<div class="exp-detail__horarios" id="exp-horarios">' +
+              renderHorariosFor(initialKey) +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      // Guarda no escopo pra wire-up posterior
+      window.__expScheduleData = {
+        byDate: byDate,
+        dateOrder: dateOrder,
+        renderHorariosFor: renderHorariosFor,
+        initialKey: initialKey,
+      };
+    } else if (horarios.length > 0) {
+      // Fallback legado: experiência sem slots configurados.
       horariosHtml = '<div class="exp-detail__horarios">';
       horarios.forEach(function (h, i) {
         var sl = slotMap[h];
@@ -345,23 +477,69 @@
         '</button>' +
       '</div>';
 
-    // Wire horario button clicks
-    container.querySelectorAll('.exp-detail__horario-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        container.querySelectorAll('.exp-detail__horario-btn').forEach(function (b) {
-          b.classList.remove('exp-detail__horario-btn--active');
+    // Wire DATA chip clicks — re-renderiza chips de horário e reseta seleção
+    function wireHorarioButtons() {
+      container.querySelectorAll('.exp-detail__horario-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          container.querySelectorAll('.exp-detail__horario-btn').forEach(function (b) {
+            b.classList.remove('exp-detail__horario-btn--active');
+          });
+          btn.classList.add('exp-detail__horario-btn--active');
+          syncReserveButton(btn);
         });
-        btn.classList.add('exp-detail__horario-btn--active');
-        // Update reserve button data-horario for checkout
-        var reserveBtn = document.getElementById('exp-reserve-btn');
-        if (reserveBtn) reserveBtn.dataset.horario = btn.dataset.horario;
       });
-    });
+    }
 
-    // Set initial horario on reserve button
-    var reserveBtn = document.getElementById('exp-reserve-btn');
-    if (reserveBtn && firstAvailable >= 0) {
-      reserveBtn.dataset.horario = horarios[firstAvailable];
+    function syncReserveButton(horarioBtn) {
+      var reserveBtn = document.getElementById('exp-reserve-btn');
+      if (!reserveBtn) return;
+      if (horarioBtn) {
+        reserveBtn.dataset.horario = horarioBtn.dataset.horario || '';
+        reserveBtn.dataset.data = horarioBtn.dataset.data || '';
+        reserveBtn.dataset.dataLabel = horarioBtn.dataset.dataLabel || '';
+        reserveBtn.dataset.slotId = horarioBtn.dataset.slotId || '';
+      } else {
+        reserveBtn.dataset.horario = '';
+        reserveBtn.dataset.data = '';
+        reserveBtn.dataset.dataLabel = '';
+        reserveBtn.dataset.slotId = '';
+      }
+    }
+
+    if (useScheduleNew && window.__expScheduleData) {
+      var schedData = window.__expScheduleData;
+      var horariosEl = document.getElementById('exp-horarios');
+
+      container.querySelectorAll('.exp-detail__data-btn').forEach(function (dBtn) {
+        if (dBtn.disabled) return;
+        dBtn.addEventListener('click', function () {
+          container.querySelectorAll('.exp-detail__data-btn').forEach(function (b) {
+            b.classList.remove('exp-detail__data-btn--active');
+          });
+          dBtn.classList.add('exp-detail__data-btn--active');
+          if (horariosEl) {
+            horariosEl.innerHTML = schedData.renderHorariosFor(dBtn.dataset.dateKey);
+            wireHorarioButtons();
+            // Sincroniza botão Reservar com primeiro horário ativo da nova data
+            var firstActive = horariosEl.querySelector('.exp-detail__horario-btn--active') ||
+                              horariosEl.querySelector('.exp-detail__horario-btn:not([disabled])');
+            syncReserveButton(firstActive);
+          }
+        });
+      });
+
+      wireHorarioButtons();
+      // Estado inicial: primeiro horário da primeira data
+      var firstHorario = container.querySelector('.exp-detail__horario-btn--active') ||
+                        container.querySelector('.exp-detail__horario-btn:not([disabled])');
+      syncReserveButton(firstHorario);
+    } else {
+      // Fluxo legado (sem slots configurados)
+      wireHorarioButtons();
+      var reserveBtn = document.getElementById('exp-reserve-btn');
+      if (reserveBtn && firstAvailable >= 0) {
+        reserveBtn.dataset.horario = horarios[firstAvailable];
+      }
     }
 
     // Wire share button

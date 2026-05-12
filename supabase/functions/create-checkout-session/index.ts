@@ -289,6 +289,11 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   );
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
+  // Data + slot_id vindos da UI nova (chips de data + horario em experiencia.html).
+  // Quando presentes, lookup do slot é por (exp_id, horario, data) ou por slot_id
+  // direto. Pra clientes legados (sem data/slot_id), comportamento antigo é mantido.
+  const dataFromPayload = payload.data ? String(payload.data).trim() : null;
+  const slotIdFromPayload = payload.slot_id ? String(payload.slot_id).trim() : null;
   const email = payload.email ? String(payload.email).trim() : null;
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
@@ -392,26 +397,61 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const expValorCheioCentavos = exp.valor_cheio_centavos ?? null;
   const expPercentualRepasse = Number(exp.percentual_repasse ?? 90);
 
-  // ===== Slot lookup (vagas por horário) =====
-  // Se existe um slot para este (experience_id, horario), usamos
-  // vagas do slot. Senão, fallback pro experience-level.
+  // ===== Slot lookup (vagas por horário/data) =====
+  // Prioridade:
+  //   1. slot_id explícito (UI nova já enviou o id exato)
+  //   2. (exp_id, horario, data) — quando UI mandou data específica
+  //   3. (exp_id, horario) — legado, falha se houver múltiplos slots
+  //      pro mesmo horário (recorrência) → cliente precisa enviar data
   let slotId: string | null = null;
   let useSlotVagas = false;
   // deno-lint-ignore no-explicit-any
   let slotRow: any = null;
 
-  if (horario) {
+  if (slotIdFromPayload) {
     const { data: sr } = await supabase
       .from("experience_slots")
-      .select("id, vagas_total, vagas_restantes, event_at, is_active")
+      .select("id, vagas_total, vagas_restantes, event_at, is_active, horario, data")
+      .eq("id", slotIdFromPayload)
       .eq("experience_id", exp.id)
-      .eq("horario", horario)
       .maybeSingle();
     if (sr) {
       slotRow = sr;
       slotId = sr.id;
       useSlotVagas = true;
       if (sr.is_active === false) {
+        return jsonResponse(
+          { error: "slot_unavailable", message: "Este horário não está mais disponível." },
+          409,
+        );
+      }
+    }
+  } else if (horario) {
+    let query = supabase
+      .from("experience_slots")
+      .select("id, vagas_total, vagas_restantes, event_at, is_active, horario, data")
+      .eq("experience_id", exp.id)
+      .eq("horario", horario);
+    if (dataFromPayload) {
+      query = query.eq("data", dataFromPayload);
+    }
+    const { data: rows, error: slotErr } = await query;
+    if (!slotErr && Array.isArray(rows) && rows.length > 0) {
+      // Se múltiplos (recorrência sem data filtrada), pega o mais
+      // próximo no futuro. Cliente novo sempre manda `data` → 1 match.
+      const sorted = rows
+        .filter((r) => r.is_active !== false)
+        .sort((a, b) => {
+          const ea = a.event_at ? new Date(a.event_at).getTime() : Infinity;
+          const eb = b.event_at ? new Date(b.event_at).getTime() : Infinity;
+          return ea - eb;
+        });
+      const sr = sorted[0];
+      if (sr) {
+        slotRow = sr;
+        slotId = sr.id;
+        useSlotVagas = true;
+      } else if (rows.length > 0) {
         return jsonResponse(
           { error: "slot_unavailable", message: "Este horário não está mais disponível." },
           409,
@@ -845,7 +885,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       telefone: telefoneToSave,
       experiencia_id: exp.id,
       experiencia_nome: exp.nome,
-      data: exp.data ?? null,
+      data: slotRow?.data ?? exp.data ?? null,
       horario: horario,
       preco_label: exp.preco,
       amount_total: 0,
@@ -1032,7 +1072,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         kind: "experience",
         experiencia_id: exp.id,
         experiencia_nome: exp.nome,
-        data: exp.data ?? "",
+        data: slotRow?.data ?? exp.data ?? "",
         horario: horario ?? "",
         slot_id: slotId ?? "",
         quantidade: String(quantidade),
@@ -1125,7 +1165,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     telefone: telefoneToSave,
     experiencia_id: exp.id,
     experiencia_nome: exp.nome,
-    data: exp.data ?? null,
+    data: slotRow?.data ?? exp.data ?? null,
     horario: horario,
     preco_label: exp.preco,
     amount_total: amountToCharge,
@@ -1170,7 +1210,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         nome: nome,
         experiencia_id: exp.id,
         experiencia_nome: exp.nome,
-        data: exp.data ?? null,
+        data: slotRow?.data ?? exp.data ?? null,
         horario: horario,
         preco_label: exp.preco,
         amount_total: amountToCharge,
