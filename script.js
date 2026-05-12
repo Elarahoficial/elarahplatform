@@ -3838,7 +3838,7 @@ if (groupForm) {
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.style.cssText = horarioChipCss(active, soldOut);
-            btn.textContent = s.horario + (soldOut ? ' (esgotado)' : (rest !== null ? ' · ' + rest + ' vagas' : ''));
+            btn.textContent = s.horario + (soldOut ? ' (esgotado)' : '');
             btn.disabled = soldOut;
             if (active) {
               modalSchedSel.horario = s.horario;
