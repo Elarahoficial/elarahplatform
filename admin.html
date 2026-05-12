@@ -2635,6 +2635,26 @@
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">"Compra direta" abre o checkout normal; "Lista de espera" abre o formulário de lead que envia pro WhatsApp.</p>
         </div>
 
+        <!-- ===== RECORRÊNCIA SEMANAL ===== -->
+        <!-- Aparece só quando editando uma experiência (não em "nova").
+             Cada experiência pode ter N regras (terça + quinta etc).
+             A trigger SQL materializa os slots automaticamente quando
+             a regra é criada/editada. Lista mostra próximas 8 datas
+             com vagas + reservas, com botão pra cancelar/reativar
+             cada data como exceção. -->
+        <div class="admin__form-field admin__form-field--full" id="exp-recurrence-section" style="display:none;border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
+          <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block;">Recorrência semanal</label>
+          <p class="admin__form-hint" style="margin:0 0 14px;font-size:12px;color:#666;">Cadastre uma regra "toda quinta às 19h, 12 vagas" e o sistema gera as próximas 8 semanas automaticamente. Você não precisa cadastrar cada data manualmente.</p>
+          <div id="exp-recurrence-rules-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;"></div>
+          <button type="button" id="exp-recurrence-add-btn" style="padding:10px 16px;background:#fff;border:1px dashed #f0a05e;color:#a4663b;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Adicionar regra de recorrência</button>
+          <div id="exp-recurrence-slots-wrap" style="margin-top:16px;display:none;">
+            <h4 style="margin:0 0 6px;font-size:.92rem;color:#1a1a1a;font-weight:700;">📅 Próximas datas geradas</h4>
+            <p class="admin__form-hint" style="margin:0 0 10px;font-size:12px;color:#888;">Cada linha vem de uma regra ativa. Cancelar uma data específica não recria mesmo após nova materialização.</p>
+            <div id="exp-recurrence-slots-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+          <div id="exp-recurrence-msg" style="margin-top:8px;font-size:.85rem;min-height:1em;"></div>
+        </div>
+
         <!-- ===== FORNECEDOR / FINANCEIRO ===== -->
         <div class="admin__form-field admin__form-field--full" style="border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
           <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;display:block;">Fornecedor & Financeiro</label>
@@ -3170,7 +3190,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=128"></script>
+<script src="admin.js?v=129"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
