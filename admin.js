@@ -12462,7 +12462,7 @@
     // Busca regras + slots futuros em paralelo
     const [rulesRes, slotsRes] = await Promise.all([
       sb.from('experience_recurrence_rules')
-        .select('id, weekday, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
+        .select('id, weekdays, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
         .eq('experience_id', experienceId)
         .order('created_at', { ascending: true }),
       sb.from('experience_slots')
