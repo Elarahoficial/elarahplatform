@@ -329,6 +329,8 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
   // ===== Parse do payload =====
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
+  const dataFromPayload = payload.data ? String(payload.data).trim() : null;
+  const slotIdFromPayload = payload.slot_id ? String(payload.slot_id).trim() : null;
   const email = payload.email ? String(payload.email).trim() : null;
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
@@ -376,6 +378,8 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
   const guard = await reserveExperienceSlot(supabase, {
     experienciaId,
     horario,
+    data: dataFromPayload,
+    slotId: slotIdFromPayload,
     email,
     nome: nomeFromPayload,
     cupomCode,
@@ -405,6 +409,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     couponDiscountCents,
     amountToChargeCents,
     slotId,
+    slotData,
     quantidade: guardQty,
     fornecedorId,
     fornecedorNome,
@@ -481,7 +486,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
       telefone: telefoneToSave,
       experiencia_id: exp.id,
       experiencia_nome: exp.nome,
-      data: exp.data ?? null,
+      data: slotData ?? exp.data ?? null,
       horario: horario,
       preco_label: exp.preco,
       amount_total: 0,
@@ -666,7 +671,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     telefone: telefoneToSave,
     experiencia_id: exp.id,
     experiencia_nome: exp.nome,
-    data: exp.data ?? null,
+    data: slotData ?? exp.data ?? null,
     horario: horario,
     preco_label: exp.preco,
     amount_total: amountToChargeCents,
@@ -710,7 +715,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
         telefone: telefoneToSave,
         experiencia_id: exp.id,
         experiencia_nome: exp.nome,
-        data: exp.data ?? null,
+        data: slotData ?? exp.data ?? null,
         horario: horario,
         preco_label: exp.preco,
         amount_total: amountToChargeCents,

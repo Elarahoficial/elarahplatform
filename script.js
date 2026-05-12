@@ -1632,13 +1632,9 @@ if (groupForm) {
 
     function readActiveHorario(triggerEl) {
       if (!triggerEl) return null;
-      // Trigger pode trazer um data-horario explícito (ex.: ghost button
-      // criado pelo resumePendingCheckout após login).
       if (triggerEl.dataset && triggerEl.dataset.horario) {
         return triggerEl.dataset.horario;
       }
-      // Card-based pages (home, categoria, presentear) — botões dentro
-      // do card da experiência.
       const card = triggerEl.closest && triggerEl.closest('.card, .originals__card, .exp-card');
       if (card) {
         const active = card.querySelector('.card__horario-btn--active');
@@ -1649,10 +1645,6 @@ if (groupForm) {
         if (first && first.dataset) return first.dataset.horario || null;
         return null;
       }
-      // Detail page (experiencia.html) — botões vivem fora de cards,
-      // como filhos diretos do container .exp-detail. Sem essa busca,
-      // usuário escolhia 1 dos 3 horários mas o modal sempre cobrava o
-      // primeiro (bug visual: parecia que não dava pra selecionar).
       const detailActive = document.querySelector('.exp-detail__horario-btn--active:not([disabled])');
       if (detailActive && detailActive.dataset && detailActive.dataset.horario) {
         return detailActive.dataset.horario;
@@ -1660,6 +1652,32 @@ if (groupForm) {
       const detailFirst = document.querySelector('.exp-detail__horario-btn:not([disabled])');
       if (detailFirst && detailFirst.dataset) return detailFirst.dataset.horario || null;
       return null;
+    }
+
+    // Lê seleção completa de schedule (data + horario + slot_id) do
+    // botão de reserva ou do horário ativo na página de detalhe.
+    // Retorna { horario, data, dataLabel, slotId } — qualquer campo
+    // pode ser null se não foi setado.
+    function readActiveSchedule(triggerEl) {
+      var result = { horario: null, data: null, dataLabel: null, slotId: null };
+      if (!triggerEl) return result;
+      // 1. Trigger explícito (botão Reservar com data-attrs setados pela UI)
+      if (triggerEl.dataset) {
+        if (triggerEl.dataset.horario) result.horario = triggerEl.dataset.horario;
+        if (triggerEl.dataset.data) result.data = triggerEl.dataset.data;
+        if (triggerEl.dataset.dataLabel) result.dataLabel = triggerEl.dataset.dataLabel;
+        if (triggerEl.dataset.slotId) result.slotId = triggerEl.dataset.slotId;
+        if (result.horario) return result;
+      }
+      // 2. Detail page — botão de horário ativo
+      var detailActive = document.querySelector('.exp-detail__horario-btn--active:not([disabled])');
+      if (detailActive && detailActive.dataset) {
+        result.horario = detailActive.dataset.horario || result.horario;
+        result.data = detailActive.dataset.data || result.data;
+        result.dataLabel = detailActive.dataset.dataLabel || result.dataLabel;
+        result.slotId = detailActive.dataset.slotId || result.slotId;
+      }
+      return result;
     }
 
     function readPrecoFromCard(triggerEl) {
@@ -3058,6 +3076,8 @@ if (groupForm) {
           const pixBody = {
             experiencia_id: ctx.experienceId,
             horario: ctx.horario,
+            data: ctx.data || null,
+            slot_id: ctx.slotId || null,
             email: auth.email || ctx.email,
             nome: ctx.nome || null,
             cpf: cpfDigits,
@@ -3160,6 +3180,8 @@ if (groupForm) {
         const body = {
           experiencia_id: ctx.experienceId,
           horario: ctx.horario,
+          data: ctx.data || null,
+          slot_id: ctx.slotId || null,
           email: auth.email || ctx.email,
           nome: ctx.nome || null,
           telefone: telefoneRaw,
@@ -3932,6 +3954,7 @@ if (groupForm) {
       // dinâmicos (variantLabel, variantOptions) que nunca vêm via
       // data-attributes do botão.
       let horario = readActiveHorario(btn);
+      const scheduleSel = readActiveSchedule(btn);
       let precoLabel = btn.getAttribute('data-experience-preco') || readPrecoFromCard(btn);
       let precoCentavos = parsePrecoToCents(precoLabel);
       let variantLabel = null;
@@ -3976,6 +3999,12 @@ if (groupForm) {
         // Lista completa de horários — se > 1, modal renderiza seletor
         // pra usuário trocar antes de confirmar.
         horarios: horariosArr,
+        // Data + slot vindo da nova UI de chips de data (experiencia.html).
+        // Em página de card (home/categoria) virão null — backend faz
+        // fallback pra busca por (exp_id, horario) como antes.
+        data: scheduleSel.data || null,
+        dataLabel: scheduleSel.dataLabel || null,
+        slotId: scheduleSel.slotId || null,
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
         email: auth.email,

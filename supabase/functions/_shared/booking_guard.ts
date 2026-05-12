@@ -25,6 +25,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 export interface GuardInput {
   experienciaId: string;
   horario: string | null;
+  // Data + slot_id vindos da UI nova de chips de data (experiencia.html).
+  // Opcionais — sem eles, slot lookup cai no comportamento legado.
+  data?: string | null;
+  slotId?: string | null;
   email: string | null;
   nome: string | null;
   cupomCode: string | null;
@@ -71,6 +75,7 @@ export interface GuardSuccess {
   amountToChargeCents: number;        // baseCents - giftCardCentavos
   cupomCode: string | null;
   slotId: string | null;              // UUID do slot reservado (null = experience-level)
+  slotData: string | null;            // slot.data ("DD/MM") quando disponível — usado no booking pra mostrar data específica em vez de exp.data ("Semanal")
   quantidade: number;                  // vagas reservadas (default 1)
   fornecedorId: string | null;
   fornecedorNome: string | null;
@@ -272,6 +277,8 @@ export async function reserveExperienceSlot(
   }
 
   const horarioInput = input.horario ? String(input.horario).trim() : null;
+  const dataInput = input.data ? String(input.data).trim() : null;
+  const slotIdInput = input.slotId ? String(input.slotId).trim() : null;
   const quantidade = Math.max(1, Math.floor(Number(input.quantidade) || 1));
 
   // ===== 1. Busca experiência =====
@@ -311,28 +318,29 @@ export async function reserveExperienceSlot(
     };
   }
 
-  // ===== 2. Tenta encontrar o slot pro horário escolhido =====
+  // ===== 2. Tenta encontrar o slot pro horário/data escolhido =====
+  // Prioridade:
+  //   1. slot_id explícito (UI nova já enviou o id exato)
+  //   2. (exp_id, horario, data) — quando UI mandou data específica
+  //   3. (exp_id, horario) — legado, pega o mais próximo no futuro
   // deno-lint-ignore no-explicit-any
   let slot: any = null;
   let slotId: string | null = null;
   let useSlotVagas = false;
 
-  if (horarioInput) {
+  if (slotIdInput) {
     const { data: slotRow, error: slotErr } = await supabase
       .from("experience_slots")
-      .select("id, vagas_total, vagas_restantes, event_at, is_active")
+      .select("id, vagas_total, vagas_restantes, event_at, is_active, horario, data")
+      .eq("id", slotIdInput)
       .eq("experience_id", experienciaId)
-      .eq("horario", horarioInput)
       .maybeSingle();
-
     if (slotErr) {
-      // Tabela pode não existir — continua com experience-level
-      console.warn("[Elarah Guard] slot lookup falhou (tabela ausente?)", slotErr.message);
+      console.warn("[Elarah Guard] slot lookup por id falhou:", slotErr.message);
     } else if (slotRow) {
       slot = slotRow;
       slotId = slot.id;
       useSlotVagas = true;
-
       if (slot.is_active === false) {
         return {
           ok: false,
@@ -342,6 +350,41 @@ export async function reserveExperienceSlot(
         };
       }
     }
+  } else if (horarioInput) {
+    let query = supabase
+      .from("experience_slots")
+      .select("id, vagas_total, vagas_restantes, event_at, is_active, horario, data")
+      .eq("experience_id", experienciaId)
+      .eq("horario", horarioInput);
+    if (dataInput) {
+      query = query.eq("data", dataInput);
+    }
+    const { data: slotRows, error: slotErr } = await query;
+
+    if (slotErr) {
+      console.warn("[Elarah Guard] slot lookup falhou (tabela ausente?)", slotErr.message);
+    } else if (Array.isArray(slotRows) && slotRows.length > 0) {
+      // Múltiplos slots no mesmo horario (recorrência sem data filtrada):
+      // pega o mais próximo no futuro. Cliente novo manda `data` → 1 match.
+      const sorted = slotRows
+        .filter((r) => r.is_active !== false)
+        .sort((a, b) => {
+          const ea = a.event_at ? new Date(a.event_at).getTime() : Infinity;
+          const eb = b.event_at ? new Date(b.event_at).getTime() : Infinity;
+          return ea - eb;
+        });
+      if (sorted.length > 0) {
+        slot = sorted[0];
+        slotId = slot.id;
+        useSlotVagas = true;
+      } else {
+        return {
+          ok: false,
+          errorCode: "slot_unavailable",
+          errorMessage: "Este horário não está mais disponível.",
+          errorStatus: 409,
+        };
+      }
   }
 
   // ===== 3. Cutoff =====
@@ -736,6 +779,7 @@ export async function reserveExperienceSlot(
     amountToChargeCents,
     cupomCode: input.cupomCode,
     slotId,
+    slotData: slot?.data ?? null,
     quantidade,
     fornecedorId,
     fornecedorNome: fornecedorNome || exp.fornecedor_nome || null,
