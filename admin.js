@@ -12430,6 +12430,14 @@
     return item ? item.label : '—';
   }
 
+  // Versão curta dos labels pra exibir múltiplos dias compactos:
+  // [4, 2, 5] → "Ter, Qui, Sex" (ordenado por dia)
+  const WEEKDAY_SHORT = { 0: 'Dom', 1: 'Seg', 2: 'Ter', 3: 'Qua', 4: 'Qui', 5: 'Sex', 6: 'Sáb' };
+  function _recurrenceWeekdaysShortList(arr) {
+    if (!Array.isArray(arr) || !arr.length) return '—';
+    return arr.slice().sort((a, b) => a - b).map(v => WEEKDAY_SHORT[v] || '?').join(', ');
+  }
+
   // Converte time "HH:MM:SS" do banco pro input type=time ("HH:MM").
   function _recurrenceTimeForInput(t) {
     if (!t) return '';
@@ -12454,7 +12462,7 @@
     // Busca regras + slots futuros em paralelo
     const [rulesRes, slotsRes] = await Promise.all([
       sb.from('experience_recurrence_rules')
-        .select('id, weekday, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
+        .select('id, weekdays, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
         .eq('experience_id', experienceId)
         .order('created_at', { ascending: true }),
       sb.from('experience_slots')
@@ -12498,21 +12506,41 @@
 
   // Card editável inline pra uma regra. Status visual claro: ativa
   // (laranja) vs inativa (cinza). Edit/Salvar/Desativar inline.
+  // Suporta múltiplos dias da semana — admin marca checkboxes pra
+  // criar 1 regra "terça + quinta + sexta às 19h, 12 vagas".
   function _recurrenceRuleCard(r) {
     const isActive = r.is_active !== false;
     const bg = isActive ? '#fffaf2' : '#f4f4f4';
     const border = isActive ? '#f0a05e' : '#ccc';
     const labelOpacity = isActive ? '1' : '.55';
 
+    // Set de weekdays selecionados — aceita weekdays (array novo) ou
+    // weekday (campo antigo, retrocompat). Vazio = default quinta.
+    const selected = new Set();
+    if (Array.isArray(r.weekdays)) {
+      r.weekdays.forEach(v => selected.add(Number(v)));
+    } else if (typeof r.weekday === 'number') {
+      selected.add(r.weekday);  // backfill em memória
+    }
+
+    const checkboxesHtml = RECURRENCE_WEEKDAYS.map(w => {
+      const checked = selected.has(w.v) ? ' checked' : '';
+      const labelBg = selected.has(w.v) ? '#fff8ef' : '#fff';
+      const labelBorder = selected.has(w.v) ? '#f0a05e' : '#ddd';
+      const labelColor = selected.has(w.v) ? '#a4663b' : '#666';
+      return '<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:' + labelBg + ';border:1px solid ' + labelBorder + ';border-radius:999px;cursor:pointer;font-size:.78rem;font-weight:600;color:' + labelColor + ';">' +
+        '<input type="checkbox" data-rec-field="weekday-check" data-weekday="' + w.v + '" value="' + w.v + '"' + checked + ' style="margin:0;cursor:pointer;">' +
+        w.label.replace('-feira', '') +
+      '</label>';
+    }).join('');
+
     return '<div class="rec-rule-card" data-rec-rule-id="' + _recurrenceEsc(r.id) + '" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + labelOpacity + ';">' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;margin-bottom:6px;">Dias da semana</label>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;" data-rec-field="weekdays-container">' + checkboxesHtml + '</div>' +
+        '<p style="margin:6px 0 0;font-size:.72rem;color:#888;font-style:italic;">Marque um ou mais dias. Cada dia marcado gera 8 slots (8 semanas × N dias = total).</p>' +
+      '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;">' +
-        '<label style="font-size:.78rem;font-weight:600;color:#444;">Dia da semana' +
-          '<select data-rec-field="weekday" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;background:#fff;">' +
-            RECURRENCE_WEEKDAYS.map(w =>
-              '<option value="' + w.v + '"' + (w.v === r.weekday ? ' selected' : '') + '>' + w.label + '</option>'
-            ).join('') +
-          '</select>' +
-        '</label>' +
         '<label style="font-size:.78rem;font-weight:600;color:#444;">Início' +
           '<input type="time" data-rec-field="hora_inicio" value="' + _recurrenceEsc(_recurrenceTimeForInput(r.hora_inicio)) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
         '</label>' +
@@ -12527,7 +12555,7 @@
         '</label>' +
       '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
-        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;">Rótulo do horário' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;width:100%;">Rótulo do horário' +
           '<input type="text" data-rec-field="horario_label" value="' + _recurrenceEsc(r.horario_label) + '" placeholder="Ex: 19h00 – 22h00" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
         '</label>' +
       '</div>' +
@@ -12558,6 +12586,7 @@
       if (card.dataset.wired) return;
       card.dataset.wired = '1';
       const ruleId = card.dataset.recRuleId;
+
       card.addEventListener('click', async (e) => {
         const btn = e.target && e.target.closest('button[data-rec-action]');
         if (!btn) return;
@@ -12572,6 +12601,25 @@
           await _recurrenceMaterialize(card, ruleId, experienceId);
         }
       });
+
+      // Atualiza visual do label da checkbox ao marcar/desmarcar
+      // (laranja quando marcado, cinza quando desmarcado). Visual
+      // imediato sem precisar salvar.
+      card.addEventListener('change', (e) => {
+        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"]') ? e.target : null;
+        if (!cb) return;
+        const lbl = cb.closest('label');
+        if (!lbl) return;
+        if (cb.checked) {
+          lbl.style.background = '#fff8ef';
+          lbl.style.borderColor = '#f0a05e';
+          lbl.style.color = '#a4663b';
+        } else {
+          lbl.style.background = '#fff';
+          lbl.style.borderColor = '#ddd';
+          lbl.style.color = '#666';
+        }
+      });
     });
   }
 
@@ -12584,9 +12632,10 @@
     if (msgEl) msgEl.textContent = '';
 
     // Defaults: quinta 19h00, 12 vagas, horizon 8 semanas
+    // weekdays é array — admin pode marcar mais dias depois (Ter/Qui/Sex, etc.)
     const payload = {
       experience_id: experienceId,
-      weekday: 4,
+      weekdays: [4],
       hora_inicio: '19:00:00',
       horario_label: '19h00 – 22h00',
       vagas_total: 12,
@@ -12628,13 +12677,17 @@
       return el ? el.value : '';
     };
 
-    const newWeekday = Number(getVal('weekday'));
+    // Lê array de weekdays marcados nos checkboxes
+    const newWeekdays = Array.from(
+      card.querySelectorAll('[data-rec-field="weekday-check"]:checked')
+    ).map(cb => Number(cb.value)).filter(v => v >= 0 && v <= 6).sort((a, b) => a - b);
     const newHoraInicio = getVal('hora_inicio');
     const newHoraFim = getVal('hora_fim') || null;
     const newHorarioLabel = (getVal('horario_label') || '').trim();
     const newVagasTotal = Number(getVal('vagas_total'));
     const newHorizonWeeks = Number(getVal('horizon_weeks'));
 
+    if (!newWeekdays.length) { _recurrenceCardErr(cardMsg, 'Marque pelo menos 1 dia da semana.'); return; }
     if (!newHoraInicio) { _recurrenceCardErr(cardMsg, 'Hora início obrigatória.'); return; }
     if (!newHorarioLabel) { _recurrenceCardErr(cardMsg, 'Rótulo do horário obrigatório.'); return; }
     if (!isFinite(newVagasTotal) || newVagasTotal < 1) { _recurrenceCardErr(cardMsg, 'Vagas deve ser inteiro >= 1.'); return; }
@@ -12649,9 +12702,17 @@
     //   3. Sem bookings → apaga (limpa)
     //   4. Com bookings → preserva, mas desliga recurrence_rule_id
     //      (vira manual) — usuário cuida no admin se quiser
+    // Detecta mudança em horario_label OU em weekdays (comparação de arrays).
+    // Se mudou, cleanup remove slots futuros com valores antigos (sem
+    // bookings = delete; com bookings = vira manual via recurrence_rule_id=NULL).
     const horarioChanged = oldRule && oldRule.horario_label !== newHorarioLabel;
-    const weekdayChanged = oldRule && oldRule.weekday !== newWeekday;
-    if ((horarioChanged || weekdayChanged) && oldRule) {
+    const oldWeekdays = Array.isArray(oldRule && oldRule.weekdays)
+      ? oldRule.weekdays.slice().sort((a, b) => a - b)
+      : (oldRule && typeof oldRule.weekday === 'number' ? [oldRule.weekday] : []);
+    const weekdaysChanged = oldRule &&
+      (oldWeekdays.length !== newWeekdays.length ||
+       oldWeekdays.some((v, i) => v !== newWeekdays[i]));
+    if ((horarioChanged || weekdaysChanged) && oldRule) {
       try {
         const cleaned = await _recurrenceCleanupOrphans(experienceId, oldRule);
         if (cleaned > 0) {
@@ -12663,7 +12724,7 @@
     }
 
     const patch = {
-      weekday: newWeekday,
+      weekdays: newWeekdays,
       hora_inicio: newHoraInicio,
       hora_fim: newHoraFim,
       horario_label: newHorarioLabel,
