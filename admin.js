@@ -13087,7 +13087,7 @@
 
     var [overridesRes, expsRes, slotsRes, expsEventRes] = await Promise.all([
       sb.from('campaign_overrides')
-        .select('id, experience_id, titulo_custom, badge_text, is_featured, display_order, imagem_custom')
+        .select('id, experience_id, titulo_custom, subtitulo_custom, descricao_custom, badge_text, is_featured, display_order, imagem_custom')
         .eq('campaign_slug', slug),
       sb.from('experiences')
         .select('id, nome, categoria, imagem, is_active, event_at, data')
@@ -13218,6 +13218,11 @@
               '<input type="text" data-camp-img placeholder="🖼 URL de foto exclusiva pra campanha (vazio = usa foto original)" value="' + _campEsc(o.imagem_custom || '') + '" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.78rem;color:#666;">' +
               '<small style="display:block;margin-top:3px;color:#888;font-size:.7rem;">Foto custom aparece SÓ na landing DDN. Vazio = usa foto original da experiência.</small>' +
             '</div>' +
+          '</div>' +
+          '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #f0d8b8;display:flex;flex-direction:column;gap:6px;">' +
+            '<label style="font-size:.7rem;text-transform:uppercase;color:#a4663b;font-weight:700;letter-spacing:.5px;">✨ Storytelling da campanha (opcional)</label>' +
+            '<input type="text" data-camp-subt placeholder="Subtítulo curto na página da campanha (ex: \'Um momento a dois com taça na mão\')" value="' + _campEsc(o.subtitulo_custom || '') + '" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+            '<textarea data-camp-desc rows="3" placeholder="Descrição custom — narrativa romântica pra essa experiência na campanha de Dia dos Namorados. Vazio = usa descrição original." style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;resize:vertical;">' + _campEsc(o.descricao_custom || '') + '</textarea>' +
           '</div>';
       }
 
@@ -13294,9 +13299,15 @@
     var featured = featuredEl ? featuredEl.checked : false;
     var imgEl = row.querySelector('[data-camp-img]');
     var imgCustom = imgEl ? imgEl.value.trim() : '';
+    var subtEl = row.querySelector('[data-camp-subt]');
+    var subtitulo = subtEl ? subtEl.value.trim() : '';
+    var descEl = row.querySelector('[data-camp-desc]');
+    var descricao = descEl ? descEl.value.trim() : '';
     var msg = row.querySelector('[data-camp-row-msg]');
     var { error } = await sb.from('campaign_overrides').update({
       titulo_custom: titulo || null,
+      subtitulo_custom: subtitulo || null,
+      descricao_custom: descricao || null,
       badge_text: badge || null,
       display_order: order,
       is_featured: featured,
