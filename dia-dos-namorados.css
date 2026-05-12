@@ -466,19 +466,46 @@ body.ddn-body {
   background: #fff;
   border-radius: 20px;
   border: 1.5px dashed var(--ddn-rose);
-  padding: 28px 24px;
-  text-align: center;
+  padding: 0;
+  overflow: hidden;
   display: flex; flex-direction: column;
-  align-items: center;
   position: relative;
 }
+/* Foto grande retangular no topo (igual aos cards de experiência).
+   Quando não houver foto, fallback pra placeholder colorido. */
+.ddn-upcoming-card__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: linear-gradient(135deg, var(--ddn-rose-soft), var(--ddn-gold-soft));
+  overflow: hidden;
+}
+.ddn-upcoming-card__media img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.ddn-upcoming-card__media-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ddn-wine);
+}
+.ddn-upcoming-card__media-placeholder svg { width: 64px; height: 64px; opacity: 0.7; }
+.ddn-upcoming-card__body {
+  padding: 22px 24px 24px;
+  display: flex; flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+/* Compatibilidade: cards antigos sem .ddn-upcoming-card__media */
 .ddn-upcoming-card__icon {
   width: 64px; height: 64px;
   background: var(--ddn-rose-soft);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: var(--ddn-wine);
-  margin-bottom: 16px;
+  margin: 22px auto 16px;
 }
 .ddn-upcoming-card__icon svg { width: 32px; height: 32px; }
 .ddn-upcoming-card__status {

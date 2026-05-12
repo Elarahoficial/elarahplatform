@@ -273,20 +273,23 @@
       }
 
       section.innerHTML = data.map(function (r) {
-        var iconDefault = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8c-3 6-3 9 0 12s3 6 0 12-3 6 0 8"/><path d="M14 28a10 10 0 0 0 20 0c0-5-5-9-10-14-5 5-10 9-10 14z"/></svg>';
-        var mediaIcon = r.imagem
-          ? '<img src="' + esc(r.imagem) + '" alt="' + esc(r.nome) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
-          : iconDefault;
+        // Foto grande retangular no topo. Fallback pra ícone se sem imagem.
+        var iconDefault = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8c-3 6-3 9 0 12s3 6 0 12-3 6 0 8"/><path d="M14 28a10 10 0 0 0 20 0c0-5-5-9-10-14-5 5-10 9-10 14z"/></svg>';
+        var mediaHtml = r.imagem
+          ? '<img src="' + esc(r.imagem) + '" alt="' + esc(r.nome) + '" onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.ddn-upcoming-card__media-placeholder\').style.display=\'flex\';"><div class="ddn-upcoming-card__media-placeholder" style="display:none;">' + iconDefault + '</div>'
+          : '<div class="ddn-upcoming-card__media-placeholder">' + iconDefault + '</div>';
         return '<article class="ddn-upcoming-card">' +
-          '<div class="ddn-upcoming-card__icon">' + mediaIcon + '</div>' +
-          '<div class="ddn-upcoming-card__status">' + esc(r.expected_label || 'em breve') + '</div>' +
-          '<h3 class="ddn-upcoming-card__title">' + esc(r.nome) + '</h3>' +
-          (r.descricao_curta
-            ? '<p class="ddn-upcoming-card__desc">' + esc(r.descricao_curta) + '</p>'
-            : '<p class="ddn-upcoming-card__desc"></p>') +
-          '<button type="button" class="ddn-upcoming-card__cta" data-ddn-waitlist data-upcoming-id="' + esc(r.id) + '" data-upcoming-name="' + esc(r.nome) + '">' +
-            'Avise-me quando abrir' +
-          '</button>' +
+          '<div class="ddn-upcoming-card__media">' + mediaHtml + '</div>' +
+          '<div class="ddn-upcoming-card__body">' +
+            '<div class="ddn-upcoming-card__status">' + esc(r.expected_label || 'em breve') + '</div>' +
+            '<h3 class="ddn-upcoming-card__title">' + esc(r.nome) + '</h3>' +
+            (r.descricao_curta
+              ? '<p class="ddn-upcoming-card__desc">' + esc(r.descricao_curta) + '</p>'
+              : '<p class="ddn-upcoming-card__desc"></p>') +
+            '<button type="button" class="ddn-upcoming-card__cta" data-ddn-waitlist data-upcoming-id="' + esc(r.id) + '" data-upcoming-name="' + esc(r.nome) + '">' +
+              'Avise-me quando abrir' +
+            '</button>' +
+          '</div>' +
         '</article>';
       }).join('');
 
