@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Todas as experiências da campanha Dia dos Namorados — Elarah">
+  <title>Todas as experiências · Dia dos Namorados — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="dia-dos-namorados.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    .ddn-catalogo-hero {
+      padding: 80px 24px 48px;
+      text-align: center;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 30%, rgba(201, 134, 149, 0.22), transparent 60%),
+        linear-gradient(180deg, #fef1ed 0%, var(--ddn-bg) 100%);
+    }
+    .ddn-catalogo-hero__kicker {
+      display:inline-block;font-size:.76rem;letter-spacing:2.4px;text-transform:uppercase;
+      color:var(--ddn-wine);font-weight:700;margin-bottom:18px;
+      padding:6px 16px;background:rgba(255,255,255,0.7);
+      border:1px solid var(--ddn-rose-soft);border-radius:999px;
+    }
+    .ddn-catalogo-hero__title {
+      font-family:'DM Serif Display',serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      color: var(--ddn-ink);
+      margin: 0 0 14px;
+      font-weight: 400;
+      line-height: 1.12;
+    }
+    .ddn-catalogo-hero__title em { color: var(--ddn-wine); font-style: italic; }
+    .ddn-catalogo-hero__sub {
+      font-size: 1rem; color: var(--ddn-ink-soft);
+      max-width: 580px; margin: 0 auto 24px; line-height: 1.6;
+    }
+    .ddn-catalogo-hero__back {
+      display:inline-flex;align-items:center;gap:6px;
+      color:var(--ddn-wine);font-size:.85rem;font-weight:600;text-decoration:none;
+    }
+    .ddn-catalogo-hero__back:hover { color: var(--ddn-wine-dark); }
+    .ddn-catalogo {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 24px 80px;
+    }
+  </style>
+</head>
+<body class="ddn-body">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+      <nav class="header__nav">
+        <a href="dia-dos-namorados.html" class="header__nav-link header__nav-link--ddn">Dia dos Namorados</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+      </nav>
+      <div class="header__actions">
+        <button class="header__login-btn" aria-label="Entrar" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Entrar
+        </button>
+      </div>
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="ddn-catalogo-hero">
+    <span class="ddn-catalogo-hero__kicker">Catálogo da campanha</span>
+    <h1 class="ddn-catalogo-hero__title">Todas as experiências <em>a dois</em></h1>
+    <p class="ddn-catalogo-hero__sub">
+      A curadoria completa pro Dia dos Namorados — íntima, criativa, sensorial.
+      Encontre a que conversa com a história de vocês.
+    </p>
+    <a href="dia-dos-namorados.html" class="ddn-catalogo-hero__back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar para a campanha
+    </a>
+  </section>
+
+  <!-- GRID -->
+  <main class="ddn-catalogo">
+    <div class="ddn-experiences__grid" id="ddn-grid">
+      <p style="grid-column:1/-1;text-align:center;color:#888;padding:40px 20px;font-style:italic;">Carregando experiências…</p>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo"><img src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
+        <p class="footer__tagline">Offline is a feeling.</p>
+      </div>
+    </div>
+    <div class="footer__bottom"><p>&copy; 2026 Elarah. Todos os direitos reservados.</p></div>
+  </footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=23"></script>
+<script>
+// Reutiliza o renderVitrine do dia-dos-namorados.js MAS sem limite de 6.
+(function(){
+  'use strict';
+  var CAMPAIGN_SLUG = 'dia-dos-namorados';
+  var _now = new Date();
+  var DDN_START = new Date(_now.getFullYear(), _now.getMonth(), 25).toISOString();
+  var DDN_END   = new Date(_now.getFullYear(), _now.getMonth() + 1, 25).toISOString();
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function waitSb(ms){return new Promise(function(res){var e=0;(function ch(){if(window.supabaseClient)return res(window.supabaseClient);e+=100;if(e>=(ms||5000))return res(null);setTimeout(ch,100);})();});}
+
+  (async function(){
+    var grid = document.getElementById('ddn-grid');
+    var sb = await waitSb(5000);
+    if (!sb) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#a4332b;">Conexão indisponível. Recarregue.</p>'; return; }
+
+    var { data: overrides } = await sb.from('campaign_overrides')
+      .select('experience_id, titulo_custom, badge_text, display_order, imagem_custom')
+      .eq('campaign_slug', CAMPAIGN_SLUG)
+      .eq('is_featured', true)
+      .order('display_order');
+
+    if (!overrides || !overrides.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#888;padding:60px 20px;">Sem experiências cadastradas nessa campanha.</p>';
+      return;
+    }
+
+    var expIds = overrides.map(function(o){return o.experience_id;});
+    var [{ data: exps }, { data: slots }] = await Promise.all([
+      sb.from('experiences').select('id, nome, categoria, preco, duracao, bairro, imagem, is_active').in('id', expIds).eq('is_active', true),
+      sb.from('experience_slots').select('experience_id, event_at, vagas_total, vagas_restantes').in('experience_id', expIds).not('is_active', 'is', false).gte('event_at', DDN_START).lt('event_at', DDN_END).order('event_at').range(0, 9999),
+    ]);
+
+    var expById = new Map();
+    (exps || []).forEach(function(e){expById.set(e.id, e);});
+    var firstDate = new Map();
+    (slots || []).forEach(function(s){
+      if (firstDate.has(s.experience_id)) return;
+      var rest = s.vagas_total == null ? null : (s.vagas_restantes != null ? s.vagas_restantes : s.vagas_total);
+      if (rest !== null && rest <= 0) return;
+      firstDate.set(s.experience_id, s.event_at);
+    });
+
+    grid.innerHTML = overrides.map(function(o){
+      var e = expById.get(o.experience_id);
+      if (!e) return '';
+      var titulo = (o.titulo_custom && o.titulo_custom.trim()) || e.nome;
+      var badge = (o.badge_text && o.badge_text.trim()) || 'Especial Dia dos Namorados';
+      var preco = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(e.preco) : (e.preco || '');
+      var foto = (o.imagem_custom && o.imagem_custom.trim()) || e.imagem || '';
+      var dt = firstDate.get(e.id);
+      var dataChip = '';
+      if (dt) {
+        var d = new Date(dt);
+        var label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','') + ', ' +
+                    String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+        dataChip = '<span class="ddn-card__meta-item" style="background:#fff8ef;color:#a4663b;font-weight:700;">📅 ' + esc(label) + '</span>';
+      }
+      var meta = [];
+      if (dataChip) meta.push(dataChip);
+      if (e.duracao) meta.push('<span class="ddn-card__meta-item">' + esc(e.duracao) + '</span>');
+      if (e.bairro) meta.push('<span class="ddn-card__meta-item">' + esc(e.bairro) + '</span>');
+      var media = foto
+        ? '<img src="'+esc(foto)+'" alt="'+esc(titulo)+'" onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.ddn-card__placeholder\').style.display=\'flex\';"><div class="ddn-card__placeholder" style="display:none;">'+esc(e.categoria||'Experiência')+'</div>'
+        : '<div class="ddn-card__placeholder">'+esc(e.categoria||'Experiência')+'</div>';
+      return '<article class="ddn-card"><div class="ddn-card__media"><span class="ddn-card__badge">'+esc(badge)+'</span>'+media+'</div><div class="ddn-card__body">'+
+        (e.categoria?'<span class="ddn-card__categoria">'+esc(e.categoria)+'</span>':'')+
+        '<h3 class="ddn-card__title">'+esc(titulo)+'</h3>'+
+        (meta.length?'<div class="ddn-card__meta">'+meta.join('')+'</div>':'')+
+        '<div class="ddn-card__price"><div><div class="ddn-card__price-label">A partir de</div><div class="ddn-card__price-value">'+esc(preco)+'</div></div>'+
+        '<a href="dia-dos-namorados-detalhe.html?id='+encodeURIComponent(e.id)+'" class="ddn-card__price-cta">Ver experiência →</a></div></div></article>';
+    }).filter(Boolean).join('');
+  })();
+})();
+</script>
+</body>
+</html>
