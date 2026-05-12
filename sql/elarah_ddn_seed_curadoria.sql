@@ -61,7 +61,6 @@ with curadoria as (
     end as suggested_title
   from public.experiences e
   where e.is_active = true
-    and e.is_visible is not false
     and e.imagem is not null
     and length(trim(e.imagem)) > 0
     and (
