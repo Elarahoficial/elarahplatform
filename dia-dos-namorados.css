@@ -325,8 +325,14 @@ body.ddn-body {
 }
 .ddn-experiences__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+@media (max-width: 900px) {
+  .ddn-experiences__grid { grid-template-columns: repeat(2, 1fr); gap: 22px; }
+}
+@media (max-width: 560px) {
+  .ddn-experiences__grid { grid-template-columns: 1fr; gap: 18px; }
 }
 
 /* Card de experiência */
@@ -345,7 +351,7 @@ body.ddn-body {
 }
 .ddn-card__media {
   position: relative;
-  aspect-ratio: 4/3;
+  aspect-ratio: 3/4;
   background: var(--ddn-rose-soft);
   overflow: hidden;
 }
