@@ -67,10 +67,11 @@
       sb.from('experience_slots')
         .select('*')
         .eq('experience_id', expId)
-        .eq('is_active', true)
+        .not('is_active', 'is', false)
         .gte('event_at', DDN_START.toISOString())
         .lt('event_at', DDN_END.toISOString())
-        .order('event_at', { ascending: true }),
+        .order('event_at', { ascending: true })
+        .range(0, 999),
     ]);
 
     if (!expRes.data) {

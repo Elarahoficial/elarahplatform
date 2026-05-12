@@ -137,10 +137,11 @@
         sb.from('experience_slots')
           .select('experience_id, event_at, vagas_total, vagas_restantes')
           .in('experience_id', expIds)
-          .eq('is_active', true)
+          .not('is_active', 'is', false)
           .gte('event_at', DDN_START)
           .lt('event_at', DDN_END)
-          .order('event_at', { ascending: true }),
+          .order('event_at', { ascending: true })
+          .range(0, 9999),
       ]);
       var exps = expsRes2.data;
       var eErr = expsRes2.error;
