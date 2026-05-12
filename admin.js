@@ -402,6 +402,7 @@
       case 'experiences': await renderExperiences(); break;
       case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
+      case 'campanhas':   await renderCampanhas(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
       case 'contabilidade': await renderContabilidade(); break;
@@ -13031,6 +13032,308 @@
     _recurrenceInvalidateCaches();
     const expId = document.getElementById('exp-edit-id') && document.getElementById('exp-edit-id').value;
     if (expId) _recurrenceLoadAndRender(expId);
+  }
+
+  // =============================================================
+  // CAMPANHAS SAZONAIS — gestão de campanha (Dia dos Namorados etc.)
+  // -------------------------------------------------------------
+  // Estrutura genérica por `campaign_slug` — mesma lógica serve pra
+  // Dia das Mães 2027, Natal, etc. Por enquanto só Dia dos Namorados
+  // está exposta na UI (dropdown), mas adicionar nova campanha é
+  // trivial: insert no select + run de seed.
+  // =============================================================
+
+  function _campEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  async function renderCampanhas() {
+    var sel = document.getElementById('campanhas-select');
+    if (!sel) return;
+    sel.onchange = function () { _campLoadAll(sel.value); };
+    document.getElementById('campanhas-upcoming-add').onclick = function () {
+      _campUpcomingAdd(sel.value);
+    };
+    await _campLoadAll(sel.value);
+  }
+
+  async function _campLoadAll(slug) {
+    if (!slug) return;
+    var sb = window.supabaseClient;
+    if (!sb) return;
+    await Promise.all([
+      _campLoadOverrides(slug),
+      _campLoadUpcoming(slug),
+      _campLoadWaitlist(slug),
+    ]);
+  }
+
+  // ===== Vitrine curada (campaign_overrides) =====
+  async function _campLoadOverrides(slug) {
+    var sb = window.supabaseClient;
+    var listEl = document.getElementById('campanhas-overrides-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Carregando…</p>';
+
+    var [overridesRes, expsRes] = await Promise.all([
+      sb.from('campaign_overrides')
+        .select('id, experience_id, titulo_custom, badge_text, is_featured, display_order')
+        .eq('campaign_slug', slug),
+      sb.from('experiences')
+        .select('id, nome, categoria, imagem, is_active')
+        .eq('is_active', true)
+        .order('nome'),
+    ]);
+
+    if (overridesRes.error) {
+      listEl.innerHTML = '<p style="color:#c0392b;font-size:.85rem;">Erro: ' + _campEsc(overridesRes.error.message) + '</p>';
+      return;
+    }
+
+    var overrides = overridesRes.data || [];
+    var exps = expsRes.data || [];
+    var overrideByExp = new Map();
+    overrides.forEach(function (o) { overrideByExp.set(o.experience_id, o); });
+
+    // Ordena: incluídas no topo (por display_order), depois resto alfabético
+    exps.sort(function (a, b) {
+      var oa = overrideByExp.get(a.id);
+      var ob = overrideByExp.get(b.id);
+      if (oa && !ob) return -1;
+      if (!oa && ob) return 1;
+      if (oa && ob) return (oa.display_order || 999) - (ob.display_order || 999);
+      return (a.nome || '').localeCompare(b.nome || '');
+    });
+
+    listEl.innerHTML = exps.map(function (e) {
+      var o = overrideByExp.get(e.id);
+      var included = !!o;
+      return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
+        '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">' +
+          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;flex:1 1 240px;min-width:0;">' +
+            '<input type="checkbox" data-camp-include' + (included ? ' checked' : '') + ' style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">' +
+            '<span style="overflow:hidden;text-overflow:ellipsis;">' + _campEsc(e.nome) + ' <span style="color:#888;font-weight:400;font-size:.82rem;">(' + _campEsc(e.categoria || '—') + ')</span></span>' +
+          '</label>' +
+          (included
+            ? '<input type="text" data-camp-titulo placeholder="Título customizado" value="' + _campEsc(o.titulo_custom || '') + '" style="flex:2 1 280px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">' +
+              '<input type="text" data-camp-badge placeholder="Badge" value="' + _campEsc(o.badge_text || '') + '" style="flex:1 1 140px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+              '<input type="number" data-camp-order placeholder="Ordem" value="' + (o.display_order || 100) + '" style="width:80px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+              '<button type="button" data-camp-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>'
+            : ''
+          ) +
+        '</div>' +
+        '<div data-camp-row-msg style="font-size:.78rem;min-height:1em;margin-top:4px;"></div>' +
+      '</div>';
+    }).join('');
+
+    // Wire events
+    listEl.querySelectorAll('[data-camp-include]').forEach(function (cb) {
+      cb.addEventListener('change', async function () {
+        var row = cb.closest('.camp-override-row');
+        var expId = row.dataset.expId;
+        var overrideId = row.dataset.overrideId;
+        if (cb.checked) {
+          await _campOverrideAdd(slug, expId);
+        } else {
+          if (overrideId) await _campOverrideRemove(overrideId);
+        }
+        await _campLoadOverrides(slug);
+      });
+    });
+    listEl.querySelectorAll('[data-camp-save]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var row = btn.closest('.camp-override-row');
+        await _campOverrideSave(row);
+      });
+    });
+  }
+
+  async function _campOverrideAdd(slug, expId) {
+    var sb = window.supabaseClient;
+    var { data: exp } = await sb.from('experiences').select('nome').eq('id', expId).maybeSingle();
+    var nome = (exp && exp.nome) || 'Experiência';
+    var { error } = await sb.from('campaign_overrides').insert({
+      campaign_slug: slug,
+      experience_id: expId,
+      titulo_custom: nome,
+      badge_text: 'Especial Dia dos Namorados',
+      is_featured: false,
+      display_order: 100,
+    });
+    if (error) alert('Erro: ' + (error.message || error.code));
+  }
+
+  async function _campOverrideRemove(overrideId) {
+    var sb = window.supabaseClient;
+    var { error } = await sb.from('campaign_overrides').delete().eq('id', overrideId);
+    if (error) alert('Erro: ' + (error.message || error.code));
+  }
+
+  async function _campOverrideSave(row) {
+    var sb = window.supabaseClient;
+    var overrideId = row.dataset.overrideId;
+    var titulo = row.querySelector('[data-camp-titulo]').value.trim();
+    var badge = row.querySelector('[data-camp-badge]').value.trim();
+    var order = Number(row.querySelector('[data-camp-order]').value) || 100;
+    var msg = row.querySelector('[data-camp-row-msg]');
+    var { error } = await sb.from('campaign_overrides').update({
+      titulo_custom: titulo || null,
+      badge_text: badge || null,
+      display_order: order,
+    }).eq('id', overrideId);
+    if (error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + (error.message || error.code);
+    } else {
+      msg.style.color = '#1a8a4a';
+      msg.textContent = '✓ Salvo';
+      setTimeout(function () { msg.textContent = ''; }, 1800);
+    }
+  }
+
+  // ===== Em breve (campaign_upcoming_experiences) =====
+  async function _campLoadUpcoming(slug) {
+    var sb = window.supabaseClient;
+    var listEl = document.getElementById('campanhas-upcoming-list');
+    if (!listEl) return;
+    var { data, error } = await sb.from('campaign_upcoming_experiences')
+      .select('*')
+      .eq('campaign_slug', slug)
+      .order('display_order');
+    if (error) {
+      listEl.innerHTML = '<p style="color:#c0392b;font-size:.85rem;">Erro: ' + _campEsc(error.message) + '</p>';
+      return;
+    }
+    var rows = data || [];
+    if (!rows.length) {
+      listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Nenhum card "em breve" cadastrado. Clique no botão acima pra criar.</p>';
+      return;
+    }
+    listEl.innerHTML = rows.map(function (r) {
+      return '<div class="camp-upcoming-row" data-row-id="' + _campEsc(r.id) + '" style="background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">' +
+        '<div style="flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:6px;">' +
+          '<input type="text" data-camp-up-nome placeholder="Nome" value="' + _campEsc(r.nome) + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;font-weight:600;">' +
+          '<input type="text" data-camp-up-cat placeholder="Categoria" value="' + _campEsc(r.categoria || '') + '" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<textarea data-camp-up-desc placeholder="Descrição curta" rows="2" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;resize:vertical;">' + _campEsc(r.descricao_curta || '') + '</textarea>' +
+        '</div>' +
+        '<div style="flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:6px;">' +
+          '<input type="text" data-camp-up-img placeholder="URL da imagem (opcional)" value="' + _campEsc(r.imagem || '') + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<input type="text" data-camp-up-label placeholder="Status (ex: em breve)" value="' + _campEsc(r.expected_label || '') + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<input type="number" data-camp-up-order placeholder="Ordem" value="' + (r.display_order || 100) + '" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:#666;cursor:pointer;"><input type="checkbox" data-camp-up-active' + (r.is_active !== false ? ' checked' : '') + '> Visível na landing</label>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;align-self:stretch;justify-content:space-between;">' +
+          '<button type="button" data-camp-up-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>' +
+          '<button type="button" data-camp-up-del style="padding:7px 14px;background:#fff;color:#c0392b;border:1px solid #c0392b;border-radius:6px;font-family:inherit;font-weight:600;font-size:.78rem;cursor:pointer;">Excluir</button>' +
+          '<span data-camp-up-msg style="font-size:.74rem;min-height:1em;text-align:center;"></span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('[data-camp-up-save]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var row = btn.closest('.camp-upcoming-row');
+        await _campUpcomingSave(row);
+      });
+    });
+    listEl.querySelectorAll('[data-camp-up-del]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var row = btn.closest('.camp-upcoming-row');
+        if (!confirm('Excluir esse card "em breve"?')) return;
+        await _campUpcomingDelete(row.dataset.rowId);
+        await _campLoadUpcoming(slug);
+      });
+    });
+  }
+
+  async function _campUpcomingAdd(slug) {
+    var sb = window.supabaseClient;
+    var { error } = await sb.from('campaign_upcoming_experiences').insert({
+      campaign_slug: slug,
+      nome: 'Nova experiência em breve',
+      categoria: '',
+      descricao_curta: '',
+      expected_label: 'em breve',
+      is_active: true,
+      display_order: 100,
+    });
+    if (error) { alert('Erro: ' + (error.message || error.code)); return; }
+    await _campLoadUpcoming(slug);
+  }
+
+  async function _campUpcomingSave(row) {
+    var sb = window.supabaseClient;
+    var msg = row.querySelector('[data-camp-up-msg]');
+    var patch = {
+      nome: row.querySelector('[data-camp-up-nome]').value.trim(),
+      categoria: row.querySelector('[data-camp-up-cat]').value.trim() || null,
+      descricao_curta: row.querySelector('[data-camp-up-desc]').value.trim() || null,
+      imagem: row.querySelector('[data-camp-up-img]').value.trim() || null,
+      expected_label: row.querySelector('[data-camp-up-label]').value.trim() || null,
+      display_order: Number(row.querySelector('[data-camp-up-order]').value) || 100,
+      is_active: row.querySelector('[data-camp-up-active]').checked,
+    };
+    if (!patch.nome) { msg.style.color = '#c0392b'; msg.textContent = 'Nome obrigatório.'; return; }
+    var { error } = await sb.from('campaign_upcoming_experiences').update(patch).eq('id', row.dataset.rowId);
+    if (error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = (error.message || error.code).slice(0, 30);
+    } else {
+      msg.style.color = '#1a8a4a';
+      msg.textContent = '✓';
+      setTimeout(function () { msg.textContent = ''; }, 1800);
+    }
+  }
+
+  async function _campUpcomingDelete(rowId) {
+    var sb = window.supabaseClient;
+    var { error } = await sb.from('campaign_upcoming_experiences').delete().eq('id', rowId);
+    if (error) alert('Erro: ' + (error.message || error.code));
+  }
+
+  // ===== Waitlist (read-only) =====
+  async function _campLoadWaitlist(slug) {
+    var sb = window.supabaseClient;
+    var listEl = document.getElementById('campanhas-waitlist-list');
+    if (!listEl) return;
+    var { data, error } = await sb.from('campaign_waitlist')
+      .select('*')
+      .eq('campaign_slug', slug)
+      .order('created_at', { ascending: false });
+    if (error) {
+      listEl.innerHTML = '<p style="color:#c0392b;font-size:.85rem;">Erro: ' + _campEsc(error.message) + '</p>';
+      return;
+    }
+    var rows = data || [];
+    if (!rows.length) {
+      listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Nenhum lead ainda.</p>';
+      return;
+    }
+    listEl.innerHTML =
+      '<div style="background:#fff;border:1px solid #e6e6e6;border-radius:10px;overflow:hidden;">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:.85rem;">' +
+          '<thead style="background:#faf6f0;"><tr>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Quando</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Nome</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">E-mail</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Telefone</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Interesse</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function (r) {
+            var d = r.created_at ? new Date(r.created_at) : null;
+            var when = d ? d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+            return '<tr style="border-top:1px solid #f0e8de;">' +
+              '<td style="padding:10px 12px;color:#888;">' + _campEsc(when) + '</td>' +
+              '<td style="padding:10px 12px;font-weight:600;">' + _campEsc(r.nome || '—') + '</td>' +
+              '<td style="padding:10px 12px;"><a href="mailto:' + _campEsc(r.email) + '" style="color:#a4663b;text-decoration:none;">' + _campEsc(r.email) + '</a></td>' +
+              '<td style="padding:10px 12px;">' + _campEsc(r.telefone || '—') + '</td>' +
+              '<td style="padding:10px 12px;color:#444;">' + _campEsc(r.mensagem || '—') + '</td>' +
+            '</tr>';
+          }).join('') +
+        '</tbody></table>' +
+      '</div>';
   }
 
   // ===== START =====
