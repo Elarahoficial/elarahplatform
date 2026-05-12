@@ -13078,6 +13078,9 @@
     listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Carregando…</p>';
 
     var nowIso = new Date().toISOString();
+    // Janela estratégica DDN: 21/05 a 30/06 do ano corrente
+    var ddnStart = new Date(new Date().getFullYear() + '-05-21T00:00:00');
+    var ddnEnd = new Date(new Date().getFullYear() + '-07-01T00:00:00');
     var horizon = new Date();
     horizon.setDate(horizon.getDate() + 90);
     var horizonIso = horizon.toISOString();
@@ -13159,24 +13162,29 @@
     rowsHost.innerHTML = exps.map(function (e) {
       var o = overrideByExp.get(e.id);
       var included = !!o;
-      // Próxima data — combina experience_slots + experiences.event_at
-      // + fallback pra experiences.data (formato BR "DD/MM").
+      // Próxima data — combina experience_slots + experiences.event_at.
+      // Chip mostra status em relação à janela DDN (21/05-30/06):
+      //   verde 📅 = na janela ✓ (ideal pra campanha)
+      //   amarelo ⏳ = fora da janela (passada ou muito distante)
+      //   vermelho ⚠ = sem data
       var nextDateRaw = dateByExp.get(e.id);
       var nextDateChip = '';
       if (nextDateRaw) {
         var dt = new Date(nextDateRaw);
         var ddmm = String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
-        var diffDays = Math.round((dt - new Date()) / 86400000);
-        var inDDN = diffDays >= -1 && diffDays <= 60;
-        var color = inDDN ? '#1a8a4a' : '#888';
-        var bg = inDDN ? '#e6f4ea' : '#f3f3f3';
-        nextDateChip = '<span title="Próxima data: ' + dt.toLocaleDateString('pt-BR') + '" style="display:inline-flex;align-items:center;gap:3px;background:' + bg + ';color:' + color + ';font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📅 ' + ddmm + '</span>';
+        var inWindow = dt >= ddnStart && dt < ddnEnd;
+        var color = inWindow ? '#1a8a4a' : '#b07b00';
+        var bg = inWindow ? '#e6f4ea' : '#fff4e0';
+        var icon = inWindow ? '📅' : '⏳';
+        var titleTxt = inWindow
+          ? 'Na janela DDN (21/05–30/06): ' + dt.toLocaleDateString('pt-BR')
+          : 'Fora da janela DDN: ' + dt.toLocaleDateString('pt-BR');
+        nextDateChip = '<span title="' + titleTxt + '" style="display:inline-flex;align-items:center;gap:3px;background:' + bg + ';color:' + color + ';font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">' + icon + ' ' + ddmm + '</span>';
       } else if (e.data && String(e.data).trim()) {
-        // Fallback: campo experiences.data ("DD/MM" texto livre)
         var dataLabel = String(e.data).trim();
-        nextDateChip = '<span title="Data cadastrada na experiência (sem slot futuro)" style="display:inline-flex;align-items:center;gap:3px;background:#fff8ef;color:#a4663b;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📅 ' + _campEsc(dataLabel) + '</span>';
+        nextDateChip = '<span title="Data textual sem slot futuro" style="display:inline-flex;align-items:center;gap:3px;background:#f3f3f3;color:#888;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📌 ' + _campEsc(dataLabel) + '</span>';
       } else {
-        nextDateChip = '<span title="Sem data futura nos próximos 90 dias" style="display:inline-flex;align-items:center;gap:3px;background:#fdecea;color:#c0392b;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">⚠ sem data</span>';
+        nextDateChip = '<span title="Sem data futura" style="display:inline-flex;align-items:center;gap:3px;background:#fdecea;color:#c0392b;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">⚠ sem data</span>';
       }
       return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
         '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">' +
