@@ -341,9 +341,20 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const card = document.createElement('article');
     card.className = 'card';
 
-    const horarios = Array.isArray(exp.horarios) && exp.horarios.length
+    // Dedup textual + ordem original. Recorrência popula exp.horarios
+    // com 1 entrada por slot (ex: 8 datas × 2 horários = 16 entradas
+    // repetidas). Sem dedup, o card mostra 16 chips idênticos.
+    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
       ? exp.horarios
       : (exp.horario ? [exp.horario] : []);
+    const seenHorarios = new Set();
+    const horarios = [];
+    horariosRaw.forEach(function (h) {
+      var key = String(h || '').trim();
+      if (!key || seenHorarios.has(key)) return;
+      seenHorarios.add(key);
+      horarios.push(h);
+    });
     const hasMultipleHorarios = horarios.length > 1;
 
     // Slot availability lookup (populated by loadSlotAvailability)
@@ -1176,9 +1187,20 @@ if (categoriaURL) activeCategoria = categoriaURL;
   // primeiro pra reforçar conversão visual.
   function experienceToOriginalCard(exp) {
     if (!exp || !exp.id) return null;
-    var horarios = Array.isArray(exp.horarios) && exp.horarios.length
+    // Dedup textual de horários (recorrência repete o mesmo horario_label
+    // pra cada slot/data — sem dedup, 8 datas × 2 horários viram 16
+    // chips idênticos no card).
+    var horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
       ? exp.horarios.slice()
       : (exp.horario ? [exp.horario] : []);
+    var seenH = new Set();
+    var horarios = [];
+    horariosRaw.forEach(function (h) {
+      var k = String(h || '').trim();
+      if (!k || seenH.has(k)) return;
+      seenH.add(k);
+      horarios.push(h);
+    });
     return {
       // Identificação + aparência
       id: 'exp-' + exp.id,
