@@ -45,16 +45,62 @@
     });
   });
 
+  // Aguarda window.supabaseClient ficar pronto (até 5s). Sem isso,
+  // se o JS roda antes do supabase-client.js terminar de inicializar,
+  // renderVitrine fica preso em "Carregando..." pra sempre.
+  function waitForSupabase(timeoutMs) {
+    return new Promise(function (resolve) {
+      var elapsed = 0;
+      var step = 100;
+      function check() {
+        if (window.supabaseClient) return resolve(window.supabaseClient);
+        elapsed += step;
+        if (elapsed >= (timeoutMs || 5000)) return resolve(null);
+        setTimeout(check, step);
+      }
+      check();
+    });
+  }
+
+  function renderEmptyState(grid) {
+    grid.innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:60px 24px;background:#fff;border-radius:20px;border:1.5px dashed var(--ddn-rose);">' +
+        '<div style="width:64px;height:64px;margin:0 auto 18px;background:var(--ddn-rose-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ddn-wine);">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M12 2v6"/><path d="M12 22v-6"/><path d="M4.93 4.93l4.24 4.24"/><path d="M14.83 14.83l4.24 4.24"/>' +
+            '<path d="M2 12h6"/><path d="M22 12h-6"/><path d="M4.93 19.07l4.24-4.24"/><path d="M14.83 9.17l4.24-4.24"/>' +
+          '</svg>' +
+        '</div>' +
+        '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:var(--ddn-ink);margin:0 0 10px;font-weight:400;">Curadoria sendo finalizada</h3>' +
+        '<p style="color:var(--ddn-ink-soft);font-size:.95rem;max-width:420px;margin:0 auto;line-height:1.55;">Estamos escolhendo a dedo as experiências mais especiais pra esse dia. Volte logo — ou ' +
+          '<a href="categoria.html" style="color:var(--ddn-wine);font-weight:600;text-decoration:underline;">explore todas as experiências</a>.</p>' +
+      '</div>';
+  }
+
+  function renderErrorState(grid, msg) {
+    grid.innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:40px 24px;background:#fff;border-radius:20px;border:1px solid #f4c4c4;">' +
+        '<p style="color:#a4332b;font-size:.9rem;margin:0 0 10px;">Não foi possível carregar as experiências agora.</p>' +
+        '<p style="color:#888;font-size:.78rem;margin:0;">' + (msg || '') + '</p>' +
+        '<a href="categoria.html" style="display:inline-block;margin-top:14px;color:var(--ddn-wine);font-weight:600;text-decoration:underline;">Explore todas as experiências</a>' +
+      '</div>';
+  }
+
   // ===== Renderiza vitrine real (campaign_overrides) =====
   async function renderVitrine() {
     var grid = document.getElementById('ddn-grid');
     if (!grid) return;
-    var sb = window.supabaseClient;
-    if (!sb) return;
+
+    console.info('[DDN] renderVitrine: aguardando supabaseClient…');
+    var sb = await waitForSupabase(5000);
+    if (!sb) {
+      console.error('[DDN] supabaseClient não disponível após 5s');
+      renderErrorState(grid, 'Conexão indisponível.');
+      return;
+    }
+    console.info('[DDN] supabaseClient pronto, carregando overrides…');
 
     try {
-      // Mostra SÓ as marcadas como featured no admin. Sem isso, a
-      // landing viraria catálogo (96 cards). Curadoria > catálogo.
       var { data: overrides, error: oErr } = await sb
         .from('campaign_overrides')
         .select('id, experience_id, titulo_custom, badge_text, display_order')
@@ -63,29 +109,14 @@
         .order('display_order', { ascending: true });
 
       if (oErr) {
-        console.warn('[DDN] overrides erro:', oErr.message);
+        console.error('[DDN] overrides erro:', oErr);
+        renderErrorState(grid, oErr.message);
         return;
       }
+      console.info('[DDN] overrides retornou:', overrides && overrides.length, 'destaques');
+
       if (!overrides || !overrides.length) {
-        // Empty state premium — não parece bug
-        grid.innerHTML =
-          '<div style="grid-column:1/-1;text-align:center;padding:60px 24px;background:#fff;border-radius:20px;border:1.5px dashed var(--ddn-rose);">' +
-            '<div style="width:64px;height:64px;margin:0 auto 18px;background:var(--ddn-rose-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ddn-wine);">' +
-              '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M12 2v6"/>' +
-                '<path d="M12 22v-6"/>' +
-                '<path d="M4.93 4.93l4.24 4.24"/>' +
-                '<path d="M14.83 14.83l4.24 4.24"/>' +
-                '<path d="M2 12h6"/>' +
-                '<path d="M22 12h-6"/>' +
-                '<path d="M4.93 19.07l4.24-4.24"/>' +
-                '<path d="M14.83 9.17l4.24-4.24"/>' +
-              '</svg>' +
-            '</div>' +
-            '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:var(--ddn-ink);margin:0 0 10px;font-weight:400;">Curadoria sendo finalizada</h3>' +
-            '<p style="color:var(--ddn-ink-soft);font-size:.95rem;max-width:420px;margin:0 auto;line-height:1.55;">Estamos escolhendo a dedo as experiências mais especiais pra esse dia. Volte logo — ou ' +
-              '<a href="categoria.html" style="color:var(--ddn-wine);font-weight:600;text-decoration:underline;">explore todas as experiências</a>.</p>' +
-          '</div>';
+        renderEmptyState(grid);
         return;
       }
 
@@ -97,16 +128,21 @@
         .eq('is_active', true);
 
       if (eErr) {
-        console.warn('[DDN] experiences erro:', eErr.message);
+        console.error('[DDN] experiences erro:', eErr);
+        renderErrorState(grid, eErr.message);
         return;
       }
+      console.info('[DDN] experiences retornou:', exps && exps.length, 'ativas (de', expIds.length, 'overrides)');
 
       var expById = new Map();
       (exps || []).forEach(function (e) { expById.set(e.id, e); });
 
-      grid.innerHTML = overrides.map(function (o) {
+      var cardsHtml = overrides.map(function (o) {
         var e = expById.get(o.experience_id);
-        if (!e) return '';
+        if (!e) {
+          console.warn('[DDN] override aponta pra experience inativa/inexistente:', o.experience_id);
+          return '';
+        }
         var titulo = (o.titulo_custom && o.titulo_custom.trim()) || e.nome;
         var badge = (o.badge_text && o.badge_text.trim()) || 'Especial Dia dos Namorados';
         var preco = e.preco || '';
@@ -138,18 +174,30 @@
             '</div>' +
           '</div>' +
         '</article>';
-      }).join('');
+      }).filter(Boolean).join('');
+
+      if (!cardsHtml) {
+        console.warn('[DDN] todos os overrides apontam pra experiences inativas — empty state');
+        renderEmptyState(grid);
+        return;
+      }
+      grid.innerHTML = cardsHtml;
+      console.info('[DDN] vitrine renderizada OK');
     } catch (err) {
-      console.warn('[DDN] renderVitrine exception:', err);
+      console.error('[DDN] renderVitrine exception:', err);
+      renderErrorState(grid, err && err.message ? err.message : '');
     }
   }
 
   // ===== Renderiza "em breve" real =====
   async function renderUpcoming() {
-    var sb = window.supabaseClient;
-    if (!sb) return;
     var section = document.querySelector('.ddn-upcoming__grid');
     if (!section) return;
+    var sb = await waitForSupabase(5000);
+    if (!sb) {
+      console.error('[DDN] supabaseClient indisponível pra upcoming');
+      return;
+    }
 
     try {
       var { data, error } = await sb
@@ -160,9 +208,10 @@
         .order('display_order', { ascending: true });
 
       if (error) {
-        console.warn('[DDN] upcoming erro:', error.message);
+        console.error('[DDN] upcoming erro:', error);
         return;
       }
+      console.info('[DDN] upcoming retornou:', data && data.length, 'cards');
 
       if (!data || !data.length) {
         section.parentElement.parentElement.style.display = 'none';
@@ -188,8 +237,9 @@
       }).join('');
 
       wireWaitlistButtons();
+      console.info('[DDN] upcoming renderizado OK');
     } catch (err) {
-      console.warn('[DDN] renderUpcoming exception:', err);
+      console.error('[DDN] renderUpcoming exception:', err);
     }
   }
 
