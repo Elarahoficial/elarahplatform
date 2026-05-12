@@ -4250,7 +4250,11 @@ if (groupForm) {
       if (typeof e.stopImmediatePropagation === 'function') {
         e.stopImmediatePropagation();
       }
-      startCheckout(btn);
+      // data-skip-description="true" → pula o modal de descrição
+      // (usado pela campanha DDN — cliente já viu a página temática,
+      // não precisa ver modal de descrição genérico antes do checkout).
+      var skipDesc = btn.dataset && btn.dataset.skipDescription === 'true';
+      startCheckout(btn, skipDesc ? { skipDescription: true } : undefined);
     }, true);
 
     // === Retomar checkout pendente após login ===
