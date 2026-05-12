@@ -13097,6 +13097,23 @@
     var overrideByExp = new Map();
     overrides.forEach(function (o) { overrideByExp.set(o.experience_id, o); });
 
+    var featuredCount = overrides.filter(function (o) { return o.is_featured; }).length;
+    var counterHtml =
+      '<div style="background:#fff8ef;border:1px solid #f0cfa0;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+        '<div>' +
+          '<strong style="color:#a4663b;">' + featuredCount + '</strong> ' +
+          '<span style="color:#666;font-size:.88rem;">experiência' + (featuredCount === 1 ? '' : 's') + ' marcada' + (featuredCount === 1 ? '' : 's') + ' como destaque' +
+          (featuredCount === 0 ? ' — landing está com "Curadoria sendo finalizada"' :
+           featuredCount < 6 ? ' — recomendado 6 a 15 pra landing parecer curada' :
+           featuredCount > 15 ? ' — muitas! Considere desmarcar algumas pra manter foco' :
+           ' ✓ bom número pra landing curada') +
+          '</span>' +
+        '</div>' +
+        '<small style="color:#888;">' + overrides.length + ' total na campanha</small>' +
+      '</div>';
+    listEl.innerHTML = counterHtml + '<div data-camp-rows-host></div>';
+    var rowsHost = listEl.querySelector('[data-camp-rows-host]');
+
     // Ordena: incluídas no topo (por display_order), depois resto alfabético
     exps.sort(function (a, b) {
       var oa = overrideByExp.get(a.id);
@@ -13107,7 +13124,7 @@
       return (a.nome || '').localeCompare(b.nome || '');
     });
 
-    listEl.innerHTML = exps.map(function (e) {
+    rowsHost.innerHTML = exps.map(function (e) {
       var o = overrideByExp.get(e.id);
       var included = !!o;
       return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
@@ -13117,9 +13134,13 @@
             '<span style="overflow:hidden;text-overflow:ellipsis;">' + _campEsc(e.nome) + ' <span style="color:#888;font-weight:400;font-size:.82rem;">(' + _campEsc(e.categoria || '—') + ')</span></span>' +
           '</label>' +
           (included
-            ? '<input type="text" data-camp-titulo placeholder="Título customizado" value="' + _campEsc(o.titulo_custom || '') + '" style="flex:2 1 280px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">' +
-              '<input type="text" data-camp-badge placeholder="Badge" value="' + _campEsc(o.badge_text || '') + '" style="flex:1 1 140px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
-              '<input type="number" data-camp-order placeholder="Ordem" value="' + (o.display_order || 100) + '" style="width:80px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+            ? '<label style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:' + (o.is_featured ? '#fff4e0' : '#fff') + ';border:1.5px solid ' + (o.is_featured ? '#f0a05e' : '#ccc') + ';border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;color:' + (o.is_featured ? '#a4663b' : '#666') + ';white-space:nowrap;" title="Marcar como destaque — aparece na landing pública">' +
+                '<input type="checkbox" data-camp-featured' + (o.is_featured ? ' checked' : '') + ' style="width:14px;height:14px;cursor:pointer;">' +
+                '★ Na landing' +
+              '</label>' +
+              '<input type="text" data-camp-titulo placeholder="Título customizado" value="' + _campEsc(o.titulo_custom || '') + '" style="flex:2 1 240px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">' +
+              '<input type="text" data-camp-badge placeholder="Badge" value="' + _campEsc(o.badge_text || '') + '" style="flex:1 1 120px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+              '<input type="number" data-camp-order placeholder="Ordem" value="' + (o.display_order || 100) + '" style="width:70px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
               '<button type="button" data-camp-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>'
             : ''
           ) +
@@ -13177,11 +13198,14 @@
     var titulo = row.querySelector('[data-camp-titulo]').value.trim();
     var badge = row.querySelector('[data-camp-badge]').value.trim();
     var order = Number(row.querySelector('[data-camp-order]').value) || 100;
+    var featuredEl = row.querySelector('[data-camp-featured]');
+    var featured = featuredEl ? featuredEl.checked : false;
     var msg = row.querySelector('[data-camp-row-msg]');
     var { error } = await sb.from('campaign_overrides').update({
       titulo_custom: titulo || null,
       badge_text: badge || null,
       display_order: order,
+      is_featured: featured,
     }).eq('id', overrideId);
     if (error) {
       msg.style.color = '#c0392b';
