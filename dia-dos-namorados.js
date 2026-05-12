@@ -211,7 +211,7 @@
                 '<div class="ddn-card__price-label">A partir de</div>' +
                 '<div class="ddn-card__price-value">' + esc(preco) + '</div>' +
               '</div>' +
-              '<a href="experiencia.html?id=' + encodeURIComponent(e.id) + '&campaign=dia-dos-namorados" class="ddn-card__price-cta">Ver experiência →</a>' +
+              '<a href="dia-dos-namorados-detalhe.html?id=' + encodeURIComponent(e.id) + '" class="ddn-card__price-cta">Ver experiência →</a>' +
             '</div>' +
           '</div>' +
         '</article>';
