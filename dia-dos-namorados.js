@@ -53,10 +53,13 @@
     if (!sb) return;
 
     try {
+      // Mostra SÓ as marcadas como featured no admin. Sem isso, a
+      // landing viraria catálogo (96 cards). Curadoria > catálogo.
       var { data: overrides, error: oErr } = await sb
         .from('campaign_overrides')
         .select('id, experience_id, titulo_custom, badge_text, display_order')
         .eq('campaign_slug', CAMPAIGN_SLUG)
+        .eq('is_featured', true)
         .order('display_order', { ascending: true });
 
       if (oErr) {
@@ -64,7 +67,25 @@
         return;
       }
       if (!overrides || !overrides.length) {
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#888;padding:40px 20px;font-style:italic;">Curadoria sendo finalizada — volte logo.</p>';
+        // Empty state premium — não parece bug
+        grid.innerHTML =
+          '<div style="grid-column:1/-1;text-align:center;padding:60px 24px;background:#fff;border-radius:20px;border:1.5px dashed var(--ddn-rose);">' +
+            '<div style="width:64px;height:64px;margin:0 auto 18px;background:var(--ddn-rose-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ddn-wine);">' +
+              '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M12 2v6"/>' +
+                '<path d="M12 22v-6"/>' +
+                '<path d="M4.93 4.93l4.24 4.24"/>' +
+                '<path d="M14.83 14.83l4.24 4.24"/>' +
+                '<path d="M2 12h6"/>' +
+                '<path d="M22 12h-6"/>' +
+                '<path d="M4.93 19.07l4.24-4.24"/>' +
+                '<path d="M14.83 9.17l4.24-4.24"/>' +
+              '</svg>' +
+            '</div>' +
+            '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:var(--ddn-ink);margin:0 0 10px;font-weight:400;">Curadoria sendo finalizada</h3>' +
+            '<p style="color:var(--ddn-ink-soft);font-size:.95rem;max-width:420px;margin:0 auto;line-height:1.55;">Estamos escolhendo a dedo as experiências mais especiais pra esse dia. Volte logo — ou ' +
+              '<a href="categoria.html" style="color:var(--ddn-wine);font-weight:600;text-decoration:underline;">explore todas as experiências</a>.</p>' +
+          '</div>';
         return;
       }
 
