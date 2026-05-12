@@ -281,6 +281,13 @@ end $$;
 -- UPDATE abaixo, então mesmo que alguém edite manualmente
 -- depois, fica padronizado.
 -- =============================================================
+-- ORDEM IMPORTANTE: slots primeiro, regra depois.
+-- Motivo: o trigger materialize_recurrence_after_change (Fase 1/2.1)
+-- observa UPDATE OF horario_label da regra e tenta materializar
+-- slots automaticamente. Se atualizarmos a regra ANTES dos slots
+-- filhos, o trigger cria slots novos com o label normalizado
+-- enquanto os slots filhos antigos ainda têm o label antigo →
+-- colide na unique key (experience_id, data, horario).
 do $$
 declare
   v_rule_id  uuid := '449fa916-f6d9-4c6f-adbd-71c7443dfe68';
@@ -295,23 +302,24 @@ begin
   if v_old_lbl is null then
     raise notice '[normalize-rule] regra % não encontrada — pulando', v_rule_id;
   else
-    -- Update da regra (trigger normaliza)
-    update public.experience_recurrence_rules
-       set horario_label = public.normalize_horario_label(horario_label)
-     where id = v_rule_id;
+    v_new_lbl := public.normalize_horario_label(v_old_lbl);
 
-    select horario_label into v_new_lbl
-      from public.experience_recurrence_rules
-     where id = v_rule_id;
-
-    -- Update dos slots filhos (trigger normaliza)
+    -- 1) Atualiza slots filhos PRIMEIRO
     with upd as (
       update public.experience_slots
          set horario = public.normalize_horario_label(horario)
        where recurrence_rule_id = v_rule_id
+         and horario is distinct from public.normalize_horario_label(horario)
       returning 1
     )
     select count(*) into v_slots from upd;
+
+    -- 2) Atualiza a regra DEPOIS (trigger materialize vai disparar,
+    --    mas slots já têm o label novo → ON CONFLICT DO NOTHING pula tudo)
+    update public.experience_recurrence_rules
+       set horario_label = v_new_lbl
+     where id = v_rule_id
+       and horario_label is distinct from v_new_lbl;
 
     raise notice
       '[normalize-rule] regra %: "%" → "%" (% slots filhos atualizados)',
