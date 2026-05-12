@@ -103,7 +103,7 @@
     try {
       var { data: overrides, error: oErr } = await sb
         .from('campaign_overrides')
-        .select('id, experience_id, titulo_custom, badge_text, display_order')
+        .select('id, experience_id, titulo_custom, badge_text, display_order, imagem_custom')
         .eq('campaign_slug', CAMPAIGN_SLUG)
         .eq('is_featured', true)
         .order('display_order', { ascending: true });
@@ -151,8 +151,12 @@
         if (e.bairro) meta.push('<span class="ddn-card__meta-item">' + esc(e.bairro) + '</span>');
         if (e.vagas_total) meta.push('<span class="ddn-card__meta-item">' + esc(e.vagas_total) + ' vagas</span>');
 
-        var media = e.imagem
-          ? '<img src="' + esc(e.imagem) + '" alt="' + esc(titulo) + '" onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.ddn-card__placeholder\').style.display=\'flex\';">' +
+        // Foto: prioriza imagem_custom do override (foto específica da
+        // campanha) → fallback pra imagem original da experiência →
+        // placeholder colorido.
+        var fotoUrl = (o.imagem_custom && o.imagem_custom.trim()) || e.imagem || '';
+        var media = fotoUrl
+          ? '<img src="' + esc(fotoUrl) + '" alt="' + esc(titulo) + '" onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.ddn-card__placeholder\').style.display=\'flex\';">' +
             '<div class="ddn-card__placeholder" style="display:none;">' + esc(e.categoria || 'Experiência') + '</div>'
           : '<div class="ddn-card__placeholder">' + esc(e.categoria || 'Experiência') + '</div>';
 

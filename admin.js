@@ -13087,7 +13087,7 @@
 
     var [overridesRes, expsRes, slotsRes, expsEventRes] = await Promise.all([
       sb.from('campaign_overrides')
-        .select('id, experience_id, titulo_custom, badge_text, is_featured, display_order')
+        .select('id, experience_id, titulo_custom, badge_text, is_featured, display_order, imagem_custom')
         .eq('campaign_slug', slug),
       sb.from('experiences')
         .select('id, nome, categoria, imagem, is_active, event_at, data')
@@ -13186,24 +13186,44 @@
       } else {
         nextDateChip = '<span title="Sem data futura" style="display:inline-flex;align-items:center;gap:3px;background:#fdecea;color:#c0392b;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">⚠ sem data</span>';
       }
-      return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
+      var rowHead =
         '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">' +
           '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;flex:1 1 240px;min-width:0;">' +
             '<input type="checkbox" data-camp-include' + (included ? ' checked' : '') + ' style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">' +
             '<span style="overflow:hidden;text-overflow:ellipsis;">' + _campEsc(e.nome) + ' <span style="color:#888;font-weight:400;font-size:.82rem;">(' + _campEsc(e.categoria || '—') + ')</span>' + nextDateChip + '</span>' +
+          '</label>';
+
+      var rowControls = '';
+      var rowImageSection = '';
+      if (included) {
+        rowControls =
+          '<label style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:' + (o.is_featured ? '#fff4e0' : '#fff') + ';border:1.5px solid ' + (o.is_featured ? '#f0a05e' : '#ccc') + ';border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;color:' + (o.is_featured ? '#a4663b' : '#666') + ';white-space:nowrap;" title="Marcar como destaque — aparece na landing pública">' +
+            '<input type="checkbox" data-camp-featured' + (o.is_featured ? ' checked' : '') + ' style="width:14px;height:14px;cursor:pointer;">★ Na landing' +
           '</label>' +
-          (included
-            ? '<label style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:' + (o.is_featured ? '#fff4e0' : '#fff') + ';border:1.5px solid ' + (o.is_featured ? '#f0a05e' : '#ccc') + ';border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;color:' + (o.is_featured ? '#a4663b' : '#666') + ';white-space:nowrap;" title="Marcar como destaque — aparece na landing pública">' +
-                '<input type="checkbox" data-camp-featured' + (o.is_featured ? ' checked' : '') + ' style="width:14px;height:14px;cursor:pointer;">' +
-                '★ Na landing' +
-              '</label>' +
-              '<input type="text" data-camp-titulo placeholder="Título customizado" value="' + _campEsc(o.titulo_custom || '') + '" style="flex:2 1 240px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">' +
-              '<input type="text" data-camp-badge placeholder="Badge" value="' + _campEsc(o.badge_text || '') + '" style="flex:1 1 120px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
-              '<input type="number" data-camp-order placeholder="Ordem" value="' + (o.display_order || 100) + '" style="width:70px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
-              '<button type="button" data-camp-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>'
-            : ''
-          ) +
-        '</div>' +
+          '<input type="text" data-camp-titulo placeholder="Título customizado" value="' + _campEsc(o.titulo_custom || '') + '" style="flex:2 1 220px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">' +
+          '<input type="text" data-camp-badge placeholder="Badge" value="' + _campEsc(o.badge_text || '') + '" style="flex:1 1 110px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<input type="number" data-camp-order placeholder="Ordem" value="' + (o.display_order || 100) + '" style="width:64px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<button type="button" data-camp-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>';
+
+        var imgPreview = o.imagem_custom
+          ? '<img data-camp-img-preview src="' + _campEsc(o.imagem_custom) + '" alt="foto da campanha" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid #f0a05e;">'
+          : (e.imagem
+              ? '<img data-camp-img-preview src="' + _campEsc(e.imagem) + '" alt="foto original" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid #ddd;opacity:.7;" title="Foto original — substitua por outra na campanha">'
+              : '<div data-camp-img-preview style="width:56px;height:56px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.6rem;text-align:center;">sem foto</div>'
+            );
+        rowImageSection =
+          '<div style="display:flex;gap:10px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed #f0d8b8;">' +
+            '<div style="flex-shrink:0;">' + imgPreview + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<input type="text" data-camp-img placeholder="🖼 URL de foto exclusiva pra campanha (vazio = usa foto original)" value="' + _campEsc(o.imagem_custom || '') + '" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.78rem;color:#666;">' +
+              '<small style="display:block;margin-top:3px;color:#888;font-size:.7rem;">Foto custom aparece SÓ na landing DDN. Vazio = usa foto original da experiência.</small>' +
+            '</div>' +
+          '</div>';
+      }
+
+      return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
+        rowHead + rowControls + '</div>' +
+        rowImageSection +
         '<div data-camp-row-msg style="font-size:.78rem;min-height:1em;margin-top:4px;"></div>' +
       '</div>';
     }).join('');
@@ -13226,6 +13246,19 @@
       btn.addEventListener('click', async function () {
         var row = btn.closest('.camp-override-row');
         await _campOverrideSave(row);
+      });
+    });
+    // Preview da foto custom em tempo real
+    listEl.querySelectorAll('[data-camp-img]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var url = inp.value.trim();
+        var container = inp.parentElement.previousElementSibling; // div com flex-shrink:0
+        if (!container) return;
+        if (!url) {
+          container.innerHTML = '<div data-camp-img-preview style="width:56px;height:56px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.6rem;text-align:center;">sem foto</div>';
+        } else {
+          container.innerHTML = '<img data-camp-img-preview src="' + url.replace(/"/g,'&quot;') + '" alt="preview" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid #f0a05e;">';
+        }
       });
     });
   }
@@ -13259,12 +13292,15 @@
     var order = Number(row.querySelector('[data-camp-order]').value) || 100;
     var featuredEl = row.querySelector('[data-camp-featured]');
     var featured = featuredEl ? featuredEl.checked : false;
+    var imgEl = row.querySelector('[data-camp-img]');
+    var imgCustom = imgEl ? imgEl.value.trim() : '';
     var msg = row.querySelector('[data-camp-row-msg]');
     var { error } = await sb.from('campaign_overrides').update({
       titulo_custom: titulo || null,
       badge_text: badge || null,
       display_order: order,
       is_featured: featured,
+      imagem_custom: imgCustom || null,
     }).eq('id', overrideId);
     if (error) {
       msg.style.color = '#c0392b';
