@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Plano Estratégico de Conversão · Elarah</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #faf6f0;
+    --cream-dark: #f3ece1;
+    --orange: #f0a05e;
+    --orange-dark: #d8864a;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --ink-mute: #7a7a7a;
+    --red: #c0392b;
+    --green: #1e8e5a;
+    --line: #e7dfd1;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #ddd;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 22mm 20mm;
+    margin: 12mm auto;
+    background: var(--cream);
+    box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+  h1, h2, h3 { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; }
+  h1 { font-size: 38pt; line-height: 1.1; margin: 0 0 8pt; letter-spacing: -.5pt; }
+  h2 { font-size: 22pt; margin: 0 0 14pt; color: var(--ink); border-bottom: 2px solid var(--orange); padding-bottom: 6pt; }
+  h3 { font-size: 14pt; margin: 16pt 0 6pt; color: var(--ink); }
+  p, li, td, th { font-size: 10.5pt; line-height: 1.55; }
+  p { margin: 0 0 8pt; color: var(--ink-soft); }
+  strong { color: var(--ink); font-weight: 600; }
+  ul { margin: 4pt 0 10pt; padding-left: 18pt; }
+  li { margin-bottom: 4pt; color: var(--ink-soft); }
+
+  /* Cover */
+  .cover {
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-height: calc(297mm - 44mm);
+  }
+  .cover .top { }
+  .cover .eyebrow {
+    text-transform: uppercase; letter-spacing: 3pt; font-size: 9pt;
+    color: var(--orange-dark); font-weight: 600; margin-bottom: 18pt;
+  }
+  .cover h1 { font-size: 54pt; line-height: 1.05; margin-bottom: 24pt; }
+  .cover .subtitle { font-size: 14pt; color: var(--ink-soft); max-width: 130mm; line-height: 1.5; }
+  .cover .meta { font-size: 10pt; color: var(--ink-mute); border-top: 1px solid var(--line); padding-top: 14pt; }
+  .cover .meta div { margin-bottom: 4pt; }
+  .cover .stat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12pt;
+    margin: 30pt 0;
+  }
+  .stat-card {
+    background: var(--cream-dark); border-radius: 4pt;
+    padding: 14pt; border-left: 3pt solid var(--orange);
+  }
+  .stat-card .label { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1.5pt; color: var(--ink-mute); margin-bottom: 4pt; }
+  .stat-card .value { font-size: 24pt; font-family: 'DM Serif Display', serif; color: var(--ink); line-height: 1; }
+  .stat-card .delta { font-size: 9pt; color: var(--green); margin-top: 4pt; }
+  .stat-card .delta.bad { color: var(--red); }
+
+  /* Boxes */
+  .callout {
+    background: #fff5e9; border-left: 4pt solid var(--orange);
+    padding: 12pt 14pt; margin: 12pt 0; border-radius: 3pt;
+  }
+  .callout.danger { background: #fdecea; border-left-color: var(--red); }
+  .callout.success { background: #e8f4ed; border-left-color: var(--green); }
+  .callout h3 { margin: 0 0 6pt; font-family: 'DM Sans', sans-serif; font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1pt; }
+  .callout p { margin: 0; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 8pt 0 14pt; }
+  th, td { text-align: left; padding: 8pt 6pt; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--cream-dark); font-weight: 600; font-size: 9.5pt; color: var(--ink); text-transform: uppercase; letter-spacing: .5pt; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.p0 { background: rgba(240, 160, 94, 0.08); }
+  .prio { display: inline-block; padding: 2pt 7pt; border-radius: 99pt; font-size: 8.5pt; font-weight: 700; letter-spacing: .5pt; }
+  .p-p0 { background: #c0392b; color: #fff; }
+  .p-p1 { background: #f0a05e; color: #fff; }
+  .p-p2 { background: #e9c46a; color: #6b4f10; }
+  .p-p3 { background: #cfc7b8; color: #4a4a4a; }
+
+  /* Initiative cards */
+  .initiative {
+    background: #fff; border: 1px solid var(--line); border-radius: 6pt;
+    padding: 14pt 16pt; margin-bottom: 12pt; page-break-inside: avoid;
+  }
+  .initiative .header-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8pt; margin-bottom: 6pt;
+  }
+  .initiative h3 { margin: 0; font-family: 'DM Sans', sans-serif; font-size: 12pt; font-weight: 700; }
+  .initiative .meta-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8pt; margin: 8pt 0;
+    font-size: 9pt; color: var(--ink-mute);
+  }
+  .initiative .meta-row .item { background: var(--cream-dark); padding: 6pt 8pt; border-radius: 3pt; }
+  .initiative .meta-row .item strong { display: block; font-size: 10.5pt; color: var(--ink); }
+  .initiative .why { font-size: 10pt; color: var(--ink-soft); margin: 6pt 0 0; }
+
+  /* Funnel */
+  .funnel { margin: 12pt 0; }
+  .funnel-row { display: flex; align-items: center; gap: 10pt; margin-bottom: 4pt; }
+  .funnel-row .label { width: 56mm; font-size: 10pt; color: var(--ink-soft); }
+  .funnel-row .bar { flex: 1; height: 14pt; background: var(--cream-dark); border-radius: 99pt; overflow: hidden; }
+  .funnel-row .bar .fill { height: 100%; background: var(--orange); border-radius: 99pt; }
+  .funnel-row .count { width: 24mm; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 10pt; }
+  .drop { color: var(--red); font-size: 9pt; padding-left: 56mm; margin-bottom: 6pt; }
+
+  /* Footer */
+  .footer-note {
+    margin-top: 24pt; padding-top: 10pt; border-top: 1px solid var(--line);
+    font-size: 9pt; color: var(--ink-mute);
+  }
+
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CAPA
+     ============================================================ -->
+<section class="page cover">
+  <div class="top">
+    <div class="eyebrow">Elarah · Plano Estratégico</div>
+    <h1>Destravando<br>a conversão.</h1>
+    <p class="subtitle">Diagnóstico técnico e estratégico do funil de compra. O que está travando, por que, e o que fazer pra dobrar a receita sem aumentar tráfego.</p>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="label">Conversão hoje</div>
+        <div class="value">5,65%</div>
+        <div class="delta">compras / sessões</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Maior queda</div>
+        <div class="value">−79%</div>
+        <div class="delta bad">Reservar → Checkout</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Potencial Sprint 1</div>
+        <div class="value">~2×</div>
+        <div class="delta">conversão estimada</div>
+      </div>
+    </div>
+  </div>
+  <div class="meta">
+    <div><strong>Documento:</strong> Plano de conversão — Sprint 1, 2 e 3</div>
+    <div><strong>Período analisado:</strong> dados reais do funil de conversão do admin</div>
+    <div><strong>Autor:</strong> Time técnico Elarah</div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     EXECUTIVO
+     ============================================================ -->
+<section class="page">
+  <h2>Resumo executivo</h2>
+
+  <p>A Elarah <strong>não tem problema de aquisição</strong>. Visitantes chegam, engajam, abrem páginas de experiência e clicam em "Reservar". O problema está <strong>depois do clique em Reservar</strong>: 4 em cada 5 pessoas com intenção forte de compra <strong>somem antes de chegar ao checkout</strong>.</p>
+
+  <div class="callout danger">
+    <h3>O maior gargalo da Elarah hoje</h3>
+    <p>Dos visitantes que clicam em "Reservar", <strong>apenas 20,5% chegam a iniciar o checkout</strong>. Os outros 79,5% — pessoas já convencidas, prontas pra comprar — desistem antes de ver o pagamento. Esse é o passo mais caro do funil, porque a atenção, o clique, o criativo e a campanha <strong>já foram pagos</strong> pra trazer essa pessoa até aqui.</p>
+  </div>
+
+  <h3>Por que está acontecendo</h3>
+  <p>Auditoria do código revelou <strong>três barreiras empilhadas</strong> entre o clique em "Reservar" e o modal de pagamento:</p>
+  <ul>
+    <li><strong>Modal intermediária</strong> com descrição da experiência (que a pessoa já leu na página).</li>
+    <li><strong>Login obrigatório</strong> — a pessoa é forçada a criar conta <em>antes</em> de ver preço, data ou horário disponível.</li>
+    <li><strong>Modal de checkout sem feedback visual</strong> — fica até 4 segundos carregando dados em silêncio. A pessoa pensa que o botão quebrou.</li>
+  </ul>
+
+  <h3>O que isso significa em receita</h3>
+  <p>Se o site converte <strong>5,65%</strong> hoje e a hipótese principal estiver certa, destravar essas três barreiras leva a conversão pra faixa de <strong>9% a 12%</strong>. Isso é <strong>receita ~2×</strong> com o <strong>mesmo investimento em tráfego</strong>.</p>
+
+  <div class="callout success">
+    <h3>A boa notícia</h3>
+    <p>As três correções de maior impacto são <strong>cirúrgicas</strong>. Cabem em 3 a 5 dias de trabalho técnico. Não exigem rewrite, não exigem nova arquitetura, não exigem novo design — é remover atrito que já existe no código.</p>
+  </div>
+
+  <h3>Recomendação</h3>
+  <p>Executar <strong>Sprint 1</strong> imediatamente (3 mudanças, ~5 dias). Medir o impacto. Em seguida, Sprint 2 (tracking profundo + recuperação de abandono) pra fechar o que ainda escapa.</p>
+</section>
+
+
+<!-- ============================================================
+     FUNIL VISUAL
+     ============================================================ -->
+<section class="page">
+  <h2>O funil hoje</h2>
+  <p>Cada barra é uma etapa. Cada queda entre barras é receita perdida. A maior queda do funil é a que mais dói porque acontece <em>depois</em> que a pessoa demonstrou intenção real de compra.</p>
+
+  <div class="funnel">
+    <div class="funnel-row">
+      <div class="label">Visitantes (sessões)</div>
+      <div class="bar"><div class="fill" style="width:100%"></div></div>
+      <div class="count">283</div>
+    </div>
+    <div class="drop">↓ 22,3% passa pra próxima etapa</div>
+
+    <div class="funnel-row">
+      <div class="label">Engajou com uma experiência</div>
+      <div class="bar"><div class="fill" style="width:22.3%"></div></div>
+      <div class="count">63</div>
+    </div>
+    <div class="drop">↓ 100% (mesma base — quem engaja, abre detalhe)</div>
+
+    <div class="funnel-row">
+      <div class="label">Abriu o detalhe da experiência</div>
+      <div class="bar"><div class="fill" style="width:22.3%"></div></div>
+      <div class="count">63</div>
+    </div>
+    <div class="drop">↓ 61,9% clica em Reservar</div>
+
+    <div class="funnel-row">
+      <div class="label">Clicou em "Reservar"</div>
+      <div class="bar"><div class="fill" style="width:13.8%"></div></div>
+      <div class="count">39</div>
+    </div>
+    <div class="drop"><strong>↓ 20,5% chega ao checkout — MAIOR GARGALO</strong></div>
+
+    <div class="funnel-row">
+      <div class="label">Iniciou o checkout</div>
+      <div class="bar"><div class="fill" style="width:2.8%; background:#c0392b"></div></div>
+      <div class="count">8</div>
+    </div>
+    <div class="drop">↓ 62,5% confirma pagamento</div>
+
+    <div class="funnel-row">
+      <div class="label">Confirmou pagamento</div>
+      <div class="bar"><div class="fill" style="width:1.8%"></div></div>
+      <div class="count">5</div>
+    </div>
+  </div>
+
+  <h3>A leitura do funil</h3>
+  <ul>
+    <li><strong>Aquisição está ok.</strong> 283 visitantes em uma janela curta. 22% engaja com alguma experiência — saudável pra um site de ticket alto.</li>
+    <li><strong>Interesse está ok.</strong> Dos 63 que abrem detalhe, 39 (62%) chegam a clicar em Reservar. Significa que a página da experiência convence.</li>
+    <li><strong>O problema é técnico e de UX.</strong> O drop de 39→8 é grande demais pra ser "mudança de ideia". É fricção no caminho.</li>
+    <li><strong>Pagamento em si converte bem.</strong> 5 de 8 que iniciam checkout pagam (62%). Quem chega lá, compra.</li>
+  </ul>
+
+  <div class="callout">
+    <h3>O insight central</h3>
+    <p>A Elarah não precisa convencer mais ninguém a querer comprar — <strong>as pessoas já querem</strong>. Precisa só parar de bloquear o caminho de quem já decidiu.</p>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     POR QUÊ — RAZÕES DE NEGÓCIO
+     ============================================================ -->
+<section class="page">
+  <h2>Por que cada mudança importa</h2>
+
+  <h3>1. Por que remover o login obrigatório aumentaria conversão</h3>
+  <p>Hoje a pessoa clica em "Reservar" e, <strong>antes de ver o preço final, a data disponível ou o horário</strong>, é forçada a criar uma conta. Isso quebra três princípios básicos de e-commerce:</p>
+  <ul>
+    <li><strong>O usuário deve ver valor antes de dar dado.</strong> Pedir cadastro antes do preço inverte essa lógica.</li>
+    <li><strong>Brasileiro é desconfiado com cadastro em site novo.</strong> "Vão me mandar spam? Vão vender meus dados?" Esse pensamento mata o impulso.</li>
+    <li><strong>Cada campo a mais reduz conversão.</strong> Estudos clássicos de e-commerce mostram queda de 15-30% por campo desnecessário. Cadastro inteiro vira gate.</li>
+  </ul>
+  <p>A solução é <strong>checkout convidado</strong>: pedir só nome, telefone e email no momento da compra, e <strong>criar a conta automaticamente depois</strong> do pagamento. O usuário recebe um email com a senha. Zero fricção, mesma base de dados.</p>
+
+  <h3>2. Por que o modal atual está prejudicando</h3>
+  <p>Quando a pessoa clica em "Reservar", o site faz três coisas <em>antes</em> de mostrar o pagamento:</p>
+  <ul>
+    <li>Abre uma <strong>modal intermediária com a descrição da experiência</strong> (que a pessoa <em>já leu</em>).</li>
+    <li>Carrega dados de configuração de taxa <strong>sem timeout</strong> — se o servidor demorar, a tela congela em silêncio.</li>
+    <li>Faz a pessoa preencher até <strong>5 campos</strong> (nome, telefone, CPF, cupom, método) antes de ver o botão de pagar.</li>
+  </ul>
+  <p>O modal não é só um problema técnico — é um problema de <strong>momento emocional</strong>. A pessoa decidiu comprar. O site deveria <em>celebrar</em> isso com uma experiência rápida, premium, com sensação de "tá quase lá". Em vez disso, mostra burocracia.</p>
+
+  <h3>3. Por que performance no mobile impacta tanto</h3>
+  <p>A Elarah é majoritariamente mobile. No mobile, cada segundo de espera <strong>sem feedback visual</strong> aumenta abandono em algo entre 7% e 20% — esse é um dos números mais estáveis da literatura de UX.</p>
+  <p>Hoje o site carrega <strong>196 KB de JavaScript bloqueante</strong> + outros 85 KB que <em>nem deveriam estar lá</em> na página de detalhe. Isso significa que, no 4G mediano, a pessoa espera de <strong>2 a 4 segundos</strong> entre o clique em "Reservar" e o modal aparecer. <strong>Sem nenhum spinner.</strong> Sem nenhum sinal de que algo está acontecendo.</p>
+  <p>Resultado: muita gente clica de novo (rage click), pensa que quebrou, ou simplesmente fecha. Adicionar um spinner instantâneo no clique custa <strong>2 horas de trabalho</strong> e pode recuperar uma fatia grande dessas pessoas.</p>
+
+  <h3>4. Por que precisamos de tracking mais profundo</h3>
+  <p>Hoje sabemos que <strong>31 pessoas desaparecem entre Reservar e Checkout</strong>, mas <em>não sabemos onde</em>. Caíram na modal intermediária? Recusaram o login? Travaram no formulário? Faltam eventos pra responder.</p>
+  <p>Sem tracking detalhado, a gente corrige no escuro. Com tracking, cada decisão futura vira <strong>baseada em evidência</strong>, não em suposição. É o investimento que destrava todas as melhorias seguintes.</p>
+
+  <h3>5. Quanto isso pode impactar receita</h3>
+  <p>Matemática simples. Se a conversão dobra (de 5,65% para ~11%):</p>
+  <ul>
+    <li>Mesma quantidade de visitantes</li>
+    <li>Mesmo investimento em campanhas</li>
+    <li>Mesmo ticket médio</li>
+    <li><strong>Receita ~2×.</strong></li>
+  </ul>
+  <p>Cada R$ 1 gasto em anúncio passa a render o dobro. O custo de aquisição de cliente (CAC) cai pela metade. A operação fica mais lucrativa sem mexer em nenhum produto.</p>
+</section>
+
+
+<!-- ============================================================
+     INICIATIVAS PRIORIZADAS — P0
+     ============================================================ -->
+<section class="page">
+  <h2>O que fazer — priorizado</h2>
+  <p>Cada iniciativa abaixo tem: <strong>o que é</strong>, <strong>problema que resolve</strong>, <strong>impacto estimado</strong>, <strong>dificuldade</strong> (1 = trivial, 5 = grande refactor) e <strong>tempo</strong>.</p>
+
+  <h3 style="color: var(--red); margin-top: 14pt;">PRIORIDADE MÁXIMA — fazer agora (Sprint 1)</h3>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>1. Checkout convidado (remover login obrigatório)</h3>
+      <span class="prio p-p0">P0</span>
+    </div>
+    <p class="why"><strong>Problema:</strong> O usuário é forçado a criar conta antes de ver preço/data. Maior gate psicológico do funil.</p>
+    <p class="why"><strong>Solução:</strong> Permitir checkout sem cadastro. Coletar nome/telefone/email no próprio formulário. Criar conta automaticamente após pagamento, enviar senha por email.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+40% a +80%</strong></div>
+      <div class="item">Dificuldade<strong>3 / 5</strong></div>
+      <div class="item">Tempo<strong>1-2 dias</strong></div>
+      <div class="item">Risco<strong>Baixo</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>2. Spinner visual no clique de "Reservar"</h3>
+      <span class="prio p-p0">P0</span>
+    </div>
+    <p class="why"><strong>Problema:</strong> Pessoa clica em Reservar, espera 2-4 segundos sem feedback. Acha que quebrou e fecha a aba.</p>
+    <p class="why"><strong>Solução:</strong> Overlay com spinner + texto "Carregando…" instantâneo no clique. Some quando modal abre.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+15% a +30%</strong></div>
+      <div class="item">Dificuldade<strong>1 / 5</strong></div>
+      <div class="item">Tempo<strong>2 horas</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>3. Eliminar a modal intermediária (Description Gate)</h3>
+      <span class="prio p-p0">P0</span>
+    </div>
+    <p class="why"><strong>Problema:</strong> Modal extra entre Reservar e Checkout mostrando descrição que a pessoa já leu. Um clique inteiro a mais.</p>
+    <p class="why"><strong>Solução:</strong> Remover o gate. Ou, no mínimo, só mostrar se o usuário não rolou a página do detalhe.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+10% a +25%</strong></div>
+      <div class="item">Dificuldade<strong>1 / 5</strong></div>
+      <div class="item">Tempo<strong>1 hora</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>4. Timeout + fallback no carregamento de taxa</h3>
+      <span class="prio p-p0">P0</span>
+    </div>
+    <p class="why"><strong>Problema:</strong> Modal busca configuração de taxa do servidor sem timeout. Se Supabase demora, modal congela em silêncio.</p>
+    <p class="why"><strong>Solução:</strong> Timeout de 2 segundos. Se passar, assume taxa zero e segue o jogo. Pagamento não pode travar por causa de configuração.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+5% a +10%</strong></div>
+      <div class="item">Dificuldade<strong>1 / 5</strong></div>
+      <div class="item">Tempo<strong>30 min</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>5. Defer dos scripts + remover JS desnecessário do detalhe</h3>
+      <span class="prio p-p0">P0</span>
+    </div>
+    <p class="why"><strong>Problema:</strong> 281 KB de JavaScript bloqueante carrega antes de qualquer coisa aparecer. Pior em mobile/4G.</p>
+    <p class="why"><strong>Solução:</strong> Adicionar <code>defer</code> em todos os scripts. Remover <code>experiences-data.js</code> (85 KB) da página de detalhe — não é usado lá.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+5% a +15%</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>4 horas</strong></div>
+      <div class="item">Risco<strong>Baixo</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>6. CTA fixo no mobile</h3>
+      <span class="prio p-p0">P0</span>
+    </div>
+    <p class="why"><strong>Problema:</strong> No mobile, ao rolar a página, o botão "Reservar" some. Pessoa decidida tem que rolar até o topo.</p>
+    <p class="why"><strong>Solução:</strong> Botão Reservar fixo no rodapé do mobile, sempre visível. Padrão de ouro de e-commerce mobile.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+5% a +10%</strong></div>
+      <div class="item">Dificuldade<strong>1 / 5</strong></div>
+      <div class="item">Tempo<strong>2 horas</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     INICIATIVAS — P1, P2, P3
+     ============================================================ -->
+<section class="page">
+  <h2 style="margin-top:0">Sprint 2 — Tracking + recuperação de abandono</h2>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>7. Eventos de tracking faltantes (20+ novos)</h3>
+      <span class="prio p-p1">P1</span>
+    </div>
+    <p class="why"><strong>Por que:</strong> Hoje sabemos que 31 pessoas somem, não sabemos onde. Sem isso, otimizamos no escuro.</p>
+    <p class="why"><strong>Adiciona:</strong> abertura/fechamento de modal, login gate, seleção de data/horário/variante, erros de formulário, copy do PIX, rage clicks, erros JS, abandono de checkout.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>Destrava futuro</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>1 dia</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>8. Eventos server-side dos webhooks de pagamento</h3>
+      <span class="prio p-p1">P1</span>
+    </div>
+    <p class="why"><strong>Por que:</strong> Hoje webhooks do Stripe/MP confirmam o booking mas não registram em analytics. Pagamentos confirmados fora da sessão (PIX após fechar aba) ficam invisíveis.</p>
+    <p class="why"><strong>Adiciona:</strong> <code>payment_success_server</code>, <code>payment_failed_server</code>, <code>pix_paid_server</code>, <code>pix_expired_server</code>.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>Fecha foto</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>3 horas</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>9. Auto-save de carrinho em localStorage</h3>
+      <span class="prio p-p1">P1</span>
+    </div>
+    <p class="why"><strong>Por que:</strong> Hoje, se fechar a aba, perde tudo. localStorage sobrevive — pessoa volta e continua de onde parou.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+3% a +8%</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>4 horas</strong></div>
+      <div class="item">Risco<strong>Baixo</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>10. WhatsApp recovery automático</h3>
+      <span class="prio p-p1">P1</span>
+    </div>
+    <p class="why"><strong>Por que:</strong> Pessoa abandona PIX no meio? Hoje vira receita perdida. Edge Function roda a cada 5min, identifica bookings pendentes > 30min e dispara template de WhatsApp personalizado.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+2% a +5% receita</strong></div>
+      <div class="item">Dificuldade<strong>3 / 5</strong></div>
+      <div class="item">Tempo<strong>1 dia</strong></div>
+      <div class="item">Risco<strong>Médio (precisa MP/Twilio)</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>11. Urgência ("X vagas restantes") + selos de confiança</h3>
+      <span class="prio p-p1">P1</span>
+    </div>
+    <p class="why"><strong>Por que:</strong> Urgência real (não fake) aumenta conversão. Selos "Pagamento 100% seguro · Stripe + MP" reduzem ansiedade no momento de pagar.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+3% a +8%</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>4 horas</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>12. Painel "Funil detalhado do checkout" no admin</h3>
+      <span class="prio p-p1">P1</span>
+    </div>
+    <p class="why"><strong>Por que:</strong> Visualização granular de cada etapa do checkout, tempo médio por etapa, quebra por device/browser/UTM. Pra você não ficar dependente de mim pra ler os dados.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>Autonomia</strong></div>
+      <div class="item">Dificuldade<strong>3 / 5</strong></div>
+      <div class="item">Tempo<strong>1 dia</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 18pt;">Sprint 3 — Refinamento técnico</h2>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>13. WebP/AVIF + lazy loading em imagens</h3>
+      <span class="prio p-p2">P2</span>
+    </div>
+    <p class="why">43 MB de imagens em <code>/assets</code>. WebP corta ~30%. Lazy loading carrega só o que aparece.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>LCP +20%</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>1 dia</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>14. Lazy load do iframe do YouTube (home)</h3>
+      <span class="prio p-p2">P2</span>
+    </div>
+    <p class="why">Hoje o vídeo carrega sempre (~500 KB), mesmo pra quem nem chega a vê-lo. Lazy load: só carrega quando entra na tela.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>LCP home +30%</strong></div>
+      <div class="item">Dificuldade<strong>1 / 5</strong></div>
+      <div class="item">Tempo<strong>1 hora</strong></div>
+      <div class="item">Risco<strong>Zero</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>15. Minificação JS no deploy (esbuild)</h3>
+      <span class="prio p-p3">P3</span>
+    </div>
+    <p class="why">Hoje todo JS é servido sem minificação. Esbuild corta ~40% do tamanho.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+3% a +5% LCP</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>4 horas</strong></div>
+      <div class="item">Risco<strong>Baixo</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>16. CPF opcional no PIX (validar com Mercado Pago)</h3>
+      <span class="prio p-p3">P3</span>
+    </div>
+    <p class="why">CPF é gate psicológico. MP aceita PIX sem CPF em alguns fluxos. Precisa validar a regra com a documentação atual deles.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>+5%</strong></div>
+      <div class="item">Dificuldade<strong>2 / 5</strong></div>
+      <div class="item">Tempo<strong>4 horas</strong></div>
+      <div class="item">Risco<strong>Médio</strong></div>
+    </div>
+  </div>
+
+  <div class="initiative">
+    <div class="header-row">
+      <h3>17. Service worker para cache offline-first</h3>
+      <span class="prio p-p3">P3</span>
+    </div>
+    <p class="why">Páginas voltam instantâneas em segunda visita. Bom pra ranking de Core Web Vitals e pra sensação premium.</p>
+    <div class="meta-row">
+      <div class="item">Impacto<strong>Marginal</strong></div>
+      <div class="item">Dificuldade<strong>3 / 5</strong></div>
+      <div class="item">Tempo<strong>2 dias</strong></div>
+      <div class="item">Risco<strong>Médio</strong></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     PROJEÇÃO FINANCEIRA
+     ============================================================ -->
+<section class="page">
+  <h2>Projeção de impacto financeiro</h2>
+  <p>Cenários conservador, esperado e otimista, considerando volume atual de tráfego e ticket médio. Não incluímos aumento de tráfego — só o destravamento da conversão atual.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Cenário</th>
+        <th>Conversão</th>
+        <th>Mudança</th>
+        <th>Receita relativa</th>
+        <th>Tempo de execução</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Hoje</td>
+        <td>5,65%</td>
+        <td>—</td>
+        <td>1,00×</td>
+        <td>—</td>
+      </tr>
+      <tr class="p0">
+        <td><strong>Conservador</strong> (Sprint 1, parcial)</td>
+        <td>8,0%</td>
+        <td>+41%</td>
+        <td><strong>1,4×</strong></td>
+        <td>3 dias</td>
+      </tr>
+      <tr class="p0">
+        <td><strong>Esperado</strong> (Sprint 1 completo)</td>
+        <td>10,5%</td>
+        <td>+86%</td>
+        <td><strong>1,9×</strong></td>
+        <td>1 semana</td>
+      </tr>
+      <tr class="p0">
+        <td><strong>Otimista</strong> (Sprint 1 + 2)</td>
+        <td>12,5%</td>
+        <td>+121%</td>
+        <td><strong>2,2×</strong></td>
+        <td>2-3 semanas</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout success">
+    <h3>Tradução em receita</h3>
+    <p>No cenário esperado, <strong>cada R$ 1.000 que a Elarah fatura hoje vira ~R$ 1.900</strong> — sem mexer no produto, sem aumentar ad spend, sem trazer um visitante a mais. É puramente parar de bloquear quem já decidiu comprar.</p>
+  </div>
+
+  <h3>Custos de implementação</h3>
+  <p>Sprint 1 inteiro cabe em <strong>~5 dias de trabalho técnico</strong>. Sprint 2 mais <strong>~5 dias</strong>. Sprint 3 é refinamento contínuo, sem prazo crítico.</p>
+
+  <h3>Riscos</h3>
+  <ul>
+    <li><strong>Checkout convidado</strong> exige cuidado pra não criar contas duplicadas (mesmo email já cadastrado). Solução: se email já existe, mandar magic link em vez de criar nova conta. Risco controlado.</li>
+    <li><strong>Tracking novo</strong> aumenta um pouco o tráfego de eventos no Supabase. Custo marginal (events table já existe e funciona).</li>
+    <li><strong>WhatsApp recovery</strong> precisa template aprovado se for via API oficial, ou conta business se for via Twilio. Validar antes.</li>
+  </ul>
+</section>
+
+
+<!-- ============================================================
+     PLANO DE EXECUÇÃO
+     ============================================================ -->
+<section class="page">
+  <h2>Plano de execução — passo a passo</h2>
+
+  <h3 style="color:var(--red)">Semana 1 — Sprint 1 (dobrar conversão)</h3>
+  <table>
+    <thead>
+      <tr><th>Dia</th><th>Entregável</th><th>Impacto</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Seg</td><td>PR: Spinner instantâneo no clique de Reservar (#2)</td><td>+15-30%</td></tr>
+      <tr><td>Seg</td><td>PR: Eliminar Description Gate (#3)</td><td>+10-25%</td></tr>
+      <tr><td>Seg</td><td>PR: Timeout no fee config (#4)</td><td>+5-10%</td></tr>
+      <tr><td>Ter–Qua</td><td>PR: Checkout convidado (#1) — o grande</td><td>+40-80%</td></tr>
+      <tr><td>Qui</td><td>PR: Defer + remover JS desnecessário (#5)</td><td>+5-15%</td></tr>
+      <tr><td>Sex</td><td>PR: CTA fixo no mobile (#6) + medição</td><td>+5-10%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Semana 2 — Sprint 2 (visibilidade + recuperação)</h3>
+  <table>
+    <thead>
+      <tr><th>Dia</th><th>Entregável</th><th>Impacto</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Seg–Ter</td><td>Tracking client-side + server-side (#7, #8)</td><td>Destrava futuro</td></tr>
+      <tr><td>Qua</td><td>Auto-save de carrinho (#9)</td><td>+3-8%</td></tr>
+      <tr><td>Qui</td><td>Urgência + selos de confiança (#11)</td><td>+3-8%</td></tr>
+      <tr><td>Sex</td><td>WhatsApp recovery (#10) — Edge Function</td><td>+2-5% receita</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Semanas 3-4 — Sprint 3 (refinamento)</h3>
+  <ul>
+    <li>Painel funil detalhado no admin (#12)</li>
+    <li>WebP + lazy loading de imagens (#13)</li>
+    <li>Lazy load do YouTube (#14)</li>
+    <li>Minificação JS (#15)</li>
+    <li>CPF opcional no PIX, validar com MP (#16)</li>
+  </ul>
+
+  <h2 style="margin-top: 24pt;">Decisões a alinhar com a sócia</h2>
+  <ul>
+    <li><strong>Aprovar o checkout convidado.</strong> É a mudança de maior impacto e a única com consideração de produto (vamos criar conta automaticamente — usuário só recebe senha por email depois). Precisa do "sim" de vocês.</li>
+    <li><strong>Aprovar o orçamento do WhatsApp recovery.</strong> Custo marginal por mensagem, mas template aprovado pela Meta precisa ser definido com vocês.</li>
+    <li><strong>Definir tom da urgência.</strong> "Apenas 3 vagas restantes" funciona muito bem se for real. Vocês confortáveis com isso?</li>
+    <li><strong>Ordem de execução.</strong> Eu recomendo começar pelos 3 mais simples no mesmo dia (spinner + matar gate + timeout) pra ver impacto isolado, depois ir pro grande (checkout convidado).</li>
+  </ul>
+
+  <div class="callout">
+    <h3>Recomendação final</h3>
+    <p>Se o objetivo é <strong>aumentar conversão o mais rápido possível</strong>, comece pelo <strong>spinner + remover Description Gate + timeout</strong> (Dia 1). Esses três sozinhos somam algo entre +30% e +65% de melhoria potencial no drop Reservar→Checkout, em <strong>menos de um dia de trabalho</strong>, com <strong>risco zero</strong>. Depois disso, o checkout convidado é o de maior impacto isolado da história da Elarah.</p>
+  </div>
+
+  <div class="footer-note">
+    Documento gerado para alinhamento estratégico entre as sócias da Elarah. Os impactos estimados são baseados em literatura de UX de e-commerce e na auditoria técnica do código atual. Os números do funil são reais e foram extraídos do painel de analytics interno.
+  </div>
+</section>
+
+</body>
+</html>
