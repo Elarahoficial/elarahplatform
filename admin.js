@@ -6692,16 +6692,29 @@
 
     // Agora conta VAGAS vendidas (sum quantidade), não bookings.
     // Coerente com KPIs e Compras: 1 booking qty=3 contabiliza 3.
-    const purchases = sumQuantity((bookingsInRange || []).filter(b => b.status === 'pago'));
+    // Exclui venda manual e gift card — esses não passam pelo funil do site
+    // (não disparam checkout_submit) e inflavam "Pagamento aprovado" acima
+    // de "Confirmou pagamento", quebrando a leitura do funil.
+    const purchases = sumQuantity((bookingsInRange || []).filter(b =>
+      b.status === 'pago' && !b._isManualSale && !b._isGiftCard
+    ));
+
+    // União card_click ∪ detail_view: visitantes que vêm de campanha
+    // (WhatsApp, Insta) entram direto no /experiencia/<slug> e nunca
+    // clicam num card da home — só disparam detail_view. Sem essa união
+    // o funil mostrava "Clicou em uma experiência: 0" e "Abriu detalhe: N".
+    const engaged = new Set();
+    cardClicks.forEach(s => engaged.add(s));
+    detailViews.forEach(s => engaged.add(s));
 
     const steps = [
-      { key: 'sessions',   label: 'Visitantes (sessões)',    count: sessions.size,         unit: 'sessões' },
-      { key: 'card',       label: 'Clicou em uma experiência', count: cardClicks.size,    unit: 'sessões' },
-      { key: 'detail',     label: 'Abriu o detalhe da exp.',   count: detailViews.size,   unit: 'sessões' },
-      { key: 'cta',        label: 'Clicou em "Reservar"',    count: ctaClicks.size,        unit: 'sessões' },
-      { key: 'started',    label: 'Iniciou o checkout',      count: checkoutStarted.size,  unit: 'sessões' },
-      { key: 'submit',     label: 'Confirmou pagamento',     count: checkoutSubmits.size,  unit: 'sessões' },
-      { key: 'paid',       label: 'Pagamento aprovado',      count: purchases,             unit: 'compras' },
+      { key: 'sessions',   label: 'Visitantes (sessões)',       count: sessions.size,         unit: 'sessões' },
+      { key: 'engaged',    label: 'Engajou com uma experiência',count: engaged.size,          unit: 'sessões' },
+      { key: 'detail',     label: 'Abriu o detalhe da exp.',    count: detailViews.size,      unit: 'sessões' },
+      { key: 'cta',        label: 'Clicou em "Reservar"',       count: ctaClicks.size,        unit: 'sessões' },
+      { key: 'started',    label: 'Iniciou o checkout',         count: checkoutStarted.size,  unit: 'sessões' },
+      { key: 'submit',     label: 'Confirmou pagamento',        count: checkoutSubmits.size,  unit: 'sessões' },
+      { key: 'paid',       label: 'Pagamento aprovado (site)',  count: purchases,             unit: 'compras' },
     ];
 
     if (steps.every(s => s.count === 0)) {
