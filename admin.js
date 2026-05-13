@@ -6109,16 +6109,26 @@
     // declarado e união de todas as sessions vistas.
     (eventsInRange || []).forEach(e => { if (e && e.session_id) sessions.add(e.session_id); });
 
-    const purchases = (bookingsInRange || []).filter(b => b.status === 'pago').length;
+    const purchases = (bookingsInRange || []).filter(b =>
+      b.status === 'pago' && !b._isManualSale && !b._isGiftCard
+    ).length;
+
+    // União: quem clicou no card OU abriu o detalhe direto (via link
+    // de campanha, follow-up WhatsApp, landing dedicada). Cobre o
+    // tráfego de campanha que pula a home — sem isso, "Clicou em
+    // experiência" fica zerado mesmo com gente entrando.
+    const engaged = new Set();
+    cardClicks.forEach(s => engaged.add(s));
+    detailViews.forEach(s => engaged.add(s));
 
     const steps = [
-      { key: 'sessions',   label: 'Visitantes (sessões)',    count: sessions.size,         unit: 'sessões' },
-      { key: 'card',       label: 'Clicou em uma experiência', count: cardClicks.size,    unit: 'sessões' },
-      { key: 'detail',     label: 'Abriu o detalhe da exp.',   count: detailViews.size,   unit: 'sessões' },
-      { key: 'cta',        label: 'Clicou em "Reservar"',    count: ctaClicks.size,        unit: 'sessões' },
-      { key: 'started',    label: 'Iniciou o checkout',      count: checkoutStarted.size,  unit: 'sessões' },
-      { key: 'submit',     label: 'Confirmou pagamento',     count: checkoutSubmits.size,  unit: 'sessões' },
-      { key: 'paid',       label: 'Pagamento aprovado',      count: purchases,             unit: 'compras' },
+      { key: 'sessions',   label: 'Visitantes (sessões)',          count: sessions.size,        unit: 'sessões' },
+      { key: 'engaged',    label: 'Engajou com uma experiência',   count: engaged.size,         unit: 'sessões' },
+      { key: 'detail',     label: 'Abriu o detalhe da exp.',       count: detailViews.size,     unit: 'sessões' },
+      { key: 'cta',        label: 'Clicou em "Reservar"',          count: ctaClicks.size,       unit: 'sessões' },
+      { key: 'started',    label: 'Iniciou o checkout',            count: checkoutStarted.size, unit: 'sessões' },
+      { key: 'submit',     label: 'Confirmou pagamento',           count: checkoutSubmits.size, unit: 'sessões' },
+      { key: 'paid',       label: 'Pagamento aprovado (site)',     count: purchases,            unit: 'compras' },
     ];
 
     if (steps.every(s => s.count === 0)) {
