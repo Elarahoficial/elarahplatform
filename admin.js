@@ -404,6 +404,7 @@
       case 'byelarah':    await renderByElarah(); break;
       case 'campanhas':   await renderCampanhas(); break;
       case 'marketing-ai': await renderMarketingAI(); break;
+      case 'calendario-editorial': await renderCalendarioEditorial(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
       case 'contabilidade': await renderContabilidade(); break;
@@ -13853,6 +13854,257 @@
   function _mkaiCloseModal() {
     var m = document.getElementById('mkai-modal');
     if (m) { m.style.display = 'none'; document.body.style.overflow = ''; }
+  }
+
+  // =============================================================
+  // CALENDÁRIO EDITORIAL — cronograma mensal de conteúdo
+  // =============================================================
+  var _calCache = [];
+  var _calMes = '2026-05';
+  var _calCanalFiltro = '';
+
+  function _calEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  async function renderCalendarioEditorial() {
+    var sb = window.supabaseClient;
+    if (!sb) return;
+    var mesInput = document.getElementById('cal-mes');
+    if (!mesInput) return;
+    _calMes = mesInput.value || '2026-05';
+
+    if (!mesInput.dataset.wired) {
+      mesInput.dataset.wired = '1';
+      mesInput.addEventListener('change', function () {
+        _calMes = mesInput.value;
+        renderCalendarioEditorial();
+      });
+      document.querySelectorAll('.cal-canal-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.cal-canal-btn').forEach(function (b) {
+            b.classList.remove('cal-canal-btn--active');
+          });
+          btn.classList.add('cal-canal-btn--active');
+          _calCanalFiltro = btn.dataset.canal || '';
+          _calRender();
+        });
+      });
+      document.getElementById('cal-add-btn').addEventListener('click', function () {
+        _calOpenEditModal(null);
+      });
+      document.getElementById('cal-modal-close').addEventListener('click', _calCloseModal);
+      document.getElementById('cal-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'cal-modal') _calCloseModal();
+      });
+    }
+
+    var primeiroDia = _calMes + '-01';
+    var d = new Date(_calMes + '-01T00:00:00');
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(0); // último dia do mês
+    var ultimoDia = _calMes + '-' + String(d.getDate()).padStart(2, '0');
+
+    var { data, error } = await sb.from('content_calendar')
+      .select('*')
+      .gte('data', primeiroDia)
+      .lte('data', ultimoDia)
+      .order('data', { ascending: true })
+      .order('canal');
+
+    if (error) {
+      document.getElementById('cal-grid').innerHTML = '<p style="color:#c0392b;">Erro: ' + _calEsc(error.message) + '</p>';
+      return;
+    }
+    _calCache = data || [];
+    _calRender();
+  }
+
+  function _calRender() {
+    var grid = document.getElementById('cal-grid');
+    var stats = document.getElementById('cal-stats');
+    if (!grid) return;
+
+    var hoje = new Date();
+    var hojeYmd = hoje.getFullYear() + '-' +
+                  String(hoje.getMonth() + 1).padStart(2, '0') + '-' +
+                  String(hoje.getDate()).padStart(2, '0');
+
+    // Agrupa por data
+    var byDate = new Map();
+    _calCache.forEach(function (p) {
+      if (_calCanalFiltro && p.canal !== _calCanalFiltro) return;
+      if (!byDate.has(p.data)) byDate.set(p.data, []);
+      byDate.get(p.data).push(p);
+    });
+
+    // Gera lista de dias do mês (mesmo sem post pra preservar ordem)
+    var primeiroDia = new Date(_calMes + '-01T00:00:00');
+    var ultimoDia = new Date(_calMes + '-01T00:00:00');
+    ultimoDia.setMonth(ultimoDia.getMonth() + 1);
+    ultimoDia.setDate(0);
+
+    var dias = [];
+    for (var i = 1; i <= ultimoDia.getDate(); i++) {
+      var dt = new Date(_calMes + '-' + String(i).padStart(2, '0') + 'T00:00:00');
+      var ymd = _calMes + '-' + String(i).padStart(2, '0');
+      var posts = byDate.get(ymd) || [];
+      if (posts.length === 0 && _calCanalFiltro) continue; // pula dias vazios se filtrando
+      dias.push({ ymd: ymd, dt: dt, posts: posts });
+    }
+
+    var totalPosts = _calCache.filter(function (p) {
+      return !_calCanalFiltro || p.canal === _calCanalFiltro;
+    }).length;
+    var publicados = _calCache.filter(function (p) {
+      return (!_calCanalFiltro || p.canal === _calCanalFiltro) && p.status === 'publicado';
+    }).length;
+    var planejados = totalPosts - publicados;
+    stats.innerHTML = '<strong>' + totalPosts + '</strong> posts no mês · ' +
+      '<strong style="color:#1a8a4a;">' + publicados + '</strong> publicados · ' +
+      '<strong style="color:#a4663b;">' + planejados + '</strong> planejados';
+
+    if (!dias.length) {
+      grid.innerHTML = '<p style="color:#888;font-style:italic;padding:40px;text-align:center;">Nenhum conteúdo planejado pra esse mês/canal.</p>';
+      return;
+    }
+
+    var wdNames = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+    grid.innerHTML = dias.map(function (d) {
+      var isPast = d.ymd < hojeYmd;
+      var isToday = d.ymd === hojeYmd;
+      var cls = 'cal-day-card' + (isPast ? ' cal-day-card--passed' : '') + (isToday ? ' cal-day-card--today' : '');
+      var ddmm = d.dt.getDate() + '/' + String(d.dt.getMonth() + 1).padStart(2, '0');
+
+      var postsHtml;
+      if (d.posts.length === 0) {
+        postsHtml = '<div style="padding:8px 12px;font-style:italic;color:#aaa;font-size:.85rem;">— sem conteúdo planejado —</div>';
+      } else {
+        postsHtml = d.posts.map(function (p) {
+          var canalClass = 'cal-post-canal cal-post-canal--' +
+            (p.canal === 'Instagram' ? 'ig' :
+             p.canal === 'TikTok' ? 'tk' :
+             p.canal === 'LinkedIn' ? 'li' :
+             p.canal === 'WhatsApp' ? 'wa' : 'ig');
+          var canalEmoji = p.canal === 'Instagram' ? '📸 IG' :
+                           p.canal === 'TikTok' ? '🎵 TT' :
+                           p.canal === 'LinkedIn' ? '💼 LI' :
+                           p.canal === 'WhatsApp' ? '💬 WA' : p.canal;
+          var statusCls = 'cal-post-status cal-post-status--' + (p.status || 'planejado');
+          return '<div class="cal-post-row" data-post-id="' + _calEsc(p.id) + '">' +
+            '<span class="' + canalClass + '">' + _calEsc(canalEmoji) + '</span>' +
+            (p.tipo ? '<span class="cal-post-tipo">' + _calEsc(p.tipo) + '</span>' : '') +
+            '<div class="cal-post-ideia">' + _calEsc(p.ideia) + '</div>' +
+            '<span class="' + statusCls + '">' + _calEsc(p.status || 'planejado') + '</span>' +
+          '</div>';
+        }).join('');
+      }
+
+      return '<div class="' + cls + '">' +
+        '<div class="cal-day-header">' +
+          '<div><strong>' + ddmm + '</strong><span class="cal-day-header__wd">' + wdNames[d.dt.getDay()] + '</span></div>' +
+          '<button type="button" class="cal-day-add" data-day="' + _calEsc(d.ymd) + '" style="background:transparent;border:none;color:#a4663b;font-size:.85rem;font-weight:600;cursor:pointer;">+ adicionar</button>' +
+        '</div>' +
+        '<div class="cal-day-posts">' + postsHtml + '</div>' +
+      '</div>';
+    }).join('');
+
+    grid.querySelectorAll('.cal-post-row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        var p = _calCache.find(function (x) { return x.id === row.dataset.postId; });
+        if (p) _calOpenEditModal(p);
+      });
+    });
+    grid.querySelectorAll('.cal-day-add').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        _calOpenEditModal({ data: btn.dataset.day });
+      });
+    });
+  }
+
+  function _calOpenEditModal(p) {
+    var isNew = !p || !p.id;
+    p = p || {};
+    var content = document.getElementById('cal-modal-content');
+    content.innerHTML =
+      '<h2 style="margin:0 0 18px;font-family:\'DM Serif Display\',serif;font-size:1.5rem;">' + (isNew ? 'Novo conteúdo' : 'Editar conteúdo') + '</h2>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Data</label>' +
+          '<input type="date" id="cal-edit-data" value="' + _calEsc(p.data || _calMes + '-01') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;"></div>' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Canal</label>' +
+          '<select id="cal-edit-canal" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;background:#fff;">' +
+            ['Instagram','TikTok','LinkedIn','WhatsApp'].map(function (c) {
+              return '<option value="' + c + '"' + (p.canal === c ? ' selected' : '') + '>' + c + '</option>';
+            }).join('') +
+          '</select></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Tipo</label>' +
+          '<input type="text" id="cal-edit-tipo" value="' + _calEsc(p.tipo || '') + '" placeholder="Feed, Reels, Stories, Carrossel…" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;"></div>' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Status</label>' +
+          '<select id="cal-edit-status" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;background:#fff;">' +
+            ['planejado','pronto','agendado','publicado'].map(function (s) {
+              return '<option value="' + s + '"' + (p.status === s ? ' selected' : '') + '>' + s + '</option>';
+            }).join('') +
+          '</select></div>' +
+      '</div>' +
+      '<label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Ideia / título</label>' +
+      '<input type="text" id="cal-edit-ideia" value="' + _calEsc(p.ideia || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;">' +
+      '<label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Legenda</label>' +
+      '<textarea id="cal-edit-legenda" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;min-height:100px;resize:vertical;">' + _calEsc(p.legenda || '') + '</textarea>' +
+      '<label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Observação</label>' +
+      '<input type="text" id="cal-edit-obs" value="' + _calEsc(p.observacao || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:14px;">' +
+      '<div style="display:flex;gap:10px;justify-content:space-between;">' +
+        '<button type="button" id="cal-save-btn" data-id="' + _calEsc(p.id || '') + '" style="padding:10px 22px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Salvar</button>' +
+        (!isNew ? '<button type="button" id="cal-delete-btn" data-id="' + _calEsc(p.id) + '" style="padding:10px 22px;background:transparent;color:#c0392b;border:1.5px solid #c0392b;border-radius:8px;font-weight:600;cursor:pointer;">Excluir</button>' : '') +
+      '</div>';
+
+    document.getElementById('cal-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('cal-save-btn').addEventListener('click', async function () {
+      var sb = window.supabaseClient;
+      var payload = {
+        data: document.getElementById('cal-edit-data').value,
+        canal: document.getElementById('cal-edit-canal').value,
+        tipo: document.getElementById('cal-edit-tipo').value.trim() || null,
+        ideia: document.getElementById('cal-edit-ideia').value.trim(),
+        legenda: document.getElementById('cal-edit-legenda').value || null,
+        observacao: document.getElementById('cal-edit-obs').value.trim() || null,
+        status: document.getElementById('cal-edit-status').value,
+      };
+      if (!payload.ideia) { alert('Ideia é obrigatória.'); return; }
+      var error;
+      if (isNew) {
+        var r = await sb.from('content_calendar').insert(payload);
+        error = r.error;
+      } else {
+        var r2 = await sb.from('content_calendar').update(payload).eq('id', p.id);
+        error = r2.error;
+      }
+      if (error) { alert('Erro: ' + error.message); return; }
+      _calCloseModal();
+      await renderCalendarioEditorial();
+    });
+
+    if (!isNew) {
+      document.getElementById('cal-delete-btn').addEventListener('click', async function () {
+        if (!confirm('Excluir esse conteúdo?')) return;
+        var sb = window.supabaseClient;
+        await sb.from('content_calendar').delete().eq('id', p.id);
+        _calCloseModal();
+        await renderCalendarioEditorial();
+      });
+    }
+  }
+
+  function _calCloseModal() {
+    document.getElementById('cal-modal').style.display = 'none';
+    document.body.style.overflow = '';
   }
 
   // ===== START =====
