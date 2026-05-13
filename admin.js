@@ -10195,8 +10195,9 @@
     const fmtBRL = (c) => 'R$ ' + (c / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
     const cards = [
-      { label: 'Tarefas hoje',           value: isThisWeek ? (tasksTodayDone + ' / ' + tasksToday.length) : '—',
-        sub: isThisWeek ? 'feitas' : 'só na semana atual', target: 'rotina' },
+      // Card "Tarefas hoje" removido a pedido da admin. Linhas tasksToday/
+      // tasksTodayDone ainda existem acima mas não são exibidas. Mantidas
+      // intactas pra não afetar nenhum outro consumidor das variáveis.
       { label: 'Tarefas semana',         value: tasksWeekDone + ' / ' + tasks.length,
         sub: 'concluídas', target: 'rotina' },
       { label: 'Atrasadas',              value: String(qtyAtrasadas || 0),
