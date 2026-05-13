@@ -403,6 +403,7 @@
       case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
       case 'campanhas':   await renderCampanhas(); break;
+      case 'marketing-ai': await renderMarketingAI(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
       case 'contabilidade': await renderContabilidade(); break;
@@ -13564,6 +13565,294 @@
           }).join('') +
         '</tbody></table>' +
       '</div>';
+  }
+
+  // =============================================================
+  // MARKETING AI — catálogo de skills do agente Claude Code
+  // =============================================================
+  var _mkaiCache = null;
+
+  function _mkaiEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  async function renderMarketingAI() {
+    var sb = window.supabaseClient;
+    if (!sb) return;
+    var grid = document.getElementById('mkai-grid');
+    var search = document.getElementById('mkai-search');
+    var catSelect = document.getElementById('mkai-categoria');
+    var importBtn = document.getElementById('mkai-importar-btn');
+    if (!grid) return;
+
+    var { data, error } = await sb.from('marketing_skills')
+      .select('*').order('display_order', { ascending: true }).order('nome');
+    if (error) {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#c0392b;">Erro: ' + _mkaiEsc(error.message) + '</p>';
+      return;
+    }
+    _mkaiCache = data || [];
+
+    // Popula categorias
+    var cats = Array.from(new Set(_mkaiCache.map(function (s) { return s.categoria || 'Sem categoria'; })));
+    catSelect.innerHTML = '<option value="">Todas as categorias</option>' +
+      cats.map(function (c) { return '<option value="' + _mkaiEsc(c) + '">' + _mkaiEsc(c) + '</option>'; }).join('');
+
+    _mkaiRenderGrid();
+
+    if (!search.dataset.wired) {
+      search.dataset.wired = '1';
+      search.addEventListener('input', _mkaiRenderGrid);
+      catSelect.addEventListener('change', _mkaiRenderGrid);
+      importBtn.addEventListener('click', function () { _mkaiOpenImportModal(); });
+      document.getElementById('mkai-modal-close').addEventListener('click', _mkaiCloseModal);
+      document.getElementById('mkai-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'mkai-modal') _mkaiCloseModal();
+      });
+    }
+  }
+
+  function _mkaiRenderGrid() {
+    var grid = document.getElementById('mkai-grid');
+    var search = document.getElementById('mkai-search').value.toLowerCase().trim();
+    var cat = document.getElementById('mkai-categoria').value;
+    var count = document.getElementById('mkai-count');
+    if (!grid || !_mkaiCache) return;
+
+    var filtered = _mkaiCache.filter(function (s) {
+      if (cat && (s.categoria || 'Sem categoria') !== cat) return false;
+      if (search) {
+        var hay = (s.nome + ' ' + (s.descricao || '') + ' ' + (s.trigger_command || '')).toLowerCase();
+        if (hay.indexOf(search) === -1) return false;
+      }
+      return true;
+    });
+
+    count.textContent = filtered.length + ' de ' + _mkaiCache.length + ' skills';
+
+    if (!filtered.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#888;font-style:italic;padding:40px;text-align:center;">Nenhuma skill encontrada. Click em "+ Importar skill .md" pra começar.</p>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(function (s) {
+      var icon = s.icon || '🤖';
+      var trigger = s.trigger_command || '/' + s.slug;
+      return '<div class="mkai-card" data-skill-id="' + _mkaiEsc(s.id) + '" style="background:#fff;border:1px solid #e6e6e6;border-radius:14px;padding:18px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div style="width:40px;height:40px;background:#fff4e0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">' + _mkaiEsc(icon) + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:700;font-size:.95rem;color:#1a1a1a;line-height:1.2;">' + _mkaiEsc(s.nome) + '</div>' +
+            (s.categoria ? '<div style="font-size:.7rem;color:#a4663b;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;font-weight:600;">' + _mkaiEsc(s.categoria) + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<p style="font-size:.85rem;color:#666;line-height:1.45;margin:0;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">' + _mkaiEsc(s.descricao || 'Sem descrição.') + '</p>' +
+        '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;">' +
+          '<code style="flex:1;font-size:.78rem;background:#f5ebe0;color:#a4663b;padding:5px 9px;border-radius:6px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _mkaiEsc(trigger) + '</code>' +
+          '<button type="button" data-mkai-copy="' + _mkaiEsc(trigger) + '" title="Copiar trigger" style="padding:6px 10px;background:#f0a05e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;">📋</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    grid.querySelectorAll('.mkai-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('[data-mkai-copy]')) return;
+        _mkaiOpenView(card.dataset.skillId);
+      });
+    });
+    grid.querySelectorAll('[data-mkai-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        navigator.clipboard.writeText(btn.dataset.mkaiCopy).then(function () {
+          var original = btn.textContent;
+          btn.textContent = '✓';
+          setTimeout(function () { btn.textContent = original; }, 1200);
+        });
+      });
+    });
+  }
+
+  function _mkaiOpenView(skillId) {
+    var s = _mkaiCache.find(function (x) { return x.id === skillId; });
+    if (!s) return;
+    var trigger = s.trigger_command || '/' + s.slug;
+    var content = document.getElementById('mkai-modal-content');
+    content.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+        '<div style="width:48px;height:48px;background:#fff4e0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">' + _mkaiEsc(s.icon || '🤖') + '</div>' +
+        '<div>' +
+          '<h2 style="margin:0;font-family:\'DM Serif Display\',serif;font-size:1.5rem;color:#1a1a1a;">' + _mkaiEsc(s.nome) + '</h2>' +
+          (s.categoria ? '<div style="font-size:.75rem;color:#a4663b;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:4px;">' + _mkaiEsc(s.categoria) + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#f5ebe0;padding:12px 16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">' +
+        '<code style="flex:1;font-family:monospace;font-size:.92rem;color:#a4663b;font-weight:600;">' + _mkaiEsc(trigger) + '</code>' +
+        '<button type="button" id="mkai-copy-modal" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:.85rem;">📋 Copiar trigger</button>' +
+      '</div>' +
+      (s.descricao ? '<p style="color:#444;line-height:1.6;margin:0 0 18px;">' + _mkaiEsc(s.descricao) + '</p>' : '') +
+      '<details style="margin-bottom:14px;"><summary style="cursor:pointer;font-weight:700;color:#1a1a1a;padding:8px 0;">📄 Ver prompt completo</summary>' +
+        '<pre style="background:#1a1a1a;color:#e6e6e6;padding:18px;border-radius:10px;font-family:monospace;font-size:.78rem;line-height:1.55;overflow-x:auto;white-space:pre-wrap;max-height:480px;overflow-y:auto;">' + _mkaiEsc(s.prompt_full) + '</pre>' +
+      '</details>' +
+      '<div style="display:flex;gap:10px;margin-top:18px;border-top:1px solid #eee;padding-top:18px;">' +
+        '<button type="button" id="mkai-edit-btn" data-skill-id="' + _mkaiEsc(s.id) + '" style="padding:9px 18px;background:#fff;color:#a4663b;border:1.5px solid #f0a05e;border-radius:8px;font-weight:600;cursor:pointer;">✏️ Editar</button>' +
+        '<button type="button" id="mkai-delete-btn" data-skill-id="' + _mkaiEsc(s.id) + '" style="padding:9px 18px;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:8px;font-weight:600;cursor:pointer;">🗑 Excluir</button>' +
+      '</div>';
+    _mkaiOpenModal();
+
+    document.getElementById('mkai-copy-modal').addEventListener('click', function () {
+      navigator.clipboard.writeText(trigger).then(function () {
+        var b = document.getElementById('mkai-copy-modal');
+        b.textContent = '✓ Copiado';
+        setTimeout(function () { b.textContent = '📋 Copiar trigger'; }, 1500);
+      });
+    });
+    document.getElementById('mkai-edit-btn').addEventListener('click', function () {
+      _mkaiOpenEditModal(s);
+    });
+    document.getElementById('mkai-delete-btn').addEventListener('click', async function () {
+      if (!confirm('Excluir a skill "' + s.nome + '"?')) return;
+      await sb.from('marketing_skills').delete().eq('id', s.id);
+      _mkaiCloseModal();
+      await renderMarketingAI();
+    });
+  }
+
+  function _mkaiOpenImportModal() {
+    var content = document.getElementById('mkai-modal-content');
+    content.innerHTML =
+      '<h2 style="margin:0 0 10px;font-family:\'DM Serif Display\',serif;font-size:1.4rem;">Importar skill .md</h2>' +
+      '<p style="color:#666;font-size:.88rem;margin:0 0 14px;">Cole o conteúdo de UM arquivo .md aqui. O sistema extrai nome, descrição e trigger automaticamente. Você confirma antes de salvar.</p>' +
+      '<textarea id="mkai-import-textarea" placeholder="# Nome da Skill\n\n## Skill Purpose\n..." style="width:100%;min-height:240px;padding:12px;border:1.5px solid #ddd;border-radius:10px;font-family:monospace;font-size:.82rem;resize:vertical;box-sizing:border-box;"></textarea>' +
+      '<button type="button" id="mkai-parse-btn" style="margin-top:10px;padding:10px 18px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">→ Parsear & Preview</button>' +
+      '<div id="mkai-import-preview"></div>';
+    _mkaiOpenModal();
+    document.getElementById('mkai-parse-btn').addEventListener('click', _mkaiParseImport);
+  }
+
+  function _mkaiParseImport() {
+    var raw = document.getElementById('mkai-import-textarea').value.trim();
+    if (!raw) { alert('Cole o conteúdo do .md primeiro.'); return; }
+
+    // Parse:
+    // Nome: primeira linha "# Title"
+    var nomeMatch = raw.match(/^#\s+(.+)$/m);
+    var nome = nomeMatch ? nomeMatch[1].trim() : 'Skill sem título';
+    var slug = nome.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+    // Descrição: parágrafo após "## Skill Purpose" (até próxima ##)
+    var descMatch = raw.match(/##\s*Skill Purpose\s*\n+([\s\S]+?)(?=\n##|\n#|$)/i);
+    var descricao = descMatch ? descMatch[1].trim().replace(/\s+/g, ' ').slice(0, 500) : '';
+    // Trigger: regex `/something` em "When to Use" ou "Triggered by"
+    var triggerMatch = raw.match(/Triggered by[^/]*?(\/[a-z][\w-]*(?:\s+\S+)?)/i)
+      || raw.match(/`(\/[a-z][\w-]*)`/);
+    var triggerCommand = triggerMatch ? triggerMatch[1].split(/\s+/)[0] : '/' + slug;
+    // Categoria: heurística simples
+    var hay = (nome + ' ' + descricao).toLowerCase();
+    var categoria = 'Geral';
+    if (/brand|voice|personality|identity/.test(hay)) categoria = 'Branding';
+    else if (/social|instagram|reels|calendar|post|conteudo|content/.test(hay)) categoria = 'Conteúdo';
+    else if (/competitor|análise|analytics|market|research/.test(hay)) categoria = 'Análise';
+    else if (/persona|audience|target/.test(hay)) categoria = 'Persona';
+    else if (/copy|email|newsletter|ad|landing/.test(hay)) categoria = 'Copy';
+    else if (/strategy|planning|brief|pitch/.test(hay)) categoria = 'Estratégia';
+
+    var preview = document.getElementById('mkai-import-preview');
+    preview.innerHTML =
+      '<div style="margin-top:18px;padding:18px;background:#fff8ef;border:1.5px solid #f0a05e;border-radius:10px;">' +
+        '<div style="font-size:.72rem;text-transform:uppercase;color:#a4663b;font-weight:700;letter-spacing:1px;margin-bottom:10px;">Preview da skill</div>' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Nome</label>' +
+        '<input type="text" id="mkai-prev-nome" value="' + _mkaiEsc(nome) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:inherit;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Slug (URL-safe)</label>' +
+        '<input type="text" id="mkai-prev-slug" value="' + _mkaiEsc(slug) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:monospace;font-size:.85rem;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Categoria</label>' +
+        '<input type="text" id="mkai-prev-cat" value="' + _mkaiEsc(categoria) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:inherit;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Trigger command</label>' +
+        '<input type="text" id="mkai-prev-trigger" value="' + _mkaiEsc(triggerCommand) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:monospace;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Ícone (emoji)</label>' +
+        '<input type="text" id="mkai-prev-icon" value="🤖" style="width:80px;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:inherit;font-size:1.2rem;text-align:center;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Descrição (extraída automaticamente)</label>' +
+        '<textarea id="mkai-prev-desc" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:14px;font-family:inherit;font-size:.85rem;min-height:80px;resize:vertical;">' + _mkaiEsc(descricao) + '</textarea>' +
+        '<button type="button" id="mkai-save-btn" style="padding:10px 22px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">✓ Salvar skill</button>' +
+        '<span id="mkai-save-msg" style="margin-left:12px;font-size:.85rem;"></span>' +
+      '</div>';
+
+    document.getElementById('mkai-save-btn').addEventListener('click', async function () {
+      var sb = window.supabaseClient;
+      var payload = {
+        slug: document.getElementById('mkai-prev-slug').value.trim(),
+        nome: document.getElementById('mkai-prev-nome').value.trim(),
+        descricao: document.getElementById('mkai-prev-desc').value.trim() || null,
+        categoria: document.getElementById('mkai-prev-cat').value.trim() || null,
+        trigger_command: document.getElementById('mkai-prev-trigger').value.trim() || null,
+        icon: document.getElementById('mkai-prev-icon').value.trim() || '🤖',
+        prompt_full: raw,
+      };
+      if (!payload.slug || !payload.nome) {
+        alert('Slug e nome obrigatórios.');
+        return;
+      }
+      var msg = document.getElementById('mkai-save-msg');
+      msg.textContent = 'Salvando…';
+      msg.style.color = '#666';
+      var { error } = await sb.from('marketing_skills').upsert(payload, { onConflict: 'slug' });
+      if (error) {
+        msg.textContent = '⚠ ' + error.message;
+        msg.style.color = '#c0392b';
+        return;
+      }
+      msg.textContent = '✓ Salva! Próxima…';
+      msg.style.color = '#1a8a4a';
+      setTimeout(function () {
+        _mkaiCloseModal();
+        renderMarketingAI();
+      }, 800);
+    });
+  }
+
+  function _mkaiOpenEditModal(s) {
+    var content = document.getElementById('mkai-modal-content');
+    content.innerHTML =
+      '<h2 style="margin:0 0 14px;font-family:\'DM Serif Display\',serif;font-size:1.4rem;">Editar skill</h2>' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Nome</label>' +
+      '<input type="text" id="mkai-edit-nome" value="' + _mkaiEsc(s.nome) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Categoria</label>' +
+      '<input type="text" id="mkai-edit-cat" value="' + _mkaiEsc(s.categoria || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Trigger</label>' +
+      '<input type="text" id="mkai-edit-trigger" value="' + _mkaiEsc(s.trigger_command || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:monospace;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Ícone</label>' +
+      '<input type="text" id="mkai-edit-icon" value="' + _mkaiEsc(s.icon || '🤖') + '" style="width:80px;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-size:1.2rem;text-align:center;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Descrição</label>' +
+      '<textarea id="mkai-edit-desc" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;min-height:80px;resize:vertical;">' + _mkaiEsc(s.descricao || '') + '</textarea>' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Prompt completo (.md)</label>' +
+      '<textarea id="mkai-edit-prompt" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:14px;min-height:200px;resize:vertical;font-family:monospace;font-size:.78rem;">' + _mkaiEsc(s.prompt_full) + '</textarea>' +
+      '<button type="button" id="mkai-save-edit-btn" style="padding:10px 22px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Salvar alterações</button>';
+
+    document.getElementById('mkai-save-edit-btn').addEventListener('click', async function () {
+      var sb = window.supabaseClient;
+      var { error } = await sb.from('marketing_skills').update({
+        nome: document.getElementById('mkai-edit-nome').value.trim(),
+        categoria: document.getElementById('mkai-edit-cat').value.trim() || null,
+        trigger_command: document.getElementById('mkai-edit-trigger').value.trim() || null,
+        icon: document.getElementById('mkai-edit-icon').value.trim() || '🤖',
+        descricao: document.getElementById('mkai-edit-desc').value.trim() || null,
+        prompt_full: document.getElementById('mkai-edit-prompt').value,
+      }).eq('id', s.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      _mkaiCloseModal();
+      await renderMarketingAI();
+    });
+  }
+
+  function _mkaiOpenModal() {
+    var m = document.getElementById('mkai-modal');
+    if (m) { m.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  }
+  function _mkaiCloseModal() {
+    var m = document.getElementById('mkai-modal');
+    if (m) { m.style.display = 'none'; document.body.style.overflow = ''; }
   }
 
   // ===== START =====
