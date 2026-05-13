@@ -169,6 +169,15 @@
         <span>Campanhas</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="marketing-ai">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <circle cx="12" cy="5" r="2"/>
+          <path d="M12 7v4M8 16h.01M16 16h.01"/>
+        </svg>
+        <span>Marketing AI</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="giftcards">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 12 20 22 4 22 4 12"/>
@@ -2018,6 +2027,38 @@
         <p style="color:#666;font-size:.88rem;margin:0 0 14px;">Pessoas que clicaram "Avise-me" — exporte ou contate manualmente.</p>
         <div id="campanhas-waitlist-list" style="display:flex;flex-direction:column;gap:6px;"></div>
       </section>
+    </div>
+
+    <!-- =========================================================
+         MARKETING AI — Catálogo de skills do agente Claude Code
+         ========================================================= -->
+    <div class="admin__panel" id="panel-marketing-ai">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Marketing AI Skills</h1>
+        <p class="admin__page-subtitle">Catálogo das skills do agente. Copie o trigger pra rodar no Claude Code do VS Code.</p>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;">
+        <input type="text" id="mkai-search" placeholder="🔍 Buscar skill por nome…"
+               style="flex:1 1 280px;min-width:0;padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit;font-size:.92rem;">
+        <select id="mkai-categoria" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit;font-size:.92rem;background:#fff;">
+          <option value="">Todas as categorias</option>
+        </select>
+        <button type="button" id="mkai-importar-btn" style="padding:10px 18px;background:#f0a05e;color:#fff;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">+ Importar skill .md</button>
+        <span id="mkai-count" style="margin-left:auto;color:#888;font-size:.88rem;"></span>
+      </div>
+
+      <div id="mkai-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        <p style="grid-column:1/-1;color:#888;font-style:italic;padding:40px;text-align:center;">Carregando…</p>
+      </div>
+    </div>
+
+    <!-- Modal: Importar / Visualizar / Editar skill -->
+    <div id="mkai-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:18px;max-width:780px;width:100%;max-height:90vh;overflow:auto;padding:32px;position:relative;">
+        <button type="button" id="mkai-modal-close" style="position:absolute;top:14px;right:14px;background:#f5f5f5;border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1.2rem;">×</button>
+        <div id="mkai-modal-content"></div>
+      </div>
     </div>
 
     <!-- =========================================================
