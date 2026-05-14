@@ -19,6 +19,30 @@
 
 
 /* =============================================================
+   0) DESIGN TOKENS MOBILE (etapa 1)
+   -------------------------------------------------------------
+   Variáveis ficam no :root (não impactam desktop, só usadas
+   dentro de @media <=768px). Paleta quente / "premium app".
+   ============================================================= */
+:root {
+  --m-bg: #fafaf7;
+  --m-surface: #ffffff;
+  --m-ink: #1a1815;
+  --m-ink-2: #5a5650;
+  --m-line: #f0eeea;
+  --m-accent: #b07b3a;       /* ocre quente Elarah */
+  --m-accent-soft: #fef4e6;
+  --m-green: #2c5e3f;
+  --m-red: #c0392b;
+  --m-radius: 14px;
+  --m-radius-lg: 18px;
+  --m-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --m-shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.10);
+  --m-trans: 220ms ease-out;
+}
+
+
+/* =============================================================
    1) HAMBURGER + DRAWER (mobile only)
    ============================================================= */
 
@@ -350,6 +374,157 @@
   /* Subtítulos de panel que são longos e ocupam muito espaço */
   .admin__page-subtitle {
     display: none;
+  }
+
+
+  /* =============================================================
+     12) DESIGN SYSTEM PREMIUM (etapa 1)
+     -------------------------------------------------------------
+     Substitui paleta default por algo mais "app-like" no mobile.
+     Cores, tipografia, sombras e radius. Só no breakpoint mobile.
+     ============================================================= */
+
+  /* Body / canvas geral */
+  body,
+  .admin {
+    background: var(--m-bg) !important;
+    color: var(--m-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tipografia da página */
+  .admin__page-title {
+    font-size: 1.45rem !important;
+    letter-spacing: -0.01em;
+    font-weight: 700 !important;
+    color: var(--m-ink);
+    line-height: 1.2;
+  }
+  .admin__page-subtitle {
+    /* Antes era display:none; agora mostra sutil como hint */
+    display: block;
+    font-size: 0.85rem !important;
+    color: var(--m-ink-2);
+    line-height: 1.35;
+  }
+  .admin__main {
+    font-size: 0.92rem;
+    color: var(--m-ink);
+  }
+
+  /* Card utilitário re-usável (.m-card) */
+  .m-card {
+    background: var(--m-surface);
+    border: 1px solid var(--m-line);
+    border-radius: var(--m-radius);
+    padding: 14px 16px;
+    box-shadow: var(--m-shadow);
+  }
+
+  /* Active state global (touchable feel) */
+  .admin__main button:active,
+  .admin__modal button:active,
+  .m-card:active,
+  [data-touchable]:active {
+    transform: scale(0.97);
+    transition: transform var(--m-trans);
+  }
+
+  /* Touch: sem 300ms delay, sem highlight cinza padrão */
+  .admin__main button,
+  .admin__modal button,
+  .admin__nav-item,
+  .admin__filter-pill,
+  [data-touchable] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safe area iOS — só onde faz sentido (modais bottom-anchored) */
+  .admin__main {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Stats — paleta nova */
+  .admin__stat {
+    background: var(--m-surface) !important;
+    border: 1px solid var(--m-line) !important;
+    border-radius: var(--m-radius) !important;
+    box-shadow: var(--m-shadow) !important;
+    padding: 14px 16px !important;
+  }
+  .admin__stat-value {
+    color: var(--m-ink) !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+  }
+  .admin__stat-label {
+    color: var(--m-ink-2) !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  /* Inputs / selects / textareas — paleta nova */
+  .admin__main input[type="text"],
+  .admin__main input[type="email"],
+  .admin__main input[type="tel"],
+  .admin__main input[type="url"],
+  .admin__main input[type="search"],
+  .admin__main input[type="number"],
+  .admin__main input[type="date"],
+  .admin__main select,
+  .admin__main textarea,
+  .admin__modal input[type="text"],
+  .admin__modal input[type="email"],
+  .admin__modal input[type="tel"],
+  .admin__modal input[type="url"],
+  .admin__modal input[type="search"],
+  .admin__modal input[type="number"],
+  .admin__modal input[type="date"],
+  .admin__modal select,
+  .admin__modal textarea {
+    background: var(--m-surface) !important;
+    border: 1px solid var(--m-line) !important;
+    border-radius: 10px !important;
+    color: var(--m-ink);
+    transition: border-color var(--m-trans), box-shadow var(--m-trans);
+  }
+  .admin__main input:focus,
+  .admin__main select:focus,
+  .admin__main textarea:focus,
+  .admin__modal input:focus,
+  .admin__modal select:focus,
+  .admin__modal textarea:focus {
+    outline: none;
+    border-color: var(--m-accent) !important;
+    box-shadow: 0 0 0 3px rgba(176, 123, 58, 0.15) !important;
+  }
+
+  /* Modais — backdrop com blur + inner com radius topo */
+  .admin__modal {
+    background: rgba(20, 18, 15, 0.45) !important;
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
+  }
+  .admin__modal > div {
+    background: var(--m-surface) !important;
+    border-radius: var(--m-radius-lg) var(--m-radius-lg) 0 0 !important;
+    box-shadow: var(--m-shadow-lg) !important;
+  }
+  .admin__modal h2 {
+    color: var(--m-ink);
+    font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+
+  /* Micro text helper (.7rem) — cosmetic só, opcional */
+  .admin__main small,
+  .admin__main .micro {
+    font-size: 0.7rem;
+    color: var(--m-ink-2);
   }
 }
 
