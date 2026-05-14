@@ -24,7 +24,9 @@
 --   - Índices usam CREATE INDEX IF NOT EXISTS
 --   - Policies usam DROP POLICY IF EXISTS antes do CREATE
 --   - Seeds usam INSERT ... WHERE NOT EXISTS pelo nome
---   - RPCs usam CREATE OR REPLACE FUNCTION
+--   - RPCs usam DROP FUNCTION IF EXISTS + CREATE OR REPLACE
+--     (DROP necessário porque versões posteriores mudam o shape
+--      do RETURNS TABLE — Postgres não aceita REPLACE nesse caso)
 --
 -- Rode quantas vezes quiser. Não destrói dados existentes nem
 -- sobrescreve templates editados manualmente pelo admin.
@@ -256,6 +258,11 @@ where not exists (select 1 from public.prospect_templates);
 -- fornecedor já apareça com WhatsApp/data de entrada na aba
 -- Fornecedores. Pra começar a aparecer com vendas, ainda precisa
 -- criar uma experiência atribuída a ele (fluxo separado).
+-- DROP antes do CREATE OR REPLACE porque versões posteriores
+-- (dedup_v2, promote_hotfix) mudam o shape do RETURNS TABLE, e
+-- Postgres não aceita REPLACE quando a forma do retorno muda.
+drop function if exists public.promote_prospect_to_fornecedor(uuid);
+
 create or replace function public.promote_prospect_to_fornecedor(
   p_prospect_id uuid
 )
@@ -382,7 +389,6 @@ notify pgrst, 'reload schema';
 -- =============================================================
 -- BLOCO 2/5 — elarah_crm_dedup_v2.sql
 -- =============================================================
-
 -- =============================================================
 -- ELARAH — CRM dedup v2: detecção automática de parceiros existentes
 -- -------------------------------------------------------------
@@ -763,7 +769,6 @@ notify pgrst, 'reload schema';
 -- =============================================================
 -- BLOCO 3/5 — elarah_crm_prospects_seed_followup.sql
 -- =============================================================
-
 -- =============================================================
 -- ELARAH — Seed: Templates de Follow-up pra Prospecção (parceiros)
 -- -------------------------------------------------------------
@@ -879,7 +884,6 @@ where not exists (
 -- =============================================================
 -- BLOCO 4/5 — elarah_crm_promote_hotfix.sql
 -- =============================================================
-
 -- =============================================================
 -- ELARAH — CRM hotfix v3: corrige promote_prospect_to_fornecedor
 -- -------------------------------------------------------------
@@ -1006,7 +1010,6 @@ notify pgrst, 'reload schema';
 -- =============================================================
 -- BLOCO 5/5 — elarah_crm_prospects_templates_v2.sql
 -- =============================================================
-
 -- =============================================================
 -- ELARAH — Templates de Primeiro Contato (3 canais)
 -- -------------------------------------------------------------

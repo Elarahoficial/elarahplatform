@@ -213,6 +213,11 @@ where not exists (select 1 from public.prospect_templates);
 -- fornecedor já apareça com WhatsApp/data de entrada na aba
 -- Fornecedores. Pra começar a aparecer com vendas, ainda precisa
 -- criar uma experiência atribuída a ele (fluxo separado).
+-- DROP antes do CREATE OR REPLACE porque versões posteriores
+-- (dedup_v2, promote_hotfix) mudam o shape do RETURNS TABLE, e
+-- Postgres não aceita REPLACE quando a forma do retorno muda.
+drop function if exists public.promote_prospect_to_fornecedor(uuid);
+
 create or replace function public.promote_prospect_to_fornecedor(
   p_prospect_id uuid
 )
