@@ -2118,12 +2118,19 @@ if (groupForm) {
     // nunca trava o checkout por causa da taxa. O admin pode mudar
     // os valores via env var; cliente velho pega novos valores no
     // próximo F5.
+    // Timeout de 2s pra não travar o modal de checkout se o backend
+    // de fee config estiver lento. Se passar de 2s, abortamos e caímos
+    // no fallback 0/0 — pagamento NUNCA pode esperar configuração de
+    // taxa. O usuário com impulso de compra evapora em segundos.
+    const FEE_CONFIG_TIMEOUT_MS = 2000;
     let cachedFeeConfig = null;
     let feeConfigPromise = null;
     async function getFeeConfig() {
       if (cachedFeeConfig) return cachedFeeConfig;
       if (feeConfigPromise) return feeConfigPromise;
       feeConfigPromise = (async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FEE_CONFIG_TIMEOUT_MS);
         try {
           const res = await fetch(CHECKOUT_FN_URL, {
             method: 'POST',
@@ -2133,7 +2140,9 @@ if (groupForm) {
               'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
             },
             body: JSON.stringify({ mode: 'fee_config' }),
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
           const data = await res.json().catch(() => null);
           if (res.ok && data) {
             cachedFeeConfig = {
@@ -2146,7 +2155,12 @@ if (groupForm) {
             cachedFeeConfig = { percent: 0, fixedCents: 0 };
           }
         } catch (e) {
-          console.warn('[Elarah Payment] fee config exceção, fallback 0/0:', e);
+          clearTimeout(timeoutId);
+          if (e && e.name === 'AbortError') {
+            console.warn('[Elarah Payment] fee config timeout em ' + FEE_CONFIG_TIMEOUT_MS + 'ms, fallback 0/0');
+          } else {
+            console.warn('[Elarah Payment] fee config exceção, fallback 0/0:', e);
+          }
           cachedFeeConfig = { percent: 0, fixedCents: 0 };
         }
         return cachedFeeConfig;
