@@ -775,22 +775,35 @@ grant execute on function public.promote_prospect_to_fornecedor(uuid)
 
 
 -- ===== 7. Backfill: marca prospects existentes que já são parceiros =====
--- Roda 1x: pra cada prospect, se houver match em fornecedor_metadata
--- ou experience, marca como 'ja_parceiro' com snapshot da chave.
--- Não sobrescreve quem já está com status mais avançado.
+-- Roda toda vez: pra cada prospect ainda não-parceiro, se houver
+-- match em fornecedor_metadata/experience, marca como 'ja_parceiro'
+-- com snapshot da chave. Quem já tá em parceria_fechada/ja_parceiro/
+-- recusou não é tocado.
+--
+-- Uso um CTE em vez de `update ... from lateral (...)` direto porque
+-- o Postgres não permite que um LATERAL no FROM de um UPDATE
+-- referencie a target table do UPDATE (erro 42P10). O CTE calcula
+-- os matches num escopo onde `prospects` é só uma fonte qualquer,
+-- e o UPDATE junta por id.
+with prospect_matches as (
+  select p.id as prospect_id, m.fornecedor_key
+    from public.prospects p
+    cross join lateral (
+      select * from public.find_matching_fornecedor(
+        p.nome, p.instagram, p.whatsapp, p.email, p.site, p.id
+      )
+      where source in ('experience', 'fornecedor_metadata')
+      limit 1
+    ) m
+   where p.status not in ('parceria_fechada', 'ja_parceiro', 'recusou')
+     and m.fornecedor_key is not null
+)
 update public.prospects p
    set status                    = 'ja_parceiro',
        promoted_to_fornecedor_at = coalesce(p.promoted_to_fornecedor_at, now()),
-       promoted_supplier_key     = m.fornecedor_key
-  from lateral (
-    select * from public.find_matching_fornecedor(
-      p.nome, p.instagram, p.whatsapp, p.email, p.site, p.id
-    )
-    where source in ('experience', 'fornecedor_metadata')
-    limit 1
-  ) m
- where p.status not in ('parceria_fechada', 'ja_parceiro', 'recusou')
-   and m.fornecedor_key is not null;
+       promoted_supplier_key     = pm.fornecedor_key
+  from prospect_matches pm
+ where pm.prospect_id = p.id;
 
 
 notify pgrst, 'reload schema';
