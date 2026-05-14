@@ -204,7 +204,7 @@
   <footer class="footer">
     <div class="footer__inner">
       <div class="footer__brand">
-        <a href="/" class="footer__logo"><img src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
+        <a href="/" class="footer__logo"><img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
         <p class="footer__tagline">Offline is a feeling.</p>
         <div class="footer__socials">
           <a href="https://www.instagram.com/elarah.oficial" target="_blank" aria-label="Instagram"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/></svg></a>
@@ -392,7 +392,7 @@
       "}" +
       "this.dataset.fbStep='final';this.outerHTML=this.dataset.fbHtml;";
     var heroHtml = heroSrc
-      ? '<img class="exp-detail__hero" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
+      ? '<img loading="lazy" decoding="async" class="exp-detail__hero" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
         'data-cat-fb="' + esc(heroCatFb) + '" ' +
         'data-fb-html="' + heroPlaceholder.replace(/"/g, '&quot;') + '" ' +
         'onerror="' + heroOnErr + '">'
