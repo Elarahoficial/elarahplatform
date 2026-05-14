@@ -853,9 +853,279 @@
 
 
 /* =============================================================
-   ACESSIBILIDADE — respeita preferência de redução de movimento
+   16) MICROANIMAÇÕES E FEEDBACK TÁTIL (etapa 5.1)
+   -------------------------------------------------------------
+   Active states padronizados, ripple opcional, transição de
+   troca de painel e animação de entrada de modais.
    ============================================================= */
+@media (max-width: 768px) {
+
+  /* Active scale uniforme em todos elementos interativos.
+     Sobrescreve os spots ad-hoc que já tinham scale customizado. */
+  .admin__main button:active,
+  .admin__modal button:active,
+  .admin__nav-item:active,
+  .admin__filter-pill:active,
+  .m-bn-item:active,
+  .m-fab:active,
+  a[role="button"]:active,
+  [data-touchable]:active {
+    transform: scale(0.97);
+    transition: transform 100ms ease-out;
+  }
+
+  /* Cards têm scale menos agressivo (são maiores) */
+  .admin__table tbody tr:active,
+  .m-card:active {
+    transform: scale(0.99);
+    transition: transform 100ms ease-out;
+  }
+
+  /* Ripple CSS-only — radial gradient que aparece no :active.
+     Pra usar, basta dar a classe .m-ripple no elemento. */
+  .m-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  .m-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(176, 123, 58, 0.20) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 400ms ease-out;
+    pointer-events: none;
+  }
+  .m-ripple:active::after {
+    opacity: 1;
+    transition: opacity 50ms ease-out;
+  }
+
+  /* Page transition: fade-in suave quando troca de painel.
+     Animation é re-disparada pela classe .is-entering aplicada
+     pelo JS no painel que acaba de virar ativo. */
+  @keyframes m-panel-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .admin__panel.admin__panel--active.is-entering {
+    animation: m-panel-in 200ms ease-out;
+  }
+
+  /* Modal entry animation: slide-up 30px + fade.
+     Aplicada via classe .is-open colocada pelo JS quando o modal
+     vira display:flex. O inner do modal faz o movimento. */
+  @keyframes m-modal-in {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .admin__modal.is-open > div {
+    animation: m-modal-in 220ms ease-out;
+  }
+}
+
+/* =============================================================
+   17) SKELETON LOADING (etapa 5.2)
+   -------------------------------------------------------------
+   Placeholders animados (shimmer) renderizados enquanto a lista
+   real ainda não chegou. Estrutura imita um card de prospect.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  .m-skeleton {
+    display: block;
+    background: linear-gradient(
+      90deg,
+      var(--m-line) 0%,
+      #eae6df 50%,
+      var(--m-line) 100%
+    );
+    background-size: 200% 100%;
+    animation: m-shimmer 1.4s ease-in-out infinite;
+    border-radius: 6px;
+  }
+  @keyframes m-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Skeleton card: estrutura parecida com um card de tabela mobile.
+     Layout: título, 2 linhas de meta, 2 botões */
+  .m-skeleton-card {
+    background: var(--m-surface);
+    border: 1px solid var(--m-line);
+    border-radius: var(--m-radius);
+    box-shadow: var(--m-shadow);
+    padding: 14px 16px;
+    margin: 0 14px 10px;
+  }
+  .m-skeleton-card .m-skeleton {
+    margin-bottom: 8px;
+  }
+  .m-skeleton-card .m-skeleton-title  { height: 16px; width: 60%; }
+  .m-skeleton-card .m-skeleton-line-1 { height: 12px; width: 80%; }
+  .m-skeleton-card .m-skeleton-line-2 { height: 12px; width: 50%; margin-bottom: 14px; }
+  .m-skeleton-card .m-skeleton-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .m-skeleton-card .m-skeleton-btn {
+    flex: 1;
+    height: 36px;
+    margin-bottom: 0;
+  }
+}
+
+/* =============================================================
+   18) SWIPE ACTIONS EM CARDS (etapa 5.3)
+   -------------------------------------------------------------
+   Cards de prospects ganham swipe horizontal pra revelar ações
+   ("Editar" / "Promover"). Implementação CSS: o card recebe
+   translateX via JS; um container .m-swipe-actions fica atrás
+   (z-index 0) e revela conforme o card translada.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  /* Linhas de prospects ganham contexto pra swipe.
+     A própria tr serve como container relativo; as actions são
+     injetadas como filho posicionado absolutamente em right:0.
+     A tr inteira é traduzida (transform) — actions vão junto e
+     "saem do canto direito" da posição original. Pra ficarem
+     visíveis no swipe, o .admin__table-wrap precisa não clipar.
+     Alternativa segura: actions têm width 0 quando não revelado
+     e expandem quando o swipe passa do threshold. */
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled {
+    position: relative;
+    z-index: 1;
+    transition: transform 220ms ease-out;
+    will-change: transform;
+    touch-action: pan-y;
+    overflow: visible;
+  }
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled.is-swiping {
+    transition: none;
+  }
+
+  /* Actions ficam à direita, FORA da área visível do card original
+     (posicionadas em right: -120px). Quando o tr translada -120px
+     pra esquerda, elas entram no viewport (na posição que o tr
+     ocupava antes). */
+  .m-swipe-actions {
+    position: absolute;
+    top: 0;
+    right: -120px;
+    bottom: 0;
+    width: 120px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    pointer-events: none;
+    border-radius: 0 var(--m-radius) var(--m-radius) 0;
+    overflow: hidden;
+  }
+  /* Quando o card está revelado, as actions aceitam toque */
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled.is-revealed .m-swipe-actions {
+    pointer-events: auto;
+  }
+  .m-swipe-actions.is-revealed {
+    pointer-events: auto;
+  }
+  .m-swipe-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 100%;
+    border: none;
+    background: var(--m-ink-2);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    gap: 3px;
+    padding: 6px 4px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .m-swipe-action svg { width: 18px; height: 18px; }
+  .m-swipe-action--edit    { background: #5a5650; }
+  .m-swipe-action--promote { background: var(--m-accent); }
+  .m-swipe-action:active   { filter: brightness(0.9); }
+}
+
+/* =============================================================
+   19) PULL-TO-REFRESH (etapa 5.4)
+   -------------------------------------------------------------
+   Indicador flutuante no topo da viewport que aparece quando o
+   usuário puxa pra baixo a partir do topo da página.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  .m-ptr {
+    position: fixed;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--m-surface);
+    box-shadow: var(--m-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9995;
+    transition: top var(--m-trans);
+    pointer-events: none;
+  }
+  .m-ptr.is-pulling {
+    top: 20px;
+  }
+  .m-ptr svg {
+    width: 22px;
+    height: 22px;
+    color: var(--m-accent);
+    transition: transform var(--m-trans);
+  }
+  .m-ptr.is-refreshing svg {
+    animation: m-spin 0.8s linear infinite;
+  }
+  @keyframes m-spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+/* prefers-reduced-motion: shimmer desligado (background sólido) */
 @media (prefers-reduced-motion: reduce) {
   .admin__sidebar { transition: none !important; }
   .admin-mobile-backdrop { animation: none !important; }
+  .admin__panel.admin__panel--active.is-entering { animation: none !important; }
+  .admin__modal.is-open > div { animation: none !important; }
+  .m-ripple::after { transition: none !important; }
+  .m-skeleton {
+    animation: none !important;
+    background: var(--m-line) !important;
+  }
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled {
+    transition: none !important;
+  }
+  .m-ptr { transition: none !important; }
+  .m-ptr.is-refreshing svg { animation: none !important; }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 768px) {
+  .admin__main button:active,
+  .admin__modal button:active,
+  .admin__nav-item:active,
+  .admin__filter-pill:active,
+  .m-bn-item:active,
+  .m-fab:active,
+  a[role="button"]:active,
+  [data-touchable]:active,
+  .admin__table tbody tr:active,
+  .m-card:active {
+    transform: none !important;
+    transition: none !important;
+  }
 }

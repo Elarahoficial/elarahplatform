@@ -18,14 +18,14 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="admin.css?v=10">
-  <link rel="stylesheet" href="admin-mobile.css?v=4">
+  <link rel="stylesheet" href="admin-mobile.css?v=8">
   <!-- Auto-bust de cache: se a versão local divergir da esperada,
        força reload limpo via location.replace com query string única.
        Resolve quando admin.html é cacheado pelo CDN/navegador apontando
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 121;
+      var EXPECTED = 127;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -3203,7 +3203,7 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=144"></script>
-<script src="admin-mobile.js?v=4" defer></script>
+<script src="admin-mobile.js?v=10" defer></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
