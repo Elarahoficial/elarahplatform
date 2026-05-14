@@ -4298,6 +4298,11 @@ if (groupForm) {
     }
 
     let reserveSpinnerSafetyTimer = null;
+    let reserveSpinnerShownAt = 0;
+    // Mínimo de exibição do spinner em ms. Aumentado de "o mais rápido
+    // possível" pra 2s a pedido da Eli — dá tempo do cliente LER
+    // "Preparando sua reserva…" e cria sensação de ritual premium.
+    const RESERVE_SPINNER_MIN_MS = 2000;
     function showReserveSpinner() {
       try {
         injectReserveSpinnerStyles();
@@ -4319,8 +4324,9 @@ if (groupForm) {
         // recém-criado o elemento.
         void overlay.offsetWidth;
         overlay.classList.add('is-active');
+        reserveSpinnerShownAt = Date.now();
         if (reserveSpinnerSafetyTimer) clearTimeout(reserveSpinnerSafetyTimer);
-        reserveSpinnerSafetyTimer = setTimeout(hideReserveSpinner, 6000);
+        reserveSpinnerSafetyTimer = setTimeout(hideReserveSpinner, 8000);
       } catch (e) { /* não pode quebrar o checkout */ }
     }
     function hideReserveSpinner() {
@@ -4332,6 +4338,21 @@ if (groupForm) {
           reserveSpinnerSafetyTimer = null;
         }
       } catch (e) {}
+    }
+    // Quanto tempo o spinner já está visível, em ms. 0 se nunca foi
+    // mostrado. Usado por startCheckout pra segurar a abertura do modal
+    // até completar o mínimo de RESERVE_SPINNER_MIN_MS.
+    function getReserveSpinnerElapsedMs() {
+      if (!reserveSpinnerShownAt) return 0;
+      return Date.now() - reserveSpinnerShownAt;
+    }
+    // Promise que resolve quando o spinner já ficou visível pelo tempo
+    // mínimo. Se já passou, resolve imediato.
+    function waitForReserveSpinnerMin() {
+      const elapsed = getReserveSpinnerElapsedMs();
+      const remaining = RESERVE_SPINNER_MIN_MS - elapsed;
+      if (remaining <= 0 || elapsed === 0) return Promise.resolve();
+      return new Promise(function (r) { setTimeout(r, remaining); });
     }
     // Exposto pra ser chamado pelos opener de modais (description,
     // login, reservation) sem precisar de import.
@@ -4495,6 +4516,13 @@ if (groupForm) {
 
       // Em modo guest pulamos getAuthInfo (não tem sessão).
       const auth = isGuestMode ? { email: null, nome: null } : await getAuthInfo();
+
+      // Segura a abertura do modal até o spinner ter completado seu
+      // tempo mínimo de exibição (RESERVE_SPINNER_MIN_MS). Se a
+      // preparação já demorou mais que esse mínimo, abre na hora.
+      // Cria sensação de ritual premium e dá tempo do cliente ler
+      // "Preparando sua reserva…".
+      try { await waitForReserveSpinnerMin(); } catch (e) {}
 
       openReservationModal({
         experienceId: experienceId,
