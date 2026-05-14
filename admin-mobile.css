@@ -19,6 +19,30 @@
 
 
 /* =============================================================
+   0) DESIGN TOKENS MOBILE (etapa 1)
+   -------------------------------------------------------------
+   Variáveis ficam no :root (não impactam desktop, só usadas
+   dentro de @media <=768px). Paleta quente / "premium app".
+   ============================================================= */
+:root {
+  --m-bg: #fafaf7;
+  --m-surface: #ffffff;
+  --m-ink: #1a1815;
+  --m-ink-2: #5a5650;
+  --m-line: #f0eeea;
+  --m-accent: #b07b3a;       /* ocre quente Elarah */
+  --m-accent-soft: #fef4e6;
+  --m-green: #2c5e3f;
+  --m-red: #c0392b;
+  --m-radius: 14px;
+  --m-radius-lg: 18px;
+  --m-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --m-shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.10);
+  --m-trans: 220ms ease-out;
+}
+
+
+/* =============================================================
    1) HAMBURGER + DRAWER (mobile only)
    ============================================================= */
 
@@ -351,6 +375,444 @@
   .admin__page-subtitle {
     display: none;
   }
+
+
+  /* =============================================================
+     12) DESIGN SYSTEM PREMIUM (etapa 1)
+     -------------------------------------------------------------
+     Substitui paleta default por algo mais "app-like" no mobile.
+     Cores, tipografia, sombras e radius. Só no breakpoint mobile.
+     ============================================================= */
+
+  /* Body / canvas geral */
+  body,
+  .admin {
+    background: var(--m-bg) !important;
+    color: var(--m-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tipografia da página */
+  .admin__page-title {
+    font-size: 1.45rem !important;
+    letter-spacing: -0.01em;
+    font-weight: 700 !important;
+    color: var(--m-ink);
+    line-height: 1.2;
+  }
+  .admin__page-subtitle {
+    /* Antes era display:none; agora mostra sutil como hint */
+    display: block;
+    font-size: 0.85rem !important;
+    color: var(--m-ink-2);
+    line-height: 1.35;
+  }
+  .admin__main {
+    font-size: 0.92rem;
+    color: var(--m-ink);
+  }
+
+  /* Card utilitário re-usável (.m-card) */
+  .m-card {
+    background: var(--m-surface);
+    border: 1px solid var(--m-line);
+    border-radius: var(--m-radius);
+    padding: 14px 16px;
+    box-shadow: var(--m-shadow);
+  }
+
+  /* Active state global (touchable feel) */
+  .admin__main button:active,
+  .admin__modal button:active,
+  .m-card:active,
+  [data-touchable]:active {
+    transform: scale(0.97);
+    transition: transform var(--m-trans);
+  }
+
+  /* Touch: sem 300ms delay, sem highlight cinza padrão */
+  .admin__main button,
+  .admin__modal button,
+  .admin__nav-item,
+  .admin__filter-pill,
+  [data-touchable] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safe area iOS — só onde faz sentido (modais bottom-anchored) */
+  .admin__main {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Stats — paleta nova */
+  .admin__stat {
+    background: var(--m-surface) !important;
+    border: 1px solid var(--m-line) !important;
+    border-radius: var(--m-radius) !important;
+    box-shadow: var(--m-shadow) !important;
+    padding: 14px 16px !important;
+  }
+  .admin__stat-value {
+    color: var(--m-ink) !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+  }
+  .admin__stat-label {
+    color: var(--m-ink-2) !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  /* Inputs / selects / textareas — paleta nova */
+  .admin__main input[type="text"],
+  .admin__main input[type="email"],
+  .admin__main input[type="tel"],
+  .admin__main input[type="url"],
+  .admin__main input[type="search"],
+  .admin__main input[type="number"],
+  .admin__main input[type="date"],
+  .admin__main select,
+  .admin__main textarea,
+  .admin__modal input[type="text"],
+  .admin__modal input[type="email"],
+  .admin__modal input[type="tel"],
+  .admin__modal input[type="url"],
+  .admin__modal input[type="search"],
+  .admin__modal input[type="number"],
+  .admin__modal input[type="date"],
+  .admin__modal select,
+  .admin__modal textarea {
+    background: var(--m-surface) !important;
+    border: 1px solid var(--m-line) !important;
+    border-radius: 10px !important;
+    color: var(--m-ink);
+    transition: border-color var(--m-trans), box-shadow var(--m-trans);
+  }
+  .admin__main input:focus,
+  .admin__main select:focus,
+  .admin__main textarea:focus,
+  .admin__modal input:focus,
+  .admin__modal select:focus,
+  .admin__modal textarea:focus {
+    outline: none;
+    border-color: var(--m-accent) !important;
+    box-shadow: 0 0 0 3px rgba(176, 123, 58, 0.15) !important;
+  }
+
+  /* Modais — backdrop com blur + inner com radius topo */
+  .admin__modal {
+    background: rgba(20, 18, 15, 0.45) !important;
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
+  }
+  .admin__modal > div {
+    background: var(--m-surface) !important;
+    border-radius: var(--m-radius-lg) var(--m-radius-lg) 0 0 !important;
+    box-shadow: var(--m-shadow-lg) !important;
+  }
+  .admin__modal h2 {
+    color: var(--m-ink);
+    font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+
+  /* Micro text helper (.7rem) — cosmetic só, opcional */
+  .admin__main small,
+  .admin__main .micro {
+    font-size: 0.7rem;
+    color: var(--m-ink-2);
+  }
+
+
+  /* =============================================================
+     13) BOTTOM NAVIGATION (etapa 2)
+     -------------------------------------------------------------
+     Fica fixa no rodapé com 5 itens. Não substitui o hamburger
+     em telas onde ele aparece, mas o último item dispara o drawer
+     da sidebar (que já tem todos os 20+ painéis).
+     ============================================================= */
+
+  .m-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--m-surface);
+    border-top: 1px solid var(--m-line);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+    z-index: 9997;  /* abaixo do drawer (9999) e backdrop (9998) */
+    padding-bottom: env(safe-area-inset-bottom);
+    transition: transform var(--m-trans);
+    will-change: transform;
+  }
+  .m-bottom-nav[hidden] {
+    display: none;
+  }
+  .m-bottom-nav.is-hidden {
+    transform: translateY(100%);
+  }
+
+  .m-bn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--m-ink-2);
+    font-size: 0.65rem;
+    font-family: inherit;
+    font-weight: 500;
+    padding: 4px 2px;
+    transition: color var(--m-trans);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .m-bn-item svg {
+    transition: stroke-width var(--m-trans);
+  }
+  .m-bn-item:active {
+    transform: scale(0.94);
+  }
+  .m-bn-item--active {
+    color: var(--m-accent);
+  }
+  .m-bn-item--active svg {
+    stroke-width: 2.2;
+  }
+  /* Indicator dot sutil no item ativo */
+  .m-bn-item--active::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--m-accent);
+  }
+  .m-bn-item {
+    position: relative;
+  }
+
+  /* Reserva espaço no main pra não esconder conteúdo debaixo da nav */
+  .admin__main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Esconde o hamburger antigo — agora o Menu vive na bottom nav */
+  .admin-mobile-hamburger {
+    display: none !important;
+  }
+  /* Espaço extra no header (já não precisa do botão fixo top-right) */
+  .admin__header {
+    padding-right: 0;
+  }
+}
+
+
+/* Desktop: garante que a bottom nav nunca apareça */
+@media (min-width: 769px) {
+  .m-bottom-nav { display: none !important; }
+}
+
+
+/* =============================================================
+   14) TABELAS COMO CARDS (etapa 3)
+   -------------------------------------------------------------
+   Cada <tr> do tbody vira um card. JS anota data-label nas tds;
+   o ::before exibe esse label como rótulo discreto.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  /* Quebra a estrutura table → bloco */
+  .admin__table,
+  .admin__table thead,
+  .admin__table tbody,
+  .admin__table tr,
+  .admin__table td {
+    display: block !important;
+    width: auto !important;
+  }
+  .admin__table thead {
+    display: none !important;
+  }
+
+  /* Reseta o wrap (sangrar até a borda já é bom, mas sem sombra interna
+     que conflite com o card individual) */
+  .admin__table-wrap {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .admin__table {
+    font-size: 0.92rem !important;
+    background: transparent !important;
+  }
+
+  /* Card por linha */
+  .admin__table tbody tr {
+    background: var(--m-surface) !important;
+    border: 1px solid var(--m-line) !important;
+    border-radius: var(--m-radius) !important;
+    box-shadow: var(--m-shadow) !important;
+    padding: 12px 14px !important;
+    margin: 0 14px 10px !important;  /* compensa o margin negativo do wrap */
+    transition: transform var(--m-trans);
+  }
+  .admin__table tbody tr:active {
+    transform: scale(0.985);
+  }
+
+  /* TDs viram linhas label:valor */
+  .admin__table tbody td {
+    padding: 6px 0 !important;
+    border: none !important;
+    border-bottom: 1px solid #f5f3ef !important;
+    white-space: normal !important;  /* desfaz nowrap legado */
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    text-align: right;
+    color: var(--m-ink);
+    word-break: break-word;
+  }
+  .admin__table tbody td:last-child {
+    border-bottom: none !important;
+  }
+  .admin__table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.72rem;
+    color: var(--m-ink-2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 12px;
+    flex-shrink: 0;
+    max-width: 40%;
+    text-align: left;
+  }
+
+  /* Primeira TD vira o "título" do card (sem label) */
+  .admin__table tbody td:first-child {
+    display: block !important;
+    text-align: left;
+    padding-bottom: 8px !important;
+    margin-bottom: 4px !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--m-ink) !important;
+  }
+  .admin__table tbody td:first-child::before {
+    display: none !important;
+  }
+
+  /* Última TD costuma ter botões de ação — empilha em block,
+     botões expandem 50% cada */
+  .admin__table tbody td:last-child {
+    display: block !important;
+    text-align: left;
+    padding-top: 10px !important;
+    margin-top: 6px !important;
+    border-top: 1px solid #f5f3ef;
+  }
+  .admin__table tbody td:last-child::before {
+    display: none !important;
+  }
+  .admin__table tbody td:last-child button,
+  .admin__table tbody td:last-child .admin__btn {
+    flex: 1 1 calc(50% - 4px);
+    min-height: 40px;
+    margin: 2px 0 !important;
+  }
+  /* Se tiver vários botões na última td, deixa eles fluindo lado a lado */
+  .admin__table tbody td:last-child {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  /* Empty state ocupa tudo, sem label */
+  .admin__table td.admin__table-empty,
+  .admin__table td[data-empty="1"] {
+    display: block !important;
+    text-align: center !important;
+    padding: 20px !important;
+    color: var(--m-ink-2);
+    font-size: 0.9rem;
+    background: var(--m-surface);
+    border: 1px dashed var(--m-line);
+    border-radius: var(--m-radius);
+    margin: 0 14px 10px !important;
+  }
+  .admin__table td.admin__table-empty::before,
+  .admin__table td[data-empty="1"]::before {
+    display: none !important;
+  }
+
+  /* Bordas coloridas por status (opcional — só se a classe existir) */
+  .admin__table tbody tr.row--status-nao_contatado    { border-left: 3px solid #95a5a6 !important; }
+  .admin__table tbody tr.row--status-em_negociacao    { border-left: 3px solid var(--m-accent) !important; }
+  .admin__table tbody tr.row--status-parceria_fechada { border-left: 3px solid var(--m-green) !important; }
+  .admin__table tbody tr.row--status-descartado       { border-left: 3px solid var(--m-red) !important; }
+
+
+  /* =============================================================
+     15) FAB CONTEXTUAL (etapa 4)
+     ============================================================= */
+  .m-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(70px + env(safe-area-inset-bottom) + 16px);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: var(--m-accent);
+    color: #fff;
+    box-shadow: var(--m-shadow-lg);
+    transition: transform var(--m-trans), opacity var(--m-trans), bottom var(--m-trans);
+    z-index: 9996;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .m-fab[hidden] { display: none !important; }
+  .m-fab:active  { transform: scale(0.94); }
+
+  /* Quando a bottom nav esconde, FAB também esconde (simples) */
+  body.m-nav-hidden .m-fab {
+    transform: translateY(120%);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .m-fab {
+    width: 48px;
+    height: 48px;
+    right: 14px;
+    bottom: calc(66px + env(safe-area-inset-bottom) + 14px);
+  }
+}
+
+@media (min-width: 769px) {
+  .m-fab { display: none !important; }
 }
 
 
