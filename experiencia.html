@@ -59,6 +59,77 @@
       .exp-detail__title { font-size: 1.5rem; }
       .exp-detail__hero { max-height: 260px; }
     }
+
+    /* =====================================================
+       STICKY CTA MOBILE — Sprint 1 / PR D do plano de conversão
+       -----------------------------------------------------
+       Botão "Reservar" fixo no rodapé do mobile. Aparece só
+       quando o botão original sai da viewport (scroll passou).
+       Desktop nem renderiza (display:none por @media).
+       Padrão de e-commerce mobile — reduz fricção de quem rolou
+       a página inteira e teria que voltar pro topo pra reservar.
+       ===================================================== */
+    .exp-sticky-cta {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 50;
+      background: #fff;
+      border-top: 1px solid #ebe1d0;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.10);
+      transform: translateY(100%);
+      transition: transform 240ms cubic-bezier(.2,.8,.2,1), opacity 200ms;
+      opacity: 0;
+      pointer-events: none;
+      display: none;
+    }
+    .exp-sticky-cta.is-visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .exp-sticky-cta__price {
+      flex: 1;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.2rem;
+      color: #1a1a1a;
+      line-height: 1.1;
+      letter-spacing: -.2px;
+    }
+    .exp-sticky-cta__price small {
+      display: block;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .68rem;
+      color: #8a8a8a;
+      font-weight: 400;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      margin-bottom: 1px;
+    }
+    .exp-sticky-cta__btn {
+      padding: 13px 28px;
+      border: none;
+      border-radius: 999px;
+      background: var(--orange, #f0a05e);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(240, 160, 94, .35);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .exp-sticky-cta__btn:active {
+      transform: scale(.97);
+      box-shadow: 0 2px 8px rgba(240, 160, 94, .3);
+    }
+    @media (max-width: 768px) {
+      .exp-sticky-cta { display: flex; }
+    }
   </style>
 </head>
 <body>
@@ -590,6 +661,121 @@
         '<a href="/">Explorar experiencias</a>' +
       '</div>';
   }
+})();
+</script>
+
+<!-- ============================================================
+     STICKY CTA MOBILE — Sprint 1 / PR D
+     ------------------------------------------------------------
+     Cria um botão "Reservar" fixo no rodapé que aparece SÓ no
+     mobile e SÓ quando o botão original sai da viewport.
+     Espelha data-attributes do botão original via MutationObserver
+     pra que o handler global de [data-reserve] em script.js
+     processe normalmente (mesmo experienceId, mesmo horário,
+     mesma data — clique no sticky = clique no original).
+     ============================================================ -->
+<script>
+(function setupExpStickyCta() {
+  'use strict';
+
+  // Detecta mobile com base no viewport — sticky só faz sentido aí.
+  // No desktop nem montamos o elemento (poupar memória + DOM).
+  var MOBILE_BREAKPOINT = 768;
+  function isMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+
+  var hostBtn = null;
+  var sticky = null;
+  var stickyBtn = null;
+  var stickyPriceEl = null;
+  var observer = null;
+
+  function build() {
+    if (sticky) return;
+    sticky = document.createElement('div');
+    sticky.className = 'exp-sticky-cta';
+    sticky.setAttribute('aria-hidden', 'true');
+    sticky.innerHTML =
+      '<div class="exp-sticky-cta__price"><small>A partir de</small><span class="exp-sticky-cta__price-val">—</span></div>' +
+      '<button type="button" class="exp-sticky-cta__btn" data-reserve' +
+      ' data-analytics="reserve_click" data-analytics-category="booking">Reservar</button>';
+    document.body.appendChild(sticky);
+    stickyBtn = sticky.querySelector('.exp-sticky-cta__btn');
+    stickyPriceEl = sticky.querySelector('.exp-sticky-cta__price-val');
+  }
+
+  // Copia data-attributes essenciais do botão original pro sticky.
+  // Mantém em sync com mudanças de horário/data feitas pelo usuário.
+  var DATA_KEYS = [
+    'experienceId', 'experienceNome', 'experiencePreco',
+    'horario', 'data', 'dataLabel', 'slotId',
+  ];
+  function syncFromHost() {
+    if (!stickyBtn || !hostBtn) return;
+    DATA_KEYS.forEach(function (k) {
+      var v = hostBtn.dataset[k];
+      if (v != null && v !== '') {
+        stickyBtn.dataset[k] = v;
+      } else {
+        delete stickyBtn.dataset[k];
+      }
+    });
+    stickyBtn.dataset.analyticsLabel = hostBtn.dataset.experienceNome || '';
+    var priceEl = document.querySelector('.exp-detail__price');
+    if (priceEl && stickyPriceEl) {
+      var t = (priceEl.textContent || '').trim();
+      if (t) stickyPriceEl.textContent = t;
+    }
+  }
+
+  function setupObserver() {
+    if (!hostBtn) return;
+    if (observer) observer.disconnect();
+    if (typeof IntersectionObserver === 'undefined') {
+      // Fallback: navegador antigo — mostra sempre.
+      sticky.classList.add('is-visible');
+      return;
+    }
+    observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        // Original FORA da viewport → mostra sticky.
+        // Original DENTRO da viewport → some.
+        sticky.classList.toggle('is-visible', !entry.isIntersecting);
+      });
+    }, { rootMargin: '0px 0px -20px 0px', threshold: 0 });
+    observer.observe(hostBtn);
+  }
+
+  function tryWire() {
+    if (!isMobile()) return;
+    var btn = document.getElementById('exp-reserve-btn');
+    if (!btn) return;
+    if (btn === hostBtn) return;
+    hostBtn = btn;
+    build();
+    syncFromHost();
+    setupObserver();
+  }
+
+  // Inicializa quando a página termina de renderizar o detalhe.
+  // O conteúdo é injetado async (após ElarahData carregar), então
+  // observamos o body via MutationObserver até o botão aparecer.
+  tryWire();
+  var mo = new MutationObserver(function () { tryWire(); });
+  mo.observe(document.body, { childList: true, subtree: true });
+
+  // Re-sync periódico — usuário pode trocar horário/data e os
+  // data-attrs do botão original mudam. Polling leve cobre isso
+  // sem precisar plugar em cada handler individual.
+  setInterval(function () {
+    if (hostBtn && sticky) syncFromHost();
+  }, 1500);
+
+  // Em resize cross-breakpoint, desliga sticky se virou desktop.
+  window.addEventListener('resize', function () {
+    if (!isMobile() && sticky) {
+      sticky.classList.remove('is-visible');
+    }
+  });
 })();
 </script>
 </body>
