@@ -766,6 +766,53 @@
   .admin__table tbody tr.row--status-em_negociacao    { border-left: 3px solid var(--m-accent) !important; }
   .admin__table tbody tr.row--status-parceria_fechada { border-left: 3px solid var(--m-green) !important; }
   .admin__table tbody tr.row--status-descartado       { border-left: 3px solid var(--m-red) !important; }
+
+
+  /* =============================================================
+     15) FAB CONTEXTUAL (etapa 4)
+     ============================================================= */
+  .m-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(70px + env(safe-area-inset-bottom) + 16px);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: var(--m-accent);
+    color: #fff;
+    box-shadow: var(--m-shadow-lg);
+    transition: transform var(--m-trans), opacity var(--m-trans), bottom var(--m-trans);
+    z-index: 9996;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .m-fab[hidden] { display: none !important; }
+  .m-fab:active  { transform: scale(0.94); }
+
+  /* Quando a bottom nav esconde, FAB também esconde (simples) */
+  body.m-nav-hidden .m-fab {
+    transform: translateY(120%);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .m-fab {
+    width: 48px;
+    height: 48px;
+    right: 14px;
+    bottom: calc(66px + env(safe-area-inset-bottom) + 14px);
+  }
+}
+
+@media (min-width: 769px) {
+  .m-fab { display: none !important; }
 }
 
 

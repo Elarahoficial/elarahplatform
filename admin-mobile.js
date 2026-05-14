@@ -165,6 +165,8 @@
       if (p && p === panel) b.classList.add('m-bn-item--active');
       else b.classList.remove('m-bn-item--active');
     });
+    // FAB também depende do painel ativo
+    syncFab();
   }
 
   // Hide-on-scroll com rAF throttle
@@ -204,6 +206,77 @@
       attributes: true,
       attributeFilter: ['class']
     });
+  }
+
+  // ===========================================================
+  // FAB CONTEXTUAL (etapa 4)
+  // -----------------------------------------------------------
+  // Mapeia painel ativo → ação de "novo". Clica o botão real
+  // existente na tela pra reusar toda a lógica (modais, handlers).
+  // ===========================================================
+
+  const FAB_MAP = {
+    'prospects': {
+      label: 'Novo prospect',
+      targetId: 'btn-prospect-new'
+    },
+    'purchases': {
+      label: 'Registrar venda',
+      targetId: 'btn-register-manual-sale'
+    }
+  };
+
+  function getFab() { return document.getElementById('m-fab'); }
+
+  function showToast(msg) {
+    // Toast leve, sem dependências. Some sozinho em 2.5s.
+    let t = document.getElementById('m-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'm-toast';
+      t.style.cssText = 'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:rgba(20,18,15,.92);color:#fff;padding:10px 18px;border-radius:20px;font-size:.85rem;z-index:10001;pointer-events:none;opacity:0;transition:opacity .25s ease-out;max-width:80vw;text-align:center;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t.__timer);
+    t.__timer = setTimeout(function () { t.style.opacity = '0'; }, 2500);
+  }
+
+  function getActivePanelKey() {
+    const active = document.querySelector('.admin__panel.admin__panel--active');
+    if (!active) return '';
+    return (active.id || '').replace(/^panel-/, '');
+  }
+
+  function onFabClick() {
+    const key = getActivePanelKey();
+    const cfg = FAB_MAP[key];
+    if (!cfg) return;
+    const btn = document.getElementById(cfg.targetId);
+    if (btn) {
+      btn.click();
+    } else {
+      // Fallback: scroll pro topo + toast
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {}
+      showToast('Use o botão "Novo" no topo da lista');
+    }
+  }
+
+  function syncFab() {
+    const fab = getFab();
+    if (!fab) return;
+    if (!isMobile()) { fab.hidden = true; return; }
+    const key = getActivePanelKey();
+    const cfg = FAB_MAP[key];
+    if (cfg) {
+      fab.hidden = false;
+      fab.setAttribute('aria-label', cfg.label);
+      fab.dataset.action = key;
+    } else {
+      fab.hidden = true;
+      fab.removeAttribute('data-action');
+    }
   }
 
   // ===========================================================
@@ -306,6 +379,11 @@
     // Tabela como cards (mobile only)
     scanTables();
     watchTables();
+
+    // FAB
+    const fab = getFab();
+    if (fab) fab.addEventListener('click', onFabClick);
+    syncFab();
   }
 
   if (document.readyState === 'loading') {

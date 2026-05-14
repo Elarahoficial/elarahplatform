@@ -18,14 +18,14 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="admin.css?v=10">
-  <link rel="stylesheet" href="admin-mobile.css?v=3">
+  <link rel="stylesheet" href="admin-mobile.css?v=4">
   <!-- Auto-bust de cache: se a versão local divergir da esperada,
        força reload limpo via location.replace com query string única.
        Resolve quando admin.html é cacheado pelo CDN/navegador apontando
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 120;
+      var EXPECTED = 121;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -3203,7 +3203,7 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=144"></script>
-<script src="admin-mobile.js?v=3" defer></script>
+<script src="admin-mobile.js?v=4" defer></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
@@ -3426,7 +3426,7 @@
     </svg>
     <span>Financeiro</span>
   </button>
-  <button class="m-bn-item" type="button" data-action="open-menu" aria-label="Menu">
+  <button class="m-bn-item" type="button" data-action="open-menu" aria-label="Menu" id="m-bn-menu">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <rect x="3" y="3"  width="7" height="7" rx="1.5"/>
       <rect x="14" y="3" width="7" height="7" rx="1.5"/>
@@ -3436,5 +3436,19 @@
     <span>Menu</span>
   </button>
 </nav>
+
+<!-- ==========================================================
+     FLOATING ACTION BUTTON (etapa 4)
+     ----------------------------------------------------------
+     Contextual: muda de função conforme o painel ativo.
+     - prospects   → abre modal de novo prospect (clica #btn-prospect-new)
+     - purchases   → abre modal de registrar venda (clica #btn-register-manual-sale)
+     - outras abas → fica escondido (hidden)
+     ========================================================== -->
+<button id="m-fab" class="m-fab" hidden type="button" aria-label="Nova ação">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 5v14"/><path d="M5 12h14"/>
+  </svg>
+</button>
 </body>
 </html>
