@@ -18,14 +18,14 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="admin.css?v=10">
-  <link rel="stylesheet" href="admin-mobile.css?v=1">
+  <link rel="stylesheet" href="admin-mobile.css?v=2">
   <!-- Auto-bust de cache: se a versão local divergir da esperada,
        força reload limpo via location.replace com query string única.
        Resolve quando admin.html é cacheado pelo CDN/navegador apontando
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 118;
+      var EXPECTED = 119;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -3203,7 +3203,7 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=144"></script>
-<script src="admin-mobile.js?v=1" defer></script>
+<script src="admin-mobile.js?v=2" defer></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
@@ -3392,5 +3392,49 @@
   }
 })();
 </script>
+
+<!-- ==========================================================
+     BOTTOM NAVIGATION MOBILE (etapa 2)
+     ----------------------------------------------------------
+     Visível só no mobile (CSS controla). Cada botão troca de
+     painel disparando click no .admin__nav-item correspondente
+     da sidebar (mantém toda a lógica existente intacta).
+     O último botão (Menu) abre o drawer com a sidebar completa.
+     ========================================================== -->
+<nav class="m-bottom-nav" hidden aria-label="Navegação inferior">
+  <button class="m-bn-item" type="button" data-panel="overview" aria-label="Dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+    </svg>
+    <span>Início</span>
+  </button>
+  <button class="m-bn-item" type="button" data-panel="prospects" aria-label="Prospecção">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M16 11a4 4 0 1 0-4-4"/><path d="M8 11a4 4 0 1 0 4-4"/><path d="M2 21v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/><path d="M14 21v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/>
+    </svg>
+    <span>Prospects</span>
+  </button>
+  <button class="m-bn-item" type="button" data-panel="purchases" aria-label="Vendas">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 6h15l-2 9H8L6 4H3"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/>
+    </svg>
+    <span>Vendas</span>
+  </button>
+  <button class="m-bn-item" type="button" data-panel="contabilidade" aria-label="Financeiro">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 20h18"/><path d="M5 20V10"/><path d="M10 20V4"/><path d="M15 20v-7"/><path d="M20 20v-4"/>
+    </svg>
+    <span>Financeiro</span>
+  </button>
+  <button class="m-bn-item" type="button" data-action="open-menu" aria-label="Menu">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3"  width="7" height="7" rx="1.5"/>
+      <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+    </svg>
+    <span>Menu</span>
+  </button>
+</nav>
 </body>
 </html>
