@@ -924,13 +924,69 @@
   }
 }
 
-/* prefers-reduced-motion: desliga tudo */
+/* =============================================================
+   17) SKELETON LOADING (etapa 5.2)
+   -------------------------------------------------------------
+   Placeholders animados (shimmer) renderizados enquanto a lista
+   real ainda não chegou. Estrutura imita um card de prospect.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  .m-skeleton {
+    display: block;
+    background: linear-gradient(
+      90deg,
+      var(--m-line) 0%,
+      #eae6df 50%,
+      var(--m-line) 100%
+    );
+    background-size: 200% 100%;
+    animation: m-shimmer 1.4s ease-in-out infinite;
+    border-radius: 6px;
+  }
+  @keyframes m-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Skeleton card: estrutura parecida com um card de tabela mobile.
+     Layout: título, 2 linhas de meta, 2 botões */
+  .m-skeleton-card {
+    background: var(--m-surface);
+    border: 1px solid var(--m-line);
+    border-radius: var(--m-radius);
+    box-shadow: var(--m-shadow);
+    padding: 14px 16px;
+    margin: 0 14px 10px;
+  }
+  .m-skeleton-card .m-skeleton {
+    margin-bottom: 8px;
+  }
+  .m-skeleton-card .m-skeleton-title  { height: 16px; width: 60%; }
+  .m-skeleton-card .m-skeleton-line-1 { height: 12px; width: 80%; }
+  .m-skeleton-card .m-skeleton-line-2 { height: 12px; width: 50%; margin-bottom: 14px; }
+  .m-skeleton-card .m-skeleton-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .m-skeleton-card .m-skeleton-btn {
+    flex: 1;
+    height: 36px;
+    margin-bottom: 0;
+  }
+}
+
+/* prefers-reduced-motion: shimmer desligado (background sólido) */
 @media (prefers-reduced-motion: reduce) {
   .admin__sidebar { transition: none !important; }
   .admin-mobile-backdrop { animation: none !important; }
   .admin__panel.admin__panel--active.is-entering { animation: none !important; }
   .admin__modal.is-open > div { animation: none !important; }
   .m-ripple::after { transition: none !important; }
+  .m-skeleton {
+    animation: none !important;
+    background: var(--m-line) !important;
+  }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 768px) {
   .admin__main button:active,

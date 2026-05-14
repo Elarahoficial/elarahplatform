@@ -171,6 +171,8 @@
     syncFab();
     // Anima a entrada do painel ativo (etapa 5.1)
     applyPanelEnterAnim();
+    // Skeletons se a lista do painel ainda está carregando (etapa 5.2)
+    maybeShowSkeletonsForActivePanel();
   }
 
   // Hide-on-scroll com rAF throttle
@@ -472,6 +474,115 @@
   }
 
   // ===========================================================
+  // SKELETON LOADING (etapa 5.2)
+  // -----------------------------------------------------------
+  // Mostra placeholders animados enquanto a lista real ainda
+  // não chegou. Detecção é heurística: se um painel virou ativo
+  // e o tbody está vazio OU contém só texto "Carregando", injeta
+  // skeletons. Quando o admin.js renderiza linhas de verdade, o
+  // MutationObserver remove os skeletons.
+  // ===========================================================
+
+  // Container -> skeleton wrapper. Usamos um wrapper irmão do tbody
+  // pra não conflitar com o CSS table-as-cards.
+  function createSkeletonCard() {
+    const card = document.createElement('div');
+    card.className = 'm-skeleton-card';
+    card.innerHTML =
+      '<div class="m-skeleton m-skeleton-title"></div>' +
+      '<div class="m-skeleton m-skeleton-line-1"></div>' +
+      '<div class="m-skeleton m-skeleton-line-2"></div>' +
+      '<div class="m-skeleton-actions">' +
+        '<div class="m-skeleton m-skeleton-btn"></div>' +
+        '<div class="m-skeleton m-skeleton-btn"></div>' +
+      '</div>';
+    return card;
+  }
+
+  function renderSkeletons(container, n) {
+    if (!container) return;
+    if (typeof n !== 'number' || n < 1) n = 5;
+    // Idempotente: se já tem skeletons, não duplica
+    if (container.querySelector(':scope > .m-skeleton-wrapper')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'm-skeleton-wrapper';
+    wrap.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < n; i++) {
+      wrap.appendChild(createSkeletonCard());
+    }
+    container.appendChild(wrap);
+  }
+
+  function removeSkeletons(container) {
+    if (!container) return;
+    container.querySelectorAll(':scope > .m-skeleton-wrapper').forEach(function (w) {
+      w.parentNode && w.parentNode.removeChild(w);
+    });
+  }
+
+  // Heurística: tbody é considerado "carregando" se:
+  //   - não tem nenhum <tr> renderizado, OU
+  //   - só tem 1 row e ela contém texto tipo "Carregando" / "carregando"
+  function tbodyLooksLoading(tbody) {
+    if (!tbody) return false;
+    const rows = tbody.querySelectorAll(':scope > tr');
+    if (rows.length === 0) return true;
+    if (rows.length === 1) {
+      const txt = (rows[0].textContent || '').trim().toLowerCase();
+      if (txt.indexOf('carregando') !== -1) return true;
+    }
+    return false;
+  }
+
+  // Trigger: chamado quando o painel ativo muda. Pra cada table.admin__table
+  // do painel ativo, se o tbody parece carregando, mostra skeletons.
+  // Os skeletons ficam num wrapper irmão do .admin__table-wrap (pra não
+  // misturar com o tbody) — na verdade, dentro do .admin__table-wrap.
+  function maybeShowSkeletonsForActivePanel() {
+    if (!isMobile()) return;
+    const active = document.querySelector('.admin__panel.admin__panel--active');
+    if (!active) return;
+    const tables = active.querySelectorAll('table.admin__table');
+    tables.forEach(function (table) {
+      const tbody = table.querySelector('tbody');
+      if (!tbody) return;
+      const wrap = table.closest('.admin__table-wrap') || table.parentNode;
+      if (!wrap) return;
+      if (tbodyLooksLoading(tbody)) {
+        renderSkeletons(wrap, 5);
+      } else {
+        removeSkeletons(wrap);
+      }
+    });
+  }
+
+  // Observer dedicado: quando tbody recebe <tr>s, remove skeletons da wrap.
+  function setupSkeletonObserver() {
+    const obs = new MutationObserver(function (muts) {
+      if (!isMobile()) return;
+      muts.forEach(function (m) {
+        const target = m.target;
+        if (!(target instanceof HTMLElement)) return;
+        // Mudança em tbody -> reavaliar
+        if (target.tagName === 'TBODY' || (target.closest && target.closest('tbody'))) {
+          const tbody = target.tagName === 'TBODY' ? target : target.closest('tbody');
+          if (!tbody) return;
+          const table = tbody.closest('table.admin__table');
+          if (!table) return;
+          const wrap = table.closest('.admin__table-wrap') || table.parentNode;
+          if (!wrap) return;
+          if (tbodyLooksLoading(tbody)) {
+            renderSkeletons(wrap, 5);
+          } else {
+            removeSkeletons(wrap);
+          }
+        }
+      });
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ===========================================================
   // 6) Init
   // ===========================================================
   function init() {
@@ -505,6 +616,10 @@
     // Microanimações + haptics (etapa 5.1)
     setupHapticPause();
     setupModalEntryWatcher();
+
+    // Skeleton loading (etapa 5.2)
+    setupSkeletonObserver();
+    maybeShowSkeletonsForActivePanel();
   }
 
   if (document.readyState === 'loading') {
