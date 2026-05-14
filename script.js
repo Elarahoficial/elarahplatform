@@ -4383,12 +4383,28 @@ if (groupForm) {
       // Ativar:
       //   - URL: ?guest=1
       //   - DevTools: localStorage.setItem('elarahGuestCheckout','1')
+      // === CHECKOUT CONVIDADO — LIGADO POR PADRÃO (PR G) ===
+      // Sprint 1 / Item #1 do plano de conversão — maior impacto isolado.
+      // 'Confirm email' do Supabase está OFF, então o signUp client-side
+      // retorna session imediatamente e a pessoa segue pro pagamento sem
+      // precisar criar senha nem confirmar e-mail.
+      //
+      // Kill switch (caso precise desligar emergencialmente):
+      //   - URL: ?guest=0
+      //   - DevTools: localStorage.setItem('elarahGuestCheckout','0')
+      // Para forçar ligado em testes (override do kill switch):
+      //   - URL: ?guest=1
+      //   - DevTools: localStorage.setItem('elarahGuestCheckout','1')
       function guestCheckoutEnabled() {
         try {
+          // Kill switch tem precedência.
+          if ((location.search || '').indexOf('guest=0') !== -1) return false;
+          if (localStorage.getItem('elarahGuestCheckout') === '0') return false;
+          // Overrides explícitos.
           if ((location.search || '').indexOf('guest=1') !== -1) return true;
           if (localStorage.getItem('elarahGuestCheckout') === '1') return true;
         } catch (e) {}
-        return false;
+        return true;
       }
       const isGuestMode = !isUserLogged() && guestCheckoutEnabled();
 
