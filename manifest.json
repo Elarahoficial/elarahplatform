@@ -1,0 +1,26 @@
+{
+  "name": "Elarah Admin",
+  "short_name": "Elarah",
+  "description": "Painel administrativo da Elarah — plataforma de experiências autorais em SP.",
+  "start_url": "/admin-novo.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafaf7",
+  "theme_color": "#b07b3a",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
