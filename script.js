@@ -3987,6 +3987,9 @@ if (groupForm) {
       document.body.appendChild(root);
       document.body.style.overflow = 'hidden';
       root.classList.add('open');
+      // Description modal está visível agora — esconde o spinner
+      // pra não ficar com camada de blur "dupla" empilhada.
+      try { if (window.ElarahReserveSpinner) ElarahReserveSpinner.hide(); } catch (e) {}
 
       // ===== SCROLL HANDLER — collapsible hero =====
       // Ao rolar, diminui a altura do hero e aplica fade+scale na
@@ -4109,12 +4112,100 @@ if (groupForm) {
       try { continueBtn.focus({ preventScroll: true }); } catch (e) {}
     }
 
+    // ============================================================
+    // SPINNER INSTANTÂNEO NO CLIQUE DE "RESERVAR"
+    // ------------------------------------------------------------
+    // Sprint 1 / PR A do plano de conversão. Sem feedback visual no
+    // clique, a pessoa esperava 2-4s em silêncio enquanto o backend
+    // carregava dados e achava que o botão tinha quebrado.
+    //
+    // Overlay leve com spinner + texto. Aparece SÍNCRONO no clique
+    // (antes de qualquer await), some quando:
+    //   - description modal aparece no DOM (caso comum)
+    //   - startCheckout resolve (login modal, reservation modal, erro)
+    //   - timeout de segurança de 6s (defensivo, nunca deve ocorrer)
+    // ============================================================
+    function injectReserveSpinnerStyles() {
+      if (document.getElementById('elarah-reserve-spinner-styles')) return;
+      const style = document.createElement('style');
+      style.id = 'elarah-reserve-spinner-styles';
+      style.textContent =
+        '.elarah-reserve-spinner{' +
+          'position:fixed;inset:0;z-index:10001;' +
+          'display:flex;align-items:center;justify-content:center;' +
+          'background:rgba(250,246,240,0.78);backdrop-filter:blur(3px);' +
+          '-webkit-backdrop-filter:blur(3px);' +
+          'opacity:0;pointer-events:none;transition:opacity 160ms ease;' +
+          'font-family:"DM Sans",-apple-system,BlinkMacSystemFont,sans-serif;' +
+        '}' +
+        '.elarah-reserve-spinner.is-active{opacity:1;pointer-events:auto;}' +
+        '.elarah-reserve-spinner__box{' +
+          'display:flex;flex-direction:column;align-items:center;gap:14px;' +
+          'background:#fff;padding:24px 32px;border-radius:18px;' +
+          'box-shadow:0 14px 40px rgba(0,0,0,.14);' +
+          'animation:elarahReserveSpinFade 220ms ease;' +
+        '}' +
+        '.elarah-reserve-spinner__dot{' +
+          'width:34px;height:34px;' +
+          'border:3px solid rgba(240,160,94,.22);' +
+          'border-top-color:#f0a05e;border-radius:50%;' +
+          'animation:elarahReserveSpin 0.8s linear infinite;' +
+        '}' +
+        '.elarah-reserve-spinner__label{' +
+          'font-size:14px;color:#1a1a1a;font-weight:500;letter-spacing:.1px;' +
+        '}' +
+        '@keyframes elarahReserveSpin{to{transform:rotate(360deg);}}' +
+        '@keyframes elarahReserveSpinFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}';
+      document.head.appendChild(style);
+    }
+
+    let reserveSpinnerSafetyTimer = null;
+    function showReserveSpinner() {
+      try {
+        injectReserveSpinnerStyles();
+        let overlay = document.getElementById('elarah-reserve-spinner');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'elarah-reserve-spinner';
+          overlay.className = 'elarah-reserve-spinner';
+          overlay.setAttribute('role', 'status');
+          overlay.setAttribute('aria-live', 'polite');
+          overlay.innerHTML =
+            '<div class="elarah-reserve-spinner__box">' +
+              '<div class="elarah-reserve-spinner__dot" aria-hidden="true"></div>' +
+              '<div class="elarah-reserve-spinner__label">Preparando sua reserva…</div>' +
+            '</div>';
+          document.body.appendChild(overlay);
+        }
+        // Force reflow pra que a transição de opacity rode mesmo
+        // recém-criado o elemento.
+        void overlay.offsetWidth;
+        overlay.classList.add('is-active');
+        if (reserveSpinnerSafetyTimer) clearTimeout(reserveSpinnerSafetyTimer);
+        reserveSpinnerSafetyTimer = setTimeout(hideReserveSpinner, 6000);
+      } catch (e) { /* não pode quebrar o checkout */ }
+    }
+    function hideReserveSpinner() {
+      try {
+        const overlay = document.getElementById('elarah-reserve-spinner');
+        if (overlay) overlay.classList.remove('is-active');
+        if (reserveSpinnerSafetyTimer) {
+          clearTimeout(reserveSpinnerSafetyTimer);
+          reserveSpinnerSafetyTimer = null;
+        }
+      } catch (e) {}
+    }
+    // Exposto pra ser chamado pelos opener de modais (description,
+    // login, reservation) sem precisar de import.
+    window.ElarahReserveSpinner = { show: showReserveSpinner, hide: hideReserveSpinner };
+
     async function startCheckout(btn, opts) {
       opts = opts || {};
       const experienceId = btn.getAttribute('data-experience-id');
       const experienceNome = btn.getAttribute('data-experience-nome') || '';
 
       if (!experienceId) {
+        hideReserveSpinner();
         alert('Não conseguimos identificar essa experiência. Recarregue a página e tente novamente.');
         return;
       }
@@ -4264,11 +4355,19 @@ if (groupForm) {
       if (typeof e.stopImmediatePropagation === 'function') {
         e.stopImmediatePropagation();
       }
+      // Spinner síncrono — feedback visual instantâneo no clique.
+      // Some via finally + via hideReserveSpinner chamado pelos modais.
+      showReserveSpinner();
       // data-skip-description="true" → pula o modal de descrição
       // (usado pela campanha DDN — cliente já viu a página temática,
       // não precisa ver modal de descrição genérico antes do checkout).
       var skipDesc = btn.dataset && btn.dataset.skipDescription === 'true';
-      startCheckout(btn, skipDesc ? { skipDescription: true } : undefined);
+      var p = startCheckout(btn, skipDesc ? { skipDescription: true } : undefined);
+      if (p && typeof p.finally === 'function') {
+        p.finally(function () { setTimeout(hideReserveSpinner, 80); });
+      } else {
+        setTimeout(hideReserveSpinner, 200);
+      }
     }, true);
 
     // === Retomar checkout pendente após login ===
