@@ -4210,23 +4210,28 @@ if (groupForm) {
         return;
       }
 
-      // === [NEW] GATE DE DESCRIÇÃO ===
-      // Antes de qualquer outra coisa (antes do login, do tracking, do
-      // preço), mostra uma modal intermediária com a descrição completa
-      // da experiência — SE houver descrição cadastrada. Isso dá ao
-      // usuário contexto total antes de começar o fluxo de pagamento,
-      // melhorando conversão.
+      // === [SPRINT 1 / PR B] GATE DE DESCRIÇÃO DESLIGADO POR PADRÃO ===
+      // Antes: sempre mostrava uma modal intermediária com a descrição
+      // entre o clique em "Reservar" e o checkout. Adicionava um clique
+      // a mais e fricção pra quem JÁ leu a página de detalhe.
+      // Item #3 do Sprint 1 do plano de conversão (impacto +10% a +25%).
       //
-      // Skip quando:
-      //   - opts.skipDescription === true (resume após login já confirmou)
-      //   - experiência não tem descricao cadastrada (null/undefined/'')
-      //   - ElarahData indisponível ou falha ao buscar
-      //   - descricao contém só espaços em branco
-      if (!opts.skipDescription) {
+      // Código do gate fica intacto pra reverter rápido se necessário.
+      // Reativar via:
+      //   - URL: ?desc=1
+      //   - DevTools: localStorage.setItem('elarahDescGate','1')
+      //   - data-attribute no botão: data-force-description="true"
+      function descriptionGateEnabled() {
+        try {
+          if ((location.search || '').indexOf('desc=1') !== -1) return true;
+          if (localStorage.getItem('elarahDescGate') === '1') return true;
+          if (btn.dataset && btn.dataset.forceDescription === 'true') return true;
+        } catch (e) {}
+        return false;
+      }
+      if (!opts.skipDescription && descriptionGateEnabled()) {
         const proceed = await runDescriptionGate(experienceId, experienceNome, btn);
         if (!proceed) {
-          // Usuário fechou a modal sem continuar OU modal já estava
-          // aberta pra outra experiência — não damos sequência.
           return;
         }
         // Se modal retornou objeto com schedule, propaga pro btn pra
@@ -4238,7 +4243,6 @@ if (groupForm) {
           if (proceed.dataLabel) btn.dataset.dataLabel = proceed.dataLabel;
           if (proceed.slotId) btn.dataset.slotId = proceed.slotId;
         }
-        // Chegou aqui = usuário clicou "Continuar para pagamento".
       }
 
       // === GATE DE LOGIN OBRIGATÓRIO ===
