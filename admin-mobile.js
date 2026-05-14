@@ -946,6 +946,175 @@
   }
 
   // ===========================================================
+  // VIRTUALIZAÇÃO DE LISTAS LONGAS (etapa 6.1)
+  // -----------------------------------------------------------
+  // Pra listas mobile com >50 linhas, esconde tudo após N (batch=30)
+  // e usa IntersectionObserver no sentinel pra revelar mais. Reduz
+  // o custo de layout/paint em tabelas grandes (tipo prospects).
+  // ===========================================================
+
+  const VIRT_THRESHOLD = 50;
+  const VIRT_BATCH     = 30;
+  const VIRT_HIDDEN_ATTR = 'data-m-virt-hidden';
+  const VIRT_DONE_ATTR   = 'data-m-virt-applied';
+
+  function virtualizeList(tbody, threshold, batch) {
+    if (!tbody) return;
+    if (!isMobile()) return;
+    if (window.__elarahMobileNoVirt) return;
+    threshold = threshold || VIRT_THRESHOLD;
+    batch     = batch || VIRT_BATCH;
+    const rows = tbody.querySelectorAll(':scope > tr');
+    if (rows.length <= threshold) {
+      // Lista pequena: desfaz qualquer virt anterior
+      unvirtualize(tbody);
+      return;
+    }
+    if (tbody.getAttribute(VIRT_DONE_ATTR) === '1') {
+      // Já virtualizado: reaplica caso novas linhas tenham chegado
+      reapplyVirt(tbody, batch);
+      return;
+    }
+    tbody.setAttribute(VIRT_DONE_ATTR, '1');
+    // Esconde tudo a partir do índice `batch`
+    rows.forEach(function (tr, i) {
+      if (i >= batch) {
+        tr.style.display = 'none';
+        tr.setAttribute(VIRT_HIDDEN_ATTR, '1');
+      }
+    });
+    addOrUpdateSentinel(tbody, batch);
+  }
+
+  function reapplyVirt(tbody, batch) {
+    const rows = tbody.querySelectorAll(':scope > tr:not([' + VIRT_HIDDEN_ATTR + '])');
+    // Conta quantas já estão visíveis. Pra novas linhas, esconde se passou.
+    let visibleCount = 0;
+    tbody.querySelectorAll(':scope > tr').forEach(function (tr) {
+      if (tr.getAttribute(VIRT_HIDDEN_ATTR) === '1') return;
+      visibleCount++;
+    });
+    // Não mexe nas que já estão visíveis. Adiciona sentinel se ainda houver hidden.
+    addOrUpdateSentinel(tbody);
+  }
+
+  function unvirtualize(tbody) {
+    tbody.removeAttribute(VIRT_DONE_ATTR);
+    tbody.querySelectorAll(':scope > tr[' + VIRT_HIDDEN_ATTR + ']').forEach(function (tr) {
+      tr.style.display = '';
+      tr.removeAttribute(VIRT_HIDDEN_ATTR);
+    });
+    const sentinel = tbody.querySelector(':scope > tr.m-virt-sentinel');
+    if (sentinel && sentinel.__io) {
+      try { sentinel.__io.disconnect(); } catch (_) {}
+    }
+    if (sentinel) sentinel.remove();
+  }
+
+  function addOrUpdateSentinel(tbody, batch) {
+    batch = batch || VIRT_BATCH;
+    // Se ainda há linhas escondidas, garantimos um sentinel ao fim
+    const hidden = tbody.querySelectorAll(':scope > tr[' + VIRT_HIDDEN_ATTR + ']');
+    if (!hidden.length) {
+      const old = tbody.querySelector(':scope > tr.m-virt-sentinel');
+      if (old) {
+        if (old.__io) try { old.__io.disconnect(); } catch (_) {}
+        old.remove();
+      }
+      return;
+    }
+    let sentinel = tbody.querySelector(':scope > tr.m-virt-sentinel');
+    if (!sentinel) {
+      sentinel = document.createElement('tr');
+      sentinel.className = 'm-virt-sentinel';
+      sentinel.setAttribute('aria-hidden', 'true');
+      sentinel.style.cssText = 'height:1px;background:transparent;border:none;';
+      // td filho com colspan grande pra cobrir
+      const td = document.createElement('td');
+      td.setAttribute('colspan', '20');
+      td.style.cssText = 'padding:0;border:none;background:transparent;';
+      sentinel.appendChild(td);
+    }
+    // Move sentinel pra antes da primeira linha escondida
+    const firstHidden = hidden[0];
+    tbody.insertBefore(sentinel, firstHidden);
+
+    if (!sentinel.__io) {
+      const io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          // Revela o próximo batch
+          const stillHidden = tbody.querySelectorAll(':scope > tr[' + VIRT_HIDDEN_ATTR + ']');
+          for (let i = 0; i < batch && i < stillHidden.length; i++) {
+            stillHidden[i].style.display = '';
+            stillHidden[i].removeAttribute(VIRT_HIDDEN_ATTR);
+          }
+          // Re-posiciona sentinel
+          addOrUpdateSentinel(tbody, batch);
+        });
+      }, { rootMargin: '300px 0px' });
+      io.observe(sentinel);
+      sentinel.__io = io;
+    }
+  }
+
+  function scanVirtualize() {
+    if (!isMobile()) return;
+    if (window.__elarahMobileNoVirt) return;
+    const tbodies = document.querySelectorAll('table.admin__table tbody');
+    tbodies.forEach(function (tb) { virtualizeList(tb); });
+  }
+
+  function setupVirtualizeObserver() {
+    let t = null;
+    const obs = new MutationObserver(function (muts) {
+      if (!isMobile()) return;
+      if (window.__elarahMobileNoVirt) return;
+      let touchedTbody = null;
+      for (const m of muts) {
+        const target = m.target;
+        if (target && target.tagName === 'TBODY' && target.closest('table.admin__table')) {
+          touchedTbody = target;
+          break;
+        }
+        for (const n of m.addedNodes) {
+          if (!(n instanceof HTMLElement)) continue;
+          if (n.tagName === 'TR' && n.parentNode && n.parentNode.tagName === 'TBODY') {
+            touchedTbody = n.parentNode;
+            break;
+          }
+        }
+        if (touchedTbody) break;
+      }
+      if (!touchedTbody) return;
+      // Se foi mutation causada pelo próprio virtualize (sentinel sendo movido),
+      // ignora pra evitar loop. Sentinel tem classe m-virt-sentinel.
+      if (touchedTbody.getAttribute(VIRT_DONE_ATTR) === '1') {
+        // Re-aplica suave (debounce)
+        clearTimeout(t);
+        t = setTimeout(function () {
+          // Se o tbody foi RE-renderizado do zero pelo admin.js, o atributo
+          // pode persistir mas as linhas são novas — re-virtualizamos.
+          const stillHasHidden = touchedTbody.querySelector('[' + VIRT_HIDDEN_ATTR + ']');
+          if (!stillHasHidden) {
+            // Tbody novo: limpa marker e re-virtualiza
+            touchedTbody.removeAttribute(VIRT_DONE_ATTR);
+          }
+          virtualizeList(touchedTbody);
+        }, 80);
+        return;
+      }
+      clearTimeout(t);
+      t = setTimeout(function () { virtualizeList(touchedTbody); }, 80);
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Expor pra debug
+  window.elarahVirtualizeList = virtualizeList;
+  window.elarahScanVirtualize = scanVirtualize;
+
+  // ===========================================================
   // 6) Init
   // ===========================================================
   function init() {
@@ -991,6 +1160,10 @@
 
     // Pull-to-refresh (etapa 5.4)
     enablePullToRefresh(ptrRefreshHandler);
+
+    // Virtualização de listas longas (etapa 6.1)
+    scanVirtualize();
+    setupVirtualizeObserver();
   }
 
   if (document.readyState === 'loading') {
