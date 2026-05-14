@@ -976,6 +976,85 @@
   }
 }
 
+/* =============================================================
+   18) SWIPE ACTIONS EM CARDS (etapa 5.3)
+   -------------------------------------------------------------
+   Cards de prospects ganham swipe horizontal pra revelar ações
+   ("Editar" / "Promover"). Implementação CSS: o card recebe
+   translateX via JS; um container .m-swipe-actions fica atrás
+   (z-index 0) e revela conforme o card translada.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  /* Linhas de prospects ganham contexto pra swipe.
+     A própria tr serve como container relativo; as actions são
+     injetadas como filho posicionado absolutamente em right:0.
+     A tr inteira é traduzida (transform) — actions vão junto e
+     "saem do canto direito" da posição original. Pra ficarem
+     visíveis no swipe, o .admin__table-wrap precisa não clipar.
+     Alternativa segura: actions têm width 0 quando não revelado
+     e expandem quando o swipe passa do threshold. */
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled {
+    position: relative;
+    z-index: 1;
+    transition: transform 220ms ease-out;
+    will-change: transform;
+    touch-action: pan-y;
+    overflow: visible;
+  }
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled.is-swiping {
+    transition: none;
+  }
+
+  /* Actions ficam à direita, FORA da área visível do card original
+     (posicionadas em right: -120px). Quando o tr translada -120px
+     pra esquerda, elas entram no viewport (na posição que o tr
+     ocupava antes). */
+  .m-swipe-actions {
+    position: absolute;
+    top: 0;
+    right: -120px;
+    bottom: 0;
+    width: 120px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    pointer-events: none;
+    border-radius: 0 var(--m-radius) var(--m-radius) 0;
+    overflow: hidden;
+  }
+  /* Quando o card está revelado, as actions aceitam toque */
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled.is-revealed .m-swipe-actions {
+    pointer-events: auto;
+  }
+  .m-swipe-actions.is-revealed {
+    pointer-events: auto;
+  }
+  .m-swipe-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 100%;
+    border: none;
+    background: var(--m-ink-2);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    gap: 3px;
+    padding: 6px 4px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .m-swipe-action svg { width: 18px; height: 18px; }
+  .m-swipe-action--edit    { background: #5a5650; }
+  .m-swipe-action--promote { background: var(--m-accent); }
+  .m-swipe-action:active   { filter: brightness(0.9); }
+}
+
 /* prefers-reduced-motion: shimmer desligado (background sólido) */
 @media (prefers-reduced-motion: reduce) {
   .admin__sidebar { transition: none !important; }
@@ -986,6 +1065,9 @@
   .m-skeleton {
     animation: none !important;
     background: var(--m-line) !important;
+  }
+  #panel-prospects .admin__table tbody tr.m-swipe-enabled {
+    transition: none !important;
   }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 768px) {

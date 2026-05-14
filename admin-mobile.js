@@ -583,6 +583,226 @@
   }
 
   // ===========================================================
+  // SWIPE ACTIONS EM CARDS (etapa 5.3)
+  // -----------------------------------------------------------
+  // Cards de prospects ganham swipe esquerda pra revelar ações.
+  // Aplicado SÓ em linhas que têm botão com data-prospect-id —
+  // section headers e linhas sem id são ignorados.
+  // ===========================================================
+
+  const SWIPE_THRESHOLD = 60;     // px pra considerar revelado
+  const SWIPE_MAX       = 120;    // distância em que actions ficam
+  let _openSwipeRow = null;       // referência ao tr atualmente aberto
+
+  function closeOpenSwipe() {
+    if (!_openSwipeRow) return;
+    const tr = _openSwipeRow;
+    tr.classList.remove('is-revealed');
+    tr.classList.remove('is-swiping');
+    tr.style.transform = '';
+    _openSwipeRow = null;
+  }
+
+  function findProspectIdInRow(tr) {
+    if (!tr) return null;
+    const btn = tr.querySelector('[data-prospect-id]');
+    if (!btn) return null;
+    return btn.getAttribute('data-prospect-id');
+  }
+
+  function findRowActionBtn(tr, action) {
+    if (!tr) return null;
+    return tr.querySelector('[data-prospect-action="' + action + '"][data-prospect-id]');
+  }
+
+  function buildSwipeActions(tr) {
+    // Detecta quais ações estão disponíveis pra esta linha
+    const editBtn = findRowActionBtn(tr, 'edit');
+    if (!editBtn) return null;  // sem id/edit, não monta swipe
+
+    const wrap = document.createElement('div');
+    wrap.className = 'm-swipe-actions';
+    wrap.setAttribute('aria-hidden', 'true');
+
+    // Action: Editar
+    const editAction = document.createElement('button');
+    editAction.type = 'button';
+    editAction.className = 'm-swipe-action m-swipe-action--edit';
+    editAction.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+      '<span>Editar</span>';
+    editAction.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      hapticCommit();
+      closeOpenSwipe();
+      // Dispara o click original do botão real
+      editBtn.click();
+    });
+    wrap.appendChild(editAction);
+
+    // Action: Promover (só se botão promote existir — promote é dinâmico
+    // dependendo do status. Se não tiver, pula).
+    const promoteBtn = findRowActionBtn(tr, 'promote') || tr.querySelector('button[data-prospect-action="promote"]');
+    if (promoteBtn) {
+      const promoteAction = document.createElement('button');
+      promoteAction.type = 'button';
+      promoteAction.className = 'm-swipe-action m-swipe-action--promote';
+      promoteAction.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 15 8.5 22 9.3 17 14l1.5 7L12 17.5 5.5 21 7 14 2 9.3 9 8.5z"/></svg>' +
+        '<span>Promover</span>';
+      promoteAction.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        hapticCommit();
+        closeOpenSwipe();
+        promoteBtn.click();
+      });
+      wrap.appendChild(promoteAction);
+    }
+
+    return wrap;
+  }
+
+  function enableSwipeForRow(tr) {
+    if (!tr || tr.classList.contains('m-swipe-enabled')) return;
+    // Pula linhas que claramente não são prospects (section header tem colspan)
+    const tds = tr.querySelectorAll(':scope > td');
+    if (tds.length === 1 && tds[0].getAttribute('colspan')) return;
+    // TODO: se não conseguir achar prospect id, NÃO habilita swipe
+    const pid = findProspectIdInRow(tr);
+    if (!pid) return;
+
+    const actions = buildSwipeActions(tr);
+    if (!actions) return;
+    tr.classList.add('m-swipe-enabled');
+    tr.appendChild(actions);
+
+    // Estado por-row do swipe
+    const state = { startX: 0, startY: 0, dx: 0, dy: 0, active: false, decided: false, isSwipe: false };
+
+    tr.addEventListener('touchstart', function (e) {
+      if (!isMobile()) return;
+      // Fecha qualquer card aberto que não seja este
+      if (_openSwipeRow && _openSwipeRow !== tr) {
+        closeOpenSwipe();
+      }
+      const t = e.touches[0];
+      state.startX = t.clientX;
+      state.startY = t.clientY;
+      state.dx = 0;
+      state.dy = 0;
+      state.active = true;
+      state.decided = false;
+      state.isSwipe = false;
+      tr.classList.add('is-swiping');
+    }, { passive: true });
+
+    tr.addEventListener('touchmove', function (e) {
+      if (!state.active) return;
+      const t = e.touches[0];
+      state.dx = t.clientX - state.startX;
+      state.dy = t.clientY - state.startY;
+      // Decide direção apenas 1 vez por gesture
+      if (!state.decided) {
+        if (Math.abs(state.dx) < 6 && Math.abs(state.dy) < 6) return;
+        if (Math.abs(state.dy) > Math.abs(state.dx)) {
+          // Scroll vertical: cancela o swipe
+          state.active = false;
+          tr.classList.remove('is-swiping');
+          return;
+        }
+        state.decided = true;
+        state.isSwipe = true;
+      }
+      if (!state.isSwipe) return;
+      // Limita a -SWIPE_MAX e ignora swipe pra direita quando fechado
+      let translate = state.dx;
+      if (translate > 0) translate = 0;
+      if (translate < -SWIPE_MAX) translate = -SWIPE_MAX;
+      tr.style.transform = 'translateX(' + translate + 'px)';
+    }, { passive: true });
+
+    tr.addEventListener('touchend', function () {
+      if (!state.active) return;
+      state.active = false;
+      tr.classList.remove('is-swiping');
+      if (!state.isSwipe) return;
+      if (state.dx < -SWIPE_THRESHOLD) {
+        // Revela
+        tr.style.transform = 'translateX(-' + SWIPE_MAX + 'px)';
+        tr.classList.add('is-revealed');
+        _openSwipeRow = tr;
+        hapticTap();
+      } else {
+        // Volta
+        tr.style.transform = '';
+        tr.classList.remove('is-revealed');
+        if (_openSwipeRow === tr) _openSwipeRow = null;
+      }
+    }, { passive: true });
+
+    tr.addEventListener('touchcancel', function () {
+      state.active = false;
+      tr.classList.remove('is-swiping');
+      tr.style.transform = '';
+      tr.classList.remove('is-revealed');
+      if (_openSwipeRow === tr) _openSwipeRow = null;
+    }, { passive: true });
+  }
+
+  // Aplica swipe em todas as rows de prospects no DOM
+  function scanProspectSwipe() {
+    if (!isMobile()) return;
+    const panel = document.getElementById('panel-prospects');
+    if (!panel) return;
+    const rows = panel.querySelectorAll('table.admin__table tbody > tr');
+    rows.forEach(enableSwipeForRow);
+  }
+
+  // Tap fora do card aberto: fecha
+  function setupSwipeOutsideClose() {
+    document.addEventListener('click', function (e) {
+      if (!_openSwipeRow) return;
+      const tr = _openSwipeRow;
+      if (tr.contains(e.target)) return;
+      closeOpenSwipe();
+    }, true);
+    // Touch também (alguns browsers não disparam click em scroll)
+    document.addEventListener('touchstart', function (e) {
+      if (!_openSwipeRow) return;
+      const tr = _openSwipeRow;
+      if (tr.contains(e.target)) return;
+      closeOpenSwipe();
+    }, { passive: true });
+  }
+
+  function setupSwipeObserver() {
+    const obs = new MutationObserver(function (muts) {
+      if (!isMobile()) return;
+      let needsScan = false;
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (!(n instanceof HTMLElement)) continue;
+          if (n.tagName === 'TR' && n.closest('#panel-prospects')) {
+            needsScan = true;
+            break;
+          }
+          if (n.querySelector && n.querySelector('#panel-prospects tbody tr')) {
+            needsScan = true;
+            break;
+          }
+        }
+        if (needsScan) break;
+      }
+      if (needsScan) {
+        // Debounce leve
+        clearTimeout(setupSwipeObserver._t);
+        setupSwipeObserver._t = setTimeout(scanProspectSwipe, 80);
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ===========================================================
   // 6) Init
   // ===========================================================
   function init() {
@@ -620,6 +840,11 @@
     // Skeleton loading (etapa 5.2)
     setupSkeletonObserver();
     maybeShowSkeletonsForActivePanel();
+
+    // Swipe actions em cards de prospects (etapa 5.3)
+    scanProspectSwipe();
+    setupSwipeObserver();
+    setupSwipeOutsideClose();
   }
 
   if (document.readyState === 'loading') {
