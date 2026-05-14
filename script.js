@@ -4299,10 +4299,10 @@ if (groupForm) {
 
     let reserveSpinnerSafetyTimer = null;
     let reserveSpinnerShownAt = 0;
-    // Mínimo de exibição do spinner em ms. Aumentado de "o mais rápido
-    // possível" pra 2s a pedido da Eli — dá tempo do cliente LER
-    // "Preparando sua reserva…" e cria sensação de ritual premium.
-    const RESERVE_SPINNER_MIN_MS = 2000;
+    // Mínimo de exibição do spinner em ms. Ajustado pra 1,5s — balanço
+    // entre dar tempo do cliente LER "Preparando sua reserva…" sem
+    // tornar a espera incômoda (2s pareceu lento na primeira iteração).
+    const RESERVE_SPINNER_MIN_MS = 1500;
     function showReserveSpinner() {
       try {
         injectReserveSpinnerStyles();
