@@ -7,6 +7,7 @@
 -- recente.
 --
 -- O QUE ESSE ARQUIVO INCLUI (em ordem):
+--   0) PRÉ-CLEANUP ......................... drop blindado de RPCs
 --   1) elarah_crm_prospects.sql ............ tabelas + RPCs base
 --      ↳ public.prospects, prospect_interactions, prospect_templates
 --      ↳ RPC promote_prospect_to_fornecedor, log_prospect_interaction
@@ -24,12 +25,12 @@
 --   - Índices usam CREATE INDEX IF NOT EXISTS
 --   - Policies usam DROP POLICY IF EXISTS antes do CREATE
 --   - Seeds usam INSERT ... WHERE NOT EXISTS pelo nome
---   - RPCs usam DROP FUNCTION IF EXISTS + CREATE OR REPLACE
---     (DROP necessário porque versões posteriores mudam o shape
---      do RETURNS TABLE — Postgres não aceita REPLACE nesse caso)
+--   - RPCs são dropadas no BLOCO 0 antes dos CREATEs
 --
--- Rode quantas vezes quiser. Não destrói dados existentes nem
--- sobrescreve templates editados manualmente pelo admin.
+-- Rode quantas vezes quiser. Não destrói dados existentes (linhas
+-- de prospects/interactions/templates) nem sobrescreve templates
+-- editados manualmente pelo admin. As funções (RPCs) sim são
+-- recriadas a cada execução.
 --
 -- DEPOIS DE RODAR ESSE SQL:
 --   1) Abra o admin → aba "Prospecção"
@@ -38,6 +39,35 @@
 --   4) Os novos templates de primeiro contato (WhatsApp/DM/E-mail)
 --      aparecem no dropdown do modal de timeline de cada prospect.
 -- =============================================================
+
+
+-- =============================================================
+-- BLOCO 0/5 — PRÉ-CLEANUP de RPCs (drop blindado)
+-- -------------------------------------------------------------
+-- As funções abaixo evoluíram o RETURNS TABLE entre versões e o
+-- Postgres não aceita CREATE OR REPLACE quando o shape de retorno
+-- muda. Esse bloco dropa QUALQUER variante existente dessas
+-- funções (qualquer assinatura) antes que os blocos seguintes
+-- recriem na versão final. Sem isso, o release quebra com:
+--   ERROR 42P13: cannot change return type of existing function
+-- =============================================================
+do $$
+declare r record;
+begin
+  for r in
+    select format('drop function %s cascade', p.oid::regprocedure) as stmt
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in (
+         'promote_prospect_to_fornecedor',
+         'find_matching_fornecedor',
+         'find_prospect_matches'
+       )
+  loop
+    execute r.stmt;
+  end loop;
+end$$;
 
 
 -- =============================================================
