@@ -1055,6 +1055,48 @@
   .m-swipe-action:active   { filter: brightness(0.9); }
 }
 
+/* =============================================================
+   19) PULL-TO-REFRESH (etapa 5.4)
+   -------------------------------------------------------------
+   Indicador flutuante no topo da viewport que aparece quando o
+   usuário puxa pra baixo a partir do topo da página.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  .m-ptr {
+    position: fixed;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--m-surface);
+    box-shadow: var(--m-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9995;
+    transition: top var(--m-trans);
+    pointer-events: none;
+  }
+  .m-ptr.is-pulling {
+    top: 20px;
+  }
+  .m-ptr svg {
+    width: 22px;
+    height: 22px;
+    color: var(--m-accent);
+    transition: transform var(--m-trans);
+  }
+  .m-ptr.is-refreshing svg {
+    animation: m-spin 0.8s linear infinite;
+  }
+  @keyframes m-spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
 /* prefers-reduced-motion: shimmer desligado (background sólido) */
 @media (prefers-reduced-motion: reduce) {
   .admin__sidebar { transition: none !important; }
@@ -1069,6 +1111,8 @@
   #panel-prospects .admin__table tbody tr.m-swipe-enabled {
     transition: none !important;
   }
+  .m-ptr { transition: none !important; }
+  .m-ptr.is-refreshing svg { animation: none !important; }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 768px) {
   .admin__main button:active,

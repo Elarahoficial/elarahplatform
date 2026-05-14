@@ -803,6 +803,149 @@
   }
 
   // ===========================================================
+  // PULL-TO-REFRESH (etapa 5.4)
+  // -----------------------------------------------------------
+  // Indicador flutuante que aparece quando o usuário puxa pra
+  // baixo no topo da página. Soltar passando do threshold dispara
+  // window.location.reload() (não há função global de reload
+  // exposta pelo admin.js — TODO se algum dia for criada).
+  // ===========================================================
+
+  const PTR_THRESHOLD = 60;
+  const PTR_MAX       = 80;
+
+  function ensurePtrIndicator() {
+    let ptr = document.getElementById('m-ptr');
+    if (ptr) return ptr;
+    ptr = document.createElement('div');
+    ptr.id = 'm-ptr';
+    ptr.className = 'm-ptr';
+    ptr.setAttribute('aria-hidden', 'true');
+    ptr.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>' +
+        '<path d="M3 3v5h5"/>' +
+        '<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>' +
+        '<path d="M16 16h5v5"/>' +
+      '</svg>';
+    document.body.appendChild(ptr);
+    return ptr;
+  }
+
+  function enablePullToRefresh(onRefresh) {
+    const ptr = ensurePtrIndicator();
+    const state = {
+      startY: 0,
+      dy: 0,
+      active: false,
+      decided: false,
+      isPull: false,
+      refreshing: false
+    };
+
+    function atScrollTop() {
+      return (window.scrollY || window.pageYOffset || 0) <= 0;
+    }
+
+    document.addEventListener('touchstart', function (e) {
+      if (!isMobile()) return;
+      if (state.refreshing) return;
+      if (!atScrollTop()) return;
+      // Não interfere se touch começa num card com swipe aberto
+      if (_openSwipeRow && _openSwipeRow.contains(e.target)) return;
+      const t = e.touches[0];
+      state.startY = t.clientY;
+      state.dy = 0;
+      state.active = true;
+      state.decided = false;
+      state.isPull = false;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function (e) {
+      if (!state.active) return;
+      if (state.refreshing) return;
+      const t = e.touches[0];
+      state.dy = t.clientY - state.startY;
+      if (!state.decided) {
+        if (state.dy < 8) return;  // ainda não decidiu direção
+        // Só ativa pull se estamos no topo e movimento é descendente
+        if (!atScrollTop()) {
+          state.active = false;
+          return;
+        }
+        state.decided = true;
+        state.isPull = true;
+      }
+      if (!state.isPull) return;
+      const dragged = Math.min(state.dy * 0.5, PTR_MAX);
+      if (dragged > 0) {
+        ptr.classList.add('is-pulling');
+        ptr.style.top = (20 + (dragged - PTR_THRESHOLD)) + 'px';
+        if (dragged < PTR_THRESHOLD) {
+          ptr.style.top = (-60 + dragged) + 'px';
+        }
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function () {
+      if (!state.active) return;
+      state.active = false;
+      if (!state.isPull) return;
+      const dragged = Math.min(state.dy * 0.5, PTR_MAX);
+      if (dragged >= PTR_THRESHOLD) {
+        // Dispara refresh
+        ptr.classList.add('is-pulling');
+        ptr.classList.add('is-refreshing');
+        ptr.style.top = '';  // volta pra "20px" da classe
+        state.refreshing = true;
+        hapticCommit();
+        // Pequeno delay pra usuário ver o spinner
+        setTimeout(function () {
+          try { onRefresh(); }
+          catch (_) { window.location.reload(); }
+        }, 250);
+      } else {
+        // Cancela
+        ptr.classList.remove('is-pulling');
+        ptr.style.top = '';
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchcancel', function () {
+      state.active = false;
+      if (state.refreshing) return;
+      ptr.classList.remove('is-pulling');
+      ptr.style.top = '';
+    }, { passive: true });
+  }
+
+  // Função de refresh: tenta achar helper global; senão reload.
+  function ptrRefreshHandler() {
+    // Procura função global custom (futura)
+    const candidates = ['reloadProspects', 'fetchProspects', 'refreshAdmin'];
+    for (const name of candidates) {
+      if (typeof window[name] === 'function') {
+        try {
+          window[name]();
+          // Limpa indicador depois de 800ms (não temos await pra terminar)
+          setTimeout(hidePtr, 800);
+          return;
+        } catch (_) { /* tenta próximo */ }
+      }
+    }
+    // Fallback: reload da página
+    window.location.reload();
+  }
+
+  function hidePtr() {
+    const ptr = document.getElementById('m-ptr');
+    if (!ptr) return;
+    ptr.classList.remove('is-refreshing');
+    ptr.classList.remove('is-pulling');
+    ptr.style.top = '';
+  }
+
+  // ===========================================================
   // 6) Init
   // ===========================================================
   function init() {
@@ -845,6 +988,9 @@
     scanProspectSwipe();
     setupSwipeObserver();
     setupSwipeOutsideClose();
+
+    // Pull-to-refresh (etapa 5.4)
+    enablePullToRefresh(ptrRefreshHandler);
   }
 
   if (document.readyState === 'loading') {
