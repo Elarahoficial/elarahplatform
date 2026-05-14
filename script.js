@@ -1783,6 +1783,9 @@ if (groupForm) {
     }
 
     function openLoginModal(msg) {
+      // Esconde o spinner do clique de Reservar — mesmo motivo do que está
+      // em openReservationModal: transição limpa quando o modal de login abre.
+      try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (e) {}
       try {
         if (typeof ElarahAuth !== 'undefined' && ElarahAuth && typeof ElarahAuth.openModal === 'function') {
           ElarahAuth.openModal('login', msg || 'Faça login para concluir sua reserva');
@@ -2293,6 +2296,12 @@ if (groupForm) {
     }
 
     function openReservationModal(ctx) {
+      // Esconde o spinner do clique de Reservar IMEDIATAMENTE quando o
+      // modal abre — antes era escondido com 80ms de atraso no finally
+      // do startCheckout, o que causava o spinner aparecer sobreposto
+      // ao modal por um piscar. Agora a transição é limpa: modal abriu
+      // = spinner some.
+      try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (e) {}
       const root = buildReservationModal();
       currentReservationCtx = ctx;
       root.querySelector('#erm-exp').textContent = ctx.experienceNome || 'Experiência';
