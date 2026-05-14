@@ -853,9 +853,97 @@
 
 
 /* =============================================================
-   ACESSIBILIDADE — respeita preferência de redução de movimento
+   16) MICROANIMAÇÕES E FEEDBACK TÁTIL (etapa 5.1)
+   -------------------------------------------------------------
+   Active states padronizados, ripple opcional, transição de
+   troca de painel e animação de entrada de modais.
    ============================================================= */
+@media (max-width: 768px) {
+
+  /* Active scale uniforme em todos elementos interativos.
+     Sobrescreve os spots ad-hoc que já tinham scale customizado. */
+  .admin__main button:active,
+  .admin__modal button:active,
+  .admin__nav-item:active,
+  .admin__filter-pill:active,
+  .m-bn-item:active,
+  .m-fab:active,
+  a[role="button"]:active,
+  [data-touchable]:active {
+    transform: scale(0.97);
+    transition: transform 100ms ease-out;
+  }
+
+  /* Cards têm scale menos agressivo (são maiores) */
+  .admin__table tbody tr:active,
+  .m-card:active {
+    transform: scale(0.99);
+    transition: transform 100ms ease-out;
+  }
+
+  /* Ripple CSS-only — radial gradient que aparece no :active.
+     Pra usar, basta dar a classe .m-ripple no elemento. */
+  .m-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  .m-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(176, 123, 58, 0.20) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 400ms ease-out;
+    pointer-events: none;
+  }
+  .m-ripple:active::after {
+    opacity: 1;
+    transition: opacity 50ms ease-out;
+  }
+
+  /* Page transition: fade-in suave quando troca de painel.
+     Animation é re-disparada pela classe .is-entering aplicada
+     pelo JS no painel que acaba de virar ativo. */
+  @keyframes m-panel-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .admin__panel.admin__panel--active.is-entering {
+    animation: m-panel-in 200ms ease-out;
+  }
+
+  /* Modal entry animation: slide-up 30px + fade.
+     Aplicada via classe .is-open colocada pelo JS quando o modal
+     vira display:flex. O inner do modal faz o movimento. */
+  @keyframes m-modal-in {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .admin__modal.is-open > div {
+    animation: m-modal-in 220ms ease-out;
+  }
+}
+
+/* prefers-reduced-motion: desliga tudo */
 @media (prefers-reduced-motion: reduce) {
   .admin__sidebar { transition: none !important; }
   .admin-mobile-backdrop { animation: none !important; }
+  .admin__panel.admin__panel--active.is-entering { animation: none !important; }
+  .admin__modal.is-open > div { animation: none !important; }
+  .m-ripple::after { transition: none !important; }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 768px) {
+  .admin__main button:active,
+  .admin__modal button:active,
+  .admin__nav-item:active,
+  .admin__filter-pill:active,
+  .m-bn-item:active,
+  .m-fab:active,
+  a[role="button"]:active,
+  [data-touchable]:active,
+  .admin__table tbody tr:active,
+  .m-card:active {
+    transform: none !important;
+    transition: none !important;
+  }
 }

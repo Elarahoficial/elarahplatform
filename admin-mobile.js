@@ -81,6 +81,7 @@
     if (!item) return;
     // No mobile, fechar o drawer ao selecionar uma seção
     if (window.matchMedia('(max-width: 768px)').matches) {
+      hapticTap();
       closeDrawer();
     }
   }
@@ -135,6 +136,7 @@
   function onBottomNavClick(e) {
     const item = e.target.closest('.m-bn-item');
     if (!item) return;
+    hapticTap();
     const panel  = item.getAttribute('data-panel');
     const action = item.getAttribute('data-action');
 
@@ -167,6 +169,8 @@
     });
     // FAB também depende do painel ativo
     syncFab();
+    // Anima a entrada do painel ativo (etapa 5.1)
+    applyPanelEnterAnim();
   }
 
   // Hide-on-scroll com rAF throttle
@@ -250,6 +254,7 @@
   }
 
   function onFabClick() {
+    hapticTap();
     const key = getActivePanelKey();
     const cfg = FAB_MAP[key];
     if (!cfg) return;
@@ -355,6 +360,118 @@
   }
 
   // ===========================================================
+  // MICROANIMAÇÕES E FEEDBACK TÁTIL (etapa 5.1)
+  // -----------------------------------------------------------
+  // Haptics: vibration leve (10ms) pra taps, médio (20ms) pra
+  // ações de commit (salvar/promover/etc). Wrapper try/catch
+  // porque API é instável em alguns browsers.
+  // Pausa quando a aba está oculta pra não vibrar em background.
+  // ===========================================================
+
+  let _hapticsPaused = false;
+
+  function hapticTap() {
+    if (_hapticsPaused) return;
+    if (!isMobile()) return;
+    try {
+      if (navigator && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(10);
+      }
+    } catch (_) { /* silencioso */ }
+  }
+
+  function hapticCommit() {
+    if (_hapticsPaused) return;
+    if (!isMobile()) return;
+    try {
+      if (navigator && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(20);
+      }
+    } catch (_) { /* silencioso */ }
+  }
+
+  // Expor pra reuso ad-hoc
+  window.elarahHapticTap = hapticTap;
+  window.elarahHapticCommit = hapticCommit;
+
+  function setupHapticPause() {
+    document.addEventListener('visibilitychange', function () {
+      _hapticsPaused = document.hidden;
+    });
+  }
+
+  // -----------------------------------------------------------
+  // Transição de painel: ao trocar a aba ativa, aplica .is-entering
+  // no painel que acabou de virar visível pra disparar o fade-in.
+  // -----------------------------------------------------------
+  let _lastActivePanelId = null;
+  function applyPanelEnterAnim() {
+    if (!isMobile()) return;
+    const active = document.querySelector('.admin__panel.admin__panel--active');
+    if (!active) return;
+    if (_lastActivePanelId === active.id) return;
+    _lastActivePanelId = active.id;
+    // Reaplica a classe pra re-disparar a animação CSS
+    active.classList.remove('is-entering');
+    // force reflow
+    // eslint-disable-next-line no-unused-expressions
+    void active.offsetWidth;
+    active.classList.add('is-entering');
+    // Limpa depois pra não acumular
+    setTimeout(function () {
+      active.classList.remove('is-entering');
+    }, 260);
+  }
+
+  // -----------------------------------------------------------
+  // Modal entry: detecta quando .admin__modal vira display:flex
+  // e aplica .is-open pra disparar slide-up.
+  // -----------------------------------------------------------
+  function setupModalEntryWatcher() {
+    const obs = new MutationObserver(function (muts) {
+      if (!isMobile()) return;
+      muts.forEach(function (m) {
+        if (m.type !== 'attributes') return;
+        const el = m.target;
+        if (!(el instanceof HTMLElement)) return;
+        if (!el.classList || !el.classList.contains('admin__modal')) return;
+        const styleAttr = el.getAttribute('style') || '';
+        const visible = /display\s*:\s*flex/i.test(styleAttr);
+        if (visible && !el.classList.contains('is-open')) {
+          el.classList.add('is-open');
+        } else if (!visible && el.classList.contains('is-open')) {
+          el.classList.remove('is-open');
+        }
+      });
+    });
+    // Observa só os modais existentes; novos modais virão via outro observer
+    // mas é raro criar modal em runtime — observamos body como fallback leve.
+    document.querySelectorAll('.admin__modal').forEach(function (m) {
+      obs.observe(m, { attributes: true, attributeFilter: ['style'] });
+      // Estado inicial
+      const styleAttr = m.getAttribute('style') || '';
+      if (/display\s*:\s*flex/i.test(styleAttr)) m.classList.add('is-open');
+    });
+    // Watcher pra modais adicionados depois
+    const bodyObs = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        m.addedNodes && m.addedNodes.forEach(function (n) {
+          if (!(n instanceof HTMLElement)) return;
+          if (n.classList && n.classList.contains('admin__modal')) {
+            obs.observe(n, { attributes: true, attributeFilter: ['style'] });
+          }
+          if (n.querySelectorAll) {
+            n.querySelectorAll('.admin__modal').forEach(function (sub) {
+              obs.observe(sub, { attributes: true, attributeFilter: ['style'] });
+            });
+          }
+        });
+      });
+    });
+    bodyObs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ===========================================================
   // 6) Init
   // ===========================================================
   function init() {
@@ -384,6 +501,10 @@
     const fab = getFab();
     if (fab) fab.addEventListener('click', onFabClick);
     syncFab();
+
+    // Microanimações + haptics (etapa 5.1)
+    setupHapticPause();
+    setupModalEntryWatcher();
   }
 
   if (document.readyState === 'loading') {
