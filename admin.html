@@ -101,6 +101,15 @@
         <span>Calendário Editorial</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="captacao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+        </svg>
+        <span>Captação</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="users">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -2164,6 +2173,307 @@
     </div>
 
     <!-- =========================================================
+         CAPTAÇÃO — Growth OS: áreas, projetos, tarefas e KPIs
+         ========================================================= -->
+    <div class="admin__panel" id="panel-captacao">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Captação de Clientes</h1>
+        <p class="admin__page-subtitle">Sistema operacional de growth — áreas, projetos, tarefas e KPIs de aquisição.</p>
+      </div>
+
+      <!-- KPIs -->
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:#888;margin:0 0 12px;font-weight:700;">Metas trimestrais</h3>
+        <div id="cap-kpis" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:12px;">
+          <p style="grid-column:1/-1;color:#888;font-style:italic;padding:20px;text-align:center;">Carregando…</p>
+        </div>
+      </div>
+
+      <!-- Filtros + ações -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+        <div id="cap-areas-filtros" style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="cap-area-btn cap-area-btn--active" data-area="">Todas</button>
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;align-items:center;">
+          <select id="cap-filtro-horizonte" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
+            <option value="">Todos horizontes</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mês</option>
+            <option value="trimestre">Trimestre</option>
+          </select>
+          <select id="cap-filtro-status" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
+            <option value="abertos">Em aberto</option>
+            <option value="todos">Todos</option>
+            <option value="pendente">Pendente</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="concluido">Concluídos</option>
+            <option value="pausado">Pausados</option>
+          </select>
+          <button type="button" id="cap-add-btn"
+                  style="padding:9px 16px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;">+ Nova tarefa</button>
+        </div>
+      </div>
+
+      <div id="cap-stats" style="margin-bottom:14px;color:#666;font-size:.85rem;"></div>
+
+      <div id="cap-tasks-list" style="display:flex;flex-direction:column;gap:10px;">
+        <p style="color:#888;font-style:italic;padding:40px;text-align:center;">Carregando tarefas…</p>
+      </div>
+    </div>
+
+    <style>
+      .cap-area-btn {
+        padding: 8px 14px;
+        border: 1.5px solid #ddd;
+        background: #fff;
+        border-radius: 999px;
+        font-family: inherit;
+        font-size: .82rem;
+        cursor: pointer;
+        color: #555;
+        transition: all .15s;
+        font-weight: 500;
+      }
+      .cap-area-btn:hover { border-color: #aaa; }
+      .cap-area-btn--active {
+        background: #1a1a1a;
+        border-color: #1a1a1a;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .cap-kpi-card {
+        background: #fff;
+        border: 1px solid #ececec;
+        border-radius: 12px;
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform .15s, box-shadow .15s;
+      }
+      .cap-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      }
+      .cap-kpi-bar {
+        position: absolute; top:0; left:0; width: 4px; height:100%;
+      }
+      .cap-kpi-nome {
+        font-size: .72rem; letter-spacing:.06em; text-transform:uppercase;
+        color: #888; font-weight: 700; margin-bottom: 8px;
+      }
+      .cap-kpi-valor {
+        font-size: 1.6rem; font-weight: 700; color: #1a1a1a; line-height: 1;
+      }
+      .cap-kpi-meta {
+        font-size: .75rem; color: #888; margin-top: 6px;
+      }
+
+      .cap-task {
+        background: #fff;
+        border: 1px solid #ececec;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        transition: border-color .15s;
+      }
+      .cap-task:hover { border-color: #d4d4d4; }
+      .cap-task--concluido { opacity: .55; }
+      .cap-task--concluido .cap-task-titulo { text-decoration: line-through; }
+
+      .cap-task-check {
+        flex-shrink: 0;
+        width: 22px; height: 22px;
+        border: 2px solid #d4d4d4;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        margin-top: 2px;
+        background: #fff;
+        transition: all .15s;
+      }
+      .cap-task-check:hover { border-color: #1a8a4a; }
+      .cap-task-check--done {
+        background: #1a8a4a;
+        border-color: #1a8a4a;
+        color: #fff;
+      }
+      .cap-task-body { flex: 1; min-width: 0; }
+      .cap-task-titulo {
+        font-size: .95rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+        cursor: pointer;
+      }
+      .cap-task-titulo:hover { color: #0a66c2; }
+      .cap-task-desc {
+        font-size: .82rem;
+        color: #666;
+        line-height: 1.4;
+        margin-bottom: 8px;
+      }
+      .cap-task-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .cap-tag {
+        font-size: .68rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+      .cap-tag--area    { background: #f5efe7; color: #6b4520; }
+      .cap-tag--alta    { background: #fce8e6; color: #c0392b; }
+      .cap-tag--media   { background: #fff4e0; color: #a4663b; }
+      .cap-tag--baixa   { background: #f5f5f5; color: #888; }
+      .cap-tag--semana  { background: #fce8e6; color: #c0392b; }
+      .cap-tag--mes     { background: #fff4e0; color: #a4663b; }
+      .cap-tag--trimestre { background: #e0e9f8; color: #0a66c2; }
+      .cap-tag--freq    { background: #f0e6fa; color: #6b3aa0; }
+      .cap-tag--resp    { background: #e0f6e9; color: #1a8a4a; }
+    </style>
+
+    <!-- Modal Captação (criar/editar tarefa) -->
+    <div id="cap-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:14px;max-width:580px;width:100%;max-height:90vh;overflow:auto;padding:28px;position:relative;">
+        <button type="button" id="cap-modal-close" style="position:absolute;top:12px;right:12px;background:#f5f5f5;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;">×</button>
+        <h2 id="cap-modal-title" style="margin:0 0 18px;font-size:1.2rem;">Nova tarefa</h2>
+
+        <form id="cap-form" style="display:flex;flex-direction:column;gap:12px;">
+          <input type="hidden" id="cap-form-id">
+
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Título *</label>
+            <input type="text" id="cap-form-titulo" required
+                   style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;">
+          </div>
+
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Descrição</label>
+            <textarea id="cap-form-descricao" rows="3"
+                      style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;resize:vertical;"></textarea>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Área *</label>
+              <select id="cap-form-area" required style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;"></select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Horizonte</label>
+              <select id="cap-form-horizonte" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="">—</option>
+                <option value="semana">Esta semana</option>
+                <option value="mes">Este mês</option>
+                <option value="trimestre">Trimestre</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Prioridade</label>
+              <select id="cap-form-prioridade" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Média</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Responsável</label>
+              <select id="cap-form-responsavel" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="voce">Você</option>
+                <option value="socia">Sócia</option>
+                <option value="ambas" selected>Ambas</option>
+                <option value="externo">Externo</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Frequência</label>
+              <select id="cap-form-frequencia" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="unica" selected>Única</option>
+                <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal">Mensal</option>
+                <option value="trimestral">Trimestral</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Status</label>
+              <select id="cap-form-status" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="pendente" selected>Pendente</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="concluido">Concluído</option>
+                <option value="pausado">Pausado</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Prazo</label>
+              <input type="date" id="cap-form-due"
+                     style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+            </div>
+          </div>
+
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Notas</label>
+            <textarea id="cap-form-notas" rows="2"
+                      style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;resize:vertical;"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:space-between;margin-top:8px;">
+            <button type="button" id="cap-form-delete" style="padding:9px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;display:none;">Excluir</button>
+            <div style="display:flex;gap:8px;margin-left:auto;">
+              <button type="button" id="cap-form-cancel" style="padding:9px 16px;background:#fff;border:1px solid #ccc;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;">Cancelar</button>
+              <button type="submit" style="padding:9px 18px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">Salvar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Captação (editar KPI) -->
+    <div id="cap-kpi-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:14px;max-width:420px;width:100%;padding:28px;position:relative;">
+        <button type="button" id="cap-kpi-modal-close" style="position:absolute;top:12px;right:12px;background:#f5f5f5;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;">×</button>
+        <h2 id="cap-kpi-modal-title" style="margin:0 0 18px;font-size:1.2rem;">Atualizar KPI</h2>
+        <form id="cap-kpi-form" style="display:flex;flex-direction:column;gap:12px;">
+          <input type="hidden" id="cap-kpi-form-id">
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Valor atual</label>
+            <input type="number" step="0.01" id="cap-kpi-form-valor"
+                   style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;">
+          </div>
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Meta</label>
+            <input type="number" step="0.01" id="cap-kpi-form-meta"
+                   style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;">
+          </div>
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Observação</label>
+            <textarea id="cap-kpi-form-obs" rows="2"
+                      style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;resize:vertical;"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+            <button type="button" id="cap-kpi-form-cancel" style="padding:9px 16px;background:#fff;border:1px solid #ccc;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;">Cancelar</button>
+            <button type="submit" style="padding:9px 18px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =========================================================
          MARKETING AI — Catálogo de skills do agente Claude Code
          ========================================================= -->
     <div class="admin__panel" id="panel-marketing-ai">
@@ -3422,7 +3732,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=147"></script>
+<script src="admin.js?v=148"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
