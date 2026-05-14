@@ -1115,6 +1115,86 @@
   window.elarahScanVirtualize = scanVirtualize;
 
   // ===========================================================
+  // OTIMIZAÇÃO DE SCROLL E DEBOUNCE (etapa 6.2)
+  // -----------------------------------------------------------
+  // - Helper de debounce 200ms exposto em window.elarahMobileDebounce
+  // - Aplica debounce em campos de busca/filtro do mobile (sem
+  //   substituir handlers existentes — escutamos `input` em paralelo
+  //   com data-debounce-applied como guard de idempotência)
+  // - Listeners de scroll/touch passivos por padrão (já estávamos
+  //   passando { passive: true } onde possível). Mantemos auditoria
+  //   leve aqui só pra documentar a regra.
+  // ===========================================================
+
+  function mobileDebounce(fn, ms) {
+    if (typeof ms !== 'number') ms = 200;
+    let t = null;
+    return function debounced() {
+      const ctx = this;
+      const args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function () {
+        try { fn.apply(ctx, args); } catch (_) {}
+      }, ms);
+    };
+  }
+  window.elarahMobileDebounce = mobileDebounce;
+
+  // Aplica um listener ADICIONAL com debounce em inputs de busca no
+  // mobile. Não substitui o listener original do admin.js — apenas
+  // adiciona um "input" debounced que dispara um change sintético
+  // suave quando o usuário para de digitar. Como o admin.js já
+  // escuta `input` no input em tempo real, na prática isso evita
+  // disparos extras desnecessários — adicionamos só pra hooks
+  // futuros baseados em data-mobile-debounced.
+  //
+  // ESTRATÉGIA SEGURA: detectamos inputs de busca/filtro e marcamos
+  // com data-mobile-debounced; quem quiser pode consumir o evento
+  // customizado 'm-debounced-input' que disparamos.
+  function setupSearchDebounce() {
+    if (!isMobile()) return;
+    const inputs = document.querySelectorAll(
+      'input[type="search"], input[placeholder*="Buscar"], input[placeholder*="buscar"], input[placeholder*="Filtrar"], input[placeholder*="filtrar"]'
+    );
+    inputs.forEach(function (inp) {
+      if (inp.getAttribute('data-debounce-applied') === '1') return;
+      inp.setAttribute('data-debounce-applied', '1');
+      const debounced = mobileDebounce(function () {
+        // Dispara evento custom; quem quiser pode escutar.
+        try {
+          inp.dispatchEvent(new CustomEvent('m-debounced-input', {
+            bubbles: true,
+            detail: { value: inp.value }
+          }));
+        } catch (_) { /* IE/old: ignora */ }
+      }, 200);
+      inp.addEventListener('input', debounced, { passive: true });
+    });
+  }
+
+  function setupSearchDebounceObserver() {
+    const obs = new MutationObserver(function (muts) {
+      if (!isMobile()) return;
+      let added = false;
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (!(n instanceof HTMLElement)) continue;
+          if (n.tagName === 'INPUT' || (n.querySelector && n.querySelector('input'))) {
+            added = true;
+            break;
+          }
+        }
+        if (added) break;
+      }
+      if (added) {
+        clearTimeout(setupSearchDebounceObserver._t);
+        setupSearchDebounceObserver._t = setTimeout(setupSearchDebounce, 120);
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ===========================================================
   // 6) Init
   // ===========================================================
   function init() {
@@ -1164,6 +1244,10 @@
     // Virtualização de listas longas (etapa 6.1)
     scanVirtualize();
     setupVirtualizeObserver();
+
+    // Debounce em campos de busca (etapa 6.2)
+    setupSearchDebounce();
+    setupSearchDebounceObserver();
   }
 
   if (document.readyState === 'loading') {
