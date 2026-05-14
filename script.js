@@ -1856,6 +1856,16 @@ if (groupForm) {
         +     '<div id="erm-fee-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#666;margin-top:6px;"><span>Taxa do cartão</span><span id="erm-fee"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
         +   '</div>'
+        +   // ===== CAMPO EMAIL (visível só em CHECKOUT CONVIDADO — PR F) =====
+            // Quando o usuário não está logado e a feature flag de guest
+            // checkout está ativa, mostramos o campo email aqui. Criamos
+            // conta automaticamente no submit (upgrade silencioso) e
+            // mandamos magic link pra definir senha depois.
+            '<div id="erm-email-wrap" style="display:none;">'
+        +     '<label for="erm-email" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">E-mail <span style="color:#c0392b;">*</span></label>'
+        +     '<input id="erm-email" type="email" autocomplete="email" placeholder="voce@email.com" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
+        +     '<p id="erm-email-msg" style="margin:0 0 14px;font-size:.78rem;color:#888;min-height:1em;">Usamos pra te mandar o ingresso e seu acesso à conta.</p>'
+        +   '</div>'
         +   // ===== CAMPO NOME COMPLETO (obrigatório) =====
             '<label for="erm-nome" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">Nome completo <span style="color:#c0392b;">*</span></label>'
         +   '<input id="erm-nome" type="text" required autocomplete="name" placeholder="Seu nome completo" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
@@ -2313,6 +2323,28 @@ if (groupForm) {
         root.querySelector('#erm-telefone-msg').style.color = '#888';
         root.querySelector('#erm-telefone-msg').textContent =
           'Usamos pra te avisar sobre a experiência e mudanças de horário.';
+      }
+      // [PR F] Modo CHECKOUT CONVIDADO — exibe campo email no modal.
+      // No submit, criamos conta automaticamente (signUp) com senha
+      // aleatória e disparamos magic link pra pessoa definir senha.
+      const emailWrap = root.querySelector('#erm-email-wrap');
+      const emailInput = root.querySelector('#erm-email');
+      const emailMsg = root.querySelector('#erm-email-msg');
+      if (emailWrap) {
+        if (ctx.isGuest) {
+          emailWrap.style.display = 'block';
+          if (emailInput) {
+            emailInput.value = '';
+            emailInput.required = true;
+          }
+          if (emailMsg) {
+            emailMsg.style.color = '#888';
+            emailMsg.textContent = 'Usamos pra te mandar o ingresso e seu acesso à conta.';
+          }
+        } else {
+          emailWrap.style.display = 'none';
+          if (emailInput) emailInput.required = false;
+        }
       }
       // Reset CPF.
       const cpfInputReset = root.querySelector('#erm-cpf');
@@ -2923,6 +2955,29 @@ if (groupForm) {
       }
       console.log('[Elarah checkout] telefone válido:', telefoneNormalized);
 
+      // ===== [PR F] VALIDAÇÃO EMAIL (só em checkout convidado) =====
+      let guestEmailNorm = '';
+      if (ctx.isGuest) {
+        const emailInputV = root.querySelector('#erm-email');
+        const emailMsgV = root.querySelector('#erm-email-msg');
+        const emailRaw = emailInputV ? emailInputV.value.trim().toLowerCase() : '';
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
+        if (!emailOk) {
+          if (emailMsgV) {
+            emailMsgV.style.color = '#c0392b';
+            emailMsgV.textContent = 'Informe um e-mail válido.';
+          }
+          if (emailInputV) { try { emailInputV.focus({ preventScroll: true }); } catch (e) {} }
+          return;
+        }
+        if (emailMsgV) {
+          emailMsgV.style.color = '#888';
+          emailMsgV.textContent = 'Usamos pra te mandar o ingresso e seu acesso à conta.';
+        }
+        guestEmailNorm = emailRaw;
+        ctx.email = emailRaw;
+      }
+
       // ===== VALIDAÇÃO CPF (só pra PIX) =====
       let cpfDigits = '';
       if (ctx.paymentMethod === 'pix') {
@@ -3054,6 +3109,80 @@ if (groupForm) {
 
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Processando...';
+
+      // ===== [PR F] Checkout convidado — criar conta antes do booking =====
+      // Quando o modal está em modo guest, fazemos signUp automático aqui.
+      // Senha aleatória forte; pessoa define a real depois via reset-password.
+      // Se email já está registrado → caímos pro fluxo de login normal.
+      // Se signUp exige confirmação por email → mostra mensagem e bloqueia
+      // (não dá pra criar booking sem session autenticada).
+      if (ctx.isGuest && guestEmailNorm) {
+        try {
+          const supa = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) || null;
+          if (!supa || !supa.auth || typeof supa.auth.signUp !== 'function') {
+            throw new Error('SDK_NOT_READY');
+          }
+          // Senha forte aleatória (32 chars base64).
+          var pwBytes = new Uint8Array(24);
+          (window.crypto || window.msCrypto).getRandomValues(pwBytes);
+          var randomPwd = btoa(String.fromCharCode.apply(null, pwBytes))
+            .replace(/[+/=]/g, 'x') + 'A1!';
+          var signUpRes = await supa.auth.signUp({
+            email: guestEmailNorm,
+            password: randomPwd,
+            options: {
+              data: {
+                nome: ctx.nome || '',
+                telefone: telefoneNormalized || '',
+                from_guest_checkout: true,
+              }
+            }
+          });
+          if (signUpRes && signUpRes.error) {
+            var msg = (signUpRes.error.message || '').toLowerCase();
+            if (msg.indexOf('already registered') !== -1 ||
+                msg.indexOf('user already registered') !== -1 ||
+                msg.indexOf('already exists') !== -1) {
+              // Email já tem conta → cai pro login modal
+              errEl.textContent = '';
+              try { closeReservationModal(); } catch (e) {}
+              try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({
+                experienceId: ctx.experienceId,
+                experienceNome: ctx.experienceNome,
+                horario: ctx.horario,
+                descriptionAcknowledged: true,
+                ts: Date.now(),
+              })); } catch (e) {}
+              openLoginModal('Você já tem conta com este e-mail. Faça login pra continuar a reserva.');
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = 'Confirmar e pagar';
+              return;
+            }
+            throw signUpRes.error;
+          }
+          // Sucesso. Se o projeto exige confirmação por email, session vem null.
+          if (!signUpRes.data || !signUpRes.data.session) {
+            errEl.textContent = 'Confira seu e-mail pra confirmar sua conta e volte aqui pra finalizar a reserva.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar e pagar';
+            return;
+          }
+          // Dispara magic link de reset pra pessoa definir senha real.
+          // Fire-and-forget — não bloqueia o checkout.
+          try {
+            supa.auth.resetPasswordForEmail(guestEmailNorm, {
+              redirectTo: (location.origin || '') + '/reset-password.html'
+            });
+          } catch (e) {}
+          console.log('[Elarah Checkout/Guest] conta criada e logada:', guestEmailNorm);
+        } catch (e) {
+          console.error('[Elarah Checkout/Guest] erro no signUp:', e);
+          errEl.textContent = 'Não conseguimos criar sua conta agora. Tente novamente em alguns segundos.';
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirmar e pagar';
+          return;
+        }
+      }
 
       // Funil step 6 — usuário confirmou no formulário e estamos
       // chamando a edge function de pagamento. Diferencia de
@@ -4245,8 +4374,27 @@ if (groupForm) {
         }
       }
 
+      // === [SPRINT 1 / PR F] CHECKOUT CONVIDADO (FEATURE FLAG) ===
+      // Quando a flag está ON, pula o login modal. O modal de reserva
+      // entra em modo guest (mostra campo email) e cria conta auto no
+      // submit. Maior impacto isolado do Sprint 1 (+40% a +80% estimado).
+      // Atrás de flag pra rollout controlado — começa OFF.
+      //
+      // Ativar:
+      //   - URL: ?guest=1
+      //   - DevTools: localStorage.setItem('elarahGuestCheckout','1')
+      function guestCheckoutEnabled() {
+        try {
+          if ((location.search || '').indexOf('guest=1') !== -1) return true;
+          if (localStorage.getItem('elarahGuestCheckout') === '1') return true;
+        } catch (e) {}
+        return false;
+      }
+      const isGuestMode = !isUserLogged() && guestCheckoutEnabled();
+
       // === GATE DE LOGIN OBRIGATÓRIO ===
-      if (!isUserLogged()) {
+      // Pulado quando isGuestMode === true.
+      if (!isUserLogged() && !isGuestMode) {
         try {
           sessionStorage.setItem(PENDING_KEY, JSON.stringify({
             experienceId: experienceId,
@@ -4320,7 +4468,8 @@ if (groupForm) {
         precoLabel = precoLabel || '';
       }
 
-      const auth = await getAuthInfo();
+      // Em modo guest pulamos getAuthInfo (não tem sessão).
+      const auth = isGuestMode ? { email: null, nome: null } : await getAuthInfo();
 
       openReservationModal({
         experienceId: experienceId,
@@ -4337,6 +4486,8 @@ if (groupForm) {
         slotId: scheduleSel.slotId || null,
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
+        // [PR F] modo guest — modal mostra campo email e cria conta no submit
+        isGuest: isGuestMode,
         email: auth.email,
         // Pré-preenche com o nome do profile (se disponível). O usuário
         // ainda pode editar no modal antes de confirmar.
