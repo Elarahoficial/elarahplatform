@@ -626,6 +626,150 @@
 
 
 /* =============================================================
+   14) TABELAS COMO CARDS (etapa 3)
+   -------------------------------------------------------------
+   Cada <tr> do tbody vira um card. JS anota data-label nas tds;
+   o ::before exibe esse label como rótulo discreto.
+   ============================================================= */
+@media (max-width: 768px) {
+
+  /* Quebra a estrutura table → bloco */
+  .admin__table,
+  .admin__table thead,
+  .admin__table tbody,
+  .admin__table tr,
+  .admin__table td {
+    display: block !important;
+    width: auto !important;
+  }
+  .admin__table thead {
+    display: none !important;
+  }
+
+  /* Reseta o wrap (sangrar até a borda já é bom, mas sem sombra interna
+     que conflite com o card individual) */
+  .admin__table-wrap {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .admin__table {
+    font-size: 0.92rem !important;
+    background: transparent !important;
+  }
+
+  /* Card por linha */
+  .admin__table tbody tr {
+    background: var(--m-surface) !important;
+    border: 1px solid var(--m-line) !important;
+    border-radius: var(--m-radius) !important;
+    box-shadow: var(--m-shadow) !important;
+    padding: 12px 14px !important;
+    margin: 0 14px 10px !important;  /* compensa o margin negativo do wrap */
+    transition: transform var(--m-trans);
+  }
+  .admin__table tbody tr:active {
+    transform: scale(0.985);
+  }
+
+  /* TDs viram linhas label:valor */
+  .admin__table tbody td {
+    padding: 6px 0 !important;
+    border: none !important;
+    border-bottom: 1px solid #f5f3ef !important;
+    white-space: normal !important;  /* desfaz nowrap legado */
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    text-align: right;
+    color: var(--m-ink);
+    word-break: break-word;
+  }
+  .admin__table tbody td:last-child {
+    border-bottom: none !important;
+  }
+  .admin__table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.72rem;
+    color: var(--m-ink-2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 12px;
+    flex-shrink: 0;
+    max-width: 40%;
+    text-align: left;
+  }
+
+  /* Primeira TD vira o "título" do card (sem label) */
+  .admin__table tbody td:first-child {
+    display: block !important;
+    text-align: left;
+    padding-bottom: 8px !important;
+    margin-bottom: 4px !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--m-ink) !important;
+  }
+  .admin__table tbody td:first-child::before {
+    display: none !important;
+  }
+
+  /* Última TD costuma ter botões de ação — empilha em block,
+     botões expandem 50% cada */
+  .admin__table tbody td:last-child {
+    display: block !important;
+    text-align: left;
+    padding-top: 10px !important;
+    margin-top: 6px !important;
+    border-top: 1px solid #f5f3ef;
+  }
+  .admin__table tbody td:last-child::before {
+    display: none !important;
+  }
+  .admin__table tbody td:last-child button,
+  .admin__table tbody td:last-child .admin__btn {
+    flex: 1 1 calc(50% - 4px);
+    min-height: 40px;
+    margin: 2px 0 !important;
+  }
+  /* Se tiver vários botões na última td, deixa eles fluindo lado a lado */
+  .admin__table tbody td:last-child {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  /* Empty state ocupa tudo, sem label */
+  .admin__table td.admin__table-empty,
+  .admin__table td[data-empty="1"] {
+    display: block !important;
+    text-align: center !important;
+    padding: 20px !important;
+    color: var(--m-ink-2);
+    font-size: 0.9rem;
+    background: var(--m-surface);
+    border: 1px dashed var(--m-line);
+    border-radius: var(--m-radius);
+    margin: 0 14px 10px !important;
+  }
+  .admin__table td.admin__table-empty::before,
+  .admin__table td[data-empty="1"]::before {
+    display: none !important;
+  }
+
+  /* Bordas coloridas por status (opcional — só se a classe existir) */
+  .admin__table tbody tr.row--status-nao_contatado    { border-left: 3px solid #95a5a6 !important; }
+  .admin__table tbody tr.row--status-em_negociacao    { border-left: 3px solid var(--m-accent) !important; }
+  .admin__table tbody tr.row--status-parceria_fechada { border-left: 3px solid var(--m-green) !important; }
+  .admin__table tbody tr.row--status-descartado       { border-left: 3px solid var(--m-red) !important; }
+}
+
+
+/* =============================================================
    AJUSTES FINOS PARA SMARTPHONES PEQUENOS (<= 480px)
    ============================================================= */
 @media (max-width: 480px) {

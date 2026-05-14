@@ -207,6 +207,81 @@
   }
 
   // ===========================================================
+  // MOBILE TABLE-AS-CARDS (etapa 3)
+  // -----------------------------------------------------------
+  // Anota cada <td> com data-label correspondente ao <th>, pra
+  // que o CSS no mobile (display:block + ::before attr) consiga
+  // renderizar como card. Idempotente, observa mutations.
+  // ===========================================================
+
+  function applyMobileTableCards(table) {
+    if (!table) return;
+    const thead = table.querySelector('thead');
+    if (!thead) return;
+    const ths = thead.querySelectorAll('th');
+    if (!ths.length) return;
+    const labels = Array.prototype.map.call(ths, function (th) {
+      return (th.textContent || '').trim();
+    });
+    const rows = table.querySelectorAll('tbody > tr');
+    rows.forEach(function (tr) {
+      // Pular linha de empty state (geralmente colspan)
+      const tds = tr.querySelectorAll(':scope > td');
+      if (tds.length === 1 && tds[0].classList.contains('admin__table-empty')) {
+        tds[0].setAttribute('data-empty', '1');
+        return;
+      }
+      tds.forEach(function (td, i) {
+        if (td.hasAttribute('data-label')) return; // idempotente
+        const label = labels[i] || '';
+        td.setAttribute('data-label', label);
+      });
+    });
+  }
+
+  function scanTables() {
+    if (!isMobile()) return; // só roda no mobile pra evitar overhead
+    const tables = document.querySelectorAll('table.admin__table');
+    tables.forEach(applyMobileTableCards);
+  }
+
+  // Debounce no observer pra evitar overhead em tabelas grandes
+  let scanTimer = null;
+  function scheduleScan(table) {
+    if (scanTimer) clearTimeout(scanTimer);
+    scanTimer = setTimeout(function () {
+      if (table) applyMobileTableCards(table);
+      else scanTables();
+    }, 50);
+  }
+
+  function watchTables() {
+    const obs = new MutationObserver(function (mutations) {
+      if (!isMobile()) return;
+      let touchedTable = null;
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          // Procura ancestor table.admin__table
+          let t = null;
+          if (node.matches && node.matches('table.admin__table')) t = node;
+          else if (node.closest) t = node.closest('table.admin__table');
+          else if (node.querySelector) t = node.querySelector('table.admin__table');
+          if (t) { touchedTable = t; break; }
+          // Caso adicionem só tbody/tr/td
+          if (node.tagName === 'TR' || node.tagName === 'TBODY' || node.tagName === 'TD') {
+            const t2 = node.closest && node.closest('table.admin__table');
+            if (t2) { touchedTable = t2; break; }
+          }
+        }
+        if (touchedTable) break;
+      }
+      if (touchedTable) scheduleScan(touchedTable);
+    });
+    obs.observe(document.body, { subtree: true, childList: true });
+  }
+
+  // ===========================================================
   // 6) Init
   // ===========================================================
   function init() {
@@ -227,6 +302,10 @@
     syncBottomNavActive();
     watchPanelChanges();
     window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Tabela como cards (mobile only)
+    scanTables();
+    watchTables();
   }
 
   if (document.readyState === 'loading') {
