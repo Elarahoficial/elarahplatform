@@ -156,7 +156,7 @@
     <!-- LOGO + FRASE -->
     <div class="footer__brand">
       <a href="/" class="footer__logo">
-        <img src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
       </a>
       <p class="footer__tagline">Offline is a feeling.</p>
 
@@ -301,7 +301,7 @@
       if (e.duracao) meta.push('<span class="ddn-card__meta-item">' + esc(e.duracao) + '</span>');
       if (e.bairro) meta.push('<span class="ddn-card__meta-item">' + esc(e.bairro) + '</span>');
       var media = foto
-        ? '<img src="'+esc(foto)+'" alt="'+esc(titulo)+'" onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.ddn-card__placeholder\').style.display=\'flex\';"><div class="ddn-card__placeholder" style="display:none;">'+esc(e.categoria||'Experiência')+'</div>'
+        ? '<img loading="lazy" decoding="async" src="'+esc(foto)+'" alt="'+esc(titulo)+'" onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.ddn-card__placeholder\').style.display=\'flex\';"><div class="ddn-card__placeholder" style="display:none;">'+esc(e.categoria||'Experiência')+'</div>'
         : '<div class="ddn-card__placeholder">'+esc(e.categoria||'Experiência')+'</div>';
       return '<article class="ddn-card"><div class="ddn-card__media"><span class="ddn-card__badge">'+esc(badge)+'</span>'+media+'</div><div class="ddn-card__body">'+
         (e.categoria?'<span class="ddn-card__categoria">'+esc(e.categoria)+'</span>':'')+
