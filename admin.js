@@ -7537,7 +7537,7 @@
     const status = (s.status || '').toLowerCase().trim();
     const bairro = _propStripAccents((s.bairro || '').toLowerCase()).trim();
     return (list || []).filter(p => {
-      if (cat    && (p.categoria || '').toLowerCase() !== cat) return false;
+      if (cat    && (p.categoria || '').toLowerCase().indexOf(cat) === -1) return false;
       if (status && (p.status    || '').toLowerCase() !== status) return false;
       if (bairro) {
         const pb = _propStripAccents((p.bairro || '').toLowerCase());
@@ -7786,7 +7786,7 @@
     const status   = document.getElementById('prospects-filter-status');
     const bairro   = document.getElementById('prospects-filter-bairro');
     if (search) search.addEventListener('input',  e => { _prospectsState.search   = e.target.value; onChange(); });
-    if (cat)    cat.addEventListener('change',    e => { _prospectsState.categoria = e.target.value; onChange(); });
+    if (cat)    cat.addEventListener('input',     e => { _prospectsState.categoria = e.target.value; onChange(); });
     if (status) status.addEventListener('change', e => { _prospectsState.status    = e.target.value; onChange(); });
     if (bairro) bairro.addEventListener('input',  e => { _prospectsState.bairro    = e.target.value; onChange(); });
 

@@ -856,30 +856,51 @@
       <!-- Filtros + ações -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
         <input type="search" id="prospects-filter-search" placeholder="Buscar por nome, observação..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
-        <select id="prospects-filter-categoria" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
-          <option value="">Todas as categorias</option>
-          <option value="ceramica">Cerâmica</option>
-          <option value="vidro">Vidro</option>
-          <option value="mosaico">Mosaico</option>
-          <option value="marcenaria">Marcenaria</option>
-          <option value="tufting">Tufting</option>
-          <option value="pintura">Pintura</option>
-          <option value="bordado">Bordado</option>
-          <option value="encadernacao">Encadernação</option>
-          <option value="floral">Floral</option>
-          <option value="perfumaria">Perfumaria</option>
-          <option value="vela">Vela</option>
-          <option value="aromaterapia">Aromaterapia</option>
-          <option value="joalheria">Joalheria</option>
-          <option value="gastronomia">Gastronomia</option>
-          <option value="doceria">Doceria</option>
-          <option value="cafe">Café</option>
-          <option value="degustacao">Degustação</option>
-          <option value="fermentacao">Fermentação</option>
-          <option value="sensorial">Sensorial / Experiência rara</option>
-          <option value="autoral">Autoral / Outro</option>
-          <option value="outro">Outro</option>
-        </select>
+        <input type="text" id="prospects-filter-categoria" list="prospects-categorias-list" placeholder="Todas as categorias" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;width:200px;">
+        <datalist id="prospects-categorias-list">
+          <option value="aquarela"></option>
+          <option value="aromaterapia"></option>
+          <option value="autoral"></option>
+          <option value="bordado"></option>
+          <option value="cafe"></option>
+          <option value="ceramica"></option>
+          <option value="cerveja"></option>
+          <option value="cha"></option>
+          <option value="charcutaria"></option>
+          <option value="chocolate"></option>
+          <option value="costura"></option>
+          <option value="degustacao"></option>
+          <option value="destilaria"></option>
+          <option value="doceria"></option>
+          <option value="encadernacao"></option>
+          <option value="fermentacao"></option>
+          <option value="floral"></option>
+          <option value="fotografia"></option>
+          <option value="gastronomia"></option>
+          <option value="gravura"></option>
+          <option value="joalheria"></option>
+          <option value="marcenaria"></option>
+          <option value="mosaico"></option>
+          <option value="multidisciplinar"></option>
+          <option value="origami"></option>
+          <option value="outro"></option>
+          <option value="perfumaria"></option>
+          <option value="pintura"></option>
+          <option value="pinturajaponesa"></option>
+          <option value="queijo"></option>
+          <option value="saboaria"></option>
+          <option value="sensorial"></option>
+          <option value="soundhealing"></option>
+          <option value="spa"></option>
+          <option value="tecelagem"></option>
+          <option value="tintura"></option>
+          <option value="tipografia"></option>
+          <option value="tufting"></option>
+          <option value="vela"></option>
+          <option value="vidro"></option>
+          <option value="vinhos"></option>
+          <option value="yoga"></option>
+        </datalist>
         <select id="prospects-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
           <option value="">Todos os status</option>
           <option value="nao_contatado">Não contatado</option>
@@ -936,7 +957,7 @@
           <input type="hidden" id="prospect-edit-id">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome do local/empresa *<input type="text" id="prospect-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
-            <label style="font-size:.82rem;font-weight:600;">Categoria<select id="prospect-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="ceramica">Cerâmica</option><option value="vidro">Vidro</option><option value="mosaico">Mosaico</option><option value="marcenaria">Marcenaria</option><option value="tufting">Tufting</option><option value="pintura">Pintura</option><option value="bordado">Bordado</option><option value="encadernacao">Encadernação</option><option value="floral">Floral</option><option value="perfumaria">Perfumaria</option><option value="vela">Vela</option><option value="aromaterapia">Aromaterapia</option><option value="joalheria">Joalheria</option><option value="gastronomia">Gastronomia</option><option value="doceria">Doceria</option><option value="cafe">Café</option><option value="degustacao">Degustação</option><option value="fermentacao">Fermentação</option><option value="sensorial">Sensorial</option><option value="autoral">Autoral</option><option value="outro">Outro</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Categoria<input type="text" id="prospect-edit-categoria" list="prospects-categorias-list" placeholder="—" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"></label>
             <label style="font-size:.82rem;font-weight:600;">Status<select id="prospect-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="parceria_fechada">Parceria fechada</option><option value="ja_parceiro">Já parceiro</option><option value="recusou">Recusou</option></select></label>
             <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="prospect-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
             <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="prospect-edit-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
