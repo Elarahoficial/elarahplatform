@@ -28,9 +28,30 @@
     .exp-detail__horario-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
     .exp-detail__horario-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
     .exp-detail__horario-btn--sold-out { opacity: .45; text-decoration: line-through; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__schedule { margin-bottom: 24px; }
+    .exp-detail__schedule-block { margin-bottom: 16px; }
+    .exp-detail__schedule-block:last-child { margin-bottom: 0; }
+    .exp-detail__schedule-label { font-size: .72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+    .exp-detail__datas { display: flex; flex-wrap: wrap; gap: 8px; }
+    .exp-detail__data-btn { padding: 10px 14px; font-size: .82rem; font-weight: 600; border: 1.5px solid #ddd; border-radius: 999px; background: #fff; color: #555; cursor: pointer; transition: all .15s; white-space: nowrap; font-family: inherit; line-height: 1.1; text-align: center; min-width: 88px; }
+    .exp-detail__data-btn:hover:not(:disabled) { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
+    .exp-detail__data-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
+    .exp-detail__data-btn--sold-out { opacity: .45; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__data-btn small { display: block; font-size: .68rem; opacity: .75; font-weight: 500; margin-top: 2px; }
+    @media (max-width: 600px) {
+      .exp-detail__data-btn { padding: 8px 12px; font-size: .78rem; min-width: 80px; }
+      .exp-detail__horario-btn { padding: 8px 14px; font-size: .82rem; }
+    }
     .exp-detail__includes { font-size: .9rem; color: #666; margin-bottom: 24px; padding: 14px 18px; background: #faf6f0; border-radius: 12px; }
     .exp-detail__includes strong { color: #1a1a1a; }
-    .exp-detail__desc { font-size: .95rem; line-height: 1.7; color: #444; white-space: pre-line; margin-bottom: 32px; }
+    /* PR K — Section destacada "O que você vai viver".
+       Sem o modal-gate antes do checkout (-conversão), a descrição
+       precisa BRILHAR no detalhe. Header + card creme + ícone.
+       white-space: pre-line preserva \n da descrição cadastrada. */
+    .exp-detail__desc-section { margin-bottom: 32px; padding: 22px 22px 24px; background: linear-gradient(180deg, #faf6f0 0%, #f5ede0 100%); border-radius: 14px; border: 1px solid #ebe1d0; }
+    .exp-detail__desc-header { display: flex; align-items: center; gap: 8px; font-family: 'DM Serif Display', serif; font-size: 1.15rem; color: #1a1a1a; margin: 0 0 12px; line-height: 1.2; }
+    .exp-detail__desc-header svg { width: 18px; height: 18px; color: var(--orange, #f0a05e); flex-shrink: 0; }
+    .exp-detail__desc { font-size: .95rem; line-height: 1.7; color: #3a3a3a; white-space: pre-line; margin: 0; }
     .exp-detail__actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
     .exp-detail__reserve-btn { padding: 14px 32px; border: none; border-radius: 12px; background: var(--orange, #f0a05e); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .15s; }
     .exp-detail__reserve-btn:hover { background: var(--orange-dark, #d88a44); }
@@ -44,6 +65,77 @@
     @media (max-width: 600px) {
       .exp-detail__title { font-size: 1.5rem; }
       .exp-detail__hero { max-height: 260px; }
+    }
+
+    /* =====================================================
+       STICKY CTA MOBILE — Sprint 1 / PR D do plano de conversão
+       -----------------------------------------------------
+       Botão "Reservar" fixo no rodapé do mobile. Aparece só
+       quando o botão original sai da viewport (scroll passou).
+       Desktop nem renderiza (display:none por @media).
+       Padrão de e-commerce mobile — reduz fricção de quem rolou
+       a página inteira e teria que voltar pro topo pra reservar.
+       ===================================================== */
+    .exp-sticky-cta {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 50;
+      background: #fff;
+      border-top: 1px solid #ebe1d0;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.10);
+      transform: translateY(100%);
+      transition: transform 240ms cubic-bezier(.2,.8,.2,1), opacity 200ms;
+      opacity: 0;
+      pointer-events: none;
+      display: none;
+    }
+    .exp-sticky-cta.is-visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .exp-sticky-cta__price {
+      flex: 1;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.2rem;
+      color: #1a1a1a;
+      line-height: 1.1;
+      letter-spacing: -.2px;
+    }
+    .exp-sticky-cta__price small {
+      display: block;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .68rem;
+      color: #8a8a8a;
+      font-weight: 400;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      margin-bottom: 1px;
+    }
+    .exp-sticky-cta__btn {
+      padding: 13px 28px;
+      border: none;
+      border-radius: 999px;
+      background: var(--orange, #f0a05e);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(240, 160, 94, .35);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .exp-sticky-cta__btn:active {
+      transform: scale(.97);
+      box-shadow: 0 2px 8px rgba(240, 160, 94, .3);
+    }
+    @media (max-width: 768px) {
+      .exp-sticky-cta { display: flex; }
     }
   </style>
 </head>
@@ -84,7 +176,7 @@
             <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
           </div>
         </div>
-        <a href="dia-das-maes.html" class="header__nav-link header__nav-link--ddm">Dia das Mães</a>
+        <a href="dia-dos-namorados.html" class="header__nav-link header__nav-link--ddn">Dia dos Namorados</a>
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="oferecer.html" class="header__nav-link">Oferecer uma experiencia</a>
       </nav>
@@ -119,7 +211,7 @@
   <footer class="footer">
     <div class="footer__inner">
       <div class="footer__brand">
-        <a href="/" class="footer__logo"><img src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
+        <a href="/" class="footer__logo"><img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
         <p class="footer__tagline">Offline is a feeling.</p>
         <div class="footer__socials">
           <a href="https://www.instagram.com/elarah.oficial" target="_blank" aria-label="Instagram"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/></svg></a>
@@ -153,11 +245,9 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=22"></script>
+<script src="experiences-data.js?v=23"></script>
 <script src="analytics.js?v=2"></script>
-<script src="script.js?v=44"></script>
-<script>
-(function () {
+<script src="script.js?v=60"></script><script>(function () {
   'use strict';
 
   function esc(s) {
@@ -250,12 +340,47 @@
 
     // Load slots for availability
     var slotMap = {};
+    var allSlots = [];
     try {
       if (ElarahData.getSlotsForExperience) {
-        var slots = await ElarahData.getSlotsForExperience(expId);
-        slots.forEach(function (sl) { slotMap[sl.horario] = sl; });
+        allSlots = await ElarahData.getSlotsForExperience(expId) || [];
+        allSlots.forEach(function (sl) { slotMap[sl.horario] = sl; });
       }
     } catch (e) { /* ok */ }
+
+    // Slots futuros agrupados por data (event_at).
+    // Inclui slots manuais E recorrentes — `recurrence_rule_id` é
+    // irrelevante na renderização (cliente só precisa ver data+horario).
+    //
+    // CAMPANHA: se vem com ?campaign=dia-dos-namorados, filtra slots
+    // pra mostrar SÓ os dentro da janela 14/05–06/07.
+    var now = new Date();
+    var urlParams = new URLSearchParams(window.location.search);
+    var campaignParam = urlParams.get('campaign');
+    var ddnStart = null, ddnEnd = null;
+    if (campaignParam === 'dia-dos-namorados') {
+      // Janela DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte
+      var _now = new Date();
+      ddnStart = new Date(_now.getFullYear(), _now.getMonth(), 25);
+      ddnEnd = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
+    }
+    var futureSlots = allSlots
+      .filter(function (s) { return s.isActive !== false; })
+      .filter(function (s) {
+        if (!s.eventAt) return false;
+        var d = new Date(s.eventAt);
+        if (d < now) return false;
+        if (ddnStart && (d < ddnStart || d >= ddnEnd)) return false;
+        return true;
+      })
+      .filter(function (s) {
+        if (s.vagasTotal == null) return true;
+        var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+        return rest > 0;
+      });
+    futureSlots.sort(function (a, b) {
+      return new Date(a.eventAt) - new Date(b.eventAt);
+    });
 
     var horarios = Array.isArray(exp.horarios) && exp.horarios.length
       ? exp.horarios : (exp.horario ? [exp.horario] : []);
@@ -274,16 +399,123 @@
       "}" +
       "this.dataset.fbStep='final';this.outerHTML=this.dataset.fbHtml;";
     var heroHtml = heroSrc
-      ? '<img class="exp-detail__hero" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
+      ? '<img loading="lazy" decoding="async" class="exp-detail__hero" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
         'data-cat-fb="' + esc(heroCatFb) + '" ' +
         'data-fb-html="' + heroPlaceholder.replace(/"/g, '&quot;') + '" ' +
         'onerror="' + heroOnErr + '">'
       : heroPlaceholder;
 
-    // Horario buttons
+    // Renderização da agenda — chips de DATA → chips de HORÁRIO.
+    // Cliente escolhe primeiro a data e depois o horário daquela data.
+    // Funciona com slots recorrentes E manuais (não distingue).
+    // Fallback: se experiência não tem slot futuro algum, usa o array
+    // legado exp.horarios (sem datas) — preserva fluxo antigo.
     var firstAvailable = -1;
     var horariosHtml = '';
-    if (horarios.length > 0) {
+    var useScheduleNew = futureSlots.length > 0;
+
+    if (useScheduleNew) {
+      // Agrupa por data (chave: YYYY-MM-DD do event_at).
+      var byDate = {};
+      var dateOrder = [];
+      futureSlots.forEach(function (s) {
+        var d = new Date(s.eventAt);
+        var key = d.getFullYear() + '-' +
+                  String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                  String(d.getDate()).padStart(2, '0');
+        if (!byDate[key]) {
+          byDate[key] = {
+            key: key,
+            dt: d,
+            wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+            dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+            slots: [],
+          };
+          dateOrder.push(key);
+        }
+        byDate[key].slots.push(s);
+      });
+
+      // HTML dos chips de data
+      var datasHtml = dateOrder.map(function (k, i) {
+        var g = byDate[k];
+        var anyAvailable = g.slots.some(function (s) {
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+          return rest > 0;
+        });
+        var cls = 'exp-detail__data-btn';
+        if (!anyAvailable) cls += ' exp-detail__data-btn--sold-out';
+        else if (i === 0) cls += ' exp-detail__data-btn--active';
+        return '<button type="button" class="' + cls + '"' +
+               (anyAvailable ? '' : ' disabled') +
+               ' data-date-key="' + esc(k) + '">' +
+               '<strong>' + esc(g.wd) + '</strong>' +
+               '<small>' + esc(g.dm) + '</small>' +
+               '</button>';
+      }).join('');
+
+      // HTML dos horários da primeira data (renderizado dinâmico via onClick)
+      function renderHorariosFor(dateKey) {
+        var g = byDate[dateKey];
+        if (!g) return '';
+        var html = '';
+        var picked = false;
+        g.slots.forEach(function (s, i) {
+          var rest = s.vagasTotal == null ? null : (s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal);
+          var soldOut = rest !== null && rest <= 0;
+          var cls = 'exp-detail__horario-btn';
+          if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
+          else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
+          var label = s.horario + (soldOut ? ' (esgotado)' : '');
+          html += '<button type="button" class="' + cls + '"' +
+                  (soldOut ? ' disabled' : '') +
+                  ' data-horario="' + esc(s.horario) + '"' +
+                  ' data-data="' + esc(s.data || g.dm) + '"' +
+                  ' data-data-label="' + esc(g.wd + ', ' + g.dm) + '"' +
+                  ' data-slot-id="' + esc(s.id) + '">' + esc(label) + '</button>';
+        });
+        return html;
+      }
+
+      // Estado inicial: primeira data disponível
+      var initialKey = dateOrder.find(function (k) {
+        return byDate[k].slots.some(function (s) {
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+          return rest > 0;
+        });
+      }) || dateOrder[0];
+
+      var campaignBanner = ddnStart
+        ? '<div style="background:#fff8ef;border:1px solid #f0a05e;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#a4663b;">' +
+            '🤍 Mostrando apenas datas da <strong>campanha Dia dos Namorados</strong>. ' +
+            '<a href="experiencia.html?id=' + esc(expId) + '" style="color:#a4663b;font-weight:600;text-decoration:underline;">Ver todas as datas →</a>' +
+          '</div>'
+        : '';
+      horariosHtml = campaignBanner +
+        '<div class="exp-detail__schedule">' +
+          '<div class="exp-detail__schedule-block">' +
+            '<div class="exp-detail__schedule-label">Escolha uma data</div>' +
+            '<div class="exp-detail__datas">' + datasHtml + '</div>' +
+          '</div>' +
+          '<div class="exp-detail__schedule-block">' +
+            '<div class="exp-detail__schedule-label">Escolha um horário</div>' +
+            '<div class="exp-detail__horarios" id="exp-horarios">' +
+              renderHorariosFor(initialKey) +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      // Guarda no escopo pra wire-up posterior
+      window.__expScheduleData = {
+        byDate: byDate,
+        dateOrder: dateOrder,
+        renderHorariosFor: renderHorariosFor,
+        initialKey: initialKey,
+      };
+    } else if (horarios.length > 0) {
+      // Fallback legado: experiência sem slots configurados.
       horariosHtml = '<div class="exp-detail__horarios">';
       horarios.forEach(function (h, i) {
         var sl = slotMap[h];
@@ -303,9 +535,18 @@
       ? '<div class="exp-detail__includes"><strong>Inclui:</strong> ' + esc(exp.inclui) + '</div>'
       : '';
 
-    // Description
+    // Description — section destacada "O que você vai viver".
+    // Header + ícone estrela + card creme. Substitui o modal-gate
+    // que vinha antes do checkout (PR a1c8bc5), com a vantagem de
+    // não criar fricção no clique de Reservar.
     var descHtml = exp.descricao
-      ? '<div class="exp-detail__desc">' + esc(exp.descricao) + '</div>'
+      ? '<section class="exp-detail__desc-section">' +
+          '<h2 class="exp-detail__desc-header">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
+            'O que você vai viver' +
+          '</h2>' +
+          '<div class="exp-detail__desc">' + esc(exp.descricao) + '</div>' +
+        '</section>'
       : '';
 
     var container = document.getElementById('exp-content');
@@ -345,23 +586,69 @@
         '</button>' +
       '</div>';
 
-    // Wire horario button clicks
-    container.querySelectorAll('.exp-detail__horario-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        container.querySelectorAll('.exp-detail__horario-btn').forEach(function (b) {
-          b.classList.remove('exp-detail__horario-btn--active');
+    // Wire DATA chip clicks — re-renderiza chips de horário e reseta seleção
+    function wireHorarioButtons() {
+      container.querySelectorAll('.exp-detail__horario-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          container.querySelectorAll('.exp-detail__horario-btn').forEach(function (b) {
+            b.classList.remove('exp-detail__horario-btn--active');
+          });
+          btn.classList.add('exp-detail__horario-btn--active');
+          syncReserveButton(btn);
         });
-        btn.classList.add('exp-detail__horario-btn--active');
-        // Update reserve button data-horario for checkout
-        var reserveBtn = document.getElementById('exp-reserve-btn');
-        if (reserveBtn) reserveBtn.dataset.horario = btn.dataset.horario;
       });
-    });
+    }
 
-    // Set initial horario on reserve button
-    var reserveBtn = document.getElementById('exp-reserve-btn');
-    if (reserveBtn && firstAvailable >= 0) {
-      reserveBtn.dataset.horario = horarios[firstAvailable];
+    function syncReserveButton(horarioBtn) {
+      var reserveBtn = document.getElementById('exp-reserve-btn');
+      if (!reserveBtn) return;
+      if (horarioBtn) {
+        reserveBtn.dataset.horario = horarioBtn.dataset.horario || '';
+        reserveBtn.dataset.data = horarioBtn.dataset.data || '';
+        reserveBtn.dataset.dataLabel = horarioBtn.dataset.dataLabel || '';
+        reserveBtn.dataset.slotId = horarioBtn.dataset.slotId || '';
+      } else {
+        reserveBtn.dataset.horario = '';
+        reserveBtn.dataset.data = '';
+        reserveBtn.dataset.dataLabel = '';
+        reserveBtn.dataset.slotId = '';
+      }
+    }
+
+    if (useScheduleNew && window.__expScheduleData) {
+      var schedData = window.__expScheduleData;
+      var horariosEl = document.getElementById('exp-horarios');
+
+      container.querySelectorAll('.exp-detail__data-btn').forEach(function (dBtn) {
+        if (dBtn.disabled) return;
+        dBtn.addEventListener('click', function () {
+          container.querySelectorAll('.exp-detail__data-btn').forEach(function (b) {
+            b.classList.remove('exp-detail__data-btn--active');
+          });
+          dBtn.classList.add('exp-detail__data-btn--active');
+          if (horariosEl) {
+            horariosEl.innerHTML = schedData.renderHorariosFor(dBtn.dataset.dateKey);
+            wireHorarioButtons();
+            // Sincroniza botão Reservar com primeiro horário ativo da nova data
+            var firstActive = horariosEl.querySelector('.exp-detail__horario-btn--active') ||
+                              horariosEl.querySelector('.exp-detail__horario-btn:not([disabled])');
+            syncReserveButton(firstActive);
+          }
+        });
+      });
+
+      wireHorarioButtons();
+      // Estado inicial: primeiro horário da primeira data
+      var firstHorario = container.querySelector('.exp-detail__horario-btn--active') ||
+                        container.querySelector('.exp-detail__horario-btn:not([disabled])');
+      syncReserveButton(firstHorario);
+    } else {
+      // Fluxo legado (sem slots configurados)
+      wireHorarioButtons();
+      var reserveBtn = document.getElementById('exp-reserve-btn');
+      if (reserveBtn && firstAvailable >= 0) {
+        reserveBtn.dataset.horario = horarios[firstAvailable];
+      }
     }
 
     // Wire share button
@@ -390,6 +677,121 @@
         '<a href="/">Explorar experiencias</a>' +
       '</div>';
   }
+})();
+</script>
+
+<!-- ============================================================
+     STICKY CTA MOBILE — Sprint 1 / PR D
+     ------------------------------------------------------------
+     Cria um botão "Reservar" fixo no rodapé que aparece SÓ no
+     mobile e SÓ quando o botão original sai da viewport.
+     Espelha data-attributes do botão original via MutationObserver
+     pra que o handler global de [data-reserve] em script.js
+     processe normalmente (mesmo experienceId, mesmo horário,
+     mesma data — clique no sticky = clique no original).
+     ============================================================ -->
+<script>
+(function setupExpStickyCta() {
+  'use strict';
+
+  // Detecta mobile com base no viewport — sticky só faz sentido aí.
+  // No desktop nem montamos o elemento (poupar memória + DOM).
+  var MOBILE_BREAKPOINT = 768;
+  function isMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+
+  var hostBtn = null;
+  var sticky = null;
+  var stickyBtn = null;
+  var stickyPriceEl = null;
+  var observer = null;
+
+  function build() {
+    if (sticky) return;
+    sticky = document.createElement('div');
+    sticky.className = 'exp-sticky-cta';
+    sticky.setAttribute('aria-hidden', 'true');
+    sticky.innerHTML =
+      '<div class="exp-sticky-cta__price"><small>A partir de</small><span class="exp-sticky-cta__price-val">—</span></div>' +
+      '<button type="button" class="exp-sticky-cta__btn" data-reserve' +
+      ' data-analytics="reserve_click" data-analytics-category="booking">Reservar</button>';
+    document.body.appendChild(sticky);
+    stickyBtn = sticky.querySelector('.exp-sticky-cta__btn');
+    stickyPriceEl = sticky.querySelector('.exp-sticky-cta__price-val');
+  }
+
+  // Copia data-attributes essenciais do botão original pro sticky.
+  // Mantém em sync com mudanças de horário/data feitas pelo usuário.
+  var DATA_KEYS = [
+    'experienceId', 'experienceNome', 'experiencePreco',
+    'horario', 'data', 'dataLabel', 'slotId',
+  ];
+  function syncFromHost() {
+    if (!stickyBtn || !hostBtn) return;
+    DATA_KEYS.forEach(function (k) {
+      var v = hostBtn.dataset[k];
+      if (v != null && v !== '') {
+        stickyBtn.dataset[k] = v;
+      } else {
+        delete stickyBtn.dataset[k];
+      }
+    });
+    stickyBtn.dataset.analyticsLabel = hostBtn.dataset.experienceNome || '';
+    var priceEl = document.querySelector('.exp-detail__price');
+    if (priceEl && stickyPriceEl) {
+      var t = (priceEl.textContent || '').trim();
+      if (t) stickyPriceEl.textContent = t;
+    }
+  }
+
+  function setupObserver() {
+    if (!hostBtn) return;
+    if (observer) observer.disconnect();
+    if (typeof IntersectionObserver === 'undefined') {
+      // Fallback: navegador antigo — mostra sempre.
+      sticky.classList.add('is-visible');
+      return;
+    }
+    observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        // Original FORA da viewport → mostra sticky.
+        // Original DENTRO da viewport → some.
+        sticky.classList.toggle('is-visible', !entry.isIntersecting);
+      });
+    }, { rootMargin: '0px 0px -20px 0px', threshold: 0 });
+    observer.observe(hostBtn);
+  }
+
+  function tryWire() {
+    if (!isMobile()) return;
+    var btn = document.getElementById('exp-reserve-btn');
+    if (!btn) return;
+    if (btn === hostBtn) return;
+    hostBtn = btn;
+    build();
+    syncFromHost();
+    setupObserver();
+  }
+
+  // Inicializa quando a página termina de renderizar o detalhe.
+  // O conteúdo é injetado async (após ElarahData carregar), então
+  // observamos o body via MutationObserver até o botão aparecer.
+  tryWire();
+  var mo = new MutationObserver(function () { tryWire(); });
+  mo.observe(document.body, { childList: true, subtree: true });
+
+  // Re-sync periódico — usuário pode trocar horário/data e os
+  // data-attrs do botão original mudam. Polling leve cobre isso
+  // sem precisar plugar em cada handler individual.
+  setInterval(function () {
+    if (hostBtn && sticky) syncFromHost();
+  }, 1500);
+
+  // Em resize cross-breakpoint, desliga sticky se virou desktop.
+  window.addEventListener('resize', function () {
+    if (!isMobile() && sticky) {
+      sticky.classList.remove('is-visible');
+    }
+  });
 })();
 </script>
 </body>

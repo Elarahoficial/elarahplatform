@@ -341,9 +341,20 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const card = document.createElement('article');
     card.className = 'card';
 
-    const horarios = Array.isArray(exp.horarios) && exp.horarios.length
+    // Dedup textual + ordem original. Recorrência popula exp.horarios
+    // com 1 entrada por slot (ex: 8 datas × 2 horários = 16 entradas
+    // repetidas). Sem dedup, o card mostra 16 chips idênticos.
+    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
       ? exp.horarios
       : (exp.horario ? [exp.horario] : []);
+    const seenHorarios = new Set();
+    const horarios = [];
+    horariosRaw.forEach(function (h) {
+      var key = String(h || '').trim();
+      if (!key || seenHorarios.has(key)) return;
+      seenHorarios.add(key);
+      horarios.push(h);
+    });
     const hasMultipleHorarios = horarios.length > 1;
 
     // Slot availability lookup (populated by loadSlotAvailability)
@@ -1176,9 +1187,20 @@ if (categoriaURL) activeCategoria = categoriaURL;
   // primeiro pra reforçar conversão visual.
   function experienceToOriginalCard(exp) {
     if (!exp || !exp.id) return null;
-    var horarios = Array.isArray(exp.horarios) && exp.horarios.length
+    // Dedup textual de horários (recorrência repete o mesmo horario_label
+    // pra cada slot/data — sem dedup, 8 datas × 2 horários viram 16
+    // chips idênticos no card).
+    var horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
       ? exp.horarios.slice()
       : (exp.horario ? [exp.horario] : []);
+    var seenH = new Set();
+    var horarios = [];
+    horariosRaw.forEach(function (h) {
+      var k = String(h || '').trim();
+      if (!k || seenH.has(k)) return;
+      seenH.add(k);
+      horarios.push(h);
+    });
     return {
       // Identificação + aparência
       id: 'exp-' + exp.id,
@@ -1632,13 +1654,9 @@ if (groupForm) {
 
     function readActiveHorario(triggerEl) {
       if (!triggerEl) return null;
-      // Trigger pode trazer um data-horario explícito (ex.: ghost button
-      // criado pelo resumePendingCheckout após login).
       if (triggerEl.dataset && triggerEl.dataset.horario) {
         return triggerEl.dataset.horario;
       }
-      // Card-based pages (home, categoria, presentear) — botões dentro
-      // do card da experiência.
       const card = triggerEl.closest && triggerEl.closest('.card, .originals__card, .exp-card');
       if (card) {
         const active = card.querySelector('.card__horario-btn--active');
@@ -1649,10 +1667,6 @@ if (groupForm) {
         if (first && first.dataset) return first.dataset.horario || null;
         return null;
       }
-      // Detail page (experiencia.html) — botões vivem fora de cards,
-      // como filhos diretos do container .exp-detail. Sem essa busca,
-      // usuário escolhia 1 dos 3 horários mas o modal sempre cobrava o
-      // primeiro (bug visual: parecia que não dava pra selecionar).
       const detailActive = document.querySelector('.exp-detail__horario-btn--active:not([disabled])');
       if (detailActive && detailActive.dataset && detailActive.dataset.horario) {
         return detailActive.dataset.horario;
@@ -1660,6 +1674,32 @@ if (groupForm) {
       const detailFirst = document.querySelector('.exp-detail__horario-btn:not([disabled])');
       if (detailFirst && detailFirst.dataset) return detailFirst.dataset.horario || null;
       return null;
+    }
+
+    // Lê seleção completa de schedule (data + horario + slot_id) do
+    // botão de reserva ou do horário ativo na página de detalhe.
+    // Retorna { horario, data, dataLabel, slotId } — qualquer campo
+    // pode ser null se não foi setado.
+    function readActiveSchedule(triggerEl) {
+      var result = { horario: null, data: null, dataLabel: null, slotId: null };
+      if (!triggerEl) return result;
+      // 1. Trigger explícito (botão Reservar com data-attrs setados pela UI)
+      if (triggerEl.dataset) {
+        if (triggerEl.dataset.horario) result.horario = triggerEl.dataset.horario;
+        if (triggerEl.dataset.data) result.data = triggerEl.dataset.data;
+        if (triggerEl.dataset.dataLabel) result.dataLabel = triggerEl.dataset.dataLabel;
+        if (triggerEl.dataset.slotId) result.slotId = triggerEl.dataset.slotId;
+        if (result.horario) return result;
+      }
+      // 2. Detail page — botão de horário ativo
+      var detailActive = document.querySelector('.exp-detail__horario-btn--active:not([disabled])');
+      if (detailActive && detailActive.dataset) {
+        result.horario = detailActive.dataset.horario || result.horario;
+        result.data = detailActive.dataset.data || result.data;
+        result.dataLabel = detailActive.dataset.dataLabel || result.dataLabel;
+        result.slotId = detailActive.dataset.slotId || result.slotId;
+      }
+      return result;
     }
 
     function readPrecoFromCard(triggerEl) {
@@ -1743,6 +1783,9 @@ if (groupForm) {
     }
 
     function openLoginModal(msg) {
+      // Esconde o spinner do clique de Reservar — mesmo motivo do que está
+      // em openReservationModal: transição limpa quando o modal de login abre.
+      try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (e) {}
       try {
         if (typeof ElarahAuth !== 'undefined' && ElarahAuth && typeof ElarahAuth.openModal === 'function') {
           ElarahAuth.openModal('login', msg || 'Faça login para concluir sua reserva');
@@ -1815,6 +1858,16 @@ if (groupForm) {
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
         +     '<div id="erm-fee-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#666;margin-top:6px;"><span>Taxa do cartão</span><span id="erm-fee"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
+        +   '</div>'
+        +   // ===== CAMPO EMAIL (visível só em CHECKOUT CONVIDADO — PR F) =====
+            // Quando o usuário não está logado e a feature flag de guest
+            // checkout está ativa, mostramos o campo email aqui. Criamos
+            // conta automaticamente no submit (upgrade silencioso) e
+            // mandamos magic link pra definir senha depois.
+            '<div id="erm-email-wrap" style="display:none;">'
+        +     '<label for="erm-email" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">E-mail <span style="color:#c0392b;">*</span></label>'
+        +     '<input id="erm-email" type="email" autocomplete="email" placeholder="voce@email.com" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
+        +     '<p id="erm-email-msg" style="margin:0 0 14px;font-size:.78rem;color:#888;min-height:1em;">Usamos pra te mandar o ingresso e seu acesso à conta.</p>'
         +   '</div>'
         +   // ===== CAMPO NOME COMPLETO (obrigatório) =====
             '<label for="erm-nome" style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">Nome completo <span style="color:#c0392b;">*</span></label>'
@@ -2078,12 +2131,19 @@ if (groupForm) {
     // nunca trava o checkout por causa da taxa. O admin pode mudar
     // os valores via env var; cliente velho pega novos valores no
     // próximo F5.
+    // Timeout de 2s pra não travar o modal de checkout se o backend
+    // de fee config estiver lento. Se passar de 2s, abortamos e caímos
+    // no fallback 0/0 — pagamento NUNCA pode esperar configuração de
+    // taxa. O usuário com impulso de compra evapora em segundos.
+    const FEE_CONFIG_TIMEOUT_MS = 2000;
     let cachedFeeConfig = null;
     let feeConfigPromise = null;
     async function getFeeConfig() {
       if (cachedFeeConfig) return cachedFeeConfig;
       if (feeConfigPromise) return feeConfigPromise;
       feeConfigPromise = (async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FEE_CONFIG_TIMEOUT_MS);
         try {
           const res = await fetch(CHECKOUT_FN_URL, {
             method: 'POST',
@@ -2093,7 +2153,9 @@ if (groupForm) {
               'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
             },
             body: JSON.stringify({ mode: 'fee_config' }),
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
           const data = await res.json().catch(() => null);
           if (res.ok && data) {
             cachedFeeConfig = {
@@ -2106,7 +2168,12 @@ if (groupForm) {
             cachedFeeConfig = { percent: 0, fixedCents: 0 };
           }
         } catch (e) {
-          console.warn('[Elarah Payment] fee config exceção, fallback 0/0:', e);
+          clearTimeout(timeoutId);
+          if (e && e.name === 'AbortError') {
+            console.warn('[Elarah Payment] fee config timeout em ' + FEE_CONFIG_TIMEOUT_MS + 'ms, fallback 0/0');
+          } else {
+            console.warn('[Elarah Payment] fee config exceção, fallback 0/0:', e);
+          }
           cachedFeeConfig = { percent: 0, fixedCents: 0 };
         }
         return cachedFeeConfig;
@@ -2229,6 +2296,12 @@ if (groupForm) {
     }
 
     function openReservationModal(ctx) {
+      // Esconde o spinner do clique de Reservar IMEDIATAMENTE quando o
+      // modal abre — antes era escondido com 80ms de atraso no finally
+      // do startCheckout, o que causava o spinner aparecer sobreposto
+      // ao modal por um piscar. Agora a transição é limpa: modal abriu
+      // = spinner some.
+      try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (e) {}
       const root = buildReservationModal();
       currentReservationCtx = ctx;
       root.querySelector('#erm-exp').textContent = ctx.experienceNome || 'Experiência';
@@ -2259,6 +2332,28 @@ if (groupForm) {
         root.querySelector('#erm-telefone-msg').style.color = '#888';
         root.querySelector('#erm-telefone-msg').textContent =
           'Usamos pra te avisar sobre a experiência e mudanças de horário.';
+      }
+      // [PR F] Modo CHECKOUT CONVIDADO — exibe campo email no modal.
+      // No submit, criamos conta automaticamente (signUp) com senha
+      // aleatória e disparamos magic link pra pessoa definir senha.
+      const emailWrap = root.querySelector('#erm-email-wrap');
+      const emailInput = root.querySelector('#erm-email');
+      const emailMsg = root.querySelector('#erm-email-msg');
+      if (emailWrap) {
+        if (ctx.isGuest) {
+          emailWrap.style.display = 'block';
+          if (emailInput) {
+            emailInput.value = '';
+            emailInput.required = true;
+          }
+          if (emailMsg) {
+            emailMsg.style.color = '#888';
+            emailMsg.textContent = 'Usamos pra te mandar o ingresso e seu acesso à conta.';
+          }
+        } else {
+          emailWrap.style.display = 'none';
+          if (emailInput) emailInput.required = false;
+        }
       }
       // Reset CPF.
       const cpfInputReset = root.querySelector('#erm-cpf');
@@ -2338,25 +2433,42 @@ if (groupForm) {
         horarioSection.style.display = 'none';
       }
 
-      // ===== Seletor de variante =====
+      // ===== Seletor de variante (Pessoa 1 = comprador) =====
       // Quando a experiência tem variantOptions (ex: Pintura → Lagosta /
-      // Beijo / Olho grego), renderiza botões pill. O escolhido fica em
-      // ctx.variantSelected; vai como variant_selected no payload.
-      // Quando vazio, esconde a seção (zero ruído pras experiências
-      // sem variantes).
+      // Beijo / Olho grego), renderiza botões pill pro comprador. Cada
+      // participante adicional tem o próprio seletor dentro do card dele
+      // (renderizado em renderParticipantFields). A escolha do comprador
+      // vai em ctx.variantSelected (top-level, mantida pra compat com
+      // metadata do Stripe e badge antigo do admin) E em
+      // ctx.variantByParticipant[1] (índice 1 = Pessoa 1 = comprador;
+      // 2..N = participantes adicionais). Cada participantes[i] também
+      // recebe variant_selected antes do submit.
       ctx.variantSelected = null;
+      ctx.variantByParticipant = {};
       var variantSection = root.querySelector('#erm-variant-section');
       var variantLabelEl = root.querySelector('#erm-variant-label');
       var variantOptsEl = root.querySelector('#erm-variant-options');
       var variantMsgEl = root.querySelector('#erm-variant-msg');
-      if (
-        variantSection && variantOptsEl &&
+      var hasVariantsForExp = !!(
         ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
-      ) {
-        variantSection.style.display = 'block';
-        if (variantLabelEl) {
+      );
+
+      // Helper: atualiza o rótulo do seletor do comprador conforme a
+      // quantidade. Quando qty > 1, deixa explícito que esta escolha é
+      // a da Pessoa 1 (o comprador); cada outra pessoa escolhe no card
+      // dela. Quando qty = 1, só "Modelo do quadro *" basta.
+      function updateBuyerVariantLabel() {
+        if (!variantLabelEl || !hasVariantsForExp) return;
+        if ((ctx.quantidade || 1) > 1) {
+          variantLabelEl.textContent = 'Pessoa 1 (você) — ' + ctx.variantLabel + ' *';
+        } else {
           variantLabelEl.textContent = ctx.variantLabel + ' *';
         }
+      }
+
+      if (variantSection && variantOptsEl && hasVariantsForExp) {
+        variantSection.style.display = 'block';
+        updateBuyerVariantLabel();
         variantOptsEl.innerHTML = '';
         if (variantMsgEl) {
           variantMsgEl.style.color = '#888';
@@ -2372,6 +2484,11 @@ if (groupForm) {
           btn.addEventListener('click', function () {
             if (!currentReservationCtx) return;
             currentReservationCtx.variantSelected = opt;
+            // Pessoa 1 (comprador) sempre fica no índice 1 em
+            // variantByParticipant. Mantém paridade com a numeração que
+            // o usuário vê na UI ("Pessoa 1", "Pessoa 2", ...).
+            currentReservationCtx.variantByParticipant = currentReservationCtx.variantByParticipant || {};
+            currentReservationCtx.variantByParticipant[1] = opt;
             // Atualiza visual: o escolhido vira laranja, os demais voltam ao default.
             variantOptsEl.querySelectorAll('.erm-variant-btn').forEach(function (b) {
               if (b.dataset.value === opt) {
@@ -2428,12 +2545,68 @@ if (groupForm) {
         for (var i = 2; i <= ctx.quantidade; i++) {
           var div = document.createElement('div');
           div.style.cssText = 'background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:10px;';
-          div.innerHTML =
-            '<p style="margin:0 0 8px;font-size:.85rem;font-weight:600;color:#1a1a1a;">Participante ' + i + '</p>' +
+          var html =
+            '<p style="margin:0 0 8px;font-size:.85rem;font-weight:600;color:#1a1a1a;">Pessoa ' + i + '</p>' +
             '<input type="text" class="erm-part-nome" placeholder="Nome completo *" data-idx="' + i + '" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:8px;box-sizing:border-box;">' +
             '<input type="tel" class="erm-part-telefone" placeholder="WhatsApp *" data-idx="' + i + '" inputmode="tel" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:6px;box-sizing:border-box;">' +
             '<input type="email" class="erm-part-email" placeholder="E-mail (opcional)" data-idx="' + i + '" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;box-sizing:border-box;">';
+          // Seletor de variante do participante: cada Pessoa 2..N escolhe
+          // o seu próprio quadro/variante. Sem isso, todo mundo herdava
+          // a escolha da Pessoa 1 (comprador), o que confundia a operação
+          // no dia da experiência.
+          if (hasVariantsForExp) {
+            html +=
+              '<div class="erm-part-variant" data-idx="' + i + '" style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5dccd;">' +
+                '<label style="display:block;font-size:.78rem;color:#555;margin-bottom:6px;font-weight:600;">' +
+                  htmlEscape(ctx.variantLabel) + ' *' +
+                '</label>' +
+                '<div class="erm-part-variant-options" data-idx="' + i + '" style="display:flex;flex-wrap:wrap;gap:6px;"></div>' +
+                '<p class="erm-part-variant-msg" data-idx="' + i + '" style="margin:6px 0 0;font-size:.74rem;color:#888;min-height:1em;">Escolha pra continuar.</p>' +
+              '</div>';
+          }
+          div.innerHTML = html;
           participantsEl.appendChild(div);
+
+          // Adiciona os botões de variante via JS (closure no idx) pra
+          // que cada botão saiba pra qual pessoa está votando. innerHTML
+          // não preserva listeners, então tem que ser depois do append.
+          if (hasVariantsForExp) {
+            (function (capIdx) {
+              var optsEl = div.querySelector('.erm-part-variant-options');
+              var msgEl = div.querySelector('.erm-part-variant-msg');
+              if (!optsEl) return;
+              ctx.variantOptions.forEach(function (opt) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'erm-part-variant-btn';
+                b.dataset.value = opt;
+                b.dataset.idx = String(capIdx);
+                b.textContent = opt;
+                b.style.cssText = 'padding:7px 14px;border:1.5px solid #ddd;background:#fff;color:#444;border-radius:999px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;';
+                b.addEventListener('click', function () {
+                  if (!currentReservationCtx) return;
+                  currentReservationCtx.variantByParticipant = currentReservationCtx.variantByParticipant || {};
+                  currentReservationCtx.variantByParticipant[capIdx] = opt;
+                  optsEl.querySelectorAll('.erm-part-variant-btn').forEach(function (other) {
+                    if (other.dataset.value === opt) {
+                      other.style.background = '#fff8ef';
+                      other.style.borderColor = '#f0a05e';
+                      other.style.color = '#1a1a1a';
+                    } else {
+                      other.style.background = '#fff';
+                      other.style.borderColor = '#ddd';
+                      other.style.color = '#444';
+                    }
+                  });
+                  if (msgEl) {
+                    msgEl.style.color = '#1a8a4a';
+                    msgEl.textContent = '✓ ' + ctx.variantLabel + ': ' + opt;
+                  }
+                });
+                optsEl.appendChild(b);
+              });
+            })(i);
+          }
         }
       }
 
@@ -2443,7 +2616,19 @@ if (groupForm) {
         ctx.quantidade = newQty;
         if (qtyEl) qtyEl.textContent = String(newQty);
         console.log('[Elarah QTY] quantidade atualizada para', newQty);
+        // renderParticipantFields() abaixo wipe os cards de Pessoa 2..N
+        // (innerHTML zerado), então nome/telefone/email se perdem
+        // visualmente. Pra manter o estado dos dados consistente com o
+        // visual, descarta as escolhas de variante das Pessoas 2..N.
+        // A escolha da Pessoa 1 (índice 1) sobrevive porque o seletor
+        // dela vive no topo do modal e não é re-renderizado.
+        if (ctx.variantByParticipant) {
+          Object.keys(ctx.variantByParticipant).forEach(function (k) {
+            if (Number(k) >= 2) delete ctx.variantByParticipant[k];
+          });
+        }
         renderParticipantFields();
+        updateBuyerVariantLabel();
         refreshPriceBreakdown();
       }
 
@@ -2779,6 +2964,29 @@ if (groupForm) {
       }
       console.log('[Elarah checkout] telefone válido:', telefoneNormalized);
 
+      // ===== [PR F] VALIDAÇÃO EMAIL (só em checkout convidado) =====
+      let guestEmailNorm = '';
+      if (ctx.isGuest) {
+        const emailInputV = root.querySelector('#erm-email');
+        const emailMsgV = root.querySelector('#erm-email-msg');
+        const emailRaw = emailInputV ? emailInputV.value.trim().toLowerCase() : '';
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
+        if (!emailOk) {
+          if (emailMsgV) {
+            emailMsgV.style.color = '#c0392b';
+            emailMsgV.textContent = 'Informe um e-mail válido.';
+          }
+          if (emailInputV) { try { emailInputV.focus({ preventScroll: true }); } catch (e) {} }
+          return;
+        }
+        if (emailMsgV) {
+          emailMsgV.style.color = '#888';
+          emailMsgV.textContent = 'Usamos pra te mandar o ingresso e seu acesso à conta.';
+        }
+        guestEmailNorm = emailRaw;
+        ctx.email = emailRaw;
+      }
+
       // ===== VALIDAÇÃO CPF (só pra PIX) =====
       let cpfDigits = '';
       if (ctx.paymentMethod === 'pix') {
@@ -2805,9 +3013,13 @@ if (groupForm) {
       }
 
       // ===== VALIDAÇÃO VARIANTE (Pintura: Lagosta/Beijo/Olho grego) =====
-      // Se a experiência tem variantOptions, escolha é obrigatória.
-      // Sem isso, cliente compraria sem definir o modelo do quadro.
-      if (ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length) {
+      // Cada pessoa precisa ter escolhido sua variante. Pessoa 1 (você)
+      // usa o seletor do topo; Pessoa 2..N usa o seletor dentro do card.
+      // Antes só a Pessoa 1 conseguia escolher e o resto herdava — virava
+      // bagunça operacional no dia da experiência.
+      var hasVariants = !!(ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length);
+      if (hasVariants) {
+        // Pessoa 1
         if (!ctx.variantSelected) {
           var vMsg = root.querySelector('#erm-variant-msg');
           if (vMsg) {
@@ -2818,9 +3030,14 @@ if (groupForm) {
           if (vSection) {
             try { vSection.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
           }
-          console.warn('[Elarah checkout] variante não selecionada bloqueou o submit:', ctx.variantLabel);
+          console.warn('[Elarah checkout] variante (Pessoa 1) não selecionada bloqueou o submit:', ctx.variantLabel);
           return;
         }
+        // Mantém variantByParticipant[1] em sincronia com variantSelected
+        // (caso o handler do clique não tenha rodado por algum motivo).
+        ctx.variantByParticipant = ctx.variantByParticipant || {};
+        ctx.variantByParticipant[1] = ctx.variantSelected;
+        // Pessoa 2..N (validação acontece no loop abaixo, junto com nome/telefone)
       }
 
       // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
@@ -2834,9 +3051,10 @@ if (groupForm) {
           var pNome = partNomes[pi].value.trim();
           var pTel = partTels[pi] ? partTels[pi].value.trim() : '';
           var pEmail = partEmails[pi] ? partEmails[pi].value.trim() : '';
+          var pIdx = pi + 2; // Pessoa 2 em diante (Pessoa 1 é o comprador)
           if (!pNome || pNome.length < 3) {
             partNomes[pi].style.borderColor = '#c0392b';
-            errEl.textContent = 'Preencha o nome do Participante ' + (pi + 2) + '.';
+            errEl.textContent = 'Preencha o nome da Pessoa ' + pIdx + '.';
             try { partNomes[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
             break;
@@ -2845,23 +3063,135 @@ if (groupForm) {
           var pTelNorm = normalizePhoneBR(pTel);
           if (!pTelNorm) {
             partTels[pi].style.borderColor = '#c0392b';
-            errEl.textContent = 'Informe o WhatsApp do Participante ' + (pi + 2) + '.';
+            errEl.textContent = 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
             try { partTels[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
             break;
           }
           partTels[pi].style.borderColor = '#ddd';
-          participantes.push({ nome: pNome, telefone: pTel, telefone_digits: pTelNorm, email: pEmail || null });
+          // Variante por pessoa: bloqueia o submit se faltou alguma.
+          var pVariant = null;
+          if (hasVariants) {
+            pVariant = (ctx.variantByParticipant && ctx.variantByParticipant[pIdx]) || null;
+            if (!pVariant) {
+              errEl.textContent = 'Escolha o ' + ctx.variantLabel + ' da Pessoa ' + pIdx + '.';
+              // Destaca a seção da pessoa
+              var partVariantMsg = modalRoot.querySelector('.erm-part-variant-msg[data-idx="' + pIdx + '"]');
+              if (partVariantMsg) {
+                partVariantMsg.style.color = '#c0392b';
+                partVariantMsg.textContent = 'Escolha pra continuar.';
+              }
+              var partVariantSec = modalRoot.querySelector('.erm-part-variant[data-idx="' + pIdx + '"]');
+              if (partVariantSec) {
+                try { partVariantSec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+              }
+              console.warn('[Elarah checkout] variante (Pessoa ' + pIdx + ') não selecionada bloqueou o submit');
+              partValid = false;
+              break;
+            }
+          }
+          participantes.push({
+            nome: pNome,
+            telefone: pTel,
+            telefone_digits: pTelNorm,
+            email: pEmail || null,
+            // variant_selected fica como undefined quando a experiência
+            // não tem variantes — não polui metadata pra experiências
+            // sem essa feature.
+            variant_selected: pVariant || undefined,
+          });
         }
         if (!partValid) return;
       }
-      // Inclui o comprador como Participante 1
-      var allParticipantes = [{ nome: nomeRaw, telefone: telefoneRaw, telefone_digits: telefoneNormalized, email: null }];
-      allParticipantes = allParticipantes.concat(participantes);
+      // Inclui o comprador como Pessoa 1 (índice 0 do array, mas Pessoa 1
+      // na UI). Quando a experiência tem variantes, anexa a escolha do
+      // comprador. Esse array vira metadata.participantes no booking.
+      var compradorEntry = {
+        nome: nomeRaw,
+        telefone: telefoneRaw,
+        telefone_digits: telefoneNormalized,
+        email: null,
+        variant_selected: hasVariants ? (ctx.variantSelected || null) : undefined,
+      };
+      var allParticipantes = [compradorEntry].concat(participantes);
       ctx.participantes = allParticipantes;
 
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Processando...';
+
+      // ===== [PR F] Checkout convidado — criar conta antes do booking =====
+      // Quando o modal está em modo guest, fazemos signUp automático aqui.
+      // Senha aleatória forte; pessoa define a real depois via reset-password.
+      // Se email já está registrado → caímos pro fluxo de login normal.
+      // Se signUp exige confirmação por email → mostra mensagem e bloqueia
+      // (não dá pra criar booking sem session autenticada).
+      if (ctx.isGuest && guestEmailNorm) {
+        try {
+          const supa = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) || null;
+          if (!supa || !supa.auth || typeof supa.auth.signUp !== 'function') {
+            throw new Error('SDK_NOT_READY');
+          }
+          // Senha forte aleatória (32 chars base64).
+          var pwBytes = new Uint8Array(24);
+          (window.crypto || window.msCrypto).getRandomValues(pwBytes);
+          var randomPwd = btoa(String.fromCharCode.apply(null, pwBytes))
+            .replace(/[+/=]/g, 'x') + 'A1!';
+          var signUpRes = await supa.auth.signUp({
+            email: guestEmailNorm,
+            password: randomPwd,
+            options: {
+              data: {
+                nome: ctx.nome || '',
+                telefone: telefoneNormalized || '',
+                from_guest_checkout: true,
+              }
+            }
+          });
+          if (signUpRes && signUpRes.error) {
+            var msg = (signUpRes.error.message || '').toLowerCase();
+            if (msg.indexOf('already registered') !== -1 ||
+                msg.indexOf('user already registered') !== -1 ||
+                msg.indexOf('already exists') !== -1) {
+              // Email já tem conta → cai pro login modal
+              errEl.textContent = '';
+              try { closeReservationModal(); } catch (e) {}
+              try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({
+                experienceId: ctx.experienceId,
+                experienceNome: ctx.experienceNome,
+                horario: ctx.horario,
+                descriptionAcknowledged: true,
+                ts: Date.now(),
+              })); } catch (e) {}
+              openLoginModal('Você já tem conta com este e-mail. Faça login pra continuar a reserva.');
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = 'Confirmar e pagar';
+              return;
+            }
+            throw signUpRes.error;
+          }
+          // Sucesso. Se o projeto exige confirmação por email, session vem null.
+          if (!signUpRes.data || !signUpRes.data.session) {
+            errEl.textContent = 'Confira seu e-mail pra confirmar sua conta e volte aqui pra finalizar a reserva.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar e pagar';
+            return;
+          }
+          // Dispara magic link de reset pra pessoa definir senha real.
+          // Fire-and-forget — não bloqueia o checkout.
+          try {
+            supa.auth.resetPasswordForEmail(guestEmailNorm, {
+              redirectTo: (location.origin || '') + '/reset-password.html'
+            });
+          } catch (e) {}
+          console.log('[Elarah Checkout/Guest] conta criada e logada:', guestEmailNorm);
+        } catch (e) {
+          console.error('[Elarah Checkout/Guest] erro no signUp:', e);
+          errEl.textContent = 'Não conseguimos criar sua conta agora. Tente novamente em alguns segundos.';
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirmar e pagar';
+          return;
+        }
+      }
 
       // Funil step 6 — usuário confirmou no formulário e estamos
       // chamando a edge function de pagamento. Diferencia de
@@ -2920,6 +3250,8 @@ if (groupForm) {
           const pixBody = {
             experiencia_id: ctx.experienceId,
             horario: ctx.horario,
+            data: ctx.data || null,
+            slot_id: ctx.slotId || null,
             email: auth.email || ctx.email,
             nome: ctx.nome || null,
             cpf: cpfDigits,
@@ -3022,6 +3354,8 @@ if (groupForm) {
         const body = {
           experiencia_id: ctx.experienceId,
           horario: ctx.horario,
+          data: ctx.data || null,
+          slot_id: ctx.slotId || null,
           email: auth.email || ctx.email,
           nome: ctx.nome || null,
           telefone: telefoneRaw,
@@ -3536,6 +3870,174 @@ if (groupForm) {
         body.appendChild(enderecoWrap);
       }
 
+      // ===== BLOCO DE SCHEDULE (data + horário) =====
+      // Carrega slots futuros e renderiza chips de data → horário.
+      // Usuário escolhe data primeiro, depois horário daquela data.
+      // Selecionado é guardado em scope local — footer button lê esse
+      // estado antes de continuar pro checkout.
+      var modalSchedSel = { data: null, horario: null, slotId: null, dataLabel: null };
+      var schedSection = document.createElement('div');
+      schedSection.style.cssText = 'margin-top:28px;';
+      body.appendChild(schedSection);
+
+      (async function loadSchedule() {
+        var allSlots = [];
+        try {
+          if (window.ElarahData && ElarahData.getSlotsForExperience) {
+            allSlots = await ElarahData.getSlotsForExperience(exp.id) || [];
+          }
+        } catch (e) { /* tabela ausente */ }
+
+        var now = new Date();
+        var futureSlots = allSlots
+          .filter(function (s) { return s.isActive !== false; })
+          .filter(function (s) { return s.eventAt && new Date(s.eventAt) >= now; })
+          .filter(function (s) {
+            if (s.vagasTotal == null) return true;
+            var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+            return rest > 0;
+          })
+          .sort(function (a, b) { return new Date(a.eventAt) - new Date(b.eventAt); });
+
+        if (!futureSlots.length) {
+          // Fallback: experiência sem slot configurado → mantém UX antiga
+          // (botão Continuar dispara checkout com horario default da experiência)
+          schedSection.style.display = 'none';
+          return;
+        }
+
+        // Agrupa por data (YYYY-MM-DD)
+        var byDate = {};
+        var dateOrder = [];
+        futureSlots.forEach(function (s) {
+          var d = new Date(s.eventAt);
+          var key = d.getFullYear() + '-' +
+                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0');
+          if (!byDate[key]) {
+            byDate[key] = {
+              key: key,
+              dt: d,
+              wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+              dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+              slots: [],
+            };
+            dateOrder.push(key);
+          }
+          byDate[key].slots.push(s);
+        });
+
+        // Estilos comuns (inline pra não depender de CSS externo)
+        var chipCss = function (active) {
+          return [
+            'padding:10px 14px',
+            'border:1.5px solid ' + (active ? '#f0a05e' : '#ddd'),
+            'border-radius:999px',
+            'background:' + (active ? '#f0a05e' : '#fff'),
+            'color:' + (active ? '#fff' : '#555'),
+            'font-size:.82rem',
+            'font-weight:600',
+            'cursor:pointer',
+            'font-family:inherit',
+            'line-height:1.1',
+            'min-width:88px',
+            'text-align:center',
+            'transition:all .15s',
+          ].join(';');
+        };
+        var horarioChipCss = function (active, soldOut) {
+          return [
+            'padding:8px 14px',
+            'border:1.5px solid ' + (active ? '#f0a05e' : '#ddd'),
+            'border-radius:10px',
+            'background:' + (active ? '#f0a05e' : '#fff'),
+            'color:' + (active ? '#fff' : '#555'),
+            'font-size:.85rem',
+            'font-weight:600',
+            'cursor:' + (soldOut ? 'not-allowed' : 'pointer'),
+            'opacity:' + (soldOut ? '.45' : '1'),
+            'font-family:inherit',
+            'transition:all .15s',
+          ].join(';');
+        };
+
+        // ===== CHIPS DE DATA =====
+        var dataLabel = document.createElement('div');
+        dataLabel.textContent = 'Escolha uma data';
+        dataLabel.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
+        schedSection.appendChild(dataLabel);
+
+        var datasWrap = document.createElement('div');
+        datasWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;';
+
+        // ===== CHIPS DE HORÁRIO (re-renderizado on date change) =====
+        var horarioLabel = document.createElement('div');
+        horarioLabel.textContent = 'Escolha um horário';
+        horarioLabel.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
+        var horariosWrap = document.createElement('div');
+        horariosWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+
+        function renderHorarios(dateKey) {
+          horariosWrap.innerHTML = '';
+          var g = byDate[dateKey];
+          if (!g) return;
+          var firstActive = true;
+          g.slots.forEach(function (s, i) {
+            var rest = s.vagasTotal == null ? null : (s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal);
+            var soldOut = rest !== null && rest <= 0;
+            var active = !soldOut && firstActive;
+            if (active) firstActive = false;
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.style.cssText = horarioChipCss(active, soldOut);
+            btn.textContent = s.horario + (soldOut ? ' (esgotado)' : '');
+            btn.disabled = soldOut;
+            if (active) {
+              modalSchedSel.horario = s.horario;
+              modalSchedSel.slotId = s.id;
+              modalSchedSel.data = s.data || g.dm;
+              modalSchedSel.dataLabel = g.wd + ', ' + g.dm;
+            }
+            btn.addEventListener('click', function () {
+              if (soldOut) return;
+              Array.from(horariosWrap.children).forEach(function (c) {
+                c.style.cssText = horarioChipCss(false, c.disabled);
+              });
+              btn.style.cssText = horarioChipCss(true, false);
+              modalSchedSel.horario = s.horario;
+              modalSchedSel.slotId = s.id;
+              modalSchedSel.data = s.data || g.dm;
+              modalSchedSel.dataLabel = g.wd + ', ' + g.dm;
+            });
+            horariosWrap.appendChild(btn);
+          });
+        }
+
+        // Renderiza chips de data
+        dateOrder.forEach(function (k, i) {
+          var g = byDate[k];
+          var active = i === 0;
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.style.cssText = chipCss(active);
+          btn.innerHTML = '<strong>' + g.wd + '</strong><br><small style="font-size:.68rem;opacity:.75;">' + g.dm + '</small>';
+          btn.addEventListener('click', function () {
+            Array.from(datasWrap.children).forEach(function (c) {
+              c.style.cssText = chipCss(false);
+            });
+            btn.style.cssText = chipCss(true);
+            renderHorarios(k);
+          });
+          datasWrap.appendChild(btn);
+        });
+        schedSection.appendChild(datasWrap);
+        schedSection.appendChild(horarioLabel);
+        schedSection.appendChild(horariosWrap);
+
+        // Estado inicial: primeira data → primeiro horário ativo
+        renderHorarios(dateOrder[0]);
+      })();
+
       // Spacer pra o conteúdo poder rolar além do footer
       const spacer = document.createElement('div');
       spacer.style.cssText = 'height:20px;';
@@ -3543,6 +4045,9 @@ if (groupForm) {
 
       scrollContainer.appendChild(hero);
       scrollContainer.appendChild(body);
+
+      // Expõe a seleção pro botão "Continuar" ler na hora do click
+      root.__elarahSched = modalSchedSel;
 
       // ===== FOOTER STICKY =====
       // FORA do scrollContainer, sempre visível.
@@ -3620,6 +4125,9 @@ if (groupForm) {
       document.body.appendChild(root);
       document.body.style.overflow = 'hidden';
       root.classList.add('open');
+      // Description modal está visível agora — esconde o spinner
+      // pra não ficar com camada de blur "dupla" empilhada.
+      try { if (window.ElarahReserveSpinner) ElarahReserveSpinner.hide(); } catch (e) {}
 
       // ===== SCROLL HANDLER — collapsible hero =====
       // Ao rolar, diminui a altura do hero e aplica fade+scale na
@@ -3673,7 +4181,26 @@ if (groupForm) {
           document.body.style.overflow = '';
         }
         if (typeof wasResolve === 'function') {
-          try { wasResolve(confirmed === true); } catch (e) {}
+          // Se confirmou E tem seleção de schedule, passa o objeto
+          // pra o caller setar nos data-attrs do botão (UI nova).
+          // Senão, passa true (fluxo legado).
+          var payload;
+          if (confirmed === true) {
+            if (modalSchedSel && modalSchedSel.horario) {
+              payload = {
+                confirmed: true,
+                horario: modalSchedSel.horario,
+                data: modalSchedSel.data,
+                dataLabel: modalSchedSel.dataLabel,
+                slotId: modalSchedSel.slotId,
+              };
+            } else {
+              payload = true;
+            }
+          } else {
+            payload = false;
+          }
+          try { wasResolve(payload); } catch (e) {}
         }
       }
 
@@ -3723,16 +4250,126 @@ if (groupForm) {
       try { continueBtn.focus({ preventScroll: true }); } catch (e) {}
     }
 
+    // ============================================================
+    // SPINNER INSTANTÂNEO NO CLIQUE DE "RESERVAR"
+    // ------------------------------------------------------------
+    // Sprint 1 / PR A do plano de conversão. Sem feedback visual no
+    // clique, a pessoa esperava 2-4s em silêncio enquanto o backend
+    // carregava dados e achava que o botão tinha quebrado.
+    //
+    // Overlay leve com spinner + texto. Aparece SÍNCRONO no clique
+    // (antes de qualquer await), some quando:
+    //   - description modal aparece no DOM (caso comum)
+    //   - startCheckout resolve (login modal, reservation modal, erro)
+    //   - timeout de segurança de 6s (defensivo, nunca deve ocorrer)
+    // ============================================================
+    function injectReserveSpinnerStyles() {
+      if (document.getElementById('elarah-reserve-spinner-styles')) return;
+      const style = document.createElement('style');
+      style.id = 'elarah-reserve-spinner-styles';
+      style.textContent =
+        '.elarah-reserve-spinner{' +
+          'position:fixed;inset:0;z-index:10001;' +
+          'display:flex;align-items:center;justify-content:center;' +
+          'background:rgba(250,246,240,0.78);backdrop-filter:blur(3px);' +
+          '-webkit-backdrop-filter:blur(3px);' +
+          'opacity:0;pointer-events:none;transition:opacity 160ms ease;' +
+          'font-family:"DM Sans",-apple-system,BlinkMacSystemFont,sans-serif;' +
+        '}' +
+        '.elarah-reserve-spinner.is-active{opacity:1;pointer-events:auto;}' +
+        '.elarah-reserve-spinner__box{' +
+          'display:flex;flex-direction:column;align-items:center;gap:14px;' +
+          'background:#fff;padding:24px 32px;border-radius:18px;' +
+          'box-shadow:0 14px 40px rgba(0,0,0,.14);' +
+          'animation:elarahReserveSpinFade 220ms ease;' +
+        '}' +
+        '.elarah-reserve-spinner__dot{' +
+          'width:34px;height:34px;' +
+          'border:3px solid rgba(240,160,94,.22);' +
+          'border-top-color:#f0a05e;border-radius:50%;' +
+          'animation:elarahReserveSpin 0.8s linear infinite;' +
+        '}' +
+        '.elarah-reserve-spinner__label{' +
+          'font-size:14px;color:#1a1a1a;font-weight:500;letter-spacing:.1px;' +
+        '}' +
+        '@keyframes elarahReserveSpin{to{transform:rotate(360deg);}}' +
+        '@keyframes elarahReserveSpinFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}';
+      document.head.appendChild(style);
+    }
+
+    let reserveSpinnerSafetyTimer = null;
+    let reserveSpinnerShownAt = 0;
+    // Mínimo de exibição do spinner em ms. Ajustado pra 1,5s — balanço
+    // entre dar tempo do cliente LER "Preparando sua reserva…" sem
+    // tornar a espera incômoda (2s pareceu lento na primeira iteração).
+    const RESERVE_SPINNER_MIN_MS = 1500;
+    function showReserveSpinner() {
+      try {
+        injectReserveSpinnerStyles();
+        let overlay = document.getElementById('elarah-reserve-spinner');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'elarah-reserve-spinner';
+          overlay.className = 'elarah-reserve-spinner';
+          overlay.setAttribute('role', 'status');
+          overlay.setAttribute('aria-live', 'polite');
+          overlay.innerHTML =
+            '<div class="elarah-reserve-spinner__box">' +
+              '<div class="elarah-reserve-spinner__dot" aria-hidden="true"></div>' +
+              '<div class="elarah-reserve-spinner__label">Preparando sua reserva…</div>' +
+            '</div>';
+          document.body.appendChild(overlay);
+        }
+        // Force reflow pra que a transição de opacity rode mesmo
+        // recém-criado o elemento.
+        void overlay.offsetWidth;
+        overlay.classList.add('is-active');
+        reserveSpinnerShownAt = Date.now();
+        if (reserveSpinnerSafetyTimer) clearTimeout(reserveSpinnerSafetyTimer);
+        reserveSpinnerSafetyTimer = setTimeout(hideReserveSpinner, 8000);
+      } catch (e) { /* não pode quebrar o checkout */ }
+    }
+    function hideReserveSpinner() {
+      try {
+        const overlay = document.getElementById('elarah-reserve-spinner');
+        if (overlay) overlay.classList.remove('is-active');
+        if (reserveSpinnerSafetyTimer) {
+          clearTimeout(reserveSpinnerSafetyTimer);
+          reserveSpinnerSafetyTimer = null;
+        }
+      } catch (e) {}
+    }
+    // Quanto tempo o spinner já está visível, em ms. 0 se nunca foi
+    // mostrado. Usado por startCheckout pra segurar a abertura do modal
+    // até completar o mínimo de RESERVE_SPINNER_MIN_MS.
+    function getReserveSpinnerElapsedMs() {
+      if (!reserveSpinnerShownAt) return 0;
+      return Date.now() - reserveSpinnerShownAt;
+    }
+    // Promise que resolve quando o spinner já ficou visível pelo tempo
+    // mínimo. Se já passou, resolve imediato.
+    function waitForReserveSpinnerMin() {
+      const elapsed = getReserveSpinnerElapsedMs();
+      const remaining = RESERVE_SPINNER_MIN_MS - elapsed;
+      if (remaining <= 0 || elapsed === 0) return Promise.resolve();
+      return new Promise(function (r) { setTimeout(r, remaining); });
+    }
+    // Exposto pra ser chamado pelos opener de modais (description,
+    // login, reservation) sem precisar de import.
+    window.ElarahReserveSpinner = { show: showReserveSpinner, hide: hideReserveSpinner };
+
     async function startCheckout(btn, opts) {
       opts = opts || {};
       const experienceId = btn.getAttribute('data-experience-id');
       const experienceNome = btn.getAttribute('data-experience-nome') || '';
 
       if (!experienceId) {
+        hideReserveSpinner();
         alert('Não conseguimos identificar essa experiência. Recarregue a página e tente novamente.');
         return;
       }
 
+ claude/add-accounting-admin-section-4wDvv
       // === GATE DE DESCRIÇÃO LIGADO POR PADRÃO ===
       // Mostra a modal de "DESCRIÇÃO COMPLETA" entre o clique em
       // "Reservar"/"Quero participar" e o checkout, pra o cliente ler
@@ -3749,19 +4386,80 @@ if (groupForm) {
           if (btn.dataset && btn.dataset.forceDescription === 'false') return false;
         } catch (e) {}
         return true;
+=======
+      // === [SPRINT 1 / PR B] GATE DE DESCRIÇÃO DESLIGADO POR PADRÃO ===
+      // Antes: sempre mostrava uma modal intermediária com a descrição
+      // entre o clique em "Reservar" e o checkout. Adicionava um clique
+      // a mais e fricção pra quem JÁ leu a página de detalhe.
+      // Item #3 do Sprint 1 do plano de conversão (impacto +10% a +25%).
+      //
+      // Código do gate fica intacto pra reverter rápido se necessário.
+      // Reativar via:
+      //   - URL: ?desc=1
+      //   - DevTools: localStorage.setItem('elarahDescGate','1')
+      //   - data-attribute no botão: data-force-description="true"
+      function descriptionGateEnabled() {
+        try {
+          if ((location.search || '').indexOf('desc=1') !== -1) return true;
+          if (localStorage.getItem('elarahDescGate') === '1') return true;
+          if (btn.dataset && btn.dataset.forceDescription === 'true') return true;
+        } catch (e) {}
+        return false;
+ claude/create-elarah-homepage-VsE5i
       }
       if (!opts.skipDescription && descriptionGateEnabled()) {
         const proceed = await runDescriptionGate(experienceId, experienceNome, btn);
         if (!proceed) {
-          // Usuário fechou a modal sem continuar OU modal já estava
-          // aberta pra outra experiência — não damos sequência.
           return;
         }
-        // Chegou aqui = usuário clicou "Continuar para pagamento".
+        // Se modal retornou objeto com schedule, propaga pro btn pra
+        // que readActiveSchedule pegue data + horario + slot_id do
+        // checkout. true (sem objeto) = fluxo legado sem seleção.
+        if (proceed && typeof proceed === 'object') {
+          if (proceed.horario) btn.dataset.horario = proceed.horario;
+          if (proceed.data) btn.dataset.data = proceed.data;
+          if (proceed.dataLabel) btn.dataset.dataLabel = proceed.dataLabel;
+          if (proceed.slotId) btn.dataset.slotId = proceed.slotId;
+        }
       }
 
+      // === [SPRINT 1 / PR F] CHECKOUT CONVIDADO (FEATURE FLAG) ===
+      // Quando a flag está ON, pula o login modal. O modal de reserva
+      // entra em modo guest (mostra campo email) e cria conta auto no
+      // submit. Maior impacto isolado do Sprint 1 (+40% a +80% estimado).
+      // Atrás de flag pra rollout controlado — começa OFF.
+      //
+      // Ativar:
+      //   - URL: ?guest=1
+      //   - DevTools: localStorage.setItem('elarahGuestCheckout','1')
+      // === CHECKOUT CONVIDADO — LIGADO POR PADRÃO (PR G) ===
+      // Sprint 1 / Item #1 do plano de conversão — maior impacto isolado.
+      // 'Confirm email' do Supabase está OFF, então o signUp client-side
+      // retorna session imediatamente e a pessoa segue pro pagamento sem
+      // precisar criar senha nem confirmar e-mail.
+      //
+      // Kill switch (caso precise desligar emergencialmente):
+      //   - URL: ?guest=0
+      //   - DevTools: localStorage.setItem('elarahGuestCheckout','0')
+      // Para forçar ligado em testes (override do kill switch):
+      //   - URL: ?guest=1
+      //   - DevTools: localStorage.setItem('elarahGuestCheckout','1')
+      function guestCheckoutEnabled() {
+        try {
+          // Kill switch tem precedência.
+          if ((location.search || '').indexOf('guest=0') !== -1) return false;
+          if (localStorage.getItem('elarahGuestCheckout') === '0') return false;
+          // Overrides explícitos.
+          if ((location.search || '').indexOf('guest=1') !== -1) return true;
+          if (localStorage.getItem('elarahGuestCheckout') === '1') return true;
+        } catch (e) {}
+        return true;
+      }
+      const isGuestMode = !isUserLogged() && guestCheckoutEnabled();
+
       // === GATE DE LOGIN OBRIGATÓRIO ===
-      if (!isUserLogged()) {
+      // Pulado quando isGuestMode === true.
+      if (!isUserLogged() && !isGuestMode) {
         try {
           sessionStorage.setItem(PENDING_KEY, JSON.stringify({
             experienceId: experienceId,
@@ -3799,6 +4497,7 @@ if (groupForm) {
       // dinâmicos (variantLabel, variantOptions) que nunca vêm via
       // data-attributes do botão.
       let horario = readActiveHorario(btn);
+      const scheduleSel = readActiveSchedule(btn);
       let precoLabel = btn.getAttribute('data-experience-preco') || readPrecoFromCard(btn);
       let precoCentavos = parsePrecoToCents(precoLabel);
       let variantLabel = null;
@@ -3834,7 +4533,15 @@ if (groupForm) {
         precoLabel = precoLabel || '';
       }
 
-      const auth = await getAuthInfo();
+      // Em modo guest pulamos getAuthInfo (não tem sessão).
+      const auth = isGuestMode ? { email: null, nome: null } : await getAuthInfo();
+
+      // Segura a abertura do modal até o spinner ter completado seu
+      // tempo mínimo de exibição (RESERVE_SPINNER_MIN_MS). Se a
+      // preparação já demorou mais que esse mínimo, abre na hora.
+      // Cria sensação de ritual premium e dá tempo do cliente ler
+      // "Preparando sua reserva…".
+      try { await waitForReserveSpinnerMin(); } catch (e) {}
 
       openReservationModal({
         experienceId: experienceId,
@@ -3843,8 +4550,16 @@ if (groupForm) {
         // Lista completa de horários — se > 1, modal renderiza seletor
         // pra usuário trocar antes de confirmar.
         horarios: horariosArr,
+        // Data + slot vindo da nova UI de chips de data (experiencia.html).
+        // Em página de card (home/categoria) virão null — backend faz
+        // fallback pra busca por (exp_id, horario) como antes.
+        data: scheduleSel.data || null,
+        dataLabel: scheduleSel.dataLabel || null,
+        slotId: scheduleSel.slotId || null,
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
+        // [PR F] modo guest — modal mostra campo email e cria conta no submit
+        isGuest: isGuestMode,
         email: auth.email,
         // Pré-preenche com o nome do profile (se disponível). O usuário
         // ainda pode editar no modal antes de confirmar.
@@ -3867,7 +4582,19 @@ if (groupForm) {
       if (typeof e.stopImmediatePropagation === 'function') {
         e.stopImmediatePropagation();
       }
-      startCheckout(btn);
+      // Spinner síncrono — feedback visual instantâneo no clique.
+      // Some via finally + via hideReserveSpinner chamado pelos modais.
+      showReserveSpinner();
+      // data-skip-description="true" → pula o modal de descrição
+      // (usado pela campanha DDN — cliente já viu a página temática,
+      // não precisa ver modal de descrição genérico antes do checkout).
+      var skipDesc = btn.dataset && btn.dataset.skipDescription === 'true';
+      var p = startCheckout(btn, skipDesc ? { skipDescription: true } : undefined);
+      if (p && typeof p.finally === 'function') {
+        p.finally(function () { setTimeout(hideReserveSpinner, 80); });
+      } else {
+        setTimeout(hideReserveSpinner, 200);
+      }
     }, true);
 
     // === Retomar checkout pendente após login ===

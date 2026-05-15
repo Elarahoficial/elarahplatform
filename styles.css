@@ -173,6 +173,29 @@ select {
   background: #fbeeea;
 }
 
+/* Dia dos Namorados — vinho elegante (paleta burgundy + dot dourado).
+   Premium, emocional, sem ser cafona. */
+.header__nav-link--ddn {
+  color: #6b1f2e !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.header__nav-link--ddn::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #b08945 0%, #6b1f2e 100%);
+  box-shadow: 0 0 0 3px rgba(176,137,69,0.18);
+}
+.header__nav-link--ddn:hover {
+  color: #4a1622 !important;
+  background: #fbeef0;
+}
+
 .header__nav-chevron {
   width: 16px;
   height: 16px;
@@ -463,7 +486,11 @@ select {
 
 .categories__inner {
   display: flex;
+  /* Centraliza quando cabe na tela; alinha no início quando passa
+     da largura do viewport. Sem o "safe", o overflow esconde o início
+     da lista (Bartenderia ficava cortada). */
   justify-content: center;
+  justify-content: safe center;
   align-items: center;
   width: 100%;
   padding: 32px 48px;
@@ -471,6 +498,7 @@ select {
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 48px;
 }
 
 .categories__inner::-webkit-scrollbar {

@@ -30,6 +30,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { getPayment } from "../_shared/mercadopago.ts";
 import {
   bookingConfirmationEmailHtml,
+  generateGiftCardCode,
+  giftCardEmailHtml,
   sendEmail,
 } from "../_shared/email.ts";
 
@@ -112,6 +114,233 @@ async function sendConfirmationEmail(booking: Booking) {
   }
 }
 
+// ===== Reconciliação de gift card via PIX =====
+// Polling do frontend chama isto com gift_card_id. Lê status atual
+// no banco; se ainda não está ativo, consulta a MP pelo mp_payment_id
+// salvo no metadata e ativa se a MP já aprovou (cobre atraso/falha
+// do webhook). Retorno é seguro pra o front exibir status final ao
+// usuário sem precisar de RLS abrindo a tabela gift_cards pro anon.
+async function reconcileGiftCard(giftCardId: string): Promise<Response> {
+  const { data: gc, error: gcErr } = await supabase
+    .from("gift_cards")
+    .select(
+      "id, code, status, valor_inicial_centavos, comprador_email, comprador_nome, " +
+        "destinatario_email, destinatario_nome, mensagem, expires_at, email_sent_at, metadata",
+    )
+    .eq("id", giftCardId)
+    .maybeSingle();
+
+  if (gcErr || !gc) {
+    return jsonResponse({ error: "gift_card_not_found" }, 404);
+  }
+
+  // Já ativo? devolve direto pro front saber que pode mostrar sucesso.
+  if (gc.status === "active") {
+    return jsonResponse({
+      gift_card_id: gc.id,
+      gift_card_status: "active",
+      mp_status: "approved",
+      updated: false,
+    });
+  }
+  if (gc.status === "cancelled") {
+    return jsonResponse({
+      gift_card_id: gc.id,
+      gift_card_status: "cancelled",
+      mp_status: "cancelled",
+      updated: false,
+    });
+  }
+
+  // Ainda pending — consulta a MP pra ver se já aprovaram.
+  const meta = (gc.metadata ?? {}) as Record<string, unknown>;
+  const mpPaymentId = String(meta.mp_payment_id ?? "");
+  if (!mpPaymentId) {
+    return jsonResponse({
+      gift_card_id: gc.id,
+      gift_card_status: gc.status,
+      mp_status: null,
+      updated: false,
+      message: "Gift card sem mp_payment_id no metadata.",
+    });
+  }
+
+  const result = await getPayment(MP_ACCESS_TOKEN, mpPaymentId);
+  if (!result.ok || !result.payment) {
+    return jsonResponse(
+      {
+        gift_card_id: gc.id,
+        gift_card_status: gc.status,
+        mp_status: null,
+        updated: false,
+        error: "mp_fetch_failed",
+        detail: result.errorBody,
+      },
+      502,
+    );
+  }
+  const payment = result.payment;
+  const mpStatus = payment.status;
+
+  // MP recusou ou cancelou — marca o gift_card como cancelled.
+  if (mpStatus === "rejected" || mpStatus === "cancelled") {
+    await supabase
+      .from("gift_cards")
+      .update({ status: "cancelled" })
+      .eq("id", giftCardId);
+    return jsonResponse({
+      gift_card_id: gc.id,
+      gift_card_status: "cancelled",
+      mp_status: mpStatus,
+      updated: true,
+    });
+  }
+
+  // Ainda intermediário — devolve sem alterar o banco.
+  if (mpStatus !== "approved" && mpStatus !== "authorized") {
+    return jsonResponse({
+      gift_card_id: gc.id,
+      gift_card_status: gc.status,
+      mp_status: mpStatus,
+      updated: false,
+    });
+  }
+
+  // MP aprovou mas o gift_card ainda está pending — ativa aqui (mesma
+  // lógica do mp-webhook.processGiftCardPayment, replicada porque
+  // edge functions Deno não compartilham módulos custom entre si).
+  let code = "";
+  for (let i = 0; i < 5; i++) {
+    const candidate = generateGiftCardCode();
+    const { data: collision } = await supabase
+      .from("gift_cards")
+      .select("id")
+      .eq("code", candidate)
+      .maybeSingle();
+    if (!collision) {
+      code = candidate;
+      break;
+    }
+  }
+  if (!code) {
+    return jsonResponse(
+      { error: "code_generation_failed", message: "Falha ao gerar código." },
+      500,
+    );
+  }
+
+  const expiresAtIso = gc.expires_at ||
+    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: updated, error: updErr } = await supabase
+    .from("gift_cards")
+    .update({
+      code,
+      status: "active",
+      expires_at: expiresAtIso,
+      email_sent_at: null,
+    })
+    .eq("id", giftCardId)
+    .eq("status", "pending")
+    .select()
+    .maybeSingle();
+
+  if (updErr || !updated) {
+    // Pode ter sido ativado pelo webhook entre nossa leitura e o update.
+    const { data: refetched } = await supabase
+      .from("gift_cards")
+      .select("status, code")
+      .eq("id", giftCardId)
+      .maybeSingle();
+    if (refetched && refetched.status === "active" && refetched.code) {
+      return jsonResponse({
+        gift_card_id: gc.id,
+        gift_card_status: "active",
+        mp_status: mpStatus,
+        updated: false,
+      });
+    }
+    return jsonResponse(
+      { error: "activation_failed", detail: updErr },
+      500,
+    );
+  }
+
+  // Envia e-mails (destinatário + cópia pro comprador). Idempotência:
+  // só envia se email_sent_at vier null — se já tem timestamp, é
+  // replay e a gente pula.
+  const valor = Number(gc.valor_inicial_centavos || 0);
+  const recipient = String(gc.destinatario_email ?? "").trim();
+  const recipientNome = (gc.destinatario_nome ?? "").trim() || null;
+  const buyerEmail = (gc.comprador_email ?? "").trim() || null;
+  const buyerNome = (gc.comprador_nome ?? "").trim() || null;
+  const mensagem = (gc.mensagem ?? "").trim() || null;
+  const expiresAtLabel = new Date(expiresAtIso).toLocaleDateString("pt-BR");
+
+  if (recipient) {
+    const html = giftCardEmailHtml({
+      recipientName: recipientNome,
+      buyerName: buyerNome,
+      code,
+      valorCentavos: valor,
+      message: mensagem,
+      expiresAt: expiresAtLabel,
+    });
+    const sendResult = await sendEmail({
+      to: recipient,
+      subject: "Você recebeu um gift card da Elarah ✨",
+      html,
+    });
+    if (sendResult.ok) {
+      await supabase
+        .from("gift_cards")
+        .update({ email_sent_at: new Date().toISOString() })
+        .eq("id", giftCardId);
+    } else {
+      console.error(
+        "[Elarah Payment/MP gift reconcile] e-mail destinatário falhou",
+        "gift_card_id=" + giftCardId,
+        "error=" + (sendResult.error ?? "?"),
+      );
+    }
+  }
+
+  if (
+    buyerEmail &&
+    recipient &&
+    buyerEmail.toLowerCase() !== recipient.toLowerCase()
+  ) {
+    const htmlBuyer = giftCardEmailHtml({
+      recipientName: buyerNome,
+      buyerName: buyerNome,
+      code,
+      valorCentavos: valor,
+      message: "Cópia para você. O código original foi enviado para " +
+        recipient + ".",
+      expiresAt: expiresAtLabel,
+    });
+    const buyerResult = await sendEmail({
+      to: buyerEmail,
+      subject: "Sua compra de gift card Elarah foi confirmada",
+      html: htmlBuyer,
+    });
+    if (!buyerResult.ok) {
+      console.error(
+        "[Elarah Payment/MP gift reconcile] e-mail comprador falhou",
+        "gift_card_id=" + giftCardId,
+        "error=" + (buyerResult.error ?? "?"),
+      );
+    }
+  }
+
+  return jsonResponse({
+    gift_card_id: gc.id,
+    gift_card_status: "active",
+    mp_status: mpStatus,
+    updated: true,
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -134,12 +363,22 @@ serve(async (req) => {
   const paymentIdFromPayload = payload.payment_id
     ? String(payload.payment_id)
     : null;
+  const giftCardId = payload.gift_card_id ? String(payload.gift_card_id) : null;
 
-  if (!bookingId && !paymentIdFromPayload) {
+  if (!bookingId && !paymentIdFromPayload && !giftCardId) {
     return jsonResponse(
-      { error: "booking_id_or_payment_id_required" },
+      { error: "booking_id_or_payment_id_or_gift_card_id_required" },
       400,
     );
+  }
+
+  // ===== Gift card via PIX =====
+  // Quando o front polla com gift_card_id, reconcilia o status e
+  // dispara ativação se a MP confirmou mas o webhook ainda não rodou
+  // (atraso/falha temporária). Mesmo princípio do fluxo de booking
+  // mais abaixo, mas operando em gift_cards.
+  if (giftCardId) {
+    return await reconcileGiftCard(giftCardId);
   }
 
   const booking = await findBooking(bookingId, paymentIdFromPayload);

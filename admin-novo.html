@@ -1,0 +1,3373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <!-- Anti-cache: o admin não pode servir HTML cacheado (filtros novos
+       não aparecem se o navegador segura a versão anterior). Combinado
+       com versionamento dos JS/CSS via ?v= isso garante que toda visita
+       puxe a versão atual sem precisar de hard reload manual. -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Admin — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css?v=10">
+  <!-- Auto-bust de cache: se a versão local divergir da esperada,
+       força reload limpo via location.replace com query string única.
+       Resolve quando admin.html é cacheado pelo CDN/navegador apontando
+       pra versão antiga do admin.js. Roda 1x por sessão. -->
+  <script>
+    (function () {
+      var EXPECTED = 116;
+      try {
+        var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
+        if (stored === EXPECTED) return;                  // já está na versão certa
+        sessionStorage.setItem('elarah_admin_v', String(EXPECTED));
+        // Se já tinha versão antiga gravada E essa página foi carregada SEM
+        // query de cache-bust, força reload com query única. Isso evita loop
+        // (a query muda → próximo load não dispara de novo).
+        if (stored > 0 && stored < EXPECTED && !location.search.includes('cb=')) {
+          location.replace(location.pathname + '?cb=' + Date.now() + location.hash);
+        }
+      } catch (e) { /* sessionStorage indisponível: ignora */ }
+    })();
+  </script>
+</head>
+<body>
+
+<div class="admin">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="admin__sidebar">
+    <div class="admin__logo">
+      <img src="assets/logo.png" alt="Elarah">
+      <span>Painel Admin</span>
+    </div>
+
+    <nav class="admin__nav">
+      <button class="admin__nav-item admin__nav-item--active" data-panel="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        <span>Visão geral</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="painel-semanal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3-9 4 18 3-9h4"/>
+        </svg>
+        <span>Painel semanal</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="rotina">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <path d="M9 14l2 2 4-4"/>
+        </svg>
+        <span>Rotina</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="conteudo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          <polygon points="10 8 16 11 10 14 10 8" fill="currentColor"/>
+        </svg>
+        <span>Conteúdo</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Usuários</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="partners">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2H9z"/><path d="M3 7v10a2 2 0 0 0 2 2h4"/>
+        </svg>
+        <span>Parceiros</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="purchases">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span>Compras</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="fornecedores">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Fornecedores</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="prospects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 11h-6"/><path d="M19 8v6"/>
+        </svg>
+        <span>Prospecção</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="b2b-prospects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"/>
+          <path d="M5 21V7l8-4v18"/>
+          <path d="M19 21V11l-6-4"/>
+          <path d="M9 9h.01"/><path d="M9 12h.01"/><path d="M9 15h.01"/><path d="M9 18h.01"/>
+        </svg>
+        <span>Prospecção B2B</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="purchases-pending">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+        </svg>
+        <span>Pendentes</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="experiences">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Experiências</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="experiencias-foco">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        <span>Experiências foco</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="byelarah">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.39 6.97H21l-5.3 3.85 2.02 6.21L12 15.1l-5.72 3.93 2.02-6.21L3 8.97h6.61z"/>
+        </svg>
+        <span>By Elarah</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="giftcards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 12 20 22 4 22 4 12"/>
+          <rect x="2" y="7" width="20" height="5"/>
+          <line x1="12" y1="22" x2="12" y2="7"/>
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+        </svg>
+        <span>Gift Cards</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="coupons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 12V8H6a2 2 0 1 1 0-4h12v4"/>
+          <path d="M20 12v4H6a2 2 0 1 0 0 4h12v-4"/>
+          <circle cx="9" cy="9" r="1"/>
+          <circle cx="9" cy="15" r="1"/>
+        </svg>
+        <span>Cupons</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="contabilidade">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h18v4H3z"/>
+          <path d="M5 7v14h14V7"/>
+          <path d="M9 11h6"/>
+          <path d="M9 15h6"/>
+          <path d="M9 19h3"/>
+        </svg>
+        <span>Contabilidade</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="social">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 11a9 9 0 0 1 9 9"/>
+          <path d="M4 4a16 16 0 0 1 16 16"/>
+          <circle cx="5" cy="19" r="1.5"/>
+        </svg>
+        <span>Redes Sociais</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="analytics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>Analytics</span>
+      </button>
+    </nav>
+
+    <a href="feed.html" target="_blank" rel="noopener"
+       class="admin__nav-item"
+       style="text-decoration:none;"
+       title="Visualização contínua de experiências (modo gravação) — abre em nova aba">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="6" rx="1"/>
+        <rect x="3" y="11" width="18" height="6" rx="1"/>
+        <line x1="3" y1="20" x2="21" y2="20"/>
+      </svg>
+      <span>Modo Feed</span>
+    </a>
+
+    <div class="admin__nav-bottom">
+      <!-- Marcador de versão visível: serve pra confirmar a olho qual
+           versão do admin carregou (cache busting). Toda vez que sair
+           algo novo, esse número sobe. Se você não está vendo o filtro
+           novo de fornecedor, esse marcador deve estar igual ou maior
+           que v.60. Se está em 57 ou menor, é cache do navegador. -->
+      <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
+ claude/social-instagram-integration
+        Admin v.62 · 2026-04-30
+=======
+        Admin v.69 · 2026-04-29 (cupom no template)
+ claude/create-elarah-homepage-VsE5i
+      </div>
+      <button class="admin__logout" id="admin-logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>Sair do admin</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="admin__main">
+
+    <!-- ===== OVERVIEW PANEL ===== -->
+    <div class="admin__panel admin__panel--active" id="panel-overview">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Visão geral</h1>
+        <p class="admin__page-subtitle">Resumo da plataforma Elarah</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Usuários</div>
+          <div class="admin__stat-value" id="stat-users">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Parceiros</div>
+          <div class="admin__stat-value" id="stat-partners">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Compras</div>
+          <div class="admin__stat-value" id="stat-purchases">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Experiências</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-experiences">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Gift cards (ativos)</div>
+          <div class="admin__stat-value" id="stat-giftcards">0</div>
+        </div>
+      </div>
+
+      <!-- Recent users -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Últimos cadastros</span>
+          <span class="admin__table-count" id="overview-users-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Cidade</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="overview-users-body">
+            <tr><td colspan="4" class="admin__table-empty">Nenhum usuário cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ===== SISTEMA OPERACIONAL SEMANAL — 3 abas novas ========== -->
+    <!-- ============================================================ -->
+
+    <!-- ===== PAINEL SEMANAL ===== -->
+    <div class="admin__panel" id="panel-painel-semanal">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Painel semanal</h1>
+          <p class="admin__page-subtitle" id="painel-semanal-subtitle">Resumo da operação da semana</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" id="painel-prev-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">← Semana anterior</button>
+          <button type="button" id="painel-this-week" class="admin__btn" style="padding:6px 12px;background:#fff8ef;border:1px solid #b07b00;color:#7a4f00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Esta semana</button>
+          <button type="button" id="painel-next-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">Próxima →</button>
+          <button type="button" id="painel-refresh" class="admin__btn" style="padding:6px 12px;background:transparent;border:1px dashed #999;color:#666;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">↻</button>
+        </div>
+      </div>
+
+      <!-- 9 cards em grid responsivo -->
+      <div id="painel-semanal-grid" class="op-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px;">
+        <!-- preenchido via JS -->
+      </div>
+
+      <!-- Lista de pendências da semana -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Pendências para resolver</span>
+          <span class="admin__table-count" id="painel-pendencias-count"></span>
+        </div>
+        <div id="painel-pendencias" style="padding:12px 16px;font-size:.9rem;line-height:1.6;color:#444;">
+          <em style="color:#888;">Carregando…</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ROTINA ===== -->
+    <div class="admin__panel" id="panel-rotina">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Rotina semanal</h1>
+          <p class="admin__page-subtitle" id="rotina-subtitle">Tarefas da semana — clique para marcar como concluída</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" id="rotina-prev-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">← Anterior</button>
+          <button type="button" id="rotina-this-week" class="admin__btn" style="padding:6px 12px;background:#fff8ef;border:1px solid #b07b00;color:#7a4f00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Esta semana</button>
+          <button type="button" id="rotina-next-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">Próxima →</button>
+          <button type="button" id="rotina-templates-btn" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">⚙️ Templates</button>
+        </div>
+      </div>
+
+      <!-- Grid 7 colunas (Seg-Dom) — vira 1 coluna no mobile -->
+      <div id="rotina-grid" class="op-week-grid" style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:10px;">
+        <!-- preenchido via JS -->
+      </div>
+    </div>
+
+    <!-- ===== CONTEUDO (KANBAN) ===== -->
+    <div class="admin__panel" id="panel-conteudo">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Conteúdo</h1>
+          <p class="admin__page-subtitle">Kanban de produção — Ideia → Roteiro → Gravado → Editado → Agendado → Postado → Reaproveitado</p>
+        </div>
+        <button type="button" id="conteudo-new-btn" class="admin__btn" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">+ Novo conteúdo</button>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <select id="conteudo-filter-tipo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos os tipos</option>
+          <option value="Reels">Reels</option>
+          <option value="Story">Story</option>
+          <option value="TikTok">TikTok</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Post">Post</option>
+          <option value="Grupo WhatsApp">Grupo WhatsApp</option>
+        </select>
+        <select id="conteudo-filter-objetivo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos os objetivos</option>
+          <option value="venda">Venda</option>
+          <option value="bastidor">Bastidor</option>
+          <option value="branding">Branding</option>
+          <option value="prova_social">Prova social</option>
+          <option value="lancamento">Lançamento</option>
+          <option value="urgencia">Urgência</option>
+          <option value="autoridade">Autoridade</option>
+        </select>
+        <select id="conteudo-filter-responsavel" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos responsáveis</option>
+          <option value="voce">Você</option>
+          <option value="socia">Sócia</option>
+          <option value="ambas">Ambas</option>
+        </select>
+        <input type="search" id="conteudo-filter-search" placeholder="Buscar título…" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
+      </div>
+
+      <!-- Kanban com scroll horizontal no mobile -->
+      <div id="conteudo-kanban" class="op-kanban" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;">
+        <!-- preenchido via JS -->
+      </div>
+    </div>
+
+    <!-- ===== MODALS Sistema Operacional ===== -->
+
+    <!-- Modal: editar/criar tarefa de rotina -->
+    <div id="rotina-task-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 12px;font-size:1.2rem;" id="rotina-task-modal-title">Tarefa</h2>
+        <input type="hidden" id="rotina-task-id">
+        <input type="hidden" id="rotina-task-week-start">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+          <label style="font-size:.82rem;font-weight:600;">Título *<input type="text" id="rotina-task-titulo" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Dia<select id="rotina-task-week-day" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="0">Segunda</option><option value="1">Terça</option><option value="2">Quarta</option><option value="3">Quinta</option><option value="4">Sexta</option><option value="5">Sábado</option><option value="6">Domingo</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="rotina-task-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+          </div>
+          <label style="font-size:.82rem;font-weight:600;">Status<select id="rotina-task-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="pendente">Pendente</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option></select></label>
+          <label style="font-size:.82rem;font-weight:600;">Notas<textarea id="rotina-task-notas" rows="3" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+        </div>
+        <div id="rotina-task-msg" style="margin-top:10px;font-size:.85rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="rotina-task-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="rotina-task-duplicate" style="padding:8px 14px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Duplicar</button>
+          <button type="button" id="rotina-task-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+          <button type="button" id="rotina-task-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: gerenciar templates da rotina -->
+    <div id="rotina-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.2rem;">Templates da rotina</h2>
+        <p style="margin:0 0 14px;font-size:.82rem;color:#666;">Tarefas recorrentes que aparecem em todas as semanas. Mudanças NÃO afetam semanas já criadas — só novas.</p>
+        <button type="button" id="rotina-template-new" style="margin-bottom:12px;padding:6px 12px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+        <div id="rotina-templates-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="rotina-templates-close" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: editar/criar conteúdo -->
+    <div id="conteudo-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 12px;font-size:1.2rem;" id="conteudo-modal-title">Conteúdo</h2>
+        <input type="hidden" id="conteudo-id">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+          <label style="font-size:.82rem;font-weight:600;">Título *<input type="text" id="conteudo-titulo" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;">Tipos (1+ selecionados)
+            <div id="conteudo-tipos-checks" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;font-weight:400;">
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Reels"> Reels</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Story"> Story</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="TikTok"> TikTok</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="LinkedIn"> LinkedIn</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Post"> Post</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Grupo WhatsApp"> Grupo WhatsApp</label>
+            </div>
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Objetivo<select id="conteudo-objetivo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="venda">Venda</option><option value="bastidor">Bastidor</option><option value="branding">Branding</option><option value="prova_social">Prova social</option><option value="lancamento">Lançamento</option><option value="urgencia">Urgência</option><option value="autoridade">Autoridade</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="conteudo-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Status<select id="conteudo-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="ideia">💡 Ideia</option><option value="roteiro">✍️ Roteiro</option><option value="gravado">🎥 Gravado</option><option value="editado">✂️ Editado</option><option value="agendado">📅 Agendado</option><option value="postado">✅ Postado</option><option value="reaproveitado">🔁 Reaproveitado</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Experiência (opcional)<select id="conteudo-experience" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option></select></label>
+          </div>
+          <label style="font-size:.82rem;font-weight:600;">Data agendada (se aplicável)<input type="datetime-local" id="conteudo-scheduled-at" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;">Notas / Copy / Roteiro<textarea id="conteudo-notas" rows="4" placeholder="Cola aqui a copy, link do Drive, ou anotações livres" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+        </div>
+        <div id="conteudo-msg" style="margin-top:10px;font-size:.85rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="conteudo-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="conteudo-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+          <button type="button" id="conteudo-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CSS responsivo do Sistema Operacional Semanal -->
+    <style>
+      /* Mobile: rotina vira 1 coluna por dia, kanban segue scroll horizontal */
+      @media (max-width: 768px) {
+        .op-week-grid { grid-template-columns: 1fr !important; }
+        .op-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      }
+      /* Cards do painel */
+      .op-card {
+        background:#fff;border:1px solid #eee;border-radius:10px;padding:14px;
+        box-shadow:0 1px 3px rgba(0,0,0,.04);cursor:pointer;transition:transform .12s, box-shadow .12s;
+      }
+      .op-card:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.08); }
+      .op-card-label { font-size:.7rem;text-transform:uppercase;color:#888;letter-spacing:.04em;margin-bottom:6px;font-weight:700; }
+      .op-card-value { font-size:1.5rem;font-weight:700;color:#222; }
+      .op-card-sub   { font-size:.72rem;color:#888;margin-top:4px; }
+      .op-card--alert .op-card-value { color:#c0392b; }
+      .op-card--good  .op-card-value { color:#1a8a4a; }
+      /* Coluna de dia (rotina) */
+      .op-day-col {
+        background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;min-height:200px;
+      }
+      /* Fim de semana: leve tom diferente pra não competir com Seg-Sex */
+      .op-day-col--weekend { background:#f5f3ee; }
+      /* Tarefa auto-gerada por experiência: faixa lateral colorida */
+      .op-task--exp { border-left:3px solid #e0a437; }
+      .op-day-col__header {
+        display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
+        padding-bottom:8px;border-bottom:1px solid #e8e8e8;
+      }
+      .op-day-col__label { font-size:.85rem;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:.04em; }
+      .op-day-col__date  { font-size:.7rem;color:#888; }
+      .op-task {
+        display:flex;align-items:flex-start;gap:8px;padding:8px;border-radius:6px;margin-bottom:6px;
+        background:#fff;border:1px solid #eee;cursor:pointer;transition:background .12s;
+      }
+      .op-task:hover { background:#fcfcfc; }
+      .op-task--done { opacity:.55; }
+      .op-task--done .op-task-title { text-decoration:line-through; }
+      .op-task-check { margin-top:2px; }
+      .op-task-title { font-size:.82rem;color:#222;line-height:1.3;flex:1; }
+      .op-task-meta  { font-size:.65rem;color:#666;margin-top:2px;display:flex;gap:6px;flex-wrap:wrap; }
+      .op-resp-badge { display:inline-block;padding:1px 6px;border-radius:6px;font-size:.65rem;font-weight:700; }
+      .op-resp-badge--voce  { background:#e6f0fa;color:#1f4d80; }
+      .op-resp-badge--socia { background:#fce8f1;color:#a05a7a; }
+      .op-resp-badge--ambas { background:#f0e6fa;color:#6b3aa0; }
+      /* Kanban */
+      .op-kan-col {
+        background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;
+        min-width:240px;max-width:280px;flex:0 0 auto;
+      }
+      .op-kan-col__header {
+        display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
+        padding-bottom:8px;border-bottom:1px solid #e8e8e8;
+      }
+      .op-kan-col__label { font-size:.78rem;font-weight:700;color:#444; }
+      .op-kan-col__count { font-size:.72rem;color:#888;background:#fff;padding:2px 8px;border-radius:10px; }
+      .op-kan-card {
+        background:#fff;border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px;
+        cursor:pointer;transition:box-shadow .12s,transform .12s;
+      }
+      .op-kan-card:hover { box-shadow:0 3px 8px rgba(0,0,0,.06); transform:translateY(-1px); }
+      .op-kan-card__title { font-size:.85rem;font-weight:600;color:#222;margin-bottom:6px;line-height:1.3; }
+      .op-kan-card__chips { display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px; }
+      .op-chip {
+        font-size:.65rem;padding:2px 6px;border-radius:6px;font-weight:600;letter-spacing:.02em;
+      }
+      .op-chip--tipo { background:#e6f4ea;color:#1a8a4a; }
+      .op-chip--obj  { background:#fff4d6;color:#a87a00; }
+      .op-kan-card__meta { font-size:.7rem;color:#888;display:flex;justify-content:space-between;align-items:center;gap:6px; }
+    </style>
+
+    <!-- ===== USERS PANEL ===== -->
+    <div class="admin__panel" id="panel-users">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Usuários</h1>
+        <p class="admin__page-subtitle">Todos os usuários cadastrados na plataforma</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total de usuários</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-users-total">0</div>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Lista de usuários</span>
+          <span class="admin__table-count" id="users-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Telefone</th>
+              <th>Cidade</th>
+              <th>Cadastro</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="users-body">
+            <tr><td colspan="6" class="admin__table-empty">Nenhum usuário cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PARTNERS PANEL ===== -->
+    <div class="admin__panel" id="panel-partners">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Parceiros</h1>
+        <p class="admin__page-subtitle">Solicitações e parceiros aprovados</p>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Empresas / Parceiros</span>
+          <span class="admin__table-count" id="partners-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Marca</th>
+              <th>Tipo</th>
+              <th>Bairro</th>
+              <th>Cidade</th>
+              <th>Social</th>
+              <th>Descrição</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="partners-body">
+            <tr><td colspan="8" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== BOOKINGS / PURCHASES PANEL ===== -->
+    <div class="admin__panel" id="panel-purchases">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Compras (Pagas)</h1>
+          <p class="admin__page-subtitle">Reservas finalizadas com controle financeiro e fornecedor</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <input type="text" id="bookings-filter-exp" class="admin__analytics-select"
+                 list="bookings-filter-exp-list" placeholder="Buscar experiência…"
+                 autocomplete="off" aria-label="Filtrar por experiência">
+          <datalist id="bookings-filter-exp-list"></datalist>
+          <select id="bookings-filter-fornecedor" class="admin__analytics-select">
+            <option value="">Todos os fornecedores</option>
+          </select>
+          <!-- Status filter removed: this panel only shows paid -->
+          <select id="bookings-filter-status-fornecedor" class="admin__analytics-select">
+            <option value="">Status fornecedor</option>
+            <option value="repasse_pendente">Repasse pendente</option>
+            <option value="repasse_feito">Repasse feito</option>
+          </select>
+          <button class="admin__add-btn" id="btn-register-manual-sale" type="button"
+                  style="background:#1a8a4a;color:#fff;border:0;">+ Registrar venda manual</button>
+          <button class="admin__add-btn" id="btn-refresh-bookings" type="button">Atualizar</button>
+        </div>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Vagas pagas</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-bookings-paid">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Vagas pendentes</div>
+          <div class="admin__stat-value" id="stat-bookings-pending">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita confirmada</div>
+          <div class="admin__stat-value" id="stat-bookings-revenue">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Conversão (cliques → vagas)</div>
+          <div class="admin__stat-value" id="stat-bookings-conversion">—</div>
+        </div>
+      </div>
+
+      <!-- ===== CARD: Repasses pendentes por fornecedor =====
+           To-do de repasses: lista compras já PAGAS pelo cliente onde
+           o repasse ao fornecedor ainda está como "repasse_pendente".
+           Agrupado por fornecedor com total a pagar. Click no fornecedor
+           filtra a tabela abaixo. Some quando não há nada pendente. -->
+      <section id="repasse-pendente-card" class="admin__analytics-card"
+               style="margin-bottom:16px;border:1px solid #f0d9a8;background:#fffaf0;display:none;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+          <div>
+            <h3 class="admin__analytics-title" style="margin:0;color:#b07b00;">
+              Repasses pendentes por fornecedor
+            </h3>
+            <p style="margin:4px 0 0;color:#7a6440;font-size:.82rem;">
+              Compras pagas pelo cliente, repasse ao fornecedor ainda não realizado.
+              Clique em um fornecedor pra filtrar a tabela.
+            </p>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:.72rem;color:#7a6440;text-transform:uppercase;letter-spacing:.05em;">
+              Total a repassar
+            </div>
+            <div id="repasse-pendente-total" style="font-size:1.4rem;font-weight:700;color:#b07b00;">R$ 0</div>
+            <div id="repasse-pendente-count" style="font-size:.78rem;color:#7a6440;margin-top:2px;">0 reservas</div>
+          </div>
+        </div>
+        <div id="repasse-pendente-list" style="display:flex;flex-direction:column;gap:6px;">
+        </div>
+      </section>
+
+      <div class="admin__analytics-grid">
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Reservas por experiência</h3>
+          <div id="bookings-by-exp" class="admin__bars">
+            <p class="admin__analytics-empty">Sem reservas ainda.</p>
+          </div>
+        </section>
+
+        <section class="admin__analytics-card">
+          <h3 class="admin__analytics-title">Conversão por experiência (clique → paga)</h3>
+          <div id="bookings-conversion-list" class="admin__bars">
+            <p class="admin__analytics-empty">Sem dados ainda.</p>
+          </div>
+        </section>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Lista de reservas</span>
+          <span class="admin__table-count" id="purchases-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Origem</th>
+              <th>Quando</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>WhatsApp</th>
+              <th>Experiência</th>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Qty</th>
+              <th>Valor ELARAH</th>
+              <th>Fornecedor</th>
+              <th>Valor cheio</th>
+              <th>Repasse</th>
+              <th>Comissão</th>
+              <th>Status</th>
+              <th>Prazo</th>
+              <th>Status fornecedor</th>
+              <th>Avisar fornecedor</th>
+            </tr>
+          </thead>
+          <tbody id="purchases-body">
+            <tr><td colspan="18" class="admin__table-empty">Nenhuma reserva registrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== GIFT CARDS DENTRO DE COMPRAS ===== -->
+      <!-- Mesma fonte de dados do painel Gift Cards, mas visível
+           diretamente na tela de Compras pra operador que acha que
+           "compras = tudo". -->
+      <div class="admin__table-wrap" style="margin-top:32px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Gift cards comprados</span>
+          <span class="admin__table-count" id="purchases-giftcards-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Comprador</th>
+              <th>Destinatário</th>
+              <th>Valor</th>
+              <th>Saldo</th>
+              <th>Status</th>
+              <th>Criado</th>
+            </tr>
+          </thead>
+          <tbody id="purchases-giftcards-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== FORNECEDORES PANEL ===== -->
+    <div class="admin__panel" id="panel-fornecedores">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Fornecedores</h1>
+        <p class="admin__page-subtitle">Análise financeira e tempo de parceria — data de entrada editável, tudo mais é calculado automaticamente</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Fornecedores ativos</div>
+          <div class="admin__stat-value" id="stat-fornecedores-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Faturamento bruto total</div>
+          <div class="admin__stat-value" id="stat-fornecedores-gross">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita Elarah total</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-fornecedores-comissao">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Repasses pendentes</div>
+          <div class="admin__stat-value" id="stat-fornecedores-pendente">R$ 0</div>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Todos os fornecedores</span>
+          <span class="admin__table-count" id="fornecedores-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Fornecedor</th>
+              <th>Tipo</th>
+              <th>WhatsApp</th>
+              <th>Data de entrada</th>
+              <th>Parceiro há</th>
+              <th>Experiências</th>
+              <th>Vagas</th>
+              <th>Faturamento</th>
+              <th>Repasse</th>
+              <th>Receita Elarah</th>
+              <th>Última reserva</th>
+            </tr>
+          </thead>
+          <tbody id="fornecedores-body">
+            <tr><td colspan="11" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PROSPECCAO PANEL (CRM de parceiros) ===== -->
+    <div class="admin__panel" id="panel-prospects">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Prospecção</h1>
+        <p class="admin__page-subtitle">CRM de possíveis parceiros — pesquisa, contato, follow-up e promoção a fornecedor</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total cadastrados</div>
+          <div class="admin__stat-value" id="stat-prospects-total">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Contatados</div>
+          <div class="admin__stat-value" id="stat-prospects-contatados">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Parcerias fechadas</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-prospects-fechadas">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Taxa de resposta</div>
+          <div class="admin__stat-value" id="stat-prospects-resposta">—</div>
+        </div>
+      </div>
+
+      <!-- Filtros + ações -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <input type="search" id="prospects-filter-search" placeholder="Buscar por nome, observação..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+        <select id="prospects-filter-categoria" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todas as categorias</option>
+          <option value="ceramica">Cerâmica</option>
+          <option value="vidro">Vidro</option>
+          <option value="mosaico">Mosaico</option>
+          <option value="marcenaria">Marcenaria</option>
+          <option value="tufting">Tufting</option>
+          <option value="pintura">Pintura</option>
+          <option value="bordado">Bordado</option>
+          <option value="encadernacao">Encadernação</option>
+          <option value="floral">Floral</option>
+          <option value="perfumaria">Perfumaria</option>
+          <option value="vela">Vela</option>
+          <option value="aromaterapia">Aromaterapia</option>
+          <option value="joalheria">Joalheria</option>
+          <option value="gastronomia">Gastronomia</option>
+          <option value="doceria">Doceria</option>
+          <option value="cafe">Café</option>
+          <option value="degustacao">Degustação</option>
+          <option value="fermentacao">Fermentação</option>
+          <option value="sensorial">Sensorial / Experiência rara</option>
+          <option value="autoral">Autoral / Outro</option>
+          <option value="outro">Outro</option>
+        </select>
+        <select id="prospects-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os status</option>
+          <option value="nao_contatado">Não contatado</option>
+          <option value="mensagem_enviada">Mensagem enviada</option>
+          <option value="respondeu">Respondeu</option>
+          <option value="reuniao_marcada">Reunião marcada</option>
+          <option value="parceria_fechada">Parceria fechada</option>
+          <option value="ja_parceiro">Já parceiro</option>
+          <option value="recusou">Recusou</option>
+        </select>
+        <input type="text" id="prospects-filter-bairro" placeholder="Bairro" list="prospects-bairros-list" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;width:140px;">
+        <datalist id="prospects-bairros-list"></datalist>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-prospect-new" class="admin__btn admin__btn--primary" style="background:#2c5e3f;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">+ Novo prospect</button>
+        <button type="button" id="btn-prospect-import" class="admin__btn" style="background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Importar CSV</button>
+        <button type="button" id="btn-prospect-templates" class="admin__btn" style="background:#fff;border:1px solid #888;color:#444;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Templates</button>
+        <button type="button" id="btn-prospect-export" class="admin__btn" style="background:transparent;border:1px dashed #aaa;color:#666;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;cursor:pointer;">Exportar CSV</button>
+        <input type="file" id="prospects-csv-input" accept=".csv" style="display:none;">
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Possíveis parceiros</span>
+          <span class="admin__table-count" id="prospects-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Bairro</th>
+              <th>Contato</th>
+              <th>Status</th>
+              <th>Última interação</th>
+              <th style="width:280px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="prospects-body">
+            <tr><td colspan="7" class="admin__table-empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PROSPECT MODALS (escondidos, abertos via JS) ===== -->
+    <div id="prospect-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;" id="prospect-edit-title">Novo prospect</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="prospect-edit-subtitle">Cadastre um possível parceiro pra começar a prospecção.</p>
+        <div id="prospect-edit-dup-warning" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fff8ef;border:1px solid #f0c97a;font-size:.85rem;color:#7a4f00;"></div>
+        <form id="prospect-edit-form" onsubmit="return false;">
+          <input type="hidden" id="prospect-edit-id">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome do local/empresa *<input type="text" id="prospect-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Categoria<select id="prospect-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="ceramica">Cerâmica</option><option value="vidro">Vidro</option><option value="mosaico">Mosaico</option><option value="marcenaria">Marcenaria</option><option value="tufting">Tufting</option><option value="pintura">Pintura</option><option value="bordado">Bordado</option><option value="encadernacao">Encadernação</option><option value="floral">Floral</option><option value="perfumaria">Perfumaria</option><option value="vela">Vela</option><option value="aromaterapia">Aromaterapia</option><option value="joalheria">Joalheria</option><option value="gastronomia">Gastronomia</option><option value="doceria">Doceria</option><option value="cafe">Café</option><option value="degustacao">Degustação</option><option value="fermentacao">Fermentação</option><option value="sensorial">Sensorial</option><option value="autoral">Autoral</option><option value="outro">Outro</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Status<select id="prospect-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="parceria_fechada">Parceria fechada</option><option value="ja_parceiro">Já parceiro</option><option value="recusou">Recusou</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="prospect-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="prospect-edit-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Email<input type="email" id="prospect-edit-email" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Site<input type="url" id="prospect-edit-site" placeholder="https://..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Bairro<input type="text" id="prospect-edit-bairro" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Cidade<input type="text" id="prospect-edit-cidade" value="São Paulo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Observações<textarea id="prospect-edit-observacoes" rows="3" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          </div>
+          <div id="prospect-edit-msg" style="margin-top:12px;font-size:.85rem;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" id="prospect-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="prospect-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="prospect-edit-save" style="padding:8px 16px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="prospect-timeline-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 4px;font-size:1.3rem;" id="prospect-timeline-title">Timeline</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="prospect-timeline-subtitle"></p>
+
+        <!-- Quick actions: copiar mensagem, abrir wa, abrir IG -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding:12px;background:#fafafa;border-radius:8px;">
+          <button type="button" id="prospect-timeline-wa" style="padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;display:none;">📱 Abrir WhatsApp</button>
+          <button type="button" id="prospect-timeline-ig" style="padding:8px 14px;background:#e1306c;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;display:none;">📷 Abrir Instagram</button>
+          <button type="button" id="prospect-timeline-copy-msg" style="padding:8px 14px;background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">📋 Copiar mensagem (template)</button>
+          <select id="prospect-timeline-template-select" style="padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;"></select>
+          <button type="button" id="prospect-timeline-promote" style="padding:8px 14px;background:#fff;border:1px solid #b07b00;color:#b07b00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;margin-left:auto;">⭐ Promover a fornecedor</button>
+        </div>
+
+        <!-- Mensagem renderizada (preview) -->
+        <details style="margin-bottom:18px;">
+          <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:#666;">Pré-visualizar mensagem</summary>
+          <pre id="prospect-timeline-msg-preview" style="margin-top:8px;padding:12px;background:#f4f4f4;border-radius:6px;font-family:inherit;font-size:.88rem;white-space:pre-wrap;line-height:1.5;"></pre>
+        </details>
+
+        <!-- Registrar nova interação -->
+        <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:18px;">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:8px;">Registrar nova interação</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <select id="prospect-interaction-tipo" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+              <option value="mensagem_enviada">📤 Mensagem enviada</option>
+              <option value="respondeu">💬 Respondeu</option>
+              <option value="follow_up">🔁 Follow-up</option>
+              <option value="reuniao_marcada">📅 Reunião marcada</option>
+              <option value="reuniao_realizada">✅ Reunião realizada</option>
+              <option value="parceria_fechada">🎉 Parceria fechada</option>
+              <option value="recusou">❌ Recusou</option>
+              <option value="observacao">📝 Observação livre</option>
+            </select>
+            <input type="text" id="prospect-interaction-desc" placeholder="Descrição (opcional)" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">
+            <button type="button" id="prospect-interaction-add" style="padding:6px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Registrar</button>
+          </div>
+        </div>
+
+        <!-- Lista da timeline -->
+        <div id="prospect-timeline-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+          <button type="button" id="prospect-timeline-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="prospect-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 4px;font-size:1.3rem;">Templates de mensagem</h2>
+        <p style="margin:0 0 14px;font-size:.85rem;color:#666;">Use <code>{{nome}}</code>, <code>{{categoria}}</code>, <code>{{bairro}}</code> pra personalizar. Categoria vazia = template global.</p>
+        <button type="button" id="prospect-template-new" style="margin-bottom:14px;padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+        <div id="prospect-templates-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+          <button type="button" id="prospect-templates-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         PROSPECÇÃO B2B PANEL — CRM de empresas (RH/People/Cultura)
+         Espelha a estrutura de prospects (parceiros) com campos
+         específicos B2B: tipo_empresa, funcionarios_faixa, contato_nome,
+         potencial, proxima_acao. Cor laranja Elarah pra diferenciar
+         visualmente do verde de parceiros.
+         ========================================================= -->
+    <div class="admin__panel" id="panel-b2b-prospects">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Prospecção B2B</h1>
+        <p class="admin__page-subtitle">CRM de empresas — experiências corporativas, gift cards, benefícios pra colaboradores</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total empresas</div>
+          <div class="admin__stat-value" id="stat-b2b-total">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Ações pra hoje</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-b2b-acoes-hoje">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Reuniões marcadas</div>
+          <div class="admin__stat-value" id="stat-b2b-reunioes">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Clientes ativos</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-b2b-clientes">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Taxa resposta</div>
+          <div class="admin__stat-value" id="stat-b2b-resposta">—</div>
+        </div>
+      </div>
+
+      <!-- Filtros principais -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+        <input type="search" id="b2b-filter-search" placeholder="Buscar por empresa, contato, segmento..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+        <select id="b2b-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os status</option>
+          <option value="nao_contatado">Não contatado</option>
+          <option value="mensagem_enviada">Mensagem enviada</option>
+          <option value="respondeu">Respondeu</option>
+          <option value="reuniao_marcada">Reunião marcada</option>
+          <option value="proposta_enviada">Proposta enviada</option>
+          <option value="negociacao">Negociação</option>
+          <option value="fechado">Fechado (ação pontual)</option>
+          <option value="cliente_ativo">Cliente ativo</option>
+          <option value="pausado">Pausado</option>
+          <option value="recusou">Recusou</option>
+        </select>
+        <select id="b2b-filter-tipo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os tipos</option>
+          <option value="tech">Tech</option>
+          <option value="agencia">Agência</option>
+          <option value="coworking">Coworking</option>
+          <option value="construtora">Construtora</option>
+          <option value="startup">Startup</option>
+          <option value="escritorio">Escritório</option>
+          <option value="imobiliaria">Imobiliária</option>
+          <option value="arquitetura_design">Arquitetura/Design</option>
+          <option value="escritorio_juridico">Escritório jurídico</option>
+          <option value="clinica">Clínica</option>
+          <option value="industria_leve">Indústria leve</option>
+          <option value="outro">Outro</option>
+        </select>
+        <select id="b2b-filter-funcionarios" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todas as faixas</option>
+          <option value="1_49">1–49 funcionários</option>
+          <option value="50_100">50–100 ⭐</option>
+          <option value="101_250">101–250 ⭐</option>
+          <option value="251_500">251–500 ⭐</option>
+          <option value="500_plus">500+</option>
+          <option value="sweet_spot">⭐ Sweet spot (50–500)</option>
+        </select>
+        <select id="b2b-filter-potencial" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os potenciais</option>
+          <option value="alto">🔥 Alto</option>
+          <option value="medio">Médio</option>
+          <option value="baixo">Baixo</option>
+        </select>
+        <input type="text" id="b2b-filter-cidade" placeholder="Cidade" list="b2b-cidades-list" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;width:140px;">
+        <datalist id="b2b-cidades-list"></datalist>
+      </div>
+
+      <!-- Visões rápidas: filtros pré-definidos que viram a tela operacional -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+        <span style="font-size:.8rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Visões rápidas:</span>
+        <button type="button" class="b2b-view-chip" data-view="acoes-hoje" style="padding:6px 12px;border:1px solid #f0a05e;background:#fff8ef;color:#a4663b;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">📅 Ações pra hoje</button>
+        <button type="button" class="b2b-view-chip" data-view="atrasados" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">⚠️ Follow-up atrasado</button>
+        <button type="button" class="b2b-view-chip" data-view="quentes" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">🔥 Leads quentes</button>
+        <button type="button" class="b2b-view-chip" data-view="parados" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">🥶 Parados &gt; 14d</button>
+        <button type="button" class="b2b-view-chip" data-view="todos" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Todos</button>
+      </div>
+
+      <!-- Ações principais -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-b2b-new" class="admin__btn admin__btn--primary" style="background:#f0a05e;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">+ Nova empresa</button>
+        <button type="button" id="btn-b2b-import" class="admin__btn" style="background:#fff;border:1px solid #f0a05e;color:#a4663b;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Importar CSV</button>
+        <button type="button" id="btn-b2b-templates" class="admin__btn" style="background:#fff;border:1px solid #888;color:#444;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Templates B2B</button>
+        <button type="button" id="btn-b2b-export" class="admin__btn" style="background:transparent;border:1px dashed #aaa;color:#666;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;cursor:pointer;">Exportar CSV</button>
+        <input type="file" id="b2b-csv-input" accept=".csv" style="display:none;">
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Empresas-alvo</span>
+          <span class="admin__table-count" id="b2b-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Tipo</th>
+              <th>Funcionários</th>
+              <th>Contato</th>
+              <th>Canais</th>
+              <th>Status</th>
+              <th>Potencial</th>
+              <th>Sinais</th>
+              <th>Próxima ação</th>
+              <th style="width:240px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="b2b-body">
+            <tr><td colspan="10" class="admin__table-empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== B2B PROSPECT EDIT MODAL ===== -->
+    <div id="b2b-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;" id="b2b-edit-title">Nova empresa</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="b2b-edit-subtitle">Cadastre uma empresa-alvo pra prospecção comercial.</p>
+        <div id="b2b-edit-dup-warning" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fff8ef;border:1px solid #f0c97a;font-size:.85rem;color:#7a4f00;"></div>
+        <form id="b2b-edit-form" onsubmit="return false;">
+          <input type="hidden" id="b2b-edit-id">
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Empresa</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome da empresa *<input type="text" id="b2b-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Tipo<select id="b2b-edit-tipo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="tech">Tech</option><option value="agencia">Agência</option><option value="coworking">Coworking</option><option value="construtora">Construtora</option><option value="startup">Startup</option><option value="escritorio">Escritório</option><option value="imobiliaria">Imobiliária</option><option value="arquitetura_design">Arquitetura/Design</option><option value="escritorio_juridico">Escritório jurídico</option><option value="clinica">Clínica</option><option value="industria_leve">Indústria leve</option><option value="outro">Outro</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Funcionários<select id="b2b-edit-funcionarios" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="1_49">1–49</option><option value="50_100">50–100 ⭐ sweet spot</option><option value="101_250">101–250 ⭐ sweet spot</option><option value="251_500">251–500 ⭐ sweet spot</option><option value="500_plus">500+</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Segmento<input type="text" id="b2b-edit-segmento" placeholder="SaaS B2B, construção residencial..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Cidade<input type="text" id="b2b-edit-cidade" value="São Paulo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Site<input type="url" id="b2b-edit-site" placeholder="https://..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">LinkedIn empresa<input type="url" id="b2b-edit-linkedin-empresa" placeholder="https://linkedin.com/company/..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="b2b-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Contato principal <span style="color:#888;font-weight:400;font-size:.78rem;">(RH / People / decisor)</span></h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;">Nome<input type="text" id="b2b-edit-contato-nome" placeholder="Maria Silva" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Cargo<input type="text" id="b2b-edit-contato-cargo" placeholder="Head of People" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">E-mail<input type="email" id="b2b-edit-contato-email" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="b2b-edit-contato-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">LinkedIn pessoal<input type="url" id="b2b-edit-contato-linkedin" placeholder="https://linkedin.com/in/..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Pipeline</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;">Status comercial<select id="b2b-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="proposta_enviada">Proposta enviada</option><option value="negociacao">Negociação</option><option value="fechado">Fechado (ação pontual)</option><option value="cliente_ativo">Cliente ativo</option><option value="pausado">Pausado</option><option value="recusou">Recusou</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Potencial<select id="b2b-edit-potencial" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="baixo">Baixo</option><option value="medio" selected>Médio</option><option value="alto">🔥 Alto</option></select></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Próxima ação<input type="text" id="b2b-edit-proxima-acao" placeholder="Ligar terça, enviar proposta..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;">Quando<input type="datetime-local" id="b2b-edit-proxima-acao-at" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Observações<textarea id="b2b-edit-observacoes" rows="3" placeholder="Dor, contexto, histórico..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          </div>
+
+          <!-- Timeline de interações (só edit mode) -->
+          <div id="b2b-edit-timeline-wrap" style="display:none;margin-top:16px;border-top:1px solid #eee;padding-top:16px;">
+            <h3 style="margin:0 0 10px;font-size:.95rem;color:#444;">Timeline de interações</h3>
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <select id="b2b-int-tipo" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+                <option value="mensagem_enviada">📤 Mensagem enviada</option>
+                <option value="respondeu">💬 Respondeu</option>
+                <option value="reuniao_marcada">📅 Reunião marcada</option>
+                <option value="reuniao_realizada">✅ Reunião realizada</option>
+                <option value="proposta_enviada">📋 Proposta enviada</option>
+                <option value="negociacao">💼 Negociação</option>
+                <option value="follow_up">🔁 Follow-up</option>
+                <option value="observacao">📝 Observação</option>
+                <option value="fechado">🎉 Fechado</option>
+                <option value="cliente_ativo">⭐ Cliente ativo</option>
+                <option value="pausado">⏸️ Pausado</option>
+                <option value="recusou">❌ Recusou</option>
+              </select>
+              <input type="text" id="b2b-int-desc" placeholder="Descrição (opcional)" style="flex:1;min-width:180px;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">
+              <button type="button" id="b2b-int-add" style="padding:8px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Registrar</button>
+            </div>
+            <ul id="b2b-edit-timeline" style="list-style:none;padding:0;margin:0;max-height:200px;overflow-y:auto;font-size:.85rem;"></ul>
+          </div>
+
+          <div id="b2b-edit-msg" style="margin-top:12px;font-size:.85rem;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" id="b2b-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="b2b-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="b2b-edit-save" style="padding:8px 16px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== B2B TEMPLATES MODAL ===== -->
+    <div id="b2b-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;">Templates B2B</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;">Mensagens reutilizáveis. Variáveis disponíveis: <code>{{empresa}}</code>, <code>{{contato}}</code>, <code>{{cargo}}</code>, <code>{{segmento}}</code>, <code>{{cidade}}</code>.</p>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+          <button type="button" id="b2b-template-new" style="padding:8px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+          <select id="b2b-template-filter-categoria" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+            <option value="">Todas as categorias</option>
+            <option value="primeiro_contato">Primeiro contato</option>
+            <option value="follow_up">Follow-up</option>
+            <option value="pos_reuniao">Pós reunião</option>
+            <option value="convite_experiencia">Convite experiência</option>
+            <option value="data_comemorativa">Data comemorativa</option>
+            <option value="beneficio_corporativo">Benefício corporativo</option>
+            <option value="acao_equipe">Ação pra equipe</option>
+            <option value="gift_card_corporativo">Gift card corporativo</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <ul id="b2b-templates-list" style="list-style:none;padding:0;margin:0;"></ul>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+          <button type="button" id="b2b-templates-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== B2B TEMPLATE EDIT MODAL ===== -->
+    <div id="b2b-template-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 14px;font-size:1.15rem;" id="b2b-template-edit-title">Novo template</h2>
+        <form id="b2b-template-edit-form" onsubmit="return false;">
+          <input type="hidden" id="b2b-template-edit-id">
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Nome *<input type="text" id="b2b-template-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Categoria<select id="b2b-template-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="primeiro_contato">Primeiro contato</option><option value="follow_up">Follow-up</option><option value="pos_reuniao">Pós reunião</option><option value="convite_experiencia">Convite experiência</option><option value="data_comemorativa">Data comemorativa</option><option value="beneficio_corporativo">Benefício corporativo</option><option value="acao_equipe">Ação pra equipe</option><option value="gift_card_corporativo">Gift card corporativo</option><option value="outro">Outro</option></select></label>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Conteúdo *<textarea id="b2b-template-edit-conteudo" rows="9" required placeholder="Olá {{contato}}, ..." style="margin-top:4px;width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          <label style="font-size:.85rem;display:flex;align-items:center;gap:8px;margin-bottom:14px;"><input type="checkbox" id="b2b-template-edit-default"> Marcar como padrão (abre por default em novos prospects)</label>
+          <div id="b2b-template-edit-msg" style="font-size:.85rem;margin-bottom:10px;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" id="b2b-template-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="b2b-template-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="b2b-template-edit-save" style="padding:8px 16px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== PENDENTES PANEL ===== -->
+    <div class="admin__panel" id="panel-purchases-pending">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Compras Pendentes</h1>
+          <p class="admin__page-subtitle">Reservas aguardando pagamento, expiradas ou canceladas</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <select id="pending-filter-exp" class="admin__analytics-select">
+            <option value="">Todas as experiências</option>
+          </select>
+          <select id="pending-filter-status" class="admin__analytics-select">
+            <option value="">Todos os status</option>
+            <option value="pending">Pendente</option>
+            <option value="expirado">Expirado</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="reembolsado">Reembolsado</option>
+          </select>
+          <select id="pending-filter-followup" class="admin__analytics-select">
+            <option value="">Follow-up</option>
+            <option value="nenhum">Sem follow-up</option>
+            <option value="primeiro_enviado">1º enviado</option>
+            <option value="segundo_enviado">2º enviado</option>
+            <option value="convertida">Convertidas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Reservas pendentes e canceladas</span>
+          <span class="admin__table-count" id="pending-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>WhatsApp</th>
+              <th>Experiência</th>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Qty</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Follow-up</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="pending-body">
+            <tr><td colspan="12" class="admin__table-empty">Nenhuma reserva pendente.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== BY ELARAH PANEL ===== -->
+    <div class="admin__panel" id="panel-byelarah">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">By Elarah <span style="font-size:.7em;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:1px;margin-left:8px;">Lista de espera (legado)</span></h1>
+          <p class="admin__page-subtitle">Apenas cards de lista de espera (lead via WhatsApp) e respostas do formulário.</p>
+        </div>
+        <button class="admin__add-btn" id="btn-add-byelarah">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo item By Elarah
+        </button>
+      </div>
+
+      <!-- Dica de uso: tudo é gerenciado aqui na aba By Elarah -->
+      <div style="background:#fff8ee;border:1.5px solid #f0a05e;border-radius:12px;padding:14px 18px;margin:16px 0 24px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:1.3rem;line-height:1;">✨</span>
+          <div style="flex:1;font-size:.92rem;color:#3a3a3a;line-height:1.55;">
+            Edite qualquer item e ative <strong>"💳 É comprável"</strong> pra
+            transformá-lo em experiência com checkout direto (Stripe / PIX).
+            Os campos de preço, vagas, descrição completa e fornecedor aparecem
+            quando você liga o toggle. Cards sem o toggle continuam funcionando
+            como lista de espera (lead via WhatsApp).
+          </div>
+        </div>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Itens publicados</div>
+          <div class="admin__stat-value" id="stat-byelarah-items">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Respostas totais</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-byelarah-subs">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Novas (24h)</div>
+          <div class="admin__stat-value" id="stat-byelarah-new">0</div>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Itens Elarah Originals</span>
+          <span class="admin__table-count" id="byelarah-items-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Ordem</th>
+              <th>Foto</th>
+              <th>Nome</th>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Horários</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="byelarah-items-body">
+            <tr><td colspan="8" class="admin__table-empty">Nenhum item By Elarah cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Respostas do formulário</span>
+          <span class="admin__table-count" id="byelarah-subs-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Experiência</th>
+              <th>Tipo</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Telefone</th>
+              <th>Horário</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="byelarah-subs-body">
+            <tr><td colspan="9" class="admin__table-empty">Nenhuma resposta registrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== REDES SOCIAIS PANEL =====
+         Painel de inteligência de redes sociais. Substituiu o antigo
+         "Calendário de conteúdo" (roteiros prontos), que não estava
+         gerando decisão. Agora a aba é um dashboard analítico de posts
+         já publicados (Instagram, TikTok, LinkedIn) com detecção de
+         padrão, comparativos semanais e geração de ideias baseada em
+         dados, não em achismo.
+         Dados ficam em localStorage (chave elarah.social.posts.v1) até
+         a integração direta com APIs das plataformas (roadmap). Suporta
+         input manual + import/export CSV pra evolução incremental. -->
+    <div class="admin__panel" id="panel-social">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Redes Sociais</h1>
+          <p class="admin__page-subtitle">
+            Inteligência de conteúdo: o que está performando, o que não está,
+            e o que escalar agora — baseado nos dados reais dos seus posts.
+          </p>
+        </div>
+        <div class="admin__analytics-controls">
+          <label for="social-platform" class="admin__form-hint" style="margin:0;">Plataforma:</label>
+          <select id="social-platform" class="admin__analytics-select">
+            <option value="all" selected>Todas</option>
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="linkedin">LinkedIn</option>
+          </select>
+          <label for="social-range" class="admin__form-hint" style="margin:0;">Período:</label>
+          <select id="social-range" class="admin__analytics-select">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="all">Todos</option>
+          </select>
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-import" type="button" title="Importar CSV de posts">↑ Importar CSV</button>
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-export" type="button" title="Exportar todos os posts">↓ Exportar</button>
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-connect-instagram" type="button" title="Conectar conta do Instagram">📷 Conectar Instagram</button>
+          <button class="admin__add-btn" id="btn-social-add" type="button">+ Novo post</button>
+          <input type="file" id="social-csv-input" accept=".csv,text/csv" style="display:none;">
+        </div>
+      </div>
+
+      <!-- Estado vazio: aparece se não há nenhum post cadastrado.
+           Substituído automaticamente pelo dashboard quando entra dado. -->
+      <div id="social-empty" class="social-empty" style="display:none;">
+        <div class="social-empty__icon">📊</div>
+        <h2 class="social-empty__title">Comece registrando seus posts</h2>
+        <p class="social-empty__text">
+          Adicione manualmente ou importe um CSV com posts do Instagram, TikTok e LinkedIn.
+          Quanto mais dados, mais preciso o painel fica em apontar padrões e gerar ideias acionáveis.
+        </p>
+        <div class="social-empty__actions">
+          <button class="admin__add-btn" type="button" data-social-action="connect-instagram">📷 Conectar Instagram</button>
+          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="add">+ Adicionar post manual</button>
+          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="sample">Dados de exemplo</button>
+        </div>
+        <p class="social-empty__hint">
+          CSV esperado: <code>platform,type,date,link,views,likes,comments,saves,shares,tags</code><br>
+          <span style="color:#999;">tags = palavras-chave separadas por vírgula entre aspas, ex: <code>"comida, vila madalena"</code></span>
+        </p>
+      </div>
+
+      <!-- Wrapper do dashboard (escondido se não há dados) -->
+      <div id="social-dashboard" style="display:none;">
+
+        <!-- Painel de status das conexões (Instagram/TikTok/LinkedIn).
+             Aparece só se há ao menos uma conta plugada via API. -->
+        <div id="social-connections" class="social-connections" style="display:none;"></div>
+
+        <!-- Banner temporário pós-OAuth (sucesso ou erro). Limpado
+             após alguns segundos pelo JS. -->
+        <div id="social-toast" class="social-toast" style="display:none;"></div>
+
+        <!-- KPIs principais: visão geral instantânea da saúde de conteúdo -->
+        <div class="social-kpi-grid">
+          <div class="social-kpi">
+            <div class="social-kpi__label">Posts no período</div>
+            <div class="social-kpi__value" id="social-kpi-posts">—</div>
+            <div class="social-kpi__delta" id="social-kpi-posts-delta">vs período anterior</div>
+          </div>
+          <div class="social-kpi">
+            <div class="social-kpi__label">Alcance total</div>
+            <div class="social-kpi__value" id="social-kpi-reach">—</div>
+            <div class="social-kpi__delta" id="social-kpi-reach-delta">vs período anterior</div>
+          </div>
+          <div class="social-kpi">
+            <div class="social-kpi__label">Engajamento médio</div>
+            <div class="social-kpi__value" id="social-kpi-eng">—</div>
+            <div class="social-kpi__delta" id="social-kpi-eng-delta">por post</div>
+          </div>
+          <div class="social-kpi">
+            <div class="social-kpi__label">Taxa de engajamento</div>
+            <div class="social-kpi__value" id="social-kpi-rate">—</div>
+            <div class="social-kpi__delta" id="social-kpi-rate-delta">eng/visualizações</div>
+          </div>
+        </div>
+
+        <!-- Insights: o coração do painel. Não são números, são frases.
+             O que dizer pra alguém olhando o painel pela primeira vez. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Insights</h2>
+            <p class="social-section__hint">Padrões detectados nos dados — leia isso primeiro.</p>
+          </div>
+          <div id="social-insights" class="social-insights">
+            <p class="social-insights__empty">Sem padrões claros ainda — adicione mais posts pra o sistema cruzar dados.</p>
+          </div>
+        </section>
+
+        <!-- Ideias da semana: 3 ideias acionáveis, com formato + gancho + execução,
+             tiradas das combinações de tags/tipos/plataformas com melhor performance. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Top 3 ideias da semana</h2>
+            <p class="social-section__hint">Baseado nos padrões que estão funcionando agora — não em achismo.</p>
+          </div>
+          <div id="social-ideas" class="social-ideas">
+            <p class="social-ideas__empty">Adicione mais posts (com tags) pra o sistema sugerir ideias.</p>
+          </div>
+        </section>
+
+        <!-- Performance por plataforma: qual rede está crescendo, qual está caindo. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Performance por plataforma</h2>
+            <p class="social-section__hint">Comparado ao período anterior. Verde sobe, vermelho cai.</p>
+          </div>
+          <div id="social-platforms" class="social-platforms">
+            <p class="social-section__empty">Sem dados.</p>
+          </div>
+        </section>
+
+        <!-- Performance por tipo de conteúdo (Reel vs Story vs Carrossel etc) -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Performance por tipo de conteúdo</h2>
+            <p class="social-section__hint">Onde cada formato é forte e onde é fraco.</p>
+          </div>
+          <div class="admin__table-wrap admin__table-wrap--flush">
+            <table class="admin__table social-table">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th class="social-num">Posts</th>
+                  <th class="social-num">Alcance médio</th>
+                  <th class="social-num">Eng. médio</th>
+                  <th class="social-num">Taxa eng.</th>
+                  <th class="social-num">Saves médios</th>
+                  <th class="social-num">Shares médios</th>
+                </tr>
+              </thead>
+              <tbody id="social-types-body">
+                <tr><td colspan="7" class="admin__table-empty">Sem dados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Evolução: linha simples de engajamento ao longo do tempo -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Evolução</h2>
+            <p class="social-section__hint">Engajamento ao longo do período selecionado.</p>
+          </div>
+          <div class="social-chart-wrap">
+            <canvas id="social-chart-evolution" height="240"></canvas>
+          </div>
+        </section>
+
+        <!-- Top posts e piores posts lado a lado -->
+        <div class="social-rank-grid">
+          <section class="social-section social-section--flush">
+            <div class="social-section__header">
+              <h2 class="social-section__title">Top posts</h2>
+              <p class="social-section__hint">Maior engajamento total — replicar padrão.</p>
+            </div>
+            <div id="social-top-posts" class="social-rank">
+              <p class="social-section__empty">Sem dados.</p>
+            </div>
+          </section>
+          <section class="social-section social-section--flush">
+            <div class="social-section__header">
+              <h2 class="social-section__title">Piores posts</h2>
+              <p class="social-section__hint">Menor engajamento — diagnosticar e parar de fazer.</p>
+            </div>
+            <div id="social-worst-posts" class="social-rank">
+              <p class="social-section__empty">Sem dados.</p>
+            </div>
+          </section>
+        </div>
+
+        <!-- Comparação semana a semana -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Semana atual vs anterior</h2>
+            <p class="social-section__hint">Movimento das últimas duas semanas — independente do filtro acima.</p>
+          </div>
+          <div id="social-wow" class="social-wow">
+            <p class="social-section__empty">Sem dados.</p>
+          </div>
+        </section>
+
+        <!-- Tabela com todos os posts: dá controle e edição. -->
+        <section class="social-section">
+          <div class="social-section__header">
+            <h2 class="social-section__title">Todos os posts</h2>
+            <p class="social-section__hint">Clica em editar pra atualizar números, ou remove o que não faz mais sentido.</p>
+          </div>
+          <div class="admin__table-wrap admin__table-wrap--flush">
+            <table class="admin__table social-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Plataforma</th>
+                  <th>Tipo</th>
+                  <th>Tags</th>
+                  <th class="social-num">Views</th>
+                  <th class="social-num">Likes</th>
+                  <th class="social-num">Coment.</th>
+                  <th class="social-num">Saves</th>
+                  <th class="social-num">Shares</th>
+                  <th class="social-num">Eng.</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="social-posts-body">
+                <tr><td colspan="11" class="admin__table-empty">Sem posts.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Modal: novo / editar post -->
+      <div class="social-modal" id="social-modal" style="display:none;">
+        <div class="social-modal__backdrop" data-social-close></div>
+        <div class="social-modal__card">
+          <div class="social-modal__head">
+            <h3 class="social-modal__title" id="social-modal-title">Novo post</h3>
+            <button type="button" class="social-modal__close" data-social-close aria-label="Fechar">×</button>
+          </div>
+          <form class="social-form" id="social-form" autocomplete="off">
+            <input type="hidden" id="social-form-id" value="">
+            <div class="social-form__row">
+              <label class="social-form__field">
+                <span>Plataforma</span>
+                <select id="social-form-platform" required>
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="linkedin">LinkedIn</option>
+                </select>
+              </label>
+              <label class="social-form__field">
+                <span>Tipo</span>
+                <select id="social-form-type" required>
+                  <option value="reel">Reel</option>
+                  <option value="story">Story</option>
+                  <option value="feed">Feed</option>
+                  <option value="carrossel">Carrossel</option>
+                  <option value="video">Vídeo</option>
+                </select>
+              </label>
+              <label class="social-form__field">
+                <span>Data</span>
+                <input type="date" id="social-form-date" required>
+              </label>
+            </div>
+            <label class="social-form__field">
+              <span>Link do post (opcional)</span>
+              <input type="url" id="social-form-link" placeholder="https://...">
+            </label>
+            <label class="social-form__field">
+              <span>Tags (separadas por vírgula — ex: comida, vila madalena, presente)</span>
+              <input type="text" id="social-form-tags" placeholder="comida, bairro, depoimento">
+            </label>
+            <div class="social-form__row social-form__row--metrics">
+              <label class="social-form__field">
+                <span>Visualizações</span>
+                <input type="number" id="social-form-views" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Curtidas</span>
+                <input type="number" id="social-form-likes" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Comentários</span>
+                <input type="number" id="social-form-comments" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Saves</span>
+                <input type="number" id="social-form-saves" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Shares</span>
+                <input type="number" id="social-form-shares" min="0" value="0">
+              </label>
+            </div>
+            <div class="social-form__actions">
+              <button type="button" class="admin__add-btn admin__add-btn--ghost" data-social-close>Cancelar</button>
+              <button type="button" class="admin__add-btn admin__add-btn--danger" id="social-form-delete" style="display:none;">Excluir</button>
+              <button type="submit" class="admin__add-btn">Salvar post</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== ANALYTICS PANEL ===== -->
+    <div class="admin__panel" id="panel-analytics">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Painel de crescimento</h1>
+          <p class="admin__page-subtitle" id="ana-period-label">Carregando…</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <button class="admin__add-btn admin__add-btn--ghost" id="btn-refresh-analytics" type="button" title="Recarregar dados">↻ Atualizar</button>
+        </div>
+      </div>
+
+      <!-- Filtro de período: chips + custom -->
+      <div class="ana-period-bar">
+        <div class="ana-period-chips" id="ana-period-chips">
+          <button type="button" class="ana-chip" data-range="1">24 horas</button>
+          <button type="button" class="ana-chip is-active" data-range="7">7 dias</button>
+          <button type="button" class="ana-chip" data-range="30">30 dias</button>
+          <button type="button" class="ana-chip" data-range="month">Este mês</button>
+          <button type="button" class="ana-chip" data-range="all">Tudo</button>
+          <button type="button" class="ana-chip" data-range="custom">Personalizado</button>
+        </div>
+        <div class="ana-period-custom" id="ana-period-custom" style="display:none;">
+          <label>De <input type="date" id="ana-custom-start"></label>
+          <label>Até <input type="date" id="ana-custom-end"></label>
+          <button type="button" class="admin__add-btn" id="ana-custom-apply">Aplicar</button>
+        </div>
+        <!-- Filtro de FONTE: separado do período. Default="all" inclui
+             site (bookings) + vendas manuais + gift cards. "site"
+             mostra só compras feitas no checkout do site. -->
+        <div class="ana-period-chips" id="ana-source-chips" style="margin-top:10px;">
+          <span style="font-size:.78rem;color:#888;margin-right:8px;align-self:center;">Fonte:</span>
+          <button type="button" class="ana-chip is-active" data-source="all">Tudo</button>
+          <button type="button" class="ana-chip" data-source="site">Apenas site</button>
+          <button type="button" class="ana-chip" data-source="manual">Apenas vendas manuais</button>
+          <button type="button" class="ana-chip" data-source="giftcard">Apenas gift cards</button>
+        </div>
+      </div>
+
+      <!-- KPIs principais (faturamento, compras, ticket, conversão) -->
+      <div class="ana-kpi-grid">
+        <div class="ana-kpi" data-metric="revenue">
+          <div class="ana-kpi__label">Faturamento</div>
+          <div class="ana-kpi__value" id="kpi-revenue">—</div>
+          <div class="ana-kpi__delta" id="kpi-revenue-delta">vs período anterior</div>
+        </div>
+        <div class="ana-kpi" data-metric="orders">
+          <div class="ana-kpi__label">Compras</div>
+          <div class="ana-kpi__value" id="kpi-orders">—</div>
+          <div class="ana-kpi__delta" id="kpi-orders-delta">vs período anterior</div>
+        </div>
+        <div class="ana-kpi" data-metric="ticket">
+          <div class="ana-kpi__label">Ticket médio</div>
+          <div class="ana-kpi__value" id="kpi-ticket">—</div>
+          <div class="ana-kpi__delta" id="kpi-ticket-delta">vs período anterior</div>
+        </div>
+        <div class="ana-kpi" data-metric="conv">
+          <div class="ana-kpi__label">Conversão (visualização → compra)</div>
+          <div class="ana-kpi__value" id="kpi-conv">—</div>
+          <div class="ana-kpi__delta" id="kpi-conv-delta">vs período anterior</div>
+        </div>
+      </div>
+
+      <!-- Evolução: linha de receita + compras ao longo do tempo -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Evolução</h2>
+          <p class="ana-section__hint">Como o faturamento e o número de compras se moveram no período.</p>
+        </div>
+        <div class="ana-chart-wrap">
+          <canvas id="ana-chart-evolution" height="280"></canvas>
+        </div>
+      </section>
+
+      <!-- Funil -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Funil de conversão</h2>
+          <p class="ana-section__hint">Onde a galera está caindo. Quanto mais larga a perda entre etapas, maior o gargalo.</p>
+        </div>
+        <div class="ana-funnel" id="ana-funnel">
+          <div class="ana-funnel__empty">Sem dados.</div>
+        </div>
+        <p class="ana-funnel__note" id="ana-funnel-note"></p>
+      </section>
+
+      <!-- Top experiências -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Experiências que mais vendem</h2>
+          <p class="ana-section__hint">Ordenado por receita. Use isso pra decidir o que empurrar no marketing.</p>
+        </div>
+        <div class="admin__table-wrap admin__table-wrap--flush">
+          <table class="admin__table ana-table">
+            <thead>
+              <tr>
+                <th>Experiência</th>
+                <th class="ana-num">Vendas</th>
+                <th class="ana-num">Receita</th>
+                <th class="ana-num">Visualizações</th>
+                <th class="ana-num">Conversão</th>
+              </tr>
+            </thead>
+            <tbody id="ana-top-experiences-body">
+              <tr><td colspan="5" class="admin__table-empty">Sem dados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Top fornecedores -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Fornecedores que mais geram receita</h2>
+          <p class="ana-section__hint">Quem traz mais dinheiro pra plataforma. Base pra negociação e expansão.</p>
+        </div>
+        <div class="admin__table-wrap admin__table-wrap--flush">
+          <table class="admin__table ana-table">
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th class="ana-num">Vendas</th>
+                <th class="ana-num">Receita</th>
+                <th class="ana-num">Ticket médio</th>
+              </tr>
+            </thead>
+            <tbody id="ana-top-suppliers-body">
+              <tr><td colspan="4" class="admin__table-empty">Sem dados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Clientes -->
+      <section class="ana-section">
+        <div class="ana-section__header">
+          <h2 class="ana-section__title">Clientes</h2>
+          <p class="ana-section__hint">Quem está comprando — e se está voltando.</p>
+        </div>
+        <div class="ana-customers-grid">
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Compradores no período</div>
+            <div class="ana-mini-kpi__value" id="kpi-buyers">—</div>
+            <div class="ana-mini-kpi__hint" id="kpi-buyers-hint">—</div>
+          </div>
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Novos clientes</div>
+            <div class="ana-mini-kpi__value" id="kpi-new">—</div>
+            <div class="ana-mini-kpi__hint">primeira compra no período</div>
+          </div>
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Clientes recorrentes</div>
+            <div class="ana-mini-kpi__value" id="kpi-recurring">—</div>
+            <div class="ana-mini-kpi__hint" id="kpi-recurring-hint">já tinham comprado antes</div>
+          </div>
+          <div class="ana-mini-kpi">
+            <div class="ana-mini-kpi__label">Cadastros totais</div>
+            <div class="ana-mini-kpi__value" id="kpi-signups">—</div>
+            <div class="ana-mini-kpi__hint">conta criada no site</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== EXPERIENCES PANEL ===== -->
+    <div class="admin__panel" id="panel-experiences">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Experiências</h1>
+          <p class="admin__page-subtitle">Gerencie as experiências da plataforma</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <input type="search" id="exp-search" placeholder="Buscar (nome, categoria, bairro)..."
+                 class="admin__analytics-select" style="min-width:240px;">
+          <select id="exp-filter-fornecedor" class="admin__analytics-select">
+            <option value="">Todos os fornecedores</option>
+          </select>
+          <button class="admin__add-btn" id="btn-refresh-experiences" type="button">Atualizar</button>
+          <button class="admin__add-btn" id="btn-add-experience">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nova experiência
+          </button>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Todas as experiências</span>
+          <span class="admin__table-count" id="experiences-count"></span>
+        </div>
+        <div id="exp-filter-bar" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 0 14px;"></div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Bairro</th>
+              <th>Preço</th>
+              <th>Vagas</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="experiences-body">
+            <tr><td colspan="9" class="admin__table-empty">Nenhuma experiência cadastrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         EXPERIÊNCIAS FOCO — divulgação semanal
+         O que priorizar pra divulgar essa semana. 3 grupos:
+           1. Foco da semana: experiências acontecendo em ~2 semanas
+              (10-16 dias). Sweet spot: dá tempo de comprar + gera
+              urgência. Recortes definidos no admin.js.
+           2. By Elarah: divulgação contínua, sempre na régua semanal.
+           3. Vagas críticas: <30% vagas + evento próximo (esgotando).
+         ========================================================= -->
+    <div class="admin__panel" id="panel-experiencias-foco">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Experiências foco</h1>
+        <p class="admin__page-subtitle">O que divulgar essa semana. Foco em experiências que acontecem em ~2 semanas, By Elarah (sempre) e vagas críticas.</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Semana de</div>
+          <div class="admin__stat-value" id="stat-foco-semana" style="font-size:1.05rem;">—</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Foco da semana</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-foco-week-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">By Elarah ativas</div>
+          <div class="admin__stat-value" id="stat-foco-byelarah-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Vagas críticas</div>
+          <div class="admin__stat-value" id="stat-foco-critical-count">0</div>
+        </div>
+      </div>
+
+      <!-- Mensagem-template editável: aparece no botão "Copiar mensagem" -->
+      <div style="background:#fffaf2;border:1px solid #f0d9aa;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;">
+          <strong style="font-size:.88rem;color:#1a1a1a;">Template de mensagem</strong>
+          <button type="button" id="foco-tpl-reset" style="padding:4px 10px;border:1px solid #ddd;background:#fff;color:#666;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Restaurar padrão</button>
+        </div>
+        <p style="margin:0 0 8px;font-size:.78rem;color:#888;">Variáveis: <code>{{nome}}</code>, <code>{{data}}</code>, <code>{{horario}}</code>, <code>{{bairro}}</code>, <code>{{vagas}}</code>, <code>{{link}}</code>, <code>{{preco}}</code>. Salvo só no seu navegador.</p>
+        <textarea id="foco-tpl" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+
+      <!-- Grupo 1: FOCO DA SEMANA -->
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🎯 Foco da semana</h2>
+        <p id="foco-week-desc" style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências que acontecem entre <strong>10 e 16 dias</strong> a partir de hoje. Janela ideal pra começar a divulgar.</p>
+        <div id="foco-week-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <!-- Grupo 2: BY ELARAH -->
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">✨ By Elarah — divulgação contínua</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências exclusivas Elarah Originals. Mantém na régua semanal.</p>
+        <div id="foco-byelarah-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <!-- Grupo 3: VAGAS CRÍTICAS -->
+      <section style="margin-bottom:14px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🔥 Vagas críticas</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências com menos de 30% das vagas restantes e evento no próximo mês. Use urgência (“últimas vagas”).</p>
+        <div id="foco-critical-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+    </div>
+
+    <!-- ===== GIFT CARDS PANEL ===== -->
+    <div class="admin__panel" id="panel-giftcards">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Gift Cards</h1>
+        <p class="admin__page-subtitle">Códigos emitidos, status e saldo restante</p>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Todos os gift cards</span>
+          <span class="admin__table-count" id="giftcards-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Comprador</th>
+              <th>Destinatário</th>
+              <th>Valor</th>
+              <th>Saldo</th>
+              <th>Status</th>
+              <th>Criado</th>
+            </tr>
+          </thead>
+          <tbody id="giftcards-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PANEL CUPONS ===== -->
+    <div class="admin__panel" id="panel-coupons">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Cupons</h1>
+        <p class="admin__page-subtitle">Cupons promocionais (% ou valor fixo) com restrição por experiência, validade e limite de uso.</p>
+      </div>
+
+      <div style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="coupon-new-btn" class="admin__add-btn">+ Novo cupom</button>
+        <button type="button" id="coupon-refresh-btn" class="admin__add-btn">Atualizar lista</button>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Todos os cupons</span>
+          <span class="admin__table-count" id="coupons-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Desconto</th>
+              <th>Experiência</th>
+              <th>Validade</th>
+              <th>Usos</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="coupons-body">
+            <tr><td colspan="8" class="admin__table-empty">Nenhum cupom criado ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== CONTABILIDADE PANEL ===== -->
+    <div class="admin__panel" id="panel-contabilidade">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Contabilidade</h1>
+          <p class="admin__page-subtitle">Visão financeira completa: receitas, gastos, repasses e resultado por experiência</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <select id="fin-filter-period" class="admin__analytics-select">
+            <option value="today">Hoje</option>
+            <option value="this-week">Esta semana</option>
+            <option value="this-month" selected>Este mês</option>
+            <option value="last-month">Mês passado</option>
+            <option value="all">Tudo</option>
+            <option value="custom">Personalizado</option>
+          </select>
+          <input type="date" id="fin-filter-from" class="admin__analytics-select" style="display:none;">
+          <input type="date" id="fin-filter-to" class="admin__analytics-select" style="display:none;">
+          <select id="fin-filter-experience" class="admin__analytics-select">
+            <option value="">Todas as experiências</option>
+          </select>
+          <select id="fin-filter-supplier" class="admin__analytics-select">
+            <option value="">Todos os fornecedores</option>
+          </select>
+          <button class="admin__add-btn" id="btn-fin-refresh" type="button">Atualizar</button>
+        </div>
+      </div>
+
+      <!-- ===== CARDS DE RESUMO ===== -->
+      <div class="admin__stats" id="fin-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita confirmada</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="fin-card-receita-confirmada">R$ 0</div>
+          <div class="admin__stat-sub" id="fin-card-receita-confirmada-sub" style="font-size:.72rem;color:#888;margin-top:4px;">— vendas</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita pendente</div>
+          <div class="admin__stat-value" id="fin-card-receita-pendente">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Gastos pagos</div>
+          <div class="admin__stat-value" id="fin-card-gastos-pagos">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Gastos pendentes</div>
+          <div class="admin__stat-value" id="fin-card-gastos-pendentes">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Lucro estimado</div>
+          <div class="admin__stat-value" id="fin-card-lucro" style="color:#1a8a4a;">R$ 0</div>
+          <div class="admin__stat-sub" id="fin-card-lucro-sub" style="font-size:.72rem;color:#888;margin-top:4px;">receita − gastos − repasses</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Repasses pendentes</div>
+          <div class="admin__stat-value" id="fin-card-repasses-pendentes" style="color:#b07b00;">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Resultado do mês</div>
+          <div class="admin__stat-value" id="fin-card-mes">R$ 0</div>
+          <div class="admin__stat-sub" id="fin-card-mes-sub" style="font-size:.72rem;color:#888;margin-top:4px;">(mês corrente)</div>
+        </div>
+      </div>
+
+      <!-- ===== AÇÕES ===== -->
+      <div style="margin:18px 0 8px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="btn-fin-new-expense" class="admin__add-btn"
+                style="background:#1a8a4a;color:#fff;border:0;">+ Novo gasto</button>
+        <button type="button" id="btn-fin-new-manual-sale" class="admin__add-btn"
+                style="background:#1a8a4a;color:#fff;border:0;">+ Nova venda manual</button>
+        <button type="button" id="btn-fin-export" class="admin__add-btn">Exportar lançamentos (CSV)</button>
+      </div>
+
+      <!-- ===== TABELA: LANÇAMENTOS UNIFICADOS ===== -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Lançamentos financeiros</span>
+          <span class="admin__table-count" id="fin-ledger-count"></span>
+        </div>
+        <input type="search" id="fin-ledger-search" placeholder="Buscar (nome, experiência, descrição...)"
+               style="margin:8px 12px;padding:8px 10px;width:calc(100% - 24px);box-sizing:border-box;border:1px solid #ddd;border-radius:6px;font-size:.9rem;">
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Origem</th>
+              <th>Tipo</th>
+              <th>Descrição / Cliente</th>
+              <th>Experiência</th>
+              <th>Fornecedor</th>
+              <th style="text-align:right;">Valor</th>
+              <th style="text-align:right;">Repasse</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="fin-ledger-body">
+            <tr><td colspan="9" class="admin__table-empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: GASTOS ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Gastos</span>
+          <span class="admin__table-count" id="fin-expenses-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Experiência</th>
+              <th>Fornecedor</th>
+              <th>Pagamento</th>
+              <th style="text-align:right;">Valor</th>
+              <th>Status</th>
+              <th>Comprovante</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fin-expenses-body">
+            <tr><td colspan="10" class="admin__table-empty">Nenhum gasto registrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: VENDAS MANUAIS ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Vendas manuais (fora do site)</span>
+          <span class="admin__table-count" id="fin-sales-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Cliente</th>
+              <th>Experiência</th>
+              <th>Slot</th>
+              <th>Qtd</th>
+              <th style="text-align:right;">Valor</th>
+              <th>Pagamento</th>
+              <th>Fonte</th>
+              <th>Status</th>
+              <th>Repasse</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fin-sales-body">
+            <tr><td colspan="11" class="admin__table-empty">Nenhuma venda manual registrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: RESULTADO POR EXPERIÊNCIA ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Resultado por experiência</span>
+          <span class="admin__table-count" id="fin-byexp-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Experiência</th>
+              <th style="text-align:right;">Site</th>
+              <th style="text-align:right;">Manual</th>
+              <th style="text-align:right;">Receita</th>
+              <th style="text-align:right;">Repasse</th>
+              <th style="text-align:right;">Gastos</th>
+              <th style="text-align:right;">Lucro Elarah</th>
+              <th style="text-align:right;">Margem</th>
+            </tr>
+          </thead>
+          <tbody id="fin-byexp-body">
+            <tr><td colspan="8" class="admin__table-empty">Sem dados no período.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== TABELA: REPASSES ===== -->
+      <div class="admin__table-wrap" style="margin-top:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Repasses (bookings + vendas manuais)</span>
+          <span class="admin__table-count" id="fin-payouts-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Data origem</th>
+              <th>Origem</th>
+              <th>Cliente</th>
+              <th>Experiência</th>
+              <th>Fornecedor</th>
+              <th style="text-align:right;">Valor repasse</th>
+              <th>Status</th>
+              <th>Prazo (48h)</th>
+            </tr>
+          </thead>
+          <tbody id="fin-payouts-body">
+            <tr><td colspan="8" class="admin__table-empty">Sem repasses no período.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:24px;color:#888;font-size:.78rem;">
+        Dados confirmados consideram <strong>bookings.status = 'pago'</strong> + <strong>manual_sales.payment_status = 'pago'</strong>.
+        Pendentes/cancelados/reembolsados aparecem nas tabelas com seus respectivos status, mas não somam ao card "Receita confirmada".
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== COUPON FORM MODAL ===== -->
+<div class="admin__modal" id="coupon-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:560px;">
+    <button class="admin__modal-close" id="coupon-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="coupon-modal-title">Novo cupom</h2>
+
+    <form id="coupon-form">
+      <input type="hidden" id="cp-id">
+
+      <div class="admin__form-grid">
+        <div class="admin__form-field">
+          <label>Código *</label>
+          <input type="text" id="cp-code" required style="text-transform:uppercase" placeholder="PINTURA10">
+          <p class="admin__form-hint">Sem espaço. Será comparado em CAIXA ALTA.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Nome interno (campanha)</label>
+          <input type="text" id="cp-nome" placeholder="Pintura — lista de interesse 10% OFF">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição (opcional)</label>
+          <input type="text" id="cp-descricao" placeholder="Ação focada em conversão pra leads que demonstraram interesse na 2ª edição.">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Tipo de desconto *</label>
+          <select id="cp-discount-type" required>
+            <option value="percent">Percentual (%)</option>
+            <option value="value">Valor fixo (R$)</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label id="cp-discount-value-label">Valor do desconto *</label>
+          <input type="number" id="cp-discount-value" required min="1" placeholder="10">
+          <p class="admin__form-hint" id="cp-discount-value-hint">Ex.: 10 = 10% OFF.</p>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Restringir a uma experiência específica (opcional)</label>
+          <select id="cp-experience-id">
+            <option value="">— Qualquer experiência —</option>
+          </select>
+          <p class="admin__form-hint">Se preenchido, o cupom só funciona nessa experiência.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Válido até *</label>
+          <input type="datetime-local" id="cp-valid-until" required>
+          <p class="admin__form-hint">Após essa data o cupom não funciona mais.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Limite de uso (opcional)</label>
+          <input type="number" id="cp-max-uses" min="1" placeholder="50">
+          <p class="admin__form-hint">Vazio = ilimitado.</p>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:500;">
+            <input type="checkbox" id="cp-is-active" checked style="width:18px;height:18px;margin:0;cursor:pointer;">
+            <span>Ativo (kill-switch — desmarque pra desativar instantaneamente)</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" id="cp-cancel" class="admin__add-btn">Cancelar</button>
+        <button type="submit" id="cp-save" class="admin__add-btn">Salvar</button>
+      </div>
+
+      <p id="cp-form-msg" style="margin-top:12px;font-size:.9rem;min-height:1.2em;"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ===== COUPON USES MODAL ===== -->
+<div class="admin__modal" id="coupon-uses-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:720px;">
+    <button class="admin__modal-close" id="coupon-uses-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="coupon-uses-title">Usos do cupom</h2>
+    <div id="coupon-uses-body" style="margin-top:16px;">
+      <p style="color:#888;">Carregando...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FOLLOW-UP WHATSAPP MODAL ===== -->
+<!-- Genérico: serve qualquer experiência By Elarah. Lista de
+     interessados (byelarah_submissions filtradas por experiência),
+     mensagem template editável com placeholders auto-substituídos
+     pelos valores do cupom vinculado, e botão wa.me por pessoa
+     que abre o WhatsApp já preenchido + marca como contatado. -->
+<div class="admin__modal" id="followup-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:900px;">
+    <button class="admin__modal-close" id="followup-modal-close">&times;</button>
+    <h2 class="admin__modal-title">📱 Disparar follow-up por WhatsApp</h2>
+    <p style="margin:6px 0 18px;color:#666;font-size:.9rem;" id="followup-subtitle">—</p>
+
+    <!-- Box de info do cupom vinculado (se existir) -->
+    <div id="followup-coupon-info" style="display:none;margin-bottom:16px;padding:12px 14px;background:#f4faf0;border-left:3px solid #1a8a4a;border-radius:6px;font-size:.86rem;color:#1a4a1a;"></div>
+
+    <!-- Editor da mensagem template -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:.85rem;font-weight:600;margin-bottom:6px;">
+        Mensagem (placeholders são substituídos por pessoa)
+      </label>
+      <textarea id="followup-message" rows="10" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;line-height:1.5;resize:vertical;box-sizing:border-box;"></textarea>
+      <p style="margin:6px 0 0;font-size:.78rem;color:#888;">
+        Placeholders disponíveis:
+        <code>{NOME_PRIMEIRO}</code>, <code>{EXPERIENCIA_NOME}</code>,
+        <code>{LINK}</code>, <code>{PRECO_CHEIO}</code>,
+        <code>{PRECO_DESCONTO}</code>, <code>{DESCONTO_PERCENT}</code>,
+        <code>{CUPOM}</code>
+      </p>
+    </div>
+
+    <!-- Filtros + ações em massa -->
+    <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer;">
+        <input type="checkbox" id="followup-hide-contacted" checked>
+        Esconder já contatados
+      </label>
+      <span style="flex:1;"></span>
+      <span id="followup-counter" style="font-size:.85rem;color:#666;">—</span>
+    </div>
+
+    <!-- Lista de pessoas -->
+    <div id="followup-list" style="max-height:50vh;overflow-y:auto;border:1px solid #eee;border-radius:8px;">
+      <p style="padding:24px;color:#888;text-align:center;">Carregando...</p>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;align-items:center;">
+      <span id="followup-msg" style="flex:1;font-size:.85rem;color:#888;"></span>
+      <button type="button" id="followup-close-btn" class="admin__add-btn" style="background:#fff;color:#666;border:1px solid #ddd;">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXPERIENCE FORM MODAL ===== -->
+<div class="admin__modal" id="experience-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content">
+    <button class="admin__modal-close" id="modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="modal-title">Nova experiência</h2>
+
+    <form id="experience-form">
+      <div class="admin__form-grid">
+        <div class="admin__form-field admin__form-field--full">
+          <label>Nome da experiência</label>
+          <input type="text" id="exp-nome" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Categoria</label>
+          <input
+            id="exp-categoria"
+            type="text"
+            list="exp-categoria-datalist"
+            required
+            placeholder="Ex: Cerâmica, Pintura, Tufting, ou digite uma nova..."
+            autocomplete="off">
+          <!-- Datalist populado dinamicamente pelo admin.js a partir
+               das experiências já cadastradas. Permite escolher uma
+               categoria existente (autocomplete) OU digitar uma nova
+               categoria — qualquer texto é aceito. -->
+          <datalist id="exp-categoria-datalist"></datalist>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Escolha uma categoria existente ou digite um nome novo. Categorias novas aparecem automaticamente nos filtros do site.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data</label>
+          <input type="text" id="exp-data" placeholder="Ex: 11/04 ou Semanal" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Duração</label>
+          <input type="text" id="exp-duracao" placeholder="Ex: 3h30" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Horários disponíveis</label>
+          <div id="exp-horarios-list" class="admin__horarios-list"></div>
+          <button type="button" id="exp-horarios-add-btn" class="admin__horario-add-btn">+ Adicionar horário</button>
+          <p class="admin__form-hint">Cada horário tem seu próprio limite de vagas. Ex: <em>19h00 – 22h30</em> com 8 vagas. Vazio = ilimitado. O campo "rest." mostra as vagas restantes calculadas automaticamente.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Bairro</label>
+          <input type="text" id="exp-bairro" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Preço</label>
+          <input type="text" id="exp-preco" placeholder="Ex: R$383" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Endereço completo</label>
+          <input type="text" id="exp-endereco" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>O que inclui</label>
+          <input type="text" id="exp-inclui" placeholder="Ex: Aula completa, Coffee break" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>URL da imagem</label>
+          <input type="text" id="exp-imagem" placeholder="https://... ou assets/experiences/nome.jpg">
+          <p class="admin__form-hint" id="exp-imagem-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Aceita URL completa (https://...) ou caminho relativo (assets/...).
+            Veja o preview abaixo antes de salvar.
+          </p>
+          <div id="exp-imagem-preview-wrap"
+               style="margin-top:10px;display:none;border:1px dashed #ddd;border-radius:8px;padding:8px;background:#fafafa;">
+            <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Preview</div>
+            <img id="exp-imagem-preview" alt="Preview da imagem"
+                 style="max-width:200px;max-height:140px;display:block;border-radius:6px;background:#fff;">
+            <div id="exp-imagem-preview-status"
+                 style="margin-top:6px;font-size:12px;color:#1a8a4a;font-weight:600;"></div>
+          </div>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Cor 1 (fallback)</label>
+          <input type="color" id="exp-cor1" value="#f6d5a8">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Cor 2 (fallback)</label>
+          <input type="color" id="exp-cor2" value="#f0a05e">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição completa</label>
+          <textarea id="exp-descricao" rows="6"
+            placeholder="Descreva a experiência por completo: o que o cliente vai vivenciar, como funciona, o que está incluso, qual o tom da experiência, que tipo de público é ideal..."></textarea>
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Aparece <strong>completa</strong> na modal que abre quando o cliente clica em "Quero participar".
+            No card da home, exibimos os primeiros ~120 caracteres como teaser.
+            Use linhas em branco pra separar parágrafos.
+          </p>
+        </div>
+
+        <!-- ===== VARIAÇÕES (escolha do cliente) =====
+             Quando preenchido, o modal de reserva mostra um seletor
+             com essas opções e o cliente é OBRIGADO a escolher uma
+             antes de pagar. A escolha vai junto pro checkout, fica
+             em bookings.metadata.variant_selected, aparece no email
+             de confirmação e na aba Compras do admin.
+             Deixar AMBOS em branco = experiência sem variação. -->
+        <div class="admin__form-field">
+          <label>Rótulo da variação (opcional)</label>
+          <input type="text" id="exp-variant-label" placeholder="Ex: Modelo do quadro, Tipo de aliança">
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+            Vazio = sem seletor. Preenchido = obriga o cliente a escolher uma das opções abaixo.
+          </p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Opções (uma por linha)</label>
+          <textarea id="exp-variant-options" rows="4" placeholder="Lagosta&#10;Beijo&#10;Olho grego"></textarea>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+            Cada linha vira um botão no modal. Mesmo preço pra todas. Pra ter preço diferente por variação, fala com o desenvolvedor.
+          </p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Vagas totais</label>
+          <input type="number" id="exp-vagas-total" min="0" step="1" placeholder="Em branco = sem limite">
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Quantas pessoas cabem nesta experiência. Vazio = ilimitado.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Vagas restantes</label>
+          <input type="number" id="exp-vagas-restantes" min="0" step="1" placeholder="Calculado automaticamente" readonly style="background:#f6f6f6;">
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Atualizado automaticamente conforme as reservas.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data e hora do evento</label>
+          <input type="datetime-local" id="exp-event-at">
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Use para experiências de data fixa. Necessário para o bloqueio de 24h.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Bloqueio antes do evento (horas)</label>
+          <input type="number" id="exp-cutoff-hours" min="0" step="1" value="24">
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Quantas horas antes a venda é encerrada. Padrão: 24h.</p>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="exp-is-active" checked style="width:auto;margin:0;">
+            <span>Visível no site</span>
+          </label>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Desmarque para ocultar a experiência do site sem excluí-la.</p>
+        </div>
+
+        <!-- ===== BY ELARAH (ELARAH ORIGINALS) ===== -->
+        <div class="admin__form-field admin__form-field--full" style="border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
+          <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;display:block;">By Elarah / Originals</label>
+        </div>
+        <div class="admin__form-field admin__form-field--full">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="exp-is-elarah-original" style="width:auto;margin:0;">
+            <span>É um Elarah Original (aparece na aba "By Elarah" da home)</span>
+          </label>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Marque pra exibir esta experiência na seção destacada "By Elarah" da home, com badge premium.</p>
+        </div>
+        <div class="admin__form-field admin__form-field--full">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="exp-hide-from-categorias" style="width:auto;margin:0;">
+            <span>Esconder das categorias regulares</span>
+          </label>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Se marcado, a experiência só aparece na aba "By Elarah" — não vai aparecer em <code>categoria.html</code>. Útil pra Originals exclusivos.</p>
+        </div>
+        <div class="admin__form-field admin__form-field--full">
+          <label>Ação do botão (CTA)</label>
+          <select id="exp-cta-mode" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:.95rem;">
+            <option value="buy">Compra direta (checkout) — recomendado pra experiências com data definida</option>
+            <option value="waitlist">Lista de espera (lead) — pra experiências em pré-lançamento sem data</option>
+          </select>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">"Compra direta" abre o checkout normal; "Lista de espera" abre o formulário de lead que envia pro WhatsApp.</p>
+        </div>
+
+        <!-- ===== RECORRÊNCIA SEMANAL ===== -->
+        <div class="admin__form-field admin__form-field--full" id="exp-recurrence-section" style="display:none;border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
+          <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block;">Recorrência semanal</label>
+          <p class="admin__form-hint" style="margin:0 0 14px;font-size:12px;color:#666;">Cadastre uma regra "toda quinta às 19h, 12 vagas" e o sistema gera as próximas 8 semanas automaticamente. Você não precisa cadastrar cada data manualmente.</p>
+          <div id="exp-recurrence-header"></div>
+          <div id="exp-recurrence-rules-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;"></div>
+          <button type="button" id="exp-recurrence-add-btn" style="padding:10px 16px;background:#fff;border:1px dashed #f0a05e;color:#a4663b;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Adicionar regra de recorrência</button>
+          <div id="exp-recurrence-slots-wrap" style="margin-top:16px;display:none;">
+            <h4 style="margin:0 0 6px;font-size:.92rem;color:#1a1a1a;font-weight:700;">📅 Próximas datas geradas</h4>
+            <p class="admin__form-hint" style="margin:0 0 10px;font-size:12px;color:#888;">Cada linha vem de uma regra ativa. Cancelar uma data específica não recria mesmo após nova materialização.</p>
+            <div id="exp-recurrence-slots-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+          <div id="exp-recurrence-msg" style="margin-top:8px;font-size:.85rem;min-height:1em;"></div>
+        </div>
+
+        <!-- ===== FORNECEDOR / FINANCEIRO ===== -->
+        <div class="admin__form-field admin__form-field--full" style="border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
+          <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;display:block;">Fornecedor & Financeiro</label>
+        </div>
+        <div class="admin__form-field">
+          <label>Nome do fornecedor</label>
+          <div id="exp-fornecedor-combobox"></div>
+          <input type="hidden" id="exp-fornecedor-nome">
+          <p class="admin__form-hint">Selecione um fornecedor já cadastrado ou digite um nome novo e clique em <strong>Adicionar novo fornecedor</strong>. Isso evita variações de grafia que quebram relatórios.</p>
+        </div>
+        <div class="admin__form-field">
+          <label>Valor cheio (R$)</label>
+          <input type="text" id="exp-valor-cheio" placeholder="Ex: R$425" inputmode="decimal">
+          <p class="admin__form-hint">Preço original antes do desconto Elarah. Formato: R$425 ou 425</p>
+        </div>
+        <div class="admin__form-field">
+          <label>Repasse ao fornecedor (%)</label>
+          <input type="number" id="exp-percentual-repasse" min="0" max="100" step="0.01" value="70" placeholder="70">
+          <p class="admin__form-hint">Percentual do valor ELARAH que vai pro fornecedor. Padrão Elarah: 70 (fornecedor 70%, Elarah 30%).</p>
+        </div>
+      </div>
+
+      <input type="hidden" id="exp-edit-id" value="">
+      <button type="submit" class="admin__form-submit" id="exp-submit-btn">Salvar experiência</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== BY ELARAH ITEM MODAL ===== -->
+<div class="admin__modal" id="byelarah-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content">
+    <button class="admin__modal-close" id="byelarah-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="byelarah-modal-title">Novo item By Elarah</h2>
+
+    <form id="byelarah-form">
+      <div class="admin__form-grid">
+        <div class="admin__form-field admin__form-field--full">
+          <label>Nome da experiência</label>
+          <input type="text" id="by-nome" required>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição curta</label>
+          <textarea id="by-descricao" rows="2" placeholder="Descrição exibida no card"></textarea>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>URL da imagem / foto</label>
+          <input type="text" id="by-imagem" placeholder="assets/nome-do-arquivo.jpg">
+          <p class="admin__form-hint">Ex: <em>assets/pintura-aperol.png</em> ou qualquer URL pública.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data</label>
+          <input type="text" id="by-data" placeholder="Ex: 24 de abril ou Data em breve">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Tipo</label>
+          <select id="by-tipo">
+            <option value="participar">Quero participar (com horários)</option>
+            <option value="espera">Lista de espera (sem data)</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Local / endereço</label>
+          <input type="text" id="by-local" placeholder="Rua Nova Orleans, 34 – Brooklin, São Paulo">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Horários disponíveis (com vagas por horário)</label>
+          <div id="by-horarios-list" class="admin__horarios-list"></div>
+          <button type="button" id="by-horarios-add-btn" class="admin__horario-add-btn">+ Adicionar horário</button>
+          <p class="admin__form-hint">
+            Ex: <em>10h às 13h</em> com <em>10</em> vagas. Cada horário tem suas próprias vagas —
+            quando alguém compra um, só esse horário decrementa. Deixe o campo
+            <em>Vagas</em> em branco pra horário ilimitado, ou em <em>0</em> pra esgotado.
+            <strong>Vagas por horário só são respeitadas quando "É comprável" está ligado abaixo.</strong>
+            Cards de espera ignoram o input de vagas.
+          </p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Ordem</label>
+          <input type="number" id="by-ordem" value="0" min="0">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Status</label>
+          <select id="by-ativo">
+            <option value="true">Ativo (visível na home)</option>
+            <option value="false">Oculto</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Slug (identificador)</label>
+          <input type="text" id="by-slug" placeholder="pintura-aperol">
+          <p class="admin__form-hint">Opcional. Se vazio, geramos automaticamente a partir do nome.</p>
+        </div>
+
+        <!-- ========== TOGGLE: É COMPRÁVEL? ========== -->
+        <div class="admin__form-field admin__form-field--full"
+             style="border-top:2px solid #f0a05e;padding-top:18px;margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:1rem;font-weight:700;color:#1a1a1a;">
+            <input type="checkbox" id="by-is-purchasable" style="width:auto;margin:0;transform:scale(1.3);">
+            <span>💳 É comprável (checkout direto pelo site)</span>
+          </label>
+          <p class="admin__form-hint" style="margin:8px 0 0;font-size:.88rem;color:#555;line-height:1.5;">
+            Ative pra que o botão "Quero participar" abra a modal de descrição completa
+            e siga pro checkout (Stripe / PIX) com vagas e preço. Quando desligado, o
+            card vai pro fluxo de lista de espera (lead via WhatsApp).
+          </p>
+        </div>
+
+        <!-- ========== SEÇÃO COMPRÁVEL (escondida quando toggle off) ========== -->
+        <div id="by-purchasable-section" style="display:none;background:#fafaf6;border:1px dashed #f0cfa0;border-radius:10px;padding:18px;margin-top:12px;grid-column:1 / -1;">
+          <div style="font-size:.78rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:14px;">
+            Dados de checkout
+          </div>
+
+          <div class="admin__form-grid">
+            <div class="admin__form-field">
+              <label>Preço *</label>
+              <input type="text" id="by-preco" placeholder="Ex: R$ 250 ou 250,00">
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Valor que o cliente paga. Aceita "R$ 250", "250", "250,00".
+              </p>
+            </div>
+
+            <div class="admin__form-field">
+              <label style="display:flex;align-items:center;gap:8px;">
+                Vagas totais
+                <span id="by-vagas-modo"
+                      style="display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:999px;background:#f4f4f4;color:#666;">
+                  Modo: limite global
+                </span>
+              </label>
+              <input type="number" id="by-vagas-total" min="0" step="1" placeholder="Em branco = sem limite">
+              <p class="admin__form-hint" id="by-vagas-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Adicione um horário pra controle individual, ou use este campo como limite global da experiência.
+              </p>
+            </div>
+
+            <div class="admin__form-field">
+              <label>Data exata do evento (datetime)</label>
+              <input type="datetime-local" id="by-event-at">
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Necessário pra cutoff (bloqueio antes do evento).
+              </p>
+            </div>
+
+            <div class="admin__form-field">
+              <label>Bloqueio antes do evento (horas)</label>
+              <input type="number" id="by-cutoff-hours" min="0" step="1" value="24">
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Padrão: 24h. Quantas horas antes a venda encerra.
+              </p>
+            </div>
+
+            <div class="admin__form-field admin__form-field--full">
+              <label>Descrição completa *</label>
+              <textarea id="by-descricao-completa" rows="6"
+                placeholder="Descreva a experiência por completo: o que o cliente vai vivenciar, como funciona, o que está incluso, qual o tom da experiência..."></textarea>
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Aparece <strong>completa</strong> na modal que abre quando o cliente clica em "Quero participar".
+                A "Descrição curta" acima continua sendo o teaser do card.
+              </p>
+            </div>
+
+            <div class="admin__form-field">
+              <label>Valor cheio (R$)</label>
+              <input type="text" id="by-valor-cheio" placeholder="Ex: R$ 425">
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Preço original antes do desconto Elarah. Usado pra calcular repasse e comissão.
+              </p>
+            </div>
+
+            <!-- ===== Divisão financeira: múltiplos fornecedores ===== -->
+            <div class="admin__form-field admin__form-field--full"
+                 style="border-top:1px dashed #d8c8a8;padding-top:14px;margin-top:6px;">
+              <div style="font-size:.78rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:10px;">
+                Divisão financeira
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">
+                  Fornecedores (um ou mais)
+                </label>
+                <div id="by-suppliers-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+                <button type="button" id="by-supplier-add-btn"
+                        style="margin-top:8px;padding:7px 14px;background:#fff;border:1px dashed #f0a05e;color:#a07c4c;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;">
+                  + Adicionar fornecedor
+                </button>
+                <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+                  Cada fornecedor recebe % do valor cheio OU um valor fixo.
+                  Adicione quantos precisar — a divisão pode ser livre por experiência.
+                </p>
+              </div>
+
+              <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px;">
+                <div style="flex:1;min-width:160px;">
+                  <label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;font-weight:600;">
+                    Comissão Elarah (opcional)
+                  </label>
+                  <select id="by-comissao-type"
+                          style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.9rem;background:#fff;">
+                    <option value="">Resíduo automático (sobra)</option>
+                    <option value="percent">% do valor cheio</option>
+                    <option value="fixed">Valor fixo (R$)</option>
+                  </select>
+                </div>
+                <div style="flex:0 0 130px;">
+                  <input type="number" id="by-comissao-value" step="0.01" min="0" placeholder="20"
+                         style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.9rem;">
+                </div>
+              </div>
+              <p class="admin__form-hint" style="margin:0 0 14px;font-size:12px;color:#888;">
+                Deixe "Resíduo automático" pra que a Elarah fique com o que sobra
+                depois de pagar todos os fornecedores. Ou defina manualmente em %
+                ou R$ pra controlar caso a caso.
+              </p>
+
+              <!-- Resumo live -->
+              <div id="by-suppliers-resumo"
+                   style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 14px;font-size:.86rem;line-height:1.6;color:#333;"></div>
+            </div>
+
+            <!-- ========== VARIANTE (escolha extra do cliente) ========== -->
+            <div class="admin__form-field admin__form-field--full"
+                 style="border-top:1px dashed #d8c8a8;padding-top:14px;margin-top:6px;">
+              <div style="font-size:.78rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:10px;">
+                Variação (opcional)
+              </div>
+            </div>
+
+            <div class="admin__form-field">
+              <label>Tipo de variação</label>
+              <input type="text" id="by-variant-label" placeholder="Ex: Modelo do quadro">
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Rótulo que aparece pro cliente. Em branco = sem variação
+                (cliente só escolhe horário no checkout).
+              </p>
+            </div>
+
+            <div class="admin__form-field">
+              <label>Opções (uma por linha)</label>
+              <textarea id="by-variant-options" rows="4"
+                placeholder="Lagosta&#10;Beijo&#10;Olho grego"></textarea>
+              <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
+                Cada linha vira uma opção que o cliente escolhe no modal de reserva.
+                A escolha aparece no e-mail de confirmação e no admin.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <input type="hidden" id="by-edit-id" value="">
+      <button type="submit" class="admin__form-submit" id="by-submit-btn">Salvar item</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== EXPENSE FORM MODAL (Contabilidade) ===== -->
+<div class="admin__modal" id="expense-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:640px;">
+    <button class="admin__modal-close" id="expense-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="expense-modal-title">Novo gasto</h2>
+
+    <form id="expense-form">
+      <input type="hidden" id="exp-fin-id">
+
+      <div class="admin__form-grid">
+        <div class="admin__form-field admin__form-field--full">
+          <label>Descrição *</label>
+          <input type="text" id="exp-fin-description" required placeholder="Ex.: Material da pintura — 12/04">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Valor (R$) *</label>
+          <input type="text" id="exp-fin-amount" required placeholder="120,50" inputmode="decimal">
+          <p class="admin__form-hint">Use vírgula. Será salvo em centavos.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data do gasto *</label>
+          <input type="date" id="exp-fin-date" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Categoria</label>
+          <select id="exp-fin-category">
+            <option value="">— Sem categoria —</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Forma de pagamento</label>
+          <select id="exp-fin-payment-method">
+            <option value="">—</option>
+            <option value="pix">Pix</option>
+            <option value="cartao">Cartão</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="transferencia">Transferência</option>
+            <option value="boleto">Boleto</option>
+            <option value="infinitypay">InfinityPay</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Experiência (opcional)</label>
+          <select id="exp-fin-experience">
+            <option value="">— Não vinculado —</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Fornecedor (opcional)</label>
+          <input type="text" id="exp-fin-supplier" placeholder="Nome do fornecedor">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Status *</label>
+          <select id="exp-fin-status" required>
+            <option value="pago">Pago</option>
+            <option value="pendente">Pendente</option>
+            <option value="reembolsado">Reembolsado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Observações</label>
+          <input type="text" id="exp-fin-notes" placeholder="Notas internas">
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Comprovante (foto / PDF, até 10 MB)</label>
+          <input type="file" id="exp-fin-attachment" accept="image/*,application/pdf">
+          <p class="admin__form-hint" id="exp-fin-attachment-current" style="margin-top:4px;"></p>
+          <button type="button" id="exp-fin-ocr-btn" disabled
+                  title="Em breve: leitura automática de nota fiscal por IA"
+                  style="margin-top:8px;padding:6px 12px;border:1px dashed #bbb;background:#f7f7f7;color:#999;border-radius:6px;cursor:not-allowed;font-size:.82rem;">
+            Ler nota fiscal automaticamente (em breve)
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" id="exp-fin-cancel" class="admin__add-btn">Cancelar</button>
+        <button type="submit" id="exp-fin-save" class="admin__add-btn">Salvar</button>
+      </div>
+
+      <p id="exp-fin-msg" style="margin-top:12px;font-size:.9rem;min-height:1.2em;"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MANUAL SALE FORM MODAL (Compras / Contabilidade) ===== -->
+<div class="admin__modal" id="manual-sale-modal">
+  <div class="admin__modal-backdrop"></div>
+  <div class="admin__modal-content" style="max-width:720px;">
+    <button class="admin__modal-close" id="manual-sale-modal-close">&times;</button>
+    <h2 class="admin__modal-title" id="manual-sale-modal-title">Registrar venda manual</h2>
+    <p style="margin:0 0 14px;color:#888;font-size:.85rem;">
+      Use para vendas feitas fora do site (WhatsApp, Pix direto, dinheiro, InfinityPay etc).
+      Aparecerá em Compras com badge "Venda manual" e na Contabilidade.
+    </p>
+
+    <form id="manual-sale-form">
+      <input type="hidden" id="ms-id">
+
+      <div class="admin__form-grid">
+        <div class="admin__form-field">
+          <label>Nome do cliente *</label>
+          <input type="text" id="ms-customer-name" required>
+        </div>
+
+        <div class="admin__form-field">
+          <label>E-mail</label>
+          <input type="email" id="ms-customer-email">
+        </div>
+
+        <div class="admin__form-field">
+          <label>WhatsApp / Telefone</label>
+          <input type="tel" id="ms-customer-phone" placeholder="(11) 99999-9999" maxlength="15">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Fonte da venda</label>
+          <select id="ms-source">
+            <option value="">—</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="instagram">Instagram</option>
+            <option value="indicacao">Indicação</option>
+            <option value="presencial">Presencial</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Experiência *</label>
+          <input type="text" id="ms-experience-search" list="ms-experience-datalist"
+                 autocomplete="off" placeholder="Digite para buscar (ou nome livre se experiência encerrou)..." required>
+          <datalist id="ms-experience-datalist"></datalist>
+          <input type="hidden" id="ms-experience">
+          <p class="admin__form-hint" id="ms-experience-hint" style="margin-top:4px;font-size:.78rem;min-height:1.1em;"></p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data da venda *</label>
+          <input type="date" id="ms-sale-date" required>
+          <p class="admin__form-hint">Quando o cliente pagou (não confundir com a data do evento).</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Data do evento</label>
+          <input type="date" id="ms-slot-date">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Horário</label>
+          <input type="text" id="ms-slot-time" list="ms-slot-time-datalist"
+                 autocomplete="off" placeholder="Ex: 19h00">
+          <datalist id="ms-slot-time-datalist"></datalist>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Quantidade *</label>
+          <input type="number" id="ms-quantity" required min="1" value="1">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Valor unitário (R$) *</label>
+          <input type="text" id="ms-unit-price" required inputmode="decimal" placeholder="120,00">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Cupom / desconto (opcional)</label>
+          <input type="text" id="ms-coupon-code" placeholder="Código">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Desconto (R$)</label>
+          <input type="text" id="ms-discount" inputmode="decimal" placeholder="0,00" value="0">
+        </div>
+
+        <div class="admin__form-field">
+          <label>Total (R$)</label>
+          <input type="text" id="ms-total" readonly style="background:#f5f5f5;">
+          <p class="admin__form-hint">Calculado: (qty × unit) − desconto.</p>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Forma de pagamento</label>
+          <select id="ms-payment-method">
+            <option value="">—</option>
+            <option value="pix">Pix</option>
+            <option value="cartao">Cartão</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="transferencia">Transferência</option>
+            <option value="boleto">Boleto</option>
+            <option value="infinitypay">InfinityPay</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field">
+          <label>Status do pagamento *</label>
+          <select id="ms-payment-status" required>
+            <option value="pago">Pago</option>
+            <option value="pendente">Pendente</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="reembolsado">Reembolsado</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full" style="border-top:1px dashed #ddd;padding-top:12px;margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
+            <input type="checkbox" id="ms-has-payout" style="width:16px;height:16px;margin:0;">
+            <span>Esta venda gera repasse a fornecedor</span>
+          </label>
+        </div>
+
+        <div class="admin__form-field" id="ms-payout-supplier-wrap" style="display:none;">
+          <label>Fornecedor</label>
+          <input type="text" id="ms-payout-supplier" list="ms-payout-supplier-datalist"
+                 autocomplete="off" placeholder="Digite ou selecione...">
+          <datalist id="ms-payout-supplier-datalist"></datalist>
+        </div>
+
+        <div class="admin__form-field" id="ms-payout-amount-wrap" style="display:none;">
+          <label>Valor do repasse (R$)</label>
+          <input type="text" id="ms-payout-amount" inputmode="decimal" placeholder="0,00">
+        </div>
+
+        <div class="admin__form-field" id="ms-payout-status-wrap" style="display:none;">
+          <label>Status do repasse</label>
+          <select id="ms-payout-status">
+            <option value="pendente">Pendente</option>
+            <option value="pago">Pago</option>
+          </select>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full">
+          <label>Observações</label>
+          <input type="text" id="ms-notes">
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" id="ms-cancel" class="admin__add-btn">Cancelar</button>
+        <button type="submit" id="ms-save" class="admin__add-btn">Salvar venda</button>
+      </div>
+
+      <p id="ms-msg" style="margin-top:12px;font-size:.9rem;min-height:1.2em;"></p>
+    </form>
+  </div>
+</div>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=23"></script>
+<script src="byelarah-data.js?v=6"></script>
+<script src="analytics.js?v=2"></script>
+<script src="admin-social.js?v=2"></script>
+<!-- Chart.js (somente admin) — usado pelo painel de analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="admin.js?v=148"></script>
+
+<!-- ==========================================================
+     BY ELARAH — INLINE GROUPING PATCH
+     ----------------------------------------------------------
+     Reagrupa as tabelas "Itens Elarah Originals" e "Respostas do
+     formulário" por nome da experiência, usando MutationObserver
+     sobre os <tbody>. Fica inline (não em arquivo separado) pra
+     ser imune a cache de CDN/browser que possa estar servindo
+     um admin.js antigo sem a lógica de agrupamento.
+
+     - Se o admin.js novo já renderizou com grupos, este patch
+       detecta <tr class="admin__group-header"> e não faz nada.
+     - Se o admin.js antigo renderizou rows planas, este patch
+       reconstrói o tbody com headers estilizados INLINE (não
+       depende de admin.css).
+     - Usa IIFE pra não poluir o escopo global.
+     ========================================================== -->
+<script>
+(function () {
+  'use strict';
+
+  console.info('[Elarah Admin patch] byelarah group-patch inline v1 — carregado');
+
+  var SUBS  = {
+    tbody: 'byelarah-subs-body',
+    expCol: 1,
+    dateCol: 0,
+    colspan: 9,
+    singular: 'resposta',
+    plural: 'respostas'
+  };
+  var ITEMS = {
+    tbody: 'byelarah-items-body',
+    expCol: 2,
+    dateCol: null,
+    colspan: 8,
+    singular: 'sessão',
+    plural: 'sessões'
+  };
+
+  function esc(s) {
+    if (s == null) return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  function gkey(s) {
+    return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  // Parse "14/04/2026, 14:43" → timestamp ms
+  function parseTs(txt) {
+    if (!txt) return 0;
+    var m = String(txt).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})[\s,]+(\d{1,2}):(\d{2})/);
+    if (!m) return 0;
+    var y = parseInt(m[3], 10);
+    if (y < 100) y += 2000;
+    var d = new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10), parseInt(m[4], 10), parseInt(m[5], 10));
+    var t = d.getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
+  function applyGroup(cfg) {
+    var tbody = document.getElementById(cfg.tbody);
+    if (!tbody) return;
+    // Se já está agrupado (seja pelo admin.js novo, seja por chamada
+    // anterior do patch), não refaz nada.
+    if (tbody.querySelector('tr.admin__group-header')) return;
+
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+    if (!rows.length) return;
+    // Preserva o empty state do admin.
+    if (rows.length === 1 && rows[0].querySelector('.admin__table-empty')) return;
+
+    // Extrai: nome da experiência, timestamp (quando possível) e
+    // o HTML original da row (pra preservar botões e estilos).
+    var entries = rows.map(function (tr) {
+      var tds = tr.querySelectorAll('td');
+      var nome = tds[cfg.expCol] ? tds[cfg.expCol].textContent.trim() : '';
+      if (!nome) nome = '— sem nome —';
+      var ts = 0;
+      if (cfg.dateCol != null && tds[cfg.dateCol]) {
+        ts = parseTs(tds[cfg.dateCol].textContent.trim());
+      }
+      return { nome: nome, ts: ts, html: tr.outerHTML };
+    });
+
+    // Ordena por data desc (rows sem data ficam no fim do grupo).
+    entries.sort(function (a, b) { return b.ts - a.ts; });
+
+    // Agrupa preservando ordem da primeira ocorrência.
+    var order = [];
+    var map = {};
+    entries.forEach(function (e) {
+      var k = gkey(e.nome);
+      if (!map[k]) {
+        order.push(k);
+        map[k] = { nome: e.nome, rows: [] };
+      }
+      map[k].rows.push(e);
+    });
+
+    // Ordena grupos pelo row mais recente de cada um.
+    order.sort(function (ka, kb) {
+      var ta = map[ka].rows[0] ? map[ka].rows[0].ts : 0;
+      var tb = map[kb].rows[0] ? map[kb].rows[0].ts : 0;
+      return tb - ta;
+    });
+
+    var dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    var headerStyle = 'background:linear-gradient(90deg,#fff8ee 0%,#fdf4e3 100%);border-top:3px solid #f0a05e;border-bottom:1px solid #f0cfa0;padding:18px 16px 14px;';
+    var innerStyle  = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+    var titleStyle  = 'font-family:Georgia,"DM Serif Display",serif;font-size:1.1rem;color:#1a1a1a;font-weight:400;';
+    var pillBase    = 'display:inline-block;padding:4px 12px;border-radius:999px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;vertical-align:middle;';
+    var pillOrange  = pillBase + 'background:#f0a05e;color:#fff;';
+    var pillGreen   = pillBase + 'background:#1a8a4a;color:#fff;margin-left:4px;';
+
+    var out = [];
+    order.forEach(function (k) {
+      var g = map[k];
+      var n = g.rows.length;
+      var label = n + ' ' + (n === 1 ? cfg.singular : cfg.plural);
+      var novas = g.rows.filter(function (r) { return r.ts > dayAgo; }).length;
+      var novasPill = novas > 0
+        ? '<span style="' + pillGreen + '">' + novas + ' nova' + (novas !== 1 ? 's' : '') + ' (24h)</span>'
+        : '';
+      out.push(
+        '<tr class="admin__group-header">' +
+          '<td colspan="' + cfg.colspan + '" style="' + headerStyle + '">' +
+            '<div style="' + innerStyle + '">' +
+              '<span style="' + titleStyle + '">' + esc(g.nome) + '</span>' +
+              '<span style="' + pillOrange + '">' + esc(label) + '</span>' +
+              novasPill +
+            '</div>' +
+          '</td>' +
+        '</tr>'
+      );
+      g.rows.forEach(function (r) { out.push(r.html); });
+    });
+
+    tbody.innerHTML = out.join('');
+    console.info(
+      '[Elarah Admin patch] agrupou #' + cfg.tbody + ':',
+      order.length + ' grupo' + (order.length !== 1 ? 's' : ''),
+      'de ' + entries.length + ' row' + (entries.length !== 1 ? 's' : '')
+    );
+  }
+
+  function watch(cfg) {
+    var tbody = document.getElementById(cfg.tbody);
+    if (!tbody) {
+      // Tenta de novo em 300ms até 60 tentativas (~18s). Necessário
+      // porque admin.js pode demorar pra inicializar.
+      if (watch._tries == null) watch._tries = 0;
+      if (watch._tries++ < 60) {
+        setTimeout(function () { watch(cfg); }, 300);
+      }
+      return;
+    }
+    applyGroup(cfg);
+    // MutationObserver: reagrupa automaticamente quando o admin.js
+    // redesenhar o tbody (via renderByElarah, clique em "Atualizar",
+    // etc.).
+    try {
+      var obs = new MutationObserver(function () {
+        if (!tbody.querySelector('tr.admin__group-header')) {
+          setTimeout(function () { applyGroup(cfg); }, 20);
+        }
+      });
+      obs.observe(tbody, { childList: true });
+    } catch (e) {
+      console.warn('[Elarah Admin patch] MutationObserver falhou', e);
+    }
+  }
+
+  function boot() {
+    watch(SUBS);
+    watch(ITEMS);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>

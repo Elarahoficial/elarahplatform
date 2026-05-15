@@ -41,6 +41,25 @@
     return arr.filter(function (b) { return !isTestExperience(b && b.experiencia_nome); });
   }
 
+  // Soma a quantidade de vagas/participantes de uma lista de bookings.
+  // 1 booking com quantidade=3 → contribui 3. Default 1 quando faltar.
+  // Usado em todos os contadores de volume (compras pagas, conversão,
+  // top experiências, funil, etc.) pra refletir vagas vendidas.
+  function sumQuantity(arr) {
+    if (!Array.isArray(arr)) return 0;
+    let total = 0;
+    for (let i = 0; i < arr.length; i++) {
+      const b = arr[i];
+      const q = b && b.quantidade != null ? Number(b.quantidade) : 1;
+      total += Math.max(1, Number.isFinite(q) ? q : 1);
+    }
+    return total;
+  }
+  function bookingQty(b) {
+    const q = b && b.quantidade != null ? Number(b.quantidade) : 1;
+    return Math.max(1, Number.isFinite(q) ? q : 1);
+  }
+
   // ===== HELPERS =====
   function getFromStorage(key) {
     try { return JSON.parse(localStorage.getItem(key)) || []; }
@@ -369,14 +388,24 @@
 
   async function refreshPanel(name) {
     switch (name) {
-      case 'overview':    await renderOverview(); break;
+      case 'overview':         await renderOverview(); break;
+      case 'painel-semanal':   await renderPainelSemanal(); break;
+      case 'rotina':           await renderRotina(); break;
+      case 'conteudo':         await renderConteudo(); break;
       case 'users':       await renderUsers(); break;
       case 'partners':    await renderPartners(); break;
       case 'purchases':   await renderBookings(); break;
       case 'fornecedores': await renderFornecedores(); break;
+      case 'prospects':   await renderProspects(); break;
+      case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
+      case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
+      case 'campanhas':   await renderCampanhas(); break;
+      case 'marketing-ai': await renderMarketingAI(); break;
+      case 'calendario-editorial': await renderCalendarioEditorial(); break;
+      case 'captacao':    await renderCaptacao(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
       case 'contabilidade': await renderContabilidade(); break;
@@ -951,12 +980,26 @@
   // whatsapp_followup_sent_at em byelarah_submissions.
   // Requer rodar sql/elarah_byelarah_followup_tracking.sql.
 
-  // Mensagem template default. Pode ser alterada inline no modal.
-  // Campanha atual: Oficina de Perfumaria Criativa + Brunch &
-  // Meditação Guiada (By Elarah) — anúncio de experiência nova.
-  // {LINK} é resolvido via FOLLOWUP_LANDING_PAGES (perfumes.html)
-  // pro WhatsApp gerar preview com a imagem PERFUMES.jpg.
-  const FOLLOWUP_DEFAULT_TEMPLATE = (
+  // Templates por campanha. {LINK} é resolvido via findCampaignFor →
+  // landing dedicada (preview correto no WhatsApp via og:image).
+  //
+  // Genérico: usado quando não há match com nenhuma campanha. Não cita
+  // nada específico — assim, se uma campanha nova for cadastrada antes
+  // de ganhar template próprio, a mensagem não fica falando de outra
+  // experiência (bug que já aconteceu com a campanha de joia puxando
+  // texto de perfume).
+  const FOLLOWUP_TEMPLATE_GENERIC = (
+    'Acabamos de abrir uma experiência nova… e ela é diferente de tudo que você já viu ✨\n\n' +
+    'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
+    'É o tipo de momento que você não compra… você vive.\n\n' +
+    'E as vagas são bem limitadas 👀\n\n' +
+    '👉🏻 garante sua vaga aqui: {LINK}\n\n' +
+    'Se você sentiu vontade agora… não ignora.\n' +
+    'Essas são as experiências que marcam 💫'
+  );
+
+  // Oficina de Perfumaria Criativa + Brunch & Meditação Guiada.
+  const FOLLOWUP_TEMPLATE_PERFUMARIA = (
     'Acabamos de abrir uma experiência nova… e ela tá diferente de tudo que você já viu ✨🌿\n\n' +
     'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
     'Imagina criar o seu próprio perfume do zero, com notas que traduzem quem você é… enquanto desacelera, se reconecta e vive uma manhã leve, bonita e fora do automático 🕊️🌸\n\n' +
@@ -968,6 +1011,23 @@
     '👉🏻 garante sua vaga aqui: {LINK}\n\n' +
     'Se você sentiu vontade agora… não ignora.\n' +
     'Essas são as experiências que marcam 💫'
+  );
+
+  // Workshop de Ourivesaria — Crie sua joia (Dia dos Namorados).
+  // Apelo emocional: anel/aliança feito a quatro mãos, peça única,
+  // "história que vira joia". Sem qualquer menção a perfume / brunch.
+  const FOLLOWUP_TEMPLATE_JOIA = (
+    'Acabamos de abrir uma experiência nova… e ela é diferente de tudo que você já viu 🤍✨\n\n' +
+    'A *{EXPERIENCIA_NOME}* chegou agora: e já tem tudo pra ser uma das mais especiais da Elarah 💫\n\n' +
+    'Imagina passar uma tarde criando, com as suas próprias mãos, uma joia que vai marcar a história de vocês — anel, aliança, peça única… daquelas que ficam pra sempre 💍\n\n' +
+    '* atelier de ourivesaria com mestre joalheiro\n' +
+    '* joia feita por você (a quatro mãos, se quiser)\n' +
+    '* experiência completa, do desenho à peça pronta\n\n' +
+    'É o tipo de presente que não se compra — se vive (e se usa pra sempre).\n\n' +
+    'E pro Dia dos Namorados, as vagas são contadíssimas 👀\n\n' +
+    '👉🏻 garante a sua aqui: {LINK}\n\n' +
+    'Se você sentiu vontade agora… não ignora.\n' +
+    'Essa é a experiência que vira história 🤍'
   );
 
   // Estado do modal (cache da request atual)
@@ -1031,71 +1091,91 @@
     return out;
   }
 
-  // Mapa de experiências com landing dedicada (preview correto no
-  // WhatsApp). Adicione uma entrada por campanha que ganhar página
-  // própria. Match por nome (case insensitive, contains de cada termo).
-  // O JS de cada landing redireciona dinamicamente pra experiencia.html
+  // Mapa de campanhas: cada entrada associa um conjunto de keywords
+  // (que precisam aparecer no nome da experiência) a uma landing
+  // dedicada (preview correto no WhatsApp via og:image) + um template
+  // de mensagem específico. Match por nome (case insensitive, contains
+  // de cada termo). O JS de cada landing redireciona pra experiencia.html
   // — admin não precisa atualizar IDs aqui se a experiência for
   // reimportada/duplicada.
   //
-  // Estrutura: { keywords: ['termos','que','precisam','aparecer'], landing: '/aperol.html' }
-  const FOLLOWUP_LANDING_PAGES = [
+  // ⚠️ Antes era 2 estruturas separadas (landing + template default
+  // global). Isso causou um bug em que a campanha de joia puxava o
+  // texto de perfume. Agora landing e template andam juntos, garantindo
+  // que cada campanha use o conteúdo certo.
+  //
+  // Estrutura: { keywords: [...], landing: '/X.html', template: TEMPLATE_X }
+  const FOLLOWUP_CAMPAIGNS = [
     {
-      keywords: ['pintura', 'cristal', 'aperol'],
       // pintura.html é a landing nova (URL fresh — WhatsApp gera
       // preview do zero, sem cache). aperol.html ainda existe como
       // fallback caso alguém tenha o link antigo.
+      keywords: ['pintura', 'cristal', 'aperol'],
       landing: '/pintura.html',
+      template: FOLLOWUP_TEMPLATE_GENERIC,
     },
     {
       // Oficina de Perfumaria Criativa + Brunch & Meditação Guiada (By Elarah).
       // Landing perfumes.html serve a imagem perfumes.jpg como og:image
       // pro preview do WhatsApp; redireciona usuários humanos pra
       // experiencia.html?id=d2f000df-7691-4319-a4a1-f87220e6a636.
-      // ?v=2 quebra o cache do WhatsApp (qualquer query param diferente
-      // força o crawler a reler og:* — depois do fix de case-sensitive
-      // do nome da imagem, o preview antigo cacheado seguia sem foto).
+      // ?v=2 quebra o cache do WhatsApp.
       keywords: ['perfumaria'],
       landing: '/perfumes.html?v=2',
+      template: FOLLOWUP_TEMPLATE_PERFUMARIA,
     },
+    // Workshop de Ourivesaria / Joalheria — Dia dos Namorados.
+    // Landing joias.html serve ANEL.jpg como og:image. Match em
+    // qualquer das keywords — admin pode chamar de "Joalheria",
+    // "Anel", "Aliança", etc. e o link/texto saem certos.
     {
-      // Workshop de Joalheria em Ouro (anel/aliança). Landing
-      // joias.html serve a imagem + texto emocional ("Crie a joia
-      // que vai marcar o seu amor"). Match em qualquer das keywords
-      // — admin pode chamar a experiência de "Joalheria", "Anel",
-      // "Aliança em ouro", etc. e o link sai certo.
       keywords: ['joia'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
       keywords: ['anel'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
       keywords: ['aliança'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
-      keywords: ['alianca'],  // sem cedilha — findLandingPageFor normaliza, mas garantia extra
-      landing: '/joias.html?v=1',
+      keywords: ['alianca'],
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
     {
-      // "Ourivesaria" — termo que a campanha de Dia dos Namorados usa.
       keywords: ['ourivesaria'],
-      landing: '/joias.html?v=1',
+      landing: '/joias.html?v=2',
+      template: FOLLOWUP_TEMPLATE_JOIA,
     },
-    // Próximas campanhas: copie o bloco acima.
+    // Próximas campanhas: copie o bloco acima e crie um TEMPLATE_X
+    // específico — não reutilize um template de outra campanha.
   ];
 
-  function findLandingPageFor(experienceName) {
+  function findCampaignFor(experienceName) {
     const norm = String(experienceName || '')
       .toLowerCase()
       .normalize('NFKD')
       .replace(/[̀-ͯ]/g, '');
-    for (const p of FOLLOWUP_LANDING_PAGES) {
-      if (p.keywords.every(k => norm.includes(k))) return p.landing;
+    for (const c of FOLLOWUP_CAMPAIGNS) {
+      if (c.keywords.every(k => norm.includes(k))) return c;
     }
     return null;
+  }
+
+  function findLandingPageFor(experienceName) {
+    const c = findCampaignFor(experienceName);
+    return c ? c.landing : null;
+  }
+
+  function findTemplateFor(experienceName) {
+    const c = findCampaignFor(experienceName);
+    return c && c.template ? c.template : FOLLOWUP_TEMPLATE_GENERIC;
   }
 
   // Constrói URL absoluta pra colocar na mensagem.
@@ -1246,8 +1326,10 @@
       infoEl.style.display = 'block';
     }
 
-    // Carrega template default na textarea (a usuária pode editar)
-    document.getElementById('followup-message').value = FOLLOWUP_DEFAULT_TEMPLATE;
+    // Carrega template da campanha que casa com o nome da experiência
+    // (a usuária pode editar inline). Se nenhuma campanha bater, usa
+    // o template genérico — sem nunca cair em texto de outra campanha.
+    document.getElementById('followup-message').value = findTemplateFor(experienceName);
 
     // Render lista
     renderFollowupList();
@@ -1507,9 +1589,10 @@
     // Esconde bookings de experiências de teste do contador da home.
     const bookings = withoutTestBookings(bookingsRaw);
 
-    // "Compras" no overview = reservas pagas via Stripe + gift cards
-    // ativos. Antes lia de localStorage (legado) e sempre mostrava 0.
-    const bookingsPaid = (bookings || []).filter(b => b.status === 'pago').length;
+    // "Compras" no overview = vagas pagas via Stripe + gift cards
+    // ativos. 1 booking com quantidade=3 conta como 3 vagas (alinhado
+    // com a aba Compras / Analytics / Fornecedores).
+    const bookingsPaid = sumQuantity((bookings || []).filter(b => b.status === 'pago'));
     const giftCardsActive = (giftCardsResult.rows || []).filter(
       g => g.status === 'active' || g.status === 'used'
     ).length;
@@ -1752,10 +1835,13 @@
     if (bookingsCache) return bookingsCache.slice();
     const s = window.supabaseClient;
     if (!s) return [];
+    // limit explícito: PostgREST corta em 1000 por default. Sem .limit()
+    // o admin pararia de enxergar bookings antigas conforme o volume crescer.
     const { data, error } = await s
       .from('bookings')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50000);
     if (error) {
       console.error('[Admin] getBookings error', error);
       return [];
@@ -1764,7 +1850,191 @@
     return bookingsCache.slice();
   }
 
-  function invalidateBookings() { bookingsCache = null; }
+  function invalidateBookings() {
+    bookingsCache = null;
+    // Limpa também o cache das RPCs financeiras: qualquer mudança em
+    // bookings reflete imediatamente em Compras/Fornecedores/Analytics
+    // sem esperar o TTL natural de 60s.
+    if (typeof _financeCache !== 'undefined') _financeCache.clear();
+  }
+
+  // ============================================================
+  // FONTE ÚNICA DE VERDADE FINANCEIRA — wrappers das RPCs.
+  // Compras, Fornecedores, Contabilidade e Analytics consomem
+  // estas funções. Adicione filtros aqui, NÃO em cada aba.
+  //
+  // Garantias:
+  //   - Mesmos parâmetros → mesmo resultado em todas as abas.
+  //   - p_include_test default false (esconde experiência teste).
+  //   - p_sources controla quais fontes entram (booking, manual_sale,
+  //     giftcard). null = todas.
+  //
+  // Cache: leve (60s) por chave de filtro. Invalidado em
+  // invalidateFinancialCaches() junto com bookingsCache.
+  // ============================================================
+  const _financeCache = new Map();
+  const _FINANCE_CACHE_TTL_MS = 60 * 1000;
+
+  function _financeKey(name, args) {
+    return name + '|' + JSON.stringify(args || {});
+  }
+  function _financeCacheGet(key) {
+    const e = _financeCache.get(key);
+    if (!e) return null;
+    if (Date.now() - e.t > _FINANCE_CACHE_TTL_MS) { _financeCache.delete(key); return null; }
+    return e.v;
+  }
+  function _financeCachePut(key, v) {
+    _financeCache.set(key, { v: v, t: Date.now() });
+  }
+
+  function invalidateFinancialCaches() {
+    _financeCache.clear();
+    invalidateBookings();
+  }
+  // Exponível pra outros pontos do admin (ex: salvar venda manual,
+  // mudar status de booking, criar gasto) chamarem após mutação.
+  window.__elarahInvalidateFinancials = invalidateFinancialCaches;
+
+  // Filtros canônicos. Todos opcionais.
+  //   { from: Date|null, to: Date|null, experience: uuid|'', supplier: ''|str,
+  //     sources: ['booking','manual_sale','giftcard']|null, includeTest: false }
+  function _financeNormalizeFilters(f) {
+    f = f || {};
+    return {
+      from: f.from instanceof Date ? f.from : (f.from ? new Date(f.from) : null),
+      to:   f.to   instanceof Date ? f.to   : (f.to   ? new Date(f.to)   : null),
+      experience: f.experience || null,
+      supplier:   f.supplier   || null,
+      sources:    Array.isArray(f.sources) && f.sources.length ? f.sources.slice() : null,
+      includeTest: f.includeTest === true,
+    };
+  }
+  function _isoOrNull(d) { return d instanceof Date ? d.toISOString() : null; }
+
+  async function fetchFinancialSummary(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return null;
+    const f = _financeNormalizeFilters(filters);
+    const key = _financeKey('summary', f);
+    const cached = _financeCacheGet(key);
+    if (cached) return cached;
+    const { data, error } = await sb.rpc('financial_summary', {
+      p_date_from: _isoOrNull(f.from),
+      p_date_to:   _isoOrNull(f.to),
+      p_experience: f.experience,
+      p_supplier:   f.supplier,
+      p_sources:    f.sources,
+      p_include_test: f.includeTest,
+    });
+    if (error) {
+      console.error('[Finance] financial_summary error:', error.message);
+      return null;
+    }
+    const row = (data && data[0]) || null;
+    _financeCachePut(key, row);
+    return row;
+  }
+
+  async function fetchFinancialBySupplier(filters) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const f = _financeNormalizeFilters(filters);
+    const key = _financeKey('by_supplier', { from: f.from, to: f.to, includeTest: f.includeTest });
+    const cached = _financeCacheGet(key);
+    if (cached) return cached;
+    const { data, error } = await sb.rpc('financial_by_supplier', {
+      p_date_from: _isoOrNull(f.from),
+      p_date_to:   _isoOrNull(f.to),
+      p_include_test: f.includeTest,
+    });
+    if (error) {
+      console.error('[Finance] financial_by_supplier error:', error.message);
+      return [];
+    }
+    const rows = data || [];
+    _financeCachePut(key, rows);
+    return rows;
+  }
+
+  async function fetchFinancialEvolution(filters, bucket) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const f = _financeNormalizeFilters(filters);
+    const b = (bucket === 'hour' ? 'hour' : 'day');
+    const key = _financeKey('evolution', { from: f.from, to: f.to, sources: f.sources, includeTest: f.includeTest, b: b });
+    const cached = _financeCacheGet(key);
+    if (cached) return cached;
+    const { data, error } = await sb.rpc('financial_evolution', {
+      p_date_from: _isoOrNull(f.from),
+      p_date_to:   _isoOrNull(f.to),
+      p_sources:    f.sources,
+      p_include_test: f.includeTest,
+      p_bucket:     b,
+    });
+    if (error) {
+      console.error('[Finance] financial_evolution error:', error.message);
+      return [];
+    }
+    const rows = data || [];
+    _financeCachePut(key, rows);
+    return rows;
+  }
+
+  // ============================================================
+  // SELF-CHECK CONSOLE HELPER
+  // Roda no F12 do admin: window.elarahFinanceCheck()
+  //
+  // Compara, lado a lado, a "Receita confirmada" calculada por:
+  //   - Compras  (RPC sources=booking+manual_sale+giftcard, exclui teste)
+  //   - Fornecedores (RPC sources=booking+manual_sale, exclui teste — sem gift card)
+  //   - Contabilidade (RPC sem filtro de source = todas)
+  //   - Analytics Tudo (RPC sources=booking+manual_sale+giftcard, exclui teste, sem período)
+  //
+  // Esperado: Compras == Contabilidade == Analytics (mesmas fontes).
+  // Fornecedores < eles porque exclui gift card. O delta é mostrado.
+  // Imprime tabela no console e avisa se algo estiver fora.
+  // ============================================================
+  async function elarahFinanceCheck() {
+    const fmt = (c) => 'R$ ' + ((Number(c) || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const [compras, fornecedores, contabilidade, analyticsTudo] = await Promise.all([
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale', 'giftcard'], includeTest: false }),
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale'], includeTest: false }),
+      fetchFinancialSummary({ sources: null, includeTest: false }),
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale', 'giftcard'], includeTest: false }),
+    ]);
+    const cv = compras  && compras.receita_confirmada_centavos;
+    const fv = fornecedores && fornecedores.receita_confirmada_centavos;
+    const ctv = contabilidade && contabilidade.receita_confirmada_centavos;
+    const av = analyticsTudo && analyticsTudo.receita_confirmada_centavos;
+    const fgrossv = fornecedores && fornecedores.gross_confirmado_centavos;
+    const giftcardCents = compras && fornecedores
+      ? (Number(compras.receita_confirmada_centavos) || 0) - (Number(fornecedores.receita_confirmada_centavos) || 0)
+      : 0;
+    const rows = [
+      { aba: 'Compras (booking+manual+gift)',         centavos: cv,   reais: fmt(cv) },
+      { aba: 'Fornecedores receita (booking+manual)', centavos: fv,   reais: fmt(fv) },
+      { aba: 'Fornecedores faturamento bruto',        centavos: fgrossv, reais: fmt(fgrossv) },
+      { aba: 'Contabilidade (todas as fontes)',       centavos: ctv,  reais: fmt(ctv) },
+      { aba: 'Analytics Tudo (booking+manual+gift)',  centavos: av,   reais: fmt(av) },
+      { aba: '─ Diferença Compras − Fornecedores ─',  centavos: giftcardCents, reais: fmt(giftcardCents) + '  (= gift cards inclusos)' },
+    ];
+    console.table(rows);
+
+    const ok = (cv === ctv) && (cv === av);
+    if (ok) {
+      console.log('%c[SELF-CHECK] ✓ Compras == Contabilidade == Analytics (centavo a centavo).', 'color:#1a8a4a;font-weight:600;');
+    } else {
+      console.warn('[SELF-CHECK] ✗ DIVERGÊNCIA detectada: as 3 abas equivalentes (sources=booking+manual+gift) não bateram.');
+      console.warn('  Compras:        ' + cv);
+      console.warn('  Contabilidade:  ' + ctv);
+      console.warn('  Analytics:      ' + av);
+    }
+    return rows;
+  }
+  // Expõe globalmente. Não dispara automaticamente — admin chama no console.
+  window.elarahFinanceCheck = elarahFinanceCheck;
+  // ============================================================
 
   function formatCents(amountCents, currency) {
     if (amountCents == null) return '—';
@@ -1793,7 +2063,18 @@
       invalidateGiftCardsCache();
       renderBookings();
     });
-    if (filterExp) filterExp.addEventListener('change', () => renderBookings());
+    if (filterExp) {
+      // 'input' (não 'change') pra filtrar conforme o admin digita —
+      // sem precisar dar Tab/Enter pra aplicar. Cobre tanto digitação
+      // direta quanto seleção de uma opção do datalist (que dispara
+      // 'input' também). Debounce leve de 80ms pra evitar re-render
+      // a cada tecla em listas longas.
+      let _expFilterTimer = null;
+      filterExp.addEventListener('input', () => {
+        clearTimeout(_expFilterTimer);
+        _expFilterTimer = setTimeout(() => renderBookings(), 80);
+      });
+    }
     if (filterStatus) filterStatus.addEventListener('change', () => renderBookings());
     var filterFornInit = document.getElementById('bookings-filter-fornecedor');
     var filterSfInit = document.getElementById('bookings-filter-status-fornecedor');
@@ -1867,8 +2148,16 @@
     // todas as experiences (incluindo By Elarah originais sem
     // venda ainda) + byelarah_items (workshops/mentorias).
     // Deduplica por nome (case-insensitive) e ordena pt-BR.
+    //
+    // Renderiza em um <datalist> ligado ao <input list="...">. O input
+    // suporta busca por digitação parcial: ao filtrar, comparamos por
+    // substring case-insensitive (ver loop principal abaixo). Quando o
+    // admin escolhe uma opção do dropdown nativo, o input recebe o nome
+    // completo e o filtro vira exact match implícito.
     const filterExpEl = document.getElementById('bookings-filter-exp');
-    if (filterExpEl && filterExpEl.options.length <= 1) {
+    const filterExpListEl = document.getElementById('bookings-filter-exp-list');
+    // Só popula uma vez por load: se já tem filhos, presume populado.
+    if (filterExpListEl && filterExpListEl.children.length === 0) {
       const collected = new Map();   // lowercaseName → originalName
       const addName = (raw) => {
         const trimmed = String(raw || '').trim();
@@ -1894,8 +2183,7 @@
       sorted.forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
-        opt.textContent = name;
-        filterExpEl.appendChild(opt);
+        filterExpListEl.appendChild(opt);
       });
     }
 
@@ -2015,7 +2303,13 @@
       });
     }
 
-    const filterExp = filterExpEl ? filterExpEl.value : '';
+    // Filtro de experiência: agora é input com busca. Compara por
+    // substring case-insensitive — assim "pintura" filtra todas as
+    // Pinturas, "aperol" filtra qualquer experiência que mencione
+    // Aperol no nome, etc. Quando o admin escolhe uma opção exata
+    // do datalist, vira match completo (substring de si mesmo).
+    const filterExpRaw = filterExpEl ? String(filterExpEl.value || '').trim() : '';
+    const filterExp = filterExpRaw.toLowerCase();
     const filterStatusEl = document.getElementById('bookings-filter-status');
     const filterStatus = filterStatusEl ? filterStatusEl.value : '';
     const filterForn = filterFornEl ? filterFornEl.value : '';
@@ -2025,52 +2319,51 @@
     // Este painel só mostra bookings PAGAS
     const filtered = bookings.filter(b => {
       if (b.status !== 'pago') return false;
-      if (filterExp && b.experiencia_nome !== filterExp) return false;
+      if (filterExp && !String(b.experiencia_nome || '').toLowerCase().includes(filterExp)) return false;
       if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
       if (filterSf && (b.status_fornecedor || 'repasse_pendente') !== filterSf) return false;
       return true;
     });
 
-    // Stats sobre TODAS as bookings (não filtradas) + vendas manuais.
-    const paid = bookings.filter(b => b.status === 'pago');
+    // Stats globais (não-filtradas) vêm da fonte única (RPC financial_summary).
+    // qty_*_pagos do RPC já reflete sum(quantidade) — 1 booking com 3
+    // vagas conta 3. Pendentes do site também usa sum(quantidade).
+    const paid = bookings.filter(b => b.status === 'pago');           // mantido pra gráfico/repasses
     const pending = bookings.filter(b => b.status === 'pending');
-    let revenueCents = paid.reduce((sum, b) => sum + (b.amount_total || 0), 0);
-
-    // Vendas manuais entram no contador de "Reservas pagas/pendentes" e
-    // na "Receita confirmada" da Compras (mesma semântica de receita,
-    // apenas captação fora do site). Falha silenciosa se a tabela
-    // manual_sales não existir.
-    let manualPaidCount = 0, manualPendingCount = 0;
-    try {
-      const sb = window.supabaseClient;
-      if (sb) {
-        const { data: msAll } = await sb.from('manual_sales')
-          .select('payment_status, total_amount_centavos')
-          .limit(2000);
-        (msAll || []).forEach(m => {
-          if (m.payment_status === 'pago') {
-            manualPaidCount += 1;
-            revenueCents += Number(m.total_amount_centavos) || 0;
-          } else if (m.payment_status === 'pendente') {
-            manualPendingCount += 1;
-          }
-        });
-      }
-    } catch (e) {
-      console.warn('[admin] manual_sales stats skipped:', e && e.message);
-    }
-    const totalPaid = paid.length + manualPaidCount;
-    const totalPending = pending.length + manualPendingCount;
-    const paidLabel = manualPaidCount > 0
-      ? totalPaid + ' (' + paid.length + ' site / ' + manualPaidCount + ' manual)'
-      : String(totalPaid);
-    const pendingLabel = manualPendingCount > 0
-      ? totalPending + ' (' + pending.length + ' site / ' + manualPendingCount + ' manual)'
-      : String(totalPending);
+    const summary = await fetchFinancialSummary({
+      sources: ['booking', 'manual_sale', 'giftcard'],
+      includeTest: false,
+    });
+    const qtyB = summary ? Number(summary.qty_bookings_pagos) || 0 : 0;
+    const qtyM = summary ? Number(summary.qty_manual_sales_pagas) || 0 : 0;
+    const qtyG = summary ? Number(summary.qty_giftcards_pagos) || 0 : 0;
+    const totalPaid = qtyB + qtyM;
+    const totalPending = sumQuantity(pending);                         // vagas pendentes (não nº de reservas)
+    const partesPaid = [];
+    if (qtyB) partesPaid.push(qtyB + ' site');
+    if (qtyM) partesPaid.push(qtyM + ' manual');
+    const paidLabel = partesPaid.length > 1 ? totalPaid + ' (' + partesPaid.join(' / ') + ')' : String(totalPaid);
+    const pendingLabel = String(totalPending);
+    const revenueCents = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
 
     document.getElementById('stat-bookings-paid').textContent = paidLabel;
     document.getElementById('stat-bookings-pending').textContent = pendingLabel;
     document.getElementById('stat-bookings-revenue').textContent = formatCents(revenueCents, 'BRL');
+    // Sub-linha discreta exibindo gift cards inclusos na receita (se existirem).
+    const revenueEl = document.getElementById('stat-bookings-revenue');
+    if (revenueEl && qtyG > 0 && !revenueEl.dataset.subWired) {
+      const sub = document.createElement('div');
+      sub.id = 'stat-bookings-revenue-sub';
+      sub.style.cssText = 'font-size:.72rem;color:#888;margin-top:4px;';
+      revenueEl.parentNode && revenueEl.parentNode.appendChild(sub);
+      revenueEl.dataset.subWired = '1';
+    }
+    const subEl = document.getElementById('stat-bookings-revenue-sub');
+    if (subEl) {
+      subEl.textContent = qtyG > 0
+        ? '+ ' + qtyG + ' gift card' + (qtyG !== 1 ? 's' : '') + ' inclusos'
+        : '';
+    }
 
     // ===== Card "Repasses pendentes por fornecedor" =====
     // Lista compras pagas com status_fornecedor='repasse_pendente',
@@ -2079,7 +2372,8 @@
     renderRepassesPendentesCard(bookings).catch(e =>
       console.warn('[admin] renderRepassesPendentesCard error', e));
 
-    // Conversão = pagas / cliques de Reservar (vem dos analytics_events).
+    // Conversão = vagas pagas / cliques de Reservar. Antes era nº de
+    // bookings — agora reflete vagas vendidas (1 booking qty=3 = 3 vagas).
     let conversionLabel = '—';
     try {
       if (window.ElarahAnalytics && ElarahAnalytics.rawSelect) {
@@ -2090,24 +2384,25 @@
           return !isTestExperience(c && (c.target_label || c.target_id));
         });
         if (clicks && clicks.length) {
-          const rate = (paid.length / clicks.length) * 100;
-          conversionLabel = rate.toFixed(1) + '% (' + paid.length + '/' + clicks.length + ')';
+          const paidQty = sumQuantity(paid);
+          const rate = (paidQty / clicks.length) * 100;
+          conversionLabel = rate.toFixed(1) + '% (' + paidQty + '/' + clicks.length + ')';
 
-          // Conversão por experiência
+          // Conversão por experiência (vagas pagas / cliques)
           const clicksByExp = new Map();
           clicks.forEach(c => {
             const k = c.target_label || c.target_id || '—';
             clicksByExp.set(k, (clicksByExp.get(k) || 0) + 1);
           });
-          const paidByExp = new Map();
+          const paidQtyByExp = new Map();
           paid.forEach(b => {
             const k = b.experiencia_nome || '—';
-            paidByExp.set(k, (paidByExp.get(k) || 0) + 1);
+            paidQtyByExp.set(k, (paidQtyByExp.get(k) || 0) + bookingQty(b));
           });
           const rows = Array.from(clicksByExp.entries()).map(([k, totalClicks]) => {
-            const totalPaid = paidByExp.get(k) || 0;
-            const r = totalClicks > 0 ? Math.round((totalPaid / totalClicks) * 100) : 0;
-            return { key: k, label: k + ' — ' + totalPaid + '/' + totalClicks + ' (' + r + '%)', count: r };
+            const totalPaidQty = paidQtyByExp.get(k) || 0;
+            const r = totalClicks > 0 ? Math.round((totalPaidQty / totalClicks) * 100) : 0;
+            return { key: k, label: k + ' — ' + totalPaidQty + '/' + totalClicks + ' (' + r + '%)', count: r };
           }).sort((a, b) => b.count - a.count);
           renderBars('bookings-conversion-list', rows);
         }
@@ -2117,11 +2412,12 @@
     }
     document.getElementById('stat-bookings-conversion').textContent = conversionLabel;
 
-    // Reservas por experiência (pagas + pendentes contam aqui).
+    // Vagas por experiência (pagas + pendentes). Reflete vagas, não
+    // bookings — alinhado com a nova semântica.
     const byExp = new Map();
     bookings.forEach(b => {
       const k = b.experiencia_nome || '—';
-      byExp.set(k, (byExp.get(k) || 0) + 1);
+      byExp.set(k, (byExp.get(k) || 0) + bookingQty(b));
     });
     const byExpRows = Array.from(byExp.entries())
       .map(([k, c]) => ({ key: k, label: k, count: c }))
@@ -2257,9 +2553,22 @@
       const plural = nomes.length > 1;
       const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
       const lista = joinNames(nomes) || '(participante)';
+      // Local da experiência (endereço + bairro). Mesma fonte dos
+      // dados que aparecem no e-mail de confirmação e em Minhas
+      // compras: bookings.metadata.endereco + bookings.metadata.bairro.
+      // CRÍTICO pra fornecedores que atendem em múltiplos locais nas
+      // mesmas datas/horários — sem isso o fornecedor não sabe pra
+      // onde ir e pode aparecer no endereço errado.
+      const meta = (b && b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
+      const endereco = String(meta.endereco || '').trim();
+      const bairro = String(meta.bairro || '').trim();
+      const localFull = endereco && bairro
+        ? endereco + ' — ' + bairro
+        : (endereco || bairro || '');
+      const localLine = localFull ? '\n📍 *Local:* ' + localFull : '';
       const msg = 'Oi! Tudo bem? Passando para te avisar que você tem ' + aluno +
         ' para a experiência *' + expNome + '* no dia *' + data +
-        '* às *' + horario + '*: *' + lista + '*.\n\n' +
+        '* às *' + horario + '*: *' + lista + '*.' + localLine + '\n\n' +
         'O repasse será feito até 48h antes do evento.';
       return 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
     }
@@ -2421,8 +2730,16 @@
         const items = extras.map(function (p) {
           const pNome = escapeHtml((p && p.nome) || '?');
           const pTelRaw = String((p && (p.telefone || p.telefone_digits)) || '').trim();
+          // Variante individual (ex.: Lagosta/Beijo/Olho grego) — só
+          // aparece quando o checkout novo gravou variant_selected
+          // por pessoa. Bookings antigas (variante única) caem sem
+          // essa linha e ainda mostram o badge único do bloco abaixo.
+          const pVariant = (p && p.variant_selected) ? String(p.variant_selected).trim() : '';
+          const variantSpan = pVariant
+            ? ' · <span style="color:#a07c4c;font-weight:600;">' + escapeHtml(pVariant) + '</span>'
+            : '';
           if (!pTelRaw) {
-            return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + '</span>';
+            return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + variantSpan + '</span>';
           }
           const pDigits = onlyDigits(pTelRaw);
           const pWa = pDigits.length >= 10 ? ('55' + pDigits.replace(/^55/, '')) : pDigits;
@@ -2430,21 +2747,73 @@
           const link = pWa
             ? '<a href="https://wa.me/' + pWa + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + pTelDisplay + '</a>'
             : pTelDisplay;
-          return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + ' · ' + link + '</span>';
+          return '<span style="font-size:.75rem;color:#888;display:block;margin-top:2px;">+ ' + pNome + ' · ' + link + variantSpan + '</span>';
         }).join('');
         return '<br>' + items;
       }
 
       // Variante escolhida pelo cliente (ex.: Pintura → Lagosta).
-      // Aparece como sub-linha discreta abaixo do nome da experiência
-      // pra o admin saber o que preparar sem entrar em cada booking.
+      // Estratégia em 2 camadas:
+      //   1. Booking de grupo com variant_selected POR pessoa →
+      //      lista cada Pessoa N e seu quadro abaixo do nome da
+      //      experiência, pra o operador preparar tudo no dia sem
+      //      precisar abrir cada booking.
+      //   2. Booking individual ou booking antiga (variante única
+      //      compartilhada) → badge legado lendo metadata.variant_*.
+      // Além disso, quando a experiência tem variant_options
+      // configurado E a booking está paga, exibe um botão "✏️ Quadros"
+      // pra o admin registrar manualmente as escolhas (útil pras
+      // reservas antigas, anteriores ao deploy do seletor no checkout).
       const variantLabel = b.metadata && b.metadata.variant_label;
-      const variantSelected = b.metadata && b.metadata.variant_selected;
-      const variantCell = (variantLabel && variantSelected)
-        ? '<br><span style="font-size:.75rem;color:#a07c4c;font-weight:600;">' +
-            escapeHtml(variantLabel) + ': ' + escapeHtml(variantSelected) +
-          '</span>'
-        : '';
+      const variantSelectedSingle = b.metadata && b.metadata.variant_selected;
+      const expForBooking = expById.get(b.experiencia_id);
+      const expVariantOptions = (expForBooking && Array.isArray(expForBooking.variantOptions))
+        ? expForBooking.variantOptions
+        : [];
+      const expVariantLabel = (expForBooking && expForBooking.variantLabel) || variantLabel || '';
+      const canEditVariants = b.status === 'pago' && expVariantLabel && expVariantOptions.length > 0;
+      function buildVariantCell() {
+        const editBtn = canEditVariants
+          ? '<button type="button" class="admin__edit-variants-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Editar quadros escolhidos por cada pessoa" style="display:inline-block;margin:6px 0 0;padding:3px 9px;border:1px solid #d4b794;background:#fff8ef;color:#a07c4c;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">✏️ Quadros</button>'
+          : '';
+        if (!variantLabel && !canEditVariants) return '';
+        const arr = (b.metadata && Array.isArray(b.metadata.participantes))
+          ? b.metadata.participantes
+          : [];
+        const perPerson = arr.filter(function (p) {
+          return p && p.variant_selected && String(p.variant_selected).trim();
+        });
+        // 2+ entries com variant_selected indica fluxo novo (cada um
+        // escolheu o próprio quadro). Mostra lista organizada.
+        if (perPerson.length >= 2) {
+          const linhas = perPerson.map(function (p, idx) {
+            const nm = String((p && p.nome) || ('Pessoa ' + (idx + 1))).trim() || ('Pessoa ' + (idx + 1));
+            return '<span style="display:block;font-size:.72rem;color:#a07c4c;font-weight:600;">' +
+              escapeHtml(nm) + ' → ' + escapeHtml(String(p.variant_selected)) +
+              '</span>';
+          }).join('');
+          return '<br><span style="font-size:.7rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">' +
+            escapeHtml(expVariantLabel) +
+            '</span>' + linhas +
+            (editBtn ? '<br>' + editBtn : '');
+        }
+        // Fluxo legado (variante única compartilhada).
+        if (variantSelectedSingle) {
+          return '<br><span style="font-size:.75rem;color:#a07c4c;font-weight:600;">' +
+            escapeHtml(expVariantLabel) + ': ' + escapeHtml(variantSelectedSingle) +
+            '</span>' +
+            (editBtn ? '<br>' + editBtn : '');
+        }
+        // Sem nada salvo ainda — só mostra o botão "Adicionar quadros"
+        // quando a experiência tem variantes configuradas. Visualmente
+        // discreto, mas explícito o suficiente pra o admin saber que
+        // tem como registrar a info que faltou.
+        if (canEditVariants) {
+          return '<br><span style="font-size:.7rem;color:#bbb;font-style:italic;">sem quadros registrados</span><br>' + editBtn;
+        }
+        return '';
+      }
+      const variantCell = buildVariantCell();
 
       return `
         <tr>
@@ -2512,6 +2881,209 @@
     appendGiftCardRowsInPurchases(tbody)
       .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases falhou:', e && e.message));
 
+    // ===== Editor manual de variantes (quadros) =====
+    // Abre um modal listando cada Pessoa do array participantes com
+    // botões pill pra escolher entre as variantOptions configuradas
+    // na experiência. Ao salvar, persiste:
+    //   - participantes[i].variant_selected (lugar canônico que a
+    //     tabela já lê pra mostrar "Pessoa N → Quadro X")
+    //   - variant_label + variant_selected no top-level do metadata
+    //     (compat com badge legado / email / Stripe metadata)
+    // Suporta tanto reservas que NÃO têm participantes no metadata
+    // (booking sem o array — fluxo antigo): nesse caso, monta uma lista
+    // sintética com 1 entry pelo nome do comprador, OU N entries
+    // genéricas ("Pessoa 1", "Pessoa 2") respeitando b.quantidade.
+    function openVariantsEditorModal(booking, exp) {
+      var existing = document.getElementById('admin-variants-editor');
+      if (existing) existing.remove();
+
+      // Monta a lista de pessoas pra edição. Prioridade:
+      //   1. participantes[] do metadata (preserva nomes reais)
+      //   2. fallback: comprador (nome da booking) + N-1 placeholders
+      var meta = (booking && booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+      var rawList = Array.isArray(meta.participantes) ? meta.participantes.slice() : [];
+      var qty = Number(booking.quantidade || rawList.length || 1);
+      // Se faltam entries (booking antiga só com nome do comprador),
+      // completa com placeholders pra que o admin consiga registrar
+      // a escolha de cada Pessoa N mesmo sem ter o nome dela no banco.
+      while (rawList.length < qty) {
+        if (rawList.length === 0 && booking.nome) {
+          rawList.push({ nome: booking.nome });
+        } else {
+          rawList.push({ nome: 'Pessoa ' + (rawList.length + 1) });
+        }
+      }
+      // Defesa: se mesmo assim ficou vazio (qty=0 / nome ausente),
+      // garante pelo menos 1 entry.
+      if (!rawList.length) rawList.push({ nome: booking.nome || 'Pessoa 1' });
+
+      var variantLabel = exp.variantLabel;
+      var variantOptions = exp.variantOptions.slice();
+
+      // Estado local de edição — espelha rawList mas só com a chave
+      // que vamos editar. Mantemos o array original intacto até salvar.
+      var draft = rawList.map(function (p) {
+        return {
+          nome: (p && p.nome) || '',
+          email: (p && p.email) || null,
+          telefone: (p && p.telefone) || null,
+          telefone_digits: (p && p.telefone_digits) || null,
+          variant_selected: (p && p.variant_selected) || null,
+        };
+      });
+
+      var modal = document.createElement('div');
+      modal.id = 'admin-variants-editor';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+      modal.innerHTML =
+        '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.2);">' +
+          '<div style="padding:18px 22px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:12px;">' +
+            '<div>' +
+              '<div style="font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Registrar quadros</div>' +
+              '<div style="font-size:1rem;color:#1a1a1a;font-weight:700;margin-top:2px;">' + escapeHtml(booking.experiencia_nome || '—') + '</div>' +
+              '<div style="font-size:.78rem;color:#666;margin-top:2px;">' + escapeHtml(booking.nome || booking.email || '') +
+                (booking.data ? ' · ' + escapeHtml(booking.data) : '') +
+                (booking.horario ? ' · ' + escapeHtml(booking.horario) : '') +
+              '</div>' +
+            '</div>' +
+            '<button type="button" id="admin-variants-close" style="border:none;background:transparent;font-size:1.6rem;line-height:1;color:#888;cursor:pointer;padding:0 4px;">×</button>' +
+          '</div>' +
+          '<div id="admin-variants-body" style="padding:18px 22px;"></div>' +
+          '<div style="padding:14px 22px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;">' +
+            '<button type="button" id="admin-variants-cancel" style="padding:9px 16px;border:1px solid #ddd;background:#fff;color:#444;border-radius:9px;font-weight:600;font-size:.85rem;cursor:pointer;">Cancelar</button>' +
+            '<button type="button" id="admin-variants-save" style="padding:9px 18px;border:none;background:#f0a05e;color:#fff;border-radius:9px;font-weight:700;font-size:.85rem;cursor:pointer;">Salvar</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+
+      var body = modal.querySelector('#admin-variants-body');
+
+      // Renderiza cada pessoa com um row de pills. Funções inline porque
+      // o modal é descartável (próxima abertura recria tudo).
+      function renderRows() {
+        body.innerHTML = '';
+        body.appendChild((function () {
+          var hint = document.createElement('p');
+          hint.style.cssText = 'margin:0 0 14px;font-size:.78rem;color:#666;';
+          hint.textContent = 'Marque o quadro escolhido por cada pessoa. Pode deixar em branco se não souber ainda — só pessoas com escolha vão aparecer na tabela.';
+          return hint;
+        })());
+        draft.forEach(function (p, idx) {
+          var row = document.createElement('div');
+          row.style.cssText = 'background:#faf6f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;';
+          var nomeRow = document.createElement('div');
+          nomeRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;';
+          var nomeSpan = document.createElement('span');
+          nomeSpan.style.cssText = 'font-size:.88rem;font-weight:700;color:#1a1a1a;';
+          nomeSpan.textContent = 'Pessoa ' + (idx + 1) + ' — ' + (p.nome || '(sem nome)');
+          var clearBtn = document.createElement('button');
+          clearBtn.type = 'button';
+          clearBtn.style.cssText = 'border:none;background:transparent;color:#888;font-size:.72rem;cursor:pointer;text-decoration:underline;';
+          clearBtn.textContent = 'limpar';
+          clearBtn.addEventListener('click', function () {
+            draft[idx].variant_selected = null;
+            renderRows();
+          });
+          nomeRow.appendChild(nomeSpan);
+          nomeRow.appendChild(clearBtn);
+          row.appendChild(nomeRow);
+
+          var labelEl = document.createElement('div');
+          labelEl.style.cssText = 'font-size:.74rem;color:#666;margin-bottom:6px;';
+          labelEl.textContent = variantLabel;
+          row.appendChild(labelEl);
+
+          var pillsWrap = document.createElement('div');
+          pillsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
+          variantOptions.forEach(function (opt) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = opt;
+            var selected = String(p.variant_selected || '').trim() === String(opt).trim();
+            btn.style.cssText = 'padding:6px 12px;border:1.5px solid ' + (selected ? '#f0a05e' : '#ddd') +
+              ';background:' + (selected ? '#fff8ef' : '#fff') +
+              ';color:' + (selected ? '#1a1a1a' : '#444') +
+              ';border-radius:999px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;';
+            btn.addEventListener('click', function () {
+              draft[idx].variant_selected = opt;
+              renderRows();
+            });
+            pillsWrap.appendChild(btn);
+          });
+          row.appendChild(pillsWrap);
+          body.appendChild(row);
+        });
+      }
+      renderRows();
+
+      function close() { modal.remove(); }
+      modal.querySelector('#admin-variants-close').addEventListener('click', close);
+      modal.querySelector('#admin-variants-cancel').addEventListener('click', close);
+      // ESC e clique no fundo também fecham.
+      modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+      var escHandler = function (e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); }
+      };
+      document.addEventListener('keydown', escHandler);
+
+      modal.querySelector('#admin-variants-save').addEventListener('click', async function () {
+        var saveBtn = modal.querySelector('#admin-variants-save');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+        try {
+          var s = window.supabaseClient;
+          if (!s) {
+            alert('Supabase indisponível. Recarregue a página e tente de novo.');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar';
+            return;
+          }
+          // Constrói o novo metadata preservando todos os campos
+          // existentes. Substitui só participantes (com variant_selected
+          // por entry) e atualiza variant_label/variant_selected
+          // top-level (compat com email/badge legado/Stripe metadata).
+          // Pessoa 1 vira a fonte da verdade do top-level.
+          var newMeta = Object.assign({}, meta);
+          newMeta.participantes = draft.map(function (p) {
+            var entry = { nome: p.nome || null };
+            if (p.email) entry.email = p.email;
+            if (p.telefone) entry.telefone = p.telefone;
+            if (p.telefone_digits) entry.telefone_digits = p.telefone_digits;
+            if (p.variant_selected) entry.variant_selected = p.variant_selected;
+            return entry;
+          });
+          newMeta.variant_label = variantLabel;
+          if (draft[0] && draft[0].variant_selected) {
+            newMeta.variant_selected = draft[0].variant_selected;
+          } else if (newMeta.variant_selected) {
+            // Se a Pessoa 1 ficou em branco mas havia escolha legada,
+            // remove pra não confundir o admin com info desatualizada.
+            delete newMeta.variant_selected;
+          }
+          var update = await s.from('bookings').update({ metadata: newMeta }).eq('id', booking.id);
+          if (update.error) {
+            console.error('[Admin] erro ao salvar quadros:', update.error);
+            alert('Erro ao salvar: ' + (update.error.message || 'erro desconhecido'));
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar';
+            return;
+          }
+          // Atualiza o objeto em memória pra a re-renderização não
+          // depender de novo fetch do banco (evita flash de dados velhos).
+          booking.metadata = newMeta;
+          invalidateBookings();
+          close();
+          document.removeEventListener('keydown', escHandler);
+          renderBookings();
+        } catch (e) {
+          console.error('[Admin] exceção ao salvar quadros:', e);
+          alert('Erro inesperado ao salvar. Veja o console.');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Salvar';
+        }
+      });
+    }
+
     // Wire editable status_fornecedor dropdowns
     tbody.querySelectorAll('.admin__sf-select').forEach(function (sel) {
       sel.addEventListener('change', async function () {
@@ -2539,6 +3111,30 @@
           console.error('[Admin] status_fornecedor exception', e);
         }
         sel.disabled = false;
+      });
+    });
+
+    // Wire "✏️ Quadros" — editor manual de variantes por pessoa.
+    // Caso de uso principal: bookings antigas, anteriores ao deploy do
+    // seletor no checkout, que precisaram coletar a escolha por fora
+    // (WhatsApp, e-mail). O admin agora consegue registrar essas
+    // escolhas no metadata da booking, e a tabela passa a exibir
+    // exatamente como exibe pra reservas novas — sem distinção visual
+    // entre escolha registrada manualmente vs. escolhida no checkout.
+    tbody.querySelectorAll('.admin__edit-variants-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var bookingId = btn.dataset.bookingId;
+        var booking = bookings.find(function (b) { return b && b.id === bookingId; });
+        if (!booking) {
+          console.warn('[Admin] booking não encontrada pra editar quadros:', bookingId);
+          return;
+        }
+        var exp = expById.get(booking.experiencia_id);
+        if (!exp || !exp.variantLabel || !Array.isArray(exp.variantOptions) || !exp.variantOptions.length) {
+          alert('Esta experiência não tem variantes configuradas. Configure em Experiências → editar.');
+          return;
+        }
+        openVariantsEditorModal(booking, exp);
       });
     });
 
@@ -3140,6 +3736,15 @@
       if (cor2El) cor2El.value = cores.cor2;
 
       document.getElementById('exp-edit-id').value = editId;
+
+      // Carrega e renderiza as regras de recorrência semanal desta
+      // experiência (Fase 2 da feature). Seção fica visível só em
+      // modo edição — em "nova experiência" ela some porque precisa
+      // do experienceId pra cadastrar regras. Falha gracioso se a
+      // tabela ainda não existe no banco (Fase 1 não rodada).
+      _recurrenceLoadAndRender(editId).catch(function (e) {
+        console.warn('[Elarah Recurrence] load falhou (ok se SQL Fase 1 não rodou):', e && e.message);
+      });
     } else {
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
@@ -3177,6 +3782,11 @@
       if (hfcEl2) hfcEl2.checked = false;
       if (ctaEl2) ctaEl2.value = 'buy';
       document.getElementById('exp-edit-id').value = '';
+
+      // Esconde a seção de recorrência em "nova experiência" — só
+      // dá pra cadastrar regras depois que a experiência tem id.
+      var recSec = document.getElementById('exp-recurrence-section');
+      if (recSec) recSec.style.display = 'none';
     }
 
     modal.classList.add('open');
@@ -3579,15 +4189,42 @@
         ? exp.horarios.join(' · ')
         : (exp.horario || '');
 
-      // Vagas: mostra por slot se existirem, senão experience-level
+      // Vagas: mostra por slot se existirem, senão experience-level.
+      // Agrupa por horario textual — evita listar 10 linhas iguais
+      // "19h00 – 21h00: 12/12" quando há vários slots do mesmo
+      // horário em datas diferentes. 1 linha por horário único,
+      // somando vagas e contando datas.
       var expSlots = allSlotsMap.get(exp.id) || [];
       let vagasDisplay = '';
       if (expSlots.length) {
-        vagasDisplay = expSlots.map(function (sl) {
-          if (sl.vagasTotal == null) return '<span style="color:#888;font-size:.8rem;">' + escapeHtml(sl.horario) + ': ∞</span>';
-          var rest = sl.vagasRestantes != null ? sl.vagasRestantes : sl.vagasTotal;
-          var cor = rest <= 0 ? '#c0392b' : (rest <= 3 ? '#b07b00' : '#1a8a4a');
-          return '<span style="color:' + cor + ';font-weight:600;font-size:.8rem;">' + escapeHtml(sl.horario) + ': ' + rest + '/' + sl.vagasTotal + '</span>';
+        const byHorario = new Map();
+        expSlots.forEach(function (sl) {
+          const key = (sl.horario || '').trim();
+          if (!byHorario.has(key)) {
+            byHorario.set(key, {
+              horario: key,
+              totalSum: 0,
+              restSum: 0,
+              ilimitado: false,
+              count: 0,
+            });
+          }
+          const grp = byHorario.get(key);
+          grp.count += 1;
+          if (sl.vagasTotal == null) {
+            grp.ilimitado = true;
+          } else {
+            grp.totalSum += Number(sl.vagasTotal) || 0;
+            grp.restSum += (sl.vagasRestantes != null ? Number(sl.vagasRestantes) : Number(sl.vagasTotal)) || 0;
+          }
+        });
+        vagasDisplay = Array.from(byHorario.values()).map(function (grp) {
+          const sufixo = grp.count > 1 ? ' <span style="color:#888;font-weight:400;">(' + grp.count + ' datas)</span>' : '';
+          if (grp.ilimitado) {
+            return '<span style="color:#888;font-size:.8rem;">' + escapeHtml(grp.horario) + ': ∞' + sufixo + '</span>';
+          }
+          const cor = grp.restSum <= 0 ? '#c0392b' : (grp.restSum <= 3 ? '#b07b00' : '#1a8a4a');
+          return '<span style="color:' + cor + ';font-weight:600;font-size:.8rem;">' + escapeHtml(grp.horario) + ': ' + grp.restSum + '/' + grp.totalSum + sufixo + '</span>';
         }).join('<br>');
       } else if (exp.vagasTotal != null) {
         const rest = exp.vagasRestantes != null ? exp.vagasRestantes : exp.vagasTotal;
@@ -5498,187 +6135,89 @@
   async function renderFornecedores() {
     if (!document.getElementById('fornecedores-body')) return;
 
-    const [bookingsRaw, allExperiences, metadata] = await Promise.all([
-      getBookings(),
+    // Fonte única: RPC financial_by_supplier (agrega bookings + manual_sales
+    // pagos, com tratamento correto de multi-fornecedor) + RPC
+    // financial_summary pros totais globais (sem dupla contagem).
+    const [supplierRows, summary, allExperiences, metadata] = await Promise.all([
+      fetchFinancialBySupplier({ includeTest: false }),
+      fetchFinancialSummary({ sources: ['booking', 'manual_sale'], includeTest: false }),
       (window.ElarahData && ElarahData.getAllExperiences)
         ? ElarahData.getAllExperiences().catch(() => [])
         : Promise.resolve([]),
       getFornecedoresMetadata(),
     ]);
-    // Esconde bookings de teste pra não inflar faturamento/repasse
-    // do fornecedor associado.
-    const bookings = withoutTestBookings(bookingsRaw);
 
     const metaByKey = new Map();
     (metadata || []).forEach(m => {
       if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m);
     });
 
-    // Agrega por fornecedor_key. Começa pelas experiences pra
-    // capturar fornecedores com 0 vendas.
-    const aggByKey = new Map();
-    function ensureAgg(nomeRaw) {
+    // Conta experiências por fornecedor (inclui fornecedores com 0 vendas).
+    const expCountByKey = new Map();
+    function bumpExp(nomeRaw, isActive) {
       const nome = String(nomeRaw || '').trim();
-      if (!nome) return null;
+      if (!nome) return;
       const key = fornecedorKey(nome);
-      if (!aggByKey.has(key)) {
-        aggByKey.set(key, {
-          key,
-          nome,
-          experiencesTotal: 0,
-          experiencesAtivas: 0,
-          reservas: 0,
-          faturamentoCents: 0,
-          repasseTotalCents: 0,
-          repassePagoCents: 0,
-          repassePendenteCents: 0,
-          comissaoCents: 0,
-          lastBookingTs: 0,
-        });
-      }
-      return aggByKey.get(key);
+      let entry = expCountByKey.get(key);
+      if (!entry) { entry = { nome, total: 0, ativas: 0 }; expCountByKey.set(key, entry); }
+      entry.total += 1;
+      if (isActive !== false) entry.ativas += 1;
     }
+    (allExperiences || []).forEach(e => { if (e) bumpExp(e.fornecedorNome, e.isActive); });
 
-    (allExperiences || []).forEach(e => {
-      if (!e) return;
-      const agg = ensureAgg(e.fornecedorNome);
-      if (!agg) return;
-      agg.experiencesTotal += 1;
-      if (e.isActive !== false) agg.experiencesAtivas += 1;
+    // Mescla a contagem de experiências com as linhas vindas da RPC.
+    const aggByKey = new Map();
+    (supplierRows || []).forEach(r => {
+      if (!r || !r.supplier_key) return;
+      const key = r.supplier_key;
+      const expEntry = expCountByKey.get(key);
+      const lastTs = r.ultima_venda ? new Date(r.ultima_venda).getTime() : 0;
+      aggByKey.set(key, {
+        key,
+        nome: r.supplier_name || (expEntry && expEntry.nome) || key,
+        experiencesTotal: expEntry ? expEntry.total : 0,
+        experiencesAtivas: expEntry ? expEntry.ativas : 0,
+        reservas: Number(r.qty_reservas) || 0,
+        faturamentoCents: Number(r.faturamento_centavos) || 0,
+        repasseTotalCents: Number(r.repasse_total_centavos) || 0,
+        repassePagoCents: Number(r.repasse_pago_centavos) || 0,
+        repassePendenteCents: Number(r.repasse_pendente_centavos) || 0,
+        comissaoCents: Number(r.comissao_centavos) || 0,
+        lastBookingTs: lastTs,
+      });
     });
-
-    // Para fallback de valores: map experience id → exp object.
-    const expById = new Map();
-    (allExperiences || []).forEach(e => {
-      if (e && e.id) expById.set(e.id, e);
-    });
-
-    (bookings || []).forEach(b => {
-      if (!b) return;
-      // Só conta valores pra bookings pagas.
-      if (b.status !== 'pago') return;
-
-      const exp = expById.get(b.experiencia_id);
-      const qty = Math.max(1, Number(b.quantidade) || 1);
-      let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
-      if (!valorCheio && exp && exp.valorCheioCentavos) {
-        valorCheio = Number(exp.valorCheioCentavos) * qty;
-      }
-      // Repasse / comissão derivados de exp.percentualRepasse (default 70).
-      // Se booking tem snapshot, usa direto; senão deriva do percentual.
-      const pctRepasse = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
-        ? Number(exp.percentualRepasse)
-        : 70;
-      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (!valorComissao && valorCheio) {
-        valorComissao = Math.round(valorCheio * ((100 - pctRepasse) / 100));
-      }
-
-      // ===== AGREGA POR REPASSE (multi-fornecedor) =====
-      // bookings.repasses[] é o snapshot do mapa financeiro no momento
-      // da reserva. Cada item tem {fornecedor_nome, valor_centavos}.
-      // Cada fornecedor entra na sua agregação. Pra bookings antigas
-      // (sem repasses[]), cai no fallback legado: 1 fornecedor com
-      // valor_repasse_centavos cheio.
-      let repassesUsadas = [];
-      if (Array.isArray(b.repasses) && b.repasses.length) {
-        repassesUsadas = b.repasses
-          .filter(function (r) { return r && r.fornecedor_nome; })
-          .map(function (r) {
-            return {
-              nome: String(r.fornecedor_nome).trim(),
-              valor: Number(r.valor_centavos) || 0,
-            };
-          });
-      }
-      if (!repassesUsadas.length) {
-        // Legado: 1 fornecedor por booking. Usa o percentual configurado
-        // na experiência (exp.percentualRepasse) — antes era 70% fixo,
-        // o que ignorava configs como 53.25% e dava repasse errado.
-        const nomeLegado = (b.fornecedor_nome && b.fornecedor_nome.trim())
-          || (exp && exp.fornecedorNome) || '';
-        if (nomeLegado) {
-          let vRep = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-          if (!vRep && valorCheio) vRep = Math.round(valorCheio * (pctRepasse / 100));
-          repassesUsadas = [{ nome: nomeLegado, valor: vRep || 0 }];
-        }
-      }
-
-      if (!repassesUsadas.length) return;
-
-      // Cada fornecedor incrementa sua própria agregação. Reservas é
-      // contado em todos os fornecedores que participam (cada um vê
-      // a reserva como sua).
-      repassesUsadas.forEach(function (r) {
-        const agg = ensureAgg(r.nome);
-        if (!agg) return;
-        agg.reservas += 1;
-        if (valorCheio) agg.faturamentoCents += valorCheio;
-        if (r.valor) {
-          agg.repasseTotalCents += r.valor;
-          if (b.status_fornecedor === 'repasse_feito') {
-            agg.repassePagoCents += r.valor;
-          } else {
-            agg.repassePendenteCents += r.valor;
-          }
-        }
-        // Comissão Elarah é uma vez por booking (não por fornecedor).
-        // Atribui pro fornecedor "principal" (primeiro do array) pra
-        // não duplicar no total global.
-        if (r === repassesUsadas[0] && valorComissao) {
-          agg.comissaoCents += valorComissao;
-        }
-        const ts = b.created_at ? new Date(b.created_at).getTime() : 0;
-        if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
+    // Adiciona fornecedores com experiências mas sem vendas (não vêm da RPC).
+    expCountByKey.forEach((entry, key) => {
+      if (aggByKey.has(key)) return;
+      aggByKey.set(key, {
+        key,
+        nome: entry.nome,
+        experiencesTotal: entry.total,
+        experiencesAtivas: entry.ativas,
+        reservas: 0,
+        faturamentoCents: 0,
+        repasseTotalCents: 0,
+        repassePagoCents: 0,
+        repassePendenteCents: 0,
+        comissaoCents: 0,
+        lastBookingTs: 0,
       });
     });
 
-    // ===== Inclui manual_sales pagas com payout no agregado =====
-    // Falha silenciosa se a tabela não existir (migration não rodada).
-    // Só conta vendas com payout_amount > 0 (i.e., repasse explícito).
-    try {
-      const sb = window.supabaseClient;
-      if (sb) {
-        const { data: msRows } = await sb.from('manual_sales')
-          .select('id, supplier_name, payout_amount_centavos, payout_status, total_amount_centavos, experience_id, created_at')
-          .eq('payment_status', 'pago');
-        (msRows || []).forEach(ms => {
-          const exp = expById.get(ms.experience_id);
-          // Resolve fornecedor: snapshot na venda > fornecedor da experiência.
-          const nome = (ms.supplier_name && ms.supplier_name.trim()) ||
-            (exp && (exp.fornecedorNome || exp.fornecedor_nome)) || '';
-          if (!nome) return;
-          const valorRep = Number(ms.payout_amount_centavos) || 0;
-          if (valorRep <= 0) return;
-          const agg = ensureAgg(nome);
-          if (!agg) return;
-          agg.reservas += 1;
-          // Faturamento: total da venda manual entra no faturamento do
-          // fornecedor (mesma semântica de bookings).
-          agg.faturamentoCents += Number(ms.total_amount_centavos) || 0;
-          agg.repasseTotalCents += valorRep;
-          if (ms.payout_status === 'pago') agg.repassePagoCents += valorRep;
-          else agg.repassePendenteCents += valorRep;
-          // Comissão Elarah da venda manual = total - repasse (positivo).
-          const comissao = Math.max(0, (Number(ms.total_amount_centavos) || 0) - valorRep);
-          agg.comissaoCents += comissao;
-          const ts = ms.created_at ? new Date(ms.created_at).getTime() : 0;
-          if (ts > agg.lastBookingTs) agg.lastBookingTs = ts;
-        });
-      }
-    } catch (e) {
-      console.warn('[admin] manual_sales aggregation in fornecedores skipped:', e && e.message);
-    }
-
     const list = Array.from(aggByKey.values());
-    // Ordena por faturamento desc (fornecedor mais rentável primeiro).
     list.sort((a, b) => b.faturamentoCents - a.faturamentoCents);
 
-    // Stats globais.
+    // Totais GLOBAIS vêm da RPC financial_summary (não da soma das linhas).
+    // Isso garante que multi-fornecedor não duplica no header.
     const totalCount = list.length;
-    const totalGross = list.reduce((s, f) => s + f.faturamentoCents, 0);
-    const totalComissao = list.reduce((s, f) => s + f.comissaoCents, 0);
-    const totalPendente = list.reduce((s, f) => s + f.repassePendenteCents, 0);
+    const totalGross = summary ? Number(summary.gross_confirmado_centavos) || 0 : 0;
+    const totalReceita = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
+    const totalRepassesAll = summary
+      ? (Number(summary.repasses_pagos_centavos) || 0) +
+        (Number(summary.repasses_pendentes_centavos) || 0)
+      : 0;
+    const totalComissao = Math.max(0, totalReceita - totalRepassesAll);
+    const totalPendente = summary ? Number(summary.repasses_pendentes_centavos) || 0 : 0;
 
     document.getElementById('stat-fornecedores-count').textContent = totalCount;
     document.getElementById('stat-fornecedores-gross').textContent = formatCents(totalGross, 'BRL');
@@ -5690,7 +6229,7 @@
 
     const tbody = document.getElementById('fornecedores-body');
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
       return;
     }
 
@@ -5698,6 +6237,7 @@
       const meta = metaByKey.get(f.key);
       const dataEntradaISO = meta && meta.data_entrada ? meta.data_entrada : '';
       const whatsappVal = meta && meta.whatsapp ? meta.whatsapp : '';
+      const tipoVal = meta && meta.tipo_parceria ? meta.tipo_parceria : '';
       const parceiroHa = formatParceiroHa(dataEntradaISO);
       const experienciasLabel = f.experiencesAtivas === f.experiencesTotal
         ? f.experiencesTotal
@@ -5710,8 +6250,19 @@
       const lastBookingLabel = f.lastBookingTs
         ? new Date(f.lastBookingTs).toLocaleDateString('pt-BR')
         : '<span style="color:#bbb;">—</span>';
+      // Select inline pra tipo_parceria. Salva on-change.
+      const tipoSelect =
+        '<select class="admin__forn-tipo" data-forn-key="' + escapeHtml(f.key) +
+          '" data-forn-nome="' + escapeHtml(f.nome) +
+          '" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:.78rem;font-family:inherit;background:#fff;">' +
+          '<option value=""' + (tipoVal === '' ? ' selected' : '') + '>—</option>' +
+          '<option value="elarah"' + (tipoVal === 'elarah' ? ' selected' : '') + '>Elarah</option>' +
+          '<option value="byelarah"' + (tipoVal === 'byelarah' ? ' selected' : '') + '>By Elarah</option>' +
+          '<option value="ambos"' + (tipoVal === 'ambos' ? ' selected' : '') + '>Elarah + By Elarah</option>' +
+        '</select>';
       return '<tr>' +
         '<td style="font-weight:600;">' + escapeHtml(f.nome) + '</td>' +
+        '<td>' + tipoSelect + '</td>' +
         '<td><input type="tel" class="admin__forn-whatsapp" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(whatsappVal) + '" placeholder="(11) 99999-9999" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;width:140px;" title="WhatsApp do fornecedor — usado pelo botão Avisar em Compras"></td>' +
         '<td><input type="date" class="admin__forn-data-entrada" data-forn-key="' + escapeHtml(f.key) + '" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(dataEntradaISO) + '" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;"></td>' +
         '<td>' + parceiroHa + '</td>' +
@@ -5723,6 +6274,34 @@
         '<td>' + lastBookingLabel + '</td>' +
       '</tr>';
     }).join('');
+
+    // Wire dos selects de tipo_parceria. Salva on-change via upsert
+    // em fornecedores_metadata (cria a linha se ainda não existir).
+    tbody.querySelectorAll('.admin__forn-tipo').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const el = e.target;
+        const key = el.dataset.fornKey;
+        const nome = el.dataset.fornNome;
+        const value = el.value || null;
+        el.disabled = true;
+        const sb = window.supabaseClient;
+        try {
+          // Upsert pela chave fornecedor_key
+          const { error } = await sb.from('fornecedores_metadata')
+            .upsert({ fornecedor_key: key, fornecedor_nome: nome, tipo_parceria: value },
+                    { onConflict: 'fornecedor_key' });
+          if (error) throw error;
+          // Feedback visual rápido
+          const prev = el.style.borderColor;
+          el.style.borderColor = '#1a8a4a';
+          setTimeout(() => { el.style.borderColor = prev; }, 800);
+        } catch (err) {
+          alert('Não consegui salvar o tipo de parceria. ' + (err.message || err));
+        } finally {
+          el.disabled = false;
+        }
+      });
+    });
 
     // Wire edit handlers. Uses delegation via querySelectorAll —
     // acceptable aqui porque o tbody é inteiro re-renderizado a
@@ -5743,10 +6322,11 @@
           return;
         }
         // Recalcula "Parceiro há" na célula irmã sem re-renderizar tudo.
-        // Ordem das colunas: Fornecedor=0, WhatsApp=1, DataEntrada=2, ParceiroHá=3.
+        // Ordem REAL das colunas (após PR #155 adicionar Tipo):
+        // Fornecedor=0, Tipo=1, WhatsApp=2, DataEntrada=3, ParceiroHá=4.
         const row = el.closest('tr');
         if (row) {
-          const parceiroCell = row.children[3];
+          const parceiroCell = row.children[4];
           if (parceiroCell) parceiroCell.innerHTML = formatParceiroHa(value);
         }
       });
@@ -5896,10 +6476,14 @@
 
   function getPreviousRange(curr) {
     if (curr.kind === 'all') {
-      // Não há "período anterior" pra 'tudo' — devolve um range vazio
-      // (start=end=agora) pra que comparações com período anterior
-      // simplesmente fiquem zeradas (não quebra os deltas).
-      return { start: new Date(), end: new Date(), label: '—' };
+      // Não há "período anterior" pra 'tudo'. Devolvemos um range
+      // bem antigo e zerado pra que (a) os deltas % fiquem 0/null
+      // e (b) o fetch de dados respeite o curr.start sem cortar dados.
+      // ATENÇÃO: ANTES isso devolvia { start: new Date() } e fazia o
+      // fetch de manual_sales/gift_cards usar gte('created_at', NOW),
+      // zerando esses arrays no preset Tudo (Bug A do diagnóstico).
+      const epoch = new Date('1970-01-01T00:00:00.000Z');
+      return { start: epoch, end: epoch, label: '—' };
     }
     if (curr.kind === 'month') {
       const now = new Date();
@@ -5942,13 +6526,13 @@
   }
 
   // ===== KPIs =====
+  // orders agora reflete sum(quantidade) — vagas vendidas, não nº de
+  // bookings. 1 booking qty=3 conta 3. Ticket médio = receita/vagas.
   function computeKpis(bookingsInRange, eventsInRange) {
     const paid = bookingsInRange.filter(b => b.status === 'pago');
     const revenue = paid.reduce((s, b) => s + (Number(b.amount_total) || 0), 0);
-    const orders = paid.length;
+    const orders = sumQuantity(paid);
     const avgTicket = orders ? revenue / orders : 0;
-    // Conversão: compras pagas / sessões únicas que demonstraram intenção
-    // (clicaram em card de experiência ou abriram detalhe).
     const intentSessions = new Set();
     eventsInRange.forEach(e => {
       if (e.event_name === 'experience_card_click' || e.event_name === 'exp_detail_open') {
@@ -6007,7 +6591,7 @@
       const bk = buckets.get(t);
       if (!bk) return;
       bk.revenue += (Number(b.amount_total) || 0) / 100;
-      bk.orders += 1;
+      bk.orders += bookingQty(b);                     // vagas, não bookings
     });
     const labels = [], revArr = [], ordArr = [];
     Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]).forEach(([t, bk]) => {
@@ -6109,6 +6693,7 @@
     // declarado e união de todas as sessions vistas.
     (eventsInRange || []).forEach(e => { if (e && e.session_id) sessions.add(e.session_id); });
 
+ claude/add-accounting-admin-section-4wDvv
     const purchases = (bookingsInRange || []).filter(b =>
       b.status === 'pago' && !b._isManualSale && !b._isGiftCard
     ).length;
@@ -6117,11 +6702,27 @@
     // de campanha, follow-up WhatsApp, landing dedicada). Cobre o
     // tráfego de campanha que pula a home — sem isso, "Clicou em
     // experiência" fica zerado mesmo com gente entrando.
+=======
+    // Agora conta VAGAS vendidas (sum quantidade), não bookings.
+    // Coerente com KPIs e Compras: 1 booking qty=3 contabiliza 3.
+    // Exclui venda manual e gift card — esses não passam pelo funil do site
+    // (não disparam checkout_submit) e inflavam "Pagamento aprovado" acima
+    // de "Confirmou pagamento", quebrando a leitura do funil.
+    const purchases = sumQuantity((bookingsInRange || []).filter(b =>
+      b.status === 'pago' && !b._isManualSale && !b._isGiftCard
+    ));
+
+    // União card_click ∪ detail_view: visitantes que vêm de campanha
+    // (WhatsApp, Insta) entram direto no /experiencia/<slug> e nunca
+    // clicam num card da home — só disparam detail_view. Sem essa união
+    // o funil mostrava "Clicou em uma experiência: 0" e "Abriu detalhe: N".
+ claude/create-elarah-homepage-VsE5i
     const engaged = new Set();
     cardClicks.forEach(s => engaged.add(s));
     detailViews.forEach(s => engaged.add(s));
 
     const steps = [
+ claude/add-accounting-admin-section-4wDvv
       { key: 'sessions',   label: 'Visitantes (sessões)',          count: sessions.size,        unit: 'sessões' },
       { key: 'engaged',    label: 'Engajou com uma experiência',   count: engaged.size,         unit: 'sessões' },
       { key: 'detail',     label: 'Abriu o detalhe da exp.',       count: detailViews.size,     unit: 'sessões' },
@@ -6129,6 +6730,15 @@
       { key: 'started',    label: 'Iniciou o checkout',            count: checkoutStarted.size, unit: 'sessões' },
       { key: 'submit',     label: 'Confirmou pagamento',           count: checkoutSubmits.size, unit: 'sessões' },
       { key: 'paid',       label: 'Pagamento aprovado (site)',     count: purchases,            unit: 'compras' },
+=======
+      { key: 'sessions',   label: 'Visitantes (sessões)',       count: sessions.size,         unit: 'sessões' },
+      { key: 'engaged',    label: 'Engajou com uma experiência',count: engaged.size,          unit: 'sessões' },
+      { key: 'detail',     label: 'Abriu o detalhe da exp.',    count: detailViews.size,      unit: 'sessões' },
+      { key: 'cta',        label: 'Clicou em "Reservar"',       count: ctaClicks.size,        unit: 'sessões' },
+      { key: 'started',    label: 'Iniciou o checkout',         count: checkoutStarted.size,  unit: 'sessões' },
+      { key: 'submit',     label: 'Confirmou pagamento',        count: checkoutSubmits.size,  unit: 'sessões' },
+      { key: 'paid',       label: 'Pagamento aprovado (site)',  count: purchases,             unit: 'compras' },
+claude/create-elarah-homepage-VsE5i
     ];
 
     if (steps.every(s => s.count === 0)) {
@@ -6221,7 +6831,7 @@
       const nome = b.experiencia_nome || (exp && exp.nome) || '—';
       if (isTestExperience(nome)) return;
       const e = stats.get(key) || { nome, vendas: 0, receita: 0, views: 0 };
-      e.vendas += 1;
+      e.vendas += bookingQty(b);                       // vagas vendidas
       e.receita += Number(b.amount_total) || 0;
       stats.set(key, e);
     });
@@ -6280,7 +6890,7 @@
       if (!fn) return;
       const k = fn.toLowerCase();
       const e = stats.get(k) || { nome: fn, vendas: 0, receita: 0 };
-      e.vendas += 1;
+      e.vendas += bookingQty(b);                       // vagas vendidas
       e.receita += Number(b.amount_total) || 0;
       stats.set(k, e);
     });
@@ -6409,9 +7019,13 @@
       safeCall('manual_sales', async () => {
         const sb = window.supabaseClient;
         if (!sb) return [];
+        // Sem filtro por created_at no SQL: manual_sales têm sale_date
+        // (data efetiva da venda) que pode divergir de created_at — o
+        // JS abaixo usa sale_date como timestamp do bucket. Filtrar
+        // por created_at aqui descartaria vendas registradas hoje pra
+        // datas passadas, ou vice-versa (Bug B do diagnóstico).
         const { data, error } = await sb.from('manual_sales')
           .select('*')
-          .gte('created_at', prev.start.toISOString())
           .limit(5000);
         if (error) return [];
         return data || [];
@@ -6424,7 +7038,6 @@
         if (!sb) return [];
         const { data, error } = await sb.from('gift_cards')
           .select('id, code, valor_inicial_centavos, status, comprador_email, comprador_nome, created_at')
-          .gte('created_at', prev.start.toISOString())
           .limit(5000);
         if (error) return [];
         return data || [];
@@ -6544,8 +7157,35 @@
       const eventsCurr = eventsArr.filter(e => inRange(e.created_at, curr));
       const eventsPrev = eventsArr.filter(e => inRange(e.created_at, prev));
 
-      const kpiCurr = computeKpis(bookingsCurr, eventsCurr);
-      const kpiPrev = computeKpis(bookingsPrev, eventsPrev);
+      // Mapa source-chip → fontes da RPC. Mantém o mesmo conceito dos
+      // chips do header: Tudo / Apenas site / Apenas manual / Apenas gift.
+      const sourceMap = {
+        all:      ['booking', 'manual_sale', 'giftcard'],
+        site:     ['booking'],
+        manual:   ['manual_sale'],
+        giftcard: ['giftcard'],
+      };
+      const rpcSources = sourceMap[source] || sourceMap.all;
+
+      // KPIs vêm da fonte única (financial_summary), garantindo que o
+      // card "Faturamento" do Analytics bate centavo a centavo com
+      // Compras (sources=booking+manual_sale+giftcard) e Contabilidade
+      // (sources=null = todas) quando os filtros equivalentes coincidem.
+      // Conversão continua sendo derivada de analytics_events em JS
+      // (a RPC não tem visibilidade de sessões/intent).
+      const isAllPreset = curr.kind === 'all';
+      const summaryCurr = await fetchFinancialSummary({
+        from: curr.start, to: curr.end,
+        sources: rpcSources, includeTest: false,
+      });
+      const summaryPrev = isAllPreset ? null : await fetchFinancialSummary({
+        from: prev.start, to: prev.end,
+        sources: rpcSources, includeTest: false,
+      });
+      const kpiCurr = _anaKpisFromSummary(summaryCurr, eventsCurr, bookingsCurr);
+      const kpiPrev = isAllPreset
+        ? { revenue: 0, orders: 0, avgTicket: 0, conversion: null }
+        : _anaKpisFromSummary(summaryPrev, eventsPrev, bookingsPrev);
 
       renderKpis(kpiCurr, kpiPrev);
       renderEvolutionChart(bookingsCurr, curr);
@@ -6562,6 +7202,1201 @@
       console.error('[Analytics] erro ao renderizar:', e);
       showAnalyticsError(e && e.message ? e.message : String(e));
     }
+  }
+
+  // Constrói os KPIs do Analytics a partir do retorno da RPC
+  // financial_summary. revenue/orders/avgTicket vêm direto do servidor
+  // (consistência com Compras/Fornecedores/Contabilidade); conversion
+  // continua sendo derivada de analytics_events porque a RPC não tem
+  // visibilidade de sessões. Se a RPC falhar, cai no compute legacy
+  // pra não deixar a UI sem KPIs.
+  function _anaKpisFromSummary(summary, eventsInRange, bookingsInRangeFallback) {
+    if (!summary) return computeKpis(bookingsInRangeFallback || [], eventsInRange || []);
+    const revenue = Number(summary.receita_confirmada_centavos) || 0;
+    const orders = (Number(summary.qty_bookings_pagos) || 0)
+      + (Number(summary.qty_manual_sales_pagas) || 0)
+      + (Number(summary.qty_giftcards_pagos) || 0);
+    const avgTicket = orders ? revenue / orders : 0;
+    const intentSessions = new Set();
+    (eventsInRange || []).forEach(e => {
+      if (!e) return;
+      if (e.event_name === 'experience_card_click' || e.event_name === 'exp_detail_open') {
+        if (e.session_id) intentSessions.add(e.session_id);
+      }
+    });
+    const conversion = intentSessions.size ? orders / intentSessions.size : null;
+    return { revenue, orders, avgTicket, conversion };
+  }
+
+  // =========================================================
+  // ===== PROSPECCAO (CRM de parceiros) =====
+  // ---------------------------------------------------------
+  // Aba dedicada à prospecção comercial. Tabelas:
+  //   prospects               — empresas/locais
+  //   prospect_interactions   — timeline (mensagem, resposta, etc)
+  //   prospect_templates      — mensagens-base com {{variáveis}}
+  //
+  // Schema/RPCs definidos em sql/elarah_crm_prospects.sql.
+  // Mantive o estado mínimo no escopo do módulo (filtros, prospect
+  // ativo no modal de timeline). Nada de cache pesado: queries
+  // são pequenas, refetch é barato e mantém UI sempre fresca.
+  // =========================================================
+  const PROSPECT_STATUS_LABELS = {
+    nao_contatado:    { label: 'Não contatado',    bg: '#f4f4f4', fg: '#666' },
+    mensagem_enviada: { label: 'Msg. enviada',     bg: '#e6f0fa', fg: '#3068a8' },
+    respondeu:        { label: 'Respondeu',        bg: '#fff4d6', fg: '#a87a00' },
+    reuniao_marcada:  { label: 'Reunião marcada',  bg: '#f0e6fa', fg: '#6b3aa0' },
+    parceria_fechada: { label: 'Parceria fechada', bg: '#e6f4ea', fg: '#1a8a4a' },
+    ja_parceiro:      { label: '⭐ Já parceiro',    bg: '#cce8d4', fg: '#0e6b34' },
+    recusou:          { label: 'Recusou',          bg: '#fdecec', fg: '#a83030' },
+  };
+  const TIPO_PARCERIA_LABELS = {
+    elarah:   'Elarah',
+    byelarah: 'By Elarah',
+    ambos:    'Elarah + By Elarah',
+  };
+  const PROSPECT_INTERACTION_LABELS = {
+    mensagem_enviada:  '📤 Mensagem enviada',
+    respondeu:         '💬 Respondeu',
+    follow_up:         '🔁 Follow-up',
+    reuniao_marcada:   '📅 Reunião marcada',
+    reuniao_realizada: '✅ Reunião realizada',
+    parceria_fechada:  '🎉 Parceria fechada',
+    recusou:           '❌ Recusou',
+    observacao:        '📝 Observação',
+  };
+
+  let _prospectsCache = null;
+  let _prospectsTemplatesCache = null;
+  let _prospectsState = {
+    search: '',
+    categoria: '',
+    status: '',
+    bairro: '',
+    activeId: null,            // prospect aberto no modal de timeline
+  };
+  let _prospectsWired = false;
+
+  function _propEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function _propStripAccents(s) {
+    // ̀–ͯ cobre os diacríticos combinantes que NFD gera.
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  // Limpa um WhatsApp pra wa.me/<digits>. Aceita "(11) 99999-9999",
+  // "+55 11 99999 9999", "11999999999". Adiciona DDI 55 se ausente
+  // (assume Brasil).
+  function _propWhatsappLink(raw) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return null;
+    const withCountry = digits.length <= 11 ? '55' + digits : digits;
+    return 'https://wa.me/' + withCountry;
+  }
+
+  function _propInstagramLink(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    const handle = v.replace(/^@/, '').replace(/\s+/g, '');
+    return 'https://instagram.com/' + handle;
+  }
+
+  // Substitui {{nome}} / {{categoria}} / {{bairro}} no template.
+  // Sem variável presente no prospect → fallback razoável (ex.
+  // categoria vazia vira "experiência manual").
+  function _propRenderTemplate(template, prospect) {
+    if (!template) return '';
+    const cat = prospect && prospect.categoria
+      ? prospect.categoria
+      : 'experiência manual';
+    const bairro = prospect && prospect.bairro ? prospect.bairro : 'São Paulo';
+    return String(template)
+      .replaceAll('{{nome}}',      prospect && prospect.nome ? prospect.nome : 'vocês')
+      .replaceAll('{{categoria}}', cat)
+      .replaceAll('{{bairro}}',    bairro);
+  }
+
+  // ===== Dedup: detecção de parceiros existentes =====
+  // Cliente da RPC find_matching_fornecedor. Devolve os matches
+  // com prioridade: experience > fornecedor_metadata > prospect.
+  // Filtra duplicatas por ref_id+match_reason.
+  async function _propFindMatches(prospect, excludeId) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb.rpc('find_matching_fornecedor', {
+      p_nome:      prospect.nome      || null,
+      p_instagram: prospect.instagram || null,
+      p_whatsapp:  prospect.whatsapp  || null,
+      p_email:     prospect.email     || null,
+      p_site:      prospect.site      || null,
+      p_exclude_prospect_id: excludeId || null,
+    });
+    if (error) {
+      // Fallback gracioso: se a RPC ainda não existir (migração não rodada),
+      // retorna sem dedup ao invés de quebrar o save. Avisa só no console.
+      if (String(error.message || '').includes('find_matching_fornecedor')) {
+        console.warn('[Prospects] dedup RPC ausente — rode sql/elarah_crm_dedup_v2.sql');
+        return [];
+      }
+      console.error('[Prospects] dedup error:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  // Pra batch dedup no CSV import: faz dedup local com snapshot
+  // pré-carregado das 3 fontes (mais rápido que 1 RPC por linha).
+  // Usa as mesmas regras de normalização do SQL.
+  async function _propPreloadDedupContext() {
+    const sb = window.supabaseClient;
+    if (!sb) return null;
+    const [{ data: exps }, { data: forn }, { data: pros }] = await Promise.all([
+      sb.from('experiences').select('id, fornecedor_nome, is_active, is_test').limit(20000),
+      sb.from('fornecedores_metadata').select('id, fornecedor_key, fornecedor_nome, instagram, whatsapp, email, site').limit(5000),
+      sb.from('prospects').select('id, nome, instagram, whatsapp, email, site').limit(20000),
+    ]);
+    return {
+      experiences: (exps || []).filter(e =>
+        e && e.fornecedor_nome &&
+        e.is_active !== false &&
+        e.is_test !== true
+      ),
+      fornecedores: forn || [],
+      prospects: pros || [],
+    };
+  }
+
+  // Normalizadores espelhados do SQL (_norm_*). MANTER em sincronia
+  // com sql/elarah_crm_dedup_v2.sql ao mudar regras.
+  function _propNormText(s) {
+    if (!s) return null;
+    const v = String(s).trim();
+    if (!v) return null;
+    return _propStripAccents(v.toLowerCase()).replace(/\s+/g, ' ');
+  }
+  function _propNormHandle(s) {
+    if (!s) return null;
+    const v = String(s).trim()
+      .replace(/^https?:\/\/(www\.)?(instagram\.com\/)?/i, '')
+      .replace(/[@\s/]/g, '')
+      .toLowerCase();
+    return v || null;
+  }
+  function _propNormPhone(s) {
+    if (!s) return null;
+    const digits = String(s).replace(/\D+/g, '');
+    if (!digits) return null;
+    // Remove DDI 55 quando o resultado tem 10 ou 11 dígitos
+    return digits.replace(/^55(\d{10,11})$/, '$1');
+  }
+  function _propNormEmail(s) {
+    if (!s) return null;
+    const v = String(s).trim().toLowerCase();
+    return v || null;
+  }
+  function _propNormSite(s) {
+    if (!s) return null;
+    const v = String(s).trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/[/?#].*$/, '')
+      .toLowerCase();
+    return v || null;
+  }
+
+  // Indexa o snapshot pra lookups O(1) no CSV import.
+  function _propBuildDedupIndex(ctx) {
+    const idx = {
+      byName: new Map(),       // norm_text → { source, ref_id, ref_nome, fornecedor_key }
+      byHandle: new Map(),
+      byPhone: new Map(),
+      byEmail: new Map(),
+      bySite: new Map(),
+    };
+    // Helpers pra inserir mantendo prioridade experience > metadata > prospect
+    const priority = { experience: 3, fornecedor_metadata: 2, prospect: 1 };
+    const put = (map, key, entry) => {
+      if (!key) return;
+      const existing = map.get(key);
+      if (!existing || priority[entry.source] > priority[existing.source]) {
+        map.set(key, entry);
+      }
+    };
+    (ctx.experiences || []).forEach(e => {
+      const entry = {
+        source: 'experience',
+        ref_id: e.id,
+        ref_nome: e.fornecedor_nome,
+        fornecedor_key: _propNormText(e.fornecedor_nome),
+      };
+      put(idx.byName, _propNormText(e.fornecedor_nome), entry);
+    });
+    (ctx.fornecedores || []).forEach(f => {
+      const entry = {
+        source: 'fornecedor_metadata',
+        ref_id: f.id,
+        ref_nome: f.fornecedor_nome,
+        fornecedor_key: f.fornecedor_key || _propNormText(f.fornecedor_nome),
+      };
+      put(idx.byName,   _propNormText(f.fornecedor_nome), entry);
+      put(idx.byHandle, _propNormHandle(f.instagram),     entry);
+      put(idx.byPhone,  _propNormPhone(f.whatsapp),       entry);
+      put(idx.byEmail,  _propNormEmail(f.email),          entry);
+      put(idx.bySite,   _propNormSite(f.site),            entry);
+    });
+    (ctx.prospects || []).forEach(p => {
+      const entry = {
+        source: 'prospect',
+        ref_id: p.id,
+        ref_nome: p.nome,
+        fornecedor_key: _propNormText(p.nome),
+      };
+      put(idx.byName,   _propNormText(p.nome),       entry);
+      put(idx.byHandle, _propNormHandle(p.instagram), entry);
+      put(idx.byPhone,  _propNormPhone(p.whatsapp),   entry);
+      put(idx.byEmail,  _propNormEmail(p.email),      entry);
+      put(idx.bySite,   _propNormSite(p.site),        entry);
+    });
+    return idx;
+  }
+
+  // Match local. Retorna o melhor (highest priority) match ou null.
+  function _propMatchAgainstIndex(idx, row) {
+    const tries = [
+      { key: _propNormText(row.nome),       map: idx.byName,   reason: 'name' },
+      { key: _propNormHandle(row.instagram), map: idx.byHandle, reason: 'instagram' },
+      { key: _propNormPhone(row.whatsapp),   map: idx.byPhone,  reason: 'whatsapp' },
+      { key: _propNormEmail(row.email),      map: idx.byEmail,  reason: 'email' },
+      { key: _propNormSite(row.site),        map: idx.bySite,   reason: 'site' },
+    ];
+    let best = null;
+    const priority = { experience: 3, fornecedor_metadata: 2, prospect: 1 };
+    for (const t of tries) {
+      if (!t.key) continue;
+      const hit = t.map.get(t.key);
+      if (!hit) continue;
+      if (!best || priority[hit.source] > priority[best.source]) {
+        best = Object.assign({ match_reason: t.reason }, hit);
+      }
+    }
+    return best;
+  }
+
+  // Texto amigável pra mensagens de aviso na UI
+  const DEDUP_REASON_LABELS = {
+    name: 'mesmo nome',
+    instagram: 'mesmo Instagram',
+    whatsapp: 'mesmo WhatsApp',
+    email: 'mesmo email',
+    site: 'mesmo site',
+  };
+  const DEDUP_SOURCE_LABELS = {
+    experience: 'fornecedor com experiência cadastrada',
+    fornecedor_metadata: 'fornecedor cadastrado',
+    prospect: 'prospect duplicado',
+  };
+
+  async function _propFetchProspects() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('prospects')
+      .select('*, prospect_interactions(occurred_at, tipo)')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    if (error) {
+      console.error('[Prospects] load error:', error.message);
+      return [];
+    }
+    // Compute "última interação" cliente-side (mais simples que LATERAL
+    // join no schema; volume baixo).
+    return (data || []).map(p => {
+      const interactions = Array.isArray(p.prospect_interactions) ? p.prospect_interactions : [];
+      const last = interactions.reduce((acc, i) => {
+        const t = i && i.occurred_at ? new Date(i.occurred_at).getTime() : 0;
+        if (t > acc.t) return { t, tipo: i.tipo };
+        return acc;
+      }, { t: 0, tipo: null });
+      return Object.assign({}, p, {
+        _lastInteractionTs: last.t,
+        _lastInteractionTipo: last.tipo,
+      });
+    });
+  }
+
+  async function _propFetchTemplates() {
+    if (_prospectsTemplatesCache) return _prospectsTemplatesCache.slice();
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb.from('prospect_templates')
+      .select('*')
+      .eq('is_active', true)
+      .order('ordem', { ascending: true });
+    if (error) {
+      console.warn('[Prospects] templates load error:', error.message);
+      return [];
+    }
+    _prospectsTemplatesCache = data || [];
+    return _prospectsTemplatesCache.slice();
+  }
+
+  function _propPickTemplate(templates, categoria) {
+    if (!templates || !templates.length) return null;
+    if (categoria) {
+      const byCat = templates.find(t => t.categoria === categoria);
+      if (byCat) return byCat;
+    }
+    return templates.find(t => t.is_default) || templates[0];
+  }
+
+  function _propFiltered(list) {
+    const s = _prospectsState;
+    const search = _propStripAccents((s.search || '').toLowerCase()).trim();
+    const cat = (s.categoria || '').toLowerCase().trim();
+    const status = (s.status || '').toLowerCase().trim();
+    const bairro = _propStripAccents((s.bairro || '').toLowerCase()).trim();
+    return (list || []).filter(p => {
+      if (cat    && (p.categoria || '').toLowerCase() !== cat) return false;
+      if (status && (p.status    || '').toLowerCase() !== status) return false;
+      if (bairro) {
+        const pb = _propStripAccents((p.bairro || '').toLowerCase());
+        if (pb.indexOf(bairro) === -1) return false;
+      }
+      if (search) {
+        const hay = _propStripAccents([
+          p.nome, p.observacoes, p.categoria, p.bairro, p.email, p.instagram, p.whatsapp,
+        ].map(x => String(x || '').toLowerCase()).join(' '));
+        if (hay.indexOf(search) === -1) return false;
+      }
+      return true;
+    });
+  }
+
+  function _propRenderStats(list) {
+    const total = list.length;
+    const contatados = list.filter(p => p.status !== 'nao_contatado').length;
+    const fechadas = list.filter(p => p.status === 'parceria_fechada').length;
+    const respondeu = list.filter(p => ['respondeu','reuniao_marcada','parceria_fechada'].includes(p.status)).length;
+    const enviadas = list.filter(p => p.status !== 'nao_contatado').length;
+    const taxaResposta = enviadas > 0
+      ? Math.round((respondeu / enviadas) * 100) + '%'
+      : '—';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('stat-prospects-total',       total);
+    set('stat-prospects-contatados',  contatados);
+    set('stat-prospects-fechadas',    fechadas);
+    set('stat-prospects-resposta',    taxaResposta);
+  }
+
+  function _propRenderBairrosDatalist(list) {
+    const dl = document.getElementById('prospects-bairros-list');
+    if (!dl) return;
+    const set = new Set();
+    (list || []).forEach(p => { if (p.bairro) set.add(String(p.bairro).trim()); });
+    const sorted = Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    dl.innerHTML = sorted.map(b => '<option value="' + _propEsc(b) + '"></option>').join('');
+  }
+
+  function _propStatusBadge(status) {
+    const cfg = PROSPECT_STATUS_LABELS[status] || { label: status || '—', bg: '#eee', fg: '#666' };
+    return '<span style="display:inline-block;padding:3px 10px;border-radius:10px;background:' + cfg.bg +
+      ';color:' + cfg.fg + ';font-size:.72rem;font-weight:700;letter-spacing:.02em;">' +
+      _propEsc(cfg.label) + '</span>';
+  }
+
+  function _propContactIcons(p) {
+    const out = [];
+    if (p.whatsapp) {
+      const link = _propWhatsappLink(p.whatsapp);
+      if (link) out.push('<a href="' + _propEsc(link) + '" target="_blank" rel="noopener" title="WhatsApp" style="display:inline-block;padding:4px 6px;background:#e6f4ea;color:#1a8a4a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">WA</a>');
+    }
+    if (p.instagram) {
+      const link = _propInstagramLink(p.instagram);
+      if (link) out.push('<a href="' + _propEsc(link) + '" target="_blank" rel="noopener" title="Instagram" style="display:inline-block;padding:4px 6px;background:#fce8f1;color:#c0397a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">IG</a>');
+    }
+    if (p.email) {
+      out.push('<a href="mailto:' + _propEsc(p.email) + '" title="Email" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
+    }
+    if (p.site) {
+      out.push('<a href="' + _propEsc(p.site) + '" target="_blank" rel="noopener" title="Site" style="display:inline-block;padding:4px 6px;background:#f4f0e6;color:#866d1a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">🌐</a>');
+    }
+    return out.length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + out.join('') + '</div>' : '<span style="color:#bbb;">—</span>';
+  }
+
+  async function renderProspects() {
+    if (!document.getElementById('panel-prospects')) return;
+    _propWireOnce();
+    // Carrega prospects + tipo_parceria de cada parceiro vinculado.
+    // Sem cache local pra que mudanças (promoção, edição de tipo)
+    // apareçam imediatamente.
+    const [list, fornecedoresMap] = await Promise.all([
+      _propFetchProspects(),
+      _propFetchFornecedoresTipoMap(),
+    ]);
+    _prospectsCache = list;
+    _prospectsTipoMap = fornecedoresMap;
+    _propRenderStats(list);
+    _propRenderBairrosDatalist(list);
+    _propRenderTable();
+  }
+
+  // Map<fornecedor_key, tipo_parceria>: usado pra exibir o badge
+  // Elarah/By Elarah/Ambos na linha do prospect na seção Parceiros.
+  // Falha silenciosa se a coluna não existir (migration v2 não rodou).
+  let _prospectsTipoMap = new Map();
+  async function _propFetchFornecedoresTipoMap() {
+    const sb = window.supabaseClient;
+    if (!sb) return new Map();
+    const { data, error } = await sb.from('fornecedores_metadata')
+      .select('fornecedor_key, tipo_parceria')
+      .limit(5000);
+    if (error) {
+      console.warn('[Prospects] tipo_parceria load skipped:', error.message);
+      return new Map();
+    }
+    const m = new Map();
+    (data || []).forEach(r => {
+      if (r && r.fornecedor_key) m.set(r.fornecedor_key, r.tipo_parceria || null);
+    });
+    return m;
+  }
+
+  // Pipeline operacional. Define a ordem das seções na lista, o
+  // header (cor + ícone + label) de cada uma e quais status caem
+  // em qual bucket. Pendentes vem PRIMEIRO e mais destacado pra
+  // virar foco visual da operação. Cada bucket ganha um <tr> de
+  // header com colspan=7.
+  const PROSPECT_SECTIONS = [
+    {
+      key: 'reunioes',
+      label: '📅 Reuniões marcadas',
+      sub: 'Encontros agendados — prepare antes',
+      bg: '#f5edfc', headerBg: '#e9dcf5', fg: '#6b3aa0',
+      statuses: ['reuniao_marcada'],
+    },
+    {
+      key: 'pendentes',
+      label: '🔥 Pendentes',
+      sub: 'Locais ainda não contatados — prioridade máxima',
+      bg: '#fff4e6', headerBg: '#fff0d6', fg: '#8b4500',
+      statuses: ['nao_contatado'],
+    },
+    {
+      key: 'enviadas',
+      label: '📨 Mensagens enviadas',
+      sub: 'Já receberam mensagem (incluindo responderam)',
+      bg: '#eef4fb', headerBg: '#dceaf6', fg: '#1f4d80',
+      statuses: ['mensagem_enviada', 'respondeu'],
+    },
+    {
+      key: 'parceiros',
+      label: '⭐ Parceiros',
+      sub: 'Parcerias fechadas + locais que já eram parceiros',
+      bg: '#e8f5ec', headerBg: '#d4ebd9', fg: '#0e6b34',
+      statuses: ['parceria_fechada', 'ja_parceiro'],
+    },
+    {
+      key: 'recusados',
+      label: '❌ Recusados',
+      sub: 'Recusaram a parceria ou não fazem sentido',
+      bg: '#f4f4f4', headerBg: '#ebebeb', fg: '#666',
+      statuses: ['recusou'],
+    },
+  ];
+  function _propSectionForStatus(status) {
+    return PROSPECT_SECTIONS.find(s => s.statuses.indexOf(status) !== -1);
+  }
+
+  function _propRenderTable() {
+    const tbody = document.getElementById('prospects-body');
+    const countEl = document.getElementById('prospects-count');
+    if (!tbody) return;
+    const filtered = _propFiltered(_prospectsCache || []);
+    if (countEl) countEl.textContent = filtered.length + ' prospect' + (filtered.length !== 1 ? 's' : '');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhum prospect para esses filtros. Clique em "+ Novo prospect" pra começar.</td></tr>';
+      return;
+    }
+
+    // Agrupa por seção e ordena: Pendentes → Enviadas → Parceiros → Recusados
+    // Dentro de cada seção, ordena por created_at desc (mais recente em cima).
+    const buckets = new Map();
+    PROSPECT_SECTIONS.forEach(s => buckets.set(s.key, []));
+    const orphan = [];                                 // status fora da lista (legacy)
+    filtered.forEach(p => {
+      const sec = _propSectionForStatus(p.status);
+      if (sec) buckets.get(sec.key).push(p);
+      else     orphan.push(p);
+    });
+    buckets.forEach(arr => arr.sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
+    }));
+
+    const fmtTs = (ts) => ts ? new Date(ts).toLocaleDateString('pt-BR') : '<span style="color:#bbb;">—</span>';
+
+    const renderRow = (p, sec) => {
+      const cat = p.categoria
+        ? '<span style="font-size:.78rem;background:#f4f4f4;color:#444;padding:2px 8px;border-radius:6px;">' + _propEsc(p.categoria) + '</span>'
+        : '<span style="color:#bbb;">—</span>';
+      const bairro = p.bairro ? _propEsc(p.bairro) : '<span style="color:#bbb;">—</span>';
+      const lastTipo = p._lastInteractionTipo ? PROSPECT_INTERACTION_LABELS[p._lastInteractionTipo] || p._lastInteractionTipo : null;
+      const lastInteraction = p._lastInteractionTs
+        ? fmtTs(p._lastInteractionTs) + (lastTipo ? '<br><span style="font-size:.7rem;color:#888;">' + _propEsc(lastTipo) + '</span>' : '')
+        : '<span style="color:#bbb;">—</span>';
+      const waLink = p.whatsapp ? _propWhatsappLink(p.whatsapp) : null;
+      // Status cell: badge padrão + (na seção Parceiros) badge de tipo_parceria
+      let statusCell = _propStatusBadge(p.status);
+      if (sec && sec.key === 'parceiros' && p.promoted_supplier_key) {
+        const tipo = _prospectsTipoMap.get(p.promoted_supplier_key) || null;
+        const tipoLabel = tipo ? (TIPO_PARCERIA_LABELS[tipo] || tipo) : '—';
+        const tipoColor = tipo === 'ambos' ? '#6b3aa0' : (tipo === 'byelarah' ? '#a05a00' : (tipo === 'elarah' ? '#1a8a4a' : '#999'));
+        statusCell += '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:6px;background:#fff;border:1px solid ' + tipoColor + ';color:' + tipoColor + ';font-size:.68rem;font-weight:700;">' + _propEsc(tipoLabel) + '</span>';
+      }
+      // Linha com fundo levemente colorido pra reforçar a seção
+      const rowBg = sec ? sec.bg : '#fff';
+      return '<tr style="background:' + rowBg + ';">' +
+        '<td style="font-weight:600;">' + _propEsc(p.nome) + '</td>' +
+        '<td>' + cat + '</td>' +
+        '<td style="font-size:.85rem;">' + bairro + '</td>' +
+        '<td>' + _propContactIcons(p) + '</td>' +
+        '<td>' + statusCell + '</td>' +
+        '<td style="font-size:.82rem;">' + lastInteraction + '</td>' +
+        '<td>' +
+          (waLink ? '<a href="' + _propEsc(waLink) + '" target="_blank" rel="noopener" style="display:inline-block;margin-right:6px;padding:5px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;">WhatsApp</a>' : '') +
+          '<button type="button" data-prospect-action="timeline" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:6px;">Timeline</button>' +
+          '<button type="button" data-prospect-action="edit" data-prospect-id="' + _propEsc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;">Editar</button>' +
+        '</td>' +
+      '</tr>';
+    };
+
+    const sectionHeader = (sec, count) =>
+      '<tr><td colspan="7" style="background:' + sec.headerBg + ';color:' + sec.fg + ';padding:10px 14px;border-top:2px solid ' + sec.fg + ';">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+          '<div><strong style="font-size:.92rem;letter-spacing:.02em;">' + sec.label + '</strong> ' +
+          '<span style="font-size:.78rem;color:' + sec.fg + ';opacity:.8;">— ' + sec.sub + '</span></div>' +
+          '<span style="font-size:.85rem;font-weight:700;background:#fff;color:' + sec.fg + ';padding:3px 10px;border-radius:10px;">' + count + '</span>' +
+        '</div>' +
+      '</td></tr>';
+
+    const out = [];
+    PROSPECT_SECTIONS.forEach(sec => {
+      const rows = buckets.get(sec.key);
+      if (!rows.length) return;
+      out.push(sectionHeader(sec, rows.length));
+      rows.forEach(p => out.push(renderRow(p, sec)));
+    });
+    if (orphan.length) {
+      out.push('<tr><td colspan="7" style="background:#f8f0f8;padding:8px 14px;color:#6b3aa0;font-size:.82rem;"><strong>Outros</strong> — status não-pipeline (' + orphan.length + ')</td></tr>');
+      orphan.forEach(p => out.push(renderRow(p, null)));
+    }
+    tbody.innerHTML = out.join('');
+  }
+
+  // ===== Wire (uma vez por carregamento) =====
+  function _propWireOnce() {
+    if (_prospectsWired) return;
+    _prospectsWired = true;
+
+    const onChange = () => _propRenderTable();
+    const search   = document.getElementById('prospects-filter-search');
+    const cat      = document.getElementById('prospects-filter-categoria');
+    const status   = document.getElementById('prospects-filter-status');
+    const bairro   = document.getElementById('prospects-filter-bairro');
+    if (search) search.addEventListener('input',  e => { _prospectsState.search   = e.target.value; onChange(); });
+    if (cat)    cat.addEventListener('change',    e => { _prospectsState.categoria = e.target.value; onChange(); });
+    if (status) status.addEventListener('change', e => { _prospectsState.status    = e.target.value; onChange(); });
+    if (bairro) bairro.addEventListener('input',  e => { _prospectsState.bairro    = e.target.value; onChange(); });
+
+    const btnNew = document.getElementById('btn-prospect-new');
+    if (btnNew) btnNew.addEventListener('click', () => _propOpenEditModal(null));
+
+    const btnTpl = document.getElementById('btn-prospect-templates');
+    if (btnTpl) btnTpl.addEventListener('click', () => _propOpenTemplatesModal());
+
+    const btnImport = document.getElementById('btn-prospect-import');
+    const csvInput  = document.getElementById('prospects-csv-input');
+    if (btnImport && csvInput) {
+      btnImport.addEventListener('click', () => csvInput.click());
+      csvInput.addEventListener('change', _propHandleCsvImport);
+    }
+
+    const btnExport = document.getElementById('btn-prospect-export');
+    if (btnExport) btnExport.addEventListener('click', _propExportCsv);
+
+    // Delegação dos botões da tabela
+    const tbody = document.getElementById('prospects-body');
+    if (tbody) {
+      tbody.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest('button[data-prospect-action]');
+        if (!btn) return;
+        const id = btn.dataset.prospectId;
+        const action = btn.dataset.prospectAction;
+        if (action === 'edit') _propOpenEditModal(id);
+        else if (action === 'timeline') _propOpenTimelineModal(id);
+      });
+    }
+
+    // Wire dos modais
+    _propWireEditModal();
+    _propWireTimelineModal();
+    _propWireTemplatesModal();
+  }
+
+  // ===== Modal: Editar/Criar prospect =====
+  function _propOpenEditModal(id) {
+    const modal = document.getElementById('prospect-edit-modal');
+    if (!modal) return;
+    const p = id && _prospectsCache ? _prospectsCache.find(x => x.id === id) : null;
+    document.getElementById('prospect-edit-title').textContent = p ? 'Editar prospect' : 'Novo prospect';
+    document.getElementById('prospect-edit-subtitle').textContent = p
+      ? 'Editando "' + (p.nome || '') + '"'
+      : 'Cadastre um possível parceiro pra começar a prospecção.';
+    document.getElementById('prospect-edit-id').value          = p ? p.id : '';
+    document.getElementById('prospect-edit-nome').value        = p ? (p.nome || '') : '';
+    document.getElementById('prospect-edit-categoria').value   = p ? (p.categoria || '') : '';
+    document.getElementById('prospect-edit-status').value      = p ? (p.status || 'nao_contatado') : 'nao_contatado';
+    document.getElementById('prospect-edit-instagram').value   = p ? (p.instagram || '') : '';
+    document.getElementById('prospect-edit-whatsapp').value    = p ? (p.whatsapp || '') : '';
+    document.getElementById('prospect-edit-email').value       = p ? (p.email || '') : '';
+    document.getElementById('prospect-edit-site').value        = p ? (p.site || '') : '';
+    document.getElementById('prospect-edit-bairro').value      = p ? (p.bairro || '') : '';
+    document.getElementById('prospect-edit-cidade').value      = p ? (p.cidade || 'São Paulo') : 'São Paulo';
+    document.getElementById('prospect-edit-observacoes').value = p ? (p.observacoes || '') : '';
+    document.getElementById('prospect-edit-msg').textContent = '';
+    document.getElementById('prospect-edit-delete').style.display = p ? '' : 'none';
+    // Limpa o aviso de dedup ao abrir/reabrir o modal
+    const warn = document.getElementById('prospect-edit-dup-warning');
+    if (warn) { warn.style.display = 'none'; warn.innerHTML = ''; }
+    modal.style.display = 'flex';
+  }
+
+  function _propCloseEditModal() {
+    const modal = document.getElementById('prospect-edit-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function _propWireEditModal() {
+    const cancel = document.getElementById('prospect-edit-cancel');
+    const save   = document.getElementById('prospect-edit-save');
+    const del    = document.getElementById('prospect-edit-delete');
+    if (cancel) cancel.addEventListener('click', _propCloseEditModal);
+    if (save)   save.addEventListener('click',   _propSaveEditModal);
+    if (del)    del.addEventListener('click',    _propDeleteFromModal);
+  }
+
+  async function _propSaveEditModal() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msgEl = document.getElementById('prospect-edit-msg');
+    const id = document.getElementById('prospect-edit-id').value || null;
+    const nome = document.getElementById('prospect-edit-nome').value.trim();
+    if (!nome) { msgEl.textContent = 'Nome é obrigatório.'; msgEl.style.color = '#c0392b'; return; }
+    const payload = {
+      nome,
+      categoria:    document.getElementById('prospect-edit-categoria').value || null,
+      status:       document.getElementById('prospect-edit-status').value,
+      instagram:    document.getElementById('prospect-edit-instagram').value.trim() || null,
+      whatsapp:     document.getElementById('prospect-edit-whatsapp').value.trim() || null,
+      email:        document.getElementById('prospect-edit-email').value.trim() || null,
+      site:         document.getElementById('prospect-edit-site').value.trim() || null,
+      bairro:       document.getElementById('prospect-edit-bairro').value.trim() || null,
+      cidade:       document.getElementById('prospect-edit-cidade').value.trim() || null,
+      observacoes:  document.getElementById('prospect-edit-observacoes').value.trim() || null,
+    };
+    msgEl.textContent = 'Verificando duplicatas...'; msgEl.style.color = '#666';
+
+    // Dedup check ANTES de salvar. Se achar match com fornecedor já
+    // cadastrado, oferece vincular como 'ja_parceiro'. Match com outro
+    // prospect bloqueia (sem dupla criação).
+    const matches = await _propFindMatches(payload, id);
+    const fornecedorMatch = (matches || []).find(m =>
+      m.source === 'experience' || m.source === 'fornecedor_metadata');
+    const prospectMatch = (matches || []).find(m => m.source === 'prospect');
+
+    if (fornecedorMatch && payload.status !== 'ja_parceiro') {
+      const reason = DEDUP_REASON_LABELS[fornecedorMatch.match_reason] || fornecedorMatch.match_reason;
+      const proceedAsParceiro = confirm(
+        '⭐ "' + fornecedorMatch.ref_nome + '" já é ' +
+        DEDUP_SOURCE_LABELS[fornecedorMatch.source] + ' (match: ' + reason + ').\n\n' +
+        'OK = vincular este prospect como "Já parceiro" (não duplica).\n' +
+        'Cancelar = voltar pro modal pra revisar.'
+      );
+      if (!proceedAsParceiro) {
+        msgEl.textContent = 'Verifique os dados pra evitar duplicar fornecedor.';
+        msgEl.style.color = '#a87a00';
+        return;
+      }
+      payload.status = 'ja_parceiro';
+      payload.promoted_supplier_key = fornecedorMatch.fornecedor_key;
+      payload.promoted_to_fornecedor_at = new Date().toISOString();
+    } else if (prospectMatch && !id) {
+      // Só bloqueia em CRIAÇÃO (não em edição que volta pra mesmo prospect).
+      const reason = DEDUP_REASON_LABELS[prospectMatch.match_reason] || prospectMatch.match_reason;
+      msgEl.textContent = 'Já existe prospect "' + prospectMatch.ref_nome + '" (' + reason + '). Cancele e edite o existente.';
+      msgEl.style.color = '#c0392b';
+      return;
+    }
+
+    msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
+    try {
+      let res;
+      if (id) {
+        res = await sb.from('prospects').update(payload).eq('id', id);
+      } else {
+        const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
+        if (user) payload.created_by = user.id;
+        res = await sb.from('prospects').insert(payload);
+      }
+      if (res.error) throw res.error;
+      msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      setTimeout(() => { _propCloseEditModal(); renderProspects(); }, 350);
+    } catch (e) {
+      console.error('[Prospects] save:', e);
+      msgEl.textContent = 'Erro: ' + (e.message || e); msgEl.style.color = '#c0392b';
+    }
+  }
+
+  async function _propDeleteFromModal() {
+    const id = document.getElementById('prospect-edit-id').value;
+    if (!id) return;
+    if (!confirm('Excluir este prospect? Toda a timeline associada também será removida.')) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { error } = await sb.from('prospects').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _propCloseEditModal();
+    renderProspects();
+  }
+
+  // ===== Modal: Timeline + interações =====
+  async function _propOpenTimelineModal(id) {
+    const modal = document.getElementById('prospect-timeline-modal');
+    if (!modal) return;
+    _prospectsState.activeId = id;
+    const p = _prospectsCache && _prospectsCache.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('prospect-timeline-title').textContent = p.nome || 'Prospect';
+    const partes = [];
+    if (p.categoria) partes.push(p.categoria);
+    if (p.bairro)    partes.push(p.bairro);
+    document.getElementById('prospect-timeline-subtitle').textContent = partes.join(' · ') || '—';
+
+    const waBtn = document.getElementById('prospect-timeline-wa');
+    const igBtn = document.getElementById('prospect-timeline-ig');
+    const waLink = _propWhatsappLink(p.whatsapp);
+    const igLink = _propInstagramLink(p.instagram);
+    waBtn.style.display = waLink ? '' : 'none';
+    if (waLink) waBtn.onclick = () => window.open(waLink, '_blank', 'noopener');
+    igBtn.style.display = igLink ? '' : 'none';
+    if (igLink) igBtn.onclick = () => window.open(igLink, '_blank', 'noopener');
+
+    // Templates pré-carregados (1 vez)
+    const templates = await _propFetchTemplates();
+    const select = document.getElementById('prospect-timeline-template-select');
+    if (select) {
+      const initial = _propPickTemplate(templates, p.categoria);
+      select.innerHTML = templates.map(t => {
+        const isSel = initial && t.id === initial.id;
+        const labelCat = t.categoria ? ' (' + t.categoria + ')' : ' (global)';
+        return '<option value="' + _propEsc(t.id) + '"' + (isSel ? ' selected' : '') + '>' +
+          _propEsc(t.nome) + labelCat + '</option>';
+      }).join('');
+      _propUpdateMsgPreview(p, templates, select.value);
+      select.onchange = () => _propUpdateMsgPreview(p, templates, select.value);
+    }
+
+    // Botão "Promover a fornecedor": esconde quando já é parceiro
+    // (status=ja_parceiro ou parceria_fechada com snapshot). Evita
+    // dupla promoção e mostra que esse passo já foi resolvido.
+    const promoteBtn = document.getElementById('prospect-timeline-promote');
+    if (promoteBtn) {
+      const alreadyPartner = p.status === 'ja_parceiro' ||
+        (p.status === 'parceria_fechada' && p.promoted_to_fornecedor_at);
+      if (alreadyPartner) {
+        promoteBtn.style.display = 'none';
+      } else {
+        promoteBtn.style.display = '';
+      }
+    }
+    modal.style.display = 'flex';
+
+    // Carrega interações
+    await _propRefreshTimelineList(id);
+  }
+
+  function _propUpdateMsgPreview(prospect, templates, selectedId) {
+    const tpl = templates.find(t => t.id === selectedId) || _propPickTemplate(templates, prospect.categoria);
+    const pre = document.getElementById('prospect-timeline-msg-preview');
+    if (pre) pre.textContent = tpl ? _propRenderTemplate(tpl.conteudo, prospect) : '(sem template configurado)';
+  }
+
+  function _propCloseTimelineModal() {
+    const modal = document.getElementById('prospect-timeline-modal');
+    if (modal) modal.style.display = 'none';
+    _prospectsState.activeId = null;
+  }
+
+  async function _propRefreshTimelineList(prospectId) {
+    const sb = window.supabaseClient;
+    const wrap = document.getElementById('prospect-timeline-list');
+    if (!sb || !wrap) return;
+    const { data, error } = await sb.from('prospect_interactions')
+      .select('*')
+      .eq('prospect_id', prospectId)
+      .order('occurred_at', { ascending: false })
+      .limit(500);
+    if (error) {
+      wrap.innerHTML = '<div style="color:#c0392b;">Erro: ' + _propEsc(error.message) + '</div>';
+      return;
+    }
+    if (!data || !data.length) {
+      wrap.innerHTML = '<div style="color:#888;font-size:.85rem;text-align:center;padding:20px;">Nenhuma interação registrada ainda. Use o formulário acima pra começar.</div>';
+      return;
+    }
+    wrap.innerHTML = data.map(i => {
+      const dt = i.occurred_at ? new Date(i.occurred_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+      const label = PROSPECT_INTERACTION_LABELS[i.tipo] || i.tipo;
+      return '<div style="border-left:3px solid #ddd;padding:8px 12px;background:#fafafa;border-radius:6px;">' +
+        '<div style="font-size:.82rem;font-weight:600;">' + _propEsc(label) + '</div>' +
+        '<div style="font-size:.74rem;color:#888;margin-top:2px;">' + _propEsc(dt) + '</div>' +
+        (i.descricao ? '<div style="font-size:.85rem;margin-top:6px;color:#333;">' + _propEsc(i.descricao) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function _propWireTimelineModal() {
+    const close = document.getElementById('prospect-timeline-close');
+    if (close) close.addEventListener('click', _propCloseTimelineModal);
+
+    const copy = document.getElementById('prospect-timeline-copy-msg');
+    if (copy) copy.addEventListener('click', async () => {
+      const pre = document.getElementById('prospect-timeline-msg-preview');
+      if (!pre) return;
+      try {
+        await navigator.clipboard.writeText(pre.textContent || '');
+        copy.textContent = '✓ Copiado!';
+        setTimeout(() => { copy.textContent = '📋 Copiar mensagem (template)'; }, 2000);
+      } catch (e) {
+        alert('Não consegui copiar pro clipboard. ' + (e && e.message || ''));
+      }
+    });
+
+    const promote = document.getElementById('prospect-timeline-promote');
+    if (promote) promote.addEventListener('click', _propPromoteToFornecedor);
+
+    const addBtn = document.getElementById('prospect-interaction-add');
+    if (addBtn) addBtn.addEventListener('click', _propAddInteraction);
+  }
+
+  async function _propAddInteraction() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const id = _prospectsState.activeId;
+    if (!id) return;
+    const tipo = document.getElementById('prospect-interaction-tipo').value;
+    const descEl = document.getElementById('prospect-interaction-desc');
+    const desc = descEl.value.trim();
+    const { error } = await sb.rpc('log_prospect_interaction', {
+      p_prospect_id: id,
+      p_tipo: tipo,
+      p_descricao: desc || null,
+      p_occurred_at: null,
+    });
+    if (error) { alert('Erro: ' + error.message); return; }
+    descEl.value = '';
+    await _propRefreshTimelineList(id);
+    // Atualiza tabela em background (status pode ter mudado)
+    renderProspects();
+  }
+
+  async function _propPromoteToFornecedor() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const id = _prospectsState.activeId;
+    if (!id) return;
+    if (!confirm('Promover este prospect a fornecedor? Vai criar/atualizar o cadastro em Fornecedores e marcar como parceria fechada.')) return;
+    const { data, error } = await sb.rpc('promote_prospect_to_fornecedor', { p_prospect_id: id });
+    if (error) { alert('Erro: ' + error.message); return; }
+    const row = data && data[0];
+    if (row && row.ok) {
+      alert(row.message || 'Promovido!');
+      _propCloseTimelineModal();
+      // Invalida caches financeiros + bookings (afeta Fornecedores
+      // e qualquer aba que mostre o fornecedor recém-criado).
+      if (typeof invalidateBookings === 'function') {
+        try { invalidateBookings(); } catch (e) { /* ok */ }
+      }
+      renderProspects();
+      // Se a aba Fornecedores está aberta, re-renderiza pra mostrar
+      // o novo parceiro imediatamente (sem esperar o usuário trocar
+      // de aba).
+      if (document.getElementById('panel-fornecedores')?.classList.contains('admin__panel--active')) {
+        if (typeof renderFornecedores === 'function') renderFornecedores();
+      }
+    } else {
+      alert((row && row.message) || 'Falha desconhecida.');
+    }
+  }
+
+  // ===== Modal: Templates =====
+  async function _propOpenTemplatesModal() {
+    _prospectsTemplatesCache = null;             // força refresh
+    const templates = await _propFetchTemplates();
+    const wrap = document.getElementById('prospect-templates-list');
+    const modal = document.getElementById('prospect-templates-modal');
+    if (!wrap || !modal) return;
+    wrap.innerHTML = templates.map(t => _propRenderTemplateCard(t)).join('') ||
+      '<div style="color:#888;text-align:center;padding:20px;">Nenhum template ainda. Clique em "+ Novo template".</div>';
+    modal.style.display = 'flex';
+  }
+
+  function _propRenderTemplateCard(t) {
+    const cat = t.categoria
+      ? '<span style="font-size:.72rem;background:#f4f4f4;padding:2px 8px;border-radius:6px;">' + _propEsc(t.categoria) + '</span>'
+      : '<span style="font-size:.72rem;background:#e6f4ea;color:#1a8a4a;padding:2px 8px;border-radius:6px;">global</span>';
+    const def = t.is_default ? ' <span style="font-size:.7rem;color:#a87a00;font-weight:700;">★ default</span>' : '';
+    return '<div style="border:1px solid #e8e8e8;border-radius:8px;padding:12px;" data-tpl-id="' + _propEsc(t.id) + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">' +
+        '<div><strong>' + _propEsc(t.nome) + '</strong> ' + cat + def + '</div>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<button type="button" data-tpl-action="edit" style="padding:4px 10px;background:#fff;border:1px solid #999;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Editar</button>' +
+          '<button type="button" data-tpl-action="delete" style="padding:4px 10px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Excluir</button>' +
+        '</div>' +
+      '</div>' +
+      '<pre style="margin:0;font-family:inherit;font-size:.82rem;white-space:pre-wrap;color:#444;background:#fafafa;padding:8px;border-radius:4px;">' + _propEsc(t.conteudo) + '</pre>' +
+      '</div>';
+  }
+
+  function _propWireTemplatesModal() {
+    const close = document.getElementById('prospect-templates-close');
+    if (close) close.addEventListener('click', () => {
+      const modal = document.getElementById('prospect-templates-modal');
+      if (modal) modal.style.display = 'none';
+    });
+    const newBtn = document.getElementById('prospect-template-new');
+    if (newBtn) newBtn.addEventListener('click', () => _propEditTemplatePrompt(null));
+    const wrap = document.getElementById('prospect-templates-list');
+    if (wrap) wrap.addEventListener('click', (e) => {
+      const btn = e.target && e.target.closest('button[data-tpl-action]');
+      if (!btn) return;
+      const card = btn.closest('[data-tpl-id]');
+      const tplId = card && card.dataset.tplId;
+      const action = btn.dataset.tplAction;
+      if (action === 'edit')   _propEditTemplatePrompt(tplId);
+      if (action === 'delete') _propDeleteTemplate(tplId);
+    });
+  }
+
+  // Editor "barebones" via prompt — usável e simples. Pra um editor
+  // completo (markdown / preview live), abrimos um issue separado.
+  async function _propEditTemplatePrompt(tplId) {
+    const tpl = tplId ? (_prospectsTemplatesCache || []).find(t => t.id === tplId) : null;
+    const nome = prompt('Nome do template:', tpl ? tpl.nome : '');
+    if (nome == null) return;
+    const categoria = prompt('Categoria (vazio = global):', tpl ? (tpl.categoria || '') : '');
+    if (categoria == null) return;
+    const conteudo = prompt('Conteúdo (use {{nome}}, {{categoria}}, {{bairro}}):', tpl ? tpl.conteudo : '');
+    if (conteudo == null) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const payload = {
+      nome: nome.trim(),
+      categoria: categoria.trim() ? categoria.trim() : null,
+      conteudo: conteudo,
+    };
+    let res;
+    if (tplId) res = await sb.from('prospect_templates').update(payload).eq('id', tplId);
+    else       res = await sb.from('prospect_templates').insert(payload);
+    if (res.error) { alert('Erro: ' + res.error.message); return; }
+    _prospectsTemplatesCache = null;
+    _propOpenTemplatesModal();
+  }
+
+  async function _propDeleteTemplate(tplId) {
+    if (!confirm('Excluir este template?')) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { error } = await sb.from('prospect_templates').delete().eq('id', tplId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _prospectsTemplatesCache = null;
+    _propOpenTemplatesModal();
+  }
+
+  // ===== CSV Import =====
+  // Parser MUITO simples (não trata aspas duplas escapadas — admin
+  // controla o input). Espera headers no formato:
+  // nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes
+  // Linhas com nome vazio são ignoradas. Conflito por nome NÃO é
+  // tratado — duplica se existir; deixa pro admin limpar manualmente.
+  function _propParseCsv(text) {
+    const lines = String(text || '').split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (!lines.length) return [];
+    const split = (line) => {
+      // Suporta vírgula como separador e aspas duplas envolvendo campo.
+      const out = [];
+      let cur = '', inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if (ch === ',' && !inQuotes) { out.push(cur); cur = ''; continue; }
+        cur += ch;
+      }
+      out.push(cur);
+      return out.map(s => s.trim());
+    };
+    const headers = split(lines[0]).map(h => h.toLowerCase().trim());
+    const idx = (key) => headers.indexOf(key);
+    const colNome   = idx('nome');
+    if (colNome < 0) {
+      throw new Error('CSV precisa ter coluna "nome" no header.');
+    }
+    const rows = [];
+    for (let li = 1; li < lines.length; li++) {
+      const cols = split(lines[li]);
+      const get = (key) => { const i = idx(key); return i >= 0 ? (cols[i] || '').trim() : ''; };
+      const nome = (cols[colNome] || '').trim();
+      if (!nome) continue;
+      rows.push({
+        nome,
+        categoria:   get('categoria') || null,
+        instagram:   get('instagram') || null,
+        whatsapp:    get('whatsapp') || null,
+        email:       get('email') || null,
+        site:        get('site') || null,
+        bairro:      get('bairro') || null,
+        cidade:      get('cidade') || 'São Paulo',
+        observacoes: get('observacoes') || get('observação') || null,
+      });
+    }
+    return rows;
+  }
+
+  async function _propHandleCsvImport(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    e.target.value = '';                                // permite re-uso
+    const text = await file.text();
+    let rows;
+    try { rows = _propParseCsv(text); }
+    catch (err) { alert('CSV inválido: ' + err.message); return; }
+    if (!rows.length) { alert('Nenhum prospect encontrado no CSV.'); return; }
+    const sb = window.supabaseClient;
+    if (!sb) return;
+
+    // Pré-carrega snapshot pra dedup local (mais rápido que 1 RPC por linha).
+    // Inclui experiences ativas, fornecedores_metadata e prospects existentes.
+    const ctx = await _propPreloadDedupContext();
+    const idx = ctx ? _propBuildDedupIndex(ctx) : null;
+
+    // Classifica cada linha do CSV em 1 de 3 buckets:
+    //   - novo: nenhum match → insere com status='nao_contatado'
+    //   - ja_parceiro: bate com fornecedor (experience ou metadata) →
+    //     insere com status='ja_parceiro', promoted_supplier_key, promoted_at
+    //   - duplicado: bate com prospect existente → SKIP
+    // Inclui dedup intra-CSV: se 2 linhas do CSV têm mesmo IG/WA/email/etc,
+    // só a primeira entra; as outras viram 'duplicado'.
+    const bucketNovo = [];
+    const bucketJaParceiro = [];
+    const bucketDuplicado = [];
+    const seenName  = new Set();
+    const seenHand  = new Set();
+    const seenPhone = new Set();
+    const seenMail  = new Set();
+    const seenSite  = new Set();
+    const sawSelf = (row) => {
+      const n  = _propNormText(row.nome);
+      const ig = _propNormHandle(row.instagram);
+      const wa = _propNormPhone(row.whatsapp);
+      const em = _propNormEmail(row.email);
+      const st = _propNormSite(row.site);
+      if (n  && seenName.has(n))   return true;
+      if (ig && seenHand.has(ig))  return true;
+      if (wa && seenPhone.has(wa)) return true;
+      if (em && seenMail.has(em))  return true;
+      if (st && seenSite.has(st))  return true;
+      if (n)  seenName.add(n);
+      if (ig) seenHand.add(ig);
+      if (wa) seenPhone.add(wa);
+      if (em) seenMail.add(em);
+      if (st) seenSite.add(st);
+      return false;
+    };
+    const nowIso = new Date().toISOString();
+    rows.forEach(row => {
+      if (sawSelf(row)) { bucketDuplicado.push(row); return; }
+      const m = idx ? _propMatchAgainstIndex(idx, row) : null;
+      if (m && (m.source === 'experience' || m.source === 'fornecedor_metadata')) {
+        bucketJaParceiro.push(Object.assign({}, row, {
+          status: 'ja_parceiro',
+          promoted_supplier_key: m.fornecedor_key,
+          promoted_to_fornecedor_at: nowIso,
+        }));
+      } else if (m && m.source === 'prospect') {
+        bucketDuplicado.push(row);
+      } else {
+        bucketNovo.push(row);
+      }
+    });
+
+    const total = rows.length;
+    const summary =
+      total + ' do CSV:\n' +
+      '  • ' + bucketNovo.length + ' novos\n' +
+      '  • ' + bucketJaParceiro.length + ' marcados como "Já parceiro" (já são fornecedores)\n' +
+      '  • ' + bucketDuplicado.length + ' duplicados ignorados\n\n' +
+      'Confirmar importação?';
+    if (!confirm(summary)) return;
+
+    // Insere em lotes pequenos pra evitar payload grande
+    const toInsert = bucketNovo.concat(bucketJaParceiro);
+    let inserted = 0, errors = 0;
+    const batchSize = 100;
+    for (let i = 0; i < toInsert.length; i += batchSize) {
+      const batch = toInsert.slice(i, i + batchSize);
+      const { error } = await sb.from('prospects').insert(batch);
+      if (error) { console.error('[Prospects] csv import batch error:', error); errors += batch.length; }
+      else       { inserted += batch.length; }
+    }
+    const lines = [
+      'Relatório da importação:',
+      '  ✓ ' + inserted + ' importados (' + bucketNovo.length + ' novos + ' + bucketJaParceiro.length + ' já parceiro)',
+      '  ⊘ ' + bucketDuplicado.length + ' duplicados ignorados',
+    ];
+    if (errors) lines.push('  ✗ ' + errors + ' erros (ver console F12)');
+    alert(lines.join('\n'));
+    renderProspects();
+  }
+
+  // ===== CSV Export =====
+  function _propExportCsv() {
+    const list = _propFiltered(_prospectsCache || []);
+    if (!list.length) { alert('Nenhum prospect pra exportar com os filtros atuais.'); return; }
+    const headers = ['nome','categoria','instagram','whatsapp','email','site','bairro','cidade','status','observacoes','created_at'];
+    const escCell = (v) => {
+      const s = String(v == null ? '' : v);
+      if (/[,"\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+    const lines = [headers.join(',')];
+    list.forEach(p => {
+      lines.push(headers.map(h => escCell(p[h] != null ? p[h] : '')).join(','));
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'prospects-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // =========================================================
@@ -6747,6 +8582,10 @@
   }
 
   // ===== Summary RPC =====
+  // Passa p_sources/p_include_test explicitamente. Default exclui
+  // experiência teste (alinhado com Compras, Fornecedores e Analytics).
+  // Pra incluir teste em uma análise específica, basta passar
+  // filters.includeTest=true (ainda não exposto na UI — flag interna).
   async function _finFetchSummary(filters) {
     const sb = window.supabaseClient;
     if (!sb) return null;
@@ -6755,6 +8594,8 @@
       p_date_to:   _finFromIso(filters.to),
       p_experience: filters.experience || null,
       p_supplier:   filters.supplier || null,
+      p_sources:    null,                          // null = todas as fontes
+      p_include_test: filters.includeTest === true,
     });
     if (error) {
       console.error('[Contabilidade] financial_summary error:', error.message);
@@ -7150,7 +8991,7 @@
       ['fin-card-receita-confirmada','fin-card-receita-pendente','fin-card-gastos-pagos',
        'fin-card-gastos-pendentes','fin-card-lucro','fin-card-repasses-pendentes','fin-card-mes']
         .forEach(id => set(id, 'R$ 0'));
-      set('fin-card-receita-confirmada-sub', '— vendas');
+      set('fin-card-receita-confirmada-sub', '— vagas');
       return;
     }
     set('fin-card-receita-confirmada', _finFmtBRL(s.receita_confirmada_centavos));
@@ -7159,18 +9000,17 @@
     set('fin-card-gastos-pendentes',   _finFmtBRL(s.gastos_pendentes_centavos));
     set('fin-card-lucro',              _finFmtBRL(s.lucro_estimado_centavos));
     set('fin-card-repasses-pendentes', _finFmtBRL(s.repasses_pendentes_centavos));
-    const qtyGift = Array.isArray(ledger)
-      ? ledger.filter(r => r.source === 'giftcard' && r.status === 'pago').length
-      : 0;
-    const totalVendas = (Number(s.qty_bookings_pagos) || 0) +
-                        (Number(s.qty_manual_sales_pagas) || 0) + qtyGift;
+    const qtyGift = Number(s.qty_giftcards_pagos) || 0;
+    // qty_*_pagos do RPC reflete sum(quantidade) — vagas vendidas, não bookings.
+    const totalVagas = (Number(s.qty_bookings_pagos) || 0) +
+                       (Number(s.qty_manual_sales_pagas) || 0) + qtyGift;
     const partes = [
       (s.qty_bookings_pagos || 0) + ' site',
       (s.qty_manual_sales_pagas || 0) + ' manual',
     ];
     if (qtyGift > 0) partes.push(qtyGift + ' gift card' + (qtyGift !== 1 ? 's' : ''));
     set('fin-card-receita-confirmada-sub',
-      totalVendas + ' venda' + (totalVendas !== 1 ? 's' : '') + ' · ' + partes.join(' / '));
+      totalVagas + ' vaga' + (totalVagas !== 1 ? 's' : '') + ' · ' + partes.join(' / '));
     // Cor do lucro
     const lucroEl = document.getElementById('fin-card-lucro');
     if (lucroEl) lucroEl.style.color = (Number(s.lucro_estimado_centavos) || 0) >= 0 ? '#1a8a4a' : '#c0392b';
@@ -7618,6 +9458,8 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      // Gasto afeta lucro estimado em todas as abas via RPC.
+      invalidateBookings();
       setTimeout(() => { _finCloseExpenseModal(); renderContabilidade(); }, 400);
     } catch (e) {
       console.error('[Contabilidade] save expense:', e);
@@ -7631,6 +9473,7 @@
     const sb = window.supabaseClient;
     const { error } = await sb.from('financial_expenses').delete().eq('id', id);
     if (error) { alert('Erro: ' + error.message); return; }
+    invalidateBookings();
     renderContabilidade();
   }
 
@@ -7842,9 +9685,11 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      // Mutação em manual_sales afeta Compras/Fornecedores/Analytics
+      // via RPC. Limpa o cache pra refletir imediatamente.
+      invalidateBookings();
       setTimeout(() => {
         _finCloseManualSaleModal();
-        // Atualiza Contabilidade se aberto, e Compras (cache de bookings não é afetado).
         if (document.getElementById('panel-contabilidade')?.classList.contains('admin__panel--active')) {
           renderContabilidade();
         }
@@ -7878,6 +9723,7 @@
     const sb = window.supabaseClient;
     const { error } = await sb.from('manual_sales').delete().eq('id', id);
     if (error) { alert('Erro: ' + error.message); return; }
+    invalidateBookings();
     if (document.getElementById('panel-contabilidade')?.classList.contains('admin__panel--active')) {
       renderContabilidade();
     }
@@ -7972,13 +9818,15 @@
     //   - experiences.nome via _finExpById (caso o snapshot esteja
     //     vazio em vendas antigas)
     if (expFilter) {
+      // Substring match (consistente com o filtro de bookings novo,
+      // que também é case-insensitive contains). Antes era exact ===.
       const want = String(expFilter).trim().toLowerCase();
       rows = rows.filter(r => {
         const direct = (r.experience_name || '').trim().toLowerCase();
-        if (direct === want) return true;
+        if (direct.includes(want)) return true;
         if (r.experience_id && _finExpById && _finExpById.has(r.experience_id)) {
           const fromExp = (_finExpById.get(r.experience_id).nome || '').trim().toLowerCase();
-          if (fromExp === want) return true;
+          if (fromExp.includes(want)) return true;
         }
         return false;
       });
@@ -8179,6 +10027,4416 @@
       });
     }
   });
+
+  // =============================================================
+  // === SISTEMA OPERACIONAL SEMANAL — Painel + Rotina + Conteúdo
+  // -------------------------------------------------------------
+  // 3 abas novas (Fase 1):
+  //   - Painel semanal: dashboard agregando rotina + conteúdo +
+  //     dados existentes (prospects, bookings)
+  //   - Rotina: cronograma semanal de tarefas com responsável
+  //   - Conteúdo: kanban de produção de conteúdo (7 status)
+  //
+  // Schema: sql/elarah_op_semanal.sql
+  // =============================================================
+
+  // ===== Constantes compartilhadas =====
+  const OP_DAY_NAMES = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const OP_DAY_NAMES_LONG = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  const OP_RESP_LABELS = { voce: 'Você', socia: 'Sócia', ambas: 'Ambas' };
+  const OP_CONTENT_STATUSES = ['ideia', 'roteiro', 'gravado', 'editado', 'agendado', 'postado', 'reaproveitado'];
+  const OP_CONTENT_STATUS_LABELS = {
+    ideia:         '💡 Ideia',
+    roteiro:       '✍️ Roteiro',
+    gravado:       '🎥 Gravado',
+    editado:       '✂️ Editado',
+    agendado:      '📅 Agendado',
+    postado:       '✅ Postado',
+    reaproveitado: '🔁 Reaproveitado',
+  };
+  const OP_OBJ_LABELS = {
+    venda:        'Venda',
+    bastidor:     'Bastidor',
+    branding:     'Branding',
+    prova_social: 'Prova social',
+    lancamento:   'Lançamento',
+    urgencia:     'Urgência',
+    autoridade:   'Autoridade',
+  };
+
+  // ===== Helpers de semana =====
+  function _opStartOfWeek(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const dow = d.getDay();              // 0=dom..6=sab
+    const diff = (dow + 6) % 7;          // dias desde a segunda
+    d.setDate(d.getDate() - diff);
+    return d;
+  }
+  function _opAddDays(date, n) {
+    const d = new Date(date); d.setDate(d.getDate() + n); return d;
+  }
+  function _opIsoDate(date) {
+    // YYYY-MM-DD em fuso local — usado pra week_start (date column)
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+  function _opFmtDateBR(date) {
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+  function _opFmtRange(weekStart) {
+    const end = _opAddDays(weekStart, 4);
+    return _opFmtDateBR(weekStart) + ' a ' + _opFmtDateBR(end);
+  }
+  function _opEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function _opRespBadge(resp) {
+    const cls = 'op-resp-badge op-resp-badge--' + (resp || 'ambas');
+    return '<span class="' + cls + '">' + _opEsc(OP_RESP_LABELS[resp] || resp) + '</span>';
+  }
+
+
+  // =============================================================
+  // === PAINEL SEMANAL ==========================================
+  // =============================================================
+  let _painelState = { weekStart: _opStartOfWeek(new Date()), wired: false };
+
+  async function renderPainelSemanal() {
+    if (!document.getElementById('panel-painel-semanal')) return;
+    _painelWireOnce();
+    await _painelRender();
+  }
+
+  function _painelWireOnce() {
+    if (_painelState.wired) return;
+    _painelState.wired = true;
+    const prev = document.getElementById('painel-prev-week');
+    const next = document.getElementById('painel-next-week');
+    const today = document.getElementById('painel-this-week');
+    const refresh = document.getElementById('painel-refresh');
+    if (prev) prev.addEventListener('click', () => {
+      _painelState.weekStart = _opAddDays(_painelState.weekStart, -7); _painelRender();
+    });
+    if (next) next.addEventListener('click', () => {
+      _painelState.weekStart = _opAddDays(_painelState.weekStart, 7); _painelRender();
+    });
+    if (today) today.addEventListener('click', () => {
+      _painelState.weekStart = _opStartOfWeek(new Date()); _painelRender();
+    });
+    if (refresh) refresh.addEventListener('click', () => _painelRender());
+  }
+
+  async function _painelRender() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const ws = _painelState.weekStart;
+    const wsIso = _opIsoDate(ws);
+    const weekEnd = _opAddDays(ws, 6);
+    const weekEndIso = _opIsoDate(weekEnd);
+    const weekStartTs = ws.toISOString();
+    const weekEndTs = new Date(_opAddDays(ws, 7).getTime() - 1).toISOString();
+
+    document.getElementById('painel-semanal-subtitle').textContent =
+      'Resumo da operação — semana de ' + _opFmtRange(ws);
+
+    // Garante que a semana atual já tem tarefas geradas (template +
+    // experience-based). Idempotente — só insere o que falta.
+    try {
+      await sb.rpc('ensure_routine_week', { p_week_start: wsIso });
+    } catch (e) {
+      console.warn('[Painel] ensure_routine_week falhou:', e && e.message);
+    }
+
+    // Carrega tudo em paralelo. Cada falha vira fallback null/zero.
+    const [tasks, contents, prospects, summary] = await Promise.all([
+      sb.from('routine_tasks')
+        .select('id, week_day, status, week_start')
+        .eq('week_start', wsIso)
+        .is('dismissed_at', null)
+        .then(r => r.data || []),
+      sb.from('content_pieces')
+        .select('id, status, scheduled_at, posted_at, titulo')
+        .then(r => r.data || []),
+      sb.from('prospects')
+        .select('id, status, prospect_interactions(occurred_at)')
+        .in('status', ['mensagem_enviada', 'respondeu', 'reuniao_marcada'])
+        .then(r => r.data || []),
+      typeof fetchFinancialSummary === 'function'
+        ? fetchFinancialSummary({
+            from: ws,
+            to: new Date(_opAddDays(ws, 7).getTime() - 1),
+            sources: ['booking', 'manual_sale', 'giftcard'],
+            includeTest: false,
+          })
+        : Promise.resolve(null),
+    ]);
+
+    // ===== Cards =====
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayDow = (today.getDay() + 6) % 7;
+    const isThisWeek = wsIso === _opIsoDate(_opStartOfWeek(new Date()));
+    const tasksToday = isThisWeek ? tasks.filter(t => t.week_day === todayDow) : [];
+    const tasksTodayDone = tasksToday.filter(t => t.status === 'concluido').length;
+    const tasksWeekDone = tasks.filter(t => t.status === 'concluido').length;
+
+    // Atrasadas: tarefas semanas anteriores ainda não-concluídas
+    // (filtra soft-deleted via dismissed_at IS NULL)
+    const { data: atrasadas } = await sb.from('routine_tasks')
+      .select('id', { count: 'exact', head: true })
+      .lt('week_start', wsIso)
+      .neq('status', 'concluido')
+      .is('dismissed_at', null);
+    const qtyAtrasadas = atrasadas == null
+      ? (await sb.from('routine_tasks').select('id').lt('week_start', wsIso).neq('status','concluido').is('dismissed_at', null).then(r => (r.data||[]).length))
+      : atrasadas;
+
+    // Conteúdos
+    const contentScheduled3d = contents.filter(c =>
+      c.status === 'agendado' && c.scheduled_at &&
+      new Date(c.scheduled_at) >= new Date() &&
+      new Date(c.scheduled_at) <= _opAddDays(new Date(), 3)
+    );
+    const contentPostedWeek = contents.filter(c =>
+      (c.status === 'postado' || c.status === 'reaproveitado') &&
+      c.posted_at && c.posted_at >= weekStartTs && c.posted_at <= weekEndTs
+    );
+    const contentTodo = contents.filter(c =>
+      c.status !== 'postado' && c.status !== 'reaproveitado'
+    );
+
+    // Prospects parados (5+ dias sem interação)
+    const fiveDaysAgo = _opAddDays(new Date(), -5).getTime();
+    const prospectsParados = prospects.filter(p => {
+      const last = (p.prospect_interactions || [])
+        .reduce((mx, i) => Math.max(mx, i.occurred_at ? new Date(i.occurred_at).getTime() : 0), 0);
+      return !last || last < fiveDaysAgo;
+    }).length;
+
+    // Reuniões marcadas
+    const reunMarcadas = prospects.filter(p => p.status === 'reuniao_marcada').length;
+
+    // Vagas vendidas semana
+    const vagasVendidas = summary
+      ? (Number(summary.qty_bookings_pagos) || 0) +
+        (Number(summary.qty_manual_sales_pagas) || 0) +
+        (Number(summary.qty_giftcards_pagos) || 0)
+      : 0;
+    const receitaSemana = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
+    const fmtBRL = (c) => 'R$ ' + (c / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+    const cards = [
+      // Card "Tarefas hoje" removido a pedido da admin. Linhas tasksToday/
+      // tasksTodayDone ainda existem acima mas não são exibidas. Mantidas
+      // intactas pra não afetar nenhum outro consumidor das variáveis.
+      { label: 'Tarefas semana',         value: tasksWeekDone + ' / ' + tasks.length,
+        sub: 'concluídas', target: 'rotina' },
+      { label: 'Atrasadas',              value: String(qtyAtrasadas || 0),
+        sub: 'semanas anteriores', alert: (qtyAtrasadas || 0) > 0, target: 'rotina' },
+      { label: 'Conteúdos agendados 3d', value: String(contentScheduled3d.length),
+        sub: 'próximos 3 dias', target: 'conteudo' },
+      { label: 'Postados na semana',     value: String(contentPostedWeek.length),
+        sub: 'feed + stories', good: contentPostedWeek.length >= 5, target: 'conteudo' },
+      { label: 'Conteúdos por fazer',    value: String(contentTodo.length),
+        sub: 'todo o pipeline', target: 'conteudo' },
+      { label: 'Prospects parados 5+d',  value: String(prospectsParados),
+        sub: 'precisa follow-up', alert: prospectsParados > 0, target: 'prospects' },
+      { label: 'Reuniões marcadas',      value: String(reunMarcadas),
+        sub: 'no CRM', target: 'prospects' },
+      { label: 'Vagas vendidas semana',  value: String(vagasVendidas),
+        sub: fmtBRL(receitaSemana), good: vagasVendidas > 0, target: 'purchases' },
+    ];
+
+    const grid = document.getElementById('painel-semanal-grid');
+    if (grid) {
+      grid.innerHTML = cards.map(c => {
+        const cls = 'op-card' +
+          (c.alert ? ' op-card--alert' : '') +
+          (c.good  ? ' op-card--good'  : '');
+        return '<div class="' + cls + '" data-target="' + c.target + '">' +
+          '<div class="op-card-label">' + _opEsc(c.label) + '</div>' +
+          '<div class="op-card-value">' + _opEsc(c.value) + '</div>' +
+          '<div class="op-card-sub">' + _opEsc(c.sub) + '</div>' +
+        '</div>';
+      }).join('');
+      grid.querySelectorAll('.op-card').forEach(el => {
+        el.addEventListener('click', () => {
+          const target = el.dataset.target;
+          if (target) _opGoToPanel(target);
+        });
+      });
+    }
+
+    // ===== Pendências (lista) =====
+    const pendencias = [];
+    if ((qtyAtrasadas || 0) > 0) pendencias.push('• ' + qtyAtrasadas + ' tarefa' + (qtyAtrasadas !== 1 ? 's' : '') + ' atrasada' + (qtyAtrasadas !== 1 ? 's' : '') + ' de semanas anteriores');
+    if (prospectsParados > 0) pendencias.push('• ' + prospectsParados + ' prospect' + (prospectsParados !== 1 ? 's' : '') + ' sem follow-up há 5+ dias');
+    if (contentScheduled3d.length > 0) pendencias.push('• ' + contentScheduled3d.length + ' conteúdo' + (contentScheduled3d.length !== 1 ? 's' : '') + ' agendado' + (contentScheduled3d.length !== 1 ? 's' : '') + ' pra próximos 3 dias');
+    if (reunMarcadas > 0) pendencias.push('• ' + reunMarcadas + ' reunião' + (reunMarcadas !== 1 ? 'ões' : '') + ' marcada' + (reunMarcadas !== 1 ? 's' : '') + ' no CRM');
+    const wrap = document.getElementById('painel-pendencias');
+    const countEl = document.getElementById('painel-pendencias-count');
+    if (countEl) countEl.textContent = pendencias.length + ' item' + (pendencias.length !== 1 ? 's' : '');
+    if (wrap) {
+      wrap.innerHTML = pendencias.length
+        ? pendencias.join('<br>')
+        : '<em style="color:#888;">Tudo em ordem por aqui — bom trabalho!</em>';
+    }
+  }
+
+  function _opGoToPanel(panelId) {
+    const btn = document.querySelector('button.admin__nav-item[data-panel="' + panelId + '"]');
+    if (btn) btn.click();
+  }
+
+
+  // =============================================================
+  // === ROTINA ==================================================
+  // =============================================================
+  let _rotinaState = { weekStart: _opStartOfWeek(new Date()), wired: false, tasks: [] };
+
+  async function renderRotina() {
+    if (!document.getElementById('panel-rotina')) return;
+    _rotinaWireOnce();
+    await _rotinaLoadAndRender();
+  }
+
+  function _rotinaWireOnce() {
+    if (_rotinaState.wired) return;
+    _rotinaState.wired = true;
+    const prev = document.getElementById('rotina-prev-week');
+    const next = document.getElementById('rotina-next-week');
+    const today = document.getElementById('rotina-this-week');
+    const tplBtn = document.getElementById('rotina-templates-btn');
+    if (prev) prev.addEventListener('click', () => {
+      _rotinaState.weekStart = _opAddDays(_rotinaState.weekStart, -7); _rotinaLoadAndRender();
+    });
+    if (next) next.addEventListener('click', () => {
+      _rotinaState.weekStart = _opAddDays(_rotinaState.weekStart, 7); _rotinaLoadAndRender();
+    });
+    if (today) today.addEventListener('click', () => {
+      _rotinaState.weekStart = _opStartOfWeek(new Date()); _rotinaLoadAndRender();
+    });
+    if (tplBtn) tplBtn.addEventListener('click', () => _rotinaOpenTemplatesModal());
+    _rotinaWireTaskModal();
+    _rotinaWireTemplatesModal();
+  }
+
+  async function _rotinaLoadAndRender() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const wsIso = _opIsoDate(_rotinaState.weekStart);
+
+    // Garante que a semana tem tasks (gera do template se for a primeira visita)
+    try {
+      await sb.rpc('ensure_routine_week', { p_week_start: wsIso });
+    } catch (e) {
+      console.warn('[Rotina] ensure_routine_week falhou:', e && e.message);
+    }
+
+    const { data, error } = await sb.from('routine_tasks')
+      .select('*')
+      .eq('week_start', wsIso)
+      .is('dismissed_at', null)              // soft delete: filtra excluídas
+      .order('week_day', { ascending: true })
+      .order('ordem', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error('[Rotina] load error:', error.message);
+      return;
+    }
+    _rotinaState.tasks = data || [];
+    _rotinaRenderGrid();
+    document.getElementById('rotina-subtitle').textContent =
+      'Semana de ' + _opFmtRange(_rotinaState.weekStart) + ' — clique numa tarefa pra editar, arraste pra mover de dia';
+    // Carrega observações da semana e do mês em paralelo. Não trava
+    // se falhar (tabela ausente, RLS, etc.).
+    _rotinaLoadNotesForCurrentWeek().catch(() => {});
+  }
+
+  function _rotinaRenderGrid() {
+    const grid = document.getElementById('rotina-grid');
+    if (!grid) return;
+    const tasksByDay = {};
+    for (let i = 0; i < 7; i++) tasksByDay[i] = [];
+    _rotinaState.tasks.forEach(t => {
+      if (t.week_day >= 0 && t.week_day <= 6) tasksByDay[t.week_day].push(t);
+    });
+
+    const weekStart = _rotinaState.weekStart;
+    const colsHtml = [];
+    for (let day = 0; day < 7; day++) {
+      const date = _opAddDays(weekStart, day);
+      const tasks = tasksByDay[day];
+      const isWeekend = day >= 5;
+      const taskRows = tasks.map(t => _rotinaTaskRow(t)).join('');
+      colsHtml.push(
+        '<div class="op-day-col' + (isWeekend ? ' op-day-col--weekend' : '') + '" data-day="' + day + '">' +
+          '<div class="op-day-col__header">' +
+            '<div>' +
+              '<div class="op-day-col__label">' + OP_DAY_NAMES[day] + '</div>' +
+              '<div class="op-day-col__date">' + _opFmtDateBR(date) + '</div>' +
+            '</div>' +
+            '<button type="button" class="op-add-task" data-day="' + day + '" ' +
+              'style="background:transparent;border:1px dashed #aaa;color:#666;border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:.8rem;font-family:inherit;padding:0;" ' +
+              'title="Adicionar tarefa">+</button>' +
+          '</div>' +
+          '<div class="op-day-col__tasks" data-drop-day="' + day + '">' +
+            (taskRows || '<div style="font-size:.75rem;color:#bbb;text-align:center;padding:8px 0;">Sem tarefas</div>') +
+          '</div>' +
+        '</div>'
+      );
+    }
+    grid.innerHTML = colsHtml.join('');
+
+    // Wire dos checkboxes (toggle status), clicks (editar) e DRAG & DROP
+    grid.querySelectorAll('[data-task-id]').forEach(el => {
+      const taskId = el.dataset.taskId;
+      const toggle = el.querySelector('.op-task-check');
+      if (toggle) {
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          _rotinaToggleStatus(taskId);
+        });
+      }
+      el.addEventListener('click', (e) => {
+        // Se acabou de arrastar, não abre modal (evita modal ao soltar)
+        if (el.dataset.justDragged === '1') {
+          el.dataset.justDragged = '0';
+          return;
+        }
+        _rotinaOpenTaskModal(taskId);
+      });
+
+      // ===== Drag and drop nativo HTML5 =====
+      // Em mobile (touch), drag não dispara — user usa modal pra
+      // mudar dia. Em desktop, arrasta pra outra coluna.
+      el.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/task-id', taskId);
+        e.dataTransfer.effectAllowed = 'move';
+        el.style.opacity = '0.4';
+      });
+      el.addEventListener('dragend', () => {
+        el.style.opacity = '';
+        el.dataset.justDragged = '1';
+        // limpa o flag depois de 200ms (após o click event passar)
+        setTimeout(() => { el.dataset.justDragged = '0'; }, 200);
+      });
+    });
+    grid.querySelectorAll('.op-add-task').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const day = Number(btn.dataset.day);
+        _rotinaOpenTaskModal(null, day);
+      });
+    });
+
+    // Wire dos drop targets (área de tasks de cada coluna)
+    grid.querySelectorAll('[data-drop-day]').forEach(zone => {
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();                  // permite drop
+        e.dataTransfer.dropEffect = 'move';
+        zone.style.background = 'rgba(43, 94, 63, 0.08)';
+      });
+      zone.addEventListener('dragleave', () => {
+        zone.style.background = '';
+      });
+      zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        zone.style.background = '';
+        const taskId = e.dataTransfer.getData('text/task-id');
+        if (!taskId) return;
+        const newDay = Number(zone.dataset.dropDay);
+        const t = _rotinaState.tasks.find(x => x.id === taskId);
+        if (!t || t.week_day === newDay) return;   // mesmo dia, no-op
+        await _rotinaMoveTaskToDay(taskId, newDay);
+      });
+    });
+  }
+
+  // Move tarefa pra outro dia da semana atual.
+  // Otimista: atualiza state local + re-render, depois persiste no DB.
+  // Reverte se UPDATE falhar.
+  async function _rotinaMoveTaskToDay(taskId, newDay) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const t = _rotinaState.tasks.find(x => x.id === taskId);
+    if (!t) return;
+    const prevDay = t.week_day;
+    t.week_day = newDay;
+    _rotinaRenderGrid();
+    const { error } = await sb.from('routine_tasks')
+      .update({ week_day: newDay }).eq('id', taskId);
+    if (error) {
+      console.error('[Rotina] move error:', error.message);
+      t.week_day = prevDay;
+      _rotinaRenderGrid();
+      alert('Não consegui mover: ' + error.message);
+    }
+  }
+
+  function _rotinaTaskRow(t) {
+    const done = t.status === 'concluido';
+    const cls = 'op-task' + (done ? ' op-task--done' : '');
+    // Tarefas geradas a partir de experiência ganham um marcador
+    // visual sutil (kind='experience'). Title já vem com emoji do tipo.
+    const isExp = t.kind === 'experience';
+    const expBadge = isExp
+      ? '<span style="font-size:.62rem;background:#fff4d6;color:#a87a00;padding:1px 6px;border-radius:4px;font-weight:700;letter-spacing:.02em;">★ EXPERIÊNCIA</span>'
+      : '';
+    return '<div class="' + cls + (isExp ? ' op-task--exp' : '') +
+      '" draggable="true" data-task-id="' + _opEsc(t.id) +
+      '" data-current-day="' + t.week_day + '">' +
+      '<input type="checkbox" class="op-task-check"' + (done ? ' checked' : '') + '>' +
+      '<div style="flex:1;">' +
+        '<div class="op-task-title">' + _opEsc(t.titulo) + '</div>' +
+        '<div class="op-task-meta">' + _opRespBadge(t.responsavel) +
+          (isExp ? expBadge : '') +
+          (t.status === 'em_andamento' ? '<span style="color:#a87a00;">em andamento</span>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  async function _rotinaToggleStatus(taskId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const t = _rotinaState.tasks.find(x => x.id === taskId);
+    if (!t) return;
+    const newStatus = t.status === 'concluido' ? 'pendente' : 'concluido';
+    const completedAt = newStatus === 'concluido' ? new Date().toISOString() : null;
+    // Otimista: atualiza local e re-renderiza
+    t.status = newStatus; t.completed_at = completedAt;
+    _rotinaRenderGrid();
+    const { error } = await sb.from('routine_tasks')
+      .update({ status: newStatus, completed_at: completedAt })
+      .eq('id', taskId);
+    if (error) {
+      console.error('[Rotina] toggle error:', error.message);
+      // Reverte se falhou
+      t.status = newStatus === 'concluido' ? 'pendente' : 'concluido';
+      _rotinaRenderGrid();
+      alert('Erro ao salvar: ' + error.message);
+    }
+  }
+
+  // ===== Modal: editar/criar tarefa =====
+  function _rotinaOpenTaskModal(taskId, defaultDay) {
+    const modal = document.getElementById('rotina-task-modal');
+    if (!modal) return;
+    const t = taskId ? _rotinaState.tasks.find(x => x.id === taskId) : null;
+    document.getElementById('rotina-task-modal-title').textContent = t ? 'Editar tarefa' : 'Nova tarefa';
+    document.getElementById('rotina-task-id').value = t ? t.id : '';
+    document.getElementById('rotina-task-week-start').value = _opIsoDate(_rotinaState.weekStart);
+    document.getElementById('rotina-task-titulo').value = t ? (t.titulo || '') : '';
+    document.getElementById('rotina-task-week-day').value = String(t ? t.week_day : (defaultDay != null ? defaultDay : 0));
+    document.getElementById('rotina-task-responsavel').value = t ? (t.responsavel || 'ambas') : 'ambas';
+    document.getElementById('rotina-task-status').value = t ? (t.status || 'pendente') : 'pendente';
+    document.getElementById('rotina-task-notas').value = t ? (t.notas || '') : '';
+    document.getElementById('rotina-task-msg').textContent = '';
+    document.getElementById('rotina-task-delete').style.display = t ? '' : 'none';
+    document.getElementById('rotina-task-duplicate').style.display = t ? '' : 'none';
+    // Checkbox "Repetir toda semana":
+    //  - Em CRIAÇÃO: aparece, desmarcado
+    //  - Em EDIÇÃO de tarefa pontual (kind='manual'): aparece, desmarcado
+    //    (marcar + salvar promove a tarefa pra recorrente)
+    //  - Em EDIÇÃO de tarefa template/experience: esconde (já é recorrente
+    //    OU vinculada a experiência — não fazem sentido aqui).
+    const recWrap = document.getElementById('rotina-task-recorrente-wrap');
+    const recCheck = document.getElementById('rotina-task-recorrente');
+    if (recWrap && recCheck) {
+      const isPontualOrNew = !t || t.kind === 'manual';
+      recWrap.style.display = isPontualOrNew ? '' : 'none';
+      recCheck.checked = false;
+    }
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('rotina-task-titulo').focus(), 50);
+  }
+  function _rotinaCloseTaskModal() {
+    const m = document.getElementById('rotina-task-modal'); if (m) m.style.display = 'none';
+  }
+  function _rotinaWireTaskModal() {
+    const cancel = document.getElementById('rotina-task-cancel');
+    const save = document.getElementById('rotina-task-save');
+    const del = document.getElementById('rotina-task-delete');
+    const dup = document.getElementById('rotina-task-duplicate');
+    if (cancel) cancel.addEventListener('click', _rotinaCloseTaskModal);
+    if (save) save.addEventListener('click', _rotinaSaveTask);
+    if (del) del.addEventListener('click', _rotinaDeleteTask);
+    if (dup) dup.addEventListener('click', _rotinaDuplicateTask);
+  }
+  // Duplica a tarefa atual: cria uma cópia com kind='manual',
+  // template_id/experience_id zerados (nova tarefa, sem vínculo)
+  // e ordem +1. Útil pra criar variações rápidas.
+  async function _rotinaDuplicateTask() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const id = document.getElementById('rotina-task-id').value;
+    if (!id) return;
+    const t = _rotinaState.tasks.find(x => x.id === id);
+    if (!t) return;
+    const payload = {
+      week_start: t.week_start,
+      week_day: t.week_day,
+      titulo: t.titulo + ' (cópia)',
+      responsavel: t.responsavel,
+      status: 'pendente',
+      notas: t.notas,
+      ordem: (t.ordem || 0) + 1,
+      kind: 'manual',          // cópia vira manual mesmo se original era de exp/template
+    };
+    const { error } = await sb.from('routine_tasks').insert(payload);
+    if (error) { alert('Erro ao duplicar: ' + error.message); return; }
+    _rotinaCloseTaskModal();
+    _rotinaLoadAndRender();
+  }
+  async function _rotinaSaveTask() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msg = document.getElementById('rotina-task-msg');
+    const id = document.getElementById('rotina-task-id').value || null;
+    const titulo = document.getElementById('rotina-task-titulo').value.trim();
+    if (!titulo) { msg.textContent = 'Título obrigatório.'; msg.style.color = '#c0392b'; return; }
+    const payload = {
+      week_start: document.getElementById('rotina-task-week-start').value,
+      week_day: Number(document.getElementById('rotina-task-week-day').value),
+      titulo,
+      responsavel: document.getElementById('rotina-task-responsavel').value,
+      status: document.getElementById('rotina-task-status').value,
+      notas: document.getElementById('rotina-task-notas').value.trim() || null,
+    };
+    if (payload.status === 'concluido') payload.completed_at = new Date().toISOString();
+    // Checkbox "Repetir toda semana" — vale tanto em criação quanto
+    // em edição de tarefa pontual. Marcado: cria/garante um template
+    // recorrente e linka a task.
+    const recCheck = document.getElementById('rotina-task-recorrente');
+    const isRecurring = recCheck && recCheck.checked;
+
+    msg.textContent = 'Salvando…'; msg.style.color = '#666';
+
+    // Helper: cria um template novo com próxima ordem disponível.
+    async function _criarTemplate(weekDay, titulo, responsavel) {
+      const { data: maxRow } = await sb.from('routine_templates')
+        .select('ordem')
+        .eq('week_day', weekDay)
+        .eq('is_active', true)
+        .order('ordem', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextOrdem = (maxRow && Number(maxRow.ordem)) ? Number(maxRow.ordem) + 10 : 10;
+      const tplRes = await sb.from('routine_templates')
+        .insert({
+          week_day: weekDay,
+          titulo,
+          responsavel,
+          ordem: nextOrdem,
+          is_active: true,
+        })
+        .select('id')
+        .single();
+      return { tplRes, nextOrdem };
+    }
+
+    let res;
+    if (id) {
+      // EDIÇÃO. Se checkbox marcado → promove tarefa pontual a recorrente.
+      const existing = _rotinaState.tasks.find(x => x.id === id);
+      const wasManual = !existing || existing.kind === 'manual';
+      if (isRecurring && wasManual) {
+        const { tplRes, nextOrdem } = await _criarTemplate(payload.week_day, payload.titulo, payload.responsavel);
+        if (tplRes.error) { msg.textContent = 'Erro ao criar template: ' + tplRes.error.message; msg.style.color = '#c0392b'; return; }
+        payload.template_id = tplRes.data.id;
+        payload.kind = 'template';
+        payload.ordem = nextOrdem;
+      }
+      res = await sb.from('routine_tasks').update(payload).eq('id', id);
+    } else {
+      // CRIAÇÃO. Se checkbox marcado, cria template antes da task.
+      if (isRecurring) {
+        const { tplRes, nextOrdem } = await _criarTemplate(payload.week_day, payload.titulo, payload.responsavel);
+        if (tplRes.error) { msg.textContent = 'Erro ao criar template: ' + tplRes.error.message; msg.style.color = '#c0392b'; return; }
+        payload.template_id = tplRes.data.id;
+        payload.kind = 'template';
+        payload.ordem = nextOrdem;
+      }
+      res = await sb.from('routine_tasks').insert(payload);
+    }
+    if (res.error) { msg.textContent = 'Erro: ' + res.error.message; msg.style.color = '#c0392b'; return; }
+    _rotinaCloseTaskModal();
+    _rotinaLoadAndRender();
+  }
+  async function _rotinaDeleteTask() {
+    const id = document.getElementById('rotina-task-id').value;
+    if (!id) return;
+    if (!confirm('Excluir esta tarefa? (Ela some da rotina dessa semana — próximas semanas continuam normalmente.)')) return;
+    const sb = window.supabaseClient;
+    // Soft delete: marca dismissed_at. Hard delete causaria a tarefa
+    // ser RE-INSERIDA pelo ensure_routine_week na próxima carga
+    // (template ainda ativo, week_start vazia). Com dismissed_at, a row
+    // continua existindo, a unique constraint impede re-insert e a UI
+    // filtra dismissed_at IS NOT NULL.
+    const { error } = await sb.from('routine_tasks')
+      .update({ dismissed_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _rotinaCloseTaskModal();
+    _rotinaLoadAndRender();
+  }
+
+  // ===== Modal: gerenciar templates =====
+  async function _rotinaOpenTemplatesModal() {
+    const modal = document.getElementById('rotina-templates-modal');
+    if (!modal) return;
+    const sb = window.supabaseClient;
+    const { data, error } = await sb.from('routine_templates')
+      .select('*')
+      .order('week_day', { ascending: true })
+      .order('ordem', { ascending: true });
+    if (error) { alert('Erro: ' + error.message); return; }
+    const list = document.getElementById('rotina-templates-list');
+    list.innerHTML = (data || []).map(t => _rotinaTemplateRow(t)).join('') ||
+      '<div style="color:#888;text-align:center;padding:20px;">Nenhum template ainda.</div>';
+    list.querySelectorAll('button[data-tpl-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.tplAction;
+        const tplId = btn.closest('[data-tpl-id]').dataset.tplId;
+        if (action === 'edit')   _rotinaEditTemplatePrompt(tplId, data);
+        if (action === 'delete') _rotinaDeleteTemplate(tplId);
+        if (action === 'toggle') _rotinaToggleTemplate(tplId, data);
+      });
+    });
+    modal.style.display = 'flex';
+  }
+  function _rotinaTemplateRow(t) {
+    const dia = OP_DAY_NAMES_LONG[t.week_day] || ('Dia ' + t.week_day);
+    const off = t.is_active ? '' : ' (desativado)';
+    const opacity = t.is_active ? '' : 'opacity:.55;';
+    return '<div data-tpl-id="' + _opEsc(t.id) + '" style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid #eee;border-radius:6px;align-items:center;' + opacity + '">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:.85rem;font-weight:600;color:#222;">' + _opEsc(t.titulo) + off + '</div>' +
+        '<div style="font-size:.7rem;color:#888;margin-top:2px;">' + dia + ' · ' + _opEsc(OP_RESP_LABELS[t.responsavel] || t.responsavel) + ' · ordem ' + t.ordem + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px;">' +
+        '<button type="button" data-tpl-action="toggle" style="padding:4px 8px;background:#fff;border:1px solid #999;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:inherit;">' + (t.is_active ? 'Desativar' : 'Ativar') + '</button>' +
+        '<button type="button" data-tpl-action="edit" style="padding:4px 8px;background:#fff;border:1px solid #999;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:inherit;">Editar</button>' +
+        '<button type="button" data-tpl-action="delete" style="padding:4px 8px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:inherit;">Excluir</button>' +
+      '</div>' +
+    '</div>';
+  }
+  function _rotinaWireTemplatesModal() {
+    const close = document.getElementById('rotina-templates-close');
+    const newBtn = document.getElementById('rotina-template-new');
+    if (close) close.addEventListener('click', () => {
+      const m = document.getElementById('rotina-templates-modal'); if (m) m.style.display = 'none';
+    });
+    if (newBtn) newBtn.addEventListener('click', () => _rotinaEditTemplatePrompt(null, null));
+  }
+  async function _rotinaEditTemplatePrompt(tplId, allTpls) {
+    const tpl = tplId && allTpls ? allTpls.find(x => x.id === tplId) : null;
+    const titulo = prompt('Título da tarefa:', tpl ? tpl.titulo : '');
+    if (titulo == null || !titulo.trim()) return;
+    const dayStr = prompt('Dia da semana (0=Seg, 1=Ter, 2=Qua, 3=Qui, 4=Sex):', tpl ? tpl.week_day : '0');
+    if (dayStr == null) return;
+    const day = Number(dayStr);
+    if (!(day >= 0 && day <= 6)) { alert('Dia inválido'); return; }
+    const resp = prompt('Responsável (voce / socia / ambas):', tpl ? tpl.responsavel : 'ambas');
+    if (resp == null) return;
+    if (!['voce','socia','ambas'].includes(resp)) { alert('Responsável inválido'); return; }
+    const sb = window.supabaseClient;
+    const payload = { titulo: titulo.trim(), week_day: day, responsavel: resp };
+    let res;
+    if (tplId) res = await sb.from('routine_templates').update(payload).eq('id', tplId);
+    else       res = await sb.from('routine_templates').insert(payload);
+    if (res.error) { alert('Erro: ' + res.error.message); return; }
+    _rotinaOpenTemplatesModal();
+  }
+  async function _rotinaDeleteTemplate(tplId) {
+    if (!confirm('Excluir este template? Não afeta semanas já criadas.')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('routine_templates').delete().eq('id', tplId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _rotinaOpenTemplatesModal();
+  }
+  async function _rotinaToggleTemplate(tplId, allTpls) {
+    const tpl = allTpls.find(x => x.id === tplId);
+    if (!tpl) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('routine_templates')
+      .update({ is_active: !tpl.is_active }).eq('id', tplId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _rotinaOpenTemplatesModal();
+  }
+
+
+  // =============================================================
+  // === ROTINA: OBSERVAÇÕES (notas livres semana/mês) ==========
+  // =============================================================
+  // Estado: scope ativo + cache da nota atual (id + last save).
+  let _notasState = {
+    scope: 'semana',      // 'semana' | 'mes'
+    saveTimer: null,
+    wired: false,
+    lastSavedAt: null,
+  };
+
+  // Helpers de período:
+  //   semana → period_anchor = segunda-feira da semana
+  //   mes    → period_anchor = primeiro dia do mês corrente
+  function _notasAnchorFor(scope, weekStart) {
+    if (scope === 'mes') {
+      const d = new Date(weekStart);
+      d.setDate(1);
+      return _opIsoDate(d);
+    }
+    return _opIsoDate(weekStart);
+  }
+  function _notasFmtSavedAt(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return 'Salvo ' + d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
+  function _rotinaWireNotesOnce() {
+    if (_notasState.wired) return;
+    _notasState.wired = true;
+    const tabSemana = document.getElementById('rotina-notas-tab-semana');
+    const tabMes    = document.getElementById('rotina-notas-tab-mes');
+    const ta        = document.getElementById('rotina-notas-textarea');
+
+    if (tabSemana) tabSemana.addEventListener('click', () => _rotinaSetNotesScope('semana'));
+    if (tabMes)    tabMes.addEventListener('click',    () => _rotinaSetNotesScope('mes'));
+
+    if (ta) {
+      // Auto-save com debounce 800ms enquanto digita.
+      ta.addEventListener('input', () => {
+        if (_notasState.saveTimer) clearTimeout(_notasState.saveTimer);
+        const status = document.getElementById('rotina-notas-status');
+        if (status) { status.textContent = 'Salvando…'; status.style.color = '#a87a00'; }
+        _notasState.saveTimer = setTimeout(() => _rotinaSaveNotes(), 800);
+      });
+      // Se sair do campo, salva imediatamente.
+      ta.addEventListener('blur', () => {
+        if (_notasState.saveTimer) { clearTimeout(_notasState.saveTimer); _notasState.saveTimer = null; }
+        _rotinaSaveNotes();
+      });
+    }
+  }
+
+  function _rotinaSetNotesScope(scope) {
+    _notasState.scope = scope;
+    // Atualiza visual dos toggle buttons
+    const ts = document.getElementById('rotina-notas-tab-semana');
+    const tm = document.getElementById('rotina-notas-tab-mes');
+    if (ts && tm) {
+      ts.style.background = scope === 'semana' ? '#2c5e3f' : '#fff';
+      ts.style.color      = scope === 'semana' ? '#fff'    : '#444';
+      ts.style.fontWeight = scope === 'semana' ? '600'     : '400';
+      tm.style.background = scope === 'mes'    ? '#2c5e3f' : '#fff';
+      tm.style.color      = scope === 'mes'    ? '#fff'    : '#444';
+      tm.style.fontWeight = scope === 'mes'    ? '600'     : '400';
+    }
+    // Atualiza placeholder pra contexto correto
+    const ta = document.getElementById('rotina-notas-textarea');
+    if (ta) {
+      ta.placeholder = scope === 'mes'
+        ? 'Anotações do mês — visão estratégica, aprendizados, padrões, ajustes maiores…'
+        : 'Escreva o que importa pra essa semana — aprendizados, ajustes, ideias de conteúdo, prioridades, observações de fornecedores ou experiências…';
+    }
+    _rotinaLoadNotesForCurrentWeek();
+  }
+
+  async function _rotinaLoadNotesForCurrentWeek() {
+    _rotinaWireNotesOnce();
+    const sb = window.supabaseClient;
+    const ta = document.getElementById('rotina-notas-textarea');
+    const status = document.getElementById('rotina-notas-status');
+    if (!sb || !ta) return;
+    const anchor = _notasAnchorFor(_notasState.scope, _rotinaState.weekStart);
+    const { data, error } = await sb.from('routine_notes')
+      .select('id, conteudo, updated_at')
+      .eq('scope', _notasState.scope)
+      .eq('period_anchor', anchor)
+      .maybeSingle();
+    if (error && !String(error.message || '').includes('routine_notes')) {
+      // Tabela presente mas erro real — log e ignora
+      console.warn('[Rotina/notas] load:', error.message);
+    }
+    if (data) {
+      ta.value = data.conteudo || '';
+      _notasState.lastSavedAt = data.updated_at;
+      if (status) { status.textContent = _notasFmtSavedAt(data.updated_at); status.style.color = '#888'; }
+    } else {
+      ta.value = '';
+      _notasState.lastSavedAt = null;
+      if (status) { status.textContent = '—'; status.style.color = '#888'; }
+    }
+  }
+
+  async function _rotinaSaveNotes() {
+    const sb = window.supabaseClient;
+    const ta = document.getElementById('rotina-notas-textarea');
+    const status = document.getElementById('rotina-notas-status');
+    if (!sb || !ta) return;
+    const conteudo = ta.value.trim() || null;
+    const anchor = _notasAnchorFor(_notasState.scope, _rotinaState.weekStart);
+    // UPSERT: insert ou update conforme unique (scope, period_anchor)
+    const { data, error } = await sb.from('routine_notes')
+      .upsert(
+        { scope: _notasState.scope, period_anchor: anchor, conteudo: conteudo },
+        { onConflict: 'scope,period_anchor' }
+      )
+      .select('updated_at')
+      .single();
+    if (error) {
+      console.error('[Rotina/notas] save:', error.message);
+      if (status) { status.textContent = '⚠ Erro ao salvar'; status.style.color = '#c0392b'; }
+      return;
+    }
+    _notasState.lastSavedAt = data && data.updated_at;
+    if (status) { status.textContent = _notasFmtSavedAt(_notasState.lastSavedAt); status.style.color = '#1a8a4a'; }
+  }
+
+
+  // =============================================================
+  // === CONTEUDO (Kanban) =======================================
+  // =============================================================
+  let _conteudoState = {
+    wired: false,
+    cache: [],
+    filters: { tipo: '', objetivo: '', responsavel: '', search: '' },
+    expsCache: null,
+  };
+
+  async function renderConteudo() {
+    if (!document.getElementById('panel-conteudo')) return;
+    _conteudoWireOnce();
+    await _conteudoLoadAndRender();
+  }
+
+  async function _conteudoFetchExperiences() {
+    if (_conteudoState.expsCache) return _conteudoState.expsCache;
+    if (window.ElarahData && ElarahData.getAllExperiences) {
+      try {
+        const exps = await ElarahData.getAllExperiences();
+        _conteudoState.expsCache = (exps || []).filter(e => e && !e.isTest);
+        return _conteudoState.expsCache;
+      } catch (e) { /* fall through */ }
+    }
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data } = await sb.from('experiences').select('id, nome').order('nome');
+    _conteudoState.expsCache = data || [];
+    return _conteudoState.expsCache;
+  }
+
+  function _conteudoWireOnce() {
+    if (_conteudoState.wired) return;
+    _conteudoState.wired = true;
+    const newBtn = document.getElementById('conteudo-new-btn');
+    if (newBtn) newBtn.addEventListener('click', () => _conteudoOpenModal(null));
+    const tipo = document.getElementById('conteudo-filter-tipo');
+    const obj = document.getElementById('conteudo-filter-objetivo');
+    const resp = document.getElementById('conteudo-filter-responsavel');
+    const search = document.getElementById('conteudo-filter-search');
+    const refresh = () => _conteudoRenderKanban();
+    if (tipo)   tipo.addEventListener('change', e => { _conteudoState.filters.tipo = e.target.value; refresh(); });
+    if (obj)    obj.addEventListener('change',  e => { _conteudoState.filters.objetivo = e.target.value; refresh(); });
+    if (resp)   resp.addEventListener('change', e => { _conteudoState.filters.responsavel = e.target.value; refresh(); });
+    if (search) search.addEventListener('input', e => { _conteudoState.filters.search = e.target.value; refresh(); });
+    _conteudoWireModal();
+  }
+
+  async function _conteudoLoadAndRender() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { data, error } = await sb.from('content_pieces')
+      .select('*, experiences(id, nome)')
+      .order('updated_at', { ascending: false })
+      .limit(2000);
+    if (error) { console.error('[Conteúdo] load:', error.message); return; }
+    _conteudoState.cache = data || [];
+    _conteudoRenderKanban();
+  }
+
+  function _conteudoRenderKanban() {
+    const wrap = document.getElementById('conteudo-kanban');
+    if (!wrap) return;
+    const f = _conteudoState.filters;
+    const filtered = (_conteudoState.cache || []).filter(c => {
+      if (f.tipo && !(Array.isArray(c.tipos) && c.tipos.indexOf(f.tipo) !== -1)) return false;
+      if (f.objetivo && c.objetivo !== f.objetivo) return false;
+      if (f.responsavel && c.responsavel !== f.responsavel) return false;
+      if (f.search) {
+        const s = f.search.toLowerCase();
+        if (!(String(c.titulo || '').toLowerCase().includes(s)
+              || String(c.notas  || '').toLowerCase().includes(s))) return false;
+      }
+      return true;
+    });
+    const byStatus = {};
+    OP_CONTENT_STATUSES.forEach(st => byStatus[st] = []);
+    filtered.forEach(c => {
+      const st = OP_CONTENT_STATUSES.indexOf(c.status) >= 0 ? c.status : 'ideia';
+      byStatus[st].push(c);
+    });
+    wrap.innerHTML = OP_CONTENT_STATUSES.map(st => {
+      const items = byStatus[st];
+      const cardsHtml = items.map(c => _conteudoCard(c)).join('') ||
+        '<div style="font-size:.72rem;color:#bbb;text-align:center;padding:8px 0;">—</div>';
+      return '<div class="op-kan-col">' +
+        '<div class="op-kan-col__header">' +
+          '<div class="op-kan-col__label">' + _opEsc(OP_CONTENT_STATUS_LABELS[st]) + '</div>' +
+          '<div class="op-kan-col__count">' + items.length + '</div>' +
+        '</div>' +
+        '<div>' + cardsHtml + '</div>' +
+      '</div>';
+    }).join('');
+    wrap.querySelectorAll('[data-content-id]').forEach(el => {
+      el.addEventListener('click', () => _conteudoOpenModal(el.dataset.contentId));
+    });
+  }
+
+  function _conteudoCard(c) {
+    const tipos = Array.isArray(c.tipos) ? c.tipos : [];
+    const tipoChips = tipos.slice(0, 2).map(t =>
+      '<span class="op-chip op-chip--tipo">' + _opEsc(t) + '</span>'
+    ).join('');
+    const objChip = c.objetivo
+      ? '<span class="op-chip op-chip--obj">' + _opEsc(OP_OBJ_LABELS[c.objetivo] || c.objetivo) + '</span>'
+      : '';
+    const dataChip = c.scheduled_at && c.status === 'agendado'
+      ? '<span style="font-size:.7rem;color:#1f4d80;">📅 ' + new Date(c.scheduled_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) + '</span>'
+      : '';
+    return '<div class="op-kan-card" data-content-id="' + _opEsc(c.id) + '">' +
+      '<div class="op-kan-card__title">' + _opEsc(c.titulo) + '</div>' +
+      '<div class="op-kan-card__chips">' + tipoChips + objChip + '</div>' +
+      '<div class="op-kan-card__meta">' + _opRespBadge(c.responsavel) + dataChip + '</div>' +
+    '</div>';
+  }
+
+  // ===== Modal: editar/criar conteúdo =====
+  async function _conteudoOpenModal(contentId) {
+    const modal = document.getElementById('conteudo-modal');
+    if (!modal) return;
+    const item = contentId ? _conteudoState.cache.find(x => x.id === contentId) : null;
+    document.getElementById('conteudo-modal-title').textContent = item ? 'Editar conteúdo' : 'Novo conteúdo';
+    document.getElementById('conteudo-id').value = item ? item.id : '';
+    document.getElementById('conteudo-titulo').value = item ? (item.titulo || '') : '';
+    document.getElementById('conteudo-objetivo').value = item ? (item.objetivo || '') : '';
+    document.getElementById('conteudo-responsavel').value = item ? (item.responsavel || 'ambas') : 'ambas';
+    document.getElementById('conteudo-status').value = item ? (item.status || 'ideia') : 'ideia';
+    document.getElementById('conteudo-notas').value = item ? (item.notas || '') : '';
+    const sched = document.getElementById('conteudo-scheduled-at');
+    if (item && item.scheduled_at) {
+      sched.value = new Date(item.scheduled_at).toISOString().slice(0, 16);
+    } else {
+      sched.value = '';
+    }
+    // Tipos: marca os selecionados
+    const tipos = item && Array.isArray(item.tipos) ? item.tipos : [];
+    document.querySelectorAll('#conteudo-tipos-checks input[type=checkbox]').forEach(cb => {
+      cb.checked = tipos.indexOf(cb.value) !== -1;
+    });
+    // Experiências dropdown
+    const expSelect = document.getElementById('conteudo-experience');
+    const exps = await _conteudoFetchExperiences();
+    expSelect.innerHTML = '<option value="">—</option>' + exps.map(e =>
+      '<option value="' + _opEsc(e.id) + '">' + _opEsc(e.nome) + '</option>'
+    ).join('');
+    expSelect.value = item ? (item.experience_id || '') : '';
+    document.getElementById('conteudo-msg').textContent = '';
+    document.getElementById('conteudo-delete').style.display = item ? '' : 'none';
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('conteudo-titulo').focus(), 50);
+  }
+  function _conteudoCloseModal() {
+    const m = document.getElementById('conteudo-modal'); if (m) m.style.display = 'none';
+  }
+  function _conteudoWireModal() {
+    const cancel = document.getElementById('conteudo-cancel');
+    const save = document.getElementById('conteudo-save');
+    const del = document.getElementById('conteudo-delete');
+    if (cancel) cancel.addEventListener('click', _conteudoCloseModal);
+    if (save) save.addEventListener('click', _conteudoSave);
+    if (del) del.addEventListener('click', _conteudoDelete);
+  }
+  async function _conteudoSave() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msg = document.getElementById('conteudo-msg');
+    const id = document.getElementById('conteudo-id').value || null;
+    const titulo = document.getElementById('conteudo-titulo').value.trim();
+    if (!titulo) { msg.textContent = 'Título obrigatório.'; msg.style.color = '#c0392b'; return; }
+    const tipos = Array.from(document.querySelectorAll('#conteudo-tipos-checks input[type=checkbox]:checked'))
+      .map(cb => cb.value);
+    const status = document.getElementById('conteudo-status').value;
+    const schedRaw = document.getElementById('conteudo-scheduled-at').value;
+    const payload = {
+      titulo,
+      tipos,
+      objetivo: document.getElementById('conteudo-objetivo').value || null,
+      responsavel: document.getElementById('conteudo-responsavel').value,
+      status,
+      experience_id: document.getElementById('conteudo-experience').value || null,
+      notas: document.getElementById('conteudo-notas').value.trim() || null,
+      scheduled_at: schedRaw ? new Date(schedRaw).toISOString() : null,
+    };
+    // posted_at: setado quando vai pra postado (se não tiver)
+    if (status === 'postado' || status === 'reaproveitado') {
+      const cur = id ? _conteudoState.cache.find(x => x.id === id) : null;
+      if (!cur || !cur.posted_at) payload.posted_at = new Date().toISOString();
+    }
+    msg.textContent = 'Salvando…'; msg.style.color = '#666';
+    let res;
+    if (id) res = await sb.from('content_pieces').update(payload).eq('id', id);
+    else    res = await sb.from('content_pieces').insert(payload);
+    if (res.error) { msg.textContent = 'Erro: ' + res.error.message; msg.style.color = '#c0392b'; return; }
+    _conteudoCloseModal();
+    _conteudoLoadAndRender();
+  }
+  async function _conteudoDelete() {
+    const id = document.getElementById('conteudo-id').value;
+    if (!id) return;
+    if (!confirm('Excluir este conteúdo?')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('content_pieces').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _conteudoCloseModal();
+    _conteudoLoadAndRender();
+  }
+
+
+  // =================================================================
+  // ===== B2B PROSPECTS — CRM de empresas (RH/People/Cultura)
+  // -----------------------------------------------------------------
+  // Espelha a arquitetura do CRM de parceiros (renderProspects) mas
+  // voltada pra prospecção comercial em empresas. Tabelas:
+  //   b2b_prospects · b2b_prospect_interactions · b2b_prospect_templates
+  //
+  // Recursos chave:
+  //   - Visões rápidas (ações pra hoje, follow-up atrasado, quentes, parados)
+  //   - Sinais visuais por linha (badges) sem precisar abrir o lead
+  //   - Timeline de interações dentro do modal de edição
+  //   - Templates B2B com substituição de {{empresa}} {{contato}} {{cargo}}
+  //     {{segmento}} {{cidade}}
+  //   - Import/export CSV pra acelerar prospecção em massa
+  //   - Highlight visual pra sweet spot (50-500 funcionários)
+  // =================================================================
+
+  // ----- Helpers de label (id → texto legível pro UI) -----
+  const B2B_STATUS_LABEL = {
+    nao_contatado: 'Não contatado',
+    mensagem_enviada: 'Mensagem enviada',
+    respondeu: 'Respondeu',
+    reuniao_marcada: 'Reunião marcada',
+    proposta_enviada: 'Proposta enviada',
+    negociacao: 'Negociação',
+    fechado: 'Fechado (ação pontual)',
+    cliente_ativo: 'Cliente ativo',
+    pausado: 'Pausado',
+    recusou: 'Recusou',
+  };
+  const B2B_STATUS_COLOR = {
+    nao_contatado: { bg:'#f4f4f4', fg:'#666' },
+    mensagem_enviada: { bg:'#eef4fb', fg:'#3068a8' },
+    respondeu: { bg:'#e6f4ea', fg:'#1a8a4a' },
+    reuniao_marcada: { bg:'#fff8ef', fg:'#a4663b' },
+    proposta_enviada: { bg:'#fff3e0', fg:'#b07b00' },
+    negociacao: { bg:'#fdf2e9', fg:'#a04500' },
+    fechado: { bg:'#e8f5e9', fg:'#2e7d32' },
+    cliente_ativo: { bg:'#fff8ef', fg:'#d97706' },
+    pausado: { bg:'#f4f4f4', fg:'#888' },
+    recusou: { bg:'#fdecea', fg:'#9c2f22' },
+  };
+  const B2B_TIPO_LABEL = {
+    tech: 'Tech',
+    agencia: 'Agência',
+    coworking: 'Coworking',
+    construtora: 'Construtora',
+    startup: 'Startup',
+    escritorio: 'Escritório',
+    imobiliaria: 'Imobiliária',
+    arquitetura_design: 'Arquitetura/Design',
+    escritorio_juridico: 'Esc. jurídico',
+    clinica: 'Clínica',
+    industria_leve: 'Indústria leve',
+    outro: 'Outro',
+  };
+  const B2B_FUNC_LABEL = {
+    '1_49': '1–49',
+    '50_100': '50–100',
+    '101_250': '101–250',
+    '251_500': '251–500',
+    '500_plus': '500+',
+  };
+  // Sweet spot da Elarah: 50-500 funcionários (médio porte, decisor
+  // acessível, budget disponível, valoriza cultura). Highlight visual.
+  const B2B_FUNC_SWEET_SPOT = new Set(['50_100', '101_250', '251_500']);
+  const B2B_POTENCIAL_LABEL = { baixo: 'Baixo', medio: 'Médio', alto: '🔥 Alto' };
+  const B2B_INT_TIPO_LABEL = {
+    mensagem_enviada: '📤 Mensagem enviada',
+    respondeu: '💬 Respondeu',
+    reuniao_marcada: '📅 Reunião marcada',
+    reuniao_realizada: '✅ Reunião realizada',
+    proposta_enviada: '📋 Proposta enviada',
+    negociacao: '💼 Negociação',
+    fechado: '🎉 Fechado',
+    cliente_ativo: '⭐ Cliente ativo',
+    pausado: '⏸️ Pausado',
+    recusou: '❌ Recusou',
+    follow_up: '🔁 Follow-up',
+    observacao: '📝 Observação',
+  };
+
+  // ----- Helpers de link (espelham _propWhatsappLink/_propInstagramLink) -----
+  // Replicados pra B2B porque o módulo é independente do CRM de parceiros.
+  function _b2bWhatsappLink(raw) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return null;
+    const withCountry = digits.length <= 11 ? '55' + digits : digits;
+    return 'https://wa.me/' + withCountry;
+  }
+  function _b2bInstagramLink(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    const handle = v.replace(/^@/, '').replace(/\s+/g, '');
+    return 'https://instagram.com/' + handle;
+  }
+  function _b2bUrlOrEmpty(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    return 'https://' + v;
+  }
+  function _b2bEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  // Transforma URL de empresa do LinkedIn em URL da aba "Pessoas"
+  // com keywords pré-filtradas (people OR rh OR cultura OR talent OR
+  // gente OR pessoas). Funciona pra slugs comuns:
+  //   https://www.linkedin.com/company/cobli/
+  //     → https://www.linkedin.com/company/cobli/people/?keywords=...
+  // Fallback: se a URL não casa com o padrão /company/<slug>/, devolve
+  // ela como está pra não quebrar.
+  function _b2bLinkedInPeopleSearchUrl(linkedinEmpresa) {
+    const raw = String(linkedinEmpresa || '').trim();
+    if (!raw) return null;
+    // Detecta /company/<slug> e injeta /people/ na URL
+    const match = raw.match(/^(https?:\/\/(?:www\.)?linkedin\.com\/company\/[^/?#]+)\/?/i);
+    if (!match) return raw;
+    const base = match[1].replace(/\/$/, '');
+    // Keywords cobrindo nomenclaturas comuns de cargos de People/RH em PT/EN:
+    //   people, RH, cultura, talent, gente, pessoas
+    // OR não é case-sensitive no LinkedIn search.
+    const kw = encodeURIComponent('people OR rh OR cultura OR talent OR gente OR pessoas');
+    return base + '/people/?keywords=' + kw;
+  }
+
+  // ----- Chips de contato (WA · IG · @ · in · 🌐) -----
+  // Mesma lógica visual do _propContactIcons (CRM de parceiros), mas
+  // adaptada pra B2B: usa contato_whatsapp/contato_email da pessoa e
+  // instagram/linkedin_empresa/site da empresa. Cada chip vira clique
+  // direto pro canal correspondente. Quando nada existe, mostra "—".
+  function _b2bContactIcons(p) {
+    const out = [];
+    if (p.contato_whatsapp) {
+      const link = _b2bWhatsappLink(p.contato_whatsapp);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="WhatsApp do contato" style="display:inline-block;padding:4px 6px;background:#e6f4ea;color:#1a8a4a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">WA</a>');
+    }
+    if (p.instagram) {
+      const link = _b2bInstagramLink(p.instagram);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="Instagram da empresa" style="display:inline-block;padding:4px 6px;background:#fce8f1;color:#c0397a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">IG</a>');
+    }
+    // Chip @ (email): SEMPRE renderiza, mesmo sem email cadastrado.
+    // - Com email: estilo cheio (azul saturado), click abre mailto:.
+    // - Sem email: estilo "vazio" (mais clarinho com ponto interrogação),
+    //   click abre prompt pra preencher rápido sem precisar abrir o modal
+    //   de edição completo. Salva direto no banco e atualiza a linha.
+    if (p.contato_email) {
+      out.push('<a href="mailto:' + _b2bEsc(p.contato_email) + '" title="E-mail do contato — ' + _b2bEsc(p.contato_email) + '" style="display:inline-block;padding:4px 6px;background:#e6f0fa;color:#3068a8;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">@</a>');
+    } else {
+      out.push('<button type="button" data-b2b-add-email="' + _b2bEsc(p.id) + '" title="Clique pra adicionar e-mail do contato" style="display:inline-block;padding:4px 6px;background:#f4f4f4;color:#aaa;border:1px dashed #ccc;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:700;font-family:inherit;line-height:1;">@</button>');
+    }
+    // LinkedIn: prioriza pessoa (decisor real) se existir, senão da empresa.
+    // Quando aponta pra EMPRESA, transforma a URL em /people/?keywords=...
+    // pra cair direto na aba "Pessoas" já filtrada por People/RH/Cultura/
+    // Talent. Operacional: clica → vê quem é decisor → DM em 1 clique.
+    // Sem isso, o admin caía na home da empresa e tinha que abrir Pessoas
+    // → filtrar → 3-4 cliques extras por lead.
+    if (p.contato_linkedin) {
+      out.push('<a href="' + _b2bEsc(p.contato_linkedin) + '" target="_blank" rel="noopener" title="LinkedIn do contato (decisor)" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
+    } else if (p.linkedin_empresa) {
+      const peopleUrl = _b2bLinkedInPeopleSearchUrl(p.linkedin_empresa);
+      out.push('<a href="' + _b2bEsc(peopleUrl) + '" target="_blank" rel="noopener" title="LinkedIn — Pessoas da empresa filtradas por People/RH/Cultura/Talent" style="display:inline-block;padding:4px 6px;background:#e1ecf7;color:#0a66c2;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">in</a>');
+    }
+    if (p.site) {
+      const link = _b2bUrlOrEmpty(p.site);
+      if (link) out.push('<a href="' + _b2bEsc(link) + '" target="_blank" rel="noopener" title="Site da empresa" style="display:inline-block;padding:4px 6px;background:#f4f0e6;color:#866d1a;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:700;">🌐</a>');
+    }
+    return out.length
+      ? '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + out.join('') + '</div>'
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+  }
+
+  // ----- Helpers de "sinais" (badges visuais por linha) -----
+  // Calcula sinais derivados do estado atual + última interação.
+  // Cada sinal tem: label, tooltip, e cor. Renderizado como pills
+  // pequenos na coluna "Sinais" da tabela.
+  function b2bComputeSignals(prospect, lastInteractionAt) {
+    const signals = [];
+    const now = Date.now();
+    const lastMs = lastInteractionAt ? new Date(lastInteractionAt).getTime() : null;
+    const createdMs = prospect.created_at ? new Date(prospect.created_at).getTime() : now;
+    const proximaMs = prospect.proxima_acao_at ? new Date(prospect.proxima_acao_at).getTime() : null;
+    const daysSinceLast = lastMs ? Math.floor((now - lastMs) / 86400000) : null;
+    const daysSinceCreate = Math.floor((now - createdMs) / 86400000);
+
+    // Potencial alto — sempre destaca
+    if (prospect.potencial === 'alto') {
+      signals.push({ label:'🔥 Alto potencial', bg:'#fff3e0', fg:'#b07b00' });
+    }
+    // Follow-up atrasado (proxima_acao_at < hoje)
+    if (proximaMs && proximaMs < now &&
+        prospect.status_comercial !== 'fechado' &&
+        prospect.status_comercial !== 'cliente_ativo' &&
+        prospect.status_comercial !== 'recusou') {
+      const atrasoDias = Math.floor((now - proximaMs) / 86400000);
+      signals.push({
+        label: '⚠️ Atrasado ' + (atrasoDias > 0 ? atrasoDias + 'd' : ''),
+        bg:'#fdecea', fg:'#9c2f22',
+        title: 'Próxima ação prevista pra ' + new Date(proximaMs).toLocaleDateString('pt-BR'),
+      });
+    }
+    // Lead quente — respondeu ou reunião marcada nos últimos 7 dias
+    const hotStatuses = new Set(['respondeu', 'reuniao_marcada', 'proposta_enviada', 'negociacao']);
+    if (hotStatuses.has(prospect.status_comercial) && lastMs && daysSinceLast <= 7) {
+      signals.push({ label:'🔥 Quente', bg:'#fff8ef', fg:'#a4663b' });
+    }
+    // Lead parado — sem interação > 14 dias E status não-terminal
+    const terminalStatuses = new Set(['fechado', 'cliente_ativo', 'recusou']);
+    if (!terminalStatuses.has(prospect.status_comercial)) {
+      if (lastMs && daysSinceLast > 14) {
+        signals.push({
+          label: '🥶 Parado ' + daysSinceLast + 'd',
+          bg:'#eef4fb', fg:'#3068a8',
+          title: 'Última interação há ' + daysSinceLast + ' dias',
+        });
+      } else if (!lastMs && daysSinceCreate > 14) {
+        signals.push({
+          label:'🥶 Sem contato',
+          bg:'#eef4fb', fg:'#3068a8',
+          title: 'Cadastrado há ' + daysSinceCreate + ' dias e nunca contatado',
+        });
+      }
+    }
+    // Resposta recente — interação 'respondeu' < 3 dias (sinal extra de urgência)
+    if (lastMs && daysSinceLast !== null && daysSinceLast <= 3 &&
+        prospect.status_comercial === 'respondeu') {
+      signals.push({ label:'💬 Respondeu há ' + (daysSinceLast === 0 ? 'hoje' : daysSinceLast + 'd'),
+        bg:'#e6f4ea', fg:'#1a8a4a' });
+    }
+    return signals;
+  }
+
+  // ----- Substituição de variáveis nos templates -----
+  function _b2bRenderTemplate(template, prospect) {
+    if (!template) return '';
+    return String(template)
+      .replaceAll('{{empresa}}',  (prospect && prospect.nome) || 'a empresa')
+      .replaceAll('{{contato}}',  (prospect && prospect.contato_nome) || 'time')
+      .replaceAll('{{cargo}}',    (prospect && prospect.contato_cargo) || '')
+      .replaceAll('{{segmento}}', (prospect && prospect.segmento) || 'do seu segmento')
+      .replaceAll('{{cidade}}',   (prospect && prospect.cidade) || 'São Paulo');
+  }
+
+  // ----- Fetch -----
+  async function _b2bFetchProspects() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('b2b_prospects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) {
+      console.error('[Elarah B2B] fetch prospects error', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function _b2bFetchInteractionsByProspect(prospectIds) {
+    const sb = window.supabaseClient;
+    if (!sb || !prospectIds.length) return new Map();
+    const { data, error } = await sb
+      .from('b2b_prospect_interactions')
+      .select('id, prospect_id, tipo, descricao, occurred_at')
+      .in('prospect_id', prospectIds)
+      .order('occurred_at', { ascending: false });
+    if (error) {
+      console.warn('[Elarah B2B] interactions fetch falhou:', error.message);
+      return new Map();
+    }
+    // Agrupa por prospect_id, mais recente primeiro
+    const map = new Map();
+    (data || []).forEach(row => {
+      if (!map.has(row.prospect_id)) map.set(row.prospect_id, []);
+      map.get(row.prospect_id).push(row);
+    });
+    return map;
+  }
+
+  async function _b2bFetchTemplates() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('b2b_prospect_templates')
+      .select('*')
+      .eq('is_active', true)
+      .order('ordem', { ascending: true });
+    if (error) {
+      console.warn('[Elarah B2B] templates fetch falhou:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  // ----- Estado local de filtros -----
+  const _b2bState = {
+    view: 'todos',         // todos | acoes-hoje | atrasados | quentes | parados
+    cache: null,           // prospects array
+    interactions: new Map(),
+    templates: [],
+  };
+
+  // ----- Render principal -----
+  async function renderB2BProspects() {
+    const tbody = document.getElementById('b2b-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Carregando...</td></tr>';
+
+    const [prospects, templates] = await Promise.all([
+      _b2bFetchProspects(),
+      _b2bFetchTemplates(),
+    ]);
+    _b2bState.cache = prospects;
+    _b2bState.templates = templates;
+
+    // Busca interações em batch (mais recente por prospect)
+    const ids = prospects.map(p => p.id);
+    _b2bState.interactions = await _b2bFetchInteractionsByProspect(ids);
+
+    _b2bWireFilters();
+    _b2bRenderTable();
+    _b2bRenderStats();
+    _b2bRenderCidadesDatalist();
+  }
+
+  function _b2bRenderCidadesDatalist() {
+    const list = document.getElementById('b2b-cidades-list');
+    if (!list) return;
+    const seen = new Set();
+    list.innerHTML = '';
+    (_b2bState.cache || []).forEach(p => {
+      if (p.cidade && !seen.has(p.cidade)) {
+        seen.add(p.cidade);
+        const opt = document.createElement('option');
+        opt.value = p.cidade;
+        list.appendChild(opt);
+      }
+    });
+  }
+
+  function _b2bApplyFilters(rows) {
+    const search = (document.getElementById('b2b-filter-search')?.value || '').toLowerCase().trim();
+    const status = document.getElementById('b2b-filter-status')?.value || '';
+    const tipo = document.getElementById('b2b-filter-tipo')?.value || '';
+    const func = document.getElementById('b2b-filter-funcionarios')?.value || '';
+    const potencial = document.getElementById('b2b-filter-potencial')?.value || '';
+    const cidade = (document.getElementById('b2b-filter-cidade')?.value || '').toLowerCase().trim();
+    const now = Date.now();
+    const view = _b2bState.view;
+
+    return rows.filter(p => {
+      // Search: empresa, contato_nome, segmento, observacoes
+      if (search) {
+        const hay = (p.nome + ' ' + (p.contato_nome || '') + ' ' + (p.segmento || '') + ' ' + (p.observacoes || '')).toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      if (status && p.status_comercial !== status) return false;
+      if (tipo && p.tipo_empresa !== tipo) return false;
+      if (potencial && p.potencial !== potencial) return false;
+      if (cidade && (p.cidade || '').toLowerCase().indexOf(cidade) === -1) return false;
+      if (func) {
+        if (func === 'sweet_spot') {
+          if (!B2B_FUNC_SWEET_SPOT.has(p.funcionarios_faixa)) return false;
+        } else if (p.funcionarios_faixa !== func) return false;
+      }
+      // Visões rápidas (sobrepõem outros filtros pra cenário operacional)
+      if (view === 'acoes-hoje') {
+        if (!p.proxima_acao_at) return false;
+        const proxMs = new Date(p.proxima_acao_at).getTime();
+        // Hoje: do início do dia ao final do dia (timezone local)
+        const start = new Date(); start.setHours(0,0,0,0);
+        const end = new Date(); end.setHours(23,59,59,999);
+        if (proxMs < start.getTime() || proxMs > end.getTime()) return false;
+      } else if (view === 'atrasados') {
+        if (!p.proxima_acao_at) return false;
+        if (new Date(p.proxima_acao_at).getTime() >= now) return false;
+        if (['fechado','cliente_ativo','recusou'].includes(p.status_comercial)) return false;
+      } else if (view === 'quentes') {
+        const hot = new Set(['respondeu','reuniao_marcada','proposta_enviada','negociacao']);
+        if (!hot.has(p.status_comercial)) return false;
+        const ints = _b2bState.interactions.get(p.id) || [];
+        const last = ints[0];
+        if (!last) return false;
+        const days = Math.floor((now - new Date(last.occurred_at).getTime()) / 86400000);
+        if (days > 7) return false;
+      } else if (view === 'parados') {
+        if (['fechado','cliente_ativo','recusou'].includes(p.status_comercial)) return false;
+        const ints = _b2bState.interactions.get(p.id) || [];
+        const last = ints[0];
+        const baseMs = last ? new Date(last.occurred_at).getTime() : new Date(p.created_at).getTime();
+        const days = Math.floor((now - baseMs) / 86400000);
+        if (days <= 14) return false;
+      }
+      return true;
+    });
+  }
+
+  function _b2bRenderTable() {
+    const tbody = document.getElementById('b2b-body');
+    const countEl = document.getElementById('b2b-count');
+    if (!tbody) return;
+    const filtered = _b2bApplyFilters(_b2bState.cache || []);
+    if (countEl) countEl.textContent = filtered.length + ' empresa' + (filtered.length === 1 ? '' : 's');
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhuma empresa encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(p => _b2bRenderRow(p)).join('');
+
+    // Wire row actions
+    tbody.querySelectorAll('[data-b2b-edit]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bOpenEditModal(btn.dataset.b2bEdit));
+    });
+    tbody.querySelectorAll('[data-b2b-copy-msg]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bCopyMessage(btn.dataset.b2bCopyMsg));
+    });
+    tbody.querySelectorAll('[data-b2b-quick-int]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bQuickLogInteraction(btn.dataset.b2bQuickInt, btn.dataset.tipo));
+    });
+    // Chip @ vazio — abre prompt pra adicionar email rápido
+    tbody.querySelectorAll('[data-b2b-add-email]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bQuickAddEmail(btn.dataset.b2bAddEmail));
+    });
+  }
+
+  function _b2bRenderRow(p) {
+    const escapeHtml = window.__elarahEscapeHtml || (function(){ return function(s){ const d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }; })();
+    const _esc = escapeHtml;
+    const ints = _b2bState.interactions.get(p.id) || [];
+    const lastInt = ints[0];
+    const lastIntAt = lastInt ? lastInt.occurred_at : null;
+    const signals = b2bComputeSignals(p, lastIntAt);
+
+    // Empresa (com badge sweet spot)
+    const isSweet = B2B_FUNC_SWEET_SPOT.has(p.funcionarios_faixa);
+    const nomeCell = '<strong>' + _esc(p.nome) + '</strong>' +
+      (p.cidade ? '<br><span style="font-size:.75rem;color:#888;">' + _esc(p.cidade) + '</span>' : '') +
+      (p.segmento ? '<br><span style="font-size:.72rem;color:#a4663b;font-style:italic;">' + _esc(p.segmento) + '</span>' : '');
+
+    const tipoCell = p.tipo_empresa ? _esc(B2B_TIPO_LABEL[p.tipo_empresa] || p.tipo_empresa) : '—';
+
+    const funcLabel = p.funcionarios_faixa ? (B2B_FUNC_LABEL[p.funcionarios_faixa] || '—') : '—';
+    const funcCell = isSweet
+      ? '<span style="background:#fff8ef;color:#a4663b;padding:2px 8px;border-radius:6px;font-size:.78rem;font-weight:600;" title="Sweet spot da Elarah">⭐ ' + _esc(funcLabel) + '</span>'
+      : '<span style="color:#666;">' + _esc(funcLabel) + '</span>';
+
+    const contatoCell = p.contato_nome
+      ? '<strong>' + _esc(p.contato_nome) + '</strong>' +
+        (p.contato_cargo ? '<br><span style="font-size:.72rem;color:#888;">' + _esc(p.contato_cargo) + '</span>' : '')
+      : '<span style="color:#bbb;">—</span>';
+
+    // Coluna "Canais" — chips WA/IG/@/in/🌐 clicáveis pra cada canal
+    // disponível da empresa/contato. Mesma UX do CRM de parceiros.
+    const canaisCell = _b2bContactIcons(p);
+
+    const statusColor = B2B_STATUS_COLOR[p.status_comercial] || { bg:'#f4f4f4', fg:'#666' };
+    const statusCell = '<span style="display:inline-block;padding:3px 9px;border-radius:8px;background:' +
+      statusColor.bg + ';color:' + statusColor.fg + ';font-size:.74rem;font-weight:700;white-space:nowrap;">' +
+      _esc(B2B_STATUS_LABEL[p.status_comercial] || p.status_comercial) + '</span>';
+
+    const potColor = p.potencial === 'alto' ? '#b07b00' : (p.potencial === 'baixo' ? '#999' : '#444');
+    const potCell = '<span style="color:' + potColor + ';font-weight:600;font-size:.82rem;">' +
+      _esc(B2B_POTENCIAL_LABEL[p.potencial] || p.potencial || '—') + '</span>';
+
+    const signalsCell = signals.length
+      ? signals.map(s => '<span title="' + _esc(s.title || s.label) + '" style="display:inline-block;margin:2px 3px 0 0;padding:2px 7px;border-radius:6px;background:' + s.bg + ';color:' + s.fg + ';font-size:.7rem;font-weight:600;white-space:nowrap;">' + _esc(s.label) + '</span>').join('')
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+
+    const proximaCell = p.proxima_acao
+      ? '<strong style="font-size:.82rem;">' + _esc(p.proxima_acao) + '</strong>' +
+        (p.proxima_acao_at ? '<br><span style="font-size:.72rem;color:#888;">' +
+          new Date(p.proxima_acao_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) +
+          '</span>' : '')
+      : '<span style="color:#bbb;font-size:.78rem;">—</span>';
+
+    // Ações: editar, copiar mensagem (primeiro template), log rápido
+    const acoesCell =
+      '<button type="button" data-b2b-edit="' + _esc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #f0a05e;color:#a4663b;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;">Editar</button>' +
+      ' <button type="button" data-b2b-copy-msg="' + _esc(p.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;" title="Copiar mensagem do template padrão com variáveis preenchidas">📋 Msg</button>' +
+      ' <button type="button" data-b2b-quick-int="' + _esc(p.id) + '" data-tipo="mensagem_enviada" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;" title="Registrar mensagem enviada">+ msg</button>';
+
+    return '<tr>' +
+      '<td>' + nomeCell + '</td>' +
+      '<td>' + tipoCell + '</td>' +
+      '<td>' + funcCell + '</td>' +
+      '<td>' + contatoCell + '</td>' +
+      '<td>' + canaisCell + '</td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td>' + potCell + '</td>' +
+      '<td>' + signalsCell + '</td>' +
+      '<td>' + proximaCell + '</td>' +
+      '<td>' + acoesCell + '</td>' +
+    '</tr>';
+  }
+
+  function _b2bRenderStats() {
+    const list = _b2bState.cache || [];
+    const total = list.length;
+    const contatados = list.filter(p => p.status_comercial !== 'nao_contatado').length;
+    const respostas = list.filter(p =>
+      ['respondeu','reuniao_marcada','proposta_enviada','negociacao','fechado','cliente_ativo'].includes(p.status_comercial)
+    ).length;
+    const reunioes = list.filter(p =>
+      ['reuniao_marcada','proposta_enviada','negociacao'].includes(p.status_comercial)
+    ).length;
+    const clientes = list.filter(p => p.status_comercial === 'cliente_ativo').length;
+    // Ações pra hoje
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date(); end.setHours(23,59,59,999);
+    const acoesHoje = list.filter(p => {
+      if (!p.proxima_acao_at) return false;
+      const ms = new Date(p.proxima_acao_at).getTime();
+      return ms >= start.getTime() && ms <= end.getTime();
+    }).length;
+    const taxa = contatados > 0
+      ? Math.round((respostas / contatados) * 100) + '%'
+      : '—';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('stat-b2b-total', total);
+    set('stat-b2b-acoes-hoje', acoesHoje);
+    set('stat-b2b-reunioes', reunioes);
+    set('stat-b2b-clientes', clientes);
+    set('stat-b2b-resposta', taxa);
+  }
+
+  // ----- Wire de filtros + visões + ações principais -----
+  let _b2bWired = false;
+  function _b2bWireFilters() {
+    if (_b2bWired) return;
+    _b2bWired = true;
+
+    // Filtros — re-render ao mudar
+    ['b2b-filter-search','b2b-filter-status','b2b-filter-tipo','b2b-filter-funcionarios','b2b-filter-potencial','b2b-filter-cidade']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const evt = el.tagName === 'INPUT' ? 'input' : 'change';
+        el.addEventListener(evt, () => _b2bRenderTable());
+      });
+
+    // Visões rápidas (chips)
+    document.querySelectorAll('.b2b-view-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        _b2bState.view = chip.dataset.view || 'todos';
+        // Estado visual: chip ativo destacado
+        document.querySelectorAll('.b2b-view-chip').forEach(c => {
+          const isActive = c.dataset.view === _b2bState.view;
+          c.style.borderColor = isActive ? '#f0a05e' : '#ddd';
+          c.style.background = isActive ? '#fff8ef' : '#fff';
+          c.style.color = isActive ? '#a4663b' : '#666';
+        });
+        _b2bRenderTable();
+      });
+    });
+
+    // Botões principais
+    const btnNew = document.getElementById('btn-b2b-new');
+    if (btnNew) btnNew.addEventListener('click', () => _b2bOpenEditModal(null));
+    const btnTemplates = document.getElementById('btn-b2b-templates');
+    if (btnTemplates) btnTemplates.addEventListener('click', () => _b2bOpenTemplatesModal());
+    const btnImport = document.getElementById('btn-b2b-import');
+    if (btnImport) btnImport.addEventListener('click', () => {
+      document.getElementById('b2b-csv-input')?.click();
+    });
+    const csvInput = document.getElementById('b2b-csv-input');
+    if (csvInput) csvInput.addEventListener('change', _b2bHandleCsvImport);
+    const btnExport = document.getElementById('btn-b2b-export');
+    if (btnExport) btnExport.addEventListener('click', _b2bExportCsv);
+
+    // Modal edit — wire de save/cancel/delete
+    document.getElementById('b2b-edit-cancel')?.addEventListener('click', _b2bCloseEditModal);
+    document.getElementById('b2b-edit-save')?.addEventListener('click', _b2bSaveProspect);
+    document.getElementById('b2b-edit-delete')?.addEventListener('click', _b2bDeleteProspect);
+    document.getElementById('b2b-int-add')?.addEventListener('click', _b2bAddInteractionFromModal);
+
+    // Modal templates
+    document.getElementById('b2b-templates-close')?.addEventListener('click', () => {
+      const m = document.getElementById('b2b-templates-modal');
+      if (m) m.style.display = 'none';
+    });
+    document.getElementById('b2b-template-new')?.addEventListener('click', () => _b2bOpenTemplateEdit(null));
+    document.getElementById('b2b-template-filter-categoria')?.addEventListener('change', _b2bRenderTemplatesList);
+    document.getElementById('b2b-template-edit-cancel')?.addEventListener('click', () => {
+      const m = document.getElementById('b2b-template-edit-modal');
+      if (m) m.style.display = 'none';
+    });
+    document.getElementById('b2b-template-edit-save')?.addEventListener('click', _b2bSaveTemplate);
+    document.getElementById('b2b-template-edit-delete')?.addEventListener('click', _b2bDeleteTemplate);
+  }
+
+  // ----- Modal de edição -----
+  let _b2bEditingId = null;
+  async function _b2bOpenEditModal(id) {
+    const m = document.getElementById('b2b-edit-modal');
+    if (!m) return;
+    _b2bEditingId = id;
+    const isNew = !id;
+    const p = isNew ? {} : ((_b2bState.cache || []).find(x => x.id === id) || {});
+
+    document.getElementById('b2b-edit-title').textContent = isNew ? 'Nova empresa' : 'Editar empresa';
+    document.getElementById('b2b-edit-subtitle').textContent = isNew
+      ? 'Cadastre uma empresa-alvo pra prospecção comercial.'
+      : 'Atualize informações + registre interações na timeline.';
+
+    const set = (sel, v) => { const el = m.querySelector(sel); if (el) el.value = v == null ? '' : v; };
+    set('#b2b-edit-id', p.id || '');
+    set('#b2b-edit-nome', p.nome);
+    set('#b2b-edit-tipo', p.tipo_empresa);
+    set('#b2b-edit-funcionarios', p.funcionarios_faixa);
+    set('#b2b-edit-segmento', p.segmento);
+    set('#b2b-edit-cidade', p.cidade || 'São Paulo');
+    set('#b2b-edit-site', p.site);
+    set('#b2b-edit-linkedin-empresa', p.linkedin_empresa);
+    set('#b2b-edit-instagram', p.instagram);
+    set('#b2b-edit-contato-nome', p.contato_nome);
+    set('#b2b-edit-contato-cargo', p.contato_cargo);
+    set('#b2b-edit-contato-email', p.contato_email);
+    set('#b2b-edit-contato-whatsapp', p.contato_whatsapp);
+    set('#b2b-edit-contato-linkedin', p.contato_linkedin);
+    set('#b2b-edit-status', p.status_comercial || 'nao_contatado');
+    set('#b2b-edit-potencial', p.potencial || 'medio');
+    set('#b2b-edit-proxima-acao', p.proxima_acao);
+    // datetime-local format: YYYY-MM-DDTHH:MM
+    if (p.proxima_acao_at) {
+      const d = new Date(p.proxima_acao_at);
+      const pad = n => String(n).padStart(2,'0');
+      set('#b2b-edit-proxima-acao-at',
+        d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+        'T' + pad(d.getHours()) + ':' + pad(d.getMinutes())
+      );
+    } else {
+      set('#b2b-edit-proxima-acao-at', '');
+    }
+    set('#b2b-edit-observacoes', p.observacoes);
+
+    // Botão excluir só em edit mode
+    const delBtn = m.querySelector('#b2b-edit-delete');
+    if (delBtn) delBtn.style.display = isNew ? 'none' : 'inline-block';
+
+    // Timeline só em edit mode
+    const timelineWrap = m.querySelector('#b2b-edit-timeline-wrap');
+    if (timelineWrap) timelineWrap.style.display = isNew ? 'none' : 'block';
+    if (!isNew) await _b2bRefreshTimeline(id);
+
+    const msg = m.querySelector('#b2b-edit-msg');
+    if (msg) msg.textContent = '';
+
+    m.style.display = 'flex';
+  }
+  function _b2bCloseEditModal() {
+    const m = document.getElementById('b2b-edit-modal');
+    if (m) m.style.display = 'none';
+    _b2bEditingId = null;
+  }
+
+  async function _b2bRefreshTimeline(prospectId) {
+    const sb = window.supabaseClient;
+    const ul = document.getElementById('b2b-edit-timeline');
+    if (!ul || !sb) return;
+    const { data, error } = await sb
+      .from('b2b_prospect_interactions')
+      .select('id, tipo, descricao, occurred_at')
+      .eq('prospect_id', prospectId)
+      .order('occurred_at', { ascending: false })
+      .limit(50);
+    if (error) {
+      ul.innerHTML = '<li style="color:#c0392b;">Erro ao carregar timeline.</li>';
+      return;
+    }
+    if (!data || !data.length) {
+      ul.innerHTML = '<li style="color:#888;font-style:italic;padding:6px 0;">Nenhuma interação registrada ainda.</li>';
+      return;
+    }
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+    ul.innerHTML = data.map(r =>
+      '<li style="padding:8px 0;border-bottom:1px dashed #eee;">' +
+        '<strong>' + esc(B2B_INT_TIPO_LABEL[r.tipo] || r.tipo) + '</strong>' +
+        ' <span style="color:#888;font-size:.78rem;">· ' + new Date(r.occurred_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) + '</span>' +
+        (r.descricao ? '<div style="font-size:.85rem;color:#444;margin-top:3px;">' + esc(r.descricao) + '</div>' : '') +
+      '</li>'
+    ).join('');
+  }
+
+  async function _b2bAddInteractionFromModal() {
+    if (!_b2bEditingId) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const tipo = document.getElementById('b2b-int-tipo').value;
+    const desc = (document.getElementById('b2b-int-desc').value || '').trim();
+    const { error } = await sb.from('b2b_prospect_interactions').insert({
+      prospect_id: _b2bEditingId,
+      tipo,
+      descricao: desc || null,
+    });
+    if (error) { alert('Erro ao registrar: ' + error.message); return; }
+    document.getElementById('b2b-int-desc').value = '';
+    await _b2bRefreshTimeline(_b2bEditingId);
+    // Reload pra atualizar sinais na tabela
+    renderB2BProspects();
+  }
+
+  async function _b2bSaveProspect() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const m = document.getElementById('b2b-edit-modal');
+    const msg = m.querySelector('#b2b-edit-msg');
+    msg.textContent = '';
+
+    const nome = (m.querySelector('#b2b-edit-nome').value || '').trim();
+    if (!nome) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Nome é obrigatório.';
+      return;
+    }
+    const get = (sel) => { const el = m.querySelector(sel); return el ? (el.value || '').trim() : ''; };
+    const proximaAt = get('#b2b-edit-proxima-acao-at');
+    const payload = {
+      nome,
+      tipo_empresa: get('#b2b-edit-tipo') || null,
+      funcionarios_faixa: get('#b2b-edit-funcionarios') || null,
+      segmento: get('#b2b-edit-segmento') || null,
+      cidade: get('#b2b-edit-cidade') || null,
+      site: get('#b2b-edit-site') || null,
+      linkedin_empresa: get('#b2b-edit-linkedin-empresa') || null,
+      instagram: get('#b2b-edit-instagram') || null,
+      contato_nome: get('#b2b-edit-contato-nome') || null,
+      contato_cargo: get('#b2b-edit-contato-cargo') || null,
+      contato_email: get('#b2b-edit-contato-email') || null,
+      contato_whatsapp: get('#b2b-edit-contato-whatsapp') || null,
+      contato_linkedin: get('#b2b-edit-contato-linkedin') || null,
+      status_comercial: get('#b2b-edit-status') || 'nao_contatado',
+      potencial: get('#b2b-edit-potencial') || 'medio',
+      proxima_acao: get('#b2b-edit-proxima-acao') || null,
+      proxima_acao_at: proximaAt ? new Date(proximaAt).toISOString() : null,
+      observacoes: get('#b2b-edit-observacoes') || null,
+    };
+
+    const id = get('#b2b-edit-id');
+    let res;
+    if (id) {
+      res = await sb.from('b2b_prospects').update(payload).eq('id', id).select().maybeSingle();
+    } else {
+      res = await sb.from('b2b_prospects').insert(payload).select().maybeSingle();
+    }
+    if (res.error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + res.error.message;
+      return;
+    }
+    msg.style.color = '#1a8a4a';
+    msg.textContent = id ? '✓ Atualizado' : '✓ Empresa cadastrada';
+    setTimeout(() => { _b2bCloseEditModal(); renderB2BProspects(); }, 350);
+  }
+
+  async function _b2bDeleteProspect() {
+    if (!_b2bEditingId) return;
+    if (!confirm('Excluir essa empresa e todo o histórico de interações? Não dá pra desfazer.')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('b2b_prospects').delete().eq('id', _b2bEditingId);
+    if (error) { alert('Erro: ' + error.message); return; }
+    _b2bCloseEditModal();
+    renderB2BProspects();
+  }
+
+  // ----- Copiar mensagem (template padrão com variáveis) -----
+  async function _b2bCopyMessage(prospectId) {
+    const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+    if (!p) return;
+    const tpl = _b2bState.templates.find(t => t.is_default) || _b2bState.templates[0];
+    if (!tpl) { alert('Nenhum template cadastrado. Abra "Templates B2B" pra criar.'); return; }
+    const text = _b2bRenderTemplate(tpl.conteudo, p);
+    try {
+      await navigator.clipboard.writeText(text);
+      // Feedback visual rápido
+      const btn = document.querySelector('[data-b2b-copy-msg="' + prospectId + '"]');
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = 'Copiado!';
+        btn.style.background = '#e6f4ea';
+        btn.style.borderColor = '#1a8a4a';
+        btn.style.color = '#1a8a4a';
+        setTimeout(() => { btn.textContent = orig; btn.style.background = '#fff'; btn.style.borderColor = '#ddd'; btn.style.color = '#444'; }, 1500);
+      }
+    } catch (e) {
+      alert('Mensagem (copie manualmente):\n\n' + text);
+    }
+  }
+
+  // ----- Log rápido de interação direto da linha -----
+  async function _b2bQuickLogInteraction(prospectId, tipo) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { error } = await sb.from('b2b_prospect_interactions').insert({
+      prospect_id: prospectId,
+      tipo,
+      descricao: null,
+    });
+    if (error) { alert('Erro: ' + error.message); return; }
+    // Atualiza status se for mensagem_enviada
+    if (tipo === 'mensagem_enviada') {
+      const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+      if (p && p.status_comercial === 'nao_contatado') {
+        await sb.from('b2b_prospects').update({ status_comercial: 'mensagem_enviada' }).eq('id', prospectId);
+      }
+    }
+    renderB2BProspects();
+  }
+
+  // ----- Quick add email (chip @ vazio) -----
+  // Prompt simples + save direto no banco. Cobre o caso de adicionar
+  // email enquanto vê a linha, sem abrir o modal de edição completo.
+  // Validação: formato básico de e-mail antes de salvar. Erro = alert.
+  async function _b2bQuickAddEmail(prospectId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const p = (_b2bState.cache || []).find(x => x.id === prospectId);
+    const nome = (p && p.nome) ? p.nome : 'esta empresa';
+    const input = prompt('E-mail do contato em ' + nome + ':');
+    if (input == null) return;        // user cancelou
+    const email = String(input).trim();
+    if (!email) return;
+    if (!/.+@.+\..+/.test(email)) {
+      alert('E-mail inválido. Use o formato nome@dominio.com');
+      return;
+    }
+    const { error } = await sb.from('b2b_prospects')
+      .update({ contato_email: email })
+      .eq('id', prospectId);
+    if (error) { alert('Erro ao salvar: ' + error.message); return; }
+    // Atualiza estado local pra re-render imediato (sem refetch da rede)
+    if (p) p.contato_email = email;
+    renderB2BProspects();
+  }
+
+  // ----- Templates: list + edit -----
+  function _b2bOpenTemplatesModal() {
+    const m = document.getElementById('b2b-templates-modal');
+    if (!m) return;
+    _b2bRenderTemplatesList();
+    m.style.display = 'flex';
+  }
+  function _b2bRenderTemplatesList() {
+    const ul = document.getElementById('b2b-templates-list');
+    if (!ul) return;
+    const cat = document.getElementById('b2b-template-filter-categoria')?.value || '';
+    const items = (_b2bState.templates || []).filter(t => !cat || t.categoria === cat);
+    if (!items.length) {
+      ul.innerHTML = '<li style="color:#888;font-style:italic;padding:10px 0;">Nenhum template nessa categoria.</li>';
+      return;
+    }
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+    ul.innerHTML = items.map(t =>
+      '<li style="padding:12px 0;border-bottom:1px solid #eee;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+          '<div><strong>' + esc(t.nome) + '</strong>' +
+            (t.categoria ? '<span style="margin-left:8px;font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.04em;">' + esc(t.categoria.replace(/_/g,' ')) + '</span>' : '') +
+            (t.is_default ? '<span style="margin-left:6px;font-size:.7rem;color:#a4663b;font-weight:700;">PADRÃO</span>' : '') +
+          '</div>' +
+          '<button type="button" data-b2b-tpl-edit="' + esc(t.id) + '" style="padding:5px 10px;background:#fff;border:1px solid #ddd;color:#444;border-radius:6px;font-size:.78rem;cursor:pointer;">Editar</button>' +
+        '</div>' +
+        '<pre style="margin:8px 0 0;font-family:inherit;font-size:.82rem;color:#444;background:#fafafa;padding:10px;border-radius:6px;white-space:pre-wrap;max-height:120px;overflow:auto;">' + esc(t.conteudo) + '</pre>' +
+      '</li>'
+    ).join('');
+    ul.querySelectorAll('[data-b2b-tpl-edit]').forEach(btn => {
+      btn.addEventListener('click', () => _b2bOpenTemplateEdit(btn.dataset.b2bTplEdit));
+    });
+  }
+  function _b2bOpenTemplateEdit(id) {
+    const m = document.getElementById('b2b-template-edit-modal');
+    if (!m) return;
+    const t = id ? (_b2bState.templates.find(x => x.id === id) || {}) : {};
+    document.getElementById('b2b-template-edit-title').textContent = id ? 'Editar template' : 'Novo template';
+    const set = (sel, v) => { const el = m.querySelector(sel); if (el) el.value = v == null ? '' : v; };
+    set('#b2b-template-edit-id', t.id || '');
+    set('#b2b-template-edit-nome', t.nome);
+    set('#b2b-template-edit-categoria', t.categoria);
+    set('#b2b-template-edit-conteudo', t.conteudo);
+    document.getElementById('b2b-template-edit-default').checked = !!t.is_default;
+    document.getElementById('b2b-template-edit-msg').textContent = '';
+    document.getElementById('b2b-template-edit-delete').style.display = id ? 'inline-block' : 'none';
+    m.style.display = 'flex';
+  }
+  async function _b2bSaveTemplate() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const m = document.getElementById('b2b-template-edit-modal');
+    const msg = m.querySelector('#b2b-template-edit-msg');
+    msg.textContent = '';
+    const id = m.querySelector('#b2b-template-edit-id').value;
+    const nome = (m.querySelector('#b2b-template-edit-nome').value || '').trim();
+    const conteudo = (m.querySelector('#b2b-template-edit-conteudo').value || '').trim();
+    if (!nome || !conteudo) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Nome e conteúdo são obrigatórios.';
+      return;
+    }
+    const isDefault = m.querySelector('#b2b-template-edit-default').checked;
+    // Se marcar como default, primeiro desmarca outros (constraint UNIQUE)
+    if (isDefault) {
+      await sb.from('b2b_prospect_templates').update({ is_default: false }).eq('is_default', true);
+    }
+    const payload = {
+      nome,
+      categoria: (m.querySelector('#b2b-template-edit-categoria').value || '').trim() || null,
+      conteudo,
+      is_default: isDefault,
+    };
+    let res;
+    if (id) {
+      res = await sb.from('b2b_prospect_templates').update(payload).eq('id', id);
+    } else {
+      res = await sb.from('b2b_prospect_templates').insert(payload);
+    }
+    if (res.error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + res.error.message;
+      return;
+    }
+    m.style.display = 'none';
+    _b2bState.templates = await _b2bFetchTemplates();
+    _b2bRenderTemplatesList();
+  }
+  async function _b2bDeleteTemplate() {
+    const m = document.getElementById('b2b-template-edit-modal');
+    const id = m.querySelector('#b2b-template-edit-id').value;
+    if (!id) return;
+    if (!confirm('Excluir esse template?')) return;
+    const sb = window.supabaseClient;
+    const { error } = await sb.from('b2b_prospect_templates').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    m.style.display = 'none';
+    _b2bState.templates = await _b2bFetchTemplates();
+    _b2bRenderTemplatesList();
+  }
+
+  // ----- CSV import/export -----
+  // Colunas esperadas no CSV (header obrigatório, ordem livre):
+  //   nome, tipo_empresa, funcionarios_faixa, segmento, cidade, site,
+  //   linkedin_empresa, contato_nome, contato_cargo, contato_email,
+  //   contato_whatsapp, potencial, status_comercial, observacoes
+  function _b2bParseCsv(text) {
+    // Parser simples: handles quoted fields with embedded commas.
+    const rows = [];
+    let cur = [''];
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i+1] === '"') { cur[cur.length-1] += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { cur[cur.length-1] += c; }
+      } else {
+        if (c === '"') { inQuotes = true; }
+        else if (c === ',') { cur.push(''); }
+        else if (c === '\n') { rows.push(cur); cur = ['']; }
+        else if (c === '\r') { /* skip */ }
+        else { cur[cur.length-1] += c; }
+      }
+    }
+    if (cur.length > 1 || cur[0]) rows.push(cur);
+    if (!rows.length) return [];
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    return rows.slice(1).filter(r => r.some(c => c && c.trim())).map(r => {
+      const obj = {};
+      header.forEach((h, i) => { obj[h] = (r[i] || '').trim(); });
+      return obj;
+    });
+  }
+  async function _b2bHandleCsvImport(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const rows = _b2bParseCsv(text);
+    if (!rows.length) { alert('CSV vazio ou inválido.'); return; }
+    if (!confirm(`Importar ${rows.length} empresa(s)?`)) {
+      e.target.value = '';
+      return;
+    }
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    // Filtra apenas chaves permitidas pra evitar payload com lixo
+    const allowed = new Set(['nome','tipo_empresa','funcionarios_faixa','segmento','cidade','site',
+      'linkedin_empresa','instagram','contato_nome','contato_cargo','contato_email','contato_whatsapp',
+      'contato_linkedin','potencial','status_comercial','proxima_acao','observacoes']);
+    const cleaned = rows
+      .map(r => {
+        const out = {};
+        Object.keys(r).forEach(k => { if (allowed.has(k) && r[k]) out[k] = r[k]; });
+        return out;
+      })
+      .filter(r => r.nome);  // nome é obrigatório
+    if (!cleaned.length) { alert('Nenhuma linha válida (precisa pelo menos da coluna "nome").'); e.target.value = ''; return; }
+    const { error } = await sb.from('b2b_prospects').insert(cleaned);
+    if (error) { alert('Erro no import: ' + error.message); e.target.value = ''; return; }
+    alert('✓ ' + cleaned.length + ' empresa(s) importada(s).');
+    e.target.value = '';
+    renderB2BProspects();
+  }
+  function _b2bExportCsv() {
+    const list = _b2bState.cache || [];
+    if (!list.length) { alert('Nada pra exportar.'); return; }
+    const cols = ['nome','tipo_empresa','funcionarios_faixa','segmento','cidade','site',
+      'linkedin_empresa','instagram','contato_nome','contato_cargo','contato_email','contato_whatsapp',
+      'contato_linkedin','status_comercial','potencial','proxima_acao','proxima_acao_at','observacoes','created_at'];
+    const escape = (v) => {
+      if (v == null) return '';
+      const s = String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replaceAll('"', '""') + '"';
+      return s;
+    };
+    const lines = [cols.join(',')];
+    list.forEach(p => lines.push(cols.map(c => escape(p[c])).join(',')));
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'b2b-prospects-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // =================================================================
+  // ===== EXPERIÊNCIAS FOCO — divulgação semanal ==================
+  // -----------------------------------------------------------------
+  // Painel operacional: mostra o que divulgar essa semana, em 3 grupos:
+  //   1. Foco da semana — eventos em 10-16 dias (sweet spot pra
+  //      começar divulgação: gera urgência mas dá tempo de comprar).
+  //   2. By Elarah Originals — sempre na régua, divulgação contínua.
+  //   3. Vagas críticas — <30% vagas + evento próximo (esgotando).
+  //
+  // Cada card tem botão de copiar mensagem pronta (template editável,
+  // persistido em localStorage) com variáveis preenchidas, e atalho
+  // direto pro modal de edição em "Experiências".
+  //
+  // Dados: usa o mesmo ElarahData.getAllExperiences() que outras abas.
+  // Sem nova query SQL — agrega/recorta no client.
+  // =================================================================
+
+  // Janela de "foco da semana" — 2 semanas é o sweet spot:
+  // <2 semanas = pouco tempo, >2 semanas = ainda longe.
+  // Janela de 7 dias (10-16) cobre a 2ª semana à frente com folga.
+  const FOCO_WEEK_MIN_DAYS = 10;
+  const FOCO_WEEK_MAX_DAYS = 16;
+  const FOCO_CRITICAL_DAYS = 30;     // próximo mês
+  const FOCO_CRITICAL_PCT = 0.30;    // <30% vagas restantes
+
+  // Template padrão (persistido em localStorage como `elarah_foco_tpl`)
+  const FOCO_TPL_DEFAULT =
+    '🎨 {{nome}}\n' +
+    '📅 {{data}} · {{horario}}\n' +
+    '📍 {{bairro}}\n\n' +
+    '✨ {{vagas}}\n' +
+    '💛 {{preco}}\n\n' +
+    '👉 Reserve sua vaga: {{link}}';
+
+  function _focoTpl() {
+    try { return localStorage.getItem('elarah_foco_tpl') || FOCO_TPL_DEFAULT; }
+    catch (e) { return FOCO_TPL_DEFAULT; }
+  }
+  function _focoSaveTpl(v) {
+    try { localStorage.setItem('elarah_foco_tpl', v); } catch (e) {}
+  }
+
+  // Parse defensivo do timestamp do evento. Prioridade:
+  // 1. event_at (timestamptz canônico) — quando disponível
+  // 2. data "DD/MM" ou "DD/MM/AAAA" (legado) — assume ano corrente se omitido
+  // Devolve { date: Date|null, daysFromNow: number|null }.
+  function _focoParseEventDate(exp) {
+    const now = new Date();
+    if (exp && exp.eventAt) {
+      const d = new Date(exp.eventAt);
+      if (!isNaN(d.getTime())) {
+        const days = Math.floor((d.getTime() - now.getTime()) / 86400000);
+        return { date: d, daysFromNow: days };
+      }
+    }
+    if (exp && exp.data) {
+      const m = String(exp.data).match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+      if (m) {
+        const day = Number(m[1]);
+        const month = Number(m[2]);
+        let year = m[3] ? Number(m[3]) : now.getFullYear();
+        if (year < 100) year += 2000;
+        // Tenta extrair hora do campo horario ("19h00 – 22h00")
+        let hh = 12, mm = 0;
+        const hm = String(exp.horario || '').match(/(\d{1,2})\s*h\s*(\d{0,2})/i);
+        if (hm) {
+          hh = Number(hm[1]);
+          mm = hm[2] ? Number(hm[2]) : 0;
+        }
+        const d = new Date(year, month - 1, day, hh, mm, 0);
+        if (!isNaN(d.getTime())) {
+          // Se a data caiu no passado e veio sem ano explícito, assume próximo ano
+          if (!m[3] && d.getTime() < now.getTime() - 86400000) {
+            d.setFullYear(year + 1);
+          }
+          const days = Math.floor((d.getTime() - now.getTime()) / 86400000);
+          return { date: d, daysFromNow: days };
+        }
+      }
+    }
+    return { date: null, daysFromNow: null };
+  }
+
+  function _focoEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  // Monta os dados pro template a partir da experiência.
+  function _focoBuildVars(exp) {
+    const parsed = _focoParseEventDate(exp);
+    const dataLabel = parsed.date
+      ? parsed.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      : (exp.data || '');
+    const vagasRest = Number(exp.vagasRestantes);
+    const vagasTot = Number(exp.vagasTotal);
+    const vagasLabel = (isFinite(vagasRest) && vagasRest > 0)
+      ? (vagasRest === 1 ? 'Última vaga!' : 'Restam ' + vagasRest + ' vagas')
+      : 'Vagas limitadas';
+    const link = 'https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(exp.id || '');
+    const preco = exp.preco || '';
+    return {
+      nome: exp.nome || '',
+      data: dataLabel,
+      horario: exp.horario || '',
+      bairro: exp.bairro || 'São Paulo',
+      vagas: vagasLabel,
+      link: link,
+      preco: preco,
+    };
+  }
+
+  function _focoRenderTemplate(tpl, exp) {
+    const vars = _focoBuildVars(exp);
+    return String(tpl)
+      .replaceAll('{{nome}}', vars.nome)
+      .replaceAll('{{data}}', vars.data)
+      .replaceAll('{{horario}}', vars.horario)
+      .replaceAll('{{bairro}}', vars.bairro)
+      .replaceAll('{{vagas}}', vars.vagas)
+      .replaceAll('{{link}}', vars.link)
+      .replaceAll('{{preco}}', vars.preco);
+  }
+
+  // Renderiza 1 card de experiência. Inclui badge do motivo (FOCO 2 SEM /
+  // BY ELARAH / VAGAS CRÍTICAS), data/horário com dias restantes,
+  // bairro, vagas, e botões de ação (copiar mensagem, editar, abrir
+  // página pública).
+  function _focoRenderCard(exp, opts) {
+    const parsed = _focoParseEventDate(exp);
+    const daysLabel = parsed.daysFromNow != null
+      ? (parsed.daysFromNow === 0 ? 'hoje'
+         : parsed.daysFromNow === 1 ? 'amanhã'
+         : parsed.daysFromNow < 0 ? Math.abs(parsed.daysFromNow) + 'd atrás'
+         : 'em ' + parsed.daysFromNow + 'd')
+      : '—';
+    const vagasRest = Number(exp.vagasRestantes);
+    const vagasTot = Number(exp.vagasTotal);
+    const hasVagas = isFinite(vagasRest) && isFinite(vagasTot) && vagasTot > 0;
+    const vagasPct = hasVagas ? vagasRest / vagasTot : 1;
+    const vagasColor = vagasPct < 0.3 ? '#c0392b' : (vagasPct < 0.6 ? '#a4663b' : '#1a8a4a');
+    const vagasText = hasVagas
+      ? vagasRest + ' / ' + vagasTot
+      : (isFinite(vagasRest) ? String(vagasRest) : '—');
+
+    // Badge do grupo (vermelho/laranja/azul conforme motivo)
+    const badge = opts && opts.badge
+      ? '<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:' +
+        opts.badgeBg + ';color:' + opts.badgeFg + ';">' + _focoEsc(opts.badge) + '</span>'
+      : '';
+
+    const imgUrl = (exp.imagem || '').trim();
+    const imgHtml = imgUrl
+      ? '<div style="width:100%;height:120px;background:#f4f0e6 url(\'' + _focoEsc(imgUrl) + '\') center/cover no-repeat;border-radius:8px;margin-bottom:10px;"></div>'
+      : '';
+
+    return '<article style="background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;">' +
+      imgHtml +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+        badge +
+        '<span style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.04em;">' + _focoEsc(exp.categoria || '—') + '</span>' +
+      '</div>' +
+      '<h3 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a1a;line-height:1.3;">' + _focoEsc(exp.nome || 'Experiência') + '</h3>' +
+      '<div style="font-size:.82rem;color:#444;line-height:1.5;">' +
+        '<div>📅 <strong>' + _focoEsc(exp.data || '—') + '</strong> · <span style="color:#a4663b;">' + _focoEsc(daysLabel) + '</span></div>' +
+        (exp.horario ? '<div>⏱ ' + _focoEsc(exp.horario) + '</div>' : '') +
+        (exp.bairro ? '<div>📍 ' + _focoEsc(exp.bairro) + '</div>' : '') +
+        '<div>🎟 Vagas: <strong style="color:' + vagasColor + ';">' + _focoEsc(vagasText) + '</strong>' +
+          (hasVagas ? ' <span style="color:#888;font-size:.78rem;">(' + Math.round(vagasPct * 100) + '%)</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">' +
+        '<button type="button" data-foco-copy="' + _focoEsc(exp.id) + '" style="flex:1;min-width:120px;padding:8px 10px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">📋 Copiar mensagem</button>' +
+        '<a href="https://elarah.com.br/experiencia.html?id=' + _focoEsc(exp.id) + '" target="_blank" rel="noopener" title="Abrir página pública" style="padding:8px 12px;background:#fff;border:1px solid #ddd;color:#444;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;">🔗</a>' +
+        '<button type="button" data-foco-edit="' + _focoEsc(exp.id) + '" title="Ir para Experiências e editar" style="padding:8px 12px;background:#fff;border:1px solid #ddd;color:#444;border-radius:8px;font-size:.82rem;cursor:pointer;">✏️</button>' +
+      '</div>' +
+    '</article>';
+  }
+
+  async function renderExperienciasFoco() {
+    const panel = document.getElementById('panel-experiencias-foco');
+    if (!panel) return;
+
+    const weekListEl = document.getElementById('foco-week-list');
+    const byelarahListEl = document.getElementById('foco-byelarah-list');
+    const criticalListEl = document.getElementById('foco-critical-list');
+    if (!weekListEl || !byelarahListEl || !criticalListEl) return;
+
+    weekListEl.innerHTML = '<p style="color:#888;font-size:.85rem;">Carregando…</p>';
+    byelarahListEl.innerHTML = '';
+    criticalListEl.innerHTML = '';
+
+    // Janela de datas pro stat "Semana de"
+    const now = new Date();
+    const start = new Date(now); start.setDate(now.getDate() + FOCO_WEEK_MIN_DAYS);
+    const end = new Date(now); end.setDate(now.getDate() + FOCO_WEEK_MAX_DAYS);
+    const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const semanaLabel = fmt(start) + ' – ' + fmt(end);
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('stat-foco-semana', semanaLabel);
+
+    // Wire template textarea + reset (uma vez)
+    const tplEl = document.getElementById('foco-tpl');
+    const tplResetBtn = document.getElementById('foco-tpl-reset');
+    if (tplEl && !tplEl.dataset.wired) {
+      tplEl.value = _focoTpl();
+      tplEl.addEventListener('input', () => _focoSaveTpl(tplEl.value));
+      tplEl.dataset.wired = '1';
+    }
+    if (tplResetBtn && !tplResetBtn.dataset.wired) {
+      tplResetBtn.addEventListener('click', () => {
+        if (tplEl) tplEl.value = FOCO_TPL_DEFAULT;
+        _focoSaveTpl(FOCO_TPL_DEFAULT);
+      });
+      tplResetBtn.dataset.wired = '1';
+    }
+
+    // Carrega experiências
+    let allExps = [];
+    try {
+      if (window.ElarahData && ElarahData.getAllExperiences) {
+        allExps = await ElarahData.getAllExperiences();
+      }
+    } catch (e) {
+      console.warn('[Elarah Foco] erro ao carregar experiências:', e);
+    }
+
+    // Filtra ativas e não-ocultas. Mesmo critério da home.
+    const active = (allExps || []).filter(e => e && e.isActive !== false);
+
+    // Computa grupos
+    const focoSemana = [];
+    const byelarah = [];
+    const critical = [];
+
+    active.forEach(exp => {
+      const parsed = _focoParseEventDate(exp);
+      const days = parsed.daysFromNow;
+
+      // Grupo 1: foco da semana (10-16 dias)
+      if (days != null && days >= FOCO_WEEK_MIN_DAYS && days <= FOCO_WEEK_MAX_DAYS) {
+        focoSemana.push({ exp, days });
+      }
+
+      // Grupo 2: By Elarah Originals (sempre, sem filtro de data)
+      if (exp.isElarahOriginal === true) {
+        byelarah.push({ exp, days });
+      }
+
+      // Grupo 3: Vagas críticas (<30% vagas E evento no próximo mês)
+      const vagasRest = Number(exp.vagasRestantes);
+      const vagasTot = Number(exp.vagasTotal);
+      if (isFinite(vagasRest) && isFinite(vagasTot) && vagasTot > 0 &&
+          (vagasRest / vagasTot) < FOCO_CRITICAL_PCT &&
+          days != null && days >= 0 && days <= FOCO_CRITICAL_DAYS) {
+        critical.push({ exp, days });
+      }
+    });
+
+    // Ordena por data (mais próximas primeiro)
+    const sortByDays = (a, b) => (a.days == null ? 9999 : a.days) - (b.days == null ? 9999 : b.days);
+    focoSemana.sort(sortByDays);
+    byelarah.sort(sortByDays);
+    critical.sort(sortByDays);
+
+    setText('stat-foco-week-count', focoSemana.length);
+    setText('stat-foco-byelarah-count', byelarah.length);
+    setText('stat-foco-critical-count', critical.length);
+
+    // Render dos 3 grupos
+    weekListEl.innerHTML = focoSemana.length
+      ? focoSemana.map(o => _focoRenderCard(o.exp, {
+          badge: '🎯 Foco semana', badgeBg: '#fff8ef', badgeFg: '#a4663b',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência marcada pra esta semana de divulgação. Atualize a data de eventos em <strong>Experiências</strong> ou aguarde a próxima janela.</p>';
+
+    byelarahListEl.innerHTML = byelarah.length
+      ? byelarah.map(o => _focoRenderCard(o.exp, {
+          badge: '✨ By Elarah', badgeBg: '#fcefef', badgeFg: '#a04500',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência marcada como <em>By Elarah Original</em>. Marque na aba <strong>Experiências</strong> → editar → seção "By Elarah".</p>';
+
+    criticalListEl.innerHTML = critical.length
+      ? critical.map(o => _focoRenderCard(o.exp, {
+          badge: '🔥 Vagas críticas', badgeBg: '#fdecea', badgeFg: '#9c2f22',
+        })).join('')
+      : '<p style="grid-column:1/-1;color:#888;font-size:.88rem;background:#fafafa;padding:18px;border-radius:8px;text-align:center;">Nenhuma experiência com vagas críticas. Bom sinal — sem nada esgotando às pressas.</p>';
+
+    // Wire ações em todos os cards (delegação por click)
+    panel.querySelectorAll('[data-foco-copy]').forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.focoCopy;
+        const exp = active.find(e => e.id === id);
+        if (!exp) return;
+        const tpl = (document.getElementById('foco-tpl') || {}).value || _focoTpl();
+        const text = _focoRenderTemplate(tpl, exp);
+        try {
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = '✓ Copiado!';
+            btn.style.background = '#1a8a4a';
+            setTimeout(() => { btn.textContent = orig; btn.style.background = '#f0a05e'; }, 1500);
+          }, () => alert(text));
+        } catch (e) { alert(text); }
+      });
+    });
+    panel.querySelectorAll('[data-foco-edit]').forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => {
+        // Atalho: leva pra aba Experiências. O admin abre o filtro
+        // por nome lá. Sem deep-link específico pra evitar acoplamento
+        // entre módulos.
+        const navBtn = document.querySelector('.admin__nav-item[data-panel="experiences"]');
+        if (navBtn) navBtn.click();
+      });
+    });
+  }
+
+  // =================================================================
+  // ===== RECORRÊNCIA SEMANAL (Fase 2 — admin UI) ==================
+  // -----------------------------------------------------------------
+  // CRUD das experience_recurrence_rules + listagem das próximas
+  // datas materializadas + cancelar/reativar exceções.
+  //
+  // Dependências:
+  //   - SQL elarah_experience_recurrence_rules.sql rodado (Fase 1)
+  //   - Modal de edição de experiência aberto em modo EDIÇÃO
+  //
+  // A trigger SQL materialize_recurrence_after_change cuida da geração
+  // dos slots — admin só precisa criar/editar a regra. UI mostra
+  // feedback visual do que foi gerado.
+  // =================================================================
+
+  // Mapa weekday → label PT-BR (convenção PostgreSQL extract(dow))
+  const RECURRENCE_WEEKDAYS = [
+    { v: 0, label: 'Domingo' },
+    { v: 1, label: 'Segunda-feira' },
+    { v: 2, label: 'Terça-feira' },
+    { v: 3, label: 'Quarta-feira' },
+    { v: 4, label: 'Quinta-feira' },
+    { v: 5, label: 'Sexta-feira' },
+    { v: 6, label: 'Sábado' },
+  ];
+
+  function _recurrenceEsc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+  }
+
+  function _recurrenceWeekdayLabel(v) {
+    const item = RECURRENCE_WEEKDAYS.find(w => w.v === v);
+    return item ? item.label : '—';
+  }
+
+  // Versão curta dos labels pra exibir múltiplos dias compactos:
+  // [4, 2, 5] → "Ter, Qui, Sex" (ordenado por dia)
+  const WEEKDAY_SHORT = { 0: 'Dom', 1: 'Seg', 2: 'Ter', 3: 'Qua', 4: 'Qui', 5: 'Sex', 6: 'Sáb' };
+  function _recurrenceWeekdaysShortList(arr) {
+    if (!Array.isArray(arr) || !arr.length) return '—';
+    return arr.slice().sort((a, b) => a - b).map(v => WEEKDAY_SHORT[v] || '?').join(', ');
+  }
+
+  // Converte time "HH:MM:SS" do banco pro input type=time ("HH:MM").
+  function _recurrenceTimeForInput(t) {
+    if (!t) return '';
+    const s = String(t).trim();
+    if (s.length >= 5) return s.slice(0, 5);
+    return s;
+  }
+
+  // Carrega regras + slots futuros e renderiza no painel.
+  async function _recurrenceLoadAndRender(experienceId) {
+    if (!experienceId) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const section = document.getElementById('exp-recurrence-section');
+    if (!section) return;
+
+    // Mostra a seção e limpa msg
+    section.style.display = '';
+    const msgEl = document.getElementById('exp-recurrence-msg');
+    if (msgEl) msgEl.textContent = '';
+
+    // Busca regras + slots futuros + nome da experiência em paralelo
+    const [rulesRes, slotsRes, expRes] = await Promise.all([
+      sb.from('experience_recurrence_rules')
+        .select('id, weekdays, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
+        .eq('experience_id', experienceId)
+        .order('created_at', { ascending: true }),
+      sb.from('experience_slots')
+        .select('id, data, horario, vagas_total, vagas_restantes, event_at, is_active, recurrence_rule_id')
+        .eq('experience_id', experienceId)
+        .gte('event_at', new Date().toISOString())
+        .order('event_at', { ascending: true })
+        .limit(40),
+      sb.from('experiences').select('id, nome').eq('id', experienceId).maybeSingle(),
+    ]);
+
+    // Header visível: qual experiência está sendo editada agora.
+    // Defesa contra "criei regra na experiência errada" — admin
+    // sempre vê o nome em destaque ANTES de salvar.
+    const headerEl = document.getElementById('exp-recurrence-header');
+    if (headerEl) {
+      const expNome = (expRes && expRes.data && expRes.data.nome) || '(experiência sem nome)';
+      headerEl.innerHTML =
+        '<div style="background:#fff8ef;border:2px solid #f0a05e;border-radius:8px;padding:10px 14px;margin-bottom:14px;">' +
+        '<span style="font-size:.78rem;color:#a4663b;text-transform:uppercase;letter-spacing:.5px;font-weight:600;">Regras desta experiência:</span><br>' +
+        '<strong style="font-size:1rem;color:#a4663b;">' +
+        _recurrenceEsc(expNome) +
+        '</strong>' +
+        '<span style="font-size:.72rem;color:#a4663b;opacity:.7;margin-left:8px;">' +
+        _recurrenceEsc(experienceId) +
+        '</span>' +
+        '</div>';
+    }
+
+    if (rulesRes.error) {
+      console.error('[Elarah Recurrence] load rules error:', rulesRes.error);
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Erro ao carregar regras: ' + (rulesRes.error.message || rulesRes.error.code);
+      }
+      return;
+    }
+
+    const rules = rulesRes.data || [];
+    const slots = slotsRes.error ? [] : (slotsRes.data || []);
+
+    _recurrenceRenderRules(experienceId, rules);
+    _recurrenceRenderSlots(rules, slots);
+  }
+
+  function _recurrenceRenderRules(experienceId, rules) {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+
+    if (!rules.length) {
+      listEl.innerHTML = '<p style="margin:0;color:#888;font-size:.85rem;font-style:italic;">Nenhuma regra cadastrada. Clique em "+ Adicionar regra de recorrência" pra criar a primeira.</p>';
+      _recurrenceWireAddBtn(experienceId);
+      return;
+    }
+
+    listEl.innerHTML = rules.map(r => _recurrenceRuleCard(r)).join('');
+    _recurrenceWireRuleCards(experienceId, rules);
+    _recurrenceWireAddBtn(experienceId);
+  }
+
+  // Card editável inline pra uma regra. Status visual claro: ativa
+  // (laranja) vs inativa (cinza). Edit/Salvar/Desativar inline.
+  // Suporta múltiplos dias da semana — admin marca checkboxes pra
+  // criar 1 regra "terça + quinta + sexta às 19h, 12 vagas".
+  function _recurrenceRuleCard(r) {
+    const isActive = r.is_active !== false;
+    const bg = isActive ? '#fffaf2' : '#f4f4f4';
+    const border = isActive ? '#f0a05e' : '#ccc';
+    const labelOpacity = isActive ? '1' : '.55';
+
+    // Set de weekdays selecionados — aceita weekdays (array novo) ou
+    // weekday (campo antigo, retrocompat). Vazio = default quinta.
+    const selected = new Set();
+    if (Array.isArray(r.weekdays)) {
+      r.weekdays.forEach(v => selected.add(Number(v)));
+    } else if (typeof r.weekday === 'number') {
+      selected.add(r.weekday);  // backfill em memória
+    }
+
+    const checkboxesHtml = RECURRENCE_WEEKDAYS.map(w => {
+      const checked = selected.has(w.v) ? ' checked' : '';
+      const labelBg = selected.has(w.v) ? '#fff8ef' : '#fff';
+      const labelBorder = selected.has(w.v) ? '#f0a05e' : '#ddd';
+      const labelColor = selected.has(w.v) ? '#a4663b' : '#666';
+      return '<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:' + labelBg + ';border:1px solid ' + labelBorder + ';border-radius:999px;cursor:pointer;font-size:.78rem;font-weight:600;color:' + labelColor + ';">' +
+        '<input type="checkbox" data-rec-field="weekday-check" data-weekday="' + w.v + '" value="' + w.v + '"' + checked + ' style="margin:0;cursor:pointer;">' +
+        w.label.replace('-feira', '') +
+      '</label>';
+    }).join('');
+
+    return '<div class="rec-rule-card" data-rec-rule-id="' + _recurrenceEsc(r.id) + '" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + labelOpacity + ';">' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;margin-bottom:6px;">Dias da semana</label>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;" data-rec-field="weekdays-container">' + checkboxesHtml + '</div>' +
+        '<p style="margin:6px 0 0;font-size:.72rem;color:#888;font-style:italic;">Marque um ou mais dias. Cada dia marcado gera 8 slots (8 semanas × N dias = total).</p>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Início' +
+          '<input type="time" data-rec-field="hora_inicio" value="' + _recurrenceEsc(_recurrenceTimeForInput(r.hora_inicio)) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Fim (opcional)' +
+          '<input type="time" data-rec-field="hora_fim" value="' + _recurrenceEsc(_recurrenceTimeForInput(r.hora_fim)) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Vagas' +
+          '<input type="number" data-rec-field="vagas_total" min="1" step="1" value="' + _recurrenceEsc(r.vagas_total) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;">Horizon (semanas)' +
+          '<input type="number" data-rec-field="horizon_weeks" min="1" max="52" step="1" value="' + _recurrenceEsc(r.horizon_weeks) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;width:100%;">Rótulo do horário' +
+          '<input type="text" data-rec-field="horario_label" value="' + _recurrenceEsc(r.horario_label) + '" placeholder="Ex: 19h00 – 22h00" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+        '<button type="button" data-rec-action="save" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Salvar regra</button>' +
+        (isActive
+          ? '<button type="button" data-rec-action="deactivate" style="padding:7px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Desativar</button>'
+          : '<button type="button" data-rec-action="reactivate" style="padding:7px 14px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Reativar</button>'
+        ) +
+        '<button type="button" data-rec-action="materialize" title="Gerar slots manualmente (já roda auto ao salvar; use só pra recriar horizon)" style="padding:7px 14px;background:#fff;border:1px solid #ddd;color:#666;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">↻ Materializar</button>' +
+      '</div>' +
+      '<div data-rec-rule-msg style="margin-top:6px;font-size:.78rem;min-height:1em;"></div>' +
+    '</div>';
+  }
+
+  function _recurrenceWireAddBtn(experienceId) {
+    const addBtn = document.getElementById('exp-recurrence-add-btn');
+    if (!addBtn) return;
+    // CRÍTICO: usa .onclick (substitui handler) em vez de addEventListener
+    // (acumula). Antes, abrir modal A wirava experienceId=A; abrir B em
+    // seguida não re-wirava (dataset.wired travava) — clicar "+" em B
+    // criava regra na experiência A. Vazamento cross-experience visual.
+    addBtn.onclick = () => _recurrenceCreateNew(experienceId);
+  }
+
+  function _recurrenceWireRuleCards(experienceId, rules) {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+    // Delegação por card pra não vazar handlers em re-renders
+    listEl.querySelectorAll('.rec-rule-card').forEach(card => {
+      if (card.dataset.wired) return;
+      card.dataset.wired = '1';
+      const ruleId = card.dataset.recRuleId;
+
+      card.addEventListener('click', async (e) => {
+        const btn = e.target && e.target.closest('button[data-rec-action]');
+        if (!btn) return;
+        const action = btn.dataset.recAction;
+        if (action === 'save') {
+          await _recurrenceSaveCard(card, ruleId, experienceId, rules);
+        } else if (action === 'deactivate') {
+          await _recurrenceSetActive(card, ruleId, experienceId, false);
+        } else if (action === 'reactivate') {
+          await _recurrenceSetActive(card, ruleId, experienceId, true);
+        } else if (action === 'materialize') {
+          await _recurrenceMaterialize(card, ruleId, experienceId);
+        }
+      });
+
+      // Atualiza visual do label da checkbox ao marcar/desmarcar
+      // (laranja quando marcado, cinza quando desmarcado). Visual
+      // imediato sem precisar salvar.
+      card.addEventListener('change', (e) => {
+        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"]') ? e.target : null;
+        if (!cb) return;
+        const lbl = cb.closest('label');
+        if (!lbl) return;
+        if (cb.checked) {
+          lbl.style.background = '#fff8ef';
+          lbl.style.borderColor = '#f0a05e';
+          lbl.style.color = '#a4663b';
+        } else {
+          lbl.style.background = '#fff';
+          lbl.style.borderColor = '#ddd';
+          lbl.style.color = '#666';
+        }
+      });
+    });
+  }
+
+  // Invalida caches globais (slots + experiências) depois de qualquer
+  // CRUD de recorrência. Sem isso, renderExperiences usa cache em
+  // memória e admin não vê os slots novos na listagem principal.
+  function _recurrenceInvalidateCaches() {
+    try {
+      if (window.ElarahData && typeof ElarahData.invalidateSlotsCache === 'function') {
+        ElarahData.invalidateSlotsCache();
+      }
+      if (window.ElarahData && typeof ElarahData.invalidateCache === 'function') {
+        ElarahData.invalidateCache();
+      }
+    } catch (e) {
+      console.warn('[Elarah Recurrence] cache invalidate falhou:', e && e.message);
+    }
+  }
+
+  // Cria uma regra nova com defaults sensatos. Trigger SQL gera os
+  // slots automaticamente após o INSERT.
+  async function _recurrenceCreateNew(experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const msgEl = document.getElementById('exp-recurrence-msg');
+    if (msgEl) msgEl.textContent = '';
+
+    // Confirmação dupla: re-lê o nome da experiência DO BANCO (não
+    // do cache), garantindo que o experienceId capturado no closure
+    // ainda aponta pra experiência que o admin acha que está editando.
+    const expCheck = await sb.from('experiences')
+      .select('id, nome').eq('id', experienceId).maybeSingle();
+    if (!expCheck || !expCheck.data) {
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Experiência não encontrada (id: ' + experienceId + ')';
+      }
+      return;
+    }
+    const okConfirm = window.confirm(
+      'Criar nova regra de recorrência na experiência:\n\n"' +
+      expCheck.data.nome + '"\n\n(id: ' + experienceId + ')\n\nConfirma?'
+    );
+    if (!okConfirm) return;
+
+    // Defaults: quinta 19h00, 12 vagas, horizon 8 semanas
+    // weekdays é array — admin pode marcar mais dias depois (Ter/Qui/Sex, etc.)
+    const payload = {
+      experience_id: experienceId,
+      weekdays: [4],
+      hora_inicio: '19:00:00',
+      horario_label: '19h00 – 22h00',
+      vagas_total: 12,
+      horizon_weeks: 8,
+      is_active: true,
+    };
+    const { error } = await sb.from('experience_recurrence_rules').insert(payload);
+    if (error) {
+      if (msgEl) {
+        msgEl.style.color = '#c0392b';
+        msgEl.textContent = 'Erro ao criar regra: ' + (error.message || error.code);
+      }
+      console.error('[Elarah Recurrence] create error:', error);
+      return;
+    }
+    // Re-render — trigger SQL já materializou os slots automaticamente
+    _recurrenceInvalidateCaches();
+    await _recurrenceLoadAndRender(experienceId);
+    if (msgEl) {
+      msgEl.style.color = '#1a8a4a';
+      msgEl.textContent = '✓ Regra criada e slots gerados';
+      setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 2500);
+    }
+  }
+
+  // Salva mudanças num card. Estratégia: lê o estado novo, busca o
+  // estado atual no banco, compara. Se horario_label ou weekday
+  // mudaram, faz cleanup de slots futuros SEM bookings que tenham
+  // o horario antigo (vira órfão). Slots COM bookings ficam (viram
+  // "manuais" depois que a regra remateurializa nova série).
+  async function _recurrenceSaveCard(card, ruleId, experienceId, rulesCache) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+
+    const oldRule = (rulesCache || []).find(r => r.id === ruleId) || null;
+    const getVal = (field) => {
+      const el = card.querySelector('[data-rec-field="' + field + '"]');
+      return el ? el.value : '';
+    };
+
+    // Lê array de weekdays marcados nos checkboxes
+    const newWeekdays = Array.from(
+      card.querySelectorAll('[data-rec-field="weekday-check"]:checked')
+    ).map(cb => Number(cb.value)).filter(v => v >= 0 && v <= 6).sort((a, b) => a - b);
+    const newHoraInicio = getVal('hora_inicio');
+    const newHoraFim = getVal('hora_fim') || null;
+    const newHorarioLabel = (getVal('horario_label') || '').trim();
+    const newVagasTotal = Number(getVal('vagas_total'));
+    const newHorizonWeeks = Number(getVal('horizon_weeks'));
+
+    if (!newWeekdays.length) { _recurrenceCardErr(cardMsg, 'Marque pelo menos 1 dia da semana.'); return; }
+    if (!newHoraInicio) { _recurrenceCardErr(cardMsg, 'Hora início obrigatória.'); return; }
+    if (!newHorarioLabel) { _recurrenceCardErr(cardMsg, 'Rótulo do horário obrigatório.'); return; }
+    if (!isFinite(newVagasTotal) || newVagasTotal < 1) { _recurrenceCardErr(cardMsg, 'Vagas deve ser inteiro >= 1.'); return; }
+    if (!isFinite(newHorizonWeeks) || newHorizonWeeks < 1 || newHorizonWeeks > 52) { _recurrenceCardErr(cardMsg, 'Horizon entre 1 e 52 semanas.'); return; }
+
+    // Cleanup proativo de órfãos ANTES de salvar.
+    // Quando horario_label OU weekday muda, os slots FUTUROS que a
+    // regra criou com valores antigos ficam órfãos (cliente vê dois
+    // horários no mesmo dia). Solução conservadora:
+    //   1. Lista slots futuros desta regra com horário/dow antigos
+    //   2. Pra cada, checa se tem booking (paid) referenciando
+    //   3. Sem bookings → apaga (limpa)
+    //   4. Com bookings → preserva, mas desliga recurrence_rule_id
+    //      (vira manual) — usuário cuida no admin se quiser
+    // Detecta mudança em horario_label OU em weekdays (comparação de arrays).
+    // Se mudou, cleanup remove slots futuros com valores antigos (sem
+    // bookings = delete; com bookings = vira manual via recurrence_rule_id=NULL).
+    const horarioChanged = oldRule && oldRule.horario_label !== newHorarioLabel;
+    const oldWeekdays = Array.isArray(oldRule && oldRule.weekdays)
+      ? oldRule.weekdays.slice().sort((a, b) => a - b)
+      : (oldRule && typeof oldRule.weekday === 'number' ? [oldRule.weekday] : []);
+    const weekdaysChanged = oldRule &&
+      (oldWeekdays.length !== newWeekdays.length ||
+       oldWeekdays.some((v, i) => v !== newWeekdays[i]));
+    if ((horarioChanged || weekdaysChanged) && oldRule) {
+      try {
+        const cleaned = await _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays);
+        if (cleaned > 0) {
+          console.info('[Elarah Recurrence] cleanup: ' + cleaned + ' slot(s) órfão(s) removidos/desligados');
+        }
+      } catch (e) {
+        console.warn('[Elarah Recurrence] cleanup falhou (segue mesmo assim):', e && e.message);
+      }
+    }
+
+    const patch = {
+      weekdays: newWeekdays,
+      hora_inicio: newHoraInicio,
+      hora_fim: newHoraFim,
+      horario_label: newHorarioLabel,
+      vagas_total: newVagasTotal,
+      horizon_weeks: newHorizonWeeks,
+    };
+    const { error } = await sb.from('experience_recurrence_rules').update(patch).eq('id', ruleId);
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro ao salvar: ' + (error.message || error.code));
+      console.error('[Elarah Recurrence] save error:', error);
+      return;
+    }
+    _recurrenceCardOk(cardMsg, '✓ Salvo. Slots atualizados.');
+    _recurrenceInvalidateCaches();
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Desativa OU reativa uma regra. Soft-delete: trigger materialize
+  // não dispara em desativação, mas dispara em reativação (e gera
+  // slots novos pro horizon).
+  async function _recurrenceSetActive(card, ruleId, experienceId, active) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+
+    if (!active) {
+      const yes = confirm('Desativar essa regra? Os slots já gerados continuam ativos (pra honrar reservas), mas novos slots não serão criados.');
+      if (!yes) return;
+    }
+    const { error } = await sb.from('experience_recurrence_rules')
+      .update({ is_active: active })
+      .eq('id', ruleId);
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro: ' + (error.message || error.code));
+      return;
+    }
+    _recurrenceCardOk(cardMsg, active ? '✓ Reativada' : '✓ Desativada');
+    _recurrenceInvalidateCaches();
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Chama materialize_recurrence_slots RPC manualmente. Útil pra
+  // estender horizon após cron quebrar, ou pra forçar re-cálculo.
+  async function _recurrenceMaterialize(card, ruleId, experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const cardMsg = card.querySelector('[data-rec-rule-msg]');
+    if (cardMsg) cardMsg.textContent = '';
+    const { data, error } = await sb.rpc('materialize_recurrence_slots', { p_rule_id: ruleId });
+    if (error) {
+      _recurrenceCardErr(cardMsg, 'Erro materialize: ' + (error.message || error.code));
+      return;
+    }
+    const n = typeof data === 'number' ? data : (data && data[0]) || 0;
+    _recurrenceCardOk(cardMsg, '✓ Materialize OK (' + n + ' slot' + (n === 1 ? '' : 's') + ' novo' + (n === 1 ? '' : 's') + ')');
+    _recurrenceInvalidateCaches();
+    setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Apaga (ou desliga recurrence_rule_id) slots órfãos quando o
+  // horario_label ou weekdays mudam. Slots COM bookings são preservados
+  // virando "manuais" (recurrence_rule_id=null) — admin cuida.
+  // Retorna número de slots tratados.
+  //
+  // ESTRATÉGIA (corrige bug de edição sequencial):
+  //   Lista TODOS os slots futuros da regra e marca como órfão qualquer
+  //   slot cujo (horario, weekday do event_at) não bate com o estado
+  //   NOVO esperado (newHorarioLabel + newWeekdays). Antes filtrava
+  //   por oldRule.horario_label, mas em 2 edições seguidas o oldRule
+  //   já refletia o 1º save — slots de label anterior ainda mais antigo
+  //   ficavam órfãos invisíveis. Comparar contra o estado NOVO é a
+  //   única forma robusta.
+  async function _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays) {
+    const sb = window.supabaseClient;
+    if (!sb || !ruleId) return 0;
+
+    const expectedLabel = (newHorarioLabel || '').trim();
+    const expectedWdSet = new Set((newWeekdays || []).map(Number));
+
+    // Lista TODOS os slots futuros desta regra (sem filtrar por horario)
+    const { data: candidates, error: err1 } = await sb
+      .from('experience_slots')
+      .select('id, data, horario, event_at')
+      .eq('experience_id', experienceId)
+      .eq('recurrence_rule_id', ruleId)
+      .gte('event_at', new Date().toISOString());
+    if (err1 || !candidates || !candidates.length) return 0;
+
+    let cleaned = 0;
+    for (const slot of candidates) {
+      // Decide se o slot diverge do estado novo
+      const slotHorario = (slot.horario || '').trim();
+      const slotDow = slot.event_at ? new Date(slot.event_at).getDay() : null;
+      const horarioDiverge = slotHorario !== expectedLabel;
+      const weekdayDiverge = slotDow !== null && expectedWdSet.size > 0 && !expectedWdSet.has(slotDow);
+      if (!horarioDiverge && !weekdayDiverge) continue; // slot está alinhado, mantém
+
+      // Checa booking ativo
+      const { count, error: errCount } = await sb
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('slot_id', slot.id)
+        .in('status', ['pending', 'pago']);
+      if (errCount) {
+        console.warn('[Elarah Recurrence] cleanup count error:', errCount.message);
+        continue;
+      }
+      if ((count || 0) > 0) {
+        // Tem booking — desliga rule_id (vira manual, preserva reserva)
+        const { error: errUpd } = await sb.from('experience_slots')
+          .update({ recurrence_rule_id: null })
+          .eq('id', slot.id);
+        if (errUpd) console.warn('[Elarah Recurrence] cleanup detach error:', errUpd.message);
+      } else {
+        // Sem booking — desliga rule_id PRIMEIRO (libera trigger
+        // BEFORE DELETE do guard SQL), depois deleta. O trigger
+        // bloqueia DELETE de slot com recurrence_rule_id != null;
+        // virar manual antes é caminho seguro.
+        const { error: errUnlink } = await sb.from('experience_slots')
+          .update({ recurrence_rule_id: null })
+          .eq('id', slot.id);
+        if (errUnlink) {
+          console.warn('[Elarah Recurrence] cleanup unlink-before-delete error:', errUnlink.message);
+          continue;
+        }
+        const { error: errDel } = await sb.from('experience_slots').delete().eq('id', slot.id);
+        if (errDel) console.warn('[Elarah Recurrence] cleanup delete error:', errDel.message);
+      }
+      cleaned += 1;
+    }
+    return cleaned;
+  }
+
+  function _recurrenceCardErr(el, txt) { if (el) { el.style.color = '#c0392b'; el.textContent = txt; } }
+  function _recurrenceCardOk(el, txt)  { if (el) { el.style.color = '#1a8a4a'; el.textContent = txt; } }
+
+  // Render da lista de slots futuros (próximas datas geradas).
+  function _recurrenceRenderSlots(rules, slots) {
+    const wrap = document.getElementById('exp-recurrence-slots-wrap');
+    const listEl = document.getElementById('exp-recurrence-slots-list');
+    if (!wrap || !listEl) return;
+
+    // Mostra só slots vinculados a regras (recurrence_rule_id != null)
+    const recSlots = (slots || []).filter(s => s.recurrence_rule_id);
+    if (!recSlots.length) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+
+    // Agrupa por rule_id pra mostrar de qual regra cada slot veio
+    const ruleById = new Map();
+    (rules || []).forEach(r => ruleById.set(r.id, r));
+
+    listEl.innerHTML = recSlots.map(s => _recurrenceSlotRow(s, ruleById.get(s.recurrence_rule_id))).join('');
+
+    // Wire toggle/active de cada slot
+    listEl.querySelectorAll('[data-slot-toggle]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const slotId = btn.dataset.slotToggle;
+        const targetActive = btn.dataset.slotTargetActive === '1';
+        await _recurrenceToggleSlot(slotId, targetActive);
+      });
+    });
+  }
+
+  function _recurrenceSlotRow(slot, rule) {
+    const evt = slot.event_at ? new Date(slot.event_at) : null;
+    const dataLabel = evt
+      ? evt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', weekday: 'short' })
+      : (slot.data || '—');
+    const horarioLabel = slot.horario || '—';
+    const vagasRest = Number(slot.vagas_restantes);
+    const vagasTot = Number(slot.vagas_total);
+    const reservadas = (isFinite(vagasRest) && isFinite(vagasTot)) ? Math.max(0, vagasTot - vagasRest) : null;
+    const isActive = slot.is_active !== false;
+
+    const ruleHint = rule ? ('Regra: ' + _recurrenceWeekdayLabel(rule.weekday) + ' ' + (rule.horario_label || '')) : '';
+
+    const statusBadge = isActive
+      ? '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">ATIVA</span>'
+      : '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#fdecea;color:#9c2f22;font-size:.7rem;font-weight:700;">CANCELADA</span>';
+
+    const vagasInfo = (reservadas !== null)
+      ? (reservadas > 0
+          ? '<span style="color:#a4663b;font-weight:600;">' + reservadas + ' reserva' + (reservadas === 1 ? '' : 's') + '</span> · ' + vagasRest + '/' + vagasTot + ' vagas'
+          : vagasRest + '/' + vagasTot + ' vagas livres')
+      : (isFinite(vagasRest) ? vagasRest + ' vagas' : 'vagas indef.');
+
+    const toggleBtn = isActive
+      ? '<button type="button" data-slot-toggle="' + _recurrenceEsc(slot.id) + '" data-slot-target-active="0" title="Cancelar essa data específica (mantém regra ativa). Não volta depois." style="padding:5px 10px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancelar data</button>'
+      : '<button type="button" data-slot-toggle="' + _recurrenceEsc(slot.id) + '" data-slot-target-active="1" title="Reativar essa data" style="padding:5px 10px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">Reativar</button>';
+
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #eee;border-radius:8px;flex-wrap:wrap;">' +
+      '<div style="display:flex;flex-direction:column;gap:2px;">' +
+        '<div style="font-size:.88rem;color:#1a1a1a;font-weight:600;">' + _recurrenceEsc(dataLabel) + ' · ' + _recurrenceEsc(horarioLabel) + ' ' + statusBadge + '</div>' +
+        '<div style="font-size:.74rem;color:#888;">' + _recurrenceEsc(vagasInfo) + (ruleHint ? ' · <em>' + _recurrenceEsc(ruleHint) + '</em>' : '') + '</div>' +
+      '</div>' +
+      toggleBtn +
+    '</div>';
+  }
+
+  // Cancelar/reativar 1 slot específico (exceção).
+  async function _recurrenceToggleSlot(slotId, targetActive) {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    if (!targetActive) {
+      const yes = confirm('Cancelar essa data específica? A regra continua ativa, mas essa data não será recriada mesmo após nova materialização. Se houver reservas pagas nessa data, elas continuam válidas no banco — você precisa contatar os clientes separadamente.');
+      if (!yes) return;
+    }
+    const { error } = await sb.from('experience_slots')
+      .update({ is_active: targetActive })
+      .eq('id', slotId);
+    if (error) {
+      alert('Erro: ' + (error.message || error.code));
+      return;
+    }
+    // Re-render só a parte de slots da experiência aberta
+    _recurrenceInvalidateCaches();
+    const expId = document.getElementById('exp-edit-id') && document.getElementById('exp-edit-id').value;
+    if (expId) _recurrenceLoadAndRender(expId);
+  }
+
+  // =============================================================
+  // CAMPANHAS SAZONAIS — gestão de campanha (Dia dos Namorados etc.)
+  // -------------------------------------------------------------
+  // Estrutura genérica por `campaign_slug` — mesma lógica serve pra
+  // Dia das Mães 2027, Natal, etc. Por enquanto só Dia dos Namorados
+  // está exposta na UI (dropdown), mas adicionar nova campanha é
+  // trivial: insert no select + run de seed.
+  // =============================================================
+
+  function _campEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  async function renderCampanhas() {
+    var sel = document.getElementById('campanhas-select');
+    if (!sel) return;
+    sel.onchange = function () { _campLoadAll(sel.value); };
+    document.getElementById('campanhas-upcoming-add').onclick = function () {
+      _campUpcomingAdd(sel.value);
+    };
+    await _campLoadAll(sel.value);
+  }
+
+  async function _campLoadAll(slug) {
+    if (!slug) return;
+    var sb = window.supabaseClient;
+    if (!sb) return;
+    await Promise.all([
+      _campLoadOverrides(slug),
+      _campLoadUpcoming(slug),
+      _campLoadWaitlist(slug),
+    ]);
+  }
+
+  // ===== Vitrine curada (campaign_overrides) =====
+  async function _campLoadOverrides(slug) {
+    var sb = window.supabaseClient;
+    var listEl = document.getElementById('campanhas-overrides-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Carregando…</p>';
+
+    // JANELA ESTRATÉGICA DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte.
+    // Hoje 12/05 → janela 25/05 a 25/06. Hoje 03/08 → janela 25/08 a 25/09.
+    var _now = new Date();
+    var ddnStart = new Date(_now.getFullYear(), _now.getMonth(), 25);
+    var ddnEnd = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
+    var nowIso = _now.toISOString();
+    var ddnStartIso = ddnStart.toISOString();
+    var ddnEndIso = ddnEnd.toISOString();
+
+    // Busca: overrides + slots NA JANELA + experiences.event_at NA JANELA.
+    // Só essas experiências ficam visíveis no painel — filtra o resto.
+    //
+    // IMPORTANTE: range(0, 9999) força limit alto. Por default,
+    // PostgREST limita resposta a 1000 rows — se houver mais slots
+    // na janela, alguns ficam de fora e a experiência some.
+    // .not('is_active', 'is', false) cobre slot.is_active=true E null
+    // (true/null = ativo, só false = inativo).
+    var [overridesRes, slotsRes, expsEventRes] = await Promise.all([
+      sb.from('campaign_overrides')
+        .select('id, experience_id, titulo_custom, subtitulo_custom, descricao_custom, badge_text, is_featured, display_order, imagem_custom')
+        .eq('campaign_slug', slug),
+      sb.from('experience_slots')
+        .select('experience_id, event_at')
+        .not('is_active', 'is', false)
+        .gte('event_at', ddnStartIso)
+        .lt('event_at', ddnEndIso)
+        .order('event_at')
+        .range(0, 9999),
+      sb.from('experiences')
+        .select('id, event_at')
+        .eq('is_active', true)
+        .not('event_at', 'is', null)
+        .gte('event_at', ddnStartIso)
+        .lt('event_at', ddnEndIso)
+        .range(0, 9999),
+    ]);
+
+    console.info('[Campanhas] slots na janela:', (slotsRes.data || []).length,
+      '| experiences event_at na janela:', (expsEventRes.data || []).length);
+
+    // IDs de experiências que TÊM data na janela (qualquer fonte)
+    var expIdsNaJanela = new Set();
+    (slotsRes.data || []).forEach(function (s) { expIdsNaJanela.add(s.experience_id); });
+    (expsEventRes.data || []).forEach(function (e) { expIdsNaJanela.add(e.id); });
+
+    // IDs que JÁ TÊM override (mesmo fora da janela — mostra pra admin gerenciar)
+    var overrideIds = new Set((overridesRes.data || []).map(function (o) { return o.experience_id; }));
+
+    // Lista final: experiências NA JANELA + experiências JÁ NO OVERRIDE
+    var allIds = Array.from(new Set([
+      ...Array.from(expIdsNaJanela),
+      ...Array.from(overrideIds),
+    ]));
+
+    var expsRes;
+    if (allIds.length === 0) {
+      expsRes = { data: [], error: null };
+    } else {
+      expsRes = await sb.from('experiences')
+        .select('id, nome, categoria, imagem, is_active, event_at, data')
+        .in('id', allIds)
+        .eq('is_active', true)
+        .order('nome');
+    }
+
+    if (overridesRes.error) {
+      listEl.innerHTML = '<p style="color:#c0392b;font-size:.85rem;">Erro: ' + _campEsc(overridesRes.error.message) + '</p>';
+      return;
+    }
+
+    var overrides = overridesRes.data || [];
+    var exps = expsRes.data || [];
+    // Mapa de próxima data: combina slots + experiences.event_at, fica
+    // com a menor das duas pra cada experience.
+    var dateByExp = new Map();
+    (slotsRes.data || []).forEach(function (s) {
+      if (!s.event_at) return;
+      var cur = dateByExp.get(s.experience_id);
+      if (!cur || s.event_at < cur) dateByExp.set(s.experience_id, s.event_at);
+    });
+    (expsEventRes.data || []).forEach(function (e) {
+      if (!e.event_at) return;
+      var cur = dateByExp.get(e.id);
+      if (!cur || e.event_at < cur) dateByExp.set(e.id, e.event_at);
+    });
+    var overrideByExp = new Map();
+    overrides.forEach(function (o) { overrideByExp.set(o.experience_id, o); });
+
+    var featuredCount = overrides.filter(function (o) { return o.is_featured; }).length;
+    var fmt = function (d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); };
+    var counterHtml =
+      '<div style="background:#fff8ef;border:1px solid #f0cfa0;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+        '<div>' +
+          '<strong style="color:#a4663b;">' + featuredCount + '</strong> ' +
+          '<span style="color:#666;font-size:.88rem;">experiência' + (featuredCount === 1 ? '' : 's') + ' marcada' + (featuredCount === 1 ? '' : 's') + ' como destaque' +
+          (featuredCount === 0 ? ' — landing está com "Curadoria sendo finalizada"' :
+           featuredCount < 6 ? ' — recomendado 6 a 15 pra landing parecer curada' :
+           featuredCount > 15 ? ' — muitas! Considere desmarcar algumas pra manter foco' :
+           ' ✓ bom número pra landing curada') +
+          '</span>' +
+        '</div>' +
+        '<small style="color:#888;">' + exps.length + ' na janela (de ' + overrides.length + ' total)</small>' +
+      '</div>' +
+      '<div style="background:#e6f4ea;border:1px solid #c6e7d2;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:.82rem;color:#1a8a4a;">' +
+        '📅 Mostrando só experiências com data entre <strong>' + fmt(ddnStart) + '</strong> e <strong>' + fmt(ddnEnd) + '</strong>' +
+        ' — janela estratégica da campanha. Experiências fora dessa janela ficam ocultas (mas se já estavam no override, aparecem pra você gerenciar).' +
+      '</div>';
+    listEl.innerHTML = counterHtml + '<div data-camp-rows-host></div>';
+    var rowsHost = listEl.querySelector('[data-camp-rows-host]');
+
+    // Ordena: incluídas no topo (por display_order), depois resto alfabético
+    exps.sort(function (a, b) {
+      var oa = overrideByExp.get(a.id);
+      var ob = overrideByExp.get(b.id);
+      if (oa && !ob) return -1;
+      if (!oa && ob) return 1;
+      if (oa && ob) return (oa.display_order || 999) - (ob.display_order || 999);
+      return (a.nome || '').localeCompare(b.nome || '');
+    });
+
+    rowsHost.innerHTML = exps.map(function (e) {
+      var o = overrideByExp.get(e.id);
+      var included = !!o;
+      // Próxima data — combina experience_slots + experiences.event_at.
+      // Chip mostra status em relação à janela DDN (21/05-30/06):
+      //   verde 📅 = na janela ✓ (ideal pra campanha)
+      //   amarelo ⏳ = fora da janela (passada ou muito distante)
+      //   vermelho ⚠ = sem data
+      var nextDateRaw = dateByExp.get(e.id);
+      var nextDateChip = '';
+      if (nextDateRaw) {
+        var dt = new Date(nextDateRaw);
+        var ddmm = String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
+        var inWindow = dt >= ddnStart && dt < ddnEnd;
+        var color = inWindow ? '#1a8a4a' : '#b07b00';
+        var bg = inWindow ? '#e6f4ea' : '#fff4e0';
+        var icon = inWindow ? '📅' : '⏳';
+        var titleTxt = inWindow
+          ? 'Na janela DDN (21/05–30/06): ' + dt.toLocaleDateString('pt-BR')
+          : 'Fora da janela DDN: ' + dt.toLocaleDateString('pt-BR');
+        nextDateChip = '<span title="' + titleTxt + '" style="display:inline-flex;align-items:center;gap:3px;background:' + bg + ';color:' + color + ';font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">' + icon + ' ' + ddmm + '</span>';
+      } else if (e.data && String(e.data).trim()) {
+        var dataLabel = String(e.data).trim();
+        nextDateChip = '<span title="Data textual sem slot futuro" style="display:inline-flex;align-items:center;gap:3px;background:#f3f3f3;color:#888;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">📌 ' + _campEsc(dataLabel) + '</span>';
+      } else {
+        nextDateChip = '<span title="Sem data futura" style="display:inline-flex;align-items:center;gap:3px;background:#fdecea;color:#c0392b;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;white-space:nowrap;">⚠ sem data</span>';
+      }
+      var rowHead =
+        '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">' +
+          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;flex:1 1 240px;min-width:0;">' +
+            '<input type="checkbox" data-camp-include' + (included ? ' checked' : '') + ' style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">' +
+            '<span style="overflow:hidden;text-overflow:ellipsis;">' + _campEsc(e.nome) + ' <span style="color:#888;font-weight:400;font-size:.82rem;">(' + _campEsc(e.categoria || '—') + ')</span>' + nextDateChip + '</span>' +
+          '</label>';
+
+      var rowControls = '';
+      var rowImageSection = '';
+      if (included) {
+        rowControls =
+          '<label style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:' + (o.is_featured ? '#fff4e0' : '#fff') + ';border:1.5px solid ' + (o.is_featured ? '#f0a05e' : '#ccc') + ';border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;color:' + (o.is_featured ? '#a4663b' : '#666') + ';white-space:nowrap;" title="Marcar como destaque — aparece na landing pública">' +
+            '<input type="checkbox" data-camp-featured' + (o.is_featured ? ' checked' : '') + ' style="width:14px;height:14px;cursor:pointer;">★ Na landing' +
+          '</label>' +
+          '<input type="text" data-camp-titulo placeholder="Título customizado" value="' + _campEsc(o.titulo_custom || '') + '" style="flex:2 1 220px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">' +
+          '<input type="text" data-camp-badge placeholder="Badge" value="' + _campEsc(o.badge_text || '') + '" style="flex:1 1 110px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<input type="number" data-camp-order placeholder="Ordem" value="' + (o.display_order || 100) + '" style="width:64px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<button type="button" data-camp-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>';
+
+        var imgPreview = o.imagem_custom
+          ? '<img data-camp-img-preview src="' + _campEsc(o.imagem_custom) + '" alt="foto da campanha" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid #f0a05e;">'
+          : (e.imagem
+              ? '<img data-camp-img-preview src="' + _campEsc(e.imagem) + '" alt="foto original" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid #ddd;opacity:.7;" title="Foto original — substitua por outra na campanha">'
+              : '<div data-camp-img-preview style="width:56px;height:56px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.6rem;text-align:center;">sem foto</div>'
+            );
+        rowImageSection =
+          '<div style="display:flex;gap:10px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed #f0d8b8;">' +
+            '<div style="flex-shrink:0;">' + imgPreview + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<input type="text" data-camp-img placeholder="🖼 URL de foto exclusiva pra campanha (vazio = usa foto original)" value="' + _campEsc(o.imagem_custom || '') + '" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.78rem;color:#666;">' +
+              '<small style="display:block;margin-top:3px;color:#888;font-size:.7rem;">Foto custom aparece SÓ na landing DDN. Vazio = usa foto original da experiência.</small>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #f0d8b8;display:flex;flex-direction:column;gap:6px;">' +
+            '<label style="font-size:.7rem;text-transform:uppercase;color:#a4663b;font-weight:700;letter-spacing:.5px;">✨ Storytelling da campanha (opcional)</label>' +
+            '<input type="text" data-camp-subt placeholder="Subtítulo curto na página da campanha (ex: \'Um momento a dois com taça na mão\')" value="' + _campEsc(o.subtitulo_custom || '') + '" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+            '<textarea data-camp-desc rows="3" placeholder="Descrição custom — narrativa romântica pra essa experiência na campanha de Dia dos Namorados. Vazio = usa descrição original." style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;resize:vertical;">' + _campEsc(o.descricao_custom || '') + '</textarea>' +
+          '</div>';
+      }
+
+      return '<div class="camp-override-row" data-exp-id="' + _campEsc(e.id) + '" data-override-id="' + _campEsc(o ? o.id : '') + '" style="background:' + (included ? '#fff8ef' : '#fff') + ';border:1px solid ' + (included ? '#f0a05e' : '#e6e6e6') + ';border-radius:10px;padding:12px 14px;">' +
+        rowHead + rowControls + '</div>' +
+        rowImageSection +
+        '<div data-camp-row-msg style="font-size:.78rem;min-height:1em;margin-top:4px;"></div>' +
+      '</div>';
+    }).join('');
+
+    // Wire events
+    listEl.querySelectorAll('[data-camp-include]').forEach(function (cb) {
+      cb.addEventListener('change', async function () {
+        var row = cb.closest('.camp-override-row');
+        var expId = row.dataset.expId;
+        var overrideId = row.dataset.overrideId;
+        if (cb.checked) {
+          await _campOverrideAdd(slug, expId);
+        } else {
+          if (overrideId) await _campOverrideRemove(overrideId);
+        }
+        await _campLoadOverrides(slug);
+      });
+    });
+    listEl.querySelectorAll('[data-camp-save]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var row = btn.closest('.camp-override-row');
+        await _campOverrideSave(row);
+      });
+    });
+    // Preview da foto custom em tempo real
+    listEl.querySelectorAll('[data-camp-img]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var url = inp.value.trim();
+        var container = inp.parentElement.previousElementSibling; // div com flex-shrink:0
+        if (!container) return;
+        if (!url) {
+          container.innerHTML = '<div data-camp-img-preview style="width:56px;height:56px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.6rem;text-align:center;">sem foto</div>';
+        } else {
+          container.innerHTML = '<img data-camp-img-preview src="' + url.replace(/"/g,'&quot;') + '" alt="preview" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid #f0a05e;">';
+        }
+      });
+    });
+  }
+
+  async function _campOverrideAdd(slug, expId) {
+    var sb = window.supabaseClient;
+    var { data: exp } = await sb.from('experiences').select('nome').eq('id', expId).maybeSingle();
+    var nome = (exp && exp.nome) || 'Experiência';
+    var { error } = await sb.from('campaign_overrides').insert({
+      campaign_slug: slug,
+      experience_id: expId,
+      titulo_custom: nome,
+      badge_text: 'Especial Dia dos Namorados',
+      is_featured: false,
+      display_order: 100,
+    });
+    if (error) alert('Erro: ' + (error.message || error.code));
+  }
+
+  async function _campOverrideRemove(overrideId) {
+    var sb = window.supabaseClient;
+    var { error } = await sb.from('campaign_overrides').delete().eq('id', overrideId);
+    if (error) alert('Erro: ' + (error.message || error.code));
+  }
+
+  async function _campOverrideSave(row) {
+    var sb = window.supabaseClient;
+    var overrideId = row.dataset.overrideId;
+    var titulo = row.querySelector('[data-camp-titulo]').value.trim();
+    var badge = row.querySelector('[data-camp-badge]').value.trim();
+    var order = Number(row.querySelector('[data-camp-order]').value) || 100;
+    var featuredEl = row.querySelector('[data-camp-featured]');
+    var featured = featuredEl ? featuredEl.checked : false;
+    var imgEl = row.querySelector('[data-camp-img]');
+    var imgCustom = imgEl ? imgEl.value.trim() : '';
+    var subtEl = row.querySelector('[data-camp-subt]');
+    var subtitulo = subtEl ? subtEl.value.trim() : '';
+    var descEl = row.querySelector('[data-camp-desc]');
+    var descricao = descEl ? descEl.value.trim() : '';
+    var msg = row.querySelector('[data-camp-row-msg]');
+    var { error } = await sb.from('campaign_overrides').update({
+      titulo_custom: titulo || null,
+      subtitulo_custom: subtitulo || null,
+      descricao_custom: descricao || null,
+      badge_text: badge || null,
+      display_order: order,
+      is_featured: featured,
+      imagem_custom: imgCustom || null,
+    }).eq('id', overrideId);
+    if (error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'Erro: ' + (error.message || error.code);
+    } else {
+      msg.style.color = '#1a8a4a';
+      msg.textContent = '✓ Salvo';
+      setTimeout(function () { msg.textContent = ''; }, 1800);
+    }
+  }
+
+  // ===== Em breve (campaign_upcoming_experiences) =====
+  async function _campLoadUpcoming(slug) {
+    var sb = window.supabaseClient;
+    var listEl = document.getElementById('campanhas-upcoming-list');
+    if (!listEl) return;
+    var { data, error } = await sb.from('campaign_upcoming_experiences')
+      .select('*')
+      .eq('campaign_slug', slug)
+      .order('display_order');
+    if (error) {
+      listEl.innerHTML = '<p style="color:#c0392b;font-size:.85rem;">Erro: ' + _campEsc(error.message) + '</p>';
+      return;
+    }
+    var rows = data || [];
+    if (!rows.length) {
+      listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Nenhum card "em breve" cadastrado. Clique no botão acima pra criar.</p>';
+      return;
+    }
+    listEl.innerHTML = rows.map(function (r) {
+      var imgUrl = _campEsc(r.imagem || '');
+      var imgPreview = r.imagem
+        ? '<img src="' + imgUrl + '" alt="preview" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid #eee;">'
+        : '<div style="width:100%;height:90px;border:1.5px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.74rem;text-align:center;padding:8px;">cole uma URL pra ver o preview</div>';
+      return '<div class="camp-upcoming-row" data-row-id="' + _campEsc(r.id) + '" data-dirty="0" style="background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;position:relative;">' +
+        '<div data-camp-up-dirty-dot style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:#f0a05e;display:none;" title="Alterações não salvas"></div>' +
+        '<div style="flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:6px;">' +
+          '<input type="text" data-camp-up-nome placeholder="Nome" value="' + _campEsc(r.nome) + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;font-weight:600;">' +
+          '<input type="text" data-camp-up-cat placeholder="Categoria" value="' + _campEsc(r.categoria || '') + '" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<textarea data-camp-up-desc placeholder="Descrição curta" rows="2" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;resize:vertical;">' + _campEsc(r.descricao_curta || '') + '</textarea>' +
+        '</div>' +
+        '<div style="flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:6px;">' +
+          '<div data-camp-up-img-preview>' + imgPreview + '</div>' +
+          '<input type="text" data-camp-up-img placeholder="URL da imagem (opcional)" value="' + imgUrl + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<input type="text" data-camp-up-label placeholder="Status (ex: em breve)" value="' + _campEsc(r.expected_label || '') + '" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<input type="number" data-camp-up-order placeholder="Ordem" value="' + (r.display_order || 100) + '" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.82rem;">' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:#666;cursor:pointer;"><input type="checkbox" data-camp-up-active' + (r.is_active !== false ? ' checked' : '') + '> Visível na landing</label>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;align-self:stretch;justify-content:space-between;">' +
+          '<button type="button" data-camp-up-save style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:.82rem;cursor:pointer;">Salvar</button>' +
+          '<button type="button" data-camp-up-del style="padding:7px 14px;background:#fff;color:#c0392b;border:1px solid #c0392b;border-radius:6px;font-family:inherit;font-weight:600;font-size:.78rem;cursor:pointer;">Excluir</button>' +
+          '<span data-camp-up-msg style="font-size:.74rem;min-height:1em;text-align:center;color:#888;">salvo</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // Auto-save no blur dos inputs + indicador "alterações não salvas"
+    listEl.querySelectorAll('.camp-upcoming-row').forEach(function (row) {
+      var dot = row.querySelector('[data-camp-up-dirty-dot]');
+      var msg = row.querySelector('[data-camp-up-msg]');
+      var inputs = row.querySelectorAll('input,textarea');
+      inputs.forEach(function (inp) {
+        inp.addEventListener('input', function () {
+          row.dataset.dirty = '1';
+          if (dot) dot.style.display = 'block';
+          if (msg) { msg.style.color = '#c89060'; msg.textContent = '● alterando'; }
+        });
+        inp.addEventListener('blur', async function () {
+          if (row.dataset.dirty === '1') {
+            await _campUpcomingSave(row);
+          }
+        });
+      });
+      // Preview da imagem ao colar/digitar URL
+      var imgInput = row.querySelector('[data-camp-up-img]');
+      var imgPreviewEl = row.querySelector('[data-camp-up-img-preview]');
+      if (imgInput && imgPreviewEl) {
+        imgInput.addEventListener('input', function () {
+          var url = imgInput.value.trim();
+          if (!url) {
+            imgPreviewEl.innerHTML = '<div style="width:100%;height:90px;border:1.5px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.74rem;">cole uma URL pra ver o preview</div>';
+          } else {
+            imgPreviewEl.innerHTML = '<img src="' + url.replace(/"/g,'&quot;') + '" alt="preview" onerror="this.style.opacity=\'.3\';this.title=\'⚠ não carregou\';" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid #eee;">';
+          }
+        });
+      }
+    });
+
+    listEl.querySelectorAll('[data-camp-up-save]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var row = btn.closest('.camp-upcoming-row');
+        await _campUpcomingSave(row);
+      });
+    });
+    listEl.querySelectorAll('[data-camp-up-del]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var row = btn.closest('.camp-upcoming-row');
+        if (!confirm('Excluir esse card "em breve"?')) return;
+        await _campUpcomingDelete(row.dataset.rowId);
+        await _campLoadUpcoming(slug);
+      });
+    });
+  }
+
+  async function _campUpcomingAdd(slug) {
+    var sb = window.supabaseClient;
+    // is_active SEMPRE true por default — visível imediatamente na
+    // landing depois que admin editar o nome.
+    var payload = {
+      campaign_slug: slug,
+      nome: 'Nova experiência em breve',
+      categoria: null,
+      descricao_curta: null,
+      imagem: null,
+      expected_label: 'em breve',
+      is_active: true,
+      display_order: 100,
+    };
+    console.info('[Elarah Campanhas] add upcoming', payload);
+    var { data, error } = await sb.from('campaign_upcoming_experiences')
+      .insert(payload).select().single();
+    if (error) {
+      console.error('[Elarah Campanhas] add error:', error);
+      alert('Erro ao criar: ' + (error.message || error.code));
+      return;
+    }
+    console.info('[Elarah Campanhas] added OK', data && data.id);
+    await _campLoadUpcoming(slug);
+  }
+
+  async function _campUpcomingSave(row) {
+    var sb = window.supabaseClient;
+    var msg = row.querySelector('[data-camp-up-msg]');
+    var dot = row.querySelector('[data-camp-up-dirty-dot]');
+    var patch = {
+      nome: row.querySelector('[data-camp-up-nome]').value.trim(),
+      categoria: row.querySelector('[data-camp-up-cat]').value.trim() || null,
+      descricao_curta: row.querySelector('[data-camp-up-desc]').value.trim() || null,
+      imagem: row.querySelector('[data-camp-up-img]').value.trim() || null,
+      expected_label: row.querySelector('[data-camp-up-label]').value.trim() || null,
+      display_order: Number(row.querySelector('[data-camp-up-order]').value) || 100,
+      is_active: row.querySelector('[data-camp-up-active]').checked,
+    };
+    if (!patch.nome) {
+      msg.style.color = '#c0392b';
+      msg.textContent = '⚠ nome obrigatório';
+      console.warn('[Elarah Campanhas] save abortado: nome vazio. row=', row.dataset.rowId);
+      return;
+    }
+    console.info('[Elarah Campanhas] saving upcoming', row.dataset.rowId, patch);
+    var { error } = await sb.from('campaign_upcoming_experiences').update(patch).eq('id', row.dataset.rowId);
+    if (error) {
+      msg.style.color = '#c0392b';
+      msg.textContent = '⚠ ' + (error.message || error.code).slice(0, 40);
+      console.error('[Elarah Campanhas] save error:', error);
+    } else {
+      msg.style.color = '#1a8a4a';
+      msg.textContent = '✓ salvo';
+      row.dataset.dirty = '0';
+      if (dot) dot.style.display = 'none';
+      console.info('[Elarah Campanhas] saved OK', row.dataset.rowId);
+      setTimeout(function () {
+        if (row.dataset.dirty === '0' && msg) { msg.style.color = '#888'; msg.textContent = 'salvo'; }
+      }, 2200);
+    }
+  }
+
+  async function _campUpcomingDelete(rowId) {
+    var sb = window.supabaseClient;
+    var { error } = await sb.from('campaign_upcoming_experiences').delete().eq('id', rowId);
+    if (error) alert('Erro: ' + (error.message || error.code));
+  }
+
+  // ===== Waitlist (read-only) =====
+  async function _campLoadWaitlist(slug) {
+    var sb = window.supabaseClient;
+    var listEl = document.getElementById('campanhas-waitlist-list');
+    if (!listEl) return;
+    var { data, error } = await sb.from('campaign_waitlist')
+      .select('*')
+      .eq('campaign_slug', slug)
+      .order('created_at', { ascending: false });
+    if (error) {
+      listEl.innerHTML = '<p style="color:#c0392b;font-size:.85rem;">Erro: ' + _campEsc(error.message) + '</p>';
+      return;
+    }
+    var rows = data || [];
+    if (!rows.length) {
+      listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Nenhum lead ainda.</p>';
+      return;
+    }
+    listEl.innerHTML =
+      '<div style="background:#fff;border:1px solid #e6e6e6;border-radius:10px;overflow:hidden;">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:.85rem;">' +
+          '<thead style="background:#faf6f0;"><tr>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Quando</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Nome</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">E-mail</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Telefone</th>' +
+            '<th style="padding:10px 12px;text-align:left;font-size:.74rem;text-transform:uppercase;color:#666;">Interesse</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function (r) {
+            var d = r.created_at ? new Date(r.created_at) : null;
+            var when = d ? d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+            return '<tr style="border-top:1px solid #f0e8de;">' +
+              '<td style="padding:10px 12px;color:#888;">' + _campEsc(when) + '</td>' +
+              '<td style="padding:10px 12px;font-weight:600;">' + _campEsc(r.nome || '—') + '</td>' +
+              '<td style="padding:10px 12px;"><a href="mailto:' + _campEsc(r.email) + '" style="color:#a4663b;text-decoration:none;">' + _campEsc(r.email) + '</a></td>' +
+              '<td style="padding:10px 12px;">' + _campEsc(r.telefone || '—') + '</td>' +
+              '<td style="padding:10px 12px;color:#444;">' + _campEsc(r.mensagem || '—') + '</td>' +
+            '</tr>';
+          }).join('') +
+        '</tbody></table>' +
+      '</div>';
+  }
+
+  // =============================================================
+  // MARKETING AI — catálogo de skills do agente Claude Code
+  // =============================================================
+  var _mkaiCache = null;
+
+  function _mkaiEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  async function renderMarketingAI() {
+    var sb = window.supabaseClient;
+    if (!sb) return;
+    var grid = document.getElementById('mkai-grid');
+    var search = document.getElementById('mkai-search');
+    var catSelect = document.getElementById('mkai-categoria');
+    var importBtn = document.getElementById('mkai-importar-btn');
+    if (!grid) return;
+
+    var { data, error } = await sb.from('marketing_skills')
+      .select('*').order('display_order', { ascending: true }).order('nome');
+    if (error) {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#c0392b;">Erro: ' + _mkaiEsc(error.message) + '</p>';
+      return;
+    }
+    _mkaiCache = data || [];
+
+    // Popula categorias
+    var cats = Array.from(new Set(_mkaiCache.map(function (s) { return s.categoria || 'Sem categoria'; })));
+    catSelect.innerHTML = '<option value="">Todas as categorias</option>' +
+      cats.map(function (c) { return '<option value="' + _mkaiEsc(c) + '">' + _mkaiEsc(c) + '</option>'; }).join('');
+
+    _mkaiRenderGrid();
+
+    if (!search.dataset.wired) {
+      search.dataset.wired = '1';
+      search.addEventListener('input', _mkaiRenderGrid);
+      catSelect.addEventListener('change', _mkaiRenderGrid);
+      importBtn.addEventListener('click', function () { _mkaiOpenImportModal(); });
+      document.getElementById('mkai-modal-close').addEventListener('click', _mkaiCloseModal);
+      document.getElementById('mkai-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'mkai-modal') _mkaiCloseModal();
+      });
+    }
+  }
+
+  function _mkaiRenderGrid() {
+    var grid = document.getElementById('mkai-grid');
+    var search = document.getElementById('mkai-search').value.toLowerCase().trim();
+    var cat = document.getElementById('mkai-categoria').value;
+    var count = document.getElementById('mkai-count');
+    if (!grid || !_mkaiCache) return;
+
+    var filtered = _mkaiCache.filter(function (s) {
+      if (cat && (s.categoria || 'Sem categoria') !== cat) return false;
+      if (search) {
+        var hay = (s.nome + ' ' + (s.descricao || '') + ' ' + (s.trigger_command || '')).toLowerCase();
+        if (hay.indexOf(search) === -1) return false;
+      }
+      return true;
+    });
+
+    count.textContent = filtered.length + ' de ' + _mkaiCache.length + ' skills';
+
+    if (!filtered.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#888;font-style:italic;padding:40px;text-align:center;">Nenhuma skill encontrada. Click em "+ Importar skill .md" pra começar.</p>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(function (s) {
+      var icon = s.icon || '🤖';
+      var trigger = s.trigger_command || '/' + s.slug;
+      return '<div class="mkai-card" data-skill-id="' + _mkaiEsc(s.id) + '" style="background:#fff;border:1px solid #e6e6e6;border-radius:14px;padding:18px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div style="width:40px;height:40px;background:#fff4e0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">' + _mkaiEsc(icon) + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:700;font-size:.95rem;color:#1a1a1a;line-height:1.2;">' + _mkaiEsc(s.nome) + '</div>' +
+            (s.categoria ? '<div style="font-size:.7rem;color:#a4663b;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;font-weight:600;">' + _mkaiEsc(s.categoria) + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<p style="font-size:.85rem;color:#666;line-height:1.45;margin:0;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">' + _mkaiEsc(s.descricao || 'Sem descrição.') + '</p>' +
+        '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;">' +
+          '<code style="flex:1;font-size:.78rem;background:#f5ebe0;color:#a4663b;padding:5px 9px;border-radius:6px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _mkaiEsc(trigger) + '</code>' +
+          '<button type="button" data-mkai-copy="' + _mkaiEsc(trigger) + '" title="Copiar trigger" style="padding:6px 10px;background:#f0a05e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;">📋</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    grid.querySelectorAll('.mkai-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('[data-mkai-copy]')) return;
+        _mkaiOpenView(card.dataset.skillId);
+      });
+    });
+    grid.querySelectorAll('[data-mkai-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        navigator.clipboard.writeText(btn.dataset.mkaiCopy).then(function () {
+          var original = btn.textContent;
+          btn.textContent = '✓';
+          setTimeout(function () { btn.textContent = original; }, 1200);
+        });
+      });
+    });
+  }
+
+  function _mkaiOpenView(skillId) {
+    var s = _mkaiCache.find(function (x) { return x.id === skillId; });
+    if (!s) return;
+    var trigger = s.trigger_command || '/' + s.slug;
+    var content = document.getElementById('mkai-modal-content');
+    content.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+        '<div style="width:48px;height:48px;background:#fff4e0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">' + _mkaiEsc(s.icon || '🤖') + '</div>' +
+        '<div>' +
+          '<h2 style="margin:0;font-family:\'DM Serif Display\',serif;font-size:1.5rem;color:#1a1a1a;">' + _mkaiEsc(s.nome) + '</h2>' +
+          (s.categoria ? '<div style="font-size:.75rem;color:#a4663b;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:4px;">' + _mkaiEsc(s.categoria) + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#f5ebe0;padding:12px 16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">' +
+        '<code style="flex:1;font-family:monospace;font-size:.92rem;color:#a4663b;font-weight:600;">' + _mkaiEsc(trigger) + '</code>' +
+        '<button type="button" id="mkai-copy-modal" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:.85rem;">📋 Copiar trigger</button>' +
+      '</div>' +
+      (s.descricao ? '<p style="color:#444;line-height:1.6;margin:0 0 18px;">' + _mkaiEsc(s.descricao) + '</p>' : '') +
+      '<details style="margin-bottom:14px;"><summary style="cursor:pointer;font-weight:700;color:#1a1a1a;padding:8px 0;">📄 Ver prompt completo</summary>' +
+        '<pre style="background:#1a1a1a;color:#e6e6e6;padding:18px;border-radius:10px;font-family:monospace;font-size:.78rem;line-height:1.55;overflow-x:auto;white-space:pre-wrap;max-height:480px;overflow-y:auto;">' + _mkaiEsc(s.prompt_full) + '</pre>' +
+      '</details>' +
+      '<div style="display:flex;gap:10px;margin-top:18px;border-top:1px solid #eee;padding-top:18px;">' +
+        '<button type="button" id="mkai-edit-btn" data-skill-id="' + _mkaiEsc(s.id) + '" style="padding:9px 18px;background:#fff;color:#a4663b;border:1.5px solid #f0a05e;border-radius:8px;font-weight:600;cursor:pointer;">✏️ Editar</button>' +
+        '<button type="button" id="mkai-delete-btn" data-skill-id="' + _mkaiEsc(s.id) + '" style="padding:9px 18px;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:8px;font-weight:600;cursor:pointer;">🗑 Excluir</button>' +
+      '</div>';
+    _mkaiOpenModal();
+
+    document.getElementById('mkai-copy-modal').addEventListener('click', function () {
+      navigator.clipboard.writeText(trigger).then(function () {
+        var b = document.getElementById('mkai-copy-modal');
+        b.textContent = '✓ Copiado';
+        setTimeout(function () { b.textContent = '📋 Copiar trigger'; }, 1500);
+      });
+    });
+    document.getElementById('mkai-edit-btn').addEventListener('click', function () {
+      _mkaiOpenEditModal(s);
+    });
+    document.getElementById('mkai-delete-btn').addEventListener('click', async function () {
+      if (!confirm('Excluir a skill "' + s.nome + '"?')) return;
+      await sb.from('marketing_skills').delete().eq('id', s.id);
+      _mkaiCloseModal();
+      await renderMarketingAI();
+    });
+  }
+
+  function _mkaiOpenImportModal() {
+    var content = document.getElementById('mkai-modal-content');
+    content.innerHTML =
+      '<h2 style="margin:0 0 10px;font-family:\'DM Serif Display\',serif;font-size:1.4rem;">Importar skill .md</h2>' +
+      '<p style="color:#666;font-size:.88rem;margin:0 0 14px;">Cole o conteúdo de UM arquivo .md aqui. O sistema extrai nome, descrição e trigger automaticamente. Você confirma antes de salvar.</p>' +
+      '<textarea id="mkai-import-textarea" placeholder="# Nome da Skill\n\n## Skill Purpose\n..." style="width:100%;min-height:240px;padding:12px;border:1.5px solid #ddd;border-radius:10px;font-family:monospace;font-size:.82rem;resize:vertical;box-sizing:border-box;"></textarea>' +
+      '<button type="button" id="mkai-parse-btn" style="margin-top:10px;padding:10px 18px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">→ Parsear & Preview</button>' +
+      '<div id="mkai-import-preview"></div>';
+    _mkaiOpenModal();
+    document.getElementById('mkai-parse-btn').addEventListener('click', _mkaiParseImport);
+  }
+
+  function _mkaiParseImport() {
+    var raw = document.getElementById('mkai-import-textarea').value.trim();
+    if (!raw) { alert('Cole o conteúdo do .md primeiro.'); return; }
+
+    // Parse:
+    // Nome: primeira linha "# Title"
+    var nomeMatch = raw.match(/^#\s+(.+)$/m);
+    var nome = nomeMatch ? nomeMatch[1].trim() : 'Skill sem título';
+    var slug = nome.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+    // Descrição: parágrafo após "## Skill Purpose" (até próxima ##)
+    var descMatch = raw.match(/##\s*Skill Purpose\s*\n+([\s\S]+?)(?=\n##|\n#|$)/i);
+    var descricao = descMatch ? descMatch[1].trim().replace(/\s+/g, ' ').slice(0, 500) : '';
+    // Trigger: regex `/something` em "When to Use" ou "Triggered by"
+    var triggerMatch = raw.match(/Triggered by[^/]*?(\/[a-z][\w-]*(?:\s+\S+)?)/i)
+      || raw.match(/`(\/[a-z][\w-]*)`/);
+    var triggerCommand = triggerMatch ? triggerMatch[1].split(/\s+/)[0] : '/' + slug;
+    // Categoria: heurística simples
+    var hay = (nome + ' ' + descricao).toLowerCase();
+    var categoria = 'Geral';
+    if (/brand|voice|personality|identity/.test(hay)) categoria = 'Branding';
+    else if (/social|instagram|reels|calendar|post|conteudo|content/.test(hay)) categoria = 'Conteúdo';
+    else if (/competitor|análise|analytics|market|research/.test(hay)) categoria = 'Análise';
+    else if (/persona|audience|target/.test(hay)) categoria = 'Persona';
+    else if (/copy|email|newsletter|ad|landing/.test(hay)) categoria = 'Copy';
+    else if (/strategy|planning|brief|pitch/.test(hay)) categoria = 'Estratégia';
+
+    var preview = document.getElementById('mkai-import-preview');
+    preview.innerHTML =
+      '<div style="margin-top:18px;padding:18px;background:#fff8ef;border:1.5px solid #f0a05e;border-radius:10px;">' +
+        '<div style="font-size:.72rem;text-transform:uppercase;color:#a4663b;font-weight:700;letter-spacing:1px;margin-bottom:10px;">Preview da skill</div>' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Nome</label>' +
+        '<input type="text" id="mkai-prev-nome" value="' + _mkaiEsc(nome) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:inherit;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Slug (URL-safe)</label>' +
+        '<input type="text" id="mkai-prev-slug" value="' + _mkaiEsc(slug) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:monospace;font-size:.85rem;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Categoria</label>' +
+        '<input type="text" id="mkai-prev-cat" value="' + _mkaiEsc(categoria) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:inherit;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Trigger command</label>' +
+        '<input type="text" id="mkai-prev-trigger" value="' + _mkaiEsc(triggerCommand) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:monospace;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Ícone (emoji)</label>' +
+        '<input type="text" id="mkai-prev-icon" value="🤖" style="width:80px;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:inherit;font-size:1.2rem;text-align:center;">' +
+        '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Descrição (extraída automaticamente)</label>' +
+        '<textarea id="mkai-prev-desc" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:14px;font-family:inherit;font-size:.85rem;min-height:80px;resize:vertical;">' + _mkaiEsc(descricao) + '</textarea>' +
+        '<button type="button" id="mkai-save-btn" style="padding:10px 22px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">✓ Salvar skill</button>' +
+        '<span id="mkai-save-msg" style="margin-left:12px;font-size:.85rem;"></span>' +
+      '</div>';
+
+    document.getElementById('mkai-save-btn').addEventListener('click', async function () {
+      var sb = window.supabaseClient;
+      var payload = {
+        slug: document.getElementById('mkai-prev-slug').value.trim(),
+        nome: document.getElementById('mkai-prev-nome').value.trim(),
+        descricao: document.getElementById('mkai-prev-desc').value.trim() || null,
+        categoria: document.getElementById('mkai-prev-cat').value.trim() || null,
+        trigger_command: document.getElementById('mkai-prev-trigger').value.trim() || null,
+        icon: document.getElementById('mkai-prev-icon').value.trim() || '🤖',
+        prompt_full: raw,
+      };
+      if (!payload.slug || !payload.nome) {
+        alert('Slug e nome obrigatórios.');
+        return;
+      }
+      var msg = document.getElementById('mkai-save-msg');
+      msg.textContent = 'Salvando…';
+      msg.style.color = '#666';
+      var { error } = await sb.from('marketing_skills').upsert(payload, { onConflict: 'slug' });
+      if (error) {
+        msg.textContent = '⚠ ' + error.message;
+        msg.style.color = '#c0392b';
+        return;
+      }
+      msg.textContent = '✓ Salva! Próxima…';
+      msg.style.color = '#1a8a4a';
+      setTimeout(function () {
+        _mkaiCloseModal();
+        renderMarketingAI();
+      }, 800);
+    });
+  }
+
+  function _mkaiOpenEditModal(s) {
+    var content = document.getElementById('mkai-modal-content');
+    content.innerHTML =
+      '<h2 style="margin:0 0 14px;font-family:\'DM Serif Display\',serif;font-size:1.4rem;">Editar skill</h2>' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Nome</label>' +
+      '<input type="text" id="mkai-edit-nome" value="' + _mkaiEsc(s.nome) + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Categoria</label>' +
+      '<input type="text" id="mkai-edit-cat" value="' + _mkaiEsc(s.categoria || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Trigger</label>' +
+      '<input type="text" id="mkai-edit-trigger" value="' + _mkaiEsc(s.trigger_command || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-family:monospace;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Ícone</label>' +
+      '<input type="text" id="mkai-edit-icon" value="' + _mkaiEsc(s.icon || '🤖') + '" style="width:80px;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-size:1.2rem;text-align:center;">' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Descrição</label>' +
+      '<textarea id="mkai-edit-desc" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;min-height:80px;resize:vertical;">' + _mkaiEsc(s.descricao || '') + '</textarea>' +
+      '<label style="display:block;font-size:.74rem;font-weight:700;color:#666;margin-bottom:4px;">Prompt completo (.md)</label>' +
+      '<textarea id="mkai-edit-prompt" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:14px;min-height:200px;resize:vertical;font-family:monospace;font-size:.78rem;">' + _mkaiEsc(s.prompt_full) + '</textarea>' +
+      '<button type="button" id="mkai-save-edit-btn" style="padding:10px 22px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Salvar alterações</button>';
+
+    document.getElementById('mkai-save-edit-btn').addEventListener('click', async function () {
+      var sb = window.supabaseClient;
+      var { error } = await sb.from('marketing_skills').update({
+        nome: document.getElementById('mkai-edit-nome').value.trim(),
+        categoria: document.getElementById('mkai-edit-cat').value.trim() || null,
+        trigger_command: document.getElementById('mkai-edit-trigger').value.trim() || null,
+        icon: document.getElementById('mkai-edit-icon').value.trim() || '🤖',
+        descricao: document.getElementById('mkai-edit-desc').value.trim() || null,
+        prompt_full: document.getElementById('mkai-edit-prompt').value,
+      }).eq('id', s.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      _mkaiCloseModal();
+      await renderMarketingAI();
+    });
+  }
+
+  function _mkaiOpenModal() {
+    var m = document.getElementById('mkai-modal');
+    if (m) { m.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  }
+  function _mkaiCloseModal() {
+    var m = document.getElementById('mkai-modal');
+    if (m) { m.style.display = 'none'; document.body.style.overflow = ''; }
+  }
+
+  // =============================================================
+  // CALENDÁRIO EDITORIAL — cronograma mensal de conteúdo
+  // =============================================================
+  var _calCache = [];
+  var _calMes = '2026-05';
+  var _calCanalFiltro = '';
+
+  function _calEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  async function renderCalendarioEditorial() {
+    var sb = window.supabaseClient;
+    if (!sb) return;
+    var mesInput = document.getElementById('cal-mes');
+    if (!mesInput) return;
+    _calMes = mesInput.value || '2026-05';
+
+    if (!mesInput.dataset.wired) {
+      mesInput.dataset.wired = '1';
+      mesInput.addEventListener('change', function () {
+        _calMes = mesInput.value;
+        renderCalendarioEditorial();
+      });
+      document.querySelectorAll('.cal-canal-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.cal-canal-btn').forEach(function (b) {
+            b.classList.remove('cal-canal-btn--active');
+          });
+          btn.classList.add('cal-canal-btn--active');
+          _calCanalFiltro = btn.dataset.canal || '';
+          _calRender();
+        });
+      });
+      document.getElementById('cal-add-btn').addEventListener('click', function () {
+        _calOpenEditModal(null);
+      });
+      document.getElementById('cal-modal-close').addEventListener('click', _calCloseModal);
+      document.getElementById('cal-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'cal-modal') _calCloseModal();
+      });
+    }
+
+    var primeiroDia = _calMes + '-01';
+    var d = new Date(_calMes + '-01T00:00:00');
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(0); // último dia do mês
+    var ultimoDia = _calMes + '-' + String(d.getDate()).padStart(2, '0');
+
+    var { data, error } = await sb.from('content_calendar')
+      .select('*')
+      .gte('data', primeiroDia)
+      .lte('data', ultimoDia)
+      .order('data', { ascending: true })
+      .order('canal');
+
+    if (error) {
+      document.getElementById('cal-grid').innerHTML = '<p style="color:#c0392b;">Erro: ' + _calEsc(error.message) + '</p>';
+      return;
+    }
+    _calCache = data || [];
+    _calRender();
+  }
+
+  function _calRender() {
+    var grid = document.getElementById('cal-grid');
+    var stats = document.getElementById('cal-stats');
+    if (!grid) return;
+
+    var hoje = new Date();
+    var hojeYmd = hoje.getFullYear() + '-' +
+                  String(hoje.getMonth() + 1).padStart(2, '0') + '-' +
+                  String(hoje.getDate()).padStart(2, '0');
+
+    // Agrupa por data
+    var byDate = new Map();
+    _calCache.forEach(function (p) {
+      if (_calCanalFiltro && p.canal !== _calCanalFiltro) return;
+      if (!byDate.has(p.data)) byDate.set(p.data, []);
+      byDate.get(p.data).push(p);
+    });
+
+    // Gera lista de dias do mês (mesmo sem post pra preservar ordem)
+    var primeiroDia = new Date(_calMes + '-01T00:00:00');
+    var ultimoDia = new Date(_calMes + '-01T00:00:00');
+    ultimoDia.setMonth(ultimoDia.getMonth() + 1);
+    ultimoDia.setDate(0);
+
+    var dias = [];
+    for (var i = 1; i <= ultimoDia.getDate(); i++) {
+      var dt = new Date(_calMes + '-' + String(i).padStart(2, '0') + 'T00:00:00');
+      var ymd = _calMes + '-' + String(i).padStart(2, '0');
+      var posts = byDate.get(ymd) || [];
+      if (posts.length === 0 && _calCanalFiltro) continue; // pula dias vazios se filtrando
+      dias.push({ ymd: ymd, dt: dt, posts: posts });
+    }
+
+    var totalPosts = _calCache.filter(function (p) {
+      return !_calCanalFiltro || p.canal === _calCanalFiltro;
+    }).length;
+    var publicados = _calCache.filter(function (p) {
+      return (!_calCanalFiltro || p.canal === _calCanalFiltro) && p.status === 'publicado';
+    }).length;
+    var planejados = totalPosts - publicados;
+    stats.innerHTML = '<strong>' + totalPosts + '</strong> posts no mês · ' +
+      '<strong style="color:#1a8a4a;">' + publicados + '</strong> publicados · ' +
+      '<strong style="color:#a4663b;">' + planejados + '</strong> planejados';
+
+    if (!dias.length) {
+      grid.innerHTML = '<p style="color:#888;font-style:italic;padding:40px;text-align:center;">Nenhum conteúdo planejado pra esse mês/canal.</p>';
+      return;
+    }
+
+    var wdNames = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+    grid.innerHTML = dias.map(function (d) {
+      var isPast = d.ymd < hojeYmd;
+      var isToday = d.ymd === hojeYmd;
+      var cls = 'cal-day-card' + (isPast ? ' cal-day-card--passed' : '') + (isToday ? ' cal-day-card--today' : '');
+      var ddmm = d.dt.getDate() + '/' + String(d.dt.getMonth() + 1).padStart(2, '0');
+
+      var postsHtml;
+      if (d.posts.length === 0) {
+        postsHtml = '<div style="padding:8px 12px;font-style:italic;color:#aaa;font-size:.85rem;">— sem conteúdo planejado —</div>';
+      } else {
+        postsHtml = d.posts.map(function (p) {
+          var canalClass = 'cal-post-canal cal-post-canal--' +
+            (p.canal === 'Instagram' ? 'ig' :
+             p.canal === 'TikTok' ? 'tk' :
+             p.canal === 'LinkedIn' ? 'li' :
+             p.canal === 'WhatsApp' ? 'wa' : 'ig');
+          var canalEmoji = p.canal === 'Instagram' ? '📸 IG' :
+                           p.canal === 'TikTok' ? '🎵 TT' :
+                           p.canal === 'LinkedIn' ? '💼 LI' :
+                           p.canal === 'WhatsApp' ? '💬 WA' : p.canal;
+          var statusCls = 'cal-post-status cal-post-status--' + (p.status || 'planejado');
+          return '<div class="cal-post-row" data-post-id="' + _calEsc(p.id) + '">' +
+            '<span class="' + canalClass + '">' + _calEsc(canalEmoji) + '</span>' +
+            (p.tipo ? '<span class="cal-post-tipo">' + _calEsc(p.tipo) + '</span>' : '') +
+            '<div class="cal-post-ideia">' + _calEsc(p.ideia) + '</div>' +
+            '<span class="' + statusCls + '">' + _calEsc(p.status || 'planejado') + '</span>' +
+          '</div>';
+        }).join('');
+      }
+
+      return '<div class="' + cls + '">' +
+        '<div class="cal-day-header">' +
+          '<div><strong>' + ddmm + '</strong><span class="cal-day-header__wd">' + wdNames[d.dt.getDay()] + '</span></div>' +
+          '<button type="button" class="cal-day-add" data-day="' + _calEsc(d.ymd) + '" style="background:transparent;border:none;color:#a4663b;font-size:.85rem;font-weight:600;cursor:pointer;">+ adicionar</button>' +
+        '</div>' +
+        '<div class="cal-day-posts">' + postsHtml + '</div>' +
+      '</div>';
+    }).join('');
+
+    grid.querySelectorAll('.cal-post-row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        var p = _calCache.find(function (x) { return x.id === row.dataset.postId; });
+        if (p) _calOpenEditModal(p);
+      });
+    });
+    grid.querySelectorAll('.cal-day-add').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        _calOpenEditModal({ data: btn.dataset.day });
+      });
+    });
+  }
+
+  function _calOpenEditModal(p) {
+    var isNew = !p || !p.id;
+    p = p || {};
+    var content = document.getElementById('cal-modal-content');
+    content.innerHTML =
+      '<h2 style="margin:0 0 18px;font-family:\'DM Serif Display\',serif;font-size:1.5rem;">' + (isNew ? 'Novo conteúdo' : 'Editar conteúdo') + '</h2>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Data</label>' +
+          '<input type="date" id="cal-edit-data" value="' + _calEsc(p.data || _calMes + '-01') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;"></div>' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Canal</label>' +
+          '<select id="cal-edit-canal" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;background:#fff;">' +
+            ['Instagram','TikTok','LinkedIn','WhatsApp'].map(function (c) {
+              return '<option value="' + c + '"' + (p.canal === c ? ' selected' : '') + '>' + c + '</option>';
+            }).join('') +
+          '</select></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Tipo</label>' +
+          '<input type="text" id="cal-edit-tipo" value="' + _calEsc(p.tipo || '') + '" placeholder="Feed, Reels, Stories, Carrossel…" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;"></div>' +
+        '<div><label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Status</label>' +
+          '<select id="cal-edit-status" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;background:#fff;">' +
+            ['planejado','pronto','agendado','publicado'].map(function (s) {
+              return '<option value="' + s + '"' + (p.status === s ? ' selected' : '') + '>' + s + '</option>';
+            }).join('') +
+          '</select></div>' +
+      '</div>' +
+      '<label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Ideia / título</label>' +
+      '<input type="text" id="cal-edit-ideia" value="' + _calEsc(p.ideia || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;">' +
+      '<label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Legenda</label>' +
+      '<textarea id="cal-edit-legenda" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;min-height:100px;resize:vertical;">' + _calEsc(p.legenda || '') + '</textarea>' +
+      '<label style="font-size:.74rem;font-weight:700;color:#666;display:block;margin-bottom:4px;">Observação</label>' +
+      '<input type="text" id="cal-edit-obs" value="' + _calEsc(p.observacao || '') + '" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:14px;">' +
+      '<div style="display:flex;gap:10px;justify-content:space-between;">' +
+        '<button type="button" id="cal-save-btn" data-id="' + _calEsc(p.id || '') + '" style="padding:10px 22px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Salvar</button>' +
+        (!isNew ? '<button type="button" id="cal-delete-btn" data-id="' + _calEsc(p.id) + '" style="padding:10px 22px;background:transparent;color:#c0392b;border:1.5px solid #c0392b;border-radius:8px;font-weight:600;cursor:pointer;">Excluir</button>' : '') +
+      '</div>';
+
+    document.getElementById('cal-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('cal-save-btn').addEventListener('click', async function () {
+      var sb = window.supabaseClient;
+      var payload = {
+        data: document.getElementById('cal-edit-data').value,
+        canal: document.getElementById('cal-edit-canal').value,
+        tipo: document.getElementById('cal-edit-tipo').value.trim() || null,
+        ideia: document.getElementById('cal-edit-ideia').value.trim(),
+        legenda: document.getElementById('cal-edit-legenda').value || null,
+        observacao: document.getElementById('cal-edit-obs').value.trim() || null,
+        status: document.getElementById('cal-edit-status').value,
+      };
+      if (!payload.ideia) { alert('Ideia é obrigatória.'); return; }
+      var error;
+      if (isNew) {
+        var r = await sb.from('content_calendar').insert(payload);
+        error = r.error;
+      } else {
+        var r2 = await sb.from('content_calendar').update(payload).eq('id', p.id);
+        error = r2.error;
+      }
+      if (error) { alert('Erro: ' + error.message); return; }
+      _calCloseModal();
+      await renderCalendarioEditorial();
+    });
+
+    if (!isNew) {
+      document.getElementById('cal-delete-btn').addEventListener('click', async function () {
+        if (!confirm('Excluir esse conteúdo?')) return;
+        var sb = window.supabaseClient;
+        await sb.from('content_calendar').delete().eq('id', p.id);
+        _calCloseModal();
+        await renderCalendarioEditorial();
+      });
+    }
+  }
+
+  function _calCloseModal() {
+    document.getElementById('cal-modal').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  // =============================================================
+  // CAPTAÇÃO — Growth OS (áreas, tarefas, KPIs)
+  // =============================================================
+  var _capAreas = [];
+  var _capTasks = [];
+  var _capKpis  = [];
+  var _capAreaFiltro = '';
+  var _capHorizonteFiltro = '';
+  var _capStatusFiltro = 'abertos';
+
+  function _capEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  function _capFmtNumber(n, unidade) {
+    if (n == null || n === '') return '—';
+    var v = Number(n);
+    if (!isFinite(v)) return '—';
+    var s;
+    if (unidade === 'R$') s = 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+    else if (unidade === '%') s = v.toLocaleString('pt-BR') + '%';
+    else s = v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+    return s;
+  }
+
+  async function renderCaptacao() {
+    var sb = window.supabaseClient;
+    if (!sb) return;
+
+    if (!document.getElementById('cap-add-btn').dataset.wired) {
+      document.getElementById('cap-add-btn').dataset.wired = '1';
+      document.getElementById('cap-add-btn').addEventListener('click', function () { _capOpenTaskModal(null); });
+      document.getElementById('cap-modal-close').addEventListener('click', _capCloseTaskModal);
+      document.getElementById('cap-form-cancel').addEventListener('click', _capCloseTaskModal);
+      document.getElementById('cap-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'cap-modal') _capCloseTaskModal();
+      });
+      document.getElementById('cap-form').addEventListener('submit', _capSaveTask);
+      document.getElementById('cap-form-delete').addEventListener('click', _capDeleteTask);
+
+      document.getElementById('cap-filtro-horizonte').addEventListener('change', function (e) {
+        _capHorizonteFiltro = e.target.value; _capRender();
+      });
+      document.getElementById('cap-filtro-status').addEventListener('change', function (e) {
+        _capStatusFiltro = e.target.value; _capRender();
+      });
+
+      document.getElementById('cap-kpi-modal-close').addEventListener('click', _capCloseKpiModal);
+      document.getElementById('cap-kpi-form-cancel').addEventListener('click', _capCloseKpiModal);
+      document.getElementById('cap-kpi-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'cap-kpi-modal') _capCloseKpiModal();
+      });
+      document.getElementById('cap-kpi-form').addEventListener('submit', _capSaveKpi);
+    }
+
+    // Carrega áreas, tarefas e KPIs em paralelo
+    var results = await Promise.all([
+      sb.from('growth_areas').select('*').eq('is_active', true).order('ordem'),
+      sb.from('growth_tasks').select('*').order('ordem').range(0, 9999),
+      sb.from('growth_kpis').select('*').eq('is_active', true).order('ordem')
+    ]);
+    _capAreas = (results[0].data || []);
+    _capTasks = (results[1].data || []);
+    _capKpis  = (results[2].data || []);
+
+    _capRenderKpis();
+    _capRenderFiltrosAreas();
+    _capRender();
+  }
+
+  function _capRenderKpis() {
+    var grid = document.getElementById('cap-kpis');
+    if (!_capKpis.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#888;font-style:italic;padding:20px;text-align:center;">Nenhum KPI cadastrado. Rode o SQL de seed.</p>';
+      return;
+    }
+    grid.innerHTML = _capKpis.map(function (k) {
+      var meta = k.meta != null ? 'Meta: ' + _capFmtNumber(k.meta, k.unidade) : '';
+      var valor = _capFmtNumber(k.valor_atual, k.unidade);
+      return '' +
+        '<div class="cap-kpi-card" data-kpi-id="' + _capEsc(k.id) + '">' +
+          '<div class="cap-kpi-bar" style="background:' + _capEsc(k.cor || '#1a8a4a') + ';"></div>' +
+          '<div class="cap-kpi-nome">' + _capEsc(k.nome) + '</div>' +
+          '<div class="cap-kpi-valor">' + valor + '</div>' +
+          (meta ? '<div class="cap-kpi-meta">' + meta + '</div>' : '') +
+        '</div>';
+    }).join('');
+    grid.querySelectorAll('.cap-kpi-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        var k = _capKpis.find(function (x) { return x.id === card.dataset.kpiId; });
+        if (k) _capOpenKpiModal(k);
+      });
+    });
+  }
+
+  function _capRenderFiltrosAreas() {
+    var container = document.getElementById('cap-areas-filtros');
+    var btns = '<button type="button" class="cap-area-btn ' + (_capAreaFiltro === '' ? 'cap-area-btn--active' : '') + '" data-area="">Todas</button>';
+    btns += _capAreas.map(function (a) {
+      return '<button type="button" class="cap-area-btn ' + (_capAreaFiltro === a.id ? 'cap-area-btn--active' : '') + '" data-area="' + _capEsc(a.id) + '" style="' + (_capAreaFiltro === a.id ? 'background:' + _capEsc(a.cor) + ';border-color:' + _capEsc(a.cor) + ';' : '') + '">' + _capEsc(a.nome) + '</button>';
+    }).join('');
+    container.innerHTML = btns;
+    container.querySelectorAll('.cap-area-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _capAreaFiltro = btn.dataset.area || '';
+        _capRenderFiltrosAreas();
+        _capRender();
+      });
+    });
+  }
+
+  function _capRender() {
+    var list = document.getElementById('cap-tasks-list');
+    var stats = document.getElementById('cap-stats');
+    var tasks = _capTasks.slice();
+
+    if (_capAreaFiltro) tasks = tasks.filter(function (t) { return t.area_id === _capAreaFiltro; });
+    if (_capHorizonteFiltro) tasks = tasks.filter(function (t) { return t.horizonte === _capHorizonteFiltro; });
+    if (_capStatusFiltro === 'abertos') tasks = tasks.filter(function (t) { return t.status !== 'concluido' && t.status !== 'pausado'; });
+    else if (_capStatusFiltro !== 'todos') tasks = tasks.filter(function (t) { return t.status === _capStatusFiltro; });
+
+    // Ordena: prioridade alta primeiro, depois pendente > em_andamento > resto, depois ordem
+    var prioOrder = { alta: 0, media: 1, baixa: 2 };
+    var statusOrder = { pendente: 0, em_andamento: 1, pausado: 2, concluido: 3 };
+    tasks.sort(function (a, b) {
+      var ds = (statusOrder[a.status] || 9) - (statusOrder[b.status] || 9);
+      if (ds !== 0) return ds;
+      var dp = (prioOrder[a.prioridade] || 9) - (prioOrder[b.prioridade] || 9);
+      if (dp !== 0) return dp;
+      return (a.ordem || 0) - (b.ordem || 0);
+    });
+
+    var total = tasks.length;
+    var concluidas = tasks.filter(function (t) { return t.status === 'concluido'; }).length;
+    stats.innerHTML = total + ' tarefa' + (total !== 1 ? 's' : '') +
+      ' · ' + concluidas + ' concluída' + (concluidas !== 1 ? 's' : '');
+
+    if (!tasks.length) {
+      list.innerHTML = '<p style="color:#888;font-style:italic;padding:40px;text-align:center;">Nenhuma tarefa com esses filtros.</p>';
+      return;
+    }
+
+    list.innerHTML = tasks.map(function (t) {
+      var area = _capAreas.find(function (a) { return a.id === t.area_id; });
+      var areaTag = area ? '<span class="cap-tag cap-tag--area" style="background:' + _capEsc(area.cor) + '22;color:' + _capEsc(area.cor) + ';">' + _capEsc(area.nome) + '</span>' : '';
+      var prioTag = '<span class="cap-tag cap-tag--' + _capEsc(t.prioridade) + '">' + _capEsc(t.prioridade) + '</span>';
+      var horizTag = t.horizonte ? '<span class="cap-tag cap-tag--' + _capEsc(t.horizonte) + '">' + (t.horizonte === 'semana' ? 'esta semana' : t.horizonte === 'mes' ? 'este mês' : 'trimestre') + '</span>' : '';
+      var freqTag = (t.frequencia && t.frequencia !== 'unica') ? '<span class="cap-tag cap-tag--freq">' + _capEsc(t.frequencia) + '</span>' : '';
+      var respTag = '<span class="cap-tag cap-tag--resp">' + _capEsc(t.responsavel) + '</span>';
+      var dueTag = t.due_date ? '<span class="cap-tag" style="background:#f5f5f5;color:#555;">📅 ' + _capEsc(_capFmtDate(t.due_date)) + '</span>' : '';
+      var done = t.status === 'concluido';
+      return '' +
+        '<div class="cap-task ' + (done ? 'cap-task--concluido' : '') + '" data-task-id="' + _capEsc(t.id) + '">' +
+          '<div class="cap-task-check ' + (done ? 'cap-task-check--done' : '') + '" data-action="toggle">' + (done ? '✓' : '') + '</div>' +
+          '<div class="cap-task-body">' +
+            '<div class="cap-task-titulo" data-action="edit">' + _capEsc(t.titulo) + '</div>' +
+            (t.descricao ? '<div class="cap-task-desc">' + _capEsc(t.descricao) + '</div>' : '') +
+            '<div class="cap-task-tags">' + areaTag + prioTag + horizTag + freqTag + respTag + dueTag + '</div>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    list.querySelectorAll('.cap-task').forEach(function (el) {
+      el.querySelector('[data-action="toggle"]').addEventListener('click', function () {
+        _capToggleTask(el.dataset.taskId);
+      });
+      el.querySelector('[data-action="edit"]').addEventListener('click', function () {
+        var t = _capTasks.find(function (x) { return x.id === el.dataset.taskId; });
+        if (t) _capOpenTaskModal(t);
+      });
+    });
+  }
+
+  function _capFmtDate(iso) {
+    if (!iso) return '';
+    var p = String(iso).split('-');
+    if (p.length < 3) return iso;
+    return p[2] + '/' + p[1];
+  }
+
+  async function _capToggleTask(id) {
+    var t = _capTasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    var sb = window.supabaseClient;
+    var novoStatus = t.status === 'concluido' ? 'pendente' : 'concluido';
+    var payload = { status: novoStatus, completed_at: novoStatus === 'concluido' ? new Date().toISOString() : null };
+    var r = await sb.from('growth_tasks').update(payload).eq('id', id);
+    if (r.error) { alert('Erro ao atualizar: ' + r.error.message); return; }
+    t.status = novoStatus;
+    t.completed_at = payload.completed_at;
+    _capRender();
+  }
+
+  function _capOpenTaskModal(t) {
+    document.getElementById('cap-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('cap-modal-title').textContent = t ? 'Editar tarefa' : 'Nova tarefa';
+    document.getElementById('cap-form-id').value = t ? t.id : '';
+    document.getElementById('cap-form-titulo').value = t ? (t.titulo || '') : '';
+    document.getElementById('cap-form-descricao').value = t ? (t.descricao || '') : '';
+    document.getElementById('cap-form-prioridade').value = t ? (t.prioridade || 'media') : 'media';
+    document.getElementById('cap-form-status').value = t ? (t.status || 'pendente') : 'pendente';
+    document.getElementById('cap-form-responsavel').value = t ? (t.responsavel || 'ambas') : 'ambas';
+    document.getElementById('cap-form-frequencia').value = t ? (t.frequencia || 'unica') : 'unica';
+    document.getElementById('cap-form-horizonte').value = t ? (t.horizonte || '') : '';
+    document.getElementById('cap-form-due').value = t ? (t.due_date || '') : '';
+    document.getElementById('cap-form-notas').value = t ? (t.notas || '') : '';
+
+    var areaSel = document.getElementById('cap-form-area');
+    areaSel.innerHTML = _capAreas.map(function (a) {
+      return '<option value="' + _capEsc(a.id) + '">' + _capEsc(a.nome) + '</option>';
+    }).join('');
+    if (t) areaSel.value = t.area_id || '';
+
+    document.getElementById('cap-form-delete').style.display = t ? 'block' : 'none';
+  }
+
+  function _capCloseTaskModal() {
+    document.getElementById('cap-modal').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  async function _capSaveTask(ev) {
+    ev.preventDefault();
+    var sb = window.supabaseClient;
+    var id = document.getElementById('cap-form-id').value;
+    var payload = {
+      titulo:      document.getElementById('cap-form-titulo').value.trim(),
+      descricao:   document.getElementById('cap-form-descricao').value.trim() || null,
+      area_id:     document.getElementById('cap-form-area').value || null,
+      prioridade:  document.getElementById('cap-form-prioridade').value,
+      status:      document.getElementById('cap-form-status').value,
+      responsavel: document.getElementById('cap-form-responsavel').value,
+      frequencia:  document.getElementById('cap-form-frequencia').value,
+      horizonte:   document.getElementById('cap-form-horizonte').value || null,
+      due_date:    document.getElementById('cap-form-due').value || null,
+      notas:       document.getElementById('cap-form-notas').value.trim() || null
+    };
+    if (payload.status === 'concluido') payload.completed_at = new Date().toISOString();
+    if (!payload.titulo) { alert('Título obrigatório.'); return; }
+
+    var r;
+    if (id) {
+      r = await sb.from('growth_tasks').update(payload).eq('id', id);
+    } else {
+      r = await sb.from('growth_tasks').insert(payload);
+    }
+    if (r.error) { alert('Erro ao salvar: ' + r.error.message); return; }
+    _capCloseTaskModal();
+    await renderCaptacao();
+  }
+
+  async function _capDeleteTask() {
+    var id = document.getElementById('cap-form-id').value;
+    if (!id) return;
+    if (!confirm('Excluir essa tarefa?')) return;
+    var sb = window.supabaseClient;
+    var r = await sb.from('growth_tasks').delete().eq('id', id);
+    if (r.error) { alert('Erro ao excluir: ' + r.error.message); return; }
+    _capCloseTaskModal();
+    await renderCaptacao();
+  }
+
+  function _capOpenKpiModal(k) {
+    document.getElementById('cap-kpi-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('cap-kpi-modal-title').textContent = k.nome;
+    document.getElementById('cap-kpi-form-id').value = k.id;
+    document.getElementById('cap-kpi-form-valor').value = k.valor_atual != null ? k.valor_atual : '';
+    document.getElementById('cap-kpi-form-meta').value = k.meta != null ? k.meta : '';
+    document.getElementById('cap-kpi-form-obs').value = k.observacao || '';
+  }
+
+  function _capCloseKpiModal() {
+    document.getElementById('cap-kpi-modal').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  async function _capSaveKpi(ev) {
+    ev.preventDefault();
+    var sb = window.supabaseClient;
+    var id = document.getElementById('cap-kpi-form-id').value;
+    var payload = {
+      valor_atual: parseFloat(document.getElementById('cap-kpi-form-valor').value) || 0,
+      meta:        document.getElementById('cap-kpi-form-meta').value !== '' ? parseFloat(document.getElementById('cap-kpi-form-meta').value) : null,
+      observacao:  document.getElementById('cap-kpi-form-obs').value.trim() || null
+    };
+    var r = await sb.from('growth_kpis').update(payload).eq('id', id);
+    if (r.error) { alert('Erro ao salvar KPI: ' + r.error.message); return; }
+    _capCloseKpiModal();
+    await renderCaptacao();
+  }
 
   // ===== START =====
   if (document.readyState === 'loading') {

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dia dos Namorados na Elarah — experiências a dois cuidadosamente curadas. Mais do que um presente, uma memória que dura.">
+  <title>Dia dos Namorados — Elarah</title>
+  <meta property="og:title" content="Dia dos Namorados — Elarah">
+  <meta property="og:description" content="Tempo a dois. Memória que dura. Curadoria Elarah.">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="dia-dos-namorados.css?v=4">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body class="ddn-body">
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que vocês querem viver?" class="header__search-input">
+        <button id="search-btn" class="header__search-btn"></button>
+      </div>
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+          </div>
+        </div>
+        <a href="dia-dos-namorados.html" class="header__nav-link header__nav-link--ddn" aria-current="page">Dia dos Namorados</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="oferecer.html" class="header__nav-link">Oferecer uma experiencia</a>
+      </nav>
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="ddn-hero">
+    <div class="ddn-hero__decor ddn-hero__decor--left" aria-hidden="true"></div>
+    <div class="ddn-hero__decor ddn-hero__decor--right" aria-hidden="true"></div>
+    <div class="ddn-hero__inner">
+      <span class="ddn-hero__kicker">Dia dos Namorados · Curadoria Elarah</span>
+      <h1 class="ddn-hero__title">
+        12 de junho.<br>
+        <em>O dia em que vocês param o tempo.</em>
+      </h1>
+      <p class="ddn-hero__sub">
+        Não é um presente. É um momento — feito com as próprias mãos,
+        provado a dois, lembrado pra sempre.
+      </p>
+      <a href="#ddn-experiencias" class="ddn-hero__cta">
+        Ver experiências a dois
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+        </svg>
+      </a>
+      <div class="ddn-hero__countdown" id="ddn-countdown" aria-live="polite">
+        Faltam <strong>—</strong> dias para o 12 de junho
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PILARES ========== -->
+  <section class="ddn-pillars">
+    <div class="ddn-pillars__inner">
+      <h2 class="ddn-pillars__title">Por que viver, e não só presentear?</h2>
+      <p class="ddn-pillars__sub">Porque o que vocês fazem juntos vira parte da história de vocês.</p>
+      <div class="ddn-pillars__grid">
+        <article class="ddn-pillar">
+          <div class="ddn-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="24" cy="24" r="14"/>
+              <path d="M24 16v8l5 3"/>
+            </svg>
+          </div>
+          <h3 class="ddn-pillar__title">Tempo a dois</h3>
+          <p class="ddn-pillar__text">Sem celular, sem fila, sem distração. Algumas horas só de vocês — no ritmo de vocês.</p>
+        </article>
+        <article class="ddn-pillar">
+          <div class="ddn-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 41c-7-5-15-11-15-21a8 8 0 0 1 15-4 8 8 0 0 1 15 4c0 10-8 16-15 21z"/>
+            </svg>
+          </div>
+          <h3 class="ddn-pillar__title">Memória que dura</h3>
+          <p class="ddn-pillar__text">Vão sair com algo feito a quatro mãos. Não é foto — é cheiro, gosto, peça, lembrança real.</p>
+        </article>
+        <article class="ddn-pillar">
+          <div class="ddn-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 6l5 12 13 1-10 9 3 13-11-7-11 7 3-13L6 19l13-1z"/>
+            </svg>
+          </div>
+          <h3 class="ddn-pillar__title">Curadoria Elarah</h3>
+          <p class="ddn-pillar__text">Cada experiência foi pensada pra casal. Íntima, criativa, do tamanho certo do dia.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== GIFT CARD BANNER ========== -->
+  <section class="ddn-gift">
+    <div class="ddn-gift__inner">
+      <div>
+        <span class="ddn-gift__badge">Gift Card · Especial Casal</span>
+        <h2 class="ddn-gift__title">
+          Não sabe o que ela ama?<br>
+          <em>Deixa ela escolher.</em>
+        </h2>
+        <p class="ddn-gift__sub">
+          Um cartão-presente que vale qualquer experiência Elarah.
+          Vocês decidem juntos, vivem juntos. Sem pressão, sem prazo.
+        </p>
+        <div class="ddn-gift__values">
+          <button type="button" class="ddn-gift__value-chip">R$ 250</button>
+          <button type="button" class="ddn-gift__value-chip ddn-gift__value-chip--active">R$ 500</button>
+          <button type="button" class="ddn-gift__value-chip">R$ 750</button>
+          <button type="button" class="ddn-gift__value-chip">R$ 1.000</button>
+        </div>
+        <a href="dia-dos-namorados-presentear.html" class="ddn-gift__cta">
+          Presentear agora
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+      </div>
+      <div class="ddn-gift__visual" aria-hidden="true">
+        <div class="ddn-gift__card-preview">
+          <div class="ddn-gift__card-preview-kicker">Elarah · Especial Dia dos Namorados</div>
+          <div class="ddn-gift__card-preview-title">Pra a gente<br>viver junto.</div>
+          <div class="ddn-gift__card-preview-value">R$ 500</div>
+          <div class="ddn-gift__card-preview-note">Você escolhe a experiência.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EM BREVE / LISTA DE ESPERA ========== -->
+  <section class="ddn-upcoming">
+    <div class="ddn-upcoming__inner">
+      <header class="ddn-upcoming__head">
+        <span class="ddn-upcoming__kicker">Lançamentos a caminho</span>
+        <h2 class="ddn-upcoming__title">Em breve, novas vivências para vocês</h2>
+        <p class="ddn-upcoming__sub">
+          Estamos finalizando experiências exclusivas pra essa data.
+          Deixe seu e-mail e te avisamos primeiro quando abrirem.
+        </p>
+      </header>
+      <div class="ddn-upcoming__grid">
+
+        <article class="ddn-upcoming-card">
+          <div class="ddn-upcoming-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 12h16v6c0 6-4 10-8 10s-8-4-8-10v-6z"/>
+              <path d="M20 28v6h8v-6"/>
+              <path d="M14 18h-2a3 3 0 0 0 3 3M34 18h2a3 3 0 0 1-3 3"/>
+            </svg>
+          </div>
+          <div class="ddn-upcoming-card__status">Em breve</div>
+          <h3 class="ddn-upcoming-card__title">Jantar Harmonizado a Dois</h3>
+          <p class="ddn-upcoming-card__desc">
+            Menu de 4 tempos com harmonização exclusiva.
+            Cardápio sendo finalizado.
+          </p>
+          <button type="button" class="ddn-upcoming-card__cta" data-ddn-waitlist data-upcoming-name="Jantar Harmonizado a Dois">
+            Avise-me quando abrir
+          </button>
+        </article>
+
+        <article class="ddn-upcoming-card">
+          <div class="ddn-upcoming-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="24" cy="24" r="14"/>
+              <path d="M24 10v4M24 34v4M10 24h4M34 24h4M14 14l3 3M31 31l3 3M14 34l3-3M31 17l3-3"/>
+            </svg>
+          </div>
+          <div class="ddn-upcoming-card__status">Lançamento em junho</div>
+          <h3 class="ddn-upcoming-card__title">Banho de Sons & Aromas</h3>
+          <p class="ddn-upcoming-card__desc">
+            Experiência sensorial a dois com sound bath, aromaterapia e taça de vinho.
+          </p>
+          <button type="button" class="ddn-upcoming-card__cta" data-ddn-waitlist data-upcoming-name="Banho de Sons & Aromas">
+            Avise-me quando abrir
+          </button>
+        </article>
+
+        <article class="ddn-upcoming-card">
+          <div class="ddn-upcoming-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 8c-3 6-3 9 0 12s3 6 0 12-3 6 0 8"/>
+              <path d="M14 28a10 10 0 0 0 20 0c0-5-5-9-10-14-5 5-10 9-10 14z"/>
+            </svg>
+          </div>
+          <div class="ddn-upcoming-card__status">Em breve</div>
+          <h3 class="ddn-upcoming-card__title">Vela do Casal</h3>
+          <p class="ddn-upcoming-card__desc">
+            Vocês criam uma vela única com fragrância personalizada — memória olfativa que dura.
+          </p>
+          <button type="button" class="ddn-upcoming-card__cta" data-ddn-waitlist data-upcoming-name="Vela do Casal">
+            Avise-me quando abrir
+          </button>
+        </article>
+
+      </div>
+    </div>
+  </section>
+  <!-- ========== EXPERIÊNCIAS CURADAS ========== -->
+  <section id="ddn-experiencias" class="ddn-experiences">
+    <div class="ddn-experiences__inner">
+      <header class="ddn-experiences__head">
+        <span class="ddn-experiences__kicker">Vitrine a dois</span>
+        <h2 class="ddn-experiences__title">Experiências para viver <em>juntos</em></h2>
+        <p class="ddn-experiences__sub">
+          Selecionadas pensando em casais — íntimas, criativas, gastronômicas.
+          Cada uma promete algumas horas verdadeiramente de vocês.
+        </p>
+      </header>
+
+      <div class="ddn-experiences__grid" id="ddn-grid">
+        <p style="grid-column:1/-1;text-align:center;color:#888;padding:40px 20px;font-style:italic;">Carregando experiências…</p>
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="dia-dos-namorados-todas.html" class="ddn-cta-secondary" id="ddn-ver-todas" style="display:none;">
+          Ver todas as experiências da campanha
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:4px;">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ========== DEPOIMENTOS ========== -->
+  <section class="ddn-testimonials" aria-labelledby="ddn-test-title">
+    <div class="ddn-testimonials__inner">
+      <span class="ddn-testimonials__kicker">Quem viveu, conta</span>
+      <h2 id="ddn-test-title" class="ddn-testimonials__title">Casais que pararam o tempo</h2>
+      <div class="ddn-testimonials__grid">
+        <figure class="ddn-testimonial">
+          <svg class="ddn-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddn-testimonial__text">
+            Foi o jantar mais nosso que a gente já teve. A vela ainda está acesa em casa.
+          </blockquote>
+          <figcaption class="ddn-testimonial__author">
+            <span class="ddn-testimonial__name">Carol & Pedro</span>
+            <span class="ddn-testimonial__detail">Workshop de Vela Aromática</span>
+          </figcaption>
+        </figure>
+        <figure class="ddn-testimonial">
+          <svg class="ddn-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddn-testimonial__text">
+            A gente saiu com duas taças pintadas e uma história nova pra contar.
+          </blockquote>
+          <figcaption class="ddn-testimonial__author">
+            <span class="ddn-testimonial__name">Mariana & Lucas</span>
+            <span class="ddn-testimonial__detail">Pintura em Taça</span>
+          </figcaption>
+        </figure>
+        <figure class="ddn-testimonial">
+          <svg class="ddn-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddn-testimonial__text">
+            Já viramos chefes do nosso próprio bar em casa. Inesquecível.
+          </blockquote>
+          <figcaption class="ddn-testimonial__author">
+            <span class="ddn-testimonial__name">Júlia & Rafa</span>
+            <span class="ddn-testimonial__detail">Coquetelaria a Dois</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA FINAL ========== -->
+  <section class="ddn-cta-final">
+    <h2 class="ddn-cta-final__title">
+      Esse ano, deem um <em>tempo de verdade</em><br>
+      um pro outro.
+    </h2>
+    <p class="ddn-cta-final__sub">
+      Escolha a experiência ou presenteie com um cartão.
+      O importante é que esse dia tenha vocês — inteiros, juntos, sem pressa.
+    </p>
+    <div class="ddn-cta-final__buttons">
+      <a href="#ddn-experiencias" class="ddn-cta-primary">Ver experiências</a>
+      <a href="dia-dos-namorados-presentear.html" class="ddn-cta-secondary">Presentear com gift card</a>
+    </div>
+  </section>
+
+  <!-- ========== MODAL LISTA DE ESPERA ========== -->
+  <div class="ddn-waitlist-modal" id="ddn-waitlist-modal" role="dialog" aria-modal="true" aria-labelledby="ddn-waitlist-title">
+    <div class="ddn-waitlist-modal__card">
+      <button type="button" class="ddn-waitlist-modal__close" id="ddn-waitlist-close" aria-label="Fechar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div id="ddn-waitlist-form-section">
+        <h3 id="ddn-waitlist-title" class="ddn-waitlist-modal__title">Te avisamos primeiro</h3>
+        <p class="ddn-waitlist-modal__sub" id="ddn-waitlist-sub">Deixe seu e-mail e a gente te avisa assim que essa experiência abrir reservas.</p>
+        <form id="ddn-waitlist-form">
+          <input type="hidden" id="ddn-waitlist-upcoming-name" value="">
+          <div class="ddn-waitlist-modal__field">
+            <label class="ddn-waitlist-modal__label">Seu nome</label>
+            <input type="text" class="ddn-waitlist-modal__input" id="ddn-waitlist-nome" required placeholder="Maria">
+          </div>
+          <div class="ddn-waitlist-modal__field">
+            <label class="ddn-waitlist-modal__label">E-mail</label>
+            <input type="email" class="ddn-waitlist-modal__input" id="ddn-waitlist-email" required placeholder="seu@email.com">
+          </div>
+          <div class="ddn-waitlist-modal__field">
+            <label class="ddn-waitlist-modal__label">Telefone *</label>
+            <input type="tel" class="ddn-waitlist-modal__input" id="ddn-waitlist-tel" required placeholder="(11) 91234-5678">
+          </div>
+          <button type="submit" class="ddn-waitlist-modal__submit">Entrar na lista de espera</button>
+        </form>
+      </div>
+      <div id="ddn-waitlist-success-section" style="display:none;">
+        <div class="ddn-waitlist-modal__success">
+          <div class="ddn-waitlist-modal__success-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12l5 5 9-9"/>
+            </svg>
+          </div>
+          <h3 class="ddn-waitlist-modal__title">Está na lista!</h3>
+          <p class="ddn-waitlist-modal__sub">
+            Você será o primeiro a saber quando abrirem as reservas.
+            Enquanto isso, dá uma olhada nas experiências disponíveis. 🤍
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+
+    <!-- LOGO + FRASE -->
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+
+        <!-- INSTAGRAM -->
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/>
+          </svg>
+        </a>
+
+        <!-- WHATSAPP -->
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/>
+          </svg>
+        </a>
+
+        <!-- TIKTOK -->
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/>
+          </svg>
+        </a>
+
+        <!-- LINKEDIN -->
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- EXPLORAR -->
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting">Tufting</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <!-- ELARAH -->
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <!-- INFORMAÇÕES -->
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+
+  </div>
+
+  <div class="footer__bottom">
+  <p>© 2026 Elarah. Todos os direitos reservados.</p>
+</div>
+</footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=23"></script>
+<script src="dia-dos-namorados.js?v=11"></script>
+</body>
+</html>

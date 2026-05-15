@@ -17,7 +17,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=9">
+  <link rel="stylesheet" href="admin.css?v=10">
+  <!-- Auto-bust de cache: se a versão local divergir da esperada,
+       força reload limpo via location.replace com query string única.
+       Resolve quando admin.html é cacheado pelo CDN/navegador apontando
+       pra versão antiga do admin.js. Roda 1x por sessão. -->
+  <script>
+    (function () {
+      var EXPECTED = 121;
+      try {
+        var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
+        if (stored === EXPECTED) return;                  // já está na versão certa
+        sessionStorage.setItem('elarah_admin_v', String(EXPECTED));
+        // Se já tinha versão antiga gravada E essa página foi carregada SEM
+        // query de cache-bust, força reload com query única. Isso evita loop
+        // (a query muda → próximo load não dispara de novo).
+        if (stored > 0 && stored < EXPECTED && !location.search.includes('cb=')) {
+          location.replace(location.pathname + '?cb=' + Date.now() + location.hash);
+        }
+      } catch (e) { /* sessionStorage indisponível: ignora */ }
+    })();
+  </script>
 </head>
 <body>
 
@@ -36,6 +56,58 @@
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
         </svg>
         <span>Visão geral</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="painel-semanal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3-9 4 18 3-9h4"/>
+        </svg>
+        <span>Painel semanal</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="rotina">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <path d="M9 14l2 2 4-4"/>
+        </svg>
+        <span>Rotina</span>
+      </button>
+
+      <!-- Abas escondidas (pedido da admin pra reduzir poluição visual).
+           Painéis #panel-conteudo e #panel-marketing-ai continuam no DOM
+           mas sem entrada no menu. Pra reativar, basta descomentar.
+      <button class="admin__nav-item" data-panel="conteudo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          <polygon points="10 8 16 11 10 14 10 8" fill="currentColor"/>
+        </svg>
+        <span>Conteúdo</span>
+      </button>
+      -->
+
+      <button class="admin__nav-item" data-panel="calendario-editorial">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <circle cx="8" cy="14" r="1" fill="currentColor"/>
+          <circle cx="12" cy="14" r="1" fill="currentColor"/>
+          <circle cx="16" cy="14" r="1" fill="currentColor"/>
+        </svg>
+        <span>Calendário Editorial</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="captacao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+        </svg>
+        <span>Captação</span>
       </button>
 
       <button class="admin__nav-item" data-panel="users">
@@ -66,6 +138,25 @@
         <span>Fornecedores</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="prospects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 11h-6"/><path d="M19 8v6"/>
+        </svg>
+        <span>Prospecção</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="b2b-prospects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"/>
+          <path d="M5 21V7l8-4v18"/>
+          <path d="M19 21V11l-6-4"/>
+          <path d="M9 9h.01"/><path d="M9 12h.01"/><path d="M9 15h.01"/><path d="M9 18h.01"/>
+        </svg>
+        <span>Prospecção B2B</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="purchases-pending">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
@@ -80,12 +171,42 @@
         <span>Experiências</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="experiencias-foco">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        <span>Experiências foco</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="byelarah">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2l2.39 6.97H21l-5.3 3.85 2.02 6.21L12 15.1l-5.72 3.93 2.02-6.21L3 8.97h6.61z"/>
         </svg>
         <span>By Elarah</span>
       </button>
+
+      <button class="admin__nav-item" data-panel="campanhas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/>
+          <line x1="10" y1="12" x2="14" y2="12"/>
+        </svg>
+        <span>Campanhas</span>
+      </button>
+
+      <!-- Marketing AI escondido — admin pediu pra reduzir abas. Painel
+           #panel-marketing-ai mantido no DOM. Reativar removendo este
+           wrapper de comentário.
+      <button class="admin__nav-item" data-panel="marketing-ai">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <circle cx="12" cy="5" r="2"/>
+          <path d="M12 7v4M8 16h.01M16 16h.01"/>
+        </svg>
+        <span>Marketing AI</span>
+      </button>
+      -->
 
       <button class="admin__nav-item" data-panel="giftcards">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -225,6 +346,290 @@
       </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- ===== SISTEMA OPERACIONAL SEMANAL — 3 abas novas ========== -->
+    <!-- ============================================================ -->
+
+    <!-- ===== PAINEL SEMANAL ===== -->
+    <div class="admin__panel" id="panel-painel-semanal">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Painel semanal</h1>
+          <p class="admin__page-subtitle" id="painel-semanal-subtitle">Resumo da operação da semana</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" id="painel-prev-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">← Semana anterior</button>
+          <button type="button" id="painel-this-week" class="admin__btn" style="padding:6px 12px;background:#fff8ef;border:1px solid #b07b00;color:#7a4f00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Esta semana</button>
+          <button type="button" id="painel-next-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">Próxima →</button>
+          <button type="button" id="painel-refresh" class="admin__btn" style="padding:6px 12px;background:transparent;border:1px dashed #999;color:#666;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">↻</button>
+        </div>
+      </div>
+
+      <!-- 9 cards em grid responsivo -->
+      <div id="painel-semanal-grid" class="op-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px;">
+        <!-- preenchido via JS -->
+      </div>
+
+      <!-- Lista de pendências da semana -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Pendências para resolver</span>
+          <span class="admin__table-count" id="painel-pendencias-count"></span>
+        </div>
+        <div id="painel-pendencias" style="padding:12px 16px;font-size:.9rem;line-height:1.6;color:#444;">
+          <em style="color:#888;">Carregando…</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ROTINA ===== -->
+    <div class="admin__panel" id="panel-rotina">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Rotina semanal</h1>
+          <p class="admin__page-subtitle" id="rotina-subtitle">Tarefas da semana — clique para marcar como concluída</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" id="rotina-prev-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">← Anterior</button>
+          <button type="button" id="rotina-this-week" class="admin__btn" style="padding:6px 12px;background:#fff8ef;border:1px solid #b07b00;color:#7a4f00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Esta semana</button>
+          <button type="button" id="rotina-next-week" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">Próxima →</button>
+          <button type="button" id="rotina-templates-btn" class="admin__btn" style="padding:6px 12px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer;">⚙️ Templates</button>
+        </div>
+      </div>
+
+      <!-- Grid 7 colunas (Seg-Dom) — vira 1 coluna no mobile -->
+      <div id="rotina-grid" class="op-week-grid" style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:10px;">
+        <!-- preenchido via JS -->
+      </div>
+
+      <!-- ===== Observações (bloco abaixo do grid) ===== -->
+      <div style="margin-top:24px;background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2 style="margin:0;font-size:1.05rem;">📝 Observações</h2>
+            <span style="font-size:.78rem;color:#888;">aprendizados, ideias, prioridades — auto-salva</span>
+          </div>
+          <!-- Toggle entre semana/mês -->
+          <div style="display:flex;gap:0;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+            <button type="button" id="rotina-notas-tab-semana"
+              style="padding:6px 14px;background:#2c5e3f;color:#fff;border:none;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">
+              Esta semana
+            </button>
+            <button type="button" id="rotina-notas-tab-mes"
+              style="padding:6px 14px;background:#fff;color:#444;border:none;font-family:inherit;font-size:.82rem;cursor:pointer;border-left:1px solid #ddd;">
+              Este mês
+            </button>
+          </div>
+        </div>
+        <textarea id="rotina-notas-textarea"
+          placeholder="Escreva o que importa pra essa semana — aprendizados, ajustes, ideias de conteúdo, prioridades, observações de fornecedores ou experiências…"
+          style="width:100%;min-height:160px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;line-height:1.5;resize:vertical;background:#fafafa;"></textarea>
+        <div id="rotina-notas-status" style="margin-top:6px;font-size:.74rem;color:#888;text-align:right;">—</div>
+      </div>
+    </div>
+
+    <!-- ===== CONTEUDO (KANBAN) ===== -->
+    <div class="admin__panel" id="panel-conteudo">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Conteúdo</h1>
+          <p class="admin__page-subtitle">Kanban de produção — Ideia → Roteiro → Gravado → Editado → Agendado → Postado → Reaproveitado</p>
+        </div>
+        <button type="button" id="conteudo-new-btn" class="admin__btn" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">+ Novo conteúdo</button>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <select id="conteudo-filter-tipo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos os tipos</option>
+          <option value="Reels">Reels</option>
+          <option value="Story">Story</option>
+          <option value="TikTok">TikTok</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Post">Post</option>
+          <option value="Grupo WhatsApp">Grupo WhatsApp</option>
+        </select>
+        <select id="conteudo-filter-objetivo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos os objetivos</option>
+          <option value="venda">Venda</option>
+          <option value="bastidor">Bastidor</option>
+          <option value="branding">Branding</option>
+          <option value="prova_social">Prova social</option>
+          <option value="lancamento">Lançamento</option>
+          <option value="urgencia">Urgência</option>
+          <option value="autoridade">Autoridade</option>
+        </select>
+        <select id="conteudo-filter-responsavel" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
+          <option value="">Todos responsáveis</option>
+          <option value="voce">Você</option>
+          <option value="socia">Sócia</option>
+          <option value="ambas">Ambas</option>
+        </select>
+        <input type="search" id="conteudo-filter-search" placeholder="Buscar título…" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
+      </div>
+
+      <!-- Kanban com scroll horizontal no mobile -->
+      <div id="conteudo-kanban" class="op-kanban" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;">
+        <!-- preenchido via JS -->
+      </div>
+    </div>
+
+    <!-- ===== MODALS Sistema Operacional ===== -->
+
+    <!-- Modal: editar/criar tarefa de rotina -->
+    <div id="rotina-task-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 12px;font-size:1.2rem;" id="rotina-task-modal-title">Tarefa</h2>
+        <input type="hidden" id="rotina-task-id">
+        <input type="hidden" id="rotina-task-week-start">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+          <label style="font-size:.82rem;font-weight:600;">Título *<input type="text" id="rotina-task-titulo" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Dia<select id="rotina-task-week-day" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="0">Segunda</option><option value="1">Terça</option><option value="2">Quarta</option><option value="3">Quinta</option><option value="4">Sexta</option><option value="5">Sábado</option><option value="6">Domingo</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="rotina-task-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+          </div>
+          <label style="font-size:.82rem;font-weight:600;">Status<select id="rotina-task-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="pendente">Pendente</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option></select></label>
+          <label style="font-size:.82rem;font-weight:600;">Notas<textarea id="rotina-task-notas" rows="3" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          <!-- Checkbox de recorrência: só aparece em criação. Marcar
+               cria também um template (vira tarefa fixa toda semana
+               no mesmo dia). -->
+          <label id="rotina-task-recorrente-wrap" style="font-size:.85rem;display:flex;align-items:center;gap:8px;padding:10px;background:#f5edfc;border:1px solid #d9c5ee;border-radius:6px;cursor:pointer;">
+            <input type="checkbox" id="rotina-task-recorrente" style="width:16px;height:16px;cursor:pointer;">
+            <span><strong>🔁 Repetir toda semana</strong> — cria um template e essa tarefa volta automaticamente nas próximas semanas no mesmo dia</span>
+          </label>
+        </div>
+        <div id="rotina-task-msg" style="margin-top:10px;font-size:.85rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="rotina-task-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="rotina-task-duplicate" style="padding:8px 14px;background:#fff;border:1px solid #999;color:#444;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Duplicar</button>
+          <button type="button" id="rotina-task-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+          <button type="button" id="rotina-task-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: gerenciar templates da rotina -->
+    <div id="rotina-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.2rem;">Templates da rotina</h2>
+        <p style="margin:0 0 14px;font-size:.82rem;color:#666;">Tarefas recorrentes que aparecem em todas as semanas. Mudanças NÃO afetam semanas já criadas — só novas.</p>
+        <button type="button" id="rotina-template-new" style="margin-bottom:12px;padding:6px 12px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+        <div id="rotina-templates-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="rotina-templates-close" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: editar/criar conteúdo -->
+    <div id="conteudo-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;font-family:inherit;">
+        <h2 style="margin:0 0 12px;font-size:1.2rem;" id="conteudo-modal-title">Conteúdo</h2>
+        <input type="hidden" id="conteudo-id">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+          <label style="font-size:.82rem;font-weight:600;">Título *<input type="text" id="conteudo-titulo" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;">Tipos (1+ selecionados)
+            <div id="conteudo-tipos-checks" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;font-weight:400;">
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Reels"> Reels</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Story"> Story</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="TikTok"> TikTok</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="LinkedIn"> LinkedIn</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Post"> Post</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;background:#f4f4f4;padding:4px 10px;border-radius:6px;cursor:pointer;"><input type="checkbox" value="Grupo WhatsApp"> Grupo WhatsApp</label>
+            </div>
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Objetivo<select id="conteudo-objetivo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="venda">Venda</option><option value="bastidor">Bastidor</option><option value="branding">Branding</option><option value="prova_social">Prova social</option><option value="lancamento">Lançamento</option><option value="urgencia">Urgência</option><option value="autoridade">Autoridade</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="conteudo-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="font-size:.82rem;font-weight:600;">Status<select id="conteudo-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="ideia">💡 Ideia</option><option value="roteiro">✍️ Roteiro</option><option value="gravado">🎥 Gravado</option><option value="editado">✂️ Editado</option><option value="agendado">📅 Agendado</option><option value="postado">✅ Postado</option><option value="reaproveitado">🔁 Reaproveitado</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Experiência (opcional)<select id="conteudo-experience" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option></select></label>
+          </div>
+          <label style="font-size:.82rem;font-weight:600;">Data agendada (se aplicável)<input type="datetime-local" id="conteudo-scheduled-at" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;">Notas / Copy / Roteiro<textarea id="conteudo-notas" rows="4" placeholder="Cola aqui a copy, link do Drive, ou anotações livres" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+        </div>
+        <div id="conteudo-msg" style="margin-top:10px;font-size:.85rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="conteudo-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="conteudo-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+          <button type="button" id="conteudo-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CSS responsivo do Sistema Operacional Semanal -->
+    <style>
+      /* Mobile: rotina vira 1 coluna por dia, kanban segue scroll horizontal */
+      @media (max-width: 768px) {
+        .op-week-grid { grid-template-columns: 1fr !important; }
+        .op-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      }
+      /* Cards do painel */
+      .op-card {
+        background:#fff;border:1px solid #eee;border-radius:10px;padding:14px;
+        box-shadow:0 1px 3px rgba(0,0,0,.04);cursor:pointer;transition:transform .12s, box-shadow .12s;
+      }
+      .op-card:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.08); }
+      .op-card-label { font-size:.7rem;text-transform:uppercase;color:#888;letter-spacing:.04em;margin-bottom:6px;font-weight:700; }
+      .op-card-value { font-size:1.5rem;font-weight:700;color:#222; }
+      .op-card-sub   { font-size:.72rem;color:#888;margin-top:4px; }
+      .op-card--alert .op-card-value { color:#c0392b; }
+      .op-card--good  .op-card-value { color:#1a8a4a; }
+      /* Coluna de dia (rotina) */
+      .op-day-col {
+        background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;min-height:200px;
+      }
+      /* Fim de semana: leve tom diferente pra não competir com Seg-Sex */
+      .op-day-col--weekend { background:#f5f3ee; }
+      /* Tarefa auto-gerada por experiência: faixa lateral colorida */
+      .op-task--exp { border-left:3px solid #e0a437; }
+      .op-day-col__header {
+        display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
+        padding-bottom:8px;border-bottom:1px solid #e8e8e8;
+      }
+      .op-day-col__label { font-size:.85rem;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:.04em; }
+      .op-day-col__date  { font-size:.7rem;color:#888; }
+      .op-task {
+        display:flex;align-items:flex-start;gap:8px;padding:8px;border-radius:6px;margin-bottom:6px;
+        background:#fff;border:1px solid #eee;cursor:pointer;transition:background .12s;
+      }
+      .op-task:hover { background:#fcfcfc; }
+      .op-task--done { opacity:.55; }
+      .op-task--done .op-task-title { text-decoration:line-through; }
+      .op-task-check { margin-top:2px; }
+      .op-task-title { font-size:.82rem;color:#222;line-height:1.3;flex:1; }
+      .op-task-meta  { font-size:.65rem;color:#666;margin-top:2px;display:flex;gap:6px;flex-wrap:wrap; }
+      .op-resp-badge { display:inline-block;padding:1px 6px;border-radius:6px;font-size:.65rem;font-weight:700; }
+      .op-resp-badge--voce  { background:#e6f0fa;color:#1f4d80; }
+      .op-resp-badge--socia { background:#fce8f1;color:#a05a7a; }
+      .op-resp-badge--ambas { background:#f0e6fa;color:#6b3aa0; }
+      /* Kanban */
+      .op-kan-col {
+        background:#fafafa;border:1px solid #eee;border-radius:10px;padding:10px;
+        min-width:240px;max-width:280px;flex:0 0 auto;
+      }
+      .op-kan-col__header {
+        display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
+        padding-bottom:8px;border-bottom:1px solid #e8e8e8;
+      }
+      .op-kan-col__label { font-size:.78rem;font-weight:700;color:#444; }
+      .op-kan-col__count { font-size:.72rem;color:#888;background:#fff;padding:2px 8px;border-radius:10px; }
+      .op-kan-card {
+        background:#fff;border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px;
+        cursor:pointer;transition:box-shadow .12s,transform .12s;
+      }
+      .op-kan-card:hover { box-shadow:0 3px 8px rgba(0,0,0,.06); transform:translateY(-1px); }
+      .op-kan-card__title { font-size:.85rem;font-weight:600;color:#222;margin-bottom:6px;line-height:1.3; }
+      .op-kan-card__chips { display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px; }
+      .op-chip {
+        font-size:.65rem;padding:2px 6px;border-radius:6px;font-weight:600;letter-spacing:.02em;
+      }
+      .op-chip--tipo { background:#e6f4ea;color:#1a8a4a; }
+      .op-chip--obj  { background:#fff4d6;color:#a87a00; }
+      .op-kan-card__meta { font-size:.7rem;color:#888;display:flex;justify-content:space-between;align-items:center;gap:6px; }
+    </style>
+
     <!-- ===== USERS PANEL ===== -->
     <div class="admin__panel" id="panel-users">
       <div class="admin__header">
@@ -302,9 +707,10 @@
           <p class="admin__page-subtitle">Reservas finalizadas com controle financeiro e fornecedor</p>
         </div>
         <div class="admin__analytics-controls">
-          <select id="bookings-filter-exp" class="admin__analytics-select">
-            <option value="">Todas as experiências</option>
-          </select>
+          <input type="text" id="bookings-filter-exp" class="admin__analytics-select"
+                 list="bookings-filter-exp-list" placeholder="Buscar experiência…"
+                 autocomplete="off" aria-label="Filtrar por experiência">
+          <datalist id="bookings-filter-exp-list"></datalist>
           <select id="bookings-filter-fornecedor" class="admin__analytics-select">
             <option value="">Todos os fornecedores</option>
           </select>
@@ -322,11 +728,11 @@
 
       <div class="admin__stats">
         <div class="admin__stat">
-          <div class="admin__stat-label">Reservas pagas</div>
+          <div class="admin__stat-label">Vagas pagas</div>
           <div class="admin__stat-value admin__stat-value--orange" id="stat-bookings-paid">0</div>
         </div>
         <div class="admin__stat">
-          <div class="admin__stat-label">Reservas pendentes</div>
+          <div class="admin__stat-label">Vagas pendentes</div>
           <div class="admin__stat-value" id="stat-bookings-pending">0</div>
         </div>
         <div class="admin__stat">
@@ -334,7 +740,7 @@
           <div class="admin__stat-value" id="stat-bookings-revenue">R$ 0</div>
         </div>
         <div class="admin__stat">
-          <div class="admin__stat-label">Conversão (cliques → pagas)</div>
+          <div class="admin__stat-label">Conversão (cliques → vagas)</div>
           <div class="admin__stat-value" id="stat-bookings-conversion">—</div>
         </div>
       </div>
@@ -481,11 +887,12 @@
           <thead>
             <tr>
               <th>Fornecedor</th>
+              <th>Tipo</th>
               <th>WhatsApp</th>
               <th>Data de entrada</th>
               <th>Parceiro há</th>
               <th>Experiências</th>
-              <th>Reservas</th>
+              <th>Vagas</th>
               <th>Faturamento</th>
               <th>Repasse</th>
               <th>Receita Elarah</th>
@@ -493,9 +900,444 @@
             </tr>
           </thead>
           <tbody id="fornecedores-body">
-            <tr><td colspan="10" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
+            <tr><td colspan="11" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ===== PROSPECCAO PANEL (CRM de parceiros) ===== -->
+    <div class="admin__panel" id="panel-prospects">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Prospecção</h1>
+        <p class="admin__page-subtitle">CRM de possíveis parceiros — pesquisa, contato, follow-up e promoção a fornecedor</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total cadastrados</div>
+          <div class="admin__stat-value" id="stat-prospects-total">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Contatados</div>
+          <div class="admin__stat-value" id="stat-prospects-contatados">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Parcerias fechadas</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-prospects-fechadas">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Taxa de resposta</div>
+          <div class="admin__stat-value" id="stat-prospects-resposta">—</div>
+        </div>
+      </div>
+
+      <!-- Filtros + ações -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <input type="search" id="prospects-filter-search" placeholder="Buscar por nome, observação..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+        <select id="prospects-filter-categoria" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todas as categorias</option>
+          <option value="ceramica">Cerâmica</option>
+          <option value="vidro">Vidro</option>
+          <option value="mosaico">Mosaico</option>
+          <option value="marcenaria">Marcenaria</option>
+          <option value="tufting">Tufting</option>
+          <option value="pintura">Pintura</option>
+          <option value="bordado">Bordado</option>
+          <option value="encadernacao">Encadernação</option>
+          <option value="floral">Floral</option>
+          <option value="perfumaria">Perfumaria</option>
+          <option value="vela">Vela</option>
+          <option value="aromaterapia">Aromaterapia</option>
+          <option value="joalheria">Joalheria</option>
+          <option value="gastronomia">Gastronomia</option>
+          <option value="doceria">Doceria</option>
+          <option value="cafe">Café</option>
+          <option value="degustacao">Degustação</option>
+          <option value="fermentacao">Fermentação</option>
+          <option value="sensorial">Sensorial / Experiência rara</option>
+          <option value="autoral">Autoral / Outro</option>
+          <option value="outro">Outro</option>
+        </select>
+        <select id="prospects-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os status</option>
+          <option value="nao_contatado">Não contatado</option>
+          <option value="mensagem_enviada">Mensagem enviada</option>
+          <option value="respondeu">Respondeu</option>
+          <option value="reuniao_marcada">Reunião marcada</option>
+          <option value="parceria_fechada">Parceria fechada</option>
+          <option value="ja_parceiro">Já parceiro</option>
+          <option value="recusou">Recusou</option>
+        </select>
+        <input type="text" id="prospects-filter-bairro" placeholder="Bairro" list="prospects-bairros-list" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;width:140px;">
+        <datalist id="prospects-bairros-list"></datalist>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-prospect-new" class="admin__btn admin__btn--primary" style="background:#2c5e3f;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">+ Novo prospect</button>
+        <button type="button" id="btn-prospect-import" class="admin__btn" style="background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Importar CSV</button>
+        <button type="button" id="btn-prospect-templates" class="admin__btn" style="background:#fff;border:1px solid #888;color:#444;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Templates</button>
+        <button type="button" id="btn-prospect-export" class="admin__btn" style="background:transparent;border:1px dashed #aaa;color:#666;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;cursor:pointer;">Exportar CSV</button>
+        <input type="file" id="prospects-csv-input" accept=".csv" style="display:none;">
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Possíveis parceiros</span>
+          <span class="admin__table-count" id="prospects-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Bairro</th>
+              <th>Contato</th>
+              <th>Status</th>
+              <th>Última interação</th>
+              <th style="width:280px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="prospects-body">
+            <tr><td colspan="7" class="admin__table-empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PROSPECT MODALS (escondidos, abertos via JS) ===== -->
+    <div id="prospect-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;" id="prospect-edit-title">Novo prospect</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="prospect-edit-subtitle">Cadastre um possível parceiro pra começar a prospecção.</p>
+        <div id="prospect-edit-dup-warning" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fff8ef;border:1px solid #f0c97a;font-size:.85rem;color:#7a4f00;"></div>
+        <form id="prospect-edit-form" onsubmit="return false;">
+          <input type="hidden" id="prospect-edit-id">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome do local/empresa *<input type="text" id="prospect-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Categoria<select id="prospect-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="ceramica">Cerâmica</option><option value="vidro">Vidro</option><option value="mosaico">Mosaico</option><option value="marcenaria">Marcenaria</option><option value="tufting">Tufting</option><option value="pintura">Pintura</option><option value="bordado">Bordado</option><option value="encadernacao">Encadernação</option><option value="floral">Floral</option><option value="perfumaria">Perfumaria</option><option value="vela">Vela</option><option value="aromaterapia">Aromaterapia</option><option value="joalheria">Joalheria</option><option value="gastronomia">Gastronomia</option><option value="doceria">Doceria</option><option value="cafe">Café</option><option value="degustacao">Degustação</option><option value="fermentacao">Fermentação</option><option value="sensorial">Sensorial</option><option value="autoral">Autoral</option><option value="outro">Outro</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Status<select id="prospect-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="parceria_fechada">Parceria fechada</option><option value="ja_parceiro">Já parceiro</option><option value="recusou">Recusou</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="prospect-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="prospect-edit-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Email<input type="email" id="prospect-edit-email" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Site<input type="url" id="prospect-edit-site" placeholder="https://..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Bairro<input type="text" id="prospect-edit-bairro" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Cidade<input type="text" id="prospect-edit-cidade" value="São Paulo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Observações<textarea id="prospect-edit-observacoes" rows="3" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          </div>
+          <div id="prospect-edit-msg" style="margin-top:12px;font-size:.85rem;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" id="prospect-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="prospect-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="prospect-edit-save" style="padding:8px 16px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="prospect-timeline-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 4px;font-size:1.3rem;" id="prospect-timeline-title">Timeline</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="prospect-timeline-subtitle"></p>
+
+        <!-- Quick actions: copiar mensagem, abrir wa, abrir IG -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding:12px;background:#fafafa;border-radius:8px;">
+          <button type="button" id="prospect-timeline-wa" style="padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;display:none;">📱 Abrir WhatsApp</button>
+          <button type="button" id="prospect-timeline-ig" style="padding:8px 14px;background:#e1306c;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;display:none;">📷 Abrir Instagram</button>
+          <button type="button" id="prospect-timeline-copy-msg" style="padding:8px 14px;background:#fff;border:1px solid #2c5e3f;color:#2c5e3f;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">📋 Copiar mensagem (template)</button>
+          <select id="prospect-timeline-template-select" style="padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;"></select>
+          <button type="button" id="prospect-timeline-promote" style="padding:8px 14px;background:#fff;border:1px solid #b07b00;color:#b07b00;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;margin-left:auto;">⭐ Promover a fornecedor</button>
+        </div>
+
+        <!-- Mensagem renderizada (preview) -->
+        <details style="margin-bottom:18px;">
+          <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:#666;">Pré-visualizar mensagem</summary>
+          <pre id="prospect-timeline-msg-preview" style="margin-top:8px;padding:12px;background:#f4f4f4;border-radius:6px;font-family:inherit;font-size:.88rem;white-space:pre-wrap;line-height:1.5;"></pre>
+        </details>
+
+        <!-- Registrar nova interação -->
+        <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:18px;">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:8px;">Registrar nova interação</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <select id="prospect-interaction-tipo" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+              <option value="mensagem_enviada">📤 Mensagem enviada</option>
+              <option value="respondeu">💬 Respondeu</option>
+              <option value="follow_up">🔁 Follow-up</option>
+              <option value="reuniao_marcada">📅 Reunião marcada</option>
+              <option value="reuniao_realizada">✅ Reunião realizada</option>
+              <option value="parceria_fechada">🎉 Parceria fechada</option>
+              <option value="recusou">❌ Recusou</option>
+              <option value="observacao">📝 Observação livre</option>
+            </select>
+            <input type="text" id="prospect-interaction-desc" placeholder="Descrição (opcional)" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">
+            <button type="button" id="prospect-interaction-add" style="padding:6px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Registrar</button>
+          </div>
+        </div>
+
+        <!-- Lista da timeline -->
+        <div id="prospect-timeline-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+          <button type="button" id="prospect-timeline-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="prospect-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 4px;font-size:1.3rem;">Templates de mensagem</h2>
+        <p style="margin:0 0 14px;font-size:.85rem;color:#666;">Use <code>{{nome}}</code>, <code>{{categoria}}</code>, <code>{{bairro}}</code> pra personalizar. Categoria vazia = template global.</p>
+        <button type="button" id="prospect-template-new" style="margin-bottom:14px;padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+        <div id="prospect-templates-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+          <button type="button" id="prospect-templates-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         PROSPECÇÃO B2B PANEL — CRM de empresas (RH/People/Cultura)
+         ========================================================= -->
+    <div class="admin__panel" id="panel-b2b-prospects">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Prospecção B2B</h1>
+        <p class="admin__page-subtitle">CRM de empresas — experiências corporativas, gift cards, benefícios pra colaboradores</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total empresas</div>
+          <div class="admin__stat-value" id="stat-b2b-total">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Ações pra hoje</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-b2b-acoes-hoje">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Reuniões marcadas</div>
+          <div class="admin__stat-value" id="stat-b2b-reunioes">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Clientes ativos</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-b2b-clientes">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Taxa resposta</div>
+          <div class="admin__stat-value" id="stat-b2b-resposta">—</div>
+        </div>
+      </div>
+
+      <!-- Filtros principais -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+        <input type="search" id="b2b-filter-search" placeholder="Buscar por empresa, contato, segmento..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+        <select id="b2b-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os status</option>
+          <option value="nao_contatado">Não contatado</option>
+          <option value="mensagem_enviada">Mensagem enviada</option>
+          <option value="respondeu">Respondeu</option>
+          <option value="reuniao_marcada">Reunião marcada</option>
+          <option value="proposta_enviada">Proposta enviada</option>
+          <option value="negociacao">Negociação</option>
+          <option value="fechado">Fechado (ação pontual)</option>
+          <option value="cliente_ativo">Cliente ativo</option>
+          <option value="pausado">Pausado</option>
+          <option value="recusou">Recusou</option>
+        </select>
+        <select id="b2b-filter-tipo" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os tipos</option>
+          <option value="tech">Tech</option>
+          <option value="agencia">Agência</option>
+          <option value="coworking">Coworking</option>
+          <option value="construtora">Construtora</option>
+          <option value="startup">Startup</option>
+          <option value="escritorio">Escritório</option>
+          <option value="imobiliaria">Imobiliária</option>
+          <option value="arquitetura_design">Arquitetura/Design</option>
+          <option value="escritorio_juridico">Escritório jurídico</option>
+          <option value="clinica">Clínica</option>
+          <option value="industria_leve">Indústria leve</option>
+          <option value="outro">Outro</option>
+        </select>
+        <select id="b2b-filter-funcionarios" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todas as faixas</option>
+          <option value="1_49">1–49 funcionários</option>
+          <option value="50_100">50–100 ⭐</option>
+          <option value="101_250">101–250 ⭐</option>
+          <option value="251_500">251–500 ⭐</option>
+          <option value="500_plus">500+</option>
+          <option value="sweet_spot">⭐ Sweet spot (50–500)</option>
+        </select>
+        <select id="b2b-filter-potencial" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos os potenciais</option>
+          <option value="alto">🔥 Alto</option>
+          <option value="medio">Médio</option>
+          <option value="baixo">Baixo</option>
+        </select>
+        <input type="text" id="b2b-filter-cidade" placeholder="Cidade" list="b2b-cidades-list" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;width:140px;">
+        <datalist id="b2b-cidades-list"></datalist>
+      </div>
+
+      <!-- Visões rápidas -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+        <span style="font-size:.8rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Visões rápidas:</span>
+        <button type="button" class="b2b-view-chip" data-view="acoes-hoje" style="padding:6px 12px;border:1px solid #f0a05e;background:#fff8ef;color:#a4663b;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">📅 Ações pra hoje</button>
+        <button type="button" class="b2b-view-chip" data-view="atrasados" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">⚠️ Follow-up atrasado</button>
+        <button type="button" class="b2b-view-chip" data-view="quentes" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">🔥 Leads quentes</button>
+        <button type="button" class="b2b-view-chip" data-view="parados" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">🥶 Parados &gt; 14d</button>
+        <button type="button" class="b2b-view-chip" data-view="todos" style="padding:6px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:999px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Todos</button>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-b2b-new" class="admin__btn admin__btn--primary" style="background:#f0a05e;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">+ Nova empresa</button>
+        <button type="button" id="btn-b2b-import" class="admin__btn" style="background:#fff;border:1px solid #f0a05e;color:#a4663b;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Importar CSV</button>
+        <button type="button" id="btn-b2b-templates" class="admin__btn" style="background:#fff;border:1px solid #888;color:#444;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">Templates B2B</button>
+        <button type="button" id="btn-b2b-export" class="admin__btn" style="background:transparent;border:1px dashed #aaa;color:#666;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:.92rem;cursor:pointer;">Exportar CSV</button>
+        <input type="file" id="b2b-csv-input" accept=".csv" style="display:none;">
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Empresas-alvo</span>
+          <span class="admin__table-count" id="b2b-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Tipo</th>
+              <th>Funcionários</th>
+              <th>Contato</th>
+              <th>Canais</th>
+              <th>Status</th>
+              <th>Potencial</th>
+              <th>Sinais</th>
+              <th>Próxima ação</th>
+              <th style="width:240px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="b2b-body">
+            <tr><td colspan="10" class="admin__table-empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== B2B PROSPECT EDIT MODAL ===== -->
+    <div id="b2b-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;" id="b2b-edit-title">Nova empresa</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;" id="b2b-edit-subtitle">Cadastre uma empresa-alvo pra prospecção comercial.</p>
+        <div id="b2b-edit-dup-warning" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fff8ef;border:1px solid #f0c97a;font-size:.85rem;color:#7a4f00;"></div>
+        <form id="b2b-edit-form" onsubmit="return false;">
+          <input type="hidden" id="b2b-edit-id">
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Empresa</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Nome da empresa *<input type="text" id="b2b-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Tipo<select id="b2b-edit-tipo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="tech">Tech</option><option value="agencia">Agência</option><option value="coworking">Coworking</option><option value="construtora">Construtora</option><option value="startup">Startup</option><option value="escritorio">Escritório</option><option value="imobiliaria">Imobiliária</option><option value="arquitetura_design">Arquitetura/Design</option><option value="escritorio_juridico">Escritório jurídico</option><option value="clinica">Clínica</option><option value="industria_leve">Indústria leve</option><option value="outro">Outro</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Funcionários<select id="b2b-edit-funcionarios" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="1_49">1–49</option><option value="50_100">50–100 ⭐ sweet spot</option><option value="101_250">101–250 ⭐ sweet spot</option><option value="251_500">251–500 ⭐ sweet spot</option><option value="500_plus">500+</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Segmento<input type="text" id="b2b-edit-segmento" placeholder="SaaS B2B, construção residencial..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Cidade<input type="text" id="b2b-edit-cidade" value="São Paulo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Site<input type="url" id="b2b-edit-site" placeholder="https://..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">LinkedIn empresa<input type="url" id="b2b-edit-linkedin-empresa" placeholder="https://linkedin.com/company/..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="b2b-edit-instagram" placeholder="@handle ou URL" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Contato principal <span style="color:#888;font-weight:400;font-size:.78rem;">(RH / People / decisor)</span></h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;">Nome<input type="text" id="b2b-edit-contato-nome" placeholder="Maria Silva" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Cargo<input type="text" id="b2b-edit-contato-cargo" placeholder="Head of People" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">E-mail<input type="email" id="b2b-edit-contato-email" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="tel" id="b2b-edit-contato-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">LinkedIn pessoal<input type="url" id="b2b-edit-contato-linkedin" placeholder="https://linkedin.com/in/..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <h3 style="margin:0 0 8px;font-size:.95rem;color:#444;border-bottom:1px solid #eee;padding-bottom:6px;">Pipeline</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+            <label style="font-size:.82rem;font-weight:600;">Status comercial<select id="b2b-edit-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="nao_contatado">Não contatado</option><option value="mensagem_enviada">Mensagem enviada</option><option value="respondeu">Respondeu</option><option value="reuniao_marcada">Reunião marcada</option><option value="proposta_enviada">Proposta enviada</option><option value="negociacao">Negociação</option><option value="fechado">Fechado (ação pontual)</option><option value="cliente_ativo">Cliente ativo</option><option value="pausado">Pausado</option><option value="recusou">Recusou</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Potencial<select id="b2b-edit-potencial" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="baixo">Baixo</option><option value="medio" selected>Médio</option><option value="alto">🔥 Alto</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Próxima ação<input type="text" id="b2b-edit-proxima-acao" placeholder="Ligar terça, enviar proposta..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Quando<input type="datetime-local" id="b2b-edit-proxima-acao-at" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;grid-column:1/-1;">Observações<textarea id="b2b-edit-observacoes" rows="3" placeholder="Dor, contexto, histórico..." style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          </div>
+
+          <div id="b2b-edit-timeline-wrap" style="display:none;margin-top:16px;border-top:1px solid #eee;padding-top:16px;">
+            <h3 style="margin:0 0 10px;font-size:.95rem;color:#444;">Timeline de interações</h3>
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <select id="b2b-int-tipo" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+                <option value="mensagem_enviada">📤 Mensagem enviada</option>
+                <option value="respondeu">💬 Respondeu</option>
+                <option value="reuniao_marcada">📅 Reunião marcada</option>
+                <option value="reuniao_realizada">✅ Reunião realizada</option>
+                <option value="proposta_enviada">📋 Proposta enviada</option>
+                <option value="negociacao">💼 Negociação</option>
+                <option value="follow_up">🔁 Follow-up</option>
+                <option value="observacao">📝 Observação</option>
+                <option value="fechado">🎉 Fechado</option>
+                <option value="cliente_ativo">⭐ Cliente ativo</option>
+                <option value="pausado">⏸️ Pausado</option>
+                <option value="recusou">❌ Recusou</option>
+              </select>
+              <input type="text" id="b2b-int-desc" placeholder="Descrição (opcional)" style="flex:1;min-width:180px;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;">
+              <button type="button" id="b2b-int-add" style="padding:8px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Registrar</button>
+            </div>
+            <ul id="b2b-edit-timeline" style="list-style:none;padding:0;margin:0;max-height:200px;overflow-y:auto;font-size:.85rem;"></ul>
+          </div>
+
+          <div id="b2b-edit-msg" style="margin-top:12px;font-size:.85rem;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" id="b2b-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="b2b-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="b2b-edit-save" style="padding:8px 16px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== B2B TEMPLATES MODAL ===== -->
+    <div id="b2b-templates-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 6px;font-size:1.3rem;">Templates B2B</h2>
+        <p style="margin:0 0 18px;font-size:.85rem;color:#666;">Mensagens reutilizáveis. Variáveis disponíveis: <code>{{empresa}}</code>, <code>{{contato}}</code>, <code>{{cargo}}</code>, <code>{{segmento}}</code>, <code>{{cidade}}</code>.</p>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+          <button type="button" id="b2b-template-new" style="padding:8px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Novo template</button>
+          <select id="b2b-template-filter-categoria" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;">
+            <option value="">Todas as categorias</option>
+            <option value="primeiro_contato">Primeiro contato</option>
+            <option value="follow_up">Follow-up</option>
+            <option value="pos_reuniao">Pós reunião</option>
+            <option value="convite_experiencia">Convite experiência</option>
+            <option value="data_comemorativa">Data comemorativa</option>
+            <option value="beneficio_corporativo">Benefício corporativo</option>
+            <option value="acao_equipe">Ação pra equipe</option>
+            <option value="gift_card_corporativo">Gift card corporativo</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <ul id="b2b-templates-list" style="list-style:none;padding:0;margin:0;"></ul>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+          <button type="button" id="b2b-templates-close" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== B2B TEMPLATE EDIT MODAL ===== -->
+    <div id="b2b-template-edit-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit;">
+        <h2 style="margin:0 0 14px;font-size:1.15rem;" id="b2b-template-edit-title">Novo template</h2>
+        <form id="b2b-template-edit-form" onsubmit="return false;">
+          <input type="hidden" id="b2b-template-edit-id">
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Nome *<input type="text" id="b2b-template-edit-nome" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Categoria<select id="b2b-template-edit-categoria" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="primeiro_contato">Primeiro contato</option><option value="follow_up">Follow-up</option><option value="pos_reuniao">Pós reunião</option><option value="convite_experiencia">Convite experiência</option><option value="data_comemorativa">Data comemorativa</option><option value="beneficio_corporativo">Benefício corporativo</option><option value="acao_equipe">Ação pra equipe</option><option value="gift_card_corporativo">Gift card corporativo</option><option value="outro">Outro</option></select></label>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:10px;">Conteúdo *<textarea id="b2b-template-edit-conteudo" rows="9" required placeholder="Olá {{contato}}, ..." style="margin-top:4px;width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+          <label style="font-size:.85rem;display:flex;align-items:center;gap:8px;margin-bottom:14px;"><input type="checkbox" id="b2b-template-edit-default"> Marcar como padrão (abre por default em novos prospects)</label>
+          <div id="b2b-template-edit-msg" style="font-size:.85rem;margin-bottom:10px;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" id="b2b-template-edit-cancel" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+            <button type="button" id="b2b-template-edit-delete" style="padding:8px 16px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+            <button type="button" id="b2b-template-edit-save" style="padding:8px 16px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -1169,6 +2011,556 @@
       </div>
     </div>
 
+    <!-- =========================================================
+         CAMPANHAS SAZONAIS — Dia dos Namorados, etc.
+         Gestão de overrides (vitrine), upcoming (em breve)
+         e visualização de waitlist (leads).
+         Estrutura genérica por campaign_slug — escalável pra
+         próximas campanhas sazonais.
+         ========================================================= -->
+    <div class="admin__panel" id="panel-campanhas">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Campanhas sazonais</h1>
+        <p class="admin__page-subtitle">Curadoria de experiências, gestão de "em breve" e lista de espera por campanha.</p>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;flex-wrap:wrap;">
+        <label style="font-size:.78rem;text-transform:uppercase;color:#666;font-weight:700;letter-spacing:.5px;">Campanha:</label>
+        <select id="campanhas-select" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit;font-size:.92rem;background:#fff;">
+          <option value="dia-dos-namorados">Dia dos Namorados</option>
+        </select>
+        <span id="campanhas-msg" style="font-size:.85rem;color:#1a8a4a;margin-left:8px;"></span>
+      </div>
+
+      <!-- ===== Vitrine curada ===== -->
+      <section style="margin-bottom:36px;">
+        <h2 style="font-size:1.15rem;color:#1a1a1a;margin:0 0 6px;font-weight:700;">Vitrine curada</h2>
+        <p style="color:#666;font-size:.88rem;margin:0 0 14px;">Marque as experiências reais que entram na landing. Título customizado aparece SÓ na campanha — não muda o nome global.</p>
+        <div id="campanhas-overrides-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </section>
+
+      <!-- ===== Em breve / Lista de espera ===== -->
+      <section style="margin-bottom:36px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="font-size:1.15rem;color:#1a1a1a;margin:0 0 6px;font-weight:700;">Em breve (cards aspiracionais)</h2>
+            <p style="color:#666;font-size:.88rem;margin:0;">Experiências sem id real ainda. Visíveis na landing com botão "Avise-me".</p>
+          </div>
+          <button type="button" id="campanhas-upcoming-add" style="padding:10px 18px;background:#fff;border:1px dashed #f0a05e;color:#a4663b;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Adicionar "em breve"</button>
+        </div>
+        <div id="campanhas-upcoming-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </section>
+
+      <!-- ===== Lista de leads (waitlist) ===== -->
+      <section>
+        <h2 style="font-size:1.15rem;color:#1a1a1a;margin:0 0 6px;font-weight:700;">Lista de espera (leads captados)</h2>
+        <p style="color:#666;font-size:.88rem;margin:0 0 14px;">Pessoas que clicaram "Avise-me" — exporte ou contate manualmente.</p>
+        <div id="campanhas-waitlist-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </section>
+    </div>
+
+    <!-- =========================================================
+         CALENDÁRIO EDITORIAL — Cronograma mensal de conteúdo
+         ========================================================= -->
+    <div class="admin__panel" id="panel-calendario-editorial">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Calendário Editorial</h1>
+        <p class="admin__page-subtitle">Cronograma mensal de conteúdo organizado por dia e canal.</p>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+        <input type="month" id="cal-mes" value="2026-05"
+               style="padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="cal-canais">
+          <button type="button" class="cal-canal-btn cal-canal-btn--active" data-canal="">Todos</button>
+          <button type="button" class="cal-canal-btn" data-canal="Instagram">📸 Instagram</button>
+          <button type="button" class="cal-canal-btn" data-canal="TikTok">🎵 TikTok</button>
+          <button type="button" class="cal-canal-btn" data-canal="LinkedIn">💼 LinkedIn</button>
+          <button type="button" class="cal-canal-btn" data-canal="WhatsApp">💬 WhatsApp Comunidade</button>
+        </div>
+        <button type="button" id="cal-add-btn"
+                style="margin-left:auto;padding:9px 16px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;">+ Novo conteúdo</button>
+      </div>
+
+      <div id="cal-stats" style="margin-bottom:14px;color:#666;font-size:.85rem;"></div>
+
+      <div id="cal-grid" style="display:flex;flex-direction:column;gap:12px;">
+        <p style="color:#888;font-style:italic;padding:40px;text-align:center;">Carregando…</p>
+      </div>
+    </div>
+
+    <style>
+      .cal-canal-btn {
+        padding: 8px 14px;
+        border: 1.5px solid #ddd;
+        background: #fff;
+        border-radius: 999px;
+        font-family: inherit;
+        font-size: .82rem;
+        font-weight: 600;
+        color: #666;
+        cursor: pointer;
+        transition: all .15s;
+      }
+      .cal-canal-btn:hover { border-color: #f0a05e; color: #f0a05e; }
+      .cal-canal-btn--active { background: #f0a05e; border-color: #f0a05e; color: #fff; }
+
+      .cal-day-card {
+        background: #fff;
+        border: 1px solid #e6e6e6;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: opacity .15s;
+      }
+      .cal-day-card--passed { opacity: .5; }
+      .cal-day-card--today {
+        border-color: #f0a05e;
+        border-width: 2px;
+        box-shadow: 0 8px 24px rgba(240,160,94,0.18);
+      }
+      .cal-day-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 16px; background: #faf6f0; border-bottom: 1px solid #f0e8de;
+      }
+      .cal-day-header strong { font-size: 1rem; color: #1a1a1a; }
+      .cal-day-header__wd {
+        font-size: .72rem; color: #888; text-transform: uppercase; letter-spacing: 1px;
+        margin-left: 8px;
+      }
+      .cal-day-card--today .cal-day-header { background: #fff4e0; }
+      .cal-day-card--today .cal-day-header strong::before { content: "📍 "; }
+      .cal-day-card--passed .cal-day-header strong { text-decoration: line-through; }
+
+      .cal-day-posts { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+      .cal-post-row {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 10px; border: 1px solid #f0e8de; border-radius: 8px;
+        cursor: pointer; transition: background .15s;
+      }
+      .cal-post-row:hover { background: #faf6f0; }
+      .cal-post-canal {
+        flex-shrink: 0; padding: 3px 9px;
+        font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+        border-radius: 999px; white-space: nowrap;
+      }
+      .cal-post-canal--ig { background: #ffe9f1; color: #c44569; }
+      .cal-post-canal--tk { background: #000; color: #fff; }
+      .cal-post-canal--li { background: #e0e9f8; color: #0a66c2; }
+      .cal-post-canal--wa { background: #e0f6e9; color: #128c4e; }
+      .cal-post-tipo {
+        font-size: .68rem; color: #a4663b; background: #fff4e0;
+        padding: 3px 8px; border-radius: 999px; font-weight: 600;
+      }
+      .cal-post-ideia { flex: 1; min-width: 0; font-size: .88rem; color: #1a1a1a; }
+      .cal-post-status {
+        flex-shrink: 0;
+        font-size: .68rem; font-weight: 700;
+        padding: 3px 8px; border-radius: 999px;
+        text-transform: uppercase; letter-spacing: .4px;
+      }
+      .cal-post-status--planejado { background: #f5f5f5; color: #999; }
+      .cal-post-status--pronto { background: #e0e9f8; color: #0a66c2; }
+      .cal-post-status--agendado { background: #fff4e0; color: #a4663b; }
+      .cal-post-status--publicado { background: #e0f6e9; color: #1a8a4a; }
+    </style>
+
+    <!-- Modal calendário editorial -->
+    <div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:90vh;overflow:auto;padding:28px;position:relative;">
+        <button type="button" id="cal-modal-close" style="position:absolute;top:12px;right:12px;background:#f5f5f5;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;">×</button>
+        <div id="cal-modal-content"></div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         CAPTAÇÃO — Growth OS: áreas, projetos, tarefas e KPIs
+         ========================================================= -->
+    <div class="admin__panel" id="panel-captacao">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Captação de Clientes</h1>
+        <p class="admin__page-subtitle">Sistema operacional de growth — áreas, projetos, tarefas e KPIs de aquisição.</p>
+      </div>
+
+      <!-- KPIs -->
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:#888;margin:0 0 12px;font-weight:700;">Metas trimestrais</h3>
+        <div id="cap-kpis" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:12px;">
+          <p style="grid-column:1/-1;color:#888;font-style:italic;padding:20px;text-align:center;">Carregando…</p>
+        </div>
+      </div>
+
+      <!-- Filtros + ações -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+        <div id="cap-areas-filtros" style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="cap-area-btn cap-area-btn--active" data-area="">Todas</button>
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;align-items:center;">
+          <select id="cap-filtro-horizonte" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
+            <option value="">Todos horizontes</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mês</option>
+            <option value="trimestre">Trimestre</option>
+          </select>
+          <select id="cap-filtro-status" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
+            <option value="abertos">Em aberto</option>
+            <option value="todos">Todos</option>
+            <option value="pendente">Pendente</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="concluido">Concluídos</option>
+            <option value="pausado">Pausados</option>
+          </select>
+          <button type="button" id="cap-add-btn"
+                  style="padding:9px 16px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;">+ Nova tarefa</button>
+        </div>
+      </div>
+
+      <div id="cap-stats" style="margin-bottom:14px;color:#666;font-size:.85rem;"></div>
+
+      <div id="cap-tasks-list" style="display:flex;flex-direction:column;gap:10px;">
+        <p style="color:#888;font-style:italic;padding:40px;text-align:center;">Carregando tarefas…</p>
+      </div>
+    </div>
+
+    <style>
+      .cap-area-btn {
+        padding: 8px 14px;
+        border: 1.5px solid #ddd;
+        background: #fff;
+        border-radius: 999px;
+        font-family: inherit;
+        font-size: .82rem;
+        cursor: pointer;
+        color: #555;
+        transition: all .15s;
+        font-weight: 500;
+      }
+      .cap-area-btn:hover { border-color: #aaa; }
+      .cap-area-btn--active {
+        background: #1a1a1a;
+        border-color: #1a1a1a;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .cap-kpi-card {
+        background: #fff;
+        border: 1px solid #ececec;
+        border-radius: 12px;
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform .15s, box-shadow .15s;
+      }
+      .cap-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      }
+      .cap-kpi-bar {
+        position: absolute; top:0; left:0; width: 4px; height:100%;
+      }
+      .cap-kpi-nome {
+        font-size: .72rem; letter-spacing:.06em; text-transform:uppercase;
+        color: #888; font-weight: 700; margin-bottom: 8px;
+      }
+      .cap-kpi-valor {
+        font-size: 1.6rem; font-weight: 700; color: #1a1a1a; line-height: 1;
+      }
+      .cap-kpi-meta {
+        font-size: .75rem; color: #888; margin-top: 6px;
+      }
+
+      .cap-task {
+        background: #fff;
+        border: 1px solid #ececec;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        transition: border-color .15s;
+      }
+      .cap-task:hover { border-color: #d4d4d4; }
+      .cap-task--concluido { opacity: .55; }
+      .cap-task--concluido .cap-task-titulo { text-decoration: line-through; }
+
+      .cap-task-check {
+        flex-shrink: 0;
+        width: 22px; height: 22px;
+        border: 2px solid #d4d4d4;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        margin-top: 2px;
+        background: #fff;
+        transition: all .15s;
+      }
+      .cap-task-check:hover { border-color: #1a8a4a; }
+      .cap-task-check--done {
+        background: #1a8a4a;
+        border-color: #1a8a4a;
+        color: #fff;
+      }
+      .cap-task-body { flex: 1; min-width: 0; }
+      .cap-task-titulo {
+        font-size: .95rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+        cursor: pointer;
+      }
+      .cap-task-titulo:hover { color: #0a66c2; }
+      .cap-task-desc {
+        font-size: .82rem;
+        color: #666;
+        line-height: 1.4;
+        margin-bottom: 8px;
+      }
+      .cap-task-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .cap-tag {
+        font-size: .68rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+      .cap-tag--area    { background: #f5efe7; color: #6b4520; }
+      .cap-tag--alta    { background: #fce8e6; color: #c0392b; }
+      .cap-tag--media   { background: #fff4e0; color: #a4663b; }
+      .cap-tag--baixa   { background: #f5f5f5; color: #888; }
+      .cap-tag--semana  { background: #fce8e6; color: #c0392b; }
+      .cap-tag--mes     { background: #fff4e0; color: #a4663b; }
+      .cap-tag--trimestre { background: #e0e9f8; color: #0a66c2; }
+      .cap-tag--freq    { background: #f0e6fa; color: #6b3aa0; }
+      .cap-tag--resp    { background: #e0f6e9; color: #1a8a4a; }
+    </style>
+
+    <!-- Modal Captação (criar/editar tarefa) -->
+    <div id="cap-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:14px;max-width:580px;width:100%;max-height:90vh;overflow:auto;padding:28px;position:relative;">
+        <button type="button" id="cap-modal-close" style="position:absolute;top:12px;right:12px;background:#f5f5f5;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;">×</button>
+        <h2 id="cap-modal-title" style="margin:0 0 18px;font-size:1.2rem;">Nova tarefa</h2>
+
+        <form id="cap-form" style="display:flex;flex-direction:column;gap:12px;">
+          <input type="hidden" id="cap-form-id">
+
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Título *</label>
+            <input type="text" id="cap-form-titulo" required
+                   style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;">
+          </div>
+
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Descrição</label>
+            <textarea id="cap-form-descricao" rows="3"
+                      style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;resize:vertical;"></textarea>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Área *</label>
+              <select id="cap-form-area" required style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;"></select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Horizonte</label>
+              <select id="cap-form-horizonte" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="">—</option>
+                <option value="semana">Esta semana</option>
+                <option value="mes">Este mês</option>
+                <option value="trimestre">Trimestre</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Prioridade</label>
+              <select id="cap-form-prioridade" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Média</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Responsável</label>
+              <select id="cap-form-responsavel" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="voce">Você</option>
+                <option value="socia">Sócia</option>
+                <option value="ambas" selected>Ambas</option>
+                <option value="externo">Externo</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Frequência</label>
+              <select id="cap-form-frequencia" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="unica" selected>Única</option>
+                <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal">Mensal</option>
+                <option value="trimestral">Trimestral</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Status</label>
+              <select id="cap-form-status" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+                <option value="pendente" selected>Pendente</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="concluido">Concluído</option>
+                <option value="pausado">Pausado</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Prazo</label>
+              <input type="date" id="cap-form-due"
+                     style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
+            </div>
+          </div>
+
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Notas</label>
+            <textarea id="cap-form-notas" rows="2"
+                      style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;resize:vertical;"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:space-between;margin-top:8px;">
+            <button type="button" id="cap-form-delete" style="padding:9px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;display:none;">Excluir</button>
+            <div style="display:flex;gap:8px;margin-left:auto;">
+              <button type="button" id="cap-form-cancel" style="padding:9px 16px;background:#fff;border:1px solid #ccc;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;">Cancelar</button>
+              <button type="submit" style="padding:9px 18px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">Salvar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Captação (editar KPI) -->
+    <div id="cap-kpi-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:14px;max-width:420px;width:100%;padding:28px;position:relative;">
+        <button type="button" id="cap-kpi-modal-close" style="position:absolute;top:12px;right:12px;background:#f5f5f5;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;">×</button>
+        <h2 id="cap-kpi-modal-title" style="margin:0 0 18px;font-size:1.2rem;">Atualizar KPI</h2>
+        <form id="cap-kpi-form" style="display:flex;flex-direction:column;gap:12px;">
+          <input type="hidden" id="cap-kpi-form-id">
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Valor atual</label>
+            <input type="number" step="0.01" id="cap-kpi-form-valor"
+                   style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;">
+          </div>
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Meta</label>
+            <input type="number" step="0.01" id="cap-kpi-form-meta"
+                   style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.92rem;">
+          </div>
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Observação</label>
+            <textarea id="cap-kpi-form-obs" rows="2"
+                      style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;resize:vertical;"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+            <button type="button" id="cap-kpi-form-cancel" style="padding:9px 16px;background:#fff;border:1px solid #ccc;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;">Cancelar</button>
+            <button type="submit" style="padding:9px 18px;background:#1a8a4a;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         MARKETING AI — Catálogo de skills do agente Claude Code
+         ========================================================= -->
+    <div class="admin__panel" id="panel-marketing-ai">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Marketing AI Skills</h1>
+        <p class="admin__page-subtitle">Catálogo das skills do agente. Copie o trigger pra rodar no Claude Code do VS Code.</p>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;">
+        <input type="text" id="mkai-search" placeholder="🔍 Buscar skill por nome…"
+               style="flex:1 1 280px;min-width:0;padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit;font-size:.92rem;">
+        <select id="mkai-categoria" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit;font-size:.92rem;background:#fff;">
+          <option value="">Todas as categorias</option>
+        </select>
+        <button type="button" id="mkai-importar-btn" style="padding:10px 18px;background:#f0a05e;color:#fff;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">+ Importar skill .md</button>
+        <span id="mkai-count" style="margin-left:auto;color:#888;font-size:.88rem;"></span>
+      </div>
+
+      <div id="mkai-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        <p style="grid-column:1/-1;color:#888;font-style:italic;padding:40px;text-align:center;">Carregando…</p>
+      </div>
+    </div>
+
+    <!-- Modal: Importar / Visualizar / Editar skill -->
+    <div id="mkai-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:18px;max-width:780px;width:100%;max-height:90vh;overflow:auto;padding:32px;position:relative;">
+        <button type="button" id="mkai-modal-close" style="position:absolute;top:14px;right:14px;background:#f5f5f5;border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1.2rem;">×</button>
+        <div id="mkai-modal-content"></div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         EXPERIÊNCIAS FOCO — divulgação semanal
+         ========================================================= -->
+    <div class="admin__panel" id="panel-experiencias-foco">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Experiências foco</h1>
+        <p class="admin__page-subtitle">O que divulgar essa semana. Foco em experiências que acontecem em ~2 semanas, By Elarah (sempre) e vagas críticas.</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Semana de</div>
+          <div class="admin__stat-value" id="stat-foco-semana" style="font-size:1.05rem;">—</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Foco da semana</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-foco-week-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">By Elarah ativas</div>
+          <div class="admin__stat-value" id="stat-foco-byelarah-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Vagas críticas</div>
+          <div class="admin__stat-value" id="stat-foco-critical-count">0</div>
+        </div>
+      </div>
+
+      <div style="background:#fffaf2;border:1px solid #f0d9aa;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;">
+          <strong style="font-size:.88rem;color:#1a1a1a;">Template de mensagem</strong>
+          <button type="button" id="foco-tpl-reset" style="padding:4px 10px;border:1px solid #ddd;background:#fff;color:#666;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;">Restaurar padrão</button>
+        </div>
+        <p style="margin:0 0 8px;font-size:.78rem;color:#888;">Variáveis: <code>{{nome}}</code>, <code>{{data}}</code>, <code>{{horario}}</code>, <code>{{bairro}}</code>, <code>{{vagas}}</code>, <code>{{link}}</code>, <code>{{preco}}</code>. Salvo só no seu navegador.</p>
+        <textarea id="foco-tpl" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🎯 Foco da semana</h2>
+        <p id="foco-week-desc" style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências que acontecem entre <strong>10 e 16 dias</strong> a partir de hoje. Janela ideal pra começar a divulgar.</p>
+        <div id="foco-week-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <section style="margin-bottom:28px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">✨ By Elarah — divulgação contínua</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências exclusivas Elarah Originals. Mantém na régua semanal.</p>
+        <div id="foco-byelarah-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+
+      <section style="margin-bottom:14px;">
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1a1a1a;margin:0 0 4px;">🔥 Vagas críticas</h2>
+        <p style="margin:0 0 12px;font-size:.85rem;color:#666;">Experiências com menos de 30% das vagas restantes e evento no próximo mês. Use urgência (“últimas vagas”).</p>
+        <div id="foco-critical-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+      </section>
+    </div>
+
     <!-- ===== GIFT CARDS PANEL ===== -->
     <div class="admin__panel" id="panel-giftcards">
       <div class="admin__header">
@@ -1784,6 +3176,27 @@
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">"Compra direta" abre o checkout normal; "Lista de espera" abre o formulário de lead que envia pro WhatsApp.</p>
         </div>
 
+        <!-- ===== RECORRÊNCIA SEMANAL ===== -->
+        <!-- Aparece só quando editando uma experiência (não em "nova").
+             Cada experiência pode ter N regras (terça + quinta etc).
+             A trigger SQL materializa os slots automaticamente quando
+             a regra é criada/editada. Lista mostra próximas 8 datas
+             com vagas + reservas, com botão pra cancelar/reativar
+             cada data como exceção. -->
+        <div class="admin__form-field admin__form-field--full" id="exp-recurrence-section" style="display:none;border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
+          <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block;">Recorrência semanal</label>
+          <p class="admin__form-hint" style="margin:0 0 14px;font-size:12px;color:#666;">Cadastre uma regra "toda quinta às 19h, 12 vagas" e o sistema gera as próximas 8 semanas automaticamente. Você não precisa cadastrar cada data manualmente.</p>
+          <div id="exp-recurrence-header"></div>
+          <div id="exp-recurrence-rules-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;"></div>
+          <button type="button" id="exp-recurrence-add-btn" style="padding:10px 16px;background:#fff;border:1px dashed #f0a05e;color:#a4663b;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">+ Adicionar regra de recorrência</button>
+          <div id="exp-recurrence-slots-wrap" style="margin-top:16px;display:none;">
+            <h4 style="margin:0 0 6px;font-size:.92rem;color:#1a1a1a;font-weight:700;">📅 Próximas datas geradas</h4>
+            <p class="admin__form-hint" style="margin:0 0 10px;font-size:12px;color:#888;">Cada linha vem de uma regra ativa. Cancelar uma data específica não recria mesmo após nova materialização.</p>
+            <div id="exp-recurrence-slots-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+          <div id="exp-recurrence-msg" style="margin-top:8px;font-size:.85rem;min-height:1em;"></div>
+        </div>
+
         <!-- ===== FORNECEDOR / FINANCEIRO ===== -->
         <div class="admin__form-field admin__form-field--full" style="border-top:2px solid #f0a05e;padding-top:16px;margin-top:8px;">
           <label style="font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;display:block;">Fornecedor & Financeiro</label>
@@ -2313,13 +3726,17 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=22"></script>
+<script src="experiences-data.js?v=23"></script>
 <script src="byelarah-data.js?v=6"></script>
 <script src="analytics.js?v=2"></script>
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+claude/add-accounting-admin-section-4wDvv
 <script src="admin.js?v=107"></script>
+=======
+<script src="admin.js?v=148"></script>
+claude/create-elarah-homepage-VsE5i
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
