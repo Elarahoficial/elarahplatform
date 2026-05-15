@@ -5830,7 +5830,7 @@
     const saud = (nomeContato && nomeContato.trim())
       ? nomeContato.trim()
       : String(nomeFornecedor || '').trim();
-    return 'Oi' + (saud ? ' ' + saud : '') + '! Aqui é da Elarah 🧡\n\n' +
+    return 'Oi' + (saud ? ' ' + saud : '') + '! Aqui é da Elarah.\n\n' +
       'Estamos sempre ampliando a curadoria de experiências da plataforma. ' +
       'Você tem alguma experiência ou evento novo que a gente possa adicionar?\n\n' +
       'Se tiver, me manda esses detalhes que eu já agilizo o cadastro:\n\n' +
@@ -6045,7 +6045,7 @@
           '<a id="forn-modal-solicitar" target="_blank" rel="noopener" ' +
             'style="' + (isNew ? 'margin-right:auto;' : '') +
             'font-size:.82rem;color:#1a8a4a;font-weight:600;' +
-            'text-decoration:none;">💬 Solicitar novas experiências</a>' +
+            'text-decoration:none;">Solicitar novas experiências</a>' +
           '<button type="button" id="forn-modal-cancel" style="padding:9px 16px;' +
             'border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;' +
             'font-size:.85rem;font-family:inherit;">Cancelar</button>' +
