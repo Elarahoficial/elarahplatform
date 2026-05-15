@@ -6693,16 +6693,6 @@
     // declarado e união de todas as sessions vistas.
     (eventsInRange || []).forEach(e => { if (e && e.session_id) sessions.add(e.session_id); });
 
- claude/add-accounting-admin-section-4wDvv
-    const purchases = (bookingsInRange || []).filter(b =>
-      b.status === 'pago' && !b._isManualSale && !b._isGiftCard
-    ).length;
-
-    // União: quem clicou no card OU abriu o detalhe direto (via link
-    // de campanha, follow-up WhatsApp, landing dedicada). Cobre o
-    // tráfego de campanha que pula a home — sem isso, "Clicou em
-    // experiência" fica zerado mesmo com gente entrando.
-=======
     // Agora conta VAGAS vendidas (sum quantidade), não bookings.
     // Coerente com KPIs e Compras: 1 booking qty=3 contabiliza 3.
     // Exclui venda manual e gift card — esses não passam pelo funil do site
@@ -6716,21 +6706,11 @@
     // (WhatsApp, Insta) entram direto no /experiencia/<slug> e nunca
     // clicam num card da home — só disparam detail_view. Sem essa união
     // o funil mostrava "Clicou em uma experiência: 0" e "Abriu detalhe: N".
- claude/create-elarah-homepage-VsE5i
     const engaged = new Set();
     cardClicks.forEach(s => engaged.add(s));
     detailViews.forEach(s => engaged.add(s));
 
     const steps = [
- claude/add-accounting-admin-section-4wDvv
-      { key: 'sessions',   label: 'Visitantes (sessões)',          count: sessions.size,        unit: 'sessões' },
-      { key: 'engaged',    label: 'Engajou com uma experiência',   count: engaged.size,         unit: 'sessões' },
-      { key: 'detail',     label: 'Abriu o detalhe da exp.',       count: detailViews.size,     unit: 'sessões' },
-      { key: 'cta',        label: 'Clicou em "Reservar"',          count: ctaClicks.size,       unit: 'sessões' },
-      { key: 'started',    label: 'Iniciou o checkout',            count: checkoutStarted.size, unit: 'sessões' },
-      { key: 'submit',     label: 'Confirmou pagamento',           count: checkoutSubmits.size, unit: 'sessões' },
-      { key: 'paid',       label: 'Pagamento aprovado (site)',     count: purchases,            unit: 'compras' },
-=======
       { key: 'sessions',   label: 'Visitantes (sessões)',       count: sessions.size,         unit: 'sessões' },
       { key: 'engaged',    label: 'Engajou com uma experiência',count: engaged.size,          unit: 'sessões' },
       { key: 'detail',     label: 'Abriu o detalhe da exp.',    count: detailViews.size,      unit: 'sessões' },
@@ -6738,7 +6718,6 @@
       { key: 'started',    label: 'Iniciou o checkout',         count: checkoutStarted.size,  unit: 'sessões' },
       { key: 'submit',     label: 'Confirmou pagamento',        count: checkoutSubmits.size,  unit: 'sessões' },
       { key: 'paid',       label: 'Pagamento aprovado (site)',  count: purchases,             unit: 'compras' },
-claude/create-elarah-homepage-VsE5i
     ];
 
     if (steps.every(s => s.count === 0)) {
