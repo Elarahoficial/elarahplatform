@@ -5872,6 +5872,21 @@
     return { ok: true };
   }
 
+  // Remove o registro de um fornecedor de fornecedores_metadata.
+  async function deleteFornecedorMetadata(fornecedorKeyStr) {
+    const s = window.supabaseClient;
+    if (!s) return { ok: false, error: 'Supabase client indisponível' };
+    if (!fornecedorKeyStr) return { ok: false, error: 'Fornecedor sem chave' };
+    const { error } = await s.from('fornecedores_metadata')
+      .delete().eq('fornecedor_key', fornecedorKeyStr);
+    if (error) {
+      console.error('[Admin] deleteFornecedorMetadata error', error);
+      return { ok: false, error: error.message };
+    }
+    fornecedoresMetaCache = null;
+    return { ok: true };
+  }
+
   // Modal de cadastro/edição de fornecedor. `meta` = linha de
   // fornecedores_metadata (ou objeto parcial { fornecedor_nome }).
   // `isNew` = true abre em modo cadastro (nome editável).
@@ -5940,8 +5955,14 @@
         '</div>' +
         '<div style="display:flex;align-items:center;gap:10px;padding:16px 22px;' +
           'border-top:1px solid #eee;flex-wrap:wrap;">' +
+          (isNew ? '' :
+            '<button type="button" id="forn-modal-delete" style="margin-right:auto;' +
+            'padding:9px 14px;border:1px solid #c0392b;background:#fff;color:#c0392b;' +
+            'border-radius:8px;cursor:pointer;font-size:.82rem;font-family:inherit;">' +
+            'Excluir fornecedor</button>') +
           '<a id="forn-modal-solicitar" target="_blank" rel="noopener" ' +
-            'style="margin-right:auto;font-size:.82rem;color:#1a8a4a;font-weight:600;' +
+            'style="' + (isNew ? 'margin-right:auto;' : '') +
+            'font-size:.82rem;color:#1a8a4a;font-weight:600;' +
             'text-decoration:none;">💬 Solicitar novas experiências</a>' +
           '<button type="button" id="forn-modal-cancel" style="padding:9px 16px;' +
             'border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;' +
@@ -5957,6 +5978,33 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
     overlay.querySelector('#forn-modal-close').addEventListener('click', close);
     overlay.querySelector('#forn-modal-cancel').addEventListener('click', close);
+
+    // Excluir fornecedor (só em modo edição).
+    const deleteBtn = overlay.querySelector('#forn-modal-delete');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        const nome = (meta.fornecedor_nome || '').trim();
+        if (!confirm(
+          'Excluir o fornecedor "' + nome + '"?\n\n' +
+          'Remove só o registro de relacionamento. Se houver experiências ' +
+          'cadastradas com esse fornecedor, elas continuam — e o nome pode ' +
+          'reaparecer pela experiência.'
+        )) return;
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Excluindo…';
+        const res = await deleteFornecedorMetadata(
+          meta.fornecedor_key || fornecedorKey(nome)
+        );
+        if (!res.ok) {
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = 'Excluir fornecedor';
+          alert('Não consegui excluir. ' + (res.error || ''));
+          return;
+        }
+        close();
+        if (typeof renderFornecedores === 'function') renderFornecedores();
+      });
+    }
 
     // Link "Solicitar novas experiências" — atualiza com o WhatsApp/contato
     // digitados no momento (útil já no cadastro manual).
