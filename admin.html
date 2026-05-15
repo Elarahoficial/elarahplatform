@@ -825,12 +825,12 @@
       </div>
 
       <!-- ===== GIFT CARDS DENTRO DE COMPRAS ===== -->
-      <!-- Mesma fonte de dados do painel Gift Cards, mas visível
-           diretamente na tela de Compras pra operador que acha que
-           "compras = tudo". -->
+      <!-- Mostra só gift cards ATIVOS — Compras foca no que está
+           efetivamente operacional. Pendentes, usados, expirados e
+           cancelados ficam na aba Gift Cards. -->
       <div class="admin__table-wrap" style="margin-top:32px;">
         <div class="admin__table-header">
-          <span class="admin__table-title">Gift cards comprados</span>
+          <span class="admin__table-title">Gift cards ativos</span>
           <span class="admin__table-count" id="purchases-giftcards-count"></span>
         </div>
         <table class="admin__table">
@@ -2565,13 +2565,14 @@
     <div class="admin__panel" id="panel-giftcards">
       <div class="admin__header">
         <h1 class="admin__page-title">Gift Cards</h1>
-        <p class="admin__page-subtitle">Códigos emitidos, status e saldo restante</p>
+        <p class="admin__page-subtitle">Organizados por prioridade operacional — ativos primeiro, pendentes para follow-up</p>
       </div>
 
+      <!-- 1º ATIVOS — foco principal da operação -->
       <div class="admin__table-wrap">
         <div class="admin__table-header">
-          <span class="admin__table-title">Todos os gift cards</span>
-          <span class="admin__table-count" id="giftcards-count"></span>
+          <span class="admin__table-title">Ativos</span>
+          <span class="admin__table-count" id="giftcards-active-count"></span>
         </div>
         <table class="admin__table">
           <thead>
@@ -2585,8 +2586,56 @@
               <th>Criado</th>
             </tr>
           </thead>
-          <tbody id="giftcards-body">
-            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>
+          <tbody id="giftcards-active-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card ativo no momento.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 2º USADOS E EXPIRADOS — histórico e controle -->
+      <div class="admin__table-wrap" style="margin-top:32px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Usados e expirados</span>
+          <span class="admin__table-count" id="giftcards-used-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Comprador</th>
+              <th>Destinatário</th>
+              <th>Valor</th>
+              <th>Saldo</th>
+              <th>Status</th>
+              <th>Criado</th>
+            </tr>
+          </thead>
+          <tbody id="giftcards-used-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card usado ou expirado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3º PENDENTES — por último, para follow-up de quem não concluiu -->
+      <div class="admin__table-wrap" style="margin-top:32px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Pendentes — aguardando conclusão (follow-up)</span>
+          <span class="admin__table-count" id="giftcards-pending-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Comprador</th>
+              <th>Destinatário</th>
+              <th>Valor</th>
+              <th>Saldo</th>
+              <th>Status</th>
+              <th>Criado</th>
+            </tr>
+          </thead>
+          <tbody id="giftcards-pending-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card pendente — tudo concluído.</td></tr>
           </tbody>
         </table>
       </div>

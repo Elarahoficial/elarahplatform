@@ -476,9 +476,10 @@
     return '<span style="color:' + c + ';font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;">' + l + '</span>';
   };
 
-  function giftCardRowsHtml(rows, colspan) {
+  function giftCardRowsHtml(rows, colspan, emptyMsg) {
     if (!rows.length) {
-      return '<tr><td colspan="' + colspan + '" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>';
+      return '<tr><td colspan="' + colspan + '" class="admin__table-empty">' +
+        escapeHtml(emptyMsg || 'Nenhum gift card emitido ainda.') + '</td></tr>';
     }
     return rows.map(g => {
       const dt = g.created_at ? new Date(g.created_at).toLocaleString('pt-BR') : '';
@@ -497,43 +498,53 @@
     }).join('');
   }
 
+  // Aba Gift Cards — organizada por prioridade operacional:
+  //   1. Ativos      → foco da operação, aparecem primeiro
+  //   2. Usados/expirados → histórico e controle
+  //   3. Pendentes   → por último, para follow-up de quem não concluiu
+  // Cancelados não são exibidos (não agregam na operação diária).
   async function renderGiftCards() {
-    const tbody = document.getElementById('giftcards-body');
-    const countEl = document.getElementById('giftcards-count');
-    if (!tbody) return;
+    const activeBody  = document.getElementById('giftcards-active-body');
+    const usedBody    = document.getElementById('giftcards-used-body');
+    const pendingBody = document.getElementById('giftcards-pending-body');
+    if (!activeBody) return;
+
+    const setCount = (id, txt) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = txt;
+    };
 
     const { rows, error } = await getGiftCards();
 
     if (error) {
       const hint = giftCardErrorHint(error);
-      tbody.innerHTML =
+      const errHtml =
         '<tr><td colspan="7" class="admin__table-empty" style="color:#c0392b;">' +
         'Erro ao carregar gift cards: ' + escapeHtml(hint) +
         '</td></tr>';
-      if (countEl) countEl.textContent = 'erro';
+      [activeBody, usedBody, pendingBody].forEach(b => { if (b) b.innerHTML = errHtml; });
+      ['giftcards-active-count', 'giftcards-used-count', 'giftcards-pending-count']
+        .forEach(id => setCount(id, 'erro'));
       return;
     }
 
-    // Estatística por status (útil pro operador ver rapidamente
-    // quantos gift cards estão pagos/pendentes etc).
-    const byStatus = rows.reduce((acc, g) => {
-      const s = g.status || 'unknown';
-      acc[s] = (acc[s] || 0) + 1;
-      return acc;
-    }, {});
-    const paidCount   = byStatus.active || 0;
-    const pendingCount= byStatus.pending || 0;
-    const usedCount   = byStatus.used || 0;
+    // Agrupa por prioridade operacional. rows já vem por created_at DESC.
+    const active  = rows.filter(g => g.status === 'active');
+    const used    = rows.filter(g => g.status === 'used' || g.status === 'expired');
+    const pending = rows.filter(g => g.status === 'pending');
 
-    if (countEl) {
-      const parts = [rows.length + ' total'];
-      if (paidCount)    parts.push(paidCount + ' ativos');
-      if (pendingCount) parts.push(pendingCount + ' pendentes');
-      if (usedCount)    parts.push(usedCount + ' usados');
-      countEl.textContent = parts.join(' · ');
+    const countLabel = (n) => n + (n === 1 ? ' gift card' : ' gift cards');
+    setCount('giftcards-active-count', countLabel(active.length));
+    setCount('giftcards-used-count', countLabel(used.length));
+    setCount('giftcards-pending-count', countLabel(pending.length));
+
+    activeBody.innerHTML = giftCardRowsHtml(active, 7, 'Nenhum gift card ativo no momento.');
+    if (usedBody) {
+      usedBody.innerHTML = giftCardRowsHtml(used, 7, 'Nenhum gift card usado ou expirado.');
     }
-
-    tbody.innerHTML = giftCardRowsHtml(rows, 7);
+    if (pendingBody) {
+      pendingBody.innerHTML = giftCardRowsHtml(pending, 7, 'Nenhum gift card pendente — tudo concluído.');
+    }
   }
 
   // =====================================================
@@ -1537,10 +1548,14 @@
       return;
     }
 
+    // Compras foca só no que está ativo e operacional. Pendentes,
+    // cancelados, usados e expirados ficam fora — vão na aba Gift Cards.
+    const activeRows = rows.filter(g => g.status === 'active');
+
     if (countEl) {
-      countEl.textContent = rows.length + ' gift card' + (rows.length !== 1 ? 's' : '');
+      countEl.textContent = activeRows.length + ' ativo' + (activeRows.length !== 1 ? 's' : '');
     }
-    tbody.innerHTML = giftCardRowsHtml(rows, 7);
+    tbody.innerHTML = giftCardRowsHtml(activeRows, 7, 'Nenhum gift card ativo no momento.');
   }
 
   // ===== LOGOUT =====
