@@ -4369,11 +4369,16 @@ if (groupForm) {
         return;
       }
 
+ claude/fix-modal-descricao-checkout
+=======
  claude/add-accounting-admin-section-4wDvv
+ claude/create-elarah-homepage-VsE5i
       // === GATE DE DESCRIÇÃO LIGADO POR PADRÃO ===
       // Mostra a modal de "DESCRIÇÃO COMPLETA" entre o clique em
       // "Reservar"/"Quero participar" e o checkout, pra o cliente ler
       // sobre a experiência antes de pagar.
+ claude/fix-modal-descricao-checkout
+=======
       //
       // Kill-switch (desliga o gate) caso precise reverter rápido:
       //   - URL: ?desc=0
@@ -4392,19 +4397,23 @@ if (groupForm) {
       // entre o clique em "Reservar" e o checkout. Adicionava um clique
       // a mais e fricção pra quem JÁ leu a página de detalhe.
       // Item #3 do Sprint 1 do plano de conversão (impacto +10% a +25%).
+ claude/create-elarah-homepage-VsE5i
       //
-      // Código do gate fica intacto pra reverter rápido se necessário.
-      // Reativar via:
-      //   - URL: ?desc=1
-      //   - DevTools: localStorage.setItem('elarahDescGate','1')
-      //   - data-attribute no botão: data-force-description="true"
+      // Kill-switch (desliga o gate) caso precise reverter rápido:
+      //   - URL: ?desc=0
+      //   - DevTools: localStorage.setItem('elarahDescGate','0')
+      //   - data-attribute no botão: data-force-description="false"
       function descriptionGateEnabled() {
         try {
-          if ((location.search || '').indexOf('desc=1') !== -1) return true;
-          if (localStorage.getItem('elarahDescGate') === '1') return true;
-          if (btn.dataset && btn.dataset.forceDescription === 'true') return true;
+          if ((location.search || '').indexOf('desc=0') !== -1) return false;
+          if (localStorage.getItem('elarahDescGate') === '0') return false;
+          if (btn.dataset && btn.dataset.forceDescription === 'false') return false;
         } catch (e) {}
+ claude/fix-modal-descricao-checkout
+        return true;
+=======
         return false;
+ claude/create-elarah-homepage-VsE5i
  claude/create-elarah-homepage-VsE5i
       }
       if (!opts.skipDescription && descriptionGateEnabled()) {
