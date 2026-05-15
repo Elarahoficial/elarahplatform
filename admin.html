@@ -856,7 +856,7 @@
     <div class="admin__panel" id="panel-fornecedores">
       <div class="admin__header">
         <h1 class="admin__page-title">Fornecedores</h1>
-        <p class="admin__page-subtitle">Análise financeira e tempo de parceria — data de entrada editável, tudo mais é calculado automaticamente</p>
+        <p class="admin__page-subtitle">Relacionamento, captação e análise financeira — cadastre parceiros, acompanhe o status e solicite novas experiências</p>
       </div>
 
       <div class="admin__stats">
@@ -882,11 +882,13 @@
         <div class="admin__table-header">
           <span class="admin__table-title">Todos os fornecedores</span>
           <span class="admin__table-count" id="fornecedores-count"></span>
+          <button type="button" id="forn-novo-btn" style="margin-left:auto;padding:7px 14px;border:none;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;">+ Novo fornecedor</button>
         </div>
         <table class="admin__table">
           <thead>
             <tr>
               <th>Fornecedor</th>
+              <th>Status</th>
               <th>Tipo</th>
               <th>WhatsApp</th>
               <th>Data de entrada</th>
@@ -897,10 +899,11 @@
               <th>Repasse</th>
               <th>Receita Elarah</th>
               <th>Última reserva</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="fornecedores-body">
-            <tr><td colspan="11" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
+            <tr><td colspan="13" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
           </tbody>
         </table>
       </div>

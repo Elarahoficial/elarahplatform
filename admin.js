@@ -5792,6 +5792,234 @@
     return { ok: true };
   }
 
+  // ===================================================================
+  //  FASE 1 — CRM OPERACIONAL DE FORNECEDORES
+  //  Status de relacionamento, cadastro manual e mensagem pronta de
+  //  captação de novas experiências.
+  // ===================================================================
+  const FORN_STATUS = [
+    { v: 'ativo',              l: 'Ativo',                        c: '#1a8a4a' },
+    { v: 'em_negociacao',      l: 'Em negociação',                c: '#3068a8' },
+    { v: 'aguardando_retorno', l: 'Aguardando retorno',           c: '#b07b00' },
+    { v: 'novas_experiencias', l: 'Novas experiências recebidas', c: '#7144a8' },
+    { v: 'inativo',            l: 'Inativo',                      c: '#999999' },
+  ];
+  function fornStatusMeta(v) {
+    for (let i = 0; i < FORN_STATUS.length; i++) {
+      if (FORN_STATUS[i].v === v) return FORN_STATUS[i];
+    }
+    return FORN_STATUS[0];
+  }
+  function fornStatusBadge(v) {
+    const m = fornStatusMeta(v);
+    return '<span style="display:inline-block;padding:3px 9px;border-radius:11px;' +
+      'background:' + m.c + '22;color:' + m.c + ';font-weight:600;font-size:11px;' +
+      'white-space:nowrap;">' + escapeHtml(m.l) + '</span>';
+  }
+  // Normaliza telefone pra wa.me: só dígitos, prefixo 55 (Brasil) quando
+  // vier sem DDI.
+  function fornWaPhone(raw) {
+    let d = String(raw || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.length <= 11) d = '55' + d;
+    return d;
+  }
+  // Mensagem pronta "Solicitar novas experiências" — checklist completo
+  // pra o parceiro responder de uma vez só e acelerar o cadastro.
+  function fornSolicitarExperienciasMsg(nomeContato, nomeFornecedor) {
+    const saud = (nomeContato && nomeContato.trim())
+      ? nomeContato.trim()
+      : String(nomeFornecedor || '').trim();
+    return 'Oi' + (saud ? ' ' + saud : '') + '! Aqui é da Elarah 🧡\n\n' +
+      'Estamos sempre ampliando a curadoria de experiências da plataforma. ' +
+      'Você tem alguma experiência ou evento novo que a gente possa adicionar?\n\n' +
+      'Se tiver, me manda esses detalhes que eu já agilizo o cadastro:\n\n' +
+      '• Link da experiência\n' +
+      '• Data\n' +
+      '• Horário\n' +
+      '• Valor\n' +
+      '• Descrição\n' +
+      '• Imagens\n' +
+      '• Quantidade de vagas\n' +
+      '• Localização\n\n' +
+      'Qualquer dúvida é só chamar por aqui!';
+  }
+  function fornSolicitarExperienciasUrl(meta) {
+    const phone = fornWaPhone(meta && meta.whatsapp);
+    if (!phone) return null;
+    const msg = fornSolicitarExperienciasMsg(
+      meta && meta.nome_contato,
+      meta && meta.fornecedor_nome
+    );
+    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  }
+
+  // Upsert completo de um registro de fornecedor (cadastro manual + edição
+  // dos campos de CRM). Chaveado por fornecedor_key derivado do nome.
+  async function saveFornecedorMetadata(payload) {
+    const s = window.supabaseClient;
+    if (!s) return { ok: false, error: 'Supabase client indisponível' };
+    const key = fornecedorKey(payload.fornecedor_nome);
+    if (!key) return { ok: false, error: 'Nome do fornecedor é obrigatório' };
+    const row = Object.assign({}, payload, { fornecedor_key: key });
+    const { error } = await s.from('fornecedores_metadata')
+      .upsert(row, { onConflict: 'fornecedor_key' });
+    if (error) {
+      console.error('[Admin] saveFornecedorMetadata error', error);
+      return { ok: false, error: error.message };
+    }
+    fornecedoresMetaCache = null;
+    return { ok: true };
+  }
+
+  // Modal de cadastro/edição de fornecedor. `meta` = linha de
+  // fornecedores_metadata (ou objeto parcial { fornecedor_nome }).
+  // `isNew` = true abre em modo cadastro (nome editável).
+  function openFornecedorModal(meta, isNew) {
+    meta = meta || {};
+    const existing = document.getElementById('forn-modal-overlay');
+    if (existing) existing.remove();
+
+    const val = (k) => escapeHtml(meta[k] != null ? String(meta[k]) : '');
+    const statusOptions = FORN_STATUS.map(function (s) {
+      const sel = (meta.status || 'ativo') === s.v ? ' selected' : '';
+      return '<option value="' + s.v + '"' + sel + '>' + escapeHtml(s.l) + '</option>';
+    }).join('');
+    const tipoVal = meta.tipo_parceria || '';
+    const tipoOptions =
+      '<option value=""' + (tipoVal === '' ? ' selected' : '') + '>—</option>' +
+      '<option value="elarah"' + (tipoVal === 'elarah' ? ' selected' : '') + '>Elarah</option>' +
+      '<option value="byelarah"' + (tipoVal === 'byelarah' ? ' selected' : '') + '>By Elarah</option>' +
+      '<option value="ambos"' + (tipoVal === 'ambos' ? ' selected' : '') + '>Elarah + By Elarah</option>';
+
+    const inputStyle = 'width:100%;padding:8px 10px;border:1px solid #ddd;' +
+      'border-radius:7px;font-size:.85rem;font-family:inherit;box-sizing:border-box;';
+    const labelStyle = 'display:block;font-size:.72rem;font-weight:600;' +
+      'color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;';
+    const field = (label, inner) =>
+      '<div><label style="' + labelStyle + '">' + label + '</label>' + inner + '</div>';
+
+    const overlay = document.createElement('div');
+    overlay.id = 'forn-modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10050;' +
+      'background:rgba(0,0,0,.45);display:flex;align-items:flex-start;' +
+      'justify-content:center;overflow-y:auto;padding:40px 16px;';
+    overlay.innerHTML =
+      '<div style="background:#fff;border-radius:14px;width:100%;max-width:560px;' +
+        'box-shadow:0 18px 50px rgba(0,0,0,.25);font-family:inherit;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;' +
+          'padding:18px 22px;border-bottom:1px solid #eee;">' +
+          '<h3 style="margin:0;font-size:1.05rem;">' +
+            (isNew ? 'Novo fornecedor' : 'Editar fornecedor') + '</h3>' +
+          '<button type="button" id="forn-modal-close" style="background:none;' +
+            'border:none;font-size:1.4rem;cursor:pointer;color:#999;line-height:1;">&times;</button>' +
+        '</div>' +
+        '<div style="padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
+          '<div style="grid-column:1/-1;">' +
+            field('Nome do fornecedor/empresa *',
+              '<input type="text" id="forn-f-nome" value="' + val('fornecedor_nome') + '"' +
+              (isNew ? '' : ' readonly title="O nome é a chave do fornecedor e não pode ser alterado aqui"') +
+              ' style="' + inputStyle + (isNew ? '' : 'background:#f5f5f5;color:#777;') + '">') +
+          '</div>' +
+          field('Status', '<select id="forn-f-status" style="' + inputStyle + '">' + statusOptions + '</select>') +
+          field('Categoria', '<input type="text" id="forn-f-categoria" value="' + val('categoria') + '" placeholder="Cerâmica, Pintura…" style="' + inputStyle + '">') +
+          field('Cidade', '<input type="text" id="forn-f-cidade" value="' + val('cidade') + '" style="' + inputStyle + '">') +
+          field('Bairro', '<input type="text" id="forn-f-bairro" value="' + val('bairro') + '" style="' + inputStyle + '">') +
+          field('WhatsApp', '<input type="tel" id="forn-f-whatsapp" value="' + val('whatsapp') + '" placeholder="(11) 99999-9999" style="' + inputStyle + '">') +
+          field('Instagram', '<input type="text" id="forn-f-instagram" value="' + val('instagram') + '" placeholder="@parceiro" style="' + inputStyle + '">') +
+          field('E-mail', '<input type="email" id="forn-f-email" value="' + val('email') + '" style="' + inputStyle + '">') +
+          field('Site', '<input type="text" id="forn-f-site" value="' + val('site') + '" style="' + inputStyle + '">') +
+          field('Nome do contato', '<input type="text" id="forn-f-contato" value="' + val('nome_contato') + '" style="' + inputStyle + '">') +
+          field('Tipo de parceria', '<select id="forn-f-tipo" style="' + inputStyle + '">' + tipoOptions + '</select>') +
+          field('Data de entrada', '<input type="date" id="forn-f-data" value="' + val('data_entrada') + '" style="' + inputStyle + '">') +
+          '<div style="grid-column:1/-1;">' +
+            field('Observações internas',
+              '<textarea id="forn-f-obs" rows="3" style="' + inputStyle + 'resize:vertical;">' +
+              val('observacoes') + '</textarea>') +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:16px 22px;' +
+          'border-top:1px solid #eee;flex-wrap:wrap;">' +
+          '<a id="forn-modal-solicitar" target="_blank" rel="noopener" ' +
+            'style="margin-right:auto;font-size:.82rem;color:#1a8a4a;font-weight:600;' +
+            'text-decoration:none;">💬 Solicitar novas experiências</a>' +
+          '<button type="button" id="forn-modal-cancel" style="padding:9px 16px;' +
+            'border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;' +
+            'font-size:.85rem;font-family:inherit;">Cancelar</button>' +
+          '<button type="button" id="forn-modal-save" style="padding:9px 18px;' +
+            'border:none;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;' +
+            'cursor:pointer;font-size:.85rem;font-weight:600;font-family:inherit;">Salvar</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    const close = () => { overlay.remove(); };
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector('#forn-modal-close').addEventListener('click', close);
+    overlay.querySelector('#forn-modal-cancel').addEventListener('click', close);
+
+    // Link "Solicitar novas experiências" — atualiza com o WhatsApp/contato
+    // digitados no momento (útil já no cadastro manual).
+    const solicitarLink = overlay.querySelector('#forn-modal-solicitar');
+    const refreshSolicitar = () => {
+      const phone = fornWaPhone(overlay.querySelector('#forn-f-whatsapp').value);
+      if (!phone) {
+        solicitarLink.style.display = 'none';
+        return;
+      }
+      solicitarLink.style.display = '';
+      const msg = fornSolicitarExperienciasMsg(
+        overlay.querySelector('#forn-f-contato').value,
+        overlay.querySelector('#forn-f-nome').value
+      );
+      solicitarLink.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    };
+    refreshSolicitar();
+    overlay.querySelector('#forn-f-whatsapp').addEventListener('input', refreshSolicitar);
+    overlay.querySelector('#forn-f-contato').addEventListener('input', refreshSolicitar);
+
+    overlay.querySelector('#forn-modal-save').addEventListener('click', async (e) => {
+      const btn = e.target;
+      const nome = overlay.querySelector('#forn-f-nome').value.trim();
+      if (!nome) {
+        alert('O nome do fornecedor é obrigatório.');
+        return;
+      }
+      const trimOrNull = (id) => {
+        const v = overlay.querySelector(id).value.trim();
+        return v || null;
+      };
+      btn.disabled = true;
+      btn.textContent = 'Salvando…';
+      const res = await saveFornecedorMetadata({
+        fornecedor_nome: nome,
+        status: overlay.querySelector('#forn-f-status').value || 'ativo',
+        categoria: trimOrNull('#forn-f-categoria'),
+        cidade: trimOrNull('#forn-f-cidade'),
+        bairro: trimOrNull('#forn-f-bairro'),
+        whatsapp: trimOrNull('#forn-f-whatsapp'),
+        instagram: trimOrNull('#forn-f-instagram'),
+        email: trimOrNull('#forn-f-email'),
+        site: trimOrNull('#forn-f-site'),
+        nome_contato: trimOrNull('#forn-f-contato'),
+        tipo_parceria: overlay.querySelector('#forn-f-tipo').value || null,
+        data_entrada: overlay.querySelector('#forn-f-data').value || null,
+        observacoes: trimOrNull('#forn-f-obs'),
+      });
+      if (!res.ok) {
+        btn.disabled = false;
+        btn.textContent = 'Salvar';
+        const hint = String(res.error || '').includes('fornecedores_metadata')
+          ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
+          : '';
+        alert('Não consegui salvar o fornecedor.\n' + (res.error || '') + hint);
+        return;
+      }
+      close();
+      if (typeof renderFornecedores === 'function') renderFornecedores();
+    });
+  }
+
   // Lista unificada de fornecedores conhecidos: junta nomes da tabela
   // fornecedores_metadata com nomes presentes em experiences.fornecedor_nome.
   // Dedup case-insensitive preservando a grafia original do primeiro hit.
@@ -6219,6 +6447,26 @@
       });
     });
 
+    // Adiciona fornecedores cadastrados manualmente (existem só em
+    // fornecedores_metadata, sem experiências nem vendas ainda) — fazem
+    // parte do pipeline de captação e precisam aparecer na aba.
+    (metadata || []).forEach(m => {
+      if (!m || !m.fornecedor_key || aggByKey.has(m.fornecedor_key)) return;
+      aggByKey.set(m.fornecedor_key, {
+        key: m.fornecedor_key,
+        nome: m.fornecedor_nome || m.fornecedor_key,
+        experiencesTotal: 0,
+        experiencesAtivas: 0,
+        reservas: 0,
+        faturamentoCents: 0,
+        repasseTotalCents: 0,
+        repassePagoCents: 0,
+        repassePendenteCents: 0,
+        comissaoCents: 0,
+        lastBookingTs: 0,
+      });
+    });
+
     const list = Array.from(aggByKey.values());
     list.sort((a, b) => b.faturamentoCents - a.faturamentoCents);
 
@@ -6244,7 +6492,7 @@
 
     const tbody = document.getElementById('fornecedores-body');
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhum fornecedor cadastrado ainda. Preencha o campo "Fornecedor" nas experiências pra ver os dados aqui.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="13" class="admin__table-empty">Nenhum fornecedor ainda. Use "+ Novo fornecedor" pra cadastrar manualmente, ou preencha o campo "Fornecedor" nas experiências.</td></tr>';
       return;
     }
 
@@ -6275,8 +6523,23 @@
           '<option value="byelarah"' + (tipoVal === 'byelarah' ? ' selected' : '') + '>By Elarah</option>' +
           '<option value="ambos"' + (tipoVal === 'ambos' ? ' selected' : '') + '>Elarah + By Elarah</option>' +
         '</select>';
+      const solicitarUrl = fornSolicitarExperienciasUrl(
+        meta || { fornecedor_nome: f.nome }
+      );
+      const acoesCell = '<td style="white-space:nowrap;">' +
+        '<button type="button" class="admin__forn-edit" data-forn-key="' + escapeHtml(f.key) + '" ' +
+          'style="padding:5px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;' +
+          'cursor:pointer;font-size:.75rem;font-family:inherit;margin-right:6px;">Editar</button>' +
+        (solicitarUrl
+          ? '<a href="' + solicitarUrl + '" target="_blank" rel="noopener" ' +
+            'style="padding:5px 10px;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;' +
+            'font-size:.75rem;text-decoration:none;white-space:nowrap;" ' +
+            'title="Abrir WhatsApp com a mensagem de captação de novas experiências">Solicitar exp.</a>'
+          : '<span style="font-size:.72rem;color:#bbb;" title="Cadastre o WhatsApp pra liberar">sem WhatsApp</span>') +
+        '</td>';
       return '<tr>' +
         '<td style="font-weight:600;">' + escapeHtml(f.nome) + '</td>' +
+        '<td>' + fornStatusBadge(meta && meta.status) + '</td>' +
         '<td>' + tipoSelect + '</td>' +
         '<td><input type="tel" class="admin__forn-whatsapp" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(whatsappVal) + '" placeholder="(11) 99999-9999" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;width:140px;" title="WhatsApp do fornecedor — usado pelo botão Avisar em Compras"></td>' +
         '<td><input type="date" class="admin__forn-data-entrada" data-forn-key="' + escapeHtml(f.key) + '" data-forn-nome="' + escapeHtml(f.nome) + '" value="' + escapeHtml(dataEntradaISO) + '" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:.82rem;font-family:inherit;"></td>' +
@@ -6287,6 +6550,7 @@
         '<td>' + repasseLabel + '</td>' +
         '<td style="color:var(--orange,#f0a05e);font-weight:600;">' + escapeHtml(formatCents(f.comissaoCents, 'BRL')) + '</td>' +
         '<td>' + lastBookingLabel + '</td>' +
+        acoesCell +
       '</tr>';
     }).join('');
 
@@ -6337,11 +6601,11 @@
           return;
         }
         // Recalcula "Parceiro há" na célula irmã sem re-renderizar tudo.
-        // Ordem REAL das colunas (após PR #155 adicionar Tipo):
-        // Fornecedor=0, Tipo=1, WhatsApp=2, DataEntrada=3, ParceiroHá=4.
+        // Ordem REAL das colunas (Status adicionado no índice 1):
+        // Fornecedor=0, Status=1, Tipo=2, WhatsApp=3, DataEntrada=4, ParceiroHá=5.
         const row = el.closest('tr');
         if (row) {
-          const parceiroCell = row.children[4];
+          const parceiroCell = row.children[5];
           if (parceiroCell) parceiroCell.innerHTML = formatParceiroHa(value);
         }
       });
@@ -6375,6 +6639,27 @@
         setTimeout(() => { el.style.borderColor = prev; }, 1000);
       });
     });
+
+    // Botão "Editar" — abre o modal de CRM do fornecedor.
+    tbody.querySelectorAll('.admin__forn-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.fornKey;
+        const meta = metaByKey.get(key) || null;
+        const agg = aggByKey.get(key);
+        const nome = (meta && meta.fornecedor_nome) || (agg && agg.nome) || key;
+        openFornecedorModal(meta || { fornecedor_nome: nome }, false);
+      });
+    });
+
+    // Botão "+ Novo fornecedor" — wire único (elemento estático, não
+    // re-criado a cada render), guardado por dataset pra não empilhar.
+    const novoBtn = document.getElementById('forn-novo-btn');
+    if (novoBtn && !novoBtn.dataset.wired) {
+      novoBtn.dataset.wired = '1';
+      novoBtn.addEventListener('click', () => {
+        openFornecedorModal({ fornecedor_nome: '', status: 'em_negociacao' }, true);
+      });
+    }
   }
 
   // =================================================
