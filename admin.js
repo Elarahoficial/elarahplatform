@@ -405,6 +405,7 @@
       case 'campanhas':   await renderCampanhas(); break;
       case 'marketing-ai': await renderMarketingAI(); break;
       case 'calendario-editorial': await renderCalendarioEditorial(); break;
+      case 'captacao':    await renderCaptacao(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
       case 'contabilidade': await renderContabilidade(); break;
@@ -6692,6 +6693,16 @@
     // declarado e união de todas as sessions vistas.
     (eventsInRange || []).forEach(e => { if (e && e.session_id) sessions.add(e.session_id); });
 
+ claude/add-accounting-admin-section-4wDvv
+    const purchases = (bookingsInRange || []).filter(b =>
+      b.status === 'pago' && !b._isManualSale && !b._isGiftCard
+    ).length;
+
+    // União: quem clicou no card OU abriu o detalhe direto (via link
+    // de campanha, follow-up WhatsApp, landing dedicada). Cobre o
+    // tráfego de campanha que pula a home — sem isso, "Clicou em
+    // experiência" fica zerado mesmo com gente entrando.
+=======
     // Agora conta VAGAS vendidas (sum quantidade), não bookings.
     // Coerente com KPIs e Compras: 1 booking qty=3 contabiliza 3.
     // Exclui venda manual e gift card — esses não passam pelo funil do site
@@ -6705,11 +6716,21 @@
     // (WhatsApp, Insta) entram direto no /experiencia/<slug> e nunca
     // clicam num card da home — só disparam detail_view. Sem essa união
     // o funil mostrava "Clicou em uma experiência: 0" e "Abriu detalhe: N".
+ claude/create-elarah-homepage-VsE5i
     const engaged = new Set();
     cardClicks.forEach(s => engaged.add(s));
     detailViews.forEach(s => engaged.add(s));
 
     const steps = [
+ claude/add-accounting-admin-section-4wDvv
+      { key: 'sessions',   label: 'Visitantes (sessões)',          count: sessions.size,        unit: 'sessões' },
+      { key: 'engaged',    label: 'Engajou com uma experiência',   count: engaged.size,         unit: 'sessões' },
+      { key: 'detail',     label: 'Abriu o detalhe da exp.',       count: detailViews.size,     unit: 'sessões' },
+      { key: 'cta',        label: 'Clicou em "Reservar"',          count: ctaClicks.size,       unit: 'sessões' },
+      { key: 'started',    label: 'Iniciou o checkout',            count: checkoutStarted.size, unit: 'sessões' },
+      { key: 'submit',     label: 'Confirmou pagamento',           count: checkoutSubmits.size, unit: 'sessões' },
+      { key: 'paid',       label: 'Pagamento aprovado (site)',     count: purchases,            unit: 'compras' },
+=======
       { key: 'sessions',   label: 'Visitantes (sessões)',       count: sessions.size,         unit: 'sessões' },
       { key: 'engaged',    label: 'Engajou com uma experiência',count: engaged.size,          unit: 'sessões' },
       { key: 'detail',     label: 'Abriu o detalhe da exp.',    count: detailViews.size,      unit: 'sessões' },
@@ -6717,6 +6738,7 @@
       { key: 'started',    label: 'Iniciou o checkout',         count: checkoutStarted.size,  unit: 'sessões' },
       { key: 'submit',     label: 'Confirmou pagamento',        count: checkoutSubmits.size,  unit: 'sessões' },
       { key: 'paid',       label: 'Pagamento aprovado (site)',  count: purchases,             unit: 'compras' },
+claude/create-elarah-homepage-VsE5i
     ];
 
     if (steps.every(s => s.count === 0)) {
@@ -14119,6 +14141,301 @@
   function _calCloseModal() {
     document.getElementById('cal-modal').style.display = 'none';
     document.body.style.overflow = '';
+  }
+
+  // =============================================================
+  // CAPTAÇÃO — Growth OS (áreas, tarefas, KPIs)
+  // =============================================================
+  var _capAreas = [];
+  var _capTasks = [];
+  var _capKpis  = [];
+  var _capAreaFiltro = '';
+  var _capHorizonteFiltro = '';
+  var _capStatusFiltro = 'abertos';
+
+  function _capEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  function _capFmtNumber(n, unidade) {
+    if (n == null || n === '') return '—';
+    var v = Number(n);
+    if (!isFinite(v)) return '—';
+    var s;
+    if (unidade === 'R$') s = 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+    else if (unidade === '%') s = v.toLocaleString('pt-BR') + '%';
+    else s = v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+    return s;
+  }
+
+  async function renderCaptacao() {
+    var sb = window.supabaseClient;
+    if (!sb) return;
+
+    if (!document.getElementById('cap-add-btn').dataset.wired) {
+      document.getElementById('cap-add-btn').dataset.wired = '1';
+      document.getElementById('cap-add-btn').addEventListener('click', function () { _capOpenTaskModal(null); });
+      document.getElementById('cap-modal-close').addEventListener('click', _capCloseTaskModal);
+      document.getElementById('cap-form-cancel').addEventListener('click', _capCloseTaskModal);
+      document.getElementById('cap-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'cap-modal') _capCloseTaskModal();
+      });
+      document.getElementById('cap-form').addEventListener('submit', _capSaveTask);
+      document.getElementById('cap-form-delete').addEventListener('click', _capDeleteTask);
+
+      document.getElementById('cap-filtro-horizonte').addEventListener('change', function (e) {
+        _capHorizonteFiltro = e.target.value; _capRender();
+      });
+      document.getElementById('cap-filtro-status').addEventListener('change', function (e) {
+        _capStatusFiltro = e.target.value; _capRender();
+      });
+
+      document.getElementById('cap-kpi-modal-close').addEventListener('click', _capCloseKpiModal);
+      document.getElementById('cap-kpi-form-cancel').addEventListener('click', _capCloseKpiModal);
+      document.getElementById('cap-kpi-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'cap-kpi-modal') _capCloseKpiModal();
+      });
+      document.getElementById('cap-kpi-form').addEventListener('submit', _capSaveKpi);
+    }
+
+    // Carrega áreas, tarefas e KPIs em paralelo
+    var results = await Promise.all([
+      sb.from('growth_areas').select('*').eq('is_active', true).order('ordem'),
+      sb.from('growth_tasks').select('*').order('ordem').range(0, 9999),
+      sb.from('growth_kpis').select('*').eq('is_active', true).order('ordem')
+    ]);
+    _capAreas = (results[0].data || []);
+    _capTasks = (results[1].data || []);
+    _capKpis  = (results[2].data || []);
+
+    _capRenderKpis();
+    _capRenderFiltrosAreas();
+    _capRender();
+  }
+
+  function _capRenderKpis() {
+    var grid = document.getElementById('cap-kpis');
+    if (!_capKpis.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#888;font-style:italic;padding:20px;text-align:center;">Nenhum KPI cadastrado. Rode o SQL de seed.</p>';
+      return;
+    }
+    grid.innerHTML = _capKpis.map(function (k) {
+      var meta = k.meta != null ? 'Meta: ' + _capFmtNumber(k.meta, k.unidade) : '';
+      var valor = _capFmtNumber(k.valor_atual, k.unidade);
+      return '' +
+        '<div class="cap-kpi-card" data-kpi-id="' + _capEsc(k.id) + '">' +
+          '<div class="cap-kpi-bar" style="background:' + _capEsc(k.cor || '#1a8a4a') + ';"></div>' +
+          '<div class="cap-kpi-nome">' + _capEsc(k.nome) + '</div>' +
+          '<div class="cap-kpi-valor">' + valor + '</div>' +
+          (meta ? '<div class="cap-kpi-meta">' + meta + '</div>' : '') +
+        '</div>';
+    }).join('');
+    grid.querySelectorAll('.cap-kpi-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        var k = _capKpis.find(function (x) { return x.id === card.dataset.kpiId; });
+        if (k) _capOpenKpiModal(k);
+      });
+    });
+  }
+
+  function _capRenderFiltrosAreas() {
+    var container = document.getElementById('cap-areas-filtros');
+    var btns = '<button type="button" class="cap-area-btn ' + (_capAreaFiltro === '' ? 'cap-area-btn--active' : '') + '" data-area="">Todas</button>';
+    btns += _capAreas.map(function (a) {
+      return '<button type="button" class="cap-area-btn ' + (_capAreaFiltro === a.id ? 'cap-area-btn--active' : '') + '" data-area="' + _capEsc(a.id) + '" style="' + (_capAreaFiltro === a.id ? 'background:' + _capEsc(a.cor) + ';border-color:' + _capEsc(a.cor) + ';' : '') + '">' + _capEsc(a.nome) + '</button>';
+    }).join('');
+    container.innerHTML = btns;
+    container.querySelectorAll('.cap-area-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _capAreaFiltro = btn.dataset.area || '';
+        _capRenderFiltrosAreas();
+        _capRender();
+      });
+    });
+  }
+
+  function _capRender() {
+    var list = document.getElementById('cap-tasks-list');
+    var stats = document.getElementById('cap-stats');
+    var tasks = _capTasks.slice();
+
+    if (_capAreaFiltro) tasks = tasks.filter(function (t) { return t.area_id === _capAreaFiltro; });
+    if (_capHorizonteFiltro) tasks = tasks.filter(function (t) { return t.horizonte === _capHorizonteFiltro; });
+    if (_capStatusFiltro === 'abertos') tasks = tasks.filter(function (t) { return t.status !== 'concluido' && t.status !== 'pausado'; });
+    else if (_capStatusFiltro !== 'todos') tasks = tasks.filter(function (t) { return t.status === _capStatusFiltro; });
+
+    // Ordena: prioridade alta primeiro, depois pendente > em_andamento > resto, depois ordem
+    var prioOrder = { alta: 0, media: 1, baixa: 2 };
+    var statusOrder = { pendente: 0, em_andamento: 1, pausado: 2, concluido: 3 };
+    tasks.sort(function (a, b) {
+      var ds = (statusOrder[a.status] || 9) - (statusOrder[b.status] || 9);
+      if (ds !== 0) return ds;
+      var dp = (prioOrder[a.prioridade] || 9) - (prioOrder[b.prioridade] || 9);
+      if (dp !== 0) return dp;
+      return (a.ordem || 0) - (b.ordem || 0);
+    });
+
+    var total = tasks.length;
+    var concluidas = tasks.filter(function (t) { return t.status === 'concluido'; }).length;
+    stats.innerHTML = total + ' tarefa' + (total !== 1 ? 's' : '') +
+      ' · ' + concluidas + ' concluída' + (concluidas !== 1 ? 's' : '');
+
+    if (!tasks.length) {
+      list.innerHTML = '<p style="color:#888;font-style:italic;padding:40px;text-align:center;">Nenhuma tarefa com esses filtros.</p>';
+      return;
+    }
+
+    list.innerHTML = tasks.map(function (t) {
+      var area = _capAreas.find(function (a) { return a.id === t.area_id; });
+      var areaTag = area ? '<span class="cap-tag cap-tag--area" style="background:' + _capEsc(area.cor) + '22;color:' + _capEsc(area.cor) + ';">' + _capEsc(area.nome) + '</span>' : '';
+      var prioTag = '<span class="cap-tag cap-tag--' + _capEsc(t.prioridade) + '">' + _capEsc(t.prioridade) + '</span>';
+      var horizTag = t.horizonte ? '<span class="cap-tag cap-tag--' + _capEsc(t.horizonte) + '">' + (t.horizonte === 'semana' ? 'esta semana' : t.horizonte === 'mes' ? 'este mês' : 'trimestre') + '</span>' : '';
+      var freqTag = (t.frequencia && t.frequencia !== 'unica') ? '<span class="cap-tag cap-tag--freq">' + _capEsc(t.frequencia) + '</span>' : '';
+      var respTag = '<span class="cap-tag cap-tag--resp">' + _capEsc(t.responsavel) + '</span>';
+      var dueTag = t.due_date ? '<span class="cap-tag" style="background:#f5f5f5;color:#555;">📅 ' + _capEsc(_capFmtDate(t.due_date)) + '</span>' : '';
+      var done = t.status === 'concluido';
+      return '' +
+        '<div class="cap-task ' + (done ? 'cap-task--concluido' : '') + '" data-task-id="' + _capEsc(t.id) + '">' +
+          '<div class="cap-task-check ' + (done ? 'cap-task-check--done' : '') + '" data-action="toggle">' + (done ? '✓' : '') + '</div>' +
+          '<div class="cap-task-body">' +
+            '<div class="cap-task-titulo" data-action="edit">' + _capEsc(t.titulo) + '</div>' +
+            (t.descricao ? '<div class="cap-task-desc">' + _capEsc(t.descricao) + '</div>' : '') +
+            '<div class="cap-task-tags">' + areaTag + prioTag + horizTag + freqTag + respTag + dueTag + '</div>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    list.querySelectorAll('.cap-task').forEach(function (el) {
+      el.querySelector('[data-action="toggle"]').addEventListener('click', function () {
+        _capToggleTask(el.dataset.taskId);
+      });
+      el.querySelector('[data-action="edit"]').addEventListener('click', function () {
+        var t = _capTasks.find(function (x) { return x.id === el.dataset.taskId; });
+        if (t) _capOpenTaskModal(t);
+      });
+    });
+  }
+
+  function _capFmtDate(iso) {
+    if (!iso) return '';
+    var p = String(iso).split('-');
+    if (p.length < 3) return iso;
+    return p[2] + '/' + p[1];
+  }
+
+  async function _capToggleTask(id) {
+    var t = _capTasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    var sb = window.supabaseClient;
+    var novoStatus = t.status === 'concluido' ? 'pendente' : 'concluido';
+    var payload = { status: novoStatus, completed_at: novoStatus === 'concluido' ? new Date().toISOString() : null };
+    var r = await sb.from('growth_tasks').update(payload).eq('id', id);
+    if (r.error) { alert('Erro ao atualizar: ' + r.error.message); return; }
+    t.status = novoStatus;
+    t.completed_at = payload.completed_at;
+    _capRender();
+  }
+
+  function _capOpenTaskModal(t) {
+    document.getElementById('cap-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('cap-modal-title').textContent = t ? 'Editar tarefa' : 'Nova tarefa';
+    document.getElementById('cap-form-id').value = t ? t.id : '';
+    document.getElementById('cap-form-titulo').value = t ? (t.titulo || '') : '';
+    document.getElementById('cap-form-descricao').value = t ? (t.descricao || '') : '';
+    document.getElementById('cap-form-prioridade').value = t ? (t.prioridade || 'media') : 'media';
+    document.getElementById('cap-form-status').value = t ? (t.status || 'pendente') : 'pendente';
+    document.getElementById('cap-form-responsavel').value = t ? (t.responsavel || 'ambas') : 'ambas';
+    document.getElementById('cap-form-frequencia').value = t ? (t.frequencia || 'unica') : 'unica';
+    document.getElementById('cap-form-horizonte').value = t ? (t.horizonte || '') : '';
+    document.getElementById('cap-form-due').value = t ? (t.due_date || '') : '';
+    document.getElementById('cap-form-notas').value = t ? (t.notas || '') : '';
+
+    var areaSel = document.getElementById('cap-form-area');
+    areaSel.innerHTML = _capAreas.map(function (a) {
+      return '<option value="' + _capEsc(a.id) + '">' + _capEsc(a.nome) + '</option>';
+    }).join('');
+    if (t) areaSel.value = t.area_id || '';
+
+    document.getElementById('cap-form-delete').style.display = t ? 'block' : 'none';
+  }
+
+  function _capCloseTaskModal() {
+    document.getElementById('cap-modal').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  async function _capSaveTask(ev) {
+    ev.preventDefault();
+    var sb = window.supabaseClient;
+    var id = document.getElementById('cap-form-id').value;
+    var payload = {
+      titulo:      document.getElementById('cap-form-titulo').value.trim(),
+      descricao:   document.getElementById('cap-form-descricao').value.trim() || null,
+      area_id:     document.getElementById('cap-form-area').value || null,
+      prioridade:  document.getElementById('cap-form-prioridade').value,
+      status:      document.getElementById('cap-form-status').value,
+      responsavel: document.getElementById('cap-form-responsavel').value,
+      frequencia:  document.getElementById('cap-form-frequencia').value,
+      horizonte:   document.getElementById('cap-form-horizonte').value || null,
+      due_date:    document.getElementById('cap-form-due').value || null,
+      notas:       document.getElementById('cap-form-notas').value.trim() || null
+    };
+    if (payload.status === 'concluido') payload.completed_at = new Date().toISOString();
+    if (!payload.titulo) { alert('Título obrigatório.'); return; }
+
+    var r;
+    if (id) {
+      r = await sb.from('growth_tasks').update(payload).eq('id', id);
+    } else {
+      r = await sb.from('growth_tasks').insert(payload);
+    }
+    if (r.error) { alert('Erro ao salvar: ' + r.error.message); return; }
+    _capCloseTaskModal();
+    await renderCaptacao();
+  }
+
+  async function _capDeleteTask() {
+    var id = document.getElementById('cap-form-id').value;
+    if (!id) return;
+    if (!confirm('Excluir essa tarefa?')) return;
+    var sb = window.supabaseClient;
+    var r = await sb.from('growth_tasks').delete().eq('id', id);
+    if (r.error) { alert('Erro ao excluir: ' + r.error.message); return; }
+    _capCloseTaskModal();
+    await renderCaptacao();
+  }
+
+  function _capOpenKpiModal(k) {
+    document.getElementById('cap-kpi-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('cap-kpi-modal-title').textContent = k.nome;
+    document.getElementById('cap-kpi-form-id').value = k.id;
+    document.getElementById('cap-kpi-form-valor').value = k.valor_atual != null ? k.valor_atual : '';
+    document.getElementById('cap-kpi-form-meta').value = k.meta != null ? k.meta : '';
+    document.getElementById('cap-kpi-form-obs').value = k.observacao || '';
+  }
+
+  function _capCloseKpiModal() {
+    document.getElementById('cap-kpi-modal').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  async function _capSaveKpi(ev) {
+    ev.preventDefault();
+    var sb = window.supabaseClient;
+    var id = document.getElementById('cap-kpi-form-id').value;
+    var payload = {
+      valor_atual: parseFloat(document.getElementById('cap-kpi-form-valor').value) || 0,
+      meta:        document.getElementById('cap-kpi-form-meta').value !== '' ? parseFloat(document.getElementById('cap-kpi-form-meta').value) : null,
+      observacao:  document.getElementById('cap-kpi-form-obs').value.trim() || null
+    };
+    var r = await sb.from('growth_kpis').update(payload).eq('id', id);
+    if (r.error) { alert('Erro ao salvar KPI: ' + r.error.message); return; }
+    _capCloseKpiModal();
+    await renderCaptacao();
   }
 
   // ===== START =====
