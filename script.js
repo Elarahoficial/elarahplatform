@@ -3733,19 +3733,24 @@ if (groupForm) {
         return;
       }
 
-      // === [NEW] GATE DE DESCRIÇÃO ===
-      // Antes de qualquer outra coisa (antes do login, do tracking, do
-      // preço), mostra uma modal intermediária com a descrição completa
-      // da experiência — SE houver descrição cadastrada. Isso dá ao
-      // usuário contexto total antes de começar o fluxo de pagamento,
-      // melhorando conversão.
+      // === GATE DE DESCRIÇÃO LIGADO POR PADRÃO ===
+      // Mostra a modal de "DESCRIÇÃO COMPLETA" entre o clique em
+      // "Reservar"/"Quero participar" e o checkout, pra o cliente ler
+      // sobre a experiência antes de pagar.
       //
-      // Skip quando:
-      //   - opts.skipDescription === true (resume após login já confirmou)
-      //   - experiência não tem descricao cadastrada (null/undefined/'')
-      //   - ElarahData indisponível ou falha ao buscar
-      //   - descricao contém só espaços em branco
-      if (!opts.skipDescription) {
+      // Kill-switch (desliga o gate) caso precise reverter rápido:
+      //   - URL: ?desc=0
+      //   - DevTools: localStorage.setItem('elarahDescGate','0')
+      //   - data-attribute no botão: data-force-description="false"
+      function descriptionGateEnabled() {
+        try {
+          if ((location.search || '').indexOf('desc=0') !== -1) return false;
+          if (localStorage.getItem('elarahDescGate') === '0') return false;
+          if (btn.dataset && btn.dataset.forceDescription === 'false') return false;
+        } catch (e) {}
+        return true;
+      }
+      if (!opts.skipDescription && descriptionGateEnabled()) {
         const proceed = await runDescriptionGate(experienceId, experienceNome, btn);
         if (!proceed) {
           // Usuário fechou a modal sem continuar OU modal já estava
