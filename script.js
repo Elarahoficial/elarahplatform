@@ -4369,6 +4369,24 @@ if (groupForm) {
         return;
       }
 
+ claude/add-accounting-admin-section-4wDvv
+      // === GATE DE DESCRIÇÃO LIGADO POR PADRÃO ===
+      // Mostra a modal de "DESCRIÇÃO COMPLETA" entre o clique em
+      // "Reservar"/"Quero participar" e o checkout, pra o cliente ler
+      // sobre a experiência antes de pagar.
+      //
+      // Kill-switch (desliga o gate) caso precise reverter rápido:
+      //   - URL: ?desc=0
+      //   - DevTools: localStorage.setItem('elarahDescGate','0')
+      //   - data-attribute no botão: data-force-description="false"
+      function descriptionGateEnabled() {
+        try {
+          if ((location.search || '').indexOf('desc=0') !== -1) return false;
+          if (localStorage.getItem('elarahDescGate') === '0') return false;
+          if (btn.dataset && btn.dataset.forceDescription === 'false') return false;
+        } catch (e) {}
+        return true;
+=======
       // === [SPRINT 1 / PR B] GATE DE DESCRIÇÃO DESLIGADO POR PADRÃO ===
       // Antes: sempre mostrava uma modal intermediária com a descrição
       // entre o clique em "Reservar" e o checkout. Adicionava um clique
@@ -4387,6 +4405,7 @@ if (groupForm) {
           if (btn.dataset && btn.dataset.forceDescription === 'true') return true;
         } catch (e) {}
         return false;
+ claude/create-elarah-homepage-VsE5i
       }
       if (!opts.skipDescription && descriptionGateEnabled()) {
         const proceed = await runDescriptionGate(experienceId, experienceNome, btn);
