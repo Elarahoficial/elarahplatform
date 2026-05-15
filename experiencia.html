@@ -574,6 +574,7 @@
       '<div class="exp-detail__actions">' +
         '<button type="button" class="exp-detail__reserve-btn" id="exp-reserve-btn"' +
           ' data-reserve' +
+          ' data-skip-description="true"' +
           ' data-experience-id="' + esc(exp.id) + '"' +
           ' data-experience-nome="' + esc(exp.nome) + '"' +
           ' data-analytics="reserve_click"' +
@@ -713,6 +714,7 @@
     sticky.innerHTML =
       '<div class="exp-sticky-cta__price"><small>A partir de</small><span class="exp-sticky-cta__price-val">—</span></div>' +
       '<button type="button" class="exp-sticky-cta__btn" data-reserve' +
+      ' data-skip-description="true"' +
       ' data-analytics="reserve_click" data-analytics-category="booking">Reservar</button>';
     document.body.appendChild(sticky);
     stickyBtn = sticky.querySelector('.exp-sticky-cta__btn');

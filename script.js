@@ -4129,6 +4129,12 @@ if (groupForm) {
       // pra não ficar com camada de blur "dupla" empilhada.
       try { if (window.ElarahReserveSpinner) ElarahReserveSpinner.hide(); } catch (e) {}
 
+      // Funil — etapa intermediária de descrição exibida.
+      trackBookingFunnel('description_view', {
+        experienceId: exp.id || null,
+        experienceNome: exp.nome || null,
+      });
+
       // ===== SCROLL HANDLER — collapsible hero =====
       // Ao rolar, diminui a altura do hero e aplica fade+scale na
       // imagem. Throttle via requestAnimationFrame pra suavidade.
@@ -4214,11 +4220,19 @@ if (groupForm) {
         continueBtn.style.opacity = '0.85';
         continueBtn.style.cursor = 'wait';
         console.log('[Elarah Description Flow] usuário clicou Continuar para pagamento (' + (exp.id || '?') + ')');
+        trackBookingFunnel('description_continue', {
+          experienceId: exp.id || null,
+          experienceNome: exp.nome || null,
+        });
         dismiss(true);
       }
       function onClose(e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         console.log('[Elarah Description Flow] usuário fechou a modal sem continuar');
+        trackBookingFunnel('description_dismiss', {
+          experienceId: exp.id || null,
+          experienceNome: exp.nome || null,
+        });
         dismiss(false);
       }
       function onBackdrop(e) {
@@ -4357,6 +4371,25 @@ if (groupForm) {
     // Exposto pra ser chamado pelos opener de modais (description,
     // login, reservation) sem precisar de import.
     window.ElarahReserveSpinner = { show: showReserveSpinner, hide: hideReserveSpinner };
+
+    // === FUNIL DE RESERVA — INSTRUMENTAÇÃO ===
+    // Centraliza os eventos do funil pra que o admin compare o fluxo
+    // "gated" (passou pela modal de descrição — origem card da home/
+    // categoria) vs "direct" (foi direto pro checkout — origem página
+    // de detalhe). device/browser/viewport já são anexados pelo
+    // ElarahAnalytics.track, então mobile vs desktop sai de graça.
+    function trackBookingFunnel(eventName, meta) {
+      try {
+        if (!window.ElarahAnalytics || !ElarahAnalytics.track) return;
+        meta = meta || {};
+        ElarahAnalytics.track(eventName, {
+          category: 'booking',
+          targetId: meta.experienceId != null ? meta.experienceId : null,
+          targetLabel: meta.experienceNome != null ? meta.experienceNome : null,
+          metadata: meta.metadata || {},
+        });
+      } catch (e) {}
+    }
 
     async function startCheckout(btn, opts) {
       opts = opts || {};
@@ -4521,6 +4554,18 @@ if (groupForm) {
       // Cria sensação de ritual premium e dá tempo do cliente ler
       // "Preparando sua reserva…".
       try { await waitForReserveSpinnerMin(); } catch (e) {}
+
+      // Funil — abertura do checkout. flow = 'direct' quando pulou a
+      // modal de descrição (origem página de detalhe / campanha), ou
+      // 'gated' quando o cliente passou pela etapa de descrição.
+      var checkoutFlow = (!opts.skipDescription && descriptionGateEnabled())
+        ? 'gated'
+        : 'direct';
+      trackBookingFunnel('checkout_open', {
+        experienceId: experienceId,
+        experienceNome: experienceNome,
+        metadata: { flow: checkoutFlow },
+      });
 
       openReservationModal({
         experienceId: experienceId,
