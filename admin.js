@@ -5887,6 +5887,82 @@
     return { ok: true };
   }
 
+  // Opções de categoria/bairro pro modal de fornecedor — preenchidas
+  // a cada renderFornecedores a partir das experiências + metadados.
+  let fornModalOptions = { categorias: [], bairros: [] };
+
+  // Campo de múltipla escolha em chips: clica pra (de)selecionar e dá
+  // pra adicionar opção nova. getValue() devolve string separada por
+  // vírgula (compatível com a coluna text existente — sem migração).
+  function mountMultiChip(container, allOptions, initialSelectedStr) {
+    if (!container) return { getValue: () => '' };
+    const optionMap = new Map(); // chave minúscula -> rótulo exibido
+    const addOpt = (v) => {
+      const t = String(v == null ? '' : v).trim();
+      if (!t) return '';
+      const k = t.toLowerCase();
+      if (!optionMap.has(k)) optionMap.set(k, t);
+      return k;
+    };
+    (allOptions || []).forEach(addOpt);
+    const selected = new Set();
+    String(initialSelectedStr || '').split(',').forEach(v => {
+      const k = addOpt(v);
+      if (k) selected.add(k);
+    });
+    function render() {
+      const keys = Array.from(optionMap.keys()).sort((a, b) =>
+        optionMap.get(a).localeCompare(optionMap.get(b), 'pt-BR'));
+      let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">';
+      if (!keys.length) {
+        html += '<span style="font-size:.8rem;color:#aaa;">Nenhuma opção ainda — adicione abaixo.</span>';
+      }
+      keys.forEach(k => {
+        const on = selected.has(k);
+        html += '<button type="button" data-chip-key="' + escapeHtml(k) + '" ' +
+          'style="padding:5px 11px;border-radius:14px;cursor:pointer;font-size:.8rem;' +
+          'font-family:inherit;border:1px solid ' + (on ? 'var(--orange,#f0a05e)' : '#ddd') + ';' +
+          'background:' + (on ? 'var(--orange,#f0a05e)' : '#fff') + ';' +
+          'color:' + (on ? '#fff' : '#555') + ';font-weight:' + (on ? '600' : '400') + ';">' +
+          (on ? '✓ ' : '') + escapeHtml(optionMap.get(k)) + '</button>';
+      });
+      html += '</div>';
+      html += '<div style="display:flex;gap:6px;">' +
+        '<input type="text" class="mc-new" placeholder="+ adicionar nova" ' +
+          'style="flex:1;padding:7px 9px;border:1px solid #ddd;border-radius:7px;' +
+          'font-size:.82rem;font-family:inherit;box-sizing:border-box;">' +
+        '<button type="button" class="mc-add" style="padding:7px 12px;border:1px solid #ddd;' +
+          'background:#f7f7f7;border-radius:7px;cursor:pointer;font-size:.82rem;' +
+          'font-family:inherit;">Adicionar</button>' +
+        '</div>';
+      container.innerHTML = html;
+      container.querySelectorAll('[data-chip-key]').forEach(b => {
+        b.addEventListener('click', () => {
+          const k = b.dataset.chipKey;
+          if (selected.has(k)) selected.delete(k); else selected.add(k);
+          render();
+        });
+      });
+      const newInput = container.querySelector('.mc-new');
+      const addNew = () => {
+        const k = addOpt(newInput.value);
+        if (k) selected.add(k);
+        render();
+        const ni = container.querySelector('.mc-new');
+        if (ni) ni.focus();
+      };
+      container.querySelector('.mc-add').addEventListener('click', addNew);
+      newInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addNew(); }
+      });
+    }
+    render();
+    return {
+      getValue: () => Array.from(selected)
+        .map(k => optionMap.get(k)).filter(Boolean).join(', '),
+    };
+  }
+
   // Modal de cadastro/edição de fornecedor. `meta` = linha de
   // fornecedores_metadata (ou objeto parcial { fornecedor_nome }).
   // `isNew` = true abre em modo cadastro (nome editável).
@@ -5937,9 +6013,15 @@
               ' style="' + inputStyle + (isNew ? '' : 'background:#f5f5f5;color:#777;') + '">') +
           '</div>' +
           field('Status', '<select id="forn-f-status" style="' + inputStyle + '">' + statusOptions + '</select>') +
-          field('Categoria', '<input type="text" id="forn-f-categoria" value="' + val('categoria') + '" placeholder="Cerâmica, Pintura…" style="' + inputStyle + '">') +
           field('Cidade', '<input type="text" id="forn-f-cidade" value="' + val('cidade') + '" style="' + inputStyle + '">') +
-          field('Bairro', '<input type="text" id="forn-f-bairro" value="' + val('bairro') + '" style="' + inputStyle + '">') +
+          '<div style="grid-column:1/-1;">' +
+            field('Categorias — clique pra selecionar (pode marcar várias)',
+              '<div id="forn-f-categoria-chips"></div>') +
+          '</div>' +
+          '<div style="grid-column:1/-1;">' +
+            field('Bairros — clique pra selecionar (pode marcar vários)',
+              '<div id="forn-f-bairro-chips"></div>') +
+          '</div>' +
           field('WhatsApp', '<input type="tel" id="forn-f-whatsapp" value="' + val('whatsapp') + '" placeholder="(11) 99999-9999" style="' + inputStyle + '">') +
           field('Instagram', '<input type="text" id="forn-f-instagram" value="' + val('instagram') + '" placeholder="@parceiro" style="' + inputStyle + '">') +
           field('E-mail', '<input type="email" id="forn-f-email" value="' + val('email') + '" style="' + inputStyle + '">') +
@@ -5973,6 +6055,16 @@
         '</div>' +
       '</div>';
     document.body.appendChild(overlay);
+
+    // Chips de múltipla escolha pra categoria e bairro.
+    const catWidget = mountMultiChip(
+      overlay.querySelector('#forn-f-categoria-chips'),
+      fornModalOptions.categorias, meta.categoria
+    );
+    const bairroWidget = mountMultiChip(
+      overlay.querySelector('#forn-f-bairro-chips'),
+      fornModalOptions.bairros, meta.bairro
+    );
 
     const close = () => { overlay.remove(); };
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
@@ -6042,9 +6134,9 @@
       const res = await saveFornecedorMetadata({
         fornecedor_nome: nome,
         status: overlay.querySelector('#forn-f-status').value || 'ativo',
-        categoria: trimOrNull('#forn-f-categoria'),
+        categoria: catWidget.getValue() || null,
         cidade: trimOrNull('#forn-f-cidade'),
-        bairro: trimOrNull('#forn-f-bairro'),
+        bairro: bairroWidget.getValue() || null,
         whatsapp: trimOrNull('#forn-f-whatsapp'),
         instagram: trimOrNull('#forn-f-instagram'),
         email: trimOrNull('#forn-f-email'),
@@ -6442,6 +6534,33 @@
     (metadata || []).forEach(m => {
       if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m);
     });
+
+    // Opções de categoria/bairro pro modal — todas as que já existem
+    // no site (experiências) + as já cadastradas em fornecedores.
+    (function () {
+      const cats = new Set();
+      const bairros = new Set();
+      (allExperiences || []).forEach(e => {
+        if (e && e.categoria) cats.add(String(e.categoria).trim());
+        if (e && e.bairro) bairros.add(String(e.bairro).trim());
+      });
+      (metadata || []).forEach(m => {
+        if (m && m.categoria) {
+          String(m.categoria).split(',').forEach(c => {
+            const t = c.trim(); if (t) cats.add(t);
+          });
+        }
+        if (m && m.bairro) {
+          String(m.bairro).split(',').forEach(b => {
+            const t = b.trim(); if (t) bairros.add(t);
+          });
+        }
+      });
+      fornModalOptions = {
+        categorias: Array.from(cats).filter(Boolean),
+        bairros: Array.from(bairros).filter(Boolean),
+      };
+    })();
 
     // Conta experiências por fornecedor (inclui fornecedores com 0 vendas).
     const expCountByKey = new Map();
