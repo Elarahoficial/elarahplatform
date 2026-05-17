@@ -13555,6 +13555,9 @@
   }
 
   // ===== Vitrine curada (campaign_overrides) =====
+  // Quando true, o seletor de Campanhas ignora a janela estratégica
+  // e lista todas as experiências ativas. Persiste entre re-renders.
+  var _campShowAllExps = false;
   async function _campLoadOverrides(slug) {
     var sb = window.supabaseClient;
     var listEl = document.getElementById('campanhas-overrides-list');
@@ -13616,7 +13619,14 @@
     ]));
 
     var expsRes;
-    if (allIds.length === 0) {
+    if (_campShowAllExps) {
+      // Modo "mostrar todas" — ignora a janela e lista toda experiência ativa.
+      expsRes = await sb.from('experiences')
+        .select('id, nome, categoria, imagem, is_active, event_at, data')
+        .eq('is_active', true)
+        .order('nome')
+        .range(0, 9999);
+    } else if (allIds.length === 0) {
       expsRes = { data: [], error: null };
     } else {
       expsRes = await sb.from('experiences')
@@ -13646,6 +13656,13 @@
       var cur = dateByExp.get(e.id);
       if (!cur || e.event_at < cur) dateByExp.set(e.id, e.event_at);
     });
+    // No modo "mostrar todas", completa as datas com experiences.event_at
+    // pra os chips ficarem certos mesmo fora da janela.
+    if (_campShowAllExps) {
+      exps.forEach(function (e) {
+        if (e.event_at && !dateByExp.has(e.id)) dateByExp.set(e.id, e.event_at);
+      });
+    }
     var overrideByExp = new Map();
     overrides.forEach(function (o) { overrideByExp.set(o.experience_id, o); });
 
@@ -13664,12 +13681,26 @@
         '</div>' +
         '<small style="color:#888;">' + exps.length + ' na janela (de ' + overrides.length + ' total)</small>' +
       '</div>' +
-      '<div style="background:#e6f4ea;border:1px solid #c6e7d2;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:.82rem;color:#1a8a4a;">' +
-        '📅 Mostrando só experiências com data entre <strong>' + fmt(ddnStart) + '</strong> e <strong>' + fmt(ddnEnd) + '</strong>' +
-        ' — janela estratégica da campanha. Experiências fora dessa janela ficam ocultas (mas se já estavam no override, aparecem pra você gerenciar).' +
-      '</div>';
+      (_campShowAllExps
+        ? '<div style="background:#fff4e0;border:1px solid #f0cfa0;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:.82rem;color:#a4663b;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+            '<span>Mostrando <strong>todas as experiências ativas</strong> — janela estratégica desligada.</span>' +
+            '<button type="button" id="camp-toggle-all" style="background:#fff;border:1px solid #a4663b;color:#a4663b;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:600;white-space:nowrap;">Voltar pra janela</button>' +
+          '</div>'
+        : '<div style="background:#e6f4ea;border:1px solid #c6e7d2;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:.82rem;color:#1a8a4a;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+            '<span>📅 Mostrando só experiências com data entre <strong>' + fmt(ddnStart) + '</strong> e <strong>' + fmt(ddnEnd) + '</strong> — janela estratégica. Não achou a experiência? Clique em Mostrar todas.</span>' +
+            '<button type="button" id="camp-toggle-all" style="background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:600;white-space:nowrap;">Mostrar todas</button>' +
+          '</div>');
     listEl.innerHTML = counterHtml + '<div data-camp-rows-host></div>';
     var rowsHost = listEl.querySelector('[data-camp-rows-host]');
+
+    // Toggle "Mostrar todas" / "Voltar pra janela".
+    var _campToggleBtn = listEl.querySelector('#camp-toggle-all');
+    if (_campToggleBtn) {
+      _campToggleBtn.addEventListener('click', function () {
+        _campShowAllExps = !_campShowAllExps;
+        _campLoadOverrides(slug);
+      });
+    }
 
     // Ordena: incluídas no topo (por display_order), depois resto alfabético
     exps.sort(function (a, b) {
