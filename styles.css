@@ -3426,3 +3426,78 @@ select {
   white-space: nowrap;
   border: 0;
 }
+
+/* ===== Filtro por data — chips rápidos ===== */
+.date-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.date-filter__title {
+  font-size: .85rem;
+  font-weight: 600;
+  color: #888;
+  margin-right: 2px;
+}
+.date-filter__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid #e2d9cc;
+  border-radius: 999px;
+  background: #fff;
+  color: #555;
+  font-size: .85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.date-filter__chip:hover {
+  border-color: var(--orange, #f0a05e);
+  color: var(--orange, #f0a05e);
+}
+.date-filter__chip.is-active {
+  background: var(--orange, #f0a05e);
+  border-color: var(--orange, #f0a05e);
+  color: #fff;
+}
+.date-filter__chip--date {
+  position: relative;
+}
+.date-filter__date-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.date-filter__clear {
+  border: none;
+  background: none;
+  color: #999;
+  font-size: .82rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 6px 4px;
+}
+.date-filter__clear:hover { color: #c0392b; }
+@media (max-width: 600px) {
+  .date-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .date-filter::-webkit-scrollbar { display: none; }
+  .date-filter__title,
+  .date-filter__chip,
+  .date-filter__clear { flex-shrink: 0; }
+}

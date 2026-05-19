@@ -21,10 +21,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     return e && e.hideFromCategorias !== true;
   });
 
+  // ===== SLOTS + DATAS FUTURAS (pro filtro de data) =====
+  // Recorrentes têm as datas reais nos slots, não em exp.data.
+  let slotMapRaw = new Map();
+  try {
+    if (typeof ElarahData !== 'undefined' && ElarahData.loadAllSlots) {
+      slotMapRaw = await ElarahData.loadAllSlots();
+    }
+  } catch (e) { /* tabela pode não existir */ }
+  const _nowMs = Date.now();
+  experiences.forEach(function (e) {
+    e._futureDates = (typeof ElarahData !== 'undefined' && ElarahData.experienceFutureDates)
+      ? ElarahData.experienceFutureDates(e, slotMapRaw.get(e.id) || [], _nowMs)
+      : [];
+  });
+  // Varredura: recorrente com slots mas sem ocorrência futura = vencida.
+  experiences = experiences.filter(function (e) {
+    const sl = slotMapRaw.get(e.id) || [];
+    return !(sl.length > 0 && e._futureDates.length === 0);
+  });
+
   // ===== URL PARAMS =====
   const params = new URLSearchParams(window.location.search);
   let activeCategoria = params.get('cat') || '';
   let activeBairro = '';
+  let activeDateRange = null;
 
   // ===== DOM REFS =====
   const grid = document.getElementById('cat-grid');
@@ -320,7 +341,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderCards() {
     // Filter by bairro only — categoria drive o modo de render.
     const base = experiences.filter(function (exp) {
-      return !activeBairro || exp.bairro === activeBairro;
+      if (activeBairro && exp.bairro !== activeBairro) return false;
+      if (activeDateRange) {
+        const hit = (exp._futureDates || []).some(function (ts) {
+          return ts >= activeDateRange.startMs && ts <= activeDateRange.endMs;
+        });
+        if (!hit) return false;
+      }
+      return true;
     });
 
     grid.innerHTML = '';
@@ -448,6 +476,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeBairro = filterBairro.value;
     renderCards();
   });
+
+  // Filtro por data — chips rápidos + seletor de data.
+  if (window.ElarahDateFilter) {
+    ElarahDateFilter.init({
+      onChange: function (range) {
+        activeDateRange = range;
+        renderCards();
+      },
+    });
+  }
 
   // ===== SEARCH REDIRECT =====
   const searchInput = document.getElementById('search-input');

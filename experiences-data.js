@@ -430,6 +430,90 @@
     return Number.isFinite(ts) ? ts : null;
   }
 
+  // Lista de timestamps (ms) das ocorrências FUTURAS de uma experiência.
+  // Considera os slots (experience_slots) quando existem — essencial pra
+  // recorrentes ("Semanal"), cujas datas reais ficam nos slots. Sem
+  // slots, usa event_at ou deriva de data+horário. Vazio = sem data
+  // concreta (ex.: "Semanal" sem slot, "Data em breve") OU recorrente
+  // com todos os slots no passado.
+  function experienceFutureDates(exp, slotsArr, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    if (!exp) return [];
+    const out = [];
+    const pushTs = function (ts) {
+      if (Number.isFinite(ts) && ts >= nowMs) out.push(ts);
+    };
+    const slots = Array.isArray(slotsArr) ? slotsArr : [];
+    let usedSlot = false;
+    slots.forEach(function (sl) {
+      if (!sl || sl.isActive === false) return;
+      let ts = null;
+      if (sl.eventAt) {
+        const t = new Date(sl.eventAt).getTime();
+        if (!isNaN(t)) ts = t;
+      }
+      if (ts == null) ts = deriveEventTimestamp(sl.data, sl.horario, nowMs);
+      if (ts != null) { usedSlot = true; pushTs(ts); }
+    });
+    // Nenhuma data veio de slot — cai pro nível da experiência.
+    if (!usedSlot) {
+      let et = null;
+      if (exp.eventAt) {
+        const te = new Date(exp.eventAt).getTime();
+        if (!isNaN(te)) et = te;
+      }
+      if (et == null) {
+        et = deriveEventTimestamp(
+          exp.data,
+          exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null),
+          nowMs
+        );
+      }
+      if (et != null) pushTs(et);
+    }
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  // Intervalo {startMs, endMs} pros atalhos do filtro de data.
+  //   'weekend'    → sábado e domingo desta semana
+  //   'next-week'  → segunda a domingo da semana que vem
+  //   'next-month' → mês civil seguinte inteiro
+  function dateQuickRange(key, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    const now = new Date(nowMs);
+    const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate();
+    const dow = now.getDay(); // 0=domingo .. 6=sábado
+    const startOfDay = function (dt) {
+      return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0).getTime();
+    };
+    const endOfDay = function (dt) {
+      return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 23, 59, 59, 999).getTime();
+    };
+    if (key === 'weekend') {
+      const daysToSat = (dow === 0) ? -1 : (6 - dow);
+      return {
+        startMs: startOfDay(new Date(y, mo, d + daysToSat)),
+        endMs: endOfDay(new Date(y, mo, d + daysToSat + 1)),
+      };
+    }
+    if (key === 'next-week') {
+      let toMon = ((1 - dow) + 7) % 7;
+      if (toMon === 0) toMon = 7;
+      return {
+        startMs: startOfDay(new Date(y, mo, d + toMon)),
+        endMs: endOfDay(new Date(y, mo, d + toMon + 6)),
+      };
+    }
+    if (key === 'next-month') {
+      return {
+        startMs: new Date(y, mo + 1, 1, 0, 0, 0, 0).getTime(),
+        endMs: new Date(y, mo + 2, 0, 23, 59, 59, 999).getTime(),
+      };
+    }
+    return null;
+  }
+
   // Decide se uma experiência é mostrada no site público. Regra única
   // que cobre 3 motivos de ocultação:
   //   1. isActive === false       (admin escondeu manualmente)
@@ -925,6 +1009,8 @@
     invalidateCache,
     isPubliclyVisible,
     deriveEventTimestamp,
+    experienceFutureDates,
+    dateQuickRange,
     // Slots
     loadAllSlots,
     getSlotsForExperience,

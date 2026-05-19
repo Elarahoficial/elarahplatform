@@ -70,10 +70,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Carrega disponibilidade por slot (vagas por horário)
   window._elarahSlotMap = {};
+  let slotMapRaw = new Map();
   try {
     if (typeof ElarahData !== 'undefined' && ElarahData.loadAllSlots) {
       var sMap = await ElarahData.loadAllSlots();
       if (sMap && sMap.forEach) {
+        slotMapRaw = sMap;
         sMap.forEach(function (slots, expId) {
           var byHorario = {};
           slots.forEach(function (sl) { byHorario[sl.horario] = sl; });
@@ -83,9 +85,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (e) { /* tabela pode não existir */ }
 
+  // Pré-calcula as datas futuras de cada experiência (pro filtro de
+  // data). Usa os slots — recorrentes têm as datas reais ali.
+  const _nowMs = Date.now();
+  experiences.forEach(function (e) {
+    e._futureDates = (typeof ElarahData !== 'undefined' && ElarahData.experienceFutureDates)
+      ? ElarahData.experienceFutureDates(e, slotMapRaw.get(e.id) || [], _nowMs)
+      : [];
+  });
+  // Varredura: recorrente com slots mas nenhuma ocorrência futura =
+  // experiência vencida — não deve aparecer na listagem.
+  experiences = experiences.filter(function (e) {
+    const sl = slotMapRaw.get(e.id) || [];
+    return !(sl.length > 0 && e._futureDates.length === 0);
+  });
+
   let activeCategoria = '';
   let activeBairro = '';
   let activeBusca = '';
+  let activeDateRange = null;
 
   const params = new URLSearchParams(window.location.search);
 const buscaURL = params.get('busca');
@@ -255,7 +273,11 @@ if (categoriaURL) activeCategoria = categoriaURL;
         exp.inclui.toLowerCase().includes(textoBusca) ||
         exp.data.toLowerCase().includes(textoBusca);
 
-      return matchCat && matchBairro && matchBusca;
+      const matchData = !activeDateRange ||
+        ((exp._futureDates || []).some((ts) =>
+          ts >= activeDateRange.startMs && ts <= activeDateRange.endMs));
+
+      return matchCat && matchBairro && matchBusca && matchData;
     });
 
     grid.innerHTML = '';
@@ -614,6 +636,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
       }
 
       renderCards();
+    });
+  }
+
+  // Filtro por data — chips rápidos + seletor de data.
+  if (window.ElarahDateFilter) {
+    ElarahDateFilter.init({
+      onChange: function (range) {
+        activeDateRange = range;
+        renderCards();
+      },
     });
   }
 

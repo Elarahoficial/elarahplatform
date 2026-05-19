@@ -225,6 +225,17 @@
         </div>
         <button class="filters__btn" id="filter-btn">Explorar experiências</button>
       </div>
+      <div class="date-filter" id="date-filter">
+        <span class="date-filter__title">Quando?</span>
+        <button type="button" class="date-filter__chip" data-date-range="weekend">Este fim de semana</button>
+        <button type="button" class="date-filter__chip" data-date-range="next-week">Próxima semana</button>
+        <button type="button" class="date-filter__chip" data-date-range="next-month">Próximo mês</button>
+        <label class="date-filter__chip date-filter__chip--date">
+          <span class="date-filter__date-label">Escolher data</span>
+          <input type="date" id="date-filter-input" class="date-filter__date-input">
+        </label>
+        <button type="button" class="date-filter__clear" id="date-filter-clear" hidden>limpar</button>
+      </div>
     </div>
   </section>
 
@@ -609,6 +620,7 @@
 <script src="explorar-menu.js?v=1" defer></script>
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=23"></script>
+<script src="date-filter.js?v=1"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=2"></script>
 <script src="script.js?v=60"></script></body></html>
