@@ -640,7 +640,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
   }
 
   // Filtro por data — chips rápidos + seletor de data.
-  if (window.ElarahDateFilter) {
+  // Só liga na home (onde existe #experiences-grid). Em categoria.html,
+  // que carrega script.js + categoria.js, quem cuida disso é o
+  // categoria.js — evita wiring duplicado nos mesmos chips.
+  if (grid && window.ElarahDateFilter) {
     ElarahDateFilter.init({
       onChange: function (range) {
         activeDateRange = range;
