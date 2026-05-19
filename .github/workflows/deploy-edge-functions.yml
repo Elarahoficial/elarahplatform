@@ -14,7 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      # Aceita os dois nomes de secret (SUPABASE_PROJECT_REF ou
+      # SUPABASE_PROJECT_ID) — usa o que estiver configurado.
+      PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || secrets.SUPABASE_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +34,7 @@ jobs:
             exit 1
           fi
           if [ -z "$PROJECT_REF" ]; then
-            echo "::error::SUPABASE_PROJECT_REF não configurado nos Secrets do repositório"
+            echo "::error::Configure o secret SUPABASE_PROJECT_REF (ou SUPABASE_PROJECT_ID) nos Secrets do repositório"
             exit 1
           fi
           echo "✓ Secrets presentes (project_ref=${PROJECT_REF:0:6}...)"
