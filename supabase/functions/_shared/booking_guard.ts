@@ -385,6 +385,7 @@ export async function reserveExperienceSlot(
           errorStatus: 409,
         };
       }
+    }
   }
 
   // ===== 3. Cutoff =====
