@@ -3,11 +3,13 @@
 -- =========================================================
 -- One-shot. Idempotente: rodar várias vezes não causa efeito
 -- colateral (busca pelo nome antigo, não acha mais nada no segundo
--- run). Cobre os 3 lugares onde o nome aparece:
+-- run). Cobre os 5 lugares onde o nome aparece:
 --
 --   1. experiences.fornecedor_nome
 --   2. bookings.fornecedor_nome (snapshot por reserva)
 --   3. fornecedores_metadata.fornecedor_nome + fornecedor_key
+--   4. manual_sales.supplier_name + supplier_key (vendas manuais)
+--   5. financial_expenses.supplier_name + supplier_key (despesas)
 --
 -- A comparação é case/whitespace-tolerante (trim + lower).
 -- Rode no SQL Editor do Supabase. Confira os COUNTS no fim
@@ -81,18 +83,43 @@ begin
   end if;
 end $$;
 
+-- 4) Vendas manuais (snapshot por venda — alimentam o RPC
+--    financial_by_supplier via view financial_ledger_v2).
+update public.manual_sales
+   set supplier_name = 'Accademia Gastronomica',
+       supplier_key  = 'accademia gastronomica'
+ where lower(trim(coalesce(supplier_name, ''))) = 'a gastronomica'
+    or supplier_key = 'a gastronomica';
+
+-- 5) Despesas financeiras (mesmo padrão: snapshot por despesa).
+update public.financial_expenses
+   set supplier_name = 'Accademia Gastronomica',
+       supplier_key  = 'accademia gastronomica'
+ where lower(trim(coalesce(supplier_name, ''))) = 'a gastronomica'
+    or supplier_key = 'a gastronomica';
+
 -- Diagnóstico final: quantas linhas ainda têm o nome antigo?
--- Esperado: zero em todos os três.
-select 'experiences'        as tabela, count(*) as remanescentes
+-- Esperado: zero em todos os cinco.
+select 'experiences'           as tabela, count(*) as remanescentes
   from public.experiences
  where lower(trim(fornecedor_nome)) = 'a gastronomica'
 union all
-select 'bookings'            as tabela, count(*)
+select 'bookings'               as tabela, count(*)
   from public.bookings
  where lower(trim(fornecedor_nome)) = 'a gastronomica'
 union all
-select 'fornecedores_metadata' as tabela, count(*)
+select 'fornecedores_metadata'  as tabela, count(*)
   from public.fornecedores_metadata
- where fornecedor_key = 'a gastronomica';
+ where fornecedor_key = 'a gastronomica'
+union all
+select 'manual_sales'           as tabela, count(*)
+  from public.manual_sales
+ where lower(trim(coalesce(supplier_name, ''))) = 'a gastronomica'
+    or supplier_key = 'a gastronomica'
+union all
+select 'financial_expenses'     as tabela, count(*)
+  from public.financial_expenses
+ where lower(trim(coalesce(supplier_name, ''))) = 'a gastronomica'
+    or supplier_key = 'a gastronomica';
 
 commit;
