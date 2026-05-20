@@ -6072,25 +6072,83 @@
     overlay.querySelector('#forn-modal-cancel').addEventListener('click', close);
 
     // Excluir fornecedor (só em modo edição).
+    // Apaga o cadastro em fornecedores_metadata E limpa o nome desse
+    // fornecedor das experiências ligadas — sem o segundo passo o
+    // nome reaparece na aba (a listagem é derivada de
+    // experiences.fornecedor_nome + metadata). As experiências em si
+    // continuam, só ficam sem fornecedor.
     const deleteBtn = overlay.querySelector('#forn-modal-delete');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', async () => {
         const nome = (meta.fornecedor_nome || '').trim();
-        if (!confirm(
-          'Excluir o fornecedor "' + nome + '"?\n\n' +
-          'Remove só o registro de relacionamento. Se houver experiências ' +
-          'cadastradas com esse fornecedor, elas continuam — e o nome pode ' +
-          'reaparecer pela experiência.'
-        )) return;
+        const key = meta.fornecedor_key || fornecedorKey(nome);
+
         deleteBtn.disabled = true;
-        deleteBtn.textContent = 'Excluindo…';
-        const res = await deleteFornecedorMetadata(
-          meta.fornecedor_key || fornecedorKey(nome)
-        );
-        if (!res.ok) {
+        deleteBtn.textContent = 'Verificando…';
+
+        // Descobre as experiências ligadas (match por key normalizado —
+        // pega variações de caixa/espaço no nome).
+        let linkedExps = [];
+        try {
+          const allExps = (window.ElarahData && ElarahData.getAllExperiences)
+            ? await ElarahData.getAllExperiences()
+            : [];
+          linkedExps = (allExps || []).filter(e =>
+            e && e.fornecedorNome && fornecedorKey(e.fornecedorNome) === key
+          );
+        } catch (_) { /* sem lista — segue só com a metadata */ }
+
+        const n = linkedExps.length;
+        const lista = linkedExps.slice(0, 5)
+          .map(e => '• ' + (e.nome || '(sem nome)')).join('\n');
+        const more = n > 5 ? '\n• … e mais ' + (n - 5) : '';
+        const msg = n > 0
+          ? 'Excluir o fornecedor "' + nome + '"?\n\n' +
+            'Vou também remover o nome do fornecedor de ' + n +
+            ' experiência' + (n === 1 ? '' : 's') +
+            ' (a' + (n === 1 ? '' : 's') + ' experiência' + (n === 1 ? '' : 's') +
+            ' em si continua' + (n === 1 ? '' : 'm') + ', só perde' +
+            (n === 1 ? '' : 'm') + ' o vínculo):\n\n' + lista + more +
+            '\n\nConfirmar?'
+          : 'Excluir o fornecedor "' + nome + '"?\n\n' +
+            'Nenhuma experiência está ligada — só remove o cadastro.';
+        if (!confirm(msg)) {
           deleteBtn.disabled = false;
           deleteBtn.textContent = 'Excluir fornecedor';
-          alert('Não consegui excluir. ' + (res.error || ''));
+          return;
+        }
+
+        deleteBtn.textContent = 'Excluindo…';
+
+        // 1) Limpa fornecedor_nome nas experiências ligadas. Usa update
+        //    direto no Supabase — updateExperience() usa um full-row
+        //    mapper que sobrescreveria todos os outros campos com '' .
+        const s = window.supabaseClient;
+        const fails = [];
+        if (s && linkedExps.length) {
+          for (const exp of linkedExps) {
+            try {
+              const { error } = await s.from('experiences')
+                .update({ fornecedor_nome: null })
+                .eq('id', exp.id);
+              if (error) fails.push((exp.nome || exp.id) + ': ' + error.message);
+            } catch (err) {
+              fails.push((exp.nome || exp.id) + ': ' + (err.message || err));
+            }
+          }
+          if (window.ElarahData && ElarahData.invalidateCache) {
+            ElarahData.invalidateCache();
+          }
+        }
+
+        // 2) Exclui o cadastro do fornecedor.
+        const res = await deleteFornecedorMetadata(key);
+        if (!res.ok || fails.length) {
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = 'Excluir fornecedor';
+          alert('Não consegui concluir a exclusão.\n\n' +
+            (res.ok ? '' : 'Cadastro do fornecedor: ' + (res.error || 'erro desconhecido') + '\n') +
+            (fails.length ? 'Experiências com falha:\n' + fails.join('\n') : ''));
           return;
         }
         close();
