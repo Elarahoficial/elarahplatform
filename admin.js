@@ -6102,16 +6102,34 @@
         const lista = linkedExps.slice(0, 5)
           .map(e => '• ' + (e.nome || '(sem nome)')).join('\n');
         const more = n > 5 ? '\n• … e mais ' + (n - 5) : '';
-        const msg = n > 0
-          ? 'Excluir o fornecedor "' + nome + '"?\n\n' +
+
+        // "A definir" é o próprio placeholder que recebe órfãs. Não dá
+        // pra "desvincular" reatribuindo pra ele mesmo (vira no-op e a
+        // linha nunca some). Aqui o jeito de fazer o cadastro sumir é
+        // APAGAR as experiências presas.
+        const isPlaceholder = key === 'a definir';
+
+        let msg;
+        if (n > 0 && isPlaceholder) {
+          msg = 'Excluir o placeholder "A definir"?\n\n' +
+            'Esse é o cadastro que coleta experiências sem fornecedor. ' +
+            'A' + (n === 1 ? '' : 's') + ' ' + n + ' experiência' +
+            (n === 1 ? '' : 's') + ' presa' + (n === 1 ? '' : 's') +
+            ' nele será' + (n === 1 ? '' : 'ão') + ' EXCLUÍDA' +
+            (n === 1 ? '' : 'S') + ' junto (ação irreversível):\n\n' +
+            lista + more + '\n\nConfirmar?';
+        } else if (n > 0) {
+          msg = 'Excluir o fornecedor "' + nome + '"?\n\n' +
             'A' + (n === 1 ? '' : 's') + ' ' + n + ' experiência' +
             (n === 1 ? '' : 's') + ' ligada' + (n === 1 ? '' : 's') +
             ' continua' + (n === 1 ? '' : 'm') +
             ', mas o fornecedor passa a ser "A definir" (placeholder do ' +
             'banco — depois você reatribui na aba Experiências):\n\n' +
-            lista + more + '\n\nConfirmar?'
-          : 'Excluir o fornecedor "' + nome + '"?\n\n' +
+            lista + more + '\n\nConfirmar?';
+        } else {
+          msg = 'Excluir o fornecedor "' + nome + '"?\n\n' +
             'Nenhuma experiência está ligada — só remove o cadastro.';
+        }
         if (!confirm(msg)) {
           deleteBtn.disabled = false;
           deleteBtn.textContent = 'Excluir fornecedor';
@@ -6120,22 +6138,29 @@
 
         deleteBtn.textContent = 'Excluindo…';
 
-        // 1) Reseta fornecedor_nome pro placeholder "A definir" nas
-        //    experiências ligadas. NÃO uso NULL — a check constraint
-        //    experiences_fornecedor_nome_required exige nome não-vazio
-        //    em experiência ativa (sql/elarah_fornecedores_safety_net.sql).
-        //    "A definir" é a convenção do projeto. Update direto no
-        //    Supabase: updateExperience() usa full-row mapper e
-        //    sobrescreveria todos os outros campos.
+        // 1) Trata as experiências ligadas:
+        //    - Placeholder "A definir": APAGA as experiências (são órfãs,
+        //      não têm pra onde ir).
+        //    - Demais: reseta fornecedor_nome → "A definir" (UPDATE direto
+        //      no Supabase, evita o full-row mapper de updateExperience).
+        //      Check constraint experiences_fornecedor_nome_required exige
+        //      nome não-vazio em exp ativa.
         const s = window.supabaseClient;
         const fails = [];
-        if (s && linkedExps.length) {
+        if (linkedExps.length) {
           for (const exp of linkedExps) {
             try {
-              const { error } = await s.from('experiences')
-                .update({ fornecedor_nome: 'A definir' })
-                .eq('id', exp.id);
-              if (error) fails.push((exp.nome || exp.id) + ': ' + error.message);
+              if (isPlaceholder) {
+                const ok = (window.ElarahData && ElarahData.deleteExperience)
+                  ? await ElarahData.deleteExperience(exp.id)
+                  : false;
+                if (!ok) fails.push((exp.nome || exp.id) + ': falha ao apagar (verifique permissões de admin)');
+              } else if (s) {
+                const { error } = await s.from('experiences')
+                  .update({ fornecedor_nome: 'A definir' })
+                  .eq('id', exp.id);
+                if (error) fails.push((exp.nome || exp.id) + ': ' + error.message);
+              }
             } catch (err) {
               fails.push((exp.nome || exp.id) + ': ' + (err.message || err));
             }
@@ -6145,7 +6170,9 @@
           }
         }
 
-        // 2) Exclui o cadastro do fornecedor.
+        // 2) Exclui o cadastro em fornecedores_metadata (se existir —
+        //    "A definir" muitas vezes nem tem linha lá; o delete é
+        //    idempotente nesse caso).
         const res = await deleteFornecedorMetadata(key);
         if (!res.ok || fails.length) {
           deleteBtn.disabled = false;
