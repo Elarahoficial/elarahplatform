@@ -6104,12 +6104,12 @@
         const more = n > 5 ? '\n• … e mais ' + (n - 5) : '';
         const msg = n > 0
           ? 'Excluir o fornecedor "' + nome + '"?\n\n' +
-            'Vou também remover o nome do fornecedor de ' + n +
-            ' experiência' + (n === 1 ? '' : 's') +
-            ' (a' + (n === 1 ? '' : 's') + ' experiência' + (n === 1 ? '' : 's') +
-            ' em si continua' + (n === 1 ? '' : 'm') + ', só perde' +
-            (n === 1 ? '' : 'm') + ' o vínculo):\n\n' + lista + more +
-            '\n\nConfirmar?'
+            'A' + (n === 1 ? '' : 's') + ' ' + n + ' experiência' +
+            (n === 1 ? '' : 's') + ' ligada' + (n === 1 ? '' : 's') +
+            ' continua' + (n === 1 ? '' : 'm') +
+            ', mas o fornecedor passa a ser "A definir" (placeholder do ' +
+            'banco — depois você reatribui na aba Experiências):\n\n' +
+            lista + more + '\n\nConfirmar?'
           : 'Excluir o fornecedor "' + nome + '"?\n\n' +
             'Nenhuma experiência está ligada — só remove o cadastro.';
         if (!confirm(msg)) {
@@ -6120,16 +6120,20 @@
 
         deleteBtn.textContent = 'Excluindo…';
 
-        // 1) Limpa fornecedor_nome nas experiências ligadas. Usa update
-        //    direto no Supabase — updateExperience() usa um full-row
-        //    mapper que sobrescreveria todos os outros campos com '' .
+        // 1) Reseta fornecedor_nome pro placeholder "A definir" nas
+        //    experiências ligadas. NÃO uso NULL — a check constraint
+        //    experiences_fornecedor_nome_required exige nome não-vazio
+        //    em experiência ativa (sql/elarah_fornecedores_safety_net.sql).
+        //    "A definir" é a convenção do projeto. Update direto no
+        //    Supabase: updateExperience() usa full-row mapper e
+        //    sobrescreveria todos os outros campos.
         const s = window.supabaseClient;
         const fails = [];
         if (s && linkedExps.length) {
           for (const exp of linkedExps) {
             try {
               const { error } = await s.from('experiences')
-                .update({ fornecedor_nome: null })
+                .update({ fornecedor_nome: 'A definir' })
                 .eq('id', exp.id);
               if (error) fails.push((exp.nome || exp.id) + ': ' + error.message);
             } catch (err) {
