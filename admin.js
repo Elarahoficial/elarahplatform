@@ -4023,8 +4023,14 @@
         return;
       }
 
-      // Salva slots (vagas por horário) na tabela experience_slots
+      // Salva slots (vagas por horário) na tabela experience_slots.
+      // Antes esse erro era silencioso: a experiência salvava com
+      // exp.horarios novos, mas se o upsert dos slots quebrasse (RLS,
+      // conflito de constraint, rede), só ficava no console. Resultado:
+      // exp.horarios e experience_slots dessincronizam e o site não
+      // consegue mapear horário → slot na hora da reserva. Agora alerta.
       if (saved && saved.id && ElarahData.saveSlots) {
+        let slotSaveErr = null;
         try {
           var slotsToSave = collectSlots();
           // Preenche data e eventAt do slot com os valores da experiência
@@ -4032,9 +4038,23 @@
             sl.data = expData.data || null;
             sl.eventAt = eventAtIso || null;
           });
-          await ElarahData.saveSlots(saved.id, slotsToSave);
+          const okSlots = await ElarahData.saveSlots(saved.id, slotsToSave);
+          if (okSlots === false) {
+            slotSaveErr = new Error('saveSlots retornou false (veja o console)');
+          }
         } catch (slotErr) {
           console.error('[Admin] saveSlots falhou:', slotErr);
+          slotSaveErr = slotErr;
+        }
+        if (slotSaveErr) {
+          alert(
+            'ATENÇÃO: a experiência foi salva, mas as vagas/horários ' +
+            '(tabela experience_slots) NÃO foram atualizadas.\n\n' +
+            'Detalhe: ' + (slotSaveErr.message || slotSaveErr) + '\n\n' +
+            'Abra o console (F12) pra ver o erro completo. Causas comuns: ' +
+            'permissões de admin, conflito de constraint, ou problema de rede. ' +
+            'Tente salvar novamente.'
+          );
         }
         ElarahData.invalidateSlotsCache && ElarahData.invalidateSlotsCache();
       }
