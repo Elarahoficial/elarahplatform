@@ -394,11 +394,11 @@
       case 'conteudo':         await renderConteudo(); break;
       case 'users':       await renderUsers(); break;
       case 'partners':    await renderPartners(); break;
-      case 'purchases':   await renderBookings(); break;
+      case 'purchases':   invalidateBookings(); await renderBookings(); break;
       case 'fornecedores': await renderFornecedores(); break;
       case 'prospects':   await renderProspects(); break;
       case 'b2b-prospects': await renderB2BProspects(); break;
-      case 'purchases-pending': await renderPendingBookings(); break;
+      case 'purchases-pending': invalidateBookings(); await renderPendingBookings(); break;
       case 'experiences': await renderExperiences(); break;
       case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
@@ -3513,14 +3513,23 @@
     });
   }
 
-  // Wire pending filters
+  // Wire pending filters + botão Atualizar
   (function () {
     var fe = document.getElementById('pending-filter-exp');
     var fs = document.getElementById('pending-filter-status');
     var ff = document.getElementById('pending-filter-followup');
+    var fr = document.getElementById('btn-refresh-pending');
     if (fe) fe.addEventListener('change', function () { renderPendingBookings(); });
     if (fs) fs.addEventListener('change', function () { renderPendingBookings(); });
     if (ff) ff.addEventListener('change', function () { renderPendingBookings(); });
+    // Atualizar: invalida o cache de bookings (que de outra forma só
+    // expira em ações do admin) e re-renderiza. Necessário pra ver
+    // reservas pendentes criadas por clientes via Stripe sem precisar
+    // dar F5 na página inteira.
+    if (fr) fr.addEventListener('click', function () {
+      invalidateBookings();
+      renderPendingBookings();
+    });
   })();
 
   // ===== EXPERIENCES CRUD =====
