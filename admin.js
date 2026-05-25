@@ -2336,7 +2336,19 @@
       if (b.status !== 'pago') return false;
       if (filterExp && !String(b.experiencia_nome || '').toLowerCase().includes(filterExp)) return false;
       if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
-      if (filterSf && (b.status_fornecedor || 'repasse_pendente') !== filterSf) return false;
+      if (filterSf) {
+        // Caso especial "repasse_urgente": pendente E (evento já
+        // ocorreu OU faltam ≤ 48h pra ocorrer). Mostra exatamente
+        // os repasses que precisam ser feitos hoje.
+        if (filterSf === 'repasse_urgente') {
+          if ((b.status_fornecedor || 'repasse_pendente') !== 'repasse_pendente') return false;
+          const horas = b._horasParaEventoResolvido;
+          if (horas == null) return false; // sem data calculada — não dá pra julgar urgência
+          if (horas > 48) return false;
+        } else if ((b.status_fornecedor || 'repasse_pendente') !== filterSf) {
+          return false;
+        }
+      }
       return true;
     });
 
