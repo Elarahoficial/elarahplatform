@@ -3225,7 +3225,9 @@
   async function renderPendingBookings() {
     if (!document.getElementById('pending-body')) return;
     // Filtra experiências de teste — cascata pra dropdown e tabela.
-    const bookings = withoutTestBookings(await getBookings());
+    // Mantém raw também pra computar o breakdown de ocultas no header.
+    const rawBookings = await getBookings();
+    const bookings = withoutTestBookings(rawBookings);
     const profiles = await getProfiles();
 
     const nomePorUserId = new Map();
@@ -3344,7 +3346,37 @@
     });
 
     var countEl = document.getElementById('pending-count');
-    if (countEl) countEl.textContent = filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : '');
+    if (countEl) {
+      // Breakdown do que NÃO está sendo mostrado: pendentes que já
+      // pagaram (convertidas), pagas que vão pra aba Compras, e teste.
+      // Evita confusão tipo "tinha mais aqui que sumiu" — agora o
+      // admin vê pra onde cada categoria foi.
+      const convertedCount = bookings.filter(function (b) {
+        return b.status !== 'pago' && b._convertedTo;
+      }).length;
+      const paidCount = bookings.filter(function (b) { return b.status === 'pago'; }).length;
+      const testNonPaidCount = rawBookings.filter(function (b) {
+        return b.status !== 'pago' && isTestExperience(b.experiencia_nome);
+      }).length;
+
+      if (filterFu === 'convertida') {
+        // No modo "Convertidas" o filtered já são as convertidas; não
+        // faz sentido remostrar breakdown.
+        countEl.textContent = filtered.length + ' convertida' + (filtered.length !== 1 ? 's' : '');
+      } else {
+        const parts = ['<strong>' + filtered.length + '</strong> visíve' + (filtered.length !== 1 ? 'is' : 'l')];
+        if (convertedCount > 0) {
+          parts.push('<span style="color:#888;font-weight:400;">' + convertedCount + ' já pagaram (filtro “Convertidas”)</span>');
+        }
+        if (paidCount > 0) {
+          parts.push('<span style="color:#888;font-weight:400;">' + paidCount + ' pagas (aba Compras)</span>');
+        }
+        if (testNonPaidCount > 0) {
+          parts.push('<span style="color:#bbb;font-weight:400;">' + testNonPaidCount + ' de teste</span>');
+        }
+        countEl.innerHTML = parts.join(' · ');
+      }
+    }
 
     var tbody = document.getElementById('pending-body');
     if (!filtered.length) {
