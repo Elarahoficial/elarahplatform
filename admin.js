@@ -3180,8 +3180,12 @@
       var expOptions = ordered.map(function (e) {
         var sel = (e.id === booking.experiencia_id) ? ' selected' : '';
         var price = (e.preco ? ' — ' + e.preco : '');
-        var fornec = (e.fornecedorNome ? ' (' + e.fornecedorNome + ')' : '');
-        return '<option value="' + escapeHtml(e.id) + '"' + sel + '>' + escapeHtml((e.nome || 'sem nome') + price + fornec) + '</option>';
+        // Data no rótulo é crítico: existem várias experiências com mesmo
+        // nome + preço, diferindo só na data. Sem isso o admin tem que
+        // tentar uma a uma até achar a certa.
+        var data = (e.data ? ' · ' + e.data : '');
+        var fornec = (e.fornecedorNome ? ' · ' + e.fornecedorNome : '');
+        return '<option value="' + escapeHtml(e.id) + '"' + sel + '>' + escapeHtml((e.nome || 'sem nome') + price + data + fornec) + '</option>';
       }).join('');
 
       modal.innerHTML =
@@ -3250,14 +3254,28 @@
         }).join('');
       }
 
+      // Recalcula valor cheio + repasse + comissão da nova experiência.
+      // Usa a mesma fórmula do bloco de normalização do renderBookings:
+      //   cheio = unit × qty
+      //   repasse = cheio × (percentualRepasse / 100), default 70%
+      //   comissao = cheio − repasse
+      function computeFinancials(exp, qty) {
+        if (!exp || exp.valorCheioCentavos == null) return null;
+        var cheio = (Number(exp.valorCheioCentavos) || 0) * qty;
+        var pct = (exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
+          ? Number(exp.percentualRepasse)
+          : 70;
+        var repasse = Math.round(cheio * (pct / 100));
+        var comissao = Math.max(0, cheio - repasse);
+        return { cheio: cheio, repasse: repasse, comissao: comissao, pct: pct };
+      }
+
       function refreshRefund() {
         var chosen = experiencesList.find(function (e) { return e && e.id === expSel.value; });
         if (!chosen) { refundBox.innerHTML = ''; return; }
         var novaQty = Math.max(1, Math.floor(Number(qtyInput.value) || 1));
         var newUnit = unitCheioCentavos(chosen, null, novaQty);
-        var oldTotal = originalUnit * novaQty; // Comparação justa: ambos × nova qty
         var newTotal = newUnit * novaQty;
-        var diff = oldTotal - newTotal;
         var sameExp = chosen.id === booking.experiencia_id;
         var sameQty = novaQty === originalQty;
 
@@ -3266,11 +3284,12 @@
           return;
         }
 
+        // Diferença pro cliente: valor antigo (pago) menos novo (devido).
+        var diffReal = (originalUnit * originalQty) - newTotal;
         var rows = [
           '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Valor antigo (' + originalQty + '× ' + escapeHtml(formatCents(originalUnit, booking.currency)) + ')</span><b>' + escapeHtml(formatCents(originalUnit * originalQty, booking.currency)) + '</b></div>',
           '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Valor novo (' + novaQty + '× ' + escapeHtml(formatCents(newUnit, booking.currency)) + ')</span><b>' + escapeHtml(formatCents(newTotal, booking.currency)) + '</b></div>',
         ];
-        var diffReal = (originalUnit * originalQty) - newTotal;
         var diffLine;
         if (diffReal > 0) {
           diffLine = '<div style="display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed #ddd;margin-top:4px;color:#c0392b;font-weight:700;"><span>Reembolsar ao cliente</span><span>' + escapeHtml(formatCents(diffReal, booking.currency)) + '</span></div>';
@@ -3280,9 +3299,31 @@
           diffLine = '<div style="display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed #ddd;margin-top:4px;color:#666;font-weight:700;"><span>Sem diferença</span><span>—</span></div>';
         }
         rows.push(diffLine);
+
+        // Bloco do repasse pro fornecedor da nova experiência. Substitui
+        // os valores antigos (do fornecedor anterior) — caso contrário o
+        // admin pagaria o valor errado pro fornecedor novo.
+        var fin = computeFinancials(chosen, novaQty);
+        var repasseBlock = '';
+        if (fin) {
+          repasseBlock =
+            '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eadfce;">' +
+              '<div style="font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:6px;">Repasse pro novo fornecedor (' + escapeHtml(chosen.fornecedorNome || '—') + ')</div>' +
+              '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.78rem;"><span>Valor cheio</span><b>' + escapeHtml(formatCents(fin.cheio, booking.currency)) + '</b></div>' +
+              '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.78rem;color:#1a8a4a;"><span>Repasse fornecedor (' + fin.pct + '%)</span><b>' + escapeHtml(formatCents(fin.repasse, booking.currency)) + '</b></div>' +
+              '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.78rem;color:#a07c4c;"><span>Comissão Elarah</span><b>' + escapeHtml(formatCents(fin.comissao, booking.currency)) + '</b></div>' +
+            '</div>';
+        } else if (!sameExp) {
+          repasseBlock =
+            '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eadfce;color:#b07b00;font-size:.78rem;">' +
+              '⚠ A nova experiência não tem valor cheio cadastrado — o repasse pro fornecedor não será recalculado automaticamente.' +
+            '</div>';
+        }
+
         refundBox.innerHTML = '<div style="background:#faf6f0;border:1px solid #eadfce;border-radius:10px;padding:12px 14px;font-size:.82rem;color:#1a1a1a;">' +
           '<div style="font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:6px;">Diferença de valor (sem taxas)</div>' +
           rows.join('') +
+          repasseBlock +
           '</div>';
       }
 
@@ -3343,10 +3384,23 @@
           horario: novoHorario,
           quantidade: novaQty,
         };
-        // Troca de experiência: zera fornecedor_nome pra cair no fallback
-        // (experience.fornecedorNome) e refletir o fornecedor atual.
+        // Troca de experiência: atualiza fornecedor_nome pro novo (em vez
+        // de zerar — assim o snapshot do booking fica consistente com o
+        // que aparece na tabela e no WhatsApp do fornecedor).
         if (chosenExp.id !== booking.experiencia_id) {
-          update.fornecedor_nome = null;
+          update.fornecedor_nome = chosenExp.fornecedorNome || null;
+        }
+        // Recalcula valores cheio/repasse/comissão quando troca de exp
+        // OU quando muda qty. Sem isso o admin pagaria o valor errado
+        // pro fornecedor novo (continuaria mostrando o repasse do antigo).
+        var financialsChanged = (chosenExp.id !== booking.experiencia_id) || (novaQty !== originalQty);
+        if (financialsChanged) {
+          var fin = computeFinancials(chosenExp, novaQty);
+          if (fin) {
+            update.valor_cheio_centavos = fin.cheio;
+            update.valor_repasse_centavos = fin.repasse;
+            update.valor_comissao_centavos = fin.comissao;
+          }
         }
 
         // Histórico de auditoria no metadata. Não-bloqueante.
