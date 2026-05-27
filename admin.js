@@ -3122,13 +3122,13 @@
 
     // Modal de edição de booking: troca experiência/data/horário/quantidade.
     // Mantém amount_total como está (mudar valor cobrado depende de Stripe
-    // refund/charge — fora de escopo). Mostra aviso se o preço novo difere
-    // e se o evento já está dentro de 48h.
+    // refund/charge — fora de escopo). Mostra cálculo de reembolso por
+    // diferença de preço cheio (sem considerar taxas) quando há troca.
     function openEditBookingModal(booking, experiencesList) {
       var existing = document.getElementById('admin-edit-booking');
       if (existing) existing.remove();
 
-      // Lista ordenada: experiência atual primeiro, depois ativas por nome.
+      // Lista ordenada: experiência atual primeiro, depois todas por nome.
       var current = experiencesList.find(function (e) { return e && e.id === booking.experiencia_id; });
       var others = experiencesList
         .filter(function (e) { return e && e.id && e.id !== booking.experiencia_id; })
@@ -3143,6 +3143,18 @@
         if (exp.horario) return [String(exp.horario).trim()];
         return [];
       }
+
+      // Per-pessoa em centavos. Booking pode ter valor_cheio_centavos
+      // (que é total já × qty) ou cair no fallback da experiência.
+      function unitCheioCentavos(exp, totalCentavos, qty) {
+        if (exp && exp.valorCheioCentavos != null) return Number(exp.valorCheioCentavos) || 0;
+        if (totalCentavos && qty > 0) return Math.round(Number(totalCentavos) / qty);
+        return 0;
+      }
+
+      var originalQty = Number(booking.quantidade) || 1;
+      var originalExp = current;
+      var originalUnit = unitCheioCentavos(originalExp, booking._valorCheioResolvido, originalQty);
 
       function horasUntilEvent() {
         var ts = booking._eventTsResolvido;
@@ -3192,22 +3204,21 @@
             '<select id="admin-edit-booking-exp" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;margin-bottom:6px;">' + expOptions + '</select>' +
             '<div id="admin-edit-booking-fornecedor" style="font-size:.76rem;color:#666;margin-bottom:14px;"></div>' +
 
+            '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Horário</label>' +
+            '<select id="admin-edit-booking-horario" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;margin-bottom:14px;"></select>' +
+
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
               '<div>' +
                 '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Data</label>' +
                 '<input id="admin-edit-booking-data" type="text" value="' + escapeHtml(booking.data || '') + '" placeholder="ex.: 12/03/2026" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;">' +
               '</div>' +
               '<div>' +
-                '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Horário</label>' +
-                '<input id="admin-edit-booking-horario" type="text" value="' + escapeHtml(booking.horario || '') + '" placeholder="ex.: 14h00 – 15h00" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;" list="admin-edit-booking-horario-list">' +
-                '<datalist id="admin-edit-booking-horario-list"></datalist>' +
+                '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Quantidade</label>' +
+                '<input id="admin-edit-booking-qty" type="number" min="1" step="1" value="' + originalQty + '" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;">' +
               '</div>' +
             '</div>' +
 
-            '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin:14px 0 4px;">Quantidade</label>' +
-            '<input id="admin-edit-booking-qty" type="number" min="1" step="1" value="' + (Number(booking.quantidade) || 1) + '" style="width:120px;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;">' +
-
-            '<div id="admin-edit-booking-warning" style="margin-top:14px;"></div>' +
+            '<div id="admin-edit-booking-refund" style="margin-top:14px;"></div>' +
           '</div>' +
           '<div style="padding:14px 22px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;">' +
             '<button type="button" id="admin-edit-booking-cancel" style="padding:9px 16px;border:1px solid #ddd;background:#fff;color:#444;border-radius:9px;font-weight:600;font-size:.85rem;cursor:pointer;">Cancelar</button>' +
@@ -3219,38 +3230,85 @@
 
       var expSel = modal.querySelector('#admin-edit-booking-exp');
       var fornecedorInfo = modal.querySelector('#admin-edit-booking-fornecedor');
-      var horarioInput = modal.querySelector('#admin-edit-booking-horario');
-      var horarioList = modal.querySelector('#admin-edit-booking-horario-list');
-      var warningBox = modal.querySelector('#admin-edit-booking-warning');
+      var horarioSel = modal.querySelector('#admin-edit-booking-horario');
+      var qtyInput = modal.querySelector('#admin-edit-booking-qty');
+      var dataInput = modal.querySelector('#admin-edit-booking-data');
+      var refundBox = modal.querySelector('#admin-edit-booking-refund');
 
-      function refreshExpDependentFields() {
+      function refreshHorarios(chosen) {
+        var horarios = expHorarios(chosen);
+        if (!horarios.length) {
+          horarioSel.innerHTML = '<option value="">— sem horários cadastrados —</option>';
+          return;
+        }
+        // Preserva o horário atual do cliente se a nova experiência tiver
+        // o mesmo (caso comum quando troca de fornecedor mas mantém hora).
+        var atual = (booking.horario || '').trim();
+        horarioSel.innerHTML = horarios.map(function (h) {
+          var sel = (h === atual) ? ' selected' : '';
+          return '<option value="' + escapeHtml(h) + '"' + sel + '>' + escapeHtml(h) + '</option>';
+        }).join('');
+      }
+
+      function refreshRefund() {
+        var chosen = experiencesList.find(function (e) { return e && e.id === expSel.value; });
+        if (!chosen) { refundBox.innerHTML = ''; return; }
+        var novaQty = Math.max(1, Math.floor(Number(qtyInput.value) || 1));
+        var newUnit = unitCheioCentavos(chosen, null, novaQty);
+        var oldTotal = originalUnit * novaQty; // Comparação justa: ambos × nova qty
+        var newTotal = newUnit * novaQty;
+        var diff = oldTotal - newTotal;
+        var sameExp = chosen.id === booking.experiencia_id;
+        var sameQty = novaQty === originalQty;
+
+        if (sameExp && sameQty) {
+          refundBox.innerHTML = '';
+          return;
+        }
+
+        var rows = [
+          '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Valor antigo (' + originalQty + '× ' + escapeHtml(formatCents(originalUnit, booking.currency)) + ')</span><b>' + escapeHtml(formatCents(originalUnit * originalQty, booking.currency)) + '</b></div>',
+          '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Valor novo (' + novaQty + '× ' + escapeHtml(formatCents(newUnit, booking.currency)) + ')</span><b>' + escapeHtml(formatCents(newTotal, booking.currency)) + '</b></div>',
+        ];
+        var diffReal = (originalUnit * originalQty) - newTotal;
+        var diffLine;
+        if (diffReal > 0) {
+          diffLine = '<div style="display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed #ddd;margin-top:4px;color:#c0392b;font-weight:700;"><span>Reembolsar ao cliente</span><span>' + escapeHtml(formatCents(diffReal, booking.currency)) + '</span></div>';
+        } else if (diffReal < 0) {
+          diffLine = '<div style="display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed #ddd;margin-top:4px;color:#1a8a4a;font-weight:700;"><span>Cobrar do cliente</span><span>' + escapeHtml(formatCents(-diffReal, booking.currency)) + '</span></div>';
+        } else {
+          diffLine = '<div style="display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed #ddd;margin-top:4px;color:#666;font-weight:700;"><span>Sem diferença</span><span>—</span></div>';
+        }
+        rows.push(diffLine);
+        refundBox.innerHTML = '<div style="background:#faf6f0;border:1px solid #eadfce;border-radius:10px;padding:12px 14px;font-size:.82rem;color:#1a1a1a;">' +
+          '<div style="font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:6px;">Diferença de valor (sem taxas)</div>' +
+          rows.join('') +
+          '</div>';
+      }
+
+      function refreshAll() {
         var chosen = experiencesList.find(function (e) { return e && e.id === expSel.value; });
         if (!chosen) {
           fornecedorInfo.textContent = '';
-          horarioList.innerHTML = '';
-          warningBox.innerHTML = '';
+          horarioSel.innerHTML = '';
+          refundBox.innerHTML = '';
           return;
         }
         fornecedorInfo.textContent = 'Fornecedor: ' + (chosen.fornecedorNome || '—') +
           (chosen.preco ? ' · Preço: ' + chosen.preco : '');
-        horarioList.innerHTML = expHorarios(chosen).map(function (h) {
-          return '<option value="' + escapeHtml(h) + '"></option>';
-        }).join('');
-        // Aviso quando preço cobrado não bate com preço da nova exp.
-        // Não bloqueia — só sinaliza pro admin decidir se faz reembolso/cobrança extra fora.
-        var warnings = [];
-        if (chosen.id !== booking.experiencia_id) {
-          warnings.push('Trocando experiência. O <b>valor cobrado</b> (' +
-            escapeHtml(formatCents(booking.amount_total, booking.currency)) +
-            ') <b>não</b> será alterado — se houver diferença, trate o reembolso/cobrança extra fora.');
+        refreshHorarios(chosen);
+        // Auto-preenche data: se a exp escolhida tem data fixa diferente,
+        // sugere ela, mas não força (admin pode editar).
+        if (chosen.id !== booking.experiencia_id && chosen.data && !dataInput.dataset.touched) {
+          dataInput.value = chosen.data;
         }
-        warningBox.innerHTML = warnings.length
-          ? '<div style="background:#fff8ef;border:1px solid #f0d8b8;color:#8a5a14;border-radius:8px;padding:10px 12px;font-size:.78rem;">' + warnings.join('<br>') + '</div>'
-          : '';
+        refreshRefund();
       }
 
-      refreshExpDependentFields();
-      expSel.addEventListener('change', refreshExpDependentFields);
+      refreshAll();
+      expSel.addEventListener('change', refreshAll);
+      qtyInput.addEventListener('input', refreshRefund);
+      dataInput.addEventListener('input', function () { dataInput.dataset.touched = '1'; });
 
       function close() {
         modal.remove();
@@ -3270,9 +3328,9 @@
           alert('Selecione uma experiência válida.');
           return;
         }
-        var novaData = (modal.querySelector('#admin-edit-booking-data').value || '').trim();
-        var novoHorario = (modal.querySelector('#admin-edit-booking-horario').value || '').trim();
-        var novaQty = Math.max(1, Math.floor(Number(modal.querySelector('#admin-edit-booking-qty').value) || 1));
+        var novaData = (dataInput.value || '').trim();
+        var novoHorario = (horarioSel.value || '').trim();
+        var novaQty = Math.max(1, Math.floor(Number(qtyInput.value) || 1));
         if (!novaData || !novoHorario) {
           alert('Data e horário são obrigatórios.');
           return;
@@ -3285,15 +3343,14 @@
           horario: novoHorario,
           quantidade: novaQty,
         };
-        // Se trocou de experiência, zera o fornecedor_nome gravado na booking
-        // pra que o display caia no fallback (experience.fornecedorNome) — assim
-        // o fornecedor exibido reflete a experiência atual sem stale data.
+        // Troca de experiência: zera fornecedor_nome pra cair no fallback
+        // (experience.fornecedorNome) e refletir o fornecedor atual.
         if (chosenExp.id !== booking.experiencia_id) {
           update.fornecedor_nome = null;
         }
 
-        // Histórico minimalista no metadata pra auditoria. Não-bloqueante
-        // se metadata estiver em formato inesperado.
+        // Histórico de auditoria no metadata. Não-bloqueante.
+        var metaToSave = null;
         try {
           var meta = (booking.metadata && typeof booking.metadata === 'object') ? Object.assign({}, booking.metadata) : {};
           var hist = Array.isArray(meta.admin_edit_history) ? meta.admin_edit_history.slice() : [];
@@ -3306,36 +3363,57 @@
               horario: booking.horario,
               quantidade: booking.quantidade,
             },
-            to: update,
+            to: {
+              experiencia_id: update.experiencia_id,
+              experiencia_nome: update.experiencia_nome,
+              data: update.data,
+              horario: update.horario,
+              quantidade: update.quantidade,
+            },
           });
           meta.admin_edit_history = hist;
-          update.metadata = meta;
-        } catch (e) {
-          console.warn('[Admin] não consegui anexar histórico de edição:', e);
+          metaToSave = meta;
+        } catch (err) {
+          console.warn('[Admin] não consegui anexar histórico de edição:', err);
         }
+        if (metaToSave) update.metadata = metaToSave;
 
         saveBtn.disabled = true;
         saveBtn.textContent = 'Salvando…';
-        try {
-          var s = window.supabaseClient;
-          if (!s) throw new Error('Supabase indisponível');
-          var resp = await s.from('bookings').update(update).eq('id', booking.id);
-          if (resp.error) {
-            console.error('[Admin] erro ao salvar edição da reserva:', resp.error);
-            alert('Erro ao salvar: ' + (resp.error.message || 'erro desconhecido'));
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Salvar';
-            return;
-          }
-          Object.assign(booking, update);
-          invalidateBookings();
-          close();
-          renderBookings();
-        } catch (e) {
-          console.error('[Admin] exceção ao salvar edição da reserva:', e);
-          alert('Erro inesperado ao salvar. Veja o console (F12).');
+        var s = window.supabaseClient;
+        if (!s) {
+          alert('Supabase client indisponível. Recarregue a página.');
           saveBtn.disabled = false;
           saveBtn.textContent = 'Salvar';
+          return;
+        }
+        var resp;
+        try {
+          resp = await s.from('bookings').update(update).eq('id', booking.id);
+        } catch (err) {
+          console.error('[Admin] exceção na chamada update bookings:', err);
+          alert('Erro de rede ao salvar:\n' + ((err && err.message) || String(err)));
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Salvar';
+          return;
+        }
+        if (resp && resp.error) {
+          console.error('[Admin] erro Supabase ao salvar edição:', resp.error);
+          var msg = resp.error.message || 'erro desconhecido';
+          var details = resp.error.details ? '\n\nDetalhes: ' + resp.error.details : '';
+          var hint = resp.error.hint ? '\n\nDica: ' + resp.error.hint : '';
+          alert('Erro ao salvar:\n' + msg + details + hint);
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Salvar';
+          return;
+        }
+        Object.assign(booking, update);
+        invalidateBookings();
+        close();
+        try {
+          renderBookings();
+        } catch (err) {
+          console.error('[Admin] erro ao re-renderizar após salvar:', err);
         }
       });
     }
