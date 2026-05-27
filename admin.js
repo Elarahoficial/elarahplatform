@@ -399,6 +399,7 @@
       case 'prospects':   await renderProspects(); break;
       case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': invalidateBookings(); await renderPendingBookings(); break;
+      case 'postevent':   invalidateBookings(); await renderPostEvent(); break;
       case 'experiences': await renderExperiences(); break;
       case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
@@ -3935,6 +3936,247 @@
       renderPendingBookings();
     });
   })();
+
+  // ===== PÓS-COMPRA (follow-up de feedback) =====
+  // Lista reservas pagas cujo evento já passou há 24h+, com botão pra
+  // abrir WhatsApp com mensagem pré-pronta pedindo avaliação. Marca
+  // feedback_solicitado_at no clique pra o admin saber pra quem já
+  // mandou.
+  //
+  // Requer migração sql/elarah_bookings_feedback.sql rodada no Supabase
+  // (adiciona feedback_solicitado_at + feedback_solicitado_by).
+  async function renderPostEvent() {
+    const tbody = document.getElementById('postevent-body');
+    if (!tbody) return;
+
+    // Filtro + refresh — wire UMA vez.
+    const filterSel = document.getElementById('postevent-filter-status');
+    if (filterSel && !filterSel.dataset.wired) {
+      filterSel.dataset.wired = '1';
+      filterSel.addEventListener('change', function () { renderPostEvent(); });
+    }
+    const refreshBtn = document.getElementById('btn-refresh-postevent');
+    if (refreshBtn && !refreshBtn.dataset.wired) {
+      refreshBtn.dataset.wired = '1';
+      refreshBtn.addEventListener('click', function () {
+        invalidateBookings();
+        renderPostEvent();
+      });
+    }
+
+    const [bookingsRaw, profiles, allExperiences] = await Promise.all([
+      getBookings(),
+      getProfiles().catch(function () { return []; }),
+      (window.ElarahData && ElarahData.getAllExperiences)
+        ? ElarahData.getAllExperiences().catch(function () { return []; })
+        : Promise.resolve([]),
+    ]);
+    const bookings = withoutTestBookings(bookingsRaw);
+    const expById = new Map();
+    (allExperiences || []).forEach(function (e) { if (e && e.id) expById.set(e.id, e); });
+
+    const telPorUserId = new Map();
+    const telPorEmail = new Map();
+    const nomePorUserId = new Map();
+    const nomePorEmail = new Map();
+    (profiles || []).forEach(function (p) {
+      if (!p) return;
+      const tel = (p.telefone || '').trim();
+      if (tel) {
+        if (p.id) telPorUserId.set(p.id, tel);
+        if (p.email) telPorEmail.set(String(p.email).toLowerCase(), tel);
+      }
+      const nm = (p.nome || '').trim();
+      if (nm) {
+        if (p.id) nomePorUserId.set(p.id, nm);
+        if (p.email) nomePorEmail.set(String(p.email).toLowerCase(), nm);
+      }
+    });
+
+    function eventTs(b) {
+      let ts = null;
+      if (window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+        ts = window.ElarahData.deriveEventTimestamp(b.data, b.horario, Date.now());
+      }
+      if (ts == null) {
+        const exp = expById.get(b.experiencia_id);
+        if (exp && window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+          ts = window.ElarahData.deriveEventTimestamp(
+            exp.data,
+            exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null),
+            Date.now(),
+          );
+        }
+      }
+      return ts;
+    }
+
+    // Elegíveis: pagas + evento já ocorreu há 24h+. Usa start-time do
+    // evento + 24h como cutoff (a maioria das experiências dura 1-3h,
+    // então start + 24h já significa "terminou há ≥21h" — janela boa
+    // pro cliente ainda lembrar e querer comentar).
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const elegiveis = bookings.filter(function (b) {
+      if (b.status !== 'pago') return false;
+      const ts = eventTs(b);
+      return ts != null && ts <= cutoff;
+    });
+
+    const filtroValor = (filterSel && filterSel.value) || 'pendente';
+    const lista = elegiveis.filter(function (b) {
+      const enviado = !!b.feedback_solicitado_at;
+      if (filtroValor === 'pendente') return !enviado;
+      if (filtroValor === 'enviado') return enviado;
+      return true;
+    });
+    // Evento mais recente primeiro.
+    lista.sort(function (a, b) { return (eventTs(b) || 0) - (eventTs(a) || 0); });
+
+    const countEl = document.getElementById('postevent-count');
+    if (countEl) countEl.textContent = lista.length + ' reserva' + (lista.length !== 1 ? 's' : '');
+
+    if (!lista.length) {
+      const msg = filtroValor === 'pendente'
+        ? 'Nada pendente — todos os clientes elegíveis já receberam o pedido de feedback.'
+        : (filtroValor === 'enviado' ? 'Nenhum pedido enviado ainda.' : 'Nenhuma reserva elegível ainda (precisa ter passado 24h+ do evento).');
+      tbody.innerHTML = '<tr><td colspan="7" class="admin__table-empty">' + msg + '</td></tr>';
+      return;
+    }
+
+    function resolveTelefone(b) {
+      let t = b.telefone || null;
+      if (!t && b.metadata && typeof b.metadata === 'object') {
+        t = b.metadata.telefone || b.metadata.telefone_digits || null;
+      }
+      if (!t && b.user_id && telPorUserId.has(b.user_id)) t = telPorUserId.get(b.user_id);
+      if (!t && b.email) {
+        const k = String(b.email).toLowerCase();
+        if (telPorEmail.has(k)) t = telPorEmail.get(k);
+      }
+      return t;
+    }
+    function resolveNome(b) {
+      let n = (b.nome || '').trim() || null;
+      if (!n && b.user_id && nomePorUserId.has(b.user_id)) n = nomePorUserId.get(b.user_id);
+      if (!n && b.email) {
+        const k = String(b.email).toLowerCase();
+        if (nomePorEmail.has(k)) n = nomePorEmail.get(k);
+      }
+      return n;
+    }
+
+    function buildFeedbackWhatsappLink(b, nome, tel) {
+      if (!tel) return null;
+      const digits = String(tel).replace(/\D+/g, '');
+      if (digits.length < 10) return null;
+      const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || '';
+      const oi = primeiroNome ? 'Oi, ' + primeiroNome + '!' : 'Oi!';
+      const expNome = b.experiencia_nome || '(experiência)';
+      const data = b.data || '';
+      const dataLine = data ? ' no dia *' + data + '*' : '';
+      const msg = oi + ' ✨\n\n' +
+        'Aqui é da Elarah! Esperamos que você tenha vivido uma experiência incrível na *' + expNome + '*' + dataLine + ' 💛\n\n' +
+        'Adoraríamos saber como foi pra você:\n' +
+        '• Uma nota de 0 a 10 ⭐\n' +
+        '• Um comentário curtinho sobre o que mais te marcou\n\n' +
+        'Sua opinião ajuda demais — tanto pra gente melhorar quanto pra outras pessoas descobrirem essa experiência.\n\n' +
+        'Obrigada por escolher a Elarah! 🌸';
+      return 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
+    }
+
+    tbody.innerHTML = lista.map(function (b) {
+      const tel = resolveTelefone(b);
+      const nome = resolveNome(b);
+      const ts = eventTs(b);
+      const when = ts ? new Date(ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : (b.data || '—');
+      const exp = expById.get(b.experiencia_id);
+      const fornecedor = (b.fornecedor_nome || (exp && exp.fornecedorNome) || '—');
+
+      const telDigits = tel ? String(tel).replace(/\D+/g, '') : '';
+      const telDisplay = tel ? formatPhoneBR(tel) : '—';
+      const telCell = telDigits
+        ? '<a href="https://wa.me/' + escapeHtml(telDigits.length >= 12 ? telDigits : '55' + telDigits) + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;">' + escapeHtml(telDisplay) + '</a>'
+        : '<span style="color:#bbb;">—</span>';
+
+      const link = buildFeedbackWhatsappLink(b, nome, tel);
+      const sentAt = b.feedback_solicitado_at ? new Date(b.feedback_solicitado_at) : null;
+      const isSent = sentAt && !isNaN(sentAt.getTime());
+
+      let statusCell, actionCell;
+      if (isSent) {
+        const sentWhen = sentAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        statusCell = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Solicitado ' + escapeHtml(sentWhen) + '</span>';
+        actionCell = link
+          ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#e6f4ea;color:#1a8a4a;border:1px solid #1a8a4a;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;" title="Reabrir conversa (não registra de novo)">↻ Reabrir</a>' +
+            '<button type="button" data-feedback-undo="' + escapeHtml(b.id) + '" style="margin-left:4px;padding:4px 7px;background:transparent;border:1px solid #ddd;border-radius:6px;color:#666;font-size:.72rem;cursor:pointer;" title="Marcar como não solicitado">↺</button>'
+          : '<span style="color:#bbb;font-size:.72rem;">sem WhatsApp</span>';
+      } else {
+        statusCell = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8ef;color:#b07b00;font-size:11px;font-weight:600;">Pendente</span>';
+        actionCell = link
+          ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" data-feedback-booking="' + escapeHtml(b.id) + '" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#1a8a4a;color:#fff;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;white-space:nowrap;">💬 Pedir feedback</a>'
+          : '<span style="color:#bbb;font-size:.72rem;" title="Cliente sem WhatsApp cadastrado">— sem WhatsApp</span>';
+      }
+
+      return '<tr>' +
+        '<td style="white-space:nowrap;">' + escapeHtml(when) + '</td>' +
+        '<td>' + escapeHtml(nome || b.email || '—') + '</td>' +
+        '<td>' + telCell + '</td>' +
+        '<td>' + escapeHtml(b.experiencia_nome || '—') + '</td>' +
+        '<td>' + escapeHtml(fornecedor) + '</td>' +
+        '<td>' + statusCell + '</td>' +
+        '<td>' + actionCell + '</td>' +
+        '</tr>';
+    }).join('');
+
+    // Pedir feedback: grava timestamp + abre WhatsApp (não preventDefault).
+    tbody.querySelectorAll('[data-feedback-booking]').forEach(function (a) {
+      a.addEventListener('click', async function () {
+        const bookingId = a.dataset.feedbackBooking;
+        if (!bookingId) return;
+        try {
+          const s = window.supabaseClient;
+          if (!s) return;
+          const user = s.auth && s.auth.getUser ? (await s.auth.getUser()).data.user : null;
+          const payload = { feedback_solicitado_at: new Date().toISOString() };
+          if (user) payload.feedback_solicitado_by = user.id;
+          const { error } = await s.from('bookings').update(payload).eq('id', bookingId);
+          if (error) {
+            console.warn('[Admin] feedback_solicitado update falhou (rode sql/elarah_bookings_feedback.sql):', error.message);
+            return;
+          }
+          invalidateBookings();
+          renderPostEvent();
+        } catch (e) {
+          console.warn('[Admin] feedback_solicitado exception:', e && e.message);
+        }
+      });
+    });
+
+    tbody.querySelectorAll('[data-feedback-undo]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        const bookingId = btn.dataset.feedbackUndo;
+        if (!bookingId) return;
+        if (!confirm('Marcar esta reserva como "feedback ainda NÃO solicitado"?')) return;
+        try {
+          const s = window.supabaseClient;
+          if (!s) return;
+          const { error } = await s.from('bookings').update({
+            feedback_solicitado_at: null,
+            feedback_solicitado_by: null,
+          }).eq('id', bookingId);
+          if (error) {
+            console.error('[Admin] undo feedback erro:', error);
+            return;
+          }
+          invalidateBookings();
+          renderPostEvent();
+        } catch (e) {
+          console.error('[Admin] undo feedback exception:', e);
+        }
+      });
+    });
+  }
 
   // ===== EXPERIENCES CRUD =====
   let modal, modalBackdrop, modalClose, modalTitle, form, submitBtn, addBtn;

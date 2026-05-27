@@ -164,6 +164,14 @@
         <span>Pendentes</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="postevent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/>
+        </svg>
+        <span>Pós-compra</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="experiences">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -1398,6 +1406,47 @@
           </thead>
           <tbody id="pending-body">
             <tr><td colspan="12" class="admin__table-empty">Nenhuma reserva pendente.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PÓS-COMPRA (follow-up pós-evento) ===== -->
+    <div class="admin__panel" id="panel-postevent">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Pós-compra</h1>
+          <p class="admin__page-subtitle">Reservas finalizadas há 24h+ — peça avaliação da experiência via WhatsApp</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <select id="postevent-filter-status" class="admin__analytics-select">
+            <option value="pendente">Aguardando pedido</option>
+            <option value="enviado">Feedback solicitado</option>
+            <option value="">Todas</option>
+          </select>
+          <button class="admin__add-btn" id="btn-refresh-postevent" type="button">Atualizar</button>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Pós-evento</span>
+          <span class="admin__table-count" id="postevent-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Evento em</th>
+              <th>Cliente</th>
+              <th>WhatsApp</th>
+              <th>Experiência</th>
+              <th>Fornecedor</th>
+              <th>Status</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="postevent-body">
+            <tr><td colspan="7" class="admin__table-empty">Carregando…</td></tr>
           </tbody>
         </table>
       </div>
