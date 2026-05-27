@@ -3384,23 +3384,18 @@
           horario: novoHorario,
           quantidade: novaQty,
         };
-        // Troca de experiência: atualiza fornecedor_nome pro novo (em vez
-        // de zerar — assim o snapshot do booking fica consistente com o
-        // que aparece na tabela e no WhatsApp do fornecedor).
-        if (chosenExp.id !== booking.experiencia_id) {
-          update.fornecedor_nome = chosenExp.fornecedorNome || null;
-        }
-        // Recalcula valores cheio/repasse/comissão quando troca de exp
-        // OU quando muda qty. Sem isso o admin pagaria o valor errado
-        // pro fornecedor novo (continuaria mostrando o repasse do antigo).
-        var financialsChanged = (chosenExp.id !== booking.experiencia_id) || (novaQty !== originalQty);
-        if (financialsChanged) {
-          var fin = computeFinancials(chosenExp, novaQty);
-          if (fin) {
-            update.valor_cheio_centavos = fin.cheio;
-            update.valor_repasse_centavos = fin.repasse;
-            update.valor_comissao_centavos = fin.comissao;
-          }
+        // Sempre sincroniza fornecedor + valores financeiros com a exp
+        // escolhida (idempotente se nada mudou). Isso permite "corrigir"
+        // bookings que ficaram com dados stale de edições anteriores —
+        // basta re-salvar.
+        update.fornecedor_nome = chosenExp.fornecedorNome || null;
+        var fin = computeFinancials(chosenExp, novaQty);
+        if (fin) {
+          update.valor_cheio_centavos = fin.cheio;
+          update.valor_repasse_centavos = fin.repasse;
+          update.valor_comissao_centavos = fin.comissao;
+        } else {
+          console.warn('[Admin] exp', chosenExp.id, 'sem valorCheioCentavos — repasse não foi recalculado');
         }
 
         // Histórico de auditoria no metadata. Não-bloqueante.
