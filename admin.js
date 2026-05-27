@@ -4082,7 +4082,11 @@
         '• Um comentário curtinho sobre o que mais te marcou\n\n' +
         'Sua opinião ajuda demais — tanto pra gente melhorar quanto pra outras pessoas descobrirem essa experiência.\n\n' +
         'Obrigada por escolher a Elarah! 🌸';
-      return 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
+      // api.whatsapp.com/send em vez de wa.me — wa.me corrompe emojis
+      // fora do BMP (💬 💛 🌸 ⭐) virando "��" no chat. Ver comentário
+      // em ~line 1469 onde esse fix foi originalmente identificado.
+      return 'https://api.whatsapp.com/send/?phone=' + waDigits +
+        '&text=' + encodeURIComponent(msg);
     }
 
     tbody.innerHTML = lista.map(function (b) {
