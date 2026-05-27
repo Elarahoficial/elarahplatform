@@ -2851,6 +2851,13 @@
       const editBookingBtn = canEditBooking
         ? '<button type="button" class="admin__edit-booking-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Trocar experiência, data, horário ou quantidade" style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #c9b7e8;background:#f5f0fb;color:#6c4ca0;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">✏️ Editar</button>'
         : '';
+      // Cancelar/reembolsar: marca status=reembolsado. Contabilidade
+      // exclui automaticamente reservas reembolsadas dos totais (filtro
+      // em _finBadgeIncludesInAccounting), então não precisa mexer em
+      // nada além do status + auditoria no metadata.
+      const cancelBookingBtn = b.status === 'pago'
+        ? '<button type="button" class="admin__cancel-booking-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Cancelar reserva e marcar como reembolsada. Remove dos totais da contabilidade." style="display:inline-block;margin:6px 0 0;padding:3px 9px;border:1px solid #f4c7c1;background:#fdecea;color:#c0392b;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">❌ Cancelar</button>'
+        : '';
 
       return `
         <tr>
@@ -2859,7 +2866,7 @@
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
-          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn ? '<br>' + editBookingBtn : ''}${variantCell}</td>
+          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn ? '<br>' + editBookingBtn + cancelBookingBtn : ''}${variantCell}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
@@ -3535,6 +3542,69 @@
           return;
         }
         openEditBookingModal(booking, allExperiences || []);
+      });
+    });
+
+    // Wire "❌ Cancelar" — marca reserva como reembolsada. Contabilidade
+    // exclui status=reembolsado dos totais automaticamente. Grava
+    // motivo + admin + timestamp no metadata pra auditoria.
+    tbody.querySelectorAll('.admin__cancel-booking-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var bookingId = btn.dataset.bookingId;
+        var booking = bookings.find(function (b) { return b && b.id === bookingId; });
+        if (!booking) {
+          console.warn('[Admin] booking não encontrada pra cancelar:', bookingId);
+          return;
+        }
+        var resumo = (booking.nome || booking.email || '?') + ' — ' +
+          (booking.experiencia_nome || '') +
+          (booking.data ? ' (' + booking.data + ')' : '');
+        if (!confirm('Cancelar esta reserva e marcar como REEMBOLSADA?\n\n' + resumo +
+            '\n\nIsso vai:\n• Sair dos totais da Contabilidade\n• Aparecer na aba Pendentes como "reembolsado"\n\n' +
+            'O reembolso financeiro (Stripe/PIX) precisa ser feito manualmente.')) {
+          return;
+        }
+        var motivo = prompt('Motivo do cancelamento (opcional):', '') || '';
+        btn.disabled = true;
+        btn.textContent = 'Cancelando…';
+        try {
+          var s = window.supabaseClient;
+          if (!s) { alert('Supabase indisponível.'); btn.disabled = false; btn.textContent = '❌ Cancelar'; return; }
+          var user = s.auth && s.auth.getUser ? (await s.auth.getUser()).data.user : null;
+          var meta = (booking.metadata && typeof booking.metadata === 'object') ? Object.assign({}, booking.metadata) : {};
+          var hist = Array.isArray(meta.admin_cancel_history) ? meta.admin_cancel_history.slice() : [];
+          hist.push({
+            at: new Date().toISOString(),
+            by: user ? user.id : null,
+            by_email: user ? user.email : null,
+            motivo: motivo.trim() || null,
+            previous_status: booking.status,
+          });
+          meta.admin_cancel_history = hist;
+          var resp = await s.from('bookings').update({
+            status: 'reembolsado',
+            metadata: meta,
+          }).eq('id', bookingId);
+          if (resp.error) {
+            console.error('[Admin] erro ao cancelar reserva:', resp.error);
+            alert('Erro ao cancelar: ' + (resp.error.message || 'erro desconhecido'));
+            btn.disabled = false;
+            btn.textContent = '❌ Cancelar';
+            return;
+          }
+          booking.status = 'reembolsado';
+          booking.metadata = meta;
+          invalidateBookings();
+          renderBookings();
+          // Também atualiza overview e contabilidade se estiverem
+          // abertas — números totais mudam.
+          if (typeof renderOverview === 'function') renderOverview().catch(function () {});
+        } catch (e) {
+          console.error('[Admin] exceção ao cancelar reserva:', e);
+          alert('Erro inesperado:\n' + ((e && e.message) || String(e)));
+          btn.disabled = false;
+          btn.textContent = '❌ Cancelar';
+        }
       });
     });
 
