@@ -353,7 +353,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const { data: exp, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse",
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -396,6 +396,11 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   if (!fornecedorNome && exp.fornecedor_nome) fornecedorNome = exp.fornecedor_nome;
   const expValorCheioCentavos = exp.valor_cheio_centavos ?? null;
   const expPercentualRepasse = Number(exp.percentual_repasse ?? 90);
+  // Valor fixo por pessoa em centavos. Quando preenchido, sobrescreve
+  // o percentual no calculo do repasse. Lido aqui pra passar pro
+  // computeFinancialBreakdown via LegacyConfig.
+  const expValorRepasseFixoCentavos =
+    (exp as { valor_repasse_fixo_centavos?: number | null }).valor_repasse_fixo_centavos ?? null;
 
   // ===== Slot lookup (vagas por horário/data) =====
   // Prioridade:
@@ -850,6 +855,11 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         {
           fornecedorNome: fornecedorNome,
           percentualRepasse: expPercentualRepasse,
+          // Multiplica por quantidade aqui porque o shared trata o
+          // legado fixo como valor TOTAL ja vezes qty.
+          valorRepasseFixoCentavos: expValorRepasseFixoCentavos != null
+            ? Number(expValorRepasseFixoCentavos) * quantidade
+            : null,
         },
       )
     : null;
