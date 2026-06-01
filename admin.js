@@ -4905,13 +4905,16 @@
   async function renderExperiences() {
     const allExperiencesRaw = await getExperiences();
 
-    // Esconde Elarah Originals da aba Experiências — eles são geridos
-    // exclusivamente pela aba "By Elarah" (toggle "É comprável" no
-    // form de By Elarah cria/atualiza essas experiences automaticamente).
-    // Sem isso, o admin veria o mesmo card em duas abas e poderia
-    // editar via Experiências, dessincronizando do byelarah_item.
+    // Mostra todas as experiências, INCLUINDO By Elarah originals.
+    // Antes filtrava `isElarahOriginal !== true` pra evitar duplicacao
+    // com a aba By Elarah, mas o fluxo real do admin é o oposto: cria
+    // experience no cadastro normal e marca o toggle "By Elarah" ali.
+    // Sem mostrar essas aqui, elas ficavam invisiveis nos dois paineis
+    // (aba By Elarah so lista byelarah_items legados, nao experiences).
+    // A linha tem badge "By Elarah" pra deixar claro que aparece tambem
+    // como Original na home.
     const allExperiences = (allExperiencesRaw || []).filter(function (e) {
-      return e && e.isElarahOriginal !== true;
+      return !!e;
     });
 
     // Constrói barra de filtro com TODAS as experiências (antes de filtrar)
@@ -5035,9 +5038,12 @@
       // chamar setExperienceActive(true) que seria no-op.
       const toggleLabel = isHidden ? 'Reativar' : 'Ocultar';
       const toggleClass = isHidden ? 'admin__action-btn--show' : 'admin__action-btn--hide';
+      const byElarahBadge = exp.isElarahOriginal === true
+        ? ' <span style="display:inline-block;padding:2px 7px;border-radius:10px;background:#fff1de;color:#a05f1e;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;" title="Marcada como Elarah Original — aparece na seção By Elarah da home.">By Elarah</span>'
+        : '';
       return `
       <tr${rowStyle}>
-        <td>${escapeHtml(exp.nome)}</td>
+        <td>${escapeHtml(exp.nome)}${byElarahBadge}</td>
         <td>${escapeHtml(exp.categoria)}</td>
         <td>${escapeHtml(exp.data)}</td>
         <td>${horariosDisplay}</td>
