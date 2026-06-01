@@ -149,11 +149,15 @@
           .order('ordem', { ascending: true })
           .order('created_at', { ascending: true });
         if (error) {
+          // Erro de fato (RLS, rede, etc.) — usa fallback pra não deixar
+          // a home quebrada visualmente.
           console.warn('[ElarahByElarah] getAllItems error — fallback:', error.message);
           itemsCache = FALLBACK_ITEMS.slice();
         } else {
-          const rows = (data || []).map(rowToItem);
-          itemsCache = rows.length ? rows : FALLBACK_ITEMS.slice();
+          // Sucesso, mesmo que vazio: admin pode ter deletado tudo
+          // intencionalmente e nesse caso queremos respeitar o estado
+          // (NÃO ressuscitar os cards antigos via fallback).
+          itemsCache = (data || []).map(rowToItem);
         }
       } catch (e) {
         console.warn('[ElarahByElarah] getAllItems exception — fallback:', e);
