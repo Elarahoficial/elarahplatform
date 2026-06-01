@@ -958,8 +958,24 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // inconsistente. Agora é sempre '✨ BY ELARAH' laranja.
       var badgeLabel = '✨ BY ELARAH';
 
+      // Share button: aparece quando o card aponta pra uma experience
+      // (it.experienceId) — sem isso nao tem URL canonica pra compartilhar.
+      // Cards puros de lista de espera (lead via WhatsApp, sem
+      // experience vinculada) nao tem botao, e ai mostra um espaco vazio
+      // pra preservar o layout.
+      var shareBtnHtml = '';
+      if (it.experienceId) {
+        shareBtnHtml =
+          '<button type="button" class="originals__card-share-btn" ' +
+            'data-share-experience-id="' + esc(it.experienceId) + '" ' +
+            'aria-label="Copiar link da experiência" title="Copiar link da experiência" ' +
+            'style="position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.92);color:#a05f1e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.12);z-index:2;">' +
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
+          '</button>';
+      }
+
       return '' +
-        '<article class="' + cardClass + '">' +
+        '<article class="' + cardClass + '" style="position:relative;">' +
           '<div class="originals__card-image">' +
             '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
               // onerror: loga URL que falhou (admin vê no DevTools)
@@ -972,6 +988,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
                 'this.src=&quot;' + esc(imgFallback) + '&quot;;' +
               '}" data-original-src="' + esc(imgSrc) + '">' +
             '<span class="originals__card-badge">' + esc(badgeLabel) + '</span>' +
+            shareBtnHtml +
           '</div>' +
           '<div class="originals__card-body">' +
             '<h3 class="originals__card-title">' + esc(it.nome) + '</h3>' +
@@ -984,6 +1001,37 @@ if (categoriaURL) activeCategoria = categoriaURL;
     }).join('');
 
     grid.innerHTML = html;
+
+    // Share buttons: copia link da experiencia (mesmo formato dos cards
+    // das categorias). UX identica: troca o icone por "Link copiado!"
+    // e volta depois de 2s.
+    grid.querySelectorAll('.originals__card-share-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        var expId = btn.dataset.shareExperienceId;
+        if (!expId) return;
+        var url = window.location.origin + '/experiencia.html?id=' + encodeURIComponent(expId);
+        var originalHtml = btn.innerHTML;
+        function showCopied() {
+          btn.innerHTML = '<span style="font-size:.7rem;font-weight:700;color:#a05f1e;white-space:nowrap;">Link copiado!</span>';
+          btn.style.width = 'auto';
+          btn.style.padding = '0 10px';
+          setTimeout(function () {
+            btn.innerHTML = originalHtml;
+            btn.style.width = '36px';
+            btn.style.padding = '0';
+          }, 2200);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(showCopied, function () {
+            prompt('Copie o link:', url);
+          });
+        } else {
+          prompt('Copie o link:', url);
+        }
+      });
+    });
 
     // Re-vincula os cliques nos botões (porque substituímos o HTML).
     // Cards COMPRÁVEIS (com data-reserve) NÃO precisam de listener
