@@ -6172,6 +6172,13 @@
 
   async function renderByElarah() {
     if (!document.getElementById('byelarah-items-body')) return;
+    // Invalida cache do ElarahByElarah pra garantir que items recem
+    // cadastrados aparecam — sem isso, getAllItems retorna a versao
+    // cacheada na primeira chamada da pagina e nao mostra nada novo
+    // ate o usuario dar F5 manual.
+    if (window.ElarahByElarah && typeof window.ElarahByElarah.invalidateCache === 'function') {
+      window.ElarahByElarah.invalidateCache();
+    }
     wireByElarahTableListeners();
     const [items, subs] = await Promise.all([
       ElarahByElarah.getAllItems(),
