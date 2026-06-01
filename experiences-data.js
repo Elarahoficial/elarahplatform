@@ -839,9 +839,13 @@
       .is('recurrence_rule_id', null);
     const existingIds = new Set((existing || []).map(function (r) { return r.id; }));
 
-    // 2) Separa upserts dos deletes
+    // 2) Separa upserts dos deletes. Dedupe por (data, horario) pra evitar
+    //    bater no unique index (experience_id, coalesce(data,''), horario)
+    //    quando o form tem entradas duplicadas. Preserva a entrada com id
+    //    (registro existente) sobre a sem id (novo duplicado).
     const toUpsert = [];
     const keepIds = new Set();
+    const seenByKey = new Map(); // (data||'')+'|'+horario -> index em toUpsert
     (slotsArray || []).forEach(function (slot) {
       if (!slot.horario || !String(slot.horario).trim()) return;
       const vt = slot.vagasTotal === '' || slot.vagasTotal == null
@@ -858,6 +862,19 @@
         row.id = slot.id;
         keepIds.add(slot.id);
       }
+      const key = (row.data || '') + '|' + row.horario;
+      if (seenByKey.has(key)) {
+        const existingIdx = seenByKey.get(key);
+        const existingRow = toUpsert[existingIdx];
+        // Se o atual tem id e o que ja estava nao tem, substitui pra
+        // preservar o registro do banco em vez de tentar inserir novo.
+        if (row.id && !existingRow.id) {
+          toUpsert[existingIdx] = row;
+        }
+        // Caso contrario, ignora o duplicado.
+        return;
+      }
+      seenByKey.set(key, toUpsert.length);
       toUpsert.push(row);
     });
 
@@ -881,7 +898,16 @@
       });
       if (error) {
         console.error('[Elarah] saveSlots upsert error:', error);
-        return false;
+        // Propaga a mensagem real (message + details + hint) pra que o
+        // alert no admin mostre o que aconteceu, em vez de "saveSlots
+        // retornou false". Sem isso o usuario tinha que abrir console.
+        const parts = [error.message || 'erro desconhecido'];
+        if (error.details) parts.push('Detalhes: ' + error.details);
+        if (error.hint) parts.push('Dica: ' + error.hint);
+        if (error.code) parts.push('Código: ' + error.code);
+        const e = new Error(parts.join(' | '));
+        e.supabase = error;
+        throw e;
       }
     }
 
