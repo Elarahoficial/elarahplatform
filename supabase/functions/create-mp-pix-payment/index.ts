@@ -415,6 +415,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     fornecedorNome,
     valorCheioCentavos,
     percentualRepasse,
+    valorRepasseFixoCentavos,
     inventorySkipped,
     rollback,
   } = guard;
@@ -454,6 +455,10 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
         {
           fornecedorNome: fornecedorNome,
           percentualRepasse: percentualRepasse,
+          // Multiplica × qty: shared trata o fixo legado como total.
+          valorRepasseFixoCentavos: valorRepasseFixoCentavos != null
+            ? Number(valorRepasseFixoCentavos) * guardQty
+            : null,
         },
       )
     : null;

@@ -53,6 +53,7 @@ export interface ExperienceSnapshot {
   fornecedor_nome: string | null;
   valor_cheio_centavos: number | null;
   percentual_repasse: number | null;
+  valor_repasse_fixo_centavos: number | null;
 }
 
 export interface GuardSuccess {
@@ -81,6 +82,7 @@ export interface GuardSuccess {
   fornecedorNome: string | null;
   valorCheioCentavos: number | null;
   percentualRepasse: number;
+  valorRepasseFixoCentavos: number | null;
   // TRUE quando o RPC de decremento falhou em todas as camadas e o
   // pagamento prosseguiu sem decrementar vaga (fallback de emergência).
   // Caller deve gravar no metadata da booking pra reconciliação posterior.
@@ -285,7 +287,7 @@ export async function reserveExperienceSlot(
   const { data: expRaw, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse",
+      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -786,6 +788,9 @@ export async function reserveExperienceSlot(
     fornecedorNome: fornecedorNome || exp.fornecedor_nome || null,
     valorCheioCentavos: exp.valor_cheio_centavos ?? null,
     percentualRepasse: Number(exp.percentual_repasse ?? 90),
+    // Quando preenchido (em centavos), eh valor fixo POR PESSOA que
+    // sobrescreve o percentual no calculo do repasse.
+    valorRepasseFixoCentavos: exp.valor_repasse_fixo_centavos ?? null,
     inventorySkipped,
     rollback,
   };

@@ -2237,10 +2237,18 @@
       // Comissão Elarah espelha (base − repasse) pra fechar 100%.
       let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
       if (valorRepasse == null && base) {
-        const pct = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
-          ? Number(exp.percentualRepasse)
-          : 70;
-        valorRepasse = Math.round(base * (pct / 100));
+        // Prioridade: valor fixo por pessoa (× qty) sobrescreve o
+        // percentual. Cobre o caso "fornecedor cobra R$80/aluno
+        // independente do preco cheio".
+        if (exp && exp.valorRepasseFixoCentavos != null
+            && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) {
+          valorRepasse = Number(exp.valorRepasseFixoCentavos) * qty;
+        } else {
+          const pct = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
+            ? Number(exp.percentualRepasse)
+            : 70;
+          valorRepasse = Math.round(base * (pct / 100));
+        }
       }
       b._valorRepasseResolvido = valorRepasse;
 
@@ -3270,12 +3278,22 @@
       function computeFinancials(exp, qty) {
         if (!exp || exp.valorCheioCentavos == null) return null;
         var cheio = (Number(exp.valorCheioCentavos) || 0) * qty;
+        // Repasse fixo por pessoa sobrescreve % quando preenchido.
         var pct = (exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
           ? Number(exp.percentualRepasse)
           : 70;
-        var repasse = Math.round(cheio * (pct / 100));
+        var repasse;
+        var modo;
+        if (exp.valorRepasseFixoCentavos != null
+            && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) {
+          repasse = Number(exp.valorRepasseFixoCentavos) * qty;
+          modo = 'fixo';
+        } else {
+          repasse = Math.round(cheio * (pct / 100));
+          modo = 'percent';
+        }
         var comissao = Math.max(0, cheio - repasse);
-        return { cheio: cheio, repasse: repasse, comissao: comissao, pct: pct };
+        return { cheio: cheio, repasse: repasse, comissao: comissao, pct: pct, modo: modo, unidadeFixa: Number(exp.valorRepasseFixoCentavos) || 0 };
       }
 
       function refreshRefund() {
@@ -3314,11 +3332,14 @@
         var fin = computeFinancials(chosen, novaQty);
         var repasseBlock = '';
         if (fin) {
+          var repasseLabel = fin.modo === 'fixo'
+            ? 'Repasse fornecedor (' + escapeHtml(formatCents(fin.unidadeFixa, booking.currency)) + ' × ' + novaQty + ')'
+            : 'Repasse fornecedor (' + fin.pct + '%)';
           repasseBlock =
             '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eadfce;">' +
               '<div style="font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:6px;">Repasse pro novo fornecedor (' + escapeHtml(chosen.fornecedorNome || '—') + ')</div>' +
               '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.78rem;"><span>Valor cheio</span><b>' + escapeHtml(formatCents(fin.cheio, booking.currency)) + '</b></div>' +
-              '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.78rem;color:#1a8a4a;"><span>Repasse fornecedor (' + fin.pct + '%)</span><b>' + escapeHtml(formatCents(fin.repasse, booking.currency)) + '</b></div>' +
+              '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.78rem;color:#1a8a4a;"><span>' + repasseLabel + '</span><b>' + escapeHtml(formatCents(fin.repasse, booking.currency)) + '</b></div>' +
               '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.78rem;color:#a07c4c;"><span>Comissão Elarah</span><b>' + escapeHtml(formatCents(fin.comissao, booking.currency)) + '</b></div>' +
             '</div>';
         } else if (!sameExp) {
@@ -4459,6 +4480,7 @@
       var fnEl = document.getElementById('exp-fornecedor-nome');
       var vcEl = document.getElementById('exp-valor-cheio');
       var prEl = document.getElementById('exp-percentual-repasse');
+      var vrfEl = document.getElementById('exp-valor-repasse-fixo');
       if (fnEl) fnEl.value = exp.fornecedorNome || '';
       if (window._expFornecedorCombobox) {
         window._expFornecedorCombobox.setValue(exp.fornecedorNome || '');
@@ -4466,6 +4488,25 @@
       }
       if (vcEl) vcEl.value = exp.valorCheioCentavos != null ? 'R$' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
       if (prEl) prEl.value = exp.percentualRepasse != null ? exp.percentualRepasse : 70;
+      // Repasse fixo: se setado no banco, preenche o input e seleciona o
+      // radio "Valor fixo". Caso contrario fica em modo Percentual.
+      if (vrfEl) {
+        vrfEl.value = exp.valorRepasseFixoCentavos != null
+          ? 'R$' + (exp.valorRepasseFixoCentavos / 100).toFixed(0) : '';
+      }
+      var radioFixo = document.getElementById('exp-repasse-tipo-fixo');
+      var radioPercent = document.getElementById('exp-repasse-tipo-percent');
+      var wrapFixo = document.getElementById('exp-repasse-fixo-wrap');
+      var wrapPercent = document.getElementById('exp-repasse-percent-wrap');
+      if (exp.valorRepasseFixoCentavos != null) {
+        if (radioFixo) radioFixo.checked = true;
+        if (wrapFixo) wrapFixo.style.display = '';
+        if (wrapPercent) wrapPercent.style.display = 'none';
+      } else {
+        if (radioPercent) radioPercent.checked = true;
+        if (wrapFixo) wrapFixo.style.display = 'none';
+        if (wrapPercent) wrapPercent.style.display = '';
+      }
 
       // Carrega slots do banco — cada horário com sua vaga
       var slotsFromDb = [];
@@ -4509,6 +4550,12 @@
       if (typeof window._refreshImagePreview === 'function') {
         try { window._refreshImagePreview(); } catch (e) {}
       }
+      // form.reset() volta o radio pra default (percent) mas os wraps
+      // ficam com o display que ficou da ultima edicao — restaura aqui.
+      var nWrapFixo = document.getElementById('exp-repasse-fixo-wrap');
+      var nWrapPercent = document.getElementById('exp-repasse-percent-wrap');
+      if (nWrapFixo) nWrapFixo.style.display = 'none';
+      if (nWrapPercent) nWrapPercent.style.display = '';
       renderHorarioRows([{ horario: '' }]);
       const cor1El = document.getElementById('exp-cor1');
       const cor2El = document.getElementById('exp-cor2');
@@ -4543,6 +4590,30 @@
       // dá pra cadastrar regras depois que a experiência tem id.
       var recSec = document.getElementById('exp-recurrence-section');
       if (recSec) recSec.style.display = 'none';
+    }
+
+    // Wire toggle do radio repasse (uma vez por abertura — dataset.wired
+    // evita listener acumular). Mostra/esconde os wraps correspondentes.
+    var rPercent = document.getElementById('exp-repasse-tipo-percent');
+    var rFixo = document.getElementById('exp-repasse-tipo-fixo');
+    function applyRepasseTipo() {
+      var wF = document.getElementById('exp-repasse-fixo-wrap');
+      var wP = document.getElementById('exp-repasse-percent-wrap');
+      if (rFixo && rFixo.checked) {
+        if (wF) wF.style.display = '';
+        if (wP) wP.style.display = 'none';
+      } else {
+        if (wF) wF.style.display = 'none';
+        if (wP) wP.style.display = '';
+      }
+    }
+    if (rPercent && !rPercent.dataset.wired) {
+      rPercent.dataset.wired = '1';
+      rPercent.addEventListener('change', applyRepasseTipo);
+    }
+    if (rFixo && !rFixo.dataset.wired) {
+      rFixo.dataset.wired = '1';
+      rFixo.addEventListener('change', applyRepasseTipo);
     }
 
     modal.classList.add('open');
@@ -4708,6 +4779,20 @@
           return Number.isFinite(n) && n > 0 ? n : null;
         })(),
         percentualRepasse: Number(document.getElementById('exp-percentual-repasse')?.value || 90),
+        // Repasse fixo (sobrescreve % quando preenchido). Aceita "R$80"
+        // ou "80" — converte pra centavos. Soh grava o valor se o radio
+        // "fixo" estiver selecionado, caso contrario manda null pra
+        // limpar qualquer fixo antigo no banco e usar o % de novo.
+        valorRepasseFixoCentavos: (function () {
+          var rFixo = document.getElementById('exp-repasse-tipo-fixo');
+          if (!rFixo || !rFixo.checked) return null;
+          var raw = (document.getElementById('exp-valor-repasse-fixo')?.value || '').trim();
+          if (!raw) return null;
+          var cleaned = raw.replace(/[R$\s]/gi, '').replace(',', '.');
+          var n = Math.round(Number(cleaned) * (cleaned.includes('.') ? 100 : 100));
+          if (raw.match(/^\d+$/)) n = Number(raw) * 100;
+          return Number.isFinite(n) && n >= 0 ? n : null;
+        })(),
         // By Elarah / Originals
         isElarahOriginal: !!(document.getElementById('exp-is-elarah-original')?.checked),
         hideFromCategorias: !!(document.getElementById('exp-hide-from-categorias')?.checked),

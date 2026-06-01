@@ -53,6 +53,11 @@ export interface ComissaoConfig {
 export interface LegacyConfig {
   fornecedorNome: string | null | undefined;
   percentualRepasse: number | null | undefined;
+  // Quando preenchido (em centavos), eh valor FIXO POR PESSOA que vai
+  // pro fornecedor e sobrescreve percentualRepasse. O caller eh quem
+  // multiplica por qty antes de passar valorCheioCentavos — entao aqui
+  // tratamos o fixo tambem como valor TOTAL (caller multiplicou).
+  valorRepasseFixoCentavos?: number | null | undefined;
 }
 
 export function computeFinancialBreakdown(
@@ -73,13 +78,25 @@ export function computeFinancialBreakdown(
 
   if (supplierList.length === 0 && legacy && legacy.fornecedorNome) {
     usedLegacyFallback = true;
-    const pct = Number(legacy.percentualRepasse);
-    supplierList = [{
-      fornecedor_nome: String(legacy.fornecedorNome),
-      share_type: "percent",
-      share_value: Number.isFinite(pct) ? pct : 70,
-      ordem: 0,
-    }];
+    // Prioridade: valor fixo (já total, multiplicado por qty antes)
+    // sobrescreve percentual quando preenchido.
+    const fixoRaw = legacy.valorRepasseFixoCentavos;
+    if (fixoRaw != null && Number.isFinite(Number(fixoRaw)) && Number(fixoRaw) >= 0) {
+      supplierList = [{
+        fornecedor_nome: String(legacy.fornecedorNome),
+        share_type: "fixed",
+        share_value: Number(fixoRaw),
+        ordem: 0,
+      }];
+    } else {
+      const pct = Number(legacy.percentualRepasse);
+      supplierList = [{
+        fornecedor_nome: String(legacy.fornecedorNome),
+        share_type: "percent",
+        share_value: Number.isFinite(pct) ? pct : 70,
+        ordem: 0,
+      }];
+    }
   }
 
   // Calcula valor de cada repasse e total.

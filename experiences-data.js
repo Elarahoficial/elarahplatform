@@ -41,7 +41,8 @@
   //     → sql/elarah_experiences_visibility.sql
   const OPTIONAL_COLUMNS = new Set([
     'vagas_total', 'event_at', 'cutoff_hours', 'is_active',
-    'fornecedor_nome', 'valor_cheio_centavos', 'percentual_repasse'
+    'fornecedor_nome', 'valor_cheio_centavos', 'percentual_repasse',
+    'valor_repasse_fixo_centavos'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -121,6 +122,11 @@
       fornecedorNome: row.fornecedor_nome || null,
       valorCheioCentavos: row.valor_cheio_centavos != null ? Number(row.valor_cheio_centavos) : null,
       percentualRepasse: row.percentual_repasse != null ? Number(row.percentual_repasse) : 70,
+      // Quando preenchido, eh valor FIXO por pessoa em centavos e
+      // sobrescreve percentualRepasse. Util para fornecedores com
+      // cache fixo (R$X/aluno) em vez de % sobre o preco cheio.
+      valorRepasseFixoCentavos: row.valor_repasse_fixo_centavos != null
+        ? Number(row.valor_repasse_fixo_centavos) : null,
       // --- Comissão Elarah (opcional/manual ou null=residual) ---
       // Sql/elarah_experience_suppliers.sql.
       // null/undefined → residual (calculada como sobra no checkout).
@@ -205,6 +211,14 @@
         if (raw == null || raw === '') return 70;
         var n = Number(raw);
         return Number.isFinite(n) ? n : 70;
+      })(),
+      valor_repasse_fixo_centavos: (function () {
+        var raw = exp.valorRepasseFixoCentavos != null
+          ? exp.valorRepasseFixoCentavos
+          : exp.valor_repasse_fixo_centavos;
+        if (raw == null || raw === '') return null;
+        var n = Number(raw);
+        return Number.isFinite(n) && n >= 0 ? n : null;
       })(),
       // Comissão Elarah: aceita type='percent'/'fixed' ou null.
       // Se type vazio OU value vazio, grava null/null (residual auto).
