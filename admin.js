@@ -6130,6 +6130,24 @@
     itemsBody.addEventListener('click', async (e) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (!target) return;
+      // data-by-edit-exp tem precedencia sobre data-by-edit (o ultimo
+      // tambem pega o primeiro via substring se nao filtrarmos).
+      const editExpBtn = target.closest('[data-by-edit-exp]');
+      if (editExpBtn) {
+        // Item virtual derivado de uma experience com isElarahOriginal=true.
+        // Abre o modal de cadastro de experiencia diretamente — eh la
+        // que esses itens sao geridos.
+        const expId = editExpBtn.dataset.byEditExp;
+        if (typeof openExpModal === 'function') {
+          // Troca pra aba Experiencias antes pra o modal aparecer no
+          // contexto correto (CSS de admin__panel ativo).
+          var navBtn = document.querySelector('[data-panel="experiences"]');
+          if (navBtn) navBtn.click();
+          // Pequeno delay pra a aba virar visivel antes do modal abrir.
+          setTimeout(function () { openExpModal(expId); }, 50);
+        }
+        return;
+      }
       const editBtn = target.closest('[data-by-edit]');
       if (editBtn) {
         openByModal(editBtn.dataset.byEdit);
@@ -6186,10 +6204,43 @@
       window.ElarahByElarah.invalidateCache();
     }
     wireByElarahTableListeners();
-    const [items, subs] = await Promise.all([
+    const [rawItems, subs, allExperiences] = await Promise.all([
       ElarahByElarah.getAllItems(),
-      ElarahByElarah.getAllSubmissions()
+      ElarahByElarah.getAllSubmissions(),
+      getExperiences().catch(function () { return []; }),
     ]);
+
+    // Merge: experiences com isElarahOriginal=true que NAO estao
+    // vinculadas a nenhum byelarah_item (via experience_id). Sem isso
+    // elas aparecem so na aba Experiencias — e o admin esperava ve-las
+    // aqui tambem ja que estao na secao Originals da home.
+    const linkedExpIds = new Set();
+    (rawItems || []).forEach(function (it) {
+      if (it && it.experienceId) linkedExpIds.add(it.experienceId);
+    });
+    const virtualItems = (allExperiences || [])
+      .filter(function (e) {
+        return e && e.isElarahOriginal === true && !linkedExpIds.has(e.id);
+      })
+      .map(function (e) {
+        return {
+          // Prefixo "exp-" identifica que veio da tabela experiences,
+          // pra o handler de Editar abrir openExpModal em vez do
+          // byelarah modal.
+          id: 'exp-' + e.id,
+          experienceId: e.id,
+          nome: e.nome || '',
+          descricao: e.descricao || '',
+          imagem: e.imagem || '',
+          data: e.data || '',
+          horarios: Array.isArray(e.horarios) ? e.horarios.slice() : (e.horario ? [e.horario] : []),
+          tipo: 'participar',
+          ordem: Number.isFinite(+e.ordem) ? +e.ordem : 0,
+          ativo: e.isActive !== false,
+          _fromExperience: true,
+        };
+      });
+    const items = (rawItems || []).concat(virtualItems);
 
     // Stats
     document.getElementById('stat-byelarah-items').textContent = items.length;
@@ -6280,12 +6331,22 @@
             ? `<img src="${escapeHtml(it.imagem)}" alt="" class="admin__thumb" loading="lazy" decoding="async">`
             : '<span class="admin__thumb admin__thumb--placeholder">—</span>';
           const isDbItem = typeof it.id === 'string' && it.id && !it.id.startsWith('fallback-');
-          const actions = isDbItem
-            ? `
-              <button class="admin__action-btn admin__action-btn--edit" data-by-edit="${escapeHtml(it.id)}">Editar</button>
-              <button class="admin__action-btn admin__action-btn--delete" data-by-delete="${escapeHtml(it.id)}">Excluir</button>
-            `
-            : '<span class="admin__badge admin__badge--pending">Fallback</span>';
+          let actions;
+          if (it._fromExperience) {
+            // Veio da tabela experiences (toggle "isElarahOriginal"
+            // marcado no cadastro normal). Editar precisa abrir o
+            // modal de Experiencia — nao tem registro no byelarah_items
+            // pra editar.
+            actions =
+              '<button class="admin__action-btn admin__action-btn--edit" data-by-edit-exp="' + escapeHtml(it.experienceId) + '" title="Editar na aba Experiencias">Editar</button>' +
+              ' <span class="admin__badge admin__badge--pending" style="font-size:.65rem;" title="Item gerado a partir de uma experience cadastrada. Pra removê-lo daqui, desmarque o toggle By Elarah no cadastro.">via Experiência</span>';
+          } else if (isDbItem) {
+            actions =
+              '<button class="admin__action-btn admin__action-btn--edit" data-by-edit="' + escapeHtml(it.id) + '">Editar</button>' +
+              '<button class="admin__action-btn admin__action-btn--delete" data-by-delete="' + escapeHtml(it.id) + '">Excluir</button>';
+          } else {
+            actions = '<span class="admin__badge admin__badge--pending">Fallback</span>';
+          }
           html.push(`
             <tr>
               <td>${it.ordem || 0}</td>
