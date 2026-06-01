@@ -1449,7 +1449,16 @@ if (categoriaURL) activeCategoria = categoriaURL;
       if (k && !seen.has(k)) { seen.add(k); combined.push(card); }
     });
 
-    if (combined.length) renderOriginalsGrid(combined);
+    if (combined.length) {
+      renderOriginalsGrid(combined);
+    } else {
+      // Nada cadastrado em byelarah_items + nenhuma experience marcada
+      // como Original. O HTML estático da home (cards hardcoded) ainda
+      // está visível — esconde a seção inteira pra não mostrar conteúdo
+      // velho que o admin já apagou intencionalmente.
+      var section = document.getElementById('originals');
+      if (section) section.style.display = 'none';
+    }
   }
   loadByElarahCombined().catch(function (e) {
     console.warn('[Elarah] loadByElarahCombined falhou', e);
