@@ -231,10 +231,28 @@
         <button type="button" class="date-filter__chip" data-date-range="weekend">Este fim de semana</button>
         <button type="button" class="date-filter__chip" data-date-range="next-week">Próxima semana</button>
         <button type="button" class="date-filter__chip" data-date-range="next-month">Próximo mês</button>
-        <label class="date-filter__chip date-filter__chip--date">
-          <span class="date-filter__date-label">Escolher data</span>
-          <input type="date" id="date-filter-input" class="date-filter__date-input">
-        </label>
+        <div class="date-filter__chip-wrap" style="position:relative;display:inline-block;">
+          <button type="button" class="date-filter__chip" id="date-filter-custom-btn">
+            <span id="date-filter-custom-label">Escolher data</span>
+          </button>
+          <div class="date-filter__popover" id="date-filter-popover" hidden style="position:absolute;top:calc(100% + 8px);left:0;z-index:50;background:#fff;border:1px solid #e6dccb;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,0.12);padding:16px;min-width:280px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">De</label>
+                <input type="date" id="date-filter-from" style="width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;font-family:inherit;">
+              </div>
+              <div>
+                <label style="display:block;font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Até <span style="color:#bbb;font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+                <input type="date" id="date-filter-to" style="width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;font-family:inherit;">
+              </div>
+            </div>
+            <p style="font-size:.72rem;color:#888;margin:0 0 12px;line-height:1.4;">Deixe <b>Até</b> vazio pra filtrar só por um dia.</p>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+              <button type="button" id="date-filter-popover-clear" style="padding:7px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:8px;font-weight:600;font-size:.78rem;cursor:pointer;">Limpar</button>
+              <button type="button" id="date-filter-popover-apply" style="padding:7px 14px;border:none;background:#f0a05e;color:#fff;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;">Aplicar</button>
+            </div>
+          </div>
+        </div>
         <button type="button" class="date-filter__clear" id="date-filter-clear" hidden>limpar</button>
       </div>
     </div>
@@ -621,7 +639,7 @@
 <script src="explorar-menu.js?v=1" defer></script>
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=23"></script>
-<script src="date-filter.js?v=1"></script>
+<script src="date-filter.js?v=2"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=2"></script>
 <script src="script.js?v=60"></script></body></html>
