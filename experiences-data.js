@@ -853,13 +853,29 @@
       .is('recurrence_rule_id', null);
     const existingIds = new Set((existing || []).map(function (r) { return r.id; }));
 
+    // 1b) Tambem busca os slots de RECORRENCIA pra computar quais
+    //     (data, horario) ja estao "ocupados" por regra. Sem isso, se
+    //     o form re-envia esses slots como novos (sem id), o upsert
+    //     bate no unique index (experience_id, coalesce(data,''), horario)
+    //     porque a regra ja tem entrada equivalente — erro 400 silencioso
+    //     antes de melhorarmos o erro.
+    const { data: recurrenceSlots } = await s
+      .from(SLOTS_TABLE)
+      .select('id, horario, data')
+      .eq('experience_id', experienceId)
+      .not('recurrence_rule_id', 'is', null);
+    const recurrenceKeys = new Set();
+    (recurrenceSlots || []).forEach(function (r) {
+      recurrenceKeys.add((r.data || '') + '|' + String(r.horario || '').trim());
+    });
+
     // 2) Separa upserts dos deletes. Dedupe por (data, horario) pra evitar
-    //    bater no unique index (experience_id, coalesce(data,''), horario)
-    //    quando o form tem entradas duplicadas. Preserva a entrada com id
-    //    (registro existente) sobre a sem id (novo duplicado).
+    //    bater no unique index quando o form tem entradas duplicadas OU
+    //    quando o form mandou de volta um slot que e gerado por recorrencia.
     const toUpsert = [];
     const keepIds = new Set();
     const seenByKey = new Map(); // (data||'')+'|'+horario -> index em toUpsert
+    let skippedRecurrence = 0;
     (slotsArray || []).forEach(function (slot) {
       if (!slot.horario || !String(slot.horario).trim()) return;
       const vt = slot.vagasTotal === '' || slot.vagasTotal == null
@@ -877,20 +893,31 @@
         keepIds.add(slot.id);
       }
       const key = (row.data || '') + '|' + row.horario;
+
+      // Skip se a (data, horario) eh gerenciada pela recorrencia E o slot
+      // do form nao tem id de slot manual existente. Esses slots devem
+      // ser editados pelo painel de Recorrencia, nao pelo cadastro
+      // manual — sem isso, o upsert tenta inserir uma duplicata e quebra.
+      if (!row.id && recurrenceKeys.has(key)) {
+        skippedRecurrence += 1;
+        return;
+      }
+
       if (seenByKey.has(key)) {
         const existingIdx = seenByKey.get(key);
         const existingRow = toUpsert[existingIdx];
-        // Se o atual tem id e o que ja estava nao tem, substitui pra
-        // preservar o registro do banco em vez de tentar inserir novo.
         if (row.id && !existingRow.id) {
           toUpsert[existingIdx] = row;
         }
-        // Caso contrario, ignora o duplicado.
         return;
       }
       seenByKey.set(key, toUpsert.length);
       toUpsert.push(row);
     });
+    if (skippedRecurrence > 0) {
+      console.info('[Elarah] saveSlots: ignorados', skippedRecurrence,
+        'slot(s) gerados pela recorrencia (gerencie via painel Recorrencia, nao pelo cadastro manual).');
+    }
 
     // 3) Deleta slots removidos do form — restrito a manuais.
     //    .is('recurrence_rule_id', null) é segurança dupla: mesmo que
