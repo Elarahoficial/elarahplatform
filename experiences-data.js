@@ -931,24 +931,63 @@
         .is('recurrence_rule_id', null);
     }
 
-    // 4) Upsert os que ficaram/foram adicionados
+    // 4) Upsert os que ficaram/foram adicionados.
+    //
+    // CRITICO: separa em duas operacoes pra evitar bug do supabase-js
+    // serializando 'id' ausente como id:null quando outras rows do array
+    // tem id. Isso causava "null value in column id violates not-null
+    // constraint" (codigo 23502) em INSERTs de slots novos, ja que o
+    // gen_random_uuid() default soh dispara quando o campo eh OMITIDO,
+    // nao quando eh explicitamente NULL.
     if (toUpsert.length) {
-      const { error } = await s.from(SLOTS_TABLE).upsert(toUpsert, {
-        onConflict: 'id',
-        ignoreDuplicates: false
+      const toInsert = [];
+      const toUpdate = [];
+      toUpsert.forEach(function (r) {
+        if (r.id) toUpdate.push(r);
+        else {
+          // Garante que id nem aparece no payload (delete defensivo
+          // caso codigo acima tenha setado undefined).
+          var clean = {
+            experience_id: r.experience_id,
+            data: r.data,
+            horario: r.horario,
+            vagas_total: r.vagas_total,
+            event_at: r.event_at,
+            is_active: r.is_active,
+          };
+          toInsert.push(clean);
+        }
       });
-      if (error) {
-        console.error('[Elarah] saveSlots upsert error:', error);
-        // Propaga a mensagem real (message + details + hint) pra que o
-        // alert no admin mostre o que aconteceu, em vez de "saveSlots
-        // retornou false". Sem isso o usuario tinha que abrir console.
-        const parts = [error.message || 'erro desconhecido'];
-        if (error.details) parts.push('Detalhes: ' + error.details);
-        if (error.hint) parts.push('Dica: ' + error.hint);
-        if (error.code) parts.push('Código: ' + error.code);
-        const e = new Error(parts.join(' | '));
-        e.supabase = error;
-        throw e;
+
+      if (toUpdate.length) {
+        const { error: errU } = await s.from(SLOTS_TABLE).upsert(toUpdate, {
+          onConflict: 'id',
+          ignoreDuplicates: false
+        });
+        if (errU) {
+          console.error('[Elarah] saveSlots update error:', errU);
+          const parts = [errU.message || 'erro desconhecido'];
+          if (errU.details) parts.push('Detalhes: ' + errU.details);
+          if (errU.hint) parts.push('Dica: ' + errU.hint);
+          if (errU.code) parts.push('Código: ' + errU.code);
+          const e = new Error(parts.join(' | '));
+          e.supabase = errU;
+          throw e;
+        }
+      }
+
+      if (toInsert.length) {
+        const { error: errI } = await s.from(SLOTS_TABLE).insert(toInsert);
+        if (errI) {
+          console.error('[Elarah] saveSlots insert error:', errI);
+          const parts = [errI.message || 'erro desconhecido'];
+          if (errI.details) parts.push('Detalhes: ' + errI.details);
+          if (errI.hint) parts.push('Dica: ' + errI.hint);
+          if (errI.code) parts.push('Código: ' + errI.code);
+          const e = new Error(parts.join(' | '));
+          e.supabase = errI;
+          throw e;
+        }
       }
     }
 
