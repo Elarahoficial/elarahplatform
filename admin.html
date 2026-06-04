@@ -3160,10 +3160,15 @@
         </div>
 
         <div class="admin__form-field admin__form-field--full">
-          <label>URL da imagem</label>
-          <input type="text" id="exp-imagem" placeholder="https://... ou assets/experiences/nome.jpg">
+          <label>Imagem da experiência</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <input type="file" id="exp-imagem-file" accept="image/png,image/jpeg,image/webp,image/heic,image/avif" style="font-size:12px;">
+            <span id="exp-imagem-file-status" style="font-size:12px;color:#888;"></span>
+          </div>
+          <input type="text" id="exp-imagem" placeholder="https://... ou faça upload acima">
           <p class="admin__form-hint" id="exp-imagem-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
-            Aceita URL completa (https://...) ou caminho relativo (assets/...).
+            <b>Recomendado:</b> use o botão de upload acima — a foto vai pro nosso servidor e funciona sempre.
+            O campo de URL aceita link externo, mas links de Drive/Insta geralmente não funcionam (use o upload).
             Veja o preview abaixo antes de salvar.
           </p>
           <div id="exp-imagem-preview-wrap"

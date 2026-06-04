@@ -4687,6 +4687,76 @@
     // Expõe pra que openExpModal chame depois de preencher o input.
     window._refreshImagePreview = refreshImagePreview;
 
+    // ===== Upload direto pro bucket 'experience-images' =====
+    // Caso de uso: admin escolhe arquivo local → sobe pra storage publica
+    // → URL publica entra no campo exp-imagem → preview atualiza. Resolve
+    // o problema de "as fotos sao todas iguais": antes a admin colava URL
+    // de Drive/Insta que nao funcionava no site publico, e o fallback de
+    // categoria (cookies.jpg, velaaromatica.jpg) era exibido — entao todas
+    // as gastronomia ficavam com a mesma foto. Upload direto evita isso.
+    var fileInput = document.getElementById('exp-imagem-file');
+    var fileStatus = document.getElementById('exp-imagem-file-status');
+    function setFileStatus(ok, msg) {
+      if (!fileStatus) return;
+      fileStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
+      fileStatus.textContent = msg;
+    }
+    if (fileInput) {
+      fileInput.addEventListener('change', async function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+          setFileStatus(false, '⚠ Arquivo maior que 10MB. Comprima a imagem antes.');
+          fileInput.value = '';
+          return;
+        }
+        var s = window.supabaseClient;
+        if (!s || !s.storage) {
+          setFileStatus(false, '⚠ Storage indisponível. Tente recarregar a página.');
+          return;
+        }
+        setFileStatus(true, 'Enviando…');
+        // Nome do arquivo: timestamp + slug do nome original pra evitar
+        // colisao e manter histórico legivel. Mantem extensão original.
+        var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [,'jpg'])[1].toLowerCase();
+        var safeBase = (document.getElementById('exp-nome')?.value || 'exp')
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'exp';
+        var path = safeBase + '-' + Date.now() + '.' + ext;
+        try {
+          var { data: uploadData, error: uploadErr } = await s.storage
+            .from('experience-images')
+            .upload(path, file, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: file.type || ('image/' + ext),
+            });
+          if (uploadErr) {
+            console.error('[Admin] upload de imagem falhou:', uploadErr);
+            setFileStatus(false, '⚠ Falha no upload: ' + (uploadErr.message || 'erro desconhecido') +
+              '. Rode sql/elarah_experience_images_storage.sql no Supabase caso ainda não tenha rodado.');
+            return;
+          }
+          var { data: urlData } = s.storage.from('experience-images').getPublicUrl(uploadData.path);
+          var publicUrl = urlData && urlData.publicUrl;
+          if (!publicUrl) {
+            setFileStatus(false, '⚠ Upload funcionou mas não consegui pegar a URL pública. Veja o console.');
+            console.error('[Admin] getPublicUrl retornou vazio pra', uploadData.path);
+            return;
+          }
+          // Preenche o campo de URL e atualiza preview.
+          if (imagemEl) {
+            imagemEl.value = publicUrl;
+            refreshImagePreview();
+          }
+          setFileStatus(true, '✓ Enviada! URL preenchida automaticamente.');
+        } catch (e) {
+          console.error('[Admin] exceção no upload de imagem:', e);
+          setFileStatus(false, '⚠ Erro inesperado no upload: ' + (e.message || String(e)));
+        }
+      });
+    }
+
     // Combobox de fornecedor: substitui o input livre por um dropdown
     // com busca + opção "adicionar novo". Mantém o <input type=hidden
     // id="exp-fornecedor-nome"> pra preservar a leitura via getElementById
