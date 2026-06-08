@@ -42,7 +42,8 @@
   const OPTIONAL_COLUMNS = new Set([
     'vagas_total', 'event_at', 'cutoff_hours', 'is_active',
     'fornecedor_nome', 'valor_cheio_centavos', 'percentual_repasse',
-    'valor_repasse_fixo_centavos'
+    'valor_repasse_fixo_centavos',
+    'pacote_datas'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -149,6 +150,13 @@
       variantLabel: row.variant_label || null,
       variantOptions: Array.isArray(row.variant_options)
         ? row.variant_options.filter(function (o) { return o && String(o).trim(); })
+        : [],
+      // Datas do pacote/passaporte: array de strings (ex: ["12/06","19/06"]).
+      // Quando preenchido com 2+ datas, indica experiencia multi-encontro
+      // — cliente participa de TODAS as datas listadas. sql/elarah_
+      // experiences_pacote_datas.sql.
+      pacoteDatas: Array.isArray(row.pacote_datas)
+        ? row.pacote_datas.map(function (d) { return String(d || '').trim(); }).filter(Boolean)
         : [],
       // ------------------------
       createdAt: row.created_at || '',
@@ -259,6 +267,21 @@
         return String(raw).split('\n')
           .map(function (s) { return s.trim(); })
           .filter(Boolean);
+      })(),
+      // Datas do pacote: aceita array (camelCase) ou string com linhas.
+      // Null/array vazio = experiencia normal (limpa o campo no banco).
+      pacote_datas: (function () {
+        var raw = exp.pacoteDatas != null ? exp.pacoteDatas : exp.pacote_datas;
+        if (raw == null) return null;
+        var list;
+        if (Array.isArray(raw)) {
+          list = raw.map(function (d) { return String(d || '').trim(); }).filter(Boolean);
+        } else {
+          list = String(raw).split(/\r?\n/)
+            .map(function (s) { return s.trim(); })
+            .filter(Boolean);
+        }
+        return list.length ? list : null;
       })()
     };
     return filterKnownColumns(fullRow);

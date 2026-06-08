@@ -4288,15 +4288,13 @@
     var s = slotObj || {};
     var row = document.createElement('div');
     row.className = 'admin__horario-row';
-    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
     row.innerHTML =
-      '<input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30" style="flex:2;min-width:180px;">' +
-      '<input type="text" class="admin__horario-data" placeholder="Data (opcional)" title="Data específica deste horário (ex: 04/07). Vazio = usa a data principal da experiência. Útil pra Passaportes com mais de uma data." style="flex:0 0 130px;font-size:.85rem;">' +
+      '<input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30" style="flex:2;">' +
       '<input type="number" class="admin__horario-vagas" min="0" step="1" placeholder="Vagas" title="Vagas totais (vazio = ilimitado)" style="flex:0 0 70px;text-align:center;">' +
       '<span class="admin__horario-restantes" style="flex:0 0 50px;font-size:.8rem;color:#888;text-align:center;" title="Vagas restantes"></span>' +
       '<button type="button" class="admin__horario-remove" aria-label="Remover horário" style="flex:0 0 28px;">&times;</button>';
     row.querySelector('.admin__horario-input').value = s.horario || '';
-    row.querySelector('.admin__horario-data').value = s.data || '';
     row.querySelector('.admin__horario-vagas').value = s.vagasTotal != null ? s.vagasTotal : '';
     var restEl = row.querySelector('.admin__horario-restantes');
     if (s.vagasTotal != null && s.vagasRestantes != null) {
@@ -4313,7 +4311,6 @@
       if (rows.length > 1) row.remove();
       else {
         row.querySelector('.admin__horario-input').value = '';
-        row.querySelector('.admin__horario-data').value = '';
         row.querySelector('.admin__horario-vagas').value = '';
         row.querySelector('.admin__horario-restantes').textContent = '∞';
         row.querySelector('.admin__horario-restantes').style.color = '#888';
@@ -4345,17 +4342,12 @@
       var h = row.querySelector('.admin__horario-input').value.trim();
       if (!h) return;
       var vRaw = row.querySelector('.admin__horario-vagas').value.trim();
-      // Data per-slot: vazio → fallback pra exp.data no save (logica
-      // em saveExp). Preenchido → usa esse valor especifico. Util pra
-      // Passaportes com 2+ datas (ex: Collage Club no dia A, Artsy
-      // Club no dia B, mesma experiencia/preco).
-      var dRaw = row.querySelector('.admin__horario-data').value.trim();
       out.push({
         id: row.dataset.slotId || null,
         horario: h,
         vagasTotal: vRaw === '' ? null : Number(vRaw),
-        data: dRaw || null, // null = caller usa exp.data no save
-        eventAt: null,      // caller computa por slot no save
+        data: null,    // sera preenchido com exp.data no save
+        eventAt: null, // sera preenchido com exp.eventAt no save
       });
     });
     return out;
@@ -4425,6 +4417,12 @@
       document.getElementById('exp-nome').value = exp.nome || '';
       document.getElementById('exp-categoria').value = exp.categoria || '';
       document.getElementById('exp-data').value = exp.data || '';
+      var pacoteEl = document.getElementById('exp-pacote-datas');
+      if (pacoteEl) {
+        pacoteEl.value = Array.isArray(exp.pacoteDatas) && exp.pacoteDatas.length
+          ? exp.pacoteDatas.join('\n')
+          : '';
+      }
       document.getElementById('exp-duracao').value = exp.duracao || '';
       document.getElementById('exp-bairro').value = exp.bairro || '';
       document.getElementById('exp-preco').value = exp.preco || '';
@@ -4826,6 +4824,16 @@
         nome: document.getElementById('exp-nome').value.trim(),
         categoria: (document.getElementById('exp-categoria').value || '').trim(),
         data: document.getElementById('exp-data').value.trim(),
+        // Datas do pacote/passaporte: array de strings, uma por linha
+        // da textarea. Filtra linhas vazias. Vazio = experiencia normal.
+        pacoteDatas: (function () {
+          var raw = (document.getElementById('exp-pacote-datas')?.value || '').trim();
+          if (!raw) return null;
+          var list = raw.split(/\r?\n/)
+            .map(function (s) { return s.trim(); })
+            .filter(Boolean);
+          return list.length ? list : null;
+        })(),
         horario: horarios[0],
         horarios: horarios,
         duracao: document.getElementById('exp-duracao').value.trim(),
@@ -4938,25 +4946,10 @@
         let slotSaveErr = null;
         try {
           var slotsToSave = collectSlots();
-          // Preenche data/eventAt PER-SLOT:
-          //   - Se o slot tem data propria (campo "Data" da linha), usa
-          //     ela e recomputa eventAt via deriveEventTimestamp.
-          //   - Senao, herda exp.data + eventAtIso do nivel da
-          //     experiencia (comportamento legado).
-          // Permite Passaporte: cada horario em data diferente.
+          // Preenche data e eventAt do slot com os valores da experiencia.
           slotsToSave.forEach(function (sl) {
-            if (sl.data) {
-              // Tenta computar eventAt do slot via helper compartilhado.
-              if (window.ElarahData && typeof window.ElarahData.deriveEventTimestamp === 'function') {
-                var ts = window.ElarahData.deriveEventTimestamp(sl.data, sl.horario, Date.now());
-                sl.eventAt = ts ? new Date(ts).toISOString() : null;
-              } else {
-                sl.eventAt = null;
-              }
-            } else {
-              sl.data = expData.data || null;
-              sl.eventAt = eventAtIso || null;
-            }
+            sl.data = expData.data || null;
+            sl.eventAt = eventAtIso || null;
           });
           const okSlots = await ElarahData.saveSlots(saved.id, slotsToSave);
           if (okSlots === false) {
