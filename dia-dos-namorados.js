@@ -115,13 +115,11 @@
       }
       console.info('[DDN] overrides retornou:', overrides && overrides.length, 'destaques');
 
-      // Landing mostra SÓ 3 — premium e curado. Resto fica em
-      // dia-dos-namorados-todas.html (catalogo completo). Botao "Ver
-      // todas" aparece quando ha mais de 3 (cliente sabe que tem mais).
-      var totalFeatured = overrides ? overrides.length : 0;
-      if (overrides && overrides.length > 3) overrides = overrides.slice(0, 3);
-      var verTodasBtn = document.getElementById('ddn-ver-todas');
-      if (verTodasBtn && totalFeatured > 3) verTodasBtn.style.display = 'inline-flex';
+      // NOTA: NAO slica pra 3 aqui. O slice + display do botao "Ver
+      // todas" vem DEPOIS de filtrar overrides sem data futura na
+      // janela DDN. Senao, se os 3 primeiros do banco forem todos
+      // passados, restam 0 e a tela fica vazia mesmo havendo 15
+      // outras com data futura nos overrides restantes.
 
       if (!overrides || !overrides.length) {
         renderEmptyState(grid);
@@ -207,6 +205,17 @@
         }
         return true;
       });
+
+      // AGORA sim slica pra 3 cards (depois do filtro + ordenacao).
+      // Assim, se houver 18 overrides mas soh 5 tiverem data futura,
+      // mostra os 3 mais proximos cronologicamente — em vez do bug
+      // anterior que pegava os 3 PRIMEIROS do banco (sem filtrar) e
+      // se todos fossem passados a tela ficava vazia.
+      var totalComData = orderedOverrides.length;
+      if (orderedOverrides.length > 3) orderedOverrides = orderedOverrides.slice(0, 3);
+      var verTodasBtn = document.getElementById('ddn-ver-todas');
+      if (verTodasBtn && totalComData > 3) verTodasBtn.style.display = 'inline-flex';
+      console.info('[DDN] cards a renderizar:', orderedOverrides.length, '(de', totalComData, 'com data futura)');
 
       var cardsHtml = orderedOverrides.map(function (o) {
         var e = expById.get(o.experience_id);
