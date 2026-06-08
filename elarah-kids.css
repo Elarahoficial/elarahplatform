@@ -43,12 +43,11 @@ body.ek-body {
 .ek-hero__decor {
   position: absolute;
   pointer-events: none;
-  font-size: 120px;
-  opacity: 0.18;
-  line-height: 1;
+  width: 90px; height: 90px;
+  opacity: 0.32;
 }
-.ek-hero__decor--left  { top: 30px;    left: 20px; transform: rotate(-15deg); }
-.ek-hero__decor--right { bottom: 30px; right: 20px; transform: rotate(12deg); }
+.ek-hero__decor--left  { top: 40px;    left: 24px;  color: var(--ek-sun); transform: rotate(-10deg); }
+.ek-hero__decor--right { bottom: 40px; right: 24px; color: var(--ek-sage); transform: rotate(10deg); }
 .ek-hero__inner { position: relative; max-width: 820px; margin: 0 auto; z-index: 2; }
 .ek-hero__kicker {
   display: inline-block;
@@ -103,56 +102,133 @@ body.ek-body {
   box-shadow: 0 10px 24px rgba(245, 185, 66, 0.45);
 }
 
-/* ========== BENEFICIOS (6 cards) ========== */
+/* ========== BENEFICIOS — "Menos telas. Mais infancia." ==========
+   Cards SEM emoji, foco em tipografia editorial. Estilo "magazine
+   spread" — texto respira, serif italic puxa o sentimento. */
 .ek-benefits {
-  padding: 80px 24px;
+  padding: 90px 24px;
   background: linear-gradient(180deg, var(--ek-cream) 0%, var(--ek-cream-warm) 100%);
 }
-.ek-benefits__inner { max-width: 1140px; margin: 0 auto; text-align: center; }
+.ek-benefits__inner { max-width: 1100px; margin: 0 auto; text-align: center; }
+.ek-benefits__kicker {
+  display: inline-block;
+  font-size: .72rem;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ek-sage);
+  font-weight: 700;
+  margin-bottom: 14px;
+}
 .ek-benefits__title {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-size: clamp(2rem, 4.5vw, 3rem);
   font-weight: 400;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   color: var(--ek-ink);
+  line-height: 1.05;
 }
-.ek-benefits__sub { color: var(--ek-ink-soft); font-size: 1.02rem; margin: 0 0 48px; max-width: 580px; margin-left:auto; margin-right:auto; }
+.ek-benefits__title em { font-style: italic; color: var(--ek-sage); font-weight: 400; }
+.ek-benefits__sub { color: var(--ek-ink-soft); font-size: 1.05rem; margin: 0 0 56px; max-width: 580px; margin-left:auto; margin-right:auto; line-height: 1.55; }
 .ek-benefits__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  text-align: left;
 }
 .ek-benefit {
   background: #fff;
   border: 1px solid var(--ek-line);
-  border-radius: 18px;
-  padding: 28px 24px;
-  text-align: center;
+  border-radius: 20px;
+  padding: 32px 28px;
+  position: relative;
   transition: transform .2s, box-shadow .2s, border-color .2s;
 }
+/* Numeracao discreta no canto superior direito de cada card. Da
+   ar editorial sem precisar de icone. */
+.ek-benefit::before {
+  content: counter(ek-benefit, decimal-leading-zero);
+  position: absolute;
+  top: 22px; right: 24px;
+  font-family: 'DM Serif Display', serif;
+  font-size: .9rem;
+  color: var(--ek-sage);
+  opacity: 0.4;
+  font-style: italic;
+}
+.ek-benefits__grid { counter-reset: ek-benefit; }
+.ek-benefit { counter-increment: ek-benefit; }
 .ek-benefit:hover {
   transform: translateY(-4px);
-  box-shadow: 0 14px 32px rgba(122, 154, 110, 0.15);
+  box-shadow: 0 16px 36px rgba(122, 154, 110, 0.16);
   border-color: var(--ek-sage-soft);
-}
-.ek-benefit__icon {
-  font-size: 2.4rem;
-  margin-bottom: 14px;
-  display: inline-block;
-  line-height: 1;
 }
 .ek-benefit__title {
   font-family: 'DM Serif Display', serif;
-  font-size: 1.3rem;
+  font-size: 1.45rem;
   font-weight: 400;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   color: var(--ek-ink);
+  line-height: 1.2;
+  padding-right: 24px;       /* nao colide com a numeracao */
 }
 .ek-benefit__text {
-  font-size: .9rem;
+  font-size: .96rem;
   color: var(--ek-ink-soft);
-  line-height: 1.55;
+  line-height: 1.65;
   margin: 0;
+}
+.ek-benefit__text em { font-style: italic; color: var(--ek-sage); font-weight: 500; }
+
+/* ========== PROMESSAS (O que uma tarde offline pode proporcionar) ==========
+   Lista sentimental — checkmarks sage em fundo creme escuro. Lugar
+   da pagina que faz o pai imaginar o cenario concreto. */
+.ek-promises {
+  padding: 88px 24px;
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 0%, rgba(245, 185, 66, 0.15), transparent 70%),
+    var(--ek-cream-warm);
+}
+.ek-promises__inner { max-width: 880px; margin: 0 auto; text-align: center; }
+.ek-promises__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 400;
+  margin: 0 0 36px;
+  color: var(--ek-ink);
+  line-height: 1.15;
+}
+.ek-promises__title em { font-style: italic; color: var(--ek-sage); font-weight: 400; }
+.ek-promises__list {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  text-align: left;
+}
+.ek-promise {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--ek-line);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ek-ink);
+  line-height: 1.35;
+}
+.ek-promise__check {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--ek-sage);
+  color: #fff;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: .95rem;
+  font-weight: 700;
 }
 
 /* ========== MANIFESTO ========== */
@@ -325,7 +401,9 @@ body.ek-body {
   margin: 0 0 32px;
   color: var(--ek-ink);
   text-align: center;
+  line-height: 1.15;
 }
+.ek-values__title em { font-style: italic; color: var(--ek-sage); font-weight: 400; }
 .ek-values__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -403,11 +481,19 @@ body.ek-body {
 
 /* ========== RESPONSIVO ========== */
 @media (max-width: 720px) {
-  .ek-hero { padding: 64px 20px 56px; }
-  .ek-benefits, .ek-experiences, .ek-values, .ek-manifesto, .ek-cta-final { padding: 56px 18px; }
-  .ek-hero__decor { display: none; }
-  .ek-benefit { padding: 22px 18px; }
-  .ek-benefit__icon { font-size: 2rem; }
-  .ek-benefits__title, .ek-experiences__title, .ek-values__title, .ek-cta-final__title { font-size: 1.7rem; }
-  .ek-manifesto__text { font-size: 1.2rem; }
+  .ek-hero { padding: 60px 18px 56px; }
+  .ek-hero__title { font-size: 1.5rem; line-height: 1.25; }
+  .ek-hero__title br { display: inline; content: ' '; }
+  .ek-hero__title br::after { content: ' '; }
+  .ek-hero__decor { width: 60px; height: 60px; opacity: 0.22; }
+  .ek-hero__decor--left { top: 24px; left: 14px; }
+  .ek-hero__decor--right { bottom: 24px; right: 14px; }
+
+  .ek-benefits, .ek-experiences, .ek-values, .ek-manifesto, .ek-cta-final, .ek-promises { padding: 56px 18px; }
+  .ek-benefit { padding: 26px 22px; }
+  .ek-benefit__title { font-size: 1.25rem; }
+  .ek-benefit::before { top: 18px; right: 18px; font-size: .8rem; }
+  .ek-benefits__title, .ek-promises__title, .ek-experiences__title, .ek-values__title, .ek-cta-final__title { font-size: 1.7rem; }
+  .ek-promise { padding: 14px 18px; font-size: .93rem; }
+  .ek-manifesto__text { font-size: 1.15rem; }
 }
