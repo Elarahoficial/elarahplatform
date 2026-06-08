@@ -2382,36 +2382,48 @@ select {
   }
   .categories::after { width: 32px; }
 
-  /* ===== Filters mobile: proporcional ao tamanho do telefone =====
-   * font-size: 16px mantido nos selects/botao pra evitar zoom auto
-   * do iOS Safari (regra: <16px causa zoom). Mas o resto da secao
-   * fica em escala compativel com viewport pequeno.
+  /* ===== Filters mobile: tamanhos em PX pra ignorar dynamic type =====
+   * Usar px (nao rem) evita amplificacao da iOS "Larger Text" / Android
+   * font-scale. As outras secoes (cards, header) ficam normais; soh
+   * essa secao precisava de tratamento porque os labels uppercase +
+   * letter-spacing somavam peso visual em cima do tamanho da fonte.
+   *
+   * font-size 16px PRESERVADO nos selects (anti-zoom iOS).
    */
   .filters {
-    padding: 24px 0;
+    padding: 20px 0;
   }
   .filters__inner {
     padding: 0 16px;
   }
   .filters__title {
-    font-size: 1.15rem;
+    font-size: 18px;
     line-height: 1.25;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
+  .filters__row { gap: 10px; }
+  .filters__group { min-width: 100%; }
   .filters__label {
-    font-size: 0.7rem;
-    letter-spacing: 0.04em;
+    font-size: 11px;
+    letter-spacing: 0.03em;
     margin-bottom: 4px;
+    font-weight: 500;
   }
   .filters__select {
     font-size: 16px;          /* iOS-safe — NAO baixar */
-    padding: 12px 14px;
-    padding-right: 36px;
+    padding: 10px 14px;
+    padding-right: 34px;
+    border-radius: 10px;
   }
   .filters__btn {
-    font-size: 0.92rem;
-    padding: 12px 18px;
+    font-size: 14px;
+    padding: 11px 18px;
+    border-radius: 10px;
   }
+  /* "Quando?" chip strip mais compacto */
+  .date-filter { margin-top: 10px; }
+  .date-filter__title { font-size: 13px; }
+  .date-filter__chip { font-size: 13px; padding: 7px 12px; }
 
   .header__nav {
     display: none;
