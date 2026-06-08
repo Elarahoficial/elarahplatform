@@ -230,16 +230,17 @@
           ? ElarahData.formatPrecoBR(e.preco)
           : (e.preco || '');
 
-        // Proxima data NA JANELA DDN. Vai pra cima da imagem como
-        // badge (mesmo padrao dos cards normais de categoria.html),
-        // pra cliente nao precisar clicar pra ver a data.
+        // Proxima data NA JANELA DDN como badge no canto superior
+        // esquerdo da imagem — mesmo padrao visual dos cards normais
+        // de categoria.html (pill colorida, dd/mm em branco), mas em
+        // tom vinho (ddn-wine #6b1f2e) em vez do laranja padrao pra
+        // ficar coerente com a paleta da campanha DDN.
         var nextDateInDDN = firstDateInDDN.get(e.id);
         var dataBadge = '';
         if (nextDateInDDN) {
           var dt = new Date(nextDateInDDN);
           var labelData = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-          var wd = dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-          dataBadge = '<span class="ddn-card__date-badge" style="position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.95);color:#a4332b;border-radius:999px;font-size:.78rem;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:2;">📅 ' + esc(wd) + ', ' + esc(labelData) + '</span>';
+          dataBadge = '<span class="ddn-card__date-badge" style="position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;padding:7px 16px;background:#6b1f2e;color:#fff;border-radius:999px;font-size:.85rem;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.18);z-index:3;letter-spacing:.02em;">' + esc(labelData) + '</span>';
         }
 
         var meta = [];
@@ -256,10 +257,12 @@
             '<div class="ddn-card__placeholder" style="display:none;">' + esc(e.categoria || 'Experiência') + '</div>'
           : '<div class="ddn-card__placeholder">' + esc(e.categoria || 'Experiência') + '</div>';
 
+        // Quando ha data (caso normal apos o filtro), o badge "Especial
+        // Dia dos Namorados" eh substituido pelo badge da data — evita
+        // overlap visual e mantem o card limpo, igual o exemplo enviado.
         return '<article class="ddn-card">' +
           '<div class="ddn-card__media" style="position:relative;">' +
-            '<span class="ddn-card__badge">' + esc(badge) + '</span>' +
-            dataBadge +
+            (dataBadge ? dataBadge : '<span class="ddn-card__badge">' + esc(badge) + '</span>') +
             media +
           '</div>' +
           '<div class="ddn-card__body">' +
