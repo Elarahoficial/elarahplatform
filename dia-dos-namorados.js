@@ -115,12 +115,13 @@
       }
       console.info('[DDN] overrides retornou:', overrides && overrides.length, 'destaques');
 
-      // Landing mostra SÓ 6 — premium e curado. Resto fica em
-      // dia-dos-namorados-todas.html (catálogo completo).
+      // Landing mostra SÓ 3 — premium e curado. Resto fica em
+      // dia-dos-namorados-todas.html (catalogo completo). Botao "Ver
+      // todas" aparece quando ha mais de 3 (cliente sabe que tem mais).
       var totalFeatured = overrides ? overrides.length : 0;
-      if (overrides && overrides.length > 6) overrides = overrides.slice(0, 6);
+      if (overrides && overrides.length > 3) overrides = overrides.slice(0, 3);
       var verTodasBtn = document.getElementById('ddn-ver-todas');
-      if (verTodasBtn && totalFeatured > 6) verTodasBtn.style.display = 'inline-flex';
+      if (verTodasBtn && totalFeatured > 3) verTodasBtn.style.display = 'inline-flex';
 
       if (!overrides || !overrides.length) {
         renderEmptyState(grid);
@@ -129,11 +130,21 @@
 
       var expIds = overrides.map(function (o) { return o.experience_id; });
 
-      // Janela DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte
-      // (mesma regra do admin → consistência entre admin/landing/detalhe).
+      // Janela DDN: campanha de Dia dos Namorados (12 de junho no BR).
+      // Antes era "dia 25 do mes atual ate dia 25 do mes seguinte", o
+      // que excluia o proprio 12/06 quando o admin abria a pagina
+      // DEPOIS de 25/06 — sintoma: experiencia com data 12 de junho
+      // aparecia como "sem data disponivel". Agora a janela eh fixa:
+      // 25/05 ate 25/07 do ano corrente (com rollover pra ano seguinte
+      // se a data ja passou de 25/07).
       var _now = new Date();
-      var DDN_START = new Date(_now.getFullYear(), _now.getMonth(), 25).toISOString();
-      var DDN_END   = new Date(_now.getFullYear(), _now.getMonth() + 1, 25).toISOString();
+      var _ddnYear = _now.getFullYear();
+      if (_now > new Date(_ddnYear, 6, 25)) _ddnYear += 1;
+      var DDN_START = new Date(_ddnYear, 4, 25).toISOString();   // 25 de maio
+      var DDN_END   = new Date(_ddnYear, 6, 25).toISOString();   // 25 de julho
+      // Adicionalmente, descarta slots que ja sao passado (mesmo dentro
+      // da janela): cliente nao consegue reservar pra data passada.
+      var _nowIso = _now.toISOString();
 
       var [expsRes2, slotsRes] = await Promise.all([
         sb.from('experiences')
@@ -145,7 +156,7 @@
           .select('experience_id, event_at, vagas_total, vagas_restantes')
           .in('experience_id', expIds)
           .not('is_active', 'is', false)
-          .gte('event_at', DDN_START)
+          .gte('event_at', _nowIso < DDN_START ? DDN_START : _nowIso)
           .lt('event_at', DDN_END)
           .order('event_at', { ascending: true })
           .range(0, 9999),
@@ -210,18 +221,19 @@
           ? ElarahData.formatPrecoBR(e.preco)
           : (e.preco || '');
 
-        // Próxima data NA JANELA DDN (não absoluta — esconde 18/05 etc.)
+        // Proxima data NA JANELA DDN. Vai pra cima da imagem como
+        // badge (mesmo padrao dos cards normais de categoria.html),
+        // pra cliente nao precisar clicar pra ver a data.
         var nextDateInDDN = firstDateInDDN.get(e.id);
-        var dataChip = '';
+        var dataBadge = '';
         if (nextDateInDDN) {
           var dt = new Date(nextDateInDDN);
           var labelData = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
           var wd = dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-          dataChip = '<span class="ddn-card__meta-item" style="background:#fff8ef;color:#a4663b;font-weight:700;">📅 ' + esc(wd) + ', ' + esc(labelData) + '</span>';
+          dataBadge = '<span class="ddn-card__date-badge" style="position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.95);color:#a4332b;border-radius:999px;font-size:.78rem;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:2;">📅 ' + esc(wd) + ', ' + esc(labelData) + '</span>';
         }
 
         var meta = [];
-        if (dataChip) meta.push(dataChip);
         if (e.duracao) meta.push('<span class="ddn-card__meta-item">' + esc(e.duracao) + '</span>');
         if (e.bairro) meta.push('<span class="ddn-card__meta-item">' + esc(e.bairro) + '</span>');
         if (e.vagas_total) meta.push('<span class="ddn-card__meta-item">' + esc(e.vagas_total) + ' vagas</span>');
@@ -236,8 +248,9 @@
           : '<div class="ddn-card__placeholder">' + esc(e.categoria || 'Experiência') + '</div>';
 
         return '<article class="ddn-card">' +
-          '<div class="ddn-card__media">' +
+          '<div class="ddn-card__media" style="position:relative;">' +
             '<span class="ddn-card__badge">' + esc(badge) + '</span>' +
+            dataBadge +
             media +
           '</div>' +
           '<div class="ddn-card__body">' +

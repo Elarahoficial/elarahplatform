@@ -14714,10 +14714,15 @@
     listEl.innerHTML = '<p style="color:#888;font-style:italic;font-size:.85rem;">Carregando…</p>';
 
     // JANELA ESTRATÉGICA DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte.
-    // Hoje 12/05 → janela 25/05 a 25/06. Hoje 03/08 → janela 25/08 a 25/09.
+    // Janela DDN fixa: 25/05 a 25/07 do ano da campanha (rollover pro
+    // ano seguinte apos 25/07). Antes era "mes corrente", o que jogava
+    // o 12/06 (data oficial DDN no BR) pra fora da janela quando o
+    // admin abria depois de 25/06.
     var _now = new Date();
-    var ddnStart = new Date(_now.getFullYear(), _now.getMonth(), 25);
-    var ddnEnd = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
+    var _ddnYear = _now.getFullYear();
+    if (_now > new Date(_ddnYear, 6, 25)) _ddnYear += 1;
+    var ddnStart = new Date(_ddnYear, 4, 25);
+    var ddnEnd = new Date(_ddnYear, 6, 25);
     var nowIso = _now.toISOString();
     var ddnStartIso = ddnStart.toISOString();
     var ddnEndIso = ddnEnd.toISOString();

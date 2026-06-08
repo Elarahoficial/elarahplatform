@@ -15,8 +15,14 @@
   // Janela DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte
   // (mesma regra do admin pra consistência).
   var _now = new Date();
-  var DDN_START = new Date(_now.getFullYear(), _now.getMonth(), 25);
-  var DDN_END   = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
+  // Janela DDN fixa: 25/05 ate 25/07 do ano da campanha. Rollover
+  // pra ano seguinte se passou de 25/07. Sintoma quando estava
+  // dinamica "mes corrente": 12/06 (data oficial DDN) nao aparecia
+  // pra quem abria a pagina depois de 25/06.
+  var _ddnYear = _now.getFullYear();
+  if (_now > new Date(_ddnYear, 6, 25)) _ddnYear += 1;
+  var DDN_START = new Date(_ddnYear, 4, 25);
+  var DDN_END   = new Date(_ddnYear, 6, 25);
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {

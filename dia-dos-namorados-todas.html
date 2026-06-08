@@ -244,9 +244,13 @@
 (function(){
   'use strict';
   var CAMPAIGN_SLUG = 'dia-dos-namorados';
+  // Janela DDN fixa: 25/05 a 25/07. Fix do 12/06 sumir quando admin
+  // abria depois de 25/06 (era "mes corrente" antes).
   var _now = new Date();
-  var DDN_START = new Date(_now.getFullYear(), _now.getMonth(), 25).toISOString();
-  var DDN_END   = new Date(_now.getFullYear(), _now.getMonth() + 1, 25).toISOString();
+  var _ddnYear = _now.getFullYear();
+  if (_now > new Date(_ddnYear, 6, 25)) _ddnYear += 1;
+  var DDN_START = new Date(_ddnYear, 4, 25).toISOString();
+  var DDN_END   = new Date(_ddnYear, 6, 25).toISOString();
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function waitSb(ms){return new Promise(function(res){var e=0;(function ch(){if(window.supabaseClient)return res(window.supabaseClient);e+=100;if(e>=(ms||5000))return res(null);setTimeout(ch,100);})();});}
