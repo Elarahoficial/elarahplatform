@@ -206,9 +206,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         `">`
       : placeholderHtml;
 
-    const horarioLine = hasMultipleHorarios
-      ? `${exp.data || ''}`
-      : `${exp.data || ''}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
+    // Pacote/Passaporte: quando exp.pacoteDatas tem 2+ datas, monta
+    // bloco multi-linha com TODAS as datas inclusas. Cliente ve
+    // imediatamente no card que vai a varios encontros, sem precisar
+    // abrir o detalhe.
+    const pacote = Array.isArray(exp.pacoteDatas) ? exp.pacoteDatas.filter(Boolean) : [];
+    const isPackage = pacote.length >= 2;
+    const horarioSuffix = (!hasMultipleHorarios && horarios[0]) ? ' &middot; ' + horarios[0] : '';
+    let horarioLine;
+    if (isPackage) {
+      horarioLine = pacote.map(function (d, i) {
+        return '<span style="display:block;' + (i > 0 ? 'margin-top:3px;' : '') + '"><b style="color:#a05f1e;">' + String(d).replace(/[&<>"]/g, '') + '</b>' +
+          (horarioSuffix) +
+        '</span>';
+      }).join('');
+    } else {
+      horarioLine = `${exp.data || ''}${horarioSuffix}`;
+    }
 
     const horariosBlock = hasMultipleHorarios
       ? `<div class="card__horarios">${horarios.map((h, i) =>

@@ -455,9 +455,20 @@ if (categoriaURL) activeCategoria = categoriaURL;
         `">`
       : placeholderHtml;
 
-    const horarioLine = hasMultipleHorarios
-      ? `${exp.data}`
-      : `${exp.data}${horarios[0] ? ' &middot; ' + horarios[0] : ''}`;
+    // Pacote: se exp.pacoteDatas tem 2+ datas, lista TODAS no card.
+    const pacote = Array.isArray(exp.pacoteDatas) ? exp.pacoteDatas.filter(Boolean) : [];
+    const isPackage = pacote.length >= 2;
+    const horarioSuffix = (!hasMultipleHorarios && horarios[0]) ? ' &middot; ' + horarios[0] : '';
+    let horarioLine;
+    if (isPackage) {
+      horarioLine = pacote.map(function (d, i) {
+        return '<span style="display:block;' + (i > 0 ? 'margin-top:3px;' : '') + '"><b style="color:#a05f1e;">' + String(d).replace(/[&<>"]/g, '') + '</b>' +
+          horarioSuffix +
+        '</span>';
+      }).join('');
+    } else {
+      horarioLine = `${exp.data}${horarioSuffix}`;
+    }
 
     const horariosBlock = hasMultipleHorarios
       ? `<div class="card__horarios">${horarios.map((h, i) => {
