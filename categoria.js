@@ -351,6 +351,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       return true;
     });
 
+    // Ordena cronologicamente pela proxima ocorrencia (futureDates[0]).
+    // Experiencias sem data futura conhecida vao pro fim (geralmente
+    // recorrentes sem slot programado, ou one-offs sem horario parseavel).
+    base.sort(function (a, b) {
+      var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
+      var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
+      return ta - tb;
+    });
+
     grid.innerHTML = '';
     updateTitle();
 

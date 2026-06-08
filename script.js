@@ -280,6 +280,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return matchCat && matchBairro && matchBusca && matchData;
     });
 
+    // Ordena cronologicamente pela proxima ocorrencia futura.
+    // Experiencias sem data conhecida (recorrente sem slot programado,
+    // one-off com data ausente, etc) vao pro fim.
+    filtered.sort(function (a, b) {
+      var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
+      var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
+      return ta - tb;
+    });
+
     grid.innerHTML = '';
     emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
     countEl.textContent = filtered.length + ' experiência' + (filtered.length !== 1 ? 's' : '');
