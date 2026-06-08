@@ -4288,13 +4288,15 @@
     var s = slotObj || {};
     var row = document.createElement('div');
     row.className = 'admin__horario-row';
-    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
     row.innerHTML =
-      '<input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30" style="flex:2;">' +
+      '<input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30" style="flex:2;min-width:180px;">' +
+      '<input type="text" class="admin__horario-data" placeholder="Data (opcional)" title="Data específica deste horário (ex: 04/07). Vazio = usa a data principal da experiência. Útil pra Passaportes com mais de uma data." style="flex:0 0 130px;font-size:.85rem;">' +
       '<input type="number" class="admin__horario-vagas" min="0" step="1" placeholder="Vagas" title="Vagas totais (vazio = ilimitado)" style="flex:0 0 70px;text-align:center;">' +
       '<span class="admin__horario-restantes" style="flex:0 0 50px;font-size:.8rem;color:#888;text-align:center;" title="Vagas restantes"></span>' +
       '<button type="button" class="admin__horario-remove" aria-label="Remover horário" style="flex:0 0 28px;">&times;</button>';
     row.querySelector('.admin__horario-input').value = s.horario || '';
+    row.querySelector('.admin__horario-data').value = s.data || '';
     row.querySelector('.admin__horario-vagas').value = s.vagasTotal != null ? s.vagasTotal : '';
     var restEl = row.querySelector('.admin__horario-restantes');
     if (s.vagasTotal != null && s.vagasRestantes != null) {
@@ -4311,6 +4313,7 @@
       if (rows.length > 1) row.remove();
       else {
         row.querySelector('.admin__horario-input').value = '';
+        row.querySelector('.admin__horario-data').value = '';
         row.querySelector('.admin__horario-vagas').value = '';
         row.querySelector('.admin__horario-restantes').textContent = '∞';
         row.querySelector('.admin__horario-restantes').style.color = '#888';
@@ -4342,12 +4345,17 @@
       var h = row.querySelector('.admin__horario-input').value.trim();
       if (!h) return;
       var vRaw = row.querySelector('.admin__horario-vagas').value.trim();
+      // Data per-slot: vazio → fallback pra exp.data no save (logica
+      // em saveExp). Preenchido → usa esse valor especifico. Util pra
+      // Passaportes com 2+ datas (ex: Collage Club no dia A, Artsy
+      // Club no dia B, mesma experiencia/preco).
+      var dRaw = row.querySelector('.admin__horario-data').value.trim();
       out.push({
         id: row.dataset.slotId || null,
         horario: h,
         vagasTotal: vRaw === '' ? null : Number(vRaw),
-        data: null, // será preenchido com exp.data no save
-        eventAt: null, // será preenchido com exp.eventAt no save
+        data: dRaw || null, // null = caller usa exp.data no save
+        eventAt: null,      // caller computa por slot no save
       });
     });
     return out;
@@ -4800,6 +4808,19 @@
         const d = new Date(eventAtRaw);
         if (!isNaN(d.getTime())) eventAtIso = d.toISOString();
       }
+      // SEMPRE recomputa event_at de data + 1o horario quando ambos
+      // estao preenchidos. Evita o bug "mudei a data no form mas o
+      // event_at ficou antigo (carregado do banco no openExpModal) e
+      // a experiencia auto-oculta" que reportamos antes. O event_at
+      // manual continua sendo aceito como fallback se data+horario
+      // nao parseam.
+      const expDataStr = document.getElementById('exp-data')?.value.trim() || '';
+      const firstHorario = horarios[0] || '';
+      if (expDataStr && firstHorario &&
+          window.ElarahData && typeof window.ElarahData.deriveEventTimestamp === 'function') {
+        const ts = window.ElarahData.deriveEventTimestamp(expDataStr, firstHorario, Date.now());
+        if (ts) eventAtIso = new Date(ts).toISOString();
+      }
 
       const expData = {
         nome: document.getElementById('exp-nome').value.trim(),
@@ -4917,10 +4938,25 @@
         let slotSaveErr = null;
         try {
           var slotsToSave = collectSlots();
-          // Preenche data e eventAt do slot com os valores da experiência
+          // Preenche data/eventAt PER-SLOT:
+          //   - Se o slot tem data propria (campo "Data" da linha), usa
+          //     ela e recomputa eventAt via deriveEventTimestamp.
+          //   - Senao, herda exp.data + eventAtIso do nivel da
+          //     experiencia (comportamento legado).
+          // Permite Passaporte: cada horario em data diferente.
           slotsToSave.forEach(function (sl) {
-            sl.data = expData.data || null;
-            sl.eventAt = eventAtIso || null;
+            if (sl.data) {
+              // Tenta computar eventAt do slot via helper compartilhado.
+              if (window.ElarahData && typeof window.ElarahData.deriveEventTimestamp === 'function') {
+                var ts = window.ElarahData.deriveEventTimestamp(sl.data, sl.horario, Date.now());
+                sl.eventAt = ts ? new Date(ts).toISOString() : null;
+              } else {
+                sl.eventAt = null;
+              }
+            } else {
+              sl.data = expData.data || null;
+              sl.eventAt = eventAtIso || null;
+            }
           });
           const okSlots = await ElarahData.saveSlots(saved.id, slotsToSave);
           if (okSlots === false) {
