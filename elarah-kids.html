@@ -11,7 +11,7 @@
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=8">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="elarah-kids.css?v=1">
+  <link rel="stylesheet" href="elarah-kids.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -72,20 +72,23 @@
 
   <!-- ========== HERO ========== -->
   <section class="ek-hero">
-    <div class="ek-hero__decor ek-hero__decor--left" aria-hidden="true">☀</div>
-    <div class="ek-hero__decor ek-hero__decor--right" aria-hidden="true">✿</div>
+    <svg class="ek-hero__decor ek-hero__decor--left" viewBox="0 0 60 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="30" cy="30" r="14"/>
+      <path d="M30 8v6M30 46v6M8 30h6M46 30h6M14 14l4 4M42 42l4 4M14 46l4-4M42 18l4-4"/>
+    </svg>
+    <svg class="ek-hero__decor ek-hero__decor--right" viewBox="0 0 60 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 12c-6 6-6 9 0 12s6 6 0 12-6 6 0 8"/>
+      <path d="M16 30a14 14 0 0 0 28 0c0-5-7-9-14-14-7 5-14 9-14 14z"/>
+    </svg>
     <div class="ek-hero__inner">
       <span class="ek-hero__kicker">Elarah Kids · Curadoria pra crianças</span>
       <h1 class="ek-hero__title">
-        Menos telas.<br>
-        <em>Mais descobertas.</em>
+        Eles vão esquecer o desenho<br>
+        que assistiram hoje.<br>
+        <em>Mas talvez nunca esqueçam<br>a primeira peça que criaram com<br>as próprias mãos.</em>
       </h1>
-      <p class="ek-hero__sub">
-        Experiências criativas e presenciais pra crianças aprenderem,
-        explorarem e criarem memórias inesquecíveis.
-      </p>
       <a href="#ek-experiencias" class="ek-hero__cta">
-        Explorar experiências
+        Ver experiências para crianças
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
         </svg>
@@ -93,43 +96,67 @@
     </div>
   </section>
 
-  <!-- ========== BENEFICIOS ========== -->
+  <!-- ========== MENOS TELAS. MAIS INFÂNCIA. ========== -->
   <section class="ek-benefits">
     <div class="ek-benefits__inner">
-      <h2 class="ek-benefits__title">Por que experiências offline importam?</h2>
-      <p class="ek-benefits__sub">Cada hora longe da tela é uma hora ganhando habilidade, confiança e memórias.</p>
+      <span class="ek-benefits__kicker">Para os pais</span>
+      <h2 class="ek-benefits__title">Menos telas. <em>Mais infância.</em></h2>
+      <p class="ek-benefits__sub">
+        Algumas das melhores lembranças começam quando a criatividade sai da
+        tela e vai para o mundo real.
+      </p>
       <div class="ek-benefits__grid">
         <article class="ek-benefit">
-          <span class="ek-benefit__icon" aria-hidden="true">🎨</span>
-          <h3 class="ek-benefit__title">Criatividade</h3>
-          <p class="ek-benefit__text">Estimula a imaginação e a expressão pessoal.</p>
+          <h3 class="ek-benefit__title">Mãos sujas de tinta</h3>
+          <p class="ek-benefit__text">
+            Porque algumas das melhores lembranças começam quando a criatividade
+            sai da tela e vai para o mundo real.
+          </p>
         </article>
         <article class="ek-benefit">
-          <span class="ek-benefit__icon" aria-hidden="true">🤝</span>
-          <h3 class="ek-benefit__title">Socialização</h3>
-          <p class="ek-benefit__text">Ajuda as crianças a interagirem e criarem novas amizades.</p>
+          <h3 class="ek-benefit__title">Novas descobertas</h3>
+          <p class="ek-benefit__text">
+            Cada experiência é uma oportunidade pra explorar, experimentar e
+            ganhar confiança.
+          </p>
         </article>
         <article class="ek-benefit">
-          <span class="ek-benefit__icon" aria-hidden="true">🧠</span>
-          <h3 class="ek-benefit__title">Desenvolvimento cognitivo</h3>
-          <p class="ek-benefit__text">Aprendizado através da prática e da experimentação.</p>
+          <h3 class="ek-benefit__title">Amizades e conexões</h3>
+          <p class="ek-benefit__text">
+            Momentos compartilhados ajudam crianças a criar vínculos e
+            desenvolver habilidades sociais naturalmente.
+          </p>
         </article>
         <article class="ek-benefit">
-          <span class="ek-benefit__icon" aria-hidden="true">✋</span>
-          <h3 class="ek-benefit__title">Coordenação motora</h3>
-          <p class="ek-benefit__text">Atividades manuais que desenvolvem habilidades importantes.</p>
+          <h3 class="ek-benefit__title">Orgulho de criar com as próprias mãos</h3>
+          <p class="ek-benefit__text">
+            Existe uma magia especial quando uma criança olha pra algo e diz:
+            <em>"Eu que fiz."</em>
+          </p>
         </article>
         <article class="ek-benefit">
-          <span class="ek-benefit__icon" aria-hidden="true">💡</span>
-          <h3 class="ek-benefit__title">Autonomia</h3>
-          <p class="ek-benefit__text">A criança aprende a tomar decisões e criar com independência.</p>
-        </article>
-        <article class="ek-benefit">
-          <span class="ek-benefit__icon" aria-hidden="true">❤️</span>
-          <h3 class="ek-benefit__title">Memórias afetivas</h3>
-          <p class="ek-benefit__text">Momentos que permanecem muito além do dia da experiência.</p>
+          <h3 class="ek-benefit__title">Memórias que ficam</h3>
+          <p class="ek-benefit__text">
+            As melhores histórias da infância raramente acontecem em frente a
+            uma tela.
+          </p>
         </article>
       </div>
+    </div>
+  </section>
+
+  <!-- ========== O QUE UMA TARDE OFFLINE PODE PROPORCIONAR? ========== -->
+  <section class="ek-promises">
+    <div class="ek-promises__inner">
+      <h2 class="ek-promises__title">O que uma tarde offline <em>pode proporcionar?</em></h2>
+      <ul class="ek-promises__list">
+        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>A primeira peça de cerâmica feita sozinha</li>
+        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Uma nova amizade</li>
+        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Mais confiança para criar</li>
+        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Menos tempo no celular</li>
+        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Uma lembrança para levar para casa</li>
+        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Uma história para contar depois</li>
+      </ul>
     </div>
   </section>
 
@@ -140,10 +167,10 @@
         <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
       </svg>
       <p class="ek-manifesto__text">
-        Acreditamos que algumas das melhores aprendizagens acontecem longe das telas.
-        Quando uma criança pinta, modela, cozinha, constrói ou cria algo com as
-        próprias mãos, ela desenvolve habilidades, confiança e criatividade
-        enquanto se diverte.
+        Acreditamos que algumas das melhores aprendizagens acontecem longe das
+        telas. Quando uma criança pinta, modela, cozinha, constrói ou cria algo
+        com as próprias mãos, ela desenvolve habilidades, confiança e
+        criatividade enquanto se diverte.
       </p>
       <span class="ek-manifesto__signature">— Elarah Kids</span>
     </div>
@@ -166,17 +193,17 @@
     </div>
   </section>
 
-  <!-- ========== O QUE OS PAIS PROCURAM ========== -->
+  <!-- ========== POR QUE OS PAIS AMAM A ELARAH KIDS? ========== -->
   <section class="ek-values">
     <div class="ek-values__inner">
-      <h2 class="ek-values__title">O que os pais procuram</h2>
+      <h2 class="ek-values__title">Por que os pais <em>amam a Elarah Kids?</em></h2>
       <div class="ek-values__grid">
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Atividades criativas</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Atividades criativas e presenciais</div>
         <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Menos tempo de tela</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Novas amizades</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Desenvolvimento de habilidades</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Experiências educativas</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Diversão com propósito</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Experiências educativas sem parecer aula</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Desenvolvimento através da prática</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Ambientes seguros e acolhedores</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Memórias que permanecem</div>
       </div>
     </div>
   </section>
