@@ -5238,23 +5238,50 @@
         const nextActive = !currentlyActive;
         const verb = nextActive ? 'reativar' : 'ocultar';
         if (!confirm('Deseja ' + verb + ' esta experiência? Os dados são preservados.')) return;
+        const originalLabel = btn.textContent;
         btn.disabled = true;
+        btn.textContent = nextActive ? 'Reativando…' : 'Ocultando…';
         try {
           if (ElarahData && typeof ElarahData.setExperienceActive === 'function') {
             const updated = await ElarahData.setExperienceActive(id, nextActive);
             if (!updated) {
               alert(
-                'Não foi possível atualizar a visibilidade. Veja o ' +
-                'console (F12) pra detalhes — causas comuns: coluna ' +
-                'is_active ausente (rode sql/elarah_experiences_visibility.sql) ' +
-                'ou usuário não é admin.'
+                'Não foi possível ' + verb + ' a experiência.\n\n' +
+                'Abra o console (F12) e procure por "[Elarah] setExperienceActive" — ' +
+                'a mensagem completa do Supabase aparece lá. Causas mais comuns:\n' +
+                '• Coluna is_active ausente — rode sql/elarah_experiences_visibility.sql\n' +
+                '• Seu usuário não é admin (RLS bloqueou o UPDATE)\n' +
+                '• A experiência foi excluída em outra aba'
               );
+              btn.disabled = false;
+              btn.textContent = originalLabel;
+              return;
             }
+            // Feedback claro pro admin saber que funcionou — re-render
+            // pode mudar a row de lugar/sumir do filtro, e ai parece
+            // que "nao foi". Toast simples confirma o save.
+            (function showToast() {
+              try {
+                var t = document.createElement('div');
+                t.textContent = '✓ Experiência ' + (nextActive ? 'reativada' : 'ocultada') + ' com sucesso';
+                t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a8a4a;color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;font-size:.9rem;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;font-family:inherit;';
+                document.body.appendChild(t);
+                setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2200);
+                setTimeout(function () { t.remove(); }, 2700);
+              } catch (e) { /* ignora */ }
+            })();
           } else {
             alert('Função setExperienceActive indisponível. Recarregue a página.');
+            btn.disabled = false;
+            btn.textContent = originalLabel;
+            return;
           }
-        } finally {
+        } catch (err) {
+          console.error('[Admin] toggle-exp exception:', err);
+          alert('Erro inesperado ao ' + verb + ':\n' + ((err && err.message) || String(err)));
           btn.disabled = false;
+          btn.textContent = originalLabel;
+          return;
         }
         await renderExperiences();
         await renderOverview();
