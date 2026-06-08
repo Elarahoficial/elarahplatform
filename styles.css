@@ -482,6 +482,19 @@ select {
   background: var(--white);
   border-bottom: 1px solid var(--gray-200);
   overflow: hidden;
+  /* Indicador visual de scroll horizontal: fade na borda direita
+     pra cliente saber que tem mais categorias arrastando. Cor
+     branca pra combinar com o background. */
+  position: relative;
+}
+.categories::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 48px;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, var(--white) 100%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .categories__inner {
@@ -2352,6 +2365,26 @@ select {
 }
 
 @media (max-width: 768px) {
+  /* ===== Hero video: esconde o iframe do YouTube em mobile =====
+   * iOS Safari bloqueia autoplay e mostra controles nativos (play/
+   * skip/pause) sobre o video, deixando o hero quebrado visualmente.
+   * Fix: esconde o iframe completamente em mobile, mantem soh o
+   * gradient escuro do .hero__overlay como fundo. O texto ja eh
+   * legivel sobre ele.
+   */
+  .hero__video-iframe { display: none !important; }
+  .hero__video-bg {
+    background: linear-gradient(135deg, #2a1410 0%, #4a1622 60%, #6b1f2e 100%);
+  }
+  /* ===== Categories strip: padding apertado em mobile =====
+   * Antes 32px 48px ocupava 96px laterais. Em telefone (~360px de
+   * largura) isso comia 1/4 da tela sem necessidade.
+   */
+  .categories__inner {
+    padding: 20px 16px;
+  }
+  .categories::after { width: 32px; }
+
   .header__nav {
     display: none;
   }
