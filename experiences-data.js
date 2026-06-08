@@ -734,6 +734,9 @@
       return null;
     }
     try {
+      // Log explicito do que vai rodar — facilita diagnostico em prod.
+      console.info('[Elarah] setExperienceActive: UPDATE experiences set is_active=' +
+        !!active + ' where id=' + id);
       const { data: updated, error } = await s
         .from(TABLE)
         .update({ is_active: !!active })
@@ -750,22 +753,33 @@
             'antes de usar o botão Ocultar/Reativar.'
           );
         } else {
-          console.error('[Elarah] setExperienceActive erro do Supabase:', error);
+          // Loga TODOS os campos do erro — admin pode copiar pro console
+          // e diagnosticar (codigo, hint, details, message). Em vez de
+          // soh "Object" generico.
+          console.error('[Elarah] setExperienceActive erro do Supabase:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          });
         }
-        return null;
+        // Anexa o erro no return como "erro estruturado" pra caller
+        // poder mostrar mensagem mais informativa.
+        return { _error: error };
       }
       if (!updated) {
         console.error(
           '[Elarah] setExperienceActive: 0 linhas atualizadas para id=' + id +
           '. Verifique RLS (profiles.role = "admin") e se o id existe.'
         );
-        return null;
+        return { _error: { message: '0 linhas atualizadas — provavelmente RLS bloqueou ou id nao existe' } };
       }
+      console.info('[Elarah] setExperienceActive: ok, is_active=' + updated.is_active);
       invalidateCache();
       return dbRowToExperience(updated);
     } catch (e) {
       console.error('[Elarah] setExperienceActive exceção inesperada:', e);
-      return null;
+      return { _error: { message: (e && e.message) || String(e) } };
     }
   }
 

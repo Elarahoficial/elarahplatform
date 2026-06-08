@@ -5244,11 +5244,20 @@
         try {
           if (ElarahData && typeof ElarahData.setExperienceActive === 'function') {
             const updated = await ElarahData.setExperienceActive(id, nextActive);
-            if (!updated) {
+            // setExperienceActive agora devolve {_error: {...}} em falha
+            // (em vez de null silencioso) — extrai a mensagem real do
+            // Supabase pro alert ficar acionavel.
+            const failed = !updated || updated._error;
+            if (failed) {
+              const err = (updated && updated._error) || {};
+              const errMsg = err.message || 'erro desconhecido';
+              const errCode = err.code ? ' [' + err.code + ']' : '';
+              const errDetails = err.details ? '\n\nDetalhes: ' + err.details : '';
+              const errHint = err.hint ? '\nDica: ' + err.hint : '';
               alert(
                 'Não foi possível ' + verb + ' a experiência.\n\n' +
-                'Abra o console (F12) e procure por "[Elarah] setExperienceActive" — ' +
-                'a mensagem completa do Supabase aparece lá. Causas mais comuns:\n' +
+                'Erro: ' + errMsg + errCode + errDetails + errHint + '\n\n' +
+                'Causas mais comuns:\n' +
                 '• Coluna is_active ausente — rode sql/elarah_experiences_visibility.sql\n' +
                 '• Seu usuário não é admin (RLS bloqueou o UPDATE)\n' +
                 '• A experiência foi excluída em outra aba'
