@@ -768,11 +768,26 @@
         return { _error: error };
       }
       if (!updated) {
-        console.error(
-          '[Elarah] setExperienceActive: 0 linhas atualizadas para id=' + id +
-          '. Verifique RLS (profiles.role = "admin") e se o id existe.'
-        );
-        return { _error: { message: '0 linhas atualizadas — provavelmente RLS bloqueou ou id nao existe' } };
+        // Caso classico de RLS sem erro mas com 0 linhas: o policy
+        // filtra em USING e o UPDATE simplesmente nao acha row pra
+        // atualizar. Confirma com um SELECT direto.
+        console.warn('[Elarah] setExperienceActive: UPDATE devolveu 0 linhas. ' +
+          'Confirmando se a row existe e o estado atual…');
+        const probe = await s.from(TABLE).select('id, is_active').eq('id', id).maybeSingle();
+        if (probe && probe.data) {
+          console.error('[Elarah] Row existe (is_active=' + probe.data.is_active +
+            ') mas UPDATE nao alterou. RLS USING bloqueou ou public.is_admin() retornou false.');
+          return { _error: { message: 'UPDATE bloqueado pelo RLS — verifique se profiles.role do seu usuario eh "admin" no Supabase. A row existe mas o policy nao permitiu alterar.', code: 'RLS_BLOCK' } };
+        }
+        console.error('[Elarah] Row nao encontrada: id=' + id);
+        return { _error: { message: 'A experiencia nao foi encontrada no banco (id=' + id + '). Pode ter sido excluida em outra aba.', code: 'NOT_FOUND' } };
+      }
+      // Verifica que o valor realmente eh o esperado (defesa contra
+      // trigger que sobrescreve, default, etc).
+      if (updated.is_active !== !!active) {
+        console.error('[Elarah] UPDATE retornou is_active=' + updated.is_active +
+          ' mas pedimos ' + !!active + '. Algum trigger/default sobrescreveu.');
+        return { _error: { message: 'O banco gravou um valor diferente do pedido (esperado ' + !!active + ', voltou ' + updated.is_active + '). Pode ter um trigger sobrescrevendo.', code: 'TRIGGER_OVERRIDE' } };
       }
       console.info('[Elarah] setExperienceActive: ok, is_active=' + updated.is_active);
       invalidateCache();
