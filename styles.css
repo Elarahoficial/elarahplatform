@@ -5,6 +5,16 @@
   box-sizing: border-box;
 }
 
+/* Bloqueia scroll horizontal global — sem isso, qualquer elemento
+   filho que estoure a largura do viewport (imagem larga, container
+   com max-width nao-responsivo, etc) cria scroll horizontal global
+   e empurra todo o layout pra direita. Sintoma classico em mobile:
+   cards e botoes "cortados" no lado direito da tela. */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 :root {
   --orange: #F27623;
   --orange-light: #FF9A4D;
