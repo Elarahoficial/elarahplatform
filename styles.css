@@ -2399,20 +2399,33 @@ select {
    * letter-spacing somavam peso visual em cima do tamanho da fonte.
    *
    * font-size 16px PRESERVADO nos selects (anti-zoom iOS).
+   *
+   * width: 100% FORCADO em todos os containers — antes era min-width
+   * que em flex column permitia overflow no eixo X (filho mais largo
+   * que pai), causando o "cortado na direita" da screenshot.
    */
   .filters {
     padding: 20px 0;
   }
   .filters__inner {
     padding: 0 16px;
+    width: 100%;
+    max-width: 100%;
   }
   .filters__title {
     font-size: 18px;
     line-height: 1.25;
     margin-bottom: 12px;
   }
-  .filters__row { gap: 10px; }
-  .filters__group { min-width: 100%; }
+  .filters__row {
+    gap: 10px;
+    width: 100%;
+  }
+  .filters__group {
+    width: 100%;
+    min-width: 0;       /* permite encolher */
+    flex: 0 0 auto;
+  }
   .filters__label {
     font-size: 11px;
     letter-spacing: 0.03em;
@@ -2424,14 +2437,26 @@ select {
     padding: 10px 14px;
     padding-right: 34px;
     border-radius: 10px;
+    width: 100%;
+    max-width: 100%;
   }
   .filters__btn {
     font-size: 14px;
     padding: 11px 18px;
     border-radius: 10px;
+    width: 100%;
+    max-width: 100%;
   }
-  /* "Quando?" chip strip mais compacto */
-  .date-filter { margin-top: 10px; }
+  /* ===== "Quando?" strip: scroll horizontal com indicador =====
+   * Strip ja tinha overflow-x: auto, mas sem indicacao visual de que
+   * tem mais chips arrastando. Adiciona fade no canto direito.
+   */
+  .date-filter {
+    margin-top: 10px;
+    position: relative;
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+            mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
   .date-filter__title { font-size: 13px; }
   .date-filter__chip { font-size: 13px; padding: 7px 12px; }
 
