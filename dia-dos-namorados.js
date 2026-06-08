@@ -172,7 +172,32 @@
       var expById = new Map();
       (exps || []).forEach(function (e) { expById.set(e.id, e); });
 
-      var cardsHtml = overrides.map(function (o) {
+      // Ordena overrides por data cronologica do primeiro slot na
+      // janela DDN. Overrides sem slot disponivel (ja passou tudo OU
+      // nunca teve slot) vao pro final — eles serao filtrados na
+      // proxima etapa antes de renderizar.
+      var orderedOverrides = (overrides || []).slice().sort(function (a, b) {
+        var da = firstDateInDDN.get(a.experience_id);
+        var db = firstDateInDDN.get(b.experience_id);
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return new Date(da).getTime() - new Date(db).getTime();
+      });
+
+      // Filtra overrides sem proxima data na janela DDN — sao casos de
+      // experiencia que ja passou (slots todos no passado) ou que nunca
+      // teve slot agendado nessa janela. Cliente nao consegue reservar,
+      // entao nao faz sentido mostrar.
+      orderedOverrides = orderedOverrides.filter(function (o) {
+        if (!firstDateInDDN.has(o.experience_id)) {
+          console.info('[DDN] ocultando override sem data futura na janela:', o.experience_id);
+          return false;
+        }
+        return true;
+      });
+
+      var cardsHtml = orderedOverrides.map(function (o) {
         var e = expById.get(o.experience_id);
         if (!e) {
           console.warn('[DDN] override aponta pra experience inativa/inexistente:', o.experience_id);
