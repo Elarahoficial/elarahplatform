@@ -2382,20 +2382,35 @@ select {
   }
   .categories::after { width: 32px; }
 
-  /* ===== Filters selects: tamanho de fonte iOS-safe =====
-   * iOS Safari dispara zoom automatico quando o input tem font-size
-   * menor que 16px e o usuario clica nele — sintoma do "desregular"
-   * porque a tela inteira da zoom e desalinha. 16px = sem zoom.
-   * Padding tambem aumenta pra ficar mais facil de tocar.
+  /* ===== Filters mobile: proporcional ao tamanho do telefone =====
+   * font-size: 16px mantido nos selects/botao pra evitar zoom auto
+   * do iOS Safari (regra: <16px causa zoom). Mas o resto da secao
+   * fica em escala compativel com viewport pequeno.
    */
+  .filters {
+    padding: 24px 0;
+  }
+  .filters__inner {
+    padding: 0 16px;
+  }
+  .filters__title {
+    font-size: 1.15rem;
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+  .filters__label {
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
   .filters__select {
-    font-size: 16px;
-    padding: 14px 16px;
-    padding-right: 40px;
+    font-size: 16px;          /* iOS-safe — NAO baixar */
+    padding: 12px 14px;
+    padding-right: 36px;
   }
   .filters__btn {
-    font-size: 16px;
-    padding: 14px 20px;
+    font-size: 0.92rem;
+    padding: 12px 18px;
   }
 
   .header__nav {
