@@ -11,7 +11,7 @@
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=8">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="elarah-kids.css?v=2">
+  <link rel="stylesheet" href="elarah-kids.css?v=3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -83,10 +83,11 @@
     <div class="ek-hero__inner">
       <span class="ek-hero__kicker">Elarah Kids · Curadoria pra crianças</span>
       <h1 class="ek-hero__title">
-        Eles vão esquecer o desenho<br>
-        que assistiram hoje.<br>
-        <em>Mas talvez nunca esqueçam<br>a primeira peça que criaram com<br>as próprias mãos.</em>
+        Eles vão esquecer o desenho que assistiram hoje.
       </h1>
+      <p class="ek-hero__sub">
+        <em>Mas talvez nunca esqueçam a primeira peça que criaram com as próprias mãos.</em>
+      </p>
       <a href="#ek-experiencias" class="ek-hero__cta">
         Ver experiências para crianças
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -145,37 +146,6 @@
     </div>
   </section>
 
-  <!-- ========== O QUE UMA TARDE OFFLINE PODE PROPORCIONAR? ========== -->
-  <section class="ek-promises">
-    <div class="ek-promises__inner">
-      <h2 class="ek-promises__title">O que uma tarde offline <em>pode proporcionar?</em></h2>
-      <ul class="ek-promises__list">
-        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>A primeira peça de cerâmica feita sozinha</li>
-        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Uma nova amizade</li>
-        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Mais confiança para criar</li>
-        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Menos tempo no celular</li>
-        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Uma lembrança para levar para casa</li>
-        <li class="ek-promise"><span class="ek-promise__check" aria-hidden="true">✓</span>Uma história para contar depois</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- ========== MANIFESTO ========== -->
-  <section class="ek-manifesto">
-    <div class="ek-manifesto__inner">
-      <svg class="ek-manifesto__mark" viewBox="0 0 32 24" aria-hidden="true">
-        <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
-      </svg>
-      <p class="ek-manifesto__text">
-        Acreditamos que algumas das melhores aprendizagens acontecem longe das
-        telas. Quando uma criança pinta, modela, cozinha, constrói ou cria algo
-        com as próprias mãos, ela desenvolve habilidades, confiança e
-        criatividade enquanto se diverte.
-      </p>
-      <span class="ek-manifesto__signature">— Elarah Kids</span>
-    </div>
-  </section>
-
   <!-- ========== EXPERIENCIAS ========== -->
   <section id="ek-experiencias" class="ek-experiences">
     <div class="ek-experiences__inner">
@@ -193,18 +163,40 @@
     </div>
   </section>
 
-  <!-- ========== POR QUE OS PAIS AMAM A ELARAH KIDS? ========== -->
+  <!-- ========== POR QUE OS PAIS AMAM A ELARAH KIDS? (9 itens) ==========
+       Mescla das antigas secoes "tarde offline" + "valores". 9 itens
+       em grid 3x3, mistura promessas concretas com qualidades de marca.
+  -->
   <section class="ek-values">
     <div class="ek-values__inner">
       <h2 class="ek-values__title">Por que os pais <em>amam a Elarah Kids?</em></h2>
       <div class="ek-values__grid">
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>A primeira peça de cerâmica feita sozinha</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Uma nova amizade</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Mais confiança pra criar</div>
         <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Atividades criativas e presenciais</div>
         <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Menos tempo de tela</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Experiências educativas sem parecer aula</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Desenvolvimento através da prática</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Educativas sem parecer aula</div>
         <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Ambientes seguros e acolhedores</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Memórias que permanecem</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Uma lembrança pra levar pra casa</div>
+        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Uma história pra contar depois</div>
       </div>
+    </div>
+  </section>
+
+  <!-- ========== MANIFESTO (movido pra depois do "Por que os pais amam") ========== -->
+  <section class="ek-manifesto">
+    <div class="ek-manifesto__inner">
+      <svg class="ek-manifesto__mark" viewBox="0 0 32 24" aria-hidden="true">
+        <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+      </svg>
+      <p class="ek-manifesto__text">
+        Acreditamos que algumas das melhores aprendizagens acontecem longe das
+        telas. Quando uma criança pinta, modela, cozinha, constrói ou cria algo
+        com as próprias mãos, ela desenvolve habilidades, confiança e
+        criatividade enquanto se diverte.
+      </p>
+      <span class="ek-manifesto__signature">— Elarah Kids</span>
     </div>
   </section>
 
