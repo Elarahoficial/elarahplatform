@@ -145,8 +145,12 @@
       var _nowIso = _now.toISOString();
 
       var [expsRes2, slotsRes] = await Promise.all([
+        // Inclui data, horario, horarios e event_at no SELECT — usados
+        // como fallback em camada 2/3 quando NAO ha slot na janela DDN.
+        // Antes eram ignorados, e experiencias sem slot (so com data
+        // textual tipo "12/06") nao apareciam mesmo estando na janela.
         sb.from('experiences')
-          .select('id, nome, categoria, preco, duracao, bairro, imagem, vagas_total, vagas_restantes, is_active')
+          .select('id, nome, categoria, preco, duracao, bairro, imagem, vagas_total, vagas_restantes, is_active, data, horario, horarios, event_at')
           .in('id', expIds)
           .eq('is_active', true),
         // Slots disponíveis NA JANELA DDN (não absolutos)
@@ -169,17 +173,79 @@
       }
       console.info('[DDN] experiences retornou:', exps && exps.length, 'ativas (de', expIds.length, 'overrides)');
 
-      // Mapa: experience_id → primeira data DENTRO da janela DDN
+      var expById = new Map();
+      (exps || []).forEach(function (e) { expById.set(e.id, e); });
+
+      // Helper: deriva timestamp ISO a partir de data + horario textual
+      // (ex: "12/06" + "19h00 – 22h00"). Usa o ano corrente, ou o
+      // seguinte se a data ja passou. Retorna null se nao parseou.
+      function deriveTsFromTextual(dataStr, horarioStr) {
+        if (!dataStr) return null;
+        var m = String(dataStr).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (!m) return null;
+        var d = Number(m[1]), mo = Number(m[2]) - 1;
+        var yy = m[3] ? (Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3])) : (new Date()).getFullYear();
+        // Hora: pega o primeiro "HH" do horario, default 12:00.
+        var hh = 12, mm = 0;
+        if (horarioStr) {
+          var hm = String(horarioStr).match(/(\d{1,2})\s*h\s*(\d{0,2})/i);
+          if (hm) { hh = Number(hm[1]); mm = Number(hm[2] || 0); }
+        }
+        var dt = new Date(yy, mo, d, hh, mm, 0);
+        // Se ja passou esse ano, joga pro ano seguinte (cobre o caso
+        // de admin aceessando em janeiro pra DDN de junho do mesmo ano).
+        return dt.toISOString();
+      }
+
+      // Mapa: experience_id → primeira data DENTRO da janela DDN.
+      // 3 CAMADAS DE FALLBACK pra encontrar a data:
+      //   1) experience_slots com event_at na janela e vagas disponiveis
+      //   2) experiences.event_at se estiver na janela
+      //   3) deriva de experiences.data + experiences.horario (parsing
+      //      "12/06" + "19h00") — caso classico de experiencia legada
+      //      cadastrada sem slot
       var firstDateInDDN = new Map();
+      var ddnStartMs = new Date(DDN_START).getTime();
+      var ddnEndMs   = new Date(DDN_END).getTime();
+      var nowMs      = Date.now();
+
+      // Camada 1: slots
       (slotsRes.data || []).forEach(function (s) {
         if (firstDateInDDN.has(s.experience_id)) return;
         var rest = s.vagas_total == null ? null : (s.vagas_restantes != null ? s.vagas_restantes : s.vagas_total);
-        if (rest !== null && rest <= 0) return; // pula esgotados
+        if (rest !== null && rest <= 0) return;
         firstDateInDDN.set(s.experience_id, s.event_at);
       });
 
-      var expById = new Map();
-      (exps || []).forEach(function (e) { expById.set(e.id, e); });
+      // Camadas 2 e 3: fallback pra cada experience que nao apareceu
+      // nos slots.
+      (exps || []).forEach(function (e) {
+        if (firstDateInDDN.has(e.id)) return;
+        var tsCandidate = null;
+        // Camada 2: event_at da experience
+        if (e.event_at) {
+          var t = new Date(e.event_at).getTime();
+          if (!isNaN(t) && t >= ddnStartMs && t < ddnEndMs && t >= nowMs) {
+            tsCandidate = e.event_at;
+          }
+        }
+        // Camada 3: deriva de data + horario textual
+        if (!tsCandidate) {
+          var horarioForParse = e.horario ||
+            (Array.isArray(e.horarios) && e.horarios.length ? e.horarios[0] : null);
+          var derived = deriveTsFromTextual(e.data, horarioForParse);
+          if (derived) {
+            var dt = new Date(derived).getTime();
+            if (dt >= ddnStartMs && dt < ddnEndMs && dt >= nowMs) {
+              tsCandidate = derived;
+            }
+          }
+        }
+        if (tsCandidate) {
+          console.info('[DDN] fallback de data pra', e.nome, '→', tsCandidate);
+          firstDateInDDN.set(e.id, tsCandidate);
+        }
+      });
 
       // Ordena overrides por data cronologica do primeiro slot na
       // janela DDN. Overrides sem slot disponivel (ja passou tudo OU
@@ -208,13 +274,15 @@
 
       // AGORA sim slica pra 3 cards (depois do filtro + ordenacao).
       // Assim, se houver 18 overrides mas soh 5 tiverem data futura,
-      // mostra os 3 mais proximos cronologicamente — em vez do bug
-      // anterior que pegava os 3 PRIMEIROS do banco (sem filtrar) e
-      // se todos fossem passados a tela ficava vazia.
+      // mostra os 3 mais proximos cronologicamente.
       var totalComData = orderedOverrides.length;
       if (orderedOverrides.length > 3) orderedOverrides = orderedOverrides.slice(0, 3);
+      // Botao "Ver todas as experiencias da campanha" SEMPRE visivel
+      // quando houver pelo menos 1 card — a pagina /todas mostra o
+      // catalogo completo (featured + nao-featured), entao sempre faz
+      // sentido oferecer o link.
       var verTodasBtn = document.getElementById('ddn-ver-todas');
-      if (verTodasBtn && totalComData > 3) verTodasBtn.style.display = 'inline-flex';
+      if (verTodasBtn && orderedOverrides.length > 0) verTodasBtn.style.display = 'inline-flex';
       console.info('[DDN] cards a renderizar:', orderedOverrides.length, '(de', totalComData, 'com data futura)');
 
       var cardsHtml = orderedOverrides.map(function (o) {

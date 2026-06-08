@@ -260,10 +260,13 @@
     var sb = await waitSb(5000);
     if (!sb) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#a4332b;">Conexão indisponível. Recarregue.</p>'; return; }
 
+    // "Ver todas" = catalogo completo de overrides DDN, independente
+    // de is_featured. Antes filtrava is_featured=true igual a landing,
+    // entao se a admin marcasse soh 3 featured, as outras 15 sumiam
+    // tambem dessa pagina. Agora mostra tudo que tem campaign_slug=ddn.
     var { data: overrides } = await sb.from('campaign_overrides')
       .select('experience_id, titulo_custom, badge_text, display_order, imagem_custom')
       .eq('campaign_slug', CAMPAIGN_SLUG)
-      .eq('is_featured', true)
       .order('display_order');
 
     if (!overrides || !overrides.length) {
@@ -273,18 +276,58 @@
 
     var expIds = overrides.map(function(o){return o.experience_id;});
     var [{ data: exps }, { data: slots }] = await Promise.all([
-      sb.from('experiences').select('id, nome, categoria, preco, duracao, bairro, imagem, is_active').in('id', expIds).eq('is_active', true),
+      // Inclui data/horario/horarios/event_at pro fallback em camadas.
+      sb.from('experiences').select('id, nome, categoria, preco, duracao, bairro, imagem, is_active, data, horario, horarios, event_at').in('id', expIds).eq('is_active', true),
       sb.from('experience_slots').select('experience_id, event_at, vagas_total, vagas_restantes').in('experience_id', expIds).not('is_active', 'is', false).gte('event_at', DDN_START).lt('event_at', DDN_END).order('event_at').range(0, 9999),
     ]);
 
     var expById = new Map();
     (exps || []).forEach(function(e){expById.set(e.id, e);});
+
+    // Helper: deriva timestamp ISO de "12/06" + "19h00 - 22h00"
+    function deriveTsFromTextual(dataStr, horarioStr) {
+      if (!dataStr) return null;
+      var m = String(dataStr).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+      if (!m) return null;
+      var d = Number(m[1]), mo = Number(m[2]) - 1;
+      var yy = m[3] ? (Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3])) : (new Date()).getFullYear();
+      var hh = 12, mm = 0;
+      if (horarioStr) {
+        var hm = String(horarioStr).match(/(\d{1,2})\s*h\s*(\d{0,2})/i);
+        if (hm) { hh = Number(hm[1]); mm = Number(hm[2] || 0); }
+      }
+      return new Date(yy, mo, d, hh, mm, 0).toISOString();
+    }
+
+    // 3 camadas de fallback pra encontrar a proxima data DDN da exp.
     var firstDate = new Map();
+    var _ddnStartMs = new Date(DDN_START).getTime();
+    var _ddnEndMs   = new Date(DDN_END).getTime();
+    var _nowMs      = Date.now();
+    // Camada 1: slots
     (slots || []).forEach(function(s){
       if (firstDate.has(s.experience_id)) return;
       var rest = s.vagas_total == null ? null : (s.vagas_restantes != null ? s.vagas_restantes : s.vagas_total);
       if (rest !== null && rest <= 0) return;
       firstDate.set(s.experience_id, s.event_at);
+    });
+    // Camada 2 e 3: event_at da experience, e fallback textual
+    (exps || []).forEach(function(e){
+      if (firstDate.has(e.id)) return;
+      var ts = null;
+      if (e.event_at) {
+        var t = new Date(e.event_at).getTime();
+        if (!isNaN(t) && t >= _ddnStartMs && t < _ddnEndMs && t >= _nowMs) ts = e.event_at;
+      }
+      if (!ts) {
+        var hForParse = e.horario || (Array.isArray(e.horarios) && e.horarios.length ? e.horarios[0] : null);
+        var derived = deriveTsFromTextual(e.data, hForParse);
+        if (derived) {
+          var dt = new Date(derived).getTime();
+          if (dt >= _ddnStartMs && dt < _ddnEndMs && dt >= _nowMs) ts = derived;
+        }
+      }
+      if (ts) firstDate.set(e.id, ts);
     });
 
     grid.innerHTML = overrides.map(function(o){
