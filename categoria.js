@@ -360,8 +360,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (activeCategoria) {
       // ===== MODO 1: categoria específica — flat grid =====
+      // Normaliza dos dois lados pra matching tolerante: trim + lowercase
+      // + remove acentos. Antes era === estrito, que falhava se a
+      // categoria no banco tivesse caixa diferente ("cultural" vs
+      // "Cultural"), espaços ou acentos sutis. Sintoma: clicar em
+      // Cultural no dropdown abria categoria vazia mesmo tendo
+      // experiências cadastradas.
+      const norm = function (s) {
+        return String(s == null ? '' : s)
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .toLowerCase().trim();
+      };
+      const targetNorm = norm(activeCategoria);
       const filtered = base.filter(function (exp) {
-        return exp.categoria === activeCategoria;
+        return norm(exp.categoria) === targetNorm;
       });
       grid.style.display = '';
       emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
