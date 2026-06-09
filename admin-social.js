@@ -2024,21 +2024,44 @@
     }
   }
 
-  // Botão: prompt com TODAS as URLs (uma por linha). Salva + sincroniza.
+  // Abre o modal com campos separados (Instagram / TikTok), pré-preenchidos
+  // com as URLs já salvas (cada uma vai pro campo da sua rede).
   function connectWindsor() {
-    const current = getWindsorUrls().join('\n');
-    const input = window.prompt(
-      'Cole as URLs do conector do Windsor AI — UMA POR LINHA.\n' +
-      'Pode misturar Instagram e TikTok (a plataforma é detectada pela URL).\n\n' +
-      'Ex:\nhttps://connectors.windsor.ai/instagram?api_key=...&fields=...\n' +
-      'https://connectors.windsor.ai/tiktok?api_key=...&fields=...',
-      current || 'https://connectors.windsor.ai/instagram?api_key=&date_preset=last_90d&fields=date,media_type,media_caption,media_like_count,media_reach,media_comments_count,media_saved,media_shares'
-    );
-    if (input === null) return; // cancelou
-    const urls = input.split(/\n+/).map(sanitizeWindsorUrl).filter(Boolean);
-    if (!urls.length) { alert('Nenhuma URL válida. Cada uma tem que começar com https://connectors.windsor.ai/'); return; }
+    const modal = document.getElementById('windsor-modal');
+    if (!modal) { return; }
+    const urls = getWindsorUrls();
+    const ig = urls.find(u => platformFromWindsorUrl(u) === 'instagram') || '';
+    const tk = urls.find(u => platformFromWindsorUrl(u) === 'tiktok') || '';
+    const igEl = document.getElementById('windsor-url-ig');
+    const tkEl = document.getElementById('windsor-url-tk');
+    if (igEl) igEl.value = ig;
+    if (tkEl) tkEl.value = tk;
+    const status = document.getElementById('windsor-modal-status');
+    if (status) status.textContent = urls.length ? `${urls.length} fonte(s) conectada(s).` : '';
+    modal.style.display = 'flex';
+  }
+
+  function closeWindsorModal() {
+    const modal = document.getElementById('windsor-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  // Lê os dois campos, valida e salva. Plataforma vem da URL (detecção).
+  function saveWindsorModal() {
+    const igEl = document.getElementById('windsor-url-ig');
+    const tkEl = document.getElementById('windsor-url-tk');
+    const urls = [
+      sanitizeWindsorUrl(igEl ? igEl.value : ''),
+      sanitizeWindsorUrl(tkEl ? tkEl.value : ''),
+    ].filter(Boolean);
+    if (!urls.length) {
+      const status = document.getElementById('windsor-modal-status');
+      if (status) { status.style.color = '#c0392b'; status.textContent = 'Cole ao menos uma URL válida (começa com https://connectors.windsor.ai/).'; }
+      return;
+    }
     setWindsorUrls(urls);
-    _windsorAutoSynced = true; // já vamos sincronizar manualmente agora
+    closeWindsorModal();
+    _windsorAutoSynced = true; // sincroniza manualmente agora
     syncFromWindsor({ silent: false });
   }
 
@@ -2100,11 +2123,15 @@
     const addBtn = document.getElementById('btn-social-add');
     if (addBtn) addBtn.addEventListener('click', () => openModal(null));
 
-    const igBtn = document.getElementById('btn-social-connect-instagram');
-    if (igBtn) igBtn.addEventListener('click', connectInstagram);
-
     const windsorBtn = document.getElementById('btn-social-windsor');
     if (windsorBtn) windsorBtn.addEventListener('click', connectWindsor);
+
+    // Modal do Windsor (campos separados Instagram / TikTok)
+    const windsorSave = document.getElementById('windsor-save');
+    if (windsorSave) windsorSave.addEventListener('click', saveWindsorModal);
+    document.querySelectorAll('[data-windsor-close]').forEach(el => {
+      el.addEventListener('click', closeWindsorModal);
+    });
 
     const exportBtn = document.getElementById('btn-social-export');
     if (exportBtn) exportBtn.addEventListener('click', () => {
@@ -2143,6 +2170,7 @@
         const action = btn.getAttribute('data-social-action');
         if (action === 'add') openModal(null);
         else if (action === 'sample') loadSampleData();
+        else if (action === 'windsor') connectWindsor();
         else if (action === 'connect-instagram') connectInstagram();
       });
     });
@@ -2152,7 +2180,7 @@
       el.addEventListener('click', closeModal);
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModal();
+      if (e.key === 'Escape') { closeModal(); closeWindsorModal(); }
     });
 
     const form = document.getElementById('social-form');

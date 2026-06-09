@@ -1579,7 +1579,6 @@
           <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-import-ig" type="button" title="Importar CSV exportado do Windsor (Instagram)">↑ CSV Instagram</button>
           <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-import-tk" type="button" title="Importar CSV exportado do Windsor (TikTok)">↑ CSV TikTok</button>
           <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-export" type="button" title="Exportar todos os posts">↓ Exportar</button>
-          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-connect-instagram" type="button" title="Conectar conta do Instagram">📷 Conectar Instagram</button>
           <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-windsor" type="button" title="Conectar/sincronizar com o Windsor AI (puxa os dados automaticamente)">🔗 Windsor AI</button>
           <button class="admin__add-btn" id="btn-social-analysis" type="button" title="Gerar análise estratégica completa do perfil">🎯 Análise estratégica</button>
           <button class="admin__add-btn" id="btn-social-add" type="button">+ Novo post</button>
@@ -1597,7 +1596,7 @@
           Quanto mais dados, mais preciso o painel fica em apontar padrões e gerar ideias acionáveis.
         </p>
         <div class="social-empty__actions">
-          <button class="admin__add-btn" type="button" data-social-action="connect-instagram">📷 Conectar Instagram</button>
+          <button class="admin__add-btn" type="button" data-social-action="windsor">🔗 Conectar Windsor AI</button>
           <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="add">+ Adicionar post manual</button>
           <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="sample">Dados de exemplo</button>
         </div>
@@ -1787,6 +1786,36 @@
            plano de ação, calendário e resumo). Renderizado por
            admin-social-analysis.js. Escondido por padrão. -->
       <div id="social-analysis" class="social-analysis" style="display:none;"></div>
+
+      <!-- Modal: conectar Windsor AI (uma URL por rede) -->
+      <div class="social-modal" id="windsor-modal" style="display:none;">
+        <div class="social-modal__backdrop" data-windsor-close></div>
+        <div class="social-modal__card">
+          <div class="social-modal__head">
+            <h3 class="social-modal__title">Conectar Windsor AI</h3>
+            <button type="button" class="social-modal__close" data-windsor-close aria-label="Fechar">×</button>
+          </div>
+          <div class="social-form">
+            <p class="admin__form-hint" style="margin:0 0 4px;">
+              Cole a URL de cada conector do Windsor no campo certo. A plataforma é
+              detectada automaticamente. Pode preencher só um, ou os dois.
+            </p>
+            <label class="social-form__field">
+              <span>📸 URL do Instagram <small style="color:#999;font-weight:400;">(conector /instagram)</small></span>
+              <textarea id="windsor-url-ig" rows="3" placeholder="https://connectors.windsor.ai/instagram?api_key=...&fields=date,media_type,media_caption,media_like_count,media_reach,media_comments_count,media_saved,media_shares,story_permalink"></textarea>
+            </label>
+            <label class="social-form__field">
+              <span>🎵 URL do TikTok <small style="color:#999;font-weight:400;">(conector /tiktok_organic)</small></span>
+              <textarea id="windsor-url-tk" rows="3" placeholder="https://connectors.windsor.ai/tiktok_organic?api_key=...&fields=date,datasource,video_caption,video_views,total_likes,video_favorites,bio_link_clicks,video_website_clicks"></textarea>
+            </label>
+            <p class="admin__form-hint" id="windsor-modal-status" style="margin:0;color:#999;"></p>
+            <div class="social-form__actions">
+              <button type="button" class="admin__add-btn admin__add-btn--ghost" data-windsor-close>Cancelar</button>
+              <button type="button" class="admin__add-btn" id="windsor-save">Salvar e sincronizar</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Modal: novo / editar post -->
       <div class="social-modal" id="social-modal" style="display:none;">
@@ -3906,7 +3935,7 @@
 <script src="experiences-data.js?v=25"></script>
 <script src="byelarah-data.js?v=6"></script>
 <script src="analytics.js?v=2"></script>
-<script src="admin-social.js?v=10"></script>
+<script src="admin-social.js?v=11"></script>
 <script src="admin-social-analysis.js?v=3"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
