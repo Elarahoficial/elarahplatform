@@ -2047,7 +2047,16 @@
     const reader = new FileReader();
     reader.onload = () => {
       const text = String(reader.result || '');
-      const incoming = parseCSV(text);
+      // Plataforma: se o CSV não tiver coluna "Fonte de dados"/platform,
+      // pergunta de qual rede é (senão tudo cairia em Instagram por padrão).
+      let hint = '';
+      if (!headerHasPlatform(text)) {
+        const ans = (window.prompt(
+          'Esse CSV é de qual rede social?\nDigite: instagram, tiktok ou linkedin',
+          'instagram') || '').trim().toLowerCase();
+        hint = mapPlatform(ans) || '';
+      }
+      const incoming = parseCSV(text, hint);
       if (!incoming.length) {
         alert('Nenhum post válido encontrado no CSV.\n\n' + diagnoseCSV(text));
         return;
@@ -2058,6 +2067,15 @@
     };
     reader.onerror = () => alert('Erro ao ler o arquivo.');
     reader.readAsText(file, 'utf-8');
+  }
+
+  // Verifica se o cabeçalho do CSV tem alguma coluna que mapeia pra platform.
+  function headerHasPlatform(text) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const delim = detectDelimiter(text);
+    const header = (text.split(/\r?\n/, 1)[0] || '').split(delim)
+      .map(h => h.replace(/^"|"$/g, '').trim());
+    return header.map(canonicalField).includes('platform');
   }
 
   // -----------------------------------------------------------
