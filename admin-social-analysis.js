@@ -579,46 +579,190 @@
   }
 
   // -----------------------------------------------------------
-  // SEÇÃO 9 — CALENDÁRIO EDITORIAL (30 dias)
+  // SEÇÃO 9 — CALENDÁRIO EDITORIAL (15 dias, ORIENTADO POR DADOS)
+  // Usa o desempenho real por ocasião (alcance, shares, saves, eng)
+  // pra escolher tema + formato + canal de cada dia. Inclui categorias
+  // estratégicas, frequência por canal, horários a testar e
+  // oportunidades não exploradas.
   // -----------------------------------------------------------
+  const CATEGORY = {
+    date: 'Experiências para casais', namorados: 'Experiências para casais',
+    galentine: 'Experiências para solteiros', autopresente: 'Bem-estar / Autopresente',
+    amigas: 'Experiências com amigas', kids: 'Kids', familia: 'Família',
+    gastronomia: 'Gastronomia', criatividade: 'Cerâmica & Criatividade',
+    bemestar: 'Bem-estar', corporativo: 'Corporativo (B2B)',
+    aniversario: 'Conversão / Presente', maes: 'Datas comemorativas', pais: 'Datas comemorativas',
+  };
+
+  function isoAddDays(n) {
+    const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n);
+    return d;
+  }
+
   function sectionCalendario(posts, brand) {
-    const tags = topTags(posts, 5).map(t => t.tag);
-    const temas = (tags.length ? tags : ['produto', 'bastidores', 'prova social', 'educativo', 'oferta']);
-    const formatos = ['Reel', 'Carrossel', 'Story', 'Reel', 'Feed', 'Carrossel', 'Story'];
-    const objetivos = ['Alcance', 'Autoridade', 'Comunidade', 'Alcance', 'Desejo', 'Conversão', 'Relacionamento'];
-    const ctas = ['Compartilhe', 'Salve este post', 'Responda na caixinha', 'Marque um amigo', 'Comente "EU"', 'Link na bio', 'Manda no Direct'];
-    const ganchos = [
-      'POV: você finalmente descobriu',
-      '3 erros que você comete com',
-      'O segredo por trás de',
-      'Ninguém te conta isto sobre',
-      'Antes e depois de',
-      'Como escolher o melhor',
-      'A verdade sobre',
+    if (!posts.length) return card('9. Calendário editorial — 15 dias', emptyData('Importe/sincronize os dados pra gerar um calendário orientado por performance.'));
+
+    // Rankings de ocasião por objetivo (só ocasiões classificadas).
+    const occ = byDimension(posts, p => p.theme, occasionLabel).filter(r => r.key);
+    const byR = [...occ].sort((a, b) => b.reachAvg - a.reachAvg);
+    const bySh = [...occ].sort((a, b) => b.sharesAvg - a.sharesAvg);
+    const bySv = [...occ].sort((a, b) => b.savesAvg - a.savesAvg);
+    const byEg = [...occ].sort((a, b) => b.rate - a.rate);
+    const RANK = { reach: byR, shares: bySh, saves: bySv, eng: byEg };
+    const pick = (src, i, fb) => {
+      const arr = RANK[src] || [];
+      return (arr[i] || arr[0] || { label: fb, key: fb });
+    };
+    const catOf = o => CATEGORY[o.key] || 'Descoberta da marca';
+
+    // Janelas de horário a TESTAR (não há hora no export do Windsor — só data).
+    const HOR = {
+      ig:    '12h ou 19h–21h (testar)',
+      story: '9h / 13h / 19h (testar)',
+      tiktok:'19h–22h (testar)',
+      linkedin:'ter–qui, 8h–9h (testar)',
+      whats: '11h–12h ou 19h (testar)',
+    };
+
+    // 15 dias: cada item escolhe o tema do ranking certo pro objetivo.
+    // src=null usa fixedKey (ocasião específica). canal/formato seguem os
+    // padrões reais: Reel=alcance, Carrossel=saves/autoridade, Story=comunidade.
+    const plan = [
+      { canal:'Instagram + TikTok', formato:'Reel', obj:'Descoberta / Alcance', src:'reach', hor:HOR.ig,
+        hook:t=>`POV: o ${t.toLowerCase()} perfeito pra fugir da rotina em SP existe 🤫`,
+        exec:'Corte seco nos 2s, 3 cenas da experiência, texto curto na tela, áudio em alta. Reaproveita no TikTok no mesmo dia.',
+        cta:'Compartilha com quem viveria isso' },
+      { canal:'Instagram', formato:'Carrossel', obj:'Autoridade / Saves', src:'saves', hor:HOR.ig,
+        hook:t=>`Salva esse: guia pra escolher seu ${t.toLowerCase()} ✨`,
+        exec:'Capa forte ("Salva esse"), 6–8 slides com 1 ideia cada, último slide = CTA suave.',
+        cta:'Salve este post' },
+      { canal:'Stories (Instagram)', formato:'Story', obj:'Comunidade', src:'eng', hor:HOR.story,
+        hook:t=>`Enquete: qual ${t.toLowerCase()} você faria primeiro? 👀`,
+        exec:'3–4 frames + sticker de enquete e caixinha de pergunta. Responde todo mundo (comunidade está fria).',
+        cta:'Responde na enquete' },
+      { canal:'Instagram + WhatsApp', formato:'Carrossel', obj:'Conversão', src:'saves', hor:HOR.ig,
+        hook:t=>`${t}: como reservar em 3 passos (vagas limitadas)`,
+        exec:'Prova social + escassez real + passo a passo. Espelha no WhatsApp Comunidade com link de reserva (UTM).',
+        cta:'Link na bio / reserve' },
+      { canal:'TikTok', formato:'Reel', obj:'Descoberta / Viral', src:'shares', hor:HOR.tiktok,
+        hook:t=>`3 experiências de ${t.toLowerCase()} em SP que ninguém te mostrou`,
+        exec:'Tendência de áudio do momento aplicada ao nicho. Ritmo rápido, lista numerada na tela.',
+        cta:'Salva pra não esquecer' },
+      { canal:'Instagram', formato:'Reel', obj:'Experiências para casais', src:null, fixed:'date', hor:HOR.ig,
+        hook:t=>`Date diferente em SP: tira as mãos da tela e cria memória real 🍷`,
+        exec:'Mostra o casal vivendo a experiência (cerâmica+vinho, jantar). Emoção nos 2 primeiros segundos.',
+        cta:'Marca seu par' },
+      { canal:'Stories (Instagram)', formato:'Story', obj:'Comunidade / Bastidores', src:null, fixed:'gastronomia', hor:HOR.story,
+        hook:t=>`Bastidores: montando a experiência de hoje 👀`,
+        exec:'Bastidor real humaniza a marca. Fecha com pergunta ("o que você acha?").',
+        cta:'Manda no Direct' },
+      { canal:'Instagram + TikTok', formato:'Reel', obj:'O que fazer em SP / Sair da rotina', src:'reach', hor:HOR.tiktok,
+        hook:t=>`O que fazer em SP neste fim de semana (sem ser shopping nem bar lotado)`,
+        exec:'Série fixa semanal. Roteiro de 3 experiências, 1 delas da Elarah. Vira formato recorrente.',
+        cta:'Salva pro fim de semana' },
+      { canal:'Instagram', formato:'Carrossel', obj:'Experiências para solteiros', src:null, fixed:'galentine', hor:HOR.ig,
+        hook:t=>`Single's day: rolê com as amigas que vale mais que presente 💛`,
+        exec:'Carrossel de ideias pra solteiras/amigas. Forte em saves (padrão confirmado nos dados).',
+        cta:'Salve e chame as amigas' },
+      { canal:'Instagram', formato:'Carrossel', obj:'Cerâmica & Criatividade', src:null, fixed:'criatividade', hor:HOR.ig,
+        hook:t=>`O que ninguém te conta antes da sua 1ª oficina de cerâmica 🎨`,
+        exec:'Educativo/salvável (criatividade tem saves altos mas alcance baixo → precisa de gancho mais forte).',
+        cta:'Salve este post' },
+      { canal:'TikTok', formato:'Reel', obj:'Tendências e assuntos do momento', src:'shares', hor:HOR.tiktok,
+        hook:t=>`Trend do momento aplicada a ${t.toLowerCase()} 🎵`,
+        exec:'Pega áudio/trend em alta e adapta. Baixo custo, alto teto de alcance no TikTok.',
+        cta:'Segue pra mais' },
+      { canal:'Stories (Instagram)', formato:'Story', obj:'Comunidade / Prova social', src:null, fixed:'gastronomia', hor:HOR.story,
+        hook:t=>`Depoimento de quem viveu: "${'foi inesquecível'}" 🗣️`,
+        exec:'UGC: reposta print/vídeo de cliente. Confiança + desejo. Pede pra galera responder se já foi.',
+        cta:'Conta sua experiência' },
+      { canal:'Instagram + WhatsApp', formato:'Reel', obj:'Conversão / Reserva', src:'saves', hor:HOR.whats,
+        hook:t=>`Vagas abrindo: ${t.toLowerCase()} com data marcada 👇`,
+        exec:'Demonstração da experiência + escassez + link. Dispara também no WhatsApp Comunidade.',
+        cta:'Reserve pelo link' },
+      { canal:'Instagram', formato:'Reel', obj:'Experiências com amigas', src:null, fixed:'amigas', hor:HOR.ig,
+        hook:t=>`Cansou do mesmo rolê? Experiência pra fazer com as amigas 👯`,
+        exec:'Energia alta, grupo se divertindo. Amigas tem saves bons mas alcance baixo → investir no gancho.',
+        cta:'Marca as amigas' },
+      { canal:'LinkedIn + Instagram', formato:'Carrossel', obj:'Corporativo (B2B)', src:null, fixed:'corporativo', hor:HOR.linkedin,
+        hook:t=>`Team building que não é happy hour: experiências para empresas`,
+        exec:'Case/benefício pra RH. No LinkedIn texto institucional; no IG carrossel. Gera lead B2B.',
+        cta:'Fale com a gente' },
     ];
 
-    const rows = [];
-    for (let d = 1; d <= 30; d++) {
-      const i = (d - 1) % 7;
-      const tema = temas[(d - 1) % temas.length];
-      rows.push(`<tr>
-        <td>${d}</td>
-        <td>${escapeHTML(capitalize(tema))}</td>
-        <td>${escapeHTML(ganchos[i])} ${escapeHTML(tema)}</td>
-        <td>${formatos[i]}</td>
-        <td>${objetivos[i]}</td>
-        <td>${ctas[i]}</td>
-      </tr>`);
-    }
-    return card('9. Calendário editorial — 30 dias', `
-      <p class="sa-muted">Rotação baseada nos seus temas de melhor desempenho. Ajuste os ganchos ao seu tom de voz.</p>
+    const rows = plan.map((p, i) => {
+      const o = p.src ? pick(p.src, 0, 'Gastronomia') : (occ.find(x => x.key === p.fixed) || { label: occasionLabel(p.fixed), key: p.fixed });
+      const dt = isoAddDays(i + 1);
+      const dataBR = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const dia = WEEKDAYS[dt.getDay()];
+      return `<tr>
+        <td><strong>${dataBR}</strong><br><small class="sa-muted">${dia}</small></td>
+        <td>${p.hor}</td>
+        <td>${escapeHTML(p.canal)}</td>
+        <td>${escapeHTML(p.obj)}<br><small class="sa-muted">${escapeHTML(catOf(o))}</small></td>
+        <td>${escapeHTML(p.formato)}</td>
+        <td>${escapeHTML(p.hook(o.label))}</td>
+        <td><small>${escapeHTML(p.exec)}</small></td>
+        <td>${escapeHTML(p.cta)}</td>
+      </tr>`;
+    }).join('');
+
+    const calCard = card('9. Calendário editorial — 15 dias (orientado por dados)', `
+      <p class="sa-muted">Cada dia foi escolhido a partir do <strong>desempenho real</strong> da Elarah:
+      Reel pra alcance, Carrossel pra saves/autoridade, Story pra comunidade; temas vindos dos
+      seus campeões (Gastronomia = alcance/shares, Aniversário/Autopresente = saves, Date/Galentine's = engajamento).</p>
       <div class="sa-tablewrap"><table class="sa-table sa-table--cal">
-        <thead><tr><th>Dia</th><th>Tema</th><th>Gancho</th><th>Formato</th><th>Objetivo</th><th>CTA</th></tr></thead>
-        <tbody>${rows.join('')}</tbody>
+        <thead><tr>
+          <th>Data</th><th>Horário</th><th>Canal</th><th>Objetivo / Categoria</th>
+          <th>Formato</th><th>Hook inicial</th><th>Execução</th><th>CTA</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
       </table></div>
     `);
+
+    // Frequência por canal (baseada nos padrões: Feed estático morreu).
+    const freqCard = card('Frequência ideal por canal', `
+      <div class="sa-tablewrap"><table class="sa-table">
+        <thead><tr><th>Canal</th><th>Frequência</th><th>Por quê (dado)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Instagram Feed</strong></td><td>5–6 posts/sem</td><td>Priorize <strong>Reel</strong> (alcance 10,7k) e <strong>Carrossel</strong> (eng. 10,5%). <strong>Pare o Feed estático</strong> (0,2% — está puxando a média pra baixo).</td></tr>
+          <tr><td><strong>Instagram Stories</strong></td><td>Diário (5–7/sem)</td><td>Comentários são só 4,6% do eng. — comunidade fria. Story com enquete/caixinha é o caminho mais barato de aquecer.</td></tr>
+          <tr><td><strong>TikTok</strong></td><td>5–7/sem</td><td>Alcance alto (85k) com eng. baixo → jogo de descoberta. Reaproveite os Reels do IG, custo quase zero.</td></tr>
+          <tr><td><strong>LinkedIn</strong></td><td>1–2/sem</td><td>Corporativo teve 5,6% de eng. — nicho B2B (team building) vale 1 post institucional/semana.</td></tr>
+          <tr><td><strong>WhatsApp Comunidade</strong></td><td>2–3/sem</td><td>Canal de conversão direta: drops de vagas, escassez e link de reserva. Resolve o gargalo (conversão travada).</td></tr>
+        </tbody>
+      </table></div>`);
+
+    // Horários — honestidade sobre o dado.
+    const horCard = card('Horários recomendados (a testar)', `
+      <p class="sa-list--warn" style="padding:10px 14px;border-radius:8px;">
+        ⚠️ O export do Windsor trouxe só a <strong>data</strong>, não a <strong>hora</strong> de publicação — então
+        ainda <strong>não dá pra cravar o melhor horário com dado próprio</strong>. As janelas acima são hipóteses
+        a testar, baseadas no comportamento do público da Elarah (gente planejando rolê/date à noite e no fim de semana).
+      </p>
+      <p class="sa-muted">Para destravar isso: no Windsor, adicione o campo de <strong>hora/timestamp</strong> da publicação
+      (ou registre o horário ao cadastrar). Depois de ~3–4 semanas, o painel passa a apontar o horário real por dado.
+      Enquanto isso, teste 2 janelas por canal e compare alcance/engajamento.</p>`);
+
+    // Oportunidades não exploradas + novos formatos.
+    const oppCard = card('Oportunidades não exploradas + novos formatos', `
+      <h4 class="sa-h4">Ocasiões que você ainda não captura</h4>
+      <ul class="sa-list">
+        <li><strong>👔 Dia dos Pais</strong> — comece 3–4 semanas antes; ângulo "experiência > objeto".</li>
+        <li><strong>🧒 Kids / Família</strong> — fins de semana e férias; oficinas criativas para crianças.</li>
+        <li><strong>🧘 Bem-estar</strong> — recorrente (não depende de data); surfar na pauta de autocuidado.</li>
+      </ul>
+      <h4 class="sa-h4">Novos formatos sugeridos (pelo comportamento da audiência)</h4>
+      <ul class="sa-list">
+        <li><strong>Série "O que fazer em SP neste fim de semana"</strong> (Reel semanal) — ataca alcance/descoberta.</li>
+        <li><strong>"Duelo de experiências"</strong> (enquete no Story → vira Reel) — ataca a comunidade fria.</li>
+        <li><strong>UGC / depoimento de quem viveu</strong> (Reel emocional) — confiança e conversão.</li>
+        <li><strong>Carrossel-guia "salva pra depois"</strong> por ocasião — maximiza saves (seu ponto forte).</li>
+        <li><strong>Gastronomia como isca de alcance</strong> — é seu maior motor de shares; transforme em série.</li>
+      </ul>`);
+
+    return calCard + freqCard + horCard + oppCard;
   }
-  function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   // -----------------------------------------------------------
   // SEÇÃO 10 — RESUMO EXECUTIVO
