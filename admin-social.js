@@ -552,31 +552,39 @@
     if (!rows.length) return [];
 
     // Mapeia cada coluna do header pro campo canônico (nativo OU Windsor).
-    const colMap = rows[0].map(canonicalField);
+    const headers = rows[0];
     const out = [];
     for (let r = 1; r < rows.length; r++) {
       const cells = rows[r];
       if (cells.length === 1 && !cells[0].trim()) continue;
-      const obj = {};
-      colMap.forEach((canon, i) => {
-        if (!canon) return; // coluna desconhecida — ignora
-        const val = (cells[i] || '').trim();
-        if (!val) return;
-        if (NUMERIC_FIELDS.has(canon)) {
-          // duas colunas no mesmo campo (ex: Vistas + Visualizações da
-          // história) → fica com o maior valor da linha.
-          const n = parseNum(val);
-          if (n > (parseNum(obj[canon]) || 0)) obj[canon] = String(n);
-        } else if (!obj[canon]) {
-          obj[canon] = val;
-        }
-      });
-      const post = normalizePost(obj);
+      const raw = {};
+      headers.forEach((h, i) => { raw[h] = cells[i]; });
+      const post = normalizePost(canonicalizeRow(raw));
       // Pula linhas vazias: sem legenda/tags e com todas as métricas zeradas
       // (ex: linhas de story que só trazem o permalink, sem dados).
       if (post && !isEmptyImport(post)) out.push(post);
     }
     return out;
+  }
+
+  // Converte um objeto de chaves arbitrárias (cabeçalhos de CSV ou campos
+  // de JSON do Windsor) num objeto com as chaves canônicas internas.
+  // Quando dois campos mapeiam pro mesmo canônico numérico, mantém o maior.
+  function canonicalizeRow(raw) {
+    const obj = {};
+    for (const key in raw) {
+      const canon = canonicalField(key);
+      if (!canon) continue;
+      const val = raw[key] == null ? '' : String(raw[key]).trim();
+      if (!val) continue;
+      if (NUMERIC_FIELDS.has(canon)) {
+        const n = parseNum(val);
+        if (n > (parseNum(obj[canon]) || 0)) obj[canon] = String(n);
+      } else if (!obj[canon]) {
+        obj[canon] = val;
+      }
+    }
+    return obj;
   }
 
   function isEmptyImport(p) {
@@ -1881,6 +1889,113 @@
   }
 
   // -----------------------------------------------------------
+  // MERGE / DEDUPE — usado pelo import CSV e pela sync do Windsor.
+  // Dedupe: prefere o ID da mídia (estável entre exports); senão o
+  // permalink; senão platform|date|type|legenda. Ids gerados por nós
+  // começam com "p_" — esses não servem de chave estável.
+  // -----------------------------------------------------------
+  function mergePosts(incoming) {
+    const existing = loadPosts();
+    const isGenId = id => !id || /^p_/.test(id);
+    const keyOf = p =>
+      !isGenId(p.id) ? 'mid|' + p.id
+      : p.link ? 'lnk|' + p.platform + '|' + p.date + '|' + p.link
+      : 'cap|' + p.platform + '|' + p.date + '|' + p.type + '|' + (p.caption || '').slice(0, 40);
+    const map = {};
+    existing.forEach(p => { map[keyOf(p)] = p; });
+    let added = 0, updated = 0;
+    incoming.forEach(p => {
+      const k = keyOf(p);
+      if (map[k]) { p.id = map[k].id; map[k] = p; updated++; }
+      else        { map[k] = p; added++; }
+    });
+    savePosts(Object.values(map));
+    return { added, updated };
+  }
+
+  // ===========================================================
+  // BLOCO 1.6 — SINCRONIZAÇÃO AUTOMÁTICA VIA URL DO WINDSOR AI
+  // O admin cola a URL do conector (https://connectors.windsor.ai/...)
+  // UMA vez; ela fica no localStorage (atrás do login admin, nunca no
+  // código/repo). A cada abertura da aba puxamos os dados frescos.
+  // Aceita resposta JSON (padrão do Windsor) ou CSV.
+  // ===========================================================
+  const WINDSOR_URL_KEY = 'elarah.social.windsor.url';
+  let _windsorAutoSynced = false; // evita re-sync em loop dentro do render
+
+  function getWindsorUrl() {
+    try { return localStorage.getItem(WINDSOR_URL_KEY) || ''; }
+    catch (e) { return ''; }
+  }
+  function setWindsorUrl(url) {
+    try { localStorage.setItem(WINDSOR_URL_KEY, url); } catch (e) {}
+  }
+  function sanitizeWindsorUrl(u) {
+    const s = String(u || '').trim().replace(/^[\]\[\s"']+|[\s"']+$/g, '');
+    return /^https:\/\/connectors\.windsor\.ai\//i.test(s) ? s : '';
+  }
+
+  // Converte a resposta do conector (JSON ou CSV) em posts normalizados.
+  function parseWindsorBody(text, contentType) {
+    const looksJSON = /json/i.test(contentType || '') || /^\s*[\[{]/.test(text);
+    if (looksJSON) {
+      try {
+        const j = JSON.parse(text);
+        const arr = Array.isArray(j) ? j : (j.data || j.rows || j.results || j.records || []);
+        return arr
+          .map(o => normalizePost(canonicalizeRow(o)))
+          .filter(p => p && !isEmptyImport(p));
+      } catch (e) { /* não era JSON — tenta CSV */ }
+    }
+    return parseCSV(text);
+  }
+
+  // Busca os dados do Windsor e mescla. silent=true não mostra toasts
+  // (usado no auto-sync ao abrir a aba).
+  async function syncFromWindsor(opts) {
+    const silent = !!(opts && opts.silent);
+    const url = getWindsorUrl();
+    if (!url) { if (!silent) showToast('error', 'Cole a URL do Windsor primeiro (botão 🔗 Windsor AI).'); return; }
+    try {
+      if (!silent) showToast('ok', 'Sincronizando com o Windsor AI…');
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const body = await res.text();
+      const incoming = parseWindsorBody(body, res.headers.get('content-type'));
+      if (!incoming.length) {
+        if (!silent) showToast('error', 'O Windsor respondeu, mas sem posts válidos. Confira se os campos incluem date + métricas de mídia.');
+        return;
+      }
+      const { added, updated } = mergePosts(incoming);
+      await render();
+      if (!silent) showToast('ok', `Windsor sincronizado: ${added} novos, ${updated} atualizados.`);
+    } catch (e) {
+      console.warn('[Windsor] sync falhou:', e);
+      if (!silent) {
+        showToast('error', 'Não consegui buscar do Windsor pelo navegador (provável bloqueio de CORS). ' +
+          'Posso configurar um proxy no backend pra resolver — me avise.');
+      }
+    }
+  }
+
+  // Botão: abre prompt pré-preenchido com a URL atual. Salvar + sincronizar.
+  function connectWindsor() {
+    const current = getWindsorUrl();
+    const input = window.prompt(
+      'Cole a URL do conector do Windsor AI\n(começa com https://connectors.windsor.ai/…).\n\n' +
+      'Dica: inclua os campos date,media_type,media_caption,media_like_count,' +
+      'media_reach,media_comments_count,media_saved,media_shares.',
+      current || 'https://connectors.windsor.ai/instagram?api_key=&date_preset=last_90d&fields=date,media_type,media_caption,media_like_count,media_reach,media_comments_count,media_saved,media_shares'
+    );
+    if (input === null) return; // cancelou
+    const clean = sanitizeWindsorUrl(input);
+    if (!clean) { alert('URL inválida. Tem que começar com https://connectors.windsor.ai/'); return; }
+    setWindsorUrl(clean);
+    _windsorAutoSynced = true; // já vamos sincronizar manualmente agora
+    syncFromWindsor({ silent: false });
+  }
+
+  // -----------------------------------------------------------
   // CSV IMPORT
   // -----------------------------------------------------------
   function handleCSVImport(file) {
@@ -1893,24 +2008,7 @@
         alert('Nenhum post válido encontrado no CSV.\n\n' + diagnoseCSV(text));
         return;
       }
-      const existing = loadPosts();
-      // Dedupe: prefere o ID da mídia (estável entre exports); senão o
-      // permalink; senão platform|date|type|legenda. Ids gerados por nós
-      // começam com "p_" — esses não servem de chave estável.
-      const isGenId = id => !id || /^p_/.test(id);
-      const keyOf = p =>
-        !isGenId(p.id) ? 'mid|' + p.id
-        : p.link ? 'lnk|' + p.platform + '|' + p.date + '|' + p.link
-        : 'cap|' + p.platform + '|' + p.date + '|' + p.type + '|' + (p.caption || '').slice(0, 40);
-      const map = {};
-      existing.forEach(p => { map[keyOf(p)] = p; });
-      let added = 0, updated = 0;
-      incoming.forEach(p => {
-        const k = keyOf(p);
-        if (map[k]) { p.id = map[k].id; map[k] = p; updated++; }
-        else        { map[k] = p; added++; }
-      });
-      savePosts(Object.values(map));
+      const { added, updated } = mergePosts(incoming);
       alert(`Importação concluída: ${added} novos, ${updated} atualizados.`);
       render();
     };
@@ -1938,6 +2036,9 @@
 
     const igBtn = document.getElementById('btn-social-connect-instagram');
     if (igBtn) igBtn.addEventListener('click', connectInstagram);
+
+    const windsorBtn = document.getElementById('btn-social-windsor');
+    if (windsorBtn) windsorBtn.addEventListener('click', connectWindsor);
 
     const exportBtn = document.getElementById('btn-social-export');
     if (exportBtn) exportBtn.addEventListener('click', () => {
@@ -2018,6 +2119,14 @@
     // Consome ?social_connected=... se voltou de OAuth.
     consumeOAuthRedirect();
 
+    // Auto-sync do Windsor: na 1ª abertura da aba, se há URL salva,
+    // puxa os dados frescos em silêncio. O re-render disparado por
+    // syncFromWindsor não reentra aqui (guard _windsorAutoSynced).
+    if (getWindsorUrl() && !_windsorAutoSynced) {
+      _windsorAutoSynced = true;
+      syncFromWindsor({ silent: true });
+    }
+
     // Decide a fonte: banco (se conectado) ou localStorage.
     const allPosts = effectivePostsSource() === 'remote'
       ? _remoteCache.posts
@@ -2026,9 +2135,9 @@
     const empty = document.getElementById('social-empty');
     const dash  = document.getElementById('social-dashboard');
 
-    // Mostra dashboard se há posts OU conta conectada (mesmo sem
-    // posts ainda — cron pode estar pra rodar).
-    const showDash = allPosts.length > 0 || hasConnectedAccount();
+    // Mostra dashboard se há posts, conta conectada, OU Windsor plugado
+    // (mesmo sem posts ainda — a sync pode estar a caminho).
+    const showDash = allPosts.length > 0 || hasConnectedAccount() || !!getWindsorUrl();
     if (!showDash) {
       if (empty) empty.style.display = 'block';
       if (dash)  dash.style.display = 'none';
