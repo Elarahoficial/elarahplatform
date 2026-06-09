@@ -7879,11 +7879,16 @@
             .upsert({ fornecedor_key: key, fornecedor_nome: nome, tipo_parceria: value },
                     { onConflict: 'fornecedor_key' });
           if (error) throw error;
+          // Invalida o cache de metadados — SEM isso, o próximo render lê o
+          // cache velho (sem o tipo recém-salvo) e o dropdown volta pra "—".
+          // Os editores de WhatsApp/Data já fazem isso; o de Tipo não fazia.
+          fornecedoresMetaCache = null;
           // Feedback visual rápido
           const prev = el.style.borderColor;
           el.style.borderColor = '#1a8a4a';
           setTimeout(() => { el.style.borderColor = prev; }, 800);
         } catch (err) {
+          console.error('[Admin] tipo_parceria upsert error', err);
           alert('Não consegui salvar o tipo de parceria. ' + (err.message || err));
         } finally {
           el.disabled = false;
