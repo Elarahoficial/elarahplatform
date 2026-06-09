@@ -1976,3 +1976,16 @@
   .sa-card { break-inside: avoid; border: 1px solid #ccc; }
   .social-analysis { display: block !important; }
 }
+
+/* Métricas-chave Windsor + tabelas numéricas da análise */
+.sa-metricgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;
+}
+.sa-metric {
+  background: #FBF6F0; border: 1px solid #efe2d2; border-radius: 10px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 2px;
+}
+.sa-metric__v { font-size: 1.5rem; font-weight: 700; color: #5C2426; line-height: 1.1; }
+.sa-metric__k { font-size: .82rem; font-weight: 600; color: #6B4F4D; }
+.sa-metric__h { font-size: .72rem; color: #a08c7a; }
+.sa-table .sa-num { text-align: right; font-variant-numeric: tabular-nums; }

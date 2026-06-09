@@ -1600,7 +1600,9 @@
           <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="sample">Dados de exemplo</button>
         </div>
         <p class="social-empty__hint">
-          CSV esperado: <code>platform,type,date,link,views,likes,comments,saves,shares,tags</code><br>
+          ✅ <strong>Importação direta do Windsor AI:</strong> exporte o CSV do Windsor e importe aqui — reconhecemos
+          automaticamente as colunas (Vistas, Tipo de mídia, Interações totais, Compartilhamentos, Site vinculado, etc.).<br>
+          Formato nativo também aceito: <code>platform,type,date,link,views,reach,likes,comments,saves,shares,followers,linkClicks,conversions,tags</code><br>
           <span style="color:#999;">tags = palavras-chave separadas por vírgula entre aspas, ex: <code>"comida, vila madalena"</code></span>
         </p>
       </div>
@@ -1826,10 +1828,29 @@
               <span>Tags (separadas por vírgula — ex: comida, vila madalena, presente)</span>
               <input type="text" id="social-form-tags" placeholder="comida, bairro, depoimento">
             </label>
+            <!-- Dimensões de análise da Elarah -->
+            <div class="social-form__row">
+              <label class="social-form__field">
+                <span>Ocasião / Tema</span>
+                <select id="social-form-theme"><option value="">—</option></select>
+              </label>
+              <label class="social-form__field">
+                <span>Experiência (opcional)</span>
+                <input type="text" id="social-form-experience" placeholder="Ex: Jantar harmonizado">
+              </label>
+              <label class="social-form__field">
+                <span>Campanha (opcional)</span>
+                <input type="text" id="social-form-campaign" placeholder="Ex: namorados-2026">
+              </label>
+            </div>
             <div class="social-form__row social-form__row--metrics">
               <label class="social-form__field">
                 <span>Visualizações</span>
                 <input type="number" id="social-form-views" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Alcance</span>
+                <input type="number" id="social-form-reach" min="0" value="0">
               </label>
               <label class="social-form__field">
                 <span>Curtidas</span>
@@ -1846,6 +1867,24 @@
               <label class="social-form__field">
                 <span>Shares</span>
                 <input type="number" id="social-form-shares" min="0" value="0">
+              </label>
+            </div>
+            <div class="social-form__row social-form__row--metrics">
+              <label class="social-form__field">
+                <span>Novos seguidores</span>
+                <input type="number" id="social-form-followers" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Visitas ao perfil</span>
+                <input type="number" id="social-form-profileVisits" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Cliques no link</span>
+                <input type="number" id="social-form-linkClicks" min="0" value="0">
+              </label>
+              <label class="social-form__field">
+                <span>Conversões / Reservas</span>
+                <input type="number" id="social-form-conversions" min="0" value="0">
               </label>
             </div>
             <div class="social-form__actions">
@@ -3865,8 +3904,8 @@
 <script src="experiences-data.js?v=25"></script>
 <script src="byelarah-data.js?v=6"></script>
 <script src="analytics.js?v=2"></script>
-<script src="admin-social.js?v=2"></script>
-<script src="admin-social-analysis.js?v=1"></script>
+<script src="admin-social.js?v=3"></script>
+<script src="admin-social-analysis.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=160"></script>

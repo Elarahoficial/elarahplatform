@@ -57,10 +57,15 @@
         type: String(p.type || '').toLowerCase(),
         date: String(p.date || '').slice(0, 10),
         link: p.link || '',
+        caption: p.caption || '',
         tags: Array.isArray(p.tags) ? p.tags : [],
-        views: toInt(p.views), likes: toInt(p.likes),
-        comments: toInt(p.comments), saves: toInt(p.saves),
-        shares: toInt(p.shares),
+        views: toInt(p.views), reach: toInt(p.reach),
+        likes: toInt(p.likes), comments: toInt(p.comments),
+        saves: toInt(p.saves), shares: toInt(p.shares),
+        interactions: toInt(p.interactions),
+        followers: toInt(p.followers), profileVisits: toInt(p.profileVisits),
+        linkClicks: toInt(p.linkClicks), conversions: toInt(p.conversions),
+        theme: p.theme || '', experience: p.experience || '', campaign: p.campaign || '',
       })).filter(p => p.date);
     } catch (e) {
       return [];
@@ -106,8 +111,27 @@
   function toInt(v) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : 0; }
   function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
   function avg(arr) { return arr.length ? sum(arr) / arr.length : 0; }
-  function engagement(p) { return p.likes + p.comments + p.saves + p.shares; }
-  function engRate(p) { return p.views > 0 ? (engagement(p) / p.views) * 100 : 0; }
+  function engagement(p) {
+    const b = p.likes + p.comments + p.saves + p.shares;
+    return Math.max(b, p.interactions || 0);
+  }
+  // Alcance efetivo: prefere reach, cai pra views.
+  function reachOf(p) { return (p.reach || 0) > 0 ? p.reach : (p.views || 0); }
+  function engRate(p) { const r = reachOf(p); return r > 0 ? (engagement(p) / r) * 100 : 0; }
+
+  // Taxonomia de ocasiões: usa a do admin-social.js (fonte única) com
+  // fallback local pra robustez se o script ainda não carregou.
+  function occasions() {
+    return (window.ElarahSocial && window.ElarahSocial.OCCASIONS) || [];
+  }
+  function occasionLabel(key) {
+    const map = (window.ElarahSocial && window.ElarahSocial.OCCASION_LABEL) || {};
+    return map[key] || key;
+  }
+  function occasionEmoji(key) {
+    const o = occasions().find(x => x.key === key);
+    return o ? o.emoji : '🏷️';
+  }
   function fmtNum(n) {
     if (n == null || isNaN(n)) return '—';
     if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M';
@@ -186,6 +210,34 @@
     if (dates.length < 2) return dates.length;
     const spanDays = Math.max(1, (Math.max(...dates) - Math.min(...dates)) / 86400000);
     return (posts.length / spanDays) * 7;
+  }
+
+  // Agregador genérico por uma dimensão qualquer (theme/experience/
+  // campaign/type). `keyFn` extrai a chave; linhas vazias são ignoradas.
+  // Ordena por conversões → seguidores → engajamento (foco em crescimento).
+  function byDimension(posts, keyFn, labelFn) {
+    const buckets = {};
+    posts.forEach(p => {
+      const k = keyFn(p);
+      if (!k) return;
+      (buckets[k] = buckets[k] || []).push(p);
+    });
+    return Object.keys(buckets).map(k => {
+      const b = buckets[k];
+      return {
+        key: k, label: labelFn ? labelFn(k) : k, n: b.length,
+        reachAvg: avg(b.map(reachOf)),
+        engAvg: avg(b.map(engagement)),
+        rate: avg(b.map(engRate)),
+        savesAvg: avg(b.map(p => p.saves)),
+        sharesAvg: avg(b.map(p => p.shares)),
+        followers: sum(b.map(p => p.followers)),
+        conversions: sum(b.map(p => p.conversions)),
+        linkClicks: sum(b.map(p => p.linkClicks)),
+      };
+    }).sort((a, b) =>
+      (b.conversions - a.conversions) || (b.followers - a.followers) || (b.rate - a.rate)
+    );
   }
 
   // -----------------------------------------------------------
@@ -614,6 +666,113 @@
   }
 
   // -----------------------------------------------------------
+  // PAINEL DE MÉTRICAS-CHAVE (estrutura escalável Windsor)
+  // Alcance, engajamento, shares, saves, seguidores, conversão.
+  // -----------------------------------------------------------
+  function sectionMetricas(posts) {
+    if (!posts.length) return card('Métricas-chave (Windsor AI)', emptyData('Importe o CSV do Windsor AI pra ver alcance, engajamento, seguidores e conversões.'));
+    const agg = aggregate(posts);
+    const reach = sum(posts.map(reachOf));
+    const followers = sum(posts.map(p => p.followers));
+    const linkClicks = sum(posts.map(p => p.linkClicks));
+    const conversions = sum(posts.map(p => p.conversions));
+    const cvr = linkClicks > 0 ? (conversions / linkClicks) * 100 : 0;
+    const cards = [
+      ['Alcance', fmtNum(reach), 'contas/visualizações'],
+      ['Engajamento', fmtNum(agg.eng), `taxa ${fmtPct(agg.rate)}`],
+      ['Compartilhamentos', fmtNum(agg.shares), 'motor de alcance orgânico'],
+      ['Salvamentos', fmtNum(agg.saves), 'intenção de compra'],
+      ['Novos seguidores', fmtNum(followers), 'crescimento da comunidade'],
+      ['Cliques no link', fmtNum(linkClicks), 'topo da conversão'],
+      ['Conversões / reservas', fmtNum(conversions), cvr ? `${fmtPct(cvr)} dos cliques` : 'configure UTM no site'],
+    ];
+    return card('Métricas-chave (Windsor AI)', `
+      <div class="sa-metricgrid">
+        ${cards.map(c => `<div class="sa-metric"><span class="sa-metric__v">${c[1]}</span><span class="sa-metric__k">${escapeHTML(c[0])}</span><span class="sa-metric__h">${escapeHTML(c[2])}</span></div>`).join('')}
+      </div>
+    `);
+  }
+
+  // Tabela genérica de performance por dimensão.
+  function dimensionTable(rows, firstColLabel, withEmoji) {
+    if (!rows.length) return null;
+    const body = rows.map(r => `<tr>
+      <td>${withEmoji ? occasionEmoji(r.key) + ' ' : ''}${escapeHTML(r.label)}</td>
+      <td class="sa-num">${r.n}</td>
+      <td class="sa-num">${fmtNum(r.reachAvg)}</td>
+      <td class="sa-num">${fmtPct(r.rate)}</td>
+      <td class="sa-num">${fmtNum(r.savesAvg)}</td>
+      <td class="sa-num">${fmtNum(r.sharesAvg)}</td>
+      <td class="sa-num">${fmtNum(r.followers)}</td>
+      <td class="sa-num">${fmtNum(r.conversions)}</td>
+    </tr>`).join('');
+    return `<div class="sa-tablewrap"><table class="sa-table">
+      <thead><tr>
+        <th>${escapeHTML(firstColLabel)}</th><th class="sa-num">Posts</th>
+        <th class="sa-num">Alcance méd.</th><th class="sa-num">Taxa eng.</th>
+        <th class="sa-num">Saves méd.</th><th class="sa-num">Shares méd.</th>
+        <th class="sa-num">Seguidores</th><th class="sa-num">Conversões</th>
+      </tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+
+  // -----------------------------------------------------------
+  // DESEMPENHO POR DIMENSÃO (formato / ocasião / experiência / campanha)
+  // -----------------------------------------------------------
+  function sectionDimensoes(posts) {
+    if (!posts.length) return card('Desempenho por dimensão', emptyData('Sem dados pra cruzar formato, ocasião, experiência e campanha.'));
+
+    const fmtRows = byDimension(posts, p => p.type, k => TYPE_LABEL[k] || k);
+    const occRows = byDimension(posts, p => p.theme, occasionLabel);
+    const expRows = byDimension(posts, p => p.experience, k => k);
+    const cmpRows = byDimension(posts, p => p.campaign, k => k);
+
+    const block = (title, table, emptyMsg) => `<h4 class="sa-h4">${title}</h4>${table || `<p class="sa-empty">${escapeHTML(emptyMsg)}</p>`}`;
+
+    return card('Desempenho por dimensão', `
+      ${block('Por formato', dimensionTable(fmtRows, 'Formato', false), 'Sem dados de formato.')}
+      ${block('Por ocasião / tema', dimensionTable(occRows, 'Ocasião', true), 'Nenhuma ocasião classificada ainda — taggeie os posts ou deixe o auto-classificador detectar pela legenda.')}
+      ${block('Por experiência', dimensionTable(expRows, 'Experiência', false), 'Preencha o campo "Experiência" nos posts pra ver quais experiências da Elarah mais performam.')}
+      ${block('Por campanha', dimensionTable(cmpRows, 'Campanha', false), 'Preencha o campo "Campanha" (ou use utm_campaign no CSV) pra comparar campanhas.')}
+    `);
+  }
+
+  // -----------------------------------------------------------
+  // ANÁLISE DEDICADA POR OCASIÃO (item #2)
+  // Lê melhor ocasião por interesse (engajamento) e por reserva
+  // (conversão), e aponta ocasiões inexploradas.
+  // -----------------------------------------------------------
+  function sectionOcasioes(posts) {
+    const all = occasions();
+    if (!all.length) return '';
+    const rows = byDimension(posts, p => p.theme, occasionLabel);
+    const usados = new Set(rows.map(r => r.key));
+    const inexplorados = all.filter(o => !usados.has(o.key));
+
+    if (!rows.length) {
+      return card('Inteligência por ocasião — Elarah', `
+        <p class="sa-muted">Ainda não há posts classificados por ocasião. Conforme você importar/taggear, esta seção mostra qual ocasião gera mais interesse e mais reservas.</p>
+        <h4 class="sa-h4">Ocasiões a cobrir</h4>
+        <p>${all.map(o => `<span class="sa-tag">${o.emoji} ${escapeHTML(o.label)}</span>`).join(' ')}</p>
+      `);
+    }
+
+    const topInteresse = [...rows].sort((a, b) => b.rate - a.rate)[0];
+    const topReserva = [...rows].filter(r => r.conversions > 0).sort((a, b) => b.conversions - a.conversions)[0];
+    const topSeguidor = [...rows].filter(r => r.followers > 0).sort((a, b) => b.followers - a.followers)[0];
+
+    return card('Inteligência por ocasião — Elarah', `
+      <div class="sa-kv"><span class="sa-kv__k">🔥 Mais interesse</span><span class="sa-kv__v">${topInteresse ? `${occasionEmoji(topInteresse.key)} <strong>${escapeHTML(topInteresse.label)}</strong> — ${fmtPct(topInteresse.rate)} de engajamento` : '—'}</span></div>
+      <div class="sa-kv"><span class="sa-kv__k">💰 Mais reservas</span><span class="sa-kv__v">${topReserva ? `${occasionEmoji(topReserva.key)} <strong>${escapeHTML(topReserva.label)}</strong> — ${fmtNum(topReserva.conversions)} conversões` : 'Sem conversões registradas (configure UTM/reservas).'}</span></div>
+      <div class="sa-kv"><span class="sa-kv__k">📈 Mais seguidores</span><span class="sa-kv__v">${topSeguidor ? `${occasionEmoji(topSeguidor.key)} <strong>${escapeHTML(topSeguidor.label)}</strong> — ${fmtNum(topSeguidor.followers)} novos` : '—'}</span></div>
+      <h4 class="sa-h4">Ocasiões ainda não exploradas</h4>
+      ${inexplorados.length
+        ? `<p>${inexplorados.map(o => `<span class="sa-tag">${o.emoji} ${escapeHTML(o.label)}</span>`).join(' ')}</p>
+           <p class="sa-muted">Cada ocasião acima é um calendário de conteúdo + oferta que você ainda não está capturando. Priorize as próximas datas no calendário.</p>`
+        : '<p class="sa-muted">Todas as ocasiões já têm conteúdo. Foco passa a ser otimizar a conversão de cada uma.</p>'}
+    `);
+  }
+
+  // -----------------------------------------------------------
   // RELATÓRIO COMPLETO
   // -----------------------------------------------------------
   function buildReport() {
@@ -627,10 +786,13 @@
         </div>
       </div>`;
     return head +
+      sectionMetricas(posts) +
       sectionPosicionamento(brand) +
       sectionBio(brand) +
       sectionConteudo(posts) +
       sectionEngajamento(posts) +
+      sectionDimensoes(posts) +
+      sectionOcasioes(posts) +
       sectionFunil(posts, brand) +
       sectionConcorrencia(brand) +
       sectionOportunidades(posts, brand) +
