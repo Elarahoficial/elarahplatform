@@ -47,6 +47,53 @@
     video:     'Vídeo',
   };
 
+  // -----------------------------------------------------------
+  // TAXONOMIA DE OCASIÕES DA ELARAH (item #2)
+  // Vocabulário controlado pra classificar conteúdo por ocasião /
+  // motivação de presente/experiência. Cada ocasião tem palavras-chave
+  // usadas pra auto-classificar posts a partir de tags/legenda na
+  // importação. Fonte única — alimenta o <select> do modal, o
+  // auto-tagging e a análise "performance por ocasião".
+  // -----------------------------------------------------------
+  const OCCASIONS = [
+    { key: 'namorados',   label: 'Dia dos Namorados',     emoji: '❤️', kw: ['namorado', 'namorada', 'dia dos namorados', 'romance', 'romantico', 'romântico', 'casal', 'amor'] },
+    { key: 'galentine',   label: "Galentine's / Singles", emoji: '💛', kw: ['galentine', 'singles', 'single', 'solteir', 'amigas', 'galera', 'self love'] },
+    { key: 'maes',        label: 'Dia das Mães',          emoji: '🌷', kw: ['mãe', 'mae', 'maes', 'mães', 'dia das mães', 'mamãe', 'mamae', 'materna'] },
+    { key: 'pais',        label: 'Dia dos Pais',          emoji: '👔', kw: ['pai', 'pais', 'dia dos pais', 'papai', 'paterno'] },
+    { key: 'aniversario', label: 'Aniversário',           emoji: '🎂', kw: ['aniversário', 'aniversario', 'niver', 'birthday', 'parabéns', 'parabens'] },
+    { key: 'autopresente',label: 'Autopresente',          emoji: '🎁', kw: ['autopresente', 'auto presente', 'self gift', 'pra mim', 'me presentear', 'autocuidado'] },
+    { key: 'amigas',      label: 'Experiências c/ amigas', emoji: '👯', kw: ['amigas', 'amigos', 'role', 'rolê', 'turma', 'girls', 'amizade'] },
+    { key: 'date',        label: 'Date',                  emoji: '🍷', kw: ['date', 'encontro', 'primeiro encontro', 'a dois', 'date night'] },
+    { key: 'familia',     label: 'Família',               emoji: '👨‍👩‍👧', kw: ['família', 'familia', 'familiar', 'em casa', 'reunião', 'reuniao'] },
+    { key: 'kids',        label: 'Kids',                  emoji: '🧒', kw: ['kids', 'criança', 'crianca', 'infantil', 'filho', 'filha', 'família com crianças'] },
+    { key: 'corporativo', label: 'Corporativo',           emoji: '💼', kw: ['corporativo', 'empresa', 'b2b', 'team building', 'confraternização', 'confraternizacao', 'rh', 'colaboradores'] },
+    { key: 'bemestar',    label: 'Bem-estar',             emoji: '🧘', kw: ['bem-estar', 'bem estar', 'relax', 'spa', 'massagem', 'autocuidado', 'wellness', 'mindfulness'] },
+    { key: 'criatividade',label: 'Criatividade',          emoji: '🎨', kw: ['criatividade', 'workshop', 'oficina', 'arte', 'pintura', 'ceramica', 'cerâmica', 'diy', 'mão na massa', 'mao na massa'] },
+    { key: 'gastronomia', label: 'Gastronomia',           emoji: '🍽️', kw: ['gastronomia', 'comida', 'jantar', 'degustação', 'degustacao', 'harmonização', 'harmonizacao', 'drinks', 'culinária', 'culinaria', 'chef', 'restaurante'] },
+  ];
+
+  const OCCASION_LABEL = OCCASIONS.reduce((m, o) => (m[o.key] = o.label, m), {});
+
+  // Auto-classifica uma ocasião a partir de texto livre (tags + legenda
+  // + tema/experiência/campanha). Retorna a key da ocasião ou ''.
+  // Casa por PALAVRA INTEIRA (não pedaço): normaliza tudo em tokens
+  // separados por espaço e procura o termo cercado por espaços. Evita
+  // falsos positivos tipo "uNIVERso" virar "niver"/aniversário ou
+  // "São Paulo" casar "spa". Sem lookbehind (compatível com Safari antigo).
+  function inferOccasion(text) {
+    const direct = String(text || '').trim().toLowerCase();
+    if (!direct) return '';
+    const hay = ' ' + direct.replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
+    for (const o of OCCASIONS) {
+      if (o.key === direct) return o.key;          // já é a key da taxonomia
+      for (const k of o.kw) {
+        const token = ' ' + k.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
+        if (hay.includes(token)) return o.key;
+      }
+    }
+    return '';
+  }
+
   // Limiar pra um padrão ser considerado "vencedor" / "perdedor".
   // 1.5x acima da média global = vencedor; 0.6x = perdedor.
   // Usa amostra mínima pra evitar barulho de poucos posts.
@@ -88,25 +135,60 @@
 
   // Normaliza qualquer objeto em post válido. Garante tipos numéricos
   // pra evitar bugs em soma de string ("5"+"3" = "53").
+  // Normaliza qualquer objeto em post válido. Tolerante: aceita o
+  // schema nativo e também linhas já mapeadas do Windsor AI. Como o
+  // Windsor está plugado ao Instagram, plataforma/tipo ausentes caem
+  // em defaults sensatos (instagram / feed) em vez de descartar a linha.
+  // Campos numéricos passam por parseNum (lida com separador de milhar,
+  // sufixo k/m e vazios). Schema escalável: além das métricas básicas,
+  // guarda alcance, seguidores, visitas ao perfil, cliques, conversões
+  // e as dimensões tema / experiência / campanha pra análise cruzada.
   function normalizePost(raw) {
     if (!raw || typeof raw !== 'object') return null;
-    const platform = String(raw.platform || '').toLowerCase();
-    const type = String(raw.type || '').toLowerCase();
-    if (!PLATFORM_LABEL[platform] || !TYPE_LABEL[type]) return null;
-    const date = String(raw.date || '').slice(0, 10);
+    let platform = mapPlatform(raw.platform) || 'instagram';
+    let type = mapMediaType(raw.type) || 'feed';
+    const date = parseDateISO(raw.date);
     if (!date) return null;
+
+    const tags = normalizeTags(raw.tags);
+    const caption = raw.caption ? String(raw.caption).slice(0, 2000) : '';
+    const experience = raw.experience ? String(raw.experience).trim() : '';
+    const campaign = raw.campaign ? String(raw.campaign).trim() : '';
+
+    // Ocasião/tema: se vier explícito, normaliza pra key da taxonomia;
+    // senão, infere do texto livre (tags + legenda + experiência + campanha).
+    let theme = raw.theme ? String(raw.theme).trim() : '';
+    if (theme) {
+      theme = inferOccasion(theme) || theme.toLowerCase();
+    } else {
+      theme = inferOccasion([tags.join(' '), caption, experience, campaign].join(' '));
+    }
+
     return {
-      id:       raw.id || uid(),
+      id:            raw.id || uid(),
       platform,
       type,
       date,
-      link:     raw.link ? String(raw.link) : '',
-      tags:     normalizeTags(raw.tags),
-      views:    toInt(raw.views),
-      likes:    toInt(raw.likes),
-      comments: toInt(raw.comments),
-      saves:    toInt(raw.saves),
-      shares:   toInt(raw.shares),
+      link:          raw.link ? String(raw.link) : '',
+      caption,
+      tags,
+      // Métricas de alcance/engajamento
+      views:         parseNum(raw.views),
+      reach:         parseNum(raw.reach),
+      likes:         parseNum(raw.likes),
+      comments:      parseNum(raw.comments),
+      saves:         parseNum(raw.saves),
+      shares:        parseNum(raw.shares),
+      interactions:  parseNum(raw.interactions),
+      // Métricas de crescimento e conversão
+      followers:     parseNum(raw.followers),
+      profileVisits: parseNum(raw.profileVisits),
+      linkClicks:    parseNum(raw.linkClicks),
+      conversions:   parseNum(raw.conversions),
+      // Dimensões de análise da Elarah
+      theme,
+      experience,
+      campaign,
     };
   }
 
@@ -144,7 +226,18 @@
   // HELPERS DE FORMATAÇÃO E DATA
   // -----------------------------------------------------------
   function engagement(p) {
-    return (p.likes || 0) + (p.comments || 0) + (p.saves || 0) + (p.shares || 0);
+    const breakdown = (p.likes || 0) + (p.comments || 0) + (p.saves || 0) + (p.shares || 0);
+    // Usa o maior entre o detalhamento e "Interações totais" (Windsor).
+    // Cobre os 3 casos: só detalhamento, só total, ou total + detalhamento
+    // parcial (ex: CSV com shares/saves mas sem likes/comments — aí o
+    // total do Windsor é mais fiel que a soma parcial).
+    return Math.max(breakdown, p.interactions || 0);
+  }
+
+  // Alcance efetivo: prefere o campo "reach"/"Alcance" quando existe;
+  // senão cai em views (Vistas/Visualizações) como aproximação.
+  function reachOf(p) {
+    return (p.reach || 0) > 0 ? p.reach : (p.views || 0);
   }
 
   function engRate(p) {
@@ -218,13 +311,225 @@
     }[c]));
   }
 
+  // ===========================================================
+  // BLOCO 1.2 — MAPEAMENTO WINDSOR AI
+  // Dicionário que reconhece os nomes de coluna exportados pelo
+  // Windsor AI (em PT-BR e EN) e os converte pro schema interno.
+  // Objetivo: o admin exporta o CSV do Windsor e importa aqui SEM
+  // editar nada. Várias colunas Windsor podem cair no mesmo campo
+  // canônico (ex: "Vistas" e "Visualizações da história" → views):
+  // nesse caso pegamos o maior valor não-nulo da linha.
+  // ===========================================================
+
+  // Cada chave é o campo canônico interno; os valores são os
+  // cabeçalhos (em minúsculas) que mapeiam pra ele.
+  const FIELD_ALIASES = {
+    // OBS: "dia da semana e número do dia" (ex: "2 terça-feira") NÃO é data
+    // e foi deixado de fora de propósito — ele sequestrava o campo de data.
+    id: ['id da mídia', 'id da midia', 'media id', 'media_id', 'id da publicação', 'id da publicacao'],
+    date: ['date', 'data', 'timestamp', 'data de publicação', 'data de publicacao',
+           'publish date', 'created_time', 'post date', 'mídia criada', 'midia criada',
+           'media created', 'ano mês', 'ano mes'],
+    platform: ['platform', 'plataforma', 'source', 'data source', 'fonte', 'fonte de dados', 'rede', 'rede social', 'canal'],
+    type: ['type', 'tipo', 'tipo de mídia', 'tipo de midia', 'media type', 'media_type',
+           'tipo de produto de mídia', 'tipo de produto de midia', 'media product type',
+           'formato', 'format', 'tipo de publicação', 'tipo de publicacao', 'product type'],
+    link: ['link', 'permalink', 'url', 'post url', 'link do post', 'media url', 'media_url', 'shortcode url',
+           'url permanente para a mídia', 'url permanente para a midia',
+           'link permanente para a mídia', 'link permanente para a midia',
+           'url da mídia', 'url da midia'],
+    caption: ['caption', 'legenda', 'legenda da mídia', 'legenda da midia', 'texto', 'descrição',
+              'descricao', 'description', 'mensagem', 'conteúdo', 'conteudo'],
+    tags: ['tags', 'etiquetas', 'hashtags', 'hashtag', 'palavras-chave', 'palavras chave', 'keywords'],
+    views: ['views', 'vistas', 'visualizações', 'visualizacoes', 'visualizações da história',
+            'visualizacoes da historia', 'story_views', 'opiniões da mídia', 'opinioes da midia',
+            'video views', 'video_views', 'plays', 'reproduções', 'reproducoes',
+            'impressions', 'impressões', 'impressoes', 'impressions_total'],
+    reach: ['reach', 'alcance', 'alcance da mídia', 'alcance da midia', 'contas alcançadas',
+            'contas alcancadas', 'accounts reached', 'reached accounts', 'accounts_reached'],
+    likes: ['likes', 'curtidas', 'contagem de curtidas na mídia', 'contagem de curtidas na midia',
+            'like count', 'like_count', 'curtidas totais'],
+    comments: ['comments', 'comentários', 'comentarios', 'contagem de comentários', 'contagem de comentarios',
+               'comment count', 'comment_count', 'respostas da história', 'respostas da historia',
+               'respostas', 'replies', 'story_replies', 'comments_count'],
+    saves: ['saves', 'salvamentos', 'salvos', 'mídia salva', 'midia salva', 'saved', 'bookmarks',
+            'itens salvos', 'saved_count'],
+    shares: ['shares', 'compartilhamentos', 'compartilhamentos de mídia', 'compartilhamentos de midia',
+             'compartilhamento de histórias', 'compartilhamento de historias',
+             'compartilhamentos de histórias', 'compartilhamentos de historias', 'shares totais',
+             'story_shares', 'shares_count'],
+    interactions: ['interações totais', 'interacoes totais', 'engajamento com a mídia', 'engajamento com a midia',
+                   'interactions', 'total interactions', 'total_interactions', 'engajamento',
+                   'engagement', 'engajamento total', 'total engagement'],
+    followers: ['followers', 'seguidores', 'novos seguidores', 'novos seguidores (1 dia)', 'follows',
+                'follower growth', 'crescimento de seguidores', 'seguidores ganhos', 'net followers', 'follows totais'],
+    profileVisits: ['profile visits', 'visitas ao perfil', 'profile views', 'profile_views',
+                    'visualizações do perfil', 'visualizacoes do perfil', 'visitas de perfil'],
+    linkClicks: ['link clicks', 'cliques no link', 'site vinculado', 'links de perfil', 'website clicks',
+                 'website_clicks', 'cliques no site', 'link_clicks', 'cliques no website',
+                 'cliques no link da bio', 'website taps', 'toques no site'],
+    conversions: ['conversions', 'conversões', 'conversoes', 'reservas', 'bookings', 'vendas',
+                  'purchases', 'compras', 'pedidos', 'reservas confirmadas'],
+    username: ['username', 'nome de usuário do instagram', 'nome de usuario do instagram',
+               'nome de usuário do instagram (pseudônimo)', 'nome de usuario do instagram (pseudonimo)',
+               'account', 'conta', 'usuário', 'usuario', 'user', 'perfil'],
+    theme: ['theme', 'tema', 'assunto', 'topic', 'tópico', 'topico', 'ocasião', 'ocasiao', 'occasion'],
+    experience: ['experience', 'experiência', 'experiencia', 'produto', 'product', 'serviço', 'servico'],
+    campaign: ['campaign', 'campanha', 'utm_campaign', 'campaign name', 'nome da campanha', 'utm campaign'],
+  };
+
+  // Campos numéricos (quando duas colunas mapeiam pro mesmo, pega o maior).
+  const NUMERIC_FIELDS = new Set([
+    'views', 'reach', 'likes', 'comments', 'saves', 'shares', 'interactions',
+    'followers', 'profileVisits', 'linkClicks', 'conversions',
+  ]);
+
+  // Índice reverso: cabeçalho → campo canônico (construído 1x).
+  const HEADER_INDEX = (function () {
+    const idx = {};
+    Object.keys(FIELD_ALIASES).forEach(canon => {
+      FIELD_ALIASES[canon].forEach(alias => { idx[alias] = canon; });
+    });
+    return idx;
+  })();
+
+  function canonicalField(header) {
+    const h = String(header || '').trim().toLowerCase();
+    if (HEADER_INDEX[h]) return HEADER_INDEX[h];
+    // Fallback: o Windsor exporta nomes técnicos prefixados
+    // (media_caption, media_like_count, story_permalink…). Remove o
+    // prefixo media_/story_/ig_ e tenta de novo — pega qualquer variante.
+    const stripped = h.replace(/^(media|story|ig|instagram)[ _]/, '');
+    if (stripped !== h && HEADER_INDEX[stripped]) return HEADER_INDEX[stripped];
+    return null;
+  }
+
+  // Mapeia "Tipo de mídia" do Windsor (IMAGE/VIDEO/CAROUSEL_ALBUM/REELS/STORY
+  // e variações PT) pros tipos internos.
+  const MEDIA_TYPE_MAP = {
+    image: 'feed', imagem: 'feed', photo: 'feed', foto: 'feed', picture: 'feed', post: 'feed',
+    video: 'video', 'vídeo': 'video',
+    carousel: 'carrossel', carousel_album: 'carrossel', 'carousel album': 'carrossel',
+    carrossel: 'carrossel', album: 'carrossel', 'álbum': 'carrossel', 'albúm': 'carrossel',
+    reel: 'reel', reels: 'reel',
+    story: 'story', stories: 'story', 'história': 'story', historia: 'story',
+    'histórias': 'story', historias: 'story', storie: 'story',
+    feed: 'feed', text: 'feed', link: 'feed', article: 'feed',
+  };
+
+  function mapMediaType(v) {
+    const k = String(v || '').trim().toLowerCase();
+    if (!k) return '';
+    if (TYPE_LABEL[k]) return k;
+    return MEDIA_TYPE_MAP[k] || '';
+  }
+
+  function mapPlatform(v) {
+    const k = String(v || '').trim().toLowerCase();
+    if (!k) return '';
+    if (PLATFORM_LABEL[k]) return k;
+    if (/tik\s*-?\s*tok/.test(k)) return 'tiktok';
+    if (/linkedin/.test(k)) return 'linkedin';
+    if (/instagram|\big\b|insta/.test(k)) return 'instagram';
+    return '';
+  }
+
+  // Parser de número tolerante: lida com separador de milhar (1.234 / 1,234),
+  // decimal (1,5), sufixo k/M e células vazias ("—", "n/a").
+  function parseNum(v) {
+    if (v == null) return 0;
+    if (typeof v === 'number') return isFinite(v) && v >= 0 ? Math.round(v) : 0;
+    let s = String(v).trim().toLowerCase().replace(/\s/g, '');
+    if (!s || s === '-' || s === '—' || s === 'n/a' || s === 'null') return 0;
+    let mult = 1;
+    if (/[kK]$/.test(s)) { mult = 1e3; s = s.slice(0, -1); }
+    else if (/[mM]$/.test(s)) { mult = 1e6; s = s.slice(0, -1); }
+    if (s.includes('.') && s.includes(',')) {
+      // o último separador é o decimal
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+      else s = s.replace(/,/g, '');
+    } else if (s.includes(',')) {
+      const parts = s.split(',');
+      s = (parts.length === 2 && parts[1].length <= 2) ? parts[0] + '.' + parts[1] : s.replace(/,/g, '');
+    } else if (s.includes('.')) {
+      const parts = s.split('.');
+      // "1.234" ou "1.234.567" = milhar; "1.5" = decimal
+      if (parts.length > 2 || (parts[1] && parts[1].length === 3)) s = s.replace(/\./g, '');
+    }
+    const n = parseFloat(s) * mult;
+    return isFinite(n) && n >= 0 ? Math.round(n) : 0;
+  }
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  // Converte várias formas de data pra ISO yyyy-mm-dd.
+  function parseDateISO(v) {
+    if (!v) return '';
+    const s = String(v).trim();
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);            // ISO (com ou sem hora)
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    m = s.match(/^(\d{4})[\/.](\d{1,2})[\/.](\d{1,2})/);    // yyyy/mm/dd
+    if (m) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+    m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/); // dd/mm/yyyy
+    if (m) return `${m[3]}-${pad2(m[2])}-${pad2(m[1])}`;
+    m = s.match(/^(\d{4})[-\/](\d{1,2})$/);                  // ano-mês (granularidade mensal)
+    if (m) return `${m[1]}-${pad2(m[2])}-01`;
+    const d = new Date(s);
+    return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+  }
+
   // -----------------------------------------------------------
   // CSV PARSER / SERIALIZER
   // Implementação leve, suporta campos entre aspas com vírgulas.
   // Schema esperado (header obrigatório):
   //   platform,type,date,link,views,likes,comments,saves,shares,tags
   // -----------------------------------------------------------
+  // Detecta o separador (vírgula, ponto-e-vírgula ou tab) olhando a
+  // 1ª linha — Google Sheets/Excel em PT-BR costuma usar ";".
+  function detectDelimiter(text) {
+    const firstLine = text.split(/\r?\n/, 1)[0] || '';
+    const counts = { ',': 0, ';': 0, '\t': 0 };
+    let inQ = false;
+    for (const c of firstLine) {
+      if (c === '"') inQ = !inQ;
+      else if (!inQ && counts[c] != null) counts[c]++;
+    }
+    return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || ',';
+  }
+
+  // Diagnóstico amigável quando a importação não produz nenhum post.
+  // Lê só o cabeçalho e diz o que está faltando (a causa nº1 é não ter
+  // uma coluna de DATA real — só "dia da semana" não serve).
+  function diagnoseCSV(text) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const delim = detectDelimiter(text);
+    const header = (text.split(/\r?\n/, 1)[0] || '').split(delim)
+      .map(h => h.replace(/^"|"$/g, '').trim());
+    const found = header.map(canonicalField).filter(Boolean);
+    const hasDate = found.includes('date');
+    const hasMetric = found.some(f => NUMERIC_FIELDS.has(f));
+    const recognized = [...new Set(found)];
+
+    if (!hasDate) {
+      return 'O CSV não tem uma coluna de DATA real.\n\n' +
+             'Detectei: ' + (recognized.length ? recognized.join(', ') : 'nenhuma coluna conhecida') + '.\n\n' +
+             'No Windsor, "dia da semana" (week_day_iso) NÃO é uma data. ' +
+             'Adicione o campo "Date" (data de publicação) na seção Campos ' +
+             'e troque a fonte de "Blended Data" para o Instagram.';
+    }
+    if (!hasMetric) {
+      return 'Encontrei a data, mas nenhuma métrica reconhecida ' +
+             '(views, alcance, curtidas, interações, etc.). ' +
+             'Selecione as métricas na seção Campos do Windsor.';
+    }
+    return 'Cabeçalho reconhecido (' + recognized.join(', ') + '), mas as ' +
+           'linhas estão sem data válida ou vazias. Confira se a pré-visualização ' +
+           'do Windsor não está cheia de "nulo" (sintoma de Blended Data).';
+  }
+
   function parseCSV(text) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // remove BOM
+    const delim = detectDelimiter(text);
     const rows = [];
     let row = [], field = '', inQuotes = false;
     for (let i = 0; i < text.length; i++) {
@@ -235,7 +540,7 @@
         else { field += c; }
       } else {
         if (c === '"') { inQuotes = true; }
-        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === delim) { row.push(field); field = ''; }
         else if (c === '\n' || c === '\r') {
           if (c === '\r' && text[i + 1] === '\n') i++;
           row.push(field); rows.push(row);
@@ -246,28 +551,55 @@
     if (field.length || row.length) { row.push(field); rows.push(row); }
     if (!rows.length) return [];
 
-    const header = rows[0].map(h => h.trim().toLowerCase());
+    // Mapeia cada coluna do header pro campo canônico (nativo OU Windsor).
+    const colMap = rows[0].map(canonicalField);
     const out = [];
     for (let r = 1; r < rows.length; r++) {
       const cells = rows[r];
       if (cells.length === 1 && !cells[0].trim()) continue;
       const obj = {};
-      header.forEach((h, i) => { obj[h] = (cells[i] || '').trim(); });
+      colMap.forEach((canon, i) => {
+        if (!canon) return; // coluna desconhecida — ignora
+        const val = (cells[i] || '').trim();
+        if (!val) return;
+        if (NUMERIC_FIELDS.has(canon)) {
+          // duas colunas no mesmo campo (ex: Vistas + Visualizações da
+          // história) → fica com o maior valor da linha.
+          const n = parseNum(val);
+          if (n > (parseNum(obj[canon]) || 0)) obj[canon] = String(n);
+        } else if (!obj[canon]) {
+          obj[canon] = val;
+        }
+      });
       const post = normalizePost(obj);
-      if (post) out.push(post);
+      // Pula linhas vazias: sem legenda/tags e com todas as métricas zeradas
+      // (ex: linhas de story que só trazem o permalink, sem dados).
+      if (post && !isEmptyImport(post)) out.push(post);
     }
     return out;
   }
 
+  function isEmptyImport(p) {
+    if (p.caption || (p.tags && p.tags.length)) return false;
+    const total = p.views + p.reach + p.likes + p.comments + p.saves + p.shares +
+                  p.interactions + p.followers + p.profileVisits + p.linkClicks + p.conversions;
+    return total === 0;
+  }
+
+  // Schema completo de exportação — round-trip de todas as dimensões.
+  const CSV_COLUMNS = [
+    'platform', 'type', 'date', 'link', 'theme', 'experience', 'campaign',
+    'views', 'reach', 'likes', 'comments', 'saves', 'shares', 'interactions',
+    'followers', 'profileVisits', 'linkClicks', 'conversions', 'tags',
+  ];
+
   function toCSV(posts) {
-    const header = ['platform','type','date','link','views','likes','comments','saves','shares','tags'];
-    const lines = [header.join(',')];
+    const lines = [CSV_COLUMNS.join(',')];
     posts.forEach(p => {
-      const row = [
-        p.platform, p.type, p.date, p.link,
-        p.views, p.likes, p.comments, p.saves, p.shares,
-        (p.tags || []).join(', '),
-      ].map(csvCell).join(',');
+      const row = CSV_COLUMNS.map(col => {
+        if (col === 'tags') return (p.tags || []).join(', ');
+        return p[col] != null ? p[col] : '';
+      }).map(csvCell).join(',');
       lines.push(row);
     });
     return lines.join('\n');
@@ -1401,22 +1733,41 @@
   // -----------------------------------------------------------
   // MODAL: novo / editar post
   // -----------------------------------------------------------
+  // Popula o <select> de ocasião a partir da taxonomia (fonte única).
+  function fillThemeSelect(selected) {
+    const sel = document.getElementById('social-form-theme');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">—</option>' +
+      OCCASIONS.map(o => `<option value="${o.key}">${o.emoji} ${escapeHTML(o.label)}</option>`).join('');
+    sel.value = selected || '';
+  }
+
+  function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v; }
+
   function openModal(post) {
     const modal = document.getElementById('social-modal');
     if (!modal) return;
     const isEdit = !!(post && post.id);
     document.getElementById('social-modal-title').textContent = isEdit ? 'Editar post' : 'Novo post';
-    document.getElementById('social-form-id').value        = isEdit ? post.id : '';
-    document.getElementById('social-form-platform').value  = (post && post.platform) || 'instagram';
-    document.getElementById('social-form-type').value      = (post && post.type) || 'reel';
-    document.getElementById('social-form-date').value      = (post && post.date) || todayISO();
-    document.getElementById('social-form-link').value      = (post && post.link) || '';
-    document.getElementById('social-form-tags').value      = post && post.tags ? post.tags.join(', ') : '';
-    document.getElementById('social-form-views').value     = (post && post.views)    || 0;
-    document.getElementById('social-form-likes').value     = (post && post.likes)    || 0;
-    document.getElementById('social-form-comments').value  = (post && post.comments) || 0;
-    document.getElementById('social-form-saves').value     = (post && post.saves)    || 0;
-    document.getElementById('social-form-shares').value    = (post && post.shares)   || 0;
+    setVal('social-form-id', isEdit ? post.id : '');
+    setVal('social-form-platform', (post && post.platform) || 'instagram');
+    setVal('social-form-type', (post && post.type) || 'reel');
+    setVal('social-form-date', (post && post.date) || todayISO());
+    setVal('social-form-link', (post && post.link) || '');
+    setVal('social-form-tags', post && post.tags ? post.tags.join(', ') : '');
+    fillThemeSelect(post && post.theme);
+    setVal('social-form-experience', (post && post.experience) || '');
+    setVal('social-form-campaign', (post && post.campaign) || '');
+    setVal('social-form-views', (post && post.views) || 0);
+    setVal('social-form-reach', (post && post.reach) || 0);
+    setVal('social-form-likes', (post && post.likes) || 0);
+    setVal('social-form-comments', (post && post.comments) || 0);
+    setVal('social-form-saves', (post && post.saves) || 0);
+    setVal('social-form-shares', (post && post.shares) || 0);
+    setVal('social-form-followers', (post && post.followers) || 0);
+    setVal('social-form-profileVisits', (post && post.profileVisits) || 0);
+    setVal('social-form-linkClicks', (post && post.linkClicks) || 0);
+    setVal('social-form-conversions', (post && post.conversions) || 0);
 
     const delBtn = document.getElementById('social-form-delete');
     if (delBtn) delBtn.style.display = isEdit ? 'inline-block' : 'none';
@@ -1430,18 +1781,27 @@
   }
 
   function readModalForm() {
+    const v = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
     return normalizePost({
-      id:       document.getElementById('social-form-id').value || null,
-      platform: document.getElementById('social-form-platform').value,
-      type:     document.getElementById('social-form-type').value,
-      date:     document.getElementById('social-form-date').value,
-      link:     document.getElementById('social-form-link').value.trim(),
-      tags:     document.getElementById('social-form-tags').value,
-      views:    document.getElementById('social-form-views').value,
-      likes:    document.getElementById('social-form-likes').value,
-      comments: document.getElementById('social-form-comments').value,
-      saves:    document.getElementById('social-form-saves').value,
-      shares:   document.getElementById('social-form-shares').value,
+      id:            v('social-form-id') || null,
+      platform:      v('social-form-platform'),
+      type:          v('social-form-type'),
+      date:          v('social-form-date'),
+      link:          v('social-form-link').trim(),
+      tags:          v('social-form-tags'),
+      theme:         v('social-form-theme'),
+      experience:    v('social-form-experience').trim(),
+      campaign:      v('social-form-campaign').trim(),
+      views:         v('social-form-views'),
+      reach:         v('social-form-reach'),
+      likes:         v('social-form-likes'),
+      comments:      v('social-form-comments'),
+      saves:         v('social-form-saves'),
+      shares:        v('social-form-shares'),
+      followers:     v('social-form-followers'),
+      profileVisits: v('social-form-profileVisits'),
+      linkClicks:    v('social-form-linkClicks'),
+      conversions:   v('social-form-conversions'),
     });
   }
 
@@ -1530,13 +1890,18 @@
       const text = String(reader.result || '');
       const incoming = parseCSV(text);
       if (!incoming.length) {
-        alert('Nenhum post válido encontrado no CSV. Verifique o cabeçalho:\n\nplatform,type,date,link,views,likes,comments,saves,shares,tags');
+        alert('Nenhum post válido encontrado no CSV.\n\n' + diagnoseCSV(text));
         return;
       }
       const existing = loadPosts();
-      // Dedupe simples por (platform + date + link). Se já existe,
-      // atualiza; senão, insere novo.
-      const keyOf = p => p.platform + '|' + p.date + '|' + (p.link || '');
+      // Dedupe: prefere o ID da mídia (estável entre exports); senão o
+      // permalink; senão platform|date|type|legenda. Ids gerados por nós
+      // começam com "p_" — esses não servem de chave estável.
+      const isGenId = id => !id || /^p_/.test(id);
+      const keyOf = p =>
+        !isGenId(p.id) ? 'mid|' + p.id
+        : p.link ? 'lnk|' + p.platform + '|' + p.date + '|' + p.link
+        : 'cap|' + p.platform + '|' + p.date + '|' + p.type + '|' + (p.caption || '').slice(0, 40);
       const map = {};
       existing.forEach(p => { map[keyOf(p)] = p; });
       let added = 0, updated = 0;
@@ -1730,6 +2095,11 @@
     autoOpenAfterOAuth();
   }
 
-  window.ElarahSocial = { render, loadSampleData, connectInstagram, syncNow };
+  window.ElarahSocial = {
+    render, loadSampleData, connectInstagram, syncNow,
+    // Expostos pro módulo de análise estratégica (admin-social-analysis.js)
+    OCCASIONS, OCCASION_LABEL, inferOccasion,
+    engagement, reachOf,
+  };
 
 })();
