@@ -326,15 +326,18 @@
     caption: ['caption', 'legenda', 'texto', 'descrição', 'descricao', 'description', 'mensagem', 'conteúdo', 'conteudo'],
     tags: ['tags', 'etiquetas', 'hashtags', 'hashtag', 'palavras-chave', 'palavras chave', 'keywords'],
     views: ['views', 'vistas', 'visualizações', 'visualizacoes', 'visualizações da história',
-            'visualizacoes da historia', 'video views', 'video_views', 'plays', 'reproduções',
-            'reproducoes', 'impressions', 'impressões', 'impressoes'],
-    reach: ['reach', 'alcance', 'contas alcançadas', 'contas alcancadas', 'accounts reached', 'reached accounts'],
+            'visualizacoes da historia', 'story_views', 'video views', 'video_views', 'plays',
+            'reproduções', 'reproducoes', 'impressions', 'impressões', 'impressoes', 'impressions_total'],
+    reach: ['reach', 'alcance', 'contas alcançadas', 'contas alcancadas', 'accounts reached',
+            'reached accounts', 'accounts_reached'],
     likes: ['likes', 'curtidas', 'like count', 'like_count', 'curtidas totais'],
     comments: ['comments', 'comentários', 'comentarios', 'comment count', 'comment_count',
-               'respostas da história', 'respostas da historia', 'respostas', 'replies'],
-    saves: ['saves', 'salvamentos', 'salvos', 'saved', 'bookmarks', 'itens salvos'],
+               'respostas da história', 'respostas da historia', 'respostas', 'replies',
+               'story_replies', 'comments_count'],
+    saves: ['saves', 'salvamentos', 'salvos', 'saved', 'bookmarks', 'itens salvos', 'saved_count'],
     shares: ['shares', 'compartilhamentos', 'compartilhamento de histórias', 'compartilhamento de historias',
-             'compartilhamentos de histórias', 'compartilhamentos de historias', 'shares totais'],
+             'compartilhamentos de histórias', 'compartilhamentos de historias', 'shares totais',
+             'story_shares', 'shares_count'],
     interactions: ['interações totais', 'interacoes totais', 'interactions', 'total interactions',
                    'total_interactions', 'engajamento', 'engagement', 'engajamento total', 'total engagement'],
     followers: ['followers', 'seguidores', 'novos seguidores', 'follows', 'follower growth',
@@ -464,6 +467,36 @@
       else if (!inQ && counts[c] != null) counts[c]++;
     }
     return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || ',';
+  }
+
+  // Diagnóstico amigável quando a importação não produz nenhum post.
+  // Lê só o cabeçalho e diz o que está faltando (a causa nº1 é não ter
+  // uma coluna de DATA real — só "dia da semana" não serve).
+  function diagnoseCSV(text) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const delim = detectDelimiter(text);
+    const header = (text.split(/\r?\n/, 1)[0] || '').split(delim)
+      .map(h => h.replace(/^"|"$/g, '').trim());
+    const found = header.map(canonicalField).filter(Boolean);
+    const hasDate = found.includes('date');
+    const hasMetric = found.some(f => NUMERIC_FIELDS.has(f));
+    const recognized = [...new Set(found)];
+
+    if (!hasDate) {
+      return 'O CSV não tem uma coluna de DATA real.\n\n' +
+             'Detectei: ' + (recognized.length ? recognized.join(', ') : 'nenhuma coluna conhecida') + '.\n\n' +
+             'No Windsor, "dia da semana" (week_day_iso) NÃO é uma data. ' +
+             'Adicione o campo "Date" (data de publicação) na seção Campos ' +
+             'e troque a fonte de "Blended Data" para o Instagram.';
+    }
+    if (!hasMetric) {
+      return 'Encontrei a data, mas nenhuma métrica reconhecida ' +
+             '(views, alcance, curtidas, interações, etc.). ' +
+             'Selecione as métricas na seção Campos do Windsor.';
+    }
+    return 'Cabeçalho reconhecido (' + recognized.join(', ') + '), mas as ' +
+           'linhas estão sem data válida ou vazias. Confira se a pré-visualização ' +
+           'do Windsor não está cheia de "nulo" (sintoma de Blended Data).';
   }
 
   function parseCSV(text) {
@@ -1820,11 +1853,7 @@
       const text = String(reader.result || '');
       const incoming = parseCSV(text);
       if (!incoming.length) {
-        alert('Nenhum post válido encontrado no CSV.\n\n' +
-              'Aceitamos o formato nativo (platform,type,date,...) E a exportação ' +
-              'direta do Windsor AI (Vistas, Tipo de mídia, Interações totais, ' +
-              'Compartilhamentos, Site vinculado, etc.) — sem ajustes.\n\n' +
-              'Confira se há uma coluna de data e ao menos uma métrica.');
+        alert('Nenhum post válido encontrado no CSV.\n\n' + diagnoseCSV(text));
         return;
       }
       const existing = loadPosts();
