@@ -27,32 +27,40 @@ no painel **Redes Sociais** do admin da Elarah, sem ajustes manuais.
   pra achar padrões.
 
 ### 4. Selecionar os campos (seção "Campos")
-Marque **exatamente** estes — são os que a plataforma reconhece sozinha:
+
+> ⚠️ **A regra mais importante:** selecione SÓ os campos **"da mídia"**
+> (nível de post). Eles têm "da mídia" / "de mídia" no nome. NÃO misture com
+> campos de perfil/conta (seguidores por idade, cidade, etc.) nem de
+> história (story) — misturar é o que gera o monte de `nulo`.
+
+Marque **exatamente** estes (nomes em PT-BR como aparecem no Windsor) —
+a plataforma reconhece todos automaticamente:
 
 **Obrigatórios:**
-| Campo no Windsor | Vira na plataforma |
+| Campo no Windsor (PT-BR) | Vira na plataforma |
 |---|---|
-| `date` (data de publicação) | data ← **o que mais importa** |
-| `media_type` | tipo (Reel/Feed/Carrossel/Story) |
-| `caption` (legenda) | usado pra classificar a ocasião automaticamente |
-| `reach` | alcance |
-| `likes` | curtidas |
-| `comments` | comentários |
-| `saves` | salvamentos |
-| `shares` | compartilhamentos |
-| `permalink` | link do post |
+| **Data** | data ← **o que mais importa** |
+| **Tipo de mídia** (ou Tipo de produto de mídia) | tipo (Reel/Feed/Carrossel) |
+| **Legenda da mídia** | classifica a ocasião automaticamente |
+| **alcance da mídia** | alcance |
+| **Contagem de curtidas na mídia** | curtidas |
+| **Contagem de comentários** | comentários |
+| **Mídia salva** | salvamentos |
+| **Compartilhamentos de mídia** | compartilhamentos |
+| **URL permanente para a mídia** | link do post |
+| **ID da mídia** | id estável (evita duplicar ao reimportar) |
 
-**Recomendados (crescimento/conversão):**
-| Campo no Windsor | Vira na plataforma |
+**Recomendados:**
+| Campo no Windsor (PT-BR) | Vira na plataforma |
 |---|---|
-| `follows` / `follower_count` | novos seguidores |
-| `website_clicks` / `link_clicks` | cliques no link |
-| `impressions` ou `video_views` | visualizações |
-| `total_interactions` | engajamento total (reserva) |
+| **Engajamento com a mídia** | engajamento total |
+| **Opiniões da mídia** | visualizações |
 
-**DESMARQUE** (não usamos e poluem o arquivo):
-- `week_day_iso` (dia da semana — não é data!)
-- `story_swipe_forward`, `story_taps_back`, `story_taps_forward`
+**DESMARQUE / NÃO selecione** (poluem o arquivo e geram `nulo`):
+- **Ano mês, Vistas, Site vinculado** (são de conta, não de post)
+- **Dia da semana e número do dia**, Semana, Semana ISO, Ano da semana… (dimensões de tempo — não são data)
+- Campos de **história** (Visualizações da história, Compartilhamento de histórias, Deslize…)
+- Campos de **público** (Número de seguidores de uma faixa etária / cidade / país)
 
 ### 5. Conferir a pré-visualização
 - Na aba **Dados**, olhe a tabela.

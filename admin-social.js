@@ -316,37 +316,50 @@
   // Cada chave é o campo canônico interno; os valores são os
   // cabeçalhos (em minúsculas) que mapeiam pra ele.
   const FIELD_ALIASES = {
-    date: ['date', 'data', 'dia', 'día', 'timestamp', 'data de publicação', 'data de publicacao',
-           'publish date', 'created_time', 'post date', 'horário', 'horario',
-           'dia da semana e número do dia', 'dia da semana e numero do dia', 'ano mês', 'ano mes'],
-    platform: ['platform', 'plataforma', 'source', 'data source', 'fonte', 'rede', 'rede social', 'canal'],
+    // OBS: "dia da semana e número do dia" (ex: "2 terça-feira") NÃO é data
+    // e foi deixado de fora de propósito — ele sequestrava o campo de data.
+    id: ['id da mídia', 'id da midia', 'media id', 'media_id', 'id da publicação', 'id da publicacao'],
+    date: ['date', 'data', 'timestamp', 'data de publicação', 'data de publicacao',
+           'publish date', 'created_time', 'post date', 'mídia criada', 'midia criada',
+           'media created', 'ano mês', 'ano mes'],
+    platform: ['platform', 'plataforma', 'source', 'data source', 'fonte', 'fonte de dados', 'rede', 'rede social', 'canal'],
     type: ['type', 'tipo', 'tipo de mídia', 'tipo de midia', 'media type', 'media_type',
+           'tipo de produto de mídia', 'tipo de produto de midia', 'media product type',
            'formato', 'format', 'tipo de publicação', 'tipo de publicacao', 'product type'],
-    link: ['link', 'permalink', 'url', 'post url', 'link do post', 'media url', 'media_url', 'shortcode url'],
-    caption: ['caption', 'legenda', 'texto', 'descrição', 'descricao', 'description', 'mensagem', 'conteúdo', 'conteudo'],
+    link: ['link', 'permalink', 'url', 'post url', 'link do post', 'media url', 'media_url', 'shortcode url',
+           'url permanente para a mídia', 'url permanente para a midia',
+           'link permanente para a mídia', 'link permanente para a midia',
+           'url da mídia', 'url da midia'],
+    caption: ['caption', 'legenda', 'legenda da mídia', 'legenda da midia', 'texto', 'descrição',
+              'descricao', 'description', 'mensagem', 'conteúdo', 'conteudo'],
     tags: ['tags', 'etiquetas', 'hashtags', 'hashtag', 'palavras-chave', 'palavras chave', 'keywords'],
     views: ['views', 'vistas', 'visualizações', 'visualizacoes', 'visualizações da história',
-            'visualizacoes da historia', 'story_views', 'video views', 'video_views', 'plays',
-            'reproduções', 'reproducoes', 'impressions', 'impressões', 'impressoes', 'impressions_total'],
-    reach: ['reach', 'alcance', 'contas alcançadas', 'contas alcancadas', 'accounts reached',
-            'reached accounts', 'accounts_reached'],
-    likes: ['likes', 'curtidas', 'like count', 'like_count', 'curtidas totais'],
-    comments: ['comments', 'comentários', 'comentarios', 'comment count', 'comment_count',
-               'respostas da história', 'respostas da historia', 'respostas', 'replies',
-               'story_replies', 'comments_count'],
-    saves: ['saves', 'salvamentos', 'salvos', 'saved', 'bookmarks', 'itens salvos', 'saved_count'],
-    shares: ['shares', 'compartilhamentos', 'compartilhamento de histórias', 'compartilhamento de historias',
+            'visualizacoes da historia', 'story_views', 'opiniões da mídia', 'opinioes da midia',
+            'video views', 'video_views', 'plays', 'reproduções', 'reproducoes',
+            'impressions', 'impressões', 'impressoes', 'impressions_total'],
+    reach: ['reach', 'alcance', 'alcance da mídia', 'alcance da midia', 'contas alcançadas',
+            'contas alcancadas', 'accounts reached', 'reached accounts', 'accounts_reached'],
+    likes: ['likes', 'curtidas', 'contagem de curtidas na mídia', 'contagem de curtidas na midia',
+            'like count', 'like_count', 'curtidas totais'],
+    comments: ['comments', 'comentários', 'comentarios', 'contagem de comentários', 'contagem de comentarios',
+               'comment count', 'comment_count', 'respostas da história', 'respostas da historia',
+               'respostas', 'replies', 'story_replies', 'comments_count'],
+    saves: ['saves', 'salvamentos', 'salvos', 'mídia salva', 'midia salva', 'saved', 'bookmarks',
+            'itens salvos', 'saved_count'],
+    shares: ['shares', 'compartilhamentos', 'compartilhamentos de mídia', 'compartilhamentos de midia',
+             'compartilhamento de histórias', 'compartilhamento de historias',
              'compartilhamentos de histórias', 'compartilhamentos de historias', 'shares totais',
              'story_shares', 'shares_count'],
-    interactions: ['interações totais', 'interacoes totais', 'interactions', 'total interactions',
-                   'total_interactions', 'engajamento', 'engagement', 'engajamento total', 'total engagement'],
-    followers: ['followers', 'seguidores', 'novos seguidores', 'follows', 'follower growth',
-                'crescimento de seguidores', 'seguidores ganhos', 'net followers', 'follows totais'],
+    interactions: ['interações totais', 'interacoes totais', 'engajamento com a mídia', 'engajamento com a midia',
+                   'interactions', 'total interactions', 'total_interactions', 'engajamento',
+                   'engagement', 'engajamento total', 'total engagement'],
+    followers: ['followers', 'seguidores', 'novos seguidores', 'novos seguidores (1 dia)', 'follows',
+                'follower growth', 'crescimento de seguidores', 'seguidores ganhos', 'net followers', 'follows totais'],
     profileVisits: ['profile visits', 'visitas ao perfil', 'profile views', 'profile_views',
                     'visualizações do perfil', 'visualizacoes do perfil', 'visitas de perfil'],
-    linkClicks: ['link clicks', 'cliques no link', 'site vinculado', 'website clicks', 'website_clicks',
-                 'cliques no site', 'link_clicks', 'cliques no website', 'cliques no link da bio',
-                 'website taps', 'toques no site'],
+    linkClicks: ['link clicks', 'cliques no link', 'site vinculado', 'links de perfil', 'website clicks',
+                 'website_clicks', 'cliques no site', 'link_clicks', 'cliques no website',
+                 'cliques no link da bio', 'website taps', 'toques no site'],
     conversions: ['conversions', 'conversões', 'conversoes', 'reservas', 'bookings', 'vendas',
                   'purchases', 'compras', 'pedidos', 'reservas confirmadas'],
     username: ['username', 'nome de usuário do instagram', 'nome de usuario do instagram',
@@ -1857,12 +1870,14 @@
         return;
       }
       const existing = loadPosts();
-      // Dedupe: com link, usa platform|date|link (estável). Sem link
-      // (comum no Windsor), cai pra platform|date|type|legenda pra não
-      // colapsar posts diferentes do mesmo dia num só.
-      const keyOf = p => p.link
-        ? p.platform + '|' + p.date + '|' + p.link
-        : p.platform + '|' + p.date + '|' + p.type + '|' + (p.caption || '').slice(0, 40);
+      // Dedupe: prefere o ID da mídia (estável entre exports); senão o
+      // permalink; senão platform|date|type|legenda. Ids gerados por nós
+      // começam com "p_" — esses não servem de chave estável.
+      const isGenId = id => !id || /^p_/.test(id);
+      const keyOf = p =>
+        !isGenId(p.id) ? 'mid|' + p.id
+        : p.link ? 'lnk|' + p.platform + '|' + p.date + '|' + p.link
+        : 'cap|' + p.platform + '|' + p.date + '|' + p.type + '|' + (p.caption || '').slice(0, 40);
       const map = {};
       existing.forEach(p => { map[keyOf(p)] = p; });
       let added = 0, updated = 0;
