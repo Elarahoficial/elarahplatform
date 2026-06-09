@@ -599,34 +599,30 @@
     return d;
   }
 
-  function sectionCalendario(posts, brand) {
-    if (!posts.length) return card('9. Calendário editorial — 15 dias', emptyData('Importe/sincronize os dados pra gerar um calendário orientado por performance.'));
+  // Janelas de horário a TESTAR (não há hora no export do Windsor — só data).
+  const HOR = {
+    ig:    '12h ou 19h–21h (testar)',
+    story: '9h / 13h / 19h (testar)',
+    tiktok:'19h–22h (testar)',
+    linkedin:'ter–qui, 8h–9h (testar)',
+    whats: '11h–12h ou 19h (testar)',
+  };
 
-    // Rankings de ocasião por objetivo (só ocasiões classificadas).
+  // Núcleo: resolve o plano de 15 dias em itens estruturados, escolhendo
+  // o tema de cada dia a partir do desempenho real (rankings por objetivo).
+  // Usado tanto pelo relatório quanto pelo gerador da aba Calendário Editorial.
+  function computeCalendarRows(posts) {
+    if (!posts.length) return [];
     const occ = byDimension(posts, p => p.theme, occasionLabel).filter(r => r.key);
-    const byR = [...occ].sort((a, b) => b.reachAvg - a.reachAvg);
-    const bySh = [...occ].sort((a, b) => b.sharesAvg - a.sharesAvg);
-    const bySv = [...occ].sort((a, b) => b.savesAvg - a.savesAvg);
-    const byEg = [...occ].sort((a, b) => b.rate - a.rate);
-    const RANK = { reach: byR, shares: bySh, saves: bySv, eng: byEg };
-    const pick = (src, i, fb) => {
-      const arr = RANK[src] || [];
-      return (arr[i] || arr[0] || { label: fb, key: fb });
+    const RANK = {
+      reach:  [...occ].sort((a, b) => b.reachAvg - a.reachAvg),
+      shares: [...occ].sort((a, b) => b.sharesAvg - a.sharesAvg),
+      saves:  [...occ].sort((a, b) => b.savesAvg - a.savesAvg),
+      eng:    [...occ].sort((a, b) => b.rate - a.rate),
     };
+    const pick = (src, i, fb) => (RANK[src] || [])[i] || (RANK[src] || [])[0] || { label: fb, key: fb };
     const catOf = o => CATEGORY[o.key] || 'Descoberta da marca';
 
-    // Janelas de horário a TESTAR (não há hora no export do Windsor — só data).
-    const HOR = {
-      ig:    '12h ou 19h–21h (testar)',
-      story: '9h / 13h / 19h (testar)',
-      tiktok:'19h–22h (testar)',
-      linkedin:'ter–qui, 8h–9h (testar)',
-      whats: '11h–12h ou 19h (testar)',
-    };
-
-    // 15 dias: cada item escolhe o tema do ranking certo pro objetivo.
-    // src=null usa fixedKey (ocasião específica). canal/formato seguem os
-    // padrões reais: Reel=alcance, Carrossel=saves/autoridade, Story=comunidade.
     const plan = [
       { canal:'Instagram + TikTok', formato:'Reel', obj:'Descoberta / Alcance', src:'reach', hor:HOR.ig,
         hook:t=>`POV: o ${t.toLowerCase()} perfeito pra fugir da rotina em SP existe 🤫`,
@@ -690,37 +686,27 @@
         cta:'Fale com a gente' },
     ];
 
-    const rows = plan.map((p, i) => {
+    return plan.map((p, i) => {
       const o = p.src ? pick(p.src, 0, 'Gastronomia') : (occ.find(x => x.key === p.fixed) || { label: occasionLabel(p.fixed), key: p.fixed });
       const dt = isoAddDays(i + 1);
-      const dataBR = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      const dia = WEEKDAYS[dt.getDay()];
-      return `<tr>
-        <td><strong>${dataBR}</strong><br><small class="sa-muted">${dia}</small></td>
-        <td>${p.hor}</td>
-        <td>${escapeHTML(p.canal)}</td>
-        <td>${escapeHTML(p.obj)}<br><small class="sa-muted">${escapeHTML(catOf(o))}</small></td>
-        <td>${escapeHTML(p.formato)}</td>
-        <td>${escapeHTML(p.hook(o.label))}</td>
-        <td><small>${escapeHTML(p.exec)}</small></td>
-        <td>${escapeHTML(p.cta)}</td>
-      </tr>`;
-    }).join('');
+      return {
+        dateISO: dt.toISOString().slice(0, 10),
+        dataBR: dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        dia: WEEKDAYS[dt.getDay()],
+        hor: p.hor,
+        canal: p.canal,
+        formato: p.formato,
+        obj: p.obj,
+        categoria: catOf(o),
+        hook: p.hook(o.label),
+        exec: p.exec,
+        cta: p.cta,
+      };
+    });
+  }
 
-    const calCard = card('9. Calendário editorial — 15 dias (orientado por dados)', `
-      <p class="sa-muted">Cada dia foi escolhido a partir do <strong>desempenho real</strong> da Elarah:
-      Reel pra alcance, Carrossel pra saves/autoridade, Story pra comunidade; temas vindos dos
-      seus campeões (Gastronomia = alcance/shares, Aniversário/Autopresente = saves, Date/Galentine's = engajamento).</p>
-      <div class="sa-tablewrap"><table class="sa-table sa-table--cal">
-        <thead><tr>
-          <th>Data</th><th>Horário</th><th>Canal</th><th>Objetivo / Categoria</th>
-          <th>Formato</th><th>Hook inicial</th><th>Execução</th><th>CTA</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>
-    `);
-
-    // Frequência por canal (baseada nos padrões: Feed estático morreu).
+  // Dicas (frequência, horários, oportunidades) — HTML mostrado na aba.
+  function buildCalendarTipsHTML(posts) {
     const freqCard = card('Frequência ideal por canal', `
       <div class="sa-tablewrap"><table class="sa-table">
         <thead><tr><th>Canal</th><th>Frequência</th><th>Por quê (dado)</th></tr></thead>
@@ -761,7 +747,53 @@
         <li><strong>Gastronomia como isca de alcance</strong> — é seu maior motor de shares; transforme em série.</li>
       </ul>`);
 
-    return calCard + freqCard + horCard + oppCard;
+    return freqCard + horCard + oppCard;
+  }
+
+  // Expande "Instagram + TikTok" / "Stories (Instagram)" etc. em uma linha
+  // por canal pro content_calendar (cada post do dia vira um item).
+  function expandChannels(canalRaw, formato) {
+    const low = String(canalRaw).toLowerCase();
+    if (/stories/.test(low)) return [{ canal: 'Instagram', tipo: 'Stories' }];
+    const out = [];
+    if (/instagram/.test(low)) out.push({ canal: 'Instagram', tipo: formato });
+    if (/tiktok/.test(low))    out.push({ canal: 'TikTok', tipo: formato });
+    if (/linkedin/.test(low))  out.push({ canal: 'LinkedIn', tipo: 'Post' });
+    if (/whatsapp/.test(low))  out.push({ canal: 'WhatsApp', tipo: 'Comunidade' });
+    return out.length ? out : [{ canal: 'Instagram', tipo: formato }];
+  }
+
+  // API pública: plano pronto pra inserir no content_calendar + dicas.
+  // Cada dia pode gerar mais de uma linha (um post por canal).
+  function buildCalendarPlan() {
+    const posts = loadPosts();
+    const items = computeCalendarRows(posts);
+    const rows = [];
+    items.forEach(it => {
+      expandChannels(it.canal, it.formato).forEach(ch => {
+        rows.push({
+          data: it.dateISO,
+          canal: ch.canal,
+          tipo: ch.tipo,
+          ideia: it.hook,
+          legenda: it.exec + '\n\nCTA: ' + it.cta,
+          observacao: '[auto:redes] ⏰ ' + it.hor + ' · 🎯 ' + it.obj + ' (' + it.categoria + ')',
+          status: 'planejado',
+        });
+      });
+    });
+    return { rows, tipsHTML: buildCalendarTipsHTML(posts), count: items.length };
+  }
+
+  // Seção 9 do relatório vira um atalho curto — o calendário detalhado
+  // mora na aba "Calendário Editorial".
+  function sectionCalendario(posts, brand) {
+    return card('9. Calendário editorial', `
+      <p>O calendário de <strong>15 dias orientado por dados</strong> (com data, horário a testar,
+      canal, formato, hook, execução e CTA) é gerado direto na aba
+      <strong>Calendário Editorial</strong> do admin — clique em <strong>"✨ Gerar do Redes Sociais"</strong> lá.</p>
+      <p class="sa-muted">Assim fica visível, editável e organizado por dia/canal, em vez de preso dentro deste relatório.</p>
+    `);
   }
 
   // -----------------------------------------------------------
@@ -1122,5 +1154,5 @@
     bindOpenButton();
   }
 
-  window.ElarahSocialAnalysis = { open, close, render };
+  window.ElarahSocialAnalysis = { open, close, render, buildCalendarPlan };
 })();
