@@ -2208,11 +2208,18 @@
           <button type="button" class="cal-canal-btn" data-canal="LinkedIn">💼 LinkedIn</button>
           <button type="button" class="cal-canal-btn" data-canal="WhatsApp">💬 WhatsApp Comunidade</button>
         </div>
+        <button type="button" id="cal-gerar-redes"
+                style="margin-left:auto;padding:9px 16px;background:#5C2426;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;"
+                title="Gera 15 dias de postagens a partir do desempenho real (Redes Sociais)">✨ Gerar do Redes Sociais</button>
         <button type="button" id="cal-add-btn"
-                style="margin-left:auto;padding:9px 16px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;">+ Novo conteúdo</button>
+                style="padding:9px 16px;background:#f0a05e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;">+ Novo conteúdo</button>
       </div>
 
       <div id="cal-stats" style="margin-bottom:14px;color:#666;font-size:.85rem;"></div>
+
+      <!-- Dicas orientadas por dados (frequência, horários, oportunidades),
+           preenchidas ao clicar em "Gerar do Redes Sociais". -->
+      <div id="cal-tips" style="margin-bottom:18px;"></div>
 
       <div id="cal-grid" style="display:flex;flex-direction:column;gap:12px;">
         <p style="color:#888;font-style:italic;padding:40px;text-align:center;">Carregando…</p>
@@ -3936,10 +3943,10 @@
 <script src="byelarah-data.js?v=6"></script>
 <script src="analytics.js?v=2"></script>
 <script src="admin-social.js?v=11"></script>
-<script src="admin-social-analysis.js?v=4"></script>
+<script src="admin-social-analysis.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=160"></script>
+<script src="admin.js?v=161"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

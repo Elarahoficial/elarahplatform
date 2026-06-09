@@ -15557,6 +15557,8 @@
       document.getElementById('cal-add-btn').addEventListener('click', function () {
         _calOpenEditModal(null);
       });
+      var gerarBtn = document.getElementById('cal-gerar-redes');
+      if (gerarBtn) gerarBtn.addEventListener('click', _calGerarDoRedes);
       document.getElementById('cal-modal-close').addEventListener('click', _calCloseModal);
       document.getElementById('cal-modal').addEventListener('click', function (e) {
         if (e.target.id === 'cal-modal') _calCloseModal();
@@ -15656,10 +15658,13 @@
                            p.canal === 'LinkedIn' ? '💼 LI' :
                            p.canal === 'WhatsApp' ? '💬 WA' : p.canal;
           var statusCls = 'cal-post-status cal-post-status--' + (p.status || 'planejado');
+          var obsClean = (p.observacao || '').replace('[auto:redes] ', '').trim();
           return '<div class="cal-post-row" data-post-id="' + _calEsc(p.id) + '">' +
             '<span class="' + canalClass + '">' + _calEsc(canalEmoji) + '</span>' +
             (p.tipo ? '<span class="cal-post-tipo">' + _calEsc(p.tipo) + '</span>' : '') +
-            '<div class="cal-post-ideia">' + _calEsc(p.ideia) + '</div>' +
+            '<div class="cal-post-ideia">' + _calEsc(p.ideia) +
+              (obsClean ? '<br><span style="font-size:.72rem;color:#999;font-weight:400;">' + _calEsc(obsClean) + '</span>' : '') +
+            '</div>' +
             '<span class="' + statusCls + '">' + _calEsc(p.status || 'planejado') + '</span>' +
           '</div>';
         }).join('');
@@ -15767,6 +15772,52 @@
   function _calCloseModal() {
     document.getElementById('cal-modal').style.display = 'none';
     document.body.style.overflow = '';
+  }
+
+  // Gera 15 dias de postagens a partir do desempenho real (módulo Redes
+  // Sociais) e insere no content_calendar. Substitui apenas as entradas
+  // auto-geradas anteriores (marcador [auto:redes]) — não toca nas manuais.
+  async function _calGerarDoRedes() {
+    var sb = window.supabaseClient;
+    var mod = window.ElarahSocialAnalysis;
+    if (!sb || !mod || !mod.buildCalendarPlan) {
+      alert('Módulo de Redes Sociais não carregado. Abra a aba Redes Sociais uma vez e tente de novo.');
+      return;
+    }
+    var plan = mod.buildCalendarPlan();
+    if (!plan.count || !plan.rows.length) {
+      alert('Sem dados suficientes. Importe/sincronize os posts na aba Redes Sociais primeiro.');
+      return;
+    }
+    var datas = plan.rows.map(function (r) { return r.data; }).sort();
+    var min = datas[0], max = datas[datas.length - 1];
+    if (!confirm('Isso vai gerar ' + plan.rows.length + ' postagens (' + plan.count +
+      ' dias) de ' + min + ' a ' + max + ', baseadas no desempenho real.\n\n' +
+      'As postagens geradas anteriormente por esta função serão substituídas. As manuais ficam intactas. Continuar?')) return;
+
+    var btn = document.getElementById('cal-gerar-redes');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Gerando…'; }
+    try {
+      // Remove só as auto-geradas no período (idempotente).
+      await sb.from('content_calendar').delete()
+        .gte('data', min).lte('data', max).like('observacao', '[auto:redes]%');
+      var ins = await sb.from('content_calendar').insert(plan.rows);
+      if (ins.error) throw new Error(ins.error.message);
+
+      // Mostra as dicas (frequência, horários, oportunidades) acima da grade.
+      var tips = document.getElementById('cal-tips');
+      if (tips) tips.innerHTML = plan.tipsHTML;
+
+      // Salta o calendário pro mês do plano e re-renderiza.
+      var mesInput = document.getElementById('cal-mes');
+      if (mesInput) { mesInput.value = min.slice(0, 7); _calMes = min.slice(0, 7); }
+      await renderCalendarioEditorial();
+      alert('✅ ' + plan.rows.length + ' postagens geradas! Cada dia já traz canal, formato, horário a testar, hook e CTA.');
+    } catch (e) {
+      alert('Erro ao gerar: ' + (e.message || e));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '✨ Gerar do Redes Sociais'; }
+    }
   }
 
   // =============================================================
