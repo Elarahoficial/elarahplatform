@@ -1989,3 +1989,7 @@
 .sa-metric__k { font-size: .82rem; font-weight: 600; color: #6B4F4D; }
 .sa-metric__h { font-size: .72rem; color: #a08c7a; }
 .sa-table .sa-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Blocos por plataforma na análise estratégica */
+.sa-plat { border: 1px solid #ececec; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; background: #fcfaf7; }
+.sa-plat__head { font-size: 1.02rem; color: #5C2426; margin-bottom: 10px; }
