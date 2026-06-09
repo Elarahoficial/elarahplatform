@@ -11717,6 +11717,61 @@
       _painelState.weekStart = _opStartOfWeek(new Date()); _painelRender();
     });
     if (refresh) refresh.addEventListener('click', () => _painelRender());
+    const limpar = document.getElementById('painel-limpar');
+    if (limpar) limpar.addEventListener('click', _painelLimparPendencias);
+  }
+
+  // "Começar limpo": dispensa as tarefas atrasadas de semanas anteriores
+  // (soft-delete via dismissed_at, dado preservado) e silencia os prospects
+  // parados registrando uma observação hoje (reseta o relógio de 5 dias —
+  // eles voltam a alertar se ficarem 5+ dias sem nova interação). Começa a
+  // contar a partir da semana atual.
+  async function _painelLimparPendencias() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    if (!confirm('Começar o Painel Semanal limpo a partir desta semana?\n\n' +
+      '• Tarefas atrasadas de semanas anteriores → DISPENSADAS (dado preservado).\n' +
+      '• Prospects parados 5+d → silenciados agora (voltam se ficarem 5+ dias sem interação).\n\nContinuar?')) return;
+
+    const btn = document.getElementById('painel-limpar');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Limpando…'; }
+    try {
+      const wsIso = _opIsoDate(_opStartOfWeek(new Date()));
+
+      // 1) Dispensa tarefas atrasadas (semanas anteriores, não concluídas).
+      const upd = await sb.from('routine_tasks')
+        .update({ dismissed_at: new Date().toISOString() })
+        .lt('week_start', wsIso)
+        .neq('status', 'concluido')
+        .is('dismissed_at', null);
+      if (upd.error) throw new Error('tarefas: ' + upd.error.message);
+
+      // 2) Silencia prospects parados (mesma regra do card: 5+ dias sem interação).
+      const { data: prospects, error: pErr } = await sb.from('prospects')
+        .select('id, prospect_interactions(occurred_at)')
+        .in('status', ['mensagem_enviada', 'respondeu', 'reuniao_marcada']);
+      if (pErr) throw new Error('prospects: ' + pErr.message);
+      const fiveDaysAgo = _opAddDays(new Date(), -5).getTime();
+      const parados = (prospects || []).filter(p => {
+        const last = (p.prospect_interactions || [])
+          .reduce((mx, i) => Math.max(mx, i.occurred_at ? new Date(i.occurred_at).getTime() : 0), 0);
+        return !last || last < fiveDaysAgo;
+      });
+      await Promise.all(parados.map(p => sb.rpc('log_prospect_interaction', {
+        p_prospect_id: p.id,
+        p_tipo: 'observacao',
+        p_descricao: 'Reset do Painel Semanal — começando a contar a partir desta semana.',
+        p_occurred_at: null,
+      })));
+
+      await _painelRender();
+      alert('✅ Painel zerado!\n• Atrasadas dispensadas.\n• ' + parados.length +
+        ' prospect(s) parado(s) revisado(s).\n\nA partir desta semana, o painel conta do zero.');
+    } catch (e) {
+      alert('Erro ao limpar: ' + (e.message || e));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🧹 Começar limpo'; }
+    }
   }
 
   async function _painelRender() {
