@@ -11735,43 +11735,49 @@
 
     const btn = document.getElementById('painel-limpar');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Limpando…'; }
+    const msg = [];
+
+    // 1) Dispensa tarefas atrasadas (semanas anteriores, não concluídas).
+    //    .select('id') faz o PostgREST retornar as linhas alteradas — assim
+    //    confirmamos QUANTAS foram (se vier 0, é permissão/RLS, não bug daqui).
     try {
       const wsIso = _opIsoDate(_opStartOfWeek(new Date()));
-
-      // 1) Dispensa tarefas atrasadas (semanas anteriores, não concluídas).
-      const upd = await sb.from('routine_tasks')
+      const { data, error } = await sb.from('routine_tasks')
         .update({ dismissed_at: new Date().toISOString() })
         .lt('week_start', wsIso)
         .neq('status', 'concluido')
-        .is('dismissed_at', null);
-      if (upd.error) throw new Error('tarefas: ' + upd.error.message);
+        .is('dismissed_at', null)
+        .select('id');
+      if (error) msg.push('⚠️ Atrasadas: erro — ' + error.message);
+      else msg.push('✅ ' + (data ? data.length : 0) + ' tarefa(s) atrasada(s) dispensada(s).');
+    } catch (e) { msg.push('⚠️ Atrasadas: ' + (e.message || e)); }
 
-      // 2) Silencia prospects parados (mesma regra do card: 5+ dias sem interação).
-      const { data: prospects, error: pErr } = await sb.from('prospects')
+    // 2) Silencia prospects parados (mesma regra do card: 5+ dias sem interação).
+    try {
+      const { data: prospects, error } = await sb.from('prospects')
         .select('id, prospect_interactions(occurred_at)')
         .in('status', ['mensagem_enviada', 'respondeu', 'reuniao_marcada']);
-      if (pErr) throw new Error('prospects: ' + pErr.message);
+      if (error) throw error;
       const fiveDaysAgo = _opAddDays(new Date(), -5).getTime();
       const parados = (prospects || []).filter(p => {
         const last = (p.prospect_interactions || [])
           .reduce((mx, i) => Math.max(mx, i.occurred_at ? new Date(i.occurred_at).getTime() : 0), 0);
         return !last || last < fiveDaysAgo;
       });
-      await Promise.all(parados.map(p => sb.rpc('log_prospect_interaction', {
+      const results = await Promise.allSettled(parados.map(p => sb.rpc('log_prospect_interaction', {
         p_prospect_id: p.id,
         p_tipo: 'observacao',
         p_descricao: 'Reset do Painel Semanal — começando a contar a partir desta semana.',
         p_occurred_at: null,
       })));
+      const ok = results.filter(r => r.status === 'fulfilled' && !(r.value && r.value.error)).length;
+      const fail = parados.length - ok;
+      msg.push('✅ ' + ok + ' prospect(s) parado(s) revisado(s)' + (fail ? ' · ' + fail + ' falharam' : '') + '.');
+    } catch (e) { msg.push('⚠️ Prospects: ' + (e.message || e)); }
 
-      await _painelRender();
-      alert('✅ Painel zerado!\n• Atrasadas dispensadas.\n• ' + parados.length +
-        ' prospect(s) parado(s) revisado(s).\n\nA partir desta semana, o painel conta do zero.');
-    } catch (e) {
-      alert('Erro ao limpar: ' + (e.message || e));
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '🧹 Começar limpo'; }
-    }
+    await _painelRender();
+    if (btn) { btn.disabled = false; btn.textContent = '🧹 Começar limpo'; }
+    alert('Resultado:\n\n' + msg.join('\n') + '\n\nA partir desta semana, o painel conta do zero.');
   }
 
   async function _painelRender() {
@@ -11811,8 +11817,12 @@
         .then(r => r.data || []),
       typeof fetchFinancialSummary === 'function'
         ? fetchFinancialSummary({
-            from: ws,
-            to: new Date(_opAddDays(ws, 7).getTime() - 1),
+            // Janela ancorada em datas UTC (T00:00Z..T23:59Z) em vez de
+            // meia-noite local. Isso casa com manual_sales.sale_date, que
+            // vira meia-noite UTC — senão vendas manuais no 1º dia da semana
+            // (ex: segunda) ficavam de fora por causa do fuso (-3h no Brasil).
+            from: new Date(wsIso + 'T00:00:00.000Z'),
+            to: new Date(weekEndIso + 'T23:59:59.999Z'),
             sources: ['booking', 'manual_sale', 'giftcard'],
             includeTest: false,
           })
