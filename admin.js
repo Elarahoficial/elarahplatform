@@ -11684,7 +11684,7 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function _opRespBadge(resp) {
-    const cls = 'op-resp-badge op-resp-badge--' + (resp || 'ambas');
+    const cls = 'op-resp-badge op-resp-badge--' + (resp || 'voce');
     return '<span class="' + cls + '">' + _opEsc(OP_RESP_LABELS[resp] || resp) + '</span>';
   }
 
@@ -12121,7 +12121,7 @@
     document.getElementById('rotina-task-week-start').value = _opIsoDate(_rotinaState.weekStart);
     document.getElementById('rotina-task-titulo').value = t ? (t.titulo || '') : '';
     document.getElementById('rotina-task-week-day').value = String(t ? t.week_day : (defaultDay != null ? defaultDay : 0));
-    document.getElementById('rotina-task-responsavel').value = t ? (t.responsavel || 'ambas') : 'ambas';
+    document.getElementById('rotina-task-responsavel').value = t ? (t.responsavel || 'voce') : 'voce';
     document.getElementById('rotina-task-status').value = t ? (t.status || 'pendente') : 'pendente';
     document.getElementById('rotina-task-notas').value = t ? (t.notas || '') : '';
     document.getElementById('rotina-task-msg').textContent = '';
@@ -12330,8 +12330,10 @@
     if (dayStr == null) return;
     const day = Number(dayStr);
     if (!(day >= 0 && day <= 6)) { alert('Dia inválido'); return; }
-    const resp = prompt('Responsável (voce / socia / ambas):', tpl ? tpl.responsavel : 'ambas');
-    if (resp == null) return;
+    // Apos remocao das opcoes socia/ambas do form (admin agora opera
+    // sozinha), prompt simplificado pra "voce". Mantemos validacao
+    // tolerante caso template antigo ainda tenha valor legado.
+    const resp = prompt('Responsável (voce):', tpl ? tpl.responsavel : 'voce') || 'voce';
     if (!['voce','socia','ambas'].includes(resp)) { alert('Responsável inválido'); return; }
     const sb = window.supabaseClient;
     const payload = { titulo: titulo.trim(), week_day: day, responsavel: resp };
@@ -12614,7 +12616,7 @@
     document.getElementById('conteudo-id').value = item ? item.id : '';
     document.getElementById('conteudo-titulo').value = item ? (item.titulo || '') : '';
     document.getElementById('conteudo-objetivo').value = item ? (item.objetivo || '') : '';
-    document.getElementById('conteudo-responsavel').value = item ? (item.responsavel || 'ambas') : 'ambas';
+    document.getElementById('conteudo-responsavel').value = item ? (item.responsavel || 'voce') : 'voce';
     document.getElementById('conteudo-status').value = item ? (item.status || 'ideia') : 'ideia';
     document.getElementById('conteudo-notas').value = item ? (item.notas || '') : '';
     const sched = document.getElementById('conteudo-scheduled-at');
@@ -15971,7 +15973,7 @@
     document.getElementById('cap-form-descricao').value = t ? (t.descricao || '') : '';
     document.getElementById('cap-form-prioridade').value = t ? (t.prioridade || 'media') : 'media';
     document.getElementById('cap-form-status').value = t ? (t.status || 'pendente') : 'pendente';
-    document.getElementById('cap-form-responsavel').value = t ? (t.responsavel || 'ambas') : 'ambas';
+    document.getElementById('cap-form-responsavel').value = t ? (t.responsavel || 'voce') : 'voce';
     document.getElementById('cap-form-frequencia').value = t ? (t.frequencia || 'unica') : 'unica';
     document.getElementById('cap-form-horizonte').value = t ? (t.horizonte || '') : '';
     document.getElementById('cap-form-due').value = t ? (t.due_date || '') : '';

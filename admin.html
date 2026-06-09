@@ -470,8 +470,6 @@
         <select id="conteudo-filter-responsavel" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff;">
           <option value="">Todos responsáveis</option>
           <option value="voce">Você</option>
-          <option value="socia">Sócia</option>
-          <option value="ambas">Ambas</option>
         </select>
         <input type="search" id="conteudo-filter-search" placeholder="Buscar título…" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.85rem;">
       </div>
@@ -494,7 +492,7 @@
           <label style="font-size:.82rem;font-weight:600;">Título *<input type="text" id="rotina-task-titulo" required style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <label style="font-size:.82rem;font-weight:600;">Dia<select id="rotina-task-week-day" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="0">Segunda</option><option value="1">Terça</option><option value="2">Quarta</option><option value="3">Quinta</option><option value="4">Sexta</option><option value="5">Sábado</option><option value="6">Domingo</option></select></label>
-            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="rotina-task-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="rotina-task-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option></select></label>
           </div>
           <label style="font-size:.82rem;font-weight:600;">Status<select id="rotina-task-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="pendente">Pendente</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option></select></label>
           <label style="font-size:.82rem;font-weight:600;">Notas<textarea id="rotina-task-notas" rows="3" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
@@ -548,7 +546,7 @@
           </label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <label style="font-size:.82rem;font-weight:600;">Objetivo<select id="conteudo-objetivo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="">—</option><option value="venda">Venda</option><option value="bastidor">Bastidor</option><option value="branding">Branding</option><option value="prova_social">Prova social</option><option value="lancamento">Lançamento</option><option value="urgencia">Urgência</option><option value="autoridade">Autoridade</option></select></label>
-            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="conteudo-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option><option value="socia">Sócia</option><option value="ambas">Ambas</option></select></label>
+            <label style="font-size:.82rem;font-weight:600;">Responsável<select id="conteudo-responsavel" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="voce">Você</option></select></label>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <label style="font-size:.82rem;font-weight:600;">Status<select id="conteudo-status" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;"><option value="ideia">💡 Ideia</option><option value="roteiro">✍️ Roteiro</option><option value="gravado">🎥 Gravado</option><option value="editado">✂️ Editado</option><option value="agendado">📅 Agendado</option><option value="postado">✅ Postado</option><option value="reaproveitado">🔁 Reaproveitado</option></select></label>
@@ -2445,9 +2443,7 @@
             <div>
               <label style="display:block;font-size:.78rem;font-weight:600;color:#555;margin-bottom:4px;">Responsável</label>
               <select id="cap-form-responsavel" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:.88rem;">
-                <option value="voce">Você</option>
-                <option value="socia">Sócia</option>
-                <option value="ambas" selected>Ambas</option>
+                <option value="voce" selected>Você</option>
                 <option value="externo">Externo</option>
               </select>
             </div>
@@ -3864,7 +3860,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=159"></script>
+<script src="admin.js?v=160"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
