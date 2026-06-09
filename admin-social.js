@@ -76,12 +76,20 @@
 
   // Auto-classifica uma ocasião a partir de texto livre (tags + legenda
   // + tema/experiência/campanha). Retorna a key da ocasião ou ''.
+  // Casa por PALAVRA INTEIRA (não pedaço): normaliza tudo em tokens
+  // separados por espaço e procura o termo cercado por espaços. Evita
+  // falsos positivos tipo "uNIVERso" virar "niver"/aniversário ou
+  // "São Paulo" casar "spa". Sem lookbehind (compatível com Safari antigo).
   function inferOccasion(text) {
-    const hay = String(text || '').toLowerCase();
-    if (!hay.trim()) return '';
+    const direct = String(text || '').trim().toLowerCase();
+    if (!direct) return '';
+    const hay = ' ' + direct.replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
     for (const o of OCCASIONS) {
-      if (o.key === hay) return o.key;            // já é a key
-      if (o.kw.some(k => hay.includes(k))) return o.key;
+      if (o.key === direct) return o.key;          // já é a key da taxonomia
+      for (const k of o.kw) {
+        const token = ' ' + k.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
+        if (hay.includes(token)) return o.key;
+      }
     }
     return '';
   }
@@ -386,7 +394,14 @@
   })();
 
   function canonicalField(header) {
-    return HEADER_INDEX[String(header || '').trim().toLowerCase()] || null;
+    const h = String(header || '').trim().toLowerCase();
+    if (HEADER_INDEX[h]) return HEADER_INDEX[h];
+    // Fallback: o Windsor exporta nomes técnicos prefixados
+    // (media_caption, media_like_count, story_permalink…). Remove o
+    // prefixo media_/story_/ig_ e tenta de novo — pega qualquer variante.
+    const stripped = h.replace(/^(media|story|ig|instagram)[ _]/, '');
+    if (stripped !== h && HEADER_INDEX[stripped]) return HEADER_INDEX[stripped];
+    return null;
   }
 
   // Mapeia "Tipo de mídia" do Windsor (IMAGE/VIDEO/CAROUSEL_ALBUM/REELS/STORY
@@ -557,9 +572,18 @@
         }
       });
       const post = normalizePost(obj);
-      if (post) out.push(post);
+      // Pula linhas vazias: sem legenda/tags e com todas as métricas zeradas
+      // (ex: linhas de story que só trazem o permalink, sem dados).
+      if (post && !isEmptyImport(post)) out.push(post);
     }
     return out;
+  }
+
+  function isEmptyImport(p) {
+    if (p.caption || (p.tags && p.tags.length)) return false;
+    const total = p.views + p.reach + p.likes + p.comments + p.saves + p.shares +
+                  p.interactions + p.followers + p.profileVisits + p.linkClicks + p.conversions;
+    return total === 0;
   }
 
   // Schema completo de exportação — round-trip de todas as dimensões.
