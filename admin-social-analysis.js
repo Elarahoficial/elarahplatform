@@ -41,6 +41,9 @@
     carrossel: 'Carrossel', video: 'Vídeo',
   };
 
+  const PLATFORM_LABEL = { instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn' };
+  const PLATFORM_EMOJI = { instagram: '📸', tiktok: '🎵', linkedin: '💼' };
+
   const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
   // -----------------------------------------------------------
@@ -693,6 +696,47 @@
     `);
   }
 
+  // -----------------------------------------------------------
+  // DESEMPENHO POR PLATAFORMA (Instagram vs TikTok)
+  // Mostra cada rede separada e explica o que cada uma mede — já que
+  // o TikTok do Windsor não traz comentários/compartilhamentos por vídeo.
+  // -----------------------------------------------------------
+  function sectionPlataformas(posts) {
+    if (!posts.length) return card('Instagram x TikTok', emptyData('Conecte o Windsor (Instagram e TikTok) ou importe os CSVs pra comparar as duas redes.'));
+    const rows = byDimension(posts, p => p.platform, k => PLATFORM_LABEL[k] || k);
+    if (rows.length < 1) return '';
+
+    const blocks = rows.map(r => {
+      const sub = posts.filter(p => p.platform === r.key);
+      const topFmt = byType(sub)[0];
+      const topOcc = byDimension(sub, p => p.theme, occasionLabel)[0];
+      const isTk = r.key === 'tiktok';
+      return `
+        <div class="sa-plat">
+          <div class="sa-plat__head">${PLATFORM_EMOJI[r.key] || '📱'} <strong>${escapeHTML(r.label)}</strong>
+            <span class="sa-muted">· ${r.n} posts</span></div>
+          <div class="sa-metricgrid">
+            <div class="sa-metric"><span class="sa-metric__v">${fmtNum(sum(sub.map(reachOf)))}</span><span class="sa-metric__k">Alcance</span></div>
+            <div class="sa-metric"><span class="sa-metric__v">${fmtPct(r.rate)}</span><span class="sa-metric__k">Taxa de engajamento</span></div>
+            <div class="sa-metric"><span class="sa-metric__v">${fmtNum(sum(sub.map(p => p.saves)))}</span><span class="sa-metric__k">Salvamentos</span></div>
+            <div class="sa-metric"><span class="sa-metric__v">${fmtNum(r.conversions)}</span><span class="sa-metric__k">Conversões</span></div>
+          </div>
+          <p class="sa-muted" style="margin-top:8px;">
+            Melhor formato: <strong>${topFmt ? escapeHTML(topFmt.label) : '—'}</strong> ·
+            Melhor ocasião: <strong>${topOcc ? escapeHTML(topOcc.label) : '—'}</strong>.
+            ${isTk
+              ? 'No TikTok o engajamento é estimado por <strong>curtidas + favoritos</strong> (o conector não traz comentários/compartilhamentos por vídeo).'
+              : 'No Instagram temos o engajamento completo (curtidas, comentários, salvamentos, compartilhamentos).'}
+          </p>
+        </div>`;
+    }).join('');
+
+    return card('Instagram x TikTok — visão por rede', `
+      <p class="sa-muted">Os números abaixo são <strong>separados por rede</strong>. Compare onde cada formato e ocasião performa melhor em cada plataforma.</p>
+      ${blocks}
+    `);
+  }
+
   // Tabela genérica de performance por dimensão.
   function dimensionTable(rows, firstColLabel, withEmoji) {
     if (!rows.length) return null;
@@ -778,15 +822,22 @@
   function buildReport() {
     const posts = loadPosts();
     const brand = loadBrand();
+    // Contagem por rede pra deixar explícito de onde vêm os dados.
+    const byNet = {};
+    posts.forEach(p => { byNet[p.platform] = (byNet[p.platform] || 0) + 1; });
+    const netLine = Object.keys(byNet).length
+      ? Object.keys(byNet).map(k => `${PLATFORM_EMOJI[k] || ''} ${PLATFORM_LABEL[k] || k}: ${byNet[k]}`).join('  ·  ')
+      : 'sem dados';
     const head = `
       <div class="sa-report__head">
         <div>
           <h2 class="sa-report__title">Análise estratégica — @${escapeHTML(brand.username || brand.nome || '')}</h2>
-          <p class="sa-muted">Gerado em ${new Date().toLocaleDateString('pt-BR')} · ${posts.length} posts analisados</p>
+          <p class="sa-muted">Gerado em ${new Date().toLocaleDateString('pt-BR')} · ${posts.length} posts · ${netLine}</p>
         </div>
       </div>`;
     return head +
       sectionMetricas(posts) +
+      sectionPlataformas(posts) +
       sectionPosicionamento(brand) +
       sectionBio(brand) +
       sectionConteudo(posts) +

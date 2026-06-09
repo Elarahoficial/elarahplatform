@@ -330,7 +330,7 @@
     date: ['date', 'data', 'timestamp', 'data de publicação', 'data de publicacao',
            'publish date', 'created_time', 'post date', 'mídia criada', 'midia criada',
            'media created', 'ano mês', 'ano mes'],
-    platform: ['platform', 'plataforma', 'source', 'data source', 'fonte', 'fonte de dados', 'rede', 'rede social', 'canal'],
+    platform: ['platform', 'plataforma', 'source', 'data source', 'datasource', 'fonte', 'fonte de dados', 'rede', 'rede social', 'canal'],
     type: ['type', 'tipo', 'tipo de mídia', 'tipo de midia', 'media type', 'media_type',
            'tipo de produto de mídia', 'tipo de produto de midia', 'media product type',
            'formato', 'format', 'tipo de publicação', 'tipo de publicacao', 'product type'],
@@ -353,14 +353,15 @@
             'contas alcancadas', 'accounts reached', 'reached accounts', 'accounts_reached',
             'público alcançado diariamente', 'publico alcancado diariamente'],
     likes: ['likes', 'curtidas', 'contagem de curtidas na mídia', 'contagem de curtidas na midia',
-            'like count', 'like_count', 'curtidas totais', 'total de curtidas',
+            'like count', 'like_count', 'curtidas totais', 'total de curtidas', 'total_likes',
             'curtidas do vídeo', 'curtidas do video'],
     comments: ['comments', 'comentários', 'comentarios', 'contagem de comentários', 'contagem de comentarios',
                'comment count', 'comment_count', 'respostas da história', 'respostas da historia',
                'respostas', 'replies', 'story_replies', 'comments_count'],
     saves: ['saves', 'salvamentos', 'salvos', 'mídia salva', 'midia salva', 'saved', 'bookmarks',
             'itens salvos', 'saved_count', 'contagem total de vídeos favoritos',
-            'contagem total de videos favoritos', 'vídeos favoritos', 'videos favoritos', 'favoritos'],
+            'contagem total de videos favoritos', 'vídeos favoritos', 'videos favoritos',
+            'favoritos', 'favorites', 'video_favorites'],
     shares: ['shares', 'compartilhamentos', 'compartilhamentos de mídia', 'compartilhamentos de midia',
              'compartilhamento de histórias', 'compartilhamento de historias',
              'compartilhamentos de histórias', 'compartilhamentos de historias', 'shares totais',
@@ -379,7 +380,7 @@
                  'website_clicks', 'cliques no site', 'link_clicks', 'cliques no website',
                  'cliques em sites de vídeo', 'cliques em sites de video', 'cliques no site de vídeo',
                  'cliques no endereço do vídeo', 'cliques no endereco do video',
-                 'cliques no link da bio', 'website taps', 'toques no site'],
+                 'cliques no link da bio', 'bio_link_clicks', 'website taps', 'toques no site'],
     conversions: ['conversions', 'conversões', 'conversoes', 'reservas', 'bookings', 'vendas',
                   'purchases', 'compras', 'pedidos', 'reservas confirmadas'],
     username: ['username', 'nome de usuário do instagram', 'nome de usuario do instagram',
@@ -1957,11 +1958,13 @@
     const s = String(u || '').trim().replace(/^[\]\[\s"']+|[\s"']+$/g, '');
     return /^https:\/\/connectors\.windsor\.ai\//i.test(s) ? s : '';
   }
-  // Deduz a plataforma pelo caminho da URL do conector (/tiktok, /instagram).
+  // Deduz a plataforma pelo caminho da URL do conector. Casa variações como
+  // /tiktok, /tiktok_organic, /instagram, /instagram_business, etc.
   function platformFromWindsorUrl(url) {
-    if (/\/tiktok\b/i.test(url)) return 'tiktok';
-    if (/\/instagram\b/i.test(url)) return 'instagram';
-    if (/\/linkedin\b/i.test(url)) return 'linkedin';
+    const u = String(url || '').toLowerCase();
+    if (/tiktok/.test(u)) return 'tiktok';
+    if (/instagram/.test(u)) return 'instagram';
+    if (/linkedin/.test(u)) return 'linkedin';
     return ''; // /all ou desconhecido → deixa o campo "Fonte"/default decidir
   }
 
@@ -2042,15 +2045,16 @@
   // -----------------------------------------------------------
   // CSV IMPORT
   // -----------------------------------------------------------
-  function handleCSVImport(file) {
+  function handleCSVImport(file, forcedPlatform) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       const text = String(reader.result || '');
-      // Plataforma: se o CSV não tiver coluna "Fonte de dados"/platform,
-      // pergunta de qual rede é (senão tudo cairia em Instagram por padrão).
-      let hint = '';
-      if (!headerHasPlatform(text)) {
+      // Plataforma: se o botão já forçou (CSV Instagram / CSV TikTok), usa.
+      // Senão, se o CSV não tiver coluna "Fonte de dados"/platform, pergunta
+      // (sem isso tudo cairia em Instagram por padrão).
+      let hint = mapPlatform(forcedPlatform) || '';
+      if (!hint && !headerHasPlatform(text)) {
         const ans = (window.prompt(
           'Esse CSV é de qual rede social?\nDigite: instagram, tiktok ou linkedin',
           'instagram') || '').trim().toLowerCase();
@@ -2110,13 +2114,25 @@
       downloadFile('elarah-social-' + stamp + '.csv', toCSV(posts));
     });
 
-    const importBtn   = document.getElementById('btn-social-import');
-    const csvInput    = document.getElementById('social-csv-input');
-    if (importBtn && csvInput) {
-      importBtn.addEventListener('click', () => csvInput.click());
+    // Import CSV: botões separados por rede (Instagram / TikTok) + genérico.
+    // O botão dispara o input de arquivo guardando a rede a forçar.
+    const csvInput = document.getElementById('social-csv-input');
+    let _pendingImportPlatform = '';
+    const wireImport = (btnId, platform) => {
+      const b = document.getElementById(btnId);
+      if (b && csvInput) b.addEventListener('click', () => {
+        _pendingImportPlatform = platform;
+        csvInput.click();
+      });
+    };
+    wireImport('btn-social-import', '');           // genérico (pergunta a rede)
+    wireImport('btn-social-import-ig', 'instagram');
+    wireImport('btn-social-import-tk', 'tiktok');
+    if (csvInput) {
       csvInput.addEventListener('change', (e) => {
         const file = e.target.files && e.target.files[0];
-        handleCSVImport(file);
+        handleCSVImport(file, _pendingImportPlatform);
+        _pendingImportPlatform = '';
         csvInput.value = '';
       });
     }
