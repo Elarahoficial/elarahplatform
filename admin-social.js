@@ -57,7 +57,7 @@
   // -----------------------------------------------------------
   const OCCASIONS = [
     { key: 'namorados',   label: 'Dia dos Namorados',     emoji: '❤️', kw: ['namorado', 'namorada', 'dia dos namorados', 'romance', 'romantico', 'romântico', 'casal', 'amor'] },
-    { key: 'galentine',   label: "Galentine's / Singles", emoji: '💛', kw: ['galentine', 'singles', 'single', 'solteir', 'amigas', 'galera', 'self love'] },
+    { key: 'galentine',   label: "Galentine's / Singles", emoji: '💛', kw: ['galentine', 'singles day', 'singles', 'single', 'solteir', 'self love', 'selflove'] },
     { key: 'maes',        label: 'Dia das Mães',          emoji: '🌷', kw: ['mãe', 'mae', 'maes', 'mães', 'dia das mães', 'mamãe', 'mamae', 'materna'] },
     { key: 'pais',        label: 'Dia dos Pais',          emoji: '👔', kw: ['pai', 'pais', 'dia dos pais', 'papai', 'paterno'] },
     { key: 'aniversario', label: 'Aniversário',           emoji: '🎂', kw: ['aniversário', 'aniversario', 'niver', 'birthday', 'parabéns', 'parabens'] },
@@ -338,40 +338,53 @@
            'url permanente para a mídia', 'url permanente para a midia',
            'link permanente para a mídia', 'link permanente para a midia',
            'url da mídia', 'url da midia'],
-    caption: ['caption', 'legenda', 'legenda da mídia', 'legenda da midia', 'texto', 'descrição',
-              'descricao', 'description', 'mensagem', 'conteúdo', 'conteudo'],
+    caption: ['caption', 'legenda', 'legenda da mídia', 'legenda da midia', 'legenda do vídeo',
+              'legenda do video', 'texto', 'descrição', 'descricao', 'description', 'mensagem',
+              'conteúdo', 'conteudo'],
     tags: ['tags', 'etiquetas', 'hashtags', 'hashtag', 'palavras-chave', 'palavras chave', 'keywords'],
     views: ['views', 'vistas', 'visualizações', 'visualizacoes', 'visualizações da história',
             'visualizacoes da historia', 'story_views', 'opiniões da mídia', 'opinioes da midia',
             'video views', 'video_views', 'plays', 'reproduções', 'reproducoes',
-            'impressions', 'impressões', 'impressoes', 'impressions_total'],
+            'impressions', 'impressões', 'impressoes', 'impressions_total',
+            'contagem total de visualizações de vídeos', 'contagem total de visualizacoes de videos',
+            'contagem de visualizações de vídeo', 'contagem de visualizacoes de video',
+            'visualizações de vídeo', 'visualizacoes de video'],
     reach: ['reach', 'alcance', 'alcance da mídia', 'alcance da midia', 'contas alcançadas',
-            'contas alcancadas', 'accounts reached', 'reached accounts', 'accounts_reached'],
+            'contas alcancadas', 'accounts reached', 'reached accounts', 'accounts_reached',
+            'público alcançado diariamente', 'publico alcancado diariamente'],
     likes: ['likes', 'curtidas', 'contagem de curtidas na mídia', 'contagem de curtidas na midia',
-            'like count', 'like_count', 'curtidas totais'],
+            'like count', 'like_count', 'curtidas totais', 'total de curtidas',
+            'curtidas do vídeo', 'curtidas do video'],
     comments: ['comments', 'comentários', 'comentarios', 'contagem de comentários', 'contagem de comentarios',
                'comment count', 'comment_count', 'respostas da história', 'respostas da historia',
                'respostas', 'replies', 'story_replies', 'comments_count'],
     saves: ['saves', 'salvamentos', 'salvos', 'mídia salva', 'midia salva', 'saved', 'bookmarks',
-            'itens salvos', 'saved_count'],
+            'itens salvos', 'saved_count', 'contagem total de vídeos favoritos',
+            'contagem total de videos favoritos', 'vídeos favoritos', 'videos favoritos', 'favoritos'],
     shares: ['shares', 'compartilhamentos', 'compartilhamentos de mídia', 'compartilhamentos de midia',
              'compartilhamento de histórias', 'compartilhamento de historias',
              'compartilhamentos de histórias', 'compartilhamentos de historias', 'shares totais',
-             'story_shares', 'shares_count'],
+             'story_shares', 'shares_count', 'compartilhamentos de vídeo', 'compartilhamentos de video'],
     interactions: ['interações totais', 'interacoes totais', 'engajamento com a mídia', 'engajamento com a midia',
                    'interactions', 'total interactions', 'total_interactions', 'engajamento',
-                   'engagement', 'engajamento total', 'total engagement'],
+                   'engagement', 'engajamento total', 'total engagement', 'público engajado', 'publico engajado'],
     followers: ['followers', 'seguidores', 'novos seguidores', 'novos seguidores (1 dia)', 'follows',
-                'follower growth', 'crescimento de seguidores', 'seguidores ganhos', 'net followers', 'follows totais'],
+                'follower growth', 'crescimento de seguidores', 'seguidores ganhos', 'net followers',
+                'follows totais', 'contagem diária de seguidores conquistados',
+                'contagem diaria de seguidores conquistados', 'contagem de seguidores conquistados'],
     profileVisits: ['profile visits', 'visitas ao perfil', 'profile views', 'profile_views',
-                    'visualizações do perfil', 'visualizacoes do perfil', 'visitas de perfil'],
+                    'visualizações do perfil', 'visualizacoes do perfil', 'visitas de perfil',
+                    'visualizações de perfil', 'visualizacoes de perfil'],
     linkClicks: ['link clicks', 'cliques no link', 'site vinculado', 'links de perfil', 'website clicks',
                  'website_clicks', 'cliques no site', 'link_clicks', 'cliques no website',
+                 'cliques em sites de vídeo', 'cliques em sites de video', 'cliques no site de vídeo',
+                 'cliques no endereço do vídeo', 'cliques no endereco do video',
                  'cliques no link da bio', 'website taps', 'toques no site'],
     conversions: ['conversions', 'conversões', 'conversoes', 'reservas', 'bookings', 'vendas',
                   'purchases', 'compras', 'pedidos', 'reservas confirmadas'],
     username: ['username', 'nome de usuário do instagram', 'nome de usuario do instagram',
                'nome de usuário do instagram (pseudônimo)', 'nome de usuario do instagram (pseudonimo)',
+               'nome de usuário', 'nome de usuario', 'nome da conta', 'nome de exibição', 'nome de exibicao',
                'account', 'conta', 'usuário', 'usuario', 'user', 'perfil'],
     theme: ['theme', 'tema', 'assunto', 'topic', 'tópico', 'topico', 'ocasião', 'ocasiao', 'occasion'],
     experience: ['experience', 'experiência', 'experiencia', 'produto', 'product', 'serviço', 'servico'],
@@ -399,7 +412,7 @@
     // Fallback: o Windsor exporta nomes técnicos prefixados
     // (media_caption, media_like_count, story_permalink…). Remove o
     // prefixo media_/story_/ig_ e tenta de novo — pega qualquer variante.
-    const stripped = h.replace(/^(media|story|ig|instagram)[ _]/, '');
+    const stripped = h.replace(/^(media|story|video|vídeo|ig|instagram|tiktok)[ _]/, '');
     if (stripped !== h && HEADER_INDEX[stripped]) return HEADER_INDEX[stripped];
     return null;
   }
@@ -527,7 +540,7 @@
            'do Windsor não está cheia de "nulo" (sintoma de Blended Data).';
   }
 
-  function parseCSV(text) {
+  function parseCSV(text, platformHint) {
     if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // remove BOM
     const delim = detectDelimiter(text);
     const rows = [];
@@ -559,7 +572,9 @@
       if (cells.length === 1 && !cells[0].trim()) continue;
       const raw = {};
       headers.forEach((h, i) => { raw[h] = cells[i]; });
-      const post = normalizePost(canonicalizeRow(raw));
+      const obj = canonicalizeRow(raw);
+      if (platformHint && !obj.platform) obj.platform = platformHint;
+      const post = normalizePost(obj);
       // Pula linhas vazias: sem legenda/tags e com todas as métricas zeradas
       // (ex: linhas de story que só trazem o permalink, sem dados).
       if (post && !isEmptyImport(post)) out.push(post);
@@ -1915,82 +1930,111 @@
 
   // ===========================================================
   // BLOCO 1.6 — SINCRONIZAÇÃO AUTOMÁTICA VIA URL DO WINDSOR AI
-  // O admin cola a URL do conector (https://connectors.windsor.ai/...)
-  // UMA vez; ela fica no localStorage (atrás do login admin, nunca no
-  // código/repo). A cada abertura da aba puxamos os dados frescos.
+  // O admin cola UMA ou MAIS URLs do conector (Instagram, TikTok…);
+  // ficam no localStorage (atrás do login admin, nunca no código/repo).
+  // A cada abertura da aba puxamos os dados frescos de todas as URLs.
   // Aceita resposta JSON (padrão do Windsor) ou CSV.
   // ===========================================================
-  const WINDSOR_URL_KEY = 'elarah.social.windsor.url';
+  const WINDSOR_URL_KEY  = 'elarah.social.windsor.url';   // legado (1 URL)
+  const WINDSOR_URLS_KEY = 'elarah.social.windsor.urls';  // atual (lista)
   let _windsorAutoSynced = false; // evita re-sync em loop dentro do render
 
-  function getWindsorUrl() {
-    try { return localStorage.getItem(WINDSOR_URL_KEY) || ''; }
-    catch (e) { return ''; }
+  function getWindsorUrls() {
+    try {
+      const raw = localStorage.getItem(WINDSOR_URLS_KEY);
+      if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return a.filter(Boolean); }
+      const legacy = localStorage.getItem(WINDSOR_URL_KEY); // migra a chave antiga
+      return legacy ? [legacy] : [];
+    } catch (e) { return []; }
   }
-  function setWindsorUrl(url) {
-    try { localStorage.setItem(WINDSOR_URL_KEY, url); } catch (e) {}
+  function setWindsorUrls(urls) {
+    try {
+      localStorage.setItem(WINDSOR_URLS_KEY, JSON.stringify(urls));
+      localStorage.removeItem(WINDSOR_URL_KEY);
+    } catch (e) {}
   }
   function sanitizeWindsorUrl(u) {
     const s = String(u || '').trim().replace(/^[\]\[\s"']+|[\s"']+$/g, '');
     return /^https:\/\/connectors\.windsor\.ai\//i.test(s) ? s : '';
   }
+  // Deduz a plataforma pelo caminho da URL do conector (/tiktok, /instagram).
+  function platformFromWindsorUrl(url) {
+    if (/\/tiktok\b/i.test(url)) return 'tiktok';
+    if (/\/instagram\b/i.test(url)) return 'instagram';
+    if (/\/linkedin\b/i.test(url)) return 'linkedin';
+    return ''; // /all ou desconhecido → deixa o campo "Fonte"/default decidir
+  }
 
   // Converte a resposta do conector (JSON ou CSV) em posts normalizados.
-  function parseWindsorBody(text, contentType) {
+  // platformHint preenche a plataforma quando a linha não traz "Fonte".
+  function parseWindsorBody(text, contentType, platformHint) {
+    const applyHint = (obj) => {
+      if (platformHint && !obj.platform) obj.platform = platformHint;
+      return obj;
+    };
     const looksJSON = /json/i.test(contentType || '') || /^\s*[\[{]/.test(text);
     if (looksJSON) {
       try {
         const j = JSON.parse(text);
         const arr = Array.isArray(j) ? j : (j.data || j.rows || j.results || j.records || []);
         return arr
-          .map(o => normalizePost(canonicalizeRow(o)))
+          .map(o => normalizePost(applyHint(canonicalizeRow(o))))
           .filter(p => p && !isEmptyImport(p));
       } catch (e) { /* não era JSON — tenta CSV */ }
     }
-    return parseCSV(text);
+    return parseCSV(text, platformHint);
   }
 
-  // Busca os dados do Windsor e mescla. silent=true não mostra toasts
-  // (usado no auto-sync ao abrir a aba).
+  // Busca os dados de TODAS as URLs e mescla. silent=true não mostra toasts.
   async function syncFromWindsor(opts) {
     const silent = !!(opts && opts.silent);
-    const url = getWindsorUrl();
-    if (!url) { if (!silent) showToast('error', 'Cole a URL do Windsor primeiro (botão 🔗 Windsor AI).'); return; }
-    try {
-      if (!silent) showToast('ok', 'Sincronizando com o Windsor AI…');
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const body = await res.text();
-      const incoming = parseWindsorBody(body, res.headers.get('content-type'));
-      if (!incoming.length) {
-        if (!silent) showToast('error', 'O Windsor respondeu, mas sem posts válidos. Confira se os campos incluem date + métricas de mídia.');
-        return;
+    const urls = getWindsorUrls();
+    if (!urls.length) { if (!silent) showToast('error', 'Cole a URL do Windsor primeiro (botão 🔗 Windsor AI).'); return; }
+    if (!silent) showToast('ok', `Sincronizando ${urls.length} fonte(s) do Windsor…`);
+
+    let all = [], fails = 0;
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const body = await res.text();
+        all = all.concat(parseWindsorBody(body, res.headers.get('content-type'), platformFromWindsorUrl(url)));
+      } catch (e) {
+        console.warn('[Windsor] falha em', url, e);
+        fails++;
       }
-      const { added, updated } = mergePosts(incoming);
-      await render();
-      if (!silent) showToast('ok', `Windsor sincronizado: ${added} novos, ${updated} atualizados.`);
-    } catch (e) {
-      console.warn('[Windsor] sync falhou:', e);
+    }
+
+    if (!all.length) {
       if (!silent) {
-        showToast('error', 'Não consegui buscar do Windsor pelo navegador (provável bloqueio de CORS). ' +
-          'Posso configurar um proxy no backend pra resolver — me avise.');
+        showToast('error', fails
+          ? 'Não consegui buscar do Windsor (provável bloqueio de CORS). Posso configurar um proxy no backend — me avise.'
+          : 'O Windsor respondeu, mas sem posts válidos. Confira se os campos incluem date + métricas de mídia.');
       }
+      return;
+    }
+    const { added, updated } = mergePosts(all);
+    await render();
+    if (!silent) {
+      const warn = fails ? ` (${fails} fonte(s) falharam)` : '';
+      showToast('ok', `Windsor sincronizado: ${added} novos, ${updated} atualizados${warn}.`);
     }
   }
 
-  // Botão: abre prompt pré-preenchido com a URL atual. Salvar + sincronizar.
+  // Botão: prompt com TODAS as URLs (uma por linha). Salva + sincroniza.
   function connectWindsor() {
-    const current = getWindsorUrl();
+    const current = getWindsorUrls().join('\n');
     const input = window.prompt(
-      'Cole a URL do conector do Windsor AI\n(começa com https://connectors.windsor.ai/…).\n\n' +
-      'Dica: inclua os campos date,media_type,media_caption,media_like_count,' +
-      'media_reach,media_comments_count,media_saved,media_shares.',
+      'Cole as URLs do conector do Windsor AI — UMA POR LINHA.\n' +
+      'Pode misturar Instagram e TikTok (a plataforma é detectada pela URL).\n\n' +
+      'Ex:\nhttps://connectors.windsor.ai/instagram?api_key=...&fields=...\n' +
+      'https://connectors.windsor.ai/tiktok?api_key=...&fields=...',
       current || 'https://connectors.windsor.ai/instagram?api_key=&date_preset=last_90d&fields=date,media_type,media_caption,media_like_count,media_reach,media_comments_count,media_saved,media_shares'
     );
     if (input === null) return; // cancelou
-    const clean = sanitizeWindsorUrl(input);
-    if (!clean) { alert('URL inválida. Tem que começar com https://connectors.windsor.ai/'); return; }
-    setWindsorUrl(clean);
+    const urls = input.split(/\n+/).map(sanitizeWindsorUrl).filter(Boolean);
+    if (!urls.length) { alert('Nenhuma URL válida. Cada uma tem que começar com https://connectors.windsor.ai/'); return; }
+    setWindsorUrls(urls);
     _windsorAutoSynced = true; // já vamos sincronizar manualmente agora
     syncFromWindsor({ silent: false });
   }
@@ -2122,7 +2166,7 @@
     // Auto-sync do Windsor: na 1ª abertura da aba, se há URL salva,
     // puxa os dados frescos em silêncio. O re-render disparado por
     // syncFromWindsor não reentra aqui (guard _windsorAutoSynced).
-    if (getWindsorUrl() && !_windsorAutoSynced) {
+    if (getWindsorUrls().length && !_windsorAutoSynced) {
       _windsorAutoSynced = true;
       syncFromWindsor({ silent: true });
     }
@@ -2137,7 +2181,7 @@
 
     // Mostra dashboard se há posts, conta conectada, OU Windsor plugado
     // (mesmo sem posts ainda — a sync pode estar a caminho).
-    const showDash = allPosts.length > 0 || hasConnectedAccount() || !!getWindsorUrl();
+    const showDash = allPosts.length > 0 || hasConnectedAccount() || getWindsorUrls().length > 0;
     if (!showDash) {
       if (empty) empty.style.display = 'block';
       if (dash)  dash.style.display = 'none';

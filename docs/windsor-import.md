@@ -114,6 +114,34 @@ A própria plataforma agora diz a causa. As mais comuns:
 
 ---
 
+## 📱 TikTok (além do Instagram)
+
+A plataforma analisa Instagram **e** TikTok juntos. No Windsor, crie um
+conector de TikTok e cole a URL junto com a do Instagram (o botão
+🔗 Windsor AI aceita **várias URLs, uma por linha** — a plataforma é
+detectada automaticamente pelo `/tiktok` ou `/instagram` da URL).
+
+> ⚠️ O conector de TikTok do Windsor expõe **menos métricas por vídeo** que
+> o Instagram (não tem comentários/compartilhamentos por vídeo de forma
+> limpa). O engajamento de TikTok é estimado por **curtidas + favoritos**.
+
+Campos de TikTok a selecionar (nível de vídeo):
+
+| Campo no Windsor (TikTok) | Vira na plataforma |
+|---|---|
+| **Data** | data |
+| **Fonte de dados** | marca como TikTok |
+| **Legenda do vídeo** | classifica a ocasião |
+| **Contagem total de visualizações de vídeos** | visualizações/alcance |
+| **Total de curtidas** | curtidas |
+| **Contagem total de vídeos favoritos** | salvamentos |
+| **Cliques em sites de vídeo** | cliques no link |
+
+❌ Não selecione os campos de **público/audiência** (idade, cidade, país,
+gênero) nem percentuais — são de conta e geram `nulo`.
+
+---
+
 ## 📌 Formato nativo (referência)
 
 A plataforma também aceita um CSV manual neste formato:
