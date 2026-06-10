@@ -512,6 +512,35 @@
     return out;
   }
 
+  // Decide se uma recorrente está "vencida" pra varredura da home/
+  // categoria: TODAS as turmas ativas têm data concreta e já passaram.
+  // Turma sem data parseável (ex: data "Semanal" — só controle de vagas
+  // por horário) conta como agenda aberta e mantém a experiência no ar;
+  // sem essa exceção, pacotes semanais sumiam do site por terem slots
+  // sem nenhuma data derivável. Slots existentes mas todos desativados
+  // continuam contando como vencida (comportamento antigo).
+  function isExpiredRecurring(exp, slotsArr, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    const raw = Array.isArray(slotsArr) ? slotsArr : [];
+    if (!raw.length) return false;
+    const active = raw.filter(function (sl) { return sl && sl.isActive !== false; });
+    if (!active.length) return true;
+    let dated = 0;
+    let future = 0;
+    active.forEach(function (sl) {
+      let ts = null;
+      if (sl.eventAt) {
+        const t = new Date(sl.eventAt).getTime();
+        if (!isNaN(t)) ts = t;
+      }
+      if (ts == null) ts = deriveEventTimestamp(sl.data, sl.horario, nowMs);
+      if (ts == null) return;
+      dated++;
+      if (ts >= nowMs) future++;
+    });
+    return dated === active.length && dated > 0 && future === 0;
+  }
+
   // Intervalo {startMs, endMs} pros atalhos do filtro de data.
   //   'weekend'    → sábado e domingo desta semana
   //   'next-week'  → segunda a domingo da semana que vem
@@ -1168,6 +1197,7 @@
     isPubliclyVisible,
     deriveEventTimestamp,
     experienceFutureDates,
+    isExpiredRecurring,
     dateQuickRange,
     // Slots
     loadAllSlots,
