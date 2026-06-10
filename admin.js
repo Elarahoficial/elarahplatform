@@ -4282,10 +4282,15 @@
     return { cor1: parts[0] || '#f6d5a8', cor2: parts[1] || '#f0a05e' };
   }
 
-  // slotObj = { id?, horario, vagasTotal, vagasRestantes }
+  // slotObj = { id?, horario, vagasTotal, vagasRestantes, recurrenceRuleId? }
   function addHorarioRow(slotObj) {
     if (!horariosList) return;
     var s = slotObj || {};
+    // Slot gerado pela Recorrência semanal: saveSlots NÃO toca nele
+    // (criação/edição/remoção é no painel Recorrência). Trava a linha
+    // aqui — antes ela parecia editável, o admin removia, salvava e o
+    // horário "voltava", parecendo bug.
+    var isRec = !!s.recurrenceRuleId;
     var row = document.createElement('div');
     row.className = 'admin__horario-row';
     row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
@@ -4293,6 +4298,9 @@
       '<input type="text" class="admin__horario-input" placeholder="Ex: 19h00 – 22h30" style="flex:2;">' +
       '<input type="number" class="admin__horario-vagas" min="0" step="1" placeholder="Vagas" title="Vagas totais (vazio = ilimitado)" style="flex:0 0 70px;text-align:center;">' +
       '<span class="admin__horario-restantes" style="flex:0 0 50px;font-size:.8rem;color:#888;text-align:center;" title="Vagas restantes"></span>' +
+      (isRec
+        ? '<span class="admin__horario-rec-badge" title="Horário gerado pela Recorrência semanal. Para alterar ou remover, use o painel Recorrência." style="flex:0 0 auto;font-size:.72rem;background:#eef3ee;color:#2c5e3f;border:1px solid #b9cfc1;border-radius:10px;padding:2px 8px;cursor:help;">↻ recorrência</span>'
+        : '') +
       '<button type="button" class="admin__horario-remove" aria-label="Remover horário" style="flex:0 0 28px;">&times;</button>';
     row.querySelector('.admin__horario-input').value = s.horario || '';
     row.querySelector('.admin__horario-vagas').value = s.vagasTotal != null ? s.vagasTotal : '';
@@ -4306,6 +4314,17 @@
       restEl.textContent = '∞';
     }
     if (s.id) row.dataset.slotId = s.id;
+    if (isRec) {
+      row.dataset.recurrence = '1';
+      row.querySelector('.admin__horario-input').disabled = true;
+      row.querySelector('.admin__horario-vagas').disabled = true;
+      var removeBtn = row.querySelector('.admin__horario-remove');
+      removeBtn.addEventListener('click', function () {
+        alert('Este horário é gerado pela Recorrência semanal e não pode ser removido por aqui.\n\nPra alterar ou remover, vá no painel "Recorrência" do admin e edite/desative a regra correspondente.');
+      });
+      horariosList.appendChild(row);
+      return;
+    }
     row.querySelector('.admin__horario-remove').addEventListener('click', function () {
       var rows = horariosList.querySelectorAll('.admin__horario-row');
       if (rows.length > 1) row.remove();
@@ -4339,6 +4358,10 @@
     var rows = horariosList.querySelectorAll('.admin__horario-row');
     var out = [];
     rows.forEach(function (row) {
+      // Slots da Recorrência não passam pelo saveSlots — são geridos
+      // pelo painel Recorrência. Reenviar aqui com a data da experiência
+      // ("Semanal") criaria um slot manual duplicado do mesmo horário.
+      if (row.dataset.recurrence === '1') return;
       var h = row.querySelector('.admin__horario-input').value.trim();
       if (!h) return;
       var vRaw = row.querySelector('.admin__horario-vagas').value.trim();
