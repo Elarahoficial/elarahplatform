@@ -14551,6 +14551,9 @@
   // Desativa OU reativa uma regra. Soft-delete: trigger materialize
   // não dispara em desativação, mas dispara em reativação (e gera
   // slots novos pro horizon).
+  // Na desativação, oferece também a limpeza das datas futuras já
+  // materializadas — sem isso o horário continuava no site por até
+  // `horizon` semanas e parecia que a desativação "não funcionou".
   async function _recurrenceSetActive(card, ruleId, experienceId, active) {
     const sb = window.supabaseClient;
     if (!sb) return;
@@ -14558,7 +14561,7 @@
     if (cardMsg) cardMsg.textContent = '';
 
     if (!active) {
-      const yes = confirm('Desativar essa regra? Os slots já gerados continuam ativos (pra honrar reservas), mas novos slots não serão criados.');
+      const yes = confirm('Desativar essa regra? Novos slots não serão mais criados.');
       if (!yes) return;
     }
     const { error } = await sb.from('experience_recurrence_rules')
@@ -14568,9 +14571,116 @@
       _recurrenceCardErr(cardMsg, 'Erro: ' + (error.message || error.code));
       return;
     }
-    _recurrenceCardOk(cardMsg, active ? '✓ Reativada' : '✓ Desativada');
+
+    let cleaned = 0;
+    if (!active) {
+      const wantCleanup = confirm(
+        'Regra desativada.\n\n' +
+        'Remover também as datas futuras que ela JÁ gerou?\n' +
+        '• Datas sem reserva são apagadas e o horário sai do site.\n' +
+        '• Datas com reserva são preservadas (viram manuais).\n\n' +
+        'Se escolher "Cancelar", as datas já geradas continuam ativas e o horário segue aparecendo.'
+      );
+      if (wantCleanup) {
+        const rule = (rulesCache || []).find(r => r.id === ruleId) || null;
+        try {
+          cleaned = await _recurrenceCleanupAllFuture(experienceId, ruleId, rule && rule.horario_label);
+        } catch (e) {
+          console.warn('[Elarah Recurrence] limpeza pós-desativação falhou:', e && e.message);
+        }
+      }
+    }
+    _recurrenceCardOk(cardMsg, active
+      ? '✓ Reativada'
+      : ('✓ Desativada' + (cleaned ? ' · ' + cleaned + ' data(s) futura(s) removida(s)' : '')));
     _recurrenceInvalidateCaches();
     setTimeout(() => _recurrenceLoadAndRender(experienceId), 300);
+  }
+
+  // Remove as datas FUTURAS já materializadas por uma regra (chamado
+  // após desativar). Sem reserva → apaga; com reserva → vira manual
+  // (recurrence_rule_id=null), admin cuida. Depois, se nenhuma turma
+  // ativa da experiência continuar usando o horário da regra, tira o
+  // rótulo de experiences.horarios — senão o card público seguiria
+  // oferecendo um horário sem turma. Retorna nº de slots tratados.
+  async function _recurrenceCleanupAllFuture(experienceId, ruleId, horarioLabel) {
+    const sb = window.supabaseClient;
+    if (!sb || !ruleId) return 0;
+    const { data: candidates, error: err1 } = await sb
+      .from('experience_slots')
+      .select('id')
+      .eq('experience_id', experienceId)
+      .eq('recurrence_rule_id', ruleId)
+      .gte('event_at', new Date().toISOString());
+    if (err1) {
+      console.warn('[Elarah Recurrence] cleanup-all list error:', err1.message);
+      return 0;
+    }
+    let cleaned = 0;
+    for (const slot of (candidates || [])) {
+      const { count, error: errCount } = await sb
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('slot_id', slot.id)
+        .in('status', ['pending', 'pago']);
+      if (errCount) {
+        console.warn('[Elarah Recurrence] cleanup-all count error:', errCount.message);
+        continue;
+      }
+      // Desliga rule_id sempre: com booking o slot vira manual e fica;
+      // sem booking, virar manual primeiro libera o trigger SQL que
+      // bloqueia DELETE de slot com recurrence_rule_id != null.
+      const { error: errUnlink } = await sb.from('experience_slots')
+        .update({ recurrence_rule_id: null })
+        .eq('id', slot.id);
+      if (errUnlink) {
+        console.warn('[Elarah Recurrence] cleanup-all unlink error:', errUnlink.message);
+        continue;
+      }
+      if ((count || 0) === 0) {
+        const { error: errDel } = await sb.from('experience_slots').delete().eq('id', slot.id);
+        if (errDel) console.warn('[Elarah Recurrence] cleanup-all delete error:', errDel.message);
+      }
+      cleaned += 1;
+    }
+    await _recurrenceRemoveHorarioLabel(experienceId, horarioLabel);
+    return cleaned;
+  }
+
+  // Tira um rótulo de horário de experiences.horario/horarios quando
+  // nenhuma turma ativa (futura ou sem data) da experiência usa mais
+  // esse horário.
+  async function _recurrenceRemoveHorarioLabel(experienceId, horarioLabel) {
+    const sb = window.supabaseClient;
+    const label = String(horarioLabel || '').trim();
+    if (!sb || !label || !experienceId) return;
+    // Turmas sem event_at (ex: data "Semanal") contam como vigentes.
+    const { count, error: errCount } = await sb
+      .from('experience_slots')
+      .select('id', { count: 'exact', head: true })
+      .eq('experience_id', experienceId)
+      .eq('horario', label)
+      .eq('is_active', true)
+      .or('event_at.is.null,event_at.gte.' + new Date().toISOString());
+    if (errCount || (count || 0) > 0) return;
+    const { data: expRow, error: errExp } = await sb
+      .from('experiences')
+      .select('horario, horarios')
+      .eq('id', experienceId)
+      .maybeSingle();
+    if (errExp || !expRow) return;
+    const oldHorarios = Array.isArray(expRow.horarios) ? expRow.horarios : [];
+    const horarios = oldHorarios.filter(function (h) { return String(h || '').trim() !== label; });
+    const horarioIsLabel = String(expRow.horario || '').trim() === label;
+    if (horarios.length === oldHorarios.length && !horarioIsLabel) return;
+    const { error: errUpd } = await sb.from('experiences')
+      .update({ horarios: horarios, horario: horarios[0] || (horarioIsLabel ? '' : expRow.horario) })
+      .eq('id', experienceId);
+    if (errUpd) {
+      console.warn('[Elarah Recurrence] remove-horario-label error:', errUpd.message);
+      return;
+    }
+    if (window.ElarahData && ElarahData.invalidateCache) ElarahData.invalidateCache();
   }
 
   // Chama materialize_recurrence_slots RPC manualmente. Útil pra
