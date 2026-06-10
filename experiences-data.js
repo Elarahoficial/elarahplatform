@@ -868,6 +868,11 @@
       vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
       eventAt: row.event_at || null,
       isActive: row.is_active !== false,
+      // Vínculo com a Recorrência semanal. O modal de edição manual usa
+      // isso pra travar a linha — saveSlots ignora esses slots, então
+      // deixar editar/remover ali dava a impressão de bug (horário
+      // "voltava" depois de salvar).
+      recurrenceRuleId: row.recurrence_rule_id || null,
     };
   }
 
