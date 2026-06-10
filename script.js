@@ -93,11 +93,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? ElarahData.experienceFutureDates(e, slotMapRaw.get(e.id) || [], _nowMs)
       : [];
   });
-  // Varredura: recorrente com slots mas nenhuma ocorrência futura =
-  // experiência vencida — não deve aparecer na listagem.
+  // Varredura: recorrente com turmas datadas mas nenhuma ocorrência
+  // futura = vencida. Turmas sem data ("Semanal") são agenda aberta e
+  // mantêm a experiência na listagem — regra em ElarahData.
   experiences = experiences.filter(function (e) {
-    const sl = slotMapRaw.get(e.id) || [];
-    return !(sl.length > 0 && e._futureDates.length === 0);
+    if (typeof ElarahData !== 'undefined' && ElarahData.isExpiredRecurring) {
+      return !ElarahData.isExpiredRecurring(e, slotMapRaw.get(e.id) || [], _nowMs);
+    }
+    return true;
   });
 
   let activeCategoria = '';
