@@ -117,6 +117,14 @@
         <span>Usuários</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="interesses">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span>Interesses</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="partners">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2H9z"/><path d="M3 7v10a2 2 0 0 0 2 2h4"/>
@@ -3035,6 +3043,125 @@
       </p>
     </div>
 
+    <!-- ===== INTERESSES PANEL ===== -->
+    <div class="admin__panel" id="panel-interesses">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Interesses</h1>
+        <p class="admin__page-subtitle">Lista de espera — pessoas que pediram pra ser avisadas quando uma experiência ficar disponível.</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total</div>
+          <div class="admin__stat-value" id="int-stat-total">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Aguardando aviso</div>
+          <div class="admin__stat-value" id="int-stat-aguardando">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Já avisados</div>
+          <div class="admin__stat-value" id="int-stat-avisado">0</div>
+        </div>
+      </div>
+
+      <!-- Formulário de adição -->
+      <div class="admin__table-wrap" style="margin-bottom:18px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Adicionar interessado</span>
+        </div>
+        <form id="int-add-form" style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label style="font-size:.78rem;color:#666;font-weight:600;">Nome *</label>
+            <input type="text" id="int-nome" required placeholder="Nome da pessoa" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label style="font-size:.78rem;color:#666;font-weight:600;">Categoria de interesse</label>
+            <select id="int-categoria" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+              <option value="">Selecione...</option>
+              <option value="ceramica">Cerâmica</option>
+              <option value="vidro">Vidro</option>
+              <option value="mosaico">Mosaico</option>
+              <option value="marcenaria">Marcenaria</option>
+              <option value="tufting">Tufting</option>
+              <option value="pintura">Pintura</option>
+              <option value="bordado">Bordado</option>
+              <option value="encadernacao">Encadernação</option>
+              <option value="floral">Floral</option>
+              <option value="perfumaria">Perfumaria</option>
+              <option value="vela">Vela</option>
+              <option value="aromaterapia">Aromaterapia</option>
+              <option value="joalheria">Joalheria</option>
+              <option value="gastronomia">Gastronomia</option>
+              <option value="doceria">Doceria</option>
+              <option value="cafe">Café</option>
+              <option value="degustacao">Degustação</option>
+              <option value="fermentacao">Fermentação</option>
+              <option value="golfe">Golfe</option>
+              <option value="kart">Kart</option>
+              <option value="paintball">Paintball</option>
+              <option value="machado">Arremesso de machado</option>
+              <option value="escalada">Escalada</option>
+              <option value="arquearia">Arco e flecha</option>
+              <option value="escape">Escape room</option>
+              <option value="nautica">Vela esportiva / Náutica</option>
+              <option value="circo">Circo / Trapézio</option>
+              <option value="simulador">Simulador de corrida</option>
+              <option value="sensorial">Sensorial / Experiência rara</option>
+              <option value="autoral">Autoral / Outro</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label style="font-size:.78rem;color:#666;font-weight:600;">WhatsApp</label>
+            <input type="text" id="int-whatsapp" placeholder="(11) 91234-5678" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label style="font-size:.78rem;color:#666;font-weight:600;">Observação</label>
+            <input type="text" id="int-observacao" placeholder="O que ela quer, contexto, data preferida..." style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          </div>
+          <div style="grid-column:1 / -1;display:flex;align-items:center;gap:12px;">
+            <button type="submit" style="background:#2c5e3f;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;">+ Adicionar à lista</button>
+            <span id="int-add-msg" style="font-size:.85rem;"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <input type="search" id="int-filter-search" placeholder="Buscar por nome, observação..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+        <select id="int-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todos</option>
+          <option value="aguardando">Aguardando aviso</option>
+          <option value="avisado">Já avisados</option>
+        </select>
+      </div>
+
+      <!-- Tabela -->
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Interessados</span>
+          <span class="admin__table-count" id="int-table-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>WhatsApp</th>
+              <th>Observação</th>
+              <th>Adicionado em</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="int-table-body">
+            <tr><td colspan="7" class="admin__table-empty">Nenhum interessado cadastrado ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -3957,7 +4084,7 @@
 <script src="admin-social-analysis.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=166"></script>
+<script src="admin.js?v=167"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
