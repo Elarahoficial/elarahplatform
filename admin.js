@@ -393,6 +393,7 @@
       case 'rotina':           await renderRotina(); break;
       case 'conteudo':         await renderConteudo(); break;
       case 'users':       await renderUsers(); break;
+      case 'interesses':  await renderInteresses(); break;
       case 'partners':    await renderPartners(); break;
       case 'purchases':   invalidateBookings(); await renderBookings(); break;
       case 'fornecedores': await renderFornecedores(); break;
@@ -16316,6 +16317,237 @@
     if (r.error) { alert('Erro ao salvar KPI: ' + r.error.message); return; }
     _capCloseKpiModal();
     await renderCaptacao();
+  }
+
+  // ===== INTERESSES (lista de espera) =====
+  // Pessoas que procuraram a Elarah querendo uma experiência ainda
+  // indisponível e pediram pra ser avisadas quando abrir. A admin
+  // cadastra nome, categoria, WhatsApp e observação; a data de
+  // cadastro fica salva (created_at). Quando a experiência abre, o
+  // botão "Avisar" abre o WhatsApp com a mensagem pronta — a admin
+  // só cola o link. Tabela: public.interesses (RLS is_admin()).
+  let _intCache = [];
+  let _intWired = false;
+
+  // Rótulos das categorias (mesma lista dos selects do admin). Espelha
+  // os <option> de #int-categoria pra mostrar o nome bonito na tabela.
+  const _INT_CATEGORIA_LABELS = {
+    ceramica: 'Cerâmica', vidro: 'Vidro', mosaico: 'Mosaico',
+    marcenaria: 'Marcenaria', tufting: 'Tufting', pintura: 'Pintura',
+    bordado: 'Bordado', encadernacao: 'Encadernação', floral: 'Floral',
+    perfumaria: 'Perfumaria', vela: 'Vela', aromaterapia: 'Aromaterapia',
+    joalheria: 'Joalheria', gastronomia: 'Gastronomia', doceria: 'Doceria',
+    cafe: 'Café', degustacao: 'Degustação', fermentacao: 'Fermentação',
+    golfe: 'Golfe', kart: 'Kart', paintball: 'Paintball',
+    machado: 'Arremesso de machado', escalada: 'Escalada',
+    arquearia: 'Arco e flecha', escape: 'Escape room',
+    nautica: 'Vela esportiva / Náutica', circo: 'Circo / Trapézio',
+    simulador: 'Simulador de corrida', sensorial: 'Sensorial / Experiência rara',
+    autoral: 'Autoral / Outro', outro: 'Outro'
+  };
+  function _intCategoriaLabel(v) {
+    if (!v) return '';
+    return _INT_CATEGORIA_LABELS[v] || v;
+  }
+
+  function _intEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function _intFormatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // Normaliza telefone BR pra wa.me: só dígitos; se vier sem o 55
+  // (10 ou 11 dígitos) prepende 55. Já com DDI passa direto.
+  function _intWhatsappDigits(raw) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return null;
+    return digits.length <= 11 ? '55' + digits : digits;
+  }
+
+  async function _intFetch() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('interesses')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    if (error) {
+      console.error('[Interesses] load error:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  function _intRenderStats(list) {
+    const total = list.length;
+    const aguardando = list.filter(i => (i.status || 'aguardando') === 'aguardando').length;
+    const avisado = list.filter(i => i.status === 'avisado').length;
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setTxt('int-stat-total', total);
+    setTxt('int-stat-aguardando', aguardando);
+    setTxt('int-stat-avisado', avisado);
+  }
+
+  function _intRenderTable() {
+    const body = document.getElementById('int-table-body');
+    if (!body) return;
+    const searchEl = document.getElementById('int-filter-search');
+    const statusEl = document.getElementById('int-filter-status');
+    const q = (searchEl ? searchEl.value : '').trim().toLowerCase();
+    const statusFilter = statusEl ? statusEl.value : '';
+
+    let rows = _intCache.slice();
+    if (statusFilter) rows = rows.filter(i => (i.status || 'aguardando') === statusFilter);
+    if (q) {
+      rows = rows.filter(i => {
+        const hay = [i.nome, i.observacao, _intCategoriaLabel(i.categoria), i.whatsapp]
+          .map(x => String(x || '').toLowerCase()).join(' ');
+        return hay.indexOf(q) !== -1;
+      });
+    }
+
+    const countEl = document.getElementById('int-table-count');
+    if (countEl) countEl.textContent = rows.length ? (rows.length + (rows.length === 1 ? ' interessado' : ' interessados')) : '';
+
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhum interessado encontrado.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = rows.map(function (i) {
+      const isAvisado = i.status === 'avisado';
+      const statusBadge = isAvisado
+        ? '<span style="display:inline-block;padding:2px 9px;border-radius:99px;font-size:.74rem;font-weight:600;background:#e3f3e8;color:#1a8a4a;">Avisado</span>'
+        : '<span style="display:inline-block;padding:2px 9px;border-radius:99px;font-size:.74rem;font-weight:600;background:#fdeede;color:#b6741f;">Aguardando</span>';
+      const waDigits = _intWhatsappDigits(i.whatsapp);
+      const avisarBtn = waDigits
+        ? '<button data-int-avisar="' + i.id + '" title="Avisar no WhatsApp" style="background:#25d366;color:#fff;border:none;padding:6px 10px;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;">Avisar</button>'
+        : '<span style="color:#bbb;font-size:.78rem;" title="Sem WhatsApp cadastrado">sem WhatsApp</span>';
+      return '<tr>' +
+        '<td>' + _intEsc(i.nome) + '</td>' +
+        '<td>' + (i.categoria ? _intEsc(_intCategoriaLabel(i.categoria)) : '<span style="color:#bbb;">—</span>') + '</td>' +
+        '<td>' + (i.whatsapp ? _intEsc(i.whatsapp) : '<span style="color:#bbb;">—</span>') + '</td>' +
+        '<td style="max-width:260px;white-space:normal;color:#666;">' + (i.observacao ? _intEsc(i.observacao) : '<span style="color:#bbb;">—</span>') + '</td>' +
+        '<td>' + _intFormatDate(i.created_at) + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td><div style="display:flex;gap:6px;align-items:center;">' +
+          avisarBtn +
+          '<button data-int-del="' + i.id + '" title="Excluir" style="background:none;border:1px solid #e2c4c4;color:#c0392b;padding:6px 9px;border-radius:7px;font-family:inherit;font-size:.8rem;cursor:pointer;">Excluir</button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  async function _intAddSubmit(ev) {
+    ev.preventDefault();
+    const sb = window.supabaseClient;
+    const msgEl = document.getElementById('int-add-msg');
+    const nomeEl = document.getElementById('int-nome');
+    const nome = (nomeEl ? nomeEl.value : '').trim();
+    const setMsg = (t, color) => { if (msgEl) { msgEl.textContent = t; msgEl.style.color = color || '#666'; } };
+    if (!nome) { setMsg('Informe o nome.', '#c0392b'); if (nomeEl) nomeEl.focus(); return; }
+    if (!sb) { setMsg('Sem conexão com o banco.', '#c0392b'); return; }
+
+    const payload = {
+      nome: nome,
+      categoria: document.getElementById('int-categoria').value || null,
+      whatsapp: document.getElementById('int-whatsapp').value.trim() || null,
+      observacao: document.getElementById('int-observacao').value.trim() || null,
+      status: 'aguardando'
+    };
+    setMsg('Salvando...', '#666');
+    const { error } = await sb.from('interesses').insert([payload]);
+    if (error) { setMsg('Erro ao salvar: ' + error.message, '#c0392b'); return; }
+    setMsg('Adicionado! 🧡', '#1a8a4a');
+    const form = document.getElementById('int-add-form');
+    if (form) form.reset();
+    setTimeout(() => setMsg('', '#666'), 2500);
+    await renderInteresses();
+  }
+
+  async function _intDelete(id) {
+    const sb = window.supabaseClient;
+    if (!sb || !id) return;
+    if (!confirm('Remover esse interessado da lista?')) return;
+    const { error } = await sb.from('interesses').delete().eq('id', id);
+    if (error) { alert('Erro ao excluir: ' + error.message); return; }
+    await renderInteresses();
+  }
+
+  // "Avisar": monta a mensagem pronta, pede o link pra admin colar e
+  // abre o WhatsApp. Depois marca o interessado como avisado.
+  async function _intAvisar(id) {
+    const sb = window.supabaseClient;
+    const item = _intCache.find(i => String(i.id) === String(id));
+    if (!item) return;
+    const digits = _intWhatsappDigits(item.whatsapp);
+    if (!digits) { alert('Esse interessado não tem WhatsApp cadastrado.'); return; }
+
+    const primeiroNome = String(item.nome || '').trim().split(/\s+/)[0] || '';
+    const catTxt = item.categoria ? (' de ' + _intCategoriaLabel(item.categoria)) : '';
+    const link = window.prompt('Cole o link da experiência pra incluir na mensagem (pode deixar em branco e colar direto no WhatsApp):', '');
+    // prompt retorna null se a admin cancelar — aí aborta sem avisar.
+    if (link === null) return;
+    const linkTrim = link.trim();
+
+    let msg = 'Oi' + (primeiroNome ? ' ' + primeiroNome : '') + '! 🧡\n\n' +
+      'Aquela experiência' + catTxt + ' que você estava interessada já está disponível na Elarah! ' +
+      'Achei que você ia gostar de saber em primeira mão.';
+    if (linkTrim) {
+      msg += '\n\nGaranta a sua por aqui: ' + linkTrim;
+    }
+    msg += '\n\nQualquer dúvida é só me chamar 😊';
+
+    const url = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+    window.open(url, '_blank', 'noopener');
+
+    // Marca como avisado (não bloqueia a abertura do WhatsApp se falhar).
+    if (sb) {
+      const { error } = await sb
+        .from('interesses')
+        .update({ status: 'avisado', avisado_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) console.error('[Interesses] avisar update error:', error.message);
+    }
+    await renderInteresses();
+  }
+
+  function _intWireOnce() {
+    if (_intWired) return;
+    _intWired = true;
+    const form = document.getElementById('int-add-form');
+    if (form) form.addEventListener('submit', _intAddSubmit);
+    const searchEl = document.getElementById('int-filter-search');
+    if (searchEl) searchEl.addEventListener('input', _intRenderTable);
+    const statusEl = document.getElementById('int-filter-status');
+    if (statusEl) statusEl.addEventListener('change', _intRenderTable);
+
+    // Delegação de cliques nos botões da tabela (avisar / excluir).
+    const body = document.getElementById('int-table-body');
+    if (body) {
+      body.addEventListener('click', function (e) {
+        const avisarBtn = e.target.closest('[data-int-avisar]');
+        if (avisarBtn) { _intAvisar(avisarBtn.getAttribute('data-int-avisar')); return; }
+        const delBtn = e.target.closest('[data-int-del]');
+        if (delBtn) { _intDelete(delBtn.getAttribute('data-int-del')); return; }
+      });
+    }
+  }
+
+  async function renderInteresses() {
+    if (!document.getElementById('panel-interesses')) return;
+    _intWireOnce();
+    _intCache = await _intFetch();
+    _intRenderStats(_intCache);
+    _intRenderTable();
   }
 
   // ===== START =====
