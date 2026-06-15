@@ -4516,7 +4516,7 @@
         window._expFornecedorCombobox.setValue(exp.fornecedorNome || '');
         window._expFornecedorCombobox.refresh();
       }
-      if (vcEl) vcEl.value = exp.valorCheioCentavos != null ? 'R$' + (exp.valorCheioCentavos / 100).toFixed(0) : '';
+      if (vcEl) vcEl.value = exp.valorCheioCentavos != null ? 'R$' + (exp.valorCheioCentavos / 100).toFixed(2).replace('.', ',') : '';
       if (prEl) prEl.value = exp.percentualRepasse != null ? exp.percentualRepasse : 70;
       // Repasse fixo: se setado no banco, preenche o input e seleciona o
       // radio "Valor fixo". Caso contrario fica em modo Percentual.
@@ -4896,9 +4896,21 @@
         valorCheioCentavos: (function () {
           var raw = (document.getElementById('exp-valor-cheio')?.value || '').trim();
           if (!raw) return null;
-          var cleaned = raw.replace(/[R$\s]/gi, '').replace(',', '.');
-          var n = Math.round(Number(cleaned) * (cleaned.includes('.') ? 1 : 100));
-          if (raw.match(/^\d+$/)) n = Number(raw) * 100;
+          // O valor é SEMPRE digitado em reais — converte pra centavos (×100).
+          // Aceita "R$177,80", "177,80", "1.177,80", "425" ou "177.80".
+          var cleaned = raw.replace(/[^\d.,]/g, '');
+          if (cleaned.indexOf(',') !== -1) {
+            // Formato pt-BR: vírgula é decimal, ponto é separador de milhar.
+            cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+          } else {
+            // Só pontos: trata como milhar (1.000) e não decimal quando
+            // houver mais de um ponto ou 3 casas depois do ponto.
+            var parts = cleaned.split('.');
+            if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+              cleaned = cleaned.replace(/\./g, '');
+            }
+          }
+          var n = Math.round(Number(cleaned) * 100);
           return Number.isFinite(n) && n > 0 ? n : null;
         })(),
         percentualRepasse: Number(document.getElementById('exp-percentual-repasse')?.value || 90),
