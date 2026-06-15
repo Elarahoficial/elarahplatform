@@ -25,7 +25,7 @@
 
 -- 1) Kit de Velas — Ritual da Noite -----------------------------------------
 insert into public.experiences
-  (nome, categoria, data, duracao, bairro, endereco, inclui, preco, cor, imagem, descricao, horario, horarios)
+  (nome, categoria, data, duracao, bairro, endereco, inclui, preco, cor, imagem, descricao, horario, horarios, fornecedor_nome)
 select
   'Kit de Velas — Ritual da Noite',
   'Kit em casa',
@@ -48,14 +48,15 @@ O que você vai viver:
 
 Chega em casa. O resto é com você.',
   '',
-  '{}'
+  '{}',
+  'Elarah em Casa'
 where not exists (
   select 1 from public.experiences where lower(nome) = lower('Kit de Velas — Ritual da Noite')
 );
 
 -- 2) Kit de Cerâmica — A Dois ------------------------------------------------
 insert into public.experiences
-  (nome, categoria, data, duracao, bairro, endereco, inclui, preco, cor, imagem, descricao, horario, horarios)
+  (nome, categoria, data, duracao, bairro, endereco, inclui, preco, cor, imagem, descricao, horario, horarios, fornecedor_nome)
 select
   'Kit de Cerâmica — A Dois',
   'Kit em casa',
@@ -78,7 +79,8 @@ O que vocês vão viver:
 
 Um presente e um programa, no mesmo box.',
   '',
-  '{}'
+  '{}',
+  'Elarah em Casa'
 where not exists (
   select 1 from public.experiences where lower(nome) = lower('Kit de Cerâmica — A Dois')
 );
