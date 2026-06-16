@@ -10,16 +10,19 @@
    ============================================================= */
 
 :root {
-  --ec-clay:        #b9764f;   /* argila / terracota (cerâmica, velas) */
-  --ec-clay-deep:   #a3633f;
-  --ec-clay-soft:   #ecd8c6;
-  --ec-sage:        #889a80;   /* verde-sálvia calmo (chá, folha) */
-  --ec-sage-soft:   #dde3d6;
-  --ec-cream:       #fbf6ef;
-  --ec-cream-warm:  #f4ebde;
+  --ec-clay:        #d9763e;   /* terracota quente e viva (principal) */
+  --ec-clay-deep:   #c25e2c;
+  --ec-clay-soft:   #f8e0cd;
+  --ec-coral:       #ec8559;   /* coral/pêssego — acento vibrante */
+  --ec-gold:        #eaa53c;   /* dourado quente */
+  --ec-rose:        #e58a6b;   /* rosé terroso */
+  --ec-sage:        #7e9b73;   /* sálvia (acento secundário) */
+  --ec-sage-soft:   #dde7d6;
+  --ec-cream:       #fdf6ee;
+  --ec-cream-warm:  #fcebd8;
   --ec-ink:         #2c211a;
   --ec-ink-soft:    #6a584a;
-  --ec-line:        #ece0d0;
+  --ec-line:        #f0e2d2;
 }
 
 body.ec-body {
@@ -116,6 +119,68 @@ body.ec-body {
   background: var(--ec-clay-deep);
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(185, 118, 79, 0.42);
+}
+
+/* ========== PRA VIVER COM QUEM VOCÊ AMA (ocasiões) ========== */
+.ec-occasions {
+  padding: 92px 24px;
+  background: linear-gradient(180deg, var(--ec-cream) 0%, var(--ec-cream-warm) 100%);
+}
+.ec-occasions__inner { max-width: 1180px; margin: 0 auto; }
+.ec-occasions__head { text-align: center; margin-bottom: 48px; }
+.ec-occasions__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 4.4vw, 3rem);
+  font-weight: 400; margin: 0 0 14px; color: var(--ec-ink); line-height: 1.08;
+}
+.ec-occasions__title em { font-style: italic; color: var(--ec-clay); }
+.ec-occasions__sub { color: var(--ec-ink-soft); font-size: 1.05rem; max-width: 620px; margin: 0 auto; line-height: 1.55; }
+.ec-occasions__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+.ec-occasion {
+  position: relative;
+  min-height: 300px;
+  border-radius: 22px;
+  overflow: hidden;
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(194, 94, 44, 0.16);
+  transition: transform .2s, box-shadow .2s;
+}
+.ec-occasion:hover { transform: translateY(-6px); box-shadow: 0 20px 44px rgba(194, 94, 44, 0.30); }
+.ec-occasion__icon {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.24);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; margin-bottom: 16px;
+}
+.ec-occasion__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.55rem; font-weight: 400; margin: 0 0 10px; line-height: 1.12;
+}
+.ec-occasion__text { font-size: .95rem; line-height: 1.5; margin: 0; opacity: .97; flex: 1; }
+.ec-occasion__link {
+  margin-top: 18px;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: .88rem; font-weight: 700;
+}
+/* Variações de cor — quentes, vivas e apetitosas */
+.ec-occasion--solo    { background: linear-gradient(150deg, #eaa53c, #d9763e); }
+.ec-occasion--amigas  { background: linear-gradient(150deg, #ec8559, #c2422f); }
+.ec-occasion--dois    { background: linear-gradient(150deg, #e58a6b, #b34a2f); }
+.ec-occasion--familia { background: linear-gradient(150deg, #e7b15a, #c98a34); }
+
+@media (max-width: 720px) {
+  .ec-occasions { padding: 56px 18px; }
+  .ec-occasions__title { font-size: 1.8rem; }
+  .ec-occasion { min-height: 230px; padding: 24px 22px; }
 }
 
 /* ========== COLEÇÕES POR INTENÇÃO (banners) ========== */

@@ -11,7 +11,7 @@
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=9">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="elarah-em-casa.css?v=1">
+  <link rel="stylesheet" href="elarah-em-casa.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -103,103 +103,57 @@
     </div>
   </section>
 
-  <!-- ========== COLEÇÕES POR INTENÇÃO ==========
-       Banners temáticos que cruzam os tipos de kit. Cada banner é o
-       espaço pronto pra arte da coleção: troque a imagem em
-       style="background-image:url(...)" no .ec-collection__bg.
-       Estes mesmos banners viram as vitrines sazonais (ex: "A Dois"
-       é a base do Dia dos Namorados). -->
-  <section class="ec-collections" id="ec-colecoes">
-    <div class="ec-collections__inner">
-      <header class="ec-collections__head">
-        <span class="ec-kicker">Coleções por intenção</span>
-        <h2 class="ec-collections__title">Escolha pelo <em>momento</em>, não só pelo produto</h2>
-        <p class="ec-collections__sub">
-          Não vendemos só um kit — montamos o seu ritual. Comece pelo que você está procurando sentir.
+  <!-- ========== PRA VIVER COM QUEM VOCÊ AMA (ocasiões) ==========
+       Substitui as antigas "coleções"/"tipos": com poucos kits, filtrar
+       levava sempre aos mesmos produtos. Aqui vendemos a OCASIÃO — quem
+       você chama pra viver o kit. Não filtra, só inspira e leva à vitrine. -->
+  <section class="ec-occasions" id="ec-ocasioes">
+    <div class="ec-occasions__inner">
+      <header class="ec-occasions__head">
+        <span class="ec-kicker">Pra cada momento</span>
+        <h2 class="ec-occasions__title">Saia da rotina <em>sem sair de casa</em></h2>
+        <p class="ec-occasions__sub">
+          Sozinha, com as amigas, a dois ou com a família — o kit vira o programa da vez. Você escolhe a companhia; a gente leva a experiência.
         </p>
       </header>
-      <div class="ec-collections__grid">
+      <div class="ec-occasions__grid">
 
-        <a href="#ec-vitrine" class="ec-collection" data-colecao="ritual">
-          <div class="ec-collection__bg" style="background-image:linear-gradient(135deg,#b9764f,#8a9a80);"></div>
-          <div class="ec-collection__overlay"></div>
-          <div class="ec-collection__content">
-            <span class="ec-collection__tag">Ritual</span>
-            <h3 class="ec-collection__title">Ritual da Noite</h3>
-            <p class="ec-collection__desc">Desacelerar antes de dormir. Vela, chá e banho pra fechar o dia com presença.</p>
-            <span class="ec-collection__link">Ver coleção
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
-          </div>
+        <a href="#ec-vitrine" class="ec-occasion ec-occasion--solo">
+          <span class="ec-occasion__icon" aria-hidden="true">🕯️</span>
+          <h3 class="ec-occasion__title">Seu momento</h3>
+          <p class="ec-occasion__text">Desligue o mundo por algumas horas. Vela acesa, mãos ocupadas, cabeça leve — esse tempo é só seu.</p>
+          <span class="ec-occasion__link">Ver os kits
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
         </a>
 
-        <a href="#ec-vitrine" class="ec-collection" data-colecao="casulo">
-          <div class="ec-collection__bg" style="background-image:linear-gradient(135deg,#8a9a80,#ecd8c6);"></div>
-          <div class="ec-collection__overlay"></div>
-          <div class="ec-collection__content">
-            <span class="ec-collection__tag">Casulo</span>
-            <h3 class="ec-collection__title">Modo Casulo</h3>
-            <p class="ec-collection__desc">O aconchego de ficar em casa. Chás, tricô e texturas pros dias de se recolher.</p>
-            <span class="ec-collection__link">Ver coleção
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
-          </div>
+        <a href="#ec-vitrine" class="ec-occasion ec-occasion--amigas">
+          <span class="ec-occasion__icon" aria-hidden="true">🥂</span>
+          <h3 class="ec-occasion__title">Com as amigas</h3>
+          <p class="ec-occasion__text">Troquem o rolê de sempre por uma noite de criar, rir e brindar — sem fila, sem reserva, sem pressa.</p>
+          <span class="ec-occasion__link">Ver os kits
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
         </a>
 
-        <a href="#ec-vitrine" class="ec-collection" data-colecao="a-dois">
-          <div class="ec-collection__bg" style="background-image:linear-gradient(135deg,#a3633f,#b9764f);"></div>
-          <div class="ec-collection__overlay"></div>
-          <div class="ec-collection__content">
-            <span class="ec-collection__tag">A Dois</span>
-            <h3 class="ec-collection__title">Date em Casa</h3>
-            <p class="ec-collection__desc">Trocar o jantar fora por uma noite criando juntos. Um presente e um programa no mesmo box.</p>
-            <span class="ec-collection__link">Ver coleção
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
-          </div>
+        <a href="#ec-vitrine" class="ec-occasion ec-occasion--dois">
+          <span class="ec-occasion__icon" aria-hidden="true">💛</span>
+          <h3 class="ec-occasion__title">A dois</h3>
+          <p class="ec-occasion__text">Um date que não é só mais um jantar: criem algo juntos e levem pra casa a lembrança da noite.</p>
+          <span class="ec-occasion__link">Ver os kits
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
         </a>
 
-      </div>
-    </div>
-  </section>
+        <a href="#ec-vitrine" class="ec-occasion ec-occasion--familia">
+          <span class="ec-occasion__icon" aria-hidden="true">🏡</span>
+          <h3 class="ec-occasion__title">Em família</h3>
+          <p class="ec-occasion__text">Reúna a galera numa tarde de mãos na massa. Aquela bagunça boa que vira memória.</p>
+          <span class="ec-occasion__link">Ver os kits
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
+        </a>
 
-  <!-- ========== NAVEGAÇÃO POR TIPO ========== -->
-  <section class="ec-types">
-    <div class="ec-types__inner">
-      <span class="ec-kicker">Ou navegue por tipo</span>
-      <h2 class="ec-types__title">O que você quer <em>fazer com as mãos?</em></h2>
-      <p class="ec-types__sub">Cada kit chega completo: material, instruções sem pressa e tudo pra você só começar.</p>
-      <div class="ec-types__grid">
-        <a href="#ec-vitrine" class="ec-type" data-tipo="velas">
-          <span class="ec-type__icon" aria-hidden="true">🕯️</span>
-          <span class="ec-type__name">Velas &amp; Aromas</span>
-          <span class="ec-type__hint">Velas, difusores, cera de massagem</span>
-        </a>
-        <a href="#ec-vitrine" class="ec-type" data-tipo="chas">
-          <span class="ec-type__icon" aria-hidden="true">🍵</span>
-          <span class="ec-type__name">Chás &amp; Infusões</span>
-          <span class="ec-type__hint">Blends e rituais de chá</span>
-        </a>
-        <a href="#ec-vitrine" class="ec-type" data-tipo="ceramica">
-          <span class="ec-type__icon" aria-hidden="true">🏺</span>
-          <span class="ec-type__name">Cerâmica &amp; Mãos</span>
-          <span class="ec-type__hint">Modelagem e pintura em peça</span>
-        </a>
-        <a href="#ec-vitrine" class="ec-type" data-tipo="pintura">
-          <span class="ec-type__icon" aria-hidden="true">🎨</span>
-          <span class="ec-type__name">Pintura &amp; Arte</span>
-          <span class="ec-type__hint">Tela, aquarela, arte autoral</span>
-        </a>
-        <a href="#ec-vitrine" class="ec-type" data-tipo="fios">
-          <span class="ec-type__icon" aria-hidden="true">🧶</span>
-          <span class="ec-type__name">Fios &amp; Texturas</span>
-          <span class="ec-type__hint">Macramê, tufting, bordado</span>
-        </a>
-        <a href="#ec-vitrine" class="ec-type" data-tipo="banho">
-          <span class="ec-type__icon" aria-hidden="true">🛁</span>
-          <span class="ec-type__name">Banho &amp; Pele</span>
-          <span class="ec-type__hint">Sabonete, sais, autocuidado</span>
-        </a>
       </div>
     </div>
   </section>
