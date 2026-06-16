@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Elarah em Casa — Kits de experiência faça você mesmo (DIY). Velas, cerâmica, chás e mais: a curadoria Elarah chega na sua casa pra você desacelerar e criar no seu tempo.">
+  <title>Elarah em Casa — Offline is a feeling, agora na sua casa.</title>
+  <meta property="og:title" content="Elarah em Casa — Offline is a feeling, agora na sua casa.">
+  <meta property="og:description" content="Kits de experiência DIY: você abre, desacelera e cria — no conforto de casa, no seu tempo.">
+  <meta property="og:image" content="https://elarah.com.br/assets/logo.png">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="elarah-em-casa.css?v=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body class="ec-body">
+<div class="ec-shell">
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+        <button id="search-btn" class="header__search-btn"></button>
+      </div>
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+          </div>
+        </div>
+        <a href="dia-dos-namorados.html" class="header__nav-link">Dia dos Namorados</a>
+        <a href="singles-day.html" class="header__nav-link" style="color:#c44e3a;font-weight:600;">Single's Day</a>
+        <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:700;">Elarah Kids</a>
+        <a href="elarah-em-casa.html" class="header__nav-link" aria-current="page" style="color:#b9764f;font-weight:700;">Elarah em Casa</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="oferecer.html" class="header__nav-link">Oferecer uma experiencia</a>
+      </nav>
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="ec-hero">
+    <svg class="ec-hero__decor ec-hero__decor--left" viewBox="0 0 60 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <!-- vela acesa -->
+      <path d="M30 8c0 5-4 6-4 10a4 4 0 0 0 8 0c0-4-4-5-4-10z"/>
+      <rect x="22" y="24" width="16" height="26" rx="2"/>
+      <path d="M22 32h16"/>
+    </svg>
+    <svg class="ec-hero__decor ec-hero__decor--right" viewBox="0 0 60 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <!-- xícara de chá -->
+      <path d="M14 26h28v8a14 14 0 0 1-28 0z"/>
+      <path d="M42 28h5a4 4 0 0 1 0 8h-5"/>
+      <path d="M22 14c-2 3 2 4 0 7M30 12c-2 3 2 4 0 7"/>
+    </svg>
+    <div class="ec-hero__inner">
+      <span class="ec-hero__kicker">Elarah em Casa · Kits de experiência</span>
+      <h1 class="ec-hero__title">Traga o offline pra dentro.</h1>
+      <p class="ec-hero__sub">Offline is a feeling — agora na sua casa.</p>
+      <p class="ec-hero__lead">
+        Curadoria Elarah numa caixa. Você abre, desacelera e cria — no
+        conforto de casa, no seu tempo. Porque presença também se vive de pijama.
+      </p>
+      <a href="#ec-vitrine" class="ec-hero__cta">
+        Ver os kits
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ========== COLEÇÕES POR INTENÇÃO ==========
+       Banners temáticos que cruzam os tipos de kit. Cada banner é o
+       espaço pronto pra arte da coleção: troque a imagem em
+       style="background-image:url(...)" no .ec-collection__bg.
+       Estes mesmos banners viram as vitrines sazonais (ex: "A Dois"
+       é a base do Dia dos Namorados). -->
+  <section class="ec-collections" id="ec-colecoes">
+    <div class="ec-collections__inner">
+      <header class="ec-collections__head">
+        <span class="ec-kicker">Coleções por intenção</span>
+        <h2 class="ec-collections__title">Escolha pelo <em>momento</em>, não só pelo produto</h2>
+        <p class="ec-collections__sub">
+          Não vendemos só um kit — montamos o seu ritual. Comece pelo que você está procurando sentir.
+        </p>
+      </header>
+      <div class="ec-collections__grid">
+
+        <a href="#ec-vitrine" class="ec-collection" data-colecao="ritual">
+          <div class="ec-collection__bg" style="background-image:linear-gradient(135deg,#b9764f,#8a9a80);"></div>
+          <div class="ec-collection__overlay"></div>
+          <div class="ec-collection__content">
+            <span class="ec-collection__tag">Ritual</span>
+            <h3 class="ec-collection__title">Ritual da Noite</h3>
+            <p class="ec-collection__desc">Desacelerar antes de dormir. Vela, chá e banho pra fechar o dia com presença.</p>
+            <span class="ec-collection__link">Ver coleção
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </div>
+        </a>
+
+        <a href="#ec-vitrine" class="ec-collection" data-colecao="casulo">
+          <div class="ec-collection__bg" style="background-image:linear-gradient(135deg,#8a9a80,#ecd8c6);"></div>
+          <div class="ec-collection__overlay"></div>
+          <div class="ec-collection__content">
+            <span class="ec-collection__tag">Casulo</span>
+            <h3 class="ec-collection__title">Modo Casulo</h3>
+            <p class="ec-collection__desc">O aconchego de ficar em casa. Chás, tricô e texturas pros dias de se recolher.</p>
+            <span class="ec-collection__link">Ver coleção
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </div>
+        </a>
+
+        <a href="#ec-vitrine" class="ec-collection" data-colecao="a-dois">
+          <div class="ec-collection__bg" style="background-image:linear-gradient(135deg,#a3633f,#b9764f);"></div>
+          <div class="ec-collection__overlay"></div>
+          <div class="ec-collection__content">
+            <span class="ec-collection__tag">A Dois</span>
+            <h3 class="ec-collection__title">Date em Casa</h3>
+            <p class="ec-collection__desc">Trocar o jantar fora por uma noite criando juntos. Um presente e um programa no mesmo box.</p>
+            <span class="ec-collection__link">Ver coleção
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== NAVEGAÇÃO POR TIPO ========== -->
+  <section class="ec-types">
+    <div class="ec-types__inner">
+      <span class="ec-kicker">Ou navegue por tipo</span>
+      <h2 class="ec-types__title">O que você quer <em>fazer com as mãos?</em></h2>
+      <p class="ec-types__sub">Cada kit chega completo: material, instruções sem pressa e tudo pra você só começar.</p>
+      <div class="ec-types__grid">
+        <a href="#ec-vitrine" class="ec-type" data-tipo="velas">
+          <span class="ec-type__icon" aria-hidden="true">🕯️</span>
+          <span class="ec-type__name">Velas &amp; Aromas</span>
+          <span class="ec-type__hint">Velas, difusores, cera de massagem</span>
+        </a>
+        <a href="#ec-vitrine" class="ec-type" data-tipo="chas">
+          <span class="ec-type__icon" aria-hidden="true">🍵</span>
+          <span class="ec-type__name">Chás &amp; Infusões</span>
+          <span class="ec-type__hint">Blends e rituais de chá</span>
+        </a>
+        <a href="#ec-vitrine" class="ec-type" data-tipo="ceramica">
+          <span class="ec-type__icon" aria-hidden="true">🏺</span>
+          <span class="ec-type__name">Cerâmica &amp; Mãos</span>
+          <span class="ec-type__hint">Modelagem e pintura em peça</span>
+        </a>
+        <a href="#ec-vitrine" class="ec-type" data-tipo="pintura">
+          <span class="ec-type__icon" aria-hidden="true">🎨</span>
+          <span class="ec-type__name">Pintura &amp; Arte</span>
+          <span class="ec-type__hint">Tela, aquarela, arte autoral</span>
+        </a>
+        <a href="#ec-vitrine" class="ec-type" data-tipo="fios">
+          <span class="ec-type__icon" aria-hidden="true">🧶</span>
+          <span class="ec-type__name">Fios &amp; Texturas</span>
+          <span class="ec-type__hint">Macramê, tufting, bordado</span>
+        </a>
+        <a href="#ec-vitrine" class="ec-type" data-tipo="banho">
+          <span class="ec-type__icon" aria-hidden="true">🛁</span>
+          <span class="ec-type__name">Banho &amp; Pele</span>
+          <span class="ec-type__hint">Sabonete, sais, autocuidado</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== VITRINE DE PRODUTOS ==========
+       Grid populado por elarah-em-casa.js. Mostra automaticamente
+       qualquer experiência/produto marcado como kit/DIY/em casa.
+       Enquanto não houver produtos, exibe um placeholder elegante. -->
+  <section class="ec-shop" id="ec-vitrine">
+    <div class="ec-shop__inner">
+      <header class="ec-shop__head">
+        <span class="ec-kicker">Vitrine Elarah em Casa</span>
+        <h2 class="ec-shop__title">Kits <em>pra viver em casa</em></h2>
+        <p class="ec-shop__sub">Chega na sua porta. O resto é com você — no seu tempo, sem pressa.</p>
+      </header>
+      <div class="ec-shop__grid" id="ec-grid">
+        <p style="grid-column:1/-1;text-align:center;color:#6a584a;padding:40px 20px;font-style:italic;">Carregando kits…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== COMO FUNCIONA ========== -->
+  <section class="ec-steps">
+    <div class="ec-steps__inner">
+      <h2 class="ec-steps__title">Simples como <em>respirar fundo</em></h2>
+      <div class="ec-steps__grid">
+        <article class="ec-step">
+          <h3 class="ec-step__title">Escolha seu kit</h3>
+          <p class="ec-step__text">Pelo momento que você quer viver ou pelo que quer fazer com as mãos.</p>
+        </article>
+        <article class="ec-step">
+          <h3 class="ec-step__title">Chega em casa</h3>
+          <p class="ec-step__text">Uma caixa com tudo dentro: material, aromas e instruções sem pressa.</p>
+        </article>
+        <article class="ec-step">
+          <h3 class="ec-step__title">Viva seu ritual</h3>
+          <p class="ec-step__text">Desligue o resto, acenda a vela e crie. O mundo lá fora pode esperar.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MANIFESTO ========== -->
+  <section class="ec-manifesto">
+    <div class="ec-manifesto__inner">
+      <svg class="ec-manifesto__mark" viewBox="0 0 32 24" aria-hidden="true">
+        <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+      </svg>
+      <h2 class="ec-manifesto__title">Offline também <em>mora aqui.</em></h2>
+      <p class="ec-manifesto__text">
+        A gente acredita que os melhores momentos acontecem longe das telas —
+        mas eles não precisam acontecer longe de casa. Chega uma caixa, você
+        abre, e por algumas horas o mundo lá fora pode esperar. Sem pressa, sem
+        “fazer certo” — só você, suas mãos e o prazer de viver algo real.
+      </p>
+      <span class="ec-manifesto__signature">— Elarah em Casa</span>
+    </div>
+  </section>
+
+  <!-- ========== CTA FINAL ========== -->
+  <section class="ec-cta-final">
+    <h2 class="ec-cta-final__title">
+      Seu ritual começa<br>
+      <em>quando você quiser.</em>
+    </h2>
+    <p class="ec-cta-final__sub">
+      Acenda a vela. Prepare o chá. Coloque a mão na argila. A Elarah leva a
+      experiência até a sua porta — você só precisa apertar o botão e desacelerar.
+    </p>
+    <a href="#ec-vitrine" class="ec-cta-final__btn">
+      Começar meu ritual
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+      </svg>
+    </a>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+      <div class="footer__socials">
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/></svg>
+        </a>
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+    </div>
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+  </div>
+  <div class="footer__bottom">
+    <p>© 2026 Elarah. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+</div><!-- /.ec-shell -->
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="explorar-menu.js?v=1" defer></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=27"></script>
+<script src="elarah-em-casa.js?v=1"></script>
+</body>
+</html>

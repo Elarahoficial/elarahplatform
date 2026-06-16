@@ -57,6 +57,7 @@ import {
   computeFinancialBreakdown,
   type SupplierRow,
 } from "../_shared/financial.ts";
+import { quoteForService, type ShippingOption } from "../_shared/shipping.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -304,6 +305,15 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // pra exibir no e-mail e admin. Não afetam preço nem estoque.
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+
+  // ===== Frete (kits físicos — Elarah em Casa) =====
+  // Só presente quando o frontend manda `shipping` (fluxo de kit). Pra
+  // experiências presenciais isso NUNCA vem → fluxo intacto. O custo é
+  // SEMPRE recalculado no servidor mais abaixo (quoteForService); aqui
+  // só guardamos a entrada do cliente (endereço + serviço escolhido).
+  const shippingInput = (payload.shipping && typeof payload.shipping === "object")
+    ? (payload.shipping as Record<string, unknown>)
+    : null;
 
   // ===== Método de pagamento =====
   // Esta edge function agora só cuida de cartão. PIX é gerenciado
@@ -1034,6 +1044,49 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     }
   }
 
+  // ===== Frete: recalcula no servidor e adiciona como item =====
+  // Recalcula o custo do serviço escolhido a partir do CEP (não confia
+  // no valor do cliente). Soma ao amountToCharge ANTES do assert, então
+  // a checagem de boundary continua válida.
+  let shippingCents = 0;
+  let shippingResolved: ShippingOption | null = null;
+  if (shippingInput) {
+    const cepDest = String(shippingInput.cep ?? "").replace(/\D+/g, "");
+    const service = String(shippingInput.service ?? "").trim();
+    if (cepDest.length === 8 && service) {
+      shippingResolved = await quoteForService(cepDest, service, {
+        weight_kg: shippingInput.weight_kg != null ? Number(shippingInput.weight_kg) : undefined,
+      });
+    }
+    if (!shippingResolved) {
+      await refundCupomAplicado();
+      await incrementVaga();
+      return jsonResponse(
+        {
+          error: "shipping_unavailable",
+          message: "Não foi possível confirmar o frete. Recalcule o frete e tente de novo.",
+        },
+        422,
+      );
+    }
+    // Custo 0 = frete grátis: coletamos o endereço, mas NÃO adicionamos
+    // line item (Stripe não aceita item de R$0) nem somamos ao total.
+    shippingCents = Math.max(0, shippingResolved.cost_centavos);
+    if (shippingCents > 0) {
+      lineItems.push({
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: shippingCents,
+          product_data: {
+            name: "Frete — " + shippingResolved.carrier + " " + shippingResolved.service,
+          },
+        },
+      });
+      amountToCharge += shippingCents;
+    }
+  }
+
   // Assert defensivo de boundary: a soma dos line_items que vamos
   // submeter pra Stripe TEM que bater com amountToCharge. Se algum
   // refactor futuro quebrar a multiplicação por quantidade, essa
@@ -1122,6 +1175,12 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         valor_comissao_centavos: valorComissaoCentavos != null ? String(valorComissaoCentavos) : "",
         variant_label: variantLabel ?? "",
         variant_selected: variantSelected ?? "",
+        // Frete (kits) — referência curta pro suporte/reconciliação.
+        shipping_service: shippingResolved
+          ? (shippingResolved.carrier + " " + shippingResolved.service)
+          : "",
+        shipping_cost_centavos: shippingCents ? String(shippingCents) : "",
+        shipping_cep: shippingInput ? String(shippingInput.cep ?? "") : "",
       },
     });
   } catch (e) {
@@ -1166,6 +1225,27 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     // pra reaparecer no e-mail e no admin. Não afetam o preço.
     variant_label: variantLabel || undefined,
     variant_selected: variantSelected || undefined,
+    // Frete + endereço de entrega (kits). Vive no metadata (jsonb) pra
+    // o admin ver e despachar — sem depender de migração de colunas.
+    shipping: shippingResolved
+      ? {
+        service: shippingResolved.carrier + " " + shippingResolved.service,
+        cost_centavos: shippingCents,
+        delivery_days: shippingResolved.delivery_days,
+        source: shippingResolved.source,
+        destinatario: String(shippingInput?.destinatario ?? ""),
+        cpf: String(shippingInput?.cpf ?? "").replace(/\D+/g, ""),
+        telefone: String(shippingInput?.telefone ?? "").replace(/\D+/g, ""),
+        cep: String(shippingInput?.cep ?? ""),
+        logradouro: String(shippingInput?.logradouro ?? ""),
+        numero: String(shippingInput?.numero ?? ""),
+        complemento: String(shippingInput?.complemento ?? ""),
+        bairro: String(shippingInput?.bairro ?? ""),
+        cidade: String(shippingInput?.cidade ?? ""),
+        uf: String(shippingInput?.uf ?? ""),
+        ponto_referencia: String(shippingInput?.ponto_referencia ?? ""),
+      }
+      : undefined,
   };
 
   const { error: insertErr } = await supabase.from("bookings").insert({
