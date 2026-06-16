@@ -46,6 +46,9 @@
   function brl(cents) {
     return 'R$ ' + (Number(cents || 0) / 100).toFixed(2).replace('.', ',');
   }
+  function freteLabel(cents) {
+    return Number(cents) > 0 ? brl(cents) : 'Grátis';
+  }
 
   function getIdFromUrl() {
     try {
@@ -127,11 +130,16 @@
       +     '<div class="kc-field"><label>Nome de quem recebe *</label><input type="text" id="kc-dest" autocomplete="name"></div>'
       +     '<div class="kc-field"><label>E-mail *</label><input type="email" id="kc-email" autocomplete="email"></div>'
       +     '<div class="kc-row">'
+      +       '<div class="kc-field"><label>CPF *</label><input type="text" id="kc-cpf" inputmode="numeric" placeholder="000.000.000-00" autocomplete="off"></div>'
+      +       '<div class="kc-field"><label>Celular *</label><input type="tel" id="kc-tel" inputmode="numeric" placeholder="(11) 90000-0000" autocomplete="tel"></div>'
+      +     '</div>'
+      +     '<div class="kc-row">'
       +       '<div class="kc-field"><label>CEP *</label><input type="text" id="kc-cep" inputmode="numeric" placeholder="00000-000" autocomplete="postal-code"></div>'
       +       '<div class="kc-field"><label>Número *</label><input type="text" id="kc-numero" autocomplete="address-line2"></div>'
       +     '</div>'
       +     '<div class="kc-field"><label>Endereço *</label><input type="text" id="kc-logradouro" autocomplete="address-line1"></div>'
-      +     '<div class="kc-field"><label>Complemento</label><input type="text" id="kc-complemento" placeholder="apto, bloco, referência"></div>'
+      +     '<div class="kc-field"><label>Complemento</label><input type="text" id="kc-complemento" placeholder="apto, bloco, casa"></div>'
+      +     '<div class="kc-field"><label>Ponto de referência</label><input type="text" id="kc-referencia" placeholder="opcional — ajuda na entrega"></div>'
       +     '<div class="kc-row">'
       +       '<div class="kc-field"><label>Bairro</label><input type="text" id="kc-bairro"></div>'
       +       '<div class="kc-field"><label>Cidade</label><input type="text" id="kc-cidade"></div>'
@@ -242,7 +250,7 @@
         + '<input type="radio" name="kc-frete" value="' + i + '">'
         + '<span><span class="kc-opt__name">' + esc(o.carrier + ' ' + o.service) + '</span>'
         + (prazo ? '<br><span class="kc-opt__meta">' + esc(prazo) + '</span>' : '') + '</span>'
-        + '<span class="kc-opt__price">' + brl(o.cost_centavos) + '</span>'
+        + '<span class="kc-opt__price">' + freteLabel(o.cost_centavos) + '</span>'
         + '</label>';
     }).join('');
     wrap.querySelectorAll('input[name="kc-frete"]').forEach(function (inp) {
@@ -264,7 +272,7 @@
     document.getElementById('kc-sum-kit').textContent = brl(kitCents);
     document.getElementById('kc-sum-frete-label').textContent =
       'Frete (' + selectedOption.carrier + ' ' + selectedOption.service + ')';
-    document.getElementById('kc-sum-frete').textContent = brl(freteCents);
+    document.getElementById('kc-sum-frete').textContent = freteLabel(freteCents);
     document.getElementById('kc-sum-total').textContent = brl(kitCents + freteCents);
     document.getElementById('kc-summary').style.display = 'block';
     document.getElementById('kc-buy').disabled = false;
@@ -277,11 +285,15 @@
     if (!selectedOption) { setMsg('Escolha uma opção de frete.', true); return; }
     var dest = val('kc-dest');
     var email = val('kc-email');
+    var cpf = val('kc-cpf').replace(/\D+/g, '');
+    var tel = val('kc-tel').replace(/\D+/g, '');
     var cep = val('kc-cep').replace(/\D+/g, '');
     var numero = val('kc-numero');
     var logradouro = val('kc-logradouro');
     if (!dest) { setMsg('Informe o nome de quem recebe.', true); return; }
     if (!email || email.indexOf('@') === -1) { setMsg('Informe um e-mail válido.', true); return; }
+    if (cpf.length !== 11) { setMsg('Informe um CPF válido (11 dígitos) — os Correios exigem pra postar.', true); return; }
+    if (tel.length < 10) { setMsg('Informe um celular válido com DDD.', true); return; }
     if (cep.length !== 8) { setMsg('CEP inválido.', true); return; }
     if (!numero) { setMsg('Informe o número do endereço.', true); return; }
     if (!logradouro) { setMsg('Informe o endereço.', true); return; }
@@ -302,11 +314,14 @@
           experiencia_id: kitExp.id,
           email: email,
           nome: dest,
+          telefone: tel,
           quantidade: 1,
           shipping: {
             service: selectedOption.service,
             weight_kg: KIT_WEIGHT_KG,
             destinatario: dest,
+            cpf: cpf,
+            telefone: tel,
             cep: cep,
             logradouro: logradouro,
             numero: numero,
@@ -314,6 +329,7 @@
             bairro: val('kc-bairro'),
             cidade: val('kc-cidade'),
             uf: val('kc-uf').toUpperCase(),
+            ponto_referencia: val('kc-referencia'),
           },
         }),
       });

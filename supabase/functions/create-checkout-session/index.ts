@@ -1058,7 +1058,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         weight_kg: shippingInput.weight_kg != null ? Number(shippingInput.weight_kg) : undefined,
       });
     }
-    if (!shippingResolved || shippingResolved.cost_centavos <= 0) {
+    if (!shippingResolved) {
       await refundCupomAplicado();
       await incrementVaga();
       return jsonResponse(
@@ -1069,18 +1069,22 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         422,
       );
     }
-    shippingCents = shippingResolved.cost_centavos;
-    lineItems.push({
-      quantity: 1,
-      price_data: {
-        currency: "brl",
-        unit_amount: shippingCents,
-        product_data: {
-          name: "Frete — " + shippingResolved.carrier + " " + shippingResolved.service,
+    // Custo 0 = frete grátis: coletamos o endereço, mas NÃO adicionamos
+    // line item (Stripe não aceita item de R$0) nem somamos ao total.
+    shippingCents = Math.max(0, shippingResolved.cost_centavos);
+    if (shippingCents > 0) {
+      lineItems.push({
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: shippingCents,
+          product_data: {
+            name: "Frete — " + shippingResolved.carrier + " " + shippingResolved.service,
+          },
         },
-      },
-    });
-    amountToCharge += shippingCents;
+      });
+      amountToCharge += shippingCents;
+    }
   }
 
   // Assert defensivo de boundary: a soma dos line_items que vamos
@@ -1230,6 +1234,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         delivery_days: shippingResolved.delivery_days,
         source: shippingResolved.source,
         destinatario: String(shippingInput?.destinatario ?? ""),
+        cpf: String(shippingInput?.cpf ?? "").replace(/\D+/g, ""),
+        telefone: String(shippingInput?.telefone ?? "").replace(/\D+/g, ""),
         cep: String(shippingInput?.cep ?? ""),
         logradouro: String(shippingInput?.logradouro ?? ""),
         numero: String(shippingInput?.numero ?? ""),
@@ -1237,6 +1243,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         bairro: String(shippingInput?.bairro ?? ""),
         cidade: String(shippingInput?.cidade ?? ""),
         uf: String(shippingInput?.uf ?? ""),
+        ponto_referencia: String(shippingInput?.ponto_referencia ?? ""),
       }
       : undefined,
   };

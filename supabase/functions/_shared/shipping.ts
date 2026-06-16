@@ -19,11 +19,11 @@
 // =============================================================
 
 export interface ShippingOption {
-  service: string; // "PAC", "SEDEX" ou nome devolvido pela transportadora
-  carrier: string; // "Correios", etc.
+  service: string; // "PAC", "SEDEX", "Frete grátis" ou nome da transportadora
+  carrier: string; // "Correios", "Elarah", etc.
   cost_centavos: number;
   delivery_days: number;
-  source: "estimativa" | "melhor_envio";
+  source: "estimativa" | "melhor_envio" | "gratis";
 }
 
 export interface ShippingPackage {
@@ -37,6 +37,10 @@ const ORIGIN_CEP = (Deno.env.get("SHIPPING_ORIGIN_CEP") ?? "01310-100").replace(
 const MELHOR_ENVIO_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN") ?? "";
 const MELHOR_ENVIO_BASE =
   (Deno.env.get("MELHOR_ENVIO_BASE") ?? "https://sandbox.melhorenvio.com.br").replace(/\/+$/, "");
+// Modo de frete quando NÃO há token do Melhor Envio:
+//   "free"     → frete grátis (default atual — coleta endereço mesmo assim)
+//   "estimate" → tabela de estimativa por região (ver estimateShipping)
+const SHIPPING_MODE = (Deno.env.get("SHIPPING_MODE") ?? "free").toLowerCase();
 
 const DEFAULT_PKG: Required<ShippingPackage> = {
   weight_kg: 1,
@@ -141,14 +145,30 @@ async function melhorEnvioShipping(cepDest: string, pkg: ShippingPackage): Promi
   }
 }
 
+// Frete grátis — uma opção só, custo zero. Coletamos o endereço do
+// mesmo jeito (necessário pra postar), mas não cobramos pelo envio.
+function freeShipping(): ShippingOption[] {
+  return [{
+    service: "Frete grátis",
+    carrier: "Elarah",
+    cost_centavos: 0,
+    delivery_days: 0,
+    source: "gratis",
+  }];
+}
+
 // Ponto de entrada: devolve as opções de frete pro CEP.
+//   1) Tem token Melhor Envio → preços reais dos Correios.
+//   2) SHIPPING_MODE=estimate → tabela de estimativa por região.
+//   3) Senão → frete grátis (default).
 export async function getShippingOptions(
   cepDest: string,
   pkg: ShippingPackage = {},
 ): Promise<ShippingOption[]> {
   if (!isValidCep(cepDest)) return [];
   if (MELHOR_ENVIO_TOKEN) return await melhorEnvioShipping(cepDest, pkg);
-  return estimateShipping(cepDest, pkg);
+  if (SHIPPING_MODE === "estimate") return estimateShipping(cepDest, pkg);
+  return freeShipping();
 }
 
 // Recalcula o custo de UM serviço escolhido (usado pelo checkout pra
