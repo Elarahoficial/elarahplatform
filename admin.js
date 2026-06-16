@@ -13207,11 +13207,39 @@
     });
   }
 
+  // Ordenação operacional do quadro: pendentes (ainda não contatados) ficam
+  // no topo; assim que a 1ª mensagem é enviada e o status muda, a empresa
+  // "desce" sozinha. Pipeline ativo fica no meio e encerrados/parados no fim.
+  // Empate preserva a ordem de chegada (created_at desc vindo do fetch).
+  const _B2B_BOARD_RANK = {
+    nao_contatado:    0,   // pendente de 1º contato — topo
+    mensagem_enviada: 1,   // pipeline ativo
+    respondeu:        1,
+    reuniao_marcada:  1,
+    proposta_enviada: 1,
+    negociacao:       1,
+    pausado:          2,   // encerrado/parado — fundo
+    fechado:          2,
+    cliente_ativo:    2,
+    recusou:          2,
+  };
+  function _b2bSortForBoard(rows) {
+    // Index decorado garante estabilidade do empate em qualquer engine.
+    return rows
+      .map((p, i) => [p, i])
+      .sort((a, b) => {
+        const ra = _B2B_BOARD_RANK[a[0].status_comercial] ?? 1;
+        const rb = _B2B_BOARD_RANK[b[0].status_comercial] ?? 1;
+        return ra !== rb ? ra - rb : a[1] - b[1];
+      })
+      .map(pair => pair[0]);
+  }
+
   function _b2bRenderTable() {
     const tbody = document.getElementById('b2b-body');
     const countEl = document.getElementById('b2b-count');
     if (!tbody) return;
-    const filtered = _b2bApplyFilters(_b2bState.cache || []);
+    const filtered = _b2bSortForBoard(_b2bApplyFilters(_b2bState.cache || []));
     if (countEl) countEl.textContent = filtered.length + ' empresa' + (filtered.length === 1 ? '' : 's');
 
     if (!filtered.length) {

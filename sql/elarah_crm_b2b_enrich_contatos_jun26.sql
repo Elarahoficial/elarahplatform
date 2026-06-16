@@ -31,22 +31,20 @@
 -- 1) F/Malta ------------------------------------------------------------------
 -- ATENÇÃO: há 2 perfis "Felipe Malta"; este é o rotulado como dono da F/Malta.
 update public.b2b_prospects set
-  contato_whatsapp = '+55 11 4564-5494',
   contato_email    = coalesce(contato_email, 'contato@fmalta.com.br'),
   contato_linkedin = 'https://www.linkedin.com/in/felipe-malta-lefevre-85687144',
   updated_at       = now(),
   observacoes      = case when observacoes like '%[contato jun/2026]%' then observacoes
-    else observacoes || E'\n\n[contato jun/2026] Tel. comercial (11) 4564-5494; e-mail contato@fmalta.com.br. LinkedIn do Felipe ambíguo (existe tb /in/felipemalta atribuído à AMPRO) — usar o slug -lefevre- e conferir antes.' end
+    else observacoes || E'\n\n[contato jun/2026] Sem telefone oficial confirmado — abrir por LinkedIn ou e-mail contato@fmalta.com.br. LinkedIn do Felipe ambíguo (existe tb /in/felipemalta atribuído à AMPRO) — usar o slug -lefevre- e conferir antes.' end
 where lower(nome) = lower('F/Malta');
 
 -- 2) EAÍ?! Content Experience -------------------------------------------------
 update public.b2b_prospects set
-  contato_whatsapp = '+55 11 99363-9180',
   contato_email    = coalesce(contato_email, 'eai@eaimkt.com.br'),
   contato_linkedin = coalesce(contato_linkedin, 'https://www.linkedin.com/in/paulofarnese'),
   updated_at       = now(),
   observacoes      = case when observacoes like '%[contato jun/2026]%' then observacoes
-    else observacoes || E'\n\n[contato jun/2026] Celular/WhatsApp provável (11) 99363-9180; e-mail eai@eaimkt.com.br (RH: vempraca@eaimkt.com.br).' end
+    else observacoes || E'\n\n[contato jun/2026] Sem telefone oficial confirmado — abrir por LinkedIn ou e-mails eai@eaimkt.com.br / RH vempraca@eaimkt.com.br.' end
 where lower(nome) = lower('EAÍ?! Content Experience');
 
 -- 3) Qulture.Rocks ------------------------------------------------------------
@@ -95,22 +93,21 @@ where lower(nome) = lower('Oz estratégia+design');
 
 -- 8) Suno United Creators -----------------------------------------------------
 update public.b2b_prospects set
-  contato_whatsapp = '+55 11 4637-0518',
   contato_linkedin = coalesce(contato_linkedin, 'https://www.linkedin.com/in/carolinagil'),
   updated_at       = now(),
   observacoes      = case when observacoes like '%[contato jun/2026]%' then observacoes
-    else observacoes || E'\n\n[contato jun/2026] Tel. comercial (11) 4637-0518; LinkedIn da Carolina Gil (CHRO): /in/carolinagil.' end
+    else observacoes || E'\n\n[contato jun/2026] Sem telefone oficial confirmado (site só tem e-mail suno@sunocreators.com); LinkedIn da Carolina Gil (CHRO): /in/carolinagil.' end
 where lower(nome) = lower('Suno United Creators');
 
 -- 9) Tech & Soul --------------------------------------------------------------
 update public.b2b_prospects set
-  contato_whatsapp = '+55 11 3477-1993',
+  contato_whatsapp = '+55 11 3031-3131',
   contato_email    = coalesce(contato_email, 'contato@techandsoul.com.br'),
   contato_linkedin = coalesce(contato_linkedin, 'https://www.linkedin.com/in/liliany-samarao-3b822b13'),
   linkedin_empresa = coalesce(linkedin_empresa, 'https://www.linkedin.com/company/techandsoul'),
   updated_at       = now(),
   observacoes      = case when observacoes like '%[contato jun/2026]%' then observacoes
-    else observacoes || E'\n\n[contato jun/2026] Tel. comercial (11) 3477-1993; e-mail contato@techandsoul.com.br; LinkedIn da Liliany Samarão: /in/liliany-samarao-3b822b13. Tel/e-mail via diretórios — reconfirmar.' end
+    else observacoes || E'\n\n[contato jun/2026] Tel. comercial (11) 3031-3131 (confirmado no site oficial); e-mail contato@techandsoul.com.br; LinkedIn da Liliany Samarão: /in/liliany-samarao-3b822b13.' end
 where lower(nome) = lower('Tech & Soul');
 
 -- 10) Galeria.ag --------------------------------------------------------------
@@ -125,12 +122,11 @@ where lower(nome) = lower('Galeria.ag');
 
 -- 11) Twist (twist®) ----------------------------------------------------------
 update public.b2b_prospects set
-  contato_whatsapp = '+55 11 3060-2626',
   contato_email    = coalesce(contato_email, 'contato@twist.com.br'),
   contato_linkedin = coalesce(contato_linkedin, 'https://www.linkedin.com/in/mauropalacios'),
   updated_at       = now(),
   observacoes      = case when observacoes like '%[contato jun/2026]%' then observacoes
-    else observacoes || E'\n\n[contato jun/2026] Tel. comercial (11) 3060-2626; e-mail contato@twist.com.br; LinkedIn do Mauro Palacios: /in/mauropalacios.' end
+    else observacoes || E'\n\n[contato jun/2026] Sem telefone oficial confirmado (site só tem e-mail contato@twist.com.br); LinkedIn do Mauro Palacios: /in/mauropalacios.' end
 where lower(nome) = lower('Twist (twist®)');
 
 -- 12) Papanapa ----------------------------------------------------------------
