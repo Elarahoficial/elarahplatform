@@ -159,8 +159,9 @@ body.ec-body {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.24);
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 1.6rem; margin-bottom: 16px;
+  margin-bottom: 16px;
 }
+.ec-occasion__icon svg { width: 26px; height: 26px; }
 .ec-occasion__title {
   font-family: 'DM Serif Display', serif;
   font-size: 1.55rem; font-weight: 400; margin: 0 0 10px; line-height: 1.12;
