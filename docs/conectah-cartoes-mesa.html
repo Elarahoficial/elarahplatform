@@ -81,9 +81,20 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
+    justify-content:space-between;
     text-align:center;
+    padding:9mm 10mm 8mm;
     box-shadow:0 14px 36px rgba(80,60,30,.22);
+  }
+  /* bloco central (boas-vindas + nome) ocupa o espaço do meio */
+  .center{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    flex:1 1 auto;
   }
   /* moldura fina interna (guia de elegância / corte) */
   .card::after{
@@ -147,56 +158,100 @@
     letter-spacing:.02em;
   }
 
-  /* faixa de logos */
-  .logos{
-    position:absolute;
-    bottom:9mm;
-    left:0; right:0;
+  /* SAL Clinic — logo principal no topo */
+  .hero-logo{
+    position:relative;
+    z-index:2;
+    text-align:center;
+    line-height:1;
+  }
+  .hero-logo .s-main{
+    font-family:'Cormorant Garamond',serif;
+    font-weight:600;
+    font-size:44px;
+    letter-spacing:.2em;
+    color:var(--terra);
+    padding-left:.2em;
+  }
+  .hero-logo .s-sub{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    margin-top:4px;
+    font-family:'Cormorant SC',serif;
+    font-size:11px;
+    letter-spacing:.55em;
+    color:var(--terra-soft);
+    padding-left:.55em;
+  }
+  .hero-logo .s-sub::before,
+  .hero-logo .s-sub::after{
+    content:"";
+    width:20px;
+    height:1px;
+    background:var(--terra-soft);
+  }
+
+  /* faixa de parceiros (Conectah + Elarah) no rodapé */
+  .partners{
+    position:relative;
     z-index:2;
     display:flex;
     align-items:center;
     justify-content:center;
     gap:14px;
   }
-  .logos .sep{ width:1px; height:24px; background:var(--line); }
+  .partners .sep{ width:1px; height:22px; background:var(--line); }
+  .partners-label{
+    position:relative;
+    z-index:2;
+    font-family:'Cormorant SC',serif;
+    font-size:7px;
+    letter-spacing:.4em;
+    color:var(--terra-soft);
+    text-transform:uppercase;
+    margin-bottom:4px;
+    padding-left:.4em;
+  }
 
   /* logo Conectah recriado em vetor */
   .lk-conectah{ text-align:center; line-height:1; }
-  .lk-conectah .c-emblem{ width:46px; height:auto; display:block; margin:0 auto 1px; }
+  .lk-conectah .c-emblem{ width:34px; height:auto; display:block; margin:0 auto 1px; }
   .lk-conectah .c-main{
     font-family:'Cormorant SC',serif;
     font-weight:600;
-    font-size:16px;
-    letter-spacing:.15em;
+    font-size:12px;
+    letter-spacing:.14em;
     color:var(--terra);
   }
   .lk-conectah .c-sub{
     font-family:'Cormorant Garamond',serif;
-    font-size:7.5px;
-    letter-spacing:.26em;
+    font-size:6px;
+    letter-spacing:.24em;
     color:var(--terra);
     text-transform:lowercase;
     margin-top:1px;
   }
   .lk-conectah .c-script{
     font-family:'Allura',cursive;
-    font-size:14px;
+    font-size:11px;
     color:var(--terra-soft);
     margin-top:-1px;
   }
   .lk-conectah .c-tiny{
     font-family:'Cormorant SC',serif;
-    font-size:5.5px;
-    letter-spacing:.22em;
+    font-size:4.5px;
+    letter-spacing:.2em;
     color:var(--terra-soft);
     margin-top:1px;
   }
 
   /* logo Elarah (imagem) */
-  .lk-elarah img{ height:24px; width:auto; display:block; }
+  .lk-elarah img{ height:18px; width:auto; display:block; margin:0 auto; }
   .lk-elarah .e-sub{
     font-family:'Allura',cursive;
-    font-size:11px;
+    font-size:9px;
     color:var(--terra-soft);
     text-align:center;
     margin-top:-1px;
@@ -323,8 +378,16 @@
     <svg class="floral tl" viewBox="0 0 200 270"><use href="#sprig"/></svg>
     <svg class="floral br" viewBox="0 0 200 270"><use href="#sprig"/></svg>`;
 
-  const logos = `
-    <div class="logos">
+  const heroLogo = `
+    <div class="hero-logo">
+      <div class="s-main">SAL</div>
+      <div class="s-sub">CLINIC</div>
+    </div>`;
+
+  const partners = `
+    <div class="partners-wrap">
+      <div class="partners-label">uma experiência em parceria</div>
+      <div class="partners">
       <div class="lk-conectah">
         <svg class="c-emblem" viewBox="0 0 200 118" fill="none" xmlns="http://www.w3.org/2000/svg">
           <!-- arco superior (anel quebrado) -->
@@ -363,10 +426,6 @@
         <img src="${ELARAH_LOGO}" alt="Elarah">
         <div class="e-sub">offline is a feeling</div>
       </div>
-      <span class="sep"></span>
-      <div class="lk-third">
-        <div class="s-main">SAL</div>
-        <div class="s-sub">CLINIC</div>
       </div>
     </div>`;
 
@@ -382,12 +441,15 @@
     <div class="page">
       <div class="card">
         ${floral}
-        <div class="eyebrow">Clínica de Pintura em Taça</div>
-        <div class="eyebrow-sub">seja bem-vinda</div>
-        <div class="name" style="font-size:${fit(n)}px">${n}</div>
-        <div class="divider"><span></span>&#10084;<span></span></div>
-        <div class="tagline">conectando almas através da arte</div>
-        ${logos}
+        ${heroLogo}
+        <div class="center">
+          <div class="eyebrow">Clínica de Pintura em Taça</div>
+          <div class="eyebrow-sub">seja bem-vinda</div>
+          <div class="name" style="font-size:${fit(n)}px">${n}</div>
+          <div class="divider"><span></span>&#10084;<span></span></div>
+          <div class="tagline">conectando almas através da arte</div>
+        </div>
+        ${partners}
       </div>
     </div>`).join('');
 </script>
