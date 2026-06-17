@@ -202,27 +202,33 @@
     margin-top:-1px;
   }
 
-  /* terceiro logo (placeholder editável) */
-  .lk-third{
-    text-align:center;
-    border:1px dashed rgba(169,99,63,.5);
-    border-radius:8px;
-    padding:7px 12px;
-    color:var(--terra);
-  }
-  .lk-third .t-main{
-    font-family:'Cormorant SC',serif;
+  /* terceiro logo — SAL Clinic recriado em vetor */
+  .lk-third{ text-align:center; line-height:1; }
+  .lk-third .s-main{
+    font-family:'Cormorant Garamond',serif;
     font-weight:600;
-    font-size:14px;
-    letter-spacing:.1em;
+    font-size:25px;
+    letter-spacing:.18em;
+    color:var(--olive);
+    padding-left:.18em;
   }
-  .lk-third .t-sub{
-    font-family:'DM Sans',sans-serif;
-    font-size:7px;
-    letter-spacing:.12em;
-    text-transform:uppercase;
-    color:#a99;
-    margin-top:2px;
+  .lk-third .s-sub{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    margin-top:3px;
+    font-family:'Cormorant SC',serif;
+    font-size:8px;
+    letter-spacing:.4em;
+    color:var(--terra);
+    padding-left:.4em;
+  }
+  .lk-third .s-sub::before{
+    content:"";
+    width:16px;
+    height:1px;
+    background:var(--terra-soft);
   }
 
   /* ---------- Impressão ---------- */
@@ -359,8 +365,8 @@
       </div>
       <span class="sep"></span>
       <div class="lk-third">
-        <div class="t-main">3ª EMPRESA</div>
-        <div class="t-sub">seu logo aqui</div>
+        <div class="s-main">SAL</div>
+        <div class="s-sub">CLINIC</div>
       </div>
     </div>`;
 
