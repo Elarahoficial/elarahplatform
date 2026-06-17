@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Eventos corporativos com a Elarah — experiências criativas e presenciais que cuidam da saúde mental do time, promovem descontração, soltam a comunicação e aproximam as pessoas.">
+<title>Eventos corporativos — Elarah</title>
+<link rel="icon" href="assets/logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#F27623;--orange-light:#FF9A4D;--orange-dark:#D4600E;
+    --cream:#FFF8F2;--cream-dark:#FFF0E3;
+    --ink:#2b2118;--ink-soft:#6b5d4f;--line:#efe2d4;--white:#fff;
+    --shadow:0 18px 50px -28px rgba(108,70,20,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:var(--cream);line-height:1.6;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'DM Serif Display',Georgia,serif;font-weight:400;line-height:1.12;letter-spacing:-.01em}
+  .serif-i{font-style:italic}
+  a{color:inherit}
+  img{max-width:100%;display:block}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .eyebrow{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--orange-dark);margin-bottom:18px}
+  .eyebrow--light{color:#ffd9b8}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:15px 30px;border-radius:999px;font-weight:600;font-size:.95rem;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease;cursor:pointer;border:0}
+  .btn--primary{background:var(--orange);color:#fff;box-shadow:0 12px 30px -12px rgba(242,118,35,.7)}
+  .btn--primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(242,118,35,.8)}
+  .btn--ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn--ghost:hover{border-color:var(--orange);color:var(--orange-dark)}
+  .btn--light{background:#fff;color:var(--orange-dark)}
+  .btn--light:hover{transform:translateY(-2px)}
+
+  /* ===== top bar ===== */
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(255,248,242,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar__inner{display:flex;align-items:center;justify-content:space-between;height:78px}
+  .topbar__logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  .topbar__logo img{height:46px;width:auto}
+  .topbar__tag{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);background:var(--cream-dark);padding:5px 11px;border-radius:999px}
+  .topbar__nav{display:flex;gap:26px;align-items:center}
+  .topbar__nav a{font-size:.9rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
+  .topbar__nav a:hover{color:var(--orange-dark)}
+  .topbar__nav .btn{padding:10px 20px}
+  @media(max-width:940px){.topbar__nav a:not(.btn){display:none}}
+
+  /* ===== hero ===== */
+  .hero{position:relative;overflow:hidden;padding:84px 0 76px;
+    background:radial-gradient(900px 480px at 88% -8%,rgba(255,154,77,.28),transparent 60%),radial-gradient(700px 420px at -5% 110%,rgba(242,118,35,.13),transparent 55%),var(--cream)}
+  .hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:54px;align-items:center}
+  .hero h1{font-size:clamp(2.5rem,5.2vw,4rem);margin-bottom:20px}
+  .hero h1 em{color:var(--orange-dark)}
+  .hero__lead{font-size:1.18rem;color:var(--ink-soft);max-width:548px;margin-bottom:30px}
+  .hero__actions{display:flex;gap:14px;flex-wrap:wrap}
+  .hero__visual{position:relative;height:450px}
+  .hero__visual img{position:absolute;border-radius:22px;box-shadow:var(--shadow);object-fit:cover}
+  .hero__visual .v1{width:54%;height:80%;top:0;right:0;z-index:1}
+  .hero__visual .v2{width:48%;height:58%;bottom:0;left:0;z-index:3;border:6px solid var(--cream)}
+  .hero__visual .v3{width:43%;height:45%;top:0;left:2%;z-index:2;border:6px solid var(--cream)}
+  @media(max-width:860px){.hero__grid{grid-template-columns:1fr;gap:40px}.hero__visual{height:330px;order:-1}}
+
+  /* ===== sections ===== */
+  section{padding:80px 0}
+  .section-head{max-width:730px;margin-bottom:46px}
+  .section-head--center{margin-left:auto;margin-right:auto;text-align:center}
+  .section-head h2{font-size:clamp(2rem,3.6vw,2.9rem);margin-bottom:16px}
+  .section-head p{font-size:1.1rem;color:var(--ink-soft)}
+  .lead-narrow{max-width:760px}
+  .soft{background:var(--cream-dark)}
+  .ink-bg{background:linear-gradient(150deg,#3a2a1c,#241810);color:#f6ece2}
+  .ink-bg h2{color:#fff}.ink-bg .section-head p{color:#d9c7b6}
+
+  /* ===== pillars ===== */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  .pillar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px 24px;box-shadow:0 10px 30px -24px rgba(108,70,20,.5)}
+  .pillar__ic{width:48px;height:48px;border-radius:13px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--orange-dark)}
+  .pillar h3{font-size:1.18rem;margin-bottom:9px}
+  .pillar p{color:var(--ink-soft);font-size:.95rem}
+  @media(max-width:860px){.pillars{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.pillars{grid-template-columns:1fr}}
+
+  /* ===== track (audience blocks) ===== */
+  .track{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center}
+  .track--rev .track__media{order:2}
+  .track__media{position:relative}
+  .track__media img{border-radius:22px;box-shadow:var(--shadow);height:480px;width:100%;object-fit:cover}
+  .track__badge{position:absolute;right:-20px;bottom:26px;background:#fff;border-radius:16px;padding:15px 20px;box-shadow:var(--shadow);max-width:220px;border:1px solid var(--line);z-index:4}
+  .track--rev .track__badge{right:auto;left:-20px}
+  .track__badge strong{display:block;font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--orange-dark)}
+  .track__badge span{font-size:.84rem;color:var(--ink-soft)}
+  .track h2{font-size:clamp(1.9rem,3.4vw,2.7rem);margin-bottom:14px}
+  .track__intro{font-size:1.08rem;color:var(--ink-soft);margin-bottom:22px;max-width:520px}
+  .mini-h{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);margin:0 0 14px}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .tag{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.85rem;color:var(--ink);font-weight:500}
+  .soft .tag{background:#fff}
+  .checklist{list-style:none;margin:0 0 26px}
+  .checklist li{position:relative;padding-left:30px;margin-bottom:12px;font-size:1rem;color:var(--ink)}
+  .checklist svg{position:absolute;left:0;top:3px;color:var(--orange)}
+  @media(max-width:1180px){.track__badge{right:10px;bottom:16px}.track--rev .track__badge{left:10px}}
+  @media(max-width:860px){.track{grid-template-columns:1fr;gap:34px}.track--rev .track__media{order:0}.track__media img{height:360px}}
+
+  /* ===== formats ===== */
+  .formats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .format{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 22px;box-shadow:0 10px 30px -24px rgba(108,70,20,.5)}
+  .format h3{font-size:1.16rem;margin-bottom:8px}
+  .format p{font-size:.92rem;color:var(--ink-soft)}
+  @media(max-width:860px){.formats{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.formats{grid-template-columns:1fr}}
+
+  /* ===== quote band ===== */
+  .quote{max-width:840px;margin:0 auto;text-align:center}
+  .quote p{font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,3vw,2.1rem);line-height:1.3;color:#fff}
+  .quote .pills{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+  .quote .pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:9px 18px;font-size:.9rem;color:#f6ece2}
+
+  /* ===== cta ===== */
+  .cta{background:linear-gradient(135deg,var(--orange),var(--orange-dark));color:#fff;border-radius:28px;padding:62px 48px;text-align:center}
+  .cta h2{color:#fff;font-size:clamp(2rem,4vw,3rem);margin-bottom:16px}
+  .cta p{font-size:1.15rem;color:#fff;opacity:.95;max-width:580px;margin:0 auto 30px}
+  .cta__actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  /* ===== footer ===== */
+  footer{padding:46px 0;border-top:1px solid var(--line)}
+  .footer__inner{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .footer__inner img{height:26px}
+  .footer__inner p{font-size:.86rem;color:var(--ink-soft)}
+  .footer__inner a{color:var(--orange-dark);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="#topo" class="topbar__logo">
+      <img src="assets/logo.png" alt="Elarah">
+      <span class="topbar__tag">Corporativo</span>
+    </a>
+    <nav class="topbar__nav">
+      <a href="#por-que">Por que importa</a>
+      <a href="#time">Para o time</a>
+      <a href="#empresa">Para a empresa</a>
+      <a href="#experiencias">Experiências</a>
+      <a href="#contato" class="btn btn--primary">Levar pra empresa</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="topo">
+  <div class="wrap hero__grid">
+    <div>
+      <span class="eyebrow">Eventos corporativos</span>
+      <h1>Um time mais <em>presente</em>, leve e conectado.</h1>
+      <p class="hero__lead">
+        A Elarah leva uma experiência criativa e presencial para a sua empresa — um momento de
+        <strong>descontração</strong> que cuida da <strong>saúde mental</strong>, solta a comunicação
+        e aproxima as pessoas de verdade. Longe das telas, longe do óbvio.
+      </p>
+      <div class="hero__actions">
+        <a href="#contato" class="btn btn--primary">Levar para minha empresa</a>
+        <a href="#experiencias" class="btn btn--ghost">Ver experiências</a>
+      </div>
+    </div>
+    <div class="hero__visual">
+      <img class="v1" src="assets/ceramica.jpg" alt="Equipe em experiência criativa" loading="lazy">
+      <img class="v2" src="assets/casal8.jpg" alt="Colegas criando juntos" loading="lazy">
+      <img class="v3" src="assets/aulateatro.jpg" alt="Oficina de expressão e comunicação" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- ===== POR QUE IMPORTA (4 teclas) ===== -->
+<section id="por-que">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Por que faz diferença</span>
+      <h2>Trabalho bom também é sobre gente.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Em meio a reuniões, metas e telas, um respiro criativo faz mais pelo time do que parece.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>
+        </div>
+        <h3>Saúde mental</h3>
+        <p>Um momento pra desacelerar, baixar o estresse e cuidar do bem-estar — corpo e mente agradecem.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+        </div>
+        <h3>Descontração</h3>
+        <p>Longe do e-mail e das reuniões, o time relaxa, ri junto e recarrega as energias de verdade.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.5A8.4 8.4 0 1 1 21 11.5z"/></svg>
+        </div>
+        <h3>Comunicação &amp; oratória</h3>
+        <p>Apresentar a própria criação e trocar ideias em grupo solta a fala de um jeito leve e natural.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Conexão entre pessoas</h3>
+        <p>Colegas que criam juntos quebram o gelo, criam laços e voltam mais unidos para o dia a dia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PARA O TIME ===== -->
+<section class="soft" id="time">
+  <div class="wrap track">
+    <div class="track__media">
+      <img src="assets/ceramica.jpg" alt="Funcionários se divertindo em experiência criativa" loading="lazy">
+      <div class="track__badge">
+        <strong>Pra você</strong>
+        <span>uma pausa que faz bem de verdade</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">Para quem participa</span>
+      <h2>Um dia que o time <span class="serif-i">vai querer repetir</span>.</h2>
+      <p class="track__intro">
+        Esquece o happy hour de sempre. Uma experiência Elarah é leve, divertida e significativa —
+        todo mundo coloca a mão na massa, relaxa, conversa com gente que mal via no corredor e sai
+        com algo feito por si (e com o astral lá em cima).
+      </p>
+      <p class="mini-h">O que você leva pra casa</p>
+      <div class="tags">
+        <span class="tag">Menos estresse</span>
+        <span class="tag">Mais bom humor</span>
+        <span class="tag">Criatividade ativada</span>
+        <span class="tag">Gente nova pra conversar</span>
+        <span class="tag">Mais confiança pra se expressar</span>
+        <span class="tag">Uma lembrança feita à mão</span>
+      </div>
+      <a href="#contato" class="btn btn--primary">Quero isso no meu trabalho</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PARA A EMPRESA ===== -->
+<section id="empresa">
+  <div class="wrap track track--rev">
+    <div class="track__media">
+      <img src="assets/casal8.jpg" alt="Equipe colaborando em uma experiência" loading="lazy">
+      <div class="track__badge">
+        <strong>Pro RH</strong>
+        <span>bem-estar e cultura, sem logística</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">Para o RH e a liderança</span>
+      <h2>Cuidar das pessoas <span class="serif-i">é estratégia</span>.</h2>
+      <p class="track__intro">
+        Investir em bem-estar e cultura não é custo — é o que mantém o time engajado, criativo e por
+        perto. E a Elarah cuida de toda a curadoria e logística para você, do conceito à execução.
+      </p>
+      <ul class="checklist">
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Mais engajamento e clima organizacional</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Times que se conhecem e colaboram melhor entre áreas</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Saúde mental e bem-estar colocados em prática</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Retenção de talentos e employer branding</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Evento memorável que vira conteúdo para a empresa</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Zero dor de cabeça: a Elarah organiza tudo, no seu formato</li>
+      </ul>
+      <a href="#contato" class="btn btn--primary">Solicitar uma proposta</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== QUOTE BAND ===== -->
+<section class="ink-bg">
+  <div class="wrap quote">
+    <span class="eyebrow eyebrow--light">Bem-estar no trabalho</span>
+    <p>"Gente que se sente bem trabalha melhor. Quando o time vive algo junto, ele volta mais motivado, mais unido e com a cabeça mais leve."</p>
+    <div class="pills">
+      <span class="pill">Menos estresse</span>
+      <span class="pill">Mais colaboração</span>
+      <span class="pill">Cultura mais forte</span>
+      <span class="pill">Time mais feliz</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== EXPERIÊNCIAS ===== -->
+<section class="soft" id="experiencias">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">O que a gente leva</span>
+      <h2>Experiências para todo tipo de time.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Adaptamos a vivência ao tamanho do grupo, ao objetivo e ao perfil da empresa.</p>
+    </div>
+    <div class="tags" style="justify-content:center;max-width:880px;margin:0 auto 12px;">
+      <span class="tag">Gastronomia em equipe</span>
+      <span class="tag">Coquetelaria &amp; mixology</span>
+      <span class="tag">Confeitaria &amp; brunch</span>
+      <span class="tag">Pintura (tela &amp; taça)</span>
+      <span class="tag">Cerâmica &amp; modelagem</span>
+      <span class="tag">Oficina de expressão &amp; oratória</span>
+      <span class="tag">Velas &amp; aromas</span>
+      <span class="tag">Arranjos florais</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FORMATOS ===== -->
+<section id="formatos">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Formatos</span>
+      <h2>Do jeito que faz sentido pra empresa.</h2>
+    </div>
+    <div class="formats">
+      <div class="format">
+        <h3>No seu escritório</h3>
+        <p>A gente leva a experiência completa para dentro da empresa — sem ninguém precisar se deslocar.</p>
+      </div>
+      <div class="format">
+        <h3>Em um espaço Elarah</h3>
+        <p>Tira o time da rotina e leva para um ambiente pensado para criar e relaxar.</p>
+      </div>
+      <div class="format">
+        <h3>Oficina de comunicação</h3>
+        <p>Experiências focadas em soltar a oratória, a expressão e a desenvoltura em grupo.</p>
+      </div>
+      <div class="format">
+        <h3>Datas da empresa</h3>
+        <p>Kickoff, fim de ano, aniversário da empresa, integração de novos times e celebrações.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMO FUNCIONA ===== -->
+<section class="soft" id="como-funciona">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Simples para o RH, inesquecível para o time.</h2>
+    </div>
+    <div class="formats" style="grid-template-columns:repeat(3,1fr)">
+      <div class="format">
+        <h3>1 · Conta pra gente</h3>
+        <p>Tamanho do time, objetivo (integração, bem-estar, celebração), data e formato preferido.</p>
+      </div>
+      <div class="format">
+        <h3>2 · A Elarah monta tudo</h3>
+        <p>Curadoria da experiência, profissionais, materiais, espaço e organização — proposta sob medida.</p>
+      </div>
+      <div class="format">
+        <h3>3 · O time vive o dia</h3>
+        <p>É só reunir as pessoas. A gente conduz do começo ao fim e todo mundo sai com uma criação na mão.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section id="contato">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Vamos cuidar do seu time?</h2>
+      <p>Conta pra gente sobre a sua empresa e o que você quer proporcionar — a Elarah monta uma experiência corporativa sob medida.</p>
+      <div class="cta__actions">
+        <a class="btn btn--light" href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Quero%20levar%20uma%20experi%C3%AAncia%20corporativa%20da%20Elarah%20para%20a%20minha%20empresa." target="_blank" rel="noopener">Falar no WhatsApp</a>
+        <a class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.6)" href="https://mail.google.com/mail/?view=cm&fs=1&to=contato.elarah@gmail.com&su=Evento%20corporativo%20com%20a%20Elarah" target="_blank" rel="noopener">Solicitar proposta por e-mail</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap footer__inner">
+    <img src="assets/logo.png" alt="Elarah">
+    <p>Offline is a feeling. — © 2026 Elarah · <a href="https://wa.me/5511914455930" target="_blank" rel="noopener">+55 11 91445-5930</a> · <a href="https://mail.google.com/mail/?view=cm&fs=1&to=contato.elarah@gmail.com" target="_blank" rel="noopener">contato.elarah@gmail.com</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
