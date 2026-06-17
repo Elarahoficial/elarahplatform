@@ -130,6 +130,14 @@
     margin-top:-2px;
   }
 
+  .invites{
+    position:relative; z-index:2;
+    font-family:'Allura',cursive;
+    font-size:30px;
+    color:var(--terra-soft);
+    margin-bottom:2px;
+  }
+
   .name{
     position:relative; z-index:2;
     font-family:'Cormorant Garamond',serif;
@@ -137,25 +145,25 @@
     font-size:52px;
     line-height:1.02;
     color:var(--ink);
-    margin:14px 0 10px;
+    margin:8px 0 14px;
     padding:0 16mm;
   }
 
-  .divider{
+  .rule{
     position:relative; z-index:2;
-    display:flex; align-items:center; gap:9px;
-    color:var(--olive);
-    margin-bottom:6px;
+    width:46px; height:1px;
+    background:var(--terra-soft);
+    margin-bottom:14px;
   }
-  .divider span{ display:block; width:34px; height:1px; background:var(--line); }
 
   .tagline{
     position:relative; z-index:2;
-    font-family:'Cormorant Garamond',serif;
-    font-style:italic;
-    font-size:15px;
+    font-family:'Cormorant SC',serif;
+    font-size:11px;
+    letter-spacing:.32em;
+    text-transform:uppercase;
     color:#8a7b62;
-    letter-spacing:.02em;
+    padding-left:.32em;
   }
 
   /* SAL Clinic — logo principal no topo */
@@ -440,14 +448,12 @@
   document.getElementById('cards').innerHTML = names.map(n => `
     <div class="page">
       <div class="card">
-        ${floral}
         ${heroLogo}
         <div class="center">
-          <div class="eyebrow">Clínica de Pintura em Taça</div>
-          <div class="eyebrow-sub">seja bem-vinda</div>
+          <div class="invites">convida&hellip;</div>
           <div class="name" style="font-size:${fit(n)}px">${n}</div>
-          <div class="divider"><span></span>&#10084;<span></span></div>
-          <div class="tagline">conectando almas através da arte</div>
+          <div class="rule"></div>
+          <div class="tagline">para um momento de conexão off&#8209;line</div>
         </div>
         ${partners}
       </div>
