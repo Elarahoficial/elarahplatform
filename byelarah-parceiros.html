@@ -110,6 +110,14 @@
   /* ===== about / belief ===== */
   .prose p{font-size:1.12rem;color:var(--ink-soft);margin-bottom:18px;max-width:760px}
   .prose strong{color:var(--ink)}
+  .about-grid{display:grid;grid-template-columns:1fr .92fr;gap:56px;align-items:center}
+  .about-gallery{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;height:440px}
+  .about-gallery figure{position:relative;margin:0;overflow:hidden;border-radius:16px;box-shadow:var(--shadow)}
+  .about-gallery img{width:100%;height:100%;object-fit:cover}
+  .about-gallery figure:nth-child(1){border-top-left-radius:42px}
+  .about-gallery figure:nth-child(4){border-bottom-right-radius:42px}
+  .about-gallery figcaption{position:absolute;left:10px;bottom:10px;background:rgba(255,248,242,.92);color:var(--orange-dark);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 11px;border-radius:999px}
+  @media(max-width:860px){.about-grid{grid-template-columns:1fr;gap:34px}.about-gallery{height:330px;order:-1}}
 
   .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:14px}
   .pillar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px 26px;box-shadow:0 10px 30px -24px rgba(108,70,20,.5)}
@@ -246,25 +254,33 @@
 
 <!-- ===== SOBRE A ELARAH ===== -->
 <section id="sobre">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Sobre a Elarah</span>
-      <h2>Menos rotina. <span class="serif-i">Mais presença.</span></h2>
-      <p>A Elarah nasceu para conectar pessoas a experiências criativas, presenciais e fora do óbvio.
-         Um convite para sair do automático e viver algo real.</p>
+  <div class="wrap about-grid">
+    <div>
+      <div class="section-head" style="margin-bottom:26px">
+        <span class="eyebrow">Sobre a Elarah</span>
+        <h2>Menos rotina. <span class="serif-i">Mais presença.</span></h2>
+        <p>A Elarah nasceu para conectar pessoas a experiências criativas, presenciais e fora do óbvio.
+           Um convite para sair do automático e viver algo real.</p>
+      </div>
+      <div class="prose">
+        <p>
+          Em um mundo cada vez mais acelerado, digital e cheio de distrações, a Elarah é uma
+          <strong>curadoria de experiências offline</strong> que devolve às pessoas aquilo que falta
+          na rotina: presença, troca, criatividade e conexão real.
+        </p>
+        <p>
+          Reunimos vivências autorais e especiais em um só lugar — cerâmica, pintura, gastronomia,
+          velas, floral e tantas outras — transformando tempo em memória. Cada experiência é pensada
+          para gerar conexão: com a cidade, com outras pessoas, com o fazer manual e com o prazer de
+          viver algo fora das telas.
+        </p>
+      </div>
     </div>
-    <div class="prose">
-      <p>
-        Em um mundo cada vez mais acelerado, digital e cheio de distrações, a Elarah é uma
-        <strong>curadoria de experiências offline</strong> que devolve às pessoas aquilo que falta
-        na rotina: presença, troca, criatividade e conexão real.
-      </p>
-      <p>
-        Reunimos vivências autorais e especiais em um só lugar — cerâmica, pintura, gastronomia,
-        velas, floral e tantas outras — transformando tempo em memória. Cada experiência é pensada
-        para gerar conexão: com a cidade, com outras pessoas, com o fazer manual e com o prazer de
-        viver algo fora das telas.
-      </p>
+    <div class="about-gallery">
+      <figure><img src="assets/torno.jpg" alt="Cerâmica" loading="lazy"><figcaption>Cerâmica</figcaption></figure>
+      <figure><img src="assets/pinturataca.jpg" alt="Pintura" loading="lazy"><figcaption>Pintura</figcaption></figure>
+      <figure><img src="assets/risoto.jpg" alt="Gastronomia" loading="lazy"><figcaption>Gastronomia</figcaption></figure>
+      <figure><img src="assets/velaaromatica.jpg" alt="Velas" loading="lazy"><figcaption>Velas</figcaption></figure>
     </div>
   </div>
 </section>
