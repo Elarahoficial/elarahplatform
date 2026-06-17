@@ -123,9 +123,11 @@
   .define__media{position:relative}
   .define__media img{border-radius:22px;box-shadow:var(--shadow);height:460px;width:100%;object-fit:cover}
   .define__badge{
-    position:absolute;left:-18px;bottom:26px;background:#fff;border-radius:16px;
-    padding:16px 20px;box-shadow:var(--shadow);max-width:230px;border:1px solid var(--line);
+    position:absolute;left:-72px;bottom:20px;background:#fff;border-radius:16px;
+    padding:16px 20px;box-shadow:var(--shadow);max-width:220px;border:1px solid var(--line);z-index:4;
   }
+  /* abaixo de 1180px o overhang sairia da tela — recolhe pra dentro */
+  @media(max-width:1180px){.define__badge{left:10px;bottom:16px}}
   .define__badge strong{display:block;font-family:'DM Serif Display',serif;font-size:1.45rem;color:var(--orange-dark)}
   .define__badge span{font-size:.84rem;color:var(--ink-soft)}
   .define h2{font-size:clamp(2rem,3.6vw,2.9rem);margin-bottom:18px}
@@ -135,6 +137,7 @@
   .equation .chip{background:var(--cream-dark);border:1px solid var(--line);border-radius:12px;padding:12px 18px;font-weight:600;font-size:.95rem}
   .equation .op{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--orange)}
   .equation .chip--accent{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .equation-note{font-size:.93rem;color:var(--ink-soft);margin-top:16px;max-width:560px}
   @media(max-width:860px){.define{grid-template-columns:1fr;gap:36px}.define__media img{height:340px}}
 
   /* ===== steps ===== */
@@ -326,12 +329,13 @@
         </p>
       </div>
       <div class="equation">
-        <span class="chip">A curadoria Elarah</span>
+        <span class="chip">A curadoria da Elarah</span>
         <span class="op">+</span>
-        <span class="chip">O espaço &amp; talento do parceiro</span>
+        <span class="chip">os parceiros certos para cada projeto</span>
         <span class="op">=</span>
         <span class="chip chip--accent">uma experiência única, By Elarah</span>
       </div>
+      <p class="equation-note">Um espaço, um profissional, uma marca — sozinhos ou combinados. Cada parceria é montada do jeito que faz sentido para aquela experiência.</p>
     </div>
   </div>
 </section>
