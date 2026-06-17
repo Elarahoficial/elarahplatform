@@ -160,28 +160,36 @@
   }
   .logos .sep{ width:1px; height:24px; background:var(--line); }
 
-  /* logo Conectah recriado em texto */
+  /* logo Conectah recriado em vetor */
   .lk-conectah{ text-align:center; line-height:1; }
+  .lk-conectah .c-emblem{ width:46px; height:auto; display:block; margin:0 auto 1px; }
   .lk-conectah .c-main{
     font-family:'Cormorant SC',serif;
     font-weight:600;
-    font-size:17px;
-    letter-spacing:.16em;
+    font-size:16px;
+    letter-spacing:.15em;
     color:var(--olive);
   }
   .lk-conectah .c-sub{
     font-family:'Cormorant Garamond',serif;
-    font-size:8px;
-    letter-spacing:.28em;
+    font-size:7.5px;
+    letter-spacing:.26em;
     color:var(--terra);
     text-transform:lowercase;
-    margin-top:2px;
+    margin-top:1px;
   }
   .lk-conectah .c-script{
     font-family:'Allura',cursive;
-    font-size:15px;
+    font-size:14px;
     color:var(--olive-soft);
     margin-top:-1px;
+  }
+  .lk-conectah .c-tiny{
+    font-family:'Cormorant SC',serif;
+    font-size:5.5px;
+    letter-spacing:.22em;
+    color:var(--olive-soft);
+    margin-top:1px;
   }
 
   /* logo Elarah (imagem) */
@@ -312,9 +320,37 @@
   const logos = `
     <div class="logos">
       <div class="lk-conectah">
+        <svg class="c-emblem" viewBox="0 0 200 118" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- arco superior (anel quebrado) -->
+          <path d="M28 60 C 40 22, 160 22, 172 60" stroke="#7d8a6c" stroke-width="2" stroke-linecap="round"/>
+          <!-- ramo de oliveira -->
+          <path d="M40 104 C 52 80, 60 58, 78 40" stroke="#6b7a58" stroke-width="2.2" stroke-linecap="round"/>
+          <g fill="#7d8a6c">
+            <ellipse cx="52" cy="86" rx="9" ry="4.6" transform="rotate(40 52 86)"/>
+            <ellipse cx="62" cy="68" rx="9" ry="4.6" transform="rotate(52 62 68)"/>
+            <ellipse cx="72" cy="50" rx="8" ry="4.2" transform="rotate(60 72 50)"/>
+            <ellipse cx="80" cy="36" rx="6.5" ry="3.6" transform="rotate(66 80 36)"/>
+          </g>
+          <g fill="#5f6f52">
+            <ellipse cx="44" cy="92" rx="8" ry="4.2" transform="rotate(8 44 92)"/>
+            <ellipse cx="56" cy="74" rx="8" ry="4.2" transform="rotate(20 56 74)"/>
+            <ellipse cx="66" cy="56" rx="7.5" ry="4" transform="rotate(30 66 56)"/>
+          </g>
+          <!-- pincel -->
+          <g>
+            <line x1="150" y1="22" x2="118" y2="92" stroke="#8a5a33" stroke-width="3.4" stroke-linecap="round"/>
+            <line x1="139" y1="46" x2="129" y2="68" stroke="#c9a96a" stroke-width="5" stroke-linecap="round"/>
+            <path d="M126 70 C 120 80, 116 88, 116 96 C 122 92, 130 84, 132 74 Z" fill="#a9633f"/>
+          </g>
+          <!-- paleta -->
+          <path d="M92 96 C 92 86, 104 82, 116 86 C 128 90, 130 100, 120 104 C 116 106, 116 102, 112 103 C 102 106, 92 104, 92 96 Z" fill="#b07a4c" opacity=".9"/>
+          <circle cx="101" cy="95" r="2.2" fill="#6b7a58"/>
+          <circle cx="109" cy="92" r="2.2" fill="#a9633f"/>
+        </svg>
         <div class="c-main">CONECTAH</div>
         <div class="c-sub">ateliê de artes</div>
         <div class="c-script">workshop</div>
+        <div class="c-tiny">CONECTANDO ALMAS</div>
       </div>
       <span class="sep"></span>
       <div class="lk-elarah">
