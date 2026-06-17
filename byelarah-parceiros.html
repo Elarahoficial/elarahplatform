@@ -59,9 +59,9 @@
     position:sticky;top:0;z-index:50;background:rgba(255,248,242,.82);
     backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
   }
-  .topbar__inner{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .topbar__inner{display:flex;align-items:center;justify-content:space-between;height:78px}
   .topbar__logo{display:flex;align-items:center;gap:11px;text-decoration:none}
-  .topbar__logo img{height:30px;width:auto}
+  .topbar__logo img{height:46px;width:auto}
   .topbar__tag{
     font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
     color:var(--orange-dark);background:var(--cream-dark);padding:5px 11px;border-radius:999px;
@@ -169,7 +169,8 @@
   .cat{background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px;transition:transform .18s,box-shadow .18s}
   .cat:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
   .cat__head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-  .cat__emoji{font-size:1.7rem;width:52px;height:52px;border-radius:14px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center}
+  .cat__emoji{width:54px;height:54px;border-radius:15px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;color:var(--orange-dark);flex:none}
+  .cat__emoji svg{width:27px;height:27px}
   .cat__head h3{font-size:1.4rem}
   .cat__head span{display:block;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--orange-dark);margin-top:2px}
   .cat p.cat__desc{color:var(--ink-soft);font-size:.95rem;margin-bottom:16px}
@@ -471,7 +472,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🎨</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0 0 18 2 2 0 0 0 2-2 2 2 0 0 1 2-2h1.2A3.8 3.8 0 0 0 21 11.2 9 9 0 0 0 12 3z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="9.8" cy="7.4" r="1"/><circle cx="14.6" cy="7.4" r="1"/></svg></span>
           <div><h3>Pintura</h3><span>Tela &amp; superfícies</span></div>
         </div>
         <p class="cat__desc">Pintar é o nosso clássico — e cabe em quase qualquer superfície.</p>
@@ -490,7 +491,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🏺</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1.2 3.2C16 7.3 17 9.4 17 12a5 5 0 0 1-10 0c0-2.6 1-4.7 3.2-5.8z"/><path d="M8 11h8"/></svg></span>
           <div><h3>Cerâmica</h3><span>Mãos na argila</span></div>
         </div>
         <p class="cat__desc">Do torno à modelagem livre, criar com as próprias mãos e ver a peça nascer.</p>
@@ -505,7 +506,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🍝</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 11v10M16 3c-1.7 0-2.8 1.8-2.8 4.2S14.3 11 16 11v10"/></svg></span>
           <div><h3>Gastronomia</h3><span>Mão na massa</span></div>
         </div>
         <p class="cat__desc">Da cozinha do dia a dia às cozinhas do mundo e à confeitaria.</p>
@@ -521,7 +522,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🍸</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-8 8z"/><path d="M12 13v6M8 21h8M14 5l3-2"/></svg></span>
           <div><h3>Bartenderia</h3><span>Coquetelaria</span></div>
         </div>
         <p class="cat__desc">Drinks autorais e harmonizações que viram um ótimo happy hour.</p>
@@ -536,7 +537,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🕯️</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c2.6 2.6 4 4.8 4 7a4 4 0 0 1-8 0c0-1 .5-2 1.4-2.9.4.9.9 1.3 1.4 1.4-.3-2 .6-3.9 1.2-5.5z"/><path d="M9 13.5h6V21H9z"/><path d="M7 21h10"/></svg></span>
           <div><h3>Velas</h3><span>Aromas &amp; luz</span></div>
         </div>
         <p class="cat__desc">Criação sensorial de velas, do derretimento da cera ao aroma final.</p>
@@ -550,7 +551,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🌸</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="2.2"/><path d="M12 5.8C12 4 13 3 14.3 3.4s1.3 2 .1 3M12 5.8C12 4 11 3 9.7 3.4S8.4 5.4 9.6 6.4M14.2 9.4c1.6-.9 3 .1 2.9 1.4s-1.6 1.7-3 .9M9.8 9.4c-1.6-.9-3 .1-2.9 1.4s1.6 1.7 3 .9M12 10.2V21"/></svg></span>
           <div><h3>Floral</h3><span>Flores &amp; verde</span></div>
         </div>
         <p class="cat__desc">Arranjos e composições que trazem natureza para perto.</p>
@@ -564,7 +565,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🧶</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M5 9.5c4 1 10.5 4 13.5 8.2M3.6 13.2c3.3.2 8.4 2.3 11.2 6.6M8.6 4.4c3 2.2 7.8 7.2 9.7 12.4"/></svg></span>
           <div><h3>Têxtil &amp; Fibras</h3><span>Fios &amp; nós</span></div>
         </div>
         <p class="cat__desc">Técnicas manuais relaxantes que rendem peças decorativas únicas.</p>
@@ -578,7 +579,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">🧼</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 5.5 6.8 5.5 10.5a5.5 5.5 0 0 1-11 0C6.5 9.8 9 7 12 3z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/></svg></span>
           <div><h3>Sabonetes &amp; Aromas</h3><span>Sensorial</span></div>
         </div>
         <p class="cat__desc">Vivências sensoriais para criar aromas e produtos artesanais.</p>
@@ -592,7 +593,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">💍</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10l3.5 5.2L12 21 3.5 8.2z"/><path d="M3.5 8.2h17M9 3 7 8.2 12 21M15 3l2 5.2L12 21"/></svg></span>
           <div><h3>Ourivesaria</h3><span>Joias autorais</span></div>
         </div>
         <p class="cat__desc">Conhecer o processo artesanal e sair com uma peça feita por você.</p>
@@ -605,7 +606,7 @@
 
       <div class="cat">
         <div class="cat__head">
-          <span class="cat__emoji">✨</span>
+          <span class="cat__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3l1.9 4.9L18 9.8l-5.1 1.9L11 16.6 9.1 11.7 4 9.8l5.1-1.9z"/><path d="M18 14.5l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z"/></svg></span>
           <div><h3>Outras vivências</h3><span>Sob medida</span></div>
         </div>
         <p class="cat__desc">Novas categorias nascem a cada parceria. Se faz sentido para o seu público, a gente cria.</p>
@@ -630,7 +631,7 @@
       <p>Conte para a gente sobre o seu espaço, sua marca ou seu talento. A próxima experiência By Elarah pode ser a sua.</p>
       <div class="cta__actions">
         <a class="btn btn--light" href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Tenho%20interesse%20em%20criar%20uma%20experi%C3%AAncia%20By%20Elarah." target="_blank" rel="noopener">Falar no WhatsApp</a>
-        <a class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.6)" href="mailto:contato.elarah@gmail.com?subject=Parceria%20By%20Elarah">Enviar e-mail</a>
+        <a class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.6)" href="https://mail.google.com/mail/?view=cm&fs=1&to=contato.elarah@gmail.com&su=Parceria%20By%20Elarah" target="_blank" rel="noopener">Enviar e-mail</a>
       </div>
     </div>
   </div>
