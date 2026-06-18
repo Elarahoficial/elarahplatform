@@ -15,6 +15,7 @@
     --orange:#F27623;--orange-light:#FF9A4D;--orange-dark:#D4600E;
     --cream:#FFF8F2;--cream-dark:#FFF0E3;
     --ink:#2b2118;--ink-soft:#6b5d4f;--line:#efe2d4;--white:#fff;
+    --pink:#e0689a;--pink-dark:#c2447a;--pink-soft:#fdeef5;
     --shadow:0 18px 50px -28px rgba(108,70,20,.45);
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -27,6 +28,7 @@
   .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
   .eyebrow{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--orange-dark);margin-bottom:18px}
   .eyebrow--light{color:#ffd9b8}
+  .eyebrow--pink{color:var(--pink-dark)}
   .btn{display:inline-flex;align-items:center;gap:9px;padding:15px 30px;border-radius:999px;font-weight:600;font-size:.95rem;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease;cursor:pointer;border:0}
   .btn--primary{background:var(--orange);color:#fff;box-shadow:0 12px 30px -12px rgba(242,118,35,.7)}
   .btn--primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(242,118,35,.8)}
@@ -34,6 +36,8 @@
   .btn--ghost:hover{border-color:var(--orange);color:var(--orange-dark)}
   .btn--light{background:#fff;color:var(--orange-dark)}
   .btn--light:hover{transform:translateY(-2px)}
+  .btn--pink{background:var(--pink);color:#fff;box-shadow:0 12px 30px -12px rgba(224,104,154,.7)}
+  .btn--pink:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(224,104,154,.8)}
 
   /* ===== top bar ===== */
   .topbar{position:sticky;top:0;z-index:50;background:rgba(255,248,242,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
@@ -97,6 +101,10 @@
   .tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
   .tag{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.85rem;color:var(--ink);font-weight:500}
   .soft .tag{background:#fff}
+  .pink-bg{background:linear-gradient(180deg,var(--pink-soft),#fff)}
+  .track--bride .mini-h{color:var(--pink-dark)}
+  .track--bride .tag{background:var(--pink-soft);border-color:#f6d3e3}
+  .track__badge.is-pink strong{color:var(--pink-dark)}
   @media(max-width:1180px){.track__badge{right:10px;bottom:16px}.track--rev .track__badge{left:10px}}
   @media(max-width:860px){.track{grid-template-columns:1fr;gap:34px}.track--rev .track__media{order:0}.track__media img{height:360px}}
 
@@ -151,7 +159,7 @@
         Para a <strong>noiva</strong> ou para o <strong>noivo</strong>.
       </p>
       <div class="hero__actions">
-        <a href="#solteira" class="btn btn--primary">Despedida de solteira</a>
+        <a href="#solteira" class="btn btn--pink">Despedida de solteira</a>
         <a href="#solteiro" class="btn btn--ghost">Despedida de solteiro</a>
       </div>
     </div>
@@ -205,17 +213,17 @@
 </section>
 
 <!-- ===== SOLTEIRA ===== -->
-<section class="soft" id="solteira">
+<section class="pink-bg track--bride" id="solteira">
   <div class="wrap track">
     <div class="track__media">
       <img src="assets/ceramica.jpg" alt="Despedida de solteira com as amigas" loading="lazy">
-      <div class="track__badge">
+      <div class="track__badge is-pink">
         <strong>Pra noiva</strong>
         <span>um dia perfeito com as amigas</span>
       </div>
     </div>
     <div>
-      <span class="eyebrow">Despedida de solteira</span>
+      <span class="eyebrow eyebrow--pink">Despedida de solteira</span>
       <h2>Um brinde à noiva — <span class="serif-i">do jeito dela</span>.</h2>
       <p class="track__intro">
         Reúna as amigas para uma tarde (ou noite) leve e cheia de estilo: pintura em taça com um
@@ -231,7 +239,7 @@
         <span class="tag">Arranjos florais</span>
         <span class="tag">Velas aromáticas</span>
       </div>
-      <a href="#contato" class="btn btn--primary">Reservar despedida de solteira</a>
+      <a href="#contato" class="btn btn--pink">Reservar despedida de solteira</a>
     </div>
   </div>
 </section>
