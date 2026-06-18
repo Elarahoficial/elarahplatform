@@ -127,6 +127,17 @@
   .footer__inner img{height:26px}
   .footer__inner p{font-size:.86rem;color:var(--ink-soft)}
   .footer__inner a{color:var(--orange-dark);text-decoration:none;font-weight:600}
+  /* ===== mobile polish ===== */
+  .cols3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:860px){.cols3{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.cols3{grid-template-columns:1fr}}
+  @media(max-width:600px){
+    section{padding:56px 0}
+    .wrap{padding:0 20px}
+    .topbar__tag{display:none}
+    .topbar__nav .btn{padding:9px 16px;font-size:.85rem}
+    .cta{padding:46px 26px}
+  }
 </style>
 </head>
 <body>
@@ -302,7 +313,7 @@
       <h2>Do "vamos fazer" ao brinde final.</h2>
       <p class="lead-narrow" style="margin:0 auto;">Você organiza a galera, a Elarah cuida do resto.</p>
     </div>
-    <div class="pillars" style="grid-template-columns:repeat(3,1fr)">
+    <div class="pillars cols3">
       <div class="pillar">
         <div class="pillar__ic">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>

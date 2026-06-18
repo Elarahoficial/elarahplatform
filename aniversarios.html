@@ -145,6 +145,17 @@
   .footer__inner img{height:26px}
   .footer__inner p{font-size:.86rem;color:var(--ink-soft)}
   .footer__inner a{color:var(--orange-dark);text-decoration:none;font-weight:600}
+  /* ===== mobile polish ===== */
+  .cols3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:860px){.cols3{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.cols3{grid-template-columns:1fr}}
+  @media(max-width:600px){
+    section{padding:56px 0}
+    .wrap{padding:0 20px}
+    .topbar__tag{display:none}
+    .topbar__nav .btn{padding:9px 16px;font-size:.85rem}
+    .cta{padding:46px 26px}
+  }
 </style>
 </head>
 <body>
@@ -240,7 +251,7 @@
       <h2>A gente cuida de tudo — ou só do que você quiser.</h2>
       <p class="lead-narrow" style="margin:0 auto;">Contrate só a experiência criativa, ou deixe a comemoração inteira por nossa conta. Você escolhe o quanto quer delegar — e relaxa.</p>
     </div>
-    <div class="pillars" style="grid-template-columns:repeat(3,1fr)">
+    <div class="pillars cols3">
       <div class="pillar">
         <div class="pillar__ic">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0 0 18 2 2 0 0 0 2-2 2 2 0 0 1 2-2h1.2A3.8 3.8 0 0 0 21 11.2 9 9 0 0 0 12 3z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="9.8" cy="7.4" r="1"/><circle cx="14.6" cy="7.4" r="1"/></svg>
@@ -367,7 +378,7 @@
       <h2>Enquanto as crianças criam, os pais <span class="serif-i">também aproveitam</span>.</h2>
       <p class="lead-narrow" style="margin:0 auto;">Montamos duas experiências ao mesmo tempo: uma para a criançada e outra para os adultos. Assim ninguém fica só olhando — todo mundo curte a festa.</p>
     </div>
-    <div class="pillars" style="grid-template-columns:repeat(3,1fr)">
+    <div class="pillars cols3">
       <div class="pillar">
         <div class="pillar__ic">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
