@@ -7693,6 +7693,12 @@
     });
   }
 
+  // Guarda a função de render das linhas do render mais recente, pra que o
+  // listener (permanente) da busca sempre chame o closure atual — evita
+  // filtrar uma lista velha depois que o painel é recarregado.
+  let _fornRenderRows = null;
+  let _fornSearchWired = false;
+
   async function renderFornecedores() {
     if (!document.getElementById('fornecedores-body')) return;
 
@@ -7833,15 +7839,48 @@
     document.getElementById('stat-fornecedores-pendente').textContent = formatCents(totalPendente, 'BRL');
 
     const countEl = document.getElementById('fornecedores-count');
-    if (countEl) countEl.textContent = totalCount + ' fornecedor' + (totalCount !== 1 ? 'es' : '');
 
     const tbody = document.getElementById('fornecedores-body');
-    if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="13" class="admin__table-empty">Nenhum fornecedor ainda. Use "+ Novo fornecedor" pra cadastrar manualmente, ou preencha o campo "Fornecedor" nas experiências.</td></tr>';
-      return;
-    }
 
-    tbody.innerHTML = list.map(f => {
+    // Busca por fornecedor: filtra a lista já carregada (nome, WhatsApp,
+    // categoria, bairro, tipo de parceria) e re-renderiza só o tbody — sem
+    // refazer as queries. Com muitos fornecedores fica fácil achar quem
+    // você quer. Sem termo, mostra todos.
+    const searchInput = document.getElementById('fornecedores-search');
+
+    function renderFornecedoresRows() {
+      const term = (searchInput && searchInput.value || '').trim();
+      const termLc = term.toLowerCase();
+      const filtered = termLc
+        ? list.filter(f => {
+            const meta = metaByKey.get(f.key);
+            const hay = [
+              f.nome,
+              meta && meta.whatsapp,
+              meta && meta.categoria,
+              meta && meta.bairro,
+              meta && meta.tipo_parceria,
+            ].filter(Boolean).join(' ').toLowerCase();
+            return hay.indexOf(termLc) !== -1;
+          })
+        : list;
+
+      if (countEl) {
+        countEl.textContent = term
+          ? filtered.length + ' de ' + list.length + ' fornecedor' + (list.length !== 1 ? 'es' : '')
+          : list.length + ' fornecedor' + (list.length !== 1 ? 'es' : '');
+      }
+
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="13" class="admin__table-empty">' +
+          (term
+            ? 'Nenhum fornecedor encontrado pra "' + escapeHtml(term) + '".'
+            : 'Nenhum fornecedor ainda. Use "+ Novo fornecedor" pra cadastrar manualmente, ou preencha o campo "Fornecedor" nas experiências.') +
+          '</td></tr>';
+        return;
+      }
+
+    tbody.innerHTML = filtered.map(f => {
       const meta = metaByKey.get(f.key);
       const dataEntradaISO = meta && meta.data_entrada ? meta.data_entrada : '';
       const whatsappVal = meta && meta.whatsapp ? meta.whatsapp : '';
@@ -8000,6 +8039,20 @@
         openFornecedorModal(meta || { fornecedor_nome: nome }, false);
       });
     });
+
+    } // fim de renderFornecedoresRows
+
+    // Render inicial das linhas + wire da busca. O listener é permanente
+    // (guardado por _fornSearchWired) e sempre chama o render mais recente
+    // via _fornRenderRows, evitando closure obsoleta entre recargas.
+    _fornRenderRows = renderFornecedoresRows;
+    renderFornecedoresRows();
+    if (searchInput && !_fornSearchWired) {
+      _fornSearchWired = true;
+      searchInput.addEventListener('input', () => {
+        if (_fornRenderRows) _fornRenderRows();
+      });
+    }
 
     // Botão "+ Novo fornecedor" — wire único (elemento estático, não
     // re-criado a cada render), guardado por dataset pra não empilhar.
