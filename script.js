@@ -1573,7 +1573,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? 'Conte mais sobre seu evento corporativo'
         : btn.dataset.event === 'Aniversário'
           ? 'Conte mais sobre o aniversário'
-          : 'Conte mais sobre seu grupo';
+          : btn.dataset.event === 'Despedida de solteira(o)'
+            ? 'Conte mais sobre a despedida'
+            : 'Conte mais sobre seu grupo';
     });
   });
 
