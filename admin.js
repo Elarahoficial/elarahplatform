@@ -7773,6 +7773,7 @@
         experiencesAtivas: expEntry ? expEntry.ativas : 0,
         reservas: Number(r.qty_reservas) || 0,
         faturamentoCents: Number(r.faturamento_centavos) || 0,
+        receitaCents: Number(r.receita_centavos) || 0,
         repasseTotalCents: Number(r.repasse_total_centavos) || 0,
         repassePagoCents: Number(r.repasse_pago_centavos) || 0,
         repassePendenteCents: Number(r.repasse_pendente_centavos) || 0,
@@ -7790,6 +7791,7 @@
         experiencesAtivas: entry.ativas,
         reservas: 0,
         faturamentoCents: 0,
+        receitaCents: 0,
         repasseTotalCents: 0,
         repassePagoCents: 0,
         repassePendenteCents: 0,
@@ -7810,6 +7812,7 @@
         experiencesAtivas: 0,
         reservas: 0,
         faturamentoCents: 0,
+        receitaCents: 0,
         repasseTotalCents: 0,
         repassePagoCents: 0,
         repassePendenteCents: 0,
@@ -7889,7 +7892,7 @@
       }
 
       if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="13" class="admin__table-empty">' +
+        tbody.innerHTML = '<tr><td colspan="14" class="admin__table-empty">' +
           (term
             ? 'Nenhum fornecedor encontrado pra "' + escapeHtml(term) + '".'
             : 'Nenhum fornecedor ainda. Use "+ Novo fornecedor" pra cadastrar manualmente, ou preencha o campo "Fornecedor" nas experiências.') +
@@ -7911,6 +7914,16 @@
           '<br><span style="font-size:.72rem;color:#b07b00;">' +
           formatCents(f.repassePendenteCents, 'BRL') + ' pendente</span>'
         : formatCents(f.repasseTotalCents, 'BRL');
+      // Desconto concedido (cupom, gift card ou desconto manual) = preço
+      // cheio − valor que o cliente realmente pagou. Sai da margem da
+      // Elarah (a comissão já vem líquida desse desconto na RPC), então
+      // mostrar a coluna deixa claro por que a Receita Elarah é menor que
+      // Faturamento − Repasse.
+      const descontoCents = Math.max(0, f.faturamentoCents - f.receitaCents);
+      const descontoLabel = descontoCents > 0
+        ? '<span style="color:#c0392b;" title="Cupom, gift card ou desconto manual. Sai da margem da Elarah.">−' +
+          escapeHtml(formatCents(descontoCents, 'BRL')) + '</span>'
+        : '<span style="color:#bbb;">—</span>';
       const lastBookingLabel = f.lastBookingTs
         ? new Date(f.lastBookingTs).toLocaleDateString('pt-BR')
         : '<span style="color:#bbb;">—</span>';
@@ -7948,6 +7961,7 @@
         '<td>' + experienciasLabel + '</td>' +
         '<td>' + f.reservas + '</td>' +
         '<td style="font-weight:600;">' + escapeHtml(formatCents(f.faturamentoCents, 'BRL')) + '</td>' +
+        '<td>' + descontoLabel + '</td>' +
         '<td>' + repasseLabel + '</td>' +
         '<td style="color:var(--orange,#f0a05e);font-weight:600;">' + escapeHtml(formatCents(f.comissaoCents, 'BRL')) + '</td>' +
         '<td>' + lastBookingLabel + '</td>' +
