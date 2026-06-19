@@ -888,7 +888,9 @@
         <div class="admin__analytics-controls">
           <select id="eventos-filter-tipo" class="admin__analytics-select">
             <option value="">Todos os tipos</option>
-            <option value="aniversario">Aniversário</option>
+            <option value="meu_grupo">Meu grupo</option>
+            <option value="aniversario_adulto">Aniversário adulto</option>
+            <option value="aniversario_kids">Aniversário kids</option>
             <option value="despedida_solteira">Despedida de solteira</option>
             <option value="despedida_solteiro">Despedida de solteiro</option>
             <option value="corporativo">Corporativo</option>
@@ -4138,13 +4140,16 @@
           <label>Tipo de evento (grupo fechado)</label>
           <select id="ms-event-type">
             <option value="">— Não é evento</option>
-            <option value="aniversario">Aniversário</option>
+            <option value="meu_grupo">Meu grupo</option>
+            <option value="aniversario_adulto">Aniversário adulto</option>
+            <option value="aniversario_kids">Aniversário kids</option>
             <option value="despedida_solteira">Despedida de solteira</option>
             <option value="despedida_solteiro">Despedida de solteiro</option>
             <option value="corporativo">Corporativo</option>
-            <option value="outro">Outro</option>
+            <option value="outro">Outro (digitar)</option>
           </select>
           <p class="admin__form-hint">Classifica a venda na aba Eventos. Vendas com mais de 2 pessoas já entram lá automaticamente.</p>
+          <input type="text" id="ms-event-type-custom" placeholder="Digite o tipo de evento" style="display:none;margin-top:6px;">
         </div>
 
         <div class="admin__form-field admin__form-field--full" style="border-top:1px dashed #ddd;padding-top:12px;margin-top:8px;">
@@ -4200,7 +4205,7 @@
 <script src="admin-social-analysis.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=178"></script>
+<script src="admin.js?v=179"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
