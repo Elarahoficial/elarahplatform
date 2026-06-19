@@ -139,6 +139,13 @@
         <span>Compras</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="eventos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7h-4V3"/><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 11h20"/>
+        </svg>
+        <span>Eventos</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="fornecedores">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
@@ -863,6 +870,100 @@
           </thead>
           <tbody id="purchases-giftcards-body">
             <tr><td colspan="7" class="admin__table-empty">Nenhum gift card emitido ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== EVENTOS PANEL ===== -->
+    <!-- Acompanha a demanda de eventos de grupo fechado (aniversário,
+         despedida, corporativo). Puxa vendas manuais com mais de 2
+         pessoas; dá pra classificar por tipo e remover falsos positivos. -->
+    <div class="admin__panel" id="panel-eventos">
+      <div class="admin__header">
+        <div>
+          <h1 class="admin__page-title">Eventos</h1>
+          <p class="admin__page-subtitle">Eventos de grupo fechado (aniversário, despedida, corporativo). Puxa vendas manuais com mais de 2 pessoas — classifique por tipo e remova o que não for evento.</p>
+        </div>
+        <div class="admin__analytics-controls">
+          <select id="eventos-filter-tipo" class="admin__analytics-select">
+            <option value="">Todos os tipos</option>
+            <option value="aniversario">Aniversário</option>
+            <option value="despedida_solteira">Despedida de solteira</option>
+            <option value="despedida_solteiro">Despedida de solteiro</option>
+            <option value="corporativo">Corporativo</option>
+            <option value="outro">Outro</option>
+            <option value="__sem_tipo">Sem classificação</option>
+          </select>
+          <input type="search" id="eventos-search" class="admin__analytics-select" placeholder="🔍 Buscar cliente / experiência…" autocomplete="off">
+          <button class="admin__add-btn" id="btn-eventos-new" type="button" style="background:#1a8a4a;color:#fff;border:0;">+ Registrar evento</button>
+          <button class="admin__add-btn" id="btn-eventos-refresh" type="button">Atualizar</button>
+        </div>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Eventos</div>
+          <div class="admin__stat-value" id="stat-eventos-count">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Total de pessoas</div>
+          <div class="admin__stat-value" id="stat-eventos-people">0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Faturamento (pago)</div>
+          <div class="admin__stat-value" id="stat-eventos-gross">R$ 0</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Receita Elarah (pago)</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-eventos-margin">R$ 0</div>
+        </div>
+      </div>
+
+      <!-- Demanda por tipo de evento — qual vertente está rendendo mais -->
+      <div class="admin__table-wrap" style="margin-bottom:24px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Demanda por tipo de evento</span>
+          <span class="admin__table-count">só vendas pagas no financeiro</span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Tipo de evento</th>
+              <th>Eventos</th>
+              <th>Pessoas</th>
+              <th>Faturamento</th>
+              <th>Receita Elarah</th>
+              <th>Ticket médio</th>
+            </tr>
+          </thead>
+          <tbody id="eventos-bytype-body">
+            <tr><td colspan="6" class="admin__table-empty">Sem eventos ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Lista de eventos</span>
+          <span class="admin__table-count" id="eventos-count"></span>
+        </div>
+        <table class="admin__table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Experiência</th>
+              <th>Data do evento</th>
+              <th>Pessoas</th>
+              <th>Tipo</th>
+              <th>Total</th>
+              <th>Receita Elarah</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="eventos-body">
+            <tr><td colspan="9" class="admin__table-empty">Nenhum evento ainda. Vendas manuais com mais de 2 pessoas aparecem aqui automaticamente.</td></tr>
           </tbody>
         </table>
       </div>
@@ -4033,6 +4134,19 @@
           </select>
         </div>
 
+        <div class="admin__form-field">
+          <label>Tipo de evento (grupo fechado)</label>
+          <select id="ms-event-type">
+            <option value="">— Não é evento</option>
+            <option value="aniversario">Aniversário</option>
+            <option value="despedida_solteira">Despedida de solteira</option>
+            <option value="despedida_solteiro">Despedida de solteiro</option>
+            <option value="corporativo">Corporativo</option>
+            <option value="outro">Outro</option>
+          </select>
+          <p class="admin__form-hint">Classifica a venda na aba Eventos. Vendas com mais de 2 pessoas já entram lá automaticamente.</p>
+        </div>
+
         <div class="admin__form-field admin__form-field--full" style="border-top:1px dashed #ddd;padding-top:12px;margin-top:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
             <input type="checkbox" id="ms-has-payout" style="width:16px;height:16px;margin:0;">
@@ -4086,7 +4200,7 @@
 <script src="admin-social-analysis.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=177"></script>
+<script src="admin.js?v=178"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
