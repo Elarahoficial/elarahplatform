@@ -329,7 +329,12 @@
     id: ['id da mídia', 'id da midia', 'media id', 'media_id', 'id da publicação', 'id da publicacao'],
     date: ['date', 'data', 'timestamp', 'data de publicação', 'data de publicacao',
            'publish date', 'created_time', 'post date', 'mídia criada', 'midia criada',
-           'media created', 'ano mês', 'ano mes'],
+           'media created', 'ano mês', 'ano mes',
+           // TikTok (conector Windsor): nome cru "video_create_datetime"
+           // — o fallback tira o prefixo "video_" e sobra "create_datetime".
+           'create_datetime', 'video_create_datetime', 'create datetime',
+           'data de criação', 'data de criacao', 'data de criação do vídeo',
+           'data de criacao do video', 'tempo de criação do vídeo', 'tempo de criacao do video'],
     platform: ['platform', 'plataforma', 'source', 'data source', 'datasource', 'fonte', 'fonte de dados', 'rede', 'rede social', 'canal'],
     type: ['type', 'tipo', 'tipo de mídia', 'tipo de midia', 'media type', 'media_type',
            'tipo de produto de mídia', 'tipo de produto de midia', 'media product type',
@@ -337,7 +342,10 @@
     link: ['link', 'permalink', 'url', 'post url', 'link do post', 'media url', 'media_url', 'shortcode url',
            'url permanente para a mídia', 'url permanente para a midia',
            'link permanente para a mídia', 'link permanente para a midia',
-           'url da mídia', 'url da midia'],
+           'url da mídia', 'url da midia',
+           // TikTok (conector Windsor): "video_share_url" → "share_url"
+           'share_url', 'video_share_url', 'url de compartilhamento de vídeo',
+           'url de compartilhamento de video', 'url de compartilhamento'],
     caption: ['caption', 'legenda', 'legenda da mídia', 'legenda da midia', 'legenda do vídeo',
               'legenda do video', 'texto', 'descrição', 'descricao', 'description', 'mensagem',
               'conteúdo', 'conteudo'],
