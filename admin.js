@@ -10310,22 +10310,27 @@
   // Máscara automática pra chave Pix:
   //   - telefone → (xx) xxxxx-xxxx (ou (xx) xxxx-xxxx fixo)
   //   - CPF      → xxx.xxx.xxx-xx
-  //   - resto (e-mail, CNPJ, chave aleatória) → fica como está (padrão)
+  //   - CNPJ     → xx.xxx.xxx/xxxx-xx (formato oficial, 14 dígitos)
+  //   - resto (e-mail, chave aleatória) → fica como está (padrão)
   // Decisão telefone × CPF (ambos 11 dígitos): se os 11 dígitos formam um
   // CPF válido (dígitos verificadores batem), formata como CPF; senão,
   // como telefone. E-mail/aleatória têm letras ou símbolos → não mexe.
   function _maskPixKey(value) {
     const raw = String(value || '');
-    // Separa só o que é "numérico com pontuação de telefone/CPF". Se sobrar
-    // qualquer letra, @, / etc., é chave não-numérica → deixa padrão.
-    const stripped = raw.replace(/[().\-\s+]/g, '');
+    // Separa só o que é "numérico com pontuação de telefone/CPF/CNPJ". Se
+    // sobrar qualquer letra, @ etc., é chave não-numérica → deixa padrão.
+    const stripped = raw.replace(/[()./\-\s+]/g, '');
     if (!/^\d+$/.test(stripped)) return raw;
     const d = stripped;
-    if (d.length > 11) return raw;                      // CNPJ ou número longo → padrão
-    if (d.length === 11 && _isValidCPF(d)) {
+    if (d.length === 14) {                              // CNPJ
+      return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) +
+             '/' + d.slice(8, 12) + '-' + d.slice(12);
+    }
+    if (d.length === 11 && _isValidCPF(d)) {            // CPF
       return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
     }
-    return _finMaskPhone(d);                            // telefone (progressivo)
+    if (d.length <= 11) return _finMaskPhone(d);        // telefone (progressivo)
+    return d;                                           // 12-13 dígitos: só os dígitos
   }
 
   // Máscara automática de telefone BR em TODOS os campos de telefone do
