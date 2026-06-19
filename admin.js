@@ -7300,6 +7300,21 @@
     overlay.querySelector('#forn-f-whatsapp').addEventListener('input', refreshSolicitar);
     overlay.querySelector('#forn-f-contato').addEventListener('input', refreshSolicitar);
 
+    // Campo Chave Pix: máscara automática (telefone / CPF / resto padrão).
+    // Formata o valor já salvo na abertura e a cada digitação.
+    const pixEl = overlay.querySelector('#forn-f-pix');
+    if (pixEl) {
+      const applyPixMask = () => {
+        const masked = _maskPixKey(pixEl.value);
+        if (masked !== pixEl.value) {
+          pixEl.value = masked;
+          try { pixEl.setSelectionRange(masked.length, masked.length); } catch (_) {}
+        }
+      };
+      applyPixMask();
+      pixEl.addEventListener('input', applyPixMask);
+    }
+
     overlay.querySelector('#forn-modal-save').addEventListener('click', async (e) => {
       const btn = e.target;
       const nome = overlay.querySelector('#forn-f-nome').value.trim();
@@ -10275,6 +10290,42 @@
     if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
     if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
     return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+  }
+
+  // Valida CPF pelos dígitos verificadores (mod 11). Usado pra decidir, no
+  // campo Pix, se 11 dígitos são CPF ou telefone (ambos têm 11 dígitos).
+  function _isValidCPF(d) {
+    if (!/^\d{11}$/.test(d)) return false;
+    if (/^(\d)\1{10}$/.test(d)) return false;          // todos iguais (000... etc.)
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(d[i], 10) * (10 - i);
+    let r = (sum * 10) % 11; if (r === 10) r = 0;
+    if (r !== parseInt(d[9], 10)) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(d[i], 10) * (11 - i);
+    r = (sum * 10) % 11; if (r === 10) r = 0;
+    return r === parseInt(d[10], 10);
+  }
+
+  // Máscara automática pra chave Pix:
+  //   - telefone → (xx) xxxxx-xxxx (ou (xx) xxxx-xxxx fixo)
+  //   - CPF      → xxx.xxx.xxx-xx
+  //   - resto (e-mail, CNPJ, chave aleatória) → fica como está (padrão)
+  // Decisão telefone × CPF (ambos 11 dígitos): se os 11 dígitos formam um
+  // CPF válido (dígitos verificadores batem), formata como CPF; senão,
+  // como telefone. E-mail/aleatória têm letras ou símbolos → não mexe.
+  function _maskPixKey(value) {
+    const raw = String(value || '');
+    // Separa só o que é "numérico com pontuação de telefone/CPF". Se sobrar
+    // qualquer letra, @, / etc., é chave não-numérica → deixa padrão.
+    const stripped = raw.replace(/[().\-\s+]/g, '');
+    if (!/^\d+$/.test(stripped)) return raw;
+    const d = stripped;
+    if (d.length > 11) return raw;                      // CNPJ ou número longo → padrão
+    if (d.length === 11 && _isValidCPF(d)) {
+      return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
+    }
+    return _finMaskPhone(d);                            // telefone (progressivo)
   }
 
   // Máscara automática de telefone BR em TODOS os campos de telefone do
