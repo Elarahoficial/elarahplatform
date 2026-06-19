@@ -395,6 +395,30 @@
   gap: 24px;
 }
 
+.gift-experiences__more {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.gift-experiences__more-btn {
+  padding: 12px 32px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--orange);
+  background: var(--white);
+  border: 1.5px solid var(--orange);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.gift-experiences__more-btn:hover {
+  background: var(--orange);
+  color: var(--white);
+}
+
 /* ===== FAQ ===== */
 .gift-faq {
   padding: 80px 0;
