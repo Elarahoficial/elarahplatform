@@ -7867,12 +7867,36 @@
   // (is_event=false) e classificar por tipo pra acompanhar a demanda.
   // =================================================
   const EVENTO_TIPOS = [
-    { v: 'aniversario',        l: 'Aniversário' },
+    { v: 'meu_grupo',          l: 'Meu grupo' },
+    { v: 'aniversario_adulto', l: 'Aniversário adulto' },
+    { v: 'aniversario_kids',   l: 'Aniversário kids' },
     { v: 'despedida_solteira', l: 'Despedida de solteira' },
     { v: 'despedida_solteiro', l: 'Despedida de solteiro' },
     { v: 'corporativo',        l: 'Corporativo' },
     { v: 'outro',              l: 'Outro' },
   ];
+  // Rótulos legados (tipos antigos que saíram do dropdown mas ainda podem
+  // existir em registros — pra não perder a classificação na exibição).
+  const EVENTO_TIPO_LEGADO = { aniversario: 'Aniversário' };
+  // Rótulo de exibição de uma venda: "Outro" usa o texto livre digitado.
+  function eventoLabel(s) {
+    const t = s && s.event_type;
+    if (!t) return '';
+    if (t === 'outro') return (s.event_type_custom && String(s.event_type_custom).trim()) || 'Outro';
+    const o = EVENTO_TIPOS.find(x => x.v === t);
+    return o ? o.l : (EVENTO_TIPO_LEGADO[t] || t);
+  }
+  // Chave de agrupamento na "Demanda por tipo": cada texto de "Outro" vira
+  // um grupo próprio (pra comparar a demanda de cada tipo digitado).
+  function eventoGroupKey(s) {
+    const t = s && s.event_type;
+    if (!t) return '__sem';
+    if (t === 'outro') {
+      const c = (s.event_type_custom && String(s.event_type_custom).trim().toLowerCase()) || '';
+      return c ? 'outro:' + c : 'outro';
+    }
+    return t;
+  }
   // Critério de inclusão na aba: is_event manda; senão qty>=3 ou tem tipo.
   function _isEventoSale(s) {
     if (!s) return false;
@@ -7920,18 +7944,22 @@
     const newBtn = document.getElementById('btn-eventos-new');
     if (newBtn && !newBtn.dataset.wired) { newBtn.dataset.wired = '1'; newBtn.addEventListener('click', () => _finOpenManualSaleModal(null)); }
     const filtro = document.getElementById('eventos-filter-tipo');
-    if (filtro && !filtro.dataset.wired) { filtro.dataset.wired = '1'; filtro.addEventListener('change', _eventosRenderAll); }
+    if (filtro && !filtro.dataset.wired) { filtro.dataset.wired = '1'; filtro.addEventListener('change', _eventosRenderList); }
     const search = document.getElementById('eventos-search');
-    if (search && !search.dataset.wired) { search.dataset.wired = '1'; search.addEventListener('input', _eventosRenderAll); }
+    if (search && !search.dataset.wired) { search.dataset.wired = '1'; search.addEventListener('input', _eventosRenderList); }
   }
 
-  // Renderiza stats globais + demanda por tipo (sempre tudo) e a lista
-  // (respeitando filtro de tipo + busca). Lê de _eventosData (cache).
   function _eventosRenderAll() {
+    _eventosRenderTop();
+    _eventosRenderList();
+  }
+
+  // Stats globais + demanda por tipo (sempre considera TODOS os eventos).
+  // "Outro" agrupa por texto digitado (cada tipo livre vira sua linha).
+  function _eventosRenderTop() {
     const all = _eventosData || [];
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
 
-    // ===== Stats globais =====
     let people = 0, gross = 0, margin = 0;
     all.forEach(s => {
       people += Number(s.quantity) || 0;
@@ -7942,17 +7970,18 @@
     setTxt('stat-eventos-gross', formatCents(gross, 'BRL'));
     setTxt('stat-eventos-margin', formatCents(margin, 'BRL'));
 
-    // ===== Demanda por tipo (qual rende mais) =====
     const byType = new Map();
-    EVENTO_TIPOS.forEach(t => byType.set(t.v, { l: t.l, count: 0, people: 0, gross: 0, margin: 0 }));
-    byType.set('__sem', { l: 'Sem classificação', count: 0, people: 0, gross: 0, margin: 0 });
     all.forEach(s => {
-      const k = (s.event_type && byType.has(s.event_type)) ? s.event_type : '__sem';
-      const e = byType.get(k);
+      const k = eventoGroupKey(s);
+      let e = byType.get(k);
+      if (!e) {
+        e = { l: (k === '__sem' ? 'Sem classificação' : eventoLabel(s)), count: 0, people: 0, gross: 0, margin: 0 };
+        byType.set(k, e);
+      }
       e.count += 1; e.people += Number(s.quantity) || 0;
       const m = _eventosMoney(s); e.gross += m.total; e.margin += m.margin;
     });
-    const typeRows = Array.from(byType.values()).filter(e => e.count > 0).sort((a, b) => b.gross - a.gross);
+    const typeRows = Array.from(byType.values()).sort((a, b) => b.gross - a.gross);
     const btBody = document.getElementById('eventos-bytype-body');
     if (btBody) {
       btBody.innerHTML = typeRows.length
@@ -7969,15 +7998,18 @@
           }).join('')
         : '<tr><td colspan="6" class="admin__table-empty">Sem eventos ainda.</td></tr>';
     }
+  }
 
-    // ===== Lista (filtro de tipo + busca) =====
+  // Lista (respeita filtro de tipo + busca) + wiring das ações inline.
+  function _eventosRenderList() {
+    const all = _eventosData || [];
     const tipoFilter = (document.getElementById('eventos-filter-tipo') || {}).value || '';
     const termo = ((document.getElementById('eventos-search') || {}).value || '').trim().toLowerCase();
     let list = all.slice();
     if (tipoFilter === '__sem_tipo') list = list.filter(s => !s.event_type);
     else if (tipoFilter) list = list.filter(s => s.event_type === tipoFilter);
     if (termo) list = list.filter(s =>
-      ((s.customer_name || '') + ' ' + (s.experience_name || '')).toLowerCase().indexOf(termo) !== -1);
+      ((s.customer_name || '') + ' ' + (s.experience_name || '') + ' ' + eventoLabel(s)).toLowerCase().indexOf(termo) !== -1);
     list.sort((a, b) => {
       const da = a.slot_date || '', db = b.slot_date || '';
       if (da && db) return db.localeCompare(da);
@@ -7990,6 +8022,7 @@
     if (countEl) countEl.textContent = list.length + ' evento' + (list.length !== 1 ? 's' : '');
 
     const tbody = document.getElementById('eventos-body');
+    if (!tbody) return;
     if (!list.length) {
       tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
         (all.length ? 'Nenhum evento bate com o filtro.'
@@ -8008,10 +8041,12 @@
       const dataEvento = s.slot_date
         ? new Date(s.slot_date + 'T00:00:00').toLocaleDateString('pt-BR')
         : '<span style="color:#bbb;">—</span>';
+      const isOutro = s.event_type === 'outro';
       const tipoSel = '<select class="eventos-tipo" data-id="' + escapeHtml(s.id) + '" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:.78rem;font-family:inherit;background:#fff;">' +
         '<option value=""' + (!s.event_type ? ' selected' : '') + '>—</option>' +
         EVENTO_TIPOS.map(t => '<option value="' + t.v + '"' + (s.event_type === t.v ? ' selected' : '') + '>' + escapeHtml(t.l) + '</option>').join('') +
-        '</select>';
+        '</select>' +
+        '<input type="text" class="eventos-tipo-custom" data-id="' + escapeHtml(s.id) + '" value="' + escapeHtml(s.event_type_custom || '') + '" placeholder="Digite o tipo" style="display:' + (isOutro ? 'block' : 'none') + ';margin-top:4px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:.76rem;font-family:inherit;width:150px;">';
       return '<tr>' +
         '<td style="font-weight:600;">' + escapeHtml(s.customer_name || '—') + '</td>' +
         '<td>' + escapeHtml(s.experience_name || '—') + '</td>' +
@@ -8028,20 +8063,44 @@
       '</tr>';
     }).join('');
 
+    // Salva tipo (event_type + custom + is_event), atualiza cache e só o
+    // topo (não re-renderiza a lista, pra não perder o foco no input).
+    const saveTipoLocal = async (id, value, custom) => {
+      const patch = { event_type: value };
+      if (value) patch.is_event = true;
+      patch.event_type_custom = (value === 'outro') ? (custom || null) : null;
+      const ok = await _eventosUpdate(id, patch);
+      if (ok) {
+        const row = _eventosData.find(x => x.id === id);
+        if (row) {
+          row.event_type = value;
+          row.event_type_custom = patch.event_type_custom;
+          if (value) row.is_event = true;
+        }
+        _eventosRenderTop();
+      }
+      return ok;
+    };
+
     tbody.querySelectorAll('.eventos-tipo').forEach(sel => {
       sel.addEventListener('change', async (e) => {
         const id = e.target.dataset.id;
         const value = e.target.value || null;
-        e.target.disabled = true;
-        const patch = { event_type: value };
-        if (value) patch.is_event = true;          // classificar = é evento
-        const ok = await _eventosUpdate(id, patch);
-        e.target.disabled = false;
-        if (ok) {
-          const row = _eventosData.find(x => x.id === id);
-          if (row) { row.event_type = value; if (value) row.is_event = true; }
-          _eventosRenderAll();
+        const customInput = e.target.parentElement.querySelector('.eventos-tipo-custom');
+        if (value === 'outro') {
+          if (customInput) { customInput.style.display = 'block'; customInput.focus(); }
+          await saveTipoLocal(id, 'outro', customInput ? customInput.value.trim() : '');
+        } else {
+          if (customInput) customInput.style.display = 'none';
+          await saveTipoLocal(id, value, '');
         }
+      });
+    });
+    tbody.querySelectorAll('.eventos-tipo-custom').forEach(inp => {
+      inp.addEventListener('blur', async (e) => {
+        const id = e.target.dataset.id;
+        const sel = e.target.parentElement.querySelector('.eventos-tipo');
+        if (sel && sel.value === 'outro') await saveTipoLocal(id, 'outro', e.target.value.trim());
       });
     });
     tbody.querySelectorAll('.eventos-edit').forEach(btn => {
@@ -8072,9 +8131,11 @@
     } catch (e) {
       console.error('[Eventos] update error', e);
       const msg = String((e && e.message) || e);
-      const hint = (msg.includes('event_type') || msg.includes('is_event'))
-        ? '\n\nRode sql/elarah_manual_sales_eventos.sql no SQL Editor do Supabase.'
-        : '';
+      const hint = msg.includes('event_type_custom')
+        ? '\n\nRode sql/elarah_manual_sales_eventos_tipos.sql no SQL Editor do Supabase.'
+        : ((msg.includes('event_type') || msg.includes('is_event'))
+          ? '\n\nRode sql/elarah_manual_sales_eventos.sql (e o _tipos.sql) no SQL Editor do Supabase.'
+          : '');
       alert('Não consegui salvar. ' + msg + hint);
       return false;
     }
@@ -11753,6 +11814,10 @@
       $('ms-payment-method').value = data.payment_method || '';
       $('ms-payment-status').value = data.payment_status || 'pago';
       if ($('ms-event-type')) $('ms-event-type').value = data.event_type || '';
+      if ($('ms-event-type-custom')) {
+        $('ms-event-type-custom').value = data.event_type_custom || '';
+        $('ms-event-type-custom').style.display = data.event_type === 'outro' ? 'block' : 'none';
+      }
       $('ms-notes').value = data.notes || '';
       const hasPayout = data.payout_status && data.payout_status !== 'nao_aplicavel';
       $('ms-has-payout').checked = !!hasPayout;
@@ -11781,6 +11846,7 @@
       $('ms-quantity').value = '1';
       $('ms-payment-status').value = 'pago';
       if ($('ms-event-type')) $('ms-event-type').value = '';
+      if ($('ms-event-type-custom')) { $('ms-event-type-custom').value = ''; $('ms-event-type-custom').style.display = 'none'; }
       $('ms-discount').value = '0';
       $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
       _finTogglePayoutFields(false);
@@ -11841,7 +11907,13 @@
     // classificada como evento — assim vendas normais continuam salvando
     // mesmo em ambientes que ainda não rodaram a migração de Eventos.
     const evType = ($('ms-event-type') && $('ms-event-type').value) || null;
-    if (evType) { payload.event_type = evType; payload.is_event = true; }
+    if (evType) {
+      payload.event_type = evType;
+      payload.is_event = true;
+      payload.event_type_custom = (evType === 'outro' && $('ms-event-type-custom'))
+        ? ($('ms-event-type-custom').value.trim() || null)
+        : null;
+    }
     if (!payload.customer_name) {
       msgEl.textContent = 'Nome do cliente é obrigatório.'; msgEl.style.color = '#c0392b'; return;
     }
@@ -11888,9 +11960,11 @@
     } catch (e) {
       console.error('[Contabilidade] save manual sale:', e);
       const em = String(e.message || e);
-      const hint = (em.includes('event_type') || em.includes('is_event'))
-        ? ' — rode sql/elarah_manual_sales_eventos.sql no Supabase pra liberar a classificação de eventos.'
-        : '';
+      const hint = em.includes('event_type_custom')
+        ? ' — rode sql/elarah_manual_sales_eventos_tipos.sql no Supabase.'
+        : ((em.includes('event_type') || em.includes('is_event'))
+          ? ' — rode sql/elarah_manual_sales_eventos.sql (e o _tipos.sql) no Supabase pra liberar a classificação de eventos.'
+          : '');
       msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
     }
@@ -12149,6 +12223,16 @@
       document.getElementById(id)?.addEventListener('input', _finRecalcManualSaleTotal);
     });
     document.getElementById('ms-has-payout')?.addEventListener('change', (e) => _finTogglePayoutFields(e.target.checked));
+
+    // Tipo de evento "Outro": mostra o campo de texto livre só quando
+    // "Outro (digitar)" estiver selecionado.
+    document.getElementById('ms-event-type')?.addEventListener('change', (e) => {
+      const custom = document.getElementById('ms-event-type-custom');
+      if (!custom) return;
+      const isOutro = e.target.value === 'outro';
+      custom.style.display = isOutro ? 'block' : 'none';
+      if (isOutro) custom.focus();
+    });
 
     // Máscara de telefone: tratada globalmente por delegação no document
     // (ver _isPhoneInput perto de _finMaskPhone). Cobre o ms-customer-phone
