@@ -41,19 +41,32 @@
     ['pintura', 'ceramica', 'porta-retrato'],    // Pintura em Cerâmica: Faça seu Porta-Retrato
   ];
 
+  // Denylist: experiências que NÃO devem aparecer na aba, mesmo que
+  // casem na allowlist ou pelo nome. Tem prioridade sobre tudo. Mesma
+  // estrutura de termos (AND) da allowlist.
+  var SINGLES_DENYLIST = [
+    ['passaporte', 'porta-retrato'],             // Passaporte Cerâmica & Pintura: Faça seu Porta-Retrato
+  ];
+
+  function matchTerms(nome, groups) {
+    return groups.some(function (terms) {
+      return terms.every(function (t) { return nome.indexOf(t) !== -1; });
+    });
+  }
+
   // Casa "Single's Day", "Singles Day", "single´s day", etc. ou uma das
-  // experiências da allowlist curada acima.
+  // experiências da allowlist curada acima — desde que não esteja na
+  // denylist.
   function isSinglesExp(exp) {
     if (!exp || !exp.nome) return false;
     var nome = normalize(exp.nome);
+    if (matchTerms(nome, SINGLES_DENYLIST)) return false;
     if (nome.indexOf("single's day") !== -1
         || nome.indexOf("singles day") !== -1
         || nome.indexOf("galentine") !== -1) {
       return true;
     }
-    return SINGLES_ALLOWLIST.some(function (terms) {
-      return terms.every(function (t) { return nome.indexOf(t) !== -1; });
-    });
+    return matchTerms(nome, SINGLES_ALLOWLIST);
   }
 
   // ===== Countdown =====
