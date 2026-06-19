@@ -15,13 +15,40 @@
     });
   }
 
-  // Casa "Single's Day", "Singles Day", "single´s day", etc.
+  // Normaliza pra match tolerante: remove acentos + lowercase + colapsa
+  // espaços. "Yoga Aéreo" e "yoga aereo" caem no mesmo bucket.
+  function normalize(s) {
+    return String(s == null ? '' : s)
+      .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[´'']/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Allowlist de experiências curadas pra Single's Day que NÃO têm o
+  // padrão no nome. Cada item é uma lista de termos que precisam estar
+  // todos presentes no nome (AND) — tolera sufixos como "2ª Edição".
+  // Mesma lógica dos ILIKE em sql/elarah_seed_coupon_pintura10.sql.
+  var SINGLES_ALLOWLIST = [
+    ['pintura', 'cristal', 'aperol'],            // Pintura de Quadro com Cristal & Aperol Spritz
+    ['yoga', 'cacau'],                           // Yoga Aéreo & Imersão ao Cacau
+    ['pintura', 'ceramica', 'porta-retrato'],    // Pintura em Cerâmica: Faça seu Porta-Retrato
+  ];
+
+  // Casa "Single's Day", "Singles Day", "single´s day", etc. ou uma das
+  // experiências da allowlist curada acima.
   function isSinglesExp(exp) {
     if (!exp || !exp.nome) return false;
-    var nome = String(exp.nome).toLowerCase().replace(/[´'']/g, "'").replace(/\s+/g, ' ');
-    return nome.indexOf("single's day") !== -1
+    var nome = normalize(exp.nome);
+    if (nome.indexOf("single's day") !== -1
         || nome.indexOf("singles day") !== -1
-        || nome.indexOf("galentine") !== -1;
+        || nome.indexOf("galentine") !== -1) {
+      return true;
+    }
+    return SINGLES_ALLOWLIST.some(function (terms) {
+      return terms.every(function (t) { return nome.indexOf(t) !== -1; });
+    });
   }
 
   // ===== Countdown =====
