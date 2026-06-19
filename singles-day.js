@@ -96,7 +96,12 @@
       ? '<img src="' + esc(e.imagem) + '" alt="' + esc(e.nome) + '" loading="lazy">'
       : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#c44e3a;font-family:\'DM Serif Display\',serif;font-size:2rem;">✨</div>';
 
-    var preco = e.preco ? esc(e.preco) : '';
+    // Usa o formatador do site pra garantir o prefixo "R$" mesmo
+    // quando o admin cadastrou só o número (ex: "299" → "R$ 299").
+    var precoFmt = (window.ElarahData && window.ElarahData.formatPrecoBR)
+      ? window.ElarahData.formatPrecoBR(e.preco)
+      : (e.preco || '');
+    var preco = precoFmt ? esc(precoFmt) : '';
     var bairro = e.bairro ? esc(e.bairro) : '';
     var data = e.data ? esc(e.data) : '';
     // Limpa "Single's Day" do título pra não repetir com o badge.
@@ -190,6 +195,16 @@
       if (!fetcher) { renderError(grid, 'Sistema de dados não disponível.'); return; }
       var all = await fetcher();
       var filtered = (all || []).filter(isSinglesExp);
+      // Dedup: a mesma experiência pode ter várias linhas no banco
+      // (sessões/passaporte com o mesmo nome). Mantém só 1 card por
+      // nome normalizado pra não repetir o mesmo produto na aba.
+      var seenNomes = {};
+      filtered = filtered.filter(function (e) {
+        var key = normalize(e && e.nome);
+        if (!key || seenNomes[key]) return false;
+        seenNomes[key] = true;
+        return true;
+      });
       console.info('[SinglesDay] total=' + (all || []).length + ' filtradas=' + filtered.length);
       if (!filtered.length) { renderEmpty(grid); return; }
       // Ordena por data se houver, depois por nome.

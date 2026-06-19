@@ -50,7 +50,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== DOM REFS =====
   const grid = document.getElementById('gift-grid');
+  const moreWrap = document.getElementById('gift-more');
+  const moreBtn = document.getElementById('gift-more-btn');
   const filterBtns = document.querySelectorAll('.gift-filter-btn');
+
+  // Limite de cards por filtro: 12 (3 fileiras de 4). Acima disso a
+  // gente esconde o excedente atrás do botão "Ver todas" pra não
+  // sobrecarregar a Home com opções demais.
+  const GIFT_LIMIT = 12;
+  let expanded = false;
   const mobileToggle = document.getElementById('mobile-toggle');
   const nav = document.querySelector('.header__nav');
   const header = document.querySelector('.header');
@@ -68,9 +76,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return !activeFilter || exp.categoria === activeFilter;
     });
 
+    // Quando não expandido, mostra no máximo GIFT_LIMIT cards. O resto
+    // fica acessível pelo botão "Ver todas".
+    const visible = expanded ? filtered : filtered.slice(0, GIFT_LIMIT);
+
     grid.innerHTML = '';
 
-    filtered.forEach((exp) => {
+    visible.forEach((exp) => {
       const card = document.createElement('article');
       card.className = 'card';
 
@@ -188,6 +200,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     });
+
+    // Botão "Ver todas" — só aparece quando há mais cards que o limite.
+    // Alterna entre "Ver todas (N)" e "Ver menos".
+    if (moreWrap && moreBtn) {
+      if (filtered.length > GIFT_LIMIT) {
+        moreWrap.style.display = 'flex';
+        moreBtn.textContent = expanded
+          ? 'Ver menos'
+          : 'Ver todas (' + filtered.length + ')';
+      } else {
+        moreWrap.style.display = 'none';
+      }
+    }
+  }
+
+  // ===== "VER TODAS" TOGGLE =====
+  if (moreBtn) {
+    moreBtn.addEventListener('click', () => {
+      expanded = !expanded;
+      renderGiftCards();
+      // Ao recolher, volta o foco pro topo da seção pra não deixar o
+      // usuário perdido lá embaixo.
+      if (!expanded) {
+        const sec = document.getElementById('gift-experiences');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   }
 
   // ===== FILTER BUTTONS =====
@@ -196,6 +235,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       filterBtns.forEach((b) => b.classList.remove('gift-filter-btn--active'));
       btn.classList.add('gift-filter-btn--active');
       activeFilter = btn.dataset.filter;
+      // Cada categoria recomeça recolhida (máx. 12) — trocar de filtro
+      // reseta a expansão.
+      expanded = false;
       renderGiftCards();
     });
   });
