@@ -6905,6 +6905,51 @@
       'background:' + m.c + '22;color:' + m.c + ';font-weight:600;font-size:11px;' +
       'white-space:nowrap;">' + escapeHtml(m.l) + '</span>';
   }
+
+  // ===== Tipo de parceria (multi-seleção) =====
+  // Vertentes da Elarah. Um fornecedor pode pertencer a uma ou mais —
+  // ex.: Elarah + Elarah em casa. Guardado em tipo_parceria como chaves
+  // separadas por vírgula (ex.: "elarah,em_casa"). Ordem canônica abaixo
+  // é a usada na exibição ("Elarah + By Elarah + Elarah em casa").
+  const TIPO_PARCERIA_OPTS = [
+    { v: 'elarah',   l: 'Elarah' },
+    { v: 'byelarah', l: 'By Elarah' },
+    { v: 'em_casa',  l: 'Elarah em casa' },
+  ];
+  // Lê o valor cru (incluindo o legado "ambos" = elarah+byelarah) e
+  // devolve um array de chaves válidas, sem duplicar.
+  function parseTipoParceria(raw) {
+    const out = [];
+    const push = (k) => { if (out.indexOf(k) === -1) out.push(k); };
+    String(raw || '').toLowerCase().split(',').forEach(s => {
+      const t = s.trim();
+      if (!t) return;
+      if (t === 'ambos') { push('elarah'); push('byelarah'); return; }
+      if (TIPO_PARCERIA_OPTS.some(o => o.v === t)) push(t);
+    });
+    return out;
+  }
+  // Array de chaves → string canônica pra salvar ("elarah,em_casa").
+  function tipoParceriaToValue(arr) {
+    return TIPO_PARCERIA_OPTS.filter(o => arr.indexOf(o.v) !== -1)
+      .map(o => o.v).join(',');
+  }
+  // Valor cru → rótulo de exibição ("Elarah + Elarah em casa"). '' se vazio.
+  function formatTipoParceriaLabel(raw) {
+    const arr = parseTipoParceria(raw);
+    if (!arr.length) return '';
+    return TIPO_PARCERIA_OPTS.filter(o => arr.indexOf(o.v) !== -1)
+      .map(o => o.l).join(' + ');
+  }
+  // Rank de ordenação (bitmask na ordem canônica) — agrupa combinações
+  // iguais e dá uma ordem estável. Sem tipo vai pro fim.
+  function tipoParceriaRank(raw) {
+    const arr = parseTipoParceria(raw);
+    if (!arr.length) return 999;
+    let mask = 0;
+    TIPO_PARCERIA_OPTS.forEach((o, i) => { if (arr.indexOf(o.v) !== -1) mask |= (1 << i); });
+    return mask;
+  }
   // Normaliza telefone pra wa.me: só dígitos, prefixo 55 (Brasil) quando
   // vier sem DDI.
   function fornWaPhone(raw) {
@@ -7052,6 +7097,47 @@
     };
   }
 
+  // Chips de múltipla escolha pro Tipo de parceria (conjunto fixo de
+  // vertentes, sem "adicionar novo"). Marque uma ou mais. getValue()
+  // devolve a string canônica ("elarah,em_casa"). opts.onChange(value)
+  // dispara a cada toggle (usado pra salvar inline na tabela); opts.compact
+  // deixa os chips menores (pra caber na célula da tabela).
+  function mountTipoParceriaChips(container, initialRaw, opts) {
+    opts = opts || {};
+    const onChange = typeof opts.onChange === 'function' ? opts.onChange : null;
+    const compact = !!opts.compact;
+    const selected = new Set(parseTipoParceria(initialRaw));
+    function getValue() {
+      return tipoParceriaToValue(Array.from(selected));
+    }
+    function render() {
+      const pad = compact ? '3px 8px' : '6px 12px';
+      const fs = compact ? '.72rem' : '.82rem';
+      container.innerHTML = TIPO_PARCERIA_OPTS.map(o => {
+        const on = selected.has(o.v);
+        return '<button type="button" data-tipo-v="' + o.v + '" ' +
+          'style="padding:' + pad + ';border-radius:13px;cursor:pointer;font-size:' + fs + ';' +
+          'font-family:inherit;border:1px solid ' + (on ? 'var(--orange,#f0a05e)' : '#ddd') + ';' +
+          'background:' + (on ? 'var(--orange,#f0a05e)' : '#fff') + ';' +
+          'color:' + (on ? '#fff' : '#666') + ';font-weight:' + (on ? '600' : '400') + ';white-space:nowrap;">' +
+          (on ? '✓ ' : '') + escapeHtml(o.l) + '</button>';
+      }).join('');
+      container.querySelectorAll('[data-tipo-v]').forEach(b => {
+        b.addEventListener('click', () => {
+          const v = b.dataset.tipoV;
+          if (selected.has(v)) selected.delete(v); else selected.add(v);
+          render();
+          if (onChange) onChange(getValue());
+        });
+      });
+    }
+    container.style.display = 'flex';
+    container.style.flexWrap = 'wrap';
+    container.style.gap = compact ? '4px' : '6px';
+    render();
+    return { getValue: getValue };
+  }
+
   // Modal de cadastro/edição de fornecedor. `meta` = linha de
   // fornecedores_metadata (ou objeto parcial { fornecedor_nome }).
   // `isNew` = true abre em modo cadastro (nome editável).
@@ -7065,12 +7151,6 @@
       const sel = (meta.status || 'ativo') === s.v ? ' selected' : '';
       return '<option value="' + s.v + '"' + sel + '>' + escapeHtml(s.l) + '</option>';
     }).join('');
-    const tipoVal = meta.tipo_parceria || '';
-    const tipoOptions =
-      '<option value=""' + (tipoVal === '' ? ' selected' : '') + '>—</option>' +
-      '<option value="elarah"' + (tipoVal === 'elarah' ? ' selected' : '') + '>Elarah</option>' +
-      '<option value="byelarah"' + (tipoVal === 'byelarah' ? ' selected' : '') + '>By Elarah</option>' +
-      '<option value="ambos"' + (tipoVal === 'ambos' ? ' selected' : '') + '>Elarah + By Elarah</option>';
 
     const inputStyle = 'width:100%;padding:8px 10px;border:1px solid #ddd;' +
       'border-radius:7px;font-size:.85rem;font-family:inherit;box-sizing:border-box;';
@@ -7116,7 +7196,7 @@
           field('E-mail', '<input type="email" id="forn-f-email" value="' + val('email') + '" style="' + inputStyle + '">') +
           field('Site', '<input type="text" id="forn-f-site" value="' + val('site') + '" style="' + inputStyle + '">') +
           field('Nome do contato', '<input type="text" id="forn-f-contato" value="' + val('nome_contato') + '" style="' + inputStyle + '">') +
-          field('Tipo de parceria', '<select id="forn-f-tipo" style="' + inputStyle + '">' + tipoOptions + '</select>') +
+          field('Tipo de parceria (pode marcar mais de uma)', '<div id="forn-f-tipo-chips"></div>') +
           field('Data de entrada', '<input type="date" id="forn-f-data" value="' + val('data_entrada') + '" style="' + inputStyle + '">') +
           '<div style="grid-column:1/-1;">' +
             field('Chave Pix (pra repasse)',
@@ -7157,6 +7237,11 @@
     const bairroWidget = mountMultiChip(
       overlay.querySelector('#forn-f-bairro-chips'),
       fornModalOptions.bairros, meta.bairro
+    );
+
+    // Chips multi-seleção do tipo de parceria (Elarah / By Elarah / Elarah em casa).
+    const tipoWidget = mountTipoParceriaChips(
+      overlay.querySelector('#forn-f-tipo-chips'), meta.tipo_parceria
     );
 
     const close = () => { overlay.remove(); };
@@ -7339,7 +7424,7 @@
         email: trimOrNull('#forn-f-email'),
         site: trimOrNull('#forn-f-site'),
         nome_contato: trimOrNull('#forn-f-contato'),
-        tipo_parceria: overlay.querySelector('#forn-f-tipo').value || null,
+        tipo_parceria: tipoWidget.getValue() || null,
         data_entrada: overlay.querySelector('#forn-f-data').value || null,
         pix: trimOrNull('#forn-f-pix'),
         observacoes: trimOrNull('#forn-f-obs'),
@@ -7348,11 +7433,13 @@
         btn.disabled = false;
         btn.textContent = 'Salvar';
         const errStr = String(res.error || '');
-        const hint = errStr.includes('pix')
-          ? '\n\nA coluna "pix" ainda não existe — rode sql/elarah_fornecedores_pix.sql no SQL Editor do Supabase.'
-          : (errStr.includes('fornecedores_metadata')
+        const hint = errStr.includes('tipo_parceria')
+          ? '\n\nA vertente "Elarah em casa" precisa ser liberada no banco — rode sql/elarah_fornecedores_tipo_parceria_em_casa.sql no SQL Editor do Supabase.'
+          : (errStr.includes('pix')
+            ? '\n\nA coluna "pix" ainda não existe — rode sql/elarah_fornecedores_pix.sql no SQL Editor do Supabase.'
+            : (errStr.includes('fornecedores_metadata')
               ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
-              : '');
+              : ''));
         alert('Não consegui salvar o fornecedor.\n' + (res.error || '') + hint);
         return;
       }
@@ -7914,12 +8001,7 @@
     }
     function tipoRank(f) {
       const meta = metaByKey.get(f.key);
-      switch ((meta && meta.tipo_parceria) || '') {
-        case 'elarah': return 0;
-        case 'byelarah': return 1;
-        case 'ambos': return 2;
-        default: return 3;
-      }
+      return tipoParceriaRank(meta && meta.tipo_parceria);
     }
     list.sort((a, b) => {
       const sa = statusRank(a);
@@ -7969,7 +8051,7 @@
               meta && meta.whatsapp,
               meta && meta.categoria,
               meta && meta.bairro,
-              meta && meta.tipo_parceria,
+              formatTipoParceriaLabel(meta && meta.tipo_parceria),
             ].filter(Boolean).join(' ').toLowerCase();
             return hay.indexOf(termLc) !== -1;
           })
@@ -7994,7 +8076,7 @@
       const meta = metaByKey.get(f.key);
       const dataEntradaISO = meta && meta.data_entrada ? meta.data_entrada : '';
       const whatsappVal = meta && meta.whatsapp ? meta.whatsapp : '';
-      const tipoVal = meta && meta.tipo_parceria ? meta.tipo_parceria : '';
+      const tipoRaw = meta && meta.tipo_parceria ? meta.tipo_parceria : '';
       const parceiroHa = formatParceiroHa(dataEntradaISO);
       const experienciasLabel = f.experiencesAtivas === f.experiencesTotal
         ? f.experiencesTotal
@@ -8017,16 +8099,12 @@
       const lastBookingLabel = f.lastBookingTs
         ? new Date(f.lastBookingTs).toLocaleDateString('pt-BR')
         : '<span style="color:#bbb;">—</span>';
-      // Select inline pra tipo_parceria. Salva on-change.
+      // Chips inline multi-seleção pra tipo_parceria. Montados após o
+      // innerHTML; cada toggle salva. data-tipo-raw guarda o valor atual.
       const tipoSelect =
-        '<select class="admin__forn-tipo" data-forn-key="' + escapeHtml(f.key) +
+        '<div class="admin__forn-tipo" data-forn-key="' + escapeHtml(f.key) +
           '" data-forn-nome="' + escapeHtml(f.nome) +
-          '" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:.78rem;font-family:inherit;background:#fff;">' +
-          '<option value=""' + (tipoVal === '' ? ' selected' : '') + '>—</option>' +
-          '<option value="elarah"' + (tipoVal === 'elarah' ? ' selected' : '') + '>Elarah</option>' +
-          '<option value="byelarah"' + (tipoVal === 'byelarah' ? ' selected' : '') + '>By Elarah</option>' +
-          '<option value="ambos"' + (tipoVal === 'ambos' ? ' selected' : '') + '>Elarah + By Elarah</option>' +
-        '</select>';
+          '" data-tipo-raw="' + escapeHtml(tipoRaw) + '"></div>';
       const solicitarUrl = fornSolicitarExperienciasUrl(
         meta || { fornecedor_nome: f.nome }
       );
@@ -8059,38 +8137,42 @@
       '</tr>';
     }).join('');
 
-    // Wire dos selects de tipo_parceria. Salva on-change via upsert
-    // em fornecedores_metadata (cria a linha se ainda não existir).
-    tbody.querySelectorAll('.admin__forn-tipo').forEach(sel => {
-      sel.addEventListener('change', async (e) => {
-        const el = e.target;
-        const key = el.dataset.fornKey;
-        const nome = el.dataset.fornNome;
-        const value = el.value || null;
-        el.disabled = true;
-        const sb = window.supabaseClient;
-        try {
-          // Upsert pela chave fornecedor_key
-          const { error } = await sb.from('fornecedores_metadata')
-            .upsert({ fornecedor_key: key, fornecedor_nome: nome, tipo_parceria: value },
-                    { onConflict: 'fornecedor_key' });
-          if (error) throw error;
-          // Invalida o cache de metadados — SEM isso, o próximo render lê o
-          // cache velho (sem o tipo recém-salvo) e o dropdown volta pra "—".
-          // Os editores de WhatsApp/Data já fazem isso; o de Tipo não fazia.
-          fornecedoresMetaCache = null;
-          // Feedback visual rápido + re-render pra mover a linha pro grupo
-          // certo (a tabela é ordenada por tipo de parceria).
-          el.style.borderColor = '#1a8a4a';
-          setTimeout(() => {
-            if (typeof renderFornecedores === 'function') renderFornecedores();
-          }, 600);
-        } catch (err) {
-          console.error('[Admin] tipo_parceria upsert error', err);
-          alert('Não consegui salvar o tipo de parceria. ' + (err.message || err));
-        } finally {
-          el.disabled = false;
-        }
+    // Monta os chips inline de tipo_parceria por célula. Cada toggle salva
+    // (upsert) e atualiza o metaByKey em memória — sem re-render imediato,
+    // pra não reordenar a linha no meio de uma multi-seleção. A nova ordem
+    // entra no próximo refresh do painel.
+    tbody.querySelectorAll('.admin__forn-tipo').forEach(cell => {
+      const key = cell.dataset.fornKey;
+      const nome = cell.dataset.fornNome;
+      mountTipoParceriaChips(cell, cell.dataset.tipoRaw || '', {
+        compact: true,
+        onChange: async (value) => {
+          const sb = window.supabaseClient;
+          if (!sb) return;
+          try {
+            const { error } = await sb.from('fornecedores_metadata')
+              .upsert({ fornecedor_key: key, fornecedor_nome: nome, tipo_parceria: value || null },
+                      { onConflict: 'fornecedor_key' });
+            if (error) throw error;
+            // Mantém o estado em memória: sem isso, uma re-render da busca
+            // volta os chips pro valor antigo. Invalida o cache global tb.
+            const m = metaByKey.get(key);
+            if (m) m.tipo_parceria = value || null;
+            else metaByKey.set(key, { fornecedor_key: key, fornecedor_nome: nome, tipo_parceria: value || null });
+            fornecedoresMetaCache = null;
+            // Feedback rápido: brilho verde na célula.
+            cell.style.transition = 'box-shadow .2s';
+            cell.style.boxShadow = '0 0 0 2px #1a8a4a55';
+            setTimeout(() => { cell.style.boxShadow = ''; }, 800);
+          } catch (err) {
+            console.error('[Admin] tipo_parceria upsert error', err);
+            const m = String(err && err.message || err);
+            const hint = m.includes('tipo_parceria')
+              ? '\n\nLibere a vertente "Elarah em casa" no banco: rode sql/elarah_fornecedores_tipo_parceria_em_casa.sql no SQL Editor do Supabase.'
+              : '';
+            alert('Não consegui salvar o tipo de parceria. ' + m + hint);
+          }
+        },
       });
     });
 
@@ -9055,11 +9137,6 @@
     ja_parceiro:      { label: '⭐ Já parceiro',    bg: '#cce8d4', fg: '#0e6b34' },
     recusou:          { label: 'Recusou',          bg: '#fdecec', fg: '#a83030' },
   };
-  const TIPO_PARCERIA_LABELS = {
-    elarah:   'Elarah',
-    byelarah: 'By Elarah',
-    ambos:    'Elarah + By Elarah',
-  };
   const PROSPECT_INTERACTION_LABELS = {
     mensagem_enviada:  '📤 Mensagem enviada',
     respondeu:         '💬 Respondeu',
@@ -9560,8 +9637,14 @@
       let statusCell = _propStatusBadge(p.status);
       if (sec && sec.key === 'parceiros' && p.promoted_supplier_key) {
         const tipo = _prospectsTipoMap.get(p.promoted_supplier_key) || null;
-        const tipoLabel = tipo ? (TIPO_PARCERIA_LABELS[tipo] || tipo) : '—';
-        const tipoColor = tipo === 'ambos' ? '#6b3aa0' : (tipo === 'byelarah' ? '#a05a00' : (tipo === 'elarah' ? '#1a8a4a' : '#999'));
+        const tipoArr = parseTipoParceria(tipo);
+        const tipoLabel = tipoArr.length ? formatTipoParceriaLabel(tipo) : '—';
+        // Cor: combinações → roxo; só By Elarah → laranja; só Elarah → verde;
+        // envolve "Elarah em casa" → azul; vazio → cinza.
+        const tipoColor = tipoArr.length > 1 ? '#6b3aa0'
+          : (tipoArr[0] === 'byelarah' ? '#a05a00'
+          : (tipoArr[0] === 'em_casa' ? '#3068a8'
+          : (tipoArr[0] === 'elarah' ? '#1a8a4a' : '#999')));
         statusCell += '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:6px;background:#fff;border:1px solid ' + tipoColor + ';color:' + tipoColor + ';font-size:.68rem;font-weight:700;">' + _propEsc(tipoLabel) + '</span>';
       }
       // Linha com fundo levemente colorido pra reforçar a seção
