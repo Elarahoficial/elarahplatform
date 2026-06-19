@@ -7819,7 +7819,24 @@
     });
 
     const list = Array.from(aggByKey.values());
-    list.sort((a, b) => b.faturamentoCents - a.faturamentoCents);
+    // Ordena por tipo de parceria: Elarah primeiro, depois By Elarah, depois
+    // Elarah + By Elarah; fornecedores sem tipo definido vão pro fim. Dentro
+    // de cada grupo, mantém maior faturamento primeiro.
+    function tipoRank(f) {
+      const meta = metaByKey.get(f.key);
+      switch ((meta && meta.tipo_parceria) || '') {
+        case 'elarah': return 0;
+        case 'byelarah': return 1;
+        case 'ambos': return 2;
+        default: return 3;
+      }
+    }
+    list.sort((a, b) => {
+      const ra = tipoRank(a);
+      const rb = tipoRank(b);
+      if (ra !== rb) return ra - rb;
+      return b.faturamentoCents - a.faturamentoCents;
+    });
 
     // Totais GLOBAIS vêm da RPC financial_summary (não da soma das linhas).
     // Isso garante que multi-fornecedor não duplica no header.
@@ -7958,10 +7975,12 @@
           // cache velho (sem o tipo recém-salvo) e o dropdown volta pra "—".
           // Os editores de WhatsApp/Data já fazem isso; o de Tipo não fazia.
           fornecedoresMetaCache = null;
-          // Feedback visual rápido
-          const prev = el.style.borderColor;
+          // Feedback visual rápido + re-render pra mover a linha pro grupo
+          // certo (a tabela é ordenada por tipo de parceria).
           el.style.borderColor = '#1a8a4a';
-          setTimeout(() => { el.style.borderColor = prev; }, 800);
+          setTimeout(() => {
+            if (typeof renderFornecedores === 'function') renderFornecedores();
+          }, 600);
         } catch (err) {
           console.error('[Admin] tipo_parceria upsert error', err);
           alert('Não consegui salvar o tipo de parceria. ' + (err.message || err));
