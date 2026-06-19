@@ -7119,6 +7119,10 @@
           field('Tipo de parceria', '<select id="forn-f-tipo" style="' + inputStyle + '">' + tipoOptions + '</select>') +
           field('Data de entrada', '<input type="date" id="forn-f-data" value="' + val('data_entrada') + '" style="' + inputStyle + '">') +
           '<div style="grid-column:1/-1;">' +
+            field('Chave Pix (pra repasse)',
+              '<input type="text" id="forn-f-pix" value="' + val('pix') + '" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória" style="' + inputStyle + '">') +
+          '</div>' +
+          '<div style="grid-column:1/-1;">' +
             field('Observações internas',
               '<textarea id="forn-f-obs" rows="3" style="' + inputStyle + 'resize:vertical;">' +
               val('observacoes') + '</textarea>') +
@@ -7322,14 +7326,18 @@
         nome_contato: trimOrNull('#forn-f-contato'),
         tipo_parceria: overlay.querySelector('#forn-f-tipo').value || null,
         data_entrada: overlay.querySelector('#forn-f-data').value || null,
+        pix: trimOrNull('#forn-f-pix'),
         observacoes: trimOrNull('#forn-f-obs'),
       });
       if (!res.ok) {
         btn.disabled = false;
         btn.textContent = 'Salvar';
-        const hint = String(res.error || '').includes('fornecedores_metadata')
-          ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
-          : '';
+        const errStr = String(res.error || '');
+        const hint = errStr.includes('pix')
+          ? '\n\nA coluna "pix" ainda não existe — rode sql/elarah_fornecedores_pix.sql no SQL Editor do Supabase.'
+          : (errStr.includes('fornecedores_metadata')
+              ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
+              : '');
         alert('Não consegui salvar o fornecedor.\n' + (res.error || '') + hint);
         return;
       }
@@ -7649,22 +7657,77 @@
       countEl.textContent = countGlobal + ' reserva' + (countGlobal !== 1 ? 's' : '');
     }
 
+    // Mapa de chave Pix por fornecedor — pra mostrar/copiar na hora do
+    // repasse. Falha silenciosa se a tabela/coluna ainda não existir.
+    const pixByKey = new Map();
+    try {
+      const meta = await getFornecedoresMetadata();
+      (meta || []).forEach(m => {
+        if (m && m.fornecedor_key && m.pix) {
+          pixByKey.set(m.fornecedor_key, String(m.pix).trim());
+        }
+      });
+    } catch (_) { /* sem metadata — segue sem pix */ }
+
     const list = Array.from(byForn.values()).sort((a, b) => b.total - a.total);
     listEl.innerHTML = list.map(f => {
+      const pix = f.isUnknown ? '' : (pixByKey.get(fornecedorKey(f.nome)) || '');
+      // Bloco do Pix: chave + botão copiar quando cadastrada; aviso
+      // discreto quando falta. Fornecedor desconhecido não tem cadastro.
+      const pixBlock = f.isUnknown
+        ? ''
+        : (pix
+            ? '<span style="display:inline-flex;align-items:center;gap:6px;" title="Chave Pix do fornecedor — use pra fazer o repasse">' +
+                '<span style="font-size:.7rem;color:#1a8a4a;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Pix</span>' +
+                '<code style="font-size:.76rem;color:#333;background:#f3f7f3;padding:2px 6px;border-radius:4px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+                escapeHtml(pix) + '</code>' +
+                '<button type="button" class="admin__repasse-pix-copy" data-pix="' + escapeHtml(pix) + '" ' +
+                  'style="padding:3px 8px;border:1px solid #1a8a4a;color:#1a8a4a;background:#fff;border-radius:5px;cursor:pointer;font-size:.72rem;font-family:inherit;white-space:nowrap;">copiar</button>' +
+              '</span>'
+            : '<span style="font-size:.72rem;color:#bbb;white-space:nowrap;" title="Cadastre a chave Pix deste fornecedor na aba Fornecedores">sem Pix</span>');
       return (
-        '<button type="button" class="admin__repasse-row" data-fornecedor="' +
-        escapeHtml(f.isUnknown ? '' : f.nome) + '" ' +
-        'style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #f0d9a8;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;text-align:left;width:100%;" ' +
+        '<div class="admin__repasse-row" data-fornecedor="' +
+        escapeHtml(f.isUnknown ? '' : f.nome) + '" role="button" tabindex="0" ' +
+        'style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #f0d9a8;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;text-align:left;width:100%;box-sizing:border-box;flex-wrap:wrap;" ' +
         'title="Clique pra filtrar a tabela por este fornecedor">' +
-        '<span style="flex:1;font-weight:600;color:' + (f.isUnknown ? '#a55' : '#1a1a1a') + ';">' +
+        '<span style="flex:1;min-width:120px;font-weight:600;color:' + (f.isUnknown ? '#a55' : '#1a1a1a') + ';">' +
         escapeHtml(f.nome) + '</span>' +
         '<span style="font-size:.78rem;color:#7a6440;min-width:90px;text-align:right;">' +
         f.count + ' reserva' + (f.count !== 1 ? 's' : '') + '</span>' +
         '<span style="font-weight:700;color:#b07b00;min-width:120px;text-align:right;">' +
         escapeHtml(formatCents(f.total, 'BRL')) + '</span>' +
-        '</button>'
+        pixBlock +
+        '</div>'
       );
     }).join('');
+
+    // Botão "copiar" da chave Pix — para a propagação pra não disparar o
+    // filtro da linha; copia pro clipboard com feedback visual.
+    listEl.querySelectorAll('.admin__repasse-pix-copy').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const pix = btn.getAttribute('data-pix') || '';
+        if (!pix) return;
+        const ok = () => {
+          const prev = btn.textContent;
+          btn.textContent = 'copiado!';
+          btn.style.background = '#1a8a4a';
+          btn.style.color = '#fff';
+          setTimeout(() => {
+            btn.textContent = prev;
+            btn.style.background = '#fff';
+            btn.style.color = '#1a8a4a';
+          }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(pix).then(ok).catch(() => {
+            alert('Não consegui copiar automaticamente. Chave Pix:\n' + pix);
+          });
+        } else {
+          alert('Chave Pix:\n' + pix);
+        }
+      });
+    });
 
     listEl.querySelectorAll('.admin__repasse-row').forEach(btn => {
       btn.addEventListener('click', () => {
