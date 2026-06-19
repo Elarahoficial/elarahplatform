@@ -10128,6 +10128,33 @@
     return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
   }
 
+  // Máscara automática de telefone BR em TODOS os campos de telefone do
+  // admin — (xx) xxxx-xxxx (fixo) ou (xx) xxxxx-xxxx (celular) — igual ao
+  // campo de telefone da venda manual (Contabilidade). Em vez de fiar
+  // campo a campo, usamos delegação no document: assim cobre também os
+  // inputs que vivem dentro de modais renderizados sob demanda (editar
+  // prospect, editar contato B2B, captação/interesse etc.) e qualquer
+  // campo de telefone novo que seja adicionado depois.
+  //
+  // Critério de "campo de telefone": <input type="tel"> ou input cujo id
+  // mencione whatsapp/telefone/phone/celular. Todos os números do admin
+  // são BR, então a máscara de 11 dígitos serve a todos.
+  function _isPhoneInput(el) {
+    if (!el || el.tagName !== 'INPUT') return false;
+    if ((el.type || '').toLowerCase() === 'tel') return true;
+    return /whats?app|telefone|phone|celular/i.test(el.id || '');
+  }
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (!_isPhoneInput(el)) return;
+    const masked = _finMaskPhone(el.value);
+    if (masked !== el.value) {
+      el.value = masked;
+      // mantém o cursor no fim (o usuário quase sempre edita o final)
+      try { el.setSelectionRange(masked.length, masked.length); } catch (_) {}
+    }
+  });
+
   function _finToday() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -11587,16 +11614,9 @@
     });
     document.getElementById('ms-has-payout')?.addEventListener('change', (e) => _finTogglePayoutFields(e.target.checked));
 
-    // Máscara de telefone — formata enquanto digita, mantém o cursor no
-    // fim (pra simplificar, não preserva posição do cursor — o usuário
-    // edita o final na maioria das vezes).
-    const phoneEl = document.getElementById('ms-customer-phone');
-    if (phoneEl) {
-      phoneEl.addEventListener('input', (e) => {
-        const masked = _finMaskPhone(e.target.value);
-        if (masked !== e.target.value) e.target.value = masked;
-      });
-    }
+    // Máscara de telefone: tratada globalmente por delegação no document
+    // (ver _isPhoneInput perto de _finMaskPhone). Cobre o ms-customer-phone
+    // e todos os demais campos de telefone do admin automaticamente.
 
     // Busca de experiência: resolve nome → id e dispara auto-fill
     // (horários, fornecedor, preço unitário). 'change' cobre seleção
