@@ -326,7 +326,9 @@
   const FIELD_ALIASES = {
     // OBS: "dia da semana e número do dia" (ex: "2 terça-feira") NÃO é data
     // e foi deixado de fora de propósito — ele sequestrava o campo de data.
-    id: ['id da mídia', 'id da midia', 'media id', 'media_id', 'id da publicação', 'id da publicacao'],
+    id: ['id da mídia', 'id da midia', 'media id', 'media_id', 'id da publicação', 'id da publicacao',
+         // TikTok: id estável do vídeo (evita duplicar posts a cada sync).
+         'video_id'],
     date: ['date', 'data', 'timestamp', 'data de publicação', 'data de publicacao',
            'publish date', 'created_time', 'post date', 'mídia criada', 'midia criada',
            'media created', 'ano mês', 'ano mes',
