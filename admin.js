@@ -3507,7 +3507,16 @@
         try {
           var s = window.supabaseClient;
           if (s) {
-            var { error } = await s.from('bookings').update({ status_fornecedor: newStatus }).eq('id', bookingId);
+            // Carimba a data do repasse: agora quando vira "feito", limpa
+            // quando volta pra pendente. Usado no extrato por fornecedor.
+            var patch = { status_fornecedor: newStatus };
+            patch.repasse_feito_at = newStatus === 'repasse_feito' ? new Date().toISOString() : null;
+            var { error } = await s.from('bookings').update(patch).eq('id', bookingId);
+            // Fallback: se a coluna repasse_feito_at ainda não existe (migração
+            // pendente), salva só o status pra não travar o repasse.
+            if (error && String(error.message || '').includes('repasse_feito_at')) {
+              ({ error } = await s.from('bookings').update({ status_fornecedor: newStatus }).eq('id', bookingId));
+            }
             if (error) {
               console.error('[Admin] status_fornecedor update error', error);
               alert('Erro ao atualizar status do fornecedor. Veja o console.');
@@ -7449,6 +7458,184 @@
     });
   }
 
+  // =================================================
+  // ===== EXTRATO / COMPROVANTE DE REPASSES =========
+  // Gera um PDF (página printável) por fornecedor com os repasses já
+  // feitos no mês: participante(s), experiência, data da compra, data e
+  // horário da experiência, valor do repasse e a data em que o repasse
+  // foi efetuado. Pra mandar pro fornecedor. Atualiza sozinho conforme
+  // os repasses vão sendo marcados como feitos.
+  // =================================================
+
+  // Nomes dos participantes (comprador + acompanhantes), dedup por nome.
+  function _extratoNames(b) {
+    const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const out = [], seen = new Set();
+    const add = (n) => { const t = String(n || '').trim(); if (!t) return; const k = norm(t); if (seen.has(k)) return; seen.add(k); out.push(t); };
+    add(b.nome);
+    if (b.metadata && Array.isArray(b.metadata.participantes)) {
+      b.metadata.participantes.forEach(p => { if (p) add(p.nome); });
+    }
+    return out;
+  }
+  // Valor do repasse de uma booking pra ESTE fornecedor (trata multi-fornecedor).
+  function _extratoBookingRepasse(b, supplierKey) {
+    if (b.repasses && Array.isArray(b.repasses) && b.repasses.length) {
+      let sum = 0, found = false;
+      b.repasses.forEach(e => {
+        if (e && fornecedorKey(e.fornecedor_nome) === supplierKey) { sum += Number(e.valor_centavos) || 0; found = true; }
+      });
+      if (found) return sum;
+    }
+    return Number(b.valor_repasse_centavos) || 0;
+  }
+
+  // Busca as linhas do extrato (bookings + vendas manuais) de um fornecedor
+  // num mês (ym = 'YYYY-MM'), só repasses marcados como feitos/pagos.
+  async function _fornFetchExtratoRows(supplierKey, supplierName, ym) {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const parts = String(ym || '').split('-');
+    const yy = Number(parts[0]), mm = Number(parts[1]);
+    const start = new Date(yy, mm - 1, 1), end = new Date(yy, mm, 1);
+    const inMonth = (val) => { if (!val) return false; const d = new Date(val); return !isNaN(d) && d >= start && d < end; };
+    const rows = [];
+
+    try {
+      const { data } = await sb.from('bookings').select('*').eq('status', 'pago');
+      (data || []).forEach(b => {
+        const matchPrincipal = fornecedorKey(b.fornecedor_nome) === supplierKey;
+        const matchRepasse = b.repasses && Array.isArray(b.repasses) &&
+          b.repasses.some(e => e && fornecedorKey(e.fornecedor_nome) === supplierKey);
+        if (!matchPrincipal && !matchRepasse) return;
+        if ((b.status_fornecedor || '') !== 'repasse_feito') return;
+        const rdate = b.repasse_feito_at || b.created_at;
+        if (!inMonth(rdate)) return;
+        rows.push({
+          participantes: _extratoNames(b),
+          experiencia: b.experiencia_nome || '—',
+          dataCompra: b.created_at,
+          dataExp: b.data || '',
+          horario: b.horario || '',
+          repasse: _extratoBookingRepasse(b, supplierKey),
+          dataRepasse: rdate,
+        });
+      });
+    } catch (e) { console.error('[Extrato] bookings', e); }
+
+    try {
+      const { data } = await sb.from('manual_sales').select('*').eq('payout_status', 'pago');
+      (data || []).forEach(m => {
+        const k = (m.supplier_key && m.supplier_key.trim()) || (m.supplier_name ? fornecedorKey(m.supplier_name) : '');
+        if (k !== supplierKey && fornecedorKey(m.supplier_name || '') !== supplierKey) return;
+        const rdate = m.payout_paid_at || m.updated_at || m.sale_date;
+        if (!inMonth(rdate)) return;
+        rows.push({
+          participantes: [m.customer_name].filter(Boolean),
+          experiencia: m.experience_name || '—',
+          dataCompra: m.sale_date || m.created_at,
+          dataExp: m.slot_date || '',
+          horario: m.slot_time || '',
+          repasse: Number(m.payout_amount_centavos) || 0,
+          dataRepasse: rdate,
+        });
+      });
+    } catch (e) { console.error('[Extrato] manual_sales', e); }
+
+    rows.sort((a, b) => String(a.dataRepasse || '').localeCompare(String(b.dataRepasse || '')));
+    return rows;
+  }
+
+  // Monta o HTML printável do extrato.
+  function _fornExtratoHtml(supplierName, ym, rows) {
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const parts = String(ym || '').split('-');
+    const mesNome = (meses[Number(parts[1]) - 1] || '') + ' de ' + parts[0];
+    const esc = (s) => escapeHtml(String(s == null ? '' : s));
+    const fmtTs = (v) => { if (!v) return '—'; const d = new Date(v); return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR'); };
+    const fmtDataExp = (t) => { if (!t) return '—'; const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(t)); return m ? (m[3] + '/' + m[2] + '/' + m[1]) : String(t); };
+    let total = 0; rows.forEach(r => total += (Number(r.repasse) || 0));
+    const hoje = new Date().toLocaleDateString('pt-BR');
+
+    const linhas = rows.length
+      ? rows.map(r => {
+          const nomes = (r.participantes && r.participantes.length) ? r.participantes.map(esc).join('<br>') : '—';
+          const dataHora = fmtDataExp(r.dataExp) + (r.horario ? ' · ' + esc(r.horario) : '');
+          return '<tr>' +
+            '<td>' + nomes + '</td>' +
+            '<td>' + esc(r.experiencia) + '</td>' +
+            '<td>' + fmtTs(r.dataCompra) + '</td>' +
+            '<td>' + dataHora + '</td>' +
+            '<td class="r">' + esc(formatCents(r.repasse, 'BRL')) + '</td>' +
+            '<td>' + fmtTs(r.dataRepasse) + '</td>' +
+          '</tr>';
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px;">Nenhum repasse marcado como feito neste mês.</td></tr>';
+
+    return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
+      '<title>Repasses ' + esc(supplierName) + ' — ' + esc(mesNome) + '</title>' +
+      '<style>' +
+      '*{box-sizing:border-box;} body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#222;margin:32px;}' +
+      'h1{font-size:1.3rem;margin:0 0 2px;} .sub{color:#666;font-size:.9rem;margin-bottom:18px;}' +
+      '.meta{font-size:.9rem;margin-bottom:18px;line-height:1.5;}' +
+      'table{width:100%;border-collapse:collapse;font-size:.82rem;}' +
+      'th,td{border:1px solid #ddd;padding:7px 9px;text-align:left;vertical-align:top;}' +
+      'th{background:#f4f4f4;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:#555;}' +
+      'td.r,th.r{text-align:right;white-space:nowrap;}' +
+      '.total{margin-top:16px;text-align:right;font-size:1rem;font-weight:700;}' +
+      '.foot{margin-top:28px;color:#999;font-size:.78rem;}' +
+      '.actions{margin-bottom:20px;} .actions button{padding:9px 16px;border:0;background:#f0a05e;color:#fff;border-radius:8px;font-size:.9rem;cursor:pointer;}' +
+      '@media print{.no-print{display:none;}}' +
+      '</style></head><body>' +
+      '<div class="actions no-print"><button onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button></div>' +
+      '<h1>Comprovante de repasses — Elarah</h1>' +
+      '<div class="meta"><b>Fornecedor:</b> ' + esc(supplierName) + '<br>' +
+      '<b>Mês de referência:</b> ' + esc(mesNome) + '<br>' +
+      '<b>Gerado em:</b> ' + hoje + '</div>' +
+      '<table><thead><tr>' +
+      '<th>Participante(s)</th><th>Experiência</th><th>Data da compra</th><th>Data / horário</th><th class="r">Repasse</th><th>Repasse feito em</th>' +
+      '</tr></thead><tbody>' + linhas + '</tbody></table>' +
+      '<div class="total">Total repassado: ' + esc(formatCents(total, 'BRL')) + '</div>' +
+      '<div class="foot">Documento gerado automaticamente pelo painel Elarah.</div>' +
+      '<script>window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},350);};<\/script>' +
+      '</body></html>';
+  }
+
+  // Abre o modal de extrato (escolher mês) e gera o PDF numa nova aba.
+  function _fornAbrirExtratoModal(supplierKey, supplierName) {
+    const old = document.getElementById('forn-extrato-overlay');
+    if (old) old.remove();
+    const now = new Date();
+    const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const ov = document.createElement('div');
+    ov.id = 'forn-extrato-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10060;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:430px;width:100%;padding:22px;font-family:inherit;box-shadow:0 18px 50px rgba(0,0,0,.25);">' +
+      '<h3 style="margin:0 0 6px;font-size:1.05rem;">Extrato de repasses</h3>' +
+      '<p style="margin:0 0 14px;color:#666;font-size:.85rem;"><b>' + escapeHtml(supplierName) + '</b> — gera um PDF com os repasses marcados como feitos no mês escolhido.</p>' +
+      '<label style="font-size:.78rem;font-weight:600;color:#555;">Mês de referência</label>' +
+      '<input type="month" id="forn-extrato-mes" value="' + ym + '" style="display:block;width:100%;margin:4px 0 18px;padding:8px 10px;border:1px solid #ddd;border-radius:7px;font-family:inherit;">' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+        '<button type="button" id="forn-extrato-cancel" style="padding:9px 16px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;font-family:inherit;font-size:.85rem;">Cancelar</button>' +
+        '<button type="button" id="forn-extrato-go" style="padding:9px 18px;border:0;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:600;">Gerar PDF</button>' +
+      '</div></div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    ov.querySelector('#forn-extrato-cancel').addEventListener('click', close);
+    ov.querySelector('#forn-extrato-go').addEventListener('click', async () => {
+      const ym2 = ov.querySelector('#forn-extrato-mes').value || ym;
+      // Abre a janela JÁ (gesto do usuário) pra não cair em bloqueador de popup.
+      const w = window.open('', '_blank');
+      if (w) w.document.write('<p style="font-family:sans-serif;padding:24px;color:#555;">Gerando extrato…</p>');
+      close();
+      const rows = await _fornFetchExtratoRows(supplierKey, supplierName, ym2);
+      const html = _fornExtratoHtml(supplierName, ym2, rows);
+      if (w) { w.document.open(); w.document.write(html); w.document.close(); }
+      else { alert('Seu navegador bloqueou a janela do PDF. Permita pop-ups pra este site e tente de novo.'); }
+    });
+  }
+
   // Lista unificada de fornecedores conhecidos: junta nomes da tabela
   // fornecedores_metadata com nomes presentes em experiences.fornecedor_nome.
   // Dedup case-insensitive preservando a grafia original do primeiro hit.
@@ -8415,6 +8602,10 @@
         '<button type="button" class="admin__forn-edit" data-forn-key="' + escapeHtml(f.key) + '" ' +
           'style="padding:5px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;' +
           'cursor:pointer;font-size:.75rem;font-family:inherit;margin-right:6px;">Editar</button>' +
+        '<button type="button" class="admin__forn-extrato" data-forn-key="' + escapeHtml(f.key) + '" data-forn-nome="' + escapeHtml(f.nome) + '" ' +
+          'style="padding:5px 10px;border:1px solid #3068a8;color:#3068a8;background:#fff;border-radius:6px;' +
+          'cursor:pointer;font-size:.75rem;font-family:inherit;margin-right:6px;" ' +
+          'title="Gera um PDF com os repasses feitos no mês pra enviar ao fornecedor">📄 Extrato</button>' +
         (solicitarUrl
           ? '<a href="' + solicitarUrl + '" target="_blank" rel="noopener" ' +
             'style="padding:5px 10px;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;' +
@@ -8545,6 +8736,12 @@
         const agg = aggByKey.get(key);
         const nome = (meta && meta.fornecedor_nome) || (agg && agg.nome) || key;
         openFornecedorModal(meta || { fornecedor_nome: nome }, false);
+      });
+    });
+
+    tbody.querySelectorAll('.admin__forn-extrato').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _fornAbrirExtratoModal(btn.dataset.fornKey, btn.dataset.fornNome || btn.dataset.fornKey);
       });
     });
 
@@ -11772,6 +11969,8 @@
   // é o DOM (#ms-payments-list); coletado no save. _finMsOrigHadPayments
   // lembra se a venda já tinha pagamentos, pra permitir limpar tudo.
   let _finMsOrigHadPayments = false;
+  let _finMsOrigPayoutStatus = null;   // status do repasse ao abrir (pra preservar a data)
+  let _finMsOrigPayoutPaidAt = null;   // data do repasse já registrada
   function _finPaymentRowHtml(p) {
     p = p || {};
     const valor = (p.valor_centavos != null && p.valor_centavos !== '') ? _finCentsToInput(p.valor_centavos) : '';
@@ -11921,6 +12120,9 @@
         $('ms-event-type-custom').style.display = data.event_type === 'outro' ? 'block' : 'none';
       }
       _finMsOrigHadPayments = Array.isArray(data.payments) && data.payments.length > 0;
+      // Em duplicar, o repasse vira novo (sem data); em editar, preserva.
+      _finMsOrigPayoutStatus = mode === 'edit' ? (data.payout_status || null) : null;
+      _finMsOrigPayoutPaidAt = mode === 'edit' ? (data.payout_paid_at || null) : null;
       _finSetPayments(Array.isArray(data.payments) ? data.payments : []);
       $('ms-notes').value = data.notes || '';
       const hasPayout = data.payout_status && data.payout_status !== 'nao_aplicavel';
@@ -11952,6 +12154,8 @@
       if ($('ms-event-type')) $('ms-event-type').value = '';
       if ($('ms-event-type-custom')) { $('ms-event-type-custom').value = ''; $('ms-event-type-custom').style.display = 'none'; }
       _finMsOrigHadPayments = false;
+      _finMsOrigPayoutStatus = null;
+      _finMsOrigPayoutPaidAt = null;
       _finSetPayments([]);
       $('ms-discount').value = '0';
       $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
@@ -12009,6 +12213,16 @@
       payout_status: hasPayout ? ($('ms-payout-status').value || 'pendente') : 'nao_aplicavel',
       notes: $('ms-notes').value || null,
     };
+    // Carimba a data do repasse (payout_paid_at) quando marcado como pago.
+    // Preserva a data original se já estava pago; senão usa agora. Limpa
+    // quando não é pago. Usado no extrato de repasses por fornecedor.
+    if (payload.payout_status === 'pago') {
+      payload.payout_paid_at = (_finMsOrigPayoutStatus === 'pago' && _finMsOrigPayoutPaidAt)
+        ? _finMsOrigPayoutPaidAt
+        : new Date().toISOString();
+    } else {
+      payload.payout_paid_at = null;
+    }
     // Tipo de evento: só inclui as colunas no payload quando a venda é
     // classificada como evento — assim vendas normais continuam salvando
     // mesmo em ambientes que ainda não rodaram a migração de Eventos.
