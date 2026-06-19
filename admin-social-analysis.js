@@ -79,7 +79,21 @@
     try {
       const raw = localStorage.getItem(BRAND_KEY);
       if (!raw) return defaultBrand();
-      return Object.assign(defaultBrand(), JSON.parse(raw));
+      const parsed = JSON.parse(raw);
+      const def = defaultBrand();
+      // Top-level defaults pra campos que não existirem ainda — sem
+      // chamar Object.assign(def, parsed) pra não fazer shallow-merge
+      // do byPlatform (perderia uma plataforma).
+      Object.keys(def).forEach(k => {
+        if (parsed[k] === undefined) parsed[k] = def[k];
+      });
+      if (!parsed.byPlatform || typeof parsed.byPlatform !== 'object') {
+        parsed.byPlatform = def.byPlatform;
+      } else {
+        if (!parsed.byPlatform.instagram) parsed.byPlatform.instagram = def.byPlatform.instagram;
+        if (!parsed.byPlatform.tiktok)    parsed.byPlatform.tiktok    = def.byPlatform.tiktok;
+      }
+      return migrateBrand(parsed);
     } catch (e) {
       return defaultBrand();
     }
@@ -93,19 +107,54 @@
     }
   }
 
+  // Migra schema antigo (campos username/link/bio/destaques no topo) para
+  // o novo (byPlatform). Os valores antigos viram do Instagram por padrão,
+  // já que era a rede principal antes do split. Idempotente.
+  function migrateBrand(brand) {
+    if (!brand.byPlatform || typeof brand.byPlatform !== 'object') {
+      brand.byPlatform = { instagram: {}, tiktok: {} };
+    }
+    if (!brand.byPlatform.instagram) brand.byPlatform.instagram = {};
+    if (!brand.byPlatform.tiktok) brand.byPlatform.tiktok = {};
+    const ig = brand.byPlatform.instagram;
+    ['username', 'link', 'bio', 'destaques'].forEach(k => {
+      if (brand[k] && !ig[k]) ig[k] = brand[k];
+      delete brand[k];
+    });
+    delete brand.publico; // Agora é inferido — não pedimos mais.
+    if (!brand.activePlatform) brand.activePlatform = 'instagram';
+    return brand;
+  }
+
   function defaultBrand() {
     return {
       nome: 'Elarah',
-      username: 'elarahoficial',
-      bio: '',
-      link: '',
-      destaques: '',
       temFoto: true,
       vende: 'Experiências e presentes memoráveis',
-      publico: '',
       proposta: '',
       concorrentes: '',
+      activePlatform: 'instagram',
+      byPlatform: {
+        instagram: { username: '', link: '', bio: '', destaques: '' },
+        tiktok:    { username: '', link: '', bio: '' },
+      },
     };
+  }
+
+  // Achata o brand pra "view" de uma plataforma: campos globais +
+  // campos da plataforma escolhida promovidos pro topo. Resto do
+  // código consome brand.username/.link/.bio/.destaques sem saber
+  // que houve split.
+  function brandForPlatform(brand, platform) {
+    const p = (platform === 'tiktok') ? 'tiktok' : 'instagram';
+    const per = (brand.byPlatform && brand.byPlatform[p]) || {};
+    return Object.assign({}, brand, {
+      username:  per.username  || '',
+      link:      per.link      || '',
+      bio:       per.bio       || '',
+      destaques: per.destaques || '',
+      _platform: p,
+    });
   }
 
   // -----------------------------------------------------------
@@ -244,19 +293,137 @@
   }
 
   // -----------------------------------------------------------
+  // INFERÊNCIA DE PÚBLICO — heurística rules-based em cima dos posts.
+  // Não inferimos gênero (sinal fraco demais nos posts). Usamos:
+  //   1. Hashtags geográficas → localização
+  //   2. Hashtags temáticas → interesses/categorias
+  //   3. Frequência de emojis + tom → faixa etária (proxy fraco mas
+  //      melhor que vácuo)
+  // Confiança escala com quantidade de posts e diversidade de tags.
+  // -----------------------------------------------------------
+  const GEO_TERMS = {
+    saopaulo: 'São Paulo', sp: 'São Paulo', sampa: 'São Paulo', spzin: 'São Paulo',
+    rj: 'Rio de Janeiro', rio: 'Rio de Janeiro', riodejaneiro: 'Rio de Janeiro',
+    bh: 'Belo Horizonte', belohorizonte: 'Belo Horizonte',
+    curitiba: 'Curitiba', cwb: 'Curitiba',
+    poa: 'Porto Alegre', portoalegre: 'Porto Alegre',
+    brasilia: 'Brasília', df: 'Brasília',
+    salvador: 'Salvador', ssa: 'Salvador',
+  };
+
+  const INTEREST_RULES = [
+    { kw: /gastronom|comida|cozinha|drinks?|wine|vinho|bar|restaurante|cafe|brunch|jantar|chef/, label: 'gastronomia' },
+    { kw: /presente|gift|namorados|maes?|paes?|natal|aniversari|nascimento|amigosecreto/, label: 'presentes e datas' },
+    { kw: /experien|workshop|aula|curso|oficina|imersao/, label: 'experiências e aprendizado' },
+    { kw: /arte|pintura|cultura|teatro|musica|show|exposicao|museu|cinema/, label: 'arte e cultura' },
+    { kw: /yoga|wellness|meditacao|autocuidado|saude|terapia|bem.?estar/, label: 'bem-estar e autocuidado' },
+    { kw: /role(s|m)?p?|programa|sair|noite|finde|fimdesemana|dicasp|oquefazer/, label: 'rolês e programas' },
+    { kw: /amig|namor|date|casal|encontro/, label: 'vida social e relacionamentos' },
+    { kw: /pet|cachorro|gato/, label: 'pets' },
+    { kw: /maternidade|familia|filhos|kids|crianca/, label: 'maternidade e família' },
+  ];
+
+  function inferAudience(posts, platform) {
+    // Filtra pela plataforma se ela tiver posts; senão usa tudo como fallback.
+    let scoped = posts;
+    if (platform) {
+      const f = posts.filter(p => p.platform === platform);
+      if (f.length) scoped = f;
+    }
+    if (!scoped.length) return null;
+
+    const tagCounts = {};
+    scoped.forEach(p => {
+      (p.tags || []).forEach(t => {
+        const k = String(t).toLowerCase().trim().replace(/^#/, '');
+        if (k) tagCounts[k] = (tagCounts[k] || 0) + 1;
+      });
+    });
+
+    // 1) Localização — top hit em GEO_TERMS, considerando tags + legendas
+    const geoHits = {};
+    Object.keys(GEO_TERMS).forEach(g => {
+      let n = tagCounts[g] || 0;
+      const re = new RegExp('(^|[^\\p{L}])' + g + '([^\\p{L}]|$)', 'iu');
+      scoped.forEach(p => { if (p.caption && re.test(p.caption)) n++; });
+      if (n > 0) geoHits[g] = n;
+    });
+    const topGeo = Object.entries(geoHits).sort((a, b) => b[1] - a[1])[0];
+    const localizacao = topGeo ? GEO_TERMS[topGeo[0]] : null;
+
+    // 2) Interesses — agrega tags pela regra das categorias
+    const FILLER = new Set(['foryou', 'foryoupage', 'fyp', 'foryourpage', 'explore', 'viral', 'trending']);
+    const tagSoup = Object.keys(tagCounts)
+      .filter(k => !FILLER.has(k))
+      .filter(k => !GEO_TERMS[k])
+      .join(' ');
+    const interesses = [];
+    INTEREST_RULES.forEach(r => { if (r.kw.test(tagSoup)) interesses.push(r.label); });
+
+    // Top tags brutas (auxiliar pra exibir)
+    const topTags = Object.entries(tagCounts)
+      .filter(([k]) => !FILLER.has(k))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([k]) => k);
+
+    // 3) Faixa etária — proxy fraco via emojis + tom da legenda
+    let totalEmojis = 0, casual = 0, formal = 0, withCap = 0;
+    scoped.forEach(p => {
+      const cap = p.caption || '';
+      if (!cap) return;
+      withCap++;
+      const em = cap.match(/[\u{1F300}-\u{1FAFF}\u{2700}-\u{27BF}]/gu) || [];
+      totalEmojis += em.length;
+      if (/(amoooo|incri|haha|kkkk|salv+a|@@+|aaaa|uhuu|hahaha)/i.test(cap)) casual++;
+      if (/(curadoria|exclusiv|premium|elegan|sofistica|seleciona)/i.test(cap)) formal++;
+    });
+    const emojiRate = withCap ? totalEmojis / withCap : 0;
+    let faixa;
+    if (emojiRate > 3 && casual >= formal) faixa = '18-30';
+    else if (emojiRate > 1) faixa = '25-40';
+    else faixa = '30-50';
+
+    // Confiança baseada em volume e diversidade
+    let confianca = 'baixa';
+    if (scoped.length >= 30 && Object.keys(tagCounts).length >= 15) confianca = 'alta';
+    else if (scoped.length >= 10) confianca = 'média';
+
+    return { localizacao, interesses, topTags, faixa, confianca, posts: scoped.length };
+  }
+
+  function audienceSummary(aud) {
+    if (!aud) return null;
+    const parts = [];
+    parts.push(`pessoas <strong>${aud.faixa}</strong>`);
+    if (aud.localizacao) parts.push(`em <strong>${escapeHTML(aud.localizacao)}</strong>`);
+    if (aud.interesses.length) {
+      parts.push('interessadas em <strong>' + aud.interesses.slice(0, 4).map(escapeHTML).join(', ') + '</strong>');
+    }
+    return parts.join(', ');
+  }
+
+  // -----------------------------------------------------------
   // SEÇÃO 1 — POSICIONAMENTO
   // -----------------------------------------------------------
-  function sectionPosicionamento(brand) {
+  function sectionPosicionamento(brand, posts) {
+    const aud = inferAudience(posts || [], brand._platform);
+    const audText = audienceSummary(aud);
+
     const confusao = [];
     if (!brand.proposta) confusao.push('Proposta de valor não está declarada em 1 frase — o visitante não entende em 3s o que você entrega.');
-    if (!brand.publico) confusao.push('Público-alvo não definido — sem isso, o conteúdo tenta falar com todo mundo e não conecta com ninguém.');
-    if (!brand.vende) confusao.push('Não está claro o que a marca vende.');
-    if (!brand.link) confusao.push('Sem link na bio: não há caminho claro pra ação/compra.');
+    if (!aud)            confusao.push('Sem posts suficientes para inferir público — importe mais conteúdo pra análise ficar confiável.');
+    if (!brand.vende)    confusao.push('Não está claro o que a marca vende.');
+    if (!brand.link)     confusao.push('Sem link na bio: não há caminho claro pra ação/compra.');
     if (!confusao.length) confusao.push('Nenhum ponto crítico de confusão — posicionamento bem declarado. Reforce a consistência visual.');
+
+    const audValor = audText
+      ? `${audText}<br><small class="sa-muted">Inferido de ${aud.posts} posts · confiança ${aud.confianca}${aud.topTags.length ? ' · tags fortes: #' + aud.topTags.slice(0, 5).map(escapeHTML).join(' #') : ''}</small>`
+      : '<em>sem posts suficientes pra inferir</em>';
 
     return card('1. Posicionamento', `
       ${kv('O que a marca vende', brand.vende || '<em>não informado</em>')}
-      ${kv('Público-alvo provável', brand.publico || '<em>não informado — preencha no perfil da marca</em>')}
+      ${kv('Público inferido pelos posts', audValor)}
       ${kv('Proposta de valor', brand.proposta || '<em>não informada</em>')}
       ${kv('Diferenciais percebidos', brand.vende ? 'Curadoria e experiência (inferido do que vende). Torne explícito na bio.' : '<em>defina o que te diferencia</em>')}
       <h4 class="sa-h4">Pontos de confusão</h4>
@@ -997,24 +1164,33 @@
   // -----------------------------------------------------------
   function buildReport() {
     const posts = loadPosts();
-    const brand = loadBrand();
+    const rawBrand = loadBrand();
+    // Visão achatada do brand pra plataforma ativa — assim todas as
+    // sections continuam consumindo brand.username/.link/.bio/.destaques
+    // como antes, mas vêm da rede certa.
+    const brand = brandForPlatform(rawBrand, rawBrand.activePlatform);
     // Contagem por rede pra deixar explícito de onde vêm os dados.
     const byNet = {};
     posts.forEach(p => { byNet[p.platform] = (byNet[p.platform] || 0) + 1; });
     const netLine = Object.keys(byNet).length
       ? Object.keys(byNet).map(k => `${PLATFORM_EMOJI[k] || ''} ${PLATFORM_LABEL[k] || k}: ${byNet[k]}`).join('  ·  ')
       : 'sem dados';
+    const activeLabel = PLATFORM_LABEL[brand._platform] || brand._platform;
+    const activeEmoji = PLATFORM_EMOJI[brand._platform] || '';
     const head = `
       <div class="sa-report__head">
         <div>
           <h2 class="sa-report__title">Análise estratégica — @${escapeHTML(brand.username || brand.nome || '')}</h2>
-          <p class="sa-muted">Gerado em ${new Date().toLocaleDateString('pt-BR')} · ${posts.length} posts · ${netLine}</p>
+          <p class="sa-muted">
+            Perfil analisado: ${activeEmoji} <strong>${escapeHTML(activeLabel)}</strong> ·
+            Gerado em ${new Date().toLocaleDateString('pt-BR')} · ${posts.length} posts · ${netLine}
+          </p>
         </div>
       </div>`;
     return head +
       sectionMetricas(posts) +
       sectionPlataformas(posts) +
-      sectionPosicionamento(brand) +
+      sectionPosicionamento(brand, posts) +
       sectionBio(brand) +
       sectionConteudo(posts) +
       sectionEngajamento(posts) +
@@ -1036,36 +1212,86 @@
       `<label class="sa-field"><span>${label}</span><input id="${id}" value="${escapeHTML(val)}" placeholder="${escapeHTML(ph)}"></label>`;
     const ta = (id, label, val, ph = '') =>
       `<label class="sa-field sa-field--full"><span>${label}</span><textarea id="${id}" rows="3" placeholder="${escapeHTML(ph)}">${escapeHTML(val)}</textarea></label>`;
+
+    const active = brand.activePlatform === 'tiktok' ? 'tiktok' : 'instagram';
+    const ig = (brand.byPlatform && brand.byPlatform.instagram) || {};
+    const tt = (brand.byPlatform && brand.byPlatform.tiktok)    || {};
+    const per = active === 'tiktok' ? tt : ig;
+
+    const tab = (id, label) =>
+      `<button type="button" class="sa-tab ${active === id ? 'sa-tab--active' : ''}" data-platform="${id}">${label}</button>`;
+
+    // Campos por plataforma — Destaques só existe no Instagram.
+    const perPlatformFields = active === 'instagram'
+      ? `
+          ${f('sa-username',  'Username (@)',           per.username,  'elarahoficial')}
+          ${f('sa-link',      'Link na bio',            per.link,      'https://...')}
+          ${f('sa-destaques', 'Destaques (vírgula)',    per.destaques, 'Comece aqui, Avaliações, Ofertas, FAQ')}
+        `
+      : `
+          ${f('sa-username', 'Username (@)', per.username, 'elarahoficial')}
+          ${f('sa-link',     'Link na bio',  per.link,     'https://...')}
+        `;
+
     return `
       <div class="sa-brandform" id="sa-brandform">
         <h3 class="sa-card__title">Perfil da marca <small class="sa-muted">(alimenta as seções qualitativas)</small></h3>
-        <div class="sa-grid">
-          ${f('sa-nome', 'Nome (campo pesquisável)', brand.nome, 'Ex: Elarah | Presentes & Experiências')}
-          ${f('sa-username', 'Username (@)', brand.username, 'elarahoficial')}
-          ${f('sa-link', 'Link na bio', brand.link, 'https://...')}
-          ${f('sa-vende', 'O que vende', brand.vende, 'Experiências e presentes')}
-          ${f('sa-publico', 'Público-alvo', brand.publico, 'Ex: mulheres 25-45 que presenteiam')}
-          ${f('sa-destaques', 'Destaques (vírgula)', brand.destaques, 'Comece aqui, Avaliações, Ofertas, FAQ')}
+
+        <h4 class="sa-h4">Comum às duas redes</h4>
+        <div class="sa-grid sa-grid--two">
+          ${f('sa-nome',  'Nome (campo pesquisável)', brand.nome,  'Ex: Elarah | Presentes & Experiências')}
+          ${f('sa-vende', 'O que vende',              brand.vende, 'Experiências e presentes')}
         </div>
-        ${ta('sa-bio', 'Bio atual', brand.bio, 'Cole a bio exata do perfil')}
-        ${ta('sa-proposta', 'Proposta de valor (1 frase)', brand.proposta, 'O que você entrega + pra quem + diferencial')}
-        ${ta('sa-concorrentes', 'Concorrentes percebidos (vírgula)', brand.concorrentes, '@concorrente1, @concorrente2')}
+        ${ta('sa-proposta',    'Proposta de valor (1 frase)',     brand.proposta,    'O que você entrega + pra quem + diferencial')}
+        ${ta('sa-concorrentes','Concorrentes percebidos (vírgula)', brand.concorrentes, '@concorrente1, @concorrente2')}
         <label class="sa-check"><input type="checkbox" id="sa-temfoto" ${brand.temFoto ? 'checked' : ''}> Tem foto de perfil profissional/legível</label>
+
+        <h4 class="sa-h4" style="margin-top:20px">Por plataforma</h4>
+        <div class="sa-tabs" id="sa-platform-tabs">
+          ${tab('instagram', 'Instagram')}
+          ${tab('tiktok',    'TikTok')}
+        </div>
+        <div class="sa-grid ${active === 'tiktok' ? 'sa-grid--two' : ''}">
+          ${perPlatformFields}
+        </div>
+        ${ta('sa-bio', 'Bio atual', per.bio, 'Cole a bio exata do perfil')}
+
+        <p class="sa-muted" style="margin-top:8px">
+          💡 O <strong>público-alvo</strong> agora é inferido automaticamente pela análise — não precisa preencher.
+        </p>
+
         <div class="sa-brandform__actions">
           <button class="admin__add-btn" id="sa-generate" type="button">Gerar análise</button>
         </div>
       </div>`;
   }
 
-  function readBrandForm() {
+  // Lê o form e GRUDA os valores da aba atual no brand existente, pra
+  // não apagar o que estava preenchido na outra aba.
+  function readBrandForm(existing) {
     const v = (id) => (document.getElementById(id) || {}).value || '';
-    return {
-      nome: v('sa-nome'), username: v('sa-username').replace(/^@/, ''),
-      link: v('sa-link'), vende: v('sa-vende'), publico: v('sa-publico'),
-      destaques: v('sa-destaques'), bio: v('sa-bio'), proposta: v('sa-proposta'),
+    const base = existing && existing.byPlatform ? existing : loadBrand();
+    const active = base.activePlatform === 'tiktok' ? 'tiktok' : 'instagram';
+
+    const newBrand = Object.assign({}, base, {
+      nome:         v('sa-nome'),
+      vende:        v('sa-vende'),
+      proposta:     v('sa-proposta'),
       concorrentes: v('sa-concorrentes'),
-      temFoto: !!(document.getElementById('sa-temfoto') || {}).checked,
+      temFoto:      !!(document.getElementById('sa-temfoto') || {}).checked,
+      activePlatform: active,
+      byPlatform: Object.assign({}, base.byPlatform),
+    });
+    const perOld = newBrand.byPlatform[active] || {};
+    const perNew = {
+      username: v('sa-username').replace(/^@/, ''),
+      link:     v('sa-link'),
+      bio:      v('sa-bio'),
     };
+    if (active === 'instagram') perNew.destaques = v('sa-destaques');
+    else perNew.destaques = perOld.destaques || ''; // TikTok não tem destaques no form
+    newBrand.byPlatform[active] = Object.assign({}, perOld, perNew);
+    return newBrand;
   }
 
   // -----------------------------------------------------------
@@ -1112,11 +1338,31 @@
   }
 
   function regenerate() {
-    const brand = readBrandForm();
+    const existing = loadBrand();
+    const brand = readBrandForm(existing);
     saveBrand(brand);
     const rep = document.getElementById('sa-report');
     if (rep) rep.innerHTML = buildReport();
     bindReportUI(); // re-bind nada extra, mas mantém consistência
+  }
+
+  // Troca de aba do form: salva o que foi digitado na aba atual,
+  // atualiza activePlatform, re-renderiza o form inteiro (sem re-gerar
+  // o relatório — usuário ainda não pediu).
+  function switchPlatformTab(target) {
+    if (target !== 'instagram' && target !== 'tiktok') return;
+    const existing = loadBrand();
+    if (existing.activePlatform === target) return;
+    const captured = readBrandForm(existing);
+    captured.activePlatform = target;
+    saveBrand(captured);
+    const form = document.getElementById('sa-brandform');
+    if (!form) return;
+    // Recria o form inteiro pra refletir a aba ativa
+    const wrap = document.createElement('div');
+    wrap.innerHTML = brandFormHTML(captured);
+    form.replaceWith(wrap.firstElementChild);
+    bindReportUI();
   }
 
   function bindReportUI() {
@@ -1124,6 +1370,13 @@
     if (back) back.onclick = close;
     const gen = document.getElementById('sa-generate');
     if (gen) gen.onclick = regenerate;
+    // Tabs de plataforma do form
+    const tabsWrap = document.getElementById('sa-platform-tabs');
+    if (tabsWrap) {
+      tabsWrap.querySelectorAll('[data-platform]').forEach(btn => {
+        btn.onclick = () => switchPlatformTab(btn.getAttribute('data-platform'));
+      });
+    }
     const print = document.getElementById('sa-print');
     if (print) print.onclick = () => window.print();
     const copy = document.getElementById('sa-copy');
