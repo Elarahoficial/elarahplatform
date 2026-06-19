@@ -960,12 +960,13 @@
               <th>Tipo</th>
               <th>Total</th>
               <th>Receita Elarah</th>
+              <th>Pagamentos</th>
               <th>Status</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody id="eventos-body">
-            <tr><td colspan="9" class="admin__table-empty">Nenhum evento ainda. Vendas manuais com mais de 2 pessoas aparecem aqui automaticamente.</td></tr>
+            <tr><td colspan="10" class="admin__table-empty">Nenhum evento ainda. Vendas manuais com mais de 2 pessoas aparecem aqui automaticamente.</td></tr>
           </tbody>
         </table>
       </div>
@@ -4153,6 +4154,20 @@
         </div>
 
         <div class="admin__form-field admin__form-field--full" style="border-top:1px dashed #ddd;padding-top:12px;margin-top:8px;">
+          <label style="font-weight:600;">Pagamentos — entrada + parcelas</label>
+          <p class="admin__form-hint" style="margin:2px 0 8px;">Pra eventos com entrada e restante parcelado. Cada linha tem descrição, valor, data e se já foi pago. Some quanto quiser de datas.</p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+            <span style="font-size:.84rem;color:#555;">Gerar entrada de</span>
+            <input type="number" id="ms-entrada-pct" min="1" max="100" placeholder="30" style="width:72px;">
+            <span style="font-size:.84rem;color:#555;">%</span>
+            <button type="button" id="ms-entrada-apply" class="admin__add-btn" style="padding:5px 12px;font-size:.8rem;">Gerar entrada + restante</button>
+          </div>
+          <div id="ms-payments-list"></div>
+          <button type="button" id="ms-payment-add" class="admin__add-btn" style="padding:5px 12px;font-size:.82rem;margin-top:4px;">+ Adicionar pagamento</button>
+          <p id="ms-payments-summary" style="margin-top:8px;font-size:.82rem;color:#555;min-height:1.1em;"></p>
+        </div>
+
+        <div class="admin__form-field admin__form-field--full" style="border-top:1px dashed #ddd;padding-top:12px;margin-top:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
             <input type="checkbox" id="ms-has-payout" style="width:16px;height:16px;margin:0;">
             <span>Esta venda gera repasse a fornecedor</span>
@@ -4205,7 +4220,7 @@
 <script src="admin-social-analysis.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=179"></script>
+<script src="admin.js?v=180"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

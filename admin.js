@@ -7911,13 +7911,26 @@
     const payout = paid ? (Number(s.payout_amount_centavos) || 0) : 0;
     return { total: total, margin: Math.max(0, total - payout) };
   }
+  // Resumo do cronograma de pagamentos (entrada + parcelas). null = sem.
+  function _eventosPaymentsInfo(s) {
+    const arr = Array.isArray(s.payments) ? s.payments : [];
+    if (!arr.length) return null;
+    let recebido = 0, nextDue = null;
+    arr.forEach(p => {
+      const v = Number(p.valor_centavos) || 0;
+      if (p.pago) recebido += v;
+      else if (p.data && (!nextDue || p.data < nextDue)) nextDue = p.data;
+    });
+    const dealTotal = Number(s.total_amount_centavos) || 0;
+    return { recebido: recebido, saldo: Math.max(0, dealTotal - recebido), nextDue: nextDue, count: arr.length };
+  }
   let _eventosData = [];   // cache das vendas-evento do último fetch
 
   async function renderEventos() {
     if (!document.getElementById('eventos-body')) return;
     const sb = window.supabaseClient;
     const tbody = document.getElementById('eventos-body');
-    if (!sb) { tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Supabase indisponível.</td></tr>'; return; }
+    if (!sb) { tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Supabase indisponível.</td></tr>'; return; }
 
     let rows = [];
     try {
@@ -7928,7 +7941,7 @@
       console.error('[Eventos] load error', e);
       const msg = String((e && e.message) || e);
       const missing = msg.includes('event_type') || msg.includes('is_event');
-      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">' +
         (missing
           ? 'As colunas de evento ainda não existem — rode sql/elarah_manual_sales_eventos.sql no SQL Editor do Supabase.'
           : 'Erro ao carregar: ' + escapeHtml(msg)) + '</td></tr>';
@@ -8024,7 +8037,7 @@
     const tbody = document.getElementById('eventos-body');
     if (!tbody) return;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
+      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">' +
         (all.length ? 'Nenhum evento bate com o filtro.'
           : 'Nenhum evento ainda. Vendas manuais com mais de 2 pessoas aparecem aqui automaticamente.') + '</td></tr>';
       return;
@@ -8047,6 +8060,12 @@
         EVENTO_TIPOS.map(t => '<option value="' + t.v + '"' + (s.event_type === t.v ? ' selected' : '') + '>' + escapeHtml(t.l) + '</option>').join('') +
         '</select>' +
         '<input type="text" class="eventos-tipo-custom" data-id="' + escapeHtml(s.id) + '" value="' + escapeHtml(s.event_type_custom || '') + '" placeholder="Digite o tipo" style="display:' + (isOutro ? 'block' : 'none') + ';margin-top:4px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:.76rem;font-family:inherit;width:150px;">';
+      const pinfo = _eventosPaymentsInfo(s);
+      const pagamentosCell = pinfo
+        ? 'Recebido <strong>' + escapeHtml(formatCents(pinfo.recebido, 'BRL')) + '</strong>' +
+          '<br><span style="font-size:.74rem;color:#7a6440;">Saldo ' + escapeHtml(formatCents(pinfo.saldo, 'BRL')) +
+          (pinfo.nextDue ? ' · próx ' + new Date(pinfo.nextDue + 'T00:00:00').toLocaleDateString('pt-BR') : '') + '</span>'
+        : '<span style="color:#bbb;">—</span>';
       return '<tr>' +
         '<td style="font-weight:600;">' + escapeHtml(s.customer_name || '—') + '</td>' +
         '<td>' + escapeHtml(s.experience_name || '—') + '</td>' +
@@ -8055,6 +8074,7 @@
         '<td>' + tipoSel + '</td>' +
         '<td>' + escapeHtml(formatCents(Number(s.total_amount_centavos) || 0, 'BRL')) + '</td>' +
         '<td style="color:var(--orange,#f0a05e);">' + escapeHtml(formatCents(money.margin, 'BRL')) + '</td>' +
+        '<td>' + pagamentosCell + '</td>' +
         '<td>' + statusBadge(s.payment_status) + '</td>' +
         '<td style="white-space:nowrap;">' +
           '<button type="button" class="eventos-edit" data-id="' + escapeHtml(s.id) + '" style="padding:5px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;font-size:.75rem;font-family:inherit;margin-right:6px;">Editar</button>' +
@@ -11747,6 +11767,88 @@
     });
   }
 
+  // ===== Pagamentos (entrada + parcelas) do modal de venda manual =====
+  // Editor de linhas {label, valor_centavos, data, pago}. Fonte de verdade
+  // é o DOM (#ms-payments-list); coletado no save. _finMsOrigHadPayments
+  // lembra se a venda já tinha pagamentos, pra permitir limpar tudo.
+  let _finMsOrigHadPayments = false;
+  function _finPaymentRowHtml(p) {
+    p = p || {};
+    const valor = (p.valor_centavos != null && p.valor_centavos !== '') ? _finCentsToInput(p.valor_centavos) : '';
+    return '<div class="ms-payment-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">' +
+      '<input type="text" class="ms-pay-label" placeholder="Descrição (ex: Entrada)" value="' + _finEsc(p.label || '') + '" style="flex:1;min-width:120px;">' +
+      '<input type="text" class="ms-pay-valor" inputmode="decimal" placeholder="R$" value="' + _finEsc(valor) + '" style="width:110px;">' +
+      '<input type="date" class="ms-pay-data" value="' + _finEsc(p.data || '') + '" style="width:150px;">' +
+      '<label style="display:flex;align-items:center;gap:4px;font-size:.8rem;white-space:nowrap;"><input type="checkbox" class="ms-pay-pago"' + (p.pago ? ' checked' : '') + '> pago</label>' +
+      '<button type="button" class="ms-pay-remove" title="Remover" style="border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;padding:4px 9px;font-size:.85rem;color:#c0392b;">✕</button>' +
+    '</div>';
+  }
+  function _finWirePaymentRow(row) {
+    row.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', _finRenderPaymentsSummary);
+      inp.addEventListener('change', _finRenderPaymentsSummary);
+    });
+    const rm = row.querySelector('.ms-pay-remove');
+    if (rm) rm.addEventListener('click', () => { row.remove(); _finRenderPaymentsSummary(); });
+  }
+  function _finAddPaymentRow(p) {
+    const list = document.getElementById('ms-payments-list');
+    if (!list) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = _finPaymentRowHtml(p);
+    const row = tmp.firstElementChild;
+    list.appendChild(row);
+    _finWirePaymentRow(row);
+  }
+  function _finSetPayments(arr) {
+    const list = document.getElementById('ms-payments-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (Array.isArray(arr) ? arr : []).forEach(p => _finAddPaymentRow(p));
+    _finRenderPaymentsSummary();
+  }
+  function _finCollectPayments() {
+    const list = document.getElementById('ms-payments-list');
+    if (!list) return [];
+    const out = [];
+    list.querySelectorAll('.ms-payment-row').forEach(row => {
+      const label = (row.querySelector('.ms-pay-label').value || '').trim();
+      const valor = _finParseBRL(row.querySelector('.ms-pay-valor').value);
+      const data = row.querySelector('.ms-pay-data').value || null;
+      const pago = row.querySelector('.ms-pay-pago').checked;
+      if (!label && !valor && !data) return; // linha vazia
+      out.push({ label: label || 'Pagamento', valor_centavos: valor, data: data, pago: pago });
+    });
+    return out;
+  }
+  function _finRenderPaymentsSummary() {
+    const el = document.getElementById('ms-payments-summary');
+    if (!el) return;
+    const arr = _finCollectPayments();
+    if (!arr.length) { el.textContent = ''; return; }
+    let soma = 0, pago = 0;
+    arr.forEach(p => { soma += p.valor_centavos; if (p.pago) pago += p.valor_centavos; });
+    const total = _finRecalcManualSaleTotal();
+    let txt = 'Soma: ' + _finFmtBRL(soma) + ' · Pago: ' + _finFmtBRL(pago) + ' · Em aberto: ' + _finFmtBRL(soma - pago);
+    const diff = soma - total;
+    if (diff !== 0) txt += ' · ⚠️ difere do total da venda (' + _finFmtBRL(total) + ')';
+    el.textContent = txt;
+  }
+  function _finApplyEntradaPct() {
+    const pctEl = document.getElementById('ms-entrada-pct');
+    const pct = Math.max(1, Math.min(100, parseInt(pctEl && pctEl.value, 10) || 0));
+    if (!pct) { alert('Informe a % de entrada (1 a 100).'); return; }
+    const total = _finRecalcManualSaleTotal();
+    if (total <= 0) { alert('Preencha quantidade e valor unitário antes de gerar a entrada.'); return; }
+    const entrada = Math.round(total * pct / 100);
+    const restante = Math.max(0, total - entrada);
+    const today = new Date().toISOString().slice(0, 10);
+    _finSetPayments([
+      { label: 'Entrada (' + pct + '%)', valor_centavos: entrada, data: today, pago: true },
+      { label: 'Restante', valor_centavos: restante, data: '', pago: false },
+    ]);
+  }
+
   async function _finOpenManualSaleModal(saleId, prefillData) {
     const modal = document.getElementById('manual-sale-modal');
     if (!modal) return;
@@ -11818,6 +11920,8 @@
         $('ms-event-type-custom').value = data.event_type_custom || '';
         $('ms-event-type-custom').style.display = data.event_type === 'outro' ? 'block' : 'none';
       }
+      _finMsOrigHadPayments = Array.isArray(data.payments) && data.payments.length > 0;
+      _finSetPayments(Array.isArray(data.payments) ? data.payments : []);
       $('ms-notes').value = data.notes || '';
       const hasPayout = data.payout_status && data.payout_status !== 'nao_aplicavel';
       $('ms-has-payout').checked = !!hasPayout;
@@ -11847,6 +11951,8 @@
       $('ms-payment-status').value = 'pago';
       if ($('ms-event-type')) $('ms-event-type').value = '';
       if ($('ms-event-type-custom')) { $('ms-event-type-custom').value = ''; $('ms-event-type-custom').style.display = 'none'; }
+      _finMsOrigHadPayments = false;
+      _finSetPayments([]);
       $('ms-discount').value = '0';
       $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
       _finTogglePayoutFields(false);
@@ -11914,6 +12020,13 @@
         ? ($('ms-event-type-custom').value.trim() || null)
         : null;
     }
+    // Pagamentos (entrada + parcelas). Só envia a coluna quando há linhas
+    // ou quando a venda já tinha pagamentos (pra permitir limpar) — assim
+    // vendas normais salvam mesmo sem a migração de pagamentos rodada.
+    const paymentsArr = _finCollectPayments();
+    if (paymentsArr.length > 0 || _finMsOrigHadPayments) {
+      payload.payments = paymentsArr;
+    }
     if (!payload.customer_name) {
       msgEl.textContent = 'Nome do cliente é obrigatório.'; msgEl.style.color = '#c0392b'; return;
     }
@@ -11960,11 +12073,13 @@
     } catch (e) {
       console.error('[Contabilidade] save manual sale:', e);
       const em = String(e.message || e);
-      const hint = em.includes('event_type_custom')
-        ? ' — rode sql/elarah_manual_sales_eventos_tipos.sql no Supabase.'
-        : ((em.includes('event_type') || em.includes('is_event'))
-          ? ' — rode sql/elarah_manual_sales_eventos.sql (e o _tipos.sql) no Supabase pra liberar a classificação de eventos.'
-          : '');
+      const hint = em.includes('payments')
+        ? ' — rode sql/elarah_manual_sales_pagamentos.sql no Supabase pra liberar entrada/parcelas.'
+        : (em.includes('event_type_custom')
+          ? ' — rode sql/elarah_manual_sales_eventos_tipos.sql no Supabase.'
+          : ((em.includes('event_type') || em.includes('is_event'))
+            ? ' — rode sql/elarah_manual_sales_eventos.sql (e o _tipos.sql) no Supabase pra liberar a classificação de eventos.'
+            : ''));
       msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
     }
@@ -12221,8 +12336,13 @@
     document.querySelector('#manual-sale-modal .admin__modal-backdrop')?.addEventListener('click', _finCloseManualSaleModal);
     ['ms-quantity','ms-unit-price','ms-discount'].forEach(id => {
       document.getElementById(id)?.addEventListener('input', _finRecalcManualSaleTotal);
+      document.getElementById(id)?.addEventListener('input', _finRenderPaymentsSummary);
     });
     document.getElementById('ms-has-payout')?.addEventListener('change', (e) => _finTogglePayoutFields(e.target.checked));
+
+    // Pagamentos (entrada + parcelas)
+    document.getElementById('ms-payment-add')?.addEventListener('click', () => { _finAddPaymentRow({}); _finRenderPaymentsSummary(); });
+    document.getElementById('ms-entrada-apply')?.addEventListener('click', _finApplyEntradaPct);
 
     // Tipo de evento "Outro": mostra o campo de texto livre só quando
     // "Outro (digitar)" estiver selecionado.
