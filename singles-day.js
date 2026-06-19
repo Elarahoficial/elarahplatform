@@ -19,9 +19,14 @@
   // espaços. "Yoga Aéreo" e "yoga aereo" caem no mesmo bucket.
   function normalize(s) {
     return String(s == null ? '' : s)
+      // Apóstrofos e acento agudo viram apóstrofo ASCII ANTES do NFKD.
+      // Senão o NFKD decompõe "´" (U+00B4) em espaço + acento combinante
+      // e, ao remover o acento, "Single´s" vira "single s" — quebrando
+      // o match de "single's day" (foi o que sumiu com a "Modelagem em
+      // Cerâmica: Single´s Day").
+      .replace(/[´`'']/g, "'")
       .normalize('NFKD').replace(/[̀-ͯ]/g, '')
       .toLowerCase()
-      .replace(/[´'']/g, "'")
       .replace(/\s+/g, ' ')
       .trim();
   }
