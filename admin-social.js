@@ -329,7 +329,12 @@
     id: ['id da mídia', 'id da midia', 'media id', 'media_id', 'id da publicação', 'id da publicacao'],
     date: ['date', 'data', 'timestamp', 'data de publicação', 'data de publicacao',
            'publish date', 'created_time', 'post date', 'mídia criada', 'midia criada',
-           'media created', 'ano mês', 'ano mes'],
+           'media created', 'ano mês', 'ano mes',
+           // TikTok (conector Windsor): nome cru "video_create_datetime"
+           // — o fallback tira o prefixo "video_" e sobra "create_datetime".
+           'create_datetime', 'video_create_datetime', 'create datetime',
+           'data de criação', 'data de criacao', 'data de criação do vídeo',
+           'data de criacao do video', 'tempo de criação do vídeo', 'tempo de criacao do video'],
     platform: ['platform', 'plataforma', 'source', 'data source', 'datasource', 'fonte', 'fonte de dados', 'rede', 'rede social', 'canal'],
     type: ['type', 'tipo', 'tipo de mídia', 'tipo de midia', 'media type', 'media_type',
            'tipo de produto de mídia', 'tipo de produto de midia', 'media product type',
@@ -337,7 +342,10 @@
     link: ['link', 'permalink', 'url', 'post url', 'link do post', 'media url', 'media_url', 'shortcode url',
            'url permanente para a mídia', 'url permanente para a midia',
            'link permanente para a mídia', 'link permanente para a midia',
-           'url da mídia', 'url da midia'],
+           'url da mídia', 'url da midia',
+           // TikTok (conector Windsor): "video_share_url" → "share_url"
+           'share_url', 'video_share_url', 'url de compartilhamento de vídeo',
+           'url de compartilhamento de video', 'url de compartilhamento'],
     caption: ['caption', 'legenda', 'legenda da mídia', 'legenda da midia', 'legenda do vídeo',
               'legenda do video', 'texto', 'descrição', 'descricao', 'description', 'mensagem',
               'conteúdo', 'conteudo'],
@@ -348,10 +356,15 @@
             'impressions', 'impressões', 'impressoes', 'impressions_total',
             'contagem total de visualizações de vídeos', 'contagem total de visualizacoes de videos',
             'contagem de visualizações de vídeo', 'contagem de visualizacoes de video',
-            'visualizações de vídeo', 'visualizacoes de video'],
+            'visualizações de vídeo', 'visualizacoes de video',
+            // TikTok: views POR vídeo é "video_views_count" (tabela Video).
+            // O "video_views" cru é total da CONTA — não usar por post.
+            'views_count', 'video_views_count'],
     reach: ['reach', 'alcance', 'alcance da mídia', 'alcance da midia', 'contas alcançadas',
             'contas alcancadas', 'accounts reached', 'reached accounts', 'accounts_reached',
-            'público alcançado diariamente', 'publico alcancado diariamente'],
+            'público alcançado diariamente', 'publico alcancado diariamente',
+            // TikTok: alcance único por vídeo (tabela Video).
+            'video_reach'],
     likes: ['likes', 'curtidas', 'contagem de curtidas na mídia', 'contagem de curtidas na midia',
             'like count', 'like_count', 'curtidas totais', 'total de curtidas', 'total_likes',
             'curtidas do vídeo', 'curtidas do video'],
