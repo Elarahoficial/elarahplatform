@@ -1771,7 +1771,22 @@ select {
   font-size: 1.3rem;
   font-weight: 400;
   color: var(--gray-900);
+  margin-bottom: 8px;
+}
+
+.group-section__form-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--orange);
+  text-decoration: none;
   margin-bottom: 24px;
+  transition: opacity 0.2s ease;
+}
+
+.group-section__form-link:hover {
+  opacity: 0.75;
+  text-decoration: underline;
 }
 
 .group-section__form-grid {
