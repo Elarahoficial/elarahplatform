@@ -7900,9 +7900,18 @@
     });
 
     const list = Array.from(aggByKey.values());
-    // Ordena por tipo de parceria: Elarah primeiro, depois By Elarah, depois
-    // Elarah + By Elarah; fornecedores sem tipo definido vão pro fim. Dentro
-    // de cada grupo, mantém maior faturamento primeiro.
+    // Ordena em duas camadas:
+    //  1) Status: tudo que NÃO está "ativo" (em negociação, aguardando
+    //     retorno, novas experiências, inativo) vai pro topo — é o pipeline
+    //     que pede atenção. Os ativos ficam embaixo.
+    //  2) Dentro de cada grupo, por tipo de parceria (Elarah → By Elarah →
+    //     Elarah + By Elarah → sem tipo) e, por fim, maior faturamento.
+    // Sem metadata, o status default é "ativo".
+    function statusRank(f) {
+      const meta = metaByKey.get(f.key);
+      const st = (meta && meta.status) || 'ativo';
+      return st === 'ativo' ? 1 : 0;   // não-ativo (0) em cima, ativo (1) embaixo
+    }
     function tipoRank(f) {
       const meta = metaByKey.get(f.key);
       switch ((meta && meta.tipo_parceria) || '') {
@@ -7913,6 +7922,9 @@
       }
     }
     list.sort((a, b) => {
+      const sa = statusRank(a);
+      const sb = statusRank(b);
+      if (sa !== sb) return sa - sb;
       const ra = tipoRank(a);
       const rb = tipoRank(b);
       if (ra !== rb) return ra - rb;
