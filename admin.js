@@ -396,6 +396,7 @@
       case 'interesses':  await renderInteresses(); break;
       case 'partners':    await renderPartners(); break;
       case 'purchases':   invalidateBookings(); await renderBookings(); break;
+      case 'eventos':     await renderEventos(); break;
       case 'fornecedores': await renderFornecedores(); break;
       case 'prospects':   await renderProspects(); break;
       case 'b2b-prospects': await renderB2BProspects(); break;
@@ -7858,6 +7859,227 @@
     });
   }
 
+  // =================================================
+  // ================== EVENTOS ======================
+  // Aba de eventos de grupo fechado (aniversário, despedida, corporativo).
+  // Base = vendas manuais. Entram por padrão as com mais de 2 pessoas
+  // (quantity >= 3) ou marcadas com um tipo; dá pra remover falso positivo
+  // (is_event=false) e classificar por tipo pra acompanhar a demanda.
+  // =================================================
+  const EVENTO_TIPOS = [
+    { v: 'aniversario',        l: 'Aniversário' },
+    { v: 'despedida_solteira', l: 'Despedida de solteira' },
+    { v: 'despedida_solteiro', l: 'Despedida de solteiro' },
+    { v: 'corporativo',        l: 'Corporativo' },
+    { v: 'outro',              l: 'Outro' },
+  ];
+  // Critério de inclusão na aba: is_event manda; senão qty>=3 ou tem tipo.
+  function _isEventoSale(s) {
+    if (!s) return false;
+    if (s.is_event === false) return false;
+    if (s.is_event === true) return true;
+    return (Number(s.quantity) || 0) >= 3 || !!s.event_type;
+  }
+  // Dinheiro só conta venda paga (demanda conta todas).
+  function _eventosMoney(s) {
+    const paid = s.payment_status === 'pago';
+    const total = paid ? (Number(s.total_amount_centavos) || 0) : 0;
+    const payout = paid ? (Number(s.payout_amount_centavos) || 0) : 0;
+    return { total: total, margin: Math.max(0, total - payout) };
+  }
+  let _eventosData = [];   // cache das vendas-evento do último fetch
+
+  async function renderEventos() {
+    if (!document.getElementById('eventos-body')) return;
+    const sb = window.supabaseClient;
+    const tbody = document.getElementById('eventos-body');
+    if (!sb) { tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">Supabase indisponível.</td></tr>'; return; }
+
+    let rows = [];
+    try {
+      const { data, error } = await sb.from('manual_sales').select('*');
+      if (error) throw error;
+      rows = data || [];
+    } catch (e) {
+      console.error('[Eventos] load error', e);
+      const msg = String((e && e.message) || e);
+      const missing = msg.includes('event_type') || msg.includes('is_event');
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
+        (missing
+          ? 'As colunas de evento ainda não existem — rode sql/elarah_manual_sales_eventos.sql no SQL Editor do Supabase.'
+          : 'Erro ao carregar: ' + escapeHtml(msg)) + '</td></tr>';
+      return;
+    }
+
+    _eventosData = rows.filter(_isEventoSale);
+    _eventosRenderAll();
+
+    // Controles estáticos — wire único.
+    const refreshBtn = document.getElementById('btn-eventos-refresh');
+    if (refreshBtn && !refreshBtn.dataset.wired) { refreshBtn.dataset.wired = '1'; refreshBtn.addEventListener('click', renderEventos); }
+    const newBtn = document.getElementById('btn-eventos-new');
+    if (newBtn && !newBtn.dataset.wired) { newBtn.dataset.wired = '1'; newBtn.addEventListener('click', () => _finOpenManualSaleModal(null)); }
+    const filtro = document.getElementById('eventos-filter-tipo');
+    if (filtro && !filtro.dataset.wired) { filtro.dataset.wired = '1'; filtro.addEventListener('change', _eventosRenderAll); }
+    const search = document.getElementById('eventos-search');
+    if (search && !search.dataset.wired) { search.dataset.wired = '1'; search.addEventListener('input', _eventosRenderAll); }
+  }
+
+  // Renderiza stats globais + demanda por tipo (sempre tudo) e a lista
+  // (respeitando filtro de tipo + busca). Lê de _eventosData (cache).
+  function _eventosRenderAll() {
+    const all = _eventosData || [];
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+    // ===== Stats globais =====
+    let people = 0, gross = 0, margin = 0;
+    all.forEach(s => {
+      people += Number(s.quantity) || 0;
+      const m = _eventosMoney(s); gross += m.total; margin += m.margin;
+    });
+    setTxt('stat-eventos-count', all.length);
+    setTxt('stat-eventos-people', people);
+    setTxt('stat-eventos-gross', formatCents(gross, 'BRL'));
+    setTxt('stat-eventos-margin', formatCents(margin, 'BRL'));
+
+    // ===== Demanda por tipo (qual rende mais) =====
+    const byType = new Map();
+    EVENTO_TIPOS.forEach(t => byType.set(t.v, { l: t.l, count: 0, people: 0, gross: 0, margin: 0 }));
+    byType.set('__sem', { l: 'Sem classificação', count: 0, people: 0, gross: 0, margin: 0 });
+    all.forEach(s => {
+      const k = (s.event_type && byType.has(s.event_type)) ? s.event_type : '__sem';
+      const e = byType.get(k);
+      e.count += 1; e.people += Number(s.quantity) || 0;
+      const m = _eventosMoney(s); e.gross += m.total; e.margin += m.margin;
+    });
+    const typeRows = Array.from(byType.values()).filter(e => e.count > 0).sort((a, b) => b.gross - a.gross);
+    const btBody = document.getElementById('eventos-bytype-body');
+    if (btBody) {
+      btBody.innerHTML = typeRows.length
+        ? typeRows.map(e => {
+            const ticket = e.count ? Math.round(e.gross / e.count) : 0;
+            return '<tr>' +
+              '<td style="font-weight:600;">' + escapeHtml(e.l) + '</td>' +
+              '<td>' + e.count + '</td>' +
+              '<td>' + e.people + '</td>' +
+              '<td style="font-weight:600;">' + escapeHtml(formatCents(e.gross, 'BRL')) + '</td>' +
+              '<td style="color:var(--orange,#f0a05e);font-weight:600;">' + escapeHtml(formatCents(e.margin, 'BRL')) + '</td>' +
+              '<td>' + escapeHtml(formatCents(ticket, 'BRL')) + '</td>' +
+            '</tr>';
+          }).join('')
+        : '<tr><td colspan="6" class="admin__table-empty">Sem eventos ainda.</td></tr>';
+    }
+
+    // ===== Lista (filtro de tipo + busca) =====
+    const tipoFilter = (document.getElementById('eventos-filter-tipo') || {}).value || '';
+    const termo = ((document.getElementById('eventos-search') || {}).value || '').trim().toLowerCase();
+    let list = all.slice();
+    if (tipoFilter === '__sem_tipo') list = list.filter(s => !s.event_type);
+    else if (tipoFilter) list = list.filter(s => s.event_type === tipoFilter);
+    if (termo) list = list.filter(s =>
+      ((s.customer_name || '') + ' ' + (s.experience_name || '')).toLowerCase().indexOf(termo) !== -1);
+    list.sort((a, b) => {
+      const da = a.slot_date || '', db = b.slot_date || '';
+      if (da && db) return db.localeCompare(da);
+      if (da && !db) return -1;
+      if (!da && db) return 1;
+      return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+    });
+
+    const countEl = document.getElementById('eventos-count');
+    if (countEl) countEl.textContent = list.length + ' evento' + (list.length !== 1 ? 's' : '');
+
+    const tbody = document.getElementById('eventos-body');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
+        (all.length ? 'Nenhum evento bate com o filtro.'
+          : 'Nenhum evento ainda. Vendas manuais com mais de 2 pessoas aparecem aqui automaticamente.') + '</td></tr>';
+      return;
+    }
+
+    const statusBadge = (st) => {
+      const map = { pago: ['#1a8a4a', 'Pago'], pendente: ['#b07b00', 'Pendente'], cancelado: ['#c0392b', 'Cancelado'], reembolsado: ['#999', 'Reembolsado'] };
+      const m = map[st] || ['#777', st || '—'];
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:' + m[0] + '22;color:' + m[0] + ';font-weight:600;font-size:11px;">' + escapeHtml(m[1]) + '</span>';
+    };
+
+    tbody.innerHTML = list.map(s => {
+      const money = _eventosMoney(s);
+      const dataEvento = s.slot_date
+        ? new Date(s.slot_date + 'T00:00:00').toLocaleDateString('pt-BR')
+        : '<span style="color:#bbb;">—</span>';
+      const tipoSel = '<select class="eventos-tipo" data-id="' + escapeHtml(s.id) + '" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:.78rem;font-family:inherit;background:#fff;">' +
+        '<option value=""' + (!s.event_type ? ' selected' : '') + '>—</option>' +
+        EVENTO_TIPOS.map(t => '<option value="' + t.v + '"' + (s.event_type === t.v ? ' selected' : '') + '>' + escapeHtml(t.l) + '</option>').join('') +
+        '</select>';
+      return '<tr>' +
+        '<td style="font-weight:600;">' + escapeHtml(s.customer_name || '—') + '</td>' +
+        '<td>' + escapeHtml(s.experience_name || '—') + '</td>' +
+        '<td>' + dataEvento + '</td>' +
+        '<td style="text-align:center;font-weight:600;">' + (Number(s.quantity) || 0) + '</td>' +
+        '<td>' + tipoSel + '</td>' +
+        '<td>' + escapeHtml(formatCents(Number(s.total_amount_centavos) || 0, 'BRL')) + '</td>' +
+        '<td style="color:var(--orange,#f0a05e);">' + escapeHtml(formatCents(money.margin, 'BRL')) + '</td>' +
+        '<td>' + statusBadge(s.payment_status) + '</td>' +
+        '<td style="white-space:nowrap;">' +
+          '<button type="button" class="eventos-edit" data-id="' + escapeHtml(s.id) + '" style="padding:5px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;font-size:.75rem;font-family:inherit;margin-right:6px;">Editar</button>' +
+          '<button type="button" class="eventos-remove" data-id="' + escapeHtml(s.id) + '" style="padding:5px 10px;border:1px solid #c0392b;background:#fff;color:#c0392b;border-radius:6px;cursor:pointer;font-size:.75rem;font-family:inherit;" title="Não é evento — remover desta aba">Remover</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    tbody.querySelectorAll('.eventos-tipo').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const id = e.target.dataset.id;
+        const value = e.target.value || null;
+        e.target.disabled = true;
+        const patch = { event_type: value };
+        if (value) patch.is_event = true;          // classificar = é evento
+        const ok = await _eventosUpdate(id, patch);
+        e.target.disabled = false;
+        if (ok) {
+          const row = _eventosData.find(x => x.id === id);
+          if (row) { row.event_type = value; if (value) row.is_event = true; }
+          _eventosRenderAll();
+        }
+      });
+    });
+    tbody.querySelectorAll('.eventos-edit').forEach(btn => {
+      btn.addEventListener('click', () => _finOpenManualSaleModal(btn.dataset.id));
+    });
+    tbody.querySelectorAll('.eventos-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Remover esta venda da aba Eventos?\n\nEla continua em Compras/Contabilidade — só sai daqui (marcada como "não é evento").')) return;
+        btn.disabled = true;
+        const ok = await _eventosUpdate(id, { is_event: false });
+        if (ok) {
+          _eventosData = _eventosData.filter(x => x.id !== id);
+          _eventosRenderAll();
+        } else { btn.disabled = false; }
+      });
+    });
+  }
+
+  async function _eventosUpdate(id, patch) {
+    const sb = window.supabaseClient;
+    if (!sb || !id) return false;
+    try {
+      const { error } = await sb.from('manual_sales').update(patch).eq('id', id);
+      if (error) throw error;
+      invalidateBookings();   // afeta Compras/Contabilidade/Analytics via RPC
+      return true;
+    } catch (e) {
+      console.error('[Eventos] update error', e);
+      const msg = String((e && e.message) || e);
+      const hint = (msg.includes('event_type') || msg.includes('is_event'))
+        ? '\n\nRode sql/elarah_manual_sales_eventos.sql no SQL Editor do Supabase.'
+        : '';
+      alert('Não consegui salvar. ' + msg + hint);
+      return false;
+    }
+  }
+
   // Guarda a função de render das linhas do render mais recente, pra que o
   // listener (permanente) da busca sempre chame o closure atual — evita
   // filtrar uma lista velha depois que o painel é recarregado.
@@ -11530,6 +11752,7 @@
       $('ms-discount').value = _finCentsToInput(data.discount_centavos);
       $('ms-payment-method').value = data.payment_method || '';
       $('ms-payment-status').value = data.payment_status || 'pago';
+      if ($('ms-event-type')) $('ms-event-type').value = data.event_type || '';
       $('ms-notes').value = data.notes || '';
       const hasPayout = data.payout_status && data.payout_status !== 'nao_aplicavel';
       $('ms-has-payout').checked = !!hasPayout;
@@ -11557,6 +11780,7 @@
       if (slotDlNew) slotDlNew.innerHTML = '';
       $('ms-quantity').value = '1';
       $('ms-payment-status').value = 'pago';
+      if ($('ms-event-type')) $('ms-event-type').value = '';
       $('ms-discount').value = '0';
       $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
       _finTogglePayoutFields(false);
@@ -11613,6 +11837,11 @@
       payout_status: hasPayout ? ($('ms-payout-status').value || 'pendente') : 'nao_aplicavel',
       notes: $('ms-notes').value || null,
     };
+    // Tipo de evento: só inclui as colunas no payload quando a venda é
+    // classificada como evento — assim vendas normais continuam salvando
+    // mesmo em ambientes que ainda não rodaram a migração de Eventos.
+    const evType = ($('ms-event-type') && $('ms-event-type').value) || null;
+    if (evType) { payload.event_type = evType; payload.is_event = true; }
     if (!payload.customer_name) {
       msgEl.textContent = 'Nome do cliente é obrigatório.'; msgEl.style.color = '#c0392b'; return;
     }
@@ -11652,10 +11881,17 @@
         if (document.getElementById('panel-purchases')?.classList.contains('admin__panel--active')) {
           renderBookings();
         }
+        if (document.getElementById('panel-eventos')?.classList.contains('admin__panel--active')) {
+          renderEventos();
+        }
       }, 400);
     } catch (e) {
       console.error('[Contabilidade] save manual sale:', e);
-      msgEl.textContent = 'Erro: ' + (e.message || e);
+      const em = String(e.message || e);
+      const hint = (em.includes('event_type') || em.includes('is_event'))
+        ? ' — rode sql/elarah_manual_sales_eventos.sql no Supabase pra liberar a classificação de eventos.'
+        : '';
+      msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
     }
   }
