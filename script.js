@@ -1552,6 +1552,12 @@ if (categoriaURL) activeCategoria = categoriaURL;
   var groupPlaceholder = document.querySelector('.group-section__form-placeholder');
   var groupTipo = document.getElementById('group-tipo');
   var groupFormTitle = document.getElementById('group-form-title');
+  var groupFormSaibaMais = document.getElementById('group-form-saibamais');
+  var GROUP_EVENT_PAGES = {
+    'Aniversário': 'aniversarios.html',
+    'Evento corporativo': 'eventos-corporativos.html',
+    'Despedida de solteira(o)': 'despedidas.html'
+  };
   var groupSuccess = document.getElementById('group-success');
   var groupSuccessClose = document.getElementById('group-success-close');
 
@@ -1573,7 +1579,19 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? 'Conte mais sobre seu evento corporativo'
         : btn.dataset.event === 'Aniversário'
           ? 'Conte mais sobre o aniversário'
-          : 'Conte mais sobre seu grupo';
+          : btn.dataset.event === 'Despedida de solteira(o)'
+            ? 'Conte mais sobre a despedida'
+            : 'Conte mais sobre seu grupo';
+
+      if (groupFormSaibaMais) {
+        var pageUrl = GROUP_EVENT_PAGES[btn.dataset.event];
+        if (pageUrl) {
+          groupFormSaibaMais.href = pageUrl;
+          groupFormSaibaMais.style.display = 'inline-block';
+        } else {
+          groupFormSaibaMais.style.display = 'none';
+        }
+      }
     });
   });
 
