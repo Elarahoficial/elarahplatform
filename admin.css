@@ -1881,6 +1881,7 @@
 .sa-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px;
 }
+.sa-grid--two { grid-template-columns: repeat(2, 1fr); }
 .sa-field { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; font-weight: 600; color: #6B4F4D; }
 .sa-field--full { grid-column: 1 / -1; margin-top: 12px; }
 .sa-field input, .sa-field textarea {
@@ -1890,6 +1891,15 @@
 .sa-field textarea { resize: vertical; }
 .sa-check { display: flex; align-items: center; gap: 8px; margin: 14px 0; font-size: .88rem; color: #6B4F4D; }
 .sa-brandform__actions { text-align: right; }
+
+.sa-tabs { display: flex; gap: 4px; margin: 8px 0 12px; border-bottom: 1px solid #e5d8c5; }
+.sa-tab {
+  appearance: none; background: transparent; border: 0; border-bottom: 2px solid transparent;
+  padding: 8px 14px; font-family: inherit; font-size: .88rem; font-weight: 600; color: #8b6b66;
+  cursor: pointer; transition: color .15s, border-color .15s;
+}
+.sa-tab:hover { color: #5C2426; }
+.sa-tab--active { color: #5C2426; border-bottom-color: #5C2426; }
 
 .sa-report { display: flex; flex-direction: column; gap: 18px; }
 .sa-report__head { border-bottom: 2px solid #5C2426; padding-bottom: 10px; margin-bottom: 4px; }
