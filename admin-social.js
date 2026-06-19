@@ -356,10 +356,15 @@
             'impressions', 'impressões', 'impressoes', 'impressions_total',
             'contagem total de visualizações de vídeos', 'contagem total de visualizacoes de videos',
             'contagem de visualizações de vídeo', 'contagem de visualizacoes de video',
-            'visualizações de vídeo', 'visualizacoes de video'],
+            'visualizações de vídeo', 'visualizacoes de video',
+            // TikTok: views POR vídeo é "video_views_count" (tabela Video).
+            // O "video_views" cru é total da CONTA — não usar por post.
+            'views_count', 'video_views_count'],
     reach: ['reach', 'alcance', 'alcance da mídia', 'alcance da midia', 'contas alcançadas',
             'contas alcancadas', 'accounts reached', 'reached accounts', 'accounts_reached',
-            'público alcançado diariamente', 'publico alcancado diariamente'],
+            'público alcançado diariamente', 'publico alcancado diariamente',
+            // TikTok: alcance único por vídeo (tabela Video).
+            'video_reach'],
     likes: ['likes', 'curtidas', 'contagem de curtidas na mídia', 'contagem de curtidas na midia',
             'like count', 'like_count', 'curtidas totais', 'total de curtidas', 'total_likes',
             'curtidas do vídeo', 'curtidas do video'],
