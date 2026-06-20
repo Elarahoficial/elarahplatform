@@ -4463,11 +4463,11 @@
     console.log('[Admin] datalist de categorias populado:', final.length, 'categorias');
   }
 
-  // Detecta se a experiência em edição é um "Elarah Kit em Casa" a
-  // partir do que já está digitado no form (nome + categoria). Mesma
+  // Detecta "kit em casa" pelo texto do form (nome + categoria). Mesma
   // regra tolerante do front (elarah-em-casa.js isCasaKit): casa "kit",
-  // "diy", "faça você mesmo" ou "em casa".
-  function expFormIsCasaKit() {
+  // "diy", "faça você mesmo" ou "em casa". Usada pra pré-marcar o
+  // checkbox ao abrir uma experiência já cadastrada.
+  function expFormTextIsCasaKit() {
     var norm = function (s) {
       return String(s == null ? '' : s).toLowerCase()
         .normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -4480,6 +4480,15 @@
         || hay.indexOf('diy') !== -1
         || hay.indexOf('faca voce mesmo') !== -1
         || hay.indexOf('em casa') !== -1;
+  }
+
+  // É kit em casa se o admin marcou o checkbox explícito OU se o texto
+  // (nome/categoria) já indica um kit. O checkbox é o controle principal
+  // ("assim que eu selecione kit em casa"); o texto é reforço.
+  function expFormIsCasaKit() {
+    var chk = document.getElementById('exp-is-casa-kit');
+    if (chk && chk.checked) return true;
+    return expFormTextIsCasaKit();
   }
 
   // Kits Elarah em Casa não têm data/horário/local/vagas presencial —
@@ -4513,6 +4522,11 @@
 
       document.getElementById('exp-nome').value = exp.nome || '';
       document.getElementById('exp-categoria').value = exp.categoria || '';
+      // Pré-marca o checkbox "Kit em Casa" a partir do nome/categoria já
+      // salvos — assim, ao editar um kit existente, os campos presenciais
+      // já abrem como opcionais.
+      var casaKitChk = document.getElementById('exp-is-casa-kit');
+      if (casaKitChk) casaKitChk.checked = expFormTextIsCasaKit();
       document.getElementById('exp-data').value = exp.data || '';
       var pacoteEl = document.getElementById('exp-pacote-datas');
       if (pacoteEl) {
@@ -4993,8 +5007,10 @@
     // obrigatórios na hora (sem precisar reabrir o modal).
     var nomeEl = document.getElementById('exp-nome');
     var categoriaEl = document.getElementById('exp-categoria');
+    var casaKitEl = document.getElementById('exp-is-casa-kit');
     if (nomeEl) nomeEl.addEventListener('input', applyCasaKitRequired);
     if (categoriaEl) categoriaEl.addEventListener('input', applyCasaKitRequired);
+    if (casaKitEl) casaKitEl.addEventListener('change', applyCasaKitRequired);
 
     addBtn.addEventListener('click', () => openExpModal(null));
     modalBackdrop.addEventListener('click', closeExpModal);
