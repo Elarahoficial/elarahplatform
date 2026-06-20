@@ -22,6 +22,9 @@ Envio (sem copiar/colar endereço), e a etiqueta fica pronta pra postar.
    pra autorizar as permissões novas.
 
 ## Decisão de produto (importante)
+> ✅ **ESCOLHIDO pela Duda: modo (A) Revisar e comprar.** Construir só este;
+> o modo (B) fica fora de escopo por enquanto.
+
 Como a etiqueta **custa dinheiro**, existem dois modos:
 
 - **(A) Revisar e comprar — RECOMENDADO.** Quando o kit é pago, o pedido cai
