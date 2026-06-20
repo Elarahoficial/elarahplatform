@@ -73,17 +73,17 @@
 /* ===== occasions (gradientes festivos) ===== */
 .ec-occasions__head{text-align:center;margin-bottom:46px;}
 .ec-occasions__grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-.ec-occasion{display:flex;flex-direction:column;min-height:248px;padding:26px 24px;border-radius:20px;color:#fff;text-decoration:none;box-shadow:0 14px 34px -18px rgba(194,94,44,.55);transition:transform .2s ease,box-shadow .2s ease;}
-.ec-occasion:hover{transform:translateY(-6px);box-shadow:0 22px 44px -18px rgba(194,94,44,.7);}
-.ec-occasion__icon{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+.ec-occasion{display:flex;flex-direction:column;min-height:240px;padding:26px 24px;border-radius:20px;background:#fff;border:1px solid var(--ec-line);color:var(--ec-ink);text-decoration:none;box-shadow:0 10px 30px -24px rgba(108,70,20,.5);transition:transform .2s ease,box-shadow .2s ease;}
+.ec-occasion:hover{transform:translateY(-6px);box-shadow:0 20px 40px -22px rgba(108,70,20,.55);}
+.ec-occasion__icon{width:48px;height:48px;border-radius:14px;background:var(--ec-cream-dark);color:var(--ec-orange-dark);display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
 .ec-occasion__icon svg{width:26px;height:26px;}
-.ec-occasion__title{font-family:'DM Serif Display',serif;font-size:1.4rem;margin:0 0 8px;}
-.ec-occasion__text{font-size:.95rem;line-height:1.5;margin:0;opacity:.97;flex:1;}
-.ec-occasion__link{margin-top:14px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px;}
-.ec-occasion--solo{background:linear-gradient(150deg,#eaa53c,#d9763e);}
-.ec-occasion--amigas{background:linear-gradient(150deg,#ec8559,#c2422f);}
-.ec-occasion--dois{background:linear-gradient(150deg,#e58a6b,#b34a2f);}
-.ec-occasion--familia{background:linear-gradient(150deg,#e7b15a,#c98a34);}
+.ec-occasion__title{font-family:'DM Serif Display',serif;font-size:1.35rem;margin:0 0 8px;color:var(--ec-ink);}
+.ec-occasion__text{font-size:.95rem;line-height:1.55;margin:0;color:var(--ec-ink-soft);flex:1;}
+.ec-occasion__link{margin-top:16px;font-weight:600;font-size:.9rem;color:var(--ec-orange-dark);display:inline-flex;align-items:center;gap:6px;}
+/* leve toque de cor por ocasião só no ícone (sutil, sem poluir) */
+.ec-occasion--amigas .ec-occasion__icon{background:#fdeede;color:#c2422f;}
+.ec-occasion--dois .ec-occasion__icon{background:#fce9e2;color:#b34a2f;}
+.ec-occasion--familia .ec-occasion__icon{background:#fbefd9;color:#c98a34;}
 @media(max-width:860px){.ec-occasions__grid{grid-template-columns:1fr 1fr;}}
 @media(max-width:540px){.ec-occasions__grid{grid-template-columns:1fr;}}
 
