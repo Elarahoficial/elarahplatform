@@ -36,6 +36,13 @@
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
     return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || hay.indexOf('em casa') !== -1;
   }
+  // Variação escolhida na página do produto (experiencia.html). Só vale
+  // se for do MESMO kit aberto. Devolve {nome, preco, label} ou null.
+  function getSelectedVariant() {
+    var v = window.__elarahKitVariant;
+    if (v && kitExp && v.expId === kitExp.id && v.nome) return v;
+    return null;
+  }
   function precoToCents(preco) {
     var raw = String(preco == null ? '' : preco).replace(/[^\d.,]/g, '');
     if (!raw) return 0;
@@ -267,8 +274,14 @@
 
   function updateSummary() {
     if (!selectedOption || !kitExp) return;
-    var kitCents = precoToCents(kitExp.preco);
+    var variant = getSelectedVariant();
+    var kitCents = (variant && variant.preco && precoToCents(variant.preco) > 0)
+      ? precoToCents(variant.preco)
+      : precoToCents(kitExp.preco);
     var freteCents = selectedOption.cost_centavos;
+    // Mostra o nome da variação escolhida no resumo, se houver.
+    var kitLabelEl = document.querySelector('#kc-summary .kc-line span');
+    if (kitLabelEl) kitLabelEl.textContent = variant ? ('Kit · ' + variant.nome) : 'Kit';
     document.getElementById('kc-sum-kit').textContent = brl(kitCents);
     document.getElementById('kc-sum-frete-label').textContent =
       'Frete (' + selectedOption.carrier + ' ' + selectedOption.service + ')';
@@ -316,6 +329,11 @@
           nome: dest,
           telefone: tel,
           quantidade: 1,
+          // Variação escolhida (nome). O servidor recalcula o PREÇO da
+          // variação a partir de experiences.variant_items (não confia
+          // no valor do cliente).
+          variant_label: (getSelectedVariant() || {}).label || undefined,
+          variant_selected: (getSelectedVariant() || {}).nome || undefined,
           shipping: {
             service: selectedOption.service,
             weight_kg: KIT_WEIGHT_KG,
