@@ -25,7 +25,7 @@
 // melhor-envio-callback, que finaliza a conexão.
 // =============================================================
 
-// deploy: frete Melhor Envio (preço real Correios) — v1
+// deploy: frete Melhor Envio (preço real Correios) — v2
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin } from "../_shared/social_db.ts";
