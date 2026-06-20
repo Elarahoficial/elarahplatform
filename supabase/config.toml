@@ -23,3 +23,10 @@ verify_jwt = false
 # Não retorna dados sensíveis: só os campos públicos da experiência.
 [functions.og-experience]
 verify_jwt = false
+
+# melhor-envio-callback — OAuth callback do Melhor Envio, chamado por
+# redirect do navegador (sem header Authorization). A autenticidade é
+# garantida pelo `state` aleatório criado em melhor-envio-connect
+# (validado na tabela melhor_envio_tokens com TTL).
+[functions.melhor-envio-callback]
+verify_jwt = false

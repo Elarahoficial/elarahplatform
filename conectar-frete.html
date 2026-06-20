@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Conectar frete — Melhor Envio | Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:#faf4ec;color:#2c211a;margin:0;
+      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .card{background:#fff;border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.12);
+      max-width:520px;width:100%;padding:38px 34px;}
+    .logo{height:38px;margin-bottom:18px;}
+    h1{font-family:'DM Serif Display',serif;font-size:1.7rem;margin:0 0 6px;font-weight:400;}
+    .sub{color:#6a584a;font-size:.96rem;line-height:1.55;margin:0 0 22px;}
+    .steps{background:#faf4ec;border-radius:12px;padding:16px 18px;margin:0 0 22px;font-size:.9rem;color:#6a584a;line-height:1.6;}
+    .steps b{color:#2c211a;}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+      padding:15px 20px;border:none;border-radius:999px;font-family:inherit;font-weight:700;
+      font-size:1rem;cursor:pointer;background:#b9764f;color:#fff;transition:opacity .15s;}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+    .btn--ghost{background:#f4ebde;color:#a3633f;margin-top:10px;}
+    .msg{font-size:.9rem;margin:16px 0 0;padding:12px 14px;border-radius:10px;line-height:1.5;display:none;}
+    .msg--ok{background:#e6f4ea;color:#1a7a40;display:block;}
+    .msg--err{background:#fbe9e7;color:#b83227;display:block;}
+    .msg--info{background:#fff3e3;color:#9a6a30;display:block;}
+    a{color:#b9764f;font-weight:600;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="assets/logo.png" alt="Elarah" class="logo">
+    <h1>Conectar o frete dos Correios</h1>
+    <p class="sub">
+      Liga a sua conta do <b>Melhor Envio</b> à Elarah em Casa. Depois disso, o
+      site calcula e cobra o frete real dos Correios (PAC/SEDEX) automaticamente
+      no checkout dos kits.
+    </p>
+
+    <div class="steps">
+      <b>Antes de clicar, confirme:</b><br>
+      1. Você está <b>logada no admin</b> da Elarah neste navegador.<br>
+      2. No Melhor Envio (Área Dev.), o app já está criado e os secrets
+      <b>MELHOR_ENVIO_CLIENT_ID</b> e <b>MELHOR_ENVIO_CLIENT_SECRET</b> já foram
+      adicionados no Supabase.
+    </div>
+
+    <button type="button" class="btn" id="connect-btn" disabled>Carregando…</button>
+    <a href="admin.html" class="btn btn--ghost" style="text-decoration:none;">Voltar ao admin</a>
+
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <script src="supabase-loader.js?v=11"></script>
+  <script src="supabase-client.js?v=12"></script>
+  <script>
+  (function () {
+    'use strict';
+    var btn = document.getElementById('connect-btn');
+    var msgEl = document.getElementById('msg');
+
+    function setMsg(text, kind) {
+      msgEl.className = 'msg msg--' + (kind || 'info');
+      msgEl.innerHTML = text;
+    }
+
+    // Mostra resultado do retorno do OAuth (?frete_conectado=1|0).
+    (function showReturnState() {
+      var p = new URLSearchParams(location.search);
+      if (p.get('frete_conectado') === '1') {
+        setMsg('✅ <b>Frete conectado!</b> A Elarah em Casa já mostra o preço ' +
+          'real dos Correios automaticamente. Pode fechar esta página.', 'ok');
+      } else if (p.get('frete_conectado') === '0') {
+        setMsg('⚠️ Não deu certo: ' + (p.get('frete_erro') || 'erro desconhecido') +
+          '. Tente conectar de novo.', 'err');
+      }
+    })();
+
+    function getUrl() {
+      return (window.ElarahSupabase && window.ElarahSupabase.url) ||
+        'https://nwijxjmenbfyehvscogs.supabase.co';
+    }
+
+    async function getSession() {
+      var client = window.supabaseClient;
+      if (!client && window.ElarahSupabase && window.ElarahSupabase.waitClient) {
+        client = await window.ElarahSupabase.waitClient(8000);
+      }
+      if (!client) return null;
+      try {
+        var r = await client.auth.getSession();
+        return (r && r.data && r.data.session) || null;
+      } catch (e) { return null; }
+    }
+
+    async function init() {
+      var session = await getSession();
+      if (!session) {
+        btn.textContent = 'Faça login no admin primeiro';
+        setMsg('Você precisa estar <b>logada no admin</b> pra conectar. ' +
+          '<a href="admin.html">Ir para o login</a> e depois volte aqui.', 'info');
+        return;
+      }
+      btn.disabled = false;
+      btn.textContent = 'Conectar minha conta Melhor Envio';
+      btn.addEventListener('click', connect);
+    }
+
+    async function connect() {
+      btn.disabled = true;
+      btn.textContent = 'Abrindo o Melhor Envio…';
+      setMsg('Redirecionando pro Melhor Envio pra você autorizar…', 'info');
+      try {
+        var session = await getSession();
+        if (!session) throw new Error('Sessão expirou. Faça login no admin de novo.');
+        var res = await fetch(getUrl() + '/functions/v1/melhor-envio-connect', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + session.access_token,
+          },
+          body: JSON.stringify({ return_to: location.href.split('?')[0] }),
+        });
+        var data = await res.json();
+        if (!res.ok || !data.ok || !data.url) {
+          throw new Error(data.error || ('HTTP ' + res.status));
+        }
+        window.location.href = data.url;
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Conectar minha conta Melhor Envio';
+        setMsg('⚠️ ' + (err.message || err), 'err');
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+  </script>
+</body>
+</html>

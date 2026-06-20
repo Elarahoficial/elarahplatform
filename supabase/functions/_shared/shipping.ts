@@ -112,7 +112,11 @@ export function estimateShipping(cepDest: string, pkg: ShippingPackage = {}): Sh
 }
 
 // Melhor Envio — preços reais. Em qualquer erro, cai na estimativa.
-async function melhorEnvioShipping(cepDest: string, pkg: ShippingPackage): Promise<ShippingOption[]> {
+async function melhorEnvioShipping(
+  cepDest: string,
+  pkg: ShippingPackage,
+  token: string,
+): Promise<ShippingOption[]> {
   const p = { ...DEFAULT_PKG, ...pkg };
   try {
     const resp = await fetch(`${MELHOR_ENVIO_BASE}/api/v2/me/shipment/calculate`, {
@@ -120,7 +124,7 @@ async function melhorEnvioShipping(cepDest: string, pkg: ShippingPackage): Promi
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${MELHOR_ENVIO_TOKEN}`,
+        "Authorization": `Bearer ${token}`,
         "User-Agent": "Elarah (contato.elarah@gmail.com)",
       },
       body: JSON.stringify({
@@ -176,11 +180,16 @@ function freeShipping(): ShippingOption[] {
 export async function getShippingOptions(
   cepDest: string,
   pkg: ShippingPackage = {},
+  runtimeToken?: string | null,
 ): Promise<ShippingOption[]> {
   if (!isValidCep(cepDest)) return [];
-  if (MELHOR_ENVIO_TOKEN) return await melhorEnvioShipping(cepDest, pkg);
-  if (SHIPPING_MODE === "estimate") return estimateShipping(cepDest, pkg);
-  return freeShipping();
+  // Token do OAuth (runtimeToken, vindo do banco) tem prioridade. O
+  // MELHOR_ENVIO_TOKEN do ambiente continua funcionando como fallback
+  // (útil pra testes com token estático).
+  const token = (runtimeToken && runtimeToken.trim()) || MELHOR_ENVIO_TOKEN;
+  if (token) return await melhorEnvioShipping(cepDest, pkg, token);
+  if (SHIPPING_MODE === "free") return freeShipping();
+  return estimateShipping(cepDest, pkg);
 }
 
 // Recalcula o custo de UM serviço escolhido (usado pelo checkout pra
@@ -189,8 +198,9 @@ export async function quoteForService(
   cepDest: string,
   service: string,
   pkg: ShippingPackage = {},
+  runtimeToken?: string | null,
 ): Promise<ShippingOption | null> {
-  const options = await getShippingOptions(cepDest, pkg);
+  const options = await getShippingOptions(cepDest, pkg, runtimeToken);
   if (!options.length) return null;
   const want = String(service ?? "").trim().toLowerCase();
   const found = options.find((o) => o.service.trim().toLowerCase() === want);

@@ -28,6 +28,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getShippingOptions, isValidCep } from "../_shared/shipping.ts";
+import { getValidAccessToken } from "../_shared/melhor_envio.ts";
 
 const ORIGIN_CEP = (Deno.env.get("SHIPPING_ORIGIN_CEP") ?? "01310-100").replace(/\D+/g, "");
 
@@ -69,7 +70,10 @@ serve(async (req: Request) => {
   };
 
   try {
-    const options = await getShippingOptions(cep, pkg);
+    // Token do Melhor Envio (OAuth), renovado automaticamente se preciso.
+    // null → o cálculo cai na estimativa/free conforme SHIPPING_MODE.
+    const meToken = await getValidAccessToken().catch(() => null);
+    const options = await getShippingOptions(cep, pkg, meToken);
     if (!options.length) {
       return jsonResponse(
         { error: "shipping_unavailable", message: "Não conseguimos calcular o frete pra esse CEP agora." },

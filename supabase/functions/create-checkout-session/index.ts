@@ -58,6 +58,7 @@ import {
   type SupplierRow,
 } from "../_shared/financial.ts";
 import { quoteForService, type ShippingOption } from "../_shared/shipping.ts";
+import { getValidAccessToken } from "../_shared/melhor_envio.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -1054,9 +1055,12 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     const cepDest = String(shippingInput.cep ?? "").replace(/\D+/g, "");
     const service = String(shippingInput.service ?? "").trim();
     if (cepDest.length === 8 && service) {
+      // Token do Melhor Envio (OAuth), renovado sozinho se necessário.
+      // null → recalcula via estimativa/free conforme SHIPPING_MODE.
+      const meToken = await getValidAccessToken().catch(() => null);
       shippingResolved = await quoteForService(cepDest, service, {
         weight_kg: shippingInput.weight_kg != null ? Number(shippingInput.weight_kg) : undefined,
-      });
+      }, meToken);
     }
     if (!shippingResolved) {
       await refundCupomAplicado();

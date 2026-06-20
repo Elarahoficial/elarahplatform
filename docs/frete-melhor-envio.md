@@ -1,70 +1,92 @@
-# Frete automático — Elarah em Casa (Melhor Envio)
+# Frete real dos Correios — Elarah em Casa (Melhor Envio)
 
-Guia rápido pra ligar o cálculo de frete real (Correios PAC/SEDEX) na aba
-**Elarah em Casa**. Tudo no código já está pronto — falta só **colar o token**
-da sua conta Melhor Envio nas configurações do Supabase.
+Guia pra ligar o **preço exato** dos Correios (PAC/SEDEX) na aba **Elarah em
+Casa**, via integração OAuth com o Melhor Envio. Toda a parte de código já está
+pronta — inclusive a **renovação automática do token** (ele nunca vence sem
+alguém perceber). Falta só a configuração abaixo.
 
-## Como está hoje
-
-Quando o cliente clica em **"Quero meu kit"**, o site:
-
-1. Pede o endereço e busca tudo pelo CEP automaticamente;
-2. Calcula o frete e mostra as opções (PAC/SEDEX);
-3. Soma o frete ao total e cobra junto no cartão.
-
-Estados possíveis do cálculo (escolhido automaticamente):
+## Como funciona o cálculo (escolhido automaticamente)
 
 | Situação | O que o cliente vê |
 |---|---|
-| **Token Melhor Envio configurado** | Preço **real** dos Correios (produção) ✅ |
-| **Sem token** (padrão atual) | Frete **estimado** por região (aproximado) |
-| `SHIPPING_MODE=free` | Frete grátis (só pra promoção pontual) |
+| **Melhor Envio conectado** (este guia) | Preço **real** dos Correios ✅ |
+| Sem conexão (padrão) | Frete **estimado** por região (aproximado) |
+| `SHIPPING_MODE=free` | Frete grátis (promoção pontual) |
 
-> A partir de agora o padrão **não é mais "frete grátis"**: sem o token, o site
-> já cobra uma **estimativa**. Com o token, passa a cobrar o **valor exato**.
+O checkout **sempre recalcula o frete no servidor** — nunca confia no valor que
+veio da tela do cliente.
 
-## Passo a passo pra ligar o preço real
+## Peças do código (já implementadas)
 
-### 1. Pegar o token no Melhor Envio
+- `sql/elarah_melhor_envio_tokens.sql` — tabela dos tokens (criptografados).
+- `supabase/functions/_shared/melhor_envio.ts` — OAuth + refresh automático.
+- `supabase/functions/melhor-envio-connect` — inicia a conexão (admin).
+- `supabase/functions/melhor-envio-callback` — recebe a autorização.
+- `conectar-frete.html` — página com o botão de conectar.
+- `calculate-shipping` e `create-checkout-session` — já usam o token real.
 
-1. Entre em <https://melhorenvio.com.br> com sua conta.
-2. Vá em **Configurações → Tokens / Integrações** (menu da sua conta).
-3. Gere um **token de API** com permissão de **cálculo de frete**
-   (`shipping-calculate`). Copie o código gerado (é um texto bem longo).
+## Passo a passo (uma vez só)
 
-### 2. Colar o token no Supabase
+### 1. Criar o aplicativo no Melhor Envio
 
-1. Abra o painel do Supabase do projeto Elarah → **Project Settings →
-   Edge Functions → Secrets** (ou **Configuration → Secrets**).
-2. Adicione os secrets abaixo:
+1. Entre em <https://melhorenvio.com.br> → menu **Integrações → Área Dev.**
+2. Clique em **CADASTRAR APLICATIVO** (ambiente de **produção**).
+3. Preencha:
+   - **Nome:** `Elarah`
+   - **E-mail:** `contato.elarah@gmail.com`
+   - **URL de redirecionamento (redirect URI):**
+     `https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/melhor-envio-callback`
+     > ⚠️ Tem que ser **idêntica** a essa, senão a autorização falha.
+   - **Permissões/Escopos:** marque pelo menos **Calcular fretes**
+     (`shipping-calculate`).
+4. Salve e **copie** o **Client ID** e o **Client Secret**.
 
-   | Nome do secret | Valor | Obrigatório? |
-   |---|---|---|
-   | `MELHOR_ENVIO_TOKEN` | o token longo que você copiou | **Sim** |
-   | `SHIPPING_ORIGIN_CEP` | o CEP de onde você posta os kits (ex.: `01310-100`) | Recomendado |
-   | `MELHOR_ENVIO_BASE` | deixe **em branco** (já vai pra produção). Só preencha com `https://sandbox.melhorenvio.com.br` se quiser testar | Não |
+### 2. Adicionar os secrets no Supabase
 
-3. Salve.
+Painel do Supabase → **Project Settings → Edge Functions → Secrets**:
 
-### 3. Redeploy das funções
+| Secret | Valor | Obrigatório? |
+|---|---|---|
+| `MELHOR_ENVIO_CLIENT_ID` | Client ID do app | **Sim** |
+| `MELHOR_ENVIO_CLIENT_SECRET` | Client Secret do app | **Sim** |
+| `META_TOKEN_ENCRYPTION_KEY` | chave AES de 32 bytes (`openssl rand -base64 32`) | **Sim** (já existe se a integração do Instagram estiver ligada — é a mesma) |
+| `SHIPPING_ORIGIN_CEP` | CEP de onde você posta os kits | Recomendado |
+| `MELHOR_ENVIO_BASE` | deixe **em branco** (já vai pra produção) | Não |
 
-Os secrets só passam a valer depois que as Edge Functions são publicadas de
-novo. Republique (redeploy) as funções `calculate-shipping` e
-`create-checkout-session`. Pronto — o site já mostra o preço real dos Correios.
+### 3. Rodar a migration
+
+No Supabase → **SQL Editor**, rode o conteúdo de
+`sql/elarah_melhor_envio_tokens.sql` (cria a tabela dos tokens).
+
+### 4. Publicar (deploy) as funções
+
+Publique/republique estas Edge Functions:
+`melhor-envio-connect`, `melhor-envio-callback`, `calculate-shipping`,
+`create-checkout-session`.
+
+> A função `melhor-envio-callback` é pública (sem JWT) — isso já está
+> declarado em `supabase/config.toml`. A segurança vem do `state` (CSRF).
+
+### 5. Conectar a conta
+
+1. **Logada no admin** da Elarah, abra **`/conectar-frete.html`**.
+2. Clique em **"Conectar minha conta Melhor Envio"**.
+3. Você vai pro Melhor Envio → **Autorizar** → volta pro site com
+   ✅ *"Frete conectado!"*.
+
+Pronto. A partir daí o token se renova sozinho.
 
 ## Como testar
 
-1. Abra um kit na aba **Elarah em Casa** e clique em **"Quero meu kit"**.
-2. Digite um CEP e clique em **Calcular frete**.
-3. Se aparecer **PAC / SEDEX (Correios)** com preços, está no ar. ✅
+1. Abra um kit na aba **Elarah em Casa** → **"Quero meu kit"**.
+2. Digite um CEP → **Calcular frete**.
+3. Deve aparecer **Correios PAC / SEDEX** com o preço real. ✅
 
 ## Observações
 
-- **Produtos novos** entram no cálculo automaticamente: qualquer kit com
-  "kit", "diy" ou "em casa" no nome/categoria já aparece na vitrine e já usa
-  o frete.
-- **Peso:** hoje todo kit usa **1 kg** como padrão. Se os kits novos forem
-  bem mais pesados/maiores, dá pra adicionar um campo de peso por produto
-  depois — me avise que eu faço.
-- **Segurança:** o frete é sempre **recalculado no servidor** na hora de
-  cobrar; o site nunca confia no valor que veio da tela do cliente.
+- **Produtos novos** entram no cálculo automaticamente (qualquer kit com
+  "kit", "diy" ou "em casa" no nome/categoria).
+- **Peso:** hoje todo kit usa **1 kg** como padrão. Se os kits novos forem bem
+  mais pesados, dá pra adicionar peso por produto depois.
+- **Reconectar:** se algum dia o frete real parar (ex.: você revogou o app no
+  Melhor Envio), é só abrir `/conectar-frete.html` e conectar de novo.
