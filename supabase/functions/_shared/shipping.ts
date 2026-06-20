@@ -3,13 +3,21 @@
 // -------------------------------------------------------------
 // Dois modos, escolhidos automaticamente:
 //
-//   (A) ESTIMATIVA (default, sem credenciais) — tabela por região
-//       a partir do 1º dígito do CEP de destino. Funciona na hora,
-//       valores aproximados. Use pra validar o fluxo.
+//   (A) MELHOR ENVIO (quando MELHOR_ENVIO_TOKEN está setado) — preços
+//       reais de Correios (PAC/SEDEX) e transportadoras via API. Este
+//       é o caminho de produção: assim que o token da conta Melhor
+//       Envio é configurado nos secrets do Supabase, o site passa a
+//       somar o frete real automaticamente. Aponta pra PRODUÇÃO por
+//       padrão; use MELHOR_ENVIO_BASE=sandbox só pra testar.
 //
-//   (B) MELHOR ENVIO (quando MELHOR_ENVIO_TOKEN está setado) — preços
-//       reais de Correios (PAC/SEDEX) e transportadoras via API.
-//       Sandbox por padrão; produção via MELHOR_ENVIO_BASE.
+//   (B) ESTIMATIVA (default, sem credenciais) — tabela por região
+//       a partir do 1º dígito do CEP de destino. Funciona na hora,
+//       valores aproximados. É a ponte enquanto o token não está
+//       configurado: já cobra um frete (não fica grátis), mas o
+//       preço exato só vem do Melhor Envio (modo A).
+//
+// Frete grátis continua disponível via SHIPPING_MODE=free (coleta o
+// endereço, mas não cobra envio) — usado em promoções pontuais.
 //
 // Origem do envio: SHIPPING_ORIGIN_CEP (default = CEP de São Paulo).
 // Peso/dimensões default pensados pra um kit pequeno (~1kg).
@@ -35,12 +43,16 @@ export interface ShippingPackage {
 
 const ORIGIN_CEP = (Deno.env.get("SHIPPING_ORIGIN_CEP") ?? "01310-100").replace(/\D+/g, "");
 const MELHOR_ENVIO_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN") ?? "";
+// Aponta pra PRODUÇÃO por padrão (preços reais). Defina
+// MELHOR_ENVIO_BASE=https://sandbox.melhorenvio.com.br só pra testar.
 const MELHOR_ENVIO_BASE =
-  (Deno.env.get("MELHOR_ENVIO_BASE") ?? "https://sandbox.melhorenvio.com.br").replace(/\/+$/, "");
+  (Deno.env.get("MELHOR_ENVIO_BASE") ?? "https://www.melhorenvio.com.br").replace(/\/+$/, "");
 // Modo de frete quando NÃO há token do Melhor Envio:
-//   "free"     → frete grátis (default atual — coleta endereço mesmo assim)
-//   "estimate" → tabela de estimativa por região (ver estimateShipping)
-const SHIPPING_MODE = (Deno.env.get("SHIPPING_MODE") ?? "free").toLowerCase();
+//   "estimate" → tabela de estimativa por região (default — já cobra
+//                frete aproximado, nunca fica grátis sem querer)
+//   "free"     → frete grátis (coleta endereço mesmo assim; use em
+//                promoções pontuais)
+const SHIPPING_MODE = (Deno.env.get("SHIPPING_MODE") ?? "estimate").toLowerCase();
 
 const DEFAULT_PKG: Required<ShippingPackage> = {
   weight_kg: 1,
@@ -158,9 +170,9 @@ function freeShipping(): ShippingOption[] {
 }
 
 // Ponto de entrada: devolve as opções de frete pro CEP.
-//   1) Tem token Melhor Envio → preços reais dos Correios.
-//   2) SHIPPING_MODE=estimate → tabela de estimativa por região.
-//   3) Senão → frete grátis (default).
+//   1) Tem token Melhor Envio → preços reais dos Correios (produção).
+//   2) SHIPPING_MODE=free → frete grátis (promoção pontual).
+//   3) Senão → tabela de estimativa por região (default).
 export async function getShippingOptions(
   cepDest: string,
   pkg: ShippingPackage = {},
