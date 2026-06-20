@@ -554,6 +554,31 @@
         '</section>'
       : '';
 
+    // ===== Variações do kit (Elarah em Casa) =====
+    // Só pra kits: cada opção pode ter foto e preço próprios. Ao clicar,
+    // troca a foto e o preço na página e guarda a escolha em
+    // window.__elarahKitVariant pro checkout do kit (kit-checkout.js).
+    var _kitIsKit = (function () {
+      var hay = ((exp.nome || '') + ' ' + (exp.categoria || '')).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '');
+      return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || hay.indexOf('em casa') !== -1;
+    })();
+    var _kitItems = (_kitIsKit && Array.isArray(exp.variantItems)) ? exp.variantItems : [];
+    var variantSelectorHtml = (function () {
+      if (!_kitItems.length) return '';
+      var label = exp.variantLabel || 'Escolha a sua opção';
+      var btns = _kitItems.map(function (it, i) {
+        var priceTxt = it.preco ? ' · ' + esc(it.preco) : '';
+        return '<button type="button" class="exp-variant-btn" data-vi="' + i + '" ' +
+          'style="padding:8px 14px;border:1.5px solid #d8c9b6;background:#fff;border-radius:999px;font-size:.9rem;cursor:pointer;font-family:inherit;color:#2c211a;">' +
+          esc(it.nome) + priceTxt + '</button>';
+      }).join('');
+      return '<div class="exp-detail__variants" style="margin:14px 0;">' +
+        '<div style="font-size:.85rem;font-weight:600;color:#2c211a;margin-bottom:8px;">' + esc(label) + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;" id="exp-variant-btns">' + btns + '</div>' +
+      '</div>';
+    })();
+
     var container = document.getElementById('exp-content');
     container.innerHTML =
       '<a href="javascript:history.back()" class="exp-detail__back">' +
@@ -593,7 +618,8 @@
         (exp.bairro ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + esc(exp.bairro) + '</span>' : '') +
         (exp.endereco ? '<span class="exp-detail__meta-item">' + esc(exp.endereco) + '</span>' : '') +
       '</div>' +
-      '<div class="exp-detail__price">' + esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) + '</div>' +
+      '<div class="exp-detail__price" id="exp-detail-price">' + esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) + '</div>' +
+      variantSelectorHtml +
       horariosHtml +
       includesHtml +
       descHtml +
@@ -612,6 +638,42 @@
           'Copiar link' +
         '</button>' +
       '</div>';
+
+    // Wire variações do kit — troca foto + preço e guarda a escolha em
+    // window.__elarahKitVariant (lido pelo kit-checkout.js no checkout).
+    (function wireKitVariantButtons() {
+      window.__elarahKitVariant = null;
+      if (!_kitItems.length) return;
+      var heroImg = container.querySelector('.exp-detail__hero');
+      var priceEl = document.getElementById('exp-detail-price');
+      var btns = container.querySelectorAll('.exp-variant-btn');
+      function fmtPreco(p) {
+        return (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(p) : p;
+      }
+      function select(i) {
+        var it = _kitItems[i];
+        if (!it) return;
+        btns.forEach(function (b) {
+          var on = Number(b.dataset.vi) === i;
+          b.style.borderColor = on ? '#b9764f' : '#d8c9b6';
+          b.style.background = on ? '#fbf2e9' : '#fff';
+          b.style.fontWeight = on ? '700' : '400';
+        });
+        if (it.imagem && heroImg) heroImg.src = it.imagem;
+        if (priceEl) priceEl.textContent = fmtPreco(it.preco ? it.preco : exp.preco);
+        window.__elarahKitVariant = {
+          expId: exp.id,
+          label: exp.variantLabel || 'Escolha a sua opção',
+          nome: it.nome,
+          preco: it.preco || '',
+          imagem: it.imagem || ''
+        };
+      }
+      btns.forEach(function (b) {
+        b.addEventListener('click', function () { select(Number(b.dataset.vi)); });
+      });
+      select(0); // pré-seleciona a primeira opção
+    })();
 
     // Wire DATA chip clicks — re-renderiza chips de horário e reseta seleção
     function wireHorarioButtons() {

@@ -3551,10 +3551,11 @@
         </div>
 
         <div class="admin__form-field">
-          <label>Opções (uma por linha)</label>
-          <textarea id="exp-variant-options" rows="4" placeholder="Lagosta&#10;Beijo&#10;Olho grego"></textarea>
-          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">
-            Cada linha vira um botão no modal. Mesmo preço pra todas. Pra ter preço diferente por variação, fala com o desenvolvedor.
+          <label>Opções</label>
+          <div id="exp-variant-items"></div>
+          <button type="button" id="exp-variant-add" style="margin-top:8px;padding:8px 14px;border:1px dashed #c9a26a;background:#fff8ef;color:#a3633f;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">+ Adicionar variação</button>
+          <p class="admin__form-hint" style="margin:8px 0 0;font-size:12px;color:#888;">
+            Cada variação tem <b>nome</b> (ex.: "Azul P"), <b>preço</b> (opcional — vazio usa o preço base) e <b>foto</b> (opcional — vazia usa a foto principal). Quando o cliente clica numa variação, a foto e o preço do produto mudam.
           </p>
         </div>
 

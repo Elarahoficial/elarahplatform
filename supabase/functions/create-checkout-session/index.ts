@@ -523,7 +523,49 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     );
   }
 
-  const cents = parsePrecoToCents(exp.preco);
+  let cents = parsePrecoToCents(exp.preco);
+  // ===== Preço por variação (kits — Elarah em Casa) =====
+  // Se o cliente escolheu uma variação E ela tem preço próprio em
+  // experiences.variant_items, ESSE é o preço autoritativo. Recalculado
+  // no servidor a partir do banco — nunca confia no valor do cliente.
+  if (variantSelected) {
+    try {
+      // Consulta SEPARADA da coluna variant_items (jsonb). Isolada de
+      // propósito: se a migration sql/elarah_experiences_variant_items.sql
+      // ainda não rodou, esta query falha e o catch mantém o preço base —
+      // o checkout NUNCA quebra por causa da coluna nova.
+      const { data: vRow } = await supabase
+        .from("experiences")
+        .select("variant_items")
+        .eq("id", experienciaId)
+        .maybeSingle();
+      const items = Array.isArray((vRow as { variant_items?: unknown[] } | null)?.variant_items)
+        ? (vRow as { variant_items: unknown[] }).variant_items
+        : [];
+      const want = variantSelected.trim().toLowerCase();
+      const match = items.find((it) => {
+        const nome = (it && typeof it === "object")
+          ? String((it as Record<string, unknown>).nome ?? (it as Record<string, unknown>).name ?? "")
+          : String(it ?? "");
+        return nome.trim().toLowerCase() === want;
+      });
+      if (match && typeof match === "object") {
+        const vPreco = (match as Record<string, unknown>).preco ??
+          (match as Record<string, unknown>).price;
+        const vCents = parsePrecoToCents(vPreco);
+        if (vCents) {
+          cents = vCents;
+          console.info(
+            "[create-checkout-session] preço por variação aplicado",
+            "variante=" + variantSelected,
+            "cents=" + vCents,
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[create-checkout-session] falha ao aplicar preço da variação", e);
+    }
+  }
   if (!cents) {
     console.error("[create-checkout-session] invalid price", exp.preco);
     return jsonResponse({ error: "invalid_price" }, 422);
@@ -1026,7 +1068,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         currency: "brl",
         unit_amount: cents,
         product_data: {
-          name: exp.nome,
+          name: exp.nome + (variantSelected ? " — " + variantSelected : ""),
           description: descricaoLinha,
         },
       },
