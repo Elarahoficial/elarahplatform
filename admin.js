@@ -4463,6 +4463,51 @@
     console.log('[Admin] datalist de categorias populado:', final.length, 'categorias');
   }
 
+  // Detecta "kit em casa" pelo texto do form (nome + categoria). Mesma
+  // regra tolerante do front (elarah-em-casa.js isCasaKit): casa "kit",
+  // "diy", "faça você mesmo" ou "em casa". Usada pra pré-marcar o
+  // checkbox ao abrir uma experiência já cadastrada.
+  function expFormTextIsCasaKit() {
+    var norm = function (s) {
+      return String(s == null ? '' : s).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    };
+    var hay = norm(
+      (document.getElementById('exp-nome')?.value || '') + ' ' +
+      (document.getElementById('exp-categoria')?.value || '')
+    );
+    return hay.indexOf('kit') !== -1
+        || hay.indexOf('diy') !== -1
+        || hay.indexOf('faca voce mesmo') !== -1
+        || hay.indexOf('em casa') !== -1;
+  }
+
+  // É kit em casa se o admin marcou o checkbox explícito OU se o texto
+  // (nome/categoria) já indica um kit. O checkbox é o controle principal
+  // ("assim que eu selecione kit em casa"); o texto é reforço.
+  function expFormIsCasaKit() {
+    var chk = document.getElementById('exp-is-casa-kit');
+    if (chk && chk.checked) return true;
+    return expFormTextIsCasaKit();
+  }
+
+  // Kits Elarah em Casa não têm data/horário/local/vagas presencial —
+  // são produtos físicos enviados. Quando o form é um kit, liberamos
+  // Data, Duração, Bairro e Endereço de serem obrigatórios (Horário e
+  // Vagas já são validados condicionalmente no submit). Para experiências
+  // presenciais, mantemos a obrigatoriedade de sempre.
+  function applyCasaKitRequired() {
+    var isKit = expFormIsCasaKit();
+    ['exp-data', 'exp-duracao', 'exp-bairro', 'exp-endereco'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (isKit) el.removeAttribute('required');
+      else el.setAttribute('required', '');
+    });
+  }
+  // Expõe pra o submit handler reusar a mesma detecção.
+  window._expFormIsCasaKit = expFormIsCasaKit;
+
   async function openExpModal(editId) {
     // Garante que o datalist de categorias esteja atualizado ANTES
     // de abrir o modal — assim o autocomplete funciona na hora.
@@ -4477,6 +4522,11 @@
 
       document.getElementById('exp-nome').value = exp.nome || '';
       document.getElementById('exp-categoria').value = exp.categoria || '';
+      // Pré-marca o checkbox "Kit em Casa" a partir do nome/categoria já
+      // salvos — assim, ao editar um kit existente, os campos presenciais
+      // já abrem como opcionais.
+      var casaKitChk = document.getElementById('exp-is-casa-kit');
+      if (casaKitChk) casaKitChk.checked = expFormTextIsCasaKit();
       document.getElementById('exp-data').value = exp.data || '';
       var pacoteEl = document.getElementById('exp-pacote-datas');
       if (pacoteEl) {
@@ -4687,6 +4737,11 @@
       rFixo.dataset.wired = '1';
       rFixo.addEventListener('change', applyRepasseTipo);
     }
+
+    // Ajusta a obrigatoriedade dos campos presenciais conforme o tipo
+    // (kit em casa vs. experiência presencial) com os valores já
+    // carregados no form.
+    applyCasaKitRequired();
 
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -4946,6 +5001,17 @@
       });
     }
 
+    // Reavalia a obrigatoriedade dos campos presenciais sempre que o
+    // admin muda o nome ou a categoria — assim, ao digitar "Kit ..." ou
+    // a categoria "Em casa", Data/Duração/Bairro/Endereço deixam de ser
+    // obrigatórios na hora (sem precisar reabrir o modal).
+    var nomeEl = document.getElementById('exp-nome');
+    var categoriaEl = document.getElementById('exp-categoria');
+    var casaKitEl = document.getElementById('exp-is-casa-kit');
+    if (nomeEl) nomeEl.addEventListener('input', applyCasaKitRequired);
+    if (categoriaEl) categoriaEl.addEventListener('input', applyCasaKitRequired);
+    if (casaKitEl) casaKitEl.addEventListener('change', applyCasaKitRequired);
+
     addBtn.addEventListener('click', () => openExpModal(null));
     modalBackdrop.addEventListener('click', closeExpModal);
     modalClose.addEventListener('click', closeExpModal);
@@ -4959,8 +5025,13 @@
       const cor1 = (document.getElementById('exp-cor1')?.value || '#f6d5a8').trim();
       const cor2 = (document.getElementById('exp-cor2')?.value || '#f0a05e').trim();
 
+      // Kits Elarah em Casa são enviados — não têm horário presencial,
+      // então não exigimos pelo menos um horário pra eles. Experiências
+      // presenciais continuam precisando de ao menos um horário.
+      const isCasaKit = typeof window._expFormIsCasaKit === 'function'
+        && window._expFormIsCasaKit();
       const horarios = collectHorarios();
-      if (horarios.length === 0) {
+      if (horarios.length === 0 && !isCasaKit) {
         alert('Adicione pelo menos um horário.');
         return;
       }
@@ -5004,7 +5075,7 @@
             .filter(Boolean);
           return list.length ? list : null;
         })(),
-        horario: horarios[0],
+        horario: horarios[0] || '',
         horarios: horarios,
         duracao: document.getElementById('exp-duracao').value.trim(),
         bairro: document.getElementById('exp-bairro').value.trim(),
