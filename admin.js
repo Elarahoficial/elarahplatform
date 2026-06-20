@@ -2853,6 +2853,33 @@
       }
       const variantCell = buildVariantCell();
 
+      // Endereço de entrega (kits — Elarah em Casa). Vive em
+      // metadata.shipping (gravado pelo create-checkout-session). Só
+      // aparece quando o pedido é de kit físico; reservas presenciais
+      // não têm shipping → célula vazia, layout intacto.
+      const shippingCell = (function () {
+        const sh = b.metadata && b.metadata.shipping;
+        if (!sh || typeof sh !== 'object') return '';
+        const fmtCep = String(sh.cep || '').replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2');
+        const fmtCpf = String(sh.cpf || '').replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        const linha1 = [sh.logradouro, sh.numero].filter(Boolean).join(', ') +
+          (sh.complemento ? ' - ' + sh.complemento : '');
+        const linha2 = [sh.bairro, sh.cidade, sh.uf].filter(Boolean).join(' · ');
+        const head = '📦 Entrega' +
+          (sh.service ? ' · ' + sh.service : '') +
+          (sh.cost_centavos ? ' · ' + formatCents(sh.cost_centavos, b.currency || 'brl') : '');
+        const rows = [];
+        rows.push('<span style="display:block;font-size:.7rem;color:#b9764f;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">' + escapeHtml(head) + '</span>');
+        if (sh.destinatario || fmtCpf) {
+          rows.push('<span style="display:block;font-size:.72rem;color:#555;">' + escapeHtml(sh.destinatario || '') + (fmtCpf ? ' · CPF ' + escapeHtml(fmtCpf) : '') + '</span>');
+        }
+        if (linha1.trim()) rows.push('<span style="display:block;font-size:.72rem;color:#555;">' + escapeHtml(linha1) + '</span>');
+        if (linha2 || fmtCep) rows.push('<span style="display:block;font-size:.72rem;color:#555;">' + escapeHtml(linha2) + (fmtCep ? ' · CEP ' + escapeHtml(fmtCep) : '') + '</span>');
+        if (sh.telefone) rows.push('<span style="display:block;font-size:.72rem;color:#555;">tel: ' + escapeHtml(formatPhoneBR(sh.telefone)) + '</span>');
+        if (sh.ponto_referencia) rows.push('<span style="display:block;font-size:.7rem;color:#888;font-style:italic;">ref.: ' + escapeHtml(sh.ponto_referencia) + '</span>');
+        return '<div style="margin-top:6px;padding:7px 9px;background:#fbf2e9;border:1px solid #f0ddc8;border-radius:8px;">' + rows.join('') + '</div>';
+      })();
+
       // Botão "Editar": trocar experiência, data, horário ou quantidade
       // antes do evento (caso de uso comum: cliente pede troca de fornecedor
       // ou de quadro/data até 48h antes). Só faz sentido pra reservas pagas
@@ -2876,7 +2903,7 @@
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
-          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn ? '<br>' + editBookingBtn + cancelBookingBtn : ''}${variantCell}</td>
+          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn ? '<br>' + editBookingBtn + cancelBookingBtn : ''}${variantCell}${shippingCell}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
