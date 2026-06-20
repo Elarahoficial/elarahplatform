@@ -4491,14 +4491,19 @@
       document.getElementById('exp-inclui').value = exp.inclui || '';
       document.getElementById('exp-imagem').value = exp.imagem || '';
       document.getElementById('exp-descricao').value = exp.descricao || '';
-      // Variações (escolha extra do cliente, ex: modelo do quadro).
+      // Variações (escolha extra do cliente — nome + preço + foto).
       const vLabelEl = document.getElementById('exp-variant-label');
-      const vOptsEl = document.getElementById('exp-variant-options');
       if (vLabelEl) vLabelEl.value = exp.variantLabel || '';
-      if (vOptsEl) {
-        vOptsEl.value = Array.isArray(exp.variantOptions)
-          ? exp.variantOptions.join('\n')
-          : '';
+      // Preenche o construtor de variações com os itens ricos. Se a
+      // experiência só tiver o formato antigo (variantOptions de nomes),
+      // converte cada nome num item simples { nome }.
+      if (typeof window._renderVariantItems === 'function') {
+        var _items = Array.isArray(exp.variantItems) && exp.variantItems.length
+          ? exp.variantItems
+          : (Array.isArray(exp.variantOptions)
+              ? exp.variantOptions.map(function (n) { return { nome: n, preco: '', imagem: '' }; })
+              : []);
+        window._renderVariantItems(_items);
       }
       // Atualiza o preview de imagem (se já wireado).
       if (typeof window._refreshImagePreview === 'function') {
@@ -4824,6 +4829,110 @@
       });
     }
 
+    // ===== Construtor de variações (nome + preço + foto) =====
+    // Cada variação vira uma linha com nome, preço e upload de foto
+    // próprio (reaproveita o bucket 'experience-images'). Exposto via
+    // window._renderVariantItems / _collectVariantItems pro openExpModal
+    // e o submit usarem.
+    (function setupVariantItemsBuilder() {
+      var host = document.getElementById('exp-variant-items');
+      var addVarBtn = document.getElementById('exp-variant-add');
+      if (!host) return;
+
+      function vesc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      async function uploadVariantImage(file, statusEl, urlInput, previewImg) {
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+          statusEl.textContent = '⚠ Maior que 10MB'; statusEl.style.color = '#c0392b'; return;
+        }
+        var s = window.supabaseClient;
+        if (!s || !s.storage) { statusEl.textContent = '⚠ Storage indisponível'; statusEl.style.color = '#c0392b'; return; }
+        statusEl.textContent = 'Enviando…'; statusEl.style.color = '#1a8a4a';
+        var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [, 'jpg'])[1].toLowerCase();
+        var base = ((document.getElementById('exp-nome') && document.getElementById('exp-nome').value || 'exp') + '-var')
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'var';
+        var path = base + '-' + Date.now() + '.' + ext;
+        try {
+          var up = await s.storage.from('experience-images').upload(path, file, {
+            cacheControl: '3600', upsert: false, contentType: file.type || ('image/' + ext)
+          });
+          if (up.error) { statusEl.textContent = '⚠ Falha: ' + (up.error.message || 'erro'); statusEl.style.color = '#c0392b'; return; }
+          var pub = s.storage.from('experience-images').getPublicUrl(up.data.path);
+          var url = pub && pub.data && pub.data.publicUrl;
+          if (!url) { statusEl.textContent = '⚠ Sem URL pública'; statusEl.style.color = '#c0392b'; return; }
+          urlInput.value = url;
+          if (previewImg) { previewImg.src = url; previewImg.style.display = 'block'; }
+          statusEl.textContent = '✓ Enviada'; statusEl.style.color = '#1a8a4a';
+        } catch (e) {
+          statusEl.textContent = '⚠ Erro: ' + (e.message || e); statusEl.style.color = '#c0392b';
+        }
+      }
+
+      function addRow(item) {
+        item = item || { nome: '', preco: '', imagem: '' };
+        var row = document.createElement('div');
+        row.className = 'exp-variant-row';
+        row.style.cssText = 'display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;border:1px solid #eadfce;border-radius:10px;padding:10px;margin-bottom:8px;background:#fffaf3;';
+        row.innerHTML =
+          '<div style="flex:1 1 150px;min-width:130px;"><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Nome *</label>' +
+            '<input type="text" class="vi-nome" value="' + vesc(item.nome) + '" placeholder="Ex: Azul P" style="width:100%;padding:7px;border:1px solid #d8c9b6;border-radius:6px;font-size:13px;box-sizing:border-box;"></div>' +
+          '<div style="flex:0 1 110px;min-width:90px;"><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Preço</label>' +
+            '<input type="text" class="vi-preco" value="' + vesc(item.preco) + '" placeholder="R$189" style="width:100%;padding:7px;border:1px solid #d8c9b6;border-radius:6px;font-size:13px;box-sizing:border-box;"></div>' +
+          '<div style="flex:1 1 190px;min-width:170px;"><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Foto</label>' +
+            '<input type="file" class="vi-file" accept="image/png,image/jpeg,image/webp,image/heic,image/avif" style="font-size:11px;display:block;width:100%;">' +
+            '<input type="text" class="vi-imagem" value="' + vesc(item.imagem) + '" placeholder="ou cole uma URL" style="width:100%;margin-top:4px;padding:6px;border:1px solid #d8c9b6;border-radius:6px;font-size:12px;box-sizing:border-box;">' +
+            '<span class="vi-status" style="font-size:11px;"></span></div>' +
+          '<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
+            '<img class="vi-preview" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e0d2c0;' + (item.imagem ? '' : 'display:none;') + '" src="' + vesc(item.imagem) + '">' +
+            '<button type="button" class="vi-remove" title="Remover" style="border:none;background:#fdecea;color:#c0392b;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1;">×</button>' +
+          '</div>';
+        host.appendChild(row);
+
+        var fileEl = row.querySelector('.vi-file');
+        var urlEl = row.querySelector('.vi-imagem');
+        var statusEl = row.querySelector('.vi-status');
+        var previewEl = row.querySelector('.vi-preview');
+        fileEl.addEventListener('change', function () {
+          var f = fileEl.files && fileEl.files[0];
+          if (f) uploadVariantImage(f, statusEl, urlEl, previewEl);
+        });
+        urlEl.addEventListener('input', function () {
+          var v = urlEl.value.trim();
+          if (v) { previewEl.src = v; previewEl.style.display = 'block'; }
+          else { previewEl.style.display = 'none'; }
+        });
+        row.querySelector('.vi-remove').addEventListener('click', function () { row.remove(); });
+      }
+
+      window._renderVariantItems = function (items) {
+        host.innerHTML = '';
+        (Array.isArray(items) ? items : []).forEach(addRow);
+      };
+      window._collectVariantItems = function () {
+        var out = [];
+        host.querySelectorAll('.exp-variant-row').forEach(function (row) {
+          var nomeEl = row.querySelector('.vi-nome');
+          var nome = (nomeEl && nomeEl.value || '').trim();
+          if (!nome) return;
+          var precoEl = row.querySelector('.vi-preco');
+          var imagemEl2 = row.querySelector('.vi-imagem');
+          out.push({
+            nome: nome,
+            preco: (precoEl && precoEl.value || '').trim(),
+            imagem: (imagemEl2 && imagemEl2.value || '').trim()
+          });
+        });
+        return out;
+      };
+      if (addVarBtn) addVarBtn.addEventListener('click', function () { addRow(); });
+    })();
+
     // Combobox de fornecedor: substitui o input livre por um dropdown
     // com busca + opção "adicionar novo". Mantém o <input type=hidden
     // id="exp-fornecedor-nome"> pra preservar a leitura via getElementById
@@ -4904,25 +5013,26 @@
         inclui: document.getElementById('exp-inclui').value.trim(),
         imagem: document.getElementById('exp-imagem').value.trim(),
         descricao: document.getElementById('exp-descricao').value.trim(),
-        // Variações: label vazio = sem seletor. Opções split por linha,
-        // dedup, trimmed. Mantemos só se houver label E pelo menos 1
-        // opção — caso contrário grava null/null pra não criar estado
-        // inconsistente (label sem opções OU vice-versa).
+        // Variações ricas (nome + preço + foto). Coletadas do construtor.
+        // Sem itens = experiência sem variação (grava null em tudo). Se
+        // houver itens mas o rótulo estiver vazio, usa um rótulo padrão
+        // pra o seletor ainda aparecer pro cliente.
         variantLabel: (function () {
           const lbl = (document.getElementById('exp-variant-label')?.value || '').trim();
-          const optsRaw = (document.getElementById('exp-variant-options')?.value || '').trim();
-          const opts = optsRaw
-            ? optsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
-            : [];
-          return (lbl && opts.length) ? lbl : null;
+          const items = (typeof window._collectVariantItems === 'function')
+            ? window._collectVariantItems() : [];
+          if (!items.length) return null;
+          return lbl || 'Escolha a sua opção';
+        })(),
+        variantItems: (function () {
+          const items = (typeof window._collectVariantItems === 'function')
+            ? window._collectVariantItems() : [];
+          return items.length ? items : null;
         })(),
         variantOptions: (function () {
-          const lbl = (document.getElementById('exp-variant-label')?.value || '').trim();
-          const optsRaw = (document.getElementById('exp-variant-options')?.value || '').trim();
-          const opts = optsRaw
-            ? optsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
-            : [];
-          return (lbl && opts.length) ? Array.from(new Set(opts)) : null;
+          const items = (typeof window._collectVariantItems === 'function')
+            ? window._collectVariantItems() : [];
+          return items.length ? items.map(function (it) { return it.nome; }) : null;
         })(),
         cor: cor1 + ',' + cor2,
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),

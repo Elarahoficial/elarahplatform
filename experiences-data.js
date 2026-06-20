@@ -148,9 +148,43 @@
       // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
       // o front não renderiza seletor. sql/elarah_experiences_variants.sql.
       variantLabel: row.variant_label || null,
-      variantOptions: Array.isArray(row.variant_options)
-        ? row.variant_options.filter(function (o) { return o && String(o).trim(); })
-        : [],
+      // Variações ricas: cada item = { nome, preco, imagem }. preco vazio
+      // usa o preço base; imagem vazia usa a foto principal. Tolerante a
+      // itens em string (legado) → vira { nome }. sql/elarah_experiences_
+      // variant_items.sql.
+      variantItems: (function () {
+        var raw = row.variant_items;
+        if (!Array.isArray(raw)) return [];
+        return raw.map(function (it) {
+          if (it == null) return null;
+          if (typeof it === 'string') {
+            var n = it.trim();
+            return n ? { nome: n, preco: '', imagem: '' } : null;
+          }
+          var nome = String(it.nome || it.name || '').trim();
+          if (!nome) return null;
+          return {
+            nome: nome,
+            preco: String(it.preco || it.price || '').trim(),
+            imagem: String(it.imagem || it.image || '').trim()
+          };
+        }).filter(Boolean);
+      })(),
+      // Nomes das variações — deriva de variant_items quando houver
+      // (compat com todo código que lê variantOptions como lista de
+      // nomes); senão usa o text[] legado.
+      variantOptions: (function () {
+        if (Array.isArray(row.variant_items) && row.variant_items.length) {
+          return row.variant_items.map(function (it) {
+            return typeof it === 'string'
+              ? String(it).trim()
+              : String((it && (it.nome || it.name)) || '').trim();
+          }).filter(Boolean);
+        }
+        return Array.isArray(row.variant_options)
+          ? row.variant_options.filter(function (o) { return o && String(o).trim(); })
+          : [];
+      })(),
       // Datas do pacote/passaporte: array de strings (ex: ["12/06","19/06"]).
       // Quando preenchido com 2+ datas, indica experiencia multi-encontro
       // — cliente participa de TODAS as datas listadas. sql/elarah_
@@ -256,6 +290,26 @@
         if (raw == null) return null;
         var s = String(raw).trim();
         return s ? s : null;
+      })(),
+      // Variações ricas (nome + preco + imagem). null = não enviar/limpar.
+      variant_items: (function () {
+        var raw = exp.variantItems != null ? exp.variantItems : exp.variant_items;
+        if (!Array.isArray(raw)) return null;
+        var items = raw.map(function (it) {
+          if (it == null) return null;
+          if (typeof it === 'string') {
+            var n = it.trim();
+            return n ? { nome: n, preco: '', imagem: '' } : null;
+          }
+          var nome = String(it.nome || it.name || '').trim();
+          if (!nome) return null;
+          return {
+            nome: nome,
+            preco: String(it.preco || it.price || '').trim(),
+            imagem: String(it.imagem || it.image || '').trim()
+          };
+        }).filter(Boolean);
+        return items.length ? items : null;
       })(),
       variant_options: (function () {
         var raw = exp.variantOptions != null ? exp.variantOptions : exp.variant_options;
