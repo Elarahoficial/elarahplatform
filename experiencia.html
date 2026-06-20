@@ -610,10 +610,10 @@
           '</div>'
         : '') +
       '<div class="exp-detail__meta">' +
-        '<span class="exp-detail__meta-item">' +
+        (exp.data ? '<span class="exp-detail__meta-item">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
           esc(exp.data) +
-        '</span>' +
+        '</span>' : '') +
         (exp.duracao ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' + esc(exp.duracao) + '</span>' : '') +
         (exp.bairro ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + esc(exp.bairro) + '</span>' : '') +
         (exp.endereco ? '<span class="exp-detail__meta-item">' + esc(exp.endereco) + '</span>' : '') +
