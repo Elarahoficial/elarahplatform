@@ -5,6 +5,7 @@ on:
     branches:
       - claude/create-elarah-homepage-VsE5i
       - claude/fix-purchase-errors-2GrQL
+      - claude/peaceful-wright-oh8k98
     paths:
       - 'supabase/functions/**'
   workflow_dispatch:
@@ -67,4 +68,13 @@ jobs:
           echo "→ redeem-gift-card"
           supabase functions deploy redeem-gift-card \
             --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ calculate-shipping"
+          supabase functions deploy calculate-shipping \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ melhor-envio-callback"
+          supabase functions deploy melhor-envio-callback \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ melhor-envio-connect"
+          supabase functions deploy melhor-envio-connect \
+            --project-ref "$PROJECT_REF"
           echo "✓ Deploy completo"
