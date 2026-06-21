@@ -26,6 +26,7 @@ import {
   bookingConfirmationEmailHtml,
   generateGiftCardCode,
   giftCardEmailHtml,
+  sendAdminSaleNotification,
   sendEmail,
 } from "../_shared/email.ts";
 import {
@@ -239,6 +240,32 @@ async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
   }
   // Dispara confirmação por e-mail.
   await sendBookingConfirmation(booking);
+  // Avisa os admins da venda (mesmo ponto idempotente da confirmação).
+  await notifyAdminOfSale(booking, "Pix (Mercado Pago)");
+}
+
+// Best-effort: avisa os admins que saiu uma venda. Falha aqui só loga
+// — não pode derrubar o fluxo (booking já está paga).
+async function notifyAdminOfSale(booking: BookingRow, paymentMethod: string) {
+  const meta = (booking.metadata ?? {}) as Record<string, unknown>;
+  await sendAdminSaleNotification({
+    experienciaNome: booking.experiencia_nome ?? "Experiência",
+    clienteNome: booking.nome,
+    clienteEmail: booking.email,
+    data: booking.data,
+    horario: booking.horario,
+    quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
+    amountTotalCentavos: booking.amount_total ?? null,
+    precoLabel: booking.preco_label,
+    bookingId: booking.id,
+    paymentMethod,
+    couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
+    couponDiscountCentavos:
+      (booking as { coupon_discount_centavos?: number | null }).coupon_discount_centavos ?? null,
+    fornecedorNome: (booking as { fornecedor_nome?: string | null }).fornecedor_nome ?? null,
+    bairro: (meta.bairro as string | null) ?? null,
+    endereco: (meta.endereco as string | null) ?? null,
+  });
 }
 
 async function cancelBooking(booking: BookingRow, newStatus: string) {

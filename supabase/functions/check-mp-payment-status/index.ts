@@ -32,6 +32,7 @@ import {
   bookingConfirmationEmailHtml,
   generateGiftCardCode,
   giftCardEmailHtml,
+  sendAdminSaleNotification,
   sendEmail,
 } from "../_shared/email.ts";
 
@@ -497,6 +498,26 @@ serve(async (req) => {
       booking.status = "pago";
       booking.amount_total = paidCents;
       await sendConfirmationEmail(booking);
+      // Avisa os admins da venda (best-effort — só loga se falhar).
+      const meta = (booking.metadata ?? {}) as Record<string, unknown>;
+      await sendAdminSaleNotification({
+        experienciaNome: booking.experiencia_nome ?? "Experiência",
+        clienteNome: booking.nome,
+        clienteEmail: booking.email,
+        data: booking.data,
+        horario: booking.horario,
+        quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
+        amountTotalCentavos: booking.amount_total ?? null,
+        precoLabel: booking.preco_label,
+        bookingId: booking.id,
+        paymentMethod: "Pix (Mercado Pago)",
+        couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
+        couponDiscountCentavos:
+          (booking as { coupon_discount_centavos?: number | null }).coupon_discount_centavos ?? null,
+        fornecedorNome: (booking as { fornecedor_nome?: string | null }).fornecedor_nome ?? null,
+        bairro: (meta.bairro as string | null) ?? null,
+        endereco: (meta.endereco as string | null) ?? null,
+      });
     } else {
       console.error(
         "[Elarah Payment/MP] reconcile: update falhou",
