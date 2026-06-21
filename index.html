@@ -6,7 +6,7 @@
   <meta name="description" content="Elarah — plataforma de curadoria de experiências presenciais. Descubra, reserve e viva atividades fora do óbvio.">
   <title>Elarah — Offline is a Feeling</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=11">
   <link rel="stylesheet" href="auth.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,16 +79,11 @@
 
   <!-- ========== HERO SECTION ========== -->
   <section class="hero">
-    <div class="hero__video-bg">
-      <iframe
-        id="hero-video"
-        src="https://www.youtube.com/embed/pmaXSOTo_qU?enablejsapi=1&autoplay=1&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&iv_load_policy=3"
-        frameborder="0"
-        allow="autoplay; encrypted-media"
-        allowfullscreen
-        class="hero__video-iframe"
-      ></iframe>
-    </div>
+    <!-- Hero estatico: frame do video como background (em .hero__video-bg).
+         O embed do YouTube foi removido porque o player sempre mostrava o
+         botao de play/pause por cima (ignora controls=0). Pra ter video em
+         movimento sem botao, hospedar o .mp4 e usar uma tag <video>. -->
+    <div class="hero__video-bg"></div>
     <div class="hero__overlay"></div>
     <div class="hero__content">
       <h1 class="hero__title">
@@ -651,36 +646,4 @@
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=2"></script>
 <script src="script.js?v=64"></script>
-<!-- Hero video: usa a API do YouTube pra manter o fundo SEMPRE tocando
-     (sem o overlay de play/pause) e fazer o loop sem o parametro
-     playlist=, que era o que mostrava os botoes anterior/proximo. -->
-<script>
-(function () {
-  if (!document.getElementById('hero-video')) return;
-  var tag = document.createElement('script');
-  tag.src = 'https://www.youtube.com/iframe_api';
-  document.head.appendChild(tag);
-
-  window.onYouTubeIframeAPIReady = function () {
-    if (typeof YT === 'undefined' || !YT.Player) return;
-    new YT.Player('hero-video', {
-      events: {
-        onReady: function (e) {
-          try { e.target.mute(); e.target.playVideo(); } catch (_) {}
-        },
-        onStateChange: function (e) {
-          // ENDED(0) -> reinicia (loop). PAUSED(2) -> retoma — cobre o
-          // autoplay interrompido pelo navegador. Assim o overlay de
-          // play/pause do YouTube nunca fica visivel.
-          if (e.data === YT.PlayerState.ENDED) {
-            try { e.target.seekTo(0, true); e.target.playVideo(); } catch (_) {}
-          } else if (e.data === YT.PlayerState.PAUSED) {
-            try { e.target.playVideo(); } catch (_) {}
-          }
-        }
-      }
-    });
-  };
-})();
-</script>
 </body></html>
