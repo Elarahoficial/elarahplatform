@@ -341,6 +341,11 @@ select {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  /* Poster: frame oficial do proprio video. Fica atras do iframe no desktop
+   * (cobre o flash de carregamento) e vira o hero estatico no mobile, onde o
+   * iframe e escondido — assim o YouTube nunca mostra botao de play/pause. */
+  background: #2a1410 url('https://i.ytimg.com/vi/pmaXSOTo_qU/maxresdefault.jpg')
+    center / cover no-repeat;
 }
 
 .hero__video-iframe {
@@ -2390,12 +2395,11 @@ select {
 }
 
 @media (max-width: 768px) {
-  /* Hero video preservado. Fallback eh o gradient do .hero__overlay
-   * (vinho escuro) — se autoplay falhar no iOS, o usuario ve um hero
-   * ainda apresentavel ao inves de tela cinza.
-   */
-  .hero__video-bg {
-    background: linear-gradient(135deg, #2a1410 0%, #4a1622 60%, #6b1f2e 100%);
+  /* No celular o YouTube ignora controls=0 e mostra o botao de play/pause.
+   * Entao escondemos o iframe e deixamos so o poster (definido no estilo base
+   * de .hero__video-bg) — hero limpo, sem botao nenhum e carregando rapido. */
+  .hero__video-iframe {
+    display: none;
   }
 
   /* ===== Categories strip: padding apertado em mobile =====
