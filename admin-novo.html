@@ -2348,6 +2348,14 @@
           <p class="admin__form-hint">Se preenchido, o cupom só funciona nessa experiência.</p>
         </div>
 
+        <div class="admin__form-field admin__form-field--full">
+          <label>Restringir a uma categoria (opcional)</label>
+          <select id="cp-categoria">
+            <option value="">— Qualquer categoria —</option>
+          </select>
+          <p class="admin__form-hint">Se preenchido, o cupom só funciona em experiências dessa categoria (ex.: <em>Kit em casa</em>). Deixe "Qualquer experiência" acima pra valer pra todas da categoria.</p>
+        </div>
+
         <div class="admin__form-field">
           <label>Válido até *</label>
           <input type="datetime-local" id="cp-valid-until" required>
@@ -3194,7 +3202,7 @@
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=183"></script>
+<script src="admin.js?v=184"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

@@ -577,17 +577,18 @@
     try {
       const { data, error } = await sb
         .from('coupons')
-        .select('id, code, nome, discount_type, discount_value, experience_id, valid_from, valid_until, max_uses, times_used, is_active, created_at')
+        .select('id, code, nome, discount_type, discount_value, experience_id, categoria, valid_from, valid_until, max_uses, times_used, is_active, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       couponsCache = data || [];
 
-      // Carrega experiências pra resolver nome (uma vez, com cache)
+      // Carrega experiências pra resolver nome (uma vez, com cache).
+      // Inclui categoria pra popular o filtro por categoria do cupom.
       if (!couponsExperiencesCache) {
         const { data: exps } = await sb
           .from('experiences')
-          .select('id, nome')
+          .select('id, nome, categoria')
           .order('nome', { ascending: true });
         couponsExperiencesCache = exps || [];
       }
@@ -630,9 +631,13 @@
           ? c.discount_value + '% OFF'
           : fmtBRL(c.discount_value);
 
+        // Coluna de restrição: experiência específica tem prioridade;
+        // senão mostra a categoria (se houver); senão "Qualquer".
         const expNome = c.experience_id
           ? (expById.get(c.experience_id) || '(experiência removida)')
-          : '<span style="color:#888;">Qualquer</span>';
+          : (c.categoria
+              ? '<span title="Restrito à categoria">📂 ' + escapeHtml(c.categoria) + '</span>'
+              : '<span style="color:#888;">Qualquer</span>');
 
         const usos = c.max_uses != null
           ? c.times_used + ' / ' + c.max_uses
@@ -712,6 +717,7 @@
     const typeField = document.getElementById('cp-discount-type');
     const valueField = document.getElementById('cp-discount-value');
     const expField = document.getElementById('cp-experience-id');
+    const catField = document.getElementById('cp-categoria');
     const validField = document.getElementById('cp-valid-until');
     const maxField = document.getElementById('cp-max-uses');
     const activeField = document.getElementById('cp-is-active');
@@ -721,13 +727,26 @@
 
     // Popula dropdown de experiências (com cache)
     if (!couponsExperiencesCache) {
-      const { data: exps } = await sb.from('experiences').select('id, nome').order('nome');
+      const { data: exps } = await sb.from('experiences').select('id, nome, categoria').order('nome');
       couponsExperiencesCache = exps || [];
     }
     expField.innerHTML = '<option value="">— Qualquer experiência —</option>' +
       (couponsExperiencesCache || []).map(e =>
         '<option value="' + e.id + '">' + escapeHtml(e.nome) + '</option>'
       ).join('');
+
+    // Popula dropdown de categorias — distintas, ordenadas (case-insensitive).
+    if (catField) {
+      const catSet = new Map();
+      (couponsExperiencesCache || []).forEach(e => {
+        const cat = (e.categoria || '').trim();
+        if (cat && !catSet.has(cat.toLowerCase())) catSet.set(cat.toLowerCase(), cat);
+      });
+      const cats = Array.from(catSet.values())
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+      catField.innerHTML = '<option value="">— Qualquer categoria —</option>' +
+        cats.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
+    }
 
     if (couponId) {
       title.textContent = 'Editar cupom';
@@ -743,6 +762,17 @@
         ? (c.discount_value / 100)
         : c.discount_value;
       expField.value = c.experience_id || '';
+      if (catField) {
+        // Se a categoria salva não está mais entre as experiências (ex.:
+        // renomeada/removida), injeta como opção pra não perder o valor.
+        const savedCat = (c.categoria || '').trim();
+        if (savedCat &&
+            !Array.from(catField.options).some(o => o.value.toLowerCase() === savedCat.toLowerCase())) {
+          catField.insertAdjacentHTML('beforeend',
+            '<option value="' + escapeHtml(savedCat) + '">' + escapeHtml(savedCat) + '</option>');
+        }
+        catField.value = savedCat;
+      }
       // datetime-local: precisa "YYYY-MM-DDTHH:MM"
       if (c.valid_until) {
         const d = new Date(c.valid_until);
@@ -761,6 +791,7 @@
       typeField.value = 'percent';
       valueField.value = '';
       expField.value = '';
+      if (catField) catField.value = '';
       // Default: 48h a partir de agora
       const d = new Date(Date.now() + 48 * 3600 * 1000);
       const tzOff = d.getTimezoneOffset() * 60000;
@@ -809,6 +840,7 @@
     const discountType = document.getElementById('cp-discount-type').value;
     let discountValueRaw = Number(document.getElementById('cp-discount-value').value);
     const experienceId = document.getElementById('cp-experience-id').value || null;
+    const categoria = (document.getElementById('cp-categoria')?.value || '').trim() || null;
     const validUntilStr = document.getElementById('cp-valid-until').value;
     const maxUsesRaw = document.getElementById('cp-max-uses').value.trim();
     const isActive = document.getElementById('cp-is-active').checked;
@@ -836,6 +868,7 @@
       discount_type: discountType,
       discount_value: discountValue,
       experience_id: experienceId,
+      categoria: categoria,
       valid_until: new Date(validUntilStr).toISOString(),
       max_uses: maxUses,
       is_active: isActive,
@@ -869,8 +902,14 @@
       msgEl.style.color = '#c0392b';
       // Detecta violação de unique no code
       const m = String(e.message || e);
-      if (m.toLowerCase().includes('coupons_code_key') || m.toLowerCase().includes('duplicate')) {
+      const mLow = m.toLowerCase();
+      if (mLow.includes('coupons_code_key') || mLow.includes('duplicate')) {
         msgEl.textContent = 'Já existe um cupom com esse código.';
+      } else if (mLow.includes('categoria') &&
+                 (mLow.includes('column') || mLow.includes('schema cache') || mLow.includes('does not exist'))) {
+        // Coluna categoria ainda não criada no banco.
+        msgEl.textContent = 'A restrição por categoria precisa da migração no banco: ' +
+          'rode sql/elarah_coupons_categoria.sql no Supabase (SQL Editor) e tente de novo.';
       } else {
         msgEl.textContent = 'Erro: ' + m;
       }
