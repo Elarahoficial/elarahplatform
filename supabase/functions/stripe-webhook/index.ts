@@ -33,6 +33,7 @@ import {
   bookingConfirmationEmailHtml,
   generateGiftCardCode,
   giftCardEmailHtml,
+  sendAdminSaleNotification,
   sendEmail,
 } from "../_shared/email.ts";
 
@@ -523,6 +524,32 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
     }
   }
   await sendBookingConfirmation(booking);
+  await notifyAdminOfSale(booking, "Cartão (Stripe)");
+}
+
+// Avisa os admins da Elarah que saiu uma venda. Fica junto da
+// confirmação ao cliente (mesmo ponto idempotente) pra não disparar
+// duplicado. Best-effort — qualquer falha só loga.
+async function notifyAdminOfSale(booking: BookingRow, paymentMethod: string) {
+  const meta = (booking.metadata ?? {}) as Record<string, unknown>;
+  await sendAdminSaleNotification({
+    experienciaNome: booking.experiencia_nome ?? "Experiência",
+    clienteNome: booking.nome,
+    clienteEmail: booking.email,
+    data: booking.data,
+    horario: booking.horario,
+    quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
+    amountTotalCentavos: booking.amount_total ?? null,
+    precoLabel: booking.preco_label,
+    bookingId: booking.id,
+    paymentMethod,
+    couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
+    couponDiscountCentavos:
+      (booking as { coupon_discount_centavos?: number | null }).coupon_discount_centavos ?? null,
+    fornecedorNome: (booking as { fornecedor_nome?: string | null }).fornecedor_nome ?? null,
+    bairro: (meta.bairro as string | null) ?? null,
+    endereco: (meta.endereco as string | null) ?? null,
+  });
 }
 
 async function sendBookingConfirmation(booking: BookingRow) {

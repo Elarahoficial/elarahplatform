@@ -25,6 +25,13 @@ const FROM = Deno.env.get("ELARAH_FROM_EMAIL") ?? "Elarah <contato@elarah.com.br
 // Endereço sandbox do Resend que funciona sem verificação.
 const FALLBACK_FROM = "Elarah <onboarding@resend.dev>";
 
+// Para quem mandar o aviso de "nova venda". Pode ser 1 ou vários
+// e-mails separados por vírgula/espaço em Supabase Secrets:
+//   ADMIN_NOTIFY_EMAILS  "maria@elarah.com.br, socio@elarah.com.br"
+// Se não setar, cai no e-mail de contato padrão da Elarah.
+const ADMIN_NOTIFY_EMAILS = Deno.env.get("ADMIN_NOTIFY_EMAILS") ?? "";
+const DEFAULT_ADMIN_EMAIL = "contato.elarah@gmail.com";
+
 export interface EmailMessage {
   to: string | string[];
   subject: string;
@@ -348,6 +355,130 @@ export function bookingConfirmationEmailHtml(opts: {
     ${refHtml}
   `;
   return htmlShell(inner);
+}
+
+// ---------------- NOTIFICAÇÃO DE VENDA (ADMIN) ----------------
+
+// Lista de destinatários do aviso de venda. Lê ADMIN_NOTIFY_EMAILS
+// (vírgula/ponto-e-vírgula/espaço como separador). Vazio = e-mail
+// padrão da Elarah, pra a notificação funcionar sem configurar nada.
+export function adminNotifyRecipients(): string[] {
+  const raw = (ADMIN_NOTIFY_EMAILS || "").trim();
+  const list = (raw ? raw.split(/[,;\s]+/) : [])
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.length ? list : [DEFAULT_ADMIN_EMAIL];
+}
+
+export interface AdminSaleNotificationOpts {
+  experienciaNome: string;
+  clienteNome?: string | null;
+  clienteEmail?: string | null;
+  data?: string | null;
+  horario?: string | null;
+  quantidade?: number | null;
+  amountTotalCentavos?: number | null;
+  precoLabel?: string | null;
+  bookingId?: string | null;
+  // Texto amigável do meio de pagamento, ex.: "Cartão (Stripe)".
+  paymentMethod?: string | null;
+  couponCode?: string | null;
+  couponDiscountCentavos?: number | null;
+  fornecedorNome?: string | null;
+  bairro?: string | null;
+  endereco?: string | null;
+}
+
+export function adminSaleNotificationEmailHtml(opts: AdminSaleNotificationOpts): string {
+  const linha = (label: string, value?: string | null) =>
+    value
+      ? `<tr><td style="padding:6px 0;color:#888;font-size:13px;vertical-align:top;width:40%;">${label}</td><td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right;">${escapeHtml(value)}</td></tr>`
+      : "";
+
+  const qty = Number(opts.quantidade || 1);
+  const qtyLabel = qty > 1 ? `${qty} pessoas` : "1 pessoa";
+
+  const amountCents = Number(opts.amountTotalCentavos);
+  const valorLabel = Number.isFinite(amountCents) && amountCents > 0
+    ? brl(amountCents)
+    : (opts.precoLabel || "—");
+
+  const enderecoFull = opts.endereco && opts.bairro
+    ? `${opts.endereco} — ${opts.bairro}`
+    : (opts.endereco || opts.bairro || null);
+
+  const cupomLabel = opts.couponCode
+    ? `${opts.couponCode}` + (
+        Number(opts.couponDiscountCentavos) > 0
+          ? ` (−${brl(Number(opts.couponDiscountCentavos))})`
+          : ""
+      )
+    : null;
+
+  const clienteLinha = opts.clienteEmail
+    ? `${opts.clienteNome ? escapeHtml(opts.clienteNome) + " · " : ""}<a href="mailto:${escapeHtml(opts.clienteEmail)}" style="color:#f0a05e;">${escapeHtml(opts.clienteEmail)}</a>`
+    : (opts.clienteNome ? escapeHtml(opts.clienteNome) : "—");
+
+  const inner = `
+    <h2 style="font-family:Georgia,'DM Serif Display',serif;color:#1a1a1a;margin:0 0 6px;font-size:22px;">Nova venda 🎉</h2>
+    <p style="margin:0 0 18px;color:#555;">Saiu mais uma! Aqui estão os detalhes do pedido.</p>
+    <div style="margin:0 0 18px;padding:18px 20px;background:#fff8ee;border:1.5px solid #f0d8bf;border-radius:14px;text-align:center;">
+      <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#a4663b;">Valor da venda</div>
+      <div style="font-size:30px;font-weight:700;color:#1a1a1a;margin-top:4px;">${valorLabel}</div>
+    </div>
+    <div style="margin:16px 0;padding:20px 22px;background:#faf6f0;border-radius:12px;border:1px solid #f0e8de;">
+      <div style="font-family:Georgia,serif;font-size:19px;color:#1a1a1a;margin-bottom:14px;line-height:1.3;">${escapeHtml(opts.experienciaNome)}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:6px 0;color:#888;font-size:13px;vertical-align:top;width:40%;">Cliente</td><td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right;">${clienteLinha}</td></tr>
+        ${linha("Data", opts.data)}
+        ${linha("Horário", opts.horario)}
+        ${linha("Quantidade", qtyLabel)}
+        ${linha("Endereço", enderecoFull)}
+        ${linha("Cupom", cupomLabel)}
+        ${linha("Pagamento", opts.paymentMethod)}
+        ${linha("Fornecedor", opts.fornecedorNome)}
+      </table>
+    </div>
+    ${
+      opts.bookingId
+        ? `<p style="margin:14px 0 0;font-size:12px;color:#999;text-align:center;letter-spacing:.5px;">Ref. da reserva: <span style="font-family:Menlo,Consolas,monospace;color:#666;">${escapeHtml(String(opts.bookingId).slice(-8).toUpperCase())}</span></p>`
+        : ""
+    }
+    <p style="margin:18px 0 0;font-size:13px;color:#888;text-align:center;">Pode responder este e-mail pra falar direto com o cliente.</p>
+  `;
+  return htmlShell(inner);
+}
+
+// Envia o aviso de venda pros admins. Best-effort: loga e nunca
+// relança — uma falha aqui não pode derrubar o fluxo de pagamento
+// (a booking já está paga e o cliente já foi avisado).
+export async function sendAdminSaleNotification(
+  opts: AdminSaleNotificationOpts,
+): Promise<EmailResult> {
+  const to = adminNotifyRecipients();
+  const amountCents = Number(opts.amountTotalCentavos);
+  const valorLabel = Number.isFinite(amountCents) && amountCents > 0
+    ? brl(amountCents)
+    : (opts.precoLabel || "");
+  const subject = `🎉 Nova venda: ${opts.experienciaNome}` +
+    (valorLabel ? ` — ${valorLabel}` : "");
+  const result = await sendEmail({
+    to,
+    subject,
+    html: adminSaleNotificationEmailHtml(opts),
+    // Responder o aviso fala direto com o cliente.
+    reply_to: opts.clienteEmail ?? undefined,
+  });
+  if (!result.ok) {
+    console.error(
+      "[elarah/email] FALHA ao enviar aviso de venda pro admin —",
+      "to=" + JSON.stringify(to),
+      "booking_id=" + (opts.bookingId ?? "?"),
+      "skipped=" + (result.skipped ? "true" : "false"),
+      "error=" + (result.error ?? "?"),
+    );
+  }
+  return result;
 }
 
 function escapeHtml(s: string): string {
