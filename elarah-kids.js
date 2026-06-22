@@ -52,7 +52,10 @@
       ? '<img src="' + esc(e.imagem) + '" alt="' + esc(e.nome) + '" loading="lazy">'
       : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#7a9a6e;font-family:\'DM Serif Display\',serif;font-size:2rem;">✿</div>';
 
-    var preco = e.preco ? esc(e.preco) : '';
+    var preco = e.preco
+      ? esc(window.ElarahData && typeof window.ElarahData.formatPrecoBR === 'function'
+          ? window.ElarahData.formatPrecoBR(e.preco) : e.preco)
+      : '';
     var bairro = e.bairro ? esc(e.bairro) : '';
     var data = e.data ? esc(e.data) : '';
     var tituloLimpo = String(e.nome || '').trim() || 'Experiência Kids';

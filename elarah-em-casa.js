@@ -81,7 +81,10 @@
       ? '<img src="' + esc(e.imagem) + '" alt="' + esc(e.nome) + '" loading="lazy">'
       : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#b9764f;font-family:\'DM Serif Display\',serif;font-size:2rem;">🕯️</div>';
 
-    var preco = e.preco ? esc(e.preco) : '';
+    var preco = e.preco
+      ? esc(window.ElarahData && typeof window.ElarahData.formatPrecoBR === 'function'
+          ? window.ElarahData.formatPrecoBR(e.preco) : e.preco)
+      : '';
     var titulo = String(e.nome || '').trim() || 'Kit Elarah em Casa';
 
     var descTrunc = '';

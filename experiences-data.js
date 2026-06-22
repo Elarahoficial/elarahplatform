@@ -1272,17 +1272,20 @@
     formatPrecoBR: formatPrecoBR,
   };
 
-  // Normaliza qualquer formato de preço pra "R$ X" no display.
+  // Normaliza qualquer formato de preço pra "R$ X,XX" no display.
+  // SEMPRE mostra o símbolo R$, separador de milhar e os centavos —
+  // mesmo quando o admin digita só o número (ex: "159"). É a fonte
+  // única de formatação de preço de experiência/kit no site inteiro.
   // Casos cobertos:
-  //   "383"          → "R$ 383"
-  //   "R$383"        → "R$ 383"
-  //   "R$ 383"       → "R$ 383"
-  //   "1380"         → "R$ 1.380"      (toLocaleString reformata milhares)
-  //   "1.380"        → "R$ 1.380"
-  //   "1380,00"      → "R$ 1.380"      (decimais zero ficam invisíveis)
+  //   "159"          → "R$ 159,00"
+  //   "R$225"        → "R$ 225,00"
+  //   "R$ 383"       → "R$ 383,00"
+  //   "1380"         → "R$ 1.380,00"   (toLocaleString reformata milhares)
+  //   "1.380"        → "R$ 1.380,00"
+  //   "1380,00"      → "R$ 1.380,00"
   //   "1380,50"      → "R$ 1.380,50"
-  //   "R$ 1.380,00"  → "R$ 1.380"
-  //   "A partir de R$300" → "R$ 300"   (extrai o número e adiciona prefixo)
+  //   "R$ 1.380,00"  → "R$ 1.380,00"
+  //   "A partir de R$300" → "R$ 300,00" (extrai o número e adiciona prefixo)
   //   ""             → ""              (mantém vazio)
   //   "Sob consulta" → "Sob consulta"  (texto livre sem número, mantém)
   function formatPrecoBR(raw) {
@@ -1295,16 +1298,13 @@
     if (!match) return s; // sem número (ex: "Sob consulta") → não toca
     var num = match[1];
     // Normaliza: remove pontos de milhar, troca vírgula por ponto decimal.
-    var hasDecimal = /,\d{1,2}$/.test(num);
     var clean = num.replace(/\./g, '').replace(/\s+/g, '').replace(',', '.');
     var n = parseFloat(clean);
     if (!isFinite(n)) return s;
-    var formatted;
-    if (hasDecimal && (n % 1 !== 0)) {
-      formatted = n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    } else {
-      formatted = n.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-    }
-    return 'R$ ' + formatted;
+    // Sempre com 2 casas decimais — "R$, vírgula e os centavos".
+    return 'R$ ' + n.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 })(window);
