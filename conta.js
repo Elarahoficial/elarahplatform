@@ -397,6 +397,19 @@ renderFavoritos();
     return 'past';
   }
 
+  function classifyManualSale(ms) {
+    // Vendas manuais: cancelado/reembolsado vão pro histórico.
+    // Senão, decide pela data do evento (slot_date).
+    const status = ms.payment_status || 'pendente';
+    if (status === 'cancelado' || status === 'reembolsado') return 'past';
+    if (!ms.slot_date) return 'upcoming';
+    const parsed = new Date(ms.slot_date + 'T00:00:00');
+    if (isNaN(parsed.getTime())) return 'upcoming';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return parsed >= today ? 'upcoming' : 'past';
+  }
+
   function formatBrlCents(cents) {
     if (cents == null) return '';
     return 'R$ ' + (Number(cents) / 100).toFixed(2).replace('.', ',');
@@ -554,6 +567,60 @@ renderFavoritos();
     );
   }
 
+  function manualSaleStatusLabel(status) {
+    const map = {
+      pago: 'Confirmada',
+      pendente: 'Pagamento pendente',
+      cancelado: 'Cancelada',
+      reembolsado: 'Reembolsada',
+    };
+    return map[status] || (status || '');
+  }
+
+  function formatDateBR(isoDate) {
+    if (!isoDate) return '';
+    const d = new Date(String(isoDate) + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // Renderiza uma venda manual como card de experiência. Pro cliente
+  // não há distinção visual de "venda manual" (isso é jargão interno
+  // do admin) — pra ele é só mais uma experiência comprada.
+  function renderManualSaleCard(ms, group) {
+    const nome = ms.experiencia_nome || 'Experiência';
+    const data = formatDateBR(ms.slot_date);
+    const horario = ms.horario || '';
+    const priceLabel = ms.amount_total ? formatBrlCents(ms.amount_total) : '';
+    const status = ms.payment_status || 'pendente';
+    // 'pendente' não tem classe de cor própria no CSS — reusa 'pending'.
+    const statusClass = status === 'pendente' ? 'pending' : status;
+    const statusLabel = manualSaleStatusLabel(status);
+
+    const metaParts = [];
+    if (data) metaParts.push('<span class="purchase-card__meta-item">📅 ' + escapeHtmlLocal(data) + '</span>');
+    if (horario) metaParts.push('<span class="purchase-card__meta-item">⏱ ' + escapeHtmlLocal(horario) + '</span>');
+    if (priceLabel) metaParts.push('<span class="purchase-card__meta-item purchase-card__price">' + escapeHtmlLocal(priceLabel) + '</span>');
+
+    return (
+      '<article class="purchase-card purchase-card--experience' + (group === 'past' ? ' purchase-card--past' : '') + '">' +
+        '<div class="purchase-card__icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22">' +
+            '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="purchase-card__body">' +
+          '<div class="purchase-card__head">' +
+            '<span class="purchase-card__type">Experiência</span>' +
+            '<span class="purchase-card__status purchase-card__status--' + escapeHtmlLocal(statusClass) + '">' + escapeHtmlLocal(statusLabel) + '</span>' +
+          '</div>' +
+          '<h3 class="purchase-card__title">' + escapeHtmlLocal(nome) + '</h3>' +
+          '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
   async function loadPurchases() {
     if (purchasesLoaded || purchasesLoading) return;
     purchasesLoading = true;
@@ -581,7 +648,7 @@ renderFavoritos();
       // Busca bookings do usuário (RLS: auth.uid() = user_id) e
       // gift cards onde o usuário é comprador OU destinatário
       // (RLS: gift_cards_owner_read cobre ambos via e-mail).
-      const [bookingsRes, giftCardsRes] = await Promise.all([
+      const [bookingsRes, giftCardsRes, manualSalesRes] = await Promise.all([
         sb.from('bookings')
           .select('id, experiencia_nome, data, horario, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
           .order('created_at', { ascending: false })
@@ -590,6 +657,9 @@ renderFavoritos();
           .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, created_at, expires_at')
           .order('created_at', { ascending: false })
           .limit(200),
+        // Vendas manuais via RPC (RLS da tabela é admin-only). Falha
+        // graciosamente se a migration get_my_manual_sales não rodou.
+        sb.rpc('get_my_manual_sales').then(r => r, e => ({ data: [], error: e })),
       ]);
 
       if (bookingsRes.error) {
@@ -598,9 +668,13 @@ renderFavoritos();
       if (giftCardsRes.error) {
         console.error('[Elarah conta] erro ao carregar gift_cards', giftCardsRes.error);
       }
+      if (manualSalesRes && manualSalesRes.error) {
+        console.warn('[Elarah conta] get_my_manual_sales indisponível (ok se migration não rodou)', manualSalesRes.error);
+      }
 
       const bookings = bookingsRes.data || [];
       const giftCards = giftCardsRes.data || [];
+      const manualSales = (manualSalesRes && manualSalesRes.data) || [];
 
       const upcoming = [];
       const past = [];
@@ -615,6 +689,13 @@ renderFavoritos();
       giftCards.forEach(g => {
         const group = classifyGiftCard(g);
         const entry = { kind: 'giftCard', data: g, group, sortKey: g.created_at || '' };
+        if (group === 'upcoming') upcoming.push(entry);
+        else past.push(entry);
+      });
+
+      manualSales.forEach(m => {
+        const group = classifyManualSale(m);
+        const entry = { kind: 'manualSale', data: m, group, sortKey: m.created_at || '' };
         if (group === 'upcoming') upcoming.push(entry);
         else past.push(entry);
       });
@@ -637,6 +718,7 @@ renderFavoritos();
         if (emptyEl) emptyEl.style.display = 'none';
         list.innerHTML = entries.map(e => {
           if (e.kind === 'booking') return renderBookingCard(e.data, e.group);
+          if (e.kind === 'manualSale') return renderManualSaleCard(e.data, e.group);
           return renderGiftCardCard(e.data, e.group);
         }).join('');
       }
@@ -690,6 +772,205 @@ renderFavoritos();
   }
   if (sectionParam === 'compras') {
     loadPurchases();
+  }
+
+  // ============================================================
+  //  CARTÃO FIDELIDADE
+  // ============================================================
+  // A cada 10 compras pagas (experiências + gift cards comprados),
+  // o usuário ganha um cupom de 20% OFF. A contagem e a emissão dos
+  // cupons são feitas server-side pela RPC sync_loyalty_card()
+  // (SECURITY DEFINER) — o frontend só renderiza o resultado.
+  //
+  // Fallback resiliente: se a RPC ainda não estiver no banco (migration
+  // sql/elarah_loyalty_card.sql não rodada), o cartão ainda mostra o
+  // progresso contando bookings + gift_cards via RLS, sem os cupons.
+  let loyaltyLoaded = false;
+  let loyaltyLoading = false;
+
+  function renderLoyaltyCard(data) {
+    const loadingEl = document.getElementById('loyalty-loading');
+    const errorEl = document.getElementById('loyalty-error');
+    const cardEl = document.getElementById('loyalty-card');
+    const stampsEl = document.getElementById('loyalty-stamps');
+    const progressEl = document.getElementById('loyalty-progress');
+    const hintEl = document.getElementById('loyalty-hint');
+    const rewardsEl = document.getElementById('loyalty-rewards');
+    const rewardsListEl = document.getElementById('loyalty-rewards-list');
+
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+    if (cardEl) cardEl.style.display = 'block';
+
+    const goal = Number(data.goal) || 10;
+    const stamps = Math.max(0, Math.min(goal, Number(data.stamps) || 0));
+    const total = Number(data.total_paid) || 0;
+
+    if (progressEl) progressEl.textContent = stamps + ' de ' + goal;
+
+    // Carimbos: os preenchidos ganham a logo da Elarah, os vazios
+    // mostram o número da posição.
+    if (stampsEl) {
+      let html = '';
+      for (let n = 1; n <= goal; n++) {
+        if (n <= stamps) {
+          html += '<div class="loyalty__stamp loyalty__stamp--filled">' +
+            '<img src="assets/logo.png" alt="" class="loyalty__stamp-logo">' +
+            '</div>';
+        } else {
+          html += '<div class="loyalty__stamp"><span class="loyalty__stamp-num">' + n + '</span></div>';
+        }
+      }
+      stampsEl.innerHTML = html;
+    }
+
+    // Mensagem de incentivo.
+    if (hintEl) {
+      if (total === 0) {
+        hintEl.innerHTML = 'Compre sua primeira experiência para começar a carimbar seu cartão!';
+      } else if (stamps >= goal) {
+        hintEl.innerHTML = 'Cartão completo! 🎉 Seu cupom de <strong>20% OFF</strong> está aqui embaixo.';
+      } else {
+        const left = goal - stamps;
+        hintEl.innerHTML = 'Falta' + (left > 1 ? 'm ' : ' ') + '<strong>' + left + '</strong> ' +
+          (left > 1 ? 'compras' : 'compra') + ' para ganhar <strong>20% de desconto</strong>.';
+      }
+    }
+
+    // Cupons conquistados (só existe quando a RPC respondeu).
+    const coupons = Array.isArray(data.coupons) ? data.coupons : [];
+    if (rewardsEl && rewardsListEl) {
+      if (!coupons.length) {
+        rewardsEl.style.display = 'none';
+        rewardsListEl.innerHTML = '';
+      } else {
+        rewardsEl.style.display = 'block';
+        rewardsListEl.innerHTML = coupons.map(c => {
+          const spent = c.used || c.expired;
+          const code = escapeHtmlLocal(c.code || '');
+          let metaText;
+          if (c.used) {
+            metaText = 'Cupom já utilizado';
+          } else if (c.expired) {
+            metaText = 'Expirado';
+          } else {
+            metaText = 'Válido até ' + formatCreatedAt(c.valid_until);
+          }
+          return (
+            '<div class="loyalty-coupon' + (spent ? ' loyalty-coupon--spent' : '') + '">' +
+              '<div class="loyalty-coupon__badge">' + (Number(c.discount_value) || 20) + '%</div>' +
+              '<div class="loyalty-coupon__body">' +
+                '<div class="loyalty-coupon__code">' + code + '</div>' +
+                '<div class="loyalty-coupon__meta">' + metaText + '</div>' +
+              '</div>' +
+              (spent ? '' : '<button type="button" class="loyalty-coupon__copy" data-copy-code="' + code + '">Copiar</button>') +
+            '</div>'
+          );
+        }).join('');
+
+        // Wire dos botões de copiar.
+        rewardsListEl.querySelectorAll('[data-copy-code]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const code = btn.getAttribute('data-copy-code');
+            const done = () => {
+              const original = btn.textContent;
+              btn.textContent = 'Copiado!';
+              setTimeout(() => { btn.textContent = original; }, 1800);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(code).then(done).catch(done);
+            } else {
+              done();
+            }
+          });
+        });
+      }
+    }
+  }
+
+  // Fallback client-side: conta compras pagas direto das tabelas
+  // (sem cupons, que dependem da RPC). Usado se a RPC não existir.
+  async function loadLoyaltyFallback(sb) {
+    const userEmail = (user.email || '').toLowerCase();
+    const [bookingsRes, giftCardsRes] = await Promise.all([
+      sb.from('bookings').select('id, status').eq('status', 'pago').limit(500),
+      sb.from('gift_cards')
+        .select('id, status, comprador_email, comprador_user_id')
+        .limit(500),
+    ]);
+
+    const paidExp = (bookingsRes.data || []).length;
+    const paidGift = (giftCardsRes.data || []).filter(g => {
+      const bought = (g.comprador_user_id && g.comprador_user_id === user.id) ||
+        ((g.comprador_email || '').toLowerCase() === userEmail);
+      const paid = ['active', 'used', 'expired'].includes(g.status);
+      return bought && paid;
+    }).length;
+
+    const total = paidExp + paidGift;
+    const goal = 10;
+    const rewards = Math.floor(total / goal);
+    let stamps = total - rewards * goal;
+    if (stamps === 0 && total > 0) stamps = goal;
+
+    renderLoyaltyCard({
+      total_paid: total,
+      goal,
+      stamps,
+      rewards_total: rewards,
+      coupons: [],
+    });
+  }
+
+  async function loadLoyalty() {
+    if (loyaltyLoaded || loyaltyLoading) return;
+    loyaltyLoading = true;
+
+    const loadingEl = document.getElementById('loyalty-loading');
+    const errorEl = document.getElementById('loyalty-error');
+
+    const sb = window.supabaseClient;
+    if (!sb) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (errorEl) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Supabase indisponível. Recarregue a página.';
+      }
+      loyaltyLoading = false;
+      return;
+    }
+
+    try {
+      const { data, error } = await sb.rpc('sync_loyalty_card');
+      if (error) throw error;
+      renderLoyaltyCard(data || {});
+      loyaltyLoaded = true;
+    } catch (err) {
+      // RPC ainda não existe no banco (ou outra falha) → usa o
+      // fallback client-side pra ao menos mostrar o progresso.
+      console.warn('[Elarah conta] sync_loyalty_card indisponível, usando fallback', err);
+      try {
+        await loadLoyaltyFallback(sb);
+        loyaltyLoaded = true;
+      } catch (err2) {
+        console.error('[Elarah conta] fallback de fidelidade falhou', err2);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (errorEl) {
+          errorEl.style.display = 'block';
+          errorEl.textContent = 'Não foi possível carregar seu cartão. Tente recarregar a página.';
+        }
+      }
+    } finally {
+      loyaltyLoading = false;
+    }
+  }
+
+  const fidelidadeMenuBtn = document.querySelector('.account__menu-item[data-section="fidelidade"]');
+  if (fidelidadeMenuBtn) {
+    fidelidadeMenuBtn.addEventListener('click', () => { loadLoyalty(); });
+  }
+  if (sectionParam === 'fidelidade') {
+    loadLoyalty();
   }
 
   // ===== LOGOUT =====

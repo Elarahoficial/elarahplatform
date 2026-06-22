@@ -613,3 +613,207 @@
   overflow: hidden;
   word-break: break-word;
 }
+
+/* =============================================================
+   CARTÃO FIDELIDADE (section-fidelidade)
+   ============================================================= */
+
+.loyalty__loading {
+  padding: 24px 0;
+  color: var(--gray-500, #888);
+  font-size: 0.95rem;
+}
+
+.loyalty__card {
+  background: linear-gradient(135deg, #fff8f0 0%, #ffe9d3 100%);
+  border: 1px solid #f3d9bf;
+  border-radius: var(--radius-lg, 20px);
+  padding: 28px 28px 32px;
+  box-shadow: 0 8px 24px rgba(240, 160, 94, 0.12);
+}
+
+.loyalty__card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.loyalty__card-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.loyalty__card-headtext {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.loyalty__card-kicker {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+  color: var(--gray-900, #1a1a1a);
+}
+
+.loyalty__card-progress {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--orange, #f0a05e);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Grade de carimbos — 5 por linha, 2 linhas (10 no total). */
+.loyalty__stamps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  max-width: 360px;
+}
+
+.loyalty__stamp {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px dashed #e0b58c;
+  background: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition, all .2s ease);
+}
+
+.loyalty__stamp-num {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #d3a06f;
+}
+
+.loyalty__stamp--filled {
+  border-style: solid;
+  border-color: var(--orange, #f0a05e);
+  background: var(--white, #fff);
+  box-shadow: 0 2px 8px rgba(240, 160, 94, 0.25);
+}
+
+.loyalty__stamp--filled .loyalty__stamp-num {
+  display: none;
+}
+
+.loyalty__stamp-logo {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
+.loyalty__hint {
+  margin: 22px 0 0;
+  font-size: 0.92rem;
+  color: var(--gray-600, #555);
+  line-height: 1.5;
+}
+
+.loyalty__hint strong {
+  color: var(--orange-dark, #d97a2b);
+}
+
+/* Cupons conquistados */
+.loyalty__rewards {
+  margin-top: 32px;
+}
+
+.loyalty__rewards-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--gray-900, #1a1a1a);
+  margin-bottom: 16px;
+}
+
+.loyalty__rewards-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .loyalty__rewards-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.loyalty-coupon {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1.5px dashed var(--orange, #f0a05e);
+  border-radius: var(--radius-md, 14px);
+  background: #fff9f3;
+}
+
+.loyalty-coupon--spent {
+  opacity: 0.55;
+  border-style: solid;
+  border-color: var(--gray-200, #eee);
+  background: var(--gray-50, #faf6f0);
+}
+
+.loyalty-coupon__badge {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffb877, #f0772a);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loyalty-coupon--spent .loyalty-coupon__badge {
+  background: var(--gray-300, #ccc);
+}
+
+.loyalty-coupon__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.loyalty-coupon__code {
+  font-family: Menlo, Consolas, monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-900, #1a1a1a);
+  letter-spacing: 0.5px;
+}
+
+.loyalty-coupon__meta {
+  font-size: 0.8rem;
+  color: var(--gray-500, #888);
+  margin-top: 3px;
+}
+
+.loyalty-coupon__copy {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--orange, #f0a05e);
+  background: none;
+  border: 1.5px solid var(--orange, #f0a05e);
+  border-radius: var(--radius-full, 999px);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition, all .18s ease);
+}
+
+.loyalty-coupon__copy:hover {
+  background: var(--orange, #f0a05e);
+  color: #fff;
+}
