@@ -4161,7 +4161,8 @@
         <div class="admin__form-field">
           <label>Tipo de evento (grupo fechado)</label>
           <select id="ms-event-type">
-            <option value="">— Não é evento</option>
+            <option value="">— (classificação automática)</option>
+            <option value="__none__">Não é evento (não listar)</option>
             <option value="meu_grupo">Meu grupo</option>
             <option value="aniversario_adulto">Aniversário adulto</option>
             <option value="aniversario_kids">Aniversário kids</option>
@@ -4170,7 +4171,7 @@
             <option value="corporativo">Corporativo</option>
             <option value="outro">Outro (digitar)</option>
           </select>
-          <p class="admin__form-hint">Classifica a venda na aba Eventos. Vendas com mais de 2 pessoas já entram lá automaticamente.</p>
+          <p class="admin__form-hint">Classifica a venda na aba Eventos. Vendas com mais de 2 pessoas entram lá automaticamente — escolha <strong>“Não é evento”</strong> para mantê-la fora (ex.: parceria/colaboração).</p>
           <input type="text" id="ms-event-type-custom" placeholder="Digite o tipo de evento" style="display:none;margin-top:6px;">
         </div>
 
