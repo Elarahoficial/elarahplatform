@@ -81,7 +81,8 @@ begin
     raise exception 'not_authenticated';
   end if;
 
-  select lower(email) into v_email from public.profiles where id = v_uid;
+  select nullif(lower(trim(email)), '') into v_email
+    from public.profiles where id = v_uid;
 
   -- 1) Experiências pagas (reservas). Conta por user_id E por e-mail
   --    cadastrado — cobre compras feitas como convidado (user_id nulo)
@@ -92,7 +93,7 @@ begin
      and (
            user_id = v_uid
            or (v_email is not null
-               and lower(coalesce(email, '')) = v_email)
+               and lower(trim(coalesce(email, ''))) = v_email)
          );
 
   -- 2) Gift cards comprados e pagos pela própria pessoa.
@@ -102,7 +103,7 @@ begin
      and (
            comprador_user_id = v_uid
            or (v_email is not null
-               and lower(coalesce(comprador_email, '')) = v_email)
+               and lower(trim(coalesce(comprador_email, ''))) = v_email)
          );
 
   -- 3) Vendas manuais pagas registradas com o e-mail da cliente.
@@ -112,7 +113,7 @@ begin
     from public.manual_sales
    where payment_status = 'pago'
      and v_email is not null
-     and lower(coalesce(customer_email, '')) = v_email;
+     and lower(trim(coalesce(customer_email, ''))) = v_email;
 
   v_total := coalesce(v_exp, 0) + coalesce(v_gift, 0) + coalesce(v_manual, 0);
   v_due   := floor(v_total / v_goal);
