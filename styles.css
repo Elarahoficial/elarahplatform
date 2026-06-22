@@ -359,6 +359,12 @@ select {
   transform: translate(-50%, -50%);
   border: 0;
   pointer-events: none;
+  /* O player do YouTube ignora controls=0 e mostra o botao de play/pause
+   * centralizado (desktop e mobile). Como nao da pra remover esse botao com
+   * embed do YouTube, escondemos o iframe e usamos o frame do video como hero
+   * estatico (definido em .hero__video-bg). Pra ter o video em movimento sem
+   * botao, o caminho e hospedar o arquivo .mp4 e trocar por uma tag <video>. */
+  display: none;
 }
 
 .hero__overlay {
@@ -2395,13 +2401,6 @@ select {
 }
 
 @media (max-width: 768px) {
-  /* No celular o YouTube ignora controls=0 e mostra o botao de play/pause.
-   * Entao escondemos o iframe e deixamos so o poster (definido no estilo base
-   * de .hero__video-bg) — hero limpo, sem botao nenhum e carregando rapido. */
-  .hero__video-iframe {
-    display: none;
-  }
-
   /* ===== Categories strip: padding apertado em mobile =====
    * Antes 32px 48px ocupava 96px laterais. Em telefone (~360px de
    * largura) isso comia 1/4 da tela sem necessidade.

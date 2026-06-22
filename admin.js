@@ -11047,6 +11047,7 @@
   let _finWired = false;
   let _finExpById = new Map();          // experience_id → exp object (preenche em populate)
   let _finByElarahById = new Map();     // byelarah_item_id → item object
+  let _finExpenseLinkByName = new Map();// nome (lower) → 'exp:<id>'/'bye:<id>' (datalist do gasto)
   let _finCurrentLedgerRows = [];       // pra busca + export CSV
   let _finCurrentExpenses = [];
   let _finCurrentManualSales = [];
@@ -11453,41 +11454,27 @@
       if (current) filterSel.value = current;
     }
 
-    // Modal de Gasto: experiências + items By Elarah misturados.
-    // Prefix no value distingue: 'exp:<uuid>' / 'bye:<uuid>'.
-    // Optgroup separa visualmente os 2 grupos.
-    const expFinSel = document.getElementById('exp-fin-experience');
-    if (expFinSel) {
-      const current = expFinSel.value;
-      const placeholder = expFinSel.querySelector('option');
-      expFinSel.innerHTML = '';
-      if (placeholder) expFinSel.appendChild(placeholder);
-      if ((exps || []).length) {
-        const group = document.createElement('optgroup');
-        group.label = 'Experiências';
-        (exps || []).forEach(e => {
-          if (!e || !e.id) return;
-          const opt = document.createElement('option');
-          opt.value = 'exp:' + e.id;
-          opt.textContent = e.nome || '(sem nome)';
-          group.appendChild(opt);
-        });
-        expFinSel.appendChild(group);
-      }
-      if ((byeItems || []).length) {
-        const group = document.createElement('optgroup');
-        group.label = 'By Elarah';
-        (byeItems || []).forEach(i => {
-          if (!i || !i.id) return;
-          const opt = document.createElement('option');
-          opt.value = 'bye:' + i.id;
-          opt.textContent = i.nome || '(sem nome)';
-          group.appendChild(opt);
-        });
-        expFinSel.appendChild(group);
-      }
-      if (current) expFinSel.value = current;
-    }
+    // Modal de Gasto: campo buscável (digitável) em vez de dropdown.
+    // experiências + items By Elarah no MESMO datalist. O texto digitado
+    // é resolvido pra 'exp:<uuid>'/'bye:<uuid>' via _finExpenseLinkByName.
+    // By Elarah recebe sufixo " (By Elarah)" pra desambiguar de uma
+    // experiência homônima.
+    _finExpenseLinkByName = new Map();
+    const expFinDl = document.getElementById('exp-fin-experience-datalist');
+    const expOpts = [];
+    (exps || []).forEach(e => {
+      if (!e || !e.id || !(e.nome || '').trim()) return;
+      const label = e.nome.trim();
+      _finExpenseLinkByName.set(label.toLowerCase(), 'exp:' + e.id);
+      expOpts.push('<option value="' + _finEsc(label) + '"></option>');
+    });
+    (byeItems || []).forEach(i => {
+      if (!i || !i.id || !(i.nome || '').trim()) return;
+      const label = i.nome.trim() + ' (By Elarah)';
+      _finExpenseLinkByName.set(label.toLowerCase(), 'bye:' + i.id);
+      expOpts.push('<option value="' + _finEsc(label) + '"></option>');
+    });
+    if (expFinDl) expFinDl.innerHTML = expOpts.join('');
 
     // Datalist da venda manual — buscável por nome. Só experiências
     // (vendas manuais não vinculam a By Elarah via UI atual).
@@ -11497,6 +11484,37 @@
         .filter(e => e && e.id && (e.nome || '').trim())
         .map(e => '<option value="' + _finEsc(e.nome) + '"></option>')
         .join('');
+    }
+  }
+
+  // ===== Gasto: experiência digitável → resolve 'exp:'/'bye:' no hidden =====
+  // Espelha o padrão da venda manual, mas o gasto não guarda texto livre
+  // (só experience_id/byelarah_item_id), então nome fora da lista = sem
+  // vínculo. By Elarah é distinguido pelo sufixo " (By Elarah)".
+  function _finOnExpenseExperienceSearchChange() {
+    const inputEl = document.getElementById('exp-fin-experience-search');
+    const hidden = document.getElementById('exp-fin-experience');
+    const hint = document.getElementById('exp-fin-experience-hint');
+    if (!inputEl || !hidden) return;
+    const name = (inputEl.value || '').trim();
+    if (!name) {
+      hidden.value = '';
+      if (hint) { hint.textContent = ''; hint.style.color = ''; }
+      return;
+    }
+    const link = _finExpenseLinkByName.get(name.toLowerCase());
+    if (!link) {
+      hidden.value = '';
+      if (hint) {
+        hint.textContent = 'ⓘ Não encontrada na lista — o gasto será salvo SEM vínculo de experiência.';
+        hint.style.color = '#b07b00';
+      }
+      return;
+    }
+    hidden.value = link;
+    if (hint) {
+      hint.textContent = '✓ Vinculado: ' + name;
+      hint.style.color = '#1a8a4a';
     }
   }
 
@@ -12052,15 +12070,24 @@
         : (data.expense_date || '');
       $('exp-fin-category').value = data.category_id || '';
       $('exp-fin-payment-method').value = data.payment_method || '';
-      // Vínculo: usa o prefixo certo. byelarah_item_id tem prioridade
-      // (se preenchido); senão experience_id.
+      // Vínculo: preenche o hidden (exp:/bye:) E o campo buscável visível,
+      // resolvendo o nome a partir dos mapas já carregados. byelarah_item_id
+      // tem prioridade (se preenchido); senão experience_id.
+      const _expSearch = $('exp-fin-experience-search');
+      const _expHint = $('exp-fin-experience-hint');
       if (data.byelarah_item_id) {
         $('exp-fin-experience').value = 'bye:' + data.byelarah_item_id;
+        const _bi = _finByElarahById.get(data.byelarah_item_id);
+        if (_expSearch) _expSearch.value = _bi && _bi.nome ? _bi.nome + ' (By Elarah)' : '';
       } else if (data.experience_id) {
         $('exp-fin-experience').value = 'exp:' + data.experience_id;
+        const _ei = _finExpById.get(data.experience_id);
+        if (_expSearch) _expSearch.value = _ei && _ei.nome ? _ei.nome : '';
       } else {
         $('exp-fin-experience').value = '';
+        if (_expSearch) _expSearch.value = '';
       }
+      if (_expHint) { _expHint.textContent = ''; _expHint.style.color = ''; }
       $('exp-fin-supplier').value = data.supplier_name || '';
       $('exp-fin-status').value = data.status || 'pago';
       $('exp-fin-notes').value = data.notes || '';
@@ -12075,6 +12102,10 @@
       $('expense-modal-title').textContent = 'Novo gasto';
       $('exp-fin-id').value = '';
       $('expense-form').reset();
+      // reset() limpa o input visível e o hidden; zera tambem o hint.
+      if ($('exp-fin-experience-search')) $('exp-fin-experience-search').value = '';
+      if ($('exp-fin-experience')) $('exp-fin-experience').value = '';
+      if ($('exp-fin-experience-hint')) { $('exp-fin-experience-hint').textContent = ''; $('exp-fin-experience-hint').style.color = ''; }
       $('exp-fin-date').value = new Date().toISOString().slice(0, 10);
       $('exp-fin-status').value = 'pago';
     }
@@ -12826,6 +12857,13 @@
     if (expSearch) {
       expSearch.addEventListener('change', _finOnExperienceSearchChange);
       expSearch.addEventListener('input', _finOnExperienceSearchChange);
+    }
+
+    // Busca de experiência no modal de Gasto (digitável → exp:/bye:).
+    const expFinSearch = document.getElementById('exp-fin-experience-search');
+    if (expFinSearch) {
+      expFinSearch.addEventListener('change', _finOnExpenseExperienceSearchChange);
+      expFinSearch.addEventListener('input', _finOnExpenseExperienceSearchChange);
     }
 
     // Delegação: editar/excluir/ver comprovante (panel + Compras)

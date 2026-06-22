@@ -3992,9 +3992,11 @@
 
         <div class="admin__form-field">
           <label>Experiência (opcional)</label>
-          <select id="exp-fin-experience">
-            <option value="">— Não vinculado —</option>
-          </select>
+          <input type="text" id="exp-fin-experience-search" list="exp-fin-experience-datalist"
+                 autocomplete="off" placeholder="Digite para buscar a experiência...">
+          <datalist id="exp-fin-experience-datalist"></datalist>
+          <input type="hidden" id="exp-fin-experience">
+          <p class="admin__form-hint" id="exp-fin-experience-hint" style="margin-top:4px;font-size:.78rem;min-height:1.1em;"></p>
         </div>
 
         <div class="admin__form-field">
@@ -4241,7 +4243,7 @@
 <script src="admin-social-analysis.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=184"></script>
+<script src="admin.js?v=185"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
