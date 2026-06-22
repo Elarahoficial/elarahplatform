@@ -815,7 +815,7 @@ renderFavoritos();
       for (let n = 1; n <= goal; n++) {
         if (n <= stamps) {
           html += '<div class="loyalty__stamp loyalty__stamp--filled">' +
-            '<img src="assets/logo.png" alt="" class="loyalty__stamp-logo">' +
+            '<img src="assets/logo-simbolo.png" alt="" class="loyalty__stamp-logo">' +
             '</div>';
         } else {
           html += '<div class="loyalty__stamp"><span class="loyalty__stamp-num">' + n + '</span></div>';
