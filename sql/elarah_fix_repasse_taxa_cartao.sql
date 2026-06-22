@@ -85,13 +85,35 @@ update public.bookings b
    and b.amount_total is not null
    and b.amount_total > 0;
 
--- 2.3 RELATÓRIO — quem JÁ tinha sido pago (repasse_feito) e ficou com a
--- correção aplicada. Rode DEPOIS do 2.2 só pra registrar a lista de acertos.
--- (O quanto a mais você viu na coluna "pago_a_mais" do passo 2.1.)
-select b.id, b.experiencia_nome, b.fornecedor_nome,
-       b.amount_total as valor_pago, b.valor_repasse_centavos as repasse_corrigido
+-- 2.3 ACERTO — fornecedores que JÁ tinham recebido (repasse_feito).
+-- Reconstrói o que foi pago na regra antiga (70% do valor pago, com taxa)
+-- e compara com o repasse correto (já aplicado pelo 2.2). A diferença é o
+-- acerto a fazer com cada fornecedor:
+--   diferenca > 0  → você ainda DEVE esse valor (pagou a menos)
+--   diferenca < 0  → o fornecedor recebeu A MAIS (cobrar/abater)
+-- Valores em centavos (divida por 100 pra reais).
+
+-- 2.3a Resumo POR FORNECEDOR:
+select fornecedor_nome,
+       count(*)                                                    as vendas_ja_pagas,
+       sum(round(amount_total * 0.70))::int                        as ja_repassado_aprox,
+       sum(valor_repasse_centavos)::int                            as repasse_correto,
+       sum(valor_repasse_centavos - round(amount_total * 0.70))::int as diferenca
+  from public.bookings
+ where status = 'pago'
+   and status_fornecedor = 'repasse_feito'
+   and experiencia_id <> 'a78196bb-41d8-4818-9d87-4796c11373ff'
+ group by fornecedor_nome
+ order by diferenca;
+
+-- 2.3b Detalhe POR VENDA (se quiser conferir caso a caso):
+select b.fornecedor_nome, b.experiencia_nome,
+       b.amount_total                                       as valor_pago,
+       round(b.amount_total * 0.70)::int                    as repasse_pago_antigo,
+       b.valor_repasse_centavos                             as repasse_correto,
+       (b.valor_repasse_centavos - round(b.amount_total * 0.70))::int as diferenca
   from public.bookings b
  where b.status = 'pago'
    and b.status_fornecedor = 'repasse_feito'
    and b.experiencia_id <> 'a78196bb-41d8-4818-9d87-4796c11373ff'
- order by b.experiencia_nome, b.created_at;
+ order by b.fornecedor_nome, b.experiencia_nome;
