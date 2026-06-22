@@ -13,6 +13,9 @@
 --      gift_cards.status in ('active','used','expired') e o usuário
 --      é o comprador (user_id ou e-mail). Gift cards 'pending'
 --      (não pago) e 'cancelled' (falhou) NÃO contam.
+--   3) Vendas manuais pagas (WhatsApp/Pix/dinheiro) →
+--      manual_sales.payment_status = 'pago' registradas com o
+--      e-mail da cliente.
 --
 -- Por que reaproveitar a tabela `coupons` (em vez de uma nova)?
 --   O sistema de cupons já existe e já está plugado no checkout
@@ -63,6 +66,7 @@ declare
   v_email        text;
   v_exp          integer := 0;
   v_gift         integer := 0;
+  v_manual       integer := 0;
   v_total        integer := 0;
   v_goal         constant integer := 10;
   v_due          integer := 0;   -- blocos de 10 completados
@@ -101,7 +105,16 @@ begin
                and lower(coalesce(comprador_email, '')) = v_email)
          );
 
-  v_total := coalesce(v_exp, 0) + coalesce(v_gift, 0);
+  -- 3) Vendas manuais pagas registradas com o e-mail da cliente.
+  --    manual_sales é snapshot (não tem user_id de cliente), então o
+  --    vínculo é só pelo e-mail cadastrado.
+  select count(*) into v_manual
+    from public.manual_sales
+   where payment_status = 'pago'
+     and v_email is not null
+     and lower(coalesce(customer_email, '')) = v_email;
+
+  v_total := coalesce(v_exp, 0) + coalesce(v_gift, 0) + coalesce(v_manual, 0);
   v_due   := floor(v_total / v_goal);
 
   -- Quantos cupons de fidelidade já foram emitidos pra este usuário.
@@ -178,6 +191,7 @@ begin
     'total_paid',       v_total,
     'experiences_paid', coalesce(v_exp, 0),
     'giftcards_paid',   coalesce(v_gift, 0),
+    'manual_paid',      coalesce(v_manual, 0),
     'goal',             v_goal,
     'stamps',           v_stamps,
     'rewards_total',    v_due,
