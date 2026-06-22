@@ -6,7 +6,7 @@
   <meta name="description" content="Elarah — plataforma de curadoria de experiências presenciais. Descubra, reserve e viva atividades fora do óbvio.">
   <title>Elarah — Offline is a Feeling</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
   <link rel="stylesheet" href="auth.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,11 +79,17 @@
 
   <!-- ========== HERO SECTION ========== -->
   <section class="hero">
-    <!-- Hero estatico: frame do video como background (em .hero__video-bg).
-         O embed do YouTube foi removido porque o player sempre mostrava o
-         botao de play/pause por cima (ignora controls=0). Pra ter video em
-         movimento sem botao, hospedar o .mp4 e usar uma tag <video>. -->
+    <!-- Hero com video de fundo. O .hero__video-bg (imagem estatica) fica
+         atras como fallback/poster: aparece enquanto o video carrega e
+         continua aparecendo caso o arquivo .mp4 ainda nao exista. O <video>
+         e mudo + autoplay + loop + playsinline, entao roda sozinho tambem no
+         mobile (iOS exige muted e playsinline pra autoplay inline) e sem
+         botao de play. Basta colocar o arquivo em assets/hero-video.mp4. -->
     <div class="hero__video-bg"></div>
+    <video class="hero__video" autoplay muted loop playsinline preload="auto"
+           poster="https://i.ytimg.com/vi/pmaXSOTo_qU/maxresdefault.jpg">
+      <source src="assets/hero-video.mp4" type="video/mp4">
+    </video>
     <div class="hero__overlay"></div>
     <div class="hero__content">
       <h1 class="hero__title">
@@ -642,8 +648,20 @@
 <script src="explorar-menu.js?v=1" defer></script>
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=28"></script>
-<script src="date-filter.js?v=2"></script>
+<script src="date-filter.js?v=3"></script>
 <script src="byelarah-data.js?v=5"></script>
 <script src="analytics.js?v=2"></script>
 <script src="script.js?v=64"></script>
+<script>
+  // Reforca o autoplay do video do hero: alguns navegadores mobile so tocam
+  // apos um .play() explicito. Se falhar (ex.: economia de dados), o poster
+  // (imagem estatica) continua aparecendo, sem quebrar nada.
+  (function () {
+    var v = document.querySelector('.hero__video');
+    if (!v) return;
+    var tryPlay = function () { var p = v.play(); if (p && p.catch) p.catch(function () {}); };
+    tryPlay();
+    v.addEventListener('loadeddata', tryPlay);
+  })();
+</script>
 </body></html>
