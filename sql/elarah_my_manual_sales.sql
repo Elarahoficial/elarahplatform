@@ -38,8 +38,11 @@ begin
     return;
   end if;
 
-  select nullif(lower(trim(email)), '') into v_email
-    from public.profiles where id = v_uid;
+  -- Qualifica com alias p.* — a função tem uma coluna de retorno
+  -- chamada "id" (RETURNS TABLE), então "where id = v_uid" sem
+  -- qualificar fica ambíguo e quebra a função em runtime.
+  select nullif(lower(trim(p.email)), '') into v_email
+    from public.profiles p where p.id = v_uid;
 
   if v_email is null then
     return;
