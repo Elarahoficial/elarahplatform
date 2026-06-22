@@ -2478,6 +2478,27 @@ select {
   .date-filter__title { font-size: 13px; }
   .date-filter__chip { font-size: 13px; padding: 7px 12px; }
 
+  /* "Escolher data" no mobile: o popover e movido pro <body> (via JS) e
+   * exibido como modal centralizado, pra escapar do overflow-x/mask-image
+   * da barra de chips, que antes o recortavam e deixavam invisivel. */
+  .date-filter__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 999;
+  }
+  .date-filter__popover--modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%);
+    z-index: 1000 !important;
+    width: calc(100vw - 40px);
+    max-width: 360px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+
   .header__nav {
     display: none;
   }

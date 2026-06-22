@@ -49,12 +49,45 @@
         onChange(range || null);
       }
 
+      // No mobile a barra de chips usa overflow-x:auto + mask-image, que
+      // recortam o popover (filho absoluto) e o deixam invisivel. Por isso,
+      // no mobile, movemos o popover pro <body> e o exibimos como modal
+      // centralizado, fora de qualquer container que faca clipping.
+      var popoverHome = popover ? popover.parentNode : null;
+      var backdrop = null;
+
+      function isMobile() {
+        return window.matchMedia('(max-width: 768px)').matches;
+      }
+
       function closePopover() {
-        if (popover) popover.hidden = true;
+        if (popover) {
+          popover.hidden = true;
+          popover.classList.remove('date-filter__popover--modal');
+          // Devolve o popover pro lugar original (caso tenha virado modal).
+          if (popoverHome && popover.parentNode !== popoverHome) {
+            popoverHome.appendChild(popover);
+          }
+        }
+        if (backdrop) {
+          backdrop.remove();
+          backdrop = null;
+        }
       }
 
       function openPopover() {
-        if (popover) popover.hidden = false;
+        if (!popover) return;
+        if (isMobile()) {
+          if (popover.parentNode !== document.body) {
+            document.body.appendChild(popover);
+          }
+          popover.classList.add('date-filter__popover--modal');
+          backdrop = document.createElement('div');
+          backdrop.className = 'date-filter__backdrop';
+          backdrop.addEventListener('click', closePopover);
+          document.body.appendChild(backdrop);
+        }
+        popover.hidden = false;
       }
 
       chips.forEach(function (chip) {
