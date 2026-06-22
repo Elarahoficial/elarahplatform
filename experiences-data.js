@@ -1346,19 +1346,23 @@
     formatPrecoBR: formatPrecoBR,
   };
 
-  // Normaliza qualquer formato de preço pra "R$ X" no display.
+  // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
+  // com o símbolo R$ — mesmo quando o admin digita só o número ("159").
+  // Os centavos aparecem só quando existem de verdade: valores redondos
+  // ficam sem o ",00" (mais limpo); valores com centavos mostram a
+  // vírgula. É a fonte única de formatação de preço de experiência/kit.
   // Casos cobertos:
-  //   "383"          → "R$ 383"
-  //   "R$383"        → "R$ 383"
-  //   "R$ 383"       → "R$ 383"
-  //   "1380"         → "R$ 1.380"      (toLocaleString reformata milhares)
+  //   "159"          → "R$ 159"
+  //   "R$225"        → "R$ 225"
+  //   "162,90"       → "R$ 162,90"
+  //   "1380"         → "R$ 1.380"       (toLocaleString reformata milhares)
   //   "1.380"        → "R$ 1.380"
-  //   "1380,00"      → "R$ 1.380"      (decimais zero ficam invisíveis)
+  //   "1380,00"      → "R$ 1.380"       (centavos zero ficam invisíveis)
   //   "1380,50"      → "R$ 1.380,50"
   //   "R$ 1.380,00"  → "R$ 1.380"
-  //   "A partir de R$300" → "R$ 300"   (extrai o número e adiciona prefixo)
-  //   ""             → ""              (mantém vazio)
-  //   "Sob consulta" → "Sob consulta"  (texto livre sem número, mantém)
+  //   "A partir de R$300" → "R$ 300"    (extrai o número e adiciona prefixo)
+  //   ""             → ""               (mantém vazio)
+  //   "Sob consulta" → "Sob consulta"   (texto livre sem número, mantém)
   function formatPrecoBR(raw) {
     if (raw == null) return '';
     var s = String(raw).trim();
@@ -1369,16 +1373,14 @@
     if (!match) return s; // sem número (ex: "Sob consulta") → não toca
     var num = match[1];
     // Normaliza: remove pontos de milhar, troca vírgula por ponto decimal.
-    var hasDecimal = /,\d{1,2}$/.test(num);
     var clean = num.replace(/\./g, '').replace(/\s+/g, '').replace(',', '.');
     var n = parseFloat(clean);
     if (!isFinite(n)) return s;
-    var formatted;
-    if (hasDecimal && (n % 1 !== 0)) {
-      formatted = n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    } else {
-      formatted = n.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-    }
-    return 'R$ ' + formatted;
+    // Centavos só quando existem: redondo → "R$ 162"; com centavos → "R$ 162,90".
+    var hasCents = n % 1 !== 0;
+    return 'R$ ' + n.toLocaleString('pt-BR', {
+      minimumFractionDigits: hasCents ? 2 : 0,
+      maximumFractionDigits: 2,
+    });
   }
 })(window);

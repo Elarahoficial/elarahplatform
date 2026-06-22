@@ -1132,6 +1132,19 @@
     });
   }
 
+  // Normaliza o texto de preço digitado no admin pra "R$ X,XX" antes de
+  // gravar (cadastrar). Assim o admin não precisa digitar o símbolo R$ —
+  // "159" vira "R$ 159,00". Reusa a fonte única ElarahData.formatPrecoBR.
+  // Vazio continua vazio; texto livre sem número (ex: "Sob consulta") é
+  // preservado tal qual.
+  function normalizePrecoInput(raw) {
+    var v = (raw == null ? '' : String(raw)).trim();
+    if (!v) return v;
+    return (window.ElarahData && typeof window.ElarahData.formatPrecoBR === 'function')
+      ? window.ElarahData.formatPrecoBR(v)
+      : v;
+  }
+
   // Substitui placeholders no template. Mantém placeholders vazios
   // como literal pra ficar visível que algo não foi preenchido
   // (ex.: cupom não vinculado).
@@ -3263,7 +3276,7 @@
 
       var expOptions = ordered.map(function (e) {
         var sel = (e.id === booking.experiencia_id) ? ' selected' : '';
-        var price = (e.preco ? ' — ' + e.preco : '');
+        var price = (e.preco ? ' — ' + normalizePrecoInput(e.preco) : '');
         // Data no rótulo é crítico: existem várias experiências com mesmo
         // nome + preço, diferindo só na data. Sem isso o admin tem que
         // tentar uma a uma até achar a certa.
@@ -3433,7 +3446,7 @@
           return;
         }
         fornecedorInfo.textContent = 'Fornecedor: ' + (chosen.fornecedorNome || '—') +
-          (chosen.preco ? ' · Preço: ' + chosen.preco : '');
+          (chosen.preco ? ' · Preço: ' + normalizePrecoInput(chosen.preco) : '');
         refreshHorarios(chosen);
         // Auto-preenche data: se a exp escolhida tem data fixa diferente,
         // sugere ela, mas não força (admin pode editar).
@@ -4977,7 +4990,7 @@
           '<div style="flex:1 1 150px;min-width:130px;"><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Nome *</label>' +
             '<input type="text" class="vi-nome" value="' + vesc(item.nome) + '" placeholder="Ex: Azul P" style="width:100%;padding:7px;border:1px solid #d8c9b6;border-radius:6px;font-size:13px;box-sizing:border-box;"></div>' +
           '<div style="flex:0 1 110px;min-width:90px;"><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Preço</label>' +
-            '<input type="text" class="vi-preco" value="' + vesc(item.preco) + '" placeholder="R$189" style="width:100%;padding:7px;border:1px solid #d8c9b6;border-radius:6px;font-size:13px;box-sizing:border-box;"></div>' +
+            '<input type="text" class="vi-preco" value="' + vesc(item.preco) + '" placeholder="Ex: 189" style="width:100%;padding:7px;border:1px solid #d8c9b6;border-radius:6px;font-size:13px;box-sizing:border-box;"></div>' +
           '<div style="flex:1 1 190px;min-width:170px;"><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Foto</label>' +
             '<input type="file" class="vi-file" accept="image/png,image/jpeg,image/webp,image/heic,image/avif" style="font-size:11px;display:block;width:100%;">' +
             '<input type="text" class="vi-imagem" value="' + vesc(item.imagem) + '" placeholder="ou cole uma URL" style="width:100%;margin-top:4px;padding:6px;border:1px solid #d8c9b6;border-radius:6px;font-size:12px;box-sizing:border-box;">' +
@@ -5018,7 +5031,7 @@
           var imagemEl2 = row.querySelector('.vi-imagem');
           out.push({
             nome: nome,
-            preco: (precoEl && precoEl.value || '').trim(),
+            preco: normalizePrecoInput(precoEl && precoEl.value || ''),
             imagem: (imagemEl2 && imagemEl2.value || '').trim()
           });
         });
@@ -5118,7 +5131,7 @@
         horarios: horarios,
         duracao: document.getElementById('exp-duracao').value.trim(),
         bairro: document.getElementById('exp-bairro').value.trim(),
-        preco: document.getElementById('exp-preco').value.trim(),
+        preco: normalizePrecoInput(document.getElementById('exp-preco').value),
         endereco: document.getElementById('exp-endereco').value.trim(),
         inclui: document.getElementById('exp-inclui').value.trim(),
         imagem: document.getElementById('exp-imagem').value.trim(),
@@ -5534,7 +5547,7 @@
         <td>${escapeHtml(exp.data)}</td>
         <td>${horariosDisplay}</td>
         <td>${escapeHtml(exp.bairro)}</td>
-        <td>${escapeHtml(exp.preco)}</td>
+        <td>${escapeHtml(window.ElarahData && typeof ElarahData.formatPrecoBR === 'function' ? ElarahData.formatPrecoBR(exp.preco) : (exp.preco || ''))}</td>
         <td>${vagasDisplay}</td>
         <td>${statusBadge}</td>
         <td>
@@ -6548,7 +6561,7 @@
       bairro: local,
       endereco: local,
       inclui: '',
-      preco: ($('by-preco').value || '').trim(),
+      preco: normalizePrecoInput($('by-preco').value || ''),
       cor: '#f6d5a8,#f0a05e',
       descricao: ($('by-descricao-completa').value || '').trim(),
       horario: horariosArr[0] || '',
@@ -13040,6 +13053,23 @@
         _finOpenManualSaleModal(null);
       });
     }
+
+    // Auto-formata os campos de preço ao sair (focusout). Cobre o campo
+    // da experiência/kit (#exp-preco), o do By Elarah (#by-preco) e as
+    // variações (.vi-preco, criadas dinamicamente) — por isso usamos
+    // delegação no document. O admin pode digitar só "159": ao sair do
+    // campo vira "R$ 159,00", sem precisar digitar o símbolo R$.
+    document.addEventListener('focusout', (ev) => {
+      const el = ev.target;
+      if (!el || el.tagName !== 'INPUT') return;
+      const isPriceField =
+        el.id === 'exp-preco' ||
+        el.id === 'by-preco' ||
+        el.classList.contains('vi-preco');
+      if (!isPriceField) return;
+      const formatted = normalizePrecoInput(el.value);
+      if (formatted !== el.value) el.value = formatted;
+    });
   });
 
   // =============================================================
