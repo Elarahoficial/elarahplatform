@@ -1816,6 +1816,18 @@
     return numero + botao;
   }
 
+  // Formata o campo "Instagram ou site" do parceiro: garante o @ quando
+  // for um nome de usuário; mantém links/sites no formato original.
+  function formatSocialHandle(value) {
+    const v = (value || '').trim();
+    if (!v) return '';
+    if (/^https?:\/\//i.test(v) || /^www\./i.test(v) || v.includes('/') ||
+        /\.(com|com\.br|net|org|io|me|co|app|store|site)\b/i.test(v)) {
+      return v;
+    }
+    return v.startsWith('@') ? v : '@' + v;
+  }
+
   // ===== PARTNERS =====
   async function renderPartners() {
     const profiles = await getProfiles();
@@ -1863,7 +1875,7 @@
           <td>${escapeHtml(pd.tipo || '—')}</td>
           <td>${escapeHtml(pd.bairro || '—')}</td>
           <td>${escapeHtml(pd.cidade || '—')}</td>
-          <td>${escapeHtml(pd.social || '—')}</td>
+          <td>${escapeHtml(formatSocialHandle(pd.social) || '—')}</td>
           <td title="${escapeHtml(desc)}">${escapeHtml(descShort)}</td>
           <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
           <td>${actions}</td>
