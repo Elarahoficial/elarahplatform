@@ -1272,22 +1272,23 @@
     formatPrecoBR: formatPrecoBR,
   };
 
-  // Normaliza qualquer formato de preço pra "R$ X,XX" no display.
-  // SEMPRE mostra o símbolo R$, separador de milhar e os centavos —
-  // mesmo quando o admin digita só o número (ex: "159"). É a fonte
-  // única de formatação de preço de experiência/kit no site inteiro.
+  // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
+  // com o símbolo R$ — mesmo quando o admin digita só o número ("159").
+  // Os centavos aparecem só quando existem de verdade: valores redondos
+  // ficam sem o ",00" (mais limpo); valores com centavos mostram a
+  // vírgula. É a fonte única de formatação de preço de experiência/kit.
   // Casos cobertos:
-  //   "159"          → "R$ 159,00"
-  //   "R$225"        → "R$ 225,00"
-  //   "R$ 383"       → "R$ 383,00"
-  //   "1380"         → "R$ 1.380,00"   (toLocaleString reformata milhares)
-  //   "1.380"        → "R$ 1.380,00"
-  //   "1380,00"      → "R$ 1.380,00"
+  //   "159"          → "R$ 159"
+  //   "R$225"        → "R$ 225"
+  //   "162,90"       → "R$ 162,90"
+  //   "1380"         → "R$ 1.380"       (toLocaleString reformata milhares)
+  //   "1.380"        → "R$ 1.380"
+  //   "1380,00"      → "R$ 1.380"       (centavos zero ficam invisíveis)
   //   "1380,50"      → "R$ 1.380,50"
-  //   "R$ 1.380,00"  → "R$ 1.380,00"
-  //   "A partir de R$300" → "R$ 300,00" (extrai o número e adiciona prefixo)
-  //   ""             → ""              (mantém vazio)
-  //   "Sob consulta" → "Sob consulta"  (texto livre sem número, mantém)
+  //   "R$ 1.380,00"  → "R$ 1.380"
+  //   "A partir de R$300" → "R$ 300"    (extrai o número e adiciona prefixo)
+  //   ""             → ""               (mantém vazio)
+  //   "Sob consulta" → "Sob consulta"   (texto livre sem número, mantém)
   function formatPrecoBR(raw) {
     if (raw == null) return '';
     var s = String(raw).trim();
@@ -1301,9 +1302,10 @@
     var clean = num.replace(/\./g, '').replace(/\s+/g, '').replace(',', '.');
     var n = parseFloat(clean);
     if (!isFinite(n)) return s;
-    // Sempre com 2 casas decimais — "R$, vírgula e os centavos".
+    // Centavos só quando existem: redondo → "R$ 162"; com centavos → "R$ 162,90".
+    var hasCents = n % 1 !== 0;
     return 'R$ ' + n.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
+      minimumFractionDigits: hasCents ? 2 : 0,
       maximumFractionDigits: 2,
     });
   }
