@@ -160,7 +160,12 @@
       if (!fetcher) { renderError(grid, 'Sistema de dados indisponível.'); return; }
       var all = await fetcher();
       _allKits = (all || []).filter(isCasaKit);
+      // Ordem manual do admin primeiro (arrastar pra cima = aparece antes);
+      // empate/sem ordem cai no alfabético.
       _allKits.sort(function (a, b) {
+        var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
+        var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
+        if (oa !== ob) return oa - ob;
         return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
       });
       console.info('[ElarahEmCasa] total=' + (all || []).length + ' kits=' + _allKits.length);

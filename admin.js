@@ -5440,6 +5440,12 @@
       return;
     }
 
+    // Reordenar arrastando só faz sentido na lista COMPLETA (sem filtro
+    // nem busca) — aí a ordem dos <tr> = ordem global real. Com filtro
+    // ativo, mostramos só os handles desabilitados + um aviso.
+    const reorderEnabled = !activeExpFilter && !activeExpFornecedorFilter && !searchNorm;
+    renderExpReorderHint(reorderEnabled);
+
     tbody.innerHTML = experiences.map(exp => {
       // HORÁRIO: resumo compacto. Dedup e, se houver muitos, mostra
       // só o primeiro + contagem. Lista completa fica no modal de
@@ -5518,9 +5524,12 @@
       const byElarahBadge = exp.isElarahOriginal === true
         ? ' <span style="display:inline-block;padding:2px 7px;border-radius:10px;background:#fff1de;color:#a05f1e;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;" title="Marcada como Elarah Original — aparece na seção By Elarah da home.">By Elarah</span>'
         : '';
+      const dragHandle = reorderEnabled
+        ? '<span class="exp-drag-handle" title="Arraste pra reordenar — quem fica em cima aparece primeiro no site">⠿</span> '
+        : '';
       return `
-      <tr${rowStyle}>
-        <td>${escapeHtml(exp.nome)}${byElarahBadge}</td>
+      <tr data-exp-row="${escapeHtml(exp.id)}"${rowStyle}>
+        <td>${dragHandle}${escapeHtml(exp.nome)}${byElarahBadge}</td>
         <td>${escapeHtml(exp.categoria)}</td>
         <td>${escapeHtml(exp.data)}</td>
         <td>${horariosDisplay}</td>
@@ -5627,6 +5636,95 @@
         }
       });
     });
+
+    if (reorderEnabled) setupExpDragReorder(tbody);
+  }
+
+  // Mostra/atualiza a faixa de instrução de reordenação acima da tabela.
+  function renderExpReorderHint(enabled) {
+    const filterBar = document.getElementById('exp-filter-bar');
+    if (!filterBar || !filterBar.parentNode) return;
+    let hint = document.getElementById('exp-reorder-hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'exp-reorder-hint';
+      hint.style.cssText = 'font-size:.8rem;color:#8a7a66;padding:0 0 12px;display:flex;align-items:center;gap:6px;';
+      filterBar.parentNode.insertBefore(hint, filterBar.nextSibling);
+    }
+    hint.innerHTML = enabled
+      ? '<span style="font-size:1rem;">⠿</span> Arraste as linhas pra reordenar — quem fica em cima aparece primeiro no site (vale pra todas as categorias).'
+      : '<span style="font-size:1rem;">⠿</span> Limpe a busca e os filtros pra poder reordenar arrastando.';
+  }
+
+  // Toast simples reaproveitável.
+  function showAdminToast(msg, ok) {
+    try {
+      var t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:' + (ok === false ? '#c0392b' : '#1a8a4a') + ';color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;font-size:.9rem;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;font-family:inherit;';
+      document.body.appendChild(t);
+      setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2200);
+      setTimeout(function () { t.remove(); }, 2700);
+    } catch (e) { /* ignora */ }
+  }
+
+  // Drag-and-drop nativo nas linhas da tabela de experiências. Reordena
+  // os <tr> no DOM ao arrastar e persiste a nova ordem global no drop.
+  function setupExpDragReorder(tbody) {
+    let dragEl = null;
+    const rows = Array.from(tbody.querySelectorAll('tr[data-exp-row]'));
+    rows.forEach(function (tr) {
+      tr.setAttribute('draggable', 'true');
+      tr.addEventListener('dragstart', function (e) {
+        dragEl = tr;
+        tr.classList.add('exp-row--dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', tr.dataset.expRow || ''); } catch (_) {}
+        }
+      });
+      tr.addEventListener('dragend', function () {
+        tr.classList.remove('exp-row--dragging');
+        if (dragEl) { dragEl = null; persistExpOrder(tbody); }
+      });
+      tr.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        if (!dragEl || dragEl === tr) return;
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        const rect = tr.getBoundingClientRect();
+        const after = (e.clientY - rect.top) > rect.height / 2;
+        if (after) tr.parentNode.insertBefore(dragEl, tr.nextSibling);
+        else tr.parentNode.insertBefore(dragEl, tr);
+      });
+    });
+  }
+
+  let _savingExpOrder = false;
+  async function persistExpOrder(tbody) {
+    if (_savingExpOrder) return;
+    const ids = Array.from(tbody.querySelectorAll('tr[data-exp-row]'))
+      .map(function (tr) { return tr.dataset.expRow; })
+      .filter(Boolean);
+    if (!ids.length) return;
+    if (!(ElarahData && typeof ElarahData.reorderExperiences === 'function')) {
+      showAdminToast('Função de reordenar indisponível. Recarregue a página.', false);
+      return;
+    }
+    _savingExpOrder = true;
+    try {
+      const res = await ElarahData.reorderExperiences(ids);
+      if (res && res._error) {
+        showAdminToast('Erro ao salvar a ordem: ' + (res._error.message || 'desconhecido'), false);
+        await renderExperiences();
+      } else if (res && res.updated > 0) {
+        showAdminToast('✓ Nova ordem salva (' + res.updated + ' atualizada' + (res.updated !== 1 ? 's' : '') + ')');
+      }
+    } catch (e) {
+      showAdminToast('Erro inesperado ao salvar a ordem.', false);
+      await renderExperiences();
+    } finally {
+      _savingExpOrder = false;
+    }
   }
 
   async function duplicateExperienceAndEdit(expId) {

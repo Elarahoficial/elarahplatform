@@ -283,10 +283,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return matchCat && matchBairro && matchBusca && matchData;
     });
 
-    // Ordena cronologicamente pela proxima ocorrencia futura.
+    // Ordem manual do admin primeiro (arrastar pra cima = aparece antes);
+    // empate/sem ordem cai no cronológico pela proxima ocorrencia futura.
     // Experiencias sem data conhecida (recorrente sem slot programado,
     // one-off com data ausente, etc) vao pro fim.
     filtered.sort(function (a, b) {
+      var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
+      var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
+      if (oa !== ob) return oa - ob;
       var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
       var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
       return ta - tb;

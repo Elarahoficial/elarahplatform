@@ -2003,3 +2003,23 @@
 /* Blocos por plataforma na análise estratégica */
 .sa-plat { border: 1px solid #ececec; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; background: #fcfaf7; }
 .sa-plat__head { font-size: 1.02rem; color: #5C2426; margin-bottom: 10px; }
+
+/* ===== Reordenação por arrastar (tabela de Experiências) ===== */
+.exp-drag-handle {
+  display: inline-block;
+  cursor: grab;
+  color: #c0ad95;
+  font-size: 1rem;
+  line-height: 1;
+  margin-right: 4px;
+  user-select: none;
+  vertical-align: middle;
+}
+.exp-drag-handle:hover { color: #8a7a66; }
+tr[data-exp-row][draggable="true"] { cursor: grab; }
+tr[data-exp-row][draggable="true"]:active { cursor: grabbing; }
+tr.exp-row--dragging {
+  opacity: 0.6;
+  background: #fdf3e7;
+  box-shadow: 0 6px 18px rgba(108, 70, 20, 0.18);
+}
