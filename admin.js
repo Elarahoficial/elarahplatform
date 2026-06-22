@@ -5453,11 +5453,13 @@
       return;
     }
 
-    // Reordenar arrastando só faz sentido na lista COMPLETA (sem filtro
-    // nem busca) — aí a ordem dos <tr> = ordem global real. Com filtro
-    // ativo, mostramos só os handles desabilitados + um aviso.
-    const reorderEnabled = !activeExpFilter && !activeExpFornecedorFilter && !searchNorm;
-    renderExpReorderHint(reorderEnabled);
+    // Reordenar arrastando funciona sempre — inclusive filtrando por
+    // categoria/fornecedor/busca. Quando filtrado, a nova ordem dos itens
+    // exibidos é mesclada de volta na ordem global preservando a posição
+    // dos que não estão na tela (ver persistExpOrder).
+    const reorderEnabled = true;
+    const reorderFiltered = !!(activeExpFilter || activeExpFornecedorFilter || searchNorm);
+    renderExpReorderHint(reorderEnabled, reorderFiltered);
 
     tbody.innerHTML = experiences.map(exp => {
       // HORÁRIO: resumo compacto. Dedup e, se houver muitos, mostra
@@ -5654,7 +5656,7 @@
   }
 
   // Mostra/atualiza a faixa de instrução de reordenação acima da tabela.
-  function renderExpReorderHint(enabled) {
+  function renderExpReorderHint(enabled, filtered) {
     const filterBar = document.getElementById('exp-filter-bar');
     if (!filterBar || !filterBar.parentNode) return;
     let hint = document.getElementById('exp-reorder-hint');
@@ -5664,9 +5666,9 @@
       hint.style.cssText = 'font-size:.8rem;color:#8a7a66;padding:0 0 12px;display:flex;align-items:center;gap:6px;';
       filterBar.parentNode.insertBefore(hint, filterBar.nextSibling);
     }
-    hint.innerHTML = enabled
-      ? '<span style="font-size:1rem;">⠿</span> Arraste as linhas pra reordenar — quem fica em cima aparece primeiro no site (vale pra todas as categorias).'
-      : '<span style="font-size:1rem;">⠿</span> Limpe a busca e os filtros pra poder reordenar arrastando.';
+    hint.innerHTML = filtered
+      ? '<span style="font-size:1rem;">⠿</span> Arraste pra reordenar dentro desta seleção — a ordem que você montar aqui vale pro site (a posição das outras experiências não muda).'
+      : '<span style="font-size:1rem;">⠿</span> Arraste as linhas pra reordenar — quem fica em cima aparece primeiro no site (vale pra todas as categorias).';
   }
 
   // Toast simples reaproveitável.
@@ -5715,17 +5717,36 @@
   let _savingExpOrder = false;
   async function persistExpOrder(tbody) {
     if (_savingExpOrder) return;
-    const ids = Array.from(tbody.querySelectorAll('tr[data-exp-row]'))
+    // Ordem nova dos itens EXIBIDOS (pode ser um subconjunto filtrado).
+    const displayedIds = Array.from(tbody.querySelectorAll('tr[data-exp-row]'))
       .map(function (tr) { return tr.dataset.expRow; })
       .filter(Boolean);
-    if (!ids.length) return;
+    if (!displayedIds.length) return;
     if (!(ElarahData && typeof ElarahData.reorderExperiences === 'function')) {
       showAdminToast('Função de reordenar indisponível. Recarregue a página.', false);
       return;
     }
     _savingExpOrder = true;
     try {
-      const res = await ElarahData.reorderExperiences(ids);
+      // Mescla a nova ordem dos exibidos de volta na ordem GLOBAL: cada
+      // "slot" ocupado por um item exibido recebe o próximo item exibido
+      // na nova ordem; quem não está na tela fica exatamente onde estava.
+      // Assim dá pra reordenar dentro de uma categoria sem mexer no resto.
+      let finalIds = displayedIds;
+      try {
+        const all = await ElarahData.getAllExperiences();
+        const globalIds = (all || []).map(function (e) { return e && e.id; }).filter(Boolean);
+        const displayedSet = new Set(displayedIds);
+        const matchesInGlobal = globalIds.filter(function (id) { return displayedSet.has(id); }).length;
+        if (globalIds.length && matchesInGlobal === displayedIds.length) {
+          let qi = 0;
+          finalIds = globalIds.map(function (id) {
+            return displayedSet.has(id) ? displayedIds[qi++] : id;
+          });
+        }
+      } catch (e) { /* sem o global, persiste só os exibidos */ }
+
+      const res = await ElarahData.reorderExperiences(finalIds);
       if (res && res._error) {
         showAdminToast('Erro ao salvar a ordem: ' + (res._error.message || 'desconhecido'), false);
         await renderExperiences();
