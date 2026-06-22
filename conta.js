@@ -385,6 +385,19 @@ renderFavoritos();
     return 'past';
   }
 
+  function classifyManualSale(ms) {
+    // Vendas manuais: cancelado/reembolsado vão pro histórico.
+    // Senão, decide pela data do evento (slot_date).
+    const status = ms.payment_status || 'pendente';
+    if (status === 'cancelado' || status === 'reembolsado') return 'past';
+    if (!ms.slot_date) return 'upcoming';
+    const parsed = new Date(ms.slot_date + 'T00:00:00');
+    if (isNaN(parsed.getTime())) return 'upcoming';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return parsed >= today ? 'upcoming' : 'past';
+  }
+
   function formatBrlCents(cents) {
     if (cents == null) return '';
     return 'R$ ' + (Number(cents) / 100).toFixed(2).replace('.', ',');
@@ -542,6 +555,60 @@ renderFavoritos();
     );
   }
 
+  function manualSaleStatusLabel(status) {
+    const map = {
+      pago: 'Confirmada',
+      pendente: 'Pagamento pendente',
+      cancelado: 'Cancelada',
+      reembolsado: 'Reembolsada',
+    };
+    return map[status] || (status || '');
+  }
+
+  function formatDateBR(isoDate) {
+    if (!isoDate) return '';
+    const d = new Date(String(isoDate) + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // Renderiza uma venda manual como card de experiência. Pro cliente
+  // não há distinção visual de "venda manual" (isso é jargão interno
+  // do admin) — pra ele é só mais uma experiência comprada.
+  function renderManualSaleCard(ms, group) {
+    const nome = ms.experiencia_nome || 'Experiência';
+    const data = formatDateBR(ms.slot_date);
+    const horario = ms.horario || '';
+    const priceLabel = ms.amount_total ? formatBrlCents(ms.amount_total) : '';
+    const status = ms.payment_status || 'pendente';
+    // 'pendente' não tem classe de cor própria no CSS — reusa 'pending'.
+    const statusClass = status === 'pendente' ? 'pending' : status;
+    const statusLabel = manualSaleStatusLabel(status);
+
+    const metaParts = [];
+    if (data) metaParts.push('<span class="purchase-card__meta-item">📅 ' + escapeHtmlLocal(data) + '</span>');
+    if (horario) metaParts.push('<span class="purchase-card__meta-item">⏱ ' + escapeHtmlLocal(horario) + '</span>');
+    if (priceLabel) metaParts.push('<span class="purchase-card__meta-item purchase-card__price">' + escapeHtmlLocal(priceLabel) + '</span>');
+
+    return (
+      '<article class="purchase-card purchase-card--experience' + (group === 'past' ? ' purchase-card--past' : '') + '">' +
+        '<div class="purchase-card__icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22">' +
+            '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="purchase-card__body">' +
+          '<div class="purchase-card__head">' +
+            '<span class="purchase-card__type">Experiência</span>' +
+            '<span class="purchase-card__status purchase-card__status--' + escapeHtmlLocal(statusClass) + '">' + escapeHtmlLocal(statusLabel) + '</span>' +
+          '</div>' +
+          '<h3 class="purchase-card__title">' + escapeHtmlLocal(nome) + '</h3>' +
+          '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
   async function loadPurchases() {
     if (purchasesLoaded || purchasesLoading) return;
     purchasesLoading = true;
@@ -569,7 +636,7 @@ renderFavoritos();
       // Busca bookings do usuário (RLS: auth.uid() = user_id) e
       // gift cards onde o usuário é comprador OU destinatário
       // (RLS: gift_cards_owner_read cobre ambos via e-mail).
-      const [bookingsRes, giftCardsRes] = await Promise.all([
+      const [bookingsRes, giftCardsRes, manualSalesRes] = await Promise.all([
         sb.from('bookings')
           .select('id, experiencia_nome, data, horario, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
           .order('created_at', { ascending: false })
@@ -578,6 +645,9 @@ renderFavoritos();
           .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, created_at, expires_at')
           .order('created_at', { ascending: false })
           .limit(200),
+        // Vendas manuais via RPC (RLS da tabela é admin-only). Falha
+        // graciosamente se a migration get_my_manual_sales não rodou.
+        sb.rpc('get_my_manual_sales').then(r => r, e => ({ data: [], error: e })),
       ]);
 
       if (bookingsRes.error) {
@@ -586,9 +656,13 @@ renderFavoritos();
       if (giftCardsRes.error) {
         console.error('[Elarah conta] erro ao carregar gift_cards', giftCardsRes.error);
       }
+      if (manualSalesRes && manualSalesRes.error) {
+        console.warn('[Elarah conta] get_my_manual_sales indisponível (ok se migration não rodou)', manualSalesRes.error);
+      }
 
       const bookings = bookingsRes.data || [];
       const giftCards = giftCardsRes.data || [];
+      const manualSales = (manualSalesRes && manualSalesRes.data) || [];
 
       const upcoming = [];
       const past = [];
@@ -603,6 +677,13 @@ renderFavoritos();
       giftCards.forEach(g => {
         const group = classifyGiftCard(g);
         const entry = { kind: 'giftCard', data: g, group, sortKey: g.created_at || '' };
+        if (group === 'upcoming') upcoming.push(entry);
+        else past.push(entry);
+      });
+
+      manualSales.forEach(m => {
+        const group = classifyManualSale(m);
+        const entry = { kind: 'manualSale', data: m, group, sortKey: m.created_at || '' };
         if (group === 'upcoming') upcoming.push(entry);
         else past.push(entry);
       });
@@ -625,6 +706,7 @@ renderFavoritos();
         if (emptyEl) emptyEl.style.display = 'none';
         list.innerHTML = entries.map(e => {
           if (e.kind === 'booking') return renderBookingCard(e.data, e.group);
+          if (e.kind === 'manualSale') return renderManualSaleCard(e.data, e.group);
           return renderGiftCardCard(e.data, e.group);
         }).join('');
       }
