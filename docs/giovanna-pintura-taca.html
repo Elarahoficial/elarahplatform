@@ -178,6 +178,29 @@
   #placemat .sheet{ width:297mm; height:210mm; }
   #convite .sheet{ width:130mm; height:180mm; }
 
+  /* recadinho de cuidados — rosa liso */
+  #recadinho .sheet{ width:148mm; height:210mm; background:#ebb9c4;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:15mm 15mm 12mm; color:#5a2330; }
+  .recado-frame{ position:absolute; inset:7mm; border:1px solid rgba(90,35,48,.38); pointer-events:none; }
+  .recado .sal{ font-family:'Cormorant SC',serif; font-weight:600; font-size:48px; letter-spacing:.2em; padding-left:.2em; line-height:1; }
+  .recado .sal-sub{ display:flex; align-items:center; justify-content:center; gap:9px; font-family:'Cormorant SC',serif;
+    font-size:13px; letter-spacing:.55em; padding-left:.55em; color:#7a3a48; margin-top:1mm; }
+  .recado .sal-sub::before,.recado .sal-sub::after{ content:""; width:22px; height:1px; background:#a86472; }
+  .recado .sec{ font-family:'Cormorant SC',serif; letter-spacing:.42em; padding-left:.42em; font-size:11px; color:#7a3a48; margin-top:7mm; }
+  .recado h2{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:33px; letter-spacing:.03em; margin:1mm 0 6mm; }
+  .recado ul{ list-style:none; text-align:left; font-family:'Cormorant Garamond',serif; font-size:16px; line-height:1.45; width:100%; }
+  .recado li{ position:relative; padding-left:7mm; margin-bottom:3.6mm; }
+  .recado li::before{ content:"•"; position:absolute; left:1.5mm; color:#a86472; font-size:18px; line-height:1; }
+  .recado .glasses{ width:38mm; height:auto; margin:3mm 0 2mm; }
+  .recado .gentle{ font-family:'Cormorant Garamond',serif; font-style:italic; font-size:16px; color:#6b2a38; }
+  .recado .venha{ font-family:'Cormorant SC',serif; letter-spacing:.24em; padding-left:.24em; font-size:9.5px; color:#7a3a48; margin-top:1.5mm; }
+  .recado .rlogos{ margin-top:auto; display:flex; align-items:center; gap:16px; padding-top:6mm; }
+  .recado .rlogos .sep{ width:1px; height:30px; background:#a86472; }
+  .recado .lk{ display:flex; flex-direction:column; align-items:center; line-height:1; }
+  .recado .lk .nm{ font-family:'Cormorant SC',serif; letter-spacing:.16em; font-size:13px; margin-top:2px; }
+  .recado .lk .tg{ font-family:'Cormorant Garamond',serif; font-style:italic; font-size:9px; color:#7a3a48; margin-top:1px; }
+
   #tags .sheet{ width:210mm; height:297mm; background:#fbf6ec;
      display:grid; grid-template-columns:1fr 1fr; align-content:center; justify-items:center;
      gap:4mm; padding:12mm; }
@@ -214,6 +237,8 @@
     <linearGradient id="goldG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dcc28c"/><stop offset="1" stop-color="#b8975a"/></linearGradient>
     <radialGradient id="lemonReal" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#fff6c2"/><stop offset="0.45" stop-color="#f6d352"/><stop offset="0.8" stop-color="#ecbb33"/><stop offset="1" stop-color="#d99e1c"/></radialGradient>
     <linearGradient id="leafG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#aecb73"/><stop offset="1" stop-color="#5d8a3b"/></linearGradient>
+    <radialGradient id="tagPinkG" cx="42%" cy="34%"><stop offset="0" stop-color="#f9d7df"/><stop offset="1" stop-color="#e79bb1"/></radialGradient>
+    <radialGradient id="tagYellowG" cx="40%" cy="32%"><stop offset="0" stop-color="#fdf4a6"/><stop offset="1" stop-color="#f1d757"/></radialGradient>
     <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="0.8"/></filter>
     <filter id="softer" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.3"/></filter>
   </defs></svg>
@@ -221,8 +246,8 @@
   <div class="sheet-label">Item 1 — Sousplat / jogo americano (A4 paisagem · 29,7 × 21 cm)</div>
   <div id="placemat"><div class="sheet"></div></div>
 
-  <div class="sheet-label">Item 2 — Convite (13 × 18 cm)</div>
-  <div id="convite"><div class="sheet"></div></div>
+  <div class="sheet-label">Item 2 — Recadinho de cuidados (fica em cima do sousplat · proporção A4)</div>
+  <div id="recadinho"><div class="sheet recado"></div></div>
 
   <div class="sheet-label">Item 3 — Florzinhas com nome (A4 · recorte + furo p/ taça/avental)</div>
   <div id="tags"></div>
@@ -328,28 +353,37 @@
   }
   const D=(art,style)=>`<div class="deco" style="${style}">${art}</div>`;
 
-  /* ============ ITEM 2 — CONVITE ============ */
+  /* ============ ITEM 2 — RECADINHO DE CUIDADOS (rosa liso) ============ */
   (function(){
-    const s=document.querySelector('#convite .sheet');
+    const s=document.querySelector('#recadinho .sheet');
+    const glasses = `<svg class="glasses" viewBox="0 0 150 96" fill="none" stroke="#7a3a48" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <g transform="rotate(13 60 30)"><path d="M40 14 L62 14 L53 44 Z"/><path d="M53 44 V76 M41 80 H65"/></g>
+        <g transform="rotate(-13 90 30)"><path d="M88 14 L110 14 L99 44 Z"/><path d="M99 44 V76 M87 80 H111"/></g>
+        <path d="M75 8 V1 M69 6 L64 1 M81 6 L86 1" stroke-width="1.5"/></svg>`;
+    const flame = `<svg viewBox="0 0 24 30" style="width:13px;height:17px;"><path d="M12 1 C15 9 20 11 18 19 a6 6 0 1 1 -12 0 C5 14 9 11 12 1 Z" fill="#5a2330"/><path d="M12 12 c1.6 3.4 3.4 4.4 2.6 7.6 a2.8 2.8 0 1 1 -5.2 0 c0 -2.6 1.8 -3.6 2.6 -7.6 Z" fill="#ebb9c4"/></svg>`;
+    const ring  = `<svg viewBox="0 0 44 24" style="width:26px;height:14px;"><circle cx="15" cy="12" r="9" fill="none" stroke="#5a2330" stroke-width="2.4"/><circle cx="27" cy="12" r="9" fill="none" stroke="#5a2330" stroke-width="2.4"/></svg>`;
     s.innerHTML = `
-      <div class="panel" style="left:9mm;top:13mm;width:112mm;height:156mm;">${panelScallop(336,468,17,'#fffdf6')}</div>
-      ${D(art.bow(),'left:50%;top:5mm;transform:translateX(-50%);width:46mm;height:32mm;z-index:6;')}
-      <div class="panel-content" style="left:9mm;top:13mm;width:112mm;height:156mm;padding:0 15mm;">
-        <div class="eyebrow" style="font-size:10px;margin-top:16mm;">Você está convidada para</div>
-        <div class="script" style="font-family:'Allura',cursive;font-size:54px;margin:5mm 0 1mm;">${FESTA.nome}</div>
-        <div class="serif" style="font-size:40px;font-weight:600;line-height:.9;">${FESTA.idade} <span style="font-size:22px;">anos</span></div>
-        <div class="serif-caps" style="font-size:13px;margin-top:3mm;">Pintura em Taça</div>
-        <div style="width:54mm;margin:5mm 0;">${art.flourish()}</div>
-        <div class="serif" style="font-style:italic;font-size:18px;color:#a07480;">${FESTA.data}</div>
+      <div class="recado-frame"></div>
+      <div class="sal">SAL</div>
+      <div class="sal-sub">CLINIC</div>
+      <div class="sec">Recomendações</div>
+      <div style="color:#a86472;font-size:13px;margin-top:1mm;">&#10084;</div>
+      <h2>Pintura de Taças</h2>
+      <ul>
+        <li>Espere <b>24 horas</b> após terminar a pintura.</li>
+        <li>Leve a peça ao <b>forno frio</b>:<br>Temperatura: <b>150°C</b> &nbsp;·&nbsp; Tempo: <b>30 minutos</b>.</li>
+        <li>Após os 30 minutos, desligue o forno e deixe a peça esfriar completamente, no interior do forno, com ele completamente fechado.</li>
+        <li>Quando esfriar por completo, poderá ser lavada e utilizada.</li>
+      </ul>
+      ${glasses}
+      <div style="color:#a86472;font-size:12px;">&#10084;</div>
+      <div class="gentle">A gentle pause to create and connect.</div>
+      <div class="venha">Venha pela taça, fique pela conexão</div>
+      <div class="rlogos">
+        <div class="lk">${flame}<div class="nm">CONECTAH</div></div>
+        <span class="sep"></span>
+        <div class="lk">${ring}<div class="nm" style="font-family:'Cormorant Garamond',serif;font-weight:600;letter-spacing:0;">Elarah</div><div class="tg">offline is a feeling</div></div>
       </div>
-      ${D(art.peony(),'left:-10mm;top:-8mm;width:52mm;height:52mm;z-index:5;')}
-      ${D(art.lemon(),'left:6mm;top:30mm;width:26mm;height:20mm;z-index:5;')}
-      ${D(art.flower('url(#roseG)','#e6bd49'),'right:2mm;top:4mm;width:26mm;height:26mm;z-index:5;')}
-      ${D(art.sparkle(),'right:18mm;top:30mm;width:9mm;height:9mm;z-index:5;')}
-      ${D(art.taca(),'left:4mm;bottom:8mm;width:26mm;height:34mm;z-index:5;')}
-      ${D(art.peony(),'right:-12mm;bottom:-12mm;width:50mm;height:50mm;z-index:5;')}
-      ${D(art.lemonSlice(),'right:30mm;bottom:6mm;width:20mm;height:20mm;z-index:5;')}
-      ${D(art.leaves(),'left:24mm;bottom:6mm;width:30mm;height:14mm;z-index:5;')}
     `;
   })();
 
@@ -387,9 +421,9 @@
     const fit=n=>n.length>12?30:(n.length>9?36:44);
     function tag(nome,i){
       const blush=i%2===0;
-      const grad=blush?'url(#blushG)':'url(#lemonG)';
-      const center=blush?'#e6bd49':'#d093a0';
-      const nameColor=blush?'#b06f7e':'#b58a3a';
+      const grad=blush?'url(#tagPinkG)':'url(#tagYellowG)';
+      const center=blush?'#f1d757':'#e79bb1';
+      const nameColor=blush?'#b85f78':'#b58a3a';
       return `<div class="flower-tag">
         <svg viewBox="0 0 200 190" style="width:100%;height:100%;overflow:visible">
           <g filter="url(#soft)">${petals(6,100,100,52,34,46,grad,0)}<circle cx="100" cy="100" r="34" fill="${center}" opacity=".5"/></g>
