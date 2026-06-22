@@ -161,7 +161,8 @@
     letter-spacing:.2em; color:#9a7a55; font-size:13px; text-transform:uppercase; }
 
   .sheet{ position:relative; margin:0 auto 26px; overflow:hidden;
-    background:var(--blush-bg); box-shadow:0 16px 40px rgba(120,90,50,.22); }
+    background:repeating-linear-gradient(90deg,#f6d76f 0 6mm,#fffdf4 6mm 12mm);
+    box-shadow:0 16px 40px rgba(120,90,50,.22); }
   .panel{ position:absolute; z-index:1; }
   .panel-content{ position:absolute; z-index:3; display:flex; flex-direction:column;
     align-items:center; justify-content:center; text-align:center; }
@@ -211,6 +212,8 @@
     <radialGradient id="lemonG" cx="38%" cy="32%"><stop offset="0" stop-color="#f8ecae"/><stop offset="1" stop-color="#e6bd49"/></radialGradient>
     <radialGradient id="sageG" cx="40%" cy="35%"><stop offset="0" stop-color="#d0d8ba"/><stop offset="1" stop-color="#94a777"/></radialGradient>
     <linearGradient id="goldG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dcc28c"/><stop offset="1" stop-color="#b8975a"/></linearGradient>
+    <radialGradient id="lemonReal" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#fff6c2"/><stop offset="0.45" stop-color="#f6d352"/><stop offset="0.8" stop-color="#ecbb33"/><stop offset="1" stop-color="#d99e1c"/></radialGradient>
+    <linearGradient id="leafG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#aecb73"/><stop offset="1" stop-color="#5d8a3b"/></linearGradient>
     <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="0.8"/></filter>
     <filter id="softer" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.3"/></filter>
   </defs></svg>
@@ -245,21 +248,46 @@
         </g></svg>`; },
     flower(grad,center){ return `<svg viewBox="0 0 100 100">
         <g filter="url(#soft)">${petals(5,50,50,25,16,22,grad,0)}<circle cx="50" cy="50" r="11" fill="${center}"/></g></svg>`; },
-    lemon(){ return `<svg viewBox="0 0 130 100">
+    lemon(){ return `<svg viewBox="0 0 152 120">
         <g filter="url(#soft)">
-          <path d="M65 90 C30 90 16 66 16 50 C16 30 38 12 65 12 C92 12 114 30 114 50 C114 66 100 90 65 90 Z" fill="url(#lemonG)"/>
-          <path d="M70 16 C84 -2 110 -3 124 8 C110 14 90 16 74 24 Z" fill="url(#sageG)"/>
+          <path d="M86 40 C112 12 146 10 152 22 C141 40 112 46 90 54 Z" fill="url(#leafG)"/>
+          <path d="M150 24 C130 30 108 40 92 52" stroke="#4f7a35" stroke-width="1.5" fill="none" opacity=".6"/>
         </g>
-        <ellipse cx="46" cy="34" rx="14" ry="7" fill="#fcf0bd" opacity=".8" transform="rotate(-22 46 34)"/></svg>`; },
-    lemonSlice(){ return `<svg viewBox="0 0 100 100"><g filter="url(#soft)">
-          <circle cx="50" cy="50" r="44" fill="url(#lemonG)"/><circle cx="50" cy="50" r="36" fill="#fdf6da"/></g>
-          <g stroke="#ecc659" stroke-width="2.4" opacity=".8"><line x1="50" y1="16" x2="50" y2="84"/><line x1="16" y1="50" x2="84" y2="50"/><line x1="25" y1="25" x2="75" y2="75"/><line x1="75" y1="25" x2="25" y2="75"/></g>
-          <circle cx="50" cy="50" r="6" fill="url(#lemonG)"/></svg>`; },
+        <g transform="rotate(-18 72 70)">
+          <ellipse cx="72" cy="70" rx="52" ry="41" fill="url(#lemonReal)"/>
+          <path d="M20 70 q-7 0 -9 -3 q5 -3 9 -2 Z" fill="#ecbf45"/>
+          <path d="M124 70 q7 0 9 3 q-5 3 -9 2 Z" fill="#f3d35e"/>
+          <ellipse cx="92" cy="90" rx="40" ry="28" fill="#cf941a" opacity=".22" filter="url(#soft)"/>
+          <ellipse cx="50" cy="46" rx="22" ry="12" fill="#fff8cf" opacity=".75" filter="url(#soft)" transform="rotate(-22 50 46)"/>
+          <g fill="#d3a52a" opacity=".5">
+            <circle cx="60" cy="62" r="1.5"/><circle cx="80" cy="72" r="1.5"/><circle cx="96" cy="60" r="1.4"/>
+            <circle cx="50" cy="78" r="1.4"/><circle cx="86" cy="84" r="1.4"/><circle cx="70" cy="88" r="1.3"/><circle cx="104" cy="74" r="1.3"/>
+          </g>
+        </g></svg>`; },
+    lemonSlice(){
+      let seg='',mem=''; const n=9,cx=55,cy=55,R=39;
+      for(let i=0;i<n;i++){ const a0=i*2*Math.PI/n,a1=(i+1)*2*Math.PI/n,am=(a0+a1)/2;
+        seg+=`<path d="M${cx} ${cy} L${(cx+R*Math.cos(a0)).toFixed(1)} ${(cy+R*Math.sin(a0)).toFixed(1)} A ${R} ${R} 0 0 1 ${(cx+R*Math.cos(a1)).toFixed(1)} ${(cy+R*Math.sin(a1)).toFixed(1)} Z" fill="${i%2?'#fdf3ba':'#fbeea4'}"/>`;
+        mem+=`<line x1="${cx}" y1="${cy}" x2="${(cx+R*Math.cos(am)).toFixed(1)}" y2="${(cy+R*Math.sin(am)).toFixed(1)}" stroke="#ecd072" stroke-width="1.3"/>`; }
+      return `<svg viewBox="0 0 110 110">
+        <circle cx="55" cy="55" r="50" fill="url(#lemonReal)"/>
+        <circle cx="55" cy="55" r="44" fill="#fcf2c5"/>
+        <g>${seg}</g><g opacity=".85">${mem}</g>
+        <circle cx="55" cy="55" r="39" fill="none" stroke="#f0d77f" stroke-width="2"/>
+        <ellipse cx="46" cy="42" rx="3" ry="5.5" fill="#eddf97" transform="rotate(-28 46 42)"/>
+        <ellipse cx="65" cy="63" rx="3" ry="5.5" fill="#eddf97" transform="rotate(22 65 63)"/>
+        <ellipse cx="44" cy="40" rx="13" ry="7" fill="#fffce8" opacity=".5" transform="rotate(-25 44 40)"/></svg>`; },
     leaves(){ return `<svg viewBox="0 0 140 60"><g filter="url(#soft)" fill="url(#sageG)">
           <path d="M10 30 C40 30 60 18 70 8 C58 26 40 34 10 32 Z"/>
           <path d="M10 30 C40 30 60 42 70 52 C58 34 40 28 10 28 Z"/>
           <path d="M70 30 C100 30 120 18 130 8 C118 26 100 34 70 32 Z" opacity=".9"/></g></svg>`; },
     sparkle(){ return `<svg viewBox="0 0 40 40"><path d="M20 2 C22 14 26 18 38 20 C26 22 22 26 20 38 C18 26 14 22 2 20 C14 18 18 14 20 2 Z" fill="url(#goldG)"/></svg>`; },
+    bow(){ return `<svg viewBox="0 0 160 112"><g filter="url(#soft)">
+        <path d="M80 44 C58 12 16 10 13 38 C10 62 46 64 80 50 Z" fill="url(#roseG)" stroke="#c98a96" stroke-width="2"/>
+        <path d="M80 44 C102 12 144 10 147 38 C150 62 114 64 80 50 Z" fill="url(#roseG)" stroke="#c98a96" stroke-width="2"/>
+        <path d="M73 48 C64 74 54 96 46 108 C58 102 71 94 80 72 C89 94 102 102 114 108 C106 96 96 74 87 48 Z" fill="url(#roseG)" stroke="#c98a96" stroke-width="2"/>
+        <ellipse cx="80" cy="46" rx="12" ry="14" fill="url(#roseDeepG)" stroke="#c98a96" stroke-width="2"/>
+      </g></svg>`; },
     taca(){ return `<svg viewBox="0 0 110 150"><g fill="none" stroke="#c98a96" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
           <path d="M28 20 H82 L62 66 H48 Z"/><path d="M55 66 V120 M36 128 H74"/></g>
           <path d="M33 28 H77 L60 60 H50 Z" fill="#eecace" opacity=".6"/>
@@ -280,15 +308,34 @@
       <path d="M6 ${h} L6 ${rise+4} A ${w/2-6} ${rise-2} 0 0 1 ${w-6} ${rise+4} L ${w-6} ${h}" fill="none" stroke="#d8bd86" stroke-width="1" vector-effect="non-scaling-stroke"/>
     </svg>`;
   }
+  /* painel rosa recortado (scallop) */
+  function scallopRect(w,h,r){
+    const seg=d=>Math.max(2,Math.round(d/(2*r)));
+    const top=seg(w),right=seg(h); const sw=w/top, sh=h/right; let p=['M0 0'];
+    for(let i=0;i<top;i++)  p.push(`A ${sw/2} ${sw/2} 0 0 1 ${sw*(i+1)} 0`);
+    for(let i=0;i<right;i++)p.push(`A ${sh/2} ${sh/2} 0 0 1 ${w} ${sh*(i+1)}`);
+    for(let i=0;i<top;i++)  p.push(`A ${sw/2} ${sw/2} 0 0 1 ${w-sw*(i+1)} ${h}`);
+    for(let i=0;i<right;i++)p.push(`A ${sh/2} ${sh/2} 0 0 1 0 ${h-sh*(i+1)}`);
+    p.push('Z'); return p.join(' ');
+  }
+  function panelScallop(w,h,r,fill){
+    const d=scallopRect(w-2*r,h-2*r,r);
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;filter:drop-shadow(0 7px 16px rgba(150,70,95,.18))">
+      <g transform="translate(${r},${r})">
+        <path d="${d}" fill="${fill}" stroke="#e07a98" stroke-width="3" vector-effect="non-scaling-stroke"/>
+        <path d="${d}" fill="none" stroke="#d96a8a" stroke-width="1.3" vector-effect="non-scaling-stroke" transform="translate(${r*0.18},${r*0.18}) scale(0.985)"/>
+      </g></svg>`;
+  }
   const D=(art,style)=>`<div class="deco" style="${style}">${art}</div>`;
 
   /* ============ ITEM 2 — CONVITE ============ */
   (function(){
     const s=document.querySelector('#convite .sheet');
     s.innerHTML = `
-      <div class="panel" style="left:9mm;top:9mm;width:112mm;height:162mm;">${archPanel(70,'#faf4e8')}</div>
-      <div class="panel-content" style="left:9mm;top:9mm;width:112mm;height:162mm;padding:0 14mm;">
-        <div class="eyebrow" style="font-size:10px;margin-top:30mm;">Você está convidada para</div>
+      <div class="panel" style="left:9mm;top:13mm;width:112mm;height:156mm;">${panelScallop(336,468,17,'#fffdf6')}</div>
+      ${D(art.bow(),'left:50%;top:5mm;transform:translateX(-50%);width:46mm;height:32mm;z-index:6;')}
+      <div class="panel-content" style="left:9mm;top:13mm;width:112mm;height:156mm;padding:0 15mm;">
+        <div class="eyebrow" style="font-size:10px;margin-top:16mm;">Você está convidada para</div>
         <div class="script" style="font-family:'Allura',cursive;font-size:54px;margin:5mm 0 1mm;">${FESTA.nome}</div>
         <div class="serif" style="font-size:40px;font-weight:600;line-height:.9;">${FESTA.idade} <span style="font-size:22px;">anos</span></div>
         <div class="serif-caps" style="font-size:13px;margin-top:3mm;">Pintura em Taça</div>
@@ -310,9 +357,9 @@
   (function(){
     const s=document.querySelector('#placemat .sheet');
     s.innerHTML = `
-      <div class="panel" style="left:18mm;top:16mm;width:261mm;height:178mm;background:#faf4e8;border:1.5px solid #c2a062;border-radius:8mm;box-shadow:0 6px 16px rgba(150,110,90,.14);"></div>
-      <div class="panel" style="left:21mm;top:19mm;width:255mm;height:172mm;border:1px solid #d8bd86;border-radius:7mm;"></div>
-      <div class="panel-content" style="left:18mm;top:16mm;width:261mm;height:178mm;">
+      <div class="panel" style="left:18mm;top:22mm;width:261mm;height:172mm;">${panelScallop(783,516,24,'#fffdf6')}</div>
+      ${D(art.bow(),'left:50%;top:9mm;transform:translateX(-50%);width:62mm;height:42mm;z-index:6;')}
+      <div class="panel-content" style="left:18mm;top:22mm;width:261mm;height:172mm;">
         <div class="eyebrow" style="font-size:15px;">Pintura em Taça</div>
         <div class="script" style="font-family:'Allura',cursive;font-size:90px;margin:2mm 0 0;">${FESTA.nome}</div>
         <div class="serif-caps" style="font-size:23px;letter-spacing:.3em;color:#b06f7e;">Metidieri</div>
