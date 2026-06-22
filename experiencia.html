@@ -66,6 +66,27 @@
       .exp-detail__title { font-size: 1.5rem; }
       .exp-detail__hero { max-height: 260px; }
     }
+    /* Detalhe de KIT (Elarah em Casa): foto do produto numa moldura
+       vertical uniforme, preenchendo todo o quadro (object-fit: cover).
+       Assim TODAS as fotos de kit ficam do mesmo tamanho/proporção e o
+       produto aparece "mais perto", sem o fundo sobrando em volta —
+       independente do recorte original de cada foto. Vale só pra kit;
+       as demais experiências (gastronomia etc.) seguem como antes. */
+    .exp-detail__hero--kit {
+      width: 100%;
+      max-width: 460px;
+      margin-left: auto;
+      margin-right: auto;
+      aspect-ratio: 3 / 4;
+      height: auto;
+      max-height: none;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+    @media (max-width: 600px) {
+      .exp-detail__hero--kit { max-height: none; }
+    }
 
     /* =====================================================
        STICKY CTA MOBILE — Sprint 1 / PR D do plano de conversão
@@ -249,10 +270,10 @@
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=1" defer></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=30"></script>
+<script src="experiences-data.js?v=31"></script>
 <script src="analytics.js?v=2"></script>
 <script src="kit-checkout.js?v=3"></script>
-<script src="script.js?v=64"></script><script>(function () {
+<script src="script.js?v=65"></script><script>(function () {
   'use strict';
 
   function esc(s) {
@@ -392,6 +413,14 @@
 
     var colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
 
+    // Detecta KIT (Elarah em Casa) cedo — usado pra moldura uniforme da
+    // foto principal e, mais abaixo, pro seletor de variações.
+    var _kitIsKit = (function () {
+      var hay = ((exp.nome || '') + ' ' + (exp.categoria || '')).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '');
+      return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || hay.indexOf('em casa') !== -1;
+    })();
+
     // Hero image — primary → fallback de categoria → placeholder.
     var primaryHero = normalizeImg(exp.imagem);
     var heroCatFb = defaultImgForCategory(exp.categoria);
@@ -404,7 +433,7 @@
       "}" +
       "this.dataset.fbStep='final';this.outerHTML=this.dataset.fbHtml;";
     var heroHtml = heroSrc
-      ? '<img loading="lazy" decoding="async" class="exp-detail__hero" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
+      ? '<img loading="lazy" decoding="async" class="exp-detail__hero' + (_kitIsKit ? ' exp-detail__hero--kit' : '') + '" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
         'data-cat-fb="' + esc(heroCatFb) + '" ' +
         'data-fb-html="' + heroPlaceholder.replace(/"/g, '&quot;') + '" ' +
         'onerror="' + heroOnErr + '">'
@@ -558,11 +587,6 @@
     // Só pra kits: cada opção pode ter foto e preço próprios. Ao clicar,
     // troca a foto e o preço na página e guarda a escolha em
     // window.__elarahKitVariant pro checkout do kit (kit-checkout.js).
-    var _kitIsKit = (function () {
-      var hay = ((exp.nome || '') + ' ' + (exp.categoria || '')).toLowerCase()
-        .normalize('NFD').replace(/[̀-ͯ]/g, '');
-      return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || hay.indexOf('em casa') !== -1;
-    })();
     var _kitItems = (_kitIsKit && Array.isArray(exp.variantItems)) ? exp.variantItems : [];
     var variantSelectorHtml = (function () {
       if (!_kitItems.length) return '';

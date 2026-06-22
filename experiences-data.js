@@ -43,7 +43,11 @@
     'vagas_total', 'event_at', 'cutoff_hours', 'is_active',
     'fornecedor_nome', 'valor_cheio_centavos', 'percentual_repasse',
     'valor_repasse_fixo_centavos',
-    'pacote_datas'
+    'pacote_datas',
+    // Ordem manual de exibição (admin arrasta pra reordenar). null =
+    // sem ordem definida → cai no fim, mantendo o sort cronológico
+    // padrão. sql/elarah_experiences_ordem.sql.
+    'ordem'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -117,6 +121,9 @@
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
       isActive: row.is_active === false ? false : true,
+      // Ordem manual de exibição (admin arrasta pra reordenar). null =
+      // sem ordem → sort cronológico padrão. sql/elarah_experiences_ordem.sql.
+      ordem: (row.ordem == null || row.ordem === '') ? null : Number(row.ordem),
       // --- fornecedor (legado: 1 fornecedor + percentual_repasse) ---
       // Mantido pra retrocompat. O modelo novo é experience_suppliers
       // (1:N) carregado via getSuppliersForExperience.
@@ -241,6 +248,13 @@
       event_at: eventAt,
       cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
       is_active: isActive,
+      // Ordem manual (admin). Aceita number ou string numérica; vazio/inválido = null.
+      ordem: (function () {
+        var raw = exp.ordem != null ? exp.ordem : exp.ordem_;
+        if (raw == null || raw === '') return null;
+        var n = Number(raw);
+        return Number.isFinite(n) ? n : null;
+      })(),
       fornecedor_nome: (exp.fornecedorNome || exp.fornecedor_nome || '').trim() || null,
       valor_cheio_centavos: (function () {
         var raw = exp.valorCheioCentavos != null ? exp.valorCheioCentavos : exp.valor_cheio_centavos;
@@ -362,6 +376,57 @@
     cachePromise = null;
   }
 
+  // Chave de ordenação manual: experiências com `ordem` definida vêm
+  // primeiro (asc); as sem ordem (null) vão pro fim (Infinity), onde o
+  // desempate é a regra de cada página (cronológico, alfabético, etc).
+  // Usado pelo cache e pelas páginas públicas (categoria/home/em-casa).
+  function ordemKey(exp) {
+    var o = exp ? exp.ordem : null;
+    return (o == null || o === '' || !Number.isFinite(Number(o))) ? Infinity : Number(o);
+  }
+
+  // Persiste a nova ordem das experiências. Recebe a lista de ids JÁ na
+  // ordem desejada e grava `ordem` = posição (0,1,2…) só nos que mudaram.
+  // Admin-only. Invalida o cache no fim pra refletir na hora.
+  async function reorderExperiences(orderedIds) {
+    const s = sb();
+    if (!s) {
+      console.error('[Elarah] reorderExperiences: Supabase indisponível.');
+      return { _error: { message: 'Supabase indisponível.' } };
+    }
+    if (!Array.isArray(orderedIds) || !orderedIds.length) {
+      return { ok: true, updated: 0 };
+    }
+    // Mapa id → ordem atual, pra atualizar só o que realmente mudou.
+    const current = {};
+    try {
+      const all = cache || await getAllExperiences();
+      (all || []).forEach(function (e) {
+        if (e && e.id != null) current[e.id] = (e.ordem == null ? null : Number(e.ordem));
+      });
+    } catch (e) { /* segue mesmo sem o mapa — grava tudo */ }
+
+    let updated = 0;
+    for (let i = 0; i < orderedIds.length; i++) {
+      const id = orderedIds[i];
+      if (id == null || id === '') continue;
+      if (current[id] === i) continue; // já está na posição certa
+      const { error } = await s.from(TABLE).update({ ordem: i }).eq('id', id);
+      if (error) {
+        const missing = extractMissingColumn(error);
+        if (missing === 'ordem') {
+          markColumnMissing('ordem');
+          return { _error: { message: 'A coluna "ordem" ainda não existe no banco. Rode sql/elarah_experiences_ordem.sql no Supabase e tente de novo.', code: 'NO_COLUMN' } };
+        }
+        console.error('[Elarah] reorderExperiences erro ao gravar ordem:', error);
+        return { _error: error };
+      }
+      updated++;
+    }
+    invalidateCache();
+    return { ok: true, updated: updated };
+  }
+
   // Se o erro for "column X não existe no schema cache", devolve
   // o nome da coluna. Caso contrário, null. Cobre os dois formatos
   // mais comuns que o PostgREST / Postgres usam.
@@ -430,6 +495,13 @@
             knownColumns = new Set(Object.keys(data[0]));
           }
           const rows = (data || []).map(dbRowToExperience);
+          // Ordem manual primeiro (admin arrasta pra reordenar); quem
+          // não tem `ordem` (null) vai pro fim mantendo a ordem do fetch
+          // (created_at asc). Array.sort é estável (ES2019+), então o
+          // desempate preserva a ordem cronológica original.
+          rows.sort(function (a, b) {
+            return ordemKey(a) - ordemKey(b);
+          });
           if (rows.length) {
             cache = rows;
           } else {
@@ -1252,6 +1324,8 @@
     deleteExperience,
     duplicateExperience,
     setExperienceActive,
+    reorderExperiences,
+    ordemKey,
     invalidateCache,
     isPubliclyVisible,
     deriveEventTimestamp,

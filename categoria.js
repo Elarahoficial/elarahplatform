@@ -384,10 +384,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return true;
     });
 
-    // Ordena cronologicamente pela proxima ocorrencia (futureDates[0]).
-    // Experiencias sem data futura conhecida vao pro fim (geralmente
-    // recorrentes sem slot programado, ou one-offs sem horario parseavel).
+    // Ordem manual do admin primeiro (quem foi arrastado pra cima vem
+    // antes); empate/sem ordem cai no cronológico pela proxima ocorrencia
+    // (futureDates[0]). Sem data futura conhecida vai pro fim.
     base.sort(function (a, b) {
+      var oa = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
+      var ob = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
+      if (oa !== ob) return oa - ob;
       var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
       var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
       return ta - tb;
