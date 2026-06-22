@@ -11925,7 +11925,28 @@
         '</td>' +
         '</tr>';
     }).join('');
-    tbody.innerHTML = rowsHtml + _finExpandRow('sales', filtered.length, 11);
+    // Rodapé de conferência: soma as VAGAS (quantidade) das vendas do
+    // período, separando o que entra no total de Compras (pagas) do que
+    // NÃO entra (pendentes). Ajuda a reconciliar o contador "X manual".
+    // Obs: soma sobre TODO o período carregado, não só a página visível.
+    const _q = (r) => Math.max(1, Number(r.quantity) || 1);
+    let paidVagas = 0, paidVendas = 0, pendVagas = 0, pendVendas = 0;
+    rows.forEach(r => {
+      if (r.payment_status === 'pago') { paidVagas += _q(r); paidVendas++; }
+      else if (r.payment_status === 'pendente') { pendVagas += _q(r); pendVendas++; }
+    });
+    const footerHtml = '<tr style="background:#faf7f2;">' +
+      '<td colspan="4" style="text-align:right;font-weight:700;">Σ vagas pagas (entram no total de Compras):</td>' +
+      '<td style="text-align:center;font-weight:700;color:#1a8a4a;">' + paidVagas + '</td>' +
+      '<td colspan="6" style="font-size:.78rem;color:#888;">' +
+        paidVendas + ' venda' + (paidVendas !== 1 ? 's' : '') + ' paga' + (paidVendas !== 1 ? 's' : '') +
+        (pendVagas ? ' · <span style="color:#b07b00;">' + pendVagas + ' vaga' + (pendVagas !== 1 ? 's' : '') +
+          ' pendente' + (pendVagas !== 1 ? 's' : '') + ' NÃO contada' + (pendVagas !== 1 ? 's' : '') +
+          ' (' + pendVendas + ' venda' + (pendVendas !== 1 ? 's' : '') + ')</span>' : '') +
+        ' — confira com o filtro de período em "Tudo".' +
+      '</td>' +
+      '</tr>';
+    tbody.innerHTML = rowsHtml + footerHtml + _finExpandRow('sales', filtered.length, 11);
   }
 
   function _finRenderByExperienceTable(rows) {
