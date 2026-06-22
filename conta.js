@@ -130,6 +130,18 @@ if (badgeEl) {
     });
   }
 
+  // Formata o campo "Instagram ou site": se for um @ / nome de usuário,
+  // garante o arroba na frente; se for um link/site, mantém como está.
+  function formatSocialHandle(value) {
+    const v = (value || '').trim();
+    if (!v) return '';
+    if (/^https?:\/\//i.test(v) || /^www\./i.test(v) || v.includes('/') ||
+        /\.(com|com\.br|net|org|io|me|co|app|store|site)\b/i.test(v)) {
+      return v;
+    }
+    return v.startsWith('@') ? v : '@' + v;
+  }
+
   // ===== PARTNER SECTION =====
   function renderPartnerSection() {
   const currentUser = ElarahAuth.getCurrentUser();
@@ -156,7 +168,7 @@ if (currentUser.partnerStatus === 'approved') {
       <div class="account__partner-detail"><strong>Tipo de experiência</strong><span>${pd.tipo || '-'}</span></div>
       <div class="account__partner-detail"><strong>Bairro / Local de atuação</strong><span>${pd.bairro || '-'}</span></div>
       <div class="account__partner-detail"><strong>Cidade</strong><span>${pd.cidade || '-'}</span></div>
-      <div class="account__partner-detail"><strong>Instagram ou site</strong><span>${pd.social || '-'}</span></div>
+      <div class="account__partner-detail"><strong>Instagram ou site</strong><span>${formatSocialHandle(pd.social) || '-'}</span></div>
       <div class="account__partner-detail"><strong>Conte sobre sua experiência</strong><span>${pd.descricao || '-'}</span></div>
     `;
   }
