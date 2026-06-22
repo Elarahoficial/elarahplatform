@@ -12413,7 +12413,7 @@
       $('ms-discount').value = _finCentsToInput(data.discount_centavos);
       $('ms-payment-method').value = data.payment_method || '';
       $('ms-payment-status').value = data.payment_status || 'pago';
-      if ($('ms-event-type')) $('ms-event-type').value = data.event_type || '';
+      if ($('ms-event-type')) $('ms-event-type').value = data.event_type || (data.is_event === false ? '__none__' : '');
       if ($('ms-event-type-custom')) {
         $('ms-event-type-custom').value = data.event_type_custom || '';
         $('ms-event-type-custom').style.display = data.event_type === 'outro' ? 'block' : 'none';
@@ -12522,11 +12522,18 @@
     } else {
       payload.payout_paid_at = null;
     }
-    // Tipo de evento: só inclui as colunas no payload quando a venda é
-    // classificada como evento — assim vendas normais continuam salvando
+    // Tipo de evento: só inclui as colunas no payload quando a admin faz uma
+    // escolha explícita — assim vendas normais (opção "—") continuam salvando
     // mesmo em ambientes que ainda não rodaram a migração de Eventos.
+    //   ""        → classificação automática (is_event fica null: qty>=3 entra)
+    //   "__none__"→ "Não é evento" (força is_event=false: nunca lista na aba)
+    //   <tipo>    → evento classificado (is_event=true)
     const evType = ($('ms-event-type') && $('ms-event-type').value) || null;
-    if (evType) {
+    if (evType === '__none__') {
+      payload.event_type = null;
+      payload.is_event = false;
+      payload.event_type_custom = null;
+    } else if (evType) {
       payload.event_type = evType;
       payload.is_event = true;
       payload.event_type_custom = (evType === 'outro' && $('ms-event-type-custom'))
