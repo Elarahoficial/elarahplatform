@@ -8,7 +8,7 @@
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="conta.css?v=3">
+  <link rel="stylesheet" href="conta.css?v=4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -97,6 +97,10 @@
           <button class="account__menu-item" data-section="compras">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
             Minhas compras
+          </button>
+          <button class="account__menu-item" data-section="fidelidade">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 19.3 7.2 17l.9-5.4L4.2 7.7l5.4-.8z"/></svg>
+            Cartão fidelidade
           </button>
           <button class="account__menu-item" data-section="parceiro">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
@@ -306,6 +310,41 @@
         </div>
       </section>
 
+      <!-- CARTÃO FIDELIDADE -->
+      <section class="account__section" id="section-fidelidade">
+        <h2 class="account__section-title">Cartão fidelidade</h2>
+        <p class="account__section-desc">A cada <strong>10 experiências</strong> (ou gift cards) que você compra na Elarah, você ganha um cupom de <strong>20% de desconto</strong> em qualquer experiência. Vale pra sempre — quando completar, o cartão começa de novo. ✨</p>
+
+        <!-- Estado de carregamento -->
+        <div class="loyalty__loading" id="loyalty-loading">
+          <p>Carregando seu cartão…</p>
+        </div>
+
+        <!-- Estado de erro -->
+        <div class="purchases__error" id="loyalty-error" style="display:none;"></div>
+
+        <!-- Cartão -->
+        <div class="loyalty__card" id="loyalty-card" style="display:none;">
+          <div class="loyalty__card-header">
+            <img src="assets/logo.png" alt="Elarah" class="loyalty__card-logo">
+            <div class="loyalty__card-headtext">
+              <span class="loyalty__card-kicker">Cartão Fidelidade</span>
+              <span class="loyalty__card-progress" id="loyalty-progress">0 de 10</span>
+            </div>
+          </div>
+
+          <div class="loyalty__stamps" id="loyalty-stamps" aria-label="Carimbos do cartão fidelidade"></div>
+
+          <p class="loyalty__hint" id="loyalty-hint"></p>
+        </div>
+
+        <!-- Cupons conquistados -->
+        <div class="loyalty__rewards" id="loyalty-rewards" style="display:none;">
+          <h3 class="loyalty__rewards-title">Seus cupons de 20%</h3>
+          <div class="loyalty__rewards-list" id="loyalty-rewards-list"></div>
+        </div>
+      </section>
+
       <section class="account__section" id="section-favoritos">
   <h2 class="account__section-title">Favoritos</h2>
 
@@ -409,6 +448,6 @@
 <script src="explorar-menu.js?v=1" defer></script>
 <script src="auth.js?v=12"></script>
 <script src="analytics.js?v=2"></script>
-<script src="conta.js?v=10"></script>
+<script src="conta.js?v=11"></script>
 </body>
 </html>

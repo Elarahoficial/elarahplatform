@@ -680,6 +680,205 @@ renderFavoritos();
     loadPurchases();
   }
 
+  // ============================================================
+  //  CARTÃO FIDELIDADE
+  // ============================================================
+  // A cada 10 compras pagas (experiências + gift cards comprados),
+  // o usuário ganha um cupom de 20% OFF. A contagem e a emissão dos
+  // cupons são feitas server-side pela RPC sync_loyalty_card()
+  // (SECURITY DEFINER) — o frontend só renderiza o resultado.
+  //
+  // Fallback resiliente: se a RPC ainda não estiver no banco (migration
+  // sql/elarah_loyalty_card.sql não rodada), o cartão ainda mostra o
+  // progresso contando bookings + gift_cards via RLS, sem os cupons.
+  let loyaltyLoaded = false;
+  let loyaltyLoading = false;
+
+  function renderLoyaltyCard(data) {
+    const loadingEl = document.getElementById('loyalty-loading');
+    const errorEl = document.getElementById('loyalty-error');
+    const cardEl = document.getElementById('loyalty-card');
+    const stampsEl = document.getElementById('loyalty-stamps');
+    const progressEl = document.getElementById('loyalty-progress');
+    const hintEl = document.getElementById('loyalty-hint');
+    const rewardsEl = document.getElementById('loyalty-rewards');
+    const rewardsListEl = document.getElementById('loyalty-rewards-list');
+
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+    if (cardEl) cardEl.style.display = 'block';
+
+    const goal = Number(data.goal) || 10;
+    const stamps = Math.max(0, Math.min(goal, Number(data.stamps) || 0));
+    const total = Number(data.total_paid) || 0;
+
+    if (progressEl) progressEl.textContent = stamps + ' de ' + goal;
+
+    // Carimbos: os preenchidos ganham a logo da Elarah, os vazios
+    // mostram o número da posição.
+    if (stampsEl) {
+      let html = '';
+      for (let n = 1; n <= goal; n++) {
+        if (n <= stamps) {
+          html += '<div class="loyalty__stamp loyalty__stamp--filled">' +
+            '<img src="assets/logo.png" alt="" class="loyalty__stamp-logo">' +
+            '</div>';
+        } else {
+          html += '<div class="loyalty__stamp"><span class="loyalty__stamp-num">' + n + '</span></div>';
+        }
+      }
+      stampsEl.innerHTML = html;
+    }
+
+    // Mensagem de incentivo.
+    if (hintEl) {
+      if (total === 0) {
+        hintEl.innerHTML = 'Compre sua primeira experiência para começar a carimbar seu cartão!';
+      } else if (stamps >= goal) {
+        hintEl.innerHTML = 'Cartão completo! 🎉 Seu cupom de <strong>20% OFF</strong> está aqui embaixo.';
+      } else {
+        const left = goal - stamps;
+        hintEl.innerHTML = 'Falta' + (left > 1 ? 'm ' : ' ') + '<strong>' + left + '</strong> ' +
+          (left > 1 ? 'compras' : 'compra') + ' para ganhar <strong>20% de desconto</strong>.';
+      }
+    }
+
+    // Cupons conquistados (só existe quando a RPC respondeu).
+    const coupons = Array.isArray(data.coupons) ? data.coupons : [];
+    if (rewardsEl && rewardsListEl) {
+      if (!coupons.length) {
+        rewardsEl.style.display = 'none';
+        rewardsListEl.innerHTML = '';
+      } else {
+        rewardsEl.style.display = 'block';
+        rewardsListEl.innerHTML = coupons.map(c => {
+          const spent = c.used || c.expired;
+          const code = escapeHtmlLocal(c.code || '');
+          let metaText;
+          if (c.used) {
+            metaText = 'Cupom já utilizado';
+          } else if (c.expired) {
+            metaText = 'Expirado';
+          } else {
+            metaText = 'Válido até ' + formatCreatedAt(c.valid_until);
+          }
+          return (
+            '<div class="loyalty-coupon' + (spent ? ' loyalty-coupon--spent' : '') + '">' +
+              '<div class="loyalty-coupon__badge">' + (Number(c.discount_value) || 20) + '%</div>' +
+              '<div class="loyalty-coupon__body">' +
+                '<div class="loyalty-coupon__code">' + code + '</div>' +
+                '<div class="loyalty-coupon__meta">' + metaText + '</div>' +
+              '</div>' +
+              (spent ? '' : '<button type="button" class="loyalty-coupon__copy" data-copy-code="' + code + '">Copiar</button>') +
+            '</div>'
+          );
+        }).join('');
+
+        // Wire dos botões de copiar.
+        rewardsListEl.querySelectorAll('[data-copy-code]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const code = btn.getAttribute('data-copy-code');
+            const done = () => {
+              const original = btn.textContent;
+              btn.textContent = 'Copiado!';
+              setTimeout(() => { btn.textContent = original; }, 1800);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(code).then(done).catch(done);
+            } else {
+              done();
+            }
+          });
+        });
+      }
+    }
+  }
+
+  // Fallback client-side: conta compras pagas direto das tabelas
+  // (sem cupons, que dependem da RPC). Usado se a RPC não existir.
+  async function loadLoyaltyFallback(sb) {
+    const userEmail = (user.email || '').toLowerCase();
+    const [bookingsRes, giftCardsRes] = await Promise.all([
+      sb.from('bookings').select('id, status').eq('status', 'pago').limit(500),
+      sb.from('gift_cards')
+        .select('id, status, comprador_email, comprador_user_id')
+        .limit(500),
+    ]);
+
+    const paidExp = (bookingsRes.data || []).length;
+    const paidGift = (giftCardsRes.data || []).filter(g => {
+      const bought = (g.comprador_user_id && g.comprador_user_id === user.id) ||
+        ((g.comprador_email || '').toLowerCase() === userEmail);
+      const paid = ['active', 'used', 'expired'].includes(g.status);
+      return bought && paid;
+    }).length;
+
+    const total = paidExp + paidGift;
+    const goal = 10;
+    const rewards = Math.floor(total / goal);
+    let stamps = total - rewards * goal;
+    if (stamps === 0 && total > 0) stamps = goal;
+
+    renderLoyaltyCard({
+      total_paid: total,
+      goal,
+      stamps,
+      rewards_total: rewards,
+      coupons: [],
+    });
+  }
+
+  async function loadLoyalty() {
+    if (loyaltyLoaded || loyaltyLoading) return;
+    loyaltyLoading = true;
+
+    const loadingEl = document.getElementById('loyalty-loading');
+    const errorEl = document.getElementById('loyalty-error');
+
+    const sb = window.supabaseClient;
+    if (!sb) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (errorEl) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Supabase indisponível. Recarregue a página.';
+      }
+      loyaltyLoading = false;
+      return;
+    }
+
+    try {
+      const { data, error } = await sb.rpc('sync_loyalty_card');
+      if (error) throw error;
+      renderLoyaltyCard(data || {});
+      loyaltyLoaded = true;
+    } catch (err) {
+      // RPC ainda não existe no banco (ou outra falha) → usa o
+      // fallback client-side pra ao menos mostrar o progresso.
+      console.warn('[Elarah conta] sync_loyalty_card indisponível, usando fallback', err);
+      try {
+        await loadLoyaltyFallback(sb);
+        loyaltyLoaded = true;
+      } catch (err2) {
+        console.error('[Elarah conta] fallback de fidelidade falhou', err2);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (errorEl) {
+          errorEl.style.display = 'block';
+          errorEl.textContent = 'Não foi possível carregar seu cartão. Tente recarregar a página.';
+        }
+      }
+    } finally {
+      loyaltyLoading = false;
+    }
+  }
+
+  const fidelidadeMenuBtn = document.querySelector('.account__menu-item[data-section="fidelidade"]');
+  if (fidelidadeMenuBtn) {
+    fidelidadeMenuBtn.addEventListener('click', () => { loadLoyalty(); });
+  }
+  if (sectionParam === 'fidelidade') {
+    loadLoyalty();
+  }
+
   // ===== LOGOUT =====
   const logoutBtn = document.getElementById('account-logout');
   if (logoutBtn) {
