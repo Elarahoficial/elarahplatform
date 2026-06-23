@@ -20,16 +20,18 @@
     });
   }
 
-  // Extrai categorias únicas, ordenadas pt-BR. Ignora "Elarah Originals"
-  // — não é categoria de navegação (Originals vivem na seção By Elarah).
+  // Extrai categorias únicas, ordenadas pt-BR. Ignora categorias que
+  // não são de navegação: "Elarah Originals" (vivem na seção By Elarah)
+  // e "Kit em casa" (acessível só pelo menu "Elarah em Casa" no topo).
   function categoriasDe(experiences) {
     var map = new Map();
     (experiences || []).forEach(function (e) {
       if (!e || !e.categoria) return;
       var c = String(e.categoria).trim();
       if (!c) return;
-      if (c.toLowerCase() === 'elarah originals') return;
-      var k = c.toLowerCase();
+      var low = c.toLowerCase();
+      if (low === 'elarah originals' || low === 'kit em casa') return;
+      var k = low;
       if (!map.has(k)) map.set(k, c);
     });
     return Array.from(map.values()).sort(function (a, b) {

@@ -140,6 +140,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
       const c = String(exp.categoria).trim();
       if (!c) return;
       const k = c.toLowerCase();
+      // "Kit em casa" não entra na navegação (menu/faixa de categorias)
+      // — acessível só pelo link "Elarah em Casa" no topo do header.
+      if (k === 'kit em casa') return;
       if (!categoriasSet.has(k)) {
         categoriasSet.add(k);
         categoriasOriginalCase.set(k, c);

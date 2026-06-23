@@ -85,6 +85,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const c = String(exp.categoria).trim();
     if (!c) return;
     const k = c.toLowerCase();
+    // "Kit em casa" não entra na navegação de categorias — acessível
+    // só pelo link "Elarah em Casa" no topo do header.
+    if (k === 'kit em casa') return;
     if (!catSet.has(k)) {
       catSet.add(k);
       catMap.set(k, c);
