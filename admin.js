@@ -4556,22 +4556,43 @@
     return expFormTextIsCasaKit();
   }
 
+  // Lista de espera (CTA = waitlist) é pra experiências em pré-lançamento
+  // SEM data definida — só captam lead/interesse. Logo, Data, Duração,
+  // Horário etc. não fazem sentido e não podem ser obrigatórios.
+  function expFormIsWaitlist() {
+    var el = document.getElementById('exp-cta-mode');
+    return !!(el && el.value === 'waitlist');
+  }
+
   // Kits Elarah em Casa não têm data/horário/local/vagas presencial —
-  // são produtos físicos enviados. Quando o form é um kit, liberamos
-  // Data, Duração, Bairro e Endereço de serem obrigatórios (Horário e
-  // Vagas já são validados condicionalmente no submit). Para experiências
-  // presenciais, mantemos a obrigatoriedade de sempre.
+  // são produtos físicos enviados. Cards de lista de espera (waitlist)
+  // são pré-lançamentos sem data. Em ambos os casos liberamos Data,
+  // Duração, Bairro e Endereço de serem obrigatórios (Horário e Vagas
+  // já são validados condicionalmente no submit). Para experiências
+  // presenciais com compra direta, mantemos a obrigatoriedade de sempre.
   function applyCasaKitRequired() {
     var isKit = expFormIsCasaKit();
+    var isWaitlist = expFormIsWaitlist();
+    var relax = isKit || isWaitlist;
     ['exp-data', 'exp-duracao', 'exp-bairro', 'exp-endereco'].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
-      if (isKit) el.removeAttribute('required');
+      if (relax) el.removeAttribute('required');
+      else el.setAttribute('required', '');
+    });
+    // Lista de espera é pré-lançamento sem checkout — Preço e "O que inclui"
+    // ainda não são conhecidos, então não os exigimos. Kits e compra direta
+    // continuam exigindo (um kit tem preço e conteúdo definidos).
+    ['exp-preco', 'exp-inclui'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (isWaitlist) el.removeAttribute('required');
       else el.setAttribute('required', '');
     });
   }
   // Expõe pra o submit handler reusar a mesma detecção.
   window._expFormIsCasaKit = expFormIsCasaKit;
+  window._expFormIsWaitlist = expFormIsWaitlist;
 
   async function openExpModal(editId) {
     // Garante que o datalist de categorias esteja atualizado ANTES
@@ -5073,9 +5094,12 @@
     var nomeEl = document.getElementById('exp-nome');
     var categoriaEl = document.getElementById('exp-categoria');
     var casaKitEl = document.getElementById('exp-is-casa-kit');
+    var ctaModeEl = document.getElementById('exp-cta-mode');
     if (nomeEl) nomeEl.addEventListener('input', applyCasaKitRequired);
     if (categoriaEl) categoriaEl.addEventListener('input', applyCasaKitRequired);
     if (casaKitEl) casaKitEl.addEventListener('change', applyCasaKitRequired);
+    // Trocar pra "Lista de espera" precisa relaxar Data/Duração/etc na hora.
+    if (ctaModeEl) ctaModeEl.addEventListener('change', applyCasaKitRequired);
 
     addBtn.addEventListener('click', () => openExpModal(null));
     modalBackdrop.addEventListener('click', closeExpModal);
@@ -5090,13 +5114,16 @@
       const cor1 = (document.getElementById('exp-cor1')?.value || '#f6d5a8').trim();
       const cor2 = (document.getElementById('exp-cor2')?.value || '#f0a05e').trim();
 
-      // Kits Elarah em Casa são enviados — não têm horário presencial,
-      // então não exigimos pelo menos um horário pra eles. Experiências
-      // presenciais continuam precisando de ao menos um horário.
+      // Kits Elarah em Casa são enviados — não têm horário presencial.
+      // Listas de espera (waitlist) são pré-lançamentos sem data/horário.
+      // Em ambos não exigimos pelo menos um horário. Experiências
+      // presenciais com compra direta continuam precisando de ao menos um.
       const isCasaKit = typeof window._expFormIsCasaKit === 'function'
         && window._expFormIsCasaKit();
+      const isWaitlist = typeof window._expFormIsWaitlist === 'function'
+        && window._expFormIsWaitlist();
       const horarios = collectHorarios();
-      if (horarios.length === 0 && !isCasaKit) {
+      if (horarios.length === 0 && !isCasaKit && !isWaitlist) {
         alert('Adicione pelo menos um horário.');
         return;
       }
