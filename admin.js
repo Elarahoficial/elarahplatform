@@ -10295,9 +10295,23 @@
         if (t > acc.t) return { t, tipo: i.tipo };
         return acc;
       }, { t: 0, tipo: null });
+      // Quantas vezes ela já mandou mensagem (1º contato + follow-ups).
+      // Alimenta o badge de contagem e o alerta "N× sem resposta".
+      const sentCount = interactions.filter(
+        i => i && (i.tipo === 'mensagem_enviada' || i.tipo === 'follow_up')
+      ).length;
+      // Respondeu? Status do funil OU qualquer interação 'respondeu'.
+      const responded = ['respondeu', 'reuniao_marcada', 'parceria_fechada'].indexOf(p.status) !== -1
+        || interactions.some(i => i && i.tipo === 'respondeu');
+      // Atividade mais recente: a última interação OU, sem nenhuma, a
+      // criação do prospect. É a chave de ordenação "o que mexi hoje".
+      const createdTs = p.created_at ? new Date(p.created_at).getTime() : 0;
       return Object.assign({}, p, {
         _lastInteractionTs: last.t,
         _lastInteractionTipo: last.tipo,
+        _sentCount: sentCount,
+        _responded: responded,
+        _lastActivityTs: Math.max(last.t, createdTs),
       });
     });
   }
@@ -10485,6 +10499,32 @@
     return PROSPECT_SECTIONS.find(s => s.statuses.indexOf(status) !== -1);
   }
 
+  // Badges de esforço de contato exibidos na célula de status:
+  //   • contador de mensagens já enviadas (1º contato + follow-ups)
+  //   • alerta vermelho quando 4+ mensagens saíram SEM resposta —
+  //     pra ela bater o olho e saber que já insistiu e ficou no vácuo.
+  function _propOutreachBadges(p) {
+    const sent = p._sentCount || 0;
+    if (sent <= 0) return '';
+    const ghosted = sent >= 4 && !p._responded;
+    const parts = [];
+    parts.push(
+      '<span title="Mensagens enviadas (1º contato + follow-ups)" ' +
+      'style="display:inline-block;margin-top:4px;padding:1px 7px;border-radius:6px;' +
+      'background:#eef2f7;color:#42566e;font-size:.68rem;font-weight:700;">' +
+      '✉️ ' + sent + ' enviada' + (sent !== 1 ? 's' : '') + '</span>'
+    );
+    if (ghosted) {
+      parts.push(
+        '<span title="' + sent + ' mensagens enviadas e ninguém respondeu" ' +
+        'style="display:inline-block;margin-top:4px;margin-left:4px;padding:1px 7px;border-radius:6px;' +
+        'background:#fdecec;color:#a83030;border:1px solid #e7a3a3;font-size:.68rem;font-weight:800;">' +
+        '🔁 ' + sent + '× sem resposta</span>'
+      );
+    }
+    return '<br>' + parts.join('');
+  }
+
   function _propRenderTable() {
     const tbody = document.getElementById('prospects-body');
     const countEl = document.getElementById('prospects-count');
@@ -10497,7 +10537,9 @@
     }
 
     // Agrupa por seção e ordena: Pendentes → Enviadas → Parceiros → Recusados
-    // Dentro de cada seção, ordena por created_at desc (mais recente em cima).
+    // Dentro de cada seção, ordena por ATIVIDADE mais recente (último
+    // contato/follow-up; sem interação, cai pra data de criação). Assim
+    // o que ela prospectou hoje sobe pro topo de cada seção.
     const buckets = new Map();
     PROSPECT_SECTIONS.forEach(s => buckets.set(s.key, []));
     const orphan = [];                                 // status fora da lista (legacy)
@@ -10506,11 +10548,7 @@
       if (sec) buckets.get(sec.key).push(p);
       else     orphan.push(p);
     });
-    buckets.forEach(arr => arr.sort((a, b) => {
-      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return tb - ta;
-    }));
+    buckets.forEach(arr => arr.sort((a, b) => (b._lastActivityTs || 0) - (a._lastActivityTs || 0)));
 
     const fmtTs = (ts) => ts ? new Date(ts).toLocaleDateString('pt-BR') : '<span style="color:#bbb;">—</span>';
 
@@ -10538,10 +10576,15 @@
           : (tipoArr[0] === 'elarah' ? '#1a8a4a' : '#999')));
         statusCell += '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:6px;background:#fff;border:1px solid ' + tipoColor + ';color:' + tipoColor + ';font-size:.68rem;font-weight:700;">' + _propEsc(tipoLabel) + '</span>';
       }
-      // Linha com fundo levemente colorido pra reforçar a seção
+      // Contador de mensagens + alerta de "insisti e ficou no vácuo".
+      statusCell += _propOutreachBadges(p);
+      // Linha com fundo levemente colorido pra reforçar a seção. Quando
+      // são 4+ mensagens sem resposta, ganha um filete vermelho à esquerda.
       const rowBg = sec ? sec.bg : '#fff';
+      const ghosted = (p._sentCount || 0) >= 4 && !p._responded;
+      const nameStyle = 'font-weight:600;' + (ghosted ? 'box-shadow:inset 4px 0 0 #d9534f;' : '');
       return '<tr style="background:' + rowBg + ';">' +
-        '<td style="font-weight:600;">' + _propEsc(p.nome) + '</td>' +
+        '<td style="' + nameStyle + '">' + _propEsc(p.nome) + '</td>' +
         '<td>' + cat + '</td>' +
         '<td style="font-size:.85rem;">' + bairro + '</td>' +
         '<td>' + _propContactIcons(p) + '</td>' +
