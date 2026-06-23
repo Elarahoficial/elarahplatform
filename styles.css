@@ -1466,6 +1466,91 @@ select {
   display: block;
 }
 
+/* Negrito automático (boldify) dentro dos textos do card — nomes
+   próprios / produtos ganham peso e cor pra "saltar" da frase. */
+.originals__card-detail strong,
+.originals__card-incluso strong {
+  font-weight: 700;
+  font-style: normal;
+  color: var(--gray-800);
+}
+
+/* ===== "O QUE ESTÁ INCLUSO" ===== */
+.originals__card-incluso {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  background: rgba(240, 138, 62, 0.06);
+  border: 1px solid rgba(240, 138, 62, 0.18);
+  border-radius: 12px;
+}
+
+.originals__card-incluso-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--orange);
+  margin-bottom: 8px;
+}
+
+.originals__card-incluso-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.originals__card-incluso-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--gray-700);
+}
+
+.originals__card-incluso-list svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--orange);
+}
+
+/* ===== "VER MAIS" (seção By Elarah) ===== */
+.originals__ver-mais {
+  text-align: center;
+  padding: 36px 0 0;
+}
+
+.originals__ver-mais-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 30px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--white);
+  background: linear-gradient(135deg, #f0a05e 0%, #e08a3e 100%);
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(224, 120, 30, 0.4);
+  transition: var(--transition);
+}
+
+.originals__ver-mais-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(224, 120, 30, 0.55);
+}
+
+.originals__ver-mais-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.originals__ver-mais-btn:hover svg {
+  transform: translateX(4px);
+}
+
 .originals__card-btn {
   margin-top: auto;
   display: block;
