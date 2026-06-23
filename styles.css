@@ -1403,12 +1403,28 @@ select {
 }
 
 .originals__card-detail--highlight {
-  color: var(--gray-600);
+  /* Antes era cinza-itálico apagado, sem peso no card. Agora vira um
+     bloco com destaque: fundo laranja suave, barra lateral laranja,
+     texto mais escuro e legível pra "saltar" como a proposta da
+     experiência. */
+  color: var(--gray-800);
   font-style: italic;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.5;
+  background: linear-gradient(135deg, rgba(240, 138, 62, 0.1) 0%, rgba(240, 138, 62, 0.04) 100%);
+  border-left: 3px solid var(--orange);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 14px;
+  margin: 4px 0 6px;
 }
 
 .originals__card-detail--highlight svg {
   color: var(--orange);
+  /* Estrela um pouco maior e com brilho leve pra puxar o olhar */
+  width: 16px;
+  height: 16px;
+  filter: drop-shadow(0 0 3px rgba(240, 138, 62, 0.55));
 }
 
 /* "Data em breve" nos cards de lista de espera (sem data definida).
