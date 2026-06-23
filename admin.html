@@ -153,6 +153,13 @@
         <span>Fornecedores</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="locais">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>Locais p/ eventos</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="prospects">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -1028,6 +1035,86 @@
             <tr><td colspan="14" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ===== LOCAIS PARA EVENTOS PANEL ===== -->
+    <div class="admin__panel" id="panel-locais">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Locais para eventos</h1>
+        <p class="admin__page-subtitle">Sua agenda de cafés, bares e espaços que dá pra fazer evento da Elarah — endereço, contato, se cobra e observações. Quando rolar um evento, é só olhar aqui.</p>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Meus locais</span>
+          <span class="admin__table-count" id="locais-count"></span>
+          <input type="search" id="locais-search" placeholder="🔍 Buscar (nome, bairro, contato…)" autocomplete="off" style="margin-left:16px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:.82rem;font-family:inherit;min-width:220px;flex:0 1 300px;">
+          <button type="button" id="locais-novo-btn" style="margin-left:auto;padding:7px 14px;border:none;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;">+ Novo local</button>
+        </div>
+        <div id="locais-banner" style="display:none;padding:10px 14px;font-size:.8rem;border-bottom:1px solid #eee;"></div>
+        <div id="locais-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:16px;">
+          <div class="admin__table-empty" style="grid-column:1/-1;">Carregando…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: criar/editar local de evento -->
+    <div id="locais-modal" class="admin__modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:22px;font-family:inherit;">
+        <h2 style="margin:0 0 14px;font-size:1.2rem;" id="locais-modal-title">Novo local</h2>
+        <input type="hidden" id="locais-id">
+        <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+          <label style="font-size:.82rem;font-weight:600;">Nome do local *<input type="text" id="locais-nome" required placeholder="Ex.: Café da Esquina" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <label style="font-size:.82rem;font-weight:600;">Tipo<select id="locais-tipo" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;">
+              <option value="">—</option>
+              <option value="Café">Café</option>
+              <option value="Bar">Bar</option>
+              <option value="Restaurante">Restaurante</option>
+              <option value="Espaço de eventos">Espaço de eventos</option>
+              <option value="Ateliê / estúdio">Ateliê / estúdio</option>
+              <option value="Ao ar livre">Ao ar livre</option>
+              <option value="Outro">Outro</option>
+            </select></label>
+            <label style="font-size:.82rem;font-weight:600;">Capacidade<input type="text" id="locais-capacidade" placeholder="Ex.: até 30 pessoas" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <label style="font-size:.82rem;font-weight:600;">Endereço<input type="text" id="locais-endereco" placeholder="Rua, número, complemento" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <label style="font-size:.82rem;font-weight:600;">Bairro<input type="text" id="locais-bairro" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">Cidade<input type="text" id="locais-cidade" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <label style="font-size:.82rem;font-weight:600;">Pessoa de contato<input type="text" id="locais-contato" placeholder="Com quem falar" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">WhatsApp<input type="text" id="locais-whatsapp" placeholder="(11) 99999-9999" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <label style="font-size:.82rem;font-weight:600;">Instagram<input type="text" id="locais-instagram" placeholder="@perfil" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+            <label style="font-size:.82rem;font-weight:600;">E-mail<input type="text" id="locais-email" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;">
+            <label style="font-size:.82rem;font-weight:600;">Cobra?<select id="locais-cobra" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;background:#fff;">
+              <option value="a_confirmar">A confirmar</option>
+              <option value="sim">Sim, cobra</option>
+              <option value="nao">Não cobra</option>
+            </select></label>
+            <label style="font-size:.82rem;font-weight:600;">Valor / condições<input type="text" id="locais-valor" placeholder="Ex.: R$200/h, consumação mínima, troca por divulgação…" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;"></label>
+          </div>
+
+          <label style="font-size:.82rem;font-weight:600;">Observações<textarea id="locais-observacoes" rows="3" placeholder="O que importa lembrar desse lugar" style="margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;resize:vertical;"></textarea></label>
+        </div>
+        <div id="locais-modal-msg" style="margin-top:10px;font-size:.85rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" id="locais-modal-delete" style="padding:8px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;display:none;">Excluir</button>
+          <button type="button" id="locais-modal-cancel" style="padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancelar</button>
+          <button type="button" id="locais-modal-save" style="padding:8px 14px;background:#2c5e3f;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;">Salvar</button>
+        </div>
       </div>
     </div>
 
@@ -4244,7 +4331,7 @@
 <script src="admin-social-analysis.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=188"></script>
+<script src="admin.js?v=189"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

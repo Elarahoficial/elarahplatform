@@ -398,6 +398,7 @@
       case 'purchases':   invalidateBookings(); await renderBookings(); break;
       case 'eventos':     await renderEventos(); break;
       case 'fornecedores': await renderFornecedores(); break;
+      case 'locais':      await renderLocais(); break;
       case 'prospects':   await renderProspects(); break;
       case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': invalidateBookings(); await renderPendingBookings(); break;
@@ -8744,6 +8745,283 @@
   // filtrar uma lista velha depois que o painel é recarregado.
   let _fornRenderRows = null;
   let _fornSearchWired = false;
+
+  // =========================================================
+  // LOCAIS PARA EVENTOS
+  // -------------------------------------------------------
+  // Agenda simples de lugares (cafés, bares, espaços...) que
+  // podem receber um evento da Elarah. Fonte primária: tabela
+  // public.event_venues no Supabase. Se a tabela ainda não foi
+  // criada (migração pendente), cai pra localStorage automágico
+  // pra admin já conseguir usar — e mostra um aviso explicando
+  // como sincronizar na nuvem.
+  // =========================================================
+  const LOCAIS_LS_KEY = 'elarah_event_venues';
+  let locaisBackend = null;   // 'supabase' | 'local' — definido no 1º load
+  let locaisWired = false;    // garante que os listeners do modal só montam 1x
+
+  function locaisReadLocal() {
+    try {
+      const raw = localStorage.getItem(LOCAIS_LS_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
+  }
+  function locaisWriteLocal(arr) {
+    try { localStorage.setItem(LOCAIS_LS_KEY, JSON.stringify(arr || [])); } catch {}
+  }
+
+  // Carrega a lista. Tenta Supabase; se falhar (tabela ausente / sem
+  // client), usa localStorage e marca o backend como 'local'.
+  async function locaisLoad() {
+    const s = window.supabaseClient;
+    if (s) {
+      const { data, error } = await s.from('event_venues')
+        .select('*')
+        .order('nome', { ascending: true });
+      if (!error) {
+        locaisBackend = 'supabase';
+        return data || [];
+      }
+      console.warn('[Admin] event_venues indisponível, usando localStorage:', error.message);
+    }
+    locaisBackend = 'local';
+    return locaisReadLocal().sort((a, b) =>
+      String(a.nome || '').localeCompare(String(b.nome || ''), 'pt'));
+  }
+
+  // Salva (insert ou update). Retorna { ok, error }.
+  async function locaisSave(record) {
+    const s = window.supabaseClient;
+    if (locaisBackend !== 'local' && s) {
+      const payload = Object.assign({}, record);
+      const id = payload.id;
+      delete payload.created_at;
+      delete payload.updated_at;
+      let res;
+      if (id) {
+        delete payload.id;
+        res = await s.from('event_venues').update(payload).eq('id', id);
+      } else {
+        delete payload.id;
+        res = await s.from('event_venues').insert(payload);
+      }
+      if (!res.error) { locaisBackend = 'supabase'; return { ok: true }; }
+      console.warn('[Admin] locaisSave Supabase falhou, caindo pro local:', res.error.message);
+      locaisBackend = 'local';
+    }
+    // Fallback localStorage.
+    const arr = locaisReadLocal();
+    if (record.id) {
+      const i = arr.findIndex(v => v.id === record.id);
+      if (i !== -1) arr[i] = Object.assign({}, arr[i], record);
+      else arr.push(record);
+    } else {
+      record.id = 'loc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      record.created_at = new Date().toISOString();
+      arr.push(record);
+    }
+    record.updated_at = new Date().toISOString();
+    locaisWriteLocal(arr);
+    return { ok: true };
+  }
+
+  async function locaisDelete(id) {
+    const s = window.supabaseClient;
+    if (locaisBackend !== 'local' && s) {
+      const { error } = await s.from('event_venues').delete().eq('id', id);
+      if (!error) return { ok: true };
+      console.warn('[Admin] locaisDelete Supabase falhou:', error.message);
+    }
+    const arr = locaisReadLocal().filter(v => v.id !== id);
+    locaisWriteLocal(arr);
+    return { ok: true };
+  }
+
+  function locaisCobraLabel(v) {
+    if (v === 'sim') return '<span style="color:#b07b00;font-weight:600;">Cobra</span>';
+    if (v === 'nao') return '<span style="color:#2c5e3f;font-weight:600;">Não cobra</span>';
+    return '<span style="color:#999;">Cobrança a confirmar</span>';
+  }
+
+  function locaisModalEl(id) { return document.getElementById('locais-' + id); }
+
+  function openLocaisModal(venue) {
+    const isEdit = !!(venue && venue.id);
+    document.getElementById('locais-modal-title').textContent = isEdit ? 'Editar local' : 'Novo local';
+    locaisModalEl('id').value = isEdit ? venue.id : '';
+    locaisModalEl('nome').value = (venue && venue.nome) || '';
+    locaisModalEl('tipo').value = (venue && venue.tipo) || '';
+    locaisModalEl('capacidade').value = (venue && venue.capacidade) || '';
+    locaisModalEl('endereco').value = (venue && venue.endereco) || '';
+    locaisModalEl('bairro').value = (venue && venue.bairro) || '';
+    locaisModalEl('cidade').value = (venue && venue.cidade) || '';
+    locaisModalEl('contato').value = (venue && venue.contato_nome) || '';
+    locaisModalEl('whatsapp').value = (venue && venue.whatsapp) || '';
+    locaisModalEl('instagram').value = (venue && venue.instagram) || '';
+    locaisModalEl('email').value = (venue && venue.email) || '';
+    locaisModalEl('cobra').value = (venue && venue.cobra) || 'a_confirmar';
+    locaisModalEl('valor').value = (venue && venue.valor) || '';
+    locaisModalEl('observacoes').value = (venue && venue.observacoes) || '';
+    locaisModalEl('modal-msg').textContent = '';
+    locaisModalEl('modal-delete').style.display = isEdit ? '' : 'none';
+    const modal = document.getElementById('locais-modal');
+    modal.style.display = 'flex';
+    setTimeout(() => { try { locaisModalEl('nome').focus(); } catch {} }, 30);
+  }
+  function closeLocaisModal() {
+    const modal = document.getElementById('locais-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function wireLocais() {
+    if (locaisWired) return;
+    locaisWired = true;
+
+    const novoBtn = document.getElementById('locais-novo-btn');
+    if (novoBtn) novoBtn.addEventListener('click', () => openLocaisModal(null));
+
+    const cancelBtn = document.getElementById('locais-modal-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeLocaisModal);
+
+    const modal = document.getElementById('locais-modal');
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeLocaisModal(); });
+
+    const search = document.getElementById('locais-search');
+    if (search) search.addEventListener('input', () => renderLocaisGrid());
+
+    const saveBtn = document.getElementById('locais-modal-save');
+    if (saveBtn) saveBtn.addEventListener('click', async () => {
+      const nome = locaisModalEl('nome').value.trim();
+      const msg = locaisModalEl('modal-msg');
+      if (!nome) { msg.style.color = '#c0392b'; msg.textContent = 'Dê um nome pro local.'; return; }
+      const record = {
+        id: locaisModalEl('id').value || undefined,
+        nome,
+        tipo: locaisModalEl('tipo').value || null,
+        endereco: locaisModalEl('endereco').value.trim() || null,
+        bairro: locaisModalEl('bairro').value.trim() || null,
+        cidade: locaisModalEl('cidade').value.trim() || null,
+        contato_nome: locaisModalEl('contato').value.trim() || null,
+        whatsapp: locaisModalEl('whatsapp').value.trim() || null,
+        instagram: locaisModalEl('instagram').value.trim() || null,
+        email: locaisModalEl('email').value.trim() || null,
+        cobra: locaisModalEl('cobra').value || 'a_confirmar',
+        valor: locaisModalEl('valor').value.trim() || null,
+        capacidade: locaisModalEl('capacidade').value.trim() || null,
+        observacoes: locaisModalEl('observacoes').value.trim() || null,
+      };
+      saveBtn.disabled = true;
+      msg.style.color = '#666';
+      msg.textContent = 'Salvando…';
+      const res = await locaisSave(record);
+      saveBtn.disabled = false;
+      if (!res.ok) { msg.style.color = '#c0392b'; msg.textContent = 'Erro ao salvar: ' + (res.error || ''); return; }
+      closeLocaisModal();
+      await renderLocais();
+    });
+
+    const delBtn = document.getElementById('locais-modal-delete');
+    if (delBtn) delBtn.addEventListener('click', async () => {
+      const id = locaisModalEl('id').value;
+      if (!id) return;
+      if (!confirm('Excluir esse local da sua lista?')) return;
+      delBtn.disabled = true;
+      const res = await locaisDelete(id);
+      delBtn.disabled = false;
+      if (!res.ok) { const m = locaisModalEl('modal-msg'); m.style.color = '#c0392b'; m.textContent = 'Erro ao excluir.'; return; }
+      closeLocaisModal();
+      await renderLocais();
+    });
+  }
+
+  let locaisCache = [];
+
+  function renderLocaisGrid() {
+    const grid = document.getElementById('locais-grid');
+    const countEl = document.getElementById('locais-count');
+    if (!grid) return;
+
+    const searchEl = document.getElementById('locais-search');
+    const term = (searchEl && searchEl.value || '').trim().toLowerCase();
+    const filtered = term
+      ? locaisCache.filter(v => [v.nome, v.tipo, v.endereco, v.bairro, v.cidade, v.contato_nome, v.whatsapp, v.instagram, v.observacoes]
+          .filter(Boolean).join(' ').toLowerCase().indexOf(term) !== -1)
+      : locaisCache;
+
+    if (countEl) {
+      countEl.textContent = term
+        ? filtered.length + ' de ' + locaisCache.length
+        : locaisCache.length + ' ' + (locaisCache.length === 1 ? 'local' : 'locais');
+    }
+
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="admin__table-empty" style="grid-column:1/-1;">' +
+        (term ? 'Nenhum local encontrado pra "' + escapeHtml(searchEl.value.trim()) + '".'
+              : 'Nenhum local ainda. Clique em "+ Novo local" pra cadastrar o primeiro café ou espaço.') +
+        '</div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(v => {
+      const linhas = [];
+      const local = [v.endereco, v.bairro, v.cidade].filter(Boolean).join(' · ');
+      if (local) linhas.push('<div style="font-size:.82rem;color:#555;margin-top:6px;">📍 ' + escapeHtml(local) + '</div>');
+      if (v.capacidade) linhas.push('<div style="font-size:.82rem;color:#555;margin-top:4px;">👥 ' + escapeHtml(v.capacidade) + '</div>');
+      const contato = [v.contato_nome, v.whatsapp].filter(Boolean).join(' · ');
+      if (contato) {
+        const waDigits = (v.whatsapp || '').replace(/\D/g, '');
+        const waLink = waDigits ? ' <a href="https://wa.me/' + (waDigits.length <= 11 ? '55' + waDigits : waDigits) + '" target="_blank" rel="noopener" style="color:#25908a;text-decoration:none;font-weight:600;">abrir</a>' : '';
+        linhas.push('<div style="font-size:.82rem;color:#555;margin-top:4px;">📞 ' + escapeHtml(contato) + waLink + '</div>');
+      }
+      if (v.instagram) {
+        const handle = String(v.instagram).replace(/^@/, '').trim();
+        linhas.push('<div style="font-size:.82rem;color:#555;margin-top:4px;">📷 <a href="https://instagram.com/' + encodeURIComponent(handle) + '" target="_blank" rel="noopener" style="color:#25908a;text-decoration:none;">@' + escapeHtml(handle) + '</a></div>');
+      }
+      const valorTxt = v.valor ? ' — ' + escapeHtml(v.valor) : '';
+      linhas.push('<div style="font-size:.82rem;margin-top:6px;">💰 ' + locaisCobraLabel(v.cobra) + valorTxt + '</div>');
+      if (v.observacoes) linhas.push('<div style="font-size:.8rem;color:#777;margin-top:8px;white-space:pre-wrap;">' + escapeHtml(v.observacoes) + '</div>');
+
+      return '<div style="border:1px solid #eee;border-radius:10px;padding:14px 16px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+          '<div><div style="font-weight:700;font-size:.98rem;">' + escapeHtml(v.nome || '') + '</div>' +
+          (v.tipo ? '<div style="font-size:.74rem;color:#f0a05e;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:2px;">' + escapeHtml(v.tipo) + '</div>' : '') +
+          '</div>' +
+          '<button type="button" class="locais-edit-btn" data-id="' + escapeHtml(String(v.id)) + '" style="flex:0 0 auto;padding:5px 10px;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:.76rem;font-family:inherit;">Editar</button>' +
+        '</div>' +
+        linhas.join('') +
+      '</div>';
+    }).join('');
+
+    grid.querySelectorAll('.locais-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const venue = locaisCache.find(v => String(v.id) === btn.dataset.id);
+        if (venue) openLocaisModal(venue);
+      });
+    });
+  }
+
+  async function renderLocais() {
+    const grid = document.getElementById('locais-grid');
+    if (!grid) return;
+    wireLocais();
+    locaisCache = await locaisLoad();
+
+    // Banner explicando onde está sendo salvo.
+    const banner = document.getElementById('locais-banner');
+    if (banner) {
+      if (locaisBackend === 'local') {
+        banner.style.display = 'block';
+        banner.style.background = '#fff7e6';
+        banner.style.color = '#8a6d00';
+        banner.innerHTML = '⚠️ Salvando só neste navegador por enquanto. Pra guardar na nuvem e ver de qualquer aparelho, rode a migração <code>sql/elarah_event_venues.sql</code> no Supabase.';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    renderLocaisGrid();
+  }
 
   async function renderFornecedores() {
     if (!document.getElementById('fornecedores-body')) return;
