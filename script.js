@@ -841,18 +841,6 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return cut + '…';
     }
 
-    // Auto-destaque: deixa em negrito expressões com Iniciais Maiúsculas
-    // no meio da frase (nomes próprios / produtos, ex: "Aperol Spritz",
-    // "São Paulo"). Opera sobre texto JÁ escapado — só insere <strong>,
-    // não cria HTML perigoso. Exige 2+ palavras Capitalizadas seguidas,
-    // então começos triviais de frase ("Pinte seu...") não viram negrito.
-    function boldify(escaped) {
-      return String(escaped == null ? '' : escaped).replace(
-        /([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+)+)/g,
-        '<strong>$1</strong>'
-      );
-    }
-
     // Mapa de fallback por slug/nome — usado SOMENTE pra cards do
     // legado (byelarah_items) que ainda não têm imagem cadastrada.
     // Cards vindos de `experiences` (it.fromExperience===true) NÃO
@@ -951,13 +939,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         if (it.tipo === 'espera') {
           descHtml = '<p class="originals__card-detail originals__card-detail--highlight">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
-            boldify(esc(descRaw)) + '</p>';
+            esc(descRaw) + '</p>';
         } else {
           // Truncamento inteligente: corta no espaço mais próximo de
           // 120 chars pra não cortar palavra no meio. Se a descrição
           // já cabe inteira, mostra sem "...".
           descHtml = '<p class="originals__card-detail originals__card-detail--teaser">' +
-            boldify(esc(truncateAtWord(descRaw, 120))) + '</p>';
+            esc(truncateAtWord(descRaw, 120)) + '</p>';
         }
       }
 
@@ -980,7 +968,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
           var lis = partes.map(function (p) {
             return '<li>' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>' +
-              '<span>' + boldify(esc(p)) + '</span>' +
+              '<span>' + esc(p) + '</span>' +
             '</li>';
           }).join('');
           inclusoHtml =
