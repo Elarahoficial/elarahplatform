@@ -5558,22 +5558,35 @@
           ? window.ElarahData.isPubliclyVisible(exp)
           : isActive;
       const isHidden = !publicVisible;
-      // Diferenciamos auto-oculta (passou) de oculta manual só no
-      // tooltip e no comportamento do clique do botão "Reativar".
-      // Visualmente o admin pediu pra ficar idêntico (vermelho).
-      const autoHidden = isHidden && isActive;
-      const tooltip = autoHidden
-        ? 'Ocultada automaticamente — horário já passou ou está dentro do bloqueio de 24h. Clique em Reativar pra editar a data.'
+      // "Reativar" só resolve via setExperienceActive(true) se, COM
+      // is_active=true, a experiência passaria no filtro público. Se a
+      // data já passou (ou está dentro do cutoff de 24h), reativar o
+      // is_active é no-op visual: o filtro de data continua escondendo.
+      // Detectamos isso (independente de is_active estar true ou false)
+      // pra o handler abrir o modal de edição — única forma real de
+      // reativar é mudar a data — em vez de mostrar um "sucesso" falso.
+      const wouldBeVisibleIfActive =
+        window.ElarahData && typeof window.ElarahData.isPubliclyVisible === 'function'
+          ? window.ElarahData.isPubliclyVisible(Object.assign({}, exp, { isActive: true }))
+          : true;
+      // needsDateEdit cobre os dois casos problemáticos:
+      //   1) is_active=true mas a data passou (auto-oculta)
+      //   2) is_active=false E a data passou (oculta manual + data velha)
+      // Em ambos, reativar sozinho não adianta — tem que editar a data.
+      const needsDateEdit = isHidden && !wouldBeVisibleIfActive;
+      const tooltip = needsDateEdit
+        ? 'Data no passado ou dentro do bloqueio de 24h — reativar exige mudar a data. Clique em Reativar pra editar.'
         : (isHidden ? 'Ocultada manualmente pelo admin.' : '');
       const statusBadge = isHidden
         ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:600;" title="' + escapeHtml(tooltip) + '">Oculta</span>'
         : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Visível</span>';
       const rowStyle = isHidden ? ' style="opacity:0.55;"' : '';
       // Botão de toggle: oculta -> Reativar, visível -> Ocultar.
-      // data-auto-hidden marca o caso em que isActive=true mas o
-      // evento já passou, pra que o handler abra o modal de edição
-      // (única forma real de "reativar" — mudar a data) em vez de
-      // chamar setExperienceActive(true) que seria no-op.
+      // data-needs-date-edit marca o caso em que reativar o is_active
+      // não tornaria a experiência visível (data passada/cutoff), pra
+      // que o handler abra o modal de edição (única forma real de
+      // "reativar" — mudar a data) em vez de chamar setExperienceActive
+      // que seria no-op visual e mostraria um "sucesso" enganoso.
       const toggleLabel = isHidden ? 'Reativar' : 'Ocultar';
       const toggleClass = isHidden ? 'admin__action-btn--show' : 'admin__action-btn--hide';
       const byElarahBadge = exp.isElarahOriginal === true
@@ -5594,7 +5607,7 @@
         <td>${statusBadge}</td>
         <td>
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
-          <button class="admin__action-btn ${toggleClass}" data-toggle-exp="${escapeHtml(exp.id)}" data-toggle-active="${isActive ? '1' : '0'}" data-auto-hidden="${autoHidden ? '1' : '0'}">${toggleLabel}</button>
+          <button class="admin__action-btn ${toggleClass}" data-toggle-exp="${escapeHtml(exp.id)}" data-toggle-active="${isActive ? '1' : '0'}" data-needs-date-edit="${needsDateEdit ? '1' : '0'}">${toggleLabel}</button>
           <button class="admin__action-btn admin__action-btn--duplicate" data-duplicate-exp="${escapeHtml(exp.id)}">Duplicar</button>
           <button class="admin__action-btn admin__action-btn--delete" data-delete-exp="${escapeHtml(exp.id)}">Excluir</button>
         </td>
@@ -5612,12 +5625,19 @@
       btn.addEventListener('click', async () => {
         const id = btn.dataset.toggleExp;
         const currentlyActive = btn.dataset.toggleActive === '1';
-        const autoHidden = btn.dataset.autoHidden === '1';
-        // Reativar uma experiência auto-oculta (passou do horário ou
-        // está dentro do cutoff de 24h) só faz sentido se o admin
-        // mudar a data — alternar is_active seria no-op porque já
-        // está true. Abre o modal de edição direto.
-        if (autoHidden) {
+        const needsDateEdit = btn.dataset.needsDateEdit === '1';
+        // Reativar uma experiência cuja data já passou (ou está dentro
+        // do cutoff de 24h) só faz sentido se o admin mudar a data —
+        // alternar is_active sozinho seria no-op visual: o filtro de
+        // data do site continua escondendo. Avisa e abre o modal de
+        // edição direto, em vez de fingir um "reativada com sucesso".
+        if (needsDateEdit) {
+          alert(
+            'Essa experiência está com a data no passado (ou dentro do ' +
+            'bloqueio de 24h), então só reativar não a faz aparecer no ' +
+            'site.\n\nVou abrir a edição — atualize a data para uma data ' +
+            'futura e salve para ela voltar a aparecer.'
+          );
           openExpModal(id);
           return;
         }
