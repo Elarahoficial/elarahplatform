@@ -807,9 +807,17 @@ if (categoriaURL) activeCategoria = categoriaURL;
   // Re-renderiza os cards da seção By Elarah a partir do Supabase
   // assim que estiver disponível, mantendo o HTML estático como
   // fallback visual (sem flash).
-  function renderOriginalsGrid(items) {
+  function renderOriginalsGrid(items, opts) {
     var grid = document.querySelector('.originals__grid');
     if (!grid || !Array.isArray(items) || !items.length) return;
+
+    // opts.limit  → mostra só os N primeiros (home). null = todos.
+    // opts.verMaisHref → URL do botão "Ver mais" quando há mais que N.
+    opts = opts || {};
+    var limit = (typeof opts.limit === 'number' && opts.limit > 0) ? opts.limit : null;
+    var verMaisHref = opts.verMaisHref || '';
+    var totalCount = items.length;
+    var renderList = limit ? items.slice(0, limit) : items;
 
     function esc(s) {
       return String(s == null ? '' : s)
@@ -831,6 +839,18 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // Remove pontuação solta no fim antes do "..." pra ficar limpo.
       cut = cut.replace(/[\s,;:.!?\-–—]+$/, '');
       return cut + '…';
+    }
+
+    // Auto-destaque: deixa em negrito expressões com Iniciais Maiúsculas
+    // no meio da frase (nomes próprios / produtos, ex: "Aperol Spritz",
+    // "São Paulo"). Opera sobre texto JÁ escapado — só insere <strong>,
+    // não cria HTML perigoso. Exige 2+ palavras Capitalizadas seguidas,
+    // então começos triviais de frase ("Pinte seu...") não viram negrito.
+    function boldify(escaped) {
+      return String(escaped == null ? '' : escaped).replace(
+        /([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+)+)/g,
+        '<strong>$1</strong>'
+      );
     }
 
     // Mapa de fallback por slug/nome — usado SOMENTE pra cards do
@@ -899,7 +919,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return NEUTRAL_PLACEHOLDER;
     }
 
-    var html = items.map(function(it) {
+    var html = renderList.map(function(it) {
       var horariosHtml = '';
       if (Array.isArray(it.horarios) && it.horarios.length) {
         horariosHtml =
@@ -931,13 +951,43 @@ if (categoriaURL) activeCategoria = categoriaURL;
         if (it.tipo === 'espera') {
           descHtml = '<p class="originals__card-detail originals__card-detail--highlight">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
-            esc(descRaw) + '</p>';
+            boldify(esc(descRaw)) + '</p>';
         } else {
           // Truncamento inteligente: corta no espaço mais próximo de
           // 120 chars pra não cortar palavra no meio. Se a descrição
           // já cabe inteira, mostra sem "...".
           descHtml = '<p class="originals__card-detail originals__card-detail--teaser">' +
-            esc(truncateAtWord(descRaw, 120)) + '</p>';
+            boldify(esc(truncateAtWord(descRaw, 120))) + '</p>';
+        }
+      }
+
+      // "O que está incluso" — campo `inclui` da experiência. Aceita
+      // lista (quebras de linha, ; ou •) ou texto corrido com vírgulas.
+      // Normaliza pra itens e mostra cada um com um check.
+      var inclusoHtml = '';
+      var inclusoRaw = it.incluso ? String(it.incluso).trim() : '';
+      if (inclusoRaw) {
+        var partes = inclusoRaw.split(/\r?\n|[;•·|]/)
+          .map(function (p) { return p.replace(/^[\s\-–—*]+/, '').trim(); })
+          .filter(Boolean);
+        if (partes.length <= 1) {
+          // Sem quebras explícitas: tenta separar por vírgula.
+          partes = inclusoRaw.split(',')
+            .map(function (p) { return p.trim(); })
+            .filter(Boolean);
+        }
+        if (partes.length) {
+          var lis = partes.map(function (p) {
+            return '<li>' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>' +
+              '<span>' + boldify(esc(p)) + '</span>' +
+            '</li>';
+          }).join('');
+          inclusoHtml =
+            '<div class="originals__card-incluso">' +
+              '<span class="originals__card-incluso-label">O que está incluso</span>' +
+              '<ul class="originals__card-incluso-list">' + lis + '</ul>' +
+            '</div>';
         }
       }
 
@@ -1031,7 +1081,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
           '<div class="originals__card-body">' +
             '<h3 class="originals__card-title">' + esc(it.nome) + '</h3>' +
             '<div class="originals__card-details">' +
-              descHtml + dataHtml + horariosHtml + localHtml +
+              descHtml + inclusoHtml + dataHtml + horariosHtml + localHtml +
             '</div>' +
             '<button class="' + btnClass + '"' + dataAttrs + '>' + esc(btnLabel) + '</button>' +
           '</div>' +
@@ -1039,6 +1089,31 @@ if (categoriaURL) activeCategoria = categoriaURL;
     }).join('');
 
     grid.innerHTML = html;
+
+    // "Ver mais": quando a home limita a N cards e existem mais
+    // experiências, mostra um botão que leva pra página com todas.
+    // Em páginas que exibem tudo (sem limit), remove qualquer botão
+    // remanescente pra não duplicar.
+    (function () {
+      var inner = grid.parentNode;
+      if (!inner) return;
+      var existing = inner.querySelector('.originals__ver-mais');
+      if (limit && verMaisHref && totalCount > limit) {
+        if (!existing) {
+          existing = document.createElement('div');
+          existing.className = 'originals__ver-mais';
+          if (grid.nextSibling) inner.insertBefore(existing, grid.nextSibling);
+          else inner.appendChild(existing);
+        }
+        existing.innerHTML =
+          '<a href="' + esc(verMaisHref) + '" class="originals__ver-mais-btn">' +
+            'Ver todas as ' + totalCount + ' experiências By Elarah' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
+          '</a>';
+      } else if (existing) {
+        existing.parentNode.removeChild(existing);
+      }
+    })();
 
     // Share buttons: copia link da experiencia (mesmo formato dos cards
     // das categorias). UX identica: troca o icone por "Link copiado!"
@@ -1337,6 +1412,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
       ctaMode: exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy',
       ordem: 0,
       ativo: exp.isActive !== false,
+      // "O que está incluso" — mesmo campo `inclui` do cadastro da
+      // experiência. Exibido como lista com check no card.
+      incluso: exp.inclui || '',
       // Marcadores que o renderOriginalsGrid usa pra ligar checkout
       // e aplicar o visual premium.
       fromExperience: true,
@@ -1536,7 +1614,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
 
     if (combined.length) {
-      renderOriginalsGrid(combined);
+      // Home: só os 3 primeiros + botão "Ver mais" → byelarah.html.
+      // Página dedicada (body[data-originals="all"]): mostra todas.
+      var showAllOriginals = document.body &&
+        document.body.getAttribute('data-originals') === 'all';
+      renderOriginalsGrid(
+        combined,
+        showAllOriginals ? {} : { limit: 3, verMaisHref: 'byelarah.html' }
+      );
     } else {
       // Nada cadastrado em byelarah_items + nenhuma experience marcada
       // como Original. O HTML estático da home (cards hardcoded) ainda
