@@ -5249,6 +5249,33 @@
 
       const editId = document.getElementById('exp-edit-id').value;
 
+      // Validação amigável do fornecedor: o banco tem um CHECK
+      // (experiences_fornecedor_nome_required) que rejeita qualquer
+      // experiência ATIVA sem fornecedor — antes isso estourava um erro
+      // técnico (code 23514) que só aparecia no console (F12). Agora
+      // avisamos na hora e oferecemos salvar como "A definir" (mesmo
+      // placeholder que o SQL usa) pra o admin ajustar depois.
+      if (expData.isActive && !expData.fornecedorNome) {
+        const usarPlaceholder = confirm(
+          'Esta experiência está ativa mas está SEM fornecedor.\n\n' +
+          'Experiências ativas precisam de um fornecedor para serem ' +
+          'salvas.\n\n' +
+          'Clique em OK para salvar com o fornecedor "A definir" ' +
+          '(você ajusta depois), ou em Cancelar para preencher o campo ' +
+          '"Fornecedor" agora.'
+        );
+        if (!usarPlaceholder) {
+          const fornEl = document.getElementById('exp-fornecedor-nome');
+          if (fornEl && typeof fornEl.focus === 'function') fornEl.focus();
+          if (window._expFornecedorCombobox &&
+              typeof window._expFornecedorCombobox.focus === 'function') {
+            window._expFornecedorCombobox.focus();
+          }
+          return;
+        }
+        expData.fornecedorNome = 'A definir';
+      }
+
       submitBtn.disabled = true;
       let saved = null;
       let caughtErr = null;
