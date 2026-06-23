@@ -1466,15 +1466,6 @@ select {
   display: block;
 }
 
-/* Negrito automático (boldify) dentro dos textos do card — nomes
-   próprios / produtos ganham peso e cor pra "saltar" da frase. */
-.originals__card-detail strong,
-.originals__card-incluso strong {
-  font-weight: 700;
-  font-style: normal;
-  color: var(--gray-800);
-}
-
 /* ===== "O QUE ESTÁ INCLUSO" ===== */
 .originals__card-incluso {
   margin: 12px 0 4px;
