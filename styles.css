@@ -1283,16 +1283,71 @@ select {
   left: 14px;
   /* Gradient laranja premium em TODOS os cards (uniformiza visual
      da seção By Elarah). Antes era preto translúcido nos legados,
-     o que destoava dos cards de experience. */
-  background: linear-gradient(135deg, #f0a05e 0%, #e08a3e 100%);
+     o que destoava dos cards de experience. Agora com mais destaque:
+     gradiente vibrante, brilho que percorre o badge e glow pulsante
+     pra "saltar" sobre a imagem. */
+  background: linear-gradient(135deg, #ffb867 0%, #f0852e 45%, #d96b15 100%);
   color: var(--white);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 5px 12px;
+  letter-spacing: 0.12em;
+  padding: 7px 15px;
   border-radius: var(--radius-full);
-  box-shadow: 0 2px 8px rgba(240, 160, 94, 0.4);
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  text-shadow: 0 1px 2px rgba(140, 70, 10, 0.45);
+  box-shadow:
+    0 4px 14px rgba(224, 120, 30, 0.55),
+    0 0 0 4px rgba(240, 138, 62, 0.18);
+  overflow: hidden;
+  z-index: 3;
+  animation: badgeGlow 2.6s ease-in-out infinite;
+}
+
+/* Brilho que cruza o badge da esquerda pra direita */
+.originals__card-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  animation: badgeShine 3.4s ease-in-out infinite;
+}
+
+@keyframes badgeGlow {
+  0%, 100% {
+    box-shadow:
+      0 4px 14px rgba(224, 120, 30, 0.5),
+      0 0 0 3px rgba(240, 138, 62, 0.14);
+  }
+  50% {
+    box-shadow:
+      0 6px 20px rgba(224, 120, 30, 0.75),
+      0 0 0 6px rgba(240, 138, 62, 0.26);
+  }
+}
+
+@keyframes badgeShine {
+  0% { left: -75%; }
+  55%, 100% { left: 130%; }
+}
+
+/* Respeita usuários que preferem menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  .originals__card-badge {
+    animation: none;
+  }
+  .originals__card-badge::after {
+    display: none;
+  }
 }
 
 .originals__card-date {
