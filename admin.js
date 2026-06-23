@@ -10446,6 +10446,13 @@
   // header com colspan=7.
   const PROSPECT_SECTIONS = [
     {
+      key: 'hoje',
+      label: '📌 Contatados hoje',
+      sub: 'Você enviou mensagem hoje — acompanhe de perto',
+      bg: '#fffbea', headerBg: '#fff3bf', fg: '#7a5b00',
+      statuses: [],            // bucket por DATA (contato hoje), não por status
+    },
+    {
       key: 'reunioes',
       label: '📅 Reuniões marcadas',
       sub: 'Encontros agendados — prepare antes',
@@ -10484,6 +10491,21 @@
   function _propSectionForStatus(status) {
     return PROSPECT_SECTIONS.find(s => s.statuses.indexOf(status) !== -1);
   }
+  // True se ts cai no dia de hoje (horário local).
+  function _propIsTodayTs(ts) {
+    if (!ts) return false;
+    const d = new Date(ts), n = new Date();
+    return d.getFullYear() === n.getFullYear()
+        && d.getMonth() === n.getMonth()
+        && d.getDate() === n.getDate();
+  }
+  // "Contatado hoje": última interação foi hoje E foi um contato ativo
+  // de saída (mensagem ou follow-up). Esses sobem pro topo da lista.
+  function _propContactedToday(p) {
+    return _propIsTodayTs(p._lastInteractionTs)
+        && (p._lastInteractionTipo === 'mensagem_enviada'
+         || p._lastInteractionTipo === 'follow_up');
+  }
 
   function _propRenderTable() {
     const tbody = document.getElementById('prospects-body');
@@ -10502,13 +10524,22 @@
     PROSPECT_SECTIONS.forEach(s => buckets.set(s.key, []));
     const orphan = [];                                 // status fora da lista (legacy)
     filtered.forEach(p => {
+      // Contatados hoje sobem pro bucket "hoje" (independente do status),
+      // pra ficarem em cima e fáceis de acompanhar no mesmo dia.
+      if (_propContactedToday(p)) { buckets.get('hoje').push(p); return; }
       const sec = _propSectionForStatus(p.status);
       if (sec) buckets.get(sec.key).push(p);
       else     orphan.push(p);
     });
-    buckets.forEach(arr => arr.sort((a, b) => {
-      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    buckets.forEach((arr, key) => arr.sort((a, b) => {
+      // "hoje": mais recém-contatado em cima (por última interação).
+      // Demais seções: mais recém-cadastrado em cima (por created_at).
+      const ta = key === 'hoje'
+        ? (a._lastInteractionTs || 0)
+        : (a.created_at ? new Date(a.created_at).getTime() : 0);
+      const tb = key === 'hoje'
+        ? (b._lastInteractionTs || 0)
+        : (b.created_at ? new Date(b.created_at).getTime() : 0);
       return tb - ta;
     }));
 
