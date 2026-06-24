@@ -2140,6 +2140,7 @@
   function wireBookingsControls() {
     const refreshBtn = document.getElementById('btn-refresh-bookings');
     const filterExp = document.getElementById('bookings-filter-exp');
+    const filterCliente = document.getElementById('bookings-filter-cliente');
     const filterStatus = document.getElementById('bookings-filter-status');
     if (refreshBtn) refreshBtn.addEventListener('click', () => {
       invalidateBookings();
@@ -2156,6 +2157,15 @@
       filterExp.addEventListener('input', () => {
         clearTimeout(_expFilterTimer);
         _expFilterTimer = setTimeout(() => renderBookings(), 80);
+      });
+    }
+    if (filterCliente) {
+      // Mesma lógica do filtro de experiência: filtra conforme digita,
+      // com debounce leve. Busca por nome, e-mail ou WhatsApp do cliente.
+      let _cliFilterTimer = null;
+      filterCliente.addEventListener('input', () => {
+        clearTimeout(_cliFilterTimer);
+        _cliFilterTimer = setTimeout(() => renderBookings(), 80);
       });
     }
     if (filterStatus) filterStatus.addEventListener('change', () => renderBookings());
@@ -2401,6 +2411,11 @@
     // do datalist, vira match completo (substring de si mesmo).
     const filterExpRaw = filterExpEl ? String(filterExpEl.value || '').trim() : '';
     const filterExp = filterExpRaw.toLowerCase();
+    // Filtro de cliente: substring case-insensitive contra nome, e-mail
+    // e WhatsApp (incluindo fallbacks de profile quando o booking não
+    // gravou o dado). Permite achar todas as compras de uma pessoa.
+    const filterClienteEl = document.getElementById('bookings-filter-cliente');
+    const filterCliente = filterClienteEl ? String(filterClienteEl.value || '').trim().toLowerCase() : '';
     const filterStatusEl = document.getElementById('bookings-filter-status');
     const filterStatus = filterStatusEl ? filterStatusEl.value : '';
     const filterForn = filterFornEl ? filterFornEl.value : '';
@@ -2411,6 +2426,14 @@
     const filtered = bookings.filter(b => {
       if (b.status !== 'pago') return false;
       if (filterExp && !String(b.experiencia_nome || '').toLowerCase().includes(filterExp)) return false;
+      if (filterCliente) {
+        const emailKey = String(b.email || '').toLowerCase();
+        const nomeFb = nomePorUserId.get(b.user_id) || nomePorEmail.get(emailKey) || '';
+        const telFb = telefonePorUserId.get(b.user_id) || telefonePorEmail.get(emailKey) || '';
+        const hay = [b.nome, b.email, b.telefone, nomeFb, telFb]
+          .map(x => String(x || '').toLowerCase()).join(' ');
+        if (!hay.includes(filterCliente)) return false;
+      }
       if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
       if (filterSf) {
         // Caso especial "repasse_urgente": pendente E (evento já
@@ -13103,7 +13126,17 @@
       .order('created_at', { ascending: false })
       .limit(500);
     if (error) throw error;
-    const rows = data || [];
+    let rows = data || [];
+    // Filtro de cliente: gift cards casam por comprador (nome/e-mail) ou
+    // destinatário. Mantém a aba focada na pessoa buscada.
+    const filterClienteRaw = (document.getElementById('bookings-filter-cliente')?.value || '').trim().toLowerCase();
+    if (filterClienteRaw) {
+      rows = rows.filter(g => {
+        const hay = [g.comprador_nome, g.comprador_email, g.destinatario_nome]
+          .map(x => String(x || '').toLowerCase()).join(' ');
+        return hay.includes(filterClienteRaw);
+      });
+    }
     if (!rows.length) return;
     const placeholder = tbody.querySelector('tr td.admin__table-empty');
     if (placeholder && placeholder.parentElement) placeholder.parentElement.remove();
@@ -13191,6 +13224,15 @@
         const resolved = ((r.supplier_name && r.supplier_name.trim()) ||
           (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '').toLowerCase().trim();
         return resolved === want;
+      });
+    }
+    // Filtro de cliente (mesmo input da aba Compras): nome / e-mail / telefone.
+    const filterClienteRaw = (document.getElementById('bookings-filter-cliente')?.value || '').trim().toLowerCase();
+    if (filterClienteRaw) {
+      rows = rows.filter(r => {
+        const hay = [r.customer_name, r.customer_email, r.customer_phone]
+          .map(x => String(x || '').toLowerCase()).join(' ');
+        return hay.includes(filterClienteRaw);
       });
     }
     if (!rows.length) return;
