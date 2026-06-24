@@ -96,6 +96,12 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://elarah.com.br/aula-de-pintura-em-sp.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 
   <!-- ===== Foundation pages (SEO long-tail) ===== -->
   <url>
