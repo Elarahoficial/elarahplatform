@@ -97,6 +97,55 @@ Critérios de qualidade antes de abordar:
 
 > Oi [Nome]! Que tal uma **troca de guest post** entre Elarah e Quanta? Eu escrevo um conteúdo pro site de vocês com link pra Elarah, e publico um sobre vocês com link de volta. Ganha SEO pros dois lados e a gente fortalece a parceria. Topa?
 
+### 4.4 E-mails prontos por alvo (personalizados)
+
+> Antes de enviar: troque `[Nome]` pelo nome de quem edita o site (acha no "sobre"/rodapé ou no Instagram) e `[Seu nome]` pelo seu. Mantenha curto — não cole o e-mail inteiro num bloco só, deixe respirar.
+
+**1 · Quanta Academia de Artes**
+> **Assunto:** Parceria de conteúdo entre Quanta e Elarah?
+>
+> Oi [Nome], tudo bem? Acompanho a Quanta e admiro o trabalho de vocês com arte em São Paulo há tantos anos — as oficinas e palestras são uma referência. Sou da **Elarah**, uma plataforma de curadoria de experiências presenciais criativas em SP (pintura, cerâmica, e por aí vai). Nosso público é exatamente quem ama colocar a mão na arte, igual ao de vocês.
+>
+> Queria propor uma **troca de conteúdo**: eu escrevo um guest post original pro site de vocês (ex.: *"Aula de pintura em SP: por onde começar"*) com uma menção à Elarah, e divulgo a Quanta pra nossa comunidade (Instagram + WhatsApp). Posso ainda oferecer um cupom exclusivo pra base de vocês.
+>
+> Faz sentido? Mando 2-3 ideias de pauta pra você escolher. Abraço, [Seu nome] · Elarah · elarah.com.br
+
+**2 · La Central**
+> **Assunto:** Guest post sobre experiências gastronômicas em SP pra La Central
+>
+> Oi [Nome]! Curto demais como a La Central cobre experiências gastronômicas que fogem do óbvio em São Paulo. Sou da **Elarah** (curadoria de experiências presenciais em SP).
+>
+> Queria oferecer um **guest post sem custo**, original e útil pra audiência de vocês — algo como *"Aula de coquetelaria em SP: como montar seus próprios drinks"* — com uma menção natural à Elarah. Entrego pronto, é só revisar. Em troca, divulgo a La Central pra nossa comunidade.
+>
+> Topam? Mando as ideias de pauta. Abraço, [Seu nome] · Elarah · elarah.com.br
+
+**3 · Lápis de Noiva**
+> **Assunto:** Pauta de despedida de solteira (pronta) pra Lápis de Noiva
+>
+> Oi [Nome], tudo bem? Acompanho o Lápis de Noiva e vi os guias de despedida de solteira de vocês — ótimos. Sou da **Elarah**, plataforma de experiências presenciais em SP, e a gente organiza muita despedida criativa (pintura com spritz, coquetelaria, cerâmica).
+>
+> Queria propor um **guest post original**: *"Despedida de solteira fora do clichê em SP: 10 ideias"* — conteúdo útil pras noivas que leem vocês, com uma menção à Elarah. Entrego pronto. Em troca, divulgo o Lápis de Noiva pra nossa comunidade.
+>
+> Faz sentido? Abraço, [Seu nome] · Elarah · elarah.com.br
+
+**4 · Meus Discos, Meus Drinks** (tom mais informal)
+> **Assunto:** parceria Elarah x Meus Discos, Meus Drinks?
+>
+> Oi [Nome]! Sou fã dos seus guias de bar de SP — tem uns lugares aí que viraram favoritos meus. Sou da **Elarah**, a gente faz experiências presenciais em São Paulo, incluindo aulas de coquetelaria autoral.
+>
+> Pensei numa colaboração: posso escrever algo pro seu espaço (ou a gente faz um conteúdo juntos) sobre montar drinks autorais, com um link pra Elarah — e divulgo você pra nossa comunidade. Se rolar, ainda dá pra fazer um cupom exclusivo pros seus leitores.
+>
+> Topa trocar uma ideia? Abraço, [Seu nome] · Elarah · elarah.com.br
+
+**5 · Zine Cultural**
+> **Assunto:** Guest post "o que fazer em SP" pro Zine Cultural
+>
+> Oi [Nome], tudo bem? Curto o conteúdo do Zine Cultural sobre o que fazer em São Paulo. Sou da **Elarah**, curadoria de experiências presenciais em SP.
+>
+> Queria oferecer um **guest post original e sem custo** — tipo *"10 programas diferentes pra fazer em SP no fim de semana"* — com uma menção natural à Elarah. Entrego pronto, é só publicar. Em troca, divulgo o Zine Cultural pra nossa comunidade.
+>
+> Faz sentido? Mando as ideias de pauta. Abraço, [Seu nome] · Elarah · elarah.com.br
+
 ---
 
 ## 5. Tracker de outreach
