@@ -23,6 +23,26 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- ===== Foundation pages (SEO long-tail) ===== -->
+  <url>
+    <loc>https://elarah.com.br/o-que-fazer-em-sp-final-de-semana.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://elarah.com.br/atividades-com-amigas-em-sp.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://elarah.com.br/date-diferente-em-sp.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- ===== Páginas temáticas (alvos de SEO) ===== -->
   <url>
     <loc>https://elarah.com.br/aniversarios.html</loc>
