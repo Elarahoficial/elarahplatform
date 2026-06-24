@@ -31,6 +31,10 @@ Cada post tem:
 
 ## 2. Os 12 posts (visão de calendário)
 
+> **Status (jun/2026):** ✅ já publicados — #1 Aniversário diferente, #2 Despedida de solteira, #6 Aula de cerâmica, #7 Aula de coquetelaria (os 4 evergreen de maior intenção). Hub do blog em `/blog.html`.
+> **Nota sobre #8 (date criativo):** ficou em espera para **não canibalizar** o pilar `/date-diferente-em-sp` (mesma intenção/keyword). Se entrar, será com ângulo bem distinto (mini-roteiros por tipo de casal/bairro) e canonical próprio.
+
+
 | # | Mês | Post (título de trabalho) | Keyword-alvo | Intenção | Pilar | CTA interno |
 |---|---|---|---|---|---|---|
 | 1 | Jul/sem 1 | Aniversário diferente em SP: 12 ideias fora do bar e da balada | aniversário diferente sp | Comercial | Amigas | `/aniversarios.html` |

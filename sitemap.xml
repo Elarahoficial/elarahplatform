@@ -23,6 +23,38 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- ===== Blog ===== -->
+  <url>
+    <loc>https://elarah.com.br/blog.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://elarah.com.br/aniversario-diferente-em-sp.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://elarah.com.br/despedida-de-solteira-em-sp.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://elarah.com.br/aula-de-ceramica-em-sp.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://elarah.com.br/aula-de-coquetelaria-em-sp.html</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
   <!-- ===== Foundation pages (SEO long-tail) ===== -->
   <url>
     <loc>https://elarah.com.br/o-que-fazer-em-sp-final-de-semana.html</loc>
