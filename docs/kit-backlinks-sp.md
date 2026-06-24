@@ -21,13 +21,13 @@ O Google usa links de outros sites como "votos de confiança". 5 links de sites 
 
 ### Alvos prioritários (começar por estes)
 
-| # | Site | URL | Por que faz sentido | O que oferecer | Âncora → destino |
+| # | Site | URL | Contato (pesquisado jun/2026) | Por que faz sentido | Âncora → destino |
 |---|---|---|---|---|---|
-| 1 | **Quanta Academia de Artes** | quantaacademia.com | Parceiro/relação existente; escola de arte em SP há 10+ anos — público criativo idêntico ao da Elarah. | Troca de guest post + menção mútua + cupom pra base deles | "experiências de arte presenciais em SP" → `/categoria.html?cat=Pintura` |
-| 2 | **La Central** | lacentral.com.br | Hub de conteúdo sobre **experiências gastronômicas** em SP — encaixe quase perfeito com coquetelaria/gastronomia. | Guest post "aulas de coquetelaria em SP" | "aula de coquetelaria em SP" → `/aula-de-coquetelaria-em-sp.html` |
-| 3 | **Lápis de Noiva** | lapisdenoiva.com | Um dos maiores blogs de noivas do Brasil; já publica conteúdo de parceiros — público de despedida de solteira. | Guest post "despedida de solteira fora do clichê em SP" | "despedida de solteira em SP" → `/despedida-de-solteira-em-sp.html` |
-| 4 | **Meus Discos, Meus Drinks** | meusdiscosmeusdrinks.substack.com | Newsletter indie de drinks/bares SP — autor acessível, alta chance de colaborar. | Colab / menção: experiência de coquetelaria autoral | "coquetelaria em SP" → `/categoria.html?cat=Bartenderia` |
-| 5 | **Zine Cultural** | zinecultural.com | Blog de "o que fazer em SP / lazer" — Elarah encaixa como pauta natural. | Guest post "programas diferentes pra fazer em SP" | "o que fazer em SP no fim de semana" → `/o-que-fazer-em-sp-final-de-semana.html` |
+| 1 | **Quanta Academia de Artes** | quantaacademia.com | quanta@quantaacademia.com (+ form) | Parceiro/relação existente; escola de arte em SP há 10+ anos — público criativo idêntico ao da Elarah. | "experiências de arte presenciais em SP" → `/categoria.html?cat=Pintura` |
+| 2 | **La Central** | lacentral.com.br | bloglacentral@gmail.com | Hub de **experiências gastronômicas** em SP (78k pageviews/mês, 62% mulheres) — encaixe perfeito com coquetelaria/gastronomia. | "aula de coquetelaria em SP" → `/aula-de-coquetelaria-em-sp.html` |
+| 3 | **Lápis de Noiva** | lapisdenoiva.com | noivas@lapisdenoiva.com (fundadoras: Lorena e Júnia) | Um dos maiores blogs de noivas do Brasil — público de despedida de solteira. | "despedida de solteira em SP" → `/despedida-de-solteira-em-sp.html` |
+| 4 | **Meus Discos, Meus Drinks** | meusdiscosmeusdrinks.substack.com | Autor: **Bruno Capelas** — responder à newsletter no Substack ou DM no X/Instagram (sem e-mail público) | Newsletter indie de drinks/bares SP — autor acessível, alta chance de colaborar. | "coquetelaria em SP" → `/categoria.html?cat=Bartenderia` |
+| 5 | **Programa Para Dois** | programaparadois.com.br | Confirmar no site/Instagram @programaparadois (sem e-mail público encontrado) | Conteúdo de experiências reais em SP pra casais/lifestyle — encaixe direto com a Elarah. | "date diferente em SP" → `/date-diferente-em-sp.html` |
 
 ### Reservas (se algum dos 5 não topar)
 
@@ -122,7 +122,7 @@ Critérios de qualidade antes de abordar:
 **3 · Lápis de Noiva**
 > **Assunto:** Pauta de despedida de solteira (pronta) pra Lápis de Noiva
 >
-> Oi [Nome], tudo bem? Acompanho o Lápis de Noiva e vi os guias de despedida de solteira de vocês — ótimos. Sou da **Elarah**, plataforma de experiências presenciais em SP, e a gente organiza muita despedida criativa (pintura com spritz, coquetelaria, cerâmica).
+> Oi Lorena e Júnia, tudo bem? Acompanho o Lápis de Noiva e vi os guias de despedida de solteira de vocês — ótimos. Sou da **Elarah**, plataforma de experiências presenciais em SP, e a gente organiza muita despedida criativa (pintura com spritz, coquetelaria, cerâmica).
 >
 > Queria propor um **guest post original**: *"Despedida de solteira fora do clichê em SP: 10 ideias"* — conteúdo útil pras noivas que leem vocês, com uma menção à Elarah. Entrego pronto. Em troca, divulgo o Lápis de Noiva pra nossa comunidade.
 >
@@ -131,18 +131,18 @@ Critérios de qualidade antes de abordar:
 **4 · Meus Discos, Meus Drinks** (tom mais informal)
 > **Assunto:** parceria Elarah x Meus Discos, Meus Drinks?
 >
-> Oi [Nome]! Sou fã dos seus guias de bar de SP — tem uns lugares aí que viraram favoritos meus. Sou da **Elarah**, a gente faz experiências presenciais em São Paulo, incluindo aulas de coquetelaria autoral.
+> Oi Bruno! Sou fã dos seus guias de bar de SP — tem uns lugares aí que viraram favoritos meus. Sou da **Elarah**, a gente faz experiências presenciais em São Paulo, incluindo aulas de coquetelaria autoral.
 >
 > Pensei numa colaboração: posso escrever algo pro seu espaço (ou a gente faz um conteúdo juntos) sobre montar drinks autorais, com um link pra Elarah — e divulgo você pra nossa comunidade. Se rolar, ainda dá pra fazer um cupom exclusivo pros seus leitores.
 >
 > Topa trocar uma ideia? Abraço, [Seu nome] · Elarah · elarah.com.br
 
-**5 · Zine Cultural**
-> **Assunto:** Guest post "o que fazer em SP" pro Zine Cultural
+**5 · Programa Para Dois**
+> **Assunto:** Guest post sobre date/experiências em SP pro Programa Para Dois
 >
-> Oi [Nome], tudo bem? Curto o conteúdo do Zine Cultural sobre o que fazer em São Paulo. Sou da **Elarah**, curadoria de experiências presenciais em SP.
+> Oi [Nome], tudo bem? Acompanho o Programa Para Dois e curto demais o conteúdo de experiências reais em São Paulo pra casais. Sou da **Elarah**, curadoria de experiências presenciais em SP.
 >
-> Queria oferecer um **guest post original e sem custo** — tipo *"10 programas diferentes pra fazer em SP no fim de semana"* — com uma menção natural à Elarah. Entrego pronto, é só publicar. Em troca, divulgo o Zine Cultural pra nossa comunidade.
+> Queria oferecer um **guest post original e sem custo** — tipo *"Date diferente em SP: 10 ideias fora do jantar e cinema"* — com uma menção natural à Elarah. Entrego pronto, é só publicar. Em troca, divulgo o Programa Para Dois pra nossa comunidade.
 >
 > Faz sentido? Mando as ideias de pauta. Abraço, [Seu nome] · Elarah · elarah.com.br
 
@@ -152,11 +152,11 @@ Critérios de qualidade antes de abordar:
 
 | Site | Contato | Canal | Data envio | Follow-up | Status | Link publicado (URL) | Âncora |
 |---|---|---|---|---|---|---|---|
-| Quanta Academia de Artes | | | | | A contatar | | |
-| La Central | | | | | A contatar | | |
-| Lápis de Noiva | | | | | A contatar | | |
-| Meus Discos, Meus Drinks | | | | | A contatar | | |
-| Zine Cultural | | | | | A contatar | | |
+| Quanta Academia de Artes | quanta@quantaacademia.com | E-mail/form | | | A contatar | | |
+| La Central | bloglacentral@gmail.com | E-mail | | | A contatar | | |
+| Lápis de Noiva | noivas@lapisdenoiva.com | E-mail | | | A contatar | | |
+| Meus Discos, Meus Drinks | Bruno Capelas (Substack/X) | Substack/DM | | | A contatar | | |
+| Programa Para Dois | site/IG @programaparadois | DM/site | | | A contatar | | |
 
 **Status possíveis:** A contatar · Enviado · Em conversa · Publicado · Recusado · Sem resposta
 
