@@ -17,17 +17,28 @@ O Google usa links de outros sites como "votos de confiança". 5 links de sites 
 
 ## 1. Lista-alvo (5 + reservas)
 
-> Status e contatos a confirmar — esta é a lista de partida. Validar cada um antes do envio (ver §3).
+> ✅ **Lista pesquisada (jun/2026).** Sites reais, com URL e ângulo de abordagem. Antes de enviar, validar: (a) se aceitam guest post/parceria, (b) achar o contato do editor (ver §3). Priorizados por **relevância + chance de resposta** (blogs indie/nicho respondem mais que portais grandes).
 
-| # | Site / Parceiro | Tipo | Por que faz sentido | Tipo de link | Âncora sugerida |
+### Alvos prioritários (começar por estes)
+
+| # | Site | URL | Por que faz sentido | O que oferecer | Âncora → destino |
 |---|---|---|---|---|---|
-| 1 | **Quanta** | Parceiro | Já é relação existente — troca de guest post natural. | Guest post + menção mútua | "experiências presenciais em SP" → `/o-que-fazer-em-sp-final-de-semana` |
-| 2 | **Blog de viagem / turismo SP** (ex.: *São Paulo São*, *Guia da Semana*, *Catraca Livre — lazer*) | Editorial de lazer | Listas de "o que fazer em SP" são o conteúdo deles — Elarah encaixa como pauta. | Citação em pauta / guest post | "atividades fora do óbvio em SP" → home ou `/atividades-com-amigas-em-sp` |
-| 3 | **Blog lifestyle feminino local** (ex.: blogueiras de SP, casamento/noivas) | Lifestyle | Público de despedida de solteira e date — alta conversão. | Guest post + parceria | "despedida de solteira diferente em SP" → `/despedidas.html` |
-| 4 | **Blog/site de gastronomia & drinks SP** | Nicho | Casa com coquetelaria e gastronomia hands-on. | Guest post / colaboração | "aula de coquetelaria em SP" → `/categoria.html?cat=Bartenderia` |
-| 5 | **Blog materno / família SP** | Nicho | Público da Elarah Kids — programas com crianças. | Guest post | "programa com as crianças em SP" → `/elarah-kids.html` |
-| R1 | Guia de eventos/agenda cultural SP | Reserva | Boa para presença em agendas. | Listagem | "experiências Elarah" → home |
-| R2 | Parceiros fornecedores (ateliês/chefs) | Reserva | Parceiros que já trabalham com a Elarah podem linkar de volta. | Página "parceiros" | "Elarah" → home |
+| 1 | **Quanta Academia de Artes** | quantaacademia.com | Parceiro/relação existente; escola de arte em SP há 10+ anos — público criativo idêntico ao da Elarah. | Troca de guest post + menção mútua + cupom pra base deles | "experiências de arte presenciais em SP" → `/categoria.html?cat=Pintura` |
+| 2 | **La Central** | lacentral.com.br | Hub de conteúdo sobre **experiências gastronômicas** em SP — encaixe quase perfeito com coquetelaria/gastronomia. | Guest post "aulas de coquetelaria em SP" | "aula de coquetelaria em SP" → `/aula-de-coquetelaria-em-sp.html` |
+| 3 | **Lápis de Noiva** | lapisdenoiva.com | Um dos maiores blogs de noivas do Brasil; já publica conteúdo de parceiros — público de despedida de solteira. | Guest post "despedida de solteira fora do clichê em SP" | "despedida de solteira em SP" → `/despedida-de-solteira-em-sp.html` |
+| 4 | **Meus Discos, Meus Drinks** | meusdiscosmeusdrinks.substack.com | Newsletter indie de drinks/bares SP — autor acessível, alta chance de colaborar. | Colab / menção: experiência de coquetelaria autoral | "coquetelaria em SP" → `/categoria.html?cat=Bartenderia` |
+| 5 | **Zine Cultural** | zinecultural.com | Blog de "o que fazer em SP / lazer" — Elarah encaixa como pauta natural. | Guest post "programas diferentes pra fazer em SP" | "o que fazer em SP no fim de semana" → `/o-que-fazer-em-sp-final-de-semana.html` |
+
+### Reservas (se algum dos 5 não topar)
+
+| Site | URL | Ângulo |
+|---|---|---|
+| **Feed Me Channel** | feedmechannel.com | Guia gastronômico SP — guest post de gastronomia hands-on |
+| **Quanto Custa Viajar** | quantocustaviajar.com | Blog de viagem com seção SP — pauta "experiências em SP" |
+| **Visite São Paulo** | visitesaopaulo.com | Guia de turismo/lazer — citação/listagem da Elarah |
+| **Guia da Semana** / **Catraca Livre** | guiadasemana.com.br · catracalivre.com.br | Portais de agenda — mais difíceis de linkar, mas bons pra menção/PR |
+
+> **Tier "PR / menção" (não esperar troca de link, mas vale o contato):** ELLE Brasil (lifestyle), Melhores Destinos, Vai de Promo. São grandes; aqui o jogo é virar pauta, não trocar guest post.
 
 ---
 
@@ -92,11 +103,11 @@ Critérios de qualidade antes de abordar:
 
 | Site | Contato | Canal | Data envio | Follow-up | Status | Link publicado (URL) | Âncora |
 |---|---|---|---|---|---|---|---|
-| Quanta | | | | | A contatar | | |
-| | | | | | | | |
-| | | | | | | | |
-| | | | | | | | |
-| | | | | | | | |
+| Quanta Academia de Artes | | | | | A contatar | | |
+| La Central | | | | | A contatar | | |
+| Lápis de Noiva | | | | | A contatar | | |
+| Meus Discos, Meus Drinks | | | | | A contatar | | |
+| Zine Cultural | | | | | A contatar | | |
 
 **Status possíveis:** A contatar · Enviado · Em conversa · Publicado · Recusado · Sem resposta
 

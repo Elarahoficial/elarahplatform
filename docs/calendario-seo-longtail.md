@@ -31,8 +31,8 @@ Cada post tem:
 
 ## 2. Os 12 posts (visão de calendário)
 
-> **Status (jun/2026):** ✅ já publicados — #1 Aniversário diferente, #2 Despedida de solteira, #6 Aula de cerâmica, #7 Aula de coquetelaria (os 4 evergreen de maior intenção). Hub do blog em `/blog.html`.
-> **Nota sobre #8 (date criativo):** ficou em espera para **não canibalizar** o pilar `/date-diferente-em-sp` (mesma intenção/keyword). Se entrar, será com ângulo bem distinto (mini-roteiros por tipo de casal/bairro) e canonical próprio.
+> **Status (jun/2026):** ✅ **11 dos 12 posts publicados** — #1 Aniversário, #2 Despedida, #3 Programa sozinha, #4 Com chuva, #5 Dia dos Pais, #6 Aula de cerâmica, #7 Aula de coquetelaria, #9 Confraternização de empresa, #10 Presente de experiência, #11 À noite, #12 Com a mãe. Todos no padrão Elarah, usando `blog.css`, listados no hub `/blog.html` e no `sitemap.xml`.
+> **Nota sobre #8 (date criativo):** mantido **incorporado** ao pilar `/date-diferente-em-sp` para **não canibalizar** (mesma intenção/keyword). Se algum dia entrar como post próprio, será com ângulo bem distinto (mini-roteiros por tipo de casal/bairro) e canonical próprio.
 
 
 | # | Mês | Post (título de trabalho) | Keyword-alvo | Intenção | Pilar | CTA interno |
