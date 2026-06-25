@@ -4594,7 +4594,15 @@
         // corrompem surrogate pairs no wa.me. Aceita o mesmo formato.
         var waUrl = 'https://api.whatsapp.com/send/?phone=55' + waDigits + '&text=' + encodeURIComponent(msg);
         var btnLabel = fuStatus === 'nenhum' ? '1º Follow-up' : '2º Follow-up';
-        waBtn = '<button class="admin__fu-btn" data-booking-id="' + escapeHtml(b.id) + '" data-fu-next="' + (fuStatus === 'nenhum' ? 'primeiro_enviado' : 'segundo_enviado') + '" data-wa-url="' + escapeHtml(waUrl) + '" style="padding:4px 10px;border:1px solid #1a8a4a;background:#fff;color:#1a8a4a;border-radius:8px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">' + btnLabel + '</button>';
+        waBtn = '<button class="admin__fu-btn" data-booking-id="' + escapeHtml(b.id) + '" data-fu-next="' + (fuStatus === 'nenhum' ? 'primeiro_enviado' : 'segundo_enviado') + '" data-wa-url="' + escapeHtml(waUrl) + '" style="padding:4px 10px;border:1px solid #1a8a4a;background:#fff;color:#1a8a4a;border-radius:8px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">📱 ' + btnLabel + '</button>';
+      }
+
+      // Botão de follow-up por E-MAIL — par do WhatsApp. Disponível
+      // sempre que a reserva está pendente e tem e-mail (mesmo após o 2º,
+      // pra poder reenviar). Compartilha o followup_status com o WhatsApp.
+      var emailBtn = '';
+      if (!b._convertedTo && b.status === 'pending' && b.email) {
+        emailBtn = '<button class="admin__fu-email-btn" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 10px;border:1px solid #f0a05e;background:#fff;color:#a4663b;border-radius:8px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">✉️ E-mail</button>';
       }
 
       return '<tr>' +
@@ -4609,7 +4617,7 @@
         '<td>' + escapeHtml(formatCents(b.amount_total, b.currency)) + '</td>' +
         '<td>' + bookingStatusBadge(b.status) + '</td>' +
         '<td>' + fuBadge + '</td>' +
-        '<td>' + waBtn + '</td>' +
+        '<td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' + waBtn + emailBtn + '</div></td>' +
         '</tr>';
     }
 
@@ -4661,6 +4669,53 @@
           console.error('[Admin] follow-up update error', e);
           btn.disabled = false;
           btn.textContent = 'Erro';
+        }
+      });
+    });
+
+    // Wire follow-up por E-MAIL. Chama a Edge Function booking-followup,
+    // que envia o e-mail (Resend) e avança o followup_status igual ao
+    // WhatsApp. Não abre nada no navegador — é envio direto.
+    tbody.querySelectorAll('.admin__fu-email-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var bookingId = btn.dataset.bookingId;
+        var prev = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+        var notify = function (kind, message) {
+          if (typeof showToast === 'function') showToast(kind, message);
+          else if (kind === 'erro') alert(message);
+        };
+        var s = window.supabaseClient;
+        if (!s) {
+          btn.disabled = false; btn.textContent = prev;
+          notify('erro', 'Supabase indisponível. Recarregue a página.');
+          return;
+        }
+        try {
+          var resp = await s.functions.invoke('booking-followup', {
+            body: { booking_ids: [bookingId] },
+          });
+          var data = resp && resp.data;
+          var error = resp && resp.error;
+          var r0 = data && data.results && data.results[0];
+          if (error || !data || !data.ok || !r0 || !r0.ok) {
+            var emsg = (r0 && r0.error) || (data && data.error) || (error && error.message) || 'falha no envio';
+            console.error('[Admin] booking-followup email', error, data);
+            btn.disabled = false; btn.textContent = prev;
+            notify('erro', 'Falha no e-mail: ' + emsg + '. Confira o deploy da função e o RESEND_API_KEY.');
+            return;
+          }
+          // Sucesso: feedback imediato no botão e re-render (o badge de
+          // follow-up avança). showToast é best-effort.
+          btn.textContent = '✓ Enviado';
+          notify('ok', 'E-mail de follow-up enviado!');
+          invalidateBookings();
+          renderPendingBookings();
+        } catch (e) {
+          console.error('[Admin] booking-followup email exception', e);
+          btn.disabled = false; btn.textContent = prev;
+          notify('erro', 'Erro ao enviar o e-mail. Tente de novo.');
         }
       });
     });

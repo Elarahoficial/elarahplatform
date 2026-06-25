@@ -307,6 +307,45 @@ export function giftCardFollowupEmailHtml(opts: {
   return htmlShell(inner);
 }
 
+// ---------------- FOLLOW-UP DE RESERVA PENDENTE ----------------
+
+// E-mail pro cliente que quase reservou uma experiência mas não
+// concluiu o pagamento. Tom leve, com CTA pra finalizar. Mesmo papel
+// do botão de WhatsApp na aba "Compras Pendentes" do admin.
+export function bookingFollowupEmailHtml(opts: {
+  nome?: string | null;
+  experienciaNome?: string | null;
+  data?: string | null;
+  horario?: string | null;
+  finishUrl?: string | null;
+  customMessage?: string | null;
+}): string {
+  const firstName = (opts.nome || "").trim().split(/\s+/)[0] || "";
+  const greeting = firstName ? `Oi, ${firstName}!` : "Oi!";
+  const exp = opts.experienciaNome ? `<strong>${escapeHtml(opts.experienciaNome)}</strong>` : "uma experiência da Elarah";
+  const url = opts.finishUrl || "https://elarah.com.br";
+  const quando = [opts.data, opts.horario].filter(Boolean).map((s) => escapeHtml(String(s))).join(" · ");
+  const quandoLinha = quando
+    ? `<p style="margin:0 0 4px;font-size:14px;color:#666;text-align:center;">${quando}</p>`
+    : "";
+  const personal = opts.customMessage
+    ? `<div style="margin:18px 0;padding:14px 16px;background:#faf6f0;border-left:3px solid #f0a05e;border-radius:8px;color:#5a4a3a;">${escapeHtml(opts.customMessage)}</div>`
+    : "";
+
+  const inner = `
+    <h2 style="font-family:Georgia,'DM Serif Display',serif;color:#1a1a1a;margin:0 0 12px;font-size:22px;">${greeting}</h2>
+    <p style="margin:0 0 12px;">Vimos que você quase garantiu sua vaga em ${exp}, mas a reserva não foi concluída ✨</p>
+    <p style="margin:0 0 4px;">As vagas são limitadas e essa ainda pode ser sua. Quando quiser finalizar, é rapidinho:</p>
+    ${quandoLinha}
+    ${personal}
+    <div style="text-align:center;margin:26px 0 8px;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;background:#f0a05e;color:#fff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 32px;border-radius:999px;">Garantir minha vaga</a>
+    </div>
+    <p style="margin:18px 0 0;font-size:13px;color:#666;text-align:center;">Qualquer dúvida, é só responder este e-mail — a gente te ajuda 💛</p>
+  `;
+  return htmlShell(inner);
+}
+
 export function bookingConfirmationEmailHtml(opts: {
   nome?: string | null;
   experienciaNome: string;

@@ -48,6 +48,21 @@ primeiro, deploy depois.
 
 Pronto: o modo manual (1 clique) já funciona.
 
+## Follow-up de RESERVAS pendentes (aba "Compras Pendentes")
+
+Na aba **Compras Pendentes** (reservas/bookings que não fecharam), além
+do botão de WhatsApp agora tem um botão **✉️ E-mail** por linha. Ele
+manda o e-mail de follow-up (Resend) e avança o mesmo `followup_status`
+do WhatsApp (nenhum → 1º enviado → 2º enviado).
+
+- **Não precisa de migração** — usa colunas que já existem em `bookings`
+  (`followup_status`, `followup_1_at`, `followup_2_at`).
+- **Deploy**:
+  ```
+  supabase functions deploy booking-followup
+  ```
+- Usa o mesmo `RESEND_API_KEY`.
+
 ## Modo automático (opcional)
 
 1. Crie o secret `CRON_SECRET` (uma string aleatória qualquer) em
