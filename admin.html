@@ -2920,6 +2920,7 @@
 
       <div style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;">
         <button type="button" id="gc-manual-add-btn" class="admin__add-btn">+ Adicionar gift card manual</button>
+        <button type="button" id="gc-email-followup-btn" class="admin__add-btn" style="background:#fff;color:#a4663b;border:1px solid #f0a05e;">✉️ Follow-up por e-mail</button>
       </div>
 
       <!-- 1º ATIVOS — foco principal da operação -->
@@ -2974,7 +2975,10 @@
       <div class="admin__table-wrap" style="margin-top:32px;">
         <div class="admin__table-header">
           <span class="admin__table-title">Pendentes — aguardando conclusão (follow-up)</span>
-          <span class="admin__table-count" id="giftcards-pending-count"></span>
+          <span style="display:flex;align-items:center;gap:12px;">
+            <button type="button" id="gc-pending-followup-btn" class="admin__add-btn" style="padding:7px 14px;font-size:.82rem;background:#f0a05e;color:#fff;border:none;">✉️ Disparar follow-up</button>
+            <span class="admin__table-count" id="giftcards-pending-count"></span>
+          </span>
         </div>
         <table class="admin__table">
           <thead>

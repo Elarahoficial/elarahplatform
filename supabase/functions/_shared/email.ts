@@ -263,6 +263,50 @@ export function giftCardEmailHtml(opts: {
   return htmlShell(inner);
 }
 
+// ---------------- FOLLOW-UP DE GIFT CARD PENDENTE ----------------
+
+// E-mail enviado pro COMPRADOR de um gift card que ficou "pendente"
+// (começou a compra mas não concluiu o pagamento). Tom gentil, sem
+// cobrança — só um empurrãozinho pra finalizar. NÃO mostra código:
+// o gift card ainda não existe de fato até o pagamento confirmar.
+export function giftCardFollowupEmailHtml(opts: {
+  buyerName?: string | null;
+  recipientName?: string | null;
+  valorCentavos?: number | null;
+  customMessage?: string | null;
+  finishUrl?: string | null;
+}): string {
+  const firstName = (opts.buyerName || "").trim().split(/\s+/)[0] || "";
+  const greeting = firstName ? `Oi, ${firstName}!` : "Oi!";
+  const url = opts.finishUrl || "https://elarah.com.br/presentear.html";
+  const valor = Number(opts.valorCentavos);
+  const valorLinha = Number.isFinite(valor) && valor > 0
+    ? `<div style="margin:20px 0;padding:18px;background:#fff8ee;border:1.5px dashed #f0a05e;border-radius:14px;text-align:center;">
+         <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#a4663b;">Gift card reservado</div>
+         <div style="font-size:28px;font-weight:700;color:#1a1a1a;margin-top:4px;">${brl(valor)}</div>
+       </div>`
+    : "";
+  const paraQuem = opts.recipientName
+    ? ` pra <strong>${escapeHtml(opts.recipientName)}</strong>`
+    : "";
+  const personal = opts.customMessage
+    ? `<div style="margin:18px 0;padding:14px 16px;background:#faf6f0;border-left:3px solid #f0a05e;border-radius:8px;color:#5a4a3a;">${escapeHtml(opts.customMessage)}</div>`
+    : "";
+
+  const inner = `
+    <h2 style="font-family:Georgia,'DM Serif Display',serif;color:#1a1a1a;margin:0 0 12px;font-size:22px;">${greeting}</h2>
+    <p style="margin:0 0 12px;">Vimos que você começou a presentear${paraQuem} com um gift card da Elarah, mas o pagamento ainda não foi concluído 💛</p>
+    <p style="margin:0 0 4px;">Quando você quiser, é só finalizar — leva menos de 1 minuto e o gift card é enviado na hora por e-mail, pronto pra usar em qualquer experiência da nossa curadoria.</p>
+    ${valorLinha}
+    ${personal}
+    <div style="text-align:center;margin:26px 0 8px;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;background:#f0a05e;color:#fff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 32px;border-radius:999px;">Concluir meu gift card</a>
+    </div>
+    <p style="margin:18px 0 0;font-size:13px;color:#666;text-align:center;">Já concluiu ou mudou de ideia? Pode ignorar este e-mail tranquilamente.</p>
+  `;
+  return htmlShell(inner);
+}
+
 export function bookingConfirmationEmailHtml(opts: {
   nome?: string | null;
   experienciaNome: string;

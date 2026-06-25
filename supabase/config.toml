@@ -30,3 +30,13 @@ verify_jwt = false
 # (validado na tabela melhor_envio_tokens com TTL).
 [functions.melhor-envio-callback]
 verify_jwt = false
+
+# giftcard-followup — dispara e-mail de follow-up de gift cards
+# pendentes. Dois chamadores: (1) o admin pelo navegador, com JWT —
+# validado em código via is_admin(); (2) um agendamento (cron), SEM
+# JWT, autenticado pelo header X-Cron-Secret (== CRON_SECRET). Como o
+# cron não manda JWT do Supabase, o gateway não pode exigir verify_jwt
+# — a autorização é 100% no código (admin OU segredo). Ver o header de
+# supabase/functions/giftcard-followup/index.ts.
+[functions.giftcard-followup]
+verify_jwt = false

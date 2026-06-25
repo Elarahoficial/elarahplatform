@@ -520,6 +520,15 @@
       gcAddBtn.addEventListener('click', openManualGiftCardModal);
     }
 
+    // Botões de follow-up por e-mail (topo + cabeçalho da seção Pendentes).
+    ['gc-email-followup-btn', 'gc-pending-followup-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn && !btn.dataset.wired) {
+        btn.dataset.wired = '1';
+        btn.addEventListener('click', openGiftCardFollowupModal);
+      }
+    });
+
     const setCount = (id, txt) => {
       const el = document.getElementById(id);
       if (el) el.textContent = txt;
@@ -721,6 +730,300 @@
 
     if (typeof showToast === 'function') showToast('ok', 'Gift card adicionado com sucesso!');
     else alert('Gift card adicionado com sucesso! Código: ' + code);
+  }
+
+  // =====================================================
+  //  FOLLOW-UP POR E-MAIL — gift cards pendentes
+  // =====================================================
+  // Gift cards "pendentes" são compras iniciadas mas não pagas. Este
+  // modal lista os pendentes e dispara um e-mail de follow-up pro
+  // comprador via a Edge Function giftcard-followup (Resend) — sem
+  // depender de WhatsApp. Marca followup_sent_at / followup_count pra
+  // não duplicar e alimentar o modo automático (cron).
+  //
+  // Requer rodar sql/elarah_giftcard_followup_tracking.sql e fazer
+  // deploy de supabase/functions/giftcard-followup.
+
+  let _gcFollowupModal = null;
+  let _gcFollowupTracking = {}; // id -> { followup_count, followup_sent_at, followup_last_to }
+  let _gcFollowupTrackingOk = false;
+
+  function gcDaysSince(iso) {
+    if (!iso) return null;
+    const ms = Date.now() - new Date(iso).getTime();
+    if (!isFinite(ms) || ms < 0) return 0;
+    return Math.floor(ms / 86400000);
+  }
+
+  function buildGiftCardFollowupModal() {
+    if (_gcFollowupModal) return _gcFollowupModal;
+    const m = document.createElement('div');
+    m.id = 'gc-followup-modal';
+    m.style.cssText = 'position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(20,12,4,.55);padding:20px;font-family:"DM Sans",sans-serif;';
+    m.innerHTML =
+      '<div style="background:#fff;border-radius:16px;max-width:640px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:92vh;overflow-y:auto;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
+          '<div>' +
+            '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.3rem;margin:0;color:#1a1a1a;">✉️ Follow-up por e-mail</h3>' +
+            '<p style="margin:4px 0 0;font-size:.82rem;color:#777;max-width:480px;">Cutuca quem começou um gift card mas não concluiu o pagamento. O e-mail sai pelo mesmo sistema da confirmação de compra (Resend).</p>' +
+          '</div>' +
+          '<button type="button" id="gcfu-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;">&times;</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:14px 0 10px;">' +
+          '<label style="font-size:.8rem;color:#333;font-weight:600;">Enviar para<br>' +
+            '<select id="gcfu-to" style="margin-top:4px;padding:8px 10px;border:1px solid #ddd;border-radius:9px;font-size:.88rem;font-family:inherit;">' +
+              '<option value="buyer">Comprador (quem não concluiu)</option>' +
+              '<option value="recipient">Destinatário do presente</option>' +
+              '<option value="both">Ambos</option>' +
+            '</select>' +
+          '</label>' +
+          '<label style="font-size:.8rem;color:#333;font-weight:600;display:flex;align-items:center;gap:6px;padding-bottom:8px;">' +
+            '<input type="checkbox" id="gcfu-hide-contacted" checked> Esconder já contatados' +
+          '</label>' +
+        '</div>' +
+        '<label style="display:block;font-size:.8rem;color:#333;font-weight:600;margin:6px 0 4px;">Mensagem extra (opcional) — aparece dentro do e-mail</label>' +
+        '<textarea id="gcfu-msg" rows="2" placeholder="Ex.: Qualquer dúvida pra finalizar, é só responder este e-mail 💛" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;resize:vertical;"></textarea>' +
+        '<div id="gcfu-hint" style="margin:10px 0 0;font-size:.8rem;"></div>' +
+        '<div id="gcfu-list" style="margin-top:12px;border:1px solid #eee;border-radius:10px;max-height:42vh;overflow-y:auto;"></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;">' +
+          '<span id="gcfu-status" style="font-size:.82rem;color:#888;flex:1;min-width:160px;"></span>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button type="button" id="gcfu-close2" style="padding:11px 16px;border:1px solid #ddd;background:#fff;color:#666;border-radius:10px;font-weight:600;font-size:.9rem;cursor:pointer;">Fechar</button>' +
+            '<button type="button" id="gcfu-send-all" style="padding:11px 18px;border:none;background:#f0a05e;color:#fff;border-radius:10px;font-weight:700;font-size:.9rem;cursor:pointer;">Enviar para todos</button>' +
+          '</div>' +
+        '</div>' +
+        '<details style="margin-top:16px;border-top:1px solid #f0e8de;padding-top:12px;">' +
+          '<summary style="cursor:pointer;font-size:.82rem;color:#a4663b;font-weight:600;">⚙️ Ativar envio automático (opcional)</summary>' +
+          '<p style="font-size:.8rem;color:#777;line-height:1.5;margin:8px 0 0;">A função <code>giftcard-followup</code> já suporta modo automático. Pra ligar, configure o secret <code>CRON_SECRET</code> no Supabase e agende uma chamada diária (pg_cron ou scheduler) com o header <code>X-Cron-Secret</code> e o body <code>{ "mode": "auto" }</code>. Ela cutuca compras com 48h+ pendentes, no máximo 2 vezes, espaçando 72h. Detalhes no topo de <code>supabase/functions/giftcard-followup/index.ts</code>.</p>' +
+        '</details>' +
+      '</div>';
+    document.body.appendChild(m);
+    m.querySelector('#gcfu-close').addEventListener('click', closeGiftCardFollowupModal);
+    m.querySelector('#gcfu-close2').addEventListener('click', closeGiftCardFollowupModal);
+    m.addEventListener('click', (e) => { if (e.target === m) closeGiftCardFollowupModal(); });
+    m.querySelector('#gcfu-hide-contacted').addEventListener('change', renderGiftCardFollowupList);
+    m.querySelector('#gcfu-send-all').addEventListener('click', () => {
+      const ids = gcFollowupVisiblePendingIds();
+      if (!ids.length) {
+        showFollowupStatus('Nada a enviar com os filtros atuais.');
+        return;
+      }
+      sendGiftCardFollowup(ids, m.querySelector('#gcfu-send-all'));
+    });
+    _gcFollowupModal = m;
+    return m;
+  }
+
+  function closeGiftCardFollowupModal() {
+    if (_gcFollowupModal) _gcFollowupModal.style.display = 'none';
+  }
+
+  function showFollowupStatus(txt) {
+    const el = _gcFollowupModal && _gcFollowupModal.querySelector('#gcfu-status');
+    if (el) el.textContent = txt || '';
+  }
+
+  // Carrega tracking de follow-up à parte (colunas podem não existir
+  // ainda se a migração não rodou — degrada graciosamente).
+  async function loadGiftCardFollowupTracking() {
+    _gcFollowupTracking = {};
+    _gcFollowupTrackingOk = false;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    try {
+      const { data, error } = await sb
+        .from('gift_cards')
+        .select('id, followup_count, followup_sent_at, followup_last_to')
+        .eq('status', 'pending');
+      if (error) return; // coluna ausente / RLS — segue sem tracking
+      _gcFollowupTrackingOk = true;
+      (data || []).forEach(r => {
+        _gcFollowupTracking[r.id] = {
+          followup_count: Number(r.followup_count) || 0,
+          followup_sent_at: r.followup_sent_at || null,
+          followup_last_to: r.followup_last_to || null,
+        };
+      });
+    } catch (e) { /* ignora */ }
+  }
+
+  function gcPendingRows() {
+    const cache = giftCardsCache && giftCardsCache.rows ? giftCardsCache.rows : [];
+    return cache.filter(g => g.status === 'pending');
+  }
+
+  // IDs visíveis (respeitando "esconder já contatados") e que têm
+  // algum e-mail pra onde mandar.
+  function gcFollowupVisiblePendingIds() {
+    const hide = _gcFollowupModal && _gcFollowupModal.querySelector('#gcfu-hide-contacted').checked;
+    const to = _gcFollowupModal ? _gcFollowupModal.querySelector('#gcfu-to').value : 'buyer';
+    return gcPendingRows().filter(g => {
+      const hasEmail = to === 'recipient'
+        ? (g.destinatario_email || g.comprador_email)
+        : (g.comprador_email || g.destinatario_email);
+      if (!hasEmail) return false;
+      if (hide) {
+        const t = _gcFollowupTracking[g.id];
+        if (t && t.followup_count > 0) return false;
+      }
+      return true;
+    }).map(g => g.id);
+  }
+
+  function renderGiftCardFollowupList() {
+    const m = _gcFollowupModal;
+    if (!m) return;
+    const listEl = m.querySelector('#gcfu-list');
+    const hintEl = m.querySelector('#gcfu-hint');
+    const hide = m.querySelector('#gcfu-hide-contacted').checked;
+    const to = m.querySelector('#gcfu-to').value;
+    const pending = gcPendingRows();
+
+    if (!_gcFollowupTrackingOk) {
+      hintEl.innerHTML = '<span style="color:#b07b00;">⚠️ Tracking de follow-up indisponível — rode <code>sql/elarah_giftcard_followup_tracking.sql</code> no Supabase pra registrar quem já recebeu. O envio funciona mesmo assim.</span>';
+    } else {
+      hintEl.innerHTML = '';
+    }
+
+    if (!pending.length) {
+      listEl.innerHTML = '<div style="padding:18px;text-align:center;color:#888;font-size:.88rem;">Nenhum gift card pendente — tudo concluído. 🎉</div>';
+      m.querySelector('#gcfu-send-all').disabled = true;
+      m.querySelector('#gcfu-send-all').style.opacity = '.5';
+      return;
+    }
+
+    let shown = 0;
+    const rowsHtml = pending.map(g => {
+      const t = _gcFollowupTracking[g.id] || { followup_count: 0, followup_sent_at: null };
+      const contacted = t.followup_count > 0;
+      if (hide && contacted) return '';
+      const targetEmail = to === 'recipient'
+        ? (g.destinatario_email || g.comprador_email)
+        : (g.comprador_email || g.destinatario_email);
+      const noEmail = !targetEmail;
+      shown++;
+      const nome = (to === 'recipient' ? g.destinatario_nome : g.comprador_nome) || '—';
+      const dias = gcDaysSince(g.created_at);
+      const diasLabel = dias === null ? '' : (dias === 0 ? 'hoje' : (dias === 1 ? 'há 1 dia' : 'há ' + dias + ' dias'));
+      const valor = giftCardBrl(g.valor_inicial_centavos);
+      const statusBadge = contacted
+        ? '<span style="color:#1a8a4a;font-weight:600;font-size:11px;">✓ enviado' + (t.followup_count > 1 ? ' ' + t.followup_count + '×' : '') + '</span>'
+        : '<span style="color:#999;font-size:11px;">nunca contatado</span>';
+      const btn = noEmail
+        ? '<span style="font-size:11px;color:#c0392b;">sem e-mail</span>'
+        : '<button type="button" class="gcfu-send-one" data-id="' + g.id + '" style="padding:6px 12px;border:1px solid #f0a05e;background:#fff;color:#a4663b;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;">Enviar</button>';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid #f3f3f3;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:.88rem;color:#1a1a1a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(nome) + '</div>' +
+          '<div style="font-size:.78rem;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(targetEmail || 'sem e-mail') + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;white-space:nowrap;">' +
+          '<div style="font-size:.85rem;color:#1a1a1a;">' + escapeHtml(valor) + '</div>' +
+          '<div style="font-size:.72rem;color:#aaa;">' + escapeHtml(diasLabel) + '</div>' +
+        '</div>' +
+        '<div style="width:110px;text-align:right;">' + statusBadge + '</div>' +
+        '<div style="width:80px;text-align:right;">' + btn + '</div>' +
+      '</div>';
+    }).join('');
+
+    listEl.innerHTML = rowsHtml ||
+      '<div style="padding:18px;text-align:center;color:#888;font-size:.88rem;">Todos os pendentes já foram contatados. Desmarque "esconder já contatados" pra reenviar.</div>';
+
+    listEl.querySelectorAll('.gcfu-send-one').forEach(b => {
+      b.addEventListener('click', () => sendGiftCardFollowup([b.dataset.id], b));
+    });
+
+    const sendAll = m.querySelector('#gcfu-send-all');
+    sendAll.disabled = shown === 0;
+    sendAll.style.opacity = shown === 0 ? '.5' : '1';
+    sendAll.textContent = shown > 1 ? ('Enviar para todos (' + shown + ')') : 'Enviar';
+  }
+
+  async function openGiftCardFollowupModal() {
+    const m = buildGiftCardFollowupModal();
+    m.querySelector('#gcfu-to').value = 'buyer';
+    m.querySelector('#gcfu-msg').value = '';
+    m.querySelector('#gcfu-hide-contacted').checked = true;
+    showFollowupStatus('Carregando…');
+    m.querySelector('#gcfu-list').innerHTML = '<div style="padding:18px;text-align:center;color:#888;font-size:.88rem;">Carregando pendentes…</div>';
+    m.style.display = 'flex';
+
+    // Garante que temos os gift cards + tracking carregados.
+    m.querySelector('#gcfu-to').onchange = renderGiftCardFollowupList;
+    try { await getGiftCards(); } catch (e) {}
+    await loadGiftCardFollowupTracking();
+    const n = gcPendingRows().length;
+    showFollowupStatus(n + (n === 1 ? ' gift card pendente.' : ' gift cards pendentes.'));
+    renderGiftCardFollowupList();
+  }
+
+  async function sendGiftCardFollowup(ids, btn) {
+    const m = _gcFollowupModal;
+    if (!m || !ids || !ids.length) return;
+    const sb = window.supabaseClient;
+    if (!sb) { showFollowupStatus('Supabase indisponível. Recarregue a página.'); return; }
+
+    const to = m.querySelector('#gcfu-to').value || 'buyer';
+    const customMessage = (m.querySelector('#gcfu-msg').value || '').trim() || null;
+
+    const prevTxt = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+    showFollowupStatus('Enviando ' + ids.length + (ids.length === 1 ? ' e-mail…' : ' e-mails…'));
+
+    let resp;
+    try {
+      resp = await sb.functions.invoke('giftcard-followup', {
+        body: { gift_card_ids: ids, to: to, custom_message: customMessage },
+      });
+    } catch (e) {
+      console.error('[admin/giftcard-followup] invoke error', e);
+      showFollowupStatus('Erro ao chamar o servidor de e-mail. Tente de novo.');
+      if (btn) { btn.disabled = false; btn.textContent = prevTxt; }
+      return;
+    }
+
+    const { data, error } = resp || {};
+    if (error || !data || !data.ok) {
+      const msg = (data && (data.error || (data.results && 'falha no envio'))) ||
+        (error && error.message) || 'erro desconhecido';
+      console.error('[admin/giftcard-followup] resposta', error, data);
+      showFollowupStatus('Falha no envio: ' + msg + '. Confirme o deploy da função e o RESEND_API_KEY.');
+      if (btn) { btn.disabled = false; btn.textContent = prevTxt; }
+      return;
+    }
+
+    // Atualiza tracking local pros que enviaram OK.
+    const nowIso = new Date().toISOString();
+    let okCount = 0;
+    const skipped = [];
+    (data.results || []).forEach(r => {
+      if (r.ok) {
+        okCount++;
+        const prev = _gcFollowupTracking[r.id] || { followup_count: 0 };
+        _gcFollowupTracking[r.id] = {
+          followup_count: (prev.followup_count || 0) + 1,
+          followup_sent_at: nowIso,
+          followup_last_to: r.email || null,
+        };
+        _gcFollowupTrackingOk = true;
+      } else if (r.skipped) {
+        skipped.push(r.error || 'sem e-mail');
+      }
+    });
+
+    const failed = (data.results || []).filter(r => !r.ok && !r.skipped).length;
+    let summary = okCount + (okCount === 1 ? ' e-mail enviado' : ' e-mails enviados');
+    if (failed) summary += ', ' + failed + ' falharam';
+    if (skipped.length) summary += ', ' + skipped.length + ' sem e-mail';
+    summary += '.';
+    showFollowupStatus(summary);
+
+    if (typeof showToast === 'function' && okCount > 0) {
+      showToast('ok', summary);
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = prevTxt; }
+    renderGiftCardFollowupList();
   }
 
   // =====================================================
