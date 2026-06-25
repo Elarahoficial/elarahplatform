@@ -2546,11 +2546,12 @@
     const qtyB = summary ? Number(summary.qty_bookings_pagos) || 0 : 0;
     const qtyM = summary ? Number(summary.qty_manual_sales_pagas) || 0 : 0;
     const qtyG = summary ? Number(summary.qty_giftcards_pagos) || 0 : 0;
-    const totalPaid = qtyB + qtyM;
+    const totalPaid = qtyB + qtyM + qtyG;                              // inclui gift cards comprados
     const totalPending = sumQuantity(pending);                         // vagas pendentes (não nº de reservas)
     const partesPaid = [];
     if (qtyB) partesPaid.push(qtyB + ' site');
     if (qtyM) partesPaid.push(qtyM + ' manual');
+    if (qtyG) partesPaid.push(qtyG + ' gift card');
     const paidLabel = partesPaid.length > 1 ? totalPaid + ' (' + partesPaid.join(' / ') + ')' : String(totalPaid);
     const pendingLabel = String(totalPending);
     const revenueCents = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
