@@ -6,8 +6,13 @@ on:
       - claude/create-elarah-homepage-VsE5i
       - claude/fix-purchase-errors-2GrQL
       - claude/peaceful-wright-oh8k98
+      - claude/bold-cerf-0yp7uy
     paths:
       - 'supabase/functions/**'
+      # Mudanças no próprio workflow também disparam o deploy — assim
+      # ajustes na lista de funções não ficam presos esperando um push
+      # que toque em supabase/functions.
+      - '.github/workflows/deploy-edge-functions.yml'
   workflow_dispatch:
 
 jobs:
@@ -68,6 +73,15 @@ jobs:
           echo "→ redeem-gift-card"
           supabase functions deploy redeem-gift-card \
             --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ giftcard-followup"
+          # --no-verify-jwt: o modo automático (cron) chama sem JWT do
+          # Supabase; a autorização é feita no código (admin OU CRON_SECRET).
+          supabase functions deploy giftcard-followup \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ booking-followup"
+          # Sem --no-verify-jwt: só admin chama, com JWT (validado por is_admin).
+          supabase functions deploy booking-followup \
+            --project-ref "$PROJECT_REF"
           echo "→ calculate-shipping"
           supabase functions deploy calculate-shipping \
             --project-ref "$PROJECT_REF" --no-verify-jwt
