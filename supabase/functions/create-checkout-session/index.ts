@@ -139,8 +139,10 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
   const valor = Number(payload.gift_card_value_centavos ?? 0);
   const buyerEmail = String(payload.buyer_email ?? "").trim();
   const buyerNome = String(payload.buyer_nome ?? "").trim();
+  const buyerTelefone = String(payload.buyer_telefone ?? "").trim();
   const recipientEmail = String(payload.recipient_email ?? "").trim();
   const recipientNome = String(payload.recipient_nome ?? "").trim();
+  const recipientTelefone = String(payload.recipient_telefone ?? "").trim();
   const mensagem = String(payload.mensagem ?? "").trim();
 
   if (!Number.isFinite(valor) || valor < 5000) {
@@ -196,8 +198,10 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
         valor_centavos: String(valor),
         buyer_email: buyerEmail,
         buyer_nome: buyerNome,
+        buyer_telefone: buyerTelefone.slice(0, 40),
         recipient_email: recipientEmail,
         recipient_nome: recipientNome,
+        recipient_telefone: recipientTelefone.slice(0, 40),
         mensagem: mensagem.slice(0, 480),
       },
     });
@@ -221,8 +225,10 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
     comprador_user_id: buyerUserId,
     comprador_email: buyerEmail || null,
     comprador_nome: buyerNome || null,
+    comprador_telefone: buyerTelefone || null,
     destinatario_email: recipientEmail,
     destinatario_nome: recipientNome || null,
+    destinatario_telefone: recipientTelefone || null,
     mensagem: mensagem || null,
     stripe_session_id: session.id,
     expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),

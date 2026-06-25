@@ -123,8 +123,10 @@ async function handleGiftCardPixRequest(
   const valor = Number(payload.gift_card_value_centavos ?? 0);
   const buyerEmail = String(payload.buyer_email ?? "").trim();
   const buyerNome = String(payload.buyer_nome ?? "").trim();
+  const buyerTelefone = String(payload.buyer_telefone ?? "").trim();
   const recipientEmail = String(payload.recipient_email ?? "").trim();
   const recipientNome = String(payload.recipient_nome ?? "").trim();
+  const recipientTelefone = String(payload.recipient_telefone ?? "").trim();
   const mensagem = String(payload.mensagem ?? "").trim();
   const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
 
@@ -188,8 +190,10 @@ async function handleGiftCardPixRequest(
     comprador_user_id: buyerUserId,
     comprador_email: buyerEmail || null,
     comprador_nome: buyerNome || null,
+    comprador_telefone: buyerTelefone || null,
     destinatario_email: recipientEmail,
     destinatario_nome: recipientNome || null,
+    destinatario_telefone: recipientTelefone || null,
     mensagem: mensagem || null,
     stripe_session_id: sessionPlaceholder,
     expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),

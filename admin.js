@@ -615,10 +615,14 @@
         '<input id="gcm2-buyer-nome" type="text" style="' + inp + '">' +
         '<label style="' + lbl + '">E-mail do comprador</label>' +
         '<input id="gcm2-buyer-email" type="email" style="' + inp + '">' +
+        '<label style="' + lbl + '">WhatsApp do comprador</label>' +
+        '<input id="gcm2-buyer-tel" type="tel" inputmode="tel" placeholder="(11) 91234-5678" style="' + inp + '">' +
         '<label style="' + lbl + '">Nome do destinatário</label>' +
         '<input id="gcm2-rec-nome" type="text" style="' + inp + '">' +
         '<label style="' + lbl + '">E-mail do destinatário</label>' +
         '<input id="gcm2-rec-email" type="email" style="' + inp + '">' +
+        '<label style="' + lbl + '">WhatsApp do destinatário</label>' +
+        '<input id="gcm2-rec-tel" type="tel" inputmode="tel" placeholder="(11) 91234-5678" style="' + inp + '">' +
         '<label style="' + lbl + '">Status</label>' +
         '<select id="gcm2-status" style="' + inp + '">' +
           '<option value="active">Ativo (conta como compra)</option>' +
@@ -644,8 +648,10 @@
     m.querySelector('#gcm2-code').value = genGiftCardCodeFront();
     m.querySelector('#gcm2-buyer-nome').value = '';
     m.querySelector('#gcm2-buyer-email').value = '';
+    m.querySelector('#gcm2-buyer-tel').value = '';
     m.querySelector('#gcm2-rec-nome').value = '';
     m.querySelector('#gcm2-rec-email').value = '';
+    m.querySelector('#gcm2-rec-tel').value = '';
     m.querySelector('#gcm2-status').value = 'active';
     m.querySelector('#gcm2-error').textContent = '';
     const btn = m.querySelector('#gcm2-save');
@@ -669,8 +675,10 @@
     const status = m.querySelector('#gcm2-status').value || 'active';
     const buyerNome = (m.querySelector('#gcm2-buyer-nome').value || '').trim();
     const buyerEmail = (m.querySelector('#gcm2-buyer-email').value || '').trim();
+    const buyerTel = (m.querySelector('#gcm2-buyer-tel').value || '').trim();
     const recNome = (m.querySelector('#gcm2-rec-nome').value || '').trim();
     const recEmail = (m.querySelector('#gcm2-rec-email').value || '').trim();
+    const recTel = (m.querySelector('#gcm2-rec-tel').value || '').trim();
 
     if (!isFinite(valorReais) || valorReais <= 0) {
       errEl.textContent = 'Informe um valor válido (maior que zero).';
@@ -698,13 +706,25 @@
       status: status,
       comprador_nome: buyerNome || null,
       comprador_email: buyerEmail || null,
+      comprador_telefone: buyerTel || null,
       destinatario_nome: recNome || null,
       destinatario_email: recEmail || null,
+      destinatario_telefone: recTel || null,
       expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       metadata: { source: 'manual_admin' }
     };
 
-    const { error } = await sb.from('gift_cards').insert(payload);
+    let { error } = await sb.from('gift_cards').insert(payload);
+    // Se as colunas de telefone ainda não existem (migração
+    // elarah_giftcard_contact_phones.sql não rodou), tenta de novo sem
+    // elas — pra não bloquear o cadastro manual enquanto a migração não
+    // foi aplicada.
+    if (error && /telefone/i.test(String(error.message || '')) &&
+        /column|coluna|does not exist|schema cache/i.test(String(error.message || ''))) {
+      delete payload.comprador_telefone;
+      delete payload.destinatario_telefone;
+      ({ error } = await sb.from('gift_cards').insert(payload));
+    }
     if (error) {
       console.error('[admin/gift_cards] insert manual error', error);
       const msg = String(error.message || '').toLowerCase();
@@ -755,6 +775,22 @@
     return Math.floor(ms / 86400000);
   }
 
+  // Monta o link wa.me com mensagem pré-preenchida pra cutucar o
+  // comprador a concluir o gift card pendente. Reusa o normalizador
+  // de telefone do follow-up de By Elarah (E.164 BR).
+  function buildGiftCardWaLink(rawPhone, nome, giftRow) {
+    const digits = normalizePhoneForWhatsApp(rawPhone);
+    if (!digits) return null;
+    const primeiro = firstName(nome);
+    const saud = (primeiro && primeiro !== 'tudo bem!') ? ('Oi, ' + primeiro + '! ') : 'Oi! ';
+    const valor = giftRow ? giftCardBrl(giftRow.valor_inicial_centavos) : '';
+    const msg = saud + 'Aqui é da Elarah 💛 Vi que você começou a presentear com um gift card' +
+      (valor ? (' de ' + valor) : '') + ', mas o pagamento ainda não foi concluído. ' +
+      'Quando quiser finalizar é rapidinho: https://elarah.com.br/presentear.html — ' +
+      'qualquer dúvida, é só me chamar por aqui!';
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+  }
+
   function buildGiftCardFollowupModal() {
     if (_gcFollowupModal) return _gcFollowupModal;
     const m = document.createElement('div');
@@ -765,7 +801,7 @@
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
           '<div>' +
             '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.3rem;margin:0;color:#1a1a1a;">✉️ Follow-up por e-mail</h3>' +
-            '<p style="margin:4px 0 0;font-size:.82rem;color:#777;max-width:480px;">Cutuca quem começou um gift card mas não concluiu o pagamento. O e-mail sai pelo mesmo sistema da confirmação de compra (Resend).</p>' +
+            '<p style="margin:4px 0 0;font-size:.82rem;color:#777;max-width:480px;">Cutuca quem começou um gift card mas não concluiu o pagamento. O e-mail sai pelo sistema da Elarah (Resend); quando há WhatsApp cadastrado, aparece também o botão pra abrir a conversa com a mensagem pronta.</p>' +
           '</div>' +
           '<button type="button" id="gcfu-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;">&times;</button>' +
         '</div>' +
@@ -831,17 +867,28 @@
     const sb = window.supabaseClient;
     if (!sb) return;
     try {
-      const { data, error } = await sb
+      let data, error;
+      ({ data, error } = await sb
         .from('gift_cards')
-        .select('id, followup_count, followup_sent_at, followup_last_to')
-        .eq('status', 'pending');
-      if (error) return; // coluna ausente / RLS — segue sem tracking
+        .select('id, followup_count, followup_sent_at, followup_last_to, comprador_telefone, destinatario_telefone')
+        .eq('status', 'pending'));
+      // Se as colunas de telefone ainda não existem, tenta de novo só
+      // com as colunas de follow-up (degrada sem telefone).
+      if (error) {
+        ({ data, error } = await sb
+          .from('gift_cards')
+          .select('id, followup_count, followup_sent_at, followup_last_to')
+          .eq('status', 'pending'));
+        if (error) return; // colunas de follow-up ausentes / RLS — segue sem tracking
+      }
       _gcFollowupTrackingOk = true;
       (data || []).forEach(r => {
         _gcFollowupTracking[r.id] = {
           followup_count: Number(r.followup_count) || 0,
           followup_sent_at: r.followup_sent_at || null,
           followup_last_to: r.followup_last_to || null,
+          comprador_telefone: r.comprador_telefone || null,
+          destinatario_telefone: r.destinatario_telefone || null,
         };
       });
     } catch (e) { /* ignora */ }
@@ -909,9 +956,17 @@
       const statusBadge = contacted
         ? '<span style="color:#1a8a4a;font-weight:600;font-size:11px;">✓ enviado' + (t.followup_count > 1 ? ' ' + t.followup_count + '×' : '') + '</span>'
         : '<span style="color:#999;font-size:11px;">nunca contatado</span>';
-      const btn = noEmail
+      const emailBtn = noEmail
         ? '<span style="font-size:11px;color:#c0392b;">sem e-mail</span>'
-        : '<button type="button" class="gcfu-send-one" data-id="' + g.id + '" style="padding:6px 12px;border:1px solid #f0a05e;background:#fff;color:#a4663b;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;">Enviar</button>';
+        : '<button type="button" class="gcfu-send-one" data-id="' + g.id + '" style="padding:6px 10px;border:1px solid #f0a05e;background:#fff;color:#a4663b;border-radius:8px;font-size:.76rem;font-weight:600;cursor:pointer;">✉️ E-mail</button>';
+      // Telefone do alvo conforme o destino escolhido (com fallback).
+      const telTarget = to === 'recipient'
+        ? (t.destinatario_telefone || t.comprador_telefone)
+        : (t.comprador_telefone || t.destinatario_telefone);
+      const waLink = telTarget ? buildGiftCardWaLink(telTarget, nome, g) : null;
+      const waBtn = waLink
+        ? '<a href="' + waLink + '" target="_blank" rel="noopener" style="padding:6px 10px;border:1px solid #1a8a4a;background:#fff;color:#1a8a4a;border-radius:8px;font-size:.76rem;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;">WhatsApp</a>'
+        : '<span style="font-size:10px;color:#bbb;">sem zap</span>';
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid #f3f3f3;">' +
         '<div style="flex:1;min-width:0;">' +
           '<div style="font-size:.88rem;color:#1a1a1a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(nome) + '</div>' +
@@ -921,8 +976,8 @@
           '<div style="font-size:.85rem;color:#1a1a1a;">' + escapeHtml(valor) + '</div>' +
           '<div style="font-size:.72rem;color:#aaa;">' + escapeHtml(diasLabel) + '</div>' +
         '</div>' +
-        '<div style="width:110px;text-align:right;">' + statusBadge + '</div>' +
-        '<div style="width:80px;text-align:right;">' + btn + '</div>' +
+        '<div style="width:96px;text-align:right;">' + statusBadge + '</div>' +
+        '<div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">' + waBtn + emailBtn + '</div>' +
       '</div>';
     }).join('');
 

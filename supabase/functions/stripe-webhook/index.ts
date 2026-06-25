@@ -175,8 +175,10 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
 
   const recipient = String(meta.recipient_email ?? "").trim();
   const recipientNome = String(meta.recipient_nome ?? "").trim() || null;
+  const recipientTelefone = String(meta.recipient_telefone ?? "").trim() || null;
   const buyerEmail = String(meta.buyer_email ?? "").trim() || null;
   const buyerNome = String(meta.buyer_nome ?? "").trim() || null;
+  const buyerTelefone = String(meta.buyer_telefone ?? "").trim() || null;
   const mensagem = String(meta.mensagem ?? "").trim() || null;
 
   // ----- Idempotência -----
@@ -247,8 +249,10 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
         saldo_centavos: valor,
         destinatario_email: recipient || null,
         destinatario_nome: recipientNome,
+        destinatario_telefone: recipientTelefone,
         comprador_email: buyerEmail,
         comprador_nome: buyerNome,
+        comprador_telefone: buyerTelefone,
         mensagem,
         expires_at: expiresAtIso,
         email_sent_at: null,
@@ -272,8 +276,10 @@ async function activateGiftCardFromSession(session: Stripe.Checkout.Session) {
         stripe_session_id: session.id,
         destinatario_email: recipient || null,
         destinatario_nome: recipientNome,
+        destinatario_telefone: recipientTelefone,
         comprador_email: buyerEmail,
         comprador_nome: buyerNome,
+        comprador_telefone: buyerTelefone,
         mensagem,
         expires_at: expiresAtIso,
       });

@@ -477,11 +477,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Seu e-mail <span style="color:#a4663b;font-weight:600;">(recebe cópia)</span></label>' +
             '<input type="email" id="gcm-buyer-email" placeholder="seu@email" required style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;box-sizing:border-box;">' +
 
+            '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Seu WhatsApp</label>' +
+            '<input type="tel" id="gcm-buyer-tel" inputmode="tel" autocomplete="tel" placeholder="(11) 91234-5678" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;box-sizing:border-box;">' +
+
             '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Nome de quem vai receber</label>' +
             '<input type="text" id="gcm-rec-nome" placeholder="Nome do presenteado" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;box-sizing:border-box;">' +
 
             '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">E-mail de quem vai receber</label>' +
             '<input type="email" id="gcm-rec-email" placeholder="presenteado@email" required style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;box-sizing:border-box;">' +
+
+            '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">WhatsApp de quem vai receber <span style="color:#999;font-weight:400;">(opcional)</span></label>' +
+            '<input type="tel" id="gcm-rec-tel" inputmode="tel" placeholder="(11) 91234-5678" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;margin-bottom:10px;box-sizing:border-box;">' +
 
             '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Mensagem (opcional)</label>' +
             '<textarea id="gcm-msg" rows="3" placeholder="Uma mensagem carinhosa para acompanhar o presente" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;resize:vertical;margin-bottom:14px;font-family:inherit;box-sizing:border-box;"></textarea>' +
@@ -709,8 +715,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const buyerEmail = (giftModal.querySelector('#gcm-buyer-email').value || '').trim();
     const buyerNome  = (giftModal.querySelector('#gcm-buyer-nome').value || '').trim();
+    const buyerTel   = (giftModal.querySelector('#gcm-buyer-tel').value || '').trim();
     const recEmail   = (giftModal.querySelector('#gcm-rec-email').value || '').trim();
     const recNome    = (giftModal.querySelector('#gcm-rec-nome').value || '').trim();
+    const recTel     = (giftModal.querySelector('#gcm-rec-tel').value || '').trim();
     const mensagem   = (giftModal.querySelector('#gcm-msg').value || '').trim();
     const cpfDigits  = (giftModal.querySelector('#gcm-cpf').value || '').replace(/\D+/g, '');
 
@@ -741,9 +749,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       if (paymentMethod === 'pix') {
-        await submitPix({ buyerEmail, buyerNome, recEmail, recNome, mensagem, cpfDigits });
+        await submitPix({ buyerEmail, buyerNome, buyerTel, recEmail, recNome, recTel, mensagem, cpfDigits });
       } else {
-        await submitCard({ buyerEmail, buyerNome, recEmail, recNome, mensagem });
+        await submitCard({ buyerEmail, buyerNome, buyerTel, recEmail, recNome, recTel, mensagem });
       }
     } catch (err) {
       console.error('[Elarah gift] submit error', err);
@@ -771,8 +779,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         gift_card_value_centavos: selectedCentavos,
         buyer_email: d.buyerEmail,
         buyer_nome: d.buyerNome,
+        buyer_telefone: d.buyerTel,
         recipient_email: d.recEmail,
         recipient_nome: d.recNome,
+        recipient_telefone: d.recTel,
         mensagem: d.mensagem,
       }),
     });
@@ -806,8 +816,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         gift_card_value_centavos: selectedCentavos,
         buyer_email: d.buyerEmail,
         buyer_nome: d.buyerNome,
+        buyer_telefone: d.buyerTel,
         recipient_email: d.recEmail,
         recipient_nome: d.recNome,
+        recipient_telefone: d.recTel,
         mensagem: d.mensagem,
         cpf: d.cpfDigits,
       }),

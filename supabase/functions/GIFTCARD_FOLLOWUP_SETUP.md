@@ -9,20 +9,37 @@ Resend da confirmação de compra.
 - **Aba Gift Cards → botão "✉️ Follow-up por e-mail"** (e "✉️ Disparar
   follow-up" no cabeçalho da seção *Pendentes*). Abre um modal que lista
   os pendentes e envia o e-mail com 1 clique (ou "Enviar para todos").
-- **Modo automático (opcional)**: a mesma Edge Function envia sozinha
-  quando agendada por um cron.
+- **WhatsApp também**: o formulário de compra agora pede o WhatsApp do
+  comprador e do destinatário. No modal de follow-up, quando há telefone
+  cadastrado, aparece um botão **WhatsApp** que abre a conversa com a
+  mensagem pronta (wa.me).
+- **Modo automático (opcional)**: a mesma Edge Function envia o e-mail
+  sozinha quando agendada por um cron.
+
+## ⚠️ Ordem de deploy (importante)
+
+Rode as **migrações SQL ANTES** de re-deployar as Edge Functions de
+pagamento. As funções passam a gravar `comprador_telefone` /
+`destinatario_telefone` no gift card pendente — se as colunas não
+existirem ainda, a pré-gravação falha e a compra é abortada. Migração
+primeiro, deploy depois.
 
 ## Passo a passo pra ligar
 
-1. **Migração** — rode no SQL Editor do Supabase:
+1. **Migrações** — rode as duas no SQL Editor do Supabase:
    ```
-   sql/elarah_giftcard_followup_tracking.sql
+   sql/elarah_giftcard_followup_tracking.sql   -- tracking do follow-up
+   sql/elarah_giftcard_contact_phones.sql      -- telefone comprador/destinatário
    ```
-   (adiciona `followup_sent_at`, `followup_count`, `followup_last_to`.)
+   (adicionam `followup_sent_at`, `followup_count`, `followup_last_to`,
+   `comprador_telefone` e `destinatario_telefone`.)
 
-2. **Deploy da função**:
+2. **Deploy das funções** (depois das migrações):
    ```
    supabase functions deploy giftcard-followup
+   supabase functions deploy create-checkout-session   -- passa a salvar telefones
+   supabase functions deploy create-mp-pix-payment      -- idem (PIX)
+   supabase functions deploy stripe-webhook             -- persiste telefone na ativação
    ```
 
 3. **Secret do Resend** já deve existir (`RESEND_API_KEY`) — é o mesmo
