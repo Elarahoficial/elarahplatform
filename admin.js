@@ -513,6 +513,13 @@
     const pendingBody = document.getElementById('giftcards-pending-body');
     if (!activeBody) return;
 
+    // Liga o botão de "gift card manual" uma vez (o botão é estático no HTML).
+    const gcAddBtn = document.getElementById('gc-manual-add-btn');
+    if (gcAddBtn && !gcAddBtn.dataset.wired) {
+      gcAddBtn.dataset.wired = '1';
+      gcAddBtn.addEventListener('click', openManualGiftCardModal);
+    }
+
     const setCount = (id, txt) => {
       const el = document.getElementById(id);
       if (el) el.textContent = txt;
@@ -549,6 +556,171 @@
     if (pendingBody) {
       pendingBody.innerHTML = giftCardRowsHtml(pending, 7, 'Nenhum gift card pendente — tudo concluído.');
     }
+  }
+
+  // =====================================================
+  //  GIFT CARD MANUAL (admin)
+  //  Registra uma compra de gift card feita fora do site
+  //  (cliente pagou por fora, checkout falhou, etc.). Insere
+  //  direto em public.gift_cards — então conta automaticamente
+  //  em: aba Gift Cards, stat "Compras" do overview, aba Compras
+  //  e na Contabilidade (via v_financial_ledger/financial_summary).
+  //  Mesmo alfabeto/formato do gerador do backend (XXXX-XXXX-XXXX).
+  // =====================================================
+  const GC_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function genGiftCardCodeFront() {
+    const arr = new Uint8Array(12);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(arr);
+    else for (let i = 0; i < 12; i++) arr[i] = Math.floor(Math.random() * 256);
+    let out = '';
+    for (let i = 0; i < 12; i++) {
+      out += GC_ALPHABET[arr[i] % GC_ALPHABET.length];
+      if (i === 3 || i === 7) out += '-';
+    }
+    return out;
+  }
+
+  let _gcManualModal = null;
+  function buildManualGiftCardModal() {
+    if (_gcManualModal) return _gcManualModal;
+    const lbl = 'display:block;font-size:.82rem;color:#333;margin:10px 0 5px;font-weight:600;';
+    const inp = 'width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:9px;font-size:.92rem;box-sizing:border-box;font-family:inherit;';
+    const m = document.createElement('div');
+    m.id = 'gc-manual-modal';
+    m.style.cssText = 'position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(20,12,4,.55);padding:20px;font-family:"DM Sans",sans-serif;';
+    m.innerHTML =
+      '<div style="background:#fff;border-radius:16px;max-width:460px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:92vh;overflow-y:auto;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+          '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.3rem;margin:0;color:#1a1a1a;">Adicionar gift card manual</h3>' +
+          '<button type="button" id="gcm2-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;">&times;</button>' +
+        '</div>' +
+        '<p style="margin:0 0 8px;font-size:.8rem;color:#777;">Para registrar uma compra de gift card feita fora do site. Conta na aba Compras, no painel inicial e na contabilidade.</p>' +
+        '<label style="' + lbl + '">Valor (R$) *</label>' +
+        '<input id="gcm2-valor" type="number" min="1" step="0.01" placeholder="Ex.: 200" style="' + inp + '">' +
+        '<label style="' + lbl + '">Código *</label>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<input id="gcm2-code" type="text" style="' + inp + 'font-family:Menlo,Consolas,monospace;text-transform:uppercase;">' +
+          '<button type="button" id="gcm2-gen" style="white-space:nowrap;padding:0 14px;border:1px solid #f0a05e;background:#fff;color:#a4663b;border-radius:9px;font-weight:600;font-size:.85rem;cursor:pointer;">Gerar</button>' +
+        '</div>' +
+        '<label style="' + lbl + '">Nome do comprador</label>' +
+        '<input id="gcm2-buyer-nome" type="text" style="' + inp + '">' +
+        '<label style="' + lbl + '">E-mail do comprador</label>' +
+        '<input id="gcm2-buyer-email" type="email" style="' + inp + '">' +
+        '<label style="' + lbl + '">Nome do destinatário</label>' +
+        '<input id="gcm2-rec-nome" type="text" style="' + inp + '">' +
+        '<label style="' + lbl + '">E-mail do destinatário</label>' +
+        '<input id="gcm2-rec-email" type="email" style="' + inp + '">' +
+        '<label style="' + lbl + '">Status</label>' +
+        '<select id="gcm2-status" style="' + inp + '">' +
+          '<option value="active">Ativo (conta como compra)</option>' +
+          '<option value="pending">Pendente</option>' +
+        '</select>' +
+        '<button type="button" id="gcm2-save" style="width:100%;margin-top:18px;padding:13px;border:none;border-radius:11px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Salvar gift card</button>' +
+        '<p id="gcm2-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>' +
+      '</div>';
+    document.body.appendChild(m);
+    m.querySelector('#gcm2-close').addEventListener('click', closeManualGiftCardModal);
+    m.addEventListener('click', (e) => { if (e.target === m) closeManualGiftCardModal(); });
+    m.querySelector('#gcm2-gen').addEventListener('click', () => {
+      m.querySelector('#gcm2-code').value = genGiftCardCodeFront();
+    });
+    m.querySelector('#gcm2-save').addEventListener('click', saveManualGiftCard);
+    _gcManualModal = m;
+    return m;
+  }
+
+  function openManualGiftCardModal() {
+    const m = buildManualGiftCardModal();
+    m.querySelector('#gcm2-valor').value = '';
+    m.querySelector('#gcm2-code').value = genGiftCardCodeFront();
+    m.querySelector('#gcm2-buyer-nome').value = '';
+    m.querySelector('#gcm2-buyer-email').value = '';
+    m.querySelector('#gcm2-rec-nome').value = '';
+    m.querySelector('#gcm2-rec-email').value = '';
+    m.querySelector('#gcm2-status').value = 'active';
+    m.querySelector('#gcm2-error').textContent = '';
+    const btn = m.querySelector('#gcm2-save');
+    btn.disabled = false; btn.textContent = 'Salvar gift card';
+    m.style.display = 'flex';
+  }
+
+  function closeManualGiftCardModal() {
+    if (_gcManualModal) _gcManualModal.style.display = 'none';
+  }
+
+  async function saveManualGiftCard() {
+    const m = _gcManualModal;
+    if (!m) return;
+    const errEl = m.querySelector('#gcm2-error');
+    const saveBtn = m.querySelector('#gcm2-save');
+    errEl.textContent = '';
+
+    const valorReais = Number(m.querySelector('#gcm2-valor').value);
+    const code = (m.querySelector('#gcm2-code').value || '').trim().toUpperCase();
+    const status = m.querySelector('#gcm2-status').value || 'active';
+    const buyerNome = (m.querySelector('#gcm2-buyer-nome').value || '').trim();
+    const buyerEmail = (m.querySelector('#gcm2-buyer-email').value || '').trim();
+    const recNome = (m.querySelector('#gcm2-rec-nome').value || '').trim();
+    const recEmail = (m.querySelector('#gcm2-rec-email').value || '').trim();
+
+    if (!isFinite(valorReais) || valorReais <= 0) {
+      errEl.textContent = 'Informe um valor válido (maior que zero).';
+      return;
+    }
+    if (!code) {
+      errEl.textContent = 'Informe ou gere um código.';
+      return;
+    }
+    const sb = window.supabaseClient;
+    if (!sb) {
+      errEl.textContent = 'Supabase indisponível. Recarregue a página.';
+      return;
+    }
+
+    const centavos = Math.round(valorReais * 100);
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando...';
+
+    const payload = {
+      code: code,
+      valor_inicial_centavos: centavos,
+      // Ativo já nasce com saldo cheio (resgatável); pendente fica zerado.
+      saldo_centavos: status === 'active' ? centavos : 0,
+      status: status,
+      comprador_nome: buyerNome || null,
+      comprador_email: buyerEmail || null,
+      destinatario_nome: recNome || null,
+      destinatario_email: recEmail || null,
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      metadata: { source: 'manual_admin' }
+    };
+
+    const { error } = await sb.from('gift_cards').insert(payload);
+    if (error) {
+      console.error('[admin/gift_cards] insert manual error', error);
+      const msg = String(error.message || '').toLowerCase();
+      errEl.textContent = (msg.includes('duplicate') || String(error.code) === '23505')
+        ? 'Esse código já existe. Clique em "Gerar" pra criar outro.'
+        : ('Erro ao salvar: ' + (error.message || 'tente novamente.'));
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Salvar gift card';
+      return;
+    }
+
+    // Invalida caches e re-renderiza onde o gift card precisa aparecer.
+    invalidateGiftCardsCache();
+    if (typeof invalidateBookings === 'function') { try { invalidateBookings(); } catch (e) {} }
+    closeManualGiftCardModal();
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Salvar gift card';
+
+    try { await renderGiftCards(); } catch (e) {}
+    try { if (typeof renderOverview === 'function') await renderOverview(); } catch (e) {}
+    try { if (typeof renderBookings === 'function') await renderBookings(); } catch (e) {}
+    try { if (typeof renderContabilidade === 'function') await renderContabilidade(); } catch (e) {}
+
+    if (typeof showToast === 'function') showToast('ok', 'Gift card adicionado com sucesso!');
+    else alert('Gift card adicionado com sucesso! Código: ' + code);
   }
 
   // =====================================================
