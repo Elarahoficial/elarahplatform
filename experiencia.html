@@ -529,16 +529,24 @@
         var html = '';
         var picked = false;
         g.slots.forEach(function (s, i) {
-          var rest = s.vagasTotal == null ? null : (s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal);
+          var cap = s.vagasTotal != null ? Number(s.vagasTotal) : null;
+          var rest = cap == null ? null : (s.vagasRestantes != null ? Number(s.vagasRestantes) : cap);
           var soldOut = rest !== null && rest <= 0;
           var cls = 'exp-detail__horario-btn';
           if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
           else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
           var label = s.horario + (soldOut ? ' (esgotado)' : '');
-          // Escassez honesta: só mostra quando restam POUCAS vagas reais
-          // (≤4 e >0). Dado vem de vagasRestantes — nada inventado.
-          var scarce = (!soldOut && rest != null && rest > 0 && rest <= 4)
-            ? '<span class="exp-detail__scarce">últimas ' + rest + '</span>'
+          // Escassez honesta e mais agressiva: mostra quando a turma está
+          // realmente enchendo — restam ≤40% das vagas, OU ≤6 vagas em
+          // turmas maiores (cap ≥ 10). Exige rest < cap, então NUNCA
+          // aparece em turma vazia. Tudo vem de vagasRestantes reais —
+          // nada inventado. "1" vira "última vaga" (português correto).
+          var showScarce = !soldOut && cap != null && rest != null && rest > 0 &&
+            rest < cap && (rest <= cap * 0.4 || (rest <= 6 && cap >= 10));
+          var scarce = showScarce
+            ? '<span class="exp-detail__scarce">' +
+                (rest === 1 ? 'última vaga' : 'últimas ' + rest) +
+              '</span>'
             : '';
           html += '<button type="button" class="' + cls + '"' +
                   (soldOut ? ' disabled' : '') +
