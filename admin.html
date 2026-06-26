@@ -1138,9 +1138,16 @@
 
     <!-- ===== PROSPECCAO PANEL (CRM de parceiros) ===== -->
     <div class="admin__panel" id="panel-prospects">
-      <div class="admin__header">
-        <h1 class="admin__page-title">Prospecção</h1>
-        <p class="admin__page-subtitle">CRM de possíveis parceiros — pesquisa, contato, follow-up e promoção a fornecedor</p>
+      <div class="admin__header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Prospecção</h1>
+          <p class="admin__page-subtitle">CRM de possíveis parceiros — pesquisa, contato, follow-up e promoção a fornecedor</p>
+        </div>
+        <div style="text-align:right;">
+          <button id="pf-run" class="admin__add-btn" type="button" title="Busca novos parceiros no Google Maps e adiciona aqui (sem repetir)">🔎 Buscar leads agora</button>
+          <div id="pf-status" style="font-size:.8rem;color:#888;margin-top:6px;"></div>
+          <div style="font-size:.72rem;color:#bbb;margin-top:2px;">O agente já faz isso sozinho toda segunda.</div>
+        </div>
       </div>
 
       <div class="admin__stats">
@@ -4451,6 +4458,7 @@
 <script src="admin-insights.js?v=2"></script>
 <script src="admin-broadcast.js?v=2"></script>
 <script src="admin-eventos.js?v=2"></script>
+<script src="admin-prospect-finder.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=191"></script>
