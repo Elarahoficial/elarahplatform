@@ -293,6 +293,13 @@
         </svg>
         <span>Diagnóstico IA</span>
       </button>
+
+      <button class="admin__nav-item" data-panel="broadcast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/>
+        </svg>
+        <span>Novidades</span>
+      </button>
     </nav>
 
     <a href="feed.html" target="_blank" rel="noopener"
@@ -3408,6 +3415,49 @@
       <div id="insights-result" style="display:none;margin-top:18px;"></div>
     </div>
 
+    <div class="admin__panel" id="panel-broadcast">
+      <div class="admin__header">
+        <div>
+          <h1 class="admin__title">Novidades — e-mail pra todo mundo</h1>
+          <p class="admin__subtitle">
+            Tem uma novidade? Escreve aqui <strong>uma vez</strong> e dispara pra
+            <strong>todos os cadastrados + quem já comprou</strong> de uma vez só.
+            Antes de mandar pra todo mundo, dá pra <strong>enviar um teste só pra você</strong>.
+            Todo e-mail leva um link de descadastro (exigência da lei) — quem sair, o
+            sistema respeita sozinho.
+          </p>
+        </div>
+      </div>
+
+      <section class="admin__analytics-card" style="display:grid;gap:14px;max-width:640px;">
+        <label style="font-size:.82rem;color:#555;font-weight:600;">Assunto (título do e-mail)
+          <input id="bc-assunto" type="text" maxlength="120" placeholder="Ex.: Novas experiências de inverno chegaram 🧣"
+            style="display:block;width:100%;margin-top:6px;padding:10px 12px;border:1px solid #e3d8c6;border-radius:9px;font-size:.95rem;box-sizing:border-box;">
+        </label>
+        <label style="font-size:.82rem;color:#555;font-weight:600;">Mensagem
+          <textarea id="bc-mensagem" rows="8" placeholder="Escreva como se estivesse falando com um cliente. Pode dar Enter pra separar parágrafos."
+            style="display:block;width:100%;margin-top:6px;padding:10px 12px;border:1px solid #e3d8c6;border-radius:9px;font-size:.95rem;line-height:1.5;box-sizing:border-box;resize:vertical;"></textarea>
+        </label>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button id="bc-preview-btn" class="admin__btn" type="button">Ver prévia</button>
+          <button id="bc-test-btn" class="admin__btn" type="button">Enviar teste pra mim</button>
+          <button id="bc-send-btn" class="admin__btn admin__btn--primary" type="button">
+            Enviar pra todos (<span id="bc-count">…</span>)
+          </button>
+          <span id="bc-status" style="font-size:.85rem;color:#888;"></span>
+        </div>
+        <p style="margin:0;font-size:.76rem;color:#aaa;">
+          O plano grátis do Resend manda até 100 e-mails por dia. Se tiver mais gente que
+          isso, o disparo manda os 100 e avisa quantos faltam — aí é só rodar de novo no
+          dia seguinte (ou subir o plano do Resend).
+        </p>
+      </section>
+
+      <div id="bc-preview" style="display:none;margin-top:18px;max-width:640px;"></div>
+      <div id="bc-history" style="margin-top:22px;max-width:640px;"></div>
+    </div>
+
   </main>
 </div>
 
@@ -4383,6 +4433,7 @@
 <script src="admin-social.js?v=11"></script>
 <script src="admin-social-analysis.js?v=5"></script>
 <script src="admin-insights.js?v=2"></script>
+<script src="admin-broadcast.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=191"></script>
