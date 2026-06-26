@@ -183,6 +183,10 @@
     .exp-detail__trust { list-style: none; margin: 16px 0; padding: 16px 0 0; border-top: 1px dashed #ebe1d0; display: grid; gap: 9px; }
     .exp-detail__trust li { font-size: .82rem; color: #5a5a5a; display: flex; align-items: center; gap: 8px; }
     .exp-detail__trust li svg { width: 15px; height: 15px; color: #1c7a43; flex-shrink: 0; }
+    .exp-detail__group-cta { display: flex; align-items: center; gap: 11px; margin-top: 14px; padding: 12px 14px; border: 1px solid #d8efe0; background: #f3fbf6; border-radius: 12px; text-decoration: none; color: #2c5a43; font-size: .8rem; line-height: 1.35; transition: background .15s; }
+    .exp-detail__group-cta:hover { background: #e9f7ef; }
+    .exp-detail__group-cta svg { width: 24px; height: 24px; flex-shrink: 0; color: #25D366; }
+    .exp-detail__group-cta strong { color: #147a40; }
     @media (min-width: 900px) {
       .exp-detail__layout { grid-template-columns: minmax(0,1fr) 360px;
         grid-template-areas: "head side" "body side"; gap: 0 44px; }
@@ -613,6 +617,21 @@
         '<li>' + _checkSvg + 'Suporte no WhatsApp se precisar</li>' +
       '</ul>';
 
+    // CTA "fechar em grupo" — abre WhatsApp já com o nome da experiência.
+    // Captura demanda de aniversário/empresa/turma privada (ticket alto)
+    // sem inventar número nenhum. Número = o mesmo do site.
+    var _waGroupMsg = 'Olá! Quero fechar a experiência "' + (exp.nome || '') +
+      '" para um grupo / turma privada. Pode me ajudar com datas e valores?';
+    var _waSvg = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4 0-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>';
+    var groupHtml =
+      '<a class="exp-detail__group-cta" target="_blank" rel="noopener"' +
+        ' href="https://wa.me/5511914455930?text=' + encodeURIComponent(_waGroupMsg) + '"' +
+        ' data-analytics="group_whatsapp_click" data-analytics-category="booking"' +
+        ' data-analytics-label="' + esc(exp.nome || '') + '">' +
+        _waSvg +
+        '<span><strong>Quer fechar em grupo?</strong> Aniversário, empresa ou turma privada — chama a gente no WhatsApp.</span>' +
+      '</a>';
+
     // Description — section destacada "O que você vai viver".
     // Header + ícone estrela + card creme. Substitui o modal-gate
     // que vinha antes do checkout (PR a1c8bc5), com a vantagem de
@@ -710,6 +729,7 @@
           'Copiar link' +
         '</button>' +
       '</div>' +
+      groupHtml +
       '</aside>' +
       '<div class="exp-detail__body">' +
       descHtml +
