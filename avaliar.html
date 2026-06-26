@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Avaliar experiência · Elarah</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #faf6f0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #2c211a; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 40px 18px; }
+    .card { background: #fff; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.07); overflow: hidden; }
+    .card__top { background: linear-gradient(135deg,#f6d5a8,#f0a05e); padding: 26px; text-align: center; }
+    .card__top h1 { font-family: Georgia, serif; margin: 0; font-size: 26px; color: #1a1a1a; }
+    .card__body { padding: 26px 26px 30px; }
+    h2 { font-size: 19px; margin: 0 0 6px; color: #1a1a1a; }
+    .sub { color: #777; font-size: 14px; margin: 0 0 20px; line-height: 1.5; }
+    .stars { display: flex; gap: 6px; justify-content: center; margin: 6px 0 20px; }
+    .star { font-size: 42px; cursor: pointer; color: #e3d8c5; transition: color .12s, transform .1s; line-height: 1; }
+    .star:hover { transform: scale(1.1); }
+    .star.on { color: #f0a05e; }
+    textarea { width: 100%; min-height: 110px; border: 1px solid #e3d8c6; border-radius: 12px; padding: 12px 14px; font-size: 15px; font-family: inherit; resize: vertical; }
+    .btn { display: block; width: 100%; margin-top: 16px; background: #f0a05e; color: #fff; border: none; font-weight: 700; font-size: 16px; padding: 14px; border-radius: 999px; cursor: pointer; }
+    .btn:disabled { opacity: .6; cursor: default; }
+    .msg { text-align: center; font-size: 15px; margin-top: 14px; }
+    .done { text-align: center; padding: 20px 0; }
+    .done .big { font-size: 46px; }
+    .hide { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="card__top"><h1>Elarah</h1></div>
+      <div class="card__body">
+        <div id="form-area">
+          <h2>Como foi sua experiência?</h2>
+          <p class="sub" id="exp-sub">Sua opinião ajuda muita gente a decidir viver isso também. 🧡</p>
+          <div class="stars" id="stars">
+            <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
+            <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
+            <span class="star" data-n="5">★</span>
+          </div>
+          <textarea id="comentario" placeholder="Conta pra gente como foi! (opcional)"></textarea>
+          <button class="btn" id="enviar" type="button">Enviar avaliação</button>
+          <div class="msg" id="msg"></div>
+        </div>
+        <div class="done hide" id="done-area">
+          <div class="big">🧡</div>
+          <h2 id="done-title">Obrigado pela avaliação!</h2>
+          <p class="sub" id="done-sub">Você ajudou demais a Elarah. A gente se vê na próxima experiência!</p>
+          <a class="btn" href="https://elarah.com.br" style="text-decoration:none;text-align:center;">Ver mais experiências</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var FN = 'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/reviews';
+      var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
+      var q = new URLSearchParams(location.search);
+      var bookingId = q.get('b') || '';
+      var token = q.get('t') || '';
+      var nota = parseInt(q.get('nota'), 10);
+      if (!(nota >= 1 && nota <= 5)) nota = 0;
+
+      var starsEl = document.getElementById('stars');
+      var stars = Array.prototype.slice.call(starsEl.querySelectorAll('.star'));
+      function paint(n) { stars.forEach(function (s) { s.classList.toggle('on', parseInt(s.dataset.n, 10) <= n); }); }
+      stars.forEach(function (s) {
+        s.addEventListener('mouseenter', function () { paint(parseInt(s.dataset.n, 10)); });
+        s.addEventListener('click', function () { nota = parseInt(s.dataset.n, 10); paint(nota); });
+      });
+      starsEl.addEventListener('mouseleave', function () { paint(nota); });
+      paint(nota);
+
+      var btn = document.getElementById('enviar');
+      var msg = document.getElementById('msg');
+
+      if (!bookingId || !token) {
+        msg.textContent = 'Link inválido. Use o link que chegou no seu e-mail.';
+        msg.style.color = '#b3261e';
+        btn.disabled = true;
+      }
+
+      btn.addEventListener('click', async function () {
+        if (!(nota >= 1 && nota <= 5)) { msg.textContent = 'Escolha de 1 a 5 estrelas 🙂'; msg.style.color = '#b3261e'; return; }
+        btn.disabled = true; msg.textContent = 'Enviando…'; msg.style.color = '#888';
+        try {
+          var res = await fetch(FN, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+            body: JSON.stringify({ mode: 'submit', booking_id: bookingId, token: token, nota: nota, comentario: document.getElementById('comentario').value })
+          });
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok || !data.ok) throw new Error(data.error || ('Erro ' + res.status));
+          document.getElementById('form-area').classList.add('hide');
+          var done = document.getElementById('done-area'); done.classList.remove('hide');
+          if (data.already) {
+            document.getElementById('done-title').textContent = 'Você já tinha avaliado 🧡';
+            document.getElementById('done-sub').textContent = 'Obrigado de novo! A gente se vê na próxima.';
+          }
+        } catch (e) {
+          msg.textContent = 'Ops: ' + (e.message || e); msg.style.color = '#b3261e'; btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
