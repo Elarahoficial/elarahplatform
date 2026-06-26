@@ -176,7 +176,72 @@
     } catch (_) { /* tabela pode não existir ainda */ }
   }
 
+  // ===== Newsletter automática (auto-newsletter) =====
+  var NL_FN = 'auto-newsletter';
+
+  async function callNl(payload) {
+    var s = await session();
+    if (!s) throw new Error('Sessão expirou — faça login de novo.');
+    var res = await fetch(getSupabaseUrl() + '/functions/v1/' + NL_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token },
+      body: JSON.stringify(payload),
+    });
+    var data = await res.json().catch(function () { return {}; });
+    if (!res.ok || !data.ok) throw new Error(data.error || data.detail || ('HTTP ' + res.status));
+    return data;
+  }
+
+  function setNlStatus(msg, color) {
+    var st = el('nl-status');
+    if (st) { st.textContent = msg || ''; st.style.color = color || '#888'; }
+  }
+
+  async function nlPreview() {
+    var box = el('nl-preview');
+    setNlStatus('Calculando o que está em alta…');
+    try {
+      var d = await callNl({ mode: 'preview' });
+      var cards = (d.trending || []).map(function (e) {
+        return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px dashed #eee;">' +
+          '<div style="font-size:.9rem;color:#1a1a1a;font-weight:600;">' + esc(e.nome) + '</div>' +
+          '<div style="font-size:.75rem;color:#a4663b;">' + esc(e.categoria) + '</div></div>';
+      }).join('');
+      if (box) {
+        box.innerHTML =
+          '<div style="font-size:.8rem;color:#666;margin-bottom:6px;">Semana <strong>' + esc(d.week_key) +
+            '</strong> · assunto: <em>' + esc(d.assunto) + '</em></div>' +
+          '<div style="font-size:.78rem;color:#888;margin-bottom:4px;">Em alta (vai pra quem não tem histórico):</div>' +
+          (cards || '<div style="font-size:.82rem;color:#999;">Sem dados de visita ainda — vão as experiências ativas.</div>') +
+          '<div style="font-size:.76rem;color:#aaa;margin-top:8px;">Personaliza por categoria pra quem já navegou logado (' +
+            ((d.categorias || []).length) + ' categorias cobertas).</div>';
+        box.style.display = 'block';
+      }
+      setNlStatus('');
+    } catch (e) { setNlStatus('Falha: ' + (e.message || e), '#b3261e'); }
+  }
+
+  async function nlTest() {
+    var s = await session();
+    var myEmail = s && s.user && s.user.email;
+    if (!myEmail) { setNlStatus('Não achei seu e-mail de login.', '#b3261e'); return; }
+    var btn = el('nl-test-btn');
+    if (btn) btn.disabled = true;
+    setNlStatus('Enviando teste pra ' + myEmail + '…');
+    try {
+      await callNl({ mode: 'test', test_email: myEmail });
+      setNlStatus('✅ Teste enviado pra ' + myEmail + ' — confira a caixa.', '#1c7a43');
+    } catch (e) {
+      setNlStatus('Falha no teste: ' + (e.message || e), '#b3261e');
+    } finally { if (btn) btn.disabled = false; }
+  }
+
   function init() {
+    var nlP = el('nl-preview-btn');
+    if (nlP && !nlP.dataset.wired) { nlP.dataset.wired = '1'; nlP.addEventListener('click', nlPreview); }
+    var nlT = el('nl-test-btn');
+    if (nlT && !nlT.dataset.wired) { nlT.dataset.wired = '1'; nlT.addEventListener('click', nlTest); }
+
     var wired = el('bc-send-btn');
     if (wired && !wired.dataset.wired) {
       wired.dataset.wired = '1';
