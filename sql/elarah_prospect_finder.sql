@@ -17,10 +17,12 @@ alter table public.prospects
 alter table public.prospects
   add column if not exists origem text;
 
--- Não deixa entrar o mesmo lugar 2x (índice único só quando há place_id).
+-- Não deixa entrar o mesmo lugar 2x. Índice único NÃO-parcial (Postgres
+-- trata NULL como distinto, então vários prospects manuais sem place_id
+-- continuam permitidos). Precisa ser não-parcial pro upsert ON CONFLICT
+-- da Edge Function conseguir referenciá-lo.
 create unique index if not exists prospects_google_place_id_uidx
-  on public.prospects (google_place_id)
-  where google_place_id is not null;
+  on public.prospects (google_place_id);
 
 -- =========================================================
 -- VERIFICAÇÃO
