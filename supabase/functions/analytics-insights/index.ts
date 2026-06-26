@@ -89,6 +89,10 @@ async function authorizeRequest(
   const m = auth ? /^Bearer\s+(.+)$/i.exec(auth) : null;
   if (!m) return { ok: false, trigger: "manual" };
   const token = m[1];
+  // 1) senha própria do cron (CRON_SECRET) — caminho confiável.
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  if (cronSecret && token === cronSecret) return { ok: true, trigger: "cron" };
+  // 2) service_role key (compatibilidade).
   try {
     const serviceRole = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
     if (token === serviceRole) return { ok: true, trigger: "cron" };

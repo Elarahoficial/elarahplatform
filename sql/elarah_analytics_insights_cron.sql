@@ -41,6 +41,11 @@ end $$;
 -- mode "rules" = CUSTO ZERO (diagnóstico por regras, sem IA). É o
 -- padrão. Pra usar a IA (Claude, pago ~US$1-4/mês): cadastre o secret
 -- ANTHROPIC_API_KEY e troque o body pra '{"trigger":"cron","mode":"ai"}'.
+--
+-- AUTENTICAÇÃO: usa a senha própria CRON_SECRET (cadastrada em
+-- Edge Functions → Secrets). Troque 'TROQUE_PELA_SUA_CRON_SECRET'
+-- pelo mesmo valor que você pôs no secret. (Mais confiável que
+-- depender da service_role key bater com a do ambiente.)
 select cron.schedule(
   'elarah-analytics-insights-daily',
   '0 11 * * *',
@@ -49,12 +54,7 @@ select cron.schedule(
       url     := 'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/analytics-insights',
       headers := jsonb_build_object(
         'Content-Type',  'application/json',
-        'Authorization', 'Bearer ' || (
-          select decrypted_secret
-            from vault.decrypted_secrets
-           where name = 'elarah_service_role_key'
-           limit 1
-        )
+        'Authorization', 'Bearer TROQUE_PELA_SUA_CRON_SECRET'
       ),
       body    := '{"trigger":"cron","mode":"rules","period_days":30}'::jsonb,
       timeout_milliseconds := 120000

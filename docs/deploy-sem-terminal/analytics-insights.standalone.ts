@@ -32,6 +32,9 @@ const ADMIN_NOTIFY_EMAILS = Deno.env.get("ADMIN_NOTIFY_EMAILS") ?? "";
 const DEFAULT_ADMIN_EMAIL = "contato.elarah@gmail.com";
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-opus-4-8";
+// Senha própria do cron (você define em Edge Functions → Secrets). Mais
+// confiável que depender da service_role key bater com a do ambiente.
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
 // ---------- CORS ----------
 const corsHeaders: Record<string, string> = {
@@ -56,6 +59,9 @@ async function authorizeRequest(req: Request): Promise<{ ok: boolean; trigger: "
   const m = auth ? /^Bearer\s+(.+)$/i.exec(auth) : null;
   if (!m) return { ok: false, trigger: "manual" };
   const token = m[1];
+  // 1) senha própria do cron (caminho confiável)
+  if (CRON_SECRET && token === CRON_SECRET) return { ok: true, trigger: "cron" };
+  // 2) service_role key (compatibilidade)
   if (SUPABASE_SERVICE_ROLE_KEY && token === SUPABASE_SERVICE_ROLE_KEY) {
     return { ok: true, trigger: "cron" };
   }
