@@ -683,19 +683,21 @@
 
   // ---------- Escassez (selo "últimas N vagas") ----------
   // Regra ÚNICA de escassez, usada na página da experiência E nos cards
-  // (home/categoria) — assim os dois NUNCA divergem. Honesta: só dispara
-  // com vaga REAL e quando a turma está enchendo de verdade:
-  //   • restam ≤40% das vagas, OU
-  //   • restam ≤6 vagas em turmas de 10+ lugares.
-  // Exige rest < cap → nunca aparece em turma vazia. Retorna o número de
-  // vagas restantes quando deve mostrar o selo, ou null.
+  // (home/categoria) — assim os dois NUNCA divergem. Honesta: só usa
+  // vaga REAL. Mostra quando:
+  //   • restam ≤4 vagas (turma íntima de 2-4 lugares já é exclusiva por
+  //     natureza — "últimas 4 vagas" é verdade), OU
+  //   • restam ≤6 vagas numa turma de 10+ (grande enchendo), OU
+  //   • restam ≤40% das vagas (qualquer turma na reta final).
+  // Guard rest > cap só descarta dado inconsistente (restantes > total).
+  // Retorna o nº de vagas restantes quando deve mostrar, ou null.
   function scarcityRest(slot) {
     if (!slot) return null;
     var cap = slot.vagasTotal != null ? Number(slot.vagasTotal) : null;
     if (cap == null || !(cap > 0)) return null;
     var rest = slot.vagasRestantes != null ? Number(slot.vagasRestantes) : cap;
-    if (!(rest > 0) || rest >= cap) return null;
-    var show = rest <= cap * 0.4 || (rest <= 6 && cap >= 10);
+    if (!(rest > 0) || rest > cap) return null;
+    var show = rest <= 4 || (rest <= 6 && cap >= 10) || rest <= cap * 0.4;
     return show ? rest : null;
   }
 
