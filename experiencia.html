@@ -170,6 +170,16 @@
     .exp-detail__head { grid-area: head; min-width: 0; }
     .exp-detail__booking { grid-area: side; min-width: 0; }
     .exp-detail__body { grid-area: body; min-width: 0; }
+    .exp-detail__reviews { margin-top: 30px; padding-top: 22px; border-top: 1px solid #ebe1d0; }
+    .exp-detail__reviews-title { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.4rem; color: #2c211a; margin: 0 0 12px; font-weight: 400; }
+    .exp-detail__reviews-head { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: #2c211a; }
+    .exp-detail__reviews-stars { color: #f0a05e; letter-spacing: 2px; font-size: 1.15rem; }
+    .exp-detail__reviews-count { color: #8a8a8a; font-size: .85rem; }
+    .exp-detail__review { padding: 13px 0; border-top: 1px dashed #ebe1d0; }
+    .exp-detail__review-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+    .exp-detail__review-name { font-weight: 600; color: #2c211a; font-size: .9rem; }
+    .exp-detail__review-stars { color: #f0a05e; font-size: .85rem; letter-spacing: 1px; }
+    .exp-detail__review-text { color: #5a5a5a; font-size: .9rem; line-height: 1.5; }
     .exp-detail__booking {
       background: #fff; border: 1px solid #ebe1d0; border-radius: 16px;
       padding: 20px 20px 22px; box-shadow: 0 8px 28px rgba(0,0,0,.07);
@@ -313,6 +323,44 @@
     var d = document.createElement('div');
     d.textContent = s || '';
     return d.innerHTML;
+  }
+
+  // Avaliações reais (prova social). Lê só as aprovadas (RLS público).
+  // Se não houver nenhuma ainda, não mostra nada — nada de número fake.
+  async function loadReviews(expId, expNome) {
+    var box = document.getElementById('exp-reviews');
+    var client = window.supabaseClient;
+    if (!box || !expId || !client) return;
+    try {
+      var r = await client.from('reviews')
+        .select('nome, nota, comentario, created_at')
+        .eq('experiencia_id', expId).eq('aprovado', true)
+        .order('created_at', { ascending: false }).limit(40);
+      var rows = (r && r.data) || [];
+      if (!rows.length) return;
+      var soma = 0; rows.forEach(function (x) { soma += Number(x.nota) || 0; });
+      var media = soma / rows.length;
+      var full = Math.round(media), head = '';
+      for (var i = 1; i <= 5; i++) head += (i <= full ? '★' : '☆');
+      var withC = rows.filter(function (x) { return x.comentario && String(x.comentario).trim(); });
+      var n = rows.length;
+      box.innerHTML =
+        '<h2 class="exp-detail__reviews-title">O que diz quem já viveu</h2>' +
+        '<div class="exp-detail__reviews-head">' +
+          '<span class="exp-detail__reviews-stars">' + head + '</span>' +
+          '<strong>' + media.toFixed(1).replace('.', ',') + '</strong>' +
+          '<span class="exp-detail__reviews-count">· ' + n + ' avaliação' + (n > 1 ? 'ões' : '') + '</span>' +
+        '</div>' +
+        withC.slice(0, 8).map(function (x) {
+          var nm = x.nome ? esc(x.nome) : 'Cliente';
+          var st = ''; var nt = Number(x.nota) || 0;
+          for (var j = 1; j <= 5; j++) st += (j <= nt ? '★' : '☆');
+          return '<div class="exp-detail__review">' +
+            '<div class="exp-detail__review-top"><span class="exp-detail__review-name">' + nm + '</span>' +
+            '<span class="exp-detail__review-stars">' + st + '</span></div>' +
+            '<div class="exp-detail__review-text">' + esc(x.comentario) + '</div></div>';
+        }).join('');
+    } catch (_) { /* silencioso */ }
   }
 
   // Mesmo normalizador dos cards: NFKD + lowercase do basename pra
@@ -738,8 +786,12 @@
       '</aside>' +
       '<div class="exp-detail__body">' +
       descHtml +
+      '<div id="exp-reviews" class="exp-detail__reviews"></div>' +
       '</div>' +
       '</div>';
+
+    // Avaliações reais (prova social) — carrega async e injeta.
+    loadReviews(exp.id, exp.nome);
 
     // Wire variações do kit — troca foto + preço e guarda a escolha em
     // window.__elarahKitVariant (lido pelo kit-checkout.js no checkout).

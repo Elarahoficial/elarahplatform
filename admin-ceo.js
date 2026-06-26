@@ -39,6 +39,10 @@
     var ev = await c.from('analytics_events').select('event_name, created_at').gte('created_at', since14).limit(50000);
     var pf = await c.from('profiles').select('created_at').gte('created_at', since14).limit(50000);
     var pr = await c.from('prospects').select('status, origem, created_at').limit(50000);
+    var rv = await c.from('reviews').select('nota, comentario, experiencia_nome, created_at').limit(5000);
+    // Buscas do site (90d) — pra sugerir experiência/categoria nova.
+    var since90 = new Date(now - 90 * DAY).toISOString();
+    var se = await c.from('analytics_events').select('target_label, metadata').eq('event_name', 'search_used').gte('created_at', since90).limit(20000);
 
     var exps = [], slotsMap = new Map();
     try { if (window.ElarahData && ElarahData.getAllExperiences) exps = await ElarahData.getAllExperiences(); } catch (_) {}
@@ -50,8 +54,25 @@
       events: (ev && ev.data) || [],
       profiles: (pf && pf.data) || [],
       prospects: (pr && pr.data) || [],
+      reviews: (rv && rv.data) || [],
+      searches: (se && se.data) || [],
       exps: exps, slotsMap: slotsMap,
     };
+  }
+
+  function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
+  // Termo mais buscado que a Elarah NÃO oferece (candidato a experiência nova).
+  function topUnmetSearch(searches, exps) {
+    var oferta = exps.map(function (x) { return norm((x.nome || '') + ' ' + (x.categoria || '')); }).join(' | ');
+    var map = {};
+    searches.forEach(function (e) {
+      var t = norm((e.metadata && e.metadata.term) || e.target_label || '');
+      if (!t || t.length < 3) return;
+      if (oferta.indexOf(t) !== -1) return; // já oferecemos algo parecido
+      map[t] = (map[t] || 0) + 1;
+    });
+    var rows = Object.keys(map).map(function (t) { return { termo: t, total: map[t] }; }).sort(function (a, b) { return b.total - a.total; });
+    return rows[0] && rows[0].total >= 2 ? rows[0] : null;
   }
 
   function qOf(b) { var q = Number(b.quantidade); return Number.isFinite(q) && q > 0 ? q : 1; }
@@ -155,11 +176,23 @@
     var conv = pct(cur.vendas, visitas);
     var ticket = cur.vendas > 0 ? Math.round(cur.fat / cur.vendas) : 0;
 
+    // Avaliações (feedback do cliente)
+    var rv = d.reviews || [];
+    var notaSoma = 0, baixasSemana = 0;
+    rv.forEach(function (x) {
+      notaSoma += Number(x.nota) || 0;
+      var ts = new Date(x.created_at).getTime();
+      if ((Number(x.nota) || 0) <= 2 && inRange(ts, w1a, w1b)) baixasSemana++;
+    });
+    var notaMedia = rv.length ? Math.round((notaSoma / rv.length) * 10) / 10 : null;
+    var unmet = topUnmetSearch(d.searches || [], d.exps || []);
+
     return {
       cur: cur, prev: prev, visitas: visitas, visitasPrev: visitasPrev,
       cadastros: cadastros, cadastrosPrev: cadastrosPrev, conv: conv, ticket: ticket,
       funnel: funnel, worst: worst, topSeller: topSeller, cancel: cancel,
       leadsSemana: leadsSemana, pendentes: pendentes, lotando: lotando, encalhada: encalhada,
+      notaMedia: notaMedia, totalReviews: rv.length, baixasSemana: baixasSemana, unmet: unmet,
     };
   }
 
@@ -182,8 +215,12 @@
     if (m.conv != null && m.conv < 1 && m.visitas >= 100) acoes.push({ p: 2, txt: '🛒 <strong>Conversão em ' + m.conv + '%</strong> — reduza atrito no checkout e destaque o carro-chefe na home.' });
     if (m.topSeller) acoes.push({ p: 2, txt: '🏆 <strong>Dobre no carro-chefe (' + esc(m.topSeller.nome) + ')</strong>: campanha dedicada + mais turmas. O que já vende, vende mais com empurrão.' });
     if (m.cancel >= 3) acoes.push({ p: 1, txt: '⚠️ <strong>' + m.cancel + ' cancelamentos/reembolsos</strong> essa semana — investigue o motivo (preço? data? expectativa?).' });
-    // Alavanca estrutural: prova social (ainda não temos avaliações)
-    acoes.push({ p: 2, txt: '⭐ <strong>Começar a coletar avaliações reais</strong> dos clientes e mostrar na página — é a maior alavanca de conversão ainda parada.' });
+    // Criar experiência nova (do que buscam e não temos)
+    if (m.unmet) acoes.push({ p: 2, txt: '✨ <strong>Criar uma experiência de "' + esc(m.unmet.termo) + '"</strong> — ' + m.unmet.total + ' pessoa(s) buscaram isso no site e a Elarah não tem. Demanda esperando.' });
+    // Feedback do cliente
+    if (m.baixasSemana >= 1) acoes.push({ p: 1, txt: '😟 <strong>' + m.baixasSemana + ' avaliação(ões) baixa(s) (≤2) esta semana</strong> — fale com esses clientes, entenda e recupere a relação.' });
+    if (m.totalReviews === 0) acoes.push({ p: 2, txt: '⭐ <strong>Ative o sistema de avaliações</strong> (já está pronto) — sem prova social na página você perde conversão todo dia.' });
+    else if (m.notaMedia != null && m.notaMedia < 4) acoes.push({ p: 1, txt: '⭐ <strong>Nota média em ' + String(m.notaMedia).replace('.', ',') + '</strong> — abaixo de 4 acende alerta. Leia os comentários e aja na causa.' });
 
     acoes.sort(function (a, b) { return a.p - b.p; });
     return acoes.slice(0, 6);
@@ -219,6 +256,7 @@
     var trend = dV == null ? '' : dV > 0 ? ' Vendas subiram ' + dV + '% vs. a semana passada.' : dV < 0 ? ' Vendas caíram ' + Math.abs(dV) + '%.' : ' Vendas estáveis.';
     var resumo = 'Nesta semana: <strong>' + brl(m.cur.fat) + '</strong> de faturamento em <strong>' + m.cur.vendas + '</strong> venda(s), conversão ' +
       (m.conv == null ? '—' : m.conv + '%') + ', ' + m.cadastros + ' cadastro(s) novo(s) e ' + m.leadsSemana + ' lead(s) de parceiro.' + trend +
+      (m.notaMedia != null ? ' Nota média dos clientes: ' + String(m.notaMedia).replace('.', ',') + ' (' + m.totalReviews + ').' : '') +
       (m.worst ? ' Maior gargalo: ' + esc(m.worst.de) + ' → ' + esc(m.worst.para) + '.' : '');
 
     root.innerHTML =
