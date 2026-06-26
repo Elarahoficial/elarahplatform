@@ -4029,6 +4029,42 @@ if (groupForm) {
       title.style.cssText = "font-family:'DM Serif Display',Georgia,serif;font-size:1.8rem;color:#1a1a1a;margin:0 0 16px;font-weight:400;line-height:1.22;";
       body.appendChild(title);
 
+      // Avaliações reais (prova social): mini-nota AQUI no topo (crédito
+      // na hora) + comentários completos LÁ EMBAIXO, antes do botão de
+      // reservar. Uma busca só preenche os dois. Lê só aprovadas; sem
+      // avaliação, não mostra nada (zero número fake).
+      var ratingChipEl = document.createElement('div');
+      body.appendChild(ratingChipEl);
+      var reviewsBlockEl = document.createElement('div'); // anexado no fim do body
+      (function () {
+        if (!exp || !exp.id || !window.supabaseClient) return;
+        var escR = function (s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; };
+        window.supabaseClient.from('reviews').select('nome, nota, comentario, created_at')
+          .eq('experiencia_id', exp.id).eq('aprovado', true)
+          .order('created_at', { ascending: false }).limit(40)
+          .then(function (r) {
+            var rows = (r && r.data) || [];
+            if (!rows.length) return;
+            var soma = 0; rows.forEach(function (x) { soma += Number(x.nota) || 0; });
+            var media = soma / rows.length, full = Math.round(media), head = '';
+            for (var i = 1; i <= 5; i++) head += (i <= full ? '★' : '☆');
+            var n = rows.length;
+            ratingChipEl.style.cssText = 'display:flex;align-items:center;gap:7px;margin:-6px 0 18px;';
+            ratingChipEl.innerHTML = '<span style="color:#f0a05e;font-size:1rem;letter-spacing:1.5px;">' + head + '</span>' +
+              '<strong style="color:#2c211a;font-size:.95rem;">' + media.toFixed(1).replace('.', ',') + '</strong>' +
+              '<span style="color:#8a8a8a;font-size:.82rem;">· ' + n + ' avaliação' + (n > 1 ? 'ões' : '') + '</span>';
+            var withC = rows.filter(function (x) { return x.comentario && String(x.comentario).trim(); });
+            if (!withC.length) return;
+            reviewsBlockEl.style.cssText = 'margin-top:10px;';
+            reviewsBlockEl.innerHTML = '<div style="font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin:6px 0 12px;">O que diz quem já viveu</div>' +
+              withC.slice(0, 6).map(function (x) {
+                var nm = x.nome ? escR(x.nome) : 'Cliente'; var st = ''; var nt = Number(x.nota) || 0;
+                for (var j = 1; j <= 5; j++) st += (j <= nt ? '★' : '☆');
+                return '<div style="padding:11px 0;border-top:1px dashed #f0e8de;"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:3px;"><span style="font-weight:600;color:#2c211a;font-size:.9rem;">' + nm + '</span><span style="color:#f0a05e;font-size:.82rem;letter-spacing:1px;">' + st + '</span></div><div style="color:#5a5a5a;font-size:.9rem;line-height:1.5;">' + escR(x.comentario) + '</div></div>';
+              }).join('');
+          }).catch(function () {});
+      })();
+
       // Meta chips: data · horário · duração · bairro
       const metaBits = [];
       if (data) metaBits.push({ icon: '📅', text: data });
@@ -4096,36 +4132,6 @@ if (groupForm) {
         incluiWrap.appendChild(incluiText);
         body.appendChild(incluiWrap);
       }
-
-      // Avaliações reais (prova social) NESTE pop-up — é aqui que o
-      // cliente decide. Lê só as aprovadas (RLS público). Se não houver
-      // nenhuma, não injeta nada (zero número fake). Carrega async.
-      (function () {
-        if (!exp || !exp.id || !window.supabaseClient) return;
-        var rvWrap = document.createElement('div');
-        rvWrap.style.cssText = 'margin-top:28px;';
-        body.appendChild(rvWrap);
-        var escR = function (s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; };
-        window.supabaseClient.from('reviews').select('nome, nota, comentario, created_at')
-          .eq('experiencia_id', exp.id).eq('aprovado', true)
-          .order('created_at', { ascending: false }).limit(40)
-          .then(function (r) {
-            var rows = (r && r.data) || [];
-            if (!rows.length) return;
-            var soma = 0; rows.forEach(function (x) { soma += Number(x.nota) || 0; });
-            var media = soma / rows.length, full = Math.round(media), head = '';
-            for (var i = 1; i <= 5; i++) head += (i <= full ? '★' : '☆');
-            var withC = rows.filter(function (x) { return x.comentario && String(x.comentario).trim(); });
-            var html = '<div style="font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;">O que diz quem já viveu</div>' +
-              '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><span style="color:#f0a05e;font-size:1.15rem;letter-spacing:2px;">' + head + '</span><strong style="color:#2c211a;">' + media.toFixed(1).replace('.', ',') + '</strong><span style="color:#8a8a8a;font-size:.85rem;">· ' + rows.length + ' avaliação' + (rows.length > 1 ? 'ões' : '') + '</span></div>' +
-              withC.slice(0, 6).map(function (x) {
-                var nm = x.nome ? escR(x.nome) : 'Cliente'; var st = ''; var nt = Number(x.nota) || 0;
-                for (var j = 1; j <= 5; j++) st += (j <= nt ? '★' : '☆');
-                return '<div style="padding:11px 0;border-top:1px dashed #f0e8de;"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:3px;"><span style="font-weight:600;color:#2c211a;font-size:.9rem;">' + nm + '</span><span style="color:#f0a05e;font-size:.82rem;letter-spacing:1px;">' + st + '</span></div><div style="color:#5a5a5a;font-size:.9rem;line-height:1.5;">' + escR(x.comentario) + '</div></div>';
-              }).join('');
-            rvWrap.innerHTML = html;
-          }).catch(function () {});
-      })();
 
       // "Onde acontece" (se endereço estiver disponível)
       if (endereco && String(endereco).trim() && bairro) {
@@ -4309,6 +4315,10 @@ if (groupForm) {
         // Estado inicial: primeira data → primeiro horário ativo
         renderHorarios(dateOrder[0]);
       })();
+
+      // Comentários das avaliações — logo antes do botão, como empurrão
+      // final na hora de decidir. (A mini-nota já apareceu lá no topo.)
+      body.appendChild(reviewsBlockEl);
 
       // Spacer pra o conteúdo poder rolar além do footer
       const spacer = document.createElement('div');
