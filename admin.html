@@ -2245,29 +2245,10 @@
         <p class="ana-funnel__note" id="ana-funnel-note"></p>
       </section>
 
-      <!-- Top experiências -->
-      <section class="ana-section">
-        <div class="ana-section__header">
-          <h2 class="ana-section__title">Experiências que mais vendem</h2>
-          <p class="ana-section__hint">Ordenado por receita. Use isso pra decidir o que empurrar no marketing.</p>
-        </div>
-        <div class="admin__table-wrap admin__table-wrap--flush">
-          <table class="admin__table ana-table">
-            <thead>
-              <tr>
-                <th>Experiência</th>
-                <th class="ana-num">Vendas</th>
-                <th class="ana-num">Receita</th>
-                <th class="ana-num">Visualizações</th>
-                <th class="ana-num">Conversão</th>
-              </tr>
-            </thead>
-            <tbody id="ana-top-experiences-body">
-              <tr><td colspan="5" class="admin__table-empty">Sem dados.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <!-- "Experiências que mais vendem" foi REMOVIDA daqui: virou o
+           "Mais vendem" do Agente de Eventos IA (mais abaixo nesta aba),
+           evitando duplicar a mesma informação. renderTopExperiences()
+           no admin.js já tem guard (if !tbody return), então não quebra. -->
 
       <!-- Top fornecedores -->
       <section class="ana-section">
