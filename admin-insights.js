@@ -1,12 +1,13 @@
 /* =============================================================
-   ELARAH — Diagnóstico IA ("Onde estamos pecando")
+   ELARAH — Diagnóstico IA ("Onde estamos pecando") — AUTÔNOMO
    -------------------------------------------------------------
-   Front do agente de analytics. Chama a Edge Function
-   analytics-insights (que lê os dados e roda a Claude) e
-   renderiza o diagnóstico no painel admin.
+   O agente roda SOZINHO todo dia (via cron na Edge Function) e:
+     - grava o diagnóstico em public.analytics_insights_runs
+     - manda o resumo por e-mail pros admins
 
-   Modo "sempre avisar antes": isto é só leitura. O agente gera o
-   diagnóstico pra Maria Fernanda ler — não altera nada sozinho.
+   Este front só MOSTRA o último diagnóstico gravado — abriu a aba,
+   já aparece atualizado, sem ninguém clicar. Tem um "Atualizar
+   agora" opcional pra quem quiser forçar um na hora.
 
    Auto-contido: injeta seu próprio CSS e não depende do admin.js.
    ============================================================= */
@@ -15,7 +16,6 @@
 
   function sb() { return window.supabaseClient || null; }
 
-  // URL base do Supabase — mesma lógica das outras integrações.
   function getSupabaseUrl() {
     try {
       if (window.SUPABASE_URL) return window.SUPABASE_URL;
@@ -32,7 +32,6 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // ---- CSS próprio (não depende de classes que podem não existir) ----
   function injectStyles() {
     if (el('insights-styles')) return;
     const css = `
@@ -60,6 +59,7 @@
       .ins-kpi{background:#fff8ee;border:1px solid #f0d8bf;border-radius:12px;padding:12px 16px;min-width:130px}
       .ins-kpi__v{font-size:1.3rem;font-weight:700;color:#1a1a1a}
       .ins-kpi__l{font-size:.72rem;color:#a4663b;text-transform:uppercase;letter-spacing:.04em}
+      .ins-empty{color:#777;font-size:.95rem;line-height:1.6}
     `;
     const style = document.createElement('style');
     style.id = 'insights-styles';
@@ -79,11 +79,25 @@
       </div>`;
   }
 
+  // Aceita tanto o formato da Edge Function (generated_at) quanto o
+  // da linha gravada no banco (created_at).
+  function normalize(p) {
+    return {
+      when: p.generated_at || p.created_at || null,
+      period_days: p.period_days,
+      model: p.model,
+      insights: p.insights || {},
+      metrics: p.metrics || {},
+      trigger: p.trigger,
+    };
+  }
+
   function render(payload) {
     const root = el('insights-result');
     if (!root) return;
-    const ins = payload.insights || {};
-    const m = payload.metrics || {};
+    const d = normalize(payload);
+    const ins = d.insights;
+    const m = d.metrics;
 
     const badgeClass = 'ins-badge--' + (ins.saude_geral || 'atencao');
     const badgeLabel = ({ boa: 'Saúde boa', atencao: 'Requer atenção', critica: 'Crítico' })[ins.saude_geral] || 'Diagnóstico';
@@ -102,8 +116,8 @@
     ).join('') || '<p class="ins-detalhe">Nenhum problema crítico identificado.</p>';
 
     const funil = (ins.funil_observacoes || []).map(f => `<li>${esc(f)}</li>`).join('');
-
-    const when = payload.generated_at ? new Date(payload.generated_at).toLocaleString('pt-BR') : '';
+    const when = d.when ? new Date(d.when).toLocaleString('pt-BR') : '';
+    const origem = d.trigger === 'cron' ? 'atualização automática' : 'atualização manual';
 
     root.innerHTML = `
       <div class="ins-grid">
@@ -121,11 +135,59 @@
           ${fortes}
         </div>
         ${funil ? `<div class="ins-card"><h3 class="ins-h">Leitura do funil</h3><ul class="ins-funil">${funil}</ul></div>` : ''}
-        <p class="ins-meta">Gerado em ${esc(when)} · período de ${esc(payload.period_days)} dias · modelo ${esc(payload.model)} · diagnóstico para leitura (nenhuma alteração foi feita).</p>
+        <p class="ins-meta">Última ${esc(origem)}: ${esc(when)} · período de ${esc(d.period_days)} dias · modelo ${esc(d.model)} · só leitura (nenhuma alteração foi feita).</p>
       </div>`;
     root.style.display = 'block';
   }
 
+  function showEmpty() {
+    const root = el('insights-result');
+    if (!root) return;
+    root.innerHTML = `
+      <div class="ins-card">
+        <p class="ins-empty">
+          Ainda não tem diagnóstico gravado. Assim que o agente rodar (todo dia
+          de manhã, automaticamente), ele aparece aqui sozinho e você recebe o
+          resumo por e-mail. Se quiser ver um agora, clique em
+          <strong>Atualizar agora</strong>.
+        </p>
+      </div>`;
+    root.style.display = 'block';
+  }
+
+  // ---- Carrega o último diagnóstico já gravado (sem clicar) ----
+  async function loadLatest() {
+    const status = el('insights-status');
+    const client = sb();
+    if (!client) return;
+    let session;
+    try {
+      const r = await client.auth.getSession();
+      session = r.data && r.data.session;
+    } catch (_) {}
+    if (!session) return;
+
+    try {
+      const { data, error } = await client
+        .from('analytics_insights_runs')
+        .select('created_at, period_days, model, trigger, metrics, insights')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      if (data && data.length) {
+        render(data[0]);
+        if (status) status.textContent = '';
+      } else {
+        showEmpty();
+      }
+    } catch (err) {
+      console.warn('[ElarahInsights] não carregou o último:', err);
+      // Tabela pode não existir ainda — não quebra a aba.
+      showEmpty();
+    }
+  }
+
+  // ---- Força um diagnóstico novo na hora (opcional) ----
   async function generate() {
     const btn = el('insights-generate');
     const status = el('insights-status');
@@ -149,7 +211,6 @@
     const prevLabel = btn.textContent;
     btn.textContent = 'Analisando…';
     if (status) status.textContent = 'Lendo os dados e consultando a Claude…';
-    if (result) result.style.display = 'none';
 
     try {
       const res = await fetch(getSupabaseUrl() + '/functions/v1/analytics-insights', {
@@ -158,7 +219,7 @@
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + session.access_token,
         },
-        body: JSON.stringify({ period_days: periodDays }),
+        body: JSON.stringify({ period_days: periodDays, trigger: 'manual' }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -169,6 +230,7 @@
     } catch (err) {
       console.error('[ElarahInsights] falhou:', err);
       if (status) status.textContent = 'Falha: ' + (err.message || err);
+      if (result && result.style.display === 'none') showEmpty();
     } finally {
       btn.disabled = false;
       btn.textContent = prevLabel;
@@ -182,6 +244,14 @@
       btn.dataset.wired = '1';
       btn.addEventListener('click', generate);
     }
+    // Auto-carrega o último diagnóstico ao abrir a aba (sem clique).
+    const nav = document.querySelector('[data-panel="insights"]');
+    if (nav && !nav.dataset.insightsWired) {
+      nav.dataset.insightsWired = '1';
+      nav.addEventListener('click', loadLatest);
+    }
+    // E já tenta carregar de cara (caso a aba abra direto).
+    loadLatest();
   }
 
   if (document.readyState === 'loading') {

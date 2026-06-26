@@ -481,6 +481,105 @@ export async function sendAdminSaleNotification(
   return result;
 }
 
+// ---------------- DIGEST DIÁRIO DO AGENTE DE ANALYTICS ----------------
+// E-mail automático "Onde estamos pecando" — enviado todo dia pelo cron.
+
+export interface AnalyticsDigestOpts {
+  periodDays: number;
+  model?: string | null;
+  generatedAt?: string | null;
+  insights: {
+    resumo?: string;
+    saude_geral?: "boa" | "atencao" | "critica" | string;
+    pontos_fortes?: Array<{ titulo: string; detalhe: string }>;
+    problemas?: Array<{ titulo: string; gravidade: string; detalhe: string; recomendacao: string }>;
+    funil_observacoes?: string[];
+  };
+  metrics?: Record<string, unknown>;
+}
+
+export function analyticsDigestEmailHtml(opts: AnalyticsDigestOpts): string {
+  const ins = opts.insights || {};
+  const m = (opts.metrics || {}) as Record<string, unknown>;
+
+  const saudeMap: Record<string, { label: string; bg: string; fg: string }> = {
+    boa: { label: "Saúde boa", bg: "#e6f6ec", fg: "#1c7a43" },
+    atencao: { label: "Requer atenção", bg: "#fff4e0", fg: "#a4663b" },
+    critica: { label: "Crítico", bg: "#fdeaea", fg: "#b3261e" },
+  };
+  const saude = saudeMap[String(ins.saude_geral)] || saudeMap.atencao;
+
+  const funil = Array.isArray(m.funil) ? (m.funil as Array<Record<string, unknown>>) : [];
+  const visitas = funil[0] ? Number(funil[0].total) || 0 : 0;
+  const conv = m.conversao_geral_visita_para_pagamento_pct;
+  const kpi = (v: string, l: string) =>
+    `<td style="padding:0 6px;"><div style="background:#fff8ee;border:1px solid #f0d8bf;border-radius:10px;padding:10px 12px;text-align:center;">
+       <div style="font-size:20px;font-weight:700;color:#1a1a1a;">${escapeHtml(v)}</div>
+       <div style="font-size:11px;color:#a4663b;text-transform:uppercase;letter-spacing:.4px;">${escapeHtml(l)}</div>
+     </div></td>`;
+
+  const gravColor: Record<string, string> = { alta: "#b3261e", media: "#a4663b", baixa: "#5a6472" };
+  const problemasHtml = (ins.problemas || []).map((p) =>
+    `<div style="padding:12px 0;border-top:1px dashed #eee;">
+       <div style="font-weight:600;color:#1a1a1a;">⚠️ ${escapeHtml(p.titulo)}
+         <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:${gravColor[p.gravidade] || "#5a6472"};">· ${escapeHtml(p.gravidade)}</span></div>
+       <div style="margin:4px 0 0;color:#444;font-size:14px;line-height:1.5;">${escapeHtml(p.detalhe)}</div>
+       <div style="margin:8px 0 0;padding:8px 12px;background:#faf6f0;border-left:3px solid #f0a05e;border-radius:8px;font-size:13px;color:#5a4a3a;"><strong style="color:#a4663b;">O que fazer:</strong> ${escapeHtml(p.recomendacao)}</div>
+     </div>`
+  ).join("") || `<div style="color:#444;font-size:14px;">Nenhum problema crítico identificado neste período.</div>`;
+
+  const fortesHtml = (ins.pontos_fortes || []).map((p) =>
+    `<div style="padding:10px 0;border-top:1px dashed #eee;">
+       <div style="font-weight:600;color:#1a1a1a;">✅ ${escapeHtml(p.titulo)}</div>
+       <div style="margin:4px 0 0;color:#444;font-size:14px;line-height:1.5;">${escapeHtml(p.detalhe)}</div>
+     </div>`
+  ).join("") || `<div style="color:#444;font-size:14px;">—</div>`;
+
+  const funilHtml = (ins.funil_observacoes || []).map((f) =>
+    `<li style="margin:4px 0;color:#444;font-size:14px;">${escapeHtml(f)}</li>`
+  ).join("");
+
+  const inner = `
+    <h2 style="font-family:Georgia,'DM Serif Display',serif;color:#1a1a1a;margin:0 0 6px;font-size:22px;">Onde estamos pecando 🔍</h2>
+    <p style="margin:0 0 14px;color:#555;">Diagnóstico automático dos últimos ${escapeHtml(String(opts.periodDays))} dias.</p>
+    <div style="display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:4px 12px;border-radius:999px;background:${saude.bg};color:${saude.fg};margin-bottom:14px;">${escapeHtml(saude.label)}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 18px;"><tr>
+      ${kpi(String(m.vendas_pagas ?? 0), "Vendas")}
+      ${kpi(String(m.receita_total ?? "—"), "Receita")}
+      ${kpi(String(visitas), "Visitas")}
+      ${kpi(conv == null ? "—" : conv + "%", "Conversão")}
+    </tr></table>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#2a2a2a;">${escapeHtml(ins.resumo || "")}</p>
+    <h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:18px 0 4px;font-size:17px;">Onde estamos pecando</h3>
+    ${problemasHtml}
+    <h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:22px 0 4px;font-size:17px;">O que está funcionando</h3>
+    ${fortesHtml}
+    ${funilHtml ? `<h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:22px 0 6px;font-size:17px;">Leitura do funil</h3><ul style="padding-left:20px;margin:0;">${funilHtml}</ul>` : ""}
+    <p style="margin:22px 0 0;font-size:12px;color:#999;">Gerado automaticamente${opts.model ? " pelo modelo " + escapeHtml(opts.model) : ""}. Diagnóstico para leitura — nenhuma alteração foi feita no site ou no painel.</p>
+  `;
+  return htmlShell(inner);
+}
+
+// Envia o digest diário pros admins. Best-effort: loga e nunca relança.
+export async function sendAnalyticsDigest(opts: AnalyticsDigestOpts): Promise<EmailResult> {
+  const to = adminNotifyRecipients();
+  const saudeTxt = ({ boa: "✅", atencao: "⚠️", critica: "🚨" } as Record<string, string>)[
+    String(opts.insights?.saude_geral)
+  ] || "🔍";
+  const nProblemas = (opts.insights?.problemas || []).length;
+  const subject = `${saudeTxt} Elarah — diagnóstico do dia` +
+    (nProblemas ? ` (${nProblemas} ${nProblemas === 1 ? "ponto" : "pontos"} de atenção)` : "");
+  const result = await sendEmail({ to, subject, html: analyticsDigestEmailHtml(opts) });
+  if (!result.ok) {
+    console.error(
+      "[elarah/email] FALHA ao enviar digest de analytics —",
+      "to=" + JSON.stringify(to),
+      "error=" + (result.error ?? "?"),
+    );
+  }
+  return result;
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

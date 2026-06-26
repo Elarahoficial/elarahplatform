@@ -2,14 +2,14 @@
 // ELARAH — analytics-insights Edge Function
 // -------------------------------------------------------------
 // POST /functions/v1/analytics-insights
-//   Body (opcional): { period_days?: number }   (default 30)
+//   Body (opcional): { period_days?: number, trigger?, send_email? }
 //
-// Headers:
-//   Authorization: Bearer <jwt do admin>   (uso manual via UI)
+// Headers (uma das opções):
+//   Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>   (cron / pg_net)
+//   Authorization: Bearer <jwt do admin>                (uso manual via UI)
 //
-// O que faz — o agente "Onde estamos pecando":
-//   1. Valida que quem chamou é admin (mesma checagem das outras
-//      functions sensíveis).
+// O que faz — o agente AUTÔNOMO "Onde estamos pecando":
+//   1. Valida quem chamou (service_role do cron OU admin).
 //   2. Lê os dados que JÁ existem no Supabase:
 //        - public.analytics_events (funil de navegação + tráfego)
 //        - public.bookings        (vendas reais + receita)
@@ -17,22 +17,31 @@
 //   3. Manda esse resumo pra Claude (claude-opus-4-8) e pede um
 //      DIAGNÓSTICO em português: o que funciona, onde a conversão
 //      cai, onde a gente está pecando, e o que fazer.
-//   4. Devolve { metrics, insights } pro painel admin renderizar.
+//   4. GRAVA o diagnóstico em public.analytics_insights_runs — assim
+//      o painel admin mostra o último sozinho, sem ninguém clicar.
+//   5. Num disparo de cron (todo dia), ENVIA o digest por e-mail
+//      pros admins (Resend). Roda sozinho, sem botão, sem conversa.
 //
-// IMPORTANTE — modo "sempre avisar antes":
-//   Esta function é READ-ONLY. Ela NÃO altera nada no banco, não
-//   envia e-mail, não muda o painel sozinha. Só gera o diagnóstico
-//   pra Maria Fernanda ler e decidir. Nenhuma ação automática.
+// Sobre alterações: o agente NÃO mexe no site, nas vendas, nas
+// campanhas nem em nada de negócio — ele só LÊ os dados e ESCREVE o
+// próprio diagnóstico (no log + no e-mail). É observador, não operador.
 //
 // Secrets necessários (Supabase → Edge Functions → Secrets):
 //   ANTHROPIC_API_KEY   sk-ant-...   (chave da Claude / Anthropic)
+//   RESEND_API_KEY      re_...       (pro e-mail diário; já usado no projeto)
+//   ADMIN_NOTIFY_EMAILS "maria@elarah.com.br"  (opcional — quem recebe)
 //   (SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o
 //    Supabase já injeta sozinho.)
+//
+// Agendamento: ver sql/elarah_analytics_insights_cron.sql
+// Tabela:      ver sql/elarah_analytics_insights.sql
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin, getServiceClient } from "../_shared/social_db.ts";
+import { requireEnv } from "../_shared/social_config.ts";
+import { sendAnalyticsDigest } from "../_shared/email.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 // Modelo padrão. Pode sobrescrever via secret se quiser trocar.
@@ -63,6 +72,29 @@ const EXTRA_EVENTS = [
 
 interface InsightsBody {
   period_days?: number;
+  trigger?: "cron" | "manual";
+  // Força o envio do e-mail mesmo num disparo manual (default: só no cron).
+  send_email?: boolean;
+}
+
+// Auth — aceita service_role (cron / pg_net) OU admin JWT (UI),
+// mesmo padrão de sync-instagram / refresh-tokens.
+async function authorizeRequest(
+  req: Request,
+): Promise<{ ok: boolean; trigger: "cron" | "manual" }> {
+  const auth = req.headers.get("Authorization");
+  const m = auth ? /^Bearer\s+(.+)$/i.exec(auth) : null;
+  if (!m) return { ok: false, trigger: "manual" };
+  const token = m[1];
+
+  // service_role key (cron) → trigger automático.
+  try {
+    const serviceRole = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    if (token === serviceRole) return { ok: true, trigger: "cron" };
+  } catch { /* sem service role configurada, segue pro admin */ }
+
+  const adminId = await authorizeAdmin(auth);
+  return { ok: !!adminId, trigger: "manual" };
 }
 
 // Conta eventos por nome no período (sem puxar as linhas — usa COUNT).
@@ -279,11 +311,11 @@ serve(async (req) => {
     });
   }
 
-  // ---- Autorização: só admin ----
-  const adminId = await authorizeAdmin(req.headers.get("Authorization"));
-  if (!adminId) {
+  // ---- Autorização: admin (UI) OU service_role (cron) ----
+  const auth = await authorizeRequest(req);
+  if (!auth.ok) {
     return new Response(
-      JSON.stringify({ ok: false, error: "Não autorizado (precisa ser admin)." }),
+      JSON.stringify({ ok: false, error: "Não autorizado (precisa ser admin ou cron)." }),
       { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
@@ -379,12 +411,55 @@ serve(async (req) => {
     );
   }
 
+  const trigger = body.trigger || auth.trigger;
+  const generatedAt = new Date().toISOString();
+
+  // ---- 3. Envia o e-mail (no cron, ou se pedido explicitamente) ----
+  // Best-effort: uma falha aqui NÃO derruba o resto.
+  let emailed = false;
+  if (trigger === "cron" || body.send_email === true) {
+    try {
+      const r = await sendAnalyticsDigest({
+        periodDays,
+        model: ANTHROPIC_MODEL,
+        generatedAt,
+        insights,
+        metrics,
+      });
+      emailed = !!r.ok;
+    } catch (e) {
+      console.error("[analytics-insights] falha ao enviar e-mail", e);
+    }
+  }
+
+  // ---- 4. Guarda o diagnóstico pra o painel mostrar sozinho (sem clique) ----
+  // Best-effort: se a tabela não existir ainda, só loga e segue.
+  try {
+    const sb = getServiceClient();
+    const { error } = await sb.from("analytics_insights_runs").insert({
+      period_days: periodDays,
+      model: ANTHROPIC_MODEL,
+      trigger,
+      saude_geral: insights?.saude_geral ?? null,
+      metrics,
+      insights,
+      emailed,
+    });
+    if (error) {
+      console.warn("[analytics-insights] não salvou o run (tabela existe?)", error.message);
+    }
+  } catch (e) {
+    console.warn("[analytics-insights] erro ao salvar o run", String(e));
+  }
+
   return new Response(
     JSON.stringify({
       ok: true,
-      generated_at: new Date().toISOString(),
+      generated_at: generatedAt,
       model: ANTHROPIC_MODEL,
       period_days: periodDays,
+      trigger,
+      emailed,
       metrics,
       insights,
     }),
