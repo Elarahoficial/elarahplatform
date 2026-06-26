@@ -385,6 +385,20 @@
     return (o == null || o === '' || !Number.isFinite(Number(o))) ? Infinity : Number(o);
   }
 
+  // "Kit em casa" / "Lar em casa" são PRODUTOS (kits DIY enviados pra
+  // casa), não experiências presenciais. Por isso não devem aparecer nas
+  // listagens de experiências (home e página "todas as experiências") —
+  // só na vitrine própria "Elarah em Casa". Match pela categoria
+  // (normalizada, sem acento/caixa) contendo "em casa". Fonte única de
+  // verdade pra esse filtro, usada por script.js e categoria.js.
+  function isHomeKit(exp) {
+    if (!exp || !exp.categoria) return false;
+    var cat = String(exp.categoria)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().trim();
+    return cat.indexOf('em casa') !== -1;
+  }
+
   // Persiste a nova ordem das experiências. Recebe a lista de ids JÁ na
   // ordem desejada e grava `ordem` = posição (0,1,2…) só nos que mudaram.
   // Admin-only. Invalida o cache no fim pra refletir na hora.
@@ -1326,6 +1340,7 @@
     setExperienceActive,
     reorderExperiences,
     ordemKey,
+    isHomeKit,
     invalidateCache,
     isPubliclyVisible,
     deriveEventTimestamp,
