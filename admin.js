@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v30 — filtro fornecedor em Experiências (cache-buster bump)');
+  console.info('[Elarah Admin] admin.js v31 — dica de erro ao salvar venda manual aponta migração consolidada');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -13238,13 +13238,14 @@
     } catch (e) {
       console.error('[Contabilidade] save manual sale:', e);
       const em = String(e.message || e);
-      const hint = em.includes('payments')
-        ? ' — rode sql/elarah_manual_sales_pagamentos.sql no Supabase pra liberar entrada/parcelas.'
-        : (em.includes('event_type_custom')
-          ? ' — rode sql/elarah_manual_sales_eventos_tipos.sql no Supabase.'
-          : ((em.includes('event_type') || em.includes('is_event'))
-            ? ' — rode sql/elarah_manual_sales_eventos.sql (e o _tipos.sql) no Supabase pra liberar a classificação de eventos.'
-            : ''));
+      // Qualquer "coluna não encontrada no schema cache" = falta rodar uma
+      // migração no banco. Aponta o script consolidado que cria todas de
+      // uma vez (idempotente), em vez de adivinhar qual coluna falta.
+      const missingCol = /schema cache|could not find the .* column|column .* does not exist/i.test(em)
+        && /payments|event_type|event_type_custom|is_event|sale_date/i.test(em);
+      const hint = missingCol
+        ? ' — rode sql/elarah_manual_sales_fix_save.sql no SQL Editor do Supabase (cria as colunas que faltam e recarrega o schema).'
+        : '';
       msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
     }
