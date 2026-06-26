@@ -555,7 +555,7 @@ export function analyticsDigestEmailHtml(opts: AnalyticsDigestOpts): string {
     <h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:22px 0 4px;font-size:17px;">O que está funcionando</h3>
     ${fortesHtml}
     ${funilHtml ? `<h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:22px 0 6px;font-size:17px;">Leitura do funil</h3><ul style="padding-left:20px;margin:0;">${funilHtml}</ul>` : ""}
-    <p style="margin:22px 0 0;font-size:12px;color:#999;">Gerado automaticamente${opts.model ? " pelo modelo " + escapeHtml(opts.model) : ""}. Diagnóstico para leitura — nenhuma alteração foi feita no site ou no painel.</p>
+    <p style="margin:22px 0 0;font-size:12px;color:#999;">Gerado automaticamente${opts.model ? " · " + escapeHtml(opts.model) : ""}. Diagnóstico para leitura — nenhuma alteração foi feita no site ou no painel.</p>
   `;
   return htmlShell(inner);
 }

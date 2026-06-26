@@ -1,7 +1,8 @@
 # Agente "Onde estamos pecando" (Diagnóstico IA) — AUTÔNOMO
 
-Primeiro agente de IA da Elarah. Roda **sozinho todo dia**: lê os dados reais
-do site e das vendas (que já estão no Supabase), gera um **diagnóstico** e:
+Primeiro agente da Elarah. Roda **sozinho todo dia** e, por padrão,
+**sem custo nenhum**: lê os dados reais do site e das vendas (que já estão
+no Supabase), gera um **diagnóstico** e:
 
 - **grava** o resultado no banco → o painel admin mostra o último sozinho,
   sem ninguém clicar;
@@ -9,95 +10,92 @@ do site e das vendas (que já estão no Supabase), gera um **diagnóstico** e:
 
 Sem botão, sem conversa. Você só lê.
 
-> **O agente é observador, não operador.** Ele NÃO mexe no site, nas vendas,
-> nas campanhas — só LÊ os dados e ESCREVE o próprio diagnóstico (no log e no
-> e-mail).
+## Dois modos
 
-## Como funciona (visão geral)
+| Modo | Custo | O que é |
+|---|---|---|
+| **`rules`** (padrão) | **ZERO** | Diagnóstico calculado por regras no próprio Supabase. Não usa IA, não precisa de crédito na Anthropic. |
+| **`ai`** (opcional) | ~US$1–4/mês | Usa a Claude pra um diagnóstico em linguagem natural, mais "esperto". Precisa de `ANTHROPIC_API_KEY` + crédito. |
+
+A versão `rules` já te diz onde o funil perde gente, o que vende e o que não,
+tendência vs. período anterior, experiências muito vistas que vendem pouco,
+erros de checkout etc. A `ai` conecta os pontos com mais nuance.
+
+> **Observador, não operador.** Em qualquer modo ele NÃO mexe no site, nas
+> vendas ou nas campanhas — só LÊ os dados e ESCREVE o próprio diagnóstico.
+
+## Como funciona
 
 ```
 [cron diário, 08h BRT]
    ↓ POST /functions/v1/analytics-insights  (service_role via pg_net)
 [analytics-insights]  (Edge Function, Deno)
-   1. lê public.analytics_events + public.bookings → monta métricas
-   2. manda as métricas pra Claude (claude-opus-4-8) → diagnóstico
-   3. grava em public.analytics_insights_runs
-   4. envia o digest por e-mail (Resend) pros admins
+   1. lê analytics_events + bookings → métricas (atual vs anterior)
+   2. diagnóstico:  rules (grátis)  ou  ai (Claude, pago)
+   3. grava em analytics_insights_runs
+   4. envia o digest por e-mail (Resend)
         ↓
-   [admin.html → aba "Diagnóstico IA"]  mostra o último gravado, sozinho
+   [admin.html → aba "Diagnóstico IA"]  mostra o último, sozinho
 ```
 
 Arquivos:
-- `supabase/functions/analytics-insights/index.ts` — a Edge Function.
+- `supabase/functions/analytics-insights/index.ts` — a Edge Function (regras + IA).
 - `supabase/functions/_shared/email.ts` — template do e-mail diário.
 - `admin-insights.js` + aba **Diagnóstico IA** em `admin.html` — o painel.
-- `sql/elarah_analytics_insights.sql` — tabela do log (o painel lê daqui).
+- `sql/elarah_analytics_insights.sql` — tabela do log.
 - `sql/elarah_analytics_insights_cron.sql` — o agendamento diário.
 
-Não cria nada de dados de negócio novo: usa `analytics_events` e `bookings`
-que já existem.
+## Ligar a versão GRÁTIS (sem custo)
 
-## Passo a passo pra deixar automático
-
-### 1. Secrets (Supabase → Edge Functions → Secrets)
-
-```bash
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        # chave da Claude
-# RESEND_API_KEY já está configurado no projeto (e-mails de venda usam ele).
-# Opcional: quem recebe o e-mail diário (default: contato.elarah@gmail.com):
-supabase secrets set ADMIN_NOTIFY_EMAILS="maria@elarah.com.br"
-# Opcional: trocar o modelo (default claude-opus-4-8):
-# supabase secrets set ANTHROPIC_MODEL=claude-opus-4-8
-```
-
-Pegue a `ANTHROPIC_API_KEY` em https://console.anthropic.com → API Keys.
-
-### 2. Banco (SQL Editor do Supabase, nesta ordem)
+### 1. Banco (SQL Editor do Supabase, nesta ordem)
 
 ```sql
--- a) tabela do log
-\i sql/elarah_analytics_insights.sql
--- b) agendamento diário (precisa pg_cron + pg_net ON em Database → Extensions)
-\i sql/elarah_analytics_insights_cron.sql
+\i sql/elarah_analytics_insights.sql          -- tabela do log
+\i sql/elarah_analytics_insights_cron.sql     -- agendamento (pg_cron + pg_net ON)
 ```
 
-O cron reusa o mesmo segredo `elarah_service_role_key` que os jobs de redes
-sociais já usam no Vault. Se ainda não tiver salvo, o cabeçalho do arquivo
-`elarah_analytics_insights_cron.sql` explica como salvar (uma vez só).
+O cron reusa o segredo `elarah_service_role_key` do Vault (o mesmo dos jobs de
+redes sociais). Se ainda não tiver salvo, o cabeçalho do arquivo de cron explica.
 
-### 3. Deploy da função
+### 2. E-mail (opcional, mas recomendado)
+
+`RESEND_API_KEY` já está no projeto. Pra escolher quem recebe:
+
+```bash
+supabase secrets set ADMIN_NOTIFY_EMAILS="maria@elarah.com.br"
+```
+
+### 3. Deploy
 
 ```bash
 supabase functions deploy analytics-insights
 ```
 
-Pronto. A partir daí ele roda **todo dia às 08h (BRT)**, grava o diagnóstico e
-manda o e-mail. Quem abrir a aba **Diagnóstico IA** no admin vê sempre o último,
-atualizado sozinho.
+Pronto — **sem nenhum crédito na Anthropic**. Roda todo dia às 08h (BRT),
+grava e manda o e-mail. Quem abre a aba vê sempre o último.
 
-## Mudar a frequência
+## Ligar a versão com IA (depois, se quiser)
 
-É só re-rodar `sql/elarah_analytics_insights_cron.sql` com outro cron. Exemplos:
-- `0 11 * * *` — 1x ao dia, 08h BRT (default).
-- `0 11,23 * * *` — 2x ao dia (08h e 20h BRT).
-- `0 9-21/3 * * *` — de 3 em 3 horas durante o dia.
+1. Cadastre o crédito/chave: `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
+2. No `sql/elarah_analytics_insights_cron.sql`, troque o body do cron pra
+   `'{"trigger":"cron","mode":"ai","period_days":30}'` e re-rode a migration.
 
-## Custo
+Custo aproximado: Opus ~US$3–4/mês · Sonnet ~US$2 · Haiku ~US$1
+(troca via secret `ANTHROPIC_MODEL`).
 
-Cada diagnóstico é 1 chamada à Claude com entrada pequena (só o resumo de
-métricas, não os dados crus). Centavos por dia. O e-mail vai pelo Resend, que
-já está em uso.
+## Frequência
 
-## Botão "Atualizar agora" (opcional)
+Re-rode `sql/elarah_analytics_insights_cron.sql` com outro cron. Exemplos:
+- `0 11 * * *` — 1x/dia, 08h BRT (default).
+- `0 11,23 * * *` — 2x/dia (08h e 20h BRT).
 
-Na aba tem um botão pra antecipar um diagnóstico fora do horário do automático
-(não envia e-mail — é só pra olhar na hora). Útil pra checar depois de uma
-campanha, por exemplo. O automático segue rodando independente disso.
+## Botão "Atualizar agora"
+
+Na aba tem um botão pra gerar um diagnóstico fora do horário (usa o modo
+`rules`, grátis, e não manda e-mail). O automático segue rodando independente.
 
 ## Próximos passos possíveis
 
 - Disparo de e-mail de follow-up pra todos os usuários da Elarah.
-- Agentes de WhatsApp / e-mail / reuniões (precisam de API externa — ver
-  conversa de escopo).
-- Entregar o digest diário também por WhatsApp (depois que a API oficial do
-  WhatsApp Business estiver conectada).
+- Diagnóstico incluir também o perfil do Instagram (já há integração).
+- Agentes de WhatsApp / e-mail / reuniões (precisam de API externa).

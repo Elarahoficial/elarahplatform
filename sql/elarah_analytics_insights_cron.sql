@@ -37,6 +37,10 @@ end $$;
 -- =========================================================
 -- 08h da manhã: o e-mail chega cedo, com a leitura do dia anterior.
 -- trigger:"cron" faz a function gravar o run E mandar o e-mail.
+--
+-- mode "rules" = CUSTO ZERO (diagnóstico por regras, sem IA). É o
+-- padrão. Pra usar a IA (Claude, pago ~US$1-4/mês): cadastre o secret
+-- ANTHROPIC_API_KEY e troque o body pra '{"trigger":"cron","mode":"ai"}'.
 select cron.schedule(
   'elarah-analytics-insights-daily',
   '0 11 * * *',
@@ -52,7 +56,7 @@ select cron.schedule(
            limit 1
         )
       ),
-      body    := '{"trigger":"cron","period_days":30}'::jsonb,
+      body    := '{"trigger":"cron","mode":"rules","period_days":30}'::jsonb,
       timeout_milliseconds := 120000
     );
   $$
