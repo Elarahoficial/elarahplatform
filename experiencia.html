@@ -28,6 +28,8 @@
     .exp-detail__horario-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
     .exp-detail__horario-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
     .exp-detail__horario-btn--sold-out { opacity: .45; text-decoration: line-through; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__scarce { display: inline-block; margin-left: 7px; font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #c0392b; }
+    .exp-detail__horario-btn--active .exp-detail__scarce { color: #fff3e6; }
     .exp-detail__schedule { margin-bottom: 24px; }
     .exp-detail__schedule-block { margin-bottom: 16px; }
     .exp-detail__schedule-block:last-child { margin-bottom: 0; }
@@ -529,12 +531,17 @@
           if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
           else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
           var label = s.horario + (soldOut ? ' (esgotado)' : '');
+          // Escassez honesta: só mostra quando restam POUCAS vagas reais
+          // (≤4 e >0). Dado vem de vagasRestantes — nada inventado.
+          var scarce = (!soldOut && rest != null && rest > 0 && rest <= 4)
+            ? '<span class="exp-detail__scarce">últimas ' + rest + '</span>'
+            : '';
           html += '<button type="button" class="' + cls + '"' +
                   (soldOut ? ' disabled' : '') +
                   ' data-horario="' + esc(s.horario) + '"' +
                   ' data-data="' + esc(s.data || g.dm) + '"' +
                   ' data-data-label="' + esc(g.wd + ', ' + g.dm) + '"' +
-                  ' data-slot-id="' + esc(s.id) + '">' + esc(label) + '</button>';
+                  ' data-slot-id="' + esc(s.id) + '">' + esc(label) + scarce + '</button>';
         });
         return html;
       }
