@@ -13349,6 +13349,11 @@
     if (!tbody) return;
     const sb = window.supabaseClient;
     if (!sb) return;
+    // Garante a delegação de clique (editar/excluir venda manual) mesmo
+    // quando a admin vai direto pra aba Compras sem abrir Contabilidade —
+    // sem isto, o botão "Editar" das vendas manuais não abre o modal,
+    // porque o listener só era registrado por renderContabilidade.
+    if (!_finWired) { _finWireControls(); _finWired = true; }
     // Lê filtros adicionais da aba Compras (fornecedor + status_fornecedor)
     // pra que vendas manuais respeitem o mesmo recorte que bookings.
     const filterFornRaw = (document.getElementById('bookings-filter-fornecedor')?.value || '').trim();
