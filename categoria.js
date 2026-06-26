@@ -377,6 +377,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderCards() {
     // Filter by bairro only — categoria drive o modo de render.
     const base = experiences.filter(function (exp) {
+      // Kits "Elarah em Casa" são produto, não experiência: fora da
+      // listagem (só aparecem na vitrine própria em-casa.html).
+      if (window.ElarahData && ElarahData.isHomeKit && ElarahData.isHomeKit(exp)) return false;
       if (activeBairro && exp.bairro !== activeBairro) return false;
       if (activeDateRange) {
         const hit = (exp._futureDates || []).some(function (ts) {

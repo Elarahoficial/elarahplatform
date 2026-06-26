@@ -140,9 +140,12 @@ if (categoriaURL) activeCategoria = categoriaURL;
       const c = String(exp.categoria).trim();
       if (!c) return;
       const k = c.toLowerCase();
-      // "Kit em casa" não entra na navegação (menu/faixa de categorias)
-      // — acessível só pelo link "Elarah em Casa" no topo do header.
-      if (k === 'kit em casa') return;
+      // Kits "em casa" (Kit em casa / Lar em casa) não entram na navegação
+      // (menu/faixa de categorias) — acessíveis só pelo link "Elarah em
+      // Casa" no topo do header. Mesmo critério de ElarahData.isHomeKit.
+      if ((window.ElarahData && ElarahData.isHomeKit)
+        ? ElarahData.isHomeKit(exp)
+        : k.indexOf('em casa') !== -1) return;
       if (!categoriasSet.has(k)) {
         categoriasSet.add(k);
         categoriasOriginalCase.set(k, c);
@@ -266,6 +269,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
     if (!grid || !countEl || !emptyEl) return;
 
     const filtered = experiences.filter((exp) => {
+      // Kits "Elarah em Casa" são produto, não experiência: fora da
+      // listagem (só aparecem na vitrine própria em-casa.html).
+      if (window.ElarahData && ElarahData.isHomeKit && ElarahData.isHomeKit(exp)) return false;
       const matchCat = !activeCategoria || exp.categoria === activeCategoria;
       const matchBairro = !activeBairro || exp.bairro === activeBairro;
 
