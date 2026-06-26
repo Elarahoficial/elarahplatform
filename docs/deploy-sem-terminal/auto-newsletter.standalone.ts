@@ -186,20 +186,75 @@ async function sendBatch(from: string, items: Array<{ to: string; subject: strin
   return { ok: res.ok ? items.length : 0, status: res.status, body: text };
 }
 
+// ---------- Data futura (MESMA lógica do site) ----------
+// Só entra na newsletter experiência que ainda VAI acontecer. Espelha
+// deriveEventTimestamp/experienceFutureDates do experiences-data.js.
+function parseStartHour(raw: string): { hh: number; mm: number } | null {
+  if (!raw) return null;
+  const head = String(raw).split(/[–—\-]/)[0].trim();
+  const m = head.match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})/i);
+  if (!m) return null;
+  const hh = Number(m[1]); const mm = m[2] ? Number(m[2]) : 0;
+  if (!Number.isFinite(hh) || hh < 0 || hh > 23) return null;
+  if (!Number.isFinite(mm) || mm < 0 || mm > 59) return null;
+  return { hh, mm };
+}
+function deriveEventTs(dataStr: string | null, horarioStr: string | null, nowMs: number): number | null {
+  if (!dataStr) return null;
+  const m = String(dataStr).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (!m) return null;
+  const day = Number(m[1]); const month = Number(m[2]);
+  if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+  const year = m[3] ? (Number(m[3]) < 100 ? Number(m[3]) + 2000 : Number(m[3])) : new Date(nowMs).getUTCFullYear();
+  const h = parseStartHour(horarioStr || "");
+  if (!h) return null;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const ts = new Date(`${year}-${pad(month)}-${pad(day)}T${pad(h.hh)}:${pad(h.mm)}:00-03:00`).getTime();
+  return Number.isFinite(ts) ? ts : null;
+}
+interface Slot { experience_id: string; data: string | null; horario: string | null; event_at: string | null; is_active: boolean | null; }
+// true só se a experiência tem ao menos UMA ocorrência futura (slot
+// datado no futuro, ou data/horário da própria experiência no futuro).
+function hasFutureDate(exp: { data?: string | null; horario?: string | null; horarios?: string[] | null }, slots: Slot[], nowMs: number): boolean {
+  let usedSlot = false;
+  for (const sl of slots) {
+    if (sl.is_active === false) continue;
+    let ts: number | null = null;
+    if (sl.event_at) { const t = Date.parse(sl.event_at); if (!isNaN(t)) ts = t; }
+    if (ts == null) ts = deriveEventTs(sl.data, sl.horario, nowMs);
+    if (ts != null) { usedSlot = true; if (ts >= nowMs) return true; }
+  }
+  if (!usedSlot) {
+    const horario = exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null);
+    const ts = deriveEventTs(exp.data ?? null, horario ?? null, nowMs);
+    if (ts != null && ts >= nowMs) return true;
+  }
+  return false;
+}
+
 // ---------- Conteúdo da semana (em alta + top por categoria) ----------
 async function buildContent(sb: SupabaseClient): Promise<{ assunto: string; trending: Exp[]; byCategory: Record<string, Exp[]> }> {
+  const nowMs = Date.now();
   // Contagem de views por experiência (últimos 14 dias).
-  const since = new Date(Date.now() - 14 * 86400000).toISOString();
+  const since = new Date(nowMs - 14 * 86400000).toISOString();
   const { data: ev } = await sb.from("analytics_events")
     .select("target_id").eq("event_name", "experience_detail_view")
     .gte("created_at", since).not("target_id", "is", null).limit(20000);
   const views = new Map<string, number>();
   (ev ?? []).forEach((r: { target_id: string }) => views.set(r.target_id, (views.get(r.target_id) ?? 0) + 1));
 
-  // Experiências ativas (fonte da verdade pra foto/preço/categoria).
+  // Slots (datas reais) por experiência — pra saber o que é futuro.
+  const { data: slotRows } = await sb.from("experience_slots")
+    .select("experience_id, data, horario, event_at, is_active").limit(50000);
+  const slotsByExp: Record<string, Slot[]> = {};
+  (slotRows ?? []).forEach((s: Slot) => { (slotsByExp[s.experience_id] = slotsByExp[s.experience_id] || []).push(s); });
+
+  // Experiências ATIVAS e com DATA FUTURA (nada que já passou).
   const { data: exps } = await sb.from("experiences")
-    .select("id, nome, categoria, preco, imagem, is_active").limit(5000);
-  const active = (exps ?? []).filter((e: { is_active?: boolean }) => e.is_active !== false) as Array<Exp & { is_active?: boolean }>;
+    .select("id, nome, categoria, preco, imagem, is_active, data, horario, horarios").limit(5000);
+  const active = (exps ?? []).filter((e: { id: string; is_active?: boolean }) =>
+    e.is_active !== false && hasFutureDate(e as never, slotsByExp[e.id] || [], nowMs)
+  ) as Array<Exp & { is_active?: boolean }>;
   const score = (e: Exp) => views.get(e.id) ?? 0;
 
   const trending = [...active].sort((a, b) => score(b) - score(a)).slice(0, 8)
@@ -284,7 +339,7 @@ serve(async (req) => {
     const conteudo = campaign.conteudo || {};
     const trending: Exp[] = conteudo.trending || [];
     const byCategory: Record<string, Exp[]> = conteudo.byCategory || {};
-    if (!trending.length) throw new Error("Sem experiências pra montar a newsletter (cadastre experiências ativas).");
+    if (!trending.length) throw new Error("Nenhuma experiência com data futura disponível pra montar a newsletter.");
 
     // ----- TEST: manda 1 e-mail de teste pro admin (versão "em alta") -----
     if (mode === "test") {
