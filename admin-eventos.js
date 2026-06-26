@@ -36,6 +36,16 @@
     if (bRes.error) throw new Error('Não consegui ler as reservas: ' + bRes.error.message);
     var bookings = bRes.data || [];
 
+    // Buscas do site (últimos 90 dias) — sinal de "categoria nova".
+    var searches = [];
+    try {
+      var sinceISO = new Date(Date.now() - 90 * 86400000).toISOString();
+      var sRes = await client.from('analytics_events')
+        .select('target_label, metadata, created_at')
+        .eq('event_name', 'search_used').gte('created_at', sinceISO).limit(20000);
+      if (!sRes.error) searches = sRes.data || [];
+    } catch (_) {}
+
     // Experiências (categoria, nome, ativo) via ElarahData
     var exps = [];
     try {
@@ -50,8 +60,37 @@
       if (window.ElarahData && ElarahData.loadAllSlots) slotsMap = await ElarahData.loadAllSlots();
     } catch (_) {}
 
-    return { bookings: bookings, exps: exps, byId: byId, slotsMap: slotsMap };
+    return { bookings: bookings, exps: exps, byId: byId, slotsMap: slotsMap, searches: searches };
   }
+
+  function norm(s) {
+    return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  }
+
+  // Termos mais buscados + flag de "a gente não oferece isso".
+  function searchInsights(searches, exps) {
+    var map = {};
+    searches.forEach(function (e) {
+      var term = norm((e.metadata && e.metadata.term) || e.target_label || '');
+      if (!term || term.length < 3) return;
+      map[term] = (map[term] || 0) + 1;
+    });
+    // "oferta" = tudo que existe hoje (nome + categoria), normalizado.
+    var oferta = exps.map(function (x) { return norm((x.nome || '') + ' ' + (x.categoria || '')); }).join(' | ');
+    var rows = Object.keys(map).map(function (t) {
+      return { termo: t, total: map[t], temos: oferta.indexOf(t) !== -1 };
+    }).sort(function (a, b) { return b.total - a.total; });
+    return rows;
+  }
+
+  function goToProspeccao() {
+    try {
+      if (window._adminNavigateToPanel) { window._adminNavigateToPanel('prospects'); return; }
+      var nav = document.querySelector('[data-panel="prospects"]');
+      if (nav) nav.click();
+    } catch (_) {}
+  }
+  window._evtiaGoProspeccao = goToProspeccao;
 
   function catOf(b, byId) {
     var e = b.experiencia_id ? byId[b.experiencia_id] : null;
@@ -159,6 +198,14 @@
     var occ = occupancy(d.exps, d.slotsMap);
     var catCount = activeCountByCat(d.exps);
 
+    // Categorias que pedem mais parceiro (procura alta, oferta baixa).
+    var parceiroNeeds = themes.filter(function (t) {
+      return t.categoria !== '(sem categoria)' && t.vendas >= 3 && (catCount[t.categoria] || 0) <= 2;
+    });
+    // Buscas do site → possíveis categorias novas.
+    var searchRows = searchInsights(d.searches || [], d.exps);
+    var unmet = searchRows.filter(function (r) { return !r.temos; }).slice(0, 8);
+
     var maxRec = Math.max.apply(null, sellers.map(function (s) { return s.receita; }).concat([1]));
     var maxThemeV = Math.max.apply(null, themes.map(function (s) { return s.vendas; }).concat([1]));
     var maxSeason = Math.max.apply(null, season.map(function (s) { return s.vendas; }).concat([1]));
@@ -230,6 +277,30 @@
             '<div style="text-align:right;color:' + cor + ';font-weight:700;">' + o.fill + '%</div></div>';
         })) + '</div>'
         : '<div style="color:#999;font-size:.85rem;margin-bottom:20px;">Sem turmas futuras com controle de vagas pra calcular lotação.</div>') +
+
+      // Buscar parceiro (procura alta, oferta baixa) → Prospecção
+      '<h3 style="font-size:1rem;color:#1a1a1a;margin:4px 0 8px;">Onde buscar novos parceiros</h3>' +
+      (parceiroNeeds.length
+        ? '<div style="display:grid;gap:8px;margin-bottom:10px;">' +
+          parceiroNeeds.slice(0, 6).map(function (t) {
+            return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.86rem;background:#f6fbf7;border:1px solid #d8efe0;border-radius:9px;padding:9px 12px;">' +
+              '<div><strong>' + esc(t.categoria) + '</strong> — ' + t.vendas + ' vendas, só ' + (catCount[t.categoria] || 0) + ' experiência(s) ativa(s). <span style="color:#1c7a43;">Procura > oferta.</span></div>' +
+              '</div>';
+          }).join('') + '</div>' +
+          '<button type="button" onclick="window._evtiaGoProspeccao&&window._evtiaGoProspeccao()" ' +
+            'style="background:#2c5a43;color:#fff;border:none;font-weight:700;font-size:.82rem;padding:9px 16px;border-radius:999px;cursor:pointer;margin-bottom:22px;">Ir pra Prospecção →</button>'
+        : '<div style="color:#999;font-size:.85rem;margin-bottom:22px;">Por enquanto a oferta cobre bem a procura — nenhuma categoria gritando por parceiro.</div>') +
+
+      // Categorias novas (do que as pessoas buscam e não temos)
+      '<h3 style="font-size:1rem;color:#1a1a1a;margin:4px 0 4px;">Categorias novas (o que buscam e a gente não tem)</h3>' +
+      '<p style="margin:0 0 8px;font-size:.78rem;color:#999;">Termos que as pessoas digitaram na busca do site (90 dias) e que não batem com nada que você oferece.</p>' +
+      (unmet.length
+        ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">' +
+          unmet.map(function (r) {
+            return '<span style="background:#fbeede;border:1px solid #f0d8bf;border-radius:999px;padding:6px 13px;font-size:.84rem;color:#7a4a1e;">' +
+              esc(r.termo) + ' <strong>(' + r.total + ')</strong></span>';
+          }).join('') + '</div>'
+        : '<div style="color:#999;font-size:.85rem;margin-bottom:22px;">Sem buscas relevantes fora do que você já oferece (ou ainda há poucas buscas registradas).</div>') +
 
       // Sugestões
       '<h3 style="font-size:1rem;color:#1a1a1a;margin:4px 0 8px;">O que o agente sugere</h3>' +
