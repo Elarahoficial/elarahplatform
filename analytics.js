@@ -171,11 +171,58 @@
     } catch {}
   }
 
+  // -------------------------------------------------------------
+  // Fila de eventos pendentes. O supabaseClient carrega de forma
+  // ASSÍNCRONA (lib local → CDN, com polling de até ~8s). Eventos
+  // disparados ANTES disso eram DESCARTADOS — por isso o funil
+  // registrava só uma fração dos pagamentos: o `payment_approved`
+  // do success.html dispara assim que a página abre, quando o
+  // cliente quase nunca está pronto. Agora o evento entra na fila e
+  // é enviado assim que o Supabase aparece.
+  // -------------------------------------------------------------
+  const PENDING = [];
+  const PENDING_MAX = 100;
+  let flushScheduled = false;
+  let flushTries = 0;
+
+  function insertRow(client, row) {
+    try {
+      client.from(TABLE).insert(row).then(function (res) {
+        if (res && res.error && window.ElarahAnalyticsDebug) {
+          console.warn('[ElarahAnalytics] insert error', res.error);
+        }
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
+  function flushPending() {
+    const client = sb();
+    if (!client) {
+      // Ainda carregando — tenta de novo por até ~16s.
+      flushTries++;
+      if (PENDING.length && flushTries < 40) setTimeout(flushPending, 400);
+      else flushScheduled = false;
+      return;
+    }
+    flushScheduled = false;
+    flushTries = 0;
+    const batch = PENDING.splice(0, PENDING.length);
+    for (let i = 0; i < batch.length; i++) insertRow(client, batch[i]);
+  }
+
+  function enqueue(row) {
+    if (PENDING.length >= PENDING_MAX) PENDING.shift(); // descarta o mais antigo
+    PENDING.push(row);
+    if (!flushScheduled) {
+      flushScheduled = true;
+      flushTries = 0;
+      setTimeout(flushPending, 300);
+    }
+  }
+
   async function track(eventName, opts) {
     try {
       if (!eventName) return;
-      const client = sb();
-      if (!client) return; // no-op sem Supabase
 
       opts = opts || {};
       // Contexto automático: contexto de tráfego (UTM/referrer) +
@@ -221,6 +268,11 @@
         metadata: metadata,
         user_agent: ua.slice(0, 300)
       };
+
+      // Supabase ainda carregando? Enfileira em vez de descartar — o
+      // evento sai assim que o cliente ficar pronto.
+      const client = sb();
+      if (!client) { enqueue(row); return; }
 
       const { error } = await client.from(TABLE).insert(row);
       if (error && window.ElarahAnalyticsDebug) {
