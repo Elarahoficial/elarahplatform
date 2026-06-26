@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
-    .exp-detail { max-width: 960px; margin: 0 auto; padding: 32px 20px 60px; }
+    .exp-detail { max-width: 1140px; margin: 0 auto; padding: 32px 20px 60px; }
     .exp-detail__back { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: .88rem; text-decoration: none; margin-bottom: 20px; }
     .exp-detail__back:hover { color: var(--orange, #f0a05e); }
-    .exp-detail__hero { width: 100%; height: auto; max-height: 520px; object-fit: contain; border-radius: 16px; margin-bottom: 28px; background: #f5f0eb; }
+    .exp-detail__hero { width: 100%; aspect-ratio: 16 / 10; max-height: 480px; object-fit: cover; object-position: center; border-radius: 16px; margin-bottom: 20px; background: #f5f0eb; display: block; }
     .exp-detail__hero-placeholder { width: 100%; height: 280px; border-radius: 16px; margin-bottom: 28px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 600; color: #fff; }
     .exp-detail__category { display: inline-block; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--orange, #f0a05e); margin-bottom: 8px; }
     .exp-detail__title { font-family: 'DM Serif Display', serif; font-size: 2rem; color: #1a1a1a; margin: 0 0 16px; line-height: 1.2; }
@@ -157,6 +157,34 @@
     }
     @media (max-width: 768px) {
       .exp-sticky-cta { display: flex; }
+    }
+
+    /* ===== Layout 2 colunas + cartão de reserva (conversão) =====
+       No celular: empilha head → cartão de reserva → descrição (Reservar
+       fica perto do topo). No desktop: conteúdo à esquerda, cartão de
+       reserva FIXO à direita (sempre à vista enquanto a pessoa lê). */
+    .exp-detail__layout { display: grid; grid-template-columns: 1fr;
+      grid-template-areas: "head" "side" "body"; gap: 4px 40px; }
+    .exp-detail__head { grid-area: head; min-width: 0; }
+    .exp-detail__booking { grid-area: side; min-width: 0; }
+    .exp-detail__body { grid-area: body; min-width: 0; }
+    .exp-detail__booking {
+      background: #fff; border: 1px solid #ebe1d0; border-radius: 16px;
+      padding: 20px 20px 22px; box-shadow: 0 8px 28px rgba(0,0,0,.07);
+      margin: 6px 0 24px;
+    }
+    .exp-detail__booking .exp-detail__price { font-size: 1.7rem; margin-bottom: 16px; }
+    .exp-detail__booking .exp-detail__includes { margin-bottom: 16px; }
+    .exp-detail__booking .exp-detail__actions { flex-direction: column; gap: 10px; margin-bottom: 0; }
+    .exp-detail__booking .exp-detail__reserve-btn { width: 100%; padding: 16px; font-size: 1.05rem; border-radius: 14px; }
+    .exp-detail__booking .exp-detail__share-btn { width: 100%; justify-content: center; }
+    .exp-detail__trust { list-style: none; margin: 16px 0; padding: 16px 0 0; border-top: 1px dashed #ebe1d0; display: grid; gap: 9px; }
+    .exp-detail__trust li { font-size: .82rem; color: #5a5a5a; display: flex; align-items: center; gap: 8px; }
+    .exp-detail__trust li svg { width: 15px; height: 15px; color: #1c7a43; flex-shrink: 0; }
+    @media (min-width: 900px) {
+      .exp-detail__layout { grid-template-columns: minmax(0,1fr) 360px;
+        grid-template-areas: "head side" "body side"; gap: 0 44px; }
+      .exp-detail__booking { position: sticky; top: 88px; align-self: start; margin: 0; }
     }
   </style>
 </head>
@@ -568,6 +596,16 @@
       ? '<div class="exp-detail__includes"><strong>Inclui:</strong> ' + esc(exp.inclui) + '</div>'
       : '';
 
+    // Sinais de confiança (honestos — nada inventado). Ficam no cartão
+    // de reserva, logo abaixo do botão, pra reduzir o medo de clicar.
+    var _checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    var trustHtml =
+      '<ul class="exp-detail__trust">' +
+        '<li>' + _checkSvg + 'Confirmação na hora, por e-mail</li>' +
+        '<li>' + _checkSvg + 'Pagamento seguro — Pix ou cartão</li>' +
+        '<li>' + _checkSvg + 'Suporte no WhatsApp se precisar</li>' +
+      '</ul>';
+
     // Description — section destacada "O que você vai viver".
     // Header + ícone estrela + card creme. Substitui o modal-gate
     // que vinha antes do checkout (PR a1c8bc5), com a vantagem de
@@ -608,6 +646,8 @@
         '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>' +
         'Voltar' +
       '</a>' +
+      '<div class="exp-detail__layout">' +
+      '<div class="exp-detail__head">' +
       heroHtml +
       '<span class="exp-detail__category">' + esc(exp.categoria) + '</span>' +
       '<h1 class="exp-detail__title">' + esc(exp.nome) + '</h1>' +
@@ -633,7 +673,7 @@
           '</div>'
         : '') +
       '<div class="exp-detail__meta">' +
-        (exp.data ? '<span class="exp-detail__meta-item">' +
+        ((!useScheduleNew && exp.data) ? '<span class="exp-detail__meta-item">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
           esc(exp.data) +
         '</span>' : '') +
@@ -641,11 +681,13 @@
         (exp.bairro ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + esc(exp.bairro) + '</span>' : '') +
         (exp.endereco ? '<span class="exp-detail__meta-item">' + esc(exp.endereco) + '</span>' : '') +
       '</div>' +
+      '</div>' +
+      '<aside class="exp-detail__booking">' +
       '<div class="exp-detail__price" id="exp-detail-price">' + esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) + '</div>' +
       variantSelectorHtml +
       horariosHtml +
       includesHtml +
-      descHtml +
+      trustHtml +
       '<div class="exp-detail__actions">' +
         '<button type="button" class="exp-detail__reserve-btn" id="exp-reserve-btn"' +
           ' data-reserve' +
@@ -660,6 +702,11 @@
           '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
           'Copiar link' +
         '</button>' +
+      '</div>' +
+      '</aside>' +
+      '<div class="exp-detail__body">' +
+      descHtml +
+      '</div>' +
       '</div>';
 
     // Wire variações do kit — troca foto + preço e guarda a escolha em

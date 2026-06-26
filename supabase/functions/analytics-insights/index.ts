@@ -48,7 +48,9 @@ const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-opus-4-8";
 const FUNNEL_STEPS: Array<{ event: string; label: string }> = [
   { event: "page_view", label: "Visitas" },
   { event: "experience_detail_view", label: "Viu detalhe de experiência" },
-  { event: "reserve_click", label: "Clicou em Reservar" },
+  // cta_click = clique em "Reservar" canônico (conta 1x). Antes usávamos
+  // reserve_click, que é disparado 2x (botão + handler) e inflava o passo.
+  { event: "cta_click", label: "Clicou em Reservar" },
   { event: "checkout_started", label: "Iniciou checkout" },
   { event: "payment_approved", label: "Pagamento aprovado" },
 ];
