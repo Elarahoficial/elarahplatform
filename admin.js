@@ -13359,14 +13359,41 @@
       .limit(500);
     // status_fornecedor → manual_sales.payout_status
     //   repasse_pendente → 'pendente'
+    //   repasse_urgente  → 'pendente' E evento ≤48h (filtro client-side abaixo)
     //   repasse_feito    → 'pago'
     // Vendas com payout_status='nao_aplicavel' são sempre excluídas
     // quando há qualquer filtro de status_fornecedor ativo.
     if (filterSf === 'repasse_pendente') q = q.eq('payout_status', 'pendente');
+    else if (filterSf === 'repasse_urgente') q = q.eq('payout_status', 'pendente');
     else if (filterSf === 'repasse_feito') q = q.eq('payout_status', 'pago');
     const { data, error } = await q;
     if (error) throw error;
     let rows = data || [];
+    // "Repasse urgente": mesmo recorte das vendas do site — só pendentes
+    // cujo evento já ocorreu OU falta ≤48h pra ocorrer. Vendas sem data de
+    // slot (sem como julgar urgência) ficam de fora, igual aos bookings.
+    if (filterSf === 'repasse_urgente') {
+      const now = Date.now();
+      rows = rows.filter(r => {
+        if (!r.slot_date) return false; // sem data — não dá pra julgar urgência
+        let eventTs = null;
+        // slot_date é YYYY-MM-DD; deriveEventTimestamp espera dd/mm[/aaaa] e
+        // sabe parsear horário livre ("19h00"). Converte o formato e tenta.
+        const m = String(r.slot_date).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m && window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+          eventTs = window.ElarahData.deriveEventTimestamp(
+            m[3] + '/' + m[2] + '/' + m[1], r.slot_time, now);
+        }
+        // Fallback sem horário confiável: meio-dia local da data do slot.
+        if (eventTs == null) {
+          const t = new Date(r.slot_date + 'T12:00:00').getTime();
+          if (!isNaN(t)) eventTs = t;
+        }
+        if (eventTs == null) return false;
+        const horas = (eventTs - now) / (60 * 60 * 1000);
+        return horas <= 48;
+      });
+    }
     // Filtro de experiência: o dropdown da aba Compras usa o NOME
     // (não o UUID) como value. Aplicamos client-side por nome,
     // fazendo match contra:
