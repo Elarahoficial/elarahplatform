@@ -536,17 +536,14 @@
           if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
           else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
           var label = s.horario + (soldOut ? ' (esgotado)' : '');
-          // Escassez honesta e mais agressiva: mostra quando a turma está
-          // realmente enchendo — restam ≤40% das vagas, OU ≤6 vagas em
-          // turmas maiores (cap ≥ 10). Exige rest < cap, então NUNCA
-          // aparece em turma vazia. Tudo vem de vagasRestantes reais —
-          // nada inventado. "1" vira "última vaga" (português correto).
-          var showScarce = !soldOut && cap != null && rest != null && rest > 0 &&
-            rest < cap && (rest <= cap * 0.4 || (rest <= 6 && cap >= 10));
-          var scarce = showScarce
-            ? '<span class="exp-detail__scarce">' +
-                (rest === 1 ? 'última vaga' : 'últimas ' + rest) +
-              '</span>'
+          // Escassez honesta: regra única em ElarahData.scarcityLabel
+          // (mostra quando a turma enche de verdade — ≤40% das vagas ou
+          // ≤6 em turmas de 10+; nunca em turma vazia). Mesma fonte usada
+          // nos cards, então página e listagem nunca divergem.
+          var _scLabel = (!soldOut && window.ElarahData && ElarahData.scarcityLabel)
+            ? ElarahData.scarcityLabel(s) : '';
+          var scarce = _scLabel
+            ? '<span class="exp-detail__scarce">' + _scLabel + '</span>'
             : '';
           html += '<button type="button" class="' + cls + '"' +
                   (soldOut ? ' disabled' : '') +

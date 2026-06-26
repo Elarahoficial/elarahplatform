@@ -681,6 +681,51 @@
     return dated === active.length && dated > 0 && future === 0;
   }
 
+  // ---------- Escassez (selo "últimas N vagas") ----------
+  // Regra ÚNICA de escassez, usada na página da experiência E nos cards
+  // (home/categoria) — assim os dois NUNCA divergem. Honesta: só dispara
+  // com vaga REAL e quando a turma está enchendo de verdade:
+  //   • restam ≤40% das vagas, OU
+  //   • restam ≤6 vagas em turmas de 10+ lugares.
+  // Exige rest < cap → nunca aparece em turma vazia. Retorna o número de
+  // vagas restantes quando deve mostrar o selo, ou null.
+  function scarcityRest(slot) {
+    if (!slot) return null;
+    var cap = slot.vagasTotal != null ? Number(slot.vagasTotal) : null;
+    if (cap == null || !(cap > 0)) return null;
+    var rest = slot.vagasRestantes != null ? Number(slot.vagasRestantes) : cap;
+    if (!(rest > 0) || rest >= cap) return null;
+    var show = rest <= cap * 0.4 || (rest <= 6 && cap >= 10);
+    return show ? rest : null;
+  }
+
+  // Texto curto pro botão de horário: "última vaga" / "últimas N".
+  function scarcityLabel(slot) {
+    var rest = scarcityRest(slot);
+    if (rest == null) return '';
+    return rest === 1 ? 'última vaga' : 'últimas ' + rest;
+  }
+
+  // Menor nº de vagas (= mais urgente) entre os slots FUTUROS e ativos —
+  // pro selo do card. Ignora slots passados (data derivável e < agora)
+  // pra não anunciar escassez de uma turma que já aconteceu. Slot sem
+  // data derivável (agenda aberta) conta, pois é bookável. null = nada.
+  function scarcityForSlots(slotsArr, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    var slots = Array.isArray(slotsArr) ? slotsArr : [];
+    var best = null;
+    slots.forEach(function (sl) {
+      if (!sl || sl.isActive === false) return;
+      var ts = null;
+      if (sl.eventAt) { var t = new Date(sl.eventAt).getTime(); if (!isNaN(t)) ts = t; }
+      if (ts == null) ts = deriveEventTimestamp(sl.data, sl.horario, nowMs);
+      if (ts != null && ts < nowMs) return; // turma já passou
+      var rest = scarcityRest(sl);
+      if (rest != null && (best == null || rest < best)) best = rest;
+    });
+    return best;
+  }
+
   // Intervalo {startMs, endMs} pros atalhos do filtro de data.
   //   'weekend'    → sábado e domingo desta semana
   //   'next-week'  → segunda a domingo da semana que vem
@@ -1341,6 +1386,9 @@
     reorderExperiences,
     ordemKey,
     isHomeKit,
+    scarcityRest,
+    scarcityLabel,
+    scarcityForSlots,
     invalidateCache,
     isPubliclyVisible,
     deriveEventTimestamp,

@@ -31,8 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (e) { /* tabela pode não existir */ }
   const _nowMs = Date.now();
   experiences.forEach(function (e) {
+    e._slots = slotMapRaw.get(e.id) || [];
     e._futureDates = (typeof ElarahData !== 'undefined' && ElarahData.experienceFutureDates)
-      ? ElarahData.experienceFutureDates(e, slotMapRaw.get(e.id) || [], _nowMs)
+      ? ElarahData.experienceFutureDates(e, e._slots, _nowMs)
       : [];
   });
   // Varredura: recorrente com turmas datadas mas sem ocorrência futura =
@@ -252,6 +253,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('')
       : `<span class="card__badge">${exp.data || ''}</span>`;
 
+    // Selo de escassez (mesma regra honesta de ElarahData / página da
+    // experiência) — só com turma futura enchendo de verdade.
+    var _scRest = (window.ElarahData && ElarahData.scarcityForSlots)
+      ? ElarahData.scarcityForSlots(exp._slots || [], Date.now()) : null;
+    var scarcePill = _scRest != null
+      ? '<span class="card__scarce" style="position:absolute;left:12px;bottom:12px;background:#c0392b;color:#fff;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:4px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.28);z-index:3;">' +
+          (_scRest === 1 ? 'última vaga' : 'últimas ' + _scRest + ' vagas') +
+        '</span>'
+      : '';
+
     card.innerHTML = `
       <div class="card__image">
         ${imageContent}
@@ -259,6 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
         ${badgesHtml}
+        ${scarcePill}
       </div>
       <div class="card__body">
         <span class="card__category">${exp.categoria || ''}</span>
