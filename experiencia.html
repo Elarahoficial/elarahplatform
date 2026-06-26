@@ -529,16 +529,21 @@
         var html = '';
         var picked = false;
         g.slots.forEach(function (s, i) {
-          var rest = s.vagasTotal == null ? null : (s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal);
+          var cap = s.vagasTotal != null ? Number(s.vagasTotal) : null;
+          var rest = cap == null ? null : (s.vagasRestantes != null ? Number(s.vagasRestantes) : cap);
           var soldOut = rest !== null && rest <= 0;
           var cls = 'exp-detail__horario-btn';
           if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
           else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
           var label = s.horario + (soldOut ? ' (esgotado)' : '');
-          // Escassez honesta: só mostra quando restam POUCAS vagas reais
-          // (≤4 e >0). Dado vem de vagasRestantes — nada inventado.
-          var scarce = (!soldOut && rest != null && rest > 0 && rest <= 4)
-            ? '<span class="exp-detail__scarce">últimas ' + rest + '</span>'
+          // Escassez honesta: regra única em ElarahData.scarcityLabel
+          // (mostra quando a turma enche de verdade — ≤40% das vagas ou
+          // ≤6 em turmas de 10+; nunca em turma vazia). Mesma fonte usada
+          // nos cards, então página e listagem nunca divergem.
+          var _scLabel = (!soldOut && window.ElarahData && ElarahData.scarcityLabel)
+            ? ElarahData.scarcityLabel(s) : '';
+          var scarce = _scLabel
+            ? '<span class="exp-detail__scarce">' + _scLabel + '</span>'
             : '';
           html += '<button type="button" class="' + cls + '"' +
                   (soldOut ? ' disabled' : '') +
