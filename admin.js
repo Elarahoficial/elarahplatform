@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v31 — dica de erro ao salvar venda manual aponta migração consolidada');
+  console.info('[Elarah Admin] admin.js v32 — fix: salvar venda manual pela aba Eventos recarregava a página (form não conectado)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -8733,6 +8733,12 @@
     const sb = window.supabaseClient;
     const tbody = document.getElementById('eventos-body');
     if (!sb) { tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Supabase indisponível.</td></tr>'; return; }
+
+    // Garante que o submit do form de venda manual (preventDefault + save)
+    // esteja ligado mesmo quando a admin entra direto na aba Eventos sem
+    // abrir Contabilidade/Compras antes — senão o botão "Salvar venda" do
+    // modal dispara um submit nativo e a página RECARREGA sem salvar.
+    if (!_finWired) { _finWireControls(); _finWired = true; }
 
     let rows = [];
     try {
