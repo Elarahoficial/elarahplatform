@@ -2321,6 +2321,24 @@
           </div>
         </div>
       </section>
+
+      <!-- ===== AGENTE DE EVENTOS IA (preenchido por admin-eventos.js) ===== -->
+      <section class="admin__analytics-card" id="evtia-section" style="margin-top:26px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:1.15rem;color:#1a1a1a;margin:0 0 4px;">🎯 Agente de Eventos <span style="font-size:.7rem;font-weight:700;color:#7a4a1e;background:#fbeede;padding:2px 9px;border-radius:999px;vertical-align:middle;">IA</span></h2>
+            <p style="margin:0;font-size:.85rem;color:#666;line-height:1.5;max-width:640px;">
+              O que <strong>vende mais</strong>, os <strong>temas mais procurados</strong>, a
+              <strong>sazonalidade</strong> (melhores meses) e a <strong>lotação</strong> das
+              próximas turmas — com sugestões de onde buscar parceiro e o que rever.
+            </p>
+          </div>
+          <button id="evtia-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+        </div>
+        <div id="evtia-root" style="margin-top:16px;">
+          <div style="color:#999;font-size:.9rem;">Carregando análise de eventos…</div>
+        </div>
+      </section>
     </div>
 
     <!-- ===== EXPERIENCES PANEL ===== -->
@@ -4451,6 +4469,7 @@
 <script src="admin-social-analysis.js?v=5"></script>
 <script src="admin-insights.js?v=2"></script>
 <script src="admin-broadcast.js?v=2"></script>
+<script src="admin-eventos.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=191"></script>
