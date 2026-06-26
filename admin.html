@@ -285,6 +285,14 @@
         </svg>
         <span>Analytics</span>
       </button>
+
+      <button class="admin__nav-item" data-panel="insights">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18h6"/><path d="M10 22h4"/>
+          <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
+        </svg>
+        <span>Diagnóstico IA</span>
+      </button>
     </nav>
 
     <a href="feed.html" target="_blank" rel="noopener"
@@ -3362,6 +3370,44 @@
       </div>
     </div>
 
+    <!-- ===== DIAGNÓSTICO IA PANEL ("Onde estamos pecando") ===== -->
+    <div class="admin__panel" id="panel-insights">
+      <div class="admin__header">
+        <div>
+          <h1 class="admin__title">Diagnóstico IA — Onde estamos pecando</h1>
+          <p class="admin__subtitle">
+            Roda <strong>sozinho todo dia</strong> e <strong>sem custo</strong>:
+            lê os dados reais do site e das vendas, diz onde o funil perde gente
+            e o que está dando certo, e te manda o resumo por e-mail. Aqui embaixo
+            aparece sempre o último — atualizado automaticamente, sem clicar em
+            nada. (Dá pra ligar uma versão com IA mais esperta depois, se quiser.)
+          </p>
+        </div>
+      </div>
+
+      <section class="admin__analytics-card">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:.85rem;color:#666;">Quer um diagnóstico agora, fora do horário do automático?</span>
+          <label style="font-size:.85rem;color:#666;">Período</label>
+          <select id="insights-period" class="admin__analytics-select">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+          </select>
+          <button id="insights-generate" class="admin__btn admin__btn--primary" type="button">
+            Atualizar agora
+          </button>
+          <span id="insights-status" style="font-size:.85rem;color:#888;"></span>
+        </div>
+        <p style="margin:10px 0 0;font-size:.78rem;color:#aaa;">
+          O automático já roda todo dia de manhã e manda no e-mail. Este botão é
+          só pra antecipar — leva de 10 a 40 segundos.
+        </p>
+      </section>
+
+      <div id="insights-result" style="display:none;margin-top:18px;"></div>
+    </div>
+
   </main>
 </div>
 
@@ -4333,9 +4379,10 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=31"></script>
 <script src="byelarah-data.js?v=6"></script>
-<script src="analytics.js?v=2"></script>
+<script src="analytics.js?v=3"></script>
 <script src="admin-social.js?v=11"></script>
 <script src="admin-social-analysis.js?v=5"></script>
+<script src="admin-insights.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=191"></script>
