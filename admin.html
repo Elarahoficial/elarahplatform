@@ -766,6 +766,17 @@
                  list="bookings-filter-exp-list" placeholder="Buscar experiência…"
                  autocomplete="off" aria-label="Filtrar por experiência">
           <datalist id="bookings-filter-exp-list"></datalist>
+          <!-- Filtro por data da experiência: lista todas as compras cujo
+               evento acontece no dia escolhido. Útil pra avisar os clientes
+               quando uma experiência muda de data. Compara dia/mês (e ano,
+               quando a compra tem ano salvo) com a data resolvida do booking
+               (b.data → experiência), independente do horário. -->
+          <label style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="font-size:.78rem;color:#7a6440;white-space:nowrap;">Data da experiência:</span>
+            <input type="date" id="bookings-filter-data-exp" class="admin__analytics-select"
+                   autocomplete="off" aria-label="Filtrar por data da experiência"
+                   title="Mostrar só compras cuja experiência acontece neste dia">
+          </label>
           <select id="bookings-filter-fornecedor" class="admin__analytics-select">
             <option value="">Todos os fornecedores</option>
           </select>

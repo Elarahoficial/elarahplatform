@@ -2309,6 +2309,22 @@
     return `<span class="admin__badge admin__badge--${cls}">${escapeHtml(label)}</span>`;
   }
 
+  // Extrai {day, month, year} de uma data "DD/MM" ou "DD/MM/AAAA".
+  // year vira null quando a string não traz ano (caso comum: o booking
+  // guarda só "DD/MM"). Devolve null se não der pra parsear. Espelha o
+  // parse de deriveEventTimestamp, mas sem depender de horário.
+  function parseDataDMY(raw) {
+    if (!raw) return null;
+    const m = String(raw).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if (!m) return null;
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    if (!(day >= 1 && day <= 31) || !(month >= 1 && month <= 12)) return null;
+    let year = null;
+    if (m[3]) year = Number(m[3]) < 100 ? Number(m[3]) + 2000 : Number(m[3]);
+    return { day: day, month: month, year: year };
+  }
+
   function wireBookingsControls() {
     const refreshBtn = document.getElementById('btn-refresh-bookings');
     const filterExp = document.getElementById('bookings-filter-exp');
@@ -2341,6 +2357,8 @@
       });
     }
     if (filterStatus) filterStatus.addEventListener('change', () => renderBookings());
+    const filterDataExp = document.getElementById('bookings-filter-data-exp');
+    if (filterDataExp) filterDataExp.addEventListener('change', () => renderBookings());
     var filterFornInit = document.getElementById('bookings-filter-fornecedor');
     var filterSfInit = document.getElementById('bookings-filter-status-fornecedor');
     if (filterFornInit) filterFornInit.addEventListener('change', () => renderBookings());
@@ -2558,6 +2576,15 @@
       b._horasParaEventoResolvido = eventTs != null
         ? (eventTs - Date.now()) / (60 * 60 * 1000)
         : null;
+
+      // Data resolvida (string "DD/MM" ou "DD/MM/AAAA") pro filtro por
+      // data da experiência. Mesma prioridade do timestamp: snapshot do
+      // booking primeiro (o que o cliente reservou), experiência depois.
+      // Independente de horário — uma compra sem horário parseável ainda
+      // precisa aparecer no filtro de data.
+      b._dataResolvida = (b.data && String(b.data).trim())
+        || (exp && exp.data && String(exp.data).trim())
+        || '';
     });
 
     // Popula filtro de fornecedores
@@ -2593,6 +2620,17 @@
     const filterForn = filterFornEl ? filterFornEl.value : '';
     const filterSfEl = document.getElementById('bookings-filter-status-fornecedor');
     const filterSf = filterSfEl ? filterSfEl.value : '';
+    // Filtro por data da experiência. O input nativo devolve "AAAA-MM-DD".
+    // Comparamos sempre dia+mês com a data resolvida do booking; o ano só
+    // entra quando a compra guardou ano (DD/MM/AAAA) — assim o caso comum
+    // ("DD/MM" sem ano) casa por dia/mês independente do ano escolhido.
+    const filterDataExpEl = document.getElementById('bookings-filter-data-exp');
+    const filterDataExpRaw = filterDataExpEl ? String(filterDataExpEl.value || '').trim() : '';
+    let filterDataExp = null;
+    const _fdm = filterDataExpRaw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (_fdm) {
+      filterDataExp = { year: Number(_fdm[1]), month: Number(_fdm[2]), day: Number(_fdm[3]) };
+    }
 
     // Este painel só mostra bookings PAGAS
     const filtered = bookings.filter(b => {
@@ -2607,6 +2645,13 @@
         if (!hay.includes(filterCliente)) return false;
       }
       if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
+      if (filterDataExp) {
+        const bd = parseDataDMY(b._dataResolvida);
+        if (!bd) return false; // sem data parseável — não casa um filtro de data
+        if (bd.day !== filterDataExp.day || bd.month !== filterDataExp.month) return false;
+        // Só exige ano quando a compra tem ano salvo. "DD/MM" casa qualquer ano.
+        if (bd.year != null && bd.year !== filterDataExp.year) return false;
+      }
       if (filterSf) {
         // Caso especial "repasse_urgente": pendente E (evento já
         // ocorreu OU faltam ≤ 48h pra ocorrer). Mostra exatamente
