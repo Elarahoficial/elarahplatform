@@ -5746,24 +5746,64 @@
         vagasDisplay = '<span style="color:#888;">∞</span>';
       }
       const isActive = exp.isActive !== false;
-      // Status efetivo: refletir o que o usuário vê no site, não só
-      // a flag is_active. Reusa ElarahData.isPubliclyVisible — mesma
-      // regra do filtro público (getVisibleExperiences).
-      const publicVisible =
-        window.ElarahData && typeof window.ElarahData.isPubliclyVisible === 'function'
-          ? window.ElarahData.isPubliclyVisible(exp)
-          : isActive;
-      const isHidden = !publicVisible;
-      // Diferenciamos auto-oculta (passou) de oculta manual só no
-      // tooltip e no comportamento do clique do botão "Reativar".
-      // Visualmente o admin pediu pra ficar idêntico (vermelho).
+      // Status efetivo: o selo TEM que bater com o que o site mostra,
+      // não só com is_active. Antes ele só checava isPubliclyVisible
+      // (nível da experiência) e por isso MENTIA: o site (home e
+      // categoria) aplica mais DOIS filtros, que escondiam experiências
+      // ainda marcadas "Visível" aqui. Agora checamos os três gates e
+      // dizemos QUAL é o motivo da ocultação:
+      //   gate 1 · isPubliclyVisible  → is_active + cutoff 24h + expirou (exp)
+      //   gate 2 · isExpiredRecurring → todas as turmas/slots datadas já passaram
+      //   gate 3 · hideFromCategorias → fora das listagens (só faixa By Elarah)
+      const ED = window.ElarahData || {};
+      const publicVisible = typeof ED.isPubliclyVisible === 'function'
+        ? ED.isPubliclyVisible(exp)
+        : isActive;
+      // expSlots já foi calculado acima (vagas). isExpiredRecurring só
+      // dá true quando HÁ slots e todos os datados já passaram — sem
+      // slots devolve false, então não gera falso-positivo.
+      const expiredRecurring = typeof ED.isExpiredRecurring === 'function'
+        ? ED.isExpiredRecurring(exp, expSlots, Date.now())
+        : false;
+      const hiddenFromListings = exp.hideFromCategorias === true;
+
+      // Decide selo + motivo. Vermelho "Oculta" = sumiu do site inteiro.
+      // Âmbar "Só By Elarah" = fora das categorias/home, visível apenas
+      // na faixa By Elarah (continua ativa — não é bug, é configuração).
+      let badgeKind, badgeLabel, tooltip;
+      if (!publicVisible) {
+        badgeKind = 'hidden';
+        badgeLabel = 'Oculta';
+        tooltip = isActive
+          ? 'Ocultada automaticamente — o horário já passou ou está dentro do bloqueio de 24h. Clique em Reativar pra editar a data.'
+          : 'Ocultada manualmente pelo admin (botão Ocultar).';
+      } else if (expiredRecurring) {
+        badgeKind = 'hidden';
+        badgeLabel = 'Oculta';
+        tooltip = 'Some do site: todas as turmas/horários (vagas) têm data que já passou. A experiência continua "ativa", mas sem turma futura o site a esconde. Clique em Reativar pra editar e Salvar — isso recalcula as datas dos horários com o ano atual.';
+      } else if (hiddenFromListings) {
+        badgeKind = 'bylistings';
+        badgeLabel = 'Só By Elarah';
+        tooltip = 'Marcada como "ocultar das categorias": não aparece nas listagens de categoria nem no grid da home — só na faixa By Elarah. Pra mostrar nas categorias, edite a experiência e desmarque essa opção.';
+      } else {
+        badgeKind = 'visible';
+        badgeLabel = 'Visível';
+        tooltip = '';
+      }
+      const isHidden = badgeKind === 'hidden';
+      // autoHidden: is_active=true mas o site esconde (cutoff/expirou OU
+      // slots vencidos) → o botão abre o modal de edição em vez de
+      // togglar is_active (que seria no-op, já está true).
       const autoHidden = isHidden && isActive;
-      const tooltip = autoHidden
-        ? 'Ocultada automaticamente — horário já passou ou está dentro do bloqueio de 24h. Clique em Reativar pra editar a data.'
-        : (isHidden ? 'Ocultada manualmente pelo admin.' : '');
-      const statusBadge = isHidden
-        ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:600;" title="' + escapeHtml(tooltip) + '">Oculta</span>'
-        : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Visível</span>';
+      const BADGE_BG = {
+        visible: 'background:#e6f4ea;color:#1a8a4a;',
+        hidden: 'background:#fdecea;color:#c0392b;',
+        bylistings: 'background:#fff1de;color:#a05f1e;',
+      };
+      const statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;'
+        + BADGE_BG[badgeKind] + 'font-size:11px;font-weight:600;'
+        + (tooltip ? 'cursor:help;' : '') + '" title="' + escapeHtml(tooltip) + '">'
+        + escapeHtml(badgeLabel) + '</span>';
       const rowStyle = isHidden ? ' style="opacity:0.55;"' : '';
       // Botão de toggle: oculta -> Reativar, visível -> Ocultar.
       // data-auto-hidden marca o caso em que isActive=true mas o
