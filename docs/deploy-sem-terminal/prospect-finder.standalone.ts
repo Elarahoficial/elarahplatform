@@ -67,19 +67,26 @@ function norm(s: unknown): string {
 // diferentes a cada semana, sem repetir). A função para assim que junta
 // leads novos suficientes, então a lista pode ser generosa.
 const BAIRROS = ["Pinheiros", "Vila Madalena", "Itaim Bibi", "Moema", "Brooklin", "Vila Mariana", "Tatuapé", "Santana", "Perdizes", "Jardins"];
+// CATEGORIAS NOVAS — experiências que a Elarah ainda NÃO tem, pra
+// EXPANDIR o catálogo (não repetir cerâmica/vela/pintura etc.). Edite
+// essa lista pra mirar os tipos de experiência que você quer oferecer.
 const CATS: Array<{ categoria: string; termo: string }> = [
-  { categoria: "ceramica", termo: "ateliê de cerâmica" },
-  { categoria: "pintura", termo: "ateliê de pintura" },
-  { categoria: "vela", termo: "ateliê de velas artesanais" },
-  { categoria: "perfumaria", termo: "ateliê de perfumaria" },
-  { categoria: "tufting", termo: "ateliê de tufting" },
-  { categoria: "macrame", termo: "ateliê de macramê" },
-  { categoria: "joalheria", termo: "ateliê de joalheria" },
-  { categoria: "floral", termo: "ateliê de arranjos florais" },
-  { categoria: "gastronomia", termo: "aula de culinária" },
-  { categoria: "bartenderia", termo: "aula de coquetelaria" },
-  { categoria: "croche", termo: "ateliê de crochê e tricô" },
-  { categoria: "sabonete", termo: "ateliê de sabonete artesanal" },
+  { categoria: "vinho", termo: "degustação de vinhos" },
+  { categoria: "queijos e vinhos", termo: "degustação de queijos e vinhos" },
+  { categoria: "sushi", termo: "aula de sushi" },
+  { categoria: "massas", termo: "aula de massas artesanais" },
+  { categoria: "chocolate", termo: "oficina de chocolate artesanal" },
+  { categoria: "café", termo: "curso de barista café especial" },
+  { categoria: "cerveja", termo: "experiência de cervejaria artesanal" },
+  { categoria: "coquetelaria", termo: "aula de coquetelaria e drinks" },
+  { categoria: "dança", termo: "aula de dança de salão" },
+  { categoria: "fotografia", termo: "aula de fotografia" },
+  { categoria: "vitral", termo: "oficina de vitral" },
+  { categoria: "marcenaria", termo: "oficina de marcenaria criativa" },
+  { categoria: "arco e flecha", termo: "experiência de arco e flecha" },
+  { categoria: "chá", termo: "degustação de chás" },
+  { categoria: "terrário", termo: "oficina de terrário e plantas" },
+  { categoria: "aromaterapia", termo: "oficina de aromaterapia" },
 ];
 // Monta a fila de buscas: primeiro categoria + cidade, depois por bairro.
 function buildQueries(): Array<{ categoria: string; query: string }> {
