@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v30 — filtro fornecedor em Experiências (cache-buster bump)');
+  console.info('[Elarah Admin] admin.js v32 — fix: salvar venda manual pela aba Eventos recarregava a página (form não conectado)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -5746,24 +5746,64 @@
         vagasDisplay = '<span style="color:#888;">∞</span>';
       }
       const isActive = exp.isActive !== false;
-      // Status efetivo: refletir o que o usuário vê no site, não só
-      // a flag is_active. Reusa ElarahData.isPubliclyVisible — mesma
-      // regra do filtro público (getVisibleExperiences).
-      const publicVisible =
-        window.ElarahData && typeof window.ElarahData.isPubliclyVisible === 'function'
-          ? window.ElarahData.isPubliclyVisible(exp)
-          : isActive;
-      const isHidden = !publicVisible;
-      // Diferenciamos auto-oculta (passou) de oculta manual só no
-      // tooltip e no comportamento do clique do botão "Reativar".
-      // Visualmente o admin pediu pra ficar idêntico (vermelho).
+      // Status efetivo: o selo TEM que bater com o que o site mostra,
+      // não só com is_active. Antes ele só checava isPubliclyVisible
+      // (nível da experiência) e por isso MENTIA: o site (home e
+      // categoria) aplica mais DOIS filtros, que escondiam experiências
+      // ainda marcadas "Visível" aqui. Agora checamos os três gates e
+      // dizemos QUAL é o motivo da ocultação:
+      //   gate 1 · isPubliclyVisible  → is_active + cutoff 24h + expirou (exp)
+      //   gate 2 · isExpiredRecurring → todas as turmas/slots datadas já passaram
+      //   gate 3 · hideFromCategorias → fora das listagens (só faixa By Elarah)
+      const ED = window.ElarahData || {};
+      const publicVisible = typeof ED.isPubliclyVisible === 'function'
+        ? ED.isPubliclyVisible(exp)
+        : isActive;
+      // expSlots já foi calculado acima (vagas). isExpiredRecurring só
+      // dá true quando HÁ slots e todos os datados já passaram — sem
+      // slots devolve false, então não gera falso-positivo.
+      const expiredRecurring = typeof ED.isExpiredRecurring === 'function'
+        ? ED.isExpiredRecurring(exp, expSlots, Date.now())
+        : false;
+      const hiddenFromListings = exp.hideFromCategorias === true;
+
+      // Decide selo + motivo. Vermelho "Oculta" = sumiu do site inteiro.
+      // Âmbar "Só By Elarah" = fora das categorias/home, visível apenas
+      // na faixa By Elarah (continua ativa — não é bug, é configuração).
+      let badgeKind, badgeLabel, tooltip;
+      if (!publicVisible) {
+        badgeKind = 'hidden';
+        badgeLabel = 'Oculta';
+        tooltip = isActive
+          ? 'Ocultada automaticamente — o horário já passou ou está dentro do bloqueio de 24h. Clique em Reativar pra editar a data.'
+          : 'Ocultada manualmente pelo admin (botão Ocultar).';
+      } else if (expiredRecurring) {
+        badgeKind = 'hidden';
+        badgeLabel = 'Oculta';
+        tooltip = 'Some do site: todas as turmas/horários (vagas) têm data que já passou. A experiência continua "ativa", mas sem turma futura o site a esconde. Clique em Reativar pra editar e Salvar — isso recalcula as datas dos horários com o ano atual.';
+      } else if (hiddenFromListings) {
+        badgeKind = 'bylistings';
+        badgeLabel = 'Só By Elarah';
+        tooltip = 'Marcada como "ocultar das categorias": não aparece nas listagens de categoria nem no grid da home — só na faixa By Elarah. Pra mostrar nas categorias, edite a experiência e desmarque essa opção.';
+      } else {
+        badgeKind = 'visible';
+        badgeLabel = 'Visível';
+        tooltip = '';
+      }
+      const isHidden = badgeKind === 'hidden';
+      // autoHidden: is_active=true mas o site esconde (cutoff/expirou OU
+      // slots vencidos) → o botão abre o modal de edição em vez de
+      // togglar is_active (que seria no-op, já está true).
       const autoHidden = isHidden && isActive;
-      const tooltip = autoHidden
-        ? 'Ocultada automaticamente — horário já passou ou está dentro do bloqueio de 24h. Clique em Reativar pra editar a data.'
-        : (isHidden ? 'Ocultada manualmente pelo admin.' : '');
-      const statusBadge = isHidden
-        ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:600;" title="' + escapeHtml(tooltip) + '">Oculta</span>'
-        : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Visível</span>';
+      const BADGE_BG = {
+        visible: 'background:#e6f4ea;color:#1a8a4a;',
+        hidden: 'background:#fdecea;color:#c0392b;',
+        bylistings: 'background:#fff1de;color:#a05f1e;',
+      };
+      const statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;'
+        + BADGE_BG[badgeKind] + 'font-size:11px;font-weight:600;'
+        + (tooltip ? 'cursor:help;' : '') + '" title="' + escapeHtml(tooltip) + '">'
+        + escapeHtml(badgeLabel) + '</span>';
       const rowStyle = isHidden ? ' style="opacity:0.55;"' : '';
       // Botão de toggle: oculta -> Reativar, visível -> Ocultar.
       // data-auto-hidden marca o caso em que isActive=true mas o
@@ -8733,6 +8773,12 @@
     const sb = window.supabaseClient;
     const tbody = document.getElementById('eventos-body');
     if (!sb) { tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Supabase indisponível.</td></tr>'; return; }
+
+    // Garante que o submit do form de venda manual (preventDefault + save)
+    // esteja ligado mesmo quando a admin entra direto na aba Eventos sem
+    // abrir Contabilidade/Compras antes — senão o botão "Salvar venda" do
+    // modal dispara um submit nativo e a página RECARREGA sem salvar.
+    if (!_finWired) { _finWireControls(); _finWired = true; }
 
     let rows = [];
     try {
@@ -13271,13 +13317,14 @@
     } catch (e) {
       console.error('[Contabilidade] save manual sale:', e);
       const em = String(e.message || e);
-      const hint = em.includes('payments')
-        ? ' — rode sql/elarah_manual_sales_pagamentos.sql no Supabase pra liberar entrada/parcelas.'
-        : (em.includes('event_type_custom')
-          ? ' — rode sql/elarah_manual_sales_eventos_tipos.sql no Supabase.'
-          : ((em.includes('event_type') || em.includes('is_event'))
-            ? ' — rode sql/elarah_manual_sales_eventos.sql (e o _tipos.sql) no Supabase pra liberar a classificação de eventos.'
-            : ''));
+      // Qualquer "coluna não encontrada no schema cache" = falta rodar uma
+      // migração no banco. Aponta o script consolidado que cria todas de
+      // uma vez (idempotente), em vez de adivinhar qual coluna falta.
+      const missingCol = /schema cache|could not find the .* column|column .* does not exist/i.test(em)
+        && /payments|event_type|event_type_custom|is_event|sale_date/i.test(em);
+      const hint = missingCol
+        ? ' — rode sql/elarah_manual_sales_fix_save.sql no SQL Editor do Supabase (cria as colunas que faltam e recarrega o schema).'
+        : '';
       msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
     }
@@ -13382,6 +13429,11 @@
     if (!tbody) return;
     const sb = window.supabaseClient;
     if (!sb) return;
+    // Garante a delegação de clique (editar/excluir venda manual) mesmo
+    // quando a admin vai direto pra aba Compras sem abrir Contabilidade —
+    // sem isto, o botão "Editar" das vendas manuais não abre o modal,
+    // porque o listener só era registrado por renderContabilidade.
+    if (!_finWired) { _finWireControls(); _finWired = true; }
     // Lê filtros adicionais da aba Compras (fornecedor + status_fornecedor)
     // pra que vendas manuais respeitem o mesmo recorte que bookings.
     const filterFornRaw = (document.getElementById('bookings-filter-fornecedor')?.value || '').trim();
@@ -13392,14 +13444,41 @@
       .limit(500);
     // status_fornecedor → manual_sales.payout_status
     //   repasse_pendente → 'pendente'
+    //   repasse_urgente  → 'pendente' E evento ≤48h (filtro client-side abaixo)
     //   repasse_feito    → 'pago'
     // Vendas com payout_status='nao_aplicavel' são sempre excluídas
     // quando há qualquer filtro de status_fornecedor ativo.
     if (filterSf === 'repasse_pendente') q = q.eq('payout_status', 'pendente');
+    else if (filterSf === 'repasse_urgente') q = q.eq('payout_status', 'pendente');
     else if (filterSf === 'repasse_feito') q = q.eq('payout_status', 'pago');
     const { data, error } = await q;
     if (error) throw error;
     let rows = data || [];
+    // "Repasse urgente": mesmo recorte das vendas do site — só pendentes
+    // cujo evento já ocorreu OU falta ≤48h pra ocorrer. Vendas sem data de
+    // slot (sem como julgar urgência) ficam de fora, igual aos bookings.
+    if (filterSf === 'repasse_urgente') {
+      const now = Date.now();
+      rows = rows.filter(r => {
+        if (!r.slot_date) return false; // sem data — não dá pra julgar urgência
+        let eventTs = null;
+        // slot_date é YYYY-MM-DD; deriveEventTimestamp espera dd/mm[/aaaa] e
+        // sabe parsear horário livre ("19h00"). Converte o formato e tenta.
+        const m = String(r.slot_date).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m && window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+          eventTs = window.ElarahData.deriveEventTimestamp(
+            m[3] + '/' + m[2] + '/' + m[1], r.slot_time, now);
+        }
+        // Fallback sem horário confiável: meio-dia local da data do slot.
+        if (eventTs == null) {
+          const t = new Date(r.slot_date + 'T12:00:00').getTime();
+          if (!isNaN(t)) eventTs = t;
+        }
+        if (eventTs == null) return false;
+        const horas = (eventTs - now) / (60 * 60 * 1000);
+        return horas <= 48;
+      });
+    }
     // Filtro de experiência: o dropdown da aba Compras usa o NOME
     // (não o UUID) como value. Aplicamos client-side por nome,
     // fazendo match contra:

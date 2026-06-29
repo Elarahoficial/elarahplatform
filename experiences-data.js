@@ -800,9 +800,14 @@
 
   // Lista pública: aplica isPubliclyVisible em todas as experiências.
   // Dedup defensivo: se houver registros duplicados (mesmo
-  // nome+data+horário+bairro+preço), mantém só o mais recente
-  // (primeiro do array já vem ordenado por created_at desc).
-  // Sem isso, a home/categoria mostraria o mesmo card 2x.
+  // nome+CATEGORIA+data+horário+bairro+preço), mantém só o primeiro
+  // do array. Sem isso, a home/categoria mostraria o mesmo card 2x.
+  // A CATEGORIA entra na assinatura de propósito: um mesmo evento
+  // cadastrado em duas categorias (ex. "Pintura de Vaso & Arranjo
+  // Floral" listado em Pintura E em Floral) são listagens DISTINTAS —
+  // sem a categoria na chave, o dedup descartava silenciosamente a
+  // segunda e ela sumia da própria categoria. Duplicatas realmente
+  // idênticas (mesma categoria inclusive) continuam sendo unificadas.
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
     const now = Date.now();
@@ -812,6 +817,7 @@
     visible.forEach(function (e) {
       var sig = [
         String(e.nome || '').trim().toLowerCase(),
+        String(e.categoria || '').trim().toLowerCase(),
         String(e.data || '').trim().toLowerCase(),
         String((Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '').trim().toLowerCase(),
         String(e.bairro || '').trim().toLowerCase(),
