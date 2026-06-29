@@ -1177,6 +1177,24 @@
         </div>
       </div>
 
+      <!-- ===== ANÁLISE DA ABORDAGEM (preenchido por admin-prospect-analise.js) ===== -->
+      <section class="admin__analytics-card" id="pa-section" style="margin-bottom:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:1.1rem;color:#1a1a1a;margin:0 0 4px;">🔍 Análise da abordagem <span style="font-size:.7rem;font-weight:700;color:#7a4a1e;background:#fbeede;padding:2px 9px;border-radius:999px;vertical-align:middle;">IA</span></h2>
+            <p style="margin:0;font-size:.84rem;color:#666;line-height:1.5;max-width:640px;">
+              Lê seu funil de prospecção e a timeline de contatos pra te dizer
+              <strong>o que está funcionando e o que trava</strong> na hora de abordar parceiro —
+              quem responde mais, o efeito do follow-up e onde você perde gente.
+            </p>
+          </div>
+          <button id="pa-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Analisar</button>
+        </div>
+        <div id="pa-root" style="margin-top:14px;">
+          <div style="color:#999;font-size:.9rem;">Analisando sua prospecção…</div>
+        </div>
+      </section>
+
       <!-- Filtros + ações -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
         <input type="search" id="prospects-filter-search" placeholder="Buscar por nome, observação..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
@@ -4485,6 +4503,7 @@
 <script src="admin-broadcast.js?v=2"></script>
 <script src="admin-eventos.js?v=2"></script>
 <script src="admin-prospect-finder.js?v=1"></script>
+<script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
