@@ -71,21 +71,21 @@ const BAIRROS = ["Pinheiros", "Vila Madalena", "Itaim Bibi", "Moema", "Brooklin"
 // EXPANDIR o catálogo (não repetir cerâmica/vela/pintura etc.). Edite
 // essa lista pra mirar os tipos de experiência que você quer oferecer.
 const CATS: Array<{ categoria: string; termo: string }> = [
-  { categoria: "vinho", termo: "degustação de vinhos" },
-  { categoria: "queijos e vinhos", termo: "degustação de queijos e vinhos" },
-  { categoria: "sushi", termo: "aula de sushi" },
-  { categoria: "massas", termo: "aula de massas artesanais" },
+  { categoria: "vinho", termo: "workshop de degustação de vinhos" },
+  { categoria: "queijos e vinhos", termo: "workshop de queijos e vinhos" },
+  { categoria: "sushi", termo: "aula de sushi workshop" },
+  { categoria: "massas", termo: "aula de massas artesanais workshop" },
   { categoria: "chocolate", termo: "oficina de chocolate artesanal" },
-  { categoria: "café", termo: "curso de barista café especial" },
-  { categoria: "cerveja", termo: "experiência de cervejaria artesanal" },
-  { categoria: "coquetelaria", termo: "aula de coquetelaria e drinks" },
+  { categoria: "café", termo: "curso de barista workshop de café" },
+  { categoria: "cerveja", termo: "workshop de cerveja artesanal" },
+  { categoria: "coquetelaria", termo: "workshop de coquetelaria e drinks" },
   { categoria: "dança", termo: "aula de dança de salão" },
-  { categoria: "fotografia", termo: "aula de fotografia" },
-  { categoria: "vitral", termo: "oficina de vitral" },
+  { categoria: "fotografia", termo: "curso de fotografia workshop" },
+  { categoria: "vitral", termo: "oficina de vitral workshop" },
   { categoria: "marcenaria", termo: "oficina de marcenaria criativa" },
-  { categoria: "arco e flecha", termo: "experiência de arco e flecha" },
-  { categoria: "chá", termo: "degustação de chás" },
-  { categoria: "terrário", termo: "oficina de terrário e plantas" },
+  { categoria: "arco e flecha", termo: "aula de arco e flecha" },
+  { categoria: "chá", termo: "workshop de chá degustação" },
+  { categoria: "terrário", termo: "oficina de terrário workshop" },
   { categoria: "aromaterapia", termo: "oficina de aromaterapia" },
 ];
 // Monta a fila de buscas: primeiro categoria + cidade, depois por bairro.
