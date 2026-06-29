@@ -10796,9 +10796,17 @@
         if (t > acc.t) return { t, tipo: i.tipo };
         return acc;
       }, { t: 0, tipo: null });
+      // Quantas vezes EU contatei (mensagem inicial + follow-ups) e se
+      // o parceiro retornou — pra priorizar quem falta e afundar quem já
+      // foi tentado várias vezes sem resposta.
+      const _attempts = interactions.filter(i => i && (i.tipo === 'mensagem_enviada' || i.tipo === 'follow_up')).length;
+      const _responded = interactions.some(i => i && i.tipo === 'respondeu') ||
+        ['respondeu', 'reuniao_marcada', 'parceria_fechada'].indexOf(p.status) !== -1;
       return Object.assign({}, p, {
         _lastInteractionTs: last.t,
         _lastInteractionTipo: last.tipo,
+        _attempts: _attempts,
+        _responded: _responded,
       });
     });
   }
@@ -11007,11 +11015,28 @@
       if (sec) buckets.get(sec.key).push(p);
       else     orphan.push(p);
     });
-    buckets.forEach(arr => arr.sort((a, b) => {
-      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return tb - ta;
-    }));
+    buckets.forEach((arr, key) => {
+      if (key === 'enviadas') {
+        // Ordem pra operação do dia: quem RESPONDEU primeiro (lead quente),
+        // depois quem tem MENOS tentativas (precisa do próximo toque) e,
+        // por fim, quem já foi tentado 2-3x sem resposta (afunda). Empate:
+        // contato mais antigo primeiro (mais atrasado).
+        arr.sort((a, b) => {
+          const ra = a.status === 'respondeu' ? 0 : 1;
+          const rb = b.status === 'respondeu' ? 0 : 1;
+          if (ra !== rb) return ra - rb;
+          const aa = a._attempts || 0, ab = b._attempts || 0;
+          if (aa !== ab) return aa - ab;
+          return (a._lastInteractionTs || 0) - (b._lastInteractionTs || 0);
+        });
+      } else {
+        arr.sort((a, b) => {
+          const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return tb - ta;
+        });
+      }
+    });
 
     const fmtTs = (ts) => ts ? new Date(ts).toLocaleDateString('pt-BR') : '<span style="color:#bbb;">—</span>';
 
@@ -11038,6 +11063,14 @@
           : (tipoArr[0] === 'em_casa' ? '#3068a8'
           : (tipoArr[0] === 'elarah' ? '#1a8a4a' : '#999')));
         statusCell += '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:6px;background:#fff;border:1px solid ' + tipoColor + ';color:' + tipoColor + ';font-size:.68rem;font-weight:700;">' + _propEsc(tipoLabel) + '</span>';
+      }
+      // Selo de tentativas sem resposta: "📨 3× · sem resposta".
+      // Vermelho a partir de 3 (esgotado), âmbar em 1-2 (ainda vale toque).
+      if (!p._responded && (p._attempts || 0) >= 1) {
+        const n = p._attempts;
+        const heavy = n >= 3;
+        statusCell += '<br><span style="display:inline-block;margin-top:4px;padding:1px 7px;border-radius:6px;font-size:.68rem;font-weight:700;background:' +
+          (heavy ? '#fdeaea' : '#fff4e0') + ';color:' + (heavy ? '#b3261e' : '#a4663b') + ';">📨 ' + n + 'x · sem resposta</span>';
       }
       // Linha com fundo levemente colorido pra reforçar a seção
       const rowBg = sec ? sec.bg : '#fff';
