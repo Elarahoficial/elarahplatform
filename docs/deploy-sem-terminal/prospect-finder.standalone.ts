@@ -148,15 +148,21 @@ serve(async (req) => {
 
     const queries = buildQueries();
     const novos: Lead[] = [];
+    // Espalha entre categorias: no máximo PER_CAT_MAX novos de cada
+    // categoria por rodada, pra não encher a meta toda com uma só
+    // (ex.: vinho). Assim vem variedade de verdade.
+    const perCat: Record<string, number> = {};
+    const PER_CAT_MAX = Math.max(2, Math.ceil(target / CATS.length));
     let googleCalls = 0;
     let lastErr = "";
 
     outer:
     for (const q of queries) {
       if (novos.length >= target) break;
+      if ((perCat[q.categoria] || 0) >= PER_CAT_MAX) continue; // categoria já cheia nesta rodada
       let pageToken: string | undefined = undefined;
       for (let page = 0; page < 2; page++) {
-        if (novos.length >= target) break outer;
+        if (novos.length >= target || (perCat[q.categoria] || 0) >= PER_CAT_MAX) break;
         const r = await placesSearch(q.query, pageToken);
         googleCalls++;
         if (r.error) { lastErr = r.error; break; }
@@ -172,7 +178,9 @@ serve(async (req) => {
             endereco: pl.formattedAddress || null, rating: typeof pl.rating === "number" ? pl.rating : null,
             maps: pl.googleMapsUri || null,
           });
-          if (novos.length >= target) break;
+          perCat[q.categoria] = (perCat[q.categoria] || 0) + 1;
+          if (novos.length >= target) break outer;
+          if ((perCat[q.categoria] || 0) >= PER_CAT_MAX) break; // categoria cheia → próxima
         }
         if (!r.nextPageToken) break;
         pageToken = r.nextPageToken;
