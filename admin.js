@@ -9949,7 +9949,19 @@
       ordArr.push(bk.orders);
     });
 
-    if (_anaChartEvolution) { _anaChartEvolution.destroy(); _anaChartEvolution = null; }
+    // Destrói qualquer gráfico vivo NESTE canvas antes de recriar.
+    // Não basta checar _anaChartEvolution: com o Chart.js carregando via
+    // CDN (defer) + o retry por setTimeout acima, um render pode disparar
+    // mais de uma vez e deixar um gráfico "órfão" no canvas que a variável
+    // não referencia — é o que causa o "Canvas is already in use. Chart
+    // with ID '0' must be destroyed...". Chart.getChart() acha o gráfico
+    // pelo próprio canvas, cobrindo todos os caminhos.
+    try {
+      const prev = (typeof Chart.getChart === 'function') ? Chart.getChart(canvas) : null;
+      if (prev) prev.destroy();
+      if (_anaChartEvolution && _anaChartEvolution !== prev) _anaChartEvolution.destroy();
+    } catch (_) { /* canvas já limpo */ }
+    _anaChartEvolution = null;
     _anaChartEvolution = new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
@@ -10512,12 +10524,18 @@
         ? { revenue: 0, orders: 0, avgTicket: 0, conversion: null }
         : _anaKpisFromSummary(summaryPrev, eventsPrev, bookingsPrev);
 
-      renderKpis(kpiCurr, kpiPrev);
-      renderEvolutionChart(bookingsCurr, curr);
-      renderFunnel(eventsCurr, bookingsCurr);
-      renderTopExperiences(bookingsCurr, eventsCurr, expById);
-      renderTopSuppliers(bookingsCurr, expById);
-      renderCustomers(bookingsCurr, bookings, profilesArr, curr);
+      // Cada widget é isolado: se um falhar (ex.: Chart.js, dado faltando),
+      // os demais ainda renderizam em vez de derrubar a aba inteira.
+      const safeRender = (label, fn) => {
+        try { fn(); }
+        catch (e) { console.error('[Analytics] falha ao renderizar ' + label + ':', e); }
+      };
+      safeRender('kpis', () => renderKpis(kpiCurr, kpiPrev));
+      safeRender('evolução', () => renderEvolutionChart(bookingsCurr, curr));
+      safeRender('funil', () => renderFunnel(eventsCurr, bookingsCurr));
+      safeRender('top experiências', () => renderTopExperiences(bookingsCurr, eventsCurr, expById));
+      safeRender('top fornecedores', () => renderTopSuppliers(bookingsCurr, expById));
+      safeRender('clientes', () => renderCustomers(bookingsCurr, bookings, profilesArr, curr));
 
       // Se TODAS as fontes falharam (provavelmente RLS/auth), avisa.
       if (bookingsAll === null && experiences === null && profiles === null && eventsAll === null) {
