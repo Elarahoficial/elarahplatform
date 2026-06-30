@@ -34,7 +34,7 @@
   function isKit(exp) {
     if (!exp) return false;
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
-    return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || hay.indexOf('em casa') !== -1;
+    return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || /\bem casa\b/.test(hay); // "em casa" como palavra inteira (não "Bem Casado")
   }
   // Variação escolhida na página do produto (experiencia.html). Só vale
   // se for do MESMO kit aberto. Devolve {nome, preco, label} ou null.
