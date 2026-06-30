@@ -203,6 +203,23 @@
       scheduleHtml = '<div style="background:#fdecea;color:#a4332b;padding:14px;border-radius:10px;font-size:.88rem;text-align:center;">Sem datas disponíveis na campanha do Dia dos Namorados. <a href="experiencia.html?id=' + esc(expId) + '" style="color:var(--ddn-wine);font-weight:600;">Ver todas as datas →</a></div>';
     }
 
+    // CTA "fechar em grupo" — mesma captura de demanda (aniversário/
+    // empresa/turma privada) da página padrão (experiencia.html). Aqui a
+    // página de detalhe é própria, então replicamos o box com estilo inline
+    // pra manter o visual verde do WhatsApp sem depender do CSS externo.
+    var _waGroupMsg = 'Olá! Quero fechar a experiência "' + (titulo || '') +
+      '" para um grupo / turma privada. Pode me ajudar com datas e valores?';
+    var _waSvg = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:24px;height:24px;flex-shrink:0;color:#25D366;"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4 0-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>';
+    var groupHtml =
+      '<a class="ddn-det__group-cta" target="_blank" rel="noopener"' +
+        ' href="https://wa.me/5511914455930?text=' + encodeURIComponent(_waGroupMsg) + '"' +
+        ' data-analytics="group_whatsapp_click" data-analytics-category="booking"' +
+        ' data-analytics-label="' + esc(titulo || '') + '"' +
+        ' style="display:flex;align-items:center;gap:11px;margin-top:14px;padding:12px 14px;border:1px solid #d8efe0;background:#f3fbf6;border-radius:12px;text-decoration:none;color:#2c5a43;font-size:.8rem;line-height:1.35;">' +
+        _waSvg +
+        '<span><strong style="color:#147a40;">Quer fechar em grupo?</strong> Aniversário, empresa ou turma privada — chama a gente no WhatsApp.</span>' +
+      '</a>';
+
     container.innerHTML =
       '<a href="dia-dos-namorados.html" class="ddn-det__back">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>' +
@@ -237,6 +254,7 @@
             ' data-analytics-label="' + esc(titulo) + '"' +
           '>Reservar nosso momento</button>' +
           '<a href="experiencia.html?id=' + esc(exp.id) + '" class="ddn-det__back-all">Ver todas as datas da experiência</a>' +
+          groupHtml +
         '</aside>' +
       '</div>';
 
