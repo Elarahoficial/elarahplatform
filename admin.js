@@ -4740,7 +4740,7 @@
     return hay.indexOf('kit') !== -1
         || hay.indexOf('diy') !== -1
         || hay.indexOf('faca voce mesmo') !== -1
-        || hay.indexOf('em casa') !== -1;
+        || /\bem casa\b/.test(hay); // palavra inteira: evita "Bem Casado" virar kit
   }
 
   // É kit em casa se o admin marcou o checkbox explícito OU se o texto

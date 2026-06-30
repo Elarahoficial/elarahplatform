@@ -26,13 +26,15 @@
   }
 
   // Casa "kit", "diy", "faça você mesmo", "em casa"
+  // "em casa" exige palavra inteira (\b) — senão "Bem Casado" (b-em-casa-do)
+  // cai aqui por engano e não há como tirar pelo admin.
   function isCasaKit(exp) {
     if (!exp) return false;
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
     return hay.indexOf('kit') !== -1
         || hay.indexOf('diy') !== -1
         || hay.indexOf('faca voce mesmo') !== -1
-        || hay.indexOf('em casa') !== -1;
+        || /\bem casa\b/.test(hay);
   }
 
   // Mapa de palavras-chave por tipo/coleção pros filtros do cliente.
