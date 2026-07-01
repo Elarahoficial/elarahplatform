@@ -958,9 +958,24 @@ if (categoriaURL) activeCategoria = categoriaURL;
       var descRaw = it.descricao ? String(it.descricao).trim() : '';
       if (descRaw) {
         if (it.tipo === 'espera') {
-          descHtml = '<p class="originals__card-detail originals__card-detail--highlight">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
-            esc(descRaw) + '</p>';
+          // Descrição da lista de espera: antes despejava o texto inteiro
+          // no card (ficava gigante). Agora limita a ~3 linhas via CSS
+          // (line-clamp) e, quando o texto é longo, oferece um "Saiba
+          // mais" que expande inline. Descrições curtas continuam
+          // aparecendo inteiras, sem botão.
+          var starSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+          if (descRaw.length > 140) {
+            descHtml = '<div class="originals__card-detail originals__card-detail--highlight">' +
+              starSvg +
+              '<div class="originals__card-highlight-body">' +
+                '<p class="originals__card-highlight-text originals__card-highlight-text--clamped">' + esc(descRaw) + '</p>' +
+                '<button type="button" class="originals__card-saiba-mais" aria-expanded="false">Saiba mais</button>' +
+              '</div>' +
+            '</div>';
+          } else {
+            descHtml = '<p class="originals__card-detail originals__card-detail--highlight">' +
+              starSvg + esc(descRaw) + '</p>';
+          }
         } else {
           // Truncamento inteligente: corta no espaço mais próximo de
           // 120 chars pra não cortar palavra no meio. Se a descrição
@@ -1152,6 +1167,23 @@ if (categoriaURL) activeCategoria = categoriaURL;
         } else {
           prompt('Copie o link:', url);
         }
+      });
+    });
+
+    // "Saiba mais" nos cards de lista de espera: expande/recolhe a
+    // descrição (que por padrão vem limitada a ~3 linhas via CSS).
+    grid.querySelectorAll('.originals__card-saiba-mais').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        var body = btn.parentNode;
+        var textEl = body && body.querySelector('.originals__card-highlight-text');
+        if (!textEl) return;
+        // toggle() devolve true quando a classe passa a existir (clamp
+        // ativo). Ao expandir, ela sai → false → mostra "Ver menos".
+        var clamped = textEl.classList.toggle('originals__card-highlight-text--clamped');
+        btn.textContent = clamped ? 'Saiba mais' : 'Ver menos';
+        btn.setAttribute('aria-expanded', clamped ? 'false' : 'true');
       });
     });
 

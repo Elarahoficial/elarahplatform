@@ -1427,6 +1427,44 @@ select {
   filter: drop-shadow(0 0 3px rgba(240, 138, 62, 0.55));
 }
 
+/* Corpo do highlight quando a descrição é longa: texto (limitado a
+   ~3 linhas) + botão "Saiba mais". Fica ao lado da estrelinha. */
+.originals__card-highlight-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.originals__card-highlight-text {
+  margin: 0;
+}
+
+/* Limita a descrição a 3 linhas com reticências. Ao clicar em "Saiba
+   mais" a classe é removida via JS e o texto aparece inteiro. */
+.originals__card-highlight-text--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.originals__card-saiba-mais {
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--orange);
+  cursor: pointer;
+}
+
+.originals__card-saiba-mais:hover {
+  text-decoration: underline;
+}
+
 /* "Data em breve" nos cards de lista de espera (sem data definida).
    Antes era pequeno e alinhado à esquerda — visualmente sem peso
    no card. Agora ocupa o espaço entre o teaser e o botão (flex:1
