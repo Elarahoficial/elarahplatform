@@ -490,8 +490,8 @@ Não é workflow. É higiene.
 #empreendedorismo #saudemental #produtividade',
  'Postar 8h.', 'planejado'),
 
-('2026-07-15', 'Instagram', 'Carrossel', 'WORKSHOP FEATURE — "Experiências pra AMIGAS (não é só Galentine\'s)"',
- 'experiências pra amigas — o ano inteiro, não só em Galentine\'s.
+('2026-07-15', 'Instagram', 'Carrossel', 'WORKSHOP FEATURE — "Experiências pra AMIGAS (não é só Galentine''s)"',
+ 'experiências pra amigas — o ano inteiro, não só em Galentine''s.
 
 essa semana:
 🎨 Pintura em Taça (sáb 12/07 — vagas ainda!)
