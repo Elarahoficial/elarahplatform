@@ -19,11 +19,48 @@ window.initMobileHeader = function () {
   if (toggle.dataset.elarahHeaderInit === '1') return;
   toggle.dataset.elarahHeaderInit = '1';
 
-  const closeMenu = () => nav.classList.remove('mobile-open');
+  // Trava/destrava o scroll da página enquanto o menu está aberto.
+  // Sem isso, com "Explorar" aberto o menu fica mais alto que a tela e
+  // o gesto de arrastar rolava a página (fechando o menu — "subia e
+  // saía da tela"). overflow:hidden NÃO segura no iOS Safari; o método
+  // confiável é fixar o body compensando o scroll atual, restaurado ao
+  // fechar. Com o body travado, o arrasto rola o próprio menu.
+  function lockBody() {
+    if (document.body.dataset.elarahScrollLock === '1') return;
+    const y = window.scrollY || window.pageYOffset || 0;
+    document.body.dataset.elarahScrollLock = '1';
+    document.body.dataset.elarahScrollY = String(y);
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + y + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  function unlockBody() {
+    if (document.body.dataset.elarahScrollLock !== '1') return;
+    const y = parseInt(document.body.dataset.elarahScrollY || '0', 10);
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    delete document.body.dataset.elarahScrollLock;
+    delete document.body.dataset.elarahScrollY;
+    window.scrollTo(0, y);
+  }
+
+  const openMenu = () => { nav.classList.add('mobile-open'); lockBody(); };
+  const closeMenu = () => { nav.classList.remove('mobile-open'); unlockBody(); };
+
+  // Exposto para quem precisa fechar o menu (e destravar o scroll) antes
+  // de rolar a própria página — ex.: ao tocar numa categoria do Explorar,
+  // que rola até a seção de experiências.
+  window.elarahCloseMobileMenu = closeMenu;
 
   toggle.addEventListener('click', (e) => {
     e.stopPropagation();
-    nav.classList.toggle('mobile-open');
+    if (nav.classList.contains('mobile-open')) closeMenu();
+    else openMenu();
   });
 
   // Fecha ao clicar fora do menu E fora do botão.
@@ -38,14 +75,9 @@ window.initMobileHeader = function () {
     link.addEventListener('click', closeMenu);
   });
 
-  // Fecha ao rolar a página (mobile abre como overlay; rolar fecha).
-  window.addEventListener('scroll', () => {
-    if (nav.classList.contains('mobile-open')) closeMenu();
-  }, { passive: true });
-
   // Fecha com ESC.
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMenu();
+    if (e.key === 'Escape' && nav.classList.contains('mobile-open')) closeMenu();
   });
 };
 
@@ -784,6 +816,11 @@ if (categoriaURL) activeCategoria = categoriaURL;
 
           filterCategoria.value = activeCategoria;
           renderCards();
+
+          // Fecha o menu mobile e destrava o scroll ANTES de rolar até
+          // as experiências — com o body travado o scrollIntoView não
+          // teria efeito.
+          if (window.elarahCloseMobileMenu) window.elarahCloseMobileMenu();
 
           const experienciasEl = document.getElementById('experiencias');
           if (experienciasEl) {
