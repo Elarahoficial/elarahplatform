@@ -6941,6 +6941,34 @@
       .replace(/\s+/g, ' ');
   }
 
+  // Detecta se a data ("DD/MM" ou "DD/MM/AAAA") de um item By Elarah já
+  // passou. Sem ano informado, assume o ano corrente; se isso jogar a
+  // data mais de ~6 meses pro passado (ex.: "20/12" visto em janeiro),
+  // trata como futura — provável virada de ciclo. Datas inválidas/ausentes
+  // contam como NÃO passadas (ficam visíveis por segurança).
+  function _byIsPastData(dataStr) {
+    if (!dataStr) return false;
+    const m = String(dataStr).match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+    if (!m) return false;
+    const day = +m[1], mon = +m[2];
+    if (!day || !mon || mon > 12 || day > 31) return false;
+    const now = new Date();
+    const year = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : now.getFullYear();
+    const dt = new Date(year, mon - 1, day, 23, 59, 59, 999);
+    if (isNaN(dt.getTime())) return false;
+    if (!m[3]) {
+      const sixMonths = 182 * 24 * 60 * 60 * 1000;
+      if (dt.getTime() < now.getTime() - sixMonths) return false; // ciclo seguinte
+    }
+    return dt.getTime() < now.getTime();
+  }
+
+  // Item By Elarah "fora do foco": já passou OU está oculto (ativo=false).
+  // Esses saem da lista principal e vão pra seção recolhida "passadas/ocultas".
+  function _byItemOutOfFocus(it) {
+    return (it && it.ativo === false) || _byIsPastData(it && it.data);
+  }
+
   // Agrupa uma lista por experience name preservando a ordem da
   // primeira ocorrência de cada grupo (estável). Retorna um array
   // de { nome, rows } pronto pra iterar.
@@ -7051,6 +7079,23 @@
     itemsBody.addEventListener('click', async (e) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (!target) return;
+      // Toggle "mostrar/ocultar passadas" — revela/esconde as linhas
+      // marcadas data-by-past (puro DOM, sem refazer a requisição).
+      const togglePastBtn = target.closest('[data-by-toggle-past]');
+      if (togglePastBtn) {
+        const willShow = togglePastBtn.getAttribute('aria-expanded') !== 'true';
+        itemsBody.querySelectorAll('[data-by-past]').forEach(r => {
+          r.style.display = willShow ? '' : 'none';
+        });
+        togglePastBtn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        const lbl = togglePastBtn.querySelector('.by-toggle-past-label');
+        if (lbl) {
+          lbl.textContent = willShow
+            ? lbl.textContent.replace('▸ Mostrar', '▾ Ocultar')
+            : lbl.textContent.replace('▾ Ocultar', '▸ Mostrar');
+        }
+        return;
+      }
       // data-by-edit-exp tem precedencia sobre data-by-edit (o ultimo
       // tambem pega o primeiro via substring se nao filtrarmos).
       const editExpBtn = target.closest('[data-by-edit-exp]');
@@ -7099,6 +7144,19 @@
     subsBody.addEventListener('click', async (e) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (!target) return;
+      // Accordion: clique no cabeçalho do grupo abre/fecha só as respostas
+      // daquele grupo (toggle DOM). Os botões Atendido/Excluir ficam em
+      // linhas separadas, então não colidem com este handler.
+      const subsToggle = target.closest('[data-by-subs-toggle]');
+      if (subsToggle) {
+        const gi = subsToggle.getAttribute('data-by-subs-toggle');
+        const rows = subsBody.querySelectorAll('[data-subs-group="' + gi + '"]');
+        const isOpen = rows.length > 0 && rows[0].style.display !== 'none';
+        rows.forEach(r => { r.style.display = isOpen ? 'none' : ''; });
+        const chev = subsBody.querySelector('[data-subs-chev="' + gi + '"]');
+        if (chev) chev.textContent = isOpen ? '▸' : '▾';
+        return;
+      }
       const doneBtn = target.closest('[data-by-sub-done]');
       if (doneBtn) {
         await ElarahByElarah.updateSubmissionStatus(doneBtn.dataset.bySubDone, 'atendido');
@@ -7186,14 +7244,23 @@
         return oa - ob;
       });
       const itemGroups = groupByExperienceName(sortedItems, it => it.nome);
-      const nGroups = itemGroups.length;
+      // Particiona: grupos "em foco" (ao menos uma sessão futura/ativa) vs
+      // grupos totalmente passados/ocultos — esses vão pra seção recolhida
+      // atrás do botão "mostrar passadas/ocultas".
+      const isPastGroup = g => g.rows.every(_byItemOutOfFocus);
+      const currentGroups = itemGroups.filter(g => !isPastGroup(g));
+      const pastGroups = itemGroups.filter(isPastGroup);
+      const nGroups = currentGroups.length;
       itemsCount.textContent =
-        items.length + ' item' + (items.length !== 1 ? 's' : '') +
-        ' · ' + nGroups + ' experiência' + (nGroups !== 1 ? 's' : '');
+        nGroups + ' experiência' + (nGroups !== 1 ? 's' : '') + ' em foco' +
+        (pastGroups.length
+          ? ' · ' + pastGroups.length + ' passada' + (pastGroups.length !== 1 ? 's' : '') + '/oculta' + (pastGroups.length !== 1 ? 's' : '')
+          : '');
 
-      console.info('[Admin/byelarah] rendering', itemGroups.length, 'item groups from', items.length, 'items');
+      console.info('[Admin/byelarah] rendering', currentGroups.length, 'current +', pastGroups.length, 'past item groups');
       const html = [];
-      itemGroups.forEach(group => {
+      const renderItemGroup = (group, past) => {
+        const pastAttr = past ? ' data-by-past="1" style="display:none;"' : '';
         const nSessions = group.rows.length;
         const sessoesLabel = nSessions + ' sess' + (nSessions === 1 ? 'ão' : 'ões');
         // Inline styles como fallback — garantem que o header
@@ -7222,7 +7289,7 @@
           '</button>';
 
         html.push(
-          '<tr class="admin__group-header">' +
+          '<tr class="admin__group-header"' + pastAttr + '>' +
             '<td colspan="8" style="' + headerStyle + '">' +
               '<div class="admin__group-header-inner" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
                 '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
@@ -7269,7 +7336,7 @@
             actions = '<span class="admin__badge admin__badge--pending">Fallback</span>';
           }
           html.push(`
-            <tr>
+            <tr${pastAttr}>
               <td>${it.ordem || 0}</td>
               <td>${imgHtml}</td>
               <td>${escapeHtml(it.nome)}</td>
@@ -7281,7 +7348,22 @@
             </tr>
           `);
         });
-      });
+      };
+      currentGroups.forEach(g => renderItemGroup(g, false));
+      if (pastGroups.length) {
+        // Divisor + botão pra revelar as passadas/ocultas (escondidas via
+        // display:none; o toggle é puro DOM, não refaz requisição).
+        const nPast = pastGroups.length;
+        html.push(
+          '<tr><td colspan="8" style="padding:14px 16px;background:#faf6ef;border-top:2px dashed #e0cba0;text-align:center;">' +
+            '<button type="button" data-by-toggle-past aria-expanded="false" ' +
+              'style="background:#fff;border:1px solid #d9a441;color:#a4663b;padding:8px 16px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;">' +
+              '<span class="by-toggle-past-label">▸ Mostrar ' + nPast + ' experiência' + (nPast !== 1 ? 's' : '') + ' passada' + (nPast !== 1 ? 's' : '') + '/oculta' + (nPast !== 1 ? 's' : '') + '</span>' +
+            '</button>' +
+          '</td></tr>'
+        );
+        pastGroups.forEach(g => renderItemGroup(g, true));
+      }
       itemsBody.innerHTML = html.join('');
       // Listeners são registrados uma única vez via delegação em
       // wireByElarahTableListeners() — não re-wirar aqui.
@@ -7327,7 +7409,11 @@
       const pillGreen = pillBase + 'background:#1a8a4a;color:#fff;';
 
       const html = [];
-      subGroups.forEach(group => {
+      subGroups.forEach((group, gi) => {
+        // Accordion: as linhas do grupo nascem escondidas (display:none) e
+        // o clique no cabeçalho revela/esconde só as deste grupo (toggle
+        // puro DOM, sem refazer requisição).
+        const rowHide = ' data-subs-group="' + gi + '" style="display:none;"';
         const n = group.rows.length;
         const respLabel = n + ' resposta' + (n !== 1 ? 's' : '');
         // Conta novas nas últimas 24h dentro do grupo (útil pra
@@ -7339,12 +7425,14 @@
           ? '<span class="admin__group-header-pill" style="' + pillGreen + 'margin-left:8px;">' + novasDoGrupo + ' nova' + (novasDoGrupo !== 1 ? 's' : '') + ' (24h)</span>'
           : '';
         html.push(
-          '<tr class="admin__group-header">' +
+          '<tr class="admin__group-header" data-by-subs-toggle="' + gi + '" style="cursor:pointer;">' +
             '<td colspan="9" style="' + headerStyle + '">' +
               '<div class="admin__group-header-inner" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                '<span class="by-subs-chev" data-subs-chev="' + gi + '" style="font-size:.9rem;color:#a4663b;width:14px;display:inline-block;text-align:center;">▸</span>' +
                 '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
                 '<span class="admin__group-header-pill admin__group-header-pill--muted" style="' + pillOrange + '">' + respLabel + '</span>' +
                 novasPill +
+                '<span style="margin-left:auto;font-size:.72rem;color:#a07c4c;font-weight:600;">clique pra abrir</span>' +
               '</div>' +
             '</td>' +
           '</tr>'
@@ -7362,7 +7450,7 @@
             const nb = bucket.rows.length;
             const subLabel = nb + ' resposta' + (nb !== 1 ? 's' : '');
             html.push(
-              '<tr class="admin__sub-header">' +
+              '<tr class="admin__sub-header"' + rowHide + '>' +
                 '<td colspan="9" style="' + subHeaderStyle + '">' +
                   escapeHtml(bucket.label) +
                   ' <span style="color:#a07c4c;font-weight:500;text-transform:none;letter-spacing:0;">· ' + subLabel + '</span>' +
@@ -7392,7 +7480,7 @@
               : '';
 
             html.push(`
-              <tr>
+              <tr${rowHide}>
                 <td>${escapeHtml(when)}</td>
                 <td>${escapeHtml(s.experiencia || '—')}</td>
                 <td><span class="admin__badge admin__badge--${tipoClass}">${tipoLabel}</span></td>
