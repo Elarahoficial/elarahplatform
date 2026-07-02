@@ -48,10 +48,15 @@
 
 
 -- ===== 1. v_financial_ledger v6 =====
--- IMPORTANTE: a ordem das colunas do v5 é PRESERVADA. group_id é
--- ADICIONADA no FINAL — CREATE OR REPLACE VIEW só permite append;
--- qualquer reordenação dispara erro 42P16.
-create or replace view public.v_financial_ledger as
+-- Recriada do zero (DROP + CREATE) em vez de CREATE OR REPLACE: como
+-- as vendas manuais agora somam por parcela, o tipo/append de colunas
+-- muda e CREATE OR REPLACE dispararia 42P16 ("cannot change data type
+-- of view column"). DROP evita isso. Seguro: nenhuma outra VIEW depende
+-- desta — só funções SQL (financial_summary/evolution/by_supplier) e
+-- queries, que não são dependências rígidas e re-resolvem a view depois.
+drop view if exists public.v_financial_ledger;
+
+create view public.v_financial_ledger as
 
 -- Bookings (site) — inalterado, group_id = id.
 select
