@@ -6948,17 +6948,34 @@
   // contam como NÃO passadas (ficam visíveis por segurança).
   function _byIsPastData(dataStr) {
     if (!dataStr) return false;
-    const m = String(dataStr).match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
-    if (!m) return false;
-    const day = +m[1], mon = +m[2];
+    const s = String(dataStr).toLowerCase().trim();
+    let day, mon, year = null;
+    // Formato numérico: "DD/MM" ou "DD/MM/AAAA".
+    const m = s.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+    if (m) {
+      day = +m[1]; mon = +m[2];
+      year = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : null;
+    } else {
+      // Formato por extenso: "27 de maio", "27 mai", "1 de janeiro de 2026".
+      const MESES = { jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6, jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12 };
+      const m2 = s.match(/(\d{1,2})\s*(?:de\s+)?([a-zç]{3,})/);
+      if (!m2) return false;
+      day = +m2[1];
+      mon = MESES[m2[2].slice(0, 3)];
+      if (!mon) return false;
+      const my = s.match(/(\d{4})\s*$/);
+      year = my ? +my[1] : null;
+    }
     if (!day || !mon || mon > 12 || day > 31) return false;
     const now = new Date();
-    const year = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : now.getFullYear();
-    const dt = new Date(year, mon - 1, day, 23, 59, 59, 999);
+    const yr = year != null ? year : now.getFullYear();
+    const dt = new Date(yr, mon - 1, day, 23, 59, 59, 999);
     if (isNaN(dt.getTime())) return false;
-    if (!m[3]) {
+    if (year == null) {
+      // Sem ano: se a data no ano corrente ficou muito no passado, é do
+      // próximo ciclo (ex.: "20 de dezembro" visto em janeiro) — não é passada.
       const sixMonths = 182 * 24 * 60 * 60 * 1000;
-      if (dt.getTime() < now.getTime() - sixMonths) return false; // ciclo seguinte
+      if (dt.getTime() < now.getTime() - sixMonths) return false;
     }
     return dt.getTime() < now.getTime();
   }
@@ -7243,13 +7260,15 @@
         const ob = Number(b.ordem) || 0;
         return oa - ob;
       });
-      const itemGroups = groupByExperienceName(sortedItems, it => it.nome);
-      // Particiona: grupos "em foco" (ao menos uma sessão futura/ativa) vs
-      // grupos totalmente passados/ocultos — esses vão pra seção recolhida
-      // atrás do botão "mostrar passadas/ocultas".
-      const isPastGroup = g => g.rows.every(_byItemOutOfFocus);
-      const currentGroups = itemGroups.filter(g => !isPastGroup(g));
-      const pastGroups = itemGroups.filter(isPastGroup);
+      // Particiona no nível da SESSÃO (item), não do grupo: sessões em foco
+      // (futuras E ativas) vs passadas/ocultas. Assim uma experiência com
+      // sessão ativa e sessão encerrada mostra a ativa no topo e a encerrada
+      // na seção recolhida — e uma sessão OCULTA sai da frente mesmo que
+      // outra sessão do mesmo nome esteja ativa.
+      const focusItems = sortedItems.filter(it => !_byItemOutOfFocus(it));
+      const outItems   = sortedItems.filter(_byItemOutOfFocus);
+      const currentGroups = groupByExperienceName(focusItems, it => it.nome);
+      const pastGroups    = groupByExperienceName(outItems, it => it.nome);
       const nGroups = currentGroups.length;
       itemsCount.textContent =
         nGroups + ' experiência' + (nGroups !== 1 ? 's' : '') + ' em foco' +
