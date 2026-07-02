@@ -706,7 +706,17 @@
     // (lido pelo kit-checkout.js quando é kit). Em categoria normal, o
     // seletor funciona como preview/destaque na página; a escolha vinculante
     // por pessoa acontece no modal de checkout (script.js, via variantOptions).
-    var _kitItems = Array.isArray(exp.variantItems) ? exp.variantItems : [];
+    var _kitItems = (function () {
+      // Formato rico (nome + preço + foto).
+      if (Array.isArray(exp.variantItems) && exp.variantItems.length) return exp.variantItems;
+      // Fallback: formato antigo (só nomes) — vira item simples { nome }.
+      if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
+        return exp.variantOptions
+          .filter(function (n) { return n && String(n).trim(); })
+          .map(function (n) { return { nome: String(n).trim(), preco: '', imagem: '' }; });
+      }
+      return [];
+    })();
     var variantSelectorHtml = (function () {
       if (!_kitItems.length) return '';
       var label = exp.variantLabel || 'Escolha a sua opção';
