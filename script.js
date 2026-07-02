@@ -2814,6 +2814,19 @@ if (groupForm) {
           });
           variantOptsEl.appendChild(btn);
         });
+        // Pré-seleciona a opção já escolhida no modal de descrição, se for
+        // da mesma experiência — evita pedir a variação duas vezes. O
+        // .click() reusa o handler acima (seta ctx.variantSelected + visual).
+        try {
+          var _preSel = window.__elarahDescVariant;
+          if (_preSel && _preSel.expId === ctx.experienceId && _preSel.selected) {
+            var _preBtn = Array.prototype.filter.call(
+              variantOptsEl.querySelectorAll('.erm-variant-btn'),
+              function (b) { return b.dataset.value === _preSel.selected; }
+            )[0];
+            if (_preBtn) _preBtn.click();
+          }
+        } catch (_e) {}
       } else if (variantSection) {
         variantSection.style.display = 'none';
       }
@@ -4218,6 +4231,23 @@ if (groupForm) {
       // Selecionado é guardado em scope local — footer button lê esse
       // estado antes de continuar pro checkout.
       var modalSchedSel = { data: null, horario: null, slotId: null, dataLabel: null };
+
+      // ===== Variação (kit/opção) escolhida neste modal =====
+      // Deriva as opções de variantItems (rico) ou variantOptions (legado).
+      // Quando existir, o seletor abaixo é renderizado e a escolha vira
+      // obrigatória (onContinue bloqueia sem seleção). A opção escolhida é
+      // propagada pro checkout via window.__elarahDescVariant, que o modal
+      // de reserva lê pra pré-selecionar a Pessoa 1.
+      var _descVariantItems = (Array.isArray(exp.variantItems) && exp.variantItems.length)
+        ? exp.variantItems
+        : (Array.isArray(exp.variantOptions) && exp.variantOptions.length
+            ? exp.variantOptions.map(function (n) { return { nome: String(n), preco: '', imagem: '' }; })
+            : []);
+      var _descVariantLabel = exp.variantLabel || 'Escolha a sua opção';
+      var modalVariantSel = { label: _descVariantItems.length ? _descVariantLabel : null, selected: null, item: null };
+      // Limpa qualquer escolha de uma abertura anterior.
+      window.__elarahDescVariant = null;
+
       var schedSection = document.createElement('div');
       schedSection.style.cssText = 'margin-top:28px;';
       body.appendChild(schedSection);
@@ -4380,6 +4410,58 @@ if (groupForm) {
         renderHorarios(dateOrder[0]);
       })();
 
+      // ===== SELETOR DE VARIAÇÃO (kit/opção) =====
+      // Renderizado quando a experiência tem opções. Escolha obrigatória —
+      // onContinue não avança sem seleção. Ao escolher, troca a foto do
+      // hero e o preço do rodapé, e guarda a escolha em
+      // window.__elarahDescVariant pro checkout.
+      if (_descVariantItems.length) {
+        var variantSection = document.createElement('div');
+        variantSection.style.cssText = 'margin-top:28px;';
+        var variantHeader = document.createElement('div');
+        variantHeader.textContent = _descVariantLabel;
+        variantHeader.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
+        variantSection.appendChild(variantHeader);
+        var variantBtnsWrap = document.createElement('div');
+        variantBtnsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+        var descVariantMsg = document.createElement('div');
+        descVariantMsg.textContent = 'Escolha uma opção pra continuar.';
+        descVariantMsg.style.cssText = 'font-size:.74rem;color:#c0392b;margin-top:8px;min-height:1em;display:none;';
+        function fmtPrecoDesc(p) {
+          return (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(p) : p;
+        }
+        _descVariantItems.forEach(function (it) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          var priceTxt = it.preco ? ' · ' + it.preco : '';
+          b.textContent = it.nome + priceTxt;
+          b.style.cssText = 'padding:9px 16px;border:1.5px solid #ddd;background:#fff;color:#444;border-radius:999px;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;';
+          b.addEventListener('click', function () {
+            modalVariantSel.selected = it.nome;
+            modalVariantSel.item = it;
+            modalVariantSel.label = _descVariantLabel;
+            window.__elarahDescVariant = { expId: exp.id, label: _descVariantLabel, selected: it.nome };
+            Array.from(variantBtnsWrap.children).forEach(function (other) {
+              var on = other === b;
+              other.style.background = on ? '#fff8ef' : '#fff';
+              other.style.borderColor = on ? '#f0a05e' : '#ddd';
+              other.style.color = on ? '#1a1a1a' : '#444';
+            });
+            descVariantMsg.style.display = 'none';
+            // Foto e preço acompanham a opção escolhida (quando definidos).
+            if (it.imagem && heroImg) heroImg.src = it.imagem;
+            if (root.__elarahPriceEl && it.preco) root.__elarahPriceEl.textContent = fmtPrecoDesc(it.preco);
+          });
+          variantBtnsWrap.appendChild(b);
+        });
+        variantSection.appendChild(variantBtnsWrap);
+        variantSection.appendChild(descVariantMsg);
+        body.appendChild(variantSection);
+        // Refs pro onContinue avisar/rolar até aqui se faltar escolha.
+        root.__elarahVariantMsg = descVariantMsg;
+        root.__elarahVariantSection = variantSection;
+      }
+
       // Comentários das avaliações — logo antes do botão, como empurrão
       // final na hora de decidir. (A mini-nota já apareceu lá no topo.)
       body.appendChild(reviewsBlockEl);
@@ -4449,6 +4531,8 @@ if (groupForm) {
         priceTag.appendChild(priceLabelEl);
         priceTag.appendChild(priceValEl);
         footer.appendChild(priceTag);
+        // Ref pro seletor de variação atualizar o preço ao escolher opção.
+        root.__elarahPriceEl = priceValEl;
       }
 
       const continueBtn = document.createElement('button');
@@ -4583,6 +4667,15 @@ if (groupForm) {
         // Guard contra double-click no botão final — desabilita e muda
         // o texto pra avisar o usuário que está processando.
         if (continueBtn.disabled) return;
+        // Variação obrigatória: sem opção escolhida, não avança — mostra
+        // o aviso e rola até o seletor.
+        if (_descVariantItems.length && !modalVariantSel.selected) {
+          if (root.__elarahVariantMsg) root.__elarahVariantMsg.style.display = 'block';
+          if (root.__elarahVariantSection && root.__elarahVariantSection.scrollIntoView) {
+            try { root.__elarahVariantSection.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_e) {}
+          }
+          return;
+        }
         continueBtn.disabled = true;
         continueBtn.textContent = 'Abrindo pagamento…';
         continueBtn.style.opacity = '0.85';
