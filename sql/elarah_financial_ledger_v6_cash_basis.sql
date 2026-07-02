@@ -107,7 +107,10 @@ select
     ms.sale_date::timestamptz,
     ms.created_at
   )                                                   as occurred_at,
-  coalesce((p.elem->>'valor_centavos')::bigint, 0)    as amount_centavos,
+  -- ::numeric->::int tolera "30000" e "30000.0"; mantém a coluna
+  -- amount_centavos como integer (o v5 já era integer — CREATE OR
+  -- REPLACE VIEW não permite trocar o tipo de coluna existente).
+  coalesce((p.elem->>'valor_centavos')::numeric, 0)::int as amount_centavos,
   -- Cancelada/reembolsada manda em TODAS as parcelas; senão, a flag
   -- "pago" da parcela decide entre 'pago' e 'pendente'.
   case
