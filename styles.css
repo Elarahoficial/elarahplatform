@@ -1427,6 +1427,44 @@ select {
   filter: drop-shadow(0 0 3px rgba(240, 138, 62, 0.55));
 }
 
+/* Descrição da lista de espera: limita a 3 linhas por padrão pra não
+   estourar o card com o textão do banco. O botão "ver mais" (revelado
+   via JS só quando o texto realmente passa das 3 linhas) expande/recolhe. */
+.originals__card-desc-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.originals__card-detail--highlight .originals__card-desc-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+.originals__card-detail--highlight .originals__card-desc-clamp.is-expanded {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+.originals__card-desc-toggle {
+  align-self: flex-start;
+  /* alinha ~com o início do texto (estrela 16px + gap 7px) */
+  margin: 2px 0 6px 23px;
+  padding: 2px 0;
+  background: none;
+  border: none;
+  color: var(--orange);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.originals__card-desc-toggle:hover {
+  text-decoration: underline;
+}
+
 /* "Data em breve" nos cards de lista de espera (sem data definida).
    Antes era pequeno e alinhado à esquerda — visualmente sem peso
    no card. Agora ocupa o espaço entre o teaser e o botão (flex:1

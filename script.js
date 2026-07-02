@@ -958,9 +958,17 @@ if (categoriaURL) activeCategoria = categoriaURL;
       var descRaw = it.descricao ? String(it.descricao).trim() : '';
       if (descRaw) {
         if (it.tipo === 'espera') {
-          descHtml = '<p class="originals__card-detail originals__card-detail--highlight">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
-            esc(descRaw) + '</p>';
+          // A descrição da lista de espera vem do banco e costuma ser
+          // longa — despejar inteira estoura o card. Clampa em 3 linhas
+          // e oferece "ver mais" (o botão só aparece quando o texto
+          // realmente estoura; wiring de overflow logo após o render).
+          descHtml = '<div class="originals__card-desc-wrap">' +
+            '<p class="originals__card-detail originals__card-detail--highlight">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
+              '<span class="originals__card-desc-clamp">' + esc(descRaw) + '</span>' +
+            '</p>' +
+            '<button type="button" class="originals__card-desc-toggle" aria-expanded="false" hidden>ver mais</button>' +
+          '</div>';
         } else {
           // Truncamento inteligente: corta no espaço mais próximo de
           // 120 chars pra não cortar palavra no meio. Se a descrição
@@ -1098,6 +1106,25 @@ if (categoriaURL) activeCategoria = categoriaURL;
     }).join('');
 
     grid.innerHTML = html;
+
+    // Descrições da lista de espera: clampadas em 3 linhas via CSS. O
+    // botão "ver mais" só aparece quando o texto realmente estoura as 3
+    // linhas (mede overflow depois do layout) e expande/recolhe no clique.
+    grid.querySelectorAll('.originals__card-desc-wrap').forEach(function (wrap) {
+      var clamp = wrap.querySelector('.originals__card-desc-clamp');
+      var toggle = wrap.querySelector('.originals__card-desc-toggle');
+      if (!clamp || !toggle) return;
+      var revealIfOverflow = function () {
+        if (clamp.scrollHeight - clamp.clientHeight > 2) toggle.hidden = false;
+      };
+      if (window.requestAnimationFrame) window.requestAnimationFrame(revealIfOverflow);
+      else revealIfOverflow();
+      toggle.addEventListener('click', function () {
+        var expanded = clamp.classList.toggle('is-expanded');
+        toggle.textContent = expanded ? 'ver menos' : 'ver mais';
+        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      });
+    });
 
     // "Ver mais": quando a home limita a N cards e existem mais
     // experiências, mostra um botão que leva pra página com todas.
