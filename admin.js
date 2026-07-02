@@ -11287,38 +11287,48 @@
       cidade:       document.getElementById('prospect-edit-cidade').value.trim() || null,
       observacoes:  document.getElementById('prospect-edit-observacoes').value.trim() || null,
     };
-    msgEl.textContent = 'Verificando duplicatas...'; msgEl.style.color = '#666';
+    // Dedup check só na CRIAÇÃO. Ao EDITAR um prospect que já existe não há
+    // risco de duplicar (é a mesma linha) — e rodar o dedup aqui sequestrava
+    // a troca de status escolhida pelo operador: um local que já é fornecedor/
+    // experiência (ex.: parceiro marcado 'recusou' por engano) caía sempre no
+    // confirm "já é fornecedor", que ou ABORTAVA o save (status ficava preso)
+    // ou FORÇAVA 'ja_parceiro'. Resultado: mudar pra 'mensagem_enviada' (ou
+    // qualquer outro status) nunca "caía" na aba certa. Na edição respeitamos
+    // o status escolhido e deixamos o botão "Promover a fornecedor" cuidar do
+    // vínculo quando for o caso.
+    if (!id) {
+      msgEl.textContent = 'Verificando duplicatas...'; msgEl.style.color = '#666';
 
-    // Dedup check ANTES de salvar. Se achar match com fornecedor já
-    // cadastrado, oferece vincular como 'ja_parceiro'. Match com outro
-    // prospect bloqueia (sem dupla criação).
-    const matches = await _propFindMatches(payload, id);
-    const fornecedorMatch = (matches || []).find(m =>
-      m.source === 'experience' || m.source === 'fornecedor_metadata');
-    const prospectMatch = (matches || []).find(m => m.source === 'prospect');
+      // Dedup check ANTES de criar. Se achar match com fornecedor já
+      // cadastrado, oferece vincular como 'ja_parceiro'. Match com outro
+      // prospect bloqueia (sem dupla criação).
+      const matches = await _propFindMatches(payload, id);
+      const fornecedorMatch = (matches || []).find(m =>
+        m.source === 'experience' || m.source === 'fornecedor_metadata');
+      const prospectMatch = (matches || []).find(m => m.source === 'prospect');
 
-    if (fornecedorMatch && payload.status !== 'ja_parceiro') {
-      const reason = DEDUP_REASON_LABELS[fornecedorMatch.match_reason] || fornecedorMatch.match_reason;
-      const proceedAsParceiro = confirm(
-        '⭐ "' + fornecedorMatch.ref_nome + '" já é ' +
-        DEDUP_SOURCE_LABELS[fornecedorMatch.source] + ' (match: ' + reason + ').\n\n' +
-        'OK = vincular este prospect como "Já parceiro" (não duplica).\n' +
-        'Cancelar = voltar pro modal pra revisar.'
-      );
-      if (!proceedAsParceiro) {
-        msgEl.textContent = 'Verifique os dados pra evitar duplicar fornecedor.';
-        msgEl.style.color = '#a87a00';
+      if (fornecedorMatch && payload.status !== 'ja_parceiro') {
+        const reason = DEDUP_REASON_LABELS[fornecedorMatch.match_reason] || fornecedorMatch.match_reason;
+        const proceedAsParceiro = confirm(
+          '⭐ "' + fornecedorMatch.ref_nome + '" já é ' +
+          DEDUP_SOURCE_LABELS[fornecedorMatch.source] + ' (match: ' + reason + ').\n\n' +
+          'OK = vincular este prospect como "Já parceiro" (não duplica).\n' +
+          'Cancelar = voltar pro modal pra revisar.'
+        );
+        if (!proceedAsParceiro) {
+          msgEl.textContent = 'Verifique os dados pra evitar duplicar fornecedor.';
+          msgEl.style.color = '#a87a00';
+          return;
+        }
+        payload.status = 'ja_parceiro';
+        payload.promoted_supplier_key = fornecedorMatch.fornecedor_key;
+        payload.promoted_to_fornecedor_at = new Date().toISOString();
+      } else if (prospectMatch) {
+        const reason = DEDUP_REASON_LABELS[prospectMatch.match_reason] || prospectMatch.match_reason;
+        msgEl.textContent = 'Já existe prospect "' + prospectMatch.ref_nome + '" (' + reason + '). Cancele e edite o existente.';
+        msgEl.style.color = '#c0392b';
         return;
       }
-      payload.status = 'ja_parceiro';
-      payload.promoted_supplier_key = fornecedorMatch.fornecedor_key;
-      payload.promoted_to_fornecedor_at = new Date().toISOString();
-    } else if (prospectMatch && !id) {
-      // Só bloqueia em CRIAÇÃO (não em edição que volta pra mesmo prospect).
-      const reason = DEDUP_REASON_LABELS[prospectMatch.match_reason] || prospectMatch.match_reason;
-      msgEl.textContent = 'Já existe prospect "' + prospectMatch.ref_nome + '" (' + reason + '). Cancele e edite o existente.';
-      msgEl.style.color = '#c0392b';
-      return;
     }
 
     msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
@@ -11510,6 +11520,12 @@
       if (typeof invalidateBookings === 'function') {
         try { invalidateBookings(); } catch (e) { /* ok */ }
       }
+      // Invalida o cache de fornecedores_metadata: a RPC acabou de
+      // criar/vincular o fornecedor no banco, mas getFornecedoresMetadata()
+      // devolveria a lista antiga (sem o novo parceiro) — então ele não
+      // "caía" na aba Fornecedores. Zerando o cache, o próximo render
+      // (aqui ou ao trocar de aba) já traz o parceiro recém-promovido.
+      fornecedoresMetaCache = null;
       renderProspects();
       // Se a aba Fornecedores está aberta, re-renderiza pra mostrar
       // o novo parceiro imediatamente (sem esperar o usuário trocar
