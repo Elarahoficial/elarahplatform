@@ -12647,6 +12647,19 @@
       const payout = supplierFallback
         ? '<div style="font-size:.72rem;color:#888;">' + _finEsc(supplierFallback) + '</div>' + payoutBadge
         : payoutBadge;
+      // Regime de caixa: quando há cronograma de pagamentos, mostra quanto
+      // já foi RECEBIDO abaixo do total do negócio — é esse recebido que
+      // entra na contabilidade (card "receita confirmada"), parcela a parcela.
+      const _pays = Array.isArray(r.payments) ? r.payments : [];
+      let _recebido = 0;
+      _pays.forEach(p => { if (p && p.pago) _recebido += Number(p.valor_centavos) || 0; });
+      const _totalCell = Number(r.total_amount_centavos) || 0;
+      const totalHtml = _finFmtBRL(_totalCell) +
+        (_pays.length && _recebido < _totalCell
+          ? '<div style="font-size:.7rem;font-weight:400;color:#b07b00;">recebido ' + _finFmtBRL(_recebido) + '</div>'
+          : (_pays.length && _recebido >= _totalCell
+              ? '<div style="font-size:.7rem;font-weight:400;color:#1a8a4a;">quitado</div>'
+              : ''));
       return '<tr data-fin-sale-id="' + _finEsc(r.id) + '">' +
         '<td style="white-space:nowrap;font-size:.82rem;">' + _finEsc(dt) + '</td>' +
         '<td>' + _finEsc(r.customer_name || '—') +
@@ -12655,7 +12668,7 @@
         '<td>' + exp + '</td>' +
         '<td style="font-size:.82rem;">' + slot + '</td>' +
         '<td style="text-align:center;">' + (r.quantity || 1) + '</td>' +
-        '<td style="text-align:right;font-weight:600;">' + _finFmtBRL(r.total_amount_centavos) + '</td>' +
+        '<td style="text-align:right;font-weight:600;">' + totalHtml + '</td>' +
         '<td style="font-size:.82rem;">' + (r.payment_method ? _finEsc(r.payment_method) : '—') + '</td>' +
         '<td style="font-size:.82rem;">' + (r.sale_source ? _finEsc(r.sale_source) : '—') + '</td>' +
         '<td>' + _finBadgeStatus(r.payment_status) + '</td>' +
@@ -13028,6 +13041,19 @@
       inp.addEventListener('input', _finRenderPaymentsSummary);
       inp.addEventListener('change', _finRenderPaymentsSummary);
     });
+    // Ao marcar uma parcela como PAGA sem data, carimba hoje. A data da
+    // parcela é o que decide em qual mês a receita cai na contabilidade
+    // (regime de caixa) — sem isso, o recebimento cairia na data da venda.
+    const pagoChk = row.querySelector('.ms-pay-pago');
+    const dataInp = row.querySelector('.ms-pay-data');
+    if (pagoChk && dataInp) {
+      pagoChk.addEventListener('change', () => {
+        if (pagoChk.checked && !dataInp.value) {
+          dataInp.value = new Date().toISOString().slice(0, 10);
+          _finRenderPaymentsSummary();
+        }
+      });
+    }
     const rm = row.querySelector('.ms-pay-remove');
     if (rm) rm.addEventListener('click', () => { row.remove(); _finRenderPaymentsSummary(); });
   }
