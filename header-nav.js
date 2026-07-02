@@ -95,11 +95,42 @@
     if (toggle.dataset.elarahHeaderNav === '1') return;
     toggle.dataset.elarahHeaderNav = '1';
 
-    function close() { nav.classList.remove('mobile-open'); }
+    // Trava/destrava o scroll da página com o menu aberto. Sem isso,
+    // com "Explorar" aberto o menu passa da altura da tela e arrastar
+    // rolava a página, fechando o menu ("subia e saía da tela").
+    // overflow:hidden não segura no iOS; fixamos o body compensando o
+    // scroll atual (restaurado ao fechar) para o arrasto rolar o menu.
+    function lockBody() {
+      if (document.body.dataset.elarahScrollLock === '1') return;
+      var y = window.scrollY || window.pageYOffset || 0;
+      document.body.dataset.elarahScrollLock = '1';
+      document.body.dataset.elarahScrollY = String(y);
+      document.body.style.position = 'fixed';
+      document.body.style.top = '-' + y + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+    }
+    function unlockBody() {
+      if (document.body.dataset.elarahScrollLock !== '1') return;
+      var y = parseInt(document.body.dataset.elarahScrollY || '0', 10);
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      delete document.body.dataset.elarahScrollLock;
+      delete document.body.dataset.elarahScrollY;
+      window.scrollTo(0, y);
+    }
+
+    function open() { nav.classList.add('mobile-open'); lockBody(); }
+    function close() { nav.classList.remove('mobile-open'); unlockBody(); }
 
     toggle.addEventListener('click', function (e) {
       e.stopPropagation();
-      nav.classList.toggle('mobile-open');
+      if (nav.classList.contains('mobile-open')) close();
+      else open();
     });
 
     document.addEventListener('click', function (e) {
@@ -111,10 +142,6 @@
     nav.querySelectorAll('a').forEach(function (link) {
       link.addEventListener('click', close);
     });
-
-    window.addEventListener('scroll', function () {
-      if (nav.classList.contains('mobile-open')) close();
-    }, { passive: true });
   }
 
   if (document.readyState === 'loading') {
