@@ -124,10 +124,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateTitle() {
-    const cat = activeCategoria || 'Todas as experiências';
-    titleEl.textContent = activeCategoria ? activeCategoria : 'Todas as experiências';
-    breadcrumb.textContent = activeCategoria || 'Todas as experiências';
-    document.title = (activeCategoria || 'Experiências') + ' — Elarah';
+    const cat = activeCategoria;
+    titleEl.textContent = cat ? cat : 'Todas as experiências';
+    breadcrumb.textContent = cat || 'Todas as experiências';
+    // SEO: título + meta description únicos e ricos em palavra-chave por
+    // categoria (antes todas dividiam a mesma descrição = clique zerado).
+    document.title = cat
+      ? `${cat} em SP: aulas e experiências — Elarah`
+      : 'Experiências criativas em SP por categoria — Elarah';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', cat
+        ? `Aulas e experiências de ${cat} em São Paulo com a Elarah — para fazer sozinha, a dois ou em grupo. Materiais inclusos e curadoria fora do óbvio. Reserve em minutos.`
+        : 'Explore experiências presenciais em São Paulo por categoria: cerâmica, pintura, coquetelaria, gastronomia, velas e mais. Reserve sua experiência em minutos.');
+    }
   }
 
   // =================================================
