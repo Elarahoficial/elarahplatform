@@ -429,6 +429,63 @@
     var metaDesc = document.getElementById('meta-desc');
     if (metaDesc) metaDesc.content = (exp.descricao || exp.nome || '').slice(0, 160);
 
+    // ===== SEO: canonical + Open Graph + dados estruturados (Product) =====
+    // Páginas de experiência são as "páginas de produto" do site — antes
+    // não tinham schema/canonical/OG. Isso gera rich snippet com preço no
+    // Google (mais clique) e preview bonito ao compartilhar. Nunca quebra:
+    // envolto em try/catch.
+    try {
+      var pageUrl = 'https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(exp.id || expId);
+      var seoImg = exp.imagem || 'https://elarah.com.br/assets/logo.png';
+      if (seoImg && seoImg.indexOf('http') !== 0) seoImg = 'https://elarah.com.br/' + String(seoImg).replace(/^\//, '');
+      var seoDesc = (exp.descricao || exp.nome || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+
+      function upsertLink(rel, href) {
+        var l = document.querySelector('link[rel="' + rel + '"]');
+        if (!l) { l = document.createElement('link'); l.rel = rel; document.head.appendChild(l); }
+        l.href = href;
+      }
+      function upsertMeta(prop, content) {
+        var m = document.querySelector('meta[property="' + prop + '"]');
+        if (!m) { m = document.createElement('meta'); m.setAttribute('property', prop); document.head.appendChild(m); }
+        m.setAttribute('content', content);
+      }
+      upsertLink('canonical', pageUrl);
+      upsertMeta('og:type', 'product');
+      upsertMeta('og:title', exp.nome + ' — Elarah');
+      upsertMeta('og:description', seoDesc);
+      upsertMeta('og:image', seoImg);
+      upsertMeta('og:url', pageUrl);
+
+      var priceNum = String(exp.preco || '').replace(/[^0-9,\.]/g, '').replace(/\./g, '').replace(',', '.');
+      var ld = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        'name': exp.nome,
+        'description': seoDesc,
+        'image': seoImg,
+        'brand': { '@type': 'Brand', 'name': 'Elarah' },
+        'url': pageUrl
+      };
+      if (exp.categoria) ld.category = exp.categoria;
+      if (priceNum) {
+        ld.offers = {
+          '@type': 'Offer',
+          'price': priceNum,
+          'priceCurrency': 'BRL',
+          'availability': 'https://schema.org/InStock',
+          'url': pageUrl
+        };
+      }
+      var oldLd = document.getElementById('exp-jsonld');
+      if (oldLd) oldLd.remove();
+      var s = document.createElement('script');
+      s.id = 'exp-jsonld';
+      s.type = 'application/ld+json';
+      s.textContent = JSON.stringify(ld);
+      document.head.appendChild(s);
+    } catch (e) { /* enriquecimento de SEO nunca deve quebrar a página */ }
+
     // Funnel step 3 — usuário abriu o detalhe da experiência. Crítico
     // pro funil do admin (page_view → card_click → detail_view → cta).
     try {

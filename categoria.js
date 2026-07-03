@@ -134,11 +134,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `${cat} em SP: aulas e experiências — Elarah`
       : 'Experiências criativas em SP por categoria — Elarah';
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute('content', cat
-        ? `Aulas e experiências de ${cat} em São Paulo com a Elarah — para fazer sozinha, a dois ou em grupo. Materiais inclusos e curadoria fora do óbvio. Reserve em minutos.`
-        : 'Explore experiências presenciais em São Paulo por categoria: cerâmica, pintura, coquetelaria, gastronomia, velas e mais. Reserve sua experiência em minutos.');
-    }
+    const descContent = cat
+      ? `Aulas e experiências de ${cat} em São Paulo com a Elarah — para fazer sozinha, a dois ou em grupo. Materiais inclusos e curadoria fora do óbvio. Reserve em minutos.`
+      : 'Explore experiências presenciais em São Paulo por categoria: cerâmica, pintura, coquetelaria, gastronomia, velas e mais. Reserve sua experiência em minutos.';
+    if (metaDesc) metaDesc.setAttribute('content', descContent);
+
+    // SEO: canonical + Open Graph por categoria (nunca quebra).
+    try {
+      const canonUrl = 'https://elarah.com.br/categoria.html' + (cat ? '?cat=' + encodeURIComponent(cat) : '');
+      const upsertLink = (rel, href) => {
+        let l = document.querySelector(`link[rel="${rel}"]`);
+        if (!l) { l = document.createElement('link'); l.rel = rel; document.head.appendChild(l); }
+        l.href = href;
+      };
+      const upsertMeta = (prop, content) => {
+        let m = document.querySelector(`meta[property="${prop}"]`);
+        if (!m) { m = document.createElement('meta'); m.setAttribute('property', prop); document.head.appendChild(m); }
+        m.setAttribute('content', content);
+      };
+      upsertLink('canonical', canonUrl);
+      upsertMeta('og:type', 'website');
+      upsertMeta('og:title', document.title);
+      upsertMeta('og:description', descContent);
+      upsertMeta('og:url', canonUrl);
+      upsertMeta('og:image', 'https://elarah.com.br/assets/logo.png');
+    } catch (e) { /* seo enrichment não deve quebrar a página */ }
   }
 
   // =================================================
