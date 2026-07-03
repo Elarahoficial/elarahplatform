@@ -158,6 +158,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       upsertMeta('og:description', descContent);
       upsertMeta('og:url', canonUrl);
       upsertMeta('og:image', 'https://elarah.com.br/assets/logo.png');
+
+      // Breadcrumb: Início › Categoria (breadcrumb rich result)
+      const crumbs = [{ '@type': 'ListItem', 'position': 1, 'name': 'Início', 'item': 'https://elarah.com.br/' }];
+      crumbs.push({ '@type': 'ListItem', 'position': 2, 'name': cat || 'Experiências', 'item': canonUrl });
+      const bc = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', 'itemListElement': crumbs };
+      let oldBc = document.getElementById('cat-breadcrumb-ld');
+      if (oldBc) oldBc.remove();
+      const sb = document.createElement('script');
+      sb.id = 'cat-breadcrumb-ld';
+      sb.type = 'application/ld+json';
+      sb.textContent = JSON.stringify(bc);
+      document.head.appendChild(sb);
     } catch (e) { /* seo enrichment não deve quebrar a página */ }
   }
 
