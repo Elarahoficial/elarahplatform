@@ -108,6 +108,31 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
+// Cria a sessão de checkout tentando COM parcelamento (installments até 12x).
+// Se a conta Stripe (Brasil) não suportar parcelamento, o Stripe erra ao criar
+// a sessão; nesse caso refazemos SEM parcelamento pra NUNCA quebrar o checkout
+// — o cliente paga à vista normalmente. Isso torna habilitar o 12x zero-risco:
+// se a conta permitir, aparece; se não, cai no à vista sem erro pra ninguém.
+// deno-lint-ignore no-explicit-any
+async function createSessionWithInstallmentFallback(params: any) {
+  try {
+    return await stripe.checkout.sessions.create(params);
+  } catch (err) {
+    const msg = String((err && (err as any).message) || err).toLowerCase();
+    const installmentIssue = msg.includes("installment") || msg.includes("parcel");
+    if (installmentIssue && params && params.payment_method_options) {
+      console.warn(
+        "[create-checkout-session] parcelamento não suportado pela conta " +
+          "Stripe; refazendo a sessão SEM installments (à vista).",
+      );
+      const fallback = { ...params };
+      delete fallback.payment_method_options;
+      return await stripe.checkout.sessions.create(fallback);
+    }
+    throw err;
+  }
+}
+
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -170,14 +195,14 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
 
   let session;
   try {
-    session = await stripe.checkout.sessions.create({
+    session = await createSessionWithInstallmentFallback({
       mode: "payment",
       payment_method_types: ["card"],
       // Parcelamento em até 12x COM JUROS (repassado ao cliente). O cliente
       // escolhe as parcelas na tela do Stripe; o emissor cuida dos juros —
-      // não impacta a margem da Elarah. Requer parcelamento habilitado na
-      // conta Stripe (Brasil); se não estiver, o Stripe erra ao criar a
-      // sessão — testar uma compra real logo após o deploy.
+      // não impacta a margem da Elarah. Se a conta Stripe não suportar
+      // parcelamento, createSessionWithInstallmentFallback refaz a sessão
+      // sem installments — então nunca quebra (cai no à vista).
       payment_method_options: {
         card: { installments: { enabled: true } },
       },
@@ -1177,14 +1202,14 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
 
   let session;
   try {
-    session = await stripe.checkout.sessions.create({
+    session = await createSessionWithInstallmentFallback({
       mode: "payment",
       payment_method_types: ["card"],
       // Parcelamento em até 12x COM JUROS (repassado ao cliente). O cliente
       // escolhe as parcelas na tela do Stripe; o emissor cuida dos juros —
-      // não impacta a margem da Elarah. Requer parcelamento habilitado na
-      // conta Stripe (Brasil); se não estiver, o Stripe erra ao criar a
-      // sessão — testar uma compra real logo após o deploy.
+      // não impacta a margem da Elarah. Se a conta Stripe não suportar
+      // parcelamento, createSessionWithInstallmentFallback refaz a sessão
+      // sem installments — então nunca quebra (cai no à vista).
       payment_method_options: {
         card: { installments: { enabled: true } },
       },
