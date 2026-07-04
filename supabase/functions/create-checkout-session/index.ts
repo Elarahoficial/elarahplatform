@@ -173,6 +173,14 @@ async function handleGiftCardPurchase(payload: Record<string, unknown>) {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+      // Parcelamento em até 12x COM JUROS (repassado ao cliente). O cliente
+      // escolhe as parcelas na tela do Stripe; o emissor cuida dos juros —
+      // não impacta a margem da Elarah. Requer parcelamento habilitado na
+      // conta Stripe (Brasil); se não estiver, o Stripe erra ao criar a
+      // sessão — testar uma compra real logo após o deploy.
+      payment_method_options: {
+        card: { installments: { enabled: true } },
+      },
       locale: "pt-BR",
       customer_email: buyerEmail || undefined,
       line_items: [
@@ -1172,6 +1180,14 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+      // Parcelamento em até 12x COM JUROS (repassado ao cliente). O cliente
+      // escolhe as parcelas na tela do Stripe; o emissor cuida dos juros —
+      // não impacta a margem da Elarah. Requer parcelamento habilitado na
+      // conta Stripe (Brasil); se não estiver, o Stripe erra ao criar a
+      // sessão — testar uma compra real logo após o deploy.
+      payment_method_options: {
+        card: { installments: { enabled: true } },
+      },
       locale: "pt-BR",
       customer_email: email || undefined,
       line_items: lineItems,
