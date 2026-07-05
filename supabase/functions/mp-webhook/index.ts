@@ -35,12 +35,20 @@ import {
 } from "../_shared/mercadopago.ts";
 
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
+// Token da conta do CARTÃO (CNPJ). Opcional: só existe durante a
+// migração, quando o cartão roda numa conta e o PIX em outra. Se a MP
+// notificar um pagamento que o token principal não consegue consultar
+// (porque pertence à conta do cartão), tentamos de novo com este.
+const MP_CARD_ACCESS_TOKEN = Deno.env.get("MP_CARD_ACCESS_TOKEN") ?? "";
 // Aceita tanto o nome curto (MP_WEBHOOK_SECRET) quanto o longo
 // (MERCADO_PAGO_WEBHOOK_SECRET) — quem configurar primeiro vence.
 const MP_WEBHOOK_SECRET =
   Deno.env.get("MP_WEBHOOK_SECRET") ??
   Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET") ??
   "";
+// Secret do webhook da conta do CARTÃO (CNPJ). Opcional — mesma lógica
+// de migração: aceitamos a assinatura de qualquer uma das duas contas.
+const MP_CARD_WEBHOOK_SECRET = Deno.env.get("MP_CARD_WEBHOOK_SECRET") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
@@ -107,7 +115,14 @@ async function findBookingByMpPaymentId(
   return (data2 as BookingRow) ?? null;
 }
 
-async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
+async function markBookingAsPaid(
+  booking: BookingRow,
+  paidAmountCents: number,
+  // Rótulo do método pra notificação de venda ao admin. Default
+  // preserva o comportamento histórico (PIX) — só o fluxo de cartão
+  // passa "Cartão (Mercado Pago)".
+  paymentLabel = "Pix (Mercado Pago)",
+) {
   const patch: Record<string, unknown> = {
     status: "pago",
     amount_total: paidAmountCents,
@@ -241,7 +256,7 @@ async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
   // Dispara confirmação por e-mail.
   await sendBookingConfirmation(booking);
   // Avisa os admins da venda (mesmo ponto idempotente da confirmação).
-  await notifyAdminOfSale(booking, "Pix (Mercado Pago)");
+  await notifyAdminOfSale(booking, paymentLabel);
 }
 
 // Best-effort: avisa os admins que saiu uma venda. Falha aqui só loga
@@ -661,13 +676,24 @@ serve(async (req) => {
     "request_id=" + (requestId ?? "?"),
   );
 
-  // Assinatura
-  const signatureOk = await verifyWebhookSignature(
+  // Assinatura. Durante a migração, o pagamento pode vir da conta do
+  // PIX OU da conta do cartão (CNPJ), cada uma com seu secret. Aceita
+  // se bater com qualquer um dos dois. Se MP_CARD_WEBHOOK_SECRET não
+  // estiver configurado, o comportamento é idêntico ao de antes.
+  let signatureOk = await verifyWebhookSignature(
     MP_WEBHOOK_SECRET,
     signatureHeader,
     requestId,
     dataId,
   );
+  if (!signatureOk && MP_CARD_WEBHOOK_SECRET) {
+    signatureOk = await verifyWebhookSignature(
+      MP_CARD_WEBHOOK_SECRET,
+      signatureHeader,
+      requestId,
+      dataId,
+    );
+  }
   if (!signatureOk) {
     return new Response("invalid_signature", { status: 401 });
   }
@@ -690,8 +716,22 @@ serve(async (req) => {
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
-  // Busca o pagamento completo na MP.
-  const result = await getPayment(MP_ACCESS_TOKEN, dataId);
+  // Busca o pagamento completo na MP. Primeiro com o token principal
+  // (conta do PIX). Se falhar E houver um token de cartão configurado,
+  // tenta de novo — o pagamento pode pertencer à conta do cartão
+  // (CNPJ). Sem MP_CARD_ACCESS_TOKEN, é exatamente o fluxo de antes.
+  let result = await getPayment(MP_ACCESS_TOKEN, dataId);
+  if (
+    (!result.ok || !result.payment) &&
+    MP_CARD_ACCESS_TOKEN &&
+    MP_CARD_ACCESS_TOKEN !== MP_ACCESS_TOKEN
+  ) {
+    console.info(
+      "[Elarah Payment/MP] token principal não achou o pagamento — tentando token do cartão",
+      "id=" + dataId,
+    );
+    result = await getPayment(MP_CARD_ACCESS_TOKEN, dataId);
+  }
   if (!result.ok || !result.payment) {
     console.error(
       "[Elarah Payment/MP] não consegui buscar pagamento",
@@ -763,9 +803,21 @@ serve(async (req) => {
   switch (payment.status) {
     case "approved":
     case "authorized": {
-      // MP confirmou o PIX.
+      // MP confirmou o pagamento (PIX ou cartão via Checkout Pro).
       const paidCents = Math.round((payment.transaction_amount || 0) * 100);
-      await markBookingAsPaid(booking, paidCents);
+      // Rótulo pro admin: distingue cartão de PIX. Cartão parcelado
+      // também mostra o nº de parcelas quando a MP informa.
+      const ptype = String(payment.payment_type_id ?? "");
+      let paymentLabel = "Pix (Mercado Pago)";
+      if (ptype === "credit_card" || ptype === "debit_card") {
+        const inst = Number(payment.installments) || 1;
+        paymentLabel = inst > 1
+          ? "Cartão " + inst + "x (Mercado Pago)"
+          : "Cartão (Mercado Pago)";
+      } else if (ptype === "account_money" || ptype === "digital_wallet") {
+        paymentLabel = "Carteira Mercado Pago";
+      }
+      await markBookingAsPaid(booking, paidCents, paymentLabel);
       break;
     }
     case "rejected":

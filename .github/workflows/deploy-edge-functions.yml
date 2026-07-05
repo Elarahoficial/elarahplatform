@@ -56,6 +56,9 @@ jobs:
           echo "→ create-mp-pix-payment"
           supabase functions deploy create-mp-pix-payment \
             --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "→ create-mp-card-payment"
+          supabase functions deploy create-mp-card-payment \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
           echo "→ stripe-webhook"
           supabase functions deploy stripe-webhook \
             --project-ref "$PROJECT_REF" --no-verify-jwt
