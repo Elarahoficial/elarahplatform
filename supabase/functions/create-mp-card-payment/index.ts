@@ -56,7 +56,15 @@ import {
   type SupplierRow,
 } from "../_shared/financial.ts";
 
-const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
+// Token da conta que processa o CARTÃO. Usa MP_CARD_ACCESS_TOKEN se
+// existir (conta CNPJ nova) e cai pro MERCADO_PAGO_ACCESS_TOKEN (a
+// conta do PIX) só como fallback. Isso permite rodar o cartão numa
+// conta e o PIX em outra AO MESMO TEMPO — o PIX nunca é afetado quando
+// só o MP_CARD_ACCESS_TOKEN é configurado.
+const MP_ACCESS_TOKEN =
+  Deno.env.get("MP_CARD_ACCESS_TOKEN") ??
+  Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ??
+  "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
