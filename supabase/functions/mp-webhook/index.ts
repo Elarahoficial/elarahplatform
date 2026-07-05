@@ -107,7 +107,14 @@ async function findBookingByMpPaymentId(
   return (data2 as BookingRow) ?? null;
 }
 
-async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
+async function markBookingAsPaid(
+  booking: BookingRow,
+  paidAmountCents: number,
+  // Rótulo do método pra notificação de venda ao admin. Default
+  // preserva o comportamento histórico (PIX) — só o fluxo de cartão
+  // passa "Cartão (Mercado Pago)".
+  paymentLabel = "Pix (Mercado Pago)",
+) {
   const patch: Record<string, unknown> = {
     status: "pago",
     amount_total: paidAmountCents,
@@ -241,7 +248,7 @@ async function markBookingAsPaid(booking: BookingRow, paidAmountCents: number) {
   // Dispara confirmação por e-mail.
   await sendBookingConfirmation(booking);
   // Avisa os admins da venda (mesmo ponto idempotente da confirmação).
-  await notifyAdminOfSale(booking, "Pix (Mercado Pago)");
+  await notifyAdminOfSale(booking, paymentLabel);
 }
 
 // Best-effort: avisa os admins que saiu uma venda. Falha aqui só loga
@@ -763,9 +770,21 @@ serve(async (req) => {
   switch (payment.status) {
     case "approved":
     case "authorized": {
-      // MP confirmou o PIX.
+      // MP confirmou o pagamento (PIX ou cartão via Checkout Pro).
       const paidCents = Math.round((payment.transaction_amount || 0) * 100);
-      await markBookingAsPaid(booking, paidCents);
+      // Rótulo pro admin: distingue cartão de PIX. Cartão parcelado
+      // também mostra o nº de parcelas quando a MP informa.
+      const ptype = String(payment.payment_type_id ?? "");
+      let paymentLabel = "Pix (Mercado Pago)";
+      if (ptype === "credit_card" || ptype === "debit_card") {
+        const inst = Number(payment.installments) || 1;
+        paymentLabel = inst > 1
+          ? "Cartão " + inst + "x (Mercado Pago)"
+          : "Cartão (Mercado Pago)";
+      } else if (ptype === "account_money" || ptype === "digital_wallet") {
+        paymentLabel = "Carteira Mercado Pago";
+      }
+      await markBookingAsPaid(booking, paidCents, paymentLabel);
       break;
     }
     case "rejected":

@@ -1875,8 +1875,27 @@ if (groupForm) {
       CHECKOUT_FN_BASE + '/create-checkout-session';
     const MP_PIX_FN_URL =
       CHECKOUT_FN_BASE + '/create-mp-pix-payment';
+    const MP_CARD_FN_URL =
+      CHECKOUT_FN_BASE + '/create-mp-card-payment';
     const REDEEM_FN_URL =
       CHECKOUT_FN_BASE + '/redeem-gift-card';
+
+    // ===== Chave de migração do cartão: Stripe → Mercado Pago =====
+    // Enquanto FALSE, o cartão continua indo pro Stripe (comportamento
+    // atual, que está no ar e funcionando). Vira TRUE somente DEPOIS
+    // que as credenciais de PRODUÇÃO da Mercado Pago (CNPJ) estiverem
+    // configuradas no Supabase e o webhook testado — aí o cartão passa
+    // a usar o Checkout Pro da MP (parcelamento em até 12x, com juros
+    // repassados ao cliente). O PIX nunca é afetado por esta chave.
+    // Pode ser forçado via ?mpcard=1 na URL pra testes controlados.
+    const MP_CARD_ENABLED = (function () {
+      try {
+        var q = new URLSearchParams(window.location.search);
+        if (q.get('mpcard') === '1') return true;
+        if (q.get('mpcard') === '0') return false;
+      } catch (e) {}
+      return false; // ← vira true no go-live do cartão via Mercado Pago
+    })();
     // Anon key do Supabase (JWT). Pode ficar exposta no front — é o
     // "publishable key" do projeto, sem privilégios além do RLS.
     const SUPABASE_ANON_KEY =
@@ -3666,6 +3685,97 @@ if (groupForm) {
 
           // Troca o modal pro painel de QR code e começa o polling.
           showPixPanel(data, ctx);
+          return;
+        }
+
+        // ===== Cartão via Mercado Pago (Checkout Pro) =====
+        // Só entra aqui quando a chave de migração está ligada. Cria a
+        // preference no backend e redireciona pro Checkout Pro da MP,
+        // onde o cliente digita o cartão e escolhe o parcelamento (12x).
+        // A confirmação vem pelo mp-webhook (mesmo fluxo do PIX).
+        if (MP_CARD_ENABLED) {
+          const mpCardBody = {
+            experiencia_id: ctx.experienceId,
+            horario: ctx.horario,
+            data: ctx.data || null,
+            slot_id: ctx.slotId || null,
+            email: auth.email || ctx.email,
+            nome: ctx.nome || null,
+            telefone: telefoneRaw,
+            telefone_digits: telefoneNormalized,
+            cupom: ctx.cupomCode || null,
+            quantidade: ctx.quantidade || 1,
+            participantes: ctx.participantes || [],
+            variant_label: ctx.variantLabel || null,
+            variant_selected: ctx.variantSelected || null,
+          };
+          console.log('[Elarah Payment/MP card] iniciando Checkout Pro', {
+            base: ctx.precoCentavos,
+            cupom: ctx.cupomCentavos || 0,
+            total: ctx.totalCentavos || 0,
+          });
+          const resMp = await fetch(MP_CARD_FN_URL, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(mpCardBody),
+          });
+          const dataMp = await resMp.json().catch(() => null);
+
+          if (!resMp.ok || !dataMp) {
+            let msg = translateCheckoutError(dataMp, 'Não foi possível iniciar o pagamento no cartão. Tente novamente ou pague no PIX.');
+            if (dataMp && dataMp.detail) {
+              const d = dataMp.detail;
+              const causes = Array.isArray(d.cause)
+                ? d.cause.map(function (c) { return c.description; }).filter(Boolean)
+                : [];
+              const mpDetail = causes.length
+                ? causes.join('; ')
+                : (d.message || (typeof d === 'string' ? d : JSON.stringify(d)));
+              if (mpDetail) msg += ' (MP: ' + mpDetail + ')';
+              console.error('[Elarah MP card] MP error detail:', JSON.stringify(d));
+            }
+            errEl.textContent = msg;
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+
+          // Cupom cobriu 100% — vai direto pra success (nenhum cartão).
+          if (dataMp.direct === true) {
+            window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(dataMp.booking_id || '');
+            return;
+          }
+
+          // Em teste (credenciais TEST-), usa o sandbox_init_point.
+          const redirectUrl = dataMp.is_test
+            ? (dataMp.sandbox_init_point || dataMp.init_point)
+            : (dataMp.init_point || dataMp.sandbox_init_point);
+
+          if (!redirectUrl) {
+            errEl.textContent = 'Resposta inesperada do servidor (link de pagamento ausente).';
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+
+          // Funil — cartão iniciado, redirecionando pro Checkout Pro.
+          try {
+            if (window.ElarahAnalytics && ElarahAnalytics.track) {
+              ElarahAnalytics.track('payment_pending', {
+                category: 'checkout',
+                targetId: ctx.experienceId || null,
+                targetLabel: (ctx.experienceNome || '').slice(0, 120),
+                metadata: {
+                  payment_method: 'card',
+                  provider: 'mercado_pago',
+                  booking_id: dataMp.booking_id,
+                  total_centavos: ctx.totalCentavos || 0,
+                },
+              });
+            }
+          } catch (_) {}
+
+          window.location.href = redirectUrl;
           return;
         }
 
