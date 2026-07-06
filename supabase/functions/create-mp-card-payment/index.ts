@@ -72,6 +72,35 @@ const PUBLIC_SITE_URL =
   (Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "") ||
   "https://elarah.com.br";
 
+// ===== Taxa do cartão (repasse pro cliente) =====
+// MESMAS envs que o fluxo do Stripe (create-checkout-session) usa —
+// já estão configuradas no Supabase. Assim o cartão via Mercado Pago
+// cobra a MESMA taxa que o cartão via Stripe cobrava, repassada ao
+// cliente inclusive no à vista. O PIX NÃO usa isso (preço limpo).
+const CARD_FEE_PERCENT = Number(Deno.env.get("CARD_FEE_PERCENT") ?? "0");
+const CARD_FEE_FIXED_CENTS = Number(Deno.env.get("CARD_FEE_FIXED_CENTS") ?? "0");
+
+// final = base + round(base * percent/100) + fixed  (idêntico ao Stripe)
+function applyCardFee(baseCents: number): {
+  finalCents: number;
+  feePercentCents: number;
+  feeFixedCents: number;
+  feeTotalCents: number;
+} {
+  if (!Number.isFinite(baseCents) || baseCents <= 0) {
+    return { finalCents: baseCents, feePercentCents: 0, feeFixedCents: 0, feeTotalCents: 0 };
+  }
+  const feePercentCents = Math.round(baseCents * (CARD_FEE_PERCENT / 100));
+  const feeFixedCents = CARD_FEE_FIXED_CENTS;
+  const feeTotalCents = feePercentCents + feeFixedCents;
+  return {
+    finalCents: baseCents + feeTotalCents,
+    feePercentCents,
+    feeFixedCents,
+    feeTotalCents,
+  };
+}
+
 const IS_TEST_TOKEN = MP_ACCESS_TOKEN.startsWith("TEST-");
 
 // Marcador de versão — confirme nos logs do Supabase qual versão está
@@ -314,22 +343,37 @@ async function handleCardRequest(
     );
   }
 
+  // ===== Taxa do cartão repassada ao cliente =====
+  // amountToChargeCents é o preço "limpo" (base − desconto). No cartão,
+  // somamos a taxa de processamento por cima — igual o Stripe fazia —
+  // pra a Elarah não arcar com a taxa (inclusive no à vista). O
+  // parcelamento (juros) que a MP mostra é aplicado SOBRE este total.
+  const feeInfo = applyCardFee(amountToChargeCents);
+  const finalChargeCents = feeInfo.finalCents;
+  console.info(
+    "[Elarah Payment/MP card] taxa do cartão",
+    "base=" + amountToChargeCents,
+    "fee_percent=" + feeInfo.feePercentCents,
+    "fee_fixed=" + feeInfo.feeFixedCents,
+    "fee_total=" + feeInfo.feeTotalCents,
+    "final=" + finalChargeCents,
+  );
+
   // stripe_session_id é UNIQUE; usamos "MPCARD-<bookingId>" como
   // placeholder. Esse MESMO valor vai no back_url de sucesso
   // (?session_id=MPCARD-<id>), então a success.html localiza a booking
   // pela coluna stripe_session_id e mostra o status (Pago/Processando).
   const stripeSessionIdPlaceholder = "MPCARD-" + bookingId;
 
-  // Item único com o valor JÁ com desconto (dividido pela quantidade
-  // como unit_price × quantity). Como o desconto pode não dividir
-  // exato, mandamos 1 item com quantity=1 e unit_price = total, pra o
-  // valor cobrado bater EXATAMENTE com amountToChargeCents.
+  // Item único com o valor final (preço − desconto + taxa do cartão).
+  // Mandamos 1 item com quantity=1 e unit_price = finalChargeCents, pra
+  // o valor cobrado bater EXATAMENTE com o total (com taxa repassada).
   const preferenceInput = {
     items: [
       {
         title: [exp.nome, exp.data, horario].filter(Boolean).join(" · ") || exp.nome,
         quantity: 1,
-        unitPriceCents: amountToChargeCents,
+        unitPriceCents: finalChargeCents,
       },
     ],
     externalReference: bookingId,
@@ -387,6 +431,11 @@ async function handleCardRequest(
     discount_centavos: breakdown.discountCents,
     total_after_discount_centavos: breakdown.totalCents,
     preco_total_centavos: breakdown.subtotalCents,
+    // Taxa do cartão repassada ao cliente (por cima do preço limpo).
+    card_fee_percent_centavos: feeInfo.feePercentCents,
+    card_fee_fixed_centavos: feeInfo.feeFixedCents,
+    card_fee_total_centavos: feeInfo.feeTotalCents,
+    amount_before_fee_centavos: amountToChargeCents,
     payment_method: "card",
     payment_provider: "mercado_pago",
     cpf: cpfRaw || null,
@@ -407,7 +456,7 @@ async function handleCardRequest(
     data: slotData ?? dataFromPayload ?? exp.data ?? null,
     horario: horario,
     preco_label: exp.preco,
-    amount_total: amountToChargeCents,
+    amount_total: finalChargeCents,
     currency: "brl",
     status: "pending",
     stripe_session_id: stripeSessionIdPlaceholder,
@@ -452,7 +501,7 @@ async function handleCardRequest(
         data: slotData ?? dataFromPayload ?? exp.data ?? null,
         horario: horario,
         preco_label: exp.preco,
-        amount_total: amountToChargeCents,
+        amount_total: finalChargeCents,
         currency: "brl",
         status: "pending",
         stripe_session_id: stripeSessionIdPlaceholder,
@@ -489,7 +538,8 @@ async function handleCardRequest(
     "[Elarah Payment/MP card] booking pending + preference criada",
     "booking=" + bookingId,
     "preference=" + preference.id,
-    "amount_cents=" + amountToChargeCents,
+    "amount_cents=" + finalChargeCents,
+    "(base=" + amountToChargeCents + " + fee=" + feeInfo.feeTotalCents + ")",
   );
 
   // Em TESTE (credenciais TEST-), o front deve usar sandbox_init_point.
@@ -500,7 +550,8 @@ async function handleCardRequest(
     init_point: preference.init_point,
     sandbox_init_point: preference.sandbox_init_point,
     is_test: IS_TEST_TOKEN,
-    amount_total_centavos: amountToChargeCents,
+    amount_total_centavos: finalChargeCents,
+    card_fee_total_centavos: feeInfo.feeTotalCents,
   });
 }
 
