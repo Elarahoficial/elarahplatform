@@ -1,0 +1,108 @@
+name: Backup do Banco (Supabase)
+
+# Backup automático e gratuito do banco de dados da Elarah.
+#
+# O QUE FAZ: todo dia exporta uma cópia completa dos dados
+# (schemas public + auth: contas, reservas, experiências,
+# financeiro, cupons, etc.), COMPRIME e CRIPTOGRAFA o arquivo,
+# e guarda como "artifact" no GitHub por 90 dias.
+#
+# POR QUE CRIPTOGRAFA: o arquivo contém dados de clientes.
+# A criptografia (AES-256, senha só sua) garante que, mesmo
+# que alguém baixe o artifact, não consegue ler sem a senha.
+#
+# SEGREDOS NECESSÁRIOS (Settings → Secrets and variables →
+# Actions → New repository secret):
+#   - SUPABASE_DB_URL     → connection string do Session Pooler
+#                            (Supabase → Project Settings → Database
+#                             → Connection string → Session pooler)
+#   - BACKUP_PASSPHRASE   → uma senha forte inventada por você,
+#                            usada pra criptografar/descriptografar.
+#                            GUARDE-A: sem ela o backup não abre.
+#
+# IMPORTANTE: o agendamento diário (cron) só começa a rodar
+# sozinho depois que este arquivo estiver na branch PADRÃO do
+# repositório. Antes disso, use o botão "Run workflow" (aba
+# Actions) pra testar quando quiser.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # todo dia às 06:00 UTC (03:00 de Brasília)
+  workflow_dispatch: {}    # botão manual "Run workflow"
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      # Aborta cedo com mensagem clara se faltar algum segredo,
+      # em vez de estourar um erro confuso lá na frente.
+      - name: Validar segredos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Falta o segredo SUPABASE_DB_URL (Settings → Secrets → Actions)."
+            exit 1
+          fi
+          if [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Falta o segredo BACKUP_PASSPHRASE (Settings → Secrets → Actions)."
+            exit 1
+          fi
+          echo "✓ Segredos presentes."
+
+      # Instala o cliente do PostgreSQL 17 (pg_dump). Uma versão
+      # nova do pg_dump consegue exportar bancos de versões iguais
+      # ou mais antigas com segurança.
+      - name: Instalar pg_dump (PostgreSQL 17)
+        run: |
+          set -e
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - name: Gerar backup criptografado
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          PGSSLMODE: require
+        run: |
+          set -euo pipefail
+          STAMP="$(date -u +%Y-%m-%d_%H%M)UTC"
+          FILE="elarah-backup-${STAMP}.sql.gz.gpg"
+
+          # Exporta os schemas que guardam os dados do negócio:
+          #   public → app (profiles, bookings, experiences, financeiro...)
+          #   auth   → contas/logins dos usuários
+          # --no-owner / --no-privileges deixam o dump restaurável
+          # em qualquer projeto novo sem depender dos donos originais.
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+            --no-owner --no-privileges \
+            --schema=public --schema=auth \
+            | gzip -9 \
+            | gpg --batch --yes --symmetric --cipher-algo AES256 \
+                  --passphrase "$BACKUP_PASSPHRASE" \
+                  -o "$FILE"
+
+          SIZE_BYTES="$(stat -c%s "$FILE")"
+          echo "Arquivo: $FILE (${SIZE_BYTES} bytes)"
+          # Sanidade: um backup real tem mais que alguns KB. Se vier
+          # minúsculo, algo falhou silenciosamente — melhor abortar.
+          if [ "$SIZE_BYTES" -lt 2048 ]; then
+            echo "::error::Backup suspeito de estar vazio (${SIZE_BYTES} bytes). Verifique SUPABASE_DB_URL."
+            exit 1
+          fi
+          echo "BACKUP_FILE=$FILE" >> "$GITHUB_ENV"
+
+      - name: Guardar backup (90 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_FILE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          if-no-files-found: error
