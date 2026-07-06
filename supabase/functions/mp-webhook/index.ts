@@ -49,6 +49,15 @@ const MP_WEBHOOK_SECRET =
 // Secret do webhook da conta do CARTÃO (CNPJ). Opcional — mesma lógica
 // de migração: aceitamos a assinatura de qualquer uma das duas contas.
 const MP_CARD_WEBHOOK_SECRET = Deno.env.get("MP_CARD_WEBHOOK_SECRET") ?? "";
+// ===== Rede de segurança da migração do PIX (conta antiga) =====
+// Durante a virada do PIX pra conta CNPJ, o token/secret PRINCIPAL
+// passam a apontar pra CNPJ. Estes dois guardam o token/secret da
+// conta ANTIGA por ~1 dia, pra confirmar qualquer PIX que já tinha
+// sido gerado nela e for pago depois da virada (não perde reserva
+// nem e-mail). Depois da transição, basta apagar estas duas envs.
+// Opcionais: se não existirem, o webhook se comporta como antes.
+const MP_LEGACY_ACCESS_TOKEN = Deno.env.get("MP_LEGACY_ACCESS_TOKEN") ?? "";
+const MP_LEGACY_WEBHOOK_SECRET = Deno.env.get("MP_LEGACY_WEBHOOK_SECRET") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
@@ -694,6 +703,16 @@ serve(async (req) => {
       dataId,
     );
   }
+  // Rede de segurança da migração: aceita também a assinatura da conta
+  // antiga do PIX, se configurada (some quando a env é removida).
+  if (!signatureOk && MP_LEGACY_WEBHOOK_SECRET) {
+    signatureOk = await verifyWebhookSignature(
+      MP_LEGACY_WEBHOOK_SECRET,
+      signatureHeader,
+      requestId,
+      dataId,
+    );
+  }
   if (!signatureOk) {
     return new Response("invalid_signature", { status: 401 });
   }
@@ -731,6 +750,21 @@ serve(async (req) => {
       "id=" + dataId,
     );
     result = await getPayment(MP_CARD_ACCESS_TOKEN, dataId);
+  }
+  // Rede de segurança da migração: por último, tenta o token da conta
+  // antiga do PIX (confirma stragglers durante a virada). Some quando a
+  // env MP_LEGACY_ACCESS_TOKEN é removida.
+  if (
+    (!result.ok || !result.payment) &&
+    MP_LEGACY_ACCESS_TOKEN &&
+    MP_LEGACY_ACCESS_TOKEN !== MP_ACCESS_TOKEN &&
+    MP_LEGACY_ACCESS_TOKEN !== MP_CARD_ACCESS_TOKEN
+  ) {
+    console.info(
+      "[Elarah Payment/MP] tentando token LEGADO (conta antiga do PIX)",
+      "id=" + dataId,
+    );
+    result = await getPayment(MP_LEGACY_ACCESS_TOKEN, dataId);
   }
   if (!result.ok || !result.payment) {
     console.error(
