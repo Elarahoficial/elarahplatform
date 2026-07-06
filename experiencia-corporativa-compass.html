@@ -73,7 +73,7 @@
   .rule{width:56px;height:3px;background:var(--orange);border-radius:2px;margin:24px 0}
 
   /* ---- COVER ---- */
-  .cover{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center;flex:1}
+  .cover{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:start;flex:1}
   .cover-photo{
     border-radius:18px;overflow:hidden;aspect-ratio:4/4.6;box-shadow:0 24px 48px -20px rgba(22,35,60,.45);
     position:relative;
@@ -198,7 +198,7 @@
     .slide{
       box-shadow:none;border-radius:0;
       width:210mm;height:297mm;min-height:0;overflow:hidden;
-      padding:15mm 16mm;
+      padding:12mm 15mm;
       page-break-after:always;break-after:page;page-break-inside:avoid
     }
     .slide:last-child{page-break-after:auto}
@@ -211,11 +211,16 @@
     .menu-cols{grid-template-columns:1fr 1fr}
     h1{font-size:44px}h2{font-size:34px}
     /* leve compactação pra tudo caber em 1 página */
-    .rule{margin:4mm 0}
+    .rule{margin:3mm 0}
     .lead{margin-top:3mm}
     .plans,.grid3,.steps,.trio,.pizza-hero{margin-top:2mm}
     .cover-photo{aspect-ratio:4/4}
     .plan-photo{height:150px}
+    /* fotos quadradas: cap leve de altura pra caber com rodapé no A4 */
+    .plan-photo.sq{aspect-ratio:auto;height:285px}
+    .plan-body{padding:16px 22px 18px}
+    ul.feat{gap:7px;margin-top:9px}
+    .chips{margin:10px 0 !important}
     .pizza-photo{min-height:180px}
     @page{size:A4 portrait;margin:0}
   }
@@ -377,16 +382,21 @@
 
     <span class="eyebrow orange">◆ Opção 2 · Team Building</span>
     <h2><em>Gastronomia</em> 🍝</h2>
-    <p class="lead">O time coloca a mão na massa e cozinha junto, guiado por um chef — e no fim senta pra comer o que preparou. <strong>Conexão de verdade em volta da mesa.</strong></p>
+    <p class="lead">O time coloca a mão na massa e cozinha junto, guiado por um chef — e no fim senta pra comer o que preparou. <strong>Conexão de verdade em volta da mesa.</strong> Vocês escolhem a cozinha do encontro:</p>
+    <div class="chips" style="margin-top:16px;margin-bottom:6px">
+      <span class="chip">🍝 <b>Massa</b> italiana</span>
+      <span class="chip">🥢 Comida <b>asiática</b></span>
+      <span class="chip">🌮 <b>Mexicana</b> · tacos &amp; guacamole</span>
+    </div>
     <div class="rule"></div>
 
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo"><img src="assets/corp-grupo.jpg" alt="Time cozinhando junto, guiado por um chef" style="filter:brightness(1.22) contrast(1.02) saturate(1.08)"></div>
+        <div class="plan-photo sq"><img src="assets/corp-grupo.jpg" alt="Time cozinhando junto, guiado por um chef" style="filter:brightness(1.22) contrast(1.02) saturate(1.08)"></div>
         <div class="plan-body">
           <span class="tag basic">Básico</span>
           <h3>Plano Básico</h3>
-          <div class="price soft">Sob consulta<small>montamos o menu com você</small></div>
+          <div class="price">R$ 429<small>por pessoa</small></div>
           <ul class="feat">
             <li>Aula conduzida por um chef</li>
             <li>Todos os ingredientes e material</li>
@@ -398,17 +408,19 @@
       </div>
 
       <div class="plan featured">
-        <div class="plan-photo"><img src="assets/personalizacaocompass.png" alt="Brindes personalizados com a marca Compass"></div>
+        <span class="ribbon">★ Mais escolhido</span>
+        <div class="plan-photo sq"><img src="assets/personalizacaocompass.png" alt="Brindes e avental personalizados com a marca Compass"></div>
         <div class="plan-body">
           <span class="tag premium">Premium</span>
           <h3>Plano Premium</h3>
-          <div class="price soft">Sob consulta<small>tudo do básico, e mais</small></div>
+          <div class="price">R$ 539<small>por pessoa</small></div>
+          <div class="more">Tudo do básico, e mais</div>
           <ul class="feat">
-            <li>Entrada e petiscos</li>
-            <li>Bebidas / mesa de boas-vindas</li>
+            <li><b>Avental personalizado</b> Compass (cada um leva o seu)</li>
+            <li>Entrada, petiscos e mesa de boas-vindas</li>
             <li><b>Personalização com a marca Compass</b> (brindes e lembrancinhas)</li>
           </ul>
-          <span class="allin">Menu e valor sob medida</span>
+          <span class="allin">Experiência + brindes</span>
         </div>
       </div>
     </div>
@@ -430,7 +442,7 @@
 
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo"><img src="assets/tufting6.jpg" alt="Time rindo com as peças de tufting que criaram"></div>
+        <div class="plan-photo sq"><img src="assets/tufting6.jpg" alt="Time rindo com as peças de tufting que criaram"></div>
         <div class="plan-body">
           <span class="tag basic">Básico</span>
           <h3>Plano Básico</h3>
@@ -446,7 +458,8 @@
       </div>
 
       <div class="plan featured">
-        <div class="plan-photo"><img src="assets/tufting11.jpg" alt="Peça de tufting premium com a marca Compass" style="filter:brightness(1.05) saturate(1.05)"></div>
+        <span class="ribbon">★ Mais escolhido</span>
+        <div class="plan-photo sq"><img src="assets/tufting11.jpg" alt="Peça de tufting premium com a marca Compass" style="filter:brightness(1.05) saturate(1.05)"></div>
         <div class="plan-body">
           <span class="tag premium">Premium</span>
           <h3>Plano Premium</h3>
@@ -498,7 +511,7 @@
       </div>
     </div>
 
-    <p class="fineprint">Valores por pessoa, para turmas de até 15 participantes, em meio período. Incluem material, condução e estrutura no espaço parceiro. Gastronomia com valor a confirmar. Proposta válida mediante confirmação de data, experiência e disponibilidade de agenda.</p>
+    <p class="fineprint">Valores por pessoa, para turmas de até 15 participantes, em meio período. Incluem material, condução e estrutura no espaço parceiro. Proposta válida mediante confirmação de data, experiência e disponibilidade de agenda.</p>
 
     <div class="slide__foot"><span>elarah.com.br · @elarah.oficial</span><span>Experiência Corporativa · Compass · 2026</span></div>
   </section>
