@@ -1887,12 +1887,25 @@ if (groupForm) {
     // configuradas no Supabase e o webhook testado — aí o cartão passa
     // a usar o Checkout Pro da MP (parcelamento em até 12x, com juros
     // repassados ao cliente). O PIX nunca é afetado por esta chave.
-    // Pode ser forçado via ?mpcard=1 na URL pra testes controlados.
+    // Pode ser forçado via ?mpcard=1 na URL pra testes controlados. O
+    // valor "gruda" na aba (sessionStorage): basta entrar UMA vez com
+    // ?mpcard=1 que o cartão-MP fica ligado durante toda a navegação
+    // daquela aba (some ao fechar a aba, ou com ?mpcard=0). Isso evita
+    // ter que repetir o parâmetro em cada página no teste.
     const MP_CARD_ENABLED = (function () {
       try {
         var q = new URLSearchParams(window.location.search);
-        if (q.get('mpcard') === '1') return true;
-        if (q.get('mpcard') === '0') return false;
+        if (q.get('mpcard') === '1') {
+          try { sessionStorage.setItem('elarah_mpcard', '1'); } catch (e) {}
+          return true;
+        }
+        if (q.get('mpcard') === '0') {
+          try { sessionStorage.removeItem('elarah_mpcard'); } catch (e) {}
+          return false;
+        }
+        try {
+          if (sessionStorage.getItem('elarah_mpcard') === '1') return true;
+        } catch (e) {}
       } catch (e) {}
       return false; // ← vira true no go-live do cartão via Mercado Pago
     })();
