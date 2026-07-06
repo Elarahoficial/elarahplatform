@@ -128,6 +128,8 @@
     var cur = paidSum(w1a, w1b), prev = paidSum(w0a, w0b);
     var visitas = evCount('page_view', w1a, w1b), visitasPrev = evCount('page_view', w0a, w0b);
     var cadastros = profCount(w1a, w1b), cadastrosPrev = profCount(w0a, w0b);
+    // App instalado (PWA): aberturas pelo ícone da tela inicial (iPhone + Android)
+    var pwaOpens = evCount('pwa_open', w1a, w1b), pwaOpensPrev = evCount('pwa_open', w0a, w0b);
 
     // Funil desta semana
     var steps = [
@@ -190,6 +192,7 @@
     return {
       cur: cur, prev: prev, visitas: visitas, visitasPrev: visitasPrev,
       cadastros: cadastros, cadastrosPrev: cadastrosPrev, conv: conv, ticket: ticket,
+      pwaOpens: pwaOpens, pwaOpensPrev: pwaOpensPrev,
       funnel: funnel, worst: worst, topSeller: topSeller, cancel: cancel,
       leadsSemana: leadsSemana, pendentes: pendentes, lotando: lotando, encalhada: encalhada,
       notaMedia: notaMedia, totalReviews: rv.length, baixasSemana: baixasSemana, unmet: unmet,
@@ -266,6 +269,7 @@
       kpi('Vendas', String(m.cur.vendas), dV, false) +
       kpi('Conversão', m.conv == null ? '—' : m.conv + '%', null, false) +
       kpi('Cadastros novos', String(m.cadastros), delta(m.cadastros, m.cadastrosPrev), false) +
+      kpi('📱 Aberturas do app', String(m.pwaOpens), delta(m.pwaOpens, m.pwaOpensPrev), false) +
       '</div>' +
       '<p style="font-size:.95rem;line-height:1.6;color:#2a2a2a;background:#faf6f0;border-radius:12px;padding:13px 16px;margin:0 0 20px;">' + resumo + '</p>' +
 
