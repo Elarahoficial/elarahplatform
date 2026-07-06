@@ -37,6 +37,10 @@ A pasta `www` é **gerada automaticamente** (não precisa editar nada dentro del
 - ✅ Ícone e splash da marca (fontes em `resources/`)
 - ✅ Ponte nativa (`native/bridge.js`): botão voltar do Android, links externos
   abrindo no navegador do sistema e navegação interna offline.
+- ✅ **Compartilhamento nativo**: os botões de compartilhar do site abrem o menu
+  nativo do celular (WhatsApp, Instagram…) dentro do app.
+- ✅ **Base de notificações push** pronta — falta só a configuração do Firebase/
+  Apple. Guia completo em [`docs/notificacoes-push.md`](docs/notificacoes-push.md).
 
 ---
 
