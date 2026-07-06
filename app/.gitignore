@@ -1,0 +1,24 @@
+# Dependências
+node_modules/
+
+# Artefato de build: www é regenerada a partir do site com `npm run build`
+www/
+
+# Projetos nativos gerados pelo Capacitor (recriados com `npx cap add`)
+# Descomente se preferir NÃO versionar as pastas nativas:
+# android/
+# ios/
+
+# Builds
+*.apk
+*.aab
+*.ipa
+.gradle/
+android/app/build/
+android/build/
+ios/App/build/
+ios/App/Pods/
+DerivedData/
+
+# Sistema
+.DS_Store

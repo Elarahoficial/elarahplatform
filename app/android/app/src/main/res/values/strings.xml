@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Elarah</string>
+    <string name="title_activity_main">Elarah</string>
+    <string name="package_name">com.elarah.app</string>
+    <string name="custom_url_scheme">com.elarah.app</string>
+</resources>

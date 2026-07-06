@@ -1,0 +1,31 @@
+{
+  "name": "elarah-app",
+  "version": "1.0.0",
+  "description": "Aplicativo mobile da Elarah (Android/iOS) — empacota o site elarah.com.br com Capacitor.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync-web": "node scripts/copy-web.mjs",
+    "gen-icons": "node scripts/gen-icons.mjs",
+    "assets": "npx @capacitor/assets generate",
+    "build": "npm run sync-web",
+    "prepare:android": "npm run build && npx cap sync android",
+    "prepare:ios": "npm run build && npx cap sync ios",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2"
+  },
+  "devDependencies": {
+    "pngjs": "^7.0.0"
+  }
+}
