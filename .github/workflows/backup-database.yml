@@ -13,12 +13,15 @@ name: Backup do Banco (Supabase)
 #
 # SEGREDOS NECESSÁRIOS (Settings → Secrets and variables →
 # Actions → New repository secret):
-#   - SUPABASE_DB_URL     → connection string do Session Pooler
-#                            (Supabase → Project Settings → Database
-#                             → Connection string → Session pooler)
-#   - BACKUP_PASSPHRASE   → uma senha forte inventada por você,
+#   - SUPABASE_DB_PASSWORD → SÓ a senha do banco (a database
+#                            password do Supabase). Cole ela pura,
+#                            sem montar URL nenhuma.
+#   - BACKUP_PASSPHRASE    → uma senha forte inventada por você,
 #                            usada pra criptografar/descriptografar.
 #                            GUARDE-A: sem ela o backup não abre.
+#
+# O host/usuário/porta do banco NÃO são segredos e ficam fixos
+# abaixo (env DB_HOST/DB_USER/...). Só a senha é secreta.
 #
 # IMPORTANTE: o agendamento diário (cron) só começa a rodar
 # sozinho depois que este arquivo estiver na branch PADRÃO do
@@ -33,6 +36,12 @@ on:
 permissions:
   contents: read
 
+env:
+  DB_HOST: aws-1-sa-east-1.pooler.supabase.com
+  DB_PORT: '5432'
+  DB_USER: postgres.nwijxjmenbfyehvscogs
+  DB_NAME: postgres
+
 jobs:
   backup:
     runs-on: ubuntu-latest
@@ -41,11 +50,11 @@ jobs:
       # em vez de estourar um erro confuso lá na frente.
       - name: Validar segredos
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
-          if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "::error::Falta o segredo SUPABASE_DB_URL (Settings → Secrets → Actions)."
+          if [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::Falta o segredo SUPABASE_DB_PASSWORD (Settings → Secrets → Actions)."
             exit 1
           fi
           if [ -z "$BACKUP_PASSPHRASE" ]; then
@@ -68,7 +77,10 @@ jobs:
 
       - name: Gerar backup criptografado
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # A senha vai por PGPASSWORD — assim NÃO precisa montar
+          # nenhuma connection string nem se preocupar com símbolos
+          # especiais na senha.
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
           PGSSLMODE: require
         run: |
@@ -81,7 +93,9 @@ jobs:
           #   auth   → contas/logins dos usuários
           # --no-owner / --no-privileges deixam o dump restaurável
           # em qualquer projeto novo sem depender dos donos originais.
-          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+          /usr/lib/postgresql/17/bin/pg_dump \
+            --host="$DB_HOST" --port="$DB_PORT" \
+            --username="$DB_USER" --dbname="$DB_NAME" \
             --no-owner --no-privileges \
             --schema=public --schema=auth \
             | gzip -9 \
@@ -94,7 +108,7 @@ jobs:
           # Sanidade: um backup real tem mais que alguns KB. Se vier
           # minúsculo, algo falhou silenciosamente — melhor abortar.
           if [ "$SIZE_BYTES" -lt 2048 ]; then
-            echo "::error::Backup suspeito de estar vazio (${SIZE_BYTES} bytes). Verifique SUPABASE_DB_URL."
+            echo "::error::Backup suspeito de estar vazio (${SIZE_BYTES} bytes). Verifique a senha SUPABASE_DB_PASSWORD."
             exit 1
           fi
           echo "BACKUP_FILE=$FILE" >> "$GITHUB_ENV"

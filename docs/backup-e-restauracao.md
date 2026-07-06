@@ -12,8 +12,8 @@ clique numa execução → seção **Artifacts** → baixe o arquivo
 Ficam disponíveis por **90 dias**.
 
 ## Segredos usados (Settings → Secrets and variables → Actions)
-- `SUPABASE_DB_URL` — connection string do **Session Pooler** do Supabase
-  (Project Settings → Database → Connection string → Session pooler).
+- `SUPABASE_DB_PASSWORD` — **só a senha** do banco (a *database password* do
+  Supabase). Cole ela pura; o host/usuário/porta ficam fixos no workflow.
 - `BACKUP_PASSPHRASE` — senha forte inventada por você. **Sem ela o backup
   não pode ser aberto.** Guarde num lugar seguro (gerenciador de senhas).
 
