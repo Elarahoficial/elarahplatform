@@ -44,6 +44,20 @@
     var since90 = new Date(now - 90 * DAY).toISOString();
     var se = await c.from('analytics_events').select('target_label, metadata').eq('event_name', 'search_used').gte('created_at', since90).limit(20000);
 
+    // App instalado (PWA): quem abriu pela tela inicial estando logado (90d).
+    var pwaEv = await c.from('analytics_events')
+      .select('user_id, created_at, metadata')
+      .eq('event_name', 'pwa_open')
+      .not('user_id', 'is', null)
+      .gte('created_at', since90).limit(20000);
+    var pwaRows = (pwaEv && pwaEv.data) || [];
+    var pwaUsers = [];
+    var pwaIds = Array.from(new Set(pwaRows.map(function (r) { return r.user_id; }).filter(Boolean)));
+    if (pwaIds.length) {
+      var pu = await c.from('profiles').select('id, nome, email').in('id', pwaIds).limit(5000);
+      pwaUsers = (pu && pu.data) || [];
+    }
+
     var exps = [], slotsMap = new Map();
     try { if (window.ElarahData && ElarahData.getAllExperiences) exps = await ElarahData.getAllExperiences(); } catch (_) {}
     try { if (window.ElarahData && ElarahData.loadAllSlots) slotsMap = await ElarahData.loadAllSlots(); } catch (_) {}
@@ -56,6 +70,7 @@
       prospects: (pr && pr.data) || [],
       reviews: (rv && rv.data) || [],
       searches: (se && se.data) || [],
+      pwaRows: pwaRows, pwaUsers: pwaUsers,
       exps: exps, slotsMap: slotsMap,
     };
   }
@@ -244,6 +259,49 @@
       '</div>';
   }
 
+  // Agrupa as aberturas do app por pessoa (só quem tem conta).
+  function pwaUsersList(rows, users) {
+    var byId = {};
+    (users || []).forEach(function (u) { byId[u.id] = u; });
+    var agg = {};
+    (rows || []).forEach(function (r) {
+      var id = r.user_id; if (!id) return;
+      if (!agg[id]) agg[id] = { count: 0, last: 0, platform: '' };
+      agg[id].count++;
+      var ts = new Date(r.created_at).getTime();
+      if (ts > agg[id].last) {
+        agg[id].last = ts;
+        agg[id].platform = (r.metadata && r.metadata.platform) || '';
+      }
+    });
+    return Object.keys(agg).map(function (id) {
+      var a = agg[id], u = byId[id] || {};
+      return {
+        nome: u.nome || '(cliente sem nome no cadastro)',
+        email: u.email || '',
+        count: a.count, last: a.last, platform: a.platform
+      };
+    }).sort(function (a, b) { return b.last - a.last; });
+  }
+
+  function pwaSection(d) {
+    var list = pwaUsersList(d.pwaRows, d.pwaUsers);
+    var head = '<h2 style="font-family:Georgia,serif;font-size:1.25rem;color:#1a1a1a;margin:22px 0 4px;">📱 Quem está usando o app</h2>' +
+      '<p style="margin:0 0 12px;font-size:.8rem;color:#999;">Clientes cadastrados que abriram o app pela tela inicial (últimos 90 dias). Visitantes sem conta não aparecem aqui.</p>';
+    if (!list.length) {
+      return head + '<p style="font-size:.9rem;color:#666;background:#faf6f0;border-radius:12px;padding:13px 16px;margin:0 0 4px;">Ninguém com conta abriu o app ainda — ou quem abriu não estava logado. Assim que clientes cadastrados usarem o app, eles aparecem aqui. 🧡</p>';
+    }
+    var rows = list.slice(0, 100).map(function (u) {
+      var plat = u.platform === 'ios' ? '🍎 iPhone' : (u.platform === 'android_desktop' ? '🤖 Android' : '');
+      var quando = u.last ? new Date(u.last).toLocaleDateString('pt-BR') : '—';
+      return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fff;border:1px solid #eee;border-radius:10px;padding:10px 13px;">' +
+        '<div style="min-width:0;"><div style="font-size:.92rem;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(u.nome) + '</div>' +
+        '<div style="font-size:.78rem;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(u.email) + '</div></div>' +
+        '<div style="text-align:right;font-size:.78rem;color:#666;white-space:nowrap;">' + u.count + ' abertura' + (u.count > 1 ? 's' : '') + '<br>' + quando + ' ' + plat + '</div></div>';
+    }).join('');
+    return head + '<div style="display:grid;gap:8px;margin-bottom:4px;">' + rows + '</div>';
+  }
+
   function render(d) {
     var root = el('ceo-root');
     if (!root) return;
@@ -284,6 +342,8 @@
           '<div><div style="font-size:.64rem;font-weight:700;letter-spacing:.4px;color:' + cor + ';margin-bottom:2px;">' + lbl + '</div>' +
           '<div style="font-size:.9rem;line-height:1.5;color:#333;">' + a.txt + '</div></div></li>';
       }).join('') + '</ol>' +
+
+      pwaSection(d) +
 
       '<details style="margin-top:18px;"><summary style="cursor:pointer;font-size:.82rem;color:#888;">Ver números completos da semana</summary>' +
       '<div style="font-size:.84rem;color:#555;line-height:1.7;margin-top:8px;">' +
