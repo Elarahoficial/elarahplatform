@@ -9462,6 +9462,229 @@
     renderLocaisGrid();
   }
 
+  // =================================================
+  // ===== CORREÇÃO EM MASSA DE REPASSES (1 fornec.) =====
+  // Recalcula valor cheio / repasse / comissão das reservas de 1
+  // fornecedor sobre o Valor Cheio ATUAL da experiência e regrava no
+  // banco, pra que TODAS as telas (inclusive a aba Fornecedores, que lê
+  // do servidor) fiquem consistentes com a lista de reservas. Fluxo
+  // seguro: prévia primeiro → aplica só com confirmação digitada.
+  //
+  // Regras de segurança:
+  //   - Só mexe em reservas PAGAS de 1 fornecedor (repasses[] com no
+  //     máximo 1 item). Multi-fornecedor fica intocado.
+  //   - Só corrige quando a experiência tem valor_cheio_centavos definido
+  //     (senão não dá pra recomputar sobre o Valor Cheio).
+  //   - Pula reservas de teste (nome "teste"/"teste 1").
+  //   - Grava histórico em metadata.admin_edit_history pra auditoria.
+  // =================================================
+  async function _recalcRepasseComputeDiffs() {
+    const s = window.supabaseClient;
+    if (!s) throw new Error('Supabase indisponível.');
+    const expById = new Map();
+    const allExps = (window.ElarahData && ElarahData.getAllExperiences)
+      ? await ElarahData.getAllExperiences().catch(() => [])
+      : [];
+    (allExps || []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
+
+    const { data, error } = await s.from('bookings').select('*').eq('status', 'pago');
+    if (error) throw new Error(error.message || 'Erro ao ler reservas.');
+
+    const diffs = [];
+    (data || []).forEach(b => {
+      if (!b) return;
+      // Multi-fornecedor: rateio só é fiel no snapshot — não mexe.
+      if (Array.isArray(b.repasses) && b.repasses.length > 1) return;
+      // Pula reservas de teste.
+      const nomeExpLower = String(b.experiencia_nome || '').trim().toLowerCase();
+      if (nomeExpLower === 'teste' || nomeExpLower === 'teste 1') return;
+      const exp = expById.get(b.experiencia_id);
+      if (!exp || exp.valorCheioCentavos == null) return; // sem valor cheio → não recomputa
+      const r = resolveRateioLegado(b, exp);
+      if (r.valorCheio == null || r.valorRepasse == null) return;
+
+      const oldCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
+      const oldRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
+      const oldComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
+      const hasArr = Array.isArray(b.repasses) && b.repasses.length === 1;
+      const oldArrRepasse = hasArr ? Number(b.repasses[0] && b.repasses[0].valor_centavos) : null;
+
+      const changed = oldCheio !== r.valorCheio
+        || oldRepasse !== r.valorRepasse
+        || oldComissao !== r.valorComissao
+        || (hasArr && oldArrRepasse !== r.valorRepasse);
+      if (!changed) return;
+
+      diffs.push({
+        id: b.id,
+        exp: b.experiencia_nome || (exp && exp.nome) || '—',
+        nome: b.nome || '—',
+        data: b.data || '',
+        horario: b.horario || '',
+        fornecedor: b.fornecedor_nome || (exp && exp.fornecedorNome) || '—',
+        oldCheio: oldCheio, oldRepasse: oldRepasse, oldComissao: oldComissao,
+        newCheio: r.valorCheio, newRepasse: r.valorRepasse, newComissao: r.valorComissao,
+        hasArr: hasArr,
+        repassesArr: b.repasses,
+        metadata: b.metadata,
+      });
+    });
+    return diffs;
+  }
+
+  async function _recalcRepasseApply(diffs, onProgress) {
+    const s = window.supabaseClient;
+    if (!s) throw new Error('Supabase indisponível.');
+    let ok = 0, fail = 0;
+    const errors = [];
+    for (let i = 0; i < diffs.length; i++) {
+      const d = diffs[i];
+      const patch = {
+        valor_cheio_centavos: d.newCheio,
+        valor_repasse_centavos: d.newRepasse,
+        valor_comissao_centavos: d.newComissao,
+      };
+      // Atualiza o único item de repasses[] — a RPC do servidor lê
+      // valor_centavos desse array quando ele existe.
+      if (d.hasArr && Array.isArray(d.repassesArr) && d.repassesArr.length === 1) {
+        patch.repasses = [Object.assign({}, d.repassesArr[0], { valor_centavos: d.newRepasse })];
+      }
+      // Auditoria (não-bloqueante).
+      try {
+        const meta = (d.metadata && typeof d.metadata === 'object') ? Object.assign({}, d.metadata) : {};
+        const hist = Array.isArray(meta.admin_edit_history) ? meta.admin_edit_history.slice() : [];
+        hist.push({
+          tipo: 'recalc_repasse_massa',
+          quando: new Date().toISOString(),
+          de: { cheio: d.oldCheio, repasse: d.oldRepasse, comissao: d.oldComissao },
+          para: { cheio: d.newCheio, repasse: d.newRepasse, comissao: d.newComissao },
+        });
+        meta.admin_edit_history = hist;
+        patch.metadata = meta;
+      } catch (e) { /* segue sem auditoria */ }
+
+      try {
+        const { error } = await s.from('bookings').update(patch).eq('id', d.id);
+        if (error) { fail++; errors.push((d.exp || d.id) + ': ' + (error.message || 'erro')); }
+        else ok++;
+      } catch (e) { fail++; errors.push((d.exp || d.id) + ': ' + ((e && e.message) || e)); }
+      if (onProgress) onProgress(i + 1, diffs.length);
+    }
+    return { ok: ok, fail: fail, errors: errors };
+  }
+
+  function openRecalcRepasseModal() {
+    const old = document.getElementById('recalc-repasse-overlay');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'recalc-repasse-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(20,12,4,.55);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit;';
+    overlay.innerHTML =
+      '<div style="background:#fff;border-radius:16px;max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.22);">' +
+      '<div style="padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">' +
+        '<div><h3 style="margin:0;font-size:1.2rem;color:#1a1a1a;">Corrigir repasses das reservas</h3>' +
+        '<p style="margin:4px 0 0;color:#666;font-size:.85rem;line-height:1.5;">Recalcula <b>valor cheio · repasse · comissão</b> das reservas de <b>1 fornecedor</b> sobre o Valor Cheio atual da experiência. Multi-fornecedor não é tocado. Confira a prévia antes de aplicar.</p></div>' +
+        '<button type="button" id="recalc-close" aria-label="Fechar" style="background:none;border:none;font-size:26px;line-height:1;color:#999;cursor:pointer;">&times;</button>' +
+      '</div>' +
+      '<div id="recalc-body" style="padding:18px 24px;overflow-y:auto;flex:1;">' +
+        '<p style="color:#666;">Carregando prévia…</p>' +
+      '</div>' +
+      '<div id="recalc-footer" style="padding:16px 24px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;"></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('#recalc-close').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+    const body = overlay.querySelector('#recalc-body');
+    const footer = overlay.querySelector('#recalc-footer');
+
+    _recalcRepasseComputeDiffs().then(function (diffs) {
+      if (!diffs.length) {
+        body.innerHTML = '<div style="text-align:center;padding:30px 10px;color:#1a8a4a;font-weight:600;">✓ Tudo certo — nenhuma reserva precisa de correção.</div>';
+        footer.innerHTML = '<button type="button" id="recalc-cancel" style="padding:10px 18px;border:1px solid #ddd;background:#fff;color:#444;border-radius:10px;cursor:pointer;font-weight:600;">Fechar</button>';
+        footer.querySelector('#recalc-cancel').addEventListener('click', close);
+        return;
+      }
+      let totOldR = 0, totNewR = 0;
+      diffs.forEach(function (d) { totOldR += (d.oldRepasse || 0); totNewR += (d.newRepasse || 0); });
+      const fmt = function (c) { return c == null ? '—' : formatCents(c, 'BRL'); };
+      const rows = diffs.map(function (d) {
+        const chg = function (o, n) {
+          const same = o === n;
+          return same
+            ? '<span style="color:#888;">' + fmt(n) + '</span>'
+            : '<span style="color:#888;text-decoration:line-through;">' + fmt(o) + '</span> → <b style="color:#b0651e;">' + fmt(n) + '</b>';
+        };
+        return '<tr style="border-top:1px solid #f0e8de;">' +
+          '<td style="padding:7px 8px;font-size:.82rem;">' + escapeHtml(d.exp) + '<div style="color:#999;font-size:.74rem;">' + escapeHtml(d.nome) + (d.data ? ' · ' + escapeHtml(d.data) : '') + (d.horario ? ' · ' + escapeHtml(d.horario) : '') + '</div></td>' +
+          '<td style="padding:7px 8px;font-size:.82rem;">' + escapeHtml(d.fornecedor) + '</td>' +
+          '<td style="padding:7px 8px;font-size:.82rem;white-space:nowrap;">' + chg(d.oldCheio, d.newCheio) + '</td>' +
+          '<td style="padding:7px 8px;font-size:.82rem;white-space:nowrap;">' + chg(d.oldRepasse, d.newRepasse) + '</td>' +
+          '<td style="padding:7px 8px;font-size:.82rem;white-space:nowrap;">' + chg(d.oldComissao, d.newComissao) + '</td>' +
+        '</tr>';
+      }).join('');
+      body.innerHTML =
+        '<div style="background:#fff8ef;border:1px solid #f0d9a8;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.86rem;color:#7a5a20;">' +
+          '<b>' + diffs.length + '</b> reserva(s) serão corrigidas. Total de repasse: ' +
+          '<span style="text-decoration:line-through;">' + fmt(totOldR) + '</span> → <b>' + fmt(totNewR) + '</b>.' +
+        '</div>' +
+        '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">' +
+          '<thead><tr style="text-align:left;color:#888;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;">' +
+            '<th style="padding:6px 8px;">Reserva</th><th style="padding:6px 8px;">Fornecedor</th>' +
+            '<th style="padding:6px 8px;">Valor cheio</th><th style="padding:6px 8px;">Repasse</th><th style="padding:6px 8px;">Comissão</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+
+      footer.innerHTML =
+        '<div style="margin-right:auto;display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:.82rem;color:#666;">Digite <b>CORRIGIR</b> pra habilitar:</span>' +
+          '<input type="text" id="recalc-confirm" autocomplete="off" placeholder="CORRIGIR" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;width:120px;text-transform:uppercase;">' +
+        '</div>' +
+        '<button type="button" id="recalc-cancel" style="padding:10px 18px;border:1px solid #ddd;background:#fff;color:#444;border-radius:10px;cursor:pointer;font-weight:600;">Cancelar</button>' +
+        '<button type="button" id="recalc-apply" disabled style="padding:10px 18px;border:none;background:#f0a05e;color:#fff;border-radius:10px;cursor:not-allowed;font-weight:700;opacity:.55;">Aplicar correção</button>';
+      const confirmInput = footer.querySelector('#recalc-confirm');
+      const applyBtn = footer.querySelector('#recalc-apply');
+      footer.querySelector('#recalc-cancel').addEventListener('click', close);
+      confirmInput.addEventListener('input', function () {
+        const okToApply = confirmInput.value.trim().toUpperCase() === 'CORRIGIR';
+        applyBtn.disabled = !okToApply;
+        applyBtn.style.cursor = okToApply ? 'pointer' : 'not-allowed';
+        applyBtn.style.opacity = okToApply ? '1' : '.55';
+      });
+      applyBtn.addEventListener('click', async function () {
+        if (applyBtn.disabled) return;
+        applyBtn.disabled = true; applyBtn.style.opacity = '.55'; applyBtn.style.cursor = 'wait';
+        confirmInput.disabled = true;
+        applyBtn.textContent = 'Aplicando… 0/' + diffs.length;
+        try {
+          const res = await _recalcRepasseApply(diffs, function (done, total) {
+            applyBtn.textContent = 'Aplicando… ' + done + '/' + total;
+          });
+          body.innerHTML = '<div style="text-align:center;padding:26px 10px;">' +
+            '<div style="font-size:1.05rem;color:#1a8a4a;font-weight:700;margin-bottom:6px;">✓ Correção aplicada</div>' +
+            '<div style="color:#444;font-size:.9rem;">' + res.ok + ' reserva(s) corrigida(s)' + (res.fail ? ' · <span style="color:#c0392b;">' + res.fail + ' falha(s)</span>' : '') + '.</div>' +
+            (res.errors && res.errors.length ? '<div style="margin-top:10px;text-align:left;color:#c0392b;font-size:.78rem;max-height:140px;overflow:auto;">' + res.errors.map(escapeHtml).join('<br>') + '</div>' : '') +
+            '</div>';
+          footer.innerHTML = '<button type="button" id="recalc-done" style="padding:10px 18px;border:none;background:#f0a05e;color:#fff;border-radius:10px;cursor:pointer;font-weight:700;">Concluir</button>';
+          footer.querySelector('#recalc-done').addEventListener('click', function () {
+            close();
+            if (typeof renderFornecedores === 'function') renderFornecedores();
+            if (typeof renderBookings === 'function') renderBookings();
+          });
+        } catch (e) {
+          applyBtn.textContent = 'Aplicar correção';
+          applyBtn.disabled = false; applyBtn.style.opacity = '1'; applyBtn.style.cursor = 'pointer';
+          confirmInput.disabled = false;
+          alert('Erro ao aplicar: ' + ((e && e.message) || e));
+        }
+      });
+    }).catch(function (e) {
+      body.innerHTML = '<div style="color:#c0392b;padding:20px;">Erro ao carregar prévia: ' + escapeHtml((e && e.message) || String(e)) + '</div>';
+      footer.innerHTML = '<button type="button" id="recalc-cancel" style="padding:10px 18px;border:1px solid #ddd;background:#fff;color:#444;border-radius:10px;cursor:pointer;font-weight:600;">Fechar</button>';
+      footer.querySelector('#recalc-cancel').addEventListener('click', close);
+    });
+  }
+
   async function renderFornecedores() {
     if (!document.getElementById('fornecedores-body')) return;
 
@@ -9875,6 +10098,14 @@
       novoBtn.addEventListener('click', () => {
         openFornecedorModal({ fornecedor_nome: '', status: 'em_negociacao' }, true);
       });
+    }
+
+    // Botão "↻ Corrigir repasses" — prévia + aplicação em massa (elemento
+    // estático, wire único guardado por dataset).
+    const recalcBtn = document.getElementById('forn-recalc-repasse-btn');
+    if (recalcBtn && !recalcBtn.dataset.wired) {
+      recalcBtn.dataset.wired = '1';
+      recalcBtn.addEventListener('click', () => { openRecalcRepasseModal(); });
     }
   }
 
