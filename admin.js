@@ -2469,6 +2469,24 @@
         || '';
       b._fornecedorResolvido = fornecedorNome;
 
+      // Valor Elarah: preço ATUAL da experiência × qty (o que a Elarah
+      // cobra hoje). Antes a coluna mostrava só amount_total — o valor
+      // pago na época da compra — então editar o preço da experiência
+      // não refletia aqui (reserva antiga continuava no preço velho).
+      // Agora "puxa" o preço da experiência editada, igual às colunas
+      // Valor cheio/Repasse/Comissão já fazem. Cai em amount_total quando
+      // a experiência não resolve (ex.: experiência deletada) ou o preço
+      // não é parseável.
+      let valorElarah = null;
+      if (exp && exp.preco) {
+        const precoCents = precoLabelToCents(exp.preco);
+        if (precoCents) valorElarah = precoCents * qty;
+      }
+      if (valorElarah == null && b.amount_total != null) {
+        valorElarah = Number(b.amount_total);
+      }
+      b._valorElarahResolvido = valorElarah;
+
       // Valor cheio: booking → experiência × qty → null.
       let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
       if (!valorCheio && exp && exp.valorCheioCentavos) {
@@ -3168,7 +3186,7 @@
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
-          <td>${escapeHtml(formatCents(b.amount_total, b.currency))}${mismatchBadge(b)}</td>
+          <td>${escapeHtml(formatCents(b._valorElarahResolvido != null ? b._valorElarahResolvido : b.amount_total, b.currency))}${mismatchBadge(b)}</td>
           <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
