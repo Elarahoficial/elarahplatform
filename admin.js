@@ -1312,6 +1312,11 @@
   // entre vários fornecedores só é fiel no snapshot do booking (b.repasses).
   // Fonte única compartilhada entre a lista de reservas, o card de repasses
   // pendentes e o extrato/PDF, pra nunca divergirem.
+  // Comissão padrão da Elarah quando a experiência não tem comissão
+  // cadastrada: 20% do valor cheio. (A parceira cadastra só o repasse do
+  // parceiro; a comissão da Elarah é essa regra fixa.)
+  const COMISSAO_PADRAO_PCT = 20;
+
   function resolveRateioLegado(b, exp) {
     const qty = Math.max(1, Number(b && b.quantidade) || 1);
     let valorCheio = null;
@@ -1333,14 +1338,15 @@
         valorRepasse = Math.round(base * (pct / 100));
       }
     }
-    // Comissão Elarah — espelha o backend (financial.ts): usa a comissão
-    // CADASTRADA na experiência.
-    //   'percent' → % do valor cheio (ex: 20% de 150 = R$30)
-    //   'fixed'   → valor fixo em centavos
-    //   sem config → residual (valor cheio − repasse)
-    // Antes eu calculava sempre o residual, o que dava a comissão errada
-    // pra quem tem comissão configurada diferente (ex: 20% aparecia como
-    // 30% = R$45). Agora respeita a % de cada experiência.
+    // Comissão Elarah. Ordem:
+    //   'percent' cadastrado → % do valor cheio
+    //   'fixed'   cadastrado → valor fixo em centavos
+    //   sem cadastro         → PADRÃO ELARAH = 20% do valor cheio
+    // A parceira só cadastra o valor cheio e o % do parceiro (repasse);
+    // a comissão da Elarah é fixa em 20% e não vai no formulário. Por isso
+    // o padrão aqui é 20% do cheio (não o residual "cheio − repasse", que
+    // dava 30% = R$45 errado). Se um dia uma experiência tiver comissão
+    // cadastrada diferente, ela tem prioridade.
     let valorComissao = null;
     if (base) {
       const cType = exp && exp.comissaoType;
@@ -1349,10 +1355,8 @@
         valorComissao = Math.round(base * (Number(cVal) / 100));
       } else if (cType === 'fixed' && cVal != null && cVal !== '' && Number.isFinite(Number(cVal))) {
         valorComissao = Math.round(Number(cVal));
-      } else if (valorRepasse != null) {
-        valorComissao = Math.max(0, base - valorRepasse);
       } else {
-        valorComissao = Math.round(base * 0.30);
+        valorComissao = Math.round(base * (COMISSAO_PADRAO_PCT / 100));
       }
     }
     return { valorCheio: valorCheio || null, valorRepasse, valorComissao };
