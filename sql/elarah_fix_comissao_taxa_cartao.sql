@@ -1,17 +1,25 @@
 -- =============================================================
--- ELARAH — Correção: taxa do cartão inflando a Receita Elarah
+-- ELARAH — Correção: Receita Elarah (comissão) errada no cartão
 -- -------------------------------------------------------------
--- PROBLEMA
---   A aba Fornecedores mostrava a "Receita Elarah" (comissão) e o
---   "Desconto" errados quando a venda era no cartão.
+-- A aba Fornecedores mostrava a "Receita Elarah" (comissão) e o
+-- "Desconto" errados quando a venda era no cartão. Eram DOIS bugs
+-- somados na RPC financial_by_supplier:
 --
---   A RPC financial_by_supplier calcula:
---       receita = amount_total            (valor que o cliente pagou)
---       comissão = receita − repasse
---   Mas no cartão a taxa é cobrada POR CIMA do preço, do cliente
---   (regra da Elarah: "a taxa eu passo pra pessoa"). Logo amount_total
---   já vem inflado pela taxa, e a taxa vazava pra dentro da comissão /
---   distorcia o desconto.
+-- BUG 1 — comissão das vendas com repasses[] jogada fora
+--   O trecho que explode repasses[] marca o "principal" (quem recebe a
+--   comissão) por ord = 1, mas o v5 fixava `0::int as ord` na mão,
+--   sobrescrevendo a ordinality do lateral join. Com ord sempre 0,
+--   NENHUM fornecedor era principal nas vendas com repasses[] (todo
+--   cartão) → a comissão dessas vendas virava R$0. Só as vendas antigas
+--   (PIX/legado, sem repasses[]) contavam. Numa venda de R$300 = cartão
+--   + PIX, a Receita Elarah saía R$30 em vez de R$60.
+--   Correção: usar t.ord (a numeração real do array).
+--
+-- BUG 2 — a taxa do cartão inflava a receita/comissão
+--   A RPC usava receita = amount_total (o valor pago). No cartão a taxa
+--   é cobrada POR CIMA do preço, do cliente (regra da Elarah: "a taxa eu
+--   passo pra pessoa"). Logo amount_total já vem inflado pela taxa, e a
+--   taxa vazava pra dentro da comissão / distorcia o desconto.
 --
 -- MODELO CORRETO (confirmado com a operação)
 --   valor cheio = preço do fornecedor (ex.: R$150)
@@ -117,7 +125,11 @@ as $$
       trim((elem->>'fornecedor_nome'))                              as supplier_name,
       coalesce((elem->>'valor_centavos')::bigint, 0)                as payout_centavos,
       false                                                          as is_principal,
-      0::int                                                         as ord
+      -- Numeração REAL do repasses[] (1 = principal). O v5 fixava isto
+      -- em 0::int na mão, sobrescrevendo a ordinality e fazendo com que
+      -- NENHUM fornecedor fosse "principal" nas vendas com repasses[]
+      -- (todo cartão) — a comissão dessas vendas era descartada.
+      t.ord::int                                                     as ord
     from bk
     cross join lateral jsonb_array_elements(bk.repasses) with ordinality as t(elem, ord)
     where bk.repasses is not null
