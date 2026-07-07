@@ -2487,43 +2487,62 @@
       }
       b._valorElarahResolvido = valorElarah;
 
-      // Valor cheio: booking → experiência × qty → null.
-      let valorCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
-      if (!valorCheio && exp && exp.valorCheioCentavos) {
+      // Valor cheio: prefere o preço cheio ATUAL da experiência × qty
+      // (pra "puxar" edições), cai no snapshot do booking e, por fim, null.
+      let valorCheio = null;
+      if (exp && exp.valorCheioCentavos) {
         valorCheio = Number(exp.valorCheioCentavos) * qty;
+      }
+      if (valorCheio == null && b.valor_cheio_centavos != null) {
+        valorCheio = Number(b.valor_cheio_centavos);
       }
       b._valorCheioResolvido = valorCheio || null;
 
-      // Base de cálculo: valor cheio (preferido) ou amount_total como fallback.
+      // Base de cálculo do rateio: valor cheio (regra Elarah — o repasse
+      // é % do Valor Cheio) e, em último caso, amount_total.
       const base = valorCheio || (b.amount_total != null ? Number(b.amount_total) : null);
 
-      // Repasse: prioriza snapshot do booking (valor_repasse_centavos);
-      // se ausente, deriva da config da experiência. Suporta:
-      //   - exp.percentualRepasse (legado, default 70)
-      //   - 70% como fallback final
-      // Comissão Elarah espelha (base − repasse) pra fechar 100%.
-      let valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-      if (valorRepasse == null && base) {
-        // Prioridade: valor fixo por pessoa (× qty) sobrescreve o
-        // percentual. Cobre o caso "fornecedor cobra R$80/aluno
-        // independente do preco cheio".
-        if (exp && exp.valorRepasseFixoCentavos != null
-            && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) {
-          valorRepasse = Number(exp.valorRepasseFixoCentavos) * qty;
-        } else {
-          const pct = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
-            ? Number(exp.percentualRepasse)
-            : 70;
-          valorRepasse = Math.round(base * (pct / 100));
+      // Multi-fornecedor: quando o booking tem repasses[] com +1 entrada,
+      // o rateio entre vários fornecedores só existe no snapshot — é a
+      // única fonte fiel, então respeitamos os valores gravados.
+      const isMultiFornecedor = Array.isArray(b.repasses) && b.repasses.length > 1;
+
+      // Repasse / Comissão:
+      //   - Multi-fornecedor → snapshot do booking.
+      //   - 1 fornecedor (legado) → recomputa SEMPRE off o Valor Cheio
+      //     ATUAL, pra refletir edições de preço/percentual na experiência.
+      //     Antes o snapshot tinha prioridade, então uma reserva antiga
+      //     podia mostrar repasse calculado sobre outro valor (ex: 70% de
+      //     243 = R$170,10 em vez de 70% de 270 = R$189).
+      let valorRepasse;
+      let valorComissao;
+      if (isMultiFornecedor) {
+        valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
+        valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
+        if (valorComissao == null && base && valorRepasse != null) {
+          valorComissao = Math.max(0, base - valorRepasse);
         }
+      } else {
+        valorRepasse = null;
+        if (base) {
+          // Prioridade: valor fixo por pessoa (× qty) sobrescreve o
+          // percentual. Cobre "fornecedor cobra R$80/aluno".
+          if (exp && exp.valorRepasseFixoCentavos != null
+              && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) {
+            valorRepasse = Number(exp.valorRepasseFixoCentavos) * qty;
+          } else {
+            const pct = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
+              ? Number(exp.percentualRepasse)
+              : 70;
+            valorRepasse = Math.round(base * (pct / 100));
+          }
+        }
+        // Comissão = base − repasse (mantém soma exata, evita arredondamento duplo).
+        valorComissao = (base && valorRepasse != null)
+          ? Math.max(0, base - valorRepasse)
+          : (base ? Math.round(base * 0.30) : null);
       }
       b._valorRepasseResolvido = valorRepasse;
-
-      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (valorComissao == null && base) {
-        // Comissão = base − repasse (mantém soma exata, evita arredondamento duplo).
-        valorComissao = valorRepasse != null ? Math.max(0, base - valorRepasse) : Math.round(base * 0.30);
-      }
       b._valorComissaoResolvido = valorComissao;
 
       // ===== WhatsApp do fornecedor =====
