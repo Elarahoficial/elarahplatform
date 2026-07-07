@@ -1,0 +1,63 @@
+# Configuração do Codemagic para gerar o app iOS da Elarah na nuvem
+# (sem precisar de Mac — o Codemagic usa Macs deles).
+#
+# Pré-requisitos (feitos uma vez, pelo navegador do Dell):
+#   1. Conta Apple Developer (US$ 99/ano).
+#   2. No App Store Connect, criar o app com o Bundle ID: com.elarah.app
+#   3. No Codemagic, criar uma integração "App Store Connect API key" e
+#      nomeá-la EXATAMENTE como: ElarahASC
+#      (Codemagic → Teams/User settings → Integrations → App Store Connect)
+#
+# Depois é só apertar "Start new build" no workflow "Elarah iOS".
+
+workflows:
+  ios-elarah:
+    name: Elarah iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: ElarahASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.elarah.app
+      vars:
+        XCODE_PROJECT: "app/ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+      node: 20
+      xcode: latest
+    scripts:
+      - name: Instalar dependencias do app
+        script: |
+          cd app
+          npm install
+      - name: Gerar conteudo web e sincronizar iOS
+        script: |
+          cd app
+          npm run build
+          npx cap sync ios
+      - name: Gerar icones e splash da Elarah
+        script: |
+          cd app
+          npx @capacitor/assets generate --ios || true
+      - name: Configurar assinatura (automatica via App Store Connect)
+        script: |
+          xcode-project use-profiles
+      - name: Definir numero de build
+        script: |
+          cd app/ios/App
+          agvtool new-version -all "$(($BUILD_NUMBER))" || true
+      - name: Montar o app (IPA)
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Envia automaticamente para o TestFlight (teste). Depois, quando quiser,
+        # dá pra promover para a App Store pública pelo App Store Connect.
+        submit_to_testflight: true
