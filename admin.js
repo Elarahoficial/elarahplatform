@@ -9573,6 +9573,40 @@
     return { ok: ok, fail: fail, errors: errors };
   }
 
+  // Monta o CSV da prévia (antes/depois) pra a admin guardar antes de
+  // aplicar. Delimitador ";" e decimal com vírgula (Excel pt-BR); BOM
+  // no início pra os acentos aparecerem certos.
+  function _recalcRepasseCsv(diffs) {
+    const reais = (c) => c == null ? '' : (Number(c) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const header = ['Reserva ID', 'Experiência', 'Participante', 'Data', 'Horário', 'Fornecedor',
+      'Valor cheio (antigo)', 'Valor cheio (novo)', 'Repasse (antigo)', 'Repasse (novo)',
+      'Comissão (antiga)', 'Comissão (nova)'];
+    const lines = [header.map(q).join(';')];
+    (diffs || []).forEach((d) => {
+      lines.push([
+        d.id, d.exp, d.nome, d.data, d.horario, d.fornecedor,
+        reais(d.oldCheio), reais(d.newCheio),
+        reais(d.oldRepasse), reais(d.newRepasse),
+        reais(d.oldComissao), reais(d.newComissao),
+      ].map(q).join(';'));
+    });
+    return '\ufeff' + lines.join('\r\n');
+  }
+
+  function _downloadTextFile(filename, text, mime) {
+    try {
+      const blob = new Blob([text], { type: (mime || 'text/plain') + ';charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) {} }, 0);
+    } catch (e) {
+      alert('Não foi possível exportar: ' + ((e && e.message) || e));
+    }
+  }
+
   function openRecalcRepasseModal() {
     const old = document.getElementById('recalc-repasse-overlay');
     if (old) old.remove();
@@ -9640,8 +9674,13 @@
           '<span style="font-size:.82rem;color:#666;">Digite <b>CORRIGIR</b> pra habilitar:</span>' +
           '<input type="text" id="recalc-confirm" autocomplete="off" placeholder="CORRIGIR" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;width:120px;text-transform:uppercase;">' +
         '</div>' +
+        '<button type="button" id="recalc-export" style="padding:10px 14px;border:1px solid #ddd;background:#fff;color:#444;border-radius:10px;cursor:pointer;font-weight:600;">⬇ Exportar prévia (CSV)</button>' +
         '<button type="button" id="recalc-cancel" style="padding:10px 18px;border:1px solid #ddd;background:#fff;color:#444;border-radius:10px;cursor:pointer;font-weight:600;">Cancelar</button>' +
         '<button type="button" id="recalc-apply" disabled style="padding:10px 18px;border:none;background:#f0a05e;color:#fff;border-radius:10px;cursor:not-allowed;font-weight:700;opacity:.55;">Aplicar correção</button>';
+      footer.querySelector('#recalc-export').addEventListener('click', function () {
+        const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        _downloadTextFile('previa-correcao-repasses-' + ts + '.csv', _recalcRepasseCsv(diffs), 'text/csv');
+      });
       const confirmInput = footer.querySelector('#recalc-confirm');
       const applyBtn = footer.querySelector('#recalc-apply');
       footer.querySelector('#recalc-cancel').addEventListener('click', close);
