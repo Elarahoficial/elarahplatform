@@ -1305,6 +1305,40 @@
     });
   }
 
+  // ===== Rateio "legado" (1 fornecedor) resolvido sobre o Valor Cheio =====
+  // Recalcula valor cheio / repasse / comissão a partir da config ATUAL da
+  // experiência (× qty), pra que editar a experiência "puxe" os valores em
+  // TODAS as reservas dela. Multi-fornecedor NÃO passa por aqui — o rateio
+  // entre vários fornecedores só é fiel no snapshot do booking (b.repasses).
+  // Fonte única compartilhada entre a lista de reservas, o card de repasses
+  // pendentes e o extrato/PDF, pra nunca divergirem.
+  function resolveRateioLegado(b, exp) {
+    const qty = Math.max(1, Number(b && b.quantidade) || 1);
+    let valorCheio = null;
+    if (exp && exp.valorCheioCentavos) valorCheio = Number(exp.valorCheioCentavos) * qty;
+    if (valorCheio == null && b && b.valor_cheio_centavos != null) {
+      valorCheio = Number(b.valor_cheio_centavos);
+    }
+    const base = valorCheio || (b && b.amount_total != null ? Number(b.amount_total) : null);
+    let valorRepasse = null;
+    if (base) {
+      // Valor fixo por pessoa (× qty) sobrescreve o percentual.
+      if (exp && exp.valorRepasseFixoCentavos != null
+          && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) {
+        valorRepasse = Number(exp.valorRepasseFixoCentavos) * qty;
+      } else {
+        const pct = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
+          ? Number(exp.percentualRepasse)
+          : 70;
+        valorRepasse = Math.round(base * (pct / 100));
+      }
+    }
+    const valorComissao = (base && valorRepasse != null)
+      ? Math.max(0, base - valorRepasse)
+      : (base ? Math.round(base * 0.30) : null);
+    return { valorCheio: valorCheio || null, valorRepasse, valorComissao };
+  }
+
   // Normaliza o texto de preço digitado no admin pra "R$ X,XX" antes de
   // gravar (cadastrar). Assim o admin não precisa digitar o símbolo R$ —
   // "159" vira "R$ 159,00". Reusa a fonte única ElarahData.formatPrecoBR.
@@ -2487,60 +2521,32 @@
       }
       b._valorElarahResolvido = valorElarah;
 
-      // Valor cheio: prefere o preço cheio ATUAL da experiência × qty
+      // Rateio resolvido sobre o Valor Cheio ATUAL da experiência (fonte
+      // única — resolveRateioLegado). Valor cheio prefere a config atual
       // (pra "puxar" edições), cai no snapshot do booking e, por fim, null.
-      let valorCheio = null;
-      if (exp && exp.valorCheioCentavos) {
-        valorCheio = Number(exp.valorCheioCentavos) * qty;
-      }
-      if (valorCheio == null && b.valor_cheio_centavos != null) {
-        valorCheio = Number(b.valor_cheio_centavos);
-      }
-      b._valorCheioResolvido = valorCheio || null;
-
-      // Base de cálculo do rateio: valor cheio (regra Elarah — o repasse
-      // é % do Valor Cheio) e, em último caso, amount_total.
-      const base = valorCheio || (b.amount_total != null ? Number(b.amount_total) : null);
+      const rateio = resolveRateioLegado(b, exp);
+      b._valorCheioResolvido = rateio.valorCheio;
 
       // Multi-fornecedor: quando o booking tem repasses[] com +1 entrada,
       // o rateio entre vários fornecedores só existe no snapshot — é a
       // única fonte fiel, então respeitamos os valores gravados.
+      //   - 1 fornecedor (legado) → usa o recomputo off Valor Cheio atual,
+      //     refletindo edições de preço/percentual. Antes o snapshot tinha
+      //     prioridade, então uma reserva antiga podia mostrar repasse sobre
+      //     outro valor (ex: 70% de 243 = R$170,10 em vez de 70% de 270 =
+      //     R$189).
       const isMultiFornecedor = Array.isArray(b.repasses) && b.repasses.length > 1;
-
-      // Repasse / Comissão:
-      //   - Multi-fornecedor → snapshot do booking.
-      //   - 1 fornecedor (legado) → recomputa SEMPRE off o Valor Cheio
-      //     ATUAL, pra refletir edições de preço/percentual na experiência.
-      //     Antes o snapshot tinha prioridade, então uma reserva antiga
-      //     podia mostrar repasse calculado sobre outro valor (ex: 70% de
-      //     243 = R$170,10 em vez de 70% de 270 = R$189).
       let valorRepasse;
       let valorComissao;
       if (isMultiFornecedor) {
         valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
         valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-        if (valorComissao == null && base && valorRepasse != null) {
-          valorComissao = Math.max(0, base - valorRepasse);
+        if (valorComissao == null && rateio.valorCheio && valorRepasse != null) {
+          valorComissao = Math.max(0, rateio.valorCheio - valorRepasse);
         }
       } else {
-        valorRepasse = null;
-        if (base) {
-          // Prioridade: valor fixo por pessoa (× qty) sobrescreve o
-          // percentual. Cobre "fornecedor cobra R$80/aluno".
-          if (exp && exp.valorRepasseFixoCentavos != null
-              && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) {
-            valorRepasse = Number(exp.valorRepasseFixoCentavos) * qty;
-          } else {
-            const pct = (exp && exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
-              ? Number(exp.percentualRepasse)
-              : 70;
-            valorRepasse = Math.round(base * (pct / 100));
-          }
-        }
-        // Comissão = base − repasse (mantém soma exata, evita arredondamento duplo).
-        valorComissao = (base && valorRepasse != null)
-          ? Math.max(0, base - valorRepasse)
-          : (base ? Math.round(base * 0.30) : null);
+        valorRepasse = rateio.valorRepasse;
+        valorComissao = rateio.valorComissao;
       }
       b._valorRepasseResolvido = valorRepasse;
       b._valorComissaoResolvido = valorComissao;
@@ -8278,14 +8284,24 @@
     return out;
   }
   // Valor do repasse de uma booking pra ESTE fornecedor (trata multi-fornecedor).
-  function _extratoBookingRepasse(b, supplierKey) {
-    if (b.repasses && Array.isArray(b.repasses) && b.repasses.length) {
+  // Multi-fornecedor (repasses[] com +1 item) → soma o snapshot deste
+  // fornecedor. 1 fornecedor (legado) → recomputa sobre o Valor Cheio ATUAL
+  // (mesma conta da lista de reservas e do card de pendentes), pra que o
+  // extrato reflita edições de preço/percentual em vez do valor fotografado
+  // na compra.
+  function _extratoBookingRepasse(b, supplierKey, expById) {
+    const isMulti = b.repasses && Array.isArray(b.repasses) && b.repasses.length > 1;
+    if (isMulti) {
       let sum = 0, found = false;
       b.repasses.forEach(e => {
         if (e && fornecedorKey(e.fornecedor_nome) === supplierKey) { sum += Number(e.valor_centavos) || 0; found = true; }
       });
       if (found) return sum;
+      return Number(b.valor_repasse_centavos) || 0;
     }
+    const exp = expById ? expById.get(b.experiencia_id) : null;
+    const r = resolveRateioLegado(b, exp);
+    if (r.valorRepasse != null) return r.valorRepasse;
     return Number(b.valor_repasse_centavos) || 0;
   }
 
@@ -8299,6 +8315,16 @@
     const start = new Date(yy, mm - 1, 1), end = new Date(yy, mm, 1);
     const inMonth = (val) => { if (!val) return false; const d = new Date(val); return !isNaN(d) && d >= start && d < end; };
     const rows = [];
+
+    // Mapa de experiências pra recomputar o repasse legado sobre o Valor
+    // Cheio ATUAL (idêntico à lista de reservas / card de pendentes).
+    const expById = new Map();
+    try {
+      const allExps = (window.ElarahData && ElarahData.getAllExperiences)
+        ? await ElarahData.getAllExperiences().catch(() => [])
+        : [];
+      (allExps || []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
+    } catch (e) { /* segue sem recomputo — cai no snapshot */ }
 
     try {
       const { data } = await sb.from('bookings').select('*').eq('status', 'pago');
@@ -8316,7 +8342,7 @@
           dataCompra: b.created_at,
           dataExp: b.data || '',
           horario: b.horario || '',
-          repasse: _extratoBookingRepasse(b, supplierKey),
+          repasse: _extratoBookingRepasse(b, supplierKey, expById),
           dataRepasse: rdate,
         });
       });
