@@ -1333,9 +1333,28 @@
         valorRepasse = Math.round(base * (pct / 100));
       }
     }
-    const valorComissao = (base && valorRepasse != null)
-      ? Math.max(0, base - valorRepasse)
-      : (base ? Math.round(base * 0.30) : null);
+    // Comissão Elarah — espelha o backend (financial.ts): usa a comissão
+    // CADASTRADA na experiência.
+    //   'percent' → % do valor cheio (ex: 20% de 150 = R$30)
+    //   'fixed'   → valor fixo em centavos
+    //   sem config → residual (valor cheio − repasse)
+    // Antes eu calculava sempre o residual, o que dava a comissão errada
+    // pra quem tem comissão configurada diferente (ex: 20% aparecia como
+    // 30% = R$45). Agora respeita a % de cada experiência.
+    let valorComissao = null;
+    if (base) {
+      const cType = exp && exp.comissaoType;
+      const cVal = exp && exp.comissaoValue;
+      if (cType === 'percent' && cVal != null && cVal !== '' && Number.isFinite(Number(cVal))) {
+        valorComissao = Math.round(base * (Number(cVal) / 100));
+      } else if (cType === 'fixed' && cVal != null && cVal !== '' && Number.isFinite(Number(cVal))) {
+        valorComissao = Math.round(Number(cVal));
+      } else if (valorRepasse != null) {
+        valorComissao = Math.max(0, base - valorRepasse);
+      } else {
+        valorComissao = Math.round(base * 0.30);
+      }
+    }
     return { valorCheio: valorCheio || null, valorRepasse, valorComissao };
   }
 
