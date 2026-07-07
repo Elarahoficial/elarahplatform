@@ -2501,10 +2501,22 @@
       }
       b._valorRepasseResolvido = valorRepasse;
 
-      let valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      if (valorComissao == null && base) {
-        // Comissão = base − repasse (mantém soma exata, evita arredondamento duplo).
-        valorComissao = valorRepasse != null ? Math.max(0, base - valorRepasse) : Math.round(base * 0.30);
+      // Comissão Elarah = (valor pago − taxa do cartão) − repasse.
+      // NÃO usa o valor_comissao_centavos gravado: ele foi calculado como
+      // valor_cheio − repasse (residual), sem subtrair o desconto ao
+      // cliente nem a taxa do cartão — vem inflado. Recalcula sempre a
+      // partir do que o cliente realmente pagou (amount_total) menos a
+      // taxa repassada (metadata.card_fee_total_centavos; 0 no PIX).
+      const cardFeeCentavos = Number((b.metadata && b.metadata.card_fee_total_centavos) || 0) || 0;
+      const amountTotal = b.amount_total != null ? Number(b.amount_total) : null;
+      // Receita líquida da taxa. Só cai pro valor cheio quando não há
+      // amount_total (booking não paga) — aí é só estimativa.
+      const receitaLiquida = amountTotal != null ? Math.max(0, amountTotal - cardFeeCentavos) : base;
+      let valorComissao = null;
+      if (receitaLiquida != null && valorRepasse != null) {
+        valorComissao = Math.max(0, receitaLiquida - valorRepasse);
+      } else if (b.valor_comissao_centavos != null) {
+        valorComissao = Number(b.valor_comissao_centavos);
       }
       b._valorComissaoResolvido = valorComissao;
 
@@ -9557,7 +9569,11 @@
       ? (Number(summary.repasses_pagos_centavos) || 0) +
         (Number(summary.repasses_pendentes_centavos) || 0)
       : 0;
-    const totalComissao = Math.max(0, totalReceita - totalRepassesAll);
+    // Comissão total = soma das comissões JÁ corrigidas por fornecedor
+    // (cada linha vem líquida da taxa do cartão via financial_by_supplier,
+    // e só conta o principal → sem duplicar multi-fornecedor). Não usa
+    // totalReceita − repasses, que ainda embute a taxa do cartão no total.
+    const totalComissao = list.reduce((s, f) => s + (Number(f.comissaoCents) || 0), 0);
     const totalPendente = summary ? Number(summary.repasses_pendentes_centavos) || 0 : 0;
 
     document.getElementById('stat-fornecedores-count').textContent = totalCount;
