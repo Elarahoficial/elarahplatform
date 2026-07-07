@@ -2580,7 +2580,7 @@ if (groupForm) {
       if (hint) {
         hint.textContent = ctx.paymentMethod === 'pix'
           ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
-          : 'Cartão via Stripe — taxa de processamento é repassada ao cliente.';
+          : 'Cartão via Mercado Pago — taxa de processamento é repassada ao cliente.';
       }
       // Mostra/esconde campo CPF. O reset do valor NÃO acontece aqui
       // pra preservar o que o usuário digitou se ele alternar entre
@@ -4282,6 +4282,15 @@ if (groupForm) {
       divider.style.cssText = 'height:1px;background:#f0e8de;margin:0 0 22px;';
       body.appendChild(divider);
 
+      // ===== Bloco de ESCOLHA (data/horário + variação/kit) =====
+      // Vem ANTES de "Sobre a experiência". Antes esses seletores eram
+      // anexados lá no fim do corpo (depois da descrição, includes e
+      // endereço), então a data e a escolha de kit ficavam "lá embaixo",
+      // difíceis de achar e ler. A seção de schedule e a de variação são
+      // preenchidas mais abaixo, mas ancoram AQUI no topo.
+      const pickSection = document.createElement('div');
+      body.appendChild(pickSection);
+
       // Seção "Sobre a experiência"
       const descHeader = document.createElement('div');
       descHeader.textContent = 'Sobre a experiência';
@@ -4357,8 +4366,8 @@ if (groupForm) {
       window.__elarahDescVariant = null;
 
       var schedSection = document.createElement('div');
-      schedSection.style.cssText = 'margin-top:28px;';
-      body.appendChild(schedSection);
+      schedSection.style.cssText = 'margin-top:4px;margin-bottom:28px;';
+      pickSection.appendChild(schedSection);
 
       (async function loadSchedule() {
         var allSlots = [];
@@ -4369,9 +4378,16 @@ if (groupForm) {
         } catch (e) { /* tabela ausente */ }
 
         var now = new Date();
+        // Janela de antecedência (cutoff): não oferece data que já está
+        // dentro do prazo mínimo de compra (default 24h). Antes, o chip
+        // aparecia, o cliente clicava pra comprar e só então o backend
+        // recusava com "falta menos de 24h" — opção que não deveria existir.
+        // Mesma regra de isPubliclyVisible/booking_guard, agora por slot.
+        var cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+        var cutoffMs = now.getTime() + cutoffH * 60 * 60 * 1000;
         var futureSlots = allSlots
           .filter(function (s) { return s.isActive !== false; })
-          .filter(function (s) { return s.eventAt && new Date(s.eventAt) >= now; })
+          .filter(function (s) { return s.eventAt && new Date(s.eventAt).getTime() >= cutoffMs; })
           .filter(function (s) {
             if (s.vagasTotal == null) return true;
             var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
@@ -4525,7 +4541,7 @@ if (groupForm) {
       // window.__elarahDescVariant pro checkout.
       if (_descVariantItems.length) {
         var variantSection = document.createElement('div');
-        variantSection.style.cssText = 'margin-top:28px;';
+        variantSection.style.cssText = 'margin-top:4px;margin-bottom:28px;';
         var variantHeader = document.createElement('div');
         variantHeader.textContent = _descVariantLabel;
         variantHeader.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
@@ -4564,7 +4580,9 @@ if (groupForm) {
         });
         variantSection.appendChild(variantBtnsWrap);
         variantSection.appendChild(descVariantMsg);
-        body.appendChild(variantSection);
+        // Escolha do kit/variação vai ANTES da data (pick "o quê" → "quando")
+        // e, junto com o schedule, ANTES de "Sobre a experiência".
+        pickSection.insertBefore(variantSection, pickSection.firstChild);
         // Refs pro onContinue avisar/rolar até aqui se faltar escolha.
         root.__elarahVariantMsg = descVariantMsg;
         root.__elarahVariantSection = variantSection;
@@ -5094,7 +5112,17 @@ if (groupForm) {
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
             }
             if (Array.isArray(exp.horarios) && exp.horarios.length) {
-              horariosArr = exp.horarios.slice();
+              // Dedup textual: recorrência repete o mesmo horario_label pra
+              // cada data (ex: 9 segundas × "19h00 – 21h00"). Sem dedup, o
+              // seletor de horário do modal virava 9 botões idênticos. Só
+              // horários REALMENTE distintos viram opção.
+              var _seenH = new Set();
+              horariosArr = exp.horarios.filter(function (h) {
+                var k = String(h || '').trim();
+                if (!k || _seenH.has(k)) return false;
+                _seenH.add(k);
+                return true;
+              });
             } else if (exp.horario) {
               horariosArr = [exp.horario];
             }
