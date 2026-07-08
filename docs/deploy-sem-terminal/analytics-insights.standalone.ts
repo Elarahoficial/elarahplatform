@@ -234,6 +234,13 @@ async function buildMetrics(periodDays: number) {
   const { data: detailRows } = await sb.from("analytics_events").select("target_label").eq("event_name", "experience_detail_view").gte("created_at", sinceISO).order("created_at", { ascending: false }).limit(5000);
   const experiencias_mais_vistas = topBy((detailRows ?? []) as Array<Record<string, unknown>>, (r) => r.target_label as string, 10);
 
+  // Detalhe dos erros de checkout: agrupa por mensagem + método + etapa.
+  const { data: errRows } = await sb.from("analytics_events").select("metadata").eq("event_name", "checkout_error").gte("created_at", sinceISO).order("created_at", { ascending: false }).limit(2000);
+  const erros_checkout_top = topBy((errRows ?? []) as Array<Record<string, unknown>>, (r) => {
+    const md = (r.metadata ?? {}) as Record<string, unknown>;
+    return `[${(md.payment_method as string) || "?"}/${(md.stage as string) || "?"}] ${String((md.error_message as string) || "(sem mensagem)").slice(0, 140)}`;
+  }, 8);
+
   const statuses = ["pago", "pending", "cancelado", "expirado", "reembolsado"];
   const bookings_por_status: Record<string, number> = {};
   for (const st of statuses) {
@@ -268,7 +275,7 @@ async function buildMetrics(periodDays: number) {
     periodo_dias: periodDays, desde: sinceISO, funil,
     conversao_geral_visita_para_pagamento_pct: conversao_geral_pct,
     outros_eventos: outros, trafego_por_origem, trafego_por_midia, paginas_mais_vistas,
-    experiencias_mais_vistas, bookings_por_status, vendas_pagas: paid.length,
+    experiencias_mais_vistas, bookings_por_status, erros_checkout_top, vendas_pagas: paid.length,
     receita_total: brl(receitaCentavos), receita_total_centavos: receitaCentavos, experiencias_mais_vendidas,
     comparativo: {
       visitas_anterior: visitasAnt, pagamentos_anterior: paidAnt.length, vendas_anterior: paidAnt.length,
@@ -313,7 +320,10 @@ function diagnoseByRules(m: Metrics): Insights {
   if (cg != null && cg < 1 && visitas >= 50) problemas.push({ titulo: "Conversão geral baixa", gravidade: "media", detalhe: `Conversão de visita → pagamento está em ${cg}%.`, recomendacao: "Reduza atrito no checkout e destaque as experiências que já vendem." });
   if (cmp.delta_vendas_pct != null && cmp.delta_vendas_pct < 0) problemas.push({ titulo: `Vendas caíram ${Math.abs(cmp.delta_vendas_pct)}% vs. o período anterior`, gravidade: cmp.delta_vendas_pct <= -30 ? "alta" : "media", detalhe: `Foram ${cmp.vendas_anterior} vendas antes e ${m.vendas_pagas} agora.`, recomendacao: "Veja se mudou o tráfego, alguma campanha pausou ou faltou data disponível." });
   const erros = (m.outros_eventos.checkout_error || 0) + (m.outros_eventos.payment_failed || 0);
-  if (erros >= 5) problemas.push({ titulo: `${erros} erros de checkout/pagamento no período`, gravidade: "media", detalhe: "Gente tentando pagar e batendo em erro.", recomendacao: "Cheque a integração de pagamento (Stripe / Mercado Pago) e faça um checkout de teste." });
+  if (erros >= 5) {
+    const topErros = (m.erros_checkout_top || []).slice(0, 5).map((e) => `${e.chave} (${e.total}×)`).join(" · ");
+    problemas.push({ titulo: `${erros} erros de checkout/pagamento no período`, gravidade: "media", detalhe: topErros ? `Principais erros — ${topErros}` : "Gente tentando pagar e batendo em erro.", recomendacao: "Veja as mensagens acima. Erros de cartão via Stripe são do fluxo antigo (já migrado pra Mercado Pago). Se persistirem no cartão/MP ou Pix, faça um checkout de teste." });
+  }
 
   if (m.experiencias_mais_vendidas.length) { const t = m.experiencias_mais_vendidas[0]; pontos_fortes.push({ titulo: "Carro-chefe de vendas", detalhe: `${t.chave} lidera com ${t.total} venda(s) no período.` }); }
   if (cmp.delta_vendas_pct != null && cmp.delta_vendas_pct > 0) pontos_fortes.push({ titulo: "Vendas em alta", detalhe: `As vendas subiram ${cmp.delta_vendas_pct}% vs. o período anterior.` });
