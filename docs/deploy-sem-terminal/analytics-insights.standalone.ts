@@ -244,12 +244,23 @@ async function buildMetrics(periodDays: number) {
   let receitaCentavos = 0; for (const b of paid) receitaCentavos += Number(b.amount_total) || 0;
   const experiencias_mais_vendidas = topBy(paid, (r) => r.experiencia_nome as string, 10);
 
+  // Correção de medição: a última etapa ("Pagamento aprovado") vinha do
+  // evento client-side, que não dispara quando o Pix é pago no app do
+  // banco e o cliente não volta ao site — subcontando vendas. Usamos o
+  // nº real de reservas pagas (status='pago'), mesma fonte de vendas_pagas.
+  const lastStep = funil[funil.length - 1];
+  if (lastStep && lastStep.etapa === "Pagamento aprovado") {
+    lastStep.total = paid.length;
+    const prevTotal = funil.length >= 2 ? funil[funil.length - 2].total : 0;
+    lastStep.conversao_da_etapa_anterior_pct =
+      prevTotal > 0 ? pct(paid.length, prevTotal) : null;
+  }
+
   const visitas = funil[0]?.total ?? 0;
   const pagamentos = funil[funil.length - 1]?.total ?? 0;
   const conversao_geral_pct = pct(pagamentos, visitas);
 
   const visitasAnt = await countEvent(sb, "page_view", prevSinceISO, sinceISO);
-  const pagamentosAnt = await countEvent(sb, "payment_approved", prevSinceISO, sinceISO);
   const paidAnt = await paidBookings(sb, prevSinceISO, sinceISO);
   let receitaAntCent = 0; for (const b of paidAnt) receitaAntCent += Number(b.amount_total) || 0;
 
@@ -260,8 +271,8 @@ async function buildMetrics(periodDays: number) {
     experiencias_mais_vistas, bookings_por_status, vendas_pagas: paid.length,
     receita_total: brl(receitaCentavos), receita_total_centavos: receitaCentavos, experiencias_mais_vendidas,
     comparativo: {
-      visitas_anterior: visitasAnt, pagamentos_anterior: pagamentosAnt, vendas_anterior: paidAnt.length,
-      receita_anterior_centavos: receitaAntCent, conversao_anterior_pct: pct(pagamentosAnt, visitasAnt),
+      visitas_anterior: visitasAnt, pagamentos_anterior: paidAnt.length, vendas_anterior: paidAnt.length,
+      receita_anterior_centavos: receitaAntCent, conversao_anterior_pct: pct(paidAnt.length, visitasAnt),
       delta_visitas_pct: delta(visitas, visitasAnt), delta_vendas_pct: delta(paid.length, paidAnt.length), delta_receita_pct: delta(receitaCentavos, receitaAntCent),
     },
   };

@@ -206,13 +206,29 @@ async function buildMetrics(periodDays: number) {
   for (const b of paid) receitaCentavos += Number(b.amount_total) || 0;
   const experiencias_mais_vendidas = topBy(paid, (r) => r.experiencia_nome as string, 10);
 
+  // ===== Correção de medição da última etapa do funil =====
+  // "Pagamento aprovado" vinha do evento client-side payment_approved,
+  // que só dispara quando o cliente VOLTA ao site (success.html). No
+  // Pix pago pelo app do banco, o cliente quase nunca volta — então o
+  // evento não dispara e as vendas ficam subcontadas (ex.: 44 eventos
+  // vs. 63 reservas realmente pagas). A verdade é o nº de reservas com
+  // status='pago'. Substituímos a última etapa por esse número pra o
+  // funil refletir a realidade (sem inflar: é a mesma fonte de
+  // vendas_pagas). As demais etapas seguem por evento.
+  const lastStep = funil[funil.length - 1];
+  if (lastStep && lastStep.etapa === "Pagamento aprovado") {
+    lastStep.total = paid.length;
+    const prevTotal = funil.length >= 2 ? funil[funil.length - 2].total : 0;
+    lastStep.conversao_da_etapa_anterior_pct =
+      prevTotal > 0 ? pct(paid.length, prevTotal) : null;
+  }
+
   const visitas = funil[0]?.total ?? 0;
   const pagamentos = funil[funil.length - 1]?.total ?? 0;
   const conversao_geral_pct = pct(pagamentos, visitas);
 
   // Comparativo com o período anterior (números-chave).
   const visitasAnt = await countEvent(sb, "page_view", prevSinceISO, sinceISO);
-  const pagamentosAnt = await countEvent(sb, "payment_approved", prevSinceISO, sinceISO);
   const paidAnt = await paidBookings(sb, prevSinceISO, sinceISO);
   let receitaAntCent = 0;
   for (const b of paidAnt) receitaAntCent += Number(b.amount_total) || 0;
@@ -234,10 +250,12 @@ async function buildMetrics(periodDays: number) {
     experiencias_mais_vendidas,
     comparativo: {
       visitas_anterior: visitasAnt,
-      pagamentos_anterior: pagamentosAnt,
+      // Usa reservas pagas (verdade) em vez do evento subcontado, pra
+      // o comparativo e a conversão baterem com a nova última etapa.
+      pagamentos_anterior: paidAnt.length,
       vendas_anterior: paidAnt.length,
       receita_anterior_centavos: receitaAntCent,
-      conversao_anterior_pct: pct(pagamentosAnt, visitasAnt),
+      conversao_anterior_pct: pct(paidAnt.length, visitasAnt),
       delta_visitas_pct: delta(visitas, visitasAnt),
       delta_vendas_pct: delta(paid.length, paidAnt.length),
       delta_receita_pct: delta(receitaCentavos, receitaAntCent),
