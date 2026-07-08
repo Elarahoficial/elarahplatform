@@ -191,6 +191,25 @@ async function buildMetrics(periodDays: number) {
     (detailRows ?? []) as Array<Record<string, unknown>>, (r) => r.target_label as string, 10,
   );
 
+  // Detalhe dos erros de checkout: agrupa por mensagem + método +
+  // etapa, pra o relatório mostrar O QUE está dando errado (não só a
+  // contagem). Assim dá pra saber se são erros do Stripe antigo (já
+  // resolvidos) ou algo vivo que precisa de conserto.
+  const { data: errRows } = await sb.from("analytics_events")
+    .select("metadata").eq("event_name", "checkout_error")
+    .gte("created_at", sinceISO).order("created_at", { ascending: false }).limit(2000);
+  const erros_checkout_top = topBy(
+    (errRows ?? []) as Array<Record<string, unknown>>,
+    (r) => {
+      const md = (r.metadata ?? {}) as Record<string, unknown>;
+      const msg = (md.error_message as string) || "(sem mensagem)";
+      const pm = (md.payment_method as string) || "?";
+      const stg = (md.stage as string) || "?";
+      return `[${pm}/${stg}] ${String(msg).slice(0, 140)}`;
+    },
+    8,
+  );
+
   // Bookings por status
   const statuses = ["pago", "pending", "cancelado", "expirado", "reembolsado"];
   const bookings_por_status: Record<string, number> = {};
@@ -244,6 +263,7 @@ async function buildMetrics(periodDays: number) {
     paginas_mais_vistas,
     experiencias_mais_vistas,
     bookings_por_status,
+    erros_checkout_top,
     vendas_pagas: paid.length,
     receita_total: brl(receitaCentavos),
     receita_total_centavos: receitaCentavos,
@@ -341,11 +361,17 @@ function diagnoseByRules(m: Metrics): Insights {
   // 5) Erros de checkout / pagamento
   const erros = (m.outros_eventos.checkout_error || 0) + (m.outros_eventos.payment_failed || 0);
   if (erros >= 5) {
+    const topErros = (m.erros_checkout_top || []).slice(0, 5)
+      .map((e) => `${e.chave} (${e.total}×)`).join(" · ");
     problemas.push({
       titulo: `${erros} erros de checkout/pagamento no período`,
       gravidade: "media",
-      detalhe: "Gente tentando pagar e batendo em erro.",
-      recomendacao: "Cheque a integração de pagamento (Stripe / Mercado Pago) e faça um checkout de teste.",
+      detalhe: topErros
+        ? `Principais erros — ${topErros}`
+        : "Gente tentando pagar e batendo em erro.",
+      recomendacao:
+        "Veja as mensagens acima. Erros de cartão via Stripe são do fluxo antigo " +
+        "(já migrado pra Mercado Pago). Se persistirem no cartão/MP ou Pix, faça um checkout de teste.",
     });
   }
 
