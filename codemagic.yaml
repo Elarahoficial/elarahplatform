@@ -37,22 +37,20 @@ workflows:
         script: |
           cd app
           npx @capacitor/assets generate --ios || true
-      - name: Configurar assinatura (com raio-x)
+      - name: Configurar assinatura (certificado + perfil)
         script: |
-          set -x
+          set -e
           keychain initialize
-          echo "===== CERTIFICADOS EXISTENTES ====="
-          app-store-connect list-certificates --type IOS_DISTRIBUTION --save || true
-          echo "===== CRIAR CERTIFICADO ====="
-          app-store-connect create-certificate --type IOS_DISTRIBUTION --save || echo ">>> create-certificate FALHOU (pode ser limite ou ja existe) <<<"
-          echo "===== BUSCAR/CRIAR PERFIL ====="
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create || echo ">>> fetch-signing-files FALHOU <<<"
-          echo "===== ADICIONAR CERTIFICADOS AO KEYCHAIN ====="
-          keychain add-certificates || echo ">>> add-certificates FALHOU <<<"
-          echo "===== APLICAR PERFIS NO PROJETO ====="
-          xcode-project use-profiles --project "$XCODE_PROJECT" || echo ">>> use-profiles FALHOU <<<"
-          echo "===== RESULTADO: PROVISIONING no pbxproj? ====="
-          grep -i "PROVISIONING_PROFILE" "$XCODE_PROJECT/project.pbxproj" || echo ">>> SEM PROVISIONING_PROFILE no projeto - use-profiles NAO aplicou <<<"
+          # gera a chave privada (PKCS#8) usada para criar o certificado de distribuicao
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/cert_key.pem
+          # cria o certificado de distribuicao (usando a chave) e o perfil de provisionamento
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key @file:/tmp/cert_key.pem \
+            --create
+          # adiciona o certificado ao keychain e aplica o perfil no projeto
+          keychain add-certificates
+          xcode-project use-profiles --project "$XCODE_PROJECT"
       - name: Montar o app (IPA)
         script: |
           xcode-project build-ipa \
