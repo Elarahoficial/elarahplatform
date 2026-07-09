@@ -3020,7 +3020,7 @@
             'por gentileza.\n\n' +
             'Pedimos a gentileza de que todos cheguem no horário de início ' +
             'da aula, pois não dispomos de sala de espera.\n\n' +
-            'Caso haja desistência da aula, favor avisar com 1 dia de ' +
+            'Caso haja desistência da aula, favor avisar com 48 horas de ' +
             'antecedência, para podermos nos organizar quanto aos horários ' +
             'dos professores.\n\n' +
             '📍 Endereço do Lado B: Avenida Brigadeiro Faria Lima, 1572 — ' +

@@ -83,6 +83,12 @@ jobs:
           echo "→ resend-booking-confirmation"
           supabase functions deploy resend-booking-confirmation \
             --project-ref "$PROJECT_REF"
+          # send-supplier-customer-message mantém verify_jwt (default): só
+          # admin autenticada envia a mensagem pós-compra do fornecedor
+          # (BaresSp / Lado B) pro cliente. NÃO usar --no-verify-jwt aqui.
+          echo "→ send-supplier-customer-message"
+          supabase functions deploy send-supplier-customer-message \
+            --project-ref "$PROJECT_REF"
           # analytics-insights faz a própria autorização por dentro
           # (authorizeRequest: CRON_SECRET, service_role ou admin), então
           # precisa de --no-verify-jwt — senão o cron do relatório (que
