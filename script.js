@@ -906,14 +906,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // entram aqui: a imagem do admin é fonte da verdade. Se ela
     // falhar, exibe placeholder neutro — nunca substitui pela foto
     // de outra experiência (era o bug "cadastrei foto X mas aparece Y").
-    var ORIGINALS_IMAGE_FALLBACKS = {
-      'pintura-aperol': 'assets/pintura-aperol.png',
-      'perfumaria-criativa': 'assets/perfumariaa.jpg',
-      'ourivesaria-joia': 'assets/ourivesariaa.jpg',
-      'pintura de quadro com cristal & aperol spritz': 'assets/pintura-aperol.png',
-      'oficina de perfumaria criativa': 'assets/perfumariaa.jpg',
-      'workshop de ourivesaria: crie sua joia': 'assets/ourivesariaa.jpg'
-    };
+    // Fotos fixas antigas desativadas: os cards Originals agora usam SOMENTE a
+    // imagem real cadastrada; se faltar, mostram o placeholder neutro (logo) —
+    // nunca uma foto antiga hardcoded.
+    var ORIGINALS_IMAGE_FALLBACKS = {};
     // Placeholder neutro: a logo. Reusa asset que já está no site.
     // Usado quando uma imagem custom falha de carregar — bem melhor
     // que servir foto aleatória de outra experiência.
