@@ -13787,6 +13787,7 @@
     msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
     try {
       let res;
+      const isNew = !id;
       if (id) {
         res = await sb.from('manual_sales').update(payload).eq('id', id);
       } else {
@@ -13796,6 +13797,12 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      // Só em venda NOVA: dispara o mesmo aviso "Nova venda 🎉" que sai
+      // nas vendas automáticas (Stripe/MP). Best-effort — não bloqueia
+      // nem falha o salvamento se o e-mail não sair (a venda já gravou).
+      if (isNew) {
+        _finNotifyManualSale(payload);
+      }
       // Mutação em manual_sales afeta Compras/Fornecedores/Analytics
       // via RPC. Limpa o cache pra refletir imediatamente.
       invalidateBookings();
@@ -13824,6 +13831,43 @@
         : '';
       msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
+    }
+  }
+
+  // Dispara o aviso de nova venda pros admins (mesmo e-mail das vendas
+  // automáticas), via edge function notify-manual-sale. Fire-and-forget:
+  // não usa await no fluxo de salvamento e engole qualquer erro — o
+  // aviso é secundário, a venda já foi gravada.
+  function _finNotifyManualSale(payload) {
+    try {
+      const sb = window.supabaseClient;
+      if (!sb || !sb.functions || !sb.functions.invoke) return;
+      sb.functions.invoke('notify-manual-sale', {
+        body: {
+          experience_name: payload.experience_name,
+          customer_name: payload.customer_name,
+          customer_email: payload.customer_email,
+          slot_date: payload.slot_date,
+          slot_time: payload.slot_time,
+          quantity: payload.quantity,
+          total_amount_centavos: payload.total_amount_centavos,
+          payment_method: payload.payment_method,
+          payment_status: payload.payment_status,
+          coupon_code: payload.coupon_code,
+          discount_centavos: payload.discount_centavos,
+          supplier_name: payload.supplier_name,
+        },
+      }).then((r) => {
+        if (r && r.error) {
+          console.warn('[Contabilidade] aviso de venda manual não enviado:', r.error.message || r.error);
+        } else if (r && r.data && r.data.ok === false) {
+          console.warn('[Contabilidade] aviso de venda manual não enviado:', r.data.error);
+        }
+      }).catch((e) => {
+        console.warn('[Contabilidade] aviso de venda manual falhou:', e && (e.message || e));
+      });
+    } catch (e) {
+      console.warn('[Contabilidade] aviso de venda manual (exceção):', e && (e.message || e));
     }
   }
 
