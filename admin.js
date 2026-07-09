@@ -2973,6 +2973,118 @@
         'Avisar</a></td>';
     }
 
+    // ===== Mensagem automática pro CLIENTE por fornecedor =====
+    // Dois fornecedores têm um fluxo pós-compra próprio: o cliente
+    // precisa receber uma mensagem específica (link pra concluir a
+    // reserva no BaresSp; dados + endereço/estacionamento no Lado B).
+    // Em vez de disparar sozinho, a gente monta o texto pronto e deixa
+    // a admin revisar e clicar em enviar — por WhatsApp OU e-mail
+    // (botões na linha da compra). Match por nome normalizado (sem
+    // acento, minúsculo) pra tolerar variações de cadastro no banco.
+    function normalizeFornecedorNome(s) {
+      return String(s || '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    // Retorna { key, label, subject, body } com a mensagem pronta pro
+    // cliente, ou null quando o fornecedor não tem fluxo dedicado.
+    // `body` é texto puro (sem markdown) — serve igual pro WhatsApp e
+    // pro corpo do e-mail.
+    function customerSupplierMessage(fornecedorNome, primeiroNome) {
+      const n = normalizeFornecedorNome(fornecedorNome);
+      if (!n) return null;
+      const oi = primeiroNome ? ('Oi ' + primeiroNome + '!') : 'Oi!';
+      // BaresSp — link pra concluir a reserva.
+      if (n.includes('bares')) {
+        return {
+          key: 'baressp',
+          label: 'BaresSp',
+          subject: 'Sua reserva na Elarah — falta só concluir 💛',
+          body: oi + ' Muito obrigado pela compra 💛\n\n' +
+            'Para concluirmos a sua reserva, precisamos que você preencha ' +
+            'este link:\n' +
+            'https://kommo.cc/K/X9OYUQ/X5FUBM\n\n' +
+            'Muito obrigado!',
+        };
+      }
+      // Lado B — dados + orientações + endereço/estacionamento.
+      if (n.replace(/\s+/g, '').includes('ladob')) {
+        return {
+          key: 'ladob',
+          label: 'Lado B',
+          subject: 'Sua aula no Lado B — informações importantes 💛',
+          body: (primeiroNome ? ('Oi ' + primeiroNome + '!') : 'Oi!') +
+            ' Muito obrigada pela compra 💛\n\n' +
+            'Vou precisar do seu nome completo, CPF, CEP, e-mail e endereço, ' +
+            'por gentileza.\n\n' +
+            'Pedimos a gentileza de que todos cheguem no horário de início ' +
+            'da aula, pois não dispomos de sala de espera.\n\n' +
+            'Caso haja desistência da aula, favor avisar com 1 dia de ' +
+            'antecedência, para podermos nos organizar quanto aos horários ' +
+            'dos professores.\n\n' +
+            '📍 Endereço do Lado B: Avenida Brigadeiro Faria Lima, 1572 — ' +
+            'sala 1607 (próximo à estação de metrô Faria Lima, na linha ' +
+            'amarela).\n\n' +
+            '🚗 Estacionamento: Rua Tavares Cabral, 61 (é o estacionamento ' +
+            'do Ibis Hotel, tem uma parede branca com um grafite grandão). ' +
+            'Quando chegar no estacionamento, avise que você é aluna do ' +
+            'Lado B e traga o ticket para carimbarmos — eles dão desconto ' +
+            'no valor.',
+        };
+      }
+      return null;
+    }
+
+    // Monta os botões "WhatsApp cliente" / "E-mail cliente" com a
+    // mensagem pré-preenchida. Só aparece em compras pagas de um
+    // fornecedor com fluxo dedicado (BaresSp / Lado B). Cada botão só
+    // renderiza quando há o canal (telefone → WhatsApp; e-mail → mail).
+    function renderCustomerMessageButtons(b, nomeResolved, telefone) {
+      if (b.status !== 'pago') return '';
+      const primeiroNome = String(nomeResolved || '').trim().split(/\s+/)[0] || '';
+      // Candidatos de nome: fornecedor principal resolvido + qualquer
+      // fornecedor no snapshot de repasses[] (modelo multi-fornecedor).
+      // Cobre tanto a experiência de 1 fornecedor quanto a que lista
+      // vários — basta um bater com BaresSp/Lado B.
+      const candidatos = [b._fornecedorResolvido || ''];
+      if (Array.isArray(b.repasses)) {
+        b.repasses.forEach(function (r) {
+          if (r && r.fornecedor_nome) candidatos.push(r.fornecedor_nome);
+        });
+      }
+      let tpl = null;
+      for (const nome of candidatos) {
+        tpl = customerSupplierMessage(nome, primeiroNome);
+        if (tpl) break;
+      }
+      if (!tpl) return '';
+      const btns = [];
+      const digits = String(telefone || '').replace(/\D+/g, '');
+      if (digits) {
+        const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+        // api.whatsapp.com/send (em vez de wa.me) — mais robusto pra
+        // emojis fora do BMP, mesmo motivo do follow-up de leads.
+        const waUrl = 'https://api.whatsapp.com/send/?phone=' + waDigits +
+          '&text=' + encodeURIComponent(tpl.body);
+        btns.push('<a href="' + escapeHtml(waUrl) + '" target="_blank" rel="noopener" ' +
+          'title="Abrir WhatsApp com a mensagem do ' + escapeHtml(tpl.label) +
+          ' pronta. Revise e clique enviar." ' +
+          'style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;text-decoration:none;line-height:1.4;">💬 WhatsApp cliente</a>');
+      }
+      if (b.email) {
+        const mailUrl = 'mailto:' + b.email + '?subject=' + encodeURIComponent(tpl.subject) +
+          '&body=' + encodeURIComponent(tpl.body);
+        btns.push('<a href="' + escapeHtml(mailUrl) + '" ' +
+          'title="Abrir e-mail com a mensagem do ' + escapeHtml(tpl.label) +
+          ' pronta. Revise e clique enviar." ' +
+          'style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #cfe0f3;background:#eef4fb;color:#3068a8;border-radius:8px;font-size:.7rem;font-weight:700;text-decoration:none;line-height:1.4;">📧 E-mail cliente</a>');
+      }
+      if (!btns.length) return '';
+      return '<br><span style="display:inline-block;margin-top:6px;font-size:.66rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">✉️ Mensagem ' +
+        escapeHtml(tpl.label) + '</span><br>' + btns.join('');
+    }
+
     // Renderiza uma linha da tabela. Extraído pra reaproveitar em
     // cada grupo (pendentes / pagos / outros) sem duplicar o código
     // de resolução de telefone + nome.
@@ -3242,7 +3354,7 @@
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
-          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn || resendConfirmBtn ? '<br>' + editBookingBtn + resendConfirmBtn + cancelBookingBtn : ''}${variantCell}${shippingCell}</td>
+          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn || resendConfirmBtn ? '<br>' + editBookingBtn + resendConfirmBtn + cancelBookingBtn : ''}${variantCell}${shippingCell}${renderCustomerMessageButtons(b, nomeResolved, telefone)}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
