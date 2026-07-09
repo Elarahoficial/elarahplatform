@@ -21,7 +21,7 @@ workflows:
         XCODE_PROJECT: "app/ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.elarah.app"
-      node: 20
+      node: 22
       xcode: latest
     scripts:
       - name: Instalar dependencias do app
