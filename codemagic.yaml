@@ -37,17 +37,22 @@ workflows:
         script: |
           cd app
           npx @capacitor/assets generate --ios || true
-      - name: Configurar assinatura (certificado + perfil via Codemagic)
+      - name: Configurar assinatura (com raio-x)
         script: |
+          set -x
           keychain initialize
-          # cria o certificado de distribuicao (e salva a chave privada da sessao)
-          app-store-connect create-certificate --type IOS_DISTRIBUTION --save
-          # cria/baixa o perfil de provisionamento ligado a esse certificado
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles --project "$XCODE_PROJECT"
+          echo "===== CERTIFICADOS EXISTENTES ====="
+          app-store-connect list-certificates --type IOS_DISTRIBUTION --save || true
+          echo "===== CRIAR CERTIFICADO ====="
+          app-store-connect create-certificate --type IOS_DISTRIBUTION --save || echo ">>> create-certificate FALHOU (pode ser limite ou ja existe) <<<"
+          echo "===== BUSCAR/CRIAR PERFIL ====="
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create || echo ">>> fetch-signing-files FALHOU <<<"
+          echo "===== ADICIONAR CERTIFICADOS AO KEYCHAIN ====="
+          keychain add-certificates || echo ">>> add-certificates FALHOU <<<"
+          echo "===== APLICAR PERFIS NO PROJETO ====="
+          xcode-project use-profiles --project "$XCODE_PROJECT" || echo ">>> use-profiles FALHOU <<<"
+          echo "===== RESULTADO: PROVISIONING no pbxproj? ====="
+          grep -i "PROVISIONING_PROFILE" "$XCODE_PROJECT/project.pbxproj" || echo ">>> SEM PROVISIONING_PROFILE no projeto - use-profiles NAO aplicou <<<"
       - name: Montar o app (IPA)
         script: |
           xcode-project build-ipa \
