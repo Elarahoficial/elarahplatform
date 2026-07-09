@@ -40,6 +40,9 @@ workflows:
       - name: Configurar assinatura (cria certificado e perfil se nao existirem)
         script: |
           keychain initialize
+          # cria o certificado de distribuicao (e salva a chave) se ainda nao houver
+          app-store-connect create-certificate --type IOS_DISTRIBUTION --save || true
+          # cria/baixa o perfil de provisionamento ligado a esse certificado
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
