@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <!-- =====================================================
+       PÁGINA DE LANDING — Workshop de Ourivesaria (Crie sua Joia)
+       -----------------------------------------------------
+       Existe SOMENTE para servir o preview correto no WhatsApp/
+       Facebook/iMessage quando o link é compartilhado em campanha.
+       Crawler lê og:* daqui (HTML estático) e gera preview com
+       imagem + título + descrição. Visitante humano é redirecionado
+       imediatamente pra âncora By Elarah do home via JS.
+
+       Imagem oficial da campanha: assets/ANEL.jpg (upload mais
+       recente — anel/aliança feito a quatro mãos).
+
+       Como a experiência de joia é um item By Elarah (lead /
+       lista de espera, sem checkout direto), o redirect leva pro
+       home no card da seção Elarah Originals — slug: ourivesaria-joia.
+       ===================================================== -->
+
+  <!-- ===== Open Graph (WhatsApp / Facebook / iMessage) =====
+       Texto 100% focado em criação de joia (anel/aliança, Dia
+       dos Namorados, peça única, história a quatro mãos). Nenhuma
+       referência a perfume / brunch / meditação. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Elarah">
+  <meta property="og:title" content="Esse Dia dos Namorados, criem juntos a joia que vai marcar vocês pra sempre 🤍">
+  <meta property="og:description" content="Não é só um anel — é uma tarde de cumplicidade, feita pelas próprias mãos. Vocês desenham, forjam e saem com uma peça única que vira a história de vocês. Vagas contadas. Antes que acabe.">
+  <meta property="og:image" content="https://elarah.com.br/assets/ANEL.jpg">
+  <meta property="og:image:secure_url" content="https://elarah.com.br/assets/ANEL.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="1200">
+  <meta property="og:image:alt" content="Workshop de Ourivesaria — Crie sua joia · Elarah">
+  <meta property="og:url" content="https://elarah.com.br/joias.html">
+
+  <!-- ===== Twitter Card ===== -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Esse Dia dos Namorados, criem juntos a joia que vai marcar vocês pra sempre 🤍">
+  <meta name="twitter:description" content="Não é só um anel — é uma tarde de cumplicidade, feita pelas próprias mãos. Vagas contadas.">
+  <meta name="twitter:image" content="https://elarah.com.br/assets/ANEL.jpg">
+
+  <meta name="description" content="Workshop de Ourivesaria — Dia dos Namorados na Elarah. Vocês criam, a quatro mãos, uma joia que vira a história de vocês. Vagas limitadíssimas.">
+
+  <title>Criem juntos a joia que vai marcar vocês pra sempre · Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+
+  <!-- Fallback meta refresh (caso JS falhe). Crawler do WhatsApp
+       não segue refresh (não roda JS, só lê og:*), só humano. -->
+  <meta http-equiv="refresh" content="2;url=index.html#by-elarah-ourivesaria-joia">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #faf6f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .wrap {
+      max-width: 520px;
+      text-align: center;
+    }
+    .wrap img {
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.12);
+      margin-bottom: 24px;
+    }
+    .wrap h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.6rem;
+      margin: 0 0 12px;
+      color: #1a1a1a;
+      line-height: 1.25;
+    }
+    .wrap p {
+      color: #555;
+      font-size: .96rem;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #f0a05e;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fallback-btn {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 12px 24px;
+      background: #f0a05e;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: .92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img loading="lazy" decoding="async" src="assets/ANEL.jpg" alt="Workshop de Ourivesaria — Crie sua joia">
+    <h1>Não é só um anel.<br>É a história de vocês 🤍</h1>
+    <p>Esse Dia dos Namorados, vocês criam <strong>a quatro mãos</strong> a joia que vai marcar a história de vocês. Vagas contadas — te levando pra reservar…</p>
+    <a href="index.html#by-elarah-ourivesaria-joia" class="fallback-btn" id="fallback-btn">Ver experiência</a>
+  </div>
+
+  <!-- ============================================================
+       REDIRECT IMEDIATO (humano apenas — crawler não executa JS)
+       ------------------------------------------------------------
+       Item By Elarah → âncora na home (seção Elarah Originals),
+       onde o card abre o formulário de interesse / lista de espera.
+       Slug 'ourivesaria-joia' definido em byelarah-data.js.
+       ============================================================ -->
+  <script>
+  (function () {
+    'use strict';
+    var TARGET = 'index.html#by-elarah-ourivesaria-joia';
+    try {
+      window.location.replace(TARGET);
+    } catch (e) {
+      window.location.href = TARGET;
+    }
+  })();
+  </script>
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

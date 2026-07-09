@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Aniversários com a Elarah — celebrações criativas e presenciais para adultos e crianças. A gente organiza uma experiência inesquecível, do conceito ao bolo.">
+<link rel="canonical" href="https://elarah.com.br/aniversarios.html">
+<title>Aniversários — by Elarah</title>
+<link rel="icon" href="assets/logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#F27623;
+    --orange-light:#FF9A4D;
+    --orange-dark:#D4600E;
+    --cream:#FFF8F2;
+    --cream-dark:#FFF0E3;
+    --green:#7a9a6e;
+    --green-dark:#5f7d54;
+    --green-soft:#eef3e9;
+    --ink:#2b2118;
+    --ink-soft:#6b5d4f;
+    --line:#efe2d4;
+    --white:#fff;
+    --shadow:0 18px 50px -28px rgba(108,70,20,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:var(--cream);line-height:1.6;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'DM Serif Display',Georgia,serif;font-weight:400;line-height:1.12;letter-spacing:-.01em}
+  .serif-i{font-style:italic}
+  a{color:inherit}
+  img{max-width:100%;display:block}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .eyebrow{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--orange-dark);margin-bottom:18px}
+  .eyebrow--green{color:var(--green-dark)}
+  .eyebrow--light{color:#ffd9b8}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:15px 30px;border-radius:999px;font-weight:600;font-size:.95rem;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease;cursor:pointer;border:0}
+  .btn--primary{background:var(--orange);color:#fff;box-shadow:0 12px 30px -12px rgba(242,118,35,.7)}
+  .btn--primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(242,118,35,.8)}
+  .btn--green{background:var(--green);color:#fff;box-shadow:0 12px 30px -12px rgba(122,154,110,.7)}
+  .btn--green:hover{transform:translateY(-2px)}
+  .btn--ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn--ghost:hover{border-color:var(--orange);color:var(--orange-dark)}
+  .btn--light{background:#fff;color:var(--orange-dark)}
+  .btn--light:hover{transform:translateY(-2px)}
+
+  /* ===== top bar ===== */
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(255,248,242,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar__inner{display:flex;align-items:center;justify-content:space-between;height:78px}
+  .topbar__logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  .topbar__logo img{height:46px;width:auto}
+  .topbar__tag{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);background:var(--cream-dark);padding:5px 11px;border-radius:999px}
+  .topbar__nav{display:flex;gap:26px;align-items:center}
+  .topbar__nav a{font-size:.9rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
+  .topbar__nav a:hover{color:var(--orange-dark)}
+  .topbar__nav .btn{padding:10px 20px}
+  @media(max-width:900px){.topbar__nav a:not(.btn){display:none}}
+
+  /* ===== hero ===== */
+  .hero{position:relative;overflow:hidden;padding:84px 0 76px;
+    background:radial-gradient(900px 480px at 88% -8%,rgba(255,154,77,.28),transparent 60%),radial-gradient(700px 420px at -5% 110%,rgba(122,154,110,.16),transparent 55%),var(--cream)}
+  .hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:54px;align-items:center}
+  .hero h1{font-size:clamp(2.5rem,5.2vw,4rem);margin-bottom:20px}
+  .hero h1 em{color:var(--orange-dark)}
+  .hero__lead{font-size:1.18rem;color:var(--ink-soft);max-width:540px;margin-bottom:30px}
+  .hero__actions{display:flex;gap:14px;flex-wrap:wrap}
+  .hero__visual{position:relative;height:440px}
+  .hero__visual img{position:absolute;border-radius:22px;box-shadow:var(--shadow);object-fit:cover}
+  .hero__visual .v1{width:54%;height:80%;top:0;right:0;z-index:1}
+  .hero__visual .v2{width:48%;height:58%;bottom:0;left:0;z-index:3;border:6px solid var(--cream)}
+  .hero__visual .v3{width:43%;height:45%;top:0;left:2%;z-index:2;border:6px solid var(--cream)}
+  @media(max-width:860px){.hero__grid{grid-template-columns:1fr;gap:40px}.hero__visual{height:330px;order:-1}}
+
+  /* ===== sections ===== */
+  section{padding:80px 0}
+  .section-head{max-width:720px;margin-bottom:46px}
+  .section-head--center{margin-left:auto;margin-right:auto;text-align:center}
+  .section-head h2{font-size:clamp(2rem,3.6vw,2.9rem);margin-bottom:16px}
+  .section-head p{font-size:1.1rem;color:var(--ink-soft)}
+  .lead-narrow{max-width:760px}
+  .soft{background:var(--cream-dark)}
+  .ink-bg{background:linear-gradient(150deg,#3a2a1c,#241810);color:#f6ece2}
+  .ink-bg h2{color:#fff}.ink-bg .section-head p{color:#d9c7b6}
+  .prose p{font-size:1.12rem;color:var(--ink-soft);margin-bottom:18px;max-width:760px}
+  .prose strong{color:var(--ink)}
+
+  /* ===== pillars ===== */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  .pillar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px 24px;box-shadow:0 10px 30px -24px rgba(108,70,20,.5)}
+  .pillar__ic{width:46px;height:46px;border-radius:13px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--orange-dark)}
+  .pillar h3{font-size:1.22rem;margin-bottom:9px}
+  .pillar p{color:var(--ink-soft);font-size:.95rem}
+  @media(max-width:860px){.pillars{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.pillars{grid-template-columns:1fr}}
+
+  /* ===== audience block (adult / kids) ===== */
+  .track{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center}
+  .track--rev .track__media{order:2}
+  .track__media{position:relative}
+  .track__media img{border-radius:22px;box-shadow:var(--shadow);height:480px;width:100%;object-fit:cover}
+  .track__badge{position:absolute;right:-20px;bottom:26px;background:#fff;border-radius:16px;padding:15px 20px;box-shadow:var(--shadow);max-width:215px;border:1px solid var(--line);z-index:4}
+  .track--rev .track__badge{right:auto;left:-20px}
+  .track__badge strong{display:block;font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--orange-dark)}
+  .track__badge.is-green strong{color:var(--green-dark)}
+  .track__badge span{font-size:.84rem;color:var(--ink-soft)}
+  .track h2{font-size:clamp(1.9rem,3.4vw,2.7rem);margin-bottom:14px}
+  .track__intro{font-size:1.08rem;color:var(--ink-soft);margin-bottom:22px;max-width:520px}
+  .mini-h{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);margin:0 0 12px}
+  .is-green .mini-h,.track--kids .mini-h{color:var(--green-dark)}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+  .tag{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.85rem;color:var(--ink);font-weight:500}
+  .track--kids .tag{background:var(--green-soft);border-color:#dde7d4}
+  @media(max-width:1180px){.track__badge{right:10px;bottom:16px}.track--rev .track__badge{left:10px}}
+  @media(max-width:860px){.track{grid-template-columns:1fr;gap:34px}.track--rev .track__media{order:0}.track__media img{height:360px}}
+
+  /* kids section tint */
+  .kids-bg{background:linear-gradient(180deg,var(--green-soft),#fff)}
+
+  /* ===== steps ===== */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .step{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px 26px;position:relative}
+  .step__n{font-family:'DM Serif Display',serif;font-size:1.5rem;width:48px;height:48px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .step h3{font-size:1.22rem;margin-bottom:8px}
+  .step p{font-size:.96rem;color:var(--ink-soft)}
+  @media(max-width:780px){.steps{grid-template-columns:1fr}}
+
+  /* ===== included strip ===== */
+  .incl{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 36px;max-width:860px;margin:0 auto}
+  .incl li{list-style:none;display:flex;gap:13px;align-items:flex-start;font-size:1rem;color:#f6ece2}
+  .incl svg{flex:none;color:var(--orange-light);margin-top:3px}
+  @media(max-width:680px){.incl{grid-template-columns:1fr}}
+
+  /* ===== cta ===== */
+  .cta{background:linear-gradient(135deg,var(--orange),var(--orange-dark));color:#fff;border-radius:28px;padding:62px 48px;text-align:center}
+  .cta h2{color:#fff;font-size:clamp(2rem,4vw,3rem);margin-bottom:16px}
+  .cta p{font-size:1.15rem;color:#fff;opacity:.95;max-width:580px;margin:0 auto 30px}
+  .cta__actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  /* ===== footer ===== */
+  footer{padding:46px 0;border-top:1px solid var(--line)}
+  .footer__inner{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .footer__inner img{height:26px}
+  .footer__inner p{font-size:.86rem;color:var(--ink-soft)}
+  .footer__inner a{color:var(--orange-dark);text-decoration:none;font-weight:600}
+  /* ===== mobile polish ===== */
+  .cols3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:860px){.cols3{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.cols3{grid-template-columns:1fr}}
+  @media(max-width:600px){
+    section{padding:56px 0}
+    .wrap{padding:0 20px}
+    .topbar__tag{display:none}
+    .topbar__nav .btn{padding:9px 16px;font-size:.85rem}
+    .cta{padding:46px 26px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="#topo" class="topbar__logo">
+      <img src="assets/logo.png" alt="Elarah">
+      <span class="topbar__tag">Aniversários</span>
+    </a>
+    <nav class="topbar__nav">
+      <a href="#servicos">O que cuidamos</a>
+      <a href="#adultos">Adultos</a>
+      <a href="#kids">Festa infantil</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#contato" class="btn btn--primary">Quero comemorar</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="topo">
+  <div class="wrap hero__grid">
+    <div>
+      <span class="eyebrow">Aniversários com a Elarah</span>
+      <h1>Uma festa inesquecível — da experiência ao <em>último detalhe</em>.</h1>
+      <p class="hero__lead">
+        A Elarah cria a experiência criativa que é o coração da comemoração — e, se você quiser,
+        cuida da <strong>festa inteira</strong>: espaço, ambientação, mesa do bolo, comidas e até
+        <strong>brinde e avental personalizados</strong>. Para <strong>adultos</strong> e para
+        <strong>crianças</strong> — e, no aniversário kids, os pais também têm a sua experiência.
+      </p>
+      <div class="hero__actions">
+        <a href="#adultos" class="btn btn--primary">Aniversário adulto</a>
+        <a href="#kids" class="btn btn--green">Festa infantil</a>
+      </div>
+    </div>
+    <div class="hero__visual">
+      <img class="v1" src="assets/aniv-experienciaa.jpg" alt="Amigas curtindo a experiência criativa de aniversário" loading="lazy" style="object-position:center 62%">
+      <img class="v2" src="assets/aniv-kids.jpg" alt="Festa infantil — crianças cozinhando" loading="lazy">
+      <img class="v3" src="assets/aniv-decor.jpg" alt="Mesa decorada da festa" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- ===== POR QUE COMEMORAR ===== -->
+<section id="por-que">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Por que comemorar assim</span>
+      <h2>Esquece o salão de festa de sempre.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Um aniversário Elarah é uma experiência compartilhada — daquelas que as pessoas ainda comentam meses depois.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 21l-5 2.6 1-5.5-4-3.9 5.5-.8z"/></svg>
+        </div>
+        <h3>Diferente de tudo</h3>
+        <p>Nada de festa genérica. Uma vivência criativa que combina com quem está fazendo aniversário.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Todo mundo junto</h3>
+        <p>Em vez de cada um no celular, o grupo cria, ri e interage do começo ao fim.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <h3>Sem trabalho pra você</h3>
+        <p>A gente cuida de tudo: materiais, profissionais, espaço e organização. Você só aproveita.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        </div>
+        <h3>Lembrança pra levar</h3>
+        <p>Cada convidado vai embora com algo feito pelas próprias mãos — e com a melhor das memórias.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== O QUE CUIDAMOS (serviço completo) ===== -->
+<section class="soft" id="servicos">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Da experiência à festa inteira</span>
+      <h2>A gente cuida de tudo — ou só do que você quiser.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Contrate só a experiência criativa, ou deixe a comemoração inteira por nossa conta. Você escolhe o quanto quer delegar — e relaxa.</p>
+    </div>
+    <div class="pillars cols3">
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0 0 18 2 2 0 0 0 2-2 2 2 0 0 1 2-2h1.2A3.8 3.8 0 0 0 21 11.2 9 9 0 0 0 12 3z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="9.8" cy="7.4" r="1"/><circle cx="14.6" cy="7.4" r="1"/></svg>
+        </div>
+        <h3>A experiência criativa</h3>
+        <p>O coração da festa: pintura, cerâmica, gastronomia, coquetelaria e muito mais — todo mundo cria junto.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21H3z"/><path d="M9 21v-7h6v7"/></svg>
+        </div>
+        <h3>Espaço &amp; ambientação</h3>
+        <p>Local pronto e decorado no clima da comemoração — no nosso espaço ou onde você preferir.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M5 21v-7h14v7M6 14a2 2 0 0 1 4 0 2 2 0 0 0 4 0 2 2 0 0 1 4 0"/><path d="M9 7V5M12 7V4M15 7V5"/></svg>
+        </div>
+        <h3>Mesa do bolo &amp; cenário</h3>
+        <p>Aquele cantinho lindo e instagramável das fotos, montado com todo o carinho.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 11v10M16 3c-1.5 0-3 1.5-3 4s1.5 3 3 3v11"/></svg>
+        </div>
+        <h3>Bolo, comidas &amp; bebidas</h3>
+        <p>Da opção de petiscos e drinks ao bolo da festa — feche o menu completo se quiser.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 21 4 21 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="21" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        </div>
+        <h3>Brinde personalizado</h3>
+        <p>Uma lembrancinha com a cara do aniversariante para cada convidado levar pra casa.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+        </div>
+        <h3>Avental &amp; kit personalizado</h3>
+        <p>Cada convidado cria (e leva) usando um avental exclusivo, com o tema do seu evento.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ADULTOS ===== -->
+<section id="adultos">
+  <div class="wrap track">
+    <div class="track__media">
+      <img src="assets/aniv-adulto.jpg" alt="Aniversário adulto — celebração criativa e decorada" loading="lazy">
+      <div class="track__badge">
+        <strong>+18</strong>
+        <span>celebrar com criatividade (e um bom drink)</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">Aniversário adulto</span>
+      <h2>Comemore <span class="serif-i">criando</span> — não só brindando.</h2>
+      <p class="track__intro">
+        Reúna os amigos ou a família para uma experiência criativa com clima de festa: petiscos,
+        aquele brinde e todo mundo se divertindo enquanto cria. Perfeito para aniversários intimistas
+        ou grupos animados.
+      </p>
+      <p class="mini-h">Experiências mais pedidas</p>
+      <div class="tags">
+        <span class="tag">Pintura em taça + drink</span>
+        <span class="tag">Pintura em tela</span>
+        <span class="tag">Cerâmica no torno</span>
+        <span class="tag">Modelagem em cerâmica</span>
+        <span class="tag">Coquetelaria &amp; drinks</span>
+        <span class="tag">Gastronomia &amp; confeitaria</span>
+        <span class="tag">Velas aromáticas</span>
+        <span class="tag">Arranjos florais</span>
+      </div>
+      <a href="#contato" class="btn btn--primary">Planejar meu aniversário</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== KIDS ===== -->
+<section class="kids-bg track--kids" id="kids">
+  <div class="wrap track track--rev">
+    <div class="track__media">
+      <img src="assets/aniv-infantil.jpg" alt="Festa infantil criativa — crianças pintando" loading="lazy">
+      <div class="track__badge is-green">
+        <strong>Elarah Kids</strong>
+        <span>menos telas, mais infância de verdade</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow eyebrow--green">Festa infantil · Elarah Kids</span>
+      <h2>Uma festa que as crianças <span class="serif-i">vão lembrar</span>.</h2>
+      <p class="track__intro">
+        Aniversário infantil onde as crianças exploram, criam e se divertem com as próprias mãos —
+        em um ambiente <strong>seguro e supervisionado</strong> por profissionais. Educativo sem
+        parecer aula, e cheio da magia daquele momento <em>"eu que fiz!"</em>. E o melhor: enquanto
+        a criançada cria, <strong>os pais também ganham a sua experiência</strong>.
+      </p>
+      <p class="mini-h">Experiências para os pequenos</p>
+      <div class="tags">
+        <span class="tag">Mini chefs (pizza, hot dog, focaccia)</span>
+        <span class="tag">Cupcakes &amp; bolo decorado</span>
+        <span class="tag">Brigadeiro &amp; doces</span>
+        <span class="tag">Pintura em tela</span>
+        <span class="tag">Pintura em taça</span>
+        <span class="tag">Pintura em cerâmica</span>
+        <span class="tag">Modelagem em cerâmica</span>
+        <span class="tag">Vela aromática</span>
+        <span class="tag">Sabonetes artesanais</span>
+        <span class="tag">Arranjos florais</span>
+        <span class="tag">Oficina criativa em grupo</span>
+      </div>
+      <a href="#contato" class="btn btn--green">Planejar a festa infantil</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== KIDS + PAIS (festa dupla) ===== -->
+<section class="kids-bg track--kids" id="kids-pais">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow eyebrow--green">O diferencial Elarah Kids</span>
+      <h2>Enquanto as crianças criam, os pais <span class="serif-i">também aproveitam</span>.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Montamos duas experiências ao mesmo tempo: uma para a criançada e outra para os adultos. Assim ninguém fica só olhando — todo mundo curte a festa.</p>
+    </div>
+    <div class="pillars cols3">
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <h3>Crianças seguras e cuidadas</h3>
+        <p>Profissionais conduzem e cuidam da criançada o tempo todo, num ambiente acolhedor e seguro.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8M12 15v7M6 3h12l-1 5a5 5 0 0 1-10 0z"/></svg>
+        </div>
+        <h3>Os pais com a sua experiência</h3>
+        <p>Pintura + drink, gastronomia ou outra vivência só para os adultos, acontecendo ali do lado.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9.5" x2="9" y2="9.5"/><line x1="15" y1="9.5" x2="15" y2="9.5"/></svg>
+        </div>
+        <h3>Todo mundo sai feliz</h3>
+        <p>Os pais relaxam e socializam de verdade, tranquilos porque os filhos estão felizes e seguros.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMO FUNCIONA ===== -->
+<section id="como-funciona">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Simples para você, inesquecível para os convidados.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Você conta a ideia, a Elarah cuida do resto.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step__n">1</div>
+        <h3>Conta pra gente</h3>
+        <p>Data, número de convidados, idade e o que o aniversariante curte. A partir daí sugerimos as melhores experiências.</p>
+      </div>
+      <div class="step">
+        <div class="step__n">2</div>
+        <h3>A gente monta tudo</h3>
+        <p>Da experiência à festa completa: espaço, mesa do bolo, comida, brinde e avental personalizados. A gente cuida de tudo que você quiser delegar.</p>
+      </div>
+      <div class="step">
+        <div class="step__n">3</div>
+        <h3>Vocês celebram</h3>
+        <p>É só chegar e aproveitar. No fim, cada um leva sua criação e o aniversariante leva uma festa diferente de todas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== O QUE INCLUI ===== -->
+<section class="ink-bg" id="incluso">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow eyebrow--light">O que está incluso</span>
+      <h2>É só trazer os convidados.</h2>
+    </div>
+    <ul class="incl">
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Experiência conduzida por profissionais</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Todos os materiais inclusos</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Espaço e ambientação no clima da festa</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Mesa do bolo e cenário decorado</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Bolo, comidas e bebidas (opcional)</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Brinde personalizado para cada convidado</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Avental ou kit personalizado do evento</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Uma lembrança feita à mão pra levar pra casa</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section id="contato">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Bora planejar essa festa?</h2>
+      <p>Conta pra gente a data e de quem é o aniversário (adulto ou criança) que a Elarah monta uma experiência sob medida.</p>
+      <div class="cta__actions">
+        <a class="btn btn--light" href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Quero%20comemorar%20um%20anivers%C3%A1rio%20com%20a%20Elarah." target="_blank" rel="noopener">Falar no WhatsApp</a>
+        <a class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.6)" href="https://mail.google.com/mail/?view=cm&fs=1&to=contato.elarah@gmail.com&su=Anivers%C3%A1rio%20com%20a%20Elarah" target="_blank" rel="noopener">Enviar e-mail</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap footer__inner">
+    <img src="assets/logo.png" alt="Elarah">
+    <p>Offline is a feeling. — © 2026 Elarah · <a href="https://wa.me/5511914455930" target="_blank" rel="noopener">+55 11 91445-5930</a> · <a href="https://mail.google.com/mail/?view=cm&fs=1&to=contato.elarah@gmail.com" target="_blank" rel="noopener">contato.elarah@gmail.com</a></p>
+  </div>
+</footer>
+
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Sua reserva foi confirmada com sucesso na Elarah.">
+  <title>Reserva confirmada — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    .checkout-result {
+      max-width: 640px;
+      margin: 80px auto;
+      padding: 48px 32px;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+      text-align: center;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .checkout-result__icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 999px;
+      background: #e7f7ee;
+      color: #1a8a4a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .checkout-result__title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      margin: 0 0 12px;
+      color: #1a1a1a;
+    }
+    .checkout-result__subtitle {
+      color: #666;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin: 0 auto 24px;
+      max-width: 480px;
+    }
+    .checkout-result__details {
+      text-align: left;
+      background: #faf6f0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 24px 0;
+      font-size: 0.95rem;
+      color: #333;
+    }
+    .checkout-result__details p { margin: 6px 0; }
+    .checkout-result__details strong { color: #1a1a1a; }
+    .checkout-result__btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 14px 28px;
+      background: #f0a05e;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .checkout-result__btn:hover { background: #e88f47; }
+    .checkout-result__loading { color: #999; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <div class="checkout-result">
+    <div class="checkout-result__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="36" height="36">
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+        <path d="M22 4L12 14.01l-3-3"/>
+      </svg>
+    </div>
+    <h1 class="checkout-result__title">Reserva confirmada!</h1>
+    <p class="checkout-result__subtitle">
+      Seu pagamento caiu certinho. Em instantes você recebe o resumo da experiência.
+      Já estamos contando os minutos pra te receber. ✨
+    </p>
+
+    <div class="checkout-result__details" id="result-details">
+      <p class="checkout-result__loading">Carregando detalhes da sua reserva…</p>
+    </div>
+
+    <a href="/" class="checkout-result__btn">Voltar para a Elarah</a>
+  </div><script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+  <script src="auth.js?v=12"></script>
+  <script src="analytics.js?v=3"></script>
+  <script>
+    (async function () {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+      const isGift    = params.get('gift') === '1';
+      const isDirect  = params.get('direct') === '1';
+      const directBookingId = params.get('booking_id');
+      const detailsEl = document.getElementById('result-details');
+
+      // Funnel step final — pagamento aprovado. Dispara cedo (antes de
+      // qualquer fetch) pra garantir registro mesmo se a pagina falhar
+      // depois. Metadata inclui session_id (Stripe) ou booking_id (PIX
+      // direto/MP) pra deduplicar no admin.
+      try {
+        if (window.ElarahAnalytics && window.ElarahAnalytics.track) {
+          window.ElarahAnalytics.track('payment_approved', {
+            category: 'checkout',
+            targetId: directBookingId || sessionId || null,
+            targetLabel: isGift ? 'Gift card' : 'Reserva',
+            metadata: {
+              flow: isGift ? 'gift_card' : (isDirect ? 'pix_direct' : 'stripe_session'),
+              stripe_session_id: sessionId || null,
+              booking_id: directBookingId || null,
+            },
+          });
+        }
+      } catch (_) {}
+
+      // Mensagem específica para compra de gift card
+      if (isGift) {
+        const titleEl = document.querySelector('.checkout-result__title');
+        const subEl   = document.querySelector('.checkout-result__subtitle');
+        if (titleEl) titleEl.textContent = 'Gift card a caminho!';
+        if (subEl) subEl.textContent = 'Recebemos seu pagamento e o código foi enviado por e-mail para o presenteado. Você também recebeu uma cópia.';
+        if (detailsEl) detailsEl.innerHTML = '<p>Quem você presenteou já pode usar o código no checkout de qualquer experiência. ✨</p>';
+        return;
+      }
+
+      // Reserva paga 100% com gift card — não há sessionId Stripe
+      if (isDirect) {
+        const titleEl = document.querySelector('.checkout-result__title');
+        const subEl   = document.querySelector('.checkout-result__subtitle');
+        if (titleEl) titleEl.textContent = 'Reserva confirmada!';
+        if (subEl) subEl.textContent = 'Sua reserva foi paga integralmente com o gift card. Em instantes você recebe os detalhes por e-mail.';
+        if (detailsEl && directBookingId && window.supabaseClient) {
+          const { data } = await window.supabaseClient
+            .from('bookings').select('*').eq('id', directBookingId).maybeSingle();
+          if (data) {
+            detailsEl.innerHTML =
+              '<p><strong>Experiência:</strong> ' + (data.experiencia_nome || '') + '</p>' +
+              (data.data ? '<p><strong>Data:</strong> ' + data.data + '</p>' : '') +
+              (data.horario ? '<p><strong>Horário:</strong> ' + data.horario + '</p>' : '') +
+              '<p><strong>Status:</strong> <strong style="color:#1a8a4a;">Pago (gift card)</strong></p>';
+          } else {
+            detailsEl.innerHTML = '<p>Reserva registrada com sucesso.</p>';
+          }
+        }
+        try {
+          if (window.ElarahAnalytics && ElarahAnalytics.track) {
+            ElarahAnalytics.track('checkout_success_view', {
+              category: 'booking',
+              targetId: directBookingId || '',
+              meta: { direct_gift_card: true }
+            });
+          }
+        } catch {}
+        return;
+      }
+
+      try {
+        if (window.ElarahAnalytics && ElarahAnalytics.track) {
+          ElarahAnalytics.track('checkout_success_view', {
+            category: 'booking',
+            targetId: sessionId || ''
+          });
+        }
+      } catch {}
+
+      if (!sessionId || !window.supabaseClient) {
+        detailsEl.innerHTML = '<p>Não conseguimos carregar os detalhes agora, mas seu pagamento está em processamento.</p>';
+        return;
+      }
+
+      // Tenta ler a reserva (apenas o dono enxerga via RLS).
+      // Faz pequenas re-tentativas porque o webhook pode demorar
+      // alguns segundos pra atualizar status para "pago".
+      let attempt = 0;
+      let booking = null;
+      while (attempt < 6 && !booking) {
+        const { data } = await window.supabaseClient
+          .from('bookings')
+          .select('*')
+          .eq('stripe_session_id', sessionId)
+          .maybeSingle();
+        if (data) { booking = data; break; }
+        attempt++;
+        await new Promise(r => setTimeout(r, 1500));
+      }
+
+      if (!booking) {
+        detailsEl.innerHTML = '<p>Pagamento recebido. Em instantes seu e-mail terá os detalhes da reserva.</p>';
+        return;
+      }
+
+      const statusLabel = booking.status === 'pago'
+        ? '<strong style="color:#1a8a4a;">Pago</strong>'
+        : '<strong style="color:#b07b00;">Processando</strong>';
+
+      detailsEl.innerHTML =
+        '<p><strong>Experiência:</strong> ' + (booking.experiencia_nome || '') + '</p>' +
+        (booking.data ? '<p><strong>Data:</strong> ' + booking.data + '</p>' : '') +
+        (booking.horario ? '<p><strong>Horário:</strong> ' + booking.horario + '</p>' : '') +
+        (booking.email ? '<p><strong>E-mail:</strong> ' + booking.email + '</p>' : '') +
+        '<p><strong>Status:</strong> ' + statusLabel + '</p>';
+    })();
+  </script>
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

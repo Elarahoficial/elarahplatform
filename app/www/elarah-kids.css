@@ -1,0 +1,455 @@
+/* =============================================================
+   ELARAH — Elarah Kids
+   -------------------------------------------------------------
+   Paleta: amarelo-sol + verde-salvia + coral suave + creme.
+   Sensação: alegre, criativa, premium, NAO infantilizada.
+   Pensada pra falar com PAIS (quem decide a compra) e ainda
+   passar leveza pra que a crianca tambem se interesse.
+   Mobile-first.
+   ============================================================= */
+
+:root {
+  --ek-sun:           #f5b942;   /* amarelo principal (mostarda quente) */
+  --ek-sun-soft:      #fde9b5;
+  --ek-sage:          #7a9a6e;   /* verde-salvia premium */
+  --ek-sage-soft:     #d8e3d1;
+  --ek-coral:         #f5a78a;   /* coral / pessego */
+  --ek-coral-soft:    #fde0d3;
+  --ek-cream:         #fff8ee;
+  --ek-cream-warm:    #fef0d9;
+  --ek-ink:           #2a1a10;
+  --ek-ink-soft:      #5a4030;
+  --ek-line:          #f0e2c8;
+}
+
+body.ek-body {
+  background: var(--ek-cream);
+  color: var(--ek-ink);
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ========== HERO ========== */
+.ek-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(245, 185, 66, 0.30), transparent 60%),
+    radial-gradient(ellipse 60% 60% at 95% 95%, rgba(122, 154, 110, 0.22), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(245, 167, 138, 0.20), transparent 60%),
+    linear-gradient(180deg, var(--ek-cream-warm) 0%, var(--ek-cream) 100%);
+  padding: 100px 24px 88px;
+  text-align: center;
+}
+.ek-hero__decor {
+  position: absolute;
+  pointer-events: none;
+  width: 90px; height: 90px;
+  opacity: 0.32;
+}
+.ek-hero__decor--left  { top: 40px;    left: 24px;  color: var(--ek-sun); transform: rotate(-10deg); }
+.ek-hero__decor--right { bottom: 40px; right: 24px; color: var(--ek-sage); transform: rotate(10deg); }
+.ek-hero__inner { position: relative; max-width: 820px; margin: 0 auto; z-index: 2; }
+.ek-hero__kicker {
+  display: inline-block;
+  font-size: .76rem;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ek-sage);
+  font-weight: 700;
+  margin-bottom: 18px;
+  padding: 6px 16px;
+  background: var(--ek-sage-soft);
+  border-radius: 999px;
+}
+.ek-hero__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.9rem, 4.2vw, 3.1rem);
+  font-weight: 400;
+  line-height: 1.15;
+  margin: 0 0 22px;
+  color: var(--ek-ink);
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.ek-hero__sub {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.25rem, 2.6vw, 1.9rem);
+  font-style: italic;
+  color: var(--ek-sage);
+  max-width: 740px;
+  margin: 0 auto 36px;
+  line-height: 1.3;
+  font-weight: 400;
+}
+.ek-hero__sub em { font-style: italic; }
+.ek-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: var(--ek-sun);
+  color: var(--ek-ink);
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: transform .15s, background .15s, box-shadow .15s;
+  box-shadow: 0 6px 20px rgba(245, 185, 66, 0.35);
+}
+.ek-hero__cta:hover {
+  background: #e3a830;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(245, 185, 66, 0.45);
+}
+
+/* ========== BENEFICIOS — "Menos telas. Mais infancia." ==========
+   Cards SEM emoji, foco em tipografia editorial. Estilo "magazine
+   spread" — texto respira, serif italic puxa o sentimento. */
+.ek-benefits {
+  padding: 90px 24px;
+  background: linear-gradient(180deg, var(--ek-cream) 0%, var(--ek-cream-warm) 100%);
+}
+.ek-benefits__inner { max-width: 1100px; margin: 0 auto; text-align: center; }
+.ek-benefits__kicker {
+  display: inline-block;
+  font-size: .72rem;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ek-sage);
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.ek-benefits__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 400;
+  margin: 0 0 14px;
+  color: var(--ek-ink);
+  line-height: 1.05;
+}
+.ek-benefits__title em { font-style: italic; color: var(--ek-sage); font-weight: 400; }
+.ek-benefits__sub { color: var(--ek-ink-soft); font-size: 1.05rem; margin: 0 0 56px; max-width: 580px; margin-left:auto; margin-right:auto; line-height: 1.55; }
+.ek-benefits__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  text-align: left;
+}
+.ek-benefit {
+  background: #fff;
+  border: 1px solid var(--ek-line);
+  border-radius: 20px;
+  padding: 32px 28px;
+  position: relative;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+/* Numeracao discreta no canto superior direito de cada card. Da
+   ar editorial sem precisar de icone. */
+.ek-benefit::before {
+  content: counter(ek-benefit, decimal-leading-zero);
+  position: absolute;
+  top: 22px; right: 24px;
+  font-family: 'DM Serif Display', serif;
+  font-size: .9rem;
+  color: var(--ek-sage);
+  opacity: 0.4;
+  font-style: italic;
+}
+.ek-benefits__grid { counter-reset: ek-benefit; }
+.ek-benefit { counter-increment: ek-benefit; }
+.ek-benefit:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(122, 154, 110, 0.16);
+  border-color: var(--ek-sage-soft);
+}
+.ek-benefit__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  margin: 0 0 12px;
+  color: var(--ek-ink);
+  line-height: 1.2;
+  padding-right: 24px;       /* nao colide com a numeracao */
+}
+.ek-benefit__text {
+  font-size: .96rem;
+  color: var(--ek-ink-soft);
+  line-height: 1.65;
+  margin: 0;
+}
+.ek-benefit__text em { font-style: italic; color: var(--ek-sage); font-weight: 500; }
+
+/* (Secao "promises" removida — mesclada na ek-values com 9 itens.) */
+
+/* ========== MANIFESTO ========== */
+.ek-manifesto {
+  padding: 84px 24px;
+  background: var(--ek-cream);
+  text-align: center;
+}
+.ek-manifesto__inner { max-width: 760px; margin: 0 auto; }
+.ek-manifesto__mark {
+  width: 44px; height: 32px;
+  color: var(--ek-sun);
+  margin: 0 auto 22px;
+  display: block;
+}
+.ek-manifesto__text {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.3rem, 2.6vw, 1.75rem);
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ek-ink);
+  margin: 0 0 18px;
+}
+.ek-manifesto__signature {
+  font-size: .82rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ek-sage);
+  font-weight: 700;
+}
+
+/* ========== EXPERIENCIAS ========== */
+.ek-experiences {
+  padding: 88px 24px;
+  background: linear-gradient(180deg, var(--ek-cream) 0%, var(--ek-cream-warm) 100%);
+}
+.ek-experiences__inner { max-width: 1180px; margin: 0 auto; }
+.ek-experiences__head { text-align: center; margin-bottom: 48px; }
+.ek-experiences__kicker {
+  display: inline-block;
+  font-size: .72rem;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ek-sage);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.ek-experiences__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 400;
+  margin: 0 0 12px;
+  color: var(--ek-ink);
+}
+.ek-experiences__title em { font-style: italic; color: var(--ek-sage); font-weight: 400; }
+.ek-experiences__sub { color: var(--ek-ink-soft); font-size: 1rem; max-width: 620px; margin: 0 auto; line-height: 1.55; }
+.ek-experiences__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* Card */
+.ek-card {
+  background: #fff;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--ek-line);
+  display: flex; flex-direction: column;
+  transition: transform .2s, box-shadow .2s;
+}
+.ek-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 18px 36px rgba(122, 154, 110, 0.18);
+}
+.ek-card__image {
+  position: relative;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: var(--ek-sun-soft);
+}
+.ek-card__image img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .35s;
+}
+.ek-card:hover .ek-card__image img { transform: scale(1.04); }
+.ek-card__badge {
+  position: absolute;
+  top: 14px; left: 14px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px;
+  background: var(--ek-sun);
+  color: var(--ek-ink);
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.ek-card__share {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.96);
+  color: var(--ek-sage);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.ek-card__body { padding: 22px; flex: 1; display: flex; flex-direction: column; }
+.ek-card__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.25;
+  margin: 0 0 10px;
+  color: var(--ek-ink);
+}
+.ek-card__desc {
+  font-size: .88rem;
+  color: var(--ek-ink-soft);
+  line-height: 1.55;
+  margin: 0 0 16px;
+  flex: 1;
+}
+.ek-card__meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; font-size: .82rem; color: var(--ek-ink-soft); }
+.ek-card__meta-row { display: inline-flex; align-items: center; gap: 8px; }
+.ek-card__meta-row svg { color: var(--ek-sage); flex-shrink: 0; }
+.ek-card__footer {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ek-line);
+}
+.ek-card__price {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+  color: var(--ek-sage);
+  font-weight: 400;
+}
+.ek-card__cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  background: var(--ek-sun);
+  color: var(--ek-ink);
+  text-decoration: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: .84rem;
+  transition: background .15s, transform .15s;
+}
+.ek-card__cta:hover { background: #e3a830; transform: translateY(-1px); }
+
+/* ========== VALORES PROCURADOS PELOS PAIS ========== */
+.ek-values {
+  padding: 88px 24px;
+  background:
+    radial-gradient(ellipse 60% 100% at 50% 0%, rgba(122, 154, 110, 0.15), transparent 70%),
+    var(--ek-cream);
+}
+.ek-values__inner { max-width: 980px; margin: 0 auto; }
+.ek-values__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 400;
+  margin: 0 0 32px;
+  color: var(--ek-ink);
+  text-align: center;
+  line-height: 1.15;
+}
+.ek-values__title em { font-style: italic; color: var(--ek-sage); font-weight: 400; }
+.ek-values__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 860px) {
+  .ek-values__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 540px) {
+  .ek-values__grid { grid-template-columns: 1fr; }
+}
+.ek-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--ek-line);
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--ek-ink);
+}
+.ek-value__check {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--ek-sage);
+  color: #fff;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: .9rem;
+}
+
+/* ========== CTA FINAL ========== */
+.ek-cta-final {
+  padding: 96px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--ek-cream) 0%, var(--ek-sun-soft) 100%);
+}
+.ek-cta-final__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 400;
+  margin: 0 0 18px;
+  color: var(--ek-ink);
+}
+.ek-cta-final__title em { font-style: italic; color: var(--ek-sage); font-weight: 400; }
+.ek-cta-final__sub {
+  font-size: 1.02rem;
+  color: var(--ek-ink-soft);
+  max-width: 620px;
+  margin: 0 auto 30px;
+  line-height: 1.6;
+}
+.ek-cta-final__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: var(--ek-sage);
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: background .15s, transform .15s;
+  box-shadow: 0 6px 20px rgba(122, 154, 110, 0.28);
+}
+.ek-cta-final__btn:hover { background: #6a8a60; transform: translateY(-2px); }
+
+/* ========== EMPTY / ERRO ========== */
+.ek-empty, .ek-error {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 60px 24px;
+  background: #fff;
+  border-radius: 20px;
+  border: 1.5px dashed var(--ek-sun);
+}
+
+/* ========== RESPONSIVO ========== */
+@media (max-width: 720px) {
+  .ek-hero { padding: 56px 18px 52px; }
+  .ek-hero__title { font-size: 1.5rem; line-height: 1.25; }
+  .ek-hero__sub { font-size: 1.05rem; line-height: 1.4; }
+  .ek-hero__decor { width: 56px; height: 56px; opacity: 0.22; }
+  .ek-hero__decor--left { top: 24px; left: 14px; }
+  .ek-hero__decor--right { bottom: 24px; right: 14px; }
+
+  .ek-benefits, .ek-experiences, .ek-values, .ek-manifesto, .ek-cta-final { padding: 54px 18px; }
+  .ek-benefit { padding: 26px 22px; }
+  .ek-benefit__title { font-size: 1.25rem; }
+  .ek-benefit::before { top: 18px; right: 18px; font-size: .8rem; }
+  .ek-benefits__title, .ek-experiences__title, .ek-values__title, .ek-cta-final__title { font-size: 1.7rem; }
+  .ek-value { padding: 14px 16px; font-size: .92rem; }
+  .ek-manifesto__text { font-size: 1.1rem; }
+}
