@@ -376,6 +376,10 @@ export interface AdminSaleNotificationOpts {
   // presente, aparece no assunto e no corpo do aviso. Usado nas
   // vendas manuais classificadas como evento.
   eventoLabel?: string | null;
+  // Valor já pago quando a venda é parcial (ex.: só a entrada/sinal).
+  // Quando > 0 e menor que o total, o aviso mostra "Pago (entrada)"
+  // e o restante em aberto. Usado nas vendas manuais com entrada.
+  pagoParcialCentavos?: number | null;
   clienteNome?: string | null;
   clienteEmail?: string | null;
   data?: string | null;
@@ -407,6 +411,14 @@ export function adminSaleNotificationEmailHtml(opts: AdminSaleNotificationOpts):
     ? brl(amountCents)
     : (opts.precoLabel || "—");
 
+  // Pagamento parcial (só entrada/sinal): mostra quanto entrou e
+  // quanto falta. Só quando o pago é positivo e menor que o total.
+  const pagoCents = Number(opts.pagoParcialCentavos);
+  const isParcial = Number.isFinite(pagoCents) && pagoCents > 0 &&
+    Number.isFinite(amountCents) && amountCents > 0 && pagoCents < amountCents;
+  const pagoLabel = isParcial ? brl(pagoCents) : null;
+  const emAbertoLabel = isParcial ? brl(amountCents - pagoCents) : null;
+
   const enderecoFull = opts.endereco && opts.bairro
     ? `${opts.endereco} — ${opts.bairro}`
     : (opts.endereco || opts.bairro || null);
@@ -435,6 +447,8 @@ export function adminSaleNotificationEmailHtml(opts: AdminSaleNotificationOpts):
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr><td style="padding:6px 0;color:#888;font-size:13px;vertical-align:top;width:40%;">Cliente</td><td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right;">${clienteLinha}</td></tr>
         ${linha("Evento", opts.eventoLabel)}
+        ${linha("Pago (entrada)", pagoLabel)}
+        ${linha("Em aberto", emAbertoLabel)}
         ${linha("Data", opts.data)}
         ${linha("Horário", opts.horario)}
         ${linha("Quantidade", qtyLabel)}

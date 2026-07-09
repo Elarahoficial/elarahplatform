@@ -71,6 +71,12 @@ jobs:
           echo "→ redeem-gift-card"
           supabase functions deploy redeem-gift-card \
             --project-ref "$PROJECT_REF" --no-verify-jwt
+          # notify-manual-sale mantém verify_jwt (default): só admin
+          # autenticada dispara o aviso de venda manual. NÃO usar
+          # --no-verify-jwt aqui.
+          echo "→ notify-manual-sale"
+          supabase functions deploy notify-manual-sale \
+            --project-ref "$PROJECT_REF"
           # analytics-insights faz a própria autorização por dentro
           # (authorizeRequest: CRON_SECRET, service_role ou admin), então
           # precisa de --no-verify-jwt — senão o cron do relatório (que
