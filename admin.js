@@ -2918,15 +2918,18 @@
       const plural = nomes.length > 1;
       const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
       const lista = joinNames(nomes) || '(participante)';
-      // Local da experiência (endereço + bairro). Mesma fonte dos
-      // dados que aparecem no e-mail de confirmação e em Minhas
-      // compras: bookings.metadata.endereco + bookings.metadata.bairro.
-      // CRÍTICO pra fornecedores que atendem em múltiplos locais nas
-      // mesmas datas/horários — sem isso o fornecedor não sabe pra
-      // onde ir e pode aparecer no endereço errado.
+      // Local da experiência (endereço + bairro).
+      // Prefere o endereço da experiência ATUAL (expById) — é a fonte da
+      // verdade e reflete a troca de experiência na hora, SEM depender de
+      // re-salvar a reserva. Cai no snapshot gravado na reserva
+      // (metadata.endereco/bairro) só pra reservas antigas ou experiência
+      // sem endereço cadastrado. CRÍTICO em troca de experiência/
+      // fornecedor: sem isso a nova parceira recebe o endereço da
+      // experiência antiga (o snapshot ficava stale).
       const meta = (b && b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
-      const endereco = String(meta.endereco || '').trim();
-      const bairro = String(meta.bairro || '').trim();
+      const expAtual = expById.get(b.experiencia_id) || null;
+      const endereco = String((expAtual && expAtual.endereco) || meta.endereco || '').trim();
+      const bairro = String((expAtual && expAtual.bairro) || meta.bairro || '').trim();
       const localFull = endereco && bairro
         ? endereco + ' — ' + bairro
         : (endereco || bairro || '');
