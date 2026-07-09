@@ -4741,6 +4741,118 @@
     return out;
   }
 
+  // ===== DATAS ADICIONAIS (cliente escolhe uma) =====
+  // A mesma experiência pode rodar em vários dias sem virar cards
+  // duplicados. A 1a data fica no campo "Data" + horários padrão; as
+  // OUTRAS datas ficam aqui, cada uma com seus horários/vagas. No save,
+  // cada data vira slots próprios (com event_at derivado da data +
+  // horário) e o frontend já mostra o seletor "Escolha uma data".
+
+  // Snapshot dos horários padrão (não-recorrentes, preenchidos) pra
+  // pré-popular uma nova data — assim o caso comum ("mesmos horários em
+  // outro dia") é um clique só, mas dá pra ajustar depois.
+  function getBaseHorariosSnapshot() {
+    if (!horariosList) return [];
+    var out = [];
+    horariosList.querySelectorAll('.admin__horario-row').forEach(function (row) {
+      if (row.dataset.recurrence === '1') return;
+      var h = (row.querySelector('.admin__horario-input').value || '').trim();
+      if (!h) return;
+      var vRaw = (row.querySelector('.admin__horario-vagas').value || '').trim();
+      out.push({ horario: h, vagasTotal: vRaw === '' ? null : Number(vRaw) });
+    });
+    return out;
+  }
+
+  // Uma linha de horário dentro de um bloco de data adicional.
+  // Estrutura enxuta (sem recorrência): horário + vagas + remover.
+  function addExtraHorarioRow(container, slotObj) {
+    if (!container) return;
+    var s = slotObj || {};
+    var row = document.createElement('div');
+    row.className = 'exp-extra-horario-row';
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+    row.innerHTML =
+      '<input type="text" class="exp-extra-horario-input" placeholder="Ex: 19h00 – 22h30" style="flex:2;padding:8px 10px;border:1.5px solid #e2d8c8;border-radius:8px;font-family:inherit;font-size:.85rem;">' +
+      '<input type="number" class="exp-extra-horario-vagas" min="0" step="1" placeholder="Vagas" title="Vagas totais (vazio = ilimitado)" style="flex:0 0 68px;text-align:center;padding:8px 6px;border:1.5px solid #e2d8c8;border-radius:8px;font-family:inherit;font-size:.85rem;">' +
+      '<span class="exp-extra-horario-rest" style="flex:0 0 44px;font-size:.72rem;color:#888;text-align:center;" title="Vagas restantes"></span>' +
+      '<button type="button" class="exp-extra-horario-remove admin__horario-remove" aria-label="Remover horário" style="width:30px;height:30px;font-size:1.1rem;flex:0 0 30px;">&times;</button>';
+    row.querySelector('.exp-extra-horario-input').value = s.horario || '';
+    row.querySelector('.exp-extra-horario-vagas').value = s.vagasTotal != null ? s.vagasTotal : '';
+    var restEl = row.querySelector('.exp-extra-horario-rest');
+    if (s.vagasTotal != null && s.vagasRestantes != null) {
+      restEl.textContent = s.vagasRestantes + ' rest.';
+      restEl.style.color = s.vagasRestantes <= 0 ? '#c0392b' : (s.vagasRestantes <= 3 ? '#b07b00' : '#1a8a4a');
+      restEl.style.fontWeight = '600';
+    } else if (s.vagasTotal == null) {
+      restEl.textContent = '∞';
+    }
+    if (s.id) row.dataset.slotId = s.id;
+    row.querySelector('.exp-extra-horario-remove').addEventListener('click', function () {
+      row.remove();
+    });
+    container.appendChild(row);
+  }
+
+  // Um bloco = uma data adicional + seus horários.
+  function addExtraDataBlock(blockObj) {
+    var list = document.getElementById('exp-extra-datas-list');
+    if (!list) return;
+    var b = blockObj || {};
+    var block = document.createElement('div');
+    block.className = 'exp-extra-data-block';
+    block.style.cssText = 'border:1px solid #eadfce;border-radius:10px;padding:12px;background:#fffdf9;';
+    block.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
+        '<input type="text" class="exp-extra-data-input" placeholder="Ex: 19/06" style="flex:0 0 120px;padding:8px 10px;border:1.5px solid #e2d8c8;border-radius:8px;font-family:inherit;font-size:.9rem;font-weight:600;">' +
+        '<span style="font-size:.78rem;color:#888;">horários desta data:</span>' +
+        '<button type="button" class="exp-extra-data-remove admin__horario-remove" style="margin-left:auto;width:30px;height:30px;font-size:1.1rem;flex:0 0 30px;" aria-label="Remover data" title="Remover esta data">&times;</button>' +
+      '</div>' +
+      '<div class="exp-extra-data-horarios" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>' +
+      '<button type="button" class="exp-extra-data-add-horario admin__horario-add-btn" style="font-size:.8rem;padding:6px 12px;">+ Adicionar horário</button>';
+    block.querySelector('.exp-extra-data-input').value = b.data || '';
+    var horContainer = block.querySelector('.exp-extra-data-horarios');
+    var slots = Array.isArray(b.slots) && b.slots.length ? b.slots : [{ horario: '' }];
+    slots.forEach(function (s) { addExtraHorarioRow(horContainer, s); });
+    block.querySelector('.exp-extra-data-add-horario').addEventListener('click', function () {
+      addExtraHorarioRow(horContainer, { horario: '' });
+    });
+    block.querySelector('.exp-extra-data-remove').addEventListener('click', function () {
+      block.remove();
+    });
+    list.appendChild(block);
+  }
+
+  function renderExtraDataBlocks(groups) {
+    var list = document.getElementById('exp-extra-datas-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (groups || []).forEach(function (g) { addExtraDataBlock(g); });
+  }
+
+  // Coleta as datas adicionais → [{ data, slots:[{id,horario,vagasTotal}] }]
+  function collectExtraDatas() {
+    var list = document.getElementById('exp-extra-datas-list');
+    if (!list) return [];
+    var out = [];
+    list.querySelectorAll('.exp-extra-data-block').forEach(function (block) {
+      var dstr = (block.querySelector('.exp-extra-data-input').value || '').trim();
+      var slots = [];
+      block.querySelectorAll('.exp-extra-horario-row').forEach(function (row) {
+        var h = (row.querySelector('.exp-extra-horario-input').value || '').trim();
+        if (!h) return;
+        var vRaw = (row.querySelector('.exp-extra-horario-vagas').value || '').trim();
+        slots.push({
+          id: row.dataset.slotId || null,
+          horario: h,
+          vagasTotal: vRaw === '' ? null : Number(vRaw),
+        });
+      });
+      out.push({ data: dstr, slots: slots });
+    });
+    return out;
+  }
+
   // Popula o <datalist id="exp-categoria-datalist"> com todas as
   // categorias já cadastradas no banco (+ um seed mínimo pra não
   // deixar vazio se não houver nenhuma experiência ainda).
@@ -4987,13 +5099,38 @@
       } catch (e) { console.warn('[Admin] slots load failed', e); }
 
       if (slotsFromDb.length) {
-        renderHorarioRows(slotsFromDb);
+        // Separa slots entre a DATA PRIMÁRIA (campo "Data" + horários
+        // padrão) e as DATAS ADICIONAIS (cliente escolhe uma). Slots de
+        // recorrência ficam SEMPRE na lista padrão, travados — são
+        // geridos pelo painel Recorrência, não por data adicional.
+        var baseDate = (exp.data || '').trim();
+        var recSlots = slotsFromDb.filter(function (s) { return s.recurrenceRuleId; });
+        var manualSlots = slotsFromDb.filter(function (s) { return !s.recurrenceRuleId; });
+        var baseManual = manualSlots.filter(function (s) {
+          return !s.data || (s.data || '').trim() === baseDate;
+        });
+        var extraManual = manualSlots.filter(function (s) {
+          return s.data && (s.data || '').trim() !== baseDate;
+        });
+        renderHorarioRows(recSlots.concat(baseManual));
+        // Agrupa datas adicionais por rótulo de data (preserva ordem).
+        var order = [];
+        var byData = {};
+        extraManual.forEach(function (s) {
+          var k = (s.data || '').trim();
+          if (!byData[k]) { byData[k] = []; order.push(k); }
+          byData[k].push(s);
+        });
+        renderExtraDataBlocks(order.map(function (k) {
+          return { data: k, slots: byData[k] };
+        }));
       } else {
         // Fallback: horarios sem slots (experiência pré-migração)
         var horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
           ? exp.horarios
           : (exp.horario ? [exp.horario] : ['']);
         renderHorarioRows(horarios.map(function (h) { return { horario: h }; }));
+        renderExtraDataBlocks([]);
       }
 
       const cores = parseCor(exp.cor);
@@ -5027,6 +5164,7 @@
       if (nWrapFixo) nWrapFixo.style.display = 'none';
       if (nWrapPercent) nWrapPercent.style.display = '';
       renderHorarioRows([{ horario: '' }]);
+      renderExtraDataBlocks([]);
       const cor1El = document.getElementById('exp-cor1');
       const cor2El = document.getElementById('exp-cor2');
       if (cor1El) cor1El.value = '#f6d5a8';
@@ -5113,6 +5251,15 @@
 
     if (horariosAddBtn) {
       horariosAddBtn.addEventListener('click', () => addHorarioRow({ horario: '' }));
+    }
+
+    // Datas adicionais: nova data já vem com os horários padrão copiados
+    // (caso comum = mesmo horário em outro dia), editável por data.
+    var extraDatasAddBtn = document.getElementById('exp-extra-datas-add-btn');
+    if (extraDatasAddBtn) {
+      extraDatasAddBtn.addEventListener('click', function () {
+        addExtraDataBlock({ data: '', slots: getBaseHorariosSnapshot() });
+      });
     }
 
     // ===== Preview da imagem =====
@@ -5559,6 +5706,33 @@
             sl.data = expData.data || null;
             sl.eventAt = eventAtIso || null;
           });
+          // Datas ADICIONAIS (cliente escolhe uma): cada data vira seus
+          // próprios slots, com event_at derivado da data + horário. Vão
+          // no MESMO saveSlots — ele deleta slots manuais fora da lista,
+          // então precisam ir juntos pra não serem apagados.
+          try {
+            collectExtraDatas().forEach(function (blk) {
+              var dstr = (blk.data || '').trim();
+              if (!dstr) return;
+              (blk.slots || []).forEach(function (s) {
+                if (!s.horario) return;
+                var ev = null;
+                if (window.ElarahData && typeof window.ElarahData.deriveEventTimestamp === 'function') {
+                  var ts = window.ElarahData.deriveEventTimestamp(dstr, s.horario, Date.now());
+                  if (ts) ev = new Date(ts).toISOString();
+                }
+                slotsToSave.push({
+                  id: s.id || null,
+                  horario: s.horario,
+                  vagasTotal: s.vagasTotal,
+                  data: dstr,
+                  eventAt: ev,
+                });
+              });
+            });
+          } catch (eExtra) {
+            console.warn('[Admin] coleta de datas adicionais falhou', eExtra);
+          }
           const okSlots = await ElarahData.saveSlots(saved.id, slotsToSave);
           if (okSlots === false) {
             slotSaveErr = new Error('saveSlots retornou false (veja o console)');

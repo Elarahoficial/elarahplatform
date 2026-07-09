@@ -3746,6 +3746,15 @@
           <p class="admin__form-hint">Cada horário tem seu próprio limite de vagas. Ex: <em>19h00 – 22h30</em> com 8 vagas. Vazio = ilimitado. O campo "rest." mostra as vagas restantes calculadas automaticamente.</p>
         </div>
 
+        <div class="admin__form-field admin__form-field--full" id="exp-extra-datas-section" style="border-top:2px dashed #f0c69a;padding-top:16px;margin-top:4px;">
+          <label>Outras datas desta experiência <span style="font-weight:400;color:#888;font-size:12px;">(opcional — cliente escolhe uma)</span></label>
+          <p class="admin__form-hint" style="margin:0 0 10px;">
+            Rode a <b>MESMA</b> experiência em vários dias <b>sem duplicar</b> na vitrine. A <b>primeira data</b> fica no campo <b>"Data"</b> lá em cima; aqui você adiciona as <b>outras datas</b>. Cada data vira uma opção e o cliente escolhe qual prefere na página. Ao adicionar, os horários acima já vêm copiados — dá pra ajustar horários e vagas de cada data. Deixe vazio pra experiência de uma data só.
+          </p>
+          <div id="exp-extra-datas-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:10px;"></div>
+          <button type="button" id="exp-extra-datas-add-btn" class="admin__horario-add-btn">+ Adicionar outra data</button>
+        </div>
+
         <div class="admin__form-field">
           <label>Bairro</label>
           <input type="text" id="exp-bairro" required>

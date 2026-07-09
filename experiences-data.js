@@ -778,10 +778,31 @@
   // critério 1 vale.
   // Exposta no window.ElarahData pra que o admin possa marcar status
   // sem duplicar a lógica.
-  function isPubliclyVisible(exp, nowMs) {
+  function isPubliclyVisible(exp, nowMs, slotsArr) {
     if (!exp || exp.isActive === false) return false;
     if (nowMs == null) nowMs = Date.now();
     const cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    const cutoffMs = cutoffH * 60 * 60 * 1000;
+
+    // Slot-aware (aditivo): se a experiência tem QUALQUER turma futura
+    // dentro da janela de cutoff, ela aparece — mesmo que a data
+    // primária (campo "Data") já tenha passado. Essencial pra
+    // experiências MULTI-DATA (cliente escolhe uma): a 1a data expira,
+    // mas as outras seguem valendo e o card não some. Só ESTENDE
+    // visibilidade — nunca oculta algo que já apareceria pela regra
+    // exp-level abaixo (preserva "Semanal" e datas únicas).
+    if (Array.isArray(slotsArr) && slotsArr.length) {
+      const anyFuture = slotsArr.some(function (sl) {
+        if (!sl || sl.isActive === false) return false;
+        let ts = null;
+        if (sl.eventAt) { const t = new Date(sl.eventAt).getTime(); if (!isNaN(t)) ts = t; }
+        if (ts == null) ts = deriveEventTimestamp(sl.data, sl.horario, nowMs);
+        if (ts == null) return false;
+        return nowMs + cutoffMs <= ts;
+      });
+      if (anyFuture) return true;
+    }
+
     let eventTs = null;
     if (exp.eventAt) {
       const t = new Date(exp.eventAt).getTime();
@@ -795,7 +816,7 @@
       );
     }
     if (eventTs == null) return true;
-    return nowMs + cutoffH * 60 * 60 * 1000 <= eventTs;
+    return nowMs + cutoffMs <= eventTs;
   }
 
   // Lista pública: aplica isPubliclyVisible em todas as experiências.
@@ -811,7 +832,12 @@
   async function getVisibleExperiences() {
     const all = await getAllExperiences();
     const now = Date.now();
-    const visible = all.filter(e => isPubliclyVisible(e, now));
+    // Carrega os slots pra que isPubliclyVisible enxergue datas futuras
+    // (experiências multi-data continuam visíveis após a 1a data passar).
+    // loadAllSlots é cacheado; falha graciosa mantém o filtro exp-level.
+    let slotMap = null;
+    try { slotMap = await loadAllSlots(); } catch (e) { slotMap = null; }
+    const visible = all.filter(e => isPubliclyVisible(e, now, slotMap ? slotMap.get(e.id) : null));
     const seen = new Set();
     const out = [];
     visible.forEach(function (e) {

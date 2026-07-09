@@ -507,6 +507,20 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // Pacote: se exp.pacoteDatas tem 2+ datas, lista TODAS no card.
     const pacote = Array.isArray(exp.pacoteDatas) ? exp.pacoteDatas.filter(Boolean) : [];
     const isPackage = pacote.length >= 2;
+    // Multi-data: mesma experiência em 2+ dias distintos (cliente escolhe
+    // uma). Detecta pelas datas futuras reais dos slots. Diferente de
+    // pacote (que o cliente vai a TODAS). Fallback seguro: sem
+    // _futureDates, size = 0 → mostra a data única normal.
+    const _futTs = Array.isArray(exp._futureDates) ? exp._futureDates : [];
+    const _distinctFutureDays = new Set(_futTs.map(function (ts) {
+      var d = new Date(ts);
+      return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+    }));
+    // Só rotula "Várias datas" quando a data primária é uma data
+    // concreta (dd/mm). Experiências "Semanal"/recorrentes mantêm o
+    // próprio rótulo — não viram "Várias datas".
+    const _dataConcreta = /^\d{1,2}\/\d{1,2}/.test(String(exp.data || '').trim());
+    const isMultiDate = !isPackage && _dataConcreta && _distinctFutureDays.size >= 2;
     const horarioSuffix = (!hasMultipleHorarios && horarios[0]) ? ' &middot; ' + horarios[0] : '';
     let horarioLine;
     if (isPackage) {
@@ -515,6 +529,8 @@ if (categoriaURL) activeCategoria = categoriaURL;
           horarioSuffix +
         '</span>';
       }).join('');
+    } else if (isMultiDate) {
+      horarioLine = `Várias datas${horarioSuffix}`;
     } else {
       horarioLine = `${exp.data}${horarioSuffix}`;
     }
@@ -538,7 +554,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
             String(d).replace(/[&<>"]/g, '') +
           '</span>';
         }).join('')
-      : `<span class="card__badge">${exp.data}</span>`;
+      : isMultiDate
+        ? `<span class="card__badge">Várias datas</span>`
+        : `<span class="card__badge">${exp.data}</span>`;
 
     // Selo de escassez no card (mesma regra honesta da página da
     // experiência) — só aparece quando uma turma futura está enchendo.
