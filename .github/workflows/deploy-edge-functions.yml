@@ -77,6 +77,12 @@ jobs:
           echo "→ notify-manual-sale"
           supabase functions deploy notify-manual-sale \
             --project-ref "$PROJECT_REF"
+          # resend-booking-confirmation mantém verify_jwt (default): só
+          # admin autenticada reenvia a confirmação pro cliente. NÃO usar
+          # --no-verify-jwt aqui.
+          echo "→ resend-booking-confirmation"
+          supabase functions deploy resend-booking-confirmation \
+            --project-ref "$PROJECT_REF"
           # analytics-insights faz a própria autorização por dentro
           # (authorizeRequest: CRON_SECRET, service_role ou admin), então
           # precisa de --no-verify-jwt — senão o cron do relatório (que
