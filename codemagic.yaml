@@ -4,9 +4,8 @@
 # Pré-requisitos (feitos uma vez, pelo navegador do Dell):
 #   1. Conta Apple Developer (US$ 99/ano).
 #   2. No App Store Connect, criar o app com o Bundle ID: com.elarah.app
-#   3. No Codemagic, criar uma integração "App Store Connect API key" e
-#      nomeá-la EXATAMENTE como: ElarahASC
-#      (Codemagic → Teams/User settings → Integrations → App Store Connect)
+#   3. No Codemagic, criar a integração "App Store Connect API key" com o
+#      nome EXATO: ElarahASC (em Settings -> Integrations -> Developer Portal)
 #
 # Depois é só apertar "Start new build" no workflow "Elarah iOS".
 
@@ -18,12 +17,10 @@ workflows:
     integrations:
       app_store_connect: ElarahASC
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.elarah.app
       vars:
         XCODE_PROJECT: "app/ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.elarah.app"
       node: 20
       xcode: latest
     scripts:
@@ -40,13 +37,14 @@ workflows:
         script: |
           cd app
           npx @capacitor/assets generate --ios || true
-      - name: Configurar assinatura (automatica via App Store Connect)
+      - name: Configurar assinatura (cria certificado e perfil se nao existirem)
         script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
           xcode-project use-profiles
-      - name: Definir numero de build
-        script: |
-          cd app/ios/App
-          agvtool new-version -all "$(($BUILD_NUMBER))" || true
       - name: Montar o app (IPA)
         script: |
           xcode-project build-ipa \
