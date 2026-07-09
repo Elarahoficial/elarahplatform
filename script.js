@@ -1063,8 +1063,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? 'Quero participar'
         : 'Entrar na lista de espera';
 
-      var imgSrc = resolveImage(it);
-      var imgFallback = resolveOnErrorFallback(it);
+      // SOMENTE a imagem real cadastrada. Sem foto real, o espaco fica VAZIO
+      // (nada aparece) ate a foto real carregar — nunca mostra foto antiga nem
+      // logo no lugar. Se a foto real falhar, some (fica vazio tambem).
+      var realImg = normalizeImagePath(it.imagem);
+      var imgHtml = realImg
+        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" onerror="this.style.display=&quot;none&quot;;">'
+        : '';
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
       // CRÍTICO: cards compráveis recebem `data-reserve` — o listener
@@ -1116,16 +1121,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return '' +
         '<article class="' + cardClass + '" style="position:relative;">' +
           '<div class="originals__card-image">' +
-            '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
-              // onerror: loga URL que falhou (admin vê no DevTools)
-              // e troca pro placeholder neutro. Flag dataset.fb evita
-              // loop se o próprio fallback der erro.
-              'onerror="if(this.dataset.fb!==&quot;1&quot;){' +
-                'this.dataset.fb=&quot;1&quot;;' +
-                'console.warn(&quot;[Elarah] imagem do card falhou — usando placeholder. URL original: &quot;+this.dataset.originalSrc);' +
-                'this.classList.add(&quot;originals__image--placeholder&quot;);' +
-                'this.src=&quot;' + esc(imgFallback) + '&quot;;' +
-              '}" data-original-src="' + esc(imgSrc) + '">' +
+            imgHtml +
             '<span class="originals__card-badge">' + esc(badgeLabel) + '</span>' +
             shareBtnHtml +
           '</div>' +
