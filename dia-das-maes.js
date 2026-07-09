@@ -131,7 +131,7 @@
     card.setAttribute('tabindex', '0');
 
     const primary = normalizeImg(exp.imagem);
-    const catFallback = defaultImgForCategory(exp.categoria);
+    const catFallback = ""; /* fotos genericas de categoria desativadas: mostra placeholder neutro ate a foto real carregar */
     // Cadeia: primária → fallback de categoria → placeholder.
     // Se a primária estiver vazia, já começamos pela de categoria.
     const initialSrc = primary || catFallback;
