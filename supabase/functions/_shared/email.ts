@@ -372,6 +372,10 @@ export function adminNotifyRecipients(): string[] {
 
 export interface AdminSaleNotificationOpts {
   experienciaNome: string;
+  // Rótulo do tipo de evento (ex.: "Aniversário adulto"). Quando
+  // presente, aparece no assunto e no corpo do aviso. Usado nas
+  // vendas manuais classificadas como evento.
+  eventoLabel?: string | null;
   clienteNome?: string | null;
   clienteEmail?: string | null;
   data?: string | null;
@@ -430,6 +434,7 @@ export function adminSaleNotificationEmailHtml(opts: AdminSaleNotificationOpts):
       <div style="font-family:Georgia,serif;font-size:19px;color:#1a1a1a;margin-bottom:14px;line-height:1.3;">${escapeHtml(opts.experienciaNome)}</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr><td style="padding:6px 0;color:#888;font-size:13px;vertical-align:top;width:40%;">Cliente</td><td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right;">${clienteLinha}</td></tr>
+        ${linha("Evento", opts.eventoLabel)}
         ${linha("Data", opts.data)}
         ${linha("Horário", opts.horario)}
         ${linha("Quantidade", qtyLabel)}
@@ -460,7 +465,7 @@ export async function sendAdminSaleNotification(
   const valorLabel = Number.isFinite(amountCents) && amountCents > 0
     ? brl(amountCents)
     : (opts.precoLabel || "");
-  const subject = `🎉 Nova venda: ${opts.experienciaNome}` +
+  const subject = `🎉 Nova venda${opts.eventoLabel ? ` · ${opts.eventoLabel}` : ""}: ${opts.experienciaNome}` +
     (valorLabel ? ` — ${valorLabel}` : "");
   const result = await sendEmail({
     to,
