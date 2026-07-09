@@ -13856,6 +13856,9 @@
           coupon_code: payload.coupon_code,
           discount_centavos: payload.discount_centavos,
           supplier_name: payload.supplier_name,
+          event_type: payload.event_type,
+          is_event: payload.is_event,
+          event_type_custom: payload.event_type_custom,
         },
       }).then((r) => {
         if (r && r.error) {

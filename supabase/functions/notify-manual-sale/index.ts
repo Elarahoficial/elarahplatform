@@ -37,6 +37,36 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { sendAdminSaleNotification } from "../_shared/email.ts";
 
+// Rótulo amigável do tipo de evento pro assunto/corpo do e-mail.
+// Espelha o <select id="ms-event-type"> do painel. Retorna null quando
+// não é evento (ou não dá pra saber o tipo):
+//   - is_event === false  → "Não é evento" (nunca rotula)
+//   - event_type presente → rótulo do tipo ("outro" usa o texto livre)
+//   - sem tipo + qty >= 2  → "Evento" genérico (mesma regra da aba Eventos)
+function eventoLabel(payload: Record<string, unknown>): string | null {
+  const map: Record<string, string> = {
+    meu_grupo: "Meu grupo",
+    aniversario_adulto: "Aniversário adulto",
+    aniversario_kids: "Aniversário kids",
+    despedida_solteira: "Despedida de solteira",
+    despedida_solteiro: "Despedida de solteiro",
+    corporativo: "Corporativo",
+  };
+  if (payload.is_event === false) return null;
+  const t = payload.event_type ? String(payload.event_type) : "";
+  if (t) {
+    if (t === "outro") {
+      const custom = String(payload.event_type_custom ?? "").trim();
+      return custom || "Evento";
+    }
+    return map[t] ?? t;
+  }
+  // Sem tipo explícito: a aba Eventos lista vendas com mais de 2 pessoas.
+  const qty = Number(payload.quantity);
+  if (Number.isFinite(qty) && qty >= 3) return "Evento";
+  return null;
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -97,6 +127,7 @@ serve(async (req) => {
 
   const result = await sendAdminSaleNotification({
     experienciaNome,
+    eventoLabel: eventoLabel(payload),
     clienteNome: (payload.customer_name as string | null) || null,
     clienteEmail: (payload.customer_email as string | null) || null,
     data: (payload.slot_date as string | null) || null,
