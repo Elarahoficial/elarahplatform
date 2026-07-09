@@ -3222,6 +3222,15 @@
       const cancelBookingBtn = b.status === 'pago'
         ? '<button type="button" class="admin__cancel-booking-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Cancelar reserva e marcar como reembolsada. Remove dos totais da contabilidade." style="display:inline-block;margin:6px 0 0;padding:3px 9px;border:1px solid #f4c7c1;background:#fdecea;color:#c0392b;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">❌ Cancelar</button>'
         : '';
+      // Reenviar confirmação: dispara de novo o e-mail "Sua reserva está
+      // confirmada" com os dados ATUAIS da reserva. Uso principal: depois
+      // de editar/trocar a experiência, mandar a confirmação certa pro
+      // cliente (o webhook original já rodou com os dados antigos). Só
+      // reservas pagas do site com e-mail (venda manual/gift card não).
+      const canResendConfirm = b.status === 'pago' && b.email && !b._isManualSale && !b._isGiftCard;
+      const resendConfirmBtn = canResendConfirm
+        ? '<button type="button" class="admin__resend-confirm-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Reenviar o e-mail de confirmação pro cliente com os dados atuais da reserva (use depois de editar/trocar a experiência)" style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Reenviar confirmação</button>'
+        : '';
 
       return `
         <tr>
@@ -3230,7 +3239,7 @@
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
-          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn ? '<br>' + editBookingBtn + cancelBookingBtn : ''}${variantCell}${shippingCell}</td>
+          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn || resendConfirmBtn ? '<br>' + editBookingBtn + resendConfirmBtn + cancelBookingBtn : ''}${variantCell}${shippingCell}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
@@ -3516,17 +3525,25 @@
         return [];
       }
 
-      // Per-pessoa em centavos. Booking pode ter valor_cheio_centavos
-      // (que é total já × qty) ou cair no fallback da experiência.
-      function unitCheioCentavos(exp, totalCentavos, qty) {
+      // Valor "limpo" da experiência por pessoa, em centavos — SEMPRE
+      // sem a taxa do cartão. A diferença de troca é "sem taxas": não
+      // pode usar amount_total nem o valor_cheio_centavos snapshot da
+      // reserva, que podem carregar a taxa do cartão repassada ao
+      // cliente (ex.: vendas manuais gravam o total pago COM taxa em
+      // valor_cheio_centavos). Prioriza o Valor Cheio cadastrado na
+      // experiência, cai no preço dela e, por fim, no preço limpo
+      // registrado na própria reserva (preco_label).
+      function unitCheioCentavos(exp, bookingRef) {
         if (exp && exp.valorCheioCentavos != null) return Number(exp.valorCheioCentavos) || 0;
-        if (totalCentavos && qty > 0) return Math.round(Number(totalCentavos) / qty);
-        return 0;
+        var fromExpPreco = exp ? precoLabelToCents(exp.preco) : null;
+        if (fromExpPreco) return fromExpPreco;
+        var fromBookingPreco = bookingRef ? precoLabelToCents(bookingRef.preco_label) : null;
+        return fromBookingPreco || 0;
       }
 
       var originalQty = Number(booking.quantidade) || 1;
       var originalExp = current;
-      var originalUnit = unitCheioCentavos(originalExp, booking._valorCheioResolvido, originalQty);
+      var originalUnit = unitCheioCentavos(originalExp, booking);
 
       function horasUntilEvent() {
         var ts = booking._eventTsResolvido;
@@ -3656,7 +3673,7 @@
         var chosen = experiencesList.find(function (e) { return e && e.id === expSel.value; });
         if (!chosen) { refundBox.innerHTML = ''; return; }
         var novaQty = Math.max(1, Math.floor(Number(qtyInput.value) || 1));
-        var newUnit = unitCheioCentavos(chosen, null, novaQty);
+        var newUnit = unitCheioCentavos(chosen, null);
         var newTotal = newUnit * novaQty;
         var sameExp = chosen.id === booking.experiencia_id;
         var sameQty = novaQty === originalQty;
@@ -3928,6 +3945,58 @@
           return;
         }
         openEditBookingModal(booking, allExperiences || []);
+      });
+    });
+
+    // Wire "📧 Reenviar confirmação" — dispara de novo o e-mail de
+    // confirmação pro cliente com os dados ATUAIS da reserva (via edge
+    // function resend-booking-confirmation, que reusa o mesmo template
+    // do webhook). Uso: depois de editar/trocar a experiência.
+    tbody.querySelectorAll('.admin__resend-confirm-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var bookingId = btn.dataset.bookingId;
+        var booking = bookings.find(function (b) { return b && b.id === bookingId; });
+        if (!booking) {
+          console.warn('[Admin] booking não encontrada pra reenviar confirmação:', bookingId);
+          return;
+        }
+        var destino = booking.email || '';
+        if (!confirm('Reenviar o e-mail de confirmação para ' + destino + '?\n\n' +
+          'Experiência: ' + (booking.experiencia_nome || '—') + '\n' +
+          'Data: ' + (booking.data || '—') + ' · ' + (booking.horario || '—') + '\n\n' +
+          'O e-mail usa os dados ATUAIS da reserva.')) {
+          return;
+        }
+        var sb = window.supabaseClient;
+        if (!sb || !sb.functions || !sb.functions.invoke) {
+          alert('Supabase indisponível. Recarregue a página e tente de novo.');
+          return;
+        }
+        var original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+        try {
+          var res = await sb.functions.invoke('resend-booking-confirmation', {
+            body: { booking_id: bookingId },
+          });
+          var data = res && res.data;
+          var err = res && res.error;
+          if (err || !data || !data.ok) {
+            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+            console.error('[Admin] reenviar confirmação falhou:', err || data);
+            alert('Não consegui reenviar a confirmação.\nMotivo: ' + motivo);
+            btn.disabled = false;
+            btn.textContent = original;
+            return;
+          }
+          btn.textContent = '✓ Enviado';
+          alert('Confirmação reenviada para ' + (data.to || destino) + ' ✨');
+        } catch (e) {
+          console.error('[Admin] exceção ao reenviar confirmação:', e);
+          alert('Erro ao reenviar a confirmação:\n' + ((e && e.message) || String(e)));
+          btn.disabled = false;
+          btn.textContent = original;
+        }
       });
     });
 
