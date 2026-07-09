@@ -43,7 +43,13 @@ workflows:
         script: |
           set -e
           # grava a chave da App Store Connect em arquivo para o xcodebuild usar
-          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc_key.p8
+          # (%b converte "\n" escapado em quebra de linha real -> PEM valido)
+          if printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" | grep -q "BEGIN PRIVATE KEY"; then
+            printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc_key.p8
+          else
+            printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 --decode > /tmp/asc_key.p8
+          fi
+          echo "" >> /tmp/asc_key.p8
           ARCH="$CM_BUILD_DIR/build/App.xcarchive"
           IPA_DIR="$CM_BUILD_DIR/build/ios/ipa"
           mkdir -p "$IPA_DIR"
