@@ -13842,6 +13842,14 @@
     try {
       const sb = window.supabaseClient;
       if (!sb || !sb.functions || !sb.functions.invoke) return;
+      // Soma o que já entrou (entrada/sinal + parcelas marcadas como pagas)
+      // pra o e-mail mostrar "Pago (entrada)" e o restante em aberto.
+      let paidCentavos = 0;
+      if (Array.isArray(payload.payments)) {
+        payload.payments.forEach((p) => {
+          if (p && p.pago) paidCentavos += Number(p.valor_centavos) || 0;
+        });
+      }
       sb.functions.invoke('notify-manual-sale', {
         body: {
           experience_name: payload.experience_name,
@@ -13859,6 +13867,7 @@
           event_type: payload.event_type,
           is_event: payload.is_event,
           event_type_custom: payload.event_type_custom,
+          paid_centavos: paidCentavos,
         },
       }).then((r) => {
         if (r && r.error) {

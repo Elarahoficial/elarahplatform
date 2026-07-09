@@ -128,6 +128,7 @@ serve(async (req) => {
   const result = await sendAdminSaleNotification({
     experienciaNome,
     eventoLabel: eventoLabel(payload),
+    pagoParcialCentavos: num(payload.paid_centavos),
     clienteNome: (payload.customer_name as string | null) || null,
     clienteEmail: (payload.customer_email as string | null) || null,
     data: (payload.slot_date as string | null) || null,
