@@ -3073,12 +3073,14 @@
           'style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;text-decoration:none;line-height:1.4;">💬 WhatsApp cliente</a>');
       }
       if (b.email) {
-        const mailUrl = 'mailto:' + b.email + '?subject=' + encodeURIComponent(tpl.subject) +
-          '&body=' + encodeURIComponent(tpl.body);
-        btns.push('<a href="' + escapeHtml(mailUrl) + '" ' +
-          'title="Abrir e-mail com a mensagem do ' + escapeHtml(tpl.label) +
-          ' pronta. Revise e clique enviar." ' +
-          'style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #cfe0f3;background:#eef4fb;color:#3068a8;border-radius:8px;font-size:.7rem;font-weight:700;text-decoration:none;line-height:1.4;">📧 E-mail cliente</a>');
+        // Envio real pelo servidor (edge function) — a mensagem sai
+        // direto pro e-mail do cliente com o template da Elarah. Não é
+        // mailto: um clique já dispara (com confirmação antes).
+        btns.push('<button type="button" class="admin__send-supplier-msg-btn" ' +
+          'data-booking-id="' + escapeHtml(b.id) + '" ' +
+          'title="Enviar a mensagem do ' + escapeHtml(tpl.label) +
+          ' por e-mail pro cliente (' + escapeHtml(b.email) + ')" ' +
+          'style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #cfe0f3;background:#eef4fb;color:#3068a8;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Enviar e-mail</button>');
       }
       if (!btns.length) return '';
       return '<br><span style="display:inline-block;margin-top:6px;font-size:.66rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">✉️ Mensagem ' +
@@ -4129,6 +4131,61 @@
         } catch (e) {
           console.error('[Admin] exceção ao reenviar confirmação:', e);
           alert('Erro ao reenviar a confirmação:\n' + ((e && e.message) || String(e)));
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      });
+    });
+
+    // Wire "📧 Enviar e-mail" — dispara a mensagem pós-compra do
+    // fornecedor (BaresSp / Lado B) direto pro e-mail do cliente, via
+    // edge function send-supplier-customer-message. Confirmação antes,
+    // pra a admin não mandar sem querer.
+    tbody.querySelectorAll('.admin__send-supplier-msg-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var bookingId = btn.dataset.bookingId;
+        var booking = bookings.find(function (b) { return b && b.id === bookingId; });
+        if (!booking) {
+          console.warn('[Admin] booking não encontrada pra enviar mensagem:', bookingId);
+          return;
+        }
+        var destino = booking.email || '';
+        if (!destino) { alert('Esta reserva não tem e-mail do cliente.'); return; }
+        if (!confirm('Enviar a mensagem por e-mail para ' + destino + '?\n\n' +
+          'Fornecedor: ' + (booking._fornecedorResolvido || '—') + '\n' +
+          'Experiência: ' + (booking.experiencia_nome || '—'))) {
+          return;
+        }
+        var sb = window.supabaseClient;
+        if (!sb || !sb.functions || !sb.functions.invoke) {
+          alert('Supabase indisponível. Recarregue a página e tente de novo.');
+          return;
+        }
+        var original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+        try {
+          var res = await sb.functions.invoke('send-supplier-customer-message', {
+            body: {
+              booking_id: bookingId,
+              fornecedor_nome: booking._fornecedorResolvido || '',
+            },
+          });
+          var data = res && res.data;
+          var err = res && res.error;
+          if (err || !data || !data.ok) {
+            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+            console.error('[Admin] enviar mensagem fornecedor falhou:', err || data);
+            alert('Não consegui enviar o e-mail.\nMotivo: ' + motivo);
+            btn.disabled = false;
+            btn.textContent = original;
+            return;
+          }
+          btn.textContent = '✓ Enviado';
+          alert('Mensagem enviada para ' + (data.to || destino) + ' ✨');
+        } catch (e) {
+          console.error('[Admin] exceção ao enviar mensagem fornecedor:', e);
+          alert('Erro ao enviar o e-mail:\n' + ((e && e.message) || String(e)));
           btn.disabled = false;
           btn.textContent = original;
         }
