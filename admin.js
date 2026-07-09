@@ -3800,10 +3800,30 @@
           console.warn('[Admin] exp', chosenExp.id, 'sem valorCheioCentavos — repasse não foi recalculado');
         }
 
+        // Trocou de experiência → o local muda e a PARCEIRA NOVA ainda
+        // não foi avisada. Zera o "avisado" pra a célula do WhatsApp
+        // voltar a vermelho e cobrar o aviso da nova parceira — senão
+        // ela herdaria o "✓ Avisado" da parceira antiga e ninguém a
+        // confirmaria de fato.
+        var expTrocada = chosenExp.id !== booking.experiencia_id;
+        if (expTrocada) {
+          update.fornecedor_avisado_at = null;
+        }
+
         // Histórico de auditoria no metadata. Não-bloqueante.
         var metaToSave = null;
         try {
           var meta = (booking.metadata && typeof booking.metadata === 'object') ? Object.assign({}, booking.metadata) : {};
+          // Sincroniza o LOCAL (endereço + bairro) com a experiência
+          // escolhida — mesma fonte que o checkout grava (exp.endereco/
+          // exp.bairro). CRÍTICO na troca: a confirmação da parceira
+          // (mensagem de WhatsApp) e o e-mail do cliente leem o local
+          // daqui; sem isso a nova parceira receberia o endereço da
+          // experiência antiga.
+          meta.endereco = (chosenExp.endereco != null && String(chosenExp.endereco).trim())
+            ? String(chosenExp.endereco).trim() : null;
+          meta.bairro = (chosenExp.bairro != null && String(chosenExp.bairro).trim())
+            ? String(chosenExp.bairro).trim() : null;
           var hist = Array.isArray(meta.admin_edit_history) ? meta.admin_edit_history.slice() : [];
           hist.push({
             at: new Date().toISOString(),
