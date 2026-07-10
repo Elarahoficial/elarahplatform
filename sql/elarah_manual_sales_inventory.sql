@@ -95,12 +95,19 @@ begin
   end if;
 
   -- 3: experiência com um único slot ativo
-  select count(*), min(s.id)
-    into v_count, v_id
+  -- (min(uuid) não existe no Postgres — conta primeiro, depois pega o id)
+  select count(*)
+    into v_count
     from public.experience_slots s
    where s.experience_id = p_experience_id
      and coalesce(s.is_active, true) = true;
   if v_count = 1 then
+    select s.id
+      into v_id
+      from public.experience_slots s
+     where s.experience_id = p_experience_id
+       and coalesce(s.is_active, true) = true
+     limit 1;
     return v_id;
   end if;
 
