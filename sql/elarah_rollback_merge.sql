@@ -32,14 +32,22 @@ begin
     from backup_premerge.experiences b
    where e.id = b.id;
 
-  -- 2. Slots.
+  -- 2. Slots — reconstitui a tabela EXATAMENTE como no backup.
   if to_regclass('backup_premerge.experience_slots') is not null then
     --   2a. remove slots que o merge criou (não existiam no backup)
     delete from public.experience_slots s
      where not exists (
        select 1 from backup_premerge.experience_slots b where b.id = s.id
      );
-    --   2b. devolve cada slot ao dono original
+    --   2b. recria os slots que o merge apagou (estão no backup mas
+    --       sumiram do banco — ex.: data repetida entre cópias). Sem
+    --       isso, reservas que apontavam pra eles quebram a FK.
+    insert into public.experience_slots
+    select b.* from backup_premerge.experience_slots b
+     where not exists (
+       select 1 from public.experience_slots s where s.id = b.id
+     );
+    --   2c. devolve cada slot sobrevivente ao dono original
     update public.experience_slots s
        set experience_id = b.experience_id
       from backup_premerge.experience_slots b
