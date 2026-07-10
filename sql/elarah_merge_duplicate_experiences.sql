@@ -3,10 +3,18 @@
 --          várias opções de DATA (slots)
 -- -------------------------------------------------------------
 -- Junta experiências que são a MESMA coisa repetida em dias
--- diferentes (mesmo fornecedor + mesmo valor + mesma descrição;
--- foto e data podem variar). Depois do merge você tem UMA
+-- diferentes. São consideradas a mesma quando têm IGUAIS:
+--   • fornecedor  (experience_suppliers ou fornecedor_nome)
+--   • NOME        (sem diferenciar maiúsc/minúsc, ignora espaços)
+--   • valor       (só os dígitos: "R$ 162" = "R$162")
+-- Foto, data e descrição podem variar. Depois do merge você tem UMA
 -- experiência por card, com as várias datas aparecendo como
 -- "Escolha uma data" na página.
+--
+-- Agrupa pelo NOME (não pela descrição) de propósito: fornecedores
+-- reusam a mesma descrição-padrão em produtos diferentes, então
+-- juntar por descrição misturaria coisas distintas. O nome é o que
+-- realmente identifica a experiência.
 --
 -- ⚠️  RODE O DIAGNÓSTICO PRIMEIRO e confira o resultado:
 --       sql/elarah_merge_duplicate_experiences_diagnostico.sql
@@ -68,16 +76,16 @@ begin
     with base as (
       select
         e.id,
-        e.nome,
         e.created_at,
-        lower(btrim(coalesce(e.preco, '')))                        as preco_key,
-        lower(btrim(coalesce(e.descricao, '')))                    as desc_key,
+        regexp_replace(coalesce(e.preco, ''), '[^0-9]', '', 'g')             as preco_key,
+        regexp_replace(lower(btrim(coalesce(e.nome, ''))), '\s+', ' ', 'g')  as nome_key,
         coalesce(
-          (select string_agg(lower(btrim(es.fornecedor_nome)), '|'
-                             order by lower(btrim(es.fornecedor_nome)))
+          (select string_agg(
+                    regexp_replace(lower(btrim(es.fornecedor_nome)), '\s+', ' ', 'g'), '|'
+                    order by regexp_replace(lower(btrim(es.fornecedor_nome)), '\s+', ' ', 'g'))
              from public.experience_suppliers es
             where es.experience_id = e.id),
-          lower(btrim(coalesce(e.fornecedor_nome, '')))
+          regexp_replace(lower(btrim(coalesce(e.fornecedor_nome, ''))), '\s+', ' ', 'g')
         )                                                          as sup_key,
         (select count(*) from public.bookings b
            where b.experiencia_id = e.id)                          as n_reservas,
@@ -92,8 +100,8 @@ begin
         (array_agg(id order by n_reservas desc, created_at asc, id asc))[1] as manter_id,
         (array_agg(id order by n_reservas desc, created_at asc, id asc))    as todos_ids
       from base
-      where length(desc_key) >= 20
-      group by sup_key, preco_key, md5(desc_key)
+      where length(nome_key) >= 2
+      group by sup_key, nome_key, preco_key
       having count(*) > 1
     )
     select manter_id,
