@@ -56,10 +56,18 @@ begin
   end if;
 
   -- 3. Reservas: restaura vínculo com experiência e slot.
+  --    O slot_id só é restaurado se o slot existir de fato (o passo 2
+  --    recria os apagados; este guard garante que, em qualquer caso
+  --    extremo, a FK nunca quebre — mantém o slot atual se faltar).
   if to_regclass('backup_premerge.bookings') is not null then
     update public.bookings bk
        set experiencia_id = b.experiencia_id,
-           slot_id        = b.slot_id
+           slot_id = case
+                       when b.slot_id is null then null
+                       when exists (select 1 from public.experience_slots s
+                                     where s.id = b.slot_id) then b.slot_id
+                       else bk.slot_id
+                     end
       from backup_premerge.bookings b
      where bk.id = b.id;
   end if;
