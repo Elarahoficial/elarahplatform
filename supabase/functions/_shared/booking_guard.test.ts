@@ -20,6 +20,9 @@ import {
 import {
   assertExpectedTotal,
   computeChargeAmount,
+  holdsInventory,
+  reoccupyVagaOnReapproval,
+  wasInventoryReleased,
 } from "./booking_guard.ts";
 
 Deno.test("computeChargeAmount: 1 vaga sem desconto", () => {
@@ -154,4 +157,90 @@ Deno.test("regressão bug: cálculo correto passa o assert sem soluço", () => {
   const breakdown = computeChargeAmount(10000, 5, 0);
   // Cenário OK: cobrar 50000 (5 × 10000). Assert passa.
   assertExpectedTotal(breakdown, 50000, "stripe checkout session ok");
+});
+
+// =============================================================
+// Estados de inventário + re-ocupação (fix de overbooking)
+// -------------------------------------------------------------
+// holdsInventory / wasInventoryReleased classificam o status da
+// booking. reoccupyVagaOnReapproval re-decrementa quando uma
+// booking liberada volta a ser paga. Estes cobrem o bug que
+// permitia "vender além da lotação".
+// =============================================================
+
+Deno.test("holdsInventory: pending e pago seguram vaga; resto não", () => {
+  assertEquals(holdsInventory("pending"), true);
+  assertEquals(holdsInventory("pago"), true);
+  assertEquals(holdsInventory("cancelado"), false);
+  assertEquals(holdsInventory("expirado"), false);
+  assertEquals(holdsInventory("reembolsado"), false);
+  assertEquals(holdsInventory(null), false);
+  assertEquals(holdsInventory(undefined), false);
+});
+
+Deno.test("wasInventoryReleased: só os terminais liberados", () => {
+  assertEquals(wasInventoryReleased("cancelado"), true);
+  assertEquals(wasInventoryReleased("expirado"), true);
+  assertEquals(wasInventoryReleased("reembolsado"), true);
+  assertEquals(wasInventoryReleased("pending"), false);
+  assertEquals(wasInventoryReleased("pago"), false);
+  assertEquals(wasInventoryReleased(null), false);
+});
+
+// Mock mínimo do client Supabase: registra a chamada rpc e devolve
+// o que o teste configurar.
+// deno-lint-ignore no-explicit-any
+function mockSupabase(rpcResult: any) {
+  const calls: Array<{ fn: string; args: unknown }> = [];
+  const client = {
+    // deno-lint-ignore no-explicit-any
+    rpc(fn: string, args: unknown): Promise<any> {
+      calls.push({ fn, args });
+      return Promise.resolve(rpcResult);
+    },
+  };
+  return { client, calls };
+}
+
+Deno.test("reoccupy: slot com vaga → re-decrementa e não é oversold", async () => {
+  const { client, calls } = mockSupabase({ data: [{ ok: true, vagas_restantes: 0 }], error: null });
+  // deno-lint-ignore no-explicit-any
+  const r = await reoccupyVagaOnReapproval(client as any, {
+    slot_id: "slot-1", experiencia_id: "exp-1", quantidade: 1,
+  });
+  assertEquals(r.reoccupied, true);
+  assertEquals(r.oversold, false);
+  assertEquals(calls[0].fn, "decrement_slot_vagas");
+  assertEquals(calls[0].args, { p_slot_id: "slot-1", p_qty: 1 });
+});
+
+Deno.test("reoccupy: sem vaga (ok=false) → oversold=true (pagamento já caiu)", async () => {
+  const { client } = mockSupabase({ data: [{ ok: false, vagas_restantes: 0 }], error: null });
+  // deno-lint-ignore no-explicit-any
+  const r = await reoccupyVagaOnReapproval(client as any, {
+    slot_id: "slot-1", quantidade: 2,
+  });
+  assertEquals(r.reoccupied, false);
+  assertEquals(r.oversold, true);
+});
+
+Deno.test("reoccupy: sem slot_id cai pro nível experiência", async () => {
+  const { client, calls } = mockSupabase({ data: [{ ok: true, vagas_restantes: 3 }], error: null });
+  // deno-lint-ignore no-explicit-any
+  const r = await reoccupyVagaOnReapproval(client as any, {
+    slot_id: null, experiencia_id: "exp-1", quantidade: 1,
+  });
+  assertEquals(r.reoccupied, true);
+  assertEquals(calls[0].fn, "decrement_experience_vagas");
+  assertEquals(calls[0].args, { p_experience_id: "exp-1", p_qty: 1 });
+});
+
+Deno.test("reoccupy: RPC indisponível (error) → não bloqueia, oversold=false", async () => {
+  const { client } = mockSupabase({ data: null, error: { message: "function does not exist" } });
+  // deno-lint-ignore no-explicit-any
+  const r = await reoccupyVagaOnReapproval(client as any, {
+    slot_id: "slot-1", quantidade: 1,
+  });
+  assertEquals(r.reoccupied, false);
+  assertEquals(r.oversold, false);
 });

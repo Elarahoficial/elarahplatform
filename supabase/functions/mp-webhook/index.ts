@@ -33,6 +33,11 @@ import {
   getPayment,
   verifyWebhookSignature,
 } from "../_shared/mercadopago.ts";
+import {
+  holdsInventory,
+  reoccupyVagaOnReapproval,
+  wasInventoryReleased,
+} from "../_shared/booking_guard.ts";
 
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 // Token da conta do CARTÃO (CNPJ). Opcional: só existe durante a
@@ -138,6 +143,31 @@ async function markBookingAsPaid(
     currency: "brl",
   };
 
+  // ===== Re-ocupa a vaga se a booking já tinha sido liberada =====
+  // Se o pagamento cai DEPOIS da booking ter virado cancelado/expirado/
+  // reembolsado (aprovação tardia, webhook fora de ordem, retry), a vaga
+  // já foi devolvida ao estoque. Marcar "pago" sem re-decrementar vende
+  // além da lotação. Re-decrementa atômico; se não houver vaga, o
+  // pagamento já caiu — grava flag pra tratamento manual.
+  if (wasInventoryReleased(booking.status)) {
+    const { oversold } = await reoccupyVagaOnReapproval(supabase, booking);
+    if (oversold) {
+      console.error(
+        "[Elarah Payment/MP] OVERBOOKING — pagamento aprovado sem vaga disponível",
+        "booking=" + booking.id,
+        "status_anterior=" + booking.status,
+        "experiencia=" + (booking.experiencia_id ?? "?"),
+        "slot=" + ((booking as { slot_id?: string | null }).slot_id ?? "none"),
+      );
+      patch.metadata = {
+        ...(booking.metadata ?? {}),
+        inventory_oversold: true,
+        oversold_from_status: booking.status,
+        oversold_detected_at: new Date().toISOString(),
+      };
+    }
+  }
+
   // ===== Boundary check: pre-insert vs MP transaction_amount =====
   // O create-mp-pix-payment já gravou amount_total no pre-insert com
   // o valor correto (unit × quantidade − desconto). Se a MP confirmar
@@ -163,7 +193,8 @@ async function markBookingAsPaid(
         "experiencia_nome=" + (booking.experiencia_nome ?? "?"),
       );
       patch.metadata = {
-        ...(booking.metadata ?? {}),
+        // Preserva flags já acumuladas neste patch (ex.: inventory_oversold).
+        ...((patch.metadata as Record<string, unknown>) ?? booking.metadata ?? {}),
         amount_mismatch: true,
         expected_amount_total_centavos: expected,
         mp_paid_amount_centavos: paidAmountCents,
@@ -293,6 +324,14 @@ async function notifyAdminOfSale(booking: BookingRow, paymentMethod: string) {
 }
 
 async function cancelBooking(booking: BookingRow, newStatus: string) {
+  // Idempotência de estoque: só devolve vaga/cupom se a booking AINDA
+  // estava segurando inventário (pending/pago). Um webhook de
+  // cancelamento/expiração duplicado — ou polling + webhook chegando
+  // juntos — cairia aqui de novo sobre uma booking já liberada e
+  // devolveria a MESMA vaga uma segunda vez, criando estoque fantasma
+  // (o site mostra vaga que não existe → overbooking).
+  const heldInventory = holdsInventory(booking.status);
+
   const { error } = await supabase
     .from("bookings")
     .update({ status: newStatus })
@@ -303,6 +342,15 @@ async function cancelBooking(booking: BookingRow, newStatus: string) {
       booking.id,
       error,
     );
+  }
+  if (!heldInventory) {
+    console.info(
+      "[Elarah Payment/MP] cancelamento sem devolução de estoque (booking já liberada)",
+      "booking=" + booking.id,
+      "status_anterior=" + booking.status,
+      "novo_status=" + newStatus,
+    );
+    return;
   }
   // Devolve vaga — prioriza slot, fallback pra experiência
   // deno-lint-ignore no-explicit-any

@@ -264,6 +264,87 @@ function deriveEventTimestamp(
  *   - Chamar rollback() se qualquer etapa posterior falhar
  *   - OU criar a booking com os valores retornados e seguir o fluxo
  */
+// =============================================================
+// Estados de inventário + mutação idempotente de vaga
+// -------------------------------------------------------------
+// Uma booking SEGURA uma vaga enquanto está `pending` ou `pago`. Quando
+// vai pra `cancelado`/`expirado`/`reembolsado`, a vaga foi (ou deve ser)
+// devolvida ao estoque. Historicamente a mutação de estoque era feita
+// "às cegas" — increment no cancelamento, decrement só na criação — o
+// que abria DOIS caminhos de overbooking:
+//
+//   1. Cancelamento/expiração DUPLICADO (webhook repetido ou polling +
+//      webhook): devolvia a MESMA vaga duas vezes → estoque fantasma →
+//      o site voltava a mostrar vaga que não existe → vende além da
+//      lotação.
+//
+//   2. Aprovação TARDIA de uma booking já liberada (cancelado→pago,
+//      expirado→pago): o pagamento caía depois da vaga ter sido
+//      devolvida, mas a confirmação NÃO re-decrementava → a lotação
+//      passava batido.
+//
+// Estes helpers tornam a mutação idempotente: só devolve vaga se ela
+// estava de fato ocupada, e re-decrementa quando uma booking liberada
+// volta a ser paga. É a mesma fonte da verdade pros três webhooks
+// (mp-webhook, stripe-webhook, check-mp-payment-status).
+export function holdsInventory(status: string | null | undefined): boolean {
+  return status === "pending" || status === "pago";
+}
+
+export function wasInventoryReleased(status: string | null | undefined): boolean {
+  return status === "cancelado" || status === "expirado" || status === "reembolsado";
+}
+
+interface InventoryBookingShape {
+  slot_id?: string | null;
+  experiencia_id?: string | null;
+  quantidade?: number | null;
+}
+
+// Re-decrementa a vaga quando uma booking previamente liberada
+// (cancelado/expirado/reembolsado) é confirmada de novo. Atômico via
+// RPC — respeita a lotação (não deixa `vagas_restantes` ir abaixo de 0).
+//
+// Retorna:
+//   reoccupied=true             → vaga re-ocupada com sucesso.
+//   oversold=true               → não havia vaga. O pagamento JÁ caiu,
+//                                 então não dá pra recusar; o caller
+//                                 grava flag no metadata + alerta pra
+//                                 tratamento manual (estorno/remanejo).
+//   reoccupied=false/oversold=false → RPC indisponível (schema legado);
+//                                 não bloqueia a confirmação, só loga.
+export async function reoccupyVagaOnReapproval(
+  supabase: ReturnType<typeof createClient>,
+  booking: InventoryBookingShape,
+): Promise<{ reoccupied: boolean; oversold: boolean }> {
+  const qty = Math.max(1, Math.floor(Number(booking.quantidade) || 1));
+  const useSlot = !!booking.slot_id;
+  const rpc = useSlot ? "decrement_slot_vagas" : "decrement_experience_vagas";
+  const arg = useSlot
+    ? { p_slot_id: booking.slot_id, p_qty: qty }
+    : (booking.experiencia_id
+      ? { p_experience_id: booking.experiencia_id, p_qty: qty }
+      : null);
+  if (!arg) return { reoccupied: false, oversold: false };
+
+  const { data, error } = await supabase.rpc(rpc, arg);
+  if (error) {
+    console.error(
+      "[Elarah Guard] reoccupy vaga falhou (RPC) — confirmação segue sem re-decremento",
+      "rpc=" + rpc,
+      "error=" + JSON.stringify(error),
+    );
+    return { reoccupied: false, oversold: false };
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  // deno-lint-ignore no-explicit-any
+  const vr = row as any;
+  if (!vr || vr.ok === false) {
+    return { reoccupied: false, oversold: true };
+  }
+  return { reoccupied: true, oversold: false };
+}
+
 export async function reserveExperienceSlot(
   supabase: ReturnType<typeof createClient>,
   input: GuardInput,

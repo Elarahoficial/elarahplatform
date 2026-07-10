@@ -35,6 +35,11 @@ import {
   sendAdminSaleNotification,
   sendEmail,
 } from "../_shared/email.ts";
+import {
+  holdsInventory,
+  reoccupyVagaOnReapproval,
+  wasInventoryReleased,
+} from "../_shared/booking_guard.ts";
 
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -439,6 +444,30 @@ serve(async (req) => {
       currency: "brl",
     };
 
+    // Re-ocupa a vaga se a booking já tinha sido liberada. Mesmo caso do
+    // mp-webhook: aprovação tardia sobre uma booking cancelada/expirada
+    // precisa re-decrementar o estoque, senão vende além da lotação.
+    if (wasInventoryReleased(booking.status)) {
+      const { oversold } = await reoccupyVagaOnReapproval(supabase, booking as {
+        slot_id?: string | null;
+        experiencia_id?: string | null;
+        quantidade?: number | null;
+      });
+      if (oversold) {
+        console.error(
+          "[Elarah Payment/MP] OVERBOOKING (reconcile) — aprovado sem vaga",
+          "booking=" + booking.id,
+          "status_anterior=" + booking.status,
+        );
+        patch.metadata = {
+          ...((booking.metadata ?? {}) as Record<string, unknown>),
+          inventory_oversold: true,
+          oversold_from_status: booking.status,
+          oversold_detected_at: new Date().toISOString(),
+        };
+      }
+    }
+
     // Reconcilia fornecedor/financeiro se faltarem — idêntico ao
     // mp-webhook markBookingAsPaid. Cobre o caso em que o pre-insert
     // caiu no fallback sem esses campos.
@@ -525,8 +554,12 @@ serve(async (req) => {
       );
     }
   } else if (
-    booking.status !== "cancelado" &&
-    booking.status !== "reembolsado" &&
+    // Só cancela/devolve estoque de uma booking AINDA pendente. Uma
+    // booking `pago` que a MP reporte como rejected/cancelled (webhook
+    // stale/fora de ordem) NÃO pode ser cancelada aqui — isso liberaria
+    // uma vaga de fato ocupada → overbooking. E uma já liberada
+    // (cancelado/expirado/reembolsado) não pode devolver a vaga de novo.
+    booking.status === "pending" &&
     (mpStatus === "rejected" || mpStatus === "cancelled")
   ) {
     const { error: updErr } = await supabase

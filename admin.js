@@ -14045,6 +14045,42 @@
     if (payload.unit_price_centavos < 0) {
       msgEl.textContent = 'Valor unitário inválido.'; msgEl.style.color = '#c0392b'; return;
     }
+    // ===== Aviso de lotação =====
+    // A venda manual passa a descontar vaga do estoque (gatilho no banco,
+    // sql/elarah_manual_sales_inventory.sql). Se a venda OCUPA vaga
+    // (pago/pendente) e não há vaga sobrando na experiência, avisa —
+    // mas NÃO trava: a admin pode registrar acima da lotação de propósito.
+    // Best-effort: qualquer erro na checagem não impede o salvamento.
+    if (payload.experience_id &&
+        (payload.payment_status === 'pago' || payload.payment_status === 'pendente')) {
+      try {
+        const { data: slotRows } = await sb
+          .from('experience_slots')
+          .select('vagas_total, vagas_restantes')
+          .eq('experience_id', payload.experience_id);
+        if (Array.isArray(slotRows) && slotRows.length) {
+          let restSum = 0, temTeto = false;
+          slotRows.forEach(sl => {
+            if (sl.vagas_total != null) {
+              temTeto = true;
+              restSum += (sl.vagas_restantes != null ? Number(sl.vagas_restantes) : Number(sl.vagas_total)) || 0;
+            }
+          });
+          // Em edição, a vaga desta própria venda já está descontada do
+          // estoque; ela será re-somada pelo gatilho. Só bloqueamos o
+          // aviso pra vendas NOVAS, onde o cálculo é direto.
+          if (temTeto && isNew && restSum < qty) {
+            const disponivel = Math.max(0, restSum);
+            const ok = confirm(
+              'Atenção: esta experiência tem apenas ' + disponivel + ' vaga(s) livre(s) e você está ' +
+              'registrando ' + qty + '. Isso vai passar da lotação (overbooking).\n\n' +
+              'Deseja registrar mesmo assim?'
+            );
+            if (!ok) { msgEl.textContent = ''; return; }
+          }
+        }
+      } catch (e) { /* checagem best-effort — não impede salvar */ }
+    }
     msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
     try {
       let res;
