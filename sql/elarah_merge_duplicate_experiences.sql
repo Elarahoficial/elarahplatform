@@ -181,6 +181,22 @@ begin
          set is_active = false
        where id = dup;
     end loop;
+
+    -- 7. GARANTIA "aparece sozinho": pra cada experiência do grupo
+    --    (principal + cópias), se a DATA dela ainda não virou slot na
+    --    principal, cria o slot agora — a partir da própria data +
+    --    horários da experiência. Assim TODA data vira opção clicável
+    --    na página, sem ninguém precisar registrar na mão.
+    --    Slots reais (com reservas/vagas) já foram movidos acima; este
+    --    passo só preenche buracos. on conflict não duplica nada.
+    insert into public.experience_slots
+      (experience_id, data, horario, vagas_total, vagas_restantes, event_at, is_active)
+    select canonical, e.data, h.horario, e.vagas_total, e.vagas_total, e.event_at, true
+      from public.experiences e
+      cross join lateral unnest(e.horarios) as h(horario)
+     where e.id = any (array_prepend(canonical, g.juntar_ids))
+       and coalesce(btrim(e.data), '') <> ''
+    on conflict (experience_id, coalesce(data, ''), horario) do nothing;
   end loop;
 
   raise notice 'Merge concluído: % grupo(s), % cópia(s) juntada(s) e ocultada(s).',
