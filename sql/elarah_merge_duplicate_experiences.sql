@@ -66,6 +66,13 @@ create table if not exists public.experiences_merge_log (
 
 do $$
 declare
+  -- ⚙️  CHAVE: juntar TAMBÉM os grupos com descrições diferentes?
+  --     false (padrão) = junta só os grupos com descrição idêntica
+  --                      (os "OK pra juntar" do diagnóstico).
+  --     true           = junta também os "CONFERIR (descrições
+  --                      diferentes)". Só ligue depois de conferir.
+  v_incluir_desc_diff boolean := false;
+
   g            record;
   canonical    uuid;
   dup          uuid;
@@ -79,6 +86,7 @@ begin
         e.created_at,
         regexp_replace(coalesce(e.preco, ''), '[^0-9]', '', 'g')             as preco_key,
         regexp_replace(lower(btrim(coalesce(e.nome, ''))), '\s+', ' ', 'g')  as nome_key,
+        md5(lower(btrim(coalesce(e.descricao, ''))))                         as desc_hash,
         coalesce(
           (select string_agg(
                     regexp_replace(lower(btrim(es.fornecedor_nome)), '\s+', ' ', 'g'), '|'
@@ -96,7 +104,8 @@ begin
     ),
     grp as (
       select
-        bool_or(tem_recorrencia) as tem_recorrencia,
+        bool_or(tem_recorrencia)  as tem_recorrencia,
+        count(distinct desc_hash) as n_desc,
         (array_agg(id order by n_reservas desc, created_at asc, id asc))[1] as manter_id,
         (array_agg(id order by n_reservas desc, created_at asc, id asc))    as todos_ids
       from base
@@ -108,6 +117,7 @@ begin
            (todos_ids)[2:array_length(todos_ids, 1)] as juntar_ids
       from grp
      where not tem_recorrencia
+       and (v_incluir_desc_diff or n_desc <= 1)
   loop
     canonical := g.manter_id;
     n_grupos  := n_grupos + 1;
