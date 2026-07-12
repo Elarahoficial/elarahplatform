@@ -3117,7 +3117,13 @@ if (groupForm) {
       // encontrado". Chamando direto via RPC, ignoramos qualquer drift
       // de deploy de Edge Function.
 
-      const amountCentavos = currentReservationCtx.precoCentavos;
+      // Base do desconto = preço UNITÁRIO × quantidade (o subtotal real).
+      // Antes usava só o unitário: pra cupom de porcentagem com 2+
+      // ingressos, a tela mostrava um desconto menor (e total maior) do
+      // que o backend de fato aplica (que calcula sobre unit × qty).
+      // Agora o preview do cupom bate exatamente com o valor cobrado.
+      const _qtyForCoupon = Math.max(1, currentReservationCtx.quantidade || 1);
+      const amountCentavos = (currentReservationCtx.precoCentavos || 0) * _qtyForCoupon;
       const experienciaId = currentReservationCtx.experienceId || null;
 
       // ----- Camada 1: preview_coupon via supabaseClient -----
