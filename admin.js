@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v33 — venda manual: chips de dia/horário da experiência no formulário + botão "Avisar fornecedor" (recado da compra) na aba Compras');
+  console.info('[Elarah Admin] admin.js v34 — venda manual: chips de dia/horário = disponibilidade REAL do site (sem inventar ano/data) + botão "Avisar fornecedor" na aba Compras');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -13041,8 +13041,10 @@
 
   // Converte a data de uma experiência/slot ("dd/mm", "dd/mm/aaaa" ou já
   // "aaaa-mm-dd") pro formato ISO que o <input type="date"> aceita.
-  // Sem ano explícito: usa o ano atual; se a data já passou (>1 dia),
-  // assume o ano seguinte (experiências recorrem no próximo ciclo).
+  // Sem ano explícito: usa o ano ATUAL — a MESMA regra do site
+  // (deriveEventTimestamp). Não "rola" pro ano seguinte: rolar gerava
+  // datas erradas (ex.: 07/06 virava 2027) que não batem com o que o
+  // site mostra. Datas assim ficam no passado e são filtradas fora.
   function _finExpDateToISO(dataStr) {
     if (!dataStr) return null;
     const s = String(dataStr).trim();
@@ -13054,18 +13056,10 @@
     const month = Number(m[2]);
     if (!(day >= 1 && day <= 31 && month >= 1 && month <= 12)) return null;
     const pad = (n) => String(n).padStart(2, '0');
-    const now = new Date();
-    let year = m[3]
+    const year = m[3]
       ? (Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3]))
-      : now.getFullYear();
-    let out = year + '-' + pad(month) + '-' + pad(day);
-    if (!m[3]) {
-      const t = new Date(out + 'T23:59:59').getTime();
-      if (Number.isFinite(t) && t < now.getTime() - 24 * 3600 * 1000) {
-        out = (year + 1) + '-' + pad(month) + '-' + pad(day);
-      }
-    }
-    return out;
+      : new Date().getFullYear();
+    return year + '-' + pad(month) + '-' + pad(day);
   }
 
   // Rótulo curto "dd/mm (sáb)" a partir de uma data ISO.
@@ -13106,9 +13100,28 @@
       .forEach(h => horariosSet.add(String(h).trim()));
 
     // Sessões concretas (data + horário) pras sugestões clicáveis.
-    const now = Date.now();
-    const suggestions = [];       // { iso, horario }
+    // REGRA = MESMA do site: só entram ocorrências FUTURAS (data ≥ hoje),
+    // com o ano de verdade (eventAt quando existe; senão dd/mm no ano
+    // atual, sem "rolar" pra 2027). Assim os chips batem exatamente com a
+    // disponibilidade que aparece no site. Slots sem data (agenda aberta
+    // tipo "Semanal") entram como horário avulso, sem data.
+    const nowStart = new Date(); nowStart.setHours(0, 0, 0, 0);
+    const nowStartMs = nowStart.getTime();
+    const suggestions = [];       // { iso, horario, ts }
     const seen = new Set();
+    const pushSug = (iso, horario) => {
+      const hor = (horario || '').trim();
+      if (!iso && !hor) return;
+      let ts = Infinity;   // sem data → agenda aberta, sempre válida
+      if (iso) {
+        ts = new Date(iso + 'T23:59:59').getTime();
+        if (Number.isFinite(ts) && ts < nowStartMs) return; // já passou
+      }
+      const key = (iso || '') + '|' + hor;
+      if (seen.has(key)) return;
+      seen.add(key);
+      suggestions.push({ iso, horario: hor, ts });
+    };
     (Array.isArray(slots) ? slots : []).forEach(sl => {
       if (!sl || sl.isActive === false) return;
       let iso = null;
@@ -13119,35 +13132,34 @@
       if (!iso) iso = _finExpDateToISO(sl.data);
       const hor = (sl.horario || '').trim();
       if (hor) horariosSet.add(hor);
-      if (!iso && !hor) return;
-      // Só datas futuras (ou sem data) — não polui com sessões vencidas.
-      if (iso) {
-        const t = new Date(iso + 'T23:59:59').getTime();
-        if (Number.isFinite(t) && t < now - 24 * 3600 * 1000) return;
-      }
-      const key = (iso || '') + '|' + hor;
-      if (seen.has(key)) return;
-      seen.add(key);
-      suggestions.push({ iso, horario: hor });
+      pushSug(iso, hor);
     });
 
-    // Fallback sem slots: usa data/pacoteDatas + horarios da experiência.
+    // Fallback sem slots: usa event_at / data / pacoteDatas + horarios da
+    // própria experiência (mesma cascata do site quando não há slots).
     if (!suggestions.length) {
       const datas = [];
-      if (Array.isArray(exp.pacoteDatas) && exp.pacoteDatas.length) datas.push(...exp.pacoteDatas);
+      let expIso = null;
+      if (exp.eventAt) {
+        const d = new Date(exp.eventAt);
+        if (!isNaN(d.getTime())) expIso = d.toISOString().slice(0, 10);
+      }
+      if (expIso) datas.push(expIso);
+      else if (Array.isArray(exp.pacoteDatas) && exp.pacoteDatas.length) datas.push(...exp.pacoteDatas);
       else if (exp.data) datas.push(exp.data);
       const horList = Array.from(horariosSet);
       if (datas.length) {
         datas.forEach(d => {
           const iso = _finExpDateToISO(d);
-          if (horList.length) horList.forEach(h => suggestions.push({ iso, horario: h }));
-          else suggestions.push({ iso, horario: '' });
+          if (horList.length) horList.forEach(h => pushSug(iso, h));
+          else pushSug(iso, '');
         });
       } else {
-        horList.forEach(h => suggestions.push({ iso: null, horario: h }));
+        horList.forEach(h => pushSug(null, h));
       }
     }
-    suggestions.sort((a, b) => String(a.iso || '~').localeCompare(String(b.iso || '~')));
+    // Ordena por data (sessões sem data no fim).
+    suggestions.sort((a, b) => a.ts - b.ts);
 
     // Datalist do campo Horário (autocomplete ao digitar).
     if (slotDl) {
@@ -13156,13 +13168,14 @@
         .join('');
     }
 
-    // Renderiza os chips clicáveis (data + horário). Limita a 16 pra não
-    // poluir com experiências recorrentes (muitos slots futuros).
-    _finRenderSlotSuggestions(suggestions.slice(0, 16));
+    // Renderiza os chips clicáveis (data + horário). Mostra TODAS as
+    // sessões futuras (cap alto pra recorrentes) — a admin clica na certa.
+    _finRenderSlotSuggestions(suggestions.slice(0, 40));
 
-    // Auto-fill: 1 sessão só → preenche data+horário; senão, se houver 1
-    // horário só, preenche o horário. Nunca sobrescreve o que a admin já
-    // digitou (chips clicados sempre sobrescrevem — ação explícita).
+    // Auto-preenche SÓ quando não há ambiguidade: uma única sessão futura
+    // → preenche data+horário; senão, no máximo, o horário quando só existe
+    // um. NUNCA sobrescreve o que a admin já digitou/selecionou, e nunca
+    // "chuta" uma data — a data só entra por eventAt/slot real ou clique.
     if (suggestions.length === 1) {
       const s0 = suggestions[0];
       if (slotDateInput && !slotDateInput.value && s0.iso) slotDateInput.value = s0.iso;
