@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v36 — venda manual: envia e-mail de confirmação pro cliente (auto no cadastro pago + botão "Enviar confirmação" na aba Compras)');
+  console.info('[Elarah Admin] admin.js v37 — Compras: filtro de origem (site/manual) + botão "marcar manuais avisadas" + venda manual nasce avisada');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -2402,6 +2402,51 @@
     var filterSfInit = document.getElementById('bookings-filter-status-fornecedor');
     if (filterFornInit) filterFornInit.addEventListener('change', () => renderBookings());
     if (filterSfInit) filterSfInit.addEventListener('change', () => renderBookings());
+    var filterOrigemInit = document.getElementById('bookings-filter-origem');
+    if (filterOrigemInit) filterOrigemInit.addEventListener('change', () => renderBookings());
+    var markManuaisBtn = document.getElementById('btn-mark-manuais-avisadas');
+    if (markManuaisBtn && !markManuaisBtn.dataset.wired) {
+      markManuaisBtn.dataset.wired = '1';
+      markManuaisBtn.addEventListener('click', _finMarkAllManualSalesAvisado);
+    }
+  }
+
+  // Marca TODAS as vendas manuais ainda sem aviso como "fornecedor
+  // avisado" hoje. A admin já avisa as fornecedoras direto no WhatsApp,
+  // então isso zera o vermelho de uma vez em vez de clicar linha a linha.
+  async function _finMarkAllManualSalesAvisado() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    if (!confirm('Marcar TODAS as vendas manuais ainda não marcadas como "fornecedor avisado" hoje?')) return;
+    const btn = document.getElementById('btn-mark-manuais-avisadas');
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Marcando...'; }
+    try {
+      const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
+      const payload = { fornecedor_avisado_at: new Date().toISOString() };
+      if (user) payload.fornecedor_avisado_by = user.id;
+      // Só as que ainda estão sem aviso — não sobrescreve a data das que
+      // já foram marcadas antes.
+      const { data, error } = await sb.from('manual_sales')
+        .update(payload)
+        .is('fornecedor_avisado_at', null)
+        .select('id');
+      if (error) {
+        alert('Erro ao marcar: ' + error.message +
+          '\n(A coluna fornecedor_avisado_at existe? Rode sql/elarah_manual_sales_fornecedor_avisado.sql.)');
+        return;
+      }
+      const n = Array.isArray(data) ? data.length : 0;
+      alert(n > 0
+        ? (n + ' venda(s) manual(is) marcada(s) como fornecedor avisado.')
+        : 'Nenhuma venda manual pendente de aviso — já estavam todas marcadas.');
+      invalidateBookings();
+      renderBookings();
+    } catch (e) {
+      alert('Erro ao marcar: ' + (e && (e.message || e)));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
   }
 
   async function renderBookings() {
@@ -2689,6 +2734,17 @@
       return true;
     });
 
+    // Filtro de ORIGEM (Todas / Site / Manual). Evita ter que descer a
+    // lista inteira de reservas do site pra achar as vendas manuais.
+    //   showSite   → renderiza as reservas do site (bookings)
+    //   showManual → anexa as vendas manuais
+    // Gift cards só entram em "Todas" (origem própria, não confunde).
+    const filterOrigemEl = document.getElementById('bookings-filter-origem');
+    const filterOrigem = filterOrigemEl ? filterOrigemEl.value : '';
+    const showSite = filterOrigem !== 'manual';
+    const showManual = filterOrigem !== 'site';
+    const showGift = filterOrigem === '';
+
     // Stats globais (não-filtradas) vêm da fonte única (RPC financial_summary).
     // qty_*_pagos do RPC já reflete sum(quantidade) — 1 booking com 3
     // vagas conta 3. Pendentes do site também usa sum(quantidade).
@@ -2792,15 +2848,24 @@
     // Tabela
     const tbody = document.getElementById('purchases-body');
     const countEl = document.getElementById('purchases-count');
-    countEl.textContent = filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : '');
+    countEl.textContent = showSite
+      ? (filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : ''))
+      : 'só vendas manuais';
 
-    if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="18" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>';
-      // Mesmo com bookings vazios, mostra vendas manuais e gift cards.
-      appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
-        .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases (empty) falhou:', e && e.message));
-      appendGiftCardRowsInPurchases(tbody)
-        .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases (empty) falhou:', e && e.message));
+    // Vazio de reservas do site (ou origem = só manual) → não renderiza
+    // linhas de booking. Ainda assim anexa manuais/gift conforme a origem.
+    if (!showSite || filtered.length === 0) {
+      tbody.innerHTML = showSite
+        ? '<tr><td colspan="18" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>'
+        : '';
+      if (showManual) {
+        appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
+          .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases (empty) falhou:', e && e.message));
+      }
+      if (showGift) {
+        appendGiftCardRowsInPurchases(tbody)
+          .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases (empty) falhou:', e && e.message));
+      }
       return;
     }
 
@@ -3408,12 +3473,16 @@
       : '<tr><td colspan="18" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
 
     // Append vendas manuais pagas no mesmo tbody (badge "Venda manual").
-    // Não bloqueia o render principal — se a tabela manual_sales não
-    // existir (migration não rodada), apenas loga e segue.
-    appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
-      .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases falhou (ok se migration não rodou):', e && e.message));
-    appendGiftCardRowsInPurchases(tbody)
-      .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases falhou:', e && e.message));
+    // Respeita o filtro de origem. Não bloqueia o render principal — se a
+    // tabela manual_sales não existir (migration não rodada), só loga.
+    if (showManual) {
+      appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
+        .catch(e => console.warn('[admin] appendManualSalesRowsInPurchases falhou (ok se migration não rodou):', e && e.message));
+    }
+    if (showGift) {
+      appendGiftCardRowsInPurchases(tbody)
+        .catch(e => console.warn('[admin] appendGiftCardRowsInPurchases falhou:', e && e.message));
+    }
 
     // ===== Editor manual de variantes (quadros) =====
     // Abre um modal listando cada Pessoa do array participantes com
@@ -14355,6 +14424,20 @@
         // não trava o fluxo; o botão "Enviar confirmação" cobre reenvio.
         if (savedId && payload.customer_email && payload.payment_status === 'pago') {
           _finSendManualSaleConfirmation(savedId, { silent: true });
+        }
+        // Venda manual já nasce "fornecedor avisado" — a admin avisa as
+        // fornecedoras direto no WhatsApp, então não precisa clicar linha
+        // a linha. Best-effort: se a coluna não existir, ignora (não trava
+        // o salvamento, que já foi feito).
+        if (savedId) {
+          try {
+            sb.from('manual_sales')
+              .update({ fornecedor_avisado_at: new Date().toISOString() })
+              .eq('id', savedId)
+              .then(r => {
+                if (r && r.error) console.warn('[Contabilidade] auto-marcar avisado falhou (ok se migration não rodou):', r.error.message);
+              });
+          } catch (e) { /* best-effort */ }
         }
       }
       // Mutação em manual_sales afeta Compras/Fornecedores/Analytics
