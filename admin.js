@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v32 — fix: salvar venda manual pela aba Eventos recarregava a página (form não conectado)');
+  console.info('[Elarah Admin] admin.js v33 — venda manual: chips de dia/horário da experiência no formulário + botão "Avisar fornecedor" (recado da compra) na aba Compras');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -13010,6 +13010,7 @@
     if (!name) {
       hidden.value = '';
       if (hint) { hint.textContent = ''; hint.style.color = ''; }
+      _finClearSlotSuggestions();
       return;
     }
     const want = name.toLowerCase();
@@ -13025,6 +13026,7 @@
         hint.textContent = 'ⓘ Não está na lista — será salvo como texto livre (sem repasse automático).';
         hint.style.color = '#b07b00';
       }
+      _finClearSlotSuggestions();
       return;
     }
     hidden.value = found.id;
@@ -13037,26 +13039,136 @@
     await _finAutoFillFromExperience(found);
   }
 
+  // Converte a data de uma experiência/slot ("dd/mm", "dd/mm/aaaa" ou já
+  // "aaaa-mm-dd") pro formato ISO que o <input type="date"> aceita.
+  // Sem ano explícito: usa o ano atual; se a data já passou (>1 dia),
+  // assume o ano seguinte (experiências recorrem no próximo ciclo).
+  function _finExpDateToISO(dataStr) {
+    if (!dataStr) return null;
+    const s = String(dataStr).trim();
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) return s;
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if (!m) return null;
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    if (!(day >= 1 && day <= 31 && month >= 1 && month <= 12)) return null;
+    const pad = (n) => String(n).padStart(2, '0');
+    const now = new Date();
+    let year = m[3]
+      ? (Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3]))
+      : now.getFullYear();
+    let out = year + '-' + pad(month) + '-' + pad(day);
+    if (!m[3]) {
+      const t = new Date(out + 'T23:59:59').getTime();
+      if (Number.isFinite(t) && t < now.getTime() - 24 * 3600 * 1000) {
+        out = (year + 1) + '-' + pad(month) + '-' + pad(day);
+      }
+    }
+    return out;
+  }
+
+  // Rótulo curto "dd/mm (sáb)" a partir de uma data ISO.
+  function _finIsoDateLabel(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T12:00:00');
+    if (isNaN(d.getTime())) return iso;
+    const wd = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getDay()];
+    return _finPad2(d.getDate()) + '/' + _finPad2(d.getMonth() + 1) + ' (' + wd + ')';
+  }
+  function _finPad2(n) { return String(n).padStart(2, '0'); }
+
   // Puxa horários, fornecedor e preço da experiência selecionada.
   // Não sobrescreve campos já preenchidos pelo usuário.
   async function _finAutoFillFromExperience(exp) {
     if (!exp) return;
     const $ = (id) => document.getElementById(id);
-
-    // Horários — popula datalist; auto-fill se houver exatamente 1.
     const slotInput = $('ms-slot-time');
+    const slotDateInput = $('ms-slot-date');
     const slotDl = $('ms-slot-time-datalist');
-    const horarios = Array.isArray(exp.horarios) ? exp.horarios : [];
-    const horariosLabels = horarios
+
+    // ===== Datas + horários da experiência (visíveis pra seleção) =====
+    // Fonte principal: experience_slots (datas reais, cobre recorrência
+    // semanal). Fallback: campos da própria experiência (data/pacoteDatas
+    // + horarios). O objetivo é a admin CONSEGUIR VER e clicar no dia e
+    // horário certos ao registrar a venda manual.
+    let slots = [];
+    try {
+      if (window.ElarahData && ElarahData.getSlotsForExperience && exp.id) {
+        slots = await ElarahData.getSlotsForExperience(exp.id);
+      }
+    } catch (e) { slots = []; }
+
+    const horariosSet = new Set();
+    (Array.isArray(exp.horarios) ? exp.horarios : [])
       .map(h => typeof h === 'string' ? h : (h && (h.label || h.horario)) || '')
-      .filter(Boolean);
+      .filter(Boolean)
+      .forEach(h => horariosSet.add(String(h).trim()));
+
+    // Sessões concretas (data + horário) pras sugestões clicáveis.
+    const now = Date.now();
+    const suggestions = [];       // { iso, horario }
+    const seen = new Set();
+    (Array.isArray(slots) ? slots : []).forEach(sl => {
+      if (!sl || sl.isActive === false) return;
+      let iso = null;
+      if (sl.eventAt) {
+        const d = new Date(sl.eventAt);
+        if (!isNaN(d.getTime())) iso = d.toISOString().slice(0, 10);
+      }
+      if (!iso) iso = _finExpDateToISO(sl.data);
+      const hor = (sl.horario || '').trim();
+      if (hor) horariosSet.add(hor);
+      if (!iso && !hor) return;
+      // Só datas futuras (ou sem data) — não polui com sessões vencidas.
+      if (iso) {
+        const t = new Date(iso + 'T23:59:59').getTime();
+        if (Number.isFinite(t) && t < now - 24 * 3600 * 1000) return;
+      }
+      const key = (iso || '') + '|' + hor;
+      if (seen.has(key)) return;
+      seen.add(key);
+      suggestions.push({ iso, horario: hor });
+    });
+
+    // Fallback sem slots: usa data/pacoteDatas + horarios da experiência.
+    if (!suggestions.length) {
+      const datas = [];
+      if (Array.isArray(exp.pacoteDatas) && exp.pacoteDatas.length) datas.push(...exp.pacoteDatas);
+      else if (exp.data) datas.push(exp.data);
+      const horList = Array.from(horariosSet);
+      if (datas.length) {
+        datas.forEach(d => {
+          const iso = _finExpDateToISO(d);
+          if (horList.length) horList.forEach(h => suggestions.push({ iso, horario: h }));
+          else suggestions.push({ iso, horario: '' });
+        });
+      } else {
+        horList.forEach(h => suggestions.push({ iso: null, horario: h }));
+      }
+    }
+    suggestions.sort((a, b) => String(a.iso || '~').localeCompare(String(b.iso || '~')));
+
+    // Datalist do campo Horário (autocomplete ao digitar).
     if (slotDl) {
-      slotDl.innerHTML = horariosLabels
+      slotDl.innerHTML = Array.from(horariosSet)
         .map(h => '<option value="' + _finEsc(h) + '"></option>')
         .join('');
     }
-    if (slotInput && !slotInput.value && horariosLabels.length === 1) {
-      slotInput.value = horariosLabels[0];
+
+    // Renderiza os chips clicáveis (data + horário). Limita a 16 pra não
+    // poluir com experiências recorrentes (muitos slots futuros).
+    _finRenderSlotSuggestions(suggestions.slice(0, 16));
+
+    // Auto-fill: 1 sessão só → preenche data+horário; senão, se houver 1
+    // horário só, preenche o horário. Nunca sobrescreve o que a admin já
+    // digitou (chips clicados sempre sobrescrevem — ação explícita).
+    if (suggestions.length === 1) {
+      const s0 = suggestions[0];
+      if (slotDateInput && !slotDateInput.value && s0.iso) slotDateInput.value = s0.iso;
+      if (slotInput && !slotInput.value && s0.horario) slotInput.value = s0.horario;
+    } else if (slotInput && !slotInput.value && horariosSet.size === 1) {
+      slotInput.value = Array.from(horariosSet)[0];
     }
 
     // Preço unitário — extrai o número do campo `preco` (ex.: "R$383").
@@ -13094,6 +13206,53 @@
       _finTogglePayoutFields(true);
       if (supplierEl && !supplierEl.value) supplierEl.value = supplierName;
     }
+  }
+
+  // Renderiza os chips clicáveis de data+horário da experiência no modal
+  // de venda manual. Cada chip preenche #ms-slot-date e/ou #ms-slot-time.
+  function _finRenderSlotSuggestions(suggestions) {
+    const wrap = document.getElementById('ms-slot-suggestions-wrap');
+    const box = document.getElementById('ms-slot-suggestions');
+    if (!wrap || !box) return;
+    const list = Array.isArray(suggestions) ? suggestions : [];
+    if (!list.length) { _finClearSlotSuggestions(); return; }
+    box.innerHTML = '';
+    list.forEach(s => {
+      const dateLabel = s.iso ? _finIsoDateLabel(s.iso) : '';
+      const parts = [];
+      if (dateLabel) parts.push('📅 ' + dateLabel);
+      if (s.horario) parts.push('🕐 ' + s.horario);
+      const label = parts.join(' · ') || s.horario || '—';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = label;
+      btn.style.cssText = 'padding:5px 10px;border:1px solid #e0c9a6;background:#fffaf2;color:#7a5a1e;' +
+        'border-radius:14px;font-size:.78rem;cursor:pointer;white-space:nowrap;';
+      btn.addEventListener('click', () => {
+        const di = document.getElementById('ms-slot-date');
+        const ti = document.getElementById('ms-slot-time');
+        if (di && s.iso) di.value = s.iso;
+        if (ti && s.horario) ti.value = s.horario;
+        // Destaca a seleção ativa.
+        box.querySelectorAll('button').forEach(b => {
+          b.style.background = '#fffaf2';
+          b.style.borderColor = '#e0c9a6';
+          b.style.fontWeight = '';
+        });
+        btn.style.background = '#f6e6c6';
+        btn.style.borderColor = '#b07b00';
+        btn.style.fontWeight = '700';
+      });
+      box.appendChild(btn);
+    });
+    wrap.style.display = '';
+  }
+
+  function _finClearSlotSuggestions() {
+    const wrap = document.getElementById('ms-slot-suggestions-wrap');
+    const box = document.getElementById('ms-slot-suggestions');
+    if (box) box.innerHTML = '';
+    if (wrap) wrap.style.display = 'none';
   }
 
   async function _finPopulateSupplierDropdown() {
@@ -13930,6 +14089,7 @@
       if (hintNewEl) { hintNewEl.textContent = ''; hintNewEl.style.color = ''; }
       const slotDlNew = $('ms-slot-time-datalist');
       if (slotDlNew) slotDlNew.innerHTML = '';
+      _finClearSlotSuggestions();
       $('ms-quantity').value = '1';
       $('ms-payment-status').value = 'pago';
       if ($('ms-event-type')) $('ms-event-type').value = '';
@@ -14374,6 +14534,18 @@
     // Limpa um eventual placeholder "Nenhuma reserva"
     const placeholder = tbody.querySelector('tr td.admin__table-empty');
     if (placeholder && placeholder.parentElement) placeholder.parentElement.remove();
+
+    // WhatsApp do fornecedor — centralizado em fornecedores_metadata
+    // (mesma fonte das vendas do site), vinculado por nome normalizado.
+    // Usado pra montar o botão "Avisar fornecedor" com o recado da compra.
+    let fornMetaByKey = new Map();
+    try {
+      const meta = await getFornecedoresMetadata();
+      (meta || []).forEach(m => {
+        if (m && m.fornecedor_key) fornMetaByKey.set(m.fornecedor_key, m);
+      });
+    } catch (e) { fornMetaByKey = new Map(); }
+
     const html = rows.map(r => {
       const when = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
       const phone = r.customer_phone ? _finEsc(r.customer_phone) : '<span style="color:#bbb;">—</span>';
@@ -14385,6 +14557,13 @@
         (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
       const slotDate = r.slot_date ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
       const repasseCell = r.payout_amount_centavos > 0 ? _finFmtBRL(r.payout_amount_centavos) : '—';
+
+      // ===== Avisar fornecedor (recado da compra) =====
+      // Monta o mesmo botão de WhatsApp das vendas do site, agora pra
+      // vendas manuais: mensagem pronta com experiência, dia, horário e
+      // cliente, e estado verde "✓ Avisado" quando já disparado.
+      const avisarCell = _finBuildManualSaleAvisarCell(r, supplierDisplay, expObj, fornMetaByKey);
+
       const sfBadge = r.payout_status === 'pago'
         ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">Repasse feito</span>'
         : (r.payout_status === 'pendente'
@@ -14409,11 +14588,120 @@
         '<td></td>' +
         '<td>' + sfBadge + '</td>' +
         '<td>' +
-          '<button type="button" class="admin__add-btn" data-fin-edit-sale="' + _finEsc(r.id) + '" style="padding:3px 8px;font-size:.72rem;">Editar</button>' +
+          '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">' +
+            avisarCell +
+            '<button type="button" class="admin__add-btn" data-fin-edit-sale="' + _finEsc(r.id) + '" style="padding:3px 8px;font-size:.72rem;">Editar</button>' +
+          '</div>' +
         '</td>' +
         '</tr>';
     }).join('');
     tbody.insertAdjacentHTML('beforeend', html);
+    _finWireManualSaleAvisar(tbody);
+  }
+
+  // Resolve o WhatsApp da fornecedora de uma venda manual pelo nome
+  // (mesma normalização de fornecedor_key das vendas do site).
+  function _finManualSaleSupplierWa(supplierDisplay, fornMetaByKey) {
+    const name = (supplierDisplay || '').trim();
+    if (!name || !fornMetaByKey) return '';
+    const meta = fornMetaByKey.get(name.toLowerCase().replace(/\s+/g, ' '));
+    return meta && meta.whatsapp ? String(meta.whatsapp).trim() : '';
+  }
+
+  // Monta a célula "Avisar fornecedor" de uma venda manual na aba Compras:
+  // link de WhatsApp com o recado da compra pronto + estado "✓ Avisado".
+  function _finBuildManualSaleAvisarCell(r, supplierDisplay, expObj, fornMetaByKey) {
+    const wa = _finManualSaleSupplierWa(supplierDisplay, fornMetaByKey);
+    const digits = wa.replace(/\D+/g, '');
+    if (!digits) {
+      return '<span style="font-size:.7rem;color:#bbb;" title="Cadastre o WhatsApp da fornecedora no painel Fornecedores">— sem WhatsApp</span>';
+    }
+    const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+    const expNome = r.experience_name || (expObj && expObj.nome) || '(experiência)';
+    const dataFmt = r.slot_date
+      ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR')
+      : '(data)';
+    const horario = (r.slot_time || '').trim() || '(horário)';
+    const qty = Number(r.quantity) || 1;
+    const aluno = qty > 1 ? (qty + ' alunos confirmados') : 'aluno confirmado';
+    const lista = (r.customer_name || '').trim() || '(participante)';
+    const endereco = String((expObj && expObj.endereco) || '').trim();
+    const bairro = String((expObj && expObj.bairro) || '').trim();
+    const localFull = endereco && bairro
+      ? (endereco + ' — ' + bairro)
+      : (endereco || bairro || '');
+    const localLine = localFull ? '\n📍 *Local:* ' + localFull : '';
+    const msg = 'Oi! Tudo bem? Passando para te avisar que você tem ' + aluno +
+      ' para a experiência *' + expNome + '* no dia *' + dataFmt +
+      '* às *' + horario + '*: *' + lista + '*.' + localLine + '\n\n' +
+      'O repasse será feito até 48h antes do evento.';
+    const link = 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
+    const id = _finEsc(r.id);
+    const avisadoAt = r.fornecedor_avisado_at ? new Date(r.fornecedor_avisado_at) : null;
+    const isAvisado = avisadoAt && !isNaN(avisadoAt.getTime());
+    if (isAvisado) {
+      const when = avisadoAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return '<span style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">' +
+        '<a href="' + _finEsc(link) + '" target="_blank" rel="noopener" data-fin-avisar-sale="' + id + '" ' +
+        'style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;background:#e6f4ea;color:#1a8a4a;border:1px solid #1a8a4a;border-radius:6px;font-size:.72rem;font-weight:700;text-decoration:none;" ' +
+        'title="Avisado em ' + _finEsc(when) + '. Clique pra reabrir o WhatsApp.">✓ Avisado ' + _finEsc(when) + '</a>' +
+        '<button type="button" data-fin-desavisar-sale="' + id + '" ' +
+        'style="padding:3px 6px;background:transparent;border:1px solid #ddd;border-radius:6px;color:#666;font-size:.7rem;cursor:pointer;" ' +
+        'title="Marcar como não avisado">↺</button></span>';
+    }
+    return '<a href="' + _finEsc(link) + '" target="_blank" rel="noopener" data-fin-avisar-sale="' + id + '" ' +
+      'style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;background:#c0392b;color:#fff;border-radius:6px;font-size:.72rem;font-weight:700;text-decoration:none;white-space:nowrap;" ' +
+      'title="Não avisado ainda. Clique pra abrir o WhatsApp e marcar como avisado.">Avisar fornecedor</a>';
+  }
+
+  // Liga os botões "Avisar"/"↺" das vendas manuais na aba Compras.
+  // Não previne o default do link — o WhatsApp abre normalmente e, em
+  // paralelo, grava manual_sales.fornecedor_avisado_at.
+  function _finWireManualSaleAvisar(tbody) {
+    if (!tbody) return;
+    tbody.querySelectorAll('[data-fin-avisar-sale]').forEach(a => {
+      if (a.dataset.finAvisarWired) return;
+      a.dataset.finAvisarWired = '1';
+      a.addEventListener('click', async () => {
+        const id = a.dataset.finAvisarSale;
+        if (!id) return;
+        try {
+          const s = window.supabaseClient;
+          if (!s) return;
+          const user = s.auth && s.auth.getUser ? (await s.auth.getUser()).data.user : null;
+          const payload = { fornecedor_avisado_at: new Date().toISOString() };
+          if (user) payload.fornecedor_avisado_by = user.id;
+          const { error } = await s.from('manual_sales').update(payload).eq('id', id);
+          if (error) {
+            console.warn('[admin] avisar fornecedor (venda manual) falhou (ok se migration não rodou):', error.message);
+            return;
+          }
+          if (typeof renderBookings === 'function') renderBookings();
+        } catch (e) {
+          console.warn('[admin] avisar fornecedor (venda manual) exception:', e && e.message);
+        }
+      });
+    });
+    tbody.querySelectorAll('[data-fin-desavisar-sale]').forEach(btn => {
+      if (btn.dataset.finDesavisarWired) return;
+      btn.dataset.finDesavisarWired = '1';
+      btn.addEventListener('click', async () => {
+        if (!confirm('Marcar fornecedor como NÃO avisado?')) return;
+        const id = btn.dataset.finDesavisarSale;
+        if (!id) return;
+        try {
+          const s = window.supabaseClient;
+          if (!s) return;
+          const { error } = await s.from('manual_sales')
+            .update({ fornecedor_avisado_at: null, fornecedor_avisado_by: null })
+            .eq('id', id);
+          if (error) { alert('Erro ao desmarcar aviso: ' + error.message); return; }
+          if (typeof renderBookings === 'function') renderBookings();
+        } catch (e) {
+          console.warn('[admin] desavisar fornecedor (venda manual) exception:', e && e.message);
+        }
+      });
+    });
   }
 
   // ===== Render principal =====
