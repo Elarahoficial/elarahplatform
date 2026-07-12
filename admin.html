@@ -772,6 +772,13 @@
             <option value="repasse_urgente">Repasse urgente (≤48h ou vencido)</option>
             <option value="repasse_feito">Repasse feito</option>
           </select>
+          <select id="bookings-filter-origem" class="admin__analytics-select" aria-label="Filtrar por origem da venda">
+            <option value="">Todas as origens</option>
+            <option value="site">Só vendas pelo site</option>
+            <option value="manual">Só vendas manuais</option>
+          </select>
+          <button class="admin__add-btn" id="btn-mark-manuais-avisadas" type="button"
+                  title="Marca todas as vendas manuais ainda não marcadas como &quot;fornecedor avisado&quot; hoje (útil se você já avisa direto no WhatsApp)">✓ Marcar manuais avisadas</button>
           <button class="admin__add-btn" id="btn-register-manual-sale" type="button"
                   style="background:#1a8a4a;color:#fff;border:0;">+ Registrar venda manual</button>
           <button class="admin__add-btn" id="btn-refresh-bookings" type="button">Atualizar</button>
@@ -4510,7 +4517,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=206"></script>
+<script src="admin.js?v=207"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
