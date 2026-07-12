@@ -36,6 +36,11 @@ import {
   sendAdminSaleNotification,
   sendEmail,
 } from "../_shared/email.ts";
+import {
+  holdsInventory,
+  reoccupyVagaOnReapproval,
+  wasInventoryReleased,
+} from "../_shared/booking_guard.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
@@ -125,6 +130,20 @@ async function updateBookingBySession(
 
 async function refundReservationSideEffects(booking: BookingRow | null) {
   if (!booking) return;
+  // Idempotência de estoque: só devolve vaga/cupom se a booking AINDA
+  // estava segurando inventário (pending/pago). O `booking` aqui carrega
+  // o status ANTERIOR ao update de cancelamento/expiração. Um evento
+  // Stripe duplicado (expired/failed/refunded repetido) cairia sobre uma
+  // booking já liberada e devolveria a MESMA vaga de novo → estoque
+  // fantasma → overbooking.
+  if (!holdsInventory(booking.status)) {
+    console.info(
+      "[stripe-webhook] side effects pulados (booking já liberada)",
+      "booking=" + booking.id,
+      "status=" + booking.status,
+    );
+    return;
+  }
   // Devolve a vaga — prioriza slot-level, fallback pro experience-level
   // deno-lint-ignore no-explicit-any
   const bk = booking as any;
@@ -405,6 +424,34 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
     amount_total: stripeAmountTotal,
     currency: session.currency ?? "brl",
   };
+
+  // ===== Re-ocupa a vaga se a booking já tinha sido liberada =====
+  // Mesmo caso do mp-webhook: se a sessão foi marcada expirado/cancelado
+  // (checkout.session.expired / async_payment_failed) e o pagamento cai
+  // depois mesmo assim, a vaga já voltou ao estoque. Re-decrementa
+  // atômico antes de confirmar; sem vaga, grava flag pra tratamento
+  // manual (o pagamento já caiu, não dá pra recusar).
+  let inventoryOversold: Record<string, unknown> | null = null;
+  if (existing && wasInventoryReleased(existing.status)) {
+    const { oversold } = await reoccupyVagaOnReapproval(supabase, existing as {
+      slot_id?: string | null;
+      experiencia_id?: string | null;
+      quantidade?: number | null;
+    });
+    if (oversold) {
+      console.error(
+        "[Elarah Payment] OVERBOOKING — Stripe aprovou sem vaga disponível",
+        "session=" + session.id,
+        "booking=" + existing.id,
+        "status_anterior=" + existing.status,
+      );
+      inventoryOversold = {
+        inventory_oversold: true,
+        oversold_from_status: existing.status,
+        oversold_detected_at: new Date().toISOString(),
+      };
+    }
+  }
   if (telefoneFromMeta) {
     updatePatch.telefone = telefoneFromMeta;
   }
@@ -472,13 +519,14 @@ async function markBookingAsPaid(session: Stripe.Checkout.Session) {
     if (!ex.status_fornecedor) {
       updatePatch.status_fornecedor = "repasse_pendente";
     }
-    // Mescla flag de mismatch no metadata existente, pra preservar
-    // bairro/endereco/etc. Sobrescrever metadata por inteiro perderia
-    // informação útil.
-    if (amountMismatchInfo) {
+    // Mescla flags (mismatch + overbooking) no metadata existente, pra
+    // preservar bairro/endereco/etc. Sobrescrever metadata por inteiro
+    // perderia informação útil.
+    if (amountMismatchInfo || inventoryOversold) {
       updatePatch.metadata = {
         ...(existing.metadata ?? {}),
-        ...amountMismatchInfo,
+        ...(amountMismatchInfo ?? {}),
+        ...(inventoryOversold ?? {}),
       };
     }
   }

@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" id="meta-desc" content="Experiência na Elarah — descubra, reserve e viva.">
+  <title id="page-title">Experiência — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    .exp-detail { max-width: 1140px; margin: 0 auto; padding: 32px 20px 60px; }
+    .exp-detail__back { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: .88rem; text-decoration: none; margin-bottom: 20px; }
+    .exp-detail__back:hover { color: var(--orange, #f0a05e); }
+    .exp-detail__hero { width: 100%; aspect-ratio: 16 / 10; max-height: 480px; object-fit: cover; object-position: center; border-radius: 16px; margin-bottom: 20px; background: #f5f0eb; display: block; }
+    .exp-detail__hero-placeholder { width: 100%; height: 280px; border-radius: 16px; margin-bottom: 28px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 600; color: #fff; }
+    .exp-detail__category { display: inline-block; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--orange, #f0a05e); margin-bottom: 8px; }
+    .exp-detail__title { font-family: 'DM Serif Display', serif; font-size: 2rem; color: #1a1a1a; margin: 0 0 16px; line-height: 1.2; }
+    .exp-detail__meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+    .exp-detail__meta-item { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: #555; }
+    .exp-detail__meta-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .exp-detail__price { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 20px; }
+    .exp-detail__horarios { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .exp-detail__horario-btn { padding: 8px 16px; font-size: .88rem; font-weight: 600; border: 1.5px solid #ddd; border-radius: 10px; background: #fff; color: #555; cursor: pointer; transition: all .15s; }
+    .exp-detail__horario-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
+    .exp-detail__horario-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
+    .exp-detail__horario-btn--sold-out { opacity: .45; text-decoration: line-through; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__scarce { display: inline-block; margin-left: 7px; font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #c0392b; }
+    .exp-detail__horario-btn--active .exp-detail__scarce { color: #fff3e6; }
+    .exp-detail__schedule { margin-bottom: 24px; }
+    .exp-detail__schedule-block { margin-bottom: 16px; }
+    .exp-detail__schedule-block:last-child { margin-bottom: 0; }
+    .exp-detail__schedule-label { font-size: .72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+    .exp-detail__datas { display: flex; flex-wrap: wrap; gap: 8px; }
+    .exp-detail__data-btn { padding: 10px 14px; font-size: .82rem; font-weight: 600; border: 1.5px solid #ddd; border-radius: 999px; background: #fff; color: #555; cursor: pointer; transition: all .15s; white-space: nowrap; font-family: inherit; line-height: 1.1; text-align: center; min-width: 88px; }
+    .exp-detail__data-btn:hover:not(:disabled) { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
+    .exp-detail__data-btn--active { background: var(--orange, #f0a05e); border-color: var(--orange, #f0a05e); color: #fff; }
+    .exp-detail__data-btn--sold-out { opacity: .45; cursor: not-allowed; pointer-events: none; }
+    .exp-detail__data-btn small { display: block; font-size: .68rem; opacity: .75; font-weight: 500; margin-top: 2px; }
+    @media (max-width: 600px) {
+      .exp-detail__data-btn { padding: 8px 12px; font-size: .78rem; min-width: 80px; }
+      .exp-detail__horario-btn { padding: 8px 14px; font-size: .82rem; }
+    }
+    .exp-detail__includes { font-size: .9rem; color: #666; margin-bottom: 24px; padding: 14px 18px; background: #faf6f0; border-radius: 12px; }
+    .exp-detail__includes strong { color: #1a1a1a; }
+    /* PR K — Section destacada "O que você vai viver".
+       Sem o modal-gate antes do checkout (-conversão), a descrição
+       precisa BRILHAR no detalhe. Header + card creme + ícone.
+       white-space: pre-line preserva \n da descrição cadastrada. */
+    .exp-detail__desc-section { margin-bottom: 32px; padding: 22px 22px 24px; background: linear-gradient(180deg, #faf6f0 0%, #f5ede0 100%); border-radius: 14px; border: 1px solid #ebe1d0; }
+    .exp-detail__desc-header { display: flex; align-items: center; gap: 8px; font-family: 'DM Serif Display', serif; font-size: 1.15rem; color: #1a1a1a; margin: 0 0 12px; line-height: 1.2; }
+    .exp-detail__desc-header svg { width: 18px; height: 18px; color: var(--orange, #f0a05e); flex-shrink: 0; }
+    .exp-detail__desc { font-size: .95rem; line-height: 1.7; color: #3a3a3a; white-space: pre-line; margin: 0; }
+    .exp-detail__actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+    .exp-detail__reserve-btn { padding: 14px 32px; border: none; border-radius: 12px; background: var(--orange, #f0a05e); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .exp-detail__reserve-btn:hover { background: var(--orange-dark, #d88a44); }
+    .exp-detail__share-btn { padding: 14px 20px; border: 1.5px solid #ddd; border-radius: 12px; background: #fff; color: #555; font-size: .9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; }
+    .exp-detail__share-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
+    .exp-detail__not-found { text-align: center; padding: 80px 20px; }
+    .exp-detail__not-found h2 { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: #1a1a1a; margin-bottom: 12px; }
+    .exp-detail__not-found p { color: #888; margin-bottom: 24px; }
+    .exp-detail__not-found a { color: var(--orange, #f0a05e); font-weight: 600; text-decoration: none; }
+    .exp-detail__loading { text-align: center; padding: 80px 20px; color: #888; font-size: 1rem; }
+    @media (max-width: 600px) {
+      .exp-detail__title { font-size: 1.5rem; }
+      .exp-detail__hero { max-height: 260px; }
+    }
+    /* Detalhe de KIT (Elarah em Casa): foto do produto numa moldura
+       vertical uniforme, preenchendo todo o quadro (object-fit: cover).
+       Assim TODAS as fotos de kit ficam do mesmo tamanho/proporção e o
+       produto aparece "mais perto", sem o fundo sobrando em volta —
+       independente do recorte original de cada foto. Vale só pra kit;
+       as demais experiências (gastronomia etc.) seguem como antes. */
+    .exp-detail__hero--kit {
+      width: 100%;
+      max-width: 460px;
+      margin-left: auto;
+      margin-right: auto;
+      aspect-ratio: 3 / 4;
+      height: auto;
+      max-height: none;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+    @media (max-width: 600px) {
+      .exp-detail__hero--kit { max-height: none; }
+    }
+
+    /* =====================================================
+       STICKY CTA MOBILE — Sprint 1 / PR D do plano de conversão
+       -----------------------------------------------------
+       Botão "Reservar" fixo no rodapé do mobile. Aparece só
+       quando o botão original sai da viewport (scroll passou).
+       Desktop nem renderiza (display:none por @media).
+       Padrão de e-commerce mobile — reduz fricção de quem rolou
+       a página inteira e teria que voltar pro topo pra reservar.
+       ===================================================== */
+    .exp-sticky-cta {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 50;
+      background: #fff;
+      border-top: 1px solid #ebe1d0;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.10);
+      transform: translateY(100%);
+      transition: transform 240ms cubic-bezier(.2,.8,.2,1), opacity 200ms;
+      opacity: 0;
+      pointer-events: none;
+      display: none;
+    }
+    .exp-sticky-cta.is-visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .exp-sticky-cta__price {
+      flex: 1;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.2rem;
+      color: #1a1a1a;
+      line-height: 1.1;
+      letter-spacing: -.2px;
+    }
+    .exp-sticky-cta__price small {
+      display: block;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .68rem;
+      color: #8a8a8a;
+      font-weight: 400;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      margin-bottom: 1px;
+    }
+    .exp-sticky-cta__btn {
+      padding: 13px 28px;
+      border: none;
+      border-radius: 999px;
+      background: var(--orange, #f0a05e);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(240, 160, 94, .35);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .exp-sticky-cta__btn:active {
+      transform: scale(.97);
+      box-shadow: 0 2px 8px rgba(240, 160, 94, .3);
+    }
+    @media (max-width: 768px) {
+      .exp-sticky-cta { display: flex; }
+    }
+
+    /* ===== Layout 2 colunas + cartão de reserva (conversão) =====
+       No celular: empilha head → cartão de reserva → descrição (Reservar
+       fica perto do topo). No desktop: conteúdo à esquerda, cartão de
+       reserva FIXO à direita (sempre à vista enquanto a pessoa lê). */
+    .exp-detail__layout { display: grid; grid-template-columns: 1fr;
+      grid-template-areas: "head" "side" "body"; gap: 4px 40px; }
+    .exp-detail__head { grid-area: head; min-width: 0; }
+    .exp-detail__booking { grid-area: side; min-width: 0; }
+    .exp-detail__body { grid-area: body; min-width: 0; }
+    .exp-detail__reviews { margin-top: 30px; padding-top: 22px; border-top: 1px solid #ebe1d0; }
+    .exp-detail__reviews-title { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.4rem; color: #2c211a; margin: 0 0 12px; font-weight: 400; }
+    .exp-detail__reviews-head { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: #2c211a; }
+    .exp-detail__reviews-stars { color: #f0a05e; letter-spacing: 2px; font-size: 1.15rem; }
+    .exp-detail__reviews-count { color: #8a8a8a; font-size: .85rem; }
+    .exp-detail__review { padding: 13px 0; border-top: 1px dashed #ebe1d0; }
+    .exp-detail__review-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+    .exp-detail__review-name { font-weight: 600; color: #2c211a; font-size: .9rem; }
+    .exp-detail__review-stars { color: #f0a05e; font-size: .85rem; letter-spacing: 1px; }
+    .exp-detail__review-text { color: #5a5a5a; font-size: .9rem; line-height: 1.5; }
+    .exp-detail__booking {
+      background: #fff; border: 1px solid #ebe1d0; border-radius: 16px;
+      padding: 20px 20px 22px; box-shadow: 0 8px 28px rgba(0,0,0,.07);
+      margin: 6px 0 24px;
+    }
+    .exp-detail__booking .exp-detail__price { font-size: 1.7rem; margin-bottom: 16px; }
+    .exp-detail__booking .exp-detail__includes { margin-bottom: 16px; }
+    .exp-detail__booking .exp-detail__actions { flex-direction: column; gap: 10px; margin-bottom: 0; }
+    .exp-detail__booking .exp-detail__reserve-btn { width: 100%; padding: 16px; font-size: 1.05rem; border-radius: 14px; }
+    .exp-detail__booking .exp-detail__share-btn { width: 100%; justify-content: center; }
+    .exp-detail__trust { list-style: none; margin: 16px 0; padding: 16px 0 0; border-top: 1px dashed #ebe1d0; display: grid; gap: 9px; }
+    .exp-detail__trust li { font-size: .82rem; color: #5a5a5a; display: flex; align-items: center; gap: 8px; }
+    .exp-detail__trust li svg { width: 15px; height: 15px; color: #1c7a43; flex-shrink: 0; }
+    .exp-detail__group-cta { display: flex; align-items: center; gap: 11px; margin-top: 14px; padding: 12px 14px; border: 1px solid #d8efe0; background: #f3fbf6; border-radius: 12px; text-decoration: none; color: #2c5a43; font-size: .8rem; line-height: 1.35; transition: background .15s; }
+    .exp-detail__group-cta:hover { background: #e9f7ef; }
+    .exp-detail__group-cta svg { width: 24px; height: 24px; flex-shrink: 0; color: #25D366; }
+    .exp-detail__group-cta strong { color: #147a40; }
+    @media (min-width: 900px) {
+      .exp-detail__layout { grid-template-columns: minmax(0,1fr) 360px;
+        grid-template-areas: "head side" "body side"; gap: 0 44px; }
+      .exp-detail__booking { position: sticky; top: 88px; align-self: start; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+        <button id="search-btn" class="header__search-btn"></button>
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Ceramica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macrame</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="singles-day.html" class="header__nav-link" style="color:#c44e3a;font-weight:600;">Single's Day</a>
+        <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a>
+        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Elarah em Casa</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="blog.html" class="header__nav-link">Blog</a>
+        <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== CONTENT ========== -->
+  <div id="exp-content" class="exp-detail">
+    <div class="exp-detail__loading">Carregando experiencia...</div>
+  </div>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo"><img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img"></a>
+        <p class="footer__tagline">Offline is a feeling.</p>
+        <div class="footer__socials">
+          <a href="https://www.instagram.com/elarah.oficial" target="_blank" aria-label="Instagram"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/></svg></a>
+          <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/></svg></a>
+        </div>
+      </div>
+      <div class="footer__column">
+        <h4>Explorar</h4>
+        <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+        <a href="categoria.html?cat=Cer%C3%A2mica">Ceramica</a>
+        <a href="categoria.html?cat=Pintura">Pintura</a>
+        <a href="categoria.html?cat=Tufting">Tufting</a>
+        <a href="categoria.html?cat=Vela">Vela</a>
+      </div>
+      <div class="footer__column">
+        <h4>Elarah</h4>
+        <a href="/sobre.html">Sobre nos</a>
+        <a href="/como-funciona.html">Como funciona</a>
+        <a href="/oferecer.html">Ofereca experiencias</a>
+      </div>
+      <div class="footer__column">
+        <h4>Informacoes</h4>
+        <a href="/termos.html">Termos de uso</a>
+        <a href="/privacidade.html">Politica de privacidade</a>
+        <a href="/cancelamento.html">Politica de cancelamento</a>
+      </div>
+    </div>
+    <div class="footer__bottom"><p>&copy; 2026 Elarah. Todos os direitos reservados.</p></div>
+  </footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="explorar-menu.js?v=2" defer></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=31"></script>
+<script src="analytics.js?v=3"></script>
+<script src="kit-checkout.js?v=3"></script>
+<script src="script.js?v=73"></script><script>(function () {
+  'use strict';
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  // Avaliações reais (prova social). Lê só as aprovadas (RLS público).
+  // Se não houver nenhuma ainda, não mostra nada — nada de número fake.
+  async function loadReviews(expId, expNome) {
+    var box = document.getElementById('exp-reviews');
+    var client = window.supabaseClient;
+    if (!box || !expId || !client) return;
+    try {
+      var r = await client.from('reviews')
+        .select('nome, nota, comentario, created_at')
+        .eq('experiencia_id', expId).eq('aprovado', true)
+        .order('created_at', { ascending: false }).limit(40);
+      var rows = (r && r.data) || [];
+      if (!rows.length) return;
+      var soma = 0; rows.forEach(function (x) { soma += Number(x.nota) || 0; });
+      var media = soma / rows.length;
+      var full = Math.round(media), head = '';
+      for (var i = 1; i <= 5; i++) head += (i <= full ? '★' : '☆');
+      var withC = rows.filter(function (x) { return x.comentario && String(x.comentario).trim(); });
+      var n = rows.length;
+      box.innerHTML =
+        '<h2 class="exp-detail__reviews-title">O que diz quem já viveu</h2>' +
+        '<div class="exp-detail__reviews-head">' +
+          '<span class="exp-detail__reviews-stars">' + head + '</span>' +
+          '<strong>' + media.toFixed(1).replace('.', ',') + '</strong>' +
+          '<span class="exp-detail__reviews-count">· ' + n + ' avaliação' + (n > 1 ? 'ões' : '') + '</span>' +
+        '</div>' +
+        withC.slice(0, 8).map(function (x) {
+          var nm = x.nome ? esc(x.nome) : 'Cliente';
+          var st = ''; var nt = Number(x.nota) || 0;
+          for (var j = 1; j <= 5; j++) st += (j <= nt ? '★' : '☆');
+          return '<div class="exp-detail__review">' +
+            '<div class="exp-detail__review-top"><span class="exp-detail__review-name">' + nm + '</span>' +
+            '<span class="exp-detail__review-stars">' + st + '</span></div>' +
+            '<div class="exp-detail__review-text">' + esc(x.comentario) + '</div></div>';
+        }).join('');
+    } catch (_) { /* silencioso */ }
+  }
+
+  // Mesmo normalizador dos cards: NFKD + lowercase do basename pra
+  // tolerar admin que cadastrou "PERFUMES.jpg" ou "velamaçadoamor.jpg".
+  function normalizeImg(p) {
+    var s = String(p == null ? '' : p).trim();
+    if (!s) return '';
+    if (/^(https?:\/\/|\/)/i.test(s)) return s;
+    s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+    var slash = s.lastIndexOf('/');
+    var dir = slash >= 0 ? s.slice(0, slash + 1) : '';
+    var file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+    if (/^(assets|images|img)\//i.test(s)) {
+      return dir.toLowerCase() + file;
+    }
+    return 'assets/' + file;
+  }
+
+  // Fallback por categoria (espelho de script.js / categoria.js).
+  var CATEGORY_DEFAULT_IMG = {
+    'sabonete':    'assets/sabonete.jpg',
+    'perfumaria':  'assets/perfumaria.jpg',
+    'ceramica':    'assets/ceramica-fria.jpg',
+    'tufting':     'assets/tufting1.jpg',
+    'pintura':     'assets/pinturataca.jpg',
+    'vela':        'assets/velaaromatica.jpg',
+    'gastronomia': 'assets/cookies.jpg',
+    'macrame':     'assets/macrameee.jpg',
+    'floral':      'assets/florseca.jpg',
+    'bartenderia': 'assets/drinks.jpg'
+  };
+  function defaultImgForCategory(cat) {
+    if (!cat) return '';
+    var key = String(cat).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    return CATEGORY_DEFAULT_IMG[key] || '';
+  }
+
+  var params = new URLSearchParams(window.location.search);
+  var expId = params.get('id');
+
+  if (!expId) {
+    showNotFound();
+    return;
+  }
+
+  // Wait for ElarahData to be ready
+  var tries = 0;
+  var poll = setInterval(function () {
+    tries++;
+    if (typeof ElarahData !== 'undefined' && ElarahData.getExperienceById) {
+      clearInterval(poll);
+      loadExperience();
+    } else if (tries > 40) {
+      clearInterval(poll);
+      showNotFound();
+    }
+  }, 100);
+
+  async function loadExperience() {
+    var exp = await ElarahData.getExperienceById(expId);
+    if (!exp) { showNotFound(); return; }
+
+    // Update page title and meta
+    document.getElementById('page-title').textContent = exp.nome + ' — Elarah';
+    var metaDesc = document.getElementById('meta-desc');
+    if (metaDesc) metaDesc.content = (exp.descricao || exp.nome || '').slice(0, 160);
+
+    // ===== SEO: canonical + Open Graph + dados estruturados (Product) =====
+    // Páginas de experiência são as "páginas de produto" do site — antes
+    // não tinham schema/canonical/OG. Isso gera rich snippet com preço no
+    // Google (mais clique) e preview bonito ao compartilhar. Nunca quebra:
+    // envolto em try/catch.
+    try {
+      var pageUrl = 'https://elarah.com.br/experiencia.html?id=' + encodeURIComponent(exp.id || expId);
+      var seoImg = exp.imagem || 'https://elarah.com.br/assets/logo.png';
+      if (seoImg && seoImg.indexOf('http') !== 0) seoImg = 'https://elarah.com.br/' + String(seoImg).replace(/^\//, '');
+      var seoDesc = (exp.descricao || exp.nome || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+
+      function upsertLink(rel, href) {
+        var l = document.querySelector('link[rel="' + rel + '"]');
+        if (!l) { l = document.createElement('link'); l.rel = rel; document.head.appendChild(l); }
+        l.href = href;
+      }
+      function upsertMeta(prop, content) {
+        var m = document.querySelector('meta[property="' + prop + '"]');
+        if (!m) { m = document.createElement('meta'); m.setAttribute('property', prop); document.head.appendChild(m); }
+        m.setAttribute('content', content);
+      }
+      upsertLink('canonical', pageUrl);
+      upsertMeta('og:type', 'product');
+      upsertMeta('og:title', exp.nome + ' — Elarah');
+      upsertMeta('og:description', seoDesc);
+      upsertMeta('og:image', seoImg);
+      upsertMeta('og:url', pageUrl);
+
+      var priceNum = String(exp.preco || '').replace(/[^0-9,\.]/g, '').replace(/\./g, '').replace(',', '.');
+      var ld = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        'name': exp.nome,
+        'description': seoDesc,
+        'image': seoImg,
+        'brand': { '@type': 'Brand', 'name': 'Elarah' },
+        'url': pageUrl
+      };
+      if (exp.categoria) ld.category = exp.categoria;
+      if (priceNum) {
+        ld.offers = {
+          '@type': 'Offer',
+          'price': priceNum,
+          'priceCurrency': 'BRL',
+          'availability': 'https://schema.org/InStock',
+          'url': pageUrl
+        };
+      }
+      var oldLd = document.getElementById('exp-jsonld');
+      if (oldLd) oldLd.remove();
+      var s = document.createElement('script');
+      s.id = 'exp-jsonld';
+      s.type = 'application/ld+json';
+      s.textContent = JSON.stringify(ld);
+      document.head.appendChild(s);
+
+      // Breadcrumb: Início › Categoria › Experiência (breadcrumb rich result)
+      var crumbs = [{ '@type': 'ListItem', 'position': 1, 'name': 'Início', 'item': 'https://elarah.com.br/' }];
+      if (exp.categoria) {
+        crumbs.push({ '@type': 'ListItem', 'position': 2, 'name': exp.categoria, 'item': 'https://elarah.com.br/categoria.html?cat=' + encodeURIComponent(exp.categoria) });
+      }
+      crumbs.push({ '@type': 'ListItem', 'position': crumbs.length + 1, 'name': exp.nome, 'item': pageUrl });
+      var bc = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', 'itemListElement': crumbs };
+      var oldBc = document.getElementById('exp-breadcrumb');
+      if (oldBc) oldBc.remove();
+      var sb = document.createElement('script');
+      sb.id = 'exp-breadcrumb';
+      sb.type = 'application/ld+json';
+      sb.textContent = JSON.stringify(bc);
+      document.head.appendChild(sb);
+    } catch (e) { /* enriquecimento de SEO nunca deve quebrar a página */ }
+
+    // Funnel step 3 — usuário abriu o detalhe da experiência. Crítico
+    // pro funil do admin (page_view → card_click → detail_view → cta).
+    try {
+      if (window.ElarahAnalytics && ElarahAnalytics.track) {
+        ElarahAnalytics.track('experience_detail_view', {
+          category: 'experience',
+          targetId: exp.id || expId,
+          targetLabel: (exp.nome || '').slice(0, 120),
+          metadata: {
+            experiencia_categoria: exp.categoria || null,
+            experiencia_bairro: exp.bairro || null,
+            preco: exp.preco || null,
+          },
+        });
+      }
+    } catch (e) { /* silencioso */ }
+
+    // Load slots for availability
+    var slotMap = {};
+    var allSlots = [];
+    try {
+      if (ElarahData.getSlotsForExperience) {
+        allSlots = await ElarahData.getSlotsForExperience(expId) || [];
+        allSlots.forEach(function (sl) { slotMap[sl.horario] = sl; });
+      }
+    } catch (e) { /* ok */ }
+
+    // Slots futuros agrupados por data (event_at).
+    // Inclui slots manuais E recorrentes — `recurrence_rule_id` é
+    // irrelevante na renderização (cliente só precisa ver data+horario).
+    //
+    // CAMPANHA: se vem com ?campaign=dia-dos-namorados, filtra slots
+    // pra mostrar SÓ os dentro da janela 14/05–06/07.
+    var now = new Date();
+    var urlParams = new URLSearchParams(window.location.search);
+    var campaignParam = urlParams.get('campaign');
+    var ddnStart = null, ddnEnd = null;
+    if (campaignParam === 'dia-dos-namorados') {
+      // Janela DINÂMICA: dia 25 do mês atual até dia 25 do mês seguinte
+      var _now = new Date();
+      ddnStart = new Date(_now.getFullYear(), _now.getMonth(), 25);
+      ddnEnd = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
+    }
+    var futureSlots = allSlots
+      .filter(function (s) { return s.isActive !== false; })
+      .filter(function (s) {
+        if (!s.eventAt) return false;
+        var d = new Date(s.eventAt);
+        if (d < now) return false;
+        if (ddnStart && (d < ddnStart || d >= ddnEnd)) return false;
+        return true;
+      })
+      .filter(function (s) {
+        if (s.vagasTotal == null) return true;
+        var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+        return rest > 0;
+      });
+    futureSlots.sort(function (a, b) {
+      return new Date(a.eventAt) - new Date(b.eventAt);
+    });
+
+    var horarios = Array.isArray(exp.horarios) && exp.horarios.length
+      ? exp.horarios : (exp.horario ? [exp.horario] : []);
+
+    var colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
+
+    // Detecta KIT (Elarah em Casa) cedo — usado pra moldura uniforme da
+    // foto principal e, mais abaixo, pro seletor de variações.
+    var _kitIsKit = (function () {
+      var hay = ((exp.nome || '') + ' ' + (exp.categoria || '')).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '');
+      return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || hay.indexOf('em casa') !== -1;
+    })();
+
+    // Hero image — primary → fallback de categoria → placeholder.
+    var primaryHero = normalizeImg(exp.imagem);
+    var heroCatFb = defaultImgForCategory(exp.categoria);
+    var heroSrc = primaryHero || heroCatFb;
+    var heroPlaceholder = '<div class="exp-detail__hero-placeholder" style="background:linear-gradient(135deg,' + esc(colors[0]) + ',' + esc(colors[1]) + ');">' + esc(exp.categoria) + '</div>';
+    var heroOnErr =
+      "if(this.dataset.fbStep==='final')return;" +
+      "if(!this.dataset.fbStep&&this.dataset.catFb&&this.src.indexOf(this.dataset.catFb)===-1){" +
+        "this.dataset.fbStep='cat';this.src=this.dataset.catFb;return;" +
+      "}" +
+      "this.dataset.fbStep='final';this.outerHTML=this.dataset.fbHtml;";
+    var heroHtml = heroSrc
+      ? '<img loading="lazy" decoding="async" class="exp-detail__hero' + (_kitIsKit ? ' exp-detail__hero--kit' : '') + '" src="' + esc(heroSrc) + '" alt="' + esc(exp.nome) + '" ' +
+        'data-cat-fb="' + esc(heroCatFb) + '" ' +
+        'data-fb-html="' + heroPlaceholder.replace(/"/g, '&quot;') + '" ' +
+        'onerror="' + heroOnErr + '">'
+      : heroPlaceholder;
+
+    // Renderização da agenda — chips de DATA → chips de HORÁRIO.
+    // Cliente escolhe primeiro a data e depois o horário daquela data.
+    // Funciona com slots recorrentes E manuais (não distingue).
+    // Fallback: se experiência não tem slot futuro algum, usa o array
+    // legado exp.horarios (sem datas) — preserva fluxo antigo.
+    var firstAvailable = -1;
+    var horariosHtml = '';
+    var useScheduleNew = futureSlots.length > 0;
+
+    if (useScheduleNew) {
+      // Agrupa por data (chave: YYYY-MM-DD do event_at).
+      var byDate = {};
+      var dateOrder = [];
+      futureSlots.forEach(function (s) {
+        var d = new Date(s.eventAt);
+        var key = d.getFullYear() + '-' +
+                  String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                  String(d.getDate()).padStart(2, '0');
+        if (!byDate[key]) {
+          byDate[key] = {
+            key: key,
+            dt: d,
+            wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+            dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+            slots: [],
+          };
+          dateOrder.push(key);
+        }
+        byDate[key].slots.push(s);
+      });
+
+      // HTML dos chips de data
+      var datasHtml = dateOrder.map(function (k, i) {
+        var g = byDate[k];
+        var anyAvailable = g.slots.some(function (s) {
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+          return rest > 0;
+        });
+        var cls = 'exp-detail__data-btn';
+        if (!anyAvailable) cls += ' exp-detail__data-btn--sold-out';
+        else if (i === 0) cls += ' exp-detail__data-btn--active';
+        return '<button type="button" class="' + cls + '"' +
+               (anyAvailable ? '' : ' disabled') +
+               ' data-date-key="' + esc(k) + '">' +
+               '<strong>' + esc(g.wd) + '</strong>' +
+               '<small>' + esc(g.dm) + '</small>' +
+               '</button>';
+      }).join('');
+
+      // HTML dos horários da primeira data (renderizado dinâmico via onClick)
+      function renderHorariosFor(dateKey) {
+        var g = byDate[dateKey];
+        if (!g) return '';
+        var html = '';
+        var picked = false;
+        g.slots.forEach(function (s, i) {
+          var cap = s.vagasTotal != null ? Number(s.vagasTotal) : null;
+          var rest = cap == null ? null : (s.vagasRestantes != null ? Number(s.vagasRestantes) : cap);
+          var soldOut = rest !== null && rest <= 0;
+          var cls = 'exp-detail__horario-btn';
+          if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
+          else if (!picked) { cls += ' exp-detail__horario-btn--active'; picked = true; }
+          var label = s.horario + (soldOut ? ' (esgotado)' : '');
+          // Escassez honesta: regra única em ElarahData.scarcityLabel
+          // (mostra quando a turma enche de verdade — ≤40% das vagas ou
+          // ≤6 em turmas de 10+; nunca em turma vazia). Mesma fonte usada
+          // nos cards, então página e listagem nunca divergem.
+          var _scLabel = (!soldOut && window.ElarahData && ElarahData.scarcityLabel)
+            ? ElarahData.scarcityLabel(s) : '';
+          var scarce = _scLabel
+            ? '<span class="exp-detail__scarce">' + _scLabel + '</span>'
+            : '';
+          html += '<button type="button" class="' + cls + '"' +
+                  (soldOut ? ' disabled' : '') +
+                  ' data-horario="' + esc(s.horario) + '"' +
+                  ' data-data="' + esc(s.data || g.dm) + '"' +
+                  ' data-data-label="' + esc(g.wd + ', ' + g.dm) + '"' +
+                  ' data-slot-id="' + esc(s.id) + '">' + esc(label) + scarce + '</button>';
+        });
+        return html;
+      }
+
+      // Estado inicial: primeira data disponível
+      var initialKey = dateOrder.find(function (k) {
+        return byDate[k].slots.some(function (s) {
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
+          return rest > 0;
+        });
+      }) || dateOrder[0];
+
+      var campaignBanner = ddnStart
+        ? '<div style="background:#fff8ef;border:1px solid #f0a05e;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#a4663b;">' +
+            '🤍 Mostrando apenas datas da <strong>campanha Dia dos Namorados</strong>. ' +
+            '<a href="experiencia.html?id=' + esc(expId) + '" style="color:#a4663b;font-weight:600;text-decoration:underline;">Ver todas as datas →</a>' +
+          '</div>'
+        : '';
+      horariosHtml = campaignBanner +
+        '<div class="exp-detail__schedule">' +
+          '<div class="exp-detail__schedule-block">' +
+            '<div class="exp-detail__schedule-label">Escolha uma data</div>' +
+            '<div class="exp-detail__datas">' + datasHtml + '</div>' +
+          '</div>' +
+          '<div class="exp-detail__schedule-block">' +
+            '<div class="exp-detail__schedule-label">Escolha um horário</div>' +
+            '<div class="exp-detail__horarios" id="exp-horarios">' +
+              renderHorariosFor(initialKey) +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      // Guarda no escopo pra wire-up posterior
+      window.__expScheduleData = {
+        byDate: byDate,
+        dateOrder: dateOrder,
+        renderHorariosFor: renderHorariosFor,
+        initialKey: initialKey,
+      };
+    } else if (horarios.length > 0) {
+      // Fallback legado: experiência sem slots configurados.
+      horariosHtml = '<div class="exp-detail__horarios">';
+      horarios.forEach(function (h, i) {
+        var sl = slotMap[h];
+        var soldOut = sl && sl.vagasTotal != null && sl.vagasRestantes != null && sl.vagasRestantes <= 0;
+        if (firstAvailable < 0 && !soldOut) firstAvailable = i;
+        var cls = 'exp-detail__horario-btn';
+        if (soldOut) cls += ' exp-detail__horario-btn--sold-out';
+        else if (firstAvailable === i) cls += ' exp-detail__horario-btn--active';
+        var label = soldOut ? h + ' (esgotado)' : h;
+        horariosHtml += '<button type="button" class="' + cls + '"' + (soldOut ? ' disabled' : '') + ' data-horario="' + esc(h) + '">' + label + '</button>';
+      });
+      horariosHtml += '</div>';
+    }
+
+    // Includes
+    var includesHtml = exp.inclui
+      ? '<div class="exp-detail__includes"><strong>Inclui:</strong> ' + esc(exp.inclui) + '</div>'
+      : '';
+
+    // Sinais de confiança (honestos — nada inventado). Ficam no cartão
+    // de reserva, logo abaixo do botão, pra reduzir o medo de clicar.
+    var _checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    var trustHtml =
+      '<ul class="exp-detail__trust">' +
+        '<li>' + _checkSvg + 'Confirmação na hora, por e-mail</li>' +
+        '<li>' + _checkSvg + 'Pagamento seguro — Pix ou cartão</li>' +
+        '<li>' + _checkSvg + 'Suporte no WhatsApp se precisar</li>' +
+      '</ul>';
+
+    // CTA "fechar em grupo" — abre WhatsApp já com o nome da experiência.
+    // Captura demanda de aniversário/empresa/turma privada (ticket alto)
+    // sem inventar número nenhum. Número = o mesmo do site.
+    var _waGroupMsg = 'Olá! Quero fechar a experiência "' + (exp.nome || '') +
+      '" para um grupo / turma privada. Pode me ajudar com datas e valores?';
+    var _waSvg = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4 0-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>';
+    var groupHtml =
+      '<a class="exp-detail__group-cta" target="_blank" rel="noopener"' +
+        ' href="https://wa.me/5511914455930?text=' + encodeURIComponent(_waGroupMsg) + '"' +
+        ' data-analytics="group_whatsapp_click" data-analytics-category="booking"' +
+        ' data-analytics-label="' + esc(exp.nome || '') + '">' +
+        _waSvg +
+        '<span><strong>Quer fechar em grupo?</strong> Aniversário, empresa ou turma privada — chama a gente no WhatsApp.</span>' +
+      '</a>';
+
+    // Description — section destacada "O que você vai viver".
+    // Header + ícone estrela + card creme. Substitui o modal-gate
+    // que vinha antes do checkout (PR a1c8bc5), com a vantagem de
+    // não criar fricção no clique de Reservar.
+    var descHtml = exp.descricao
+      ? '<section class="exp-detail__desc-section">' +
+          '<h2 class="exp-detail__desc-header">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
+            'O que você vai viver' +
+          '</h2>' +
+          '<div class="exp-detail__desc">' + esc(exp.descricao) + '</div>' +
+        '</section>'
+      : '';
+
+    // ===== Variações (kits E categorias normais) =====
+    // Vale pra QUALQUER experiência que tenha variantItems — não só kits.
+    // Cada opção pode ter foto e preço próprios. Ao clicar, troca a foto e
+    // o preço na página e guarda a escolha em window.__elarahKitVariant
+    // (lido pelo kit-checkout.js quando é kit). Em categoria normal, o
+    // seletor funciona como preview/destaque na página; a escolha vinculante
+    // por pessoa acontece no modal de checkout (script.js, via variantOptions).
+    var _kitItems = (function () {
+      // Formato rico (nome + preço + foto).
+      if (Array.isArray(exp.variantItems) && exp.variantItems.length) return exp.variantItems;
+      // Fallback: formato antigo (só nomes) — vira item simples { nome }.
+      if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
+        return exp.variantOptions
+          .filter(function (n) { return n && String(n).trim(); })
+          .map(function (n) { return { nome: String(n).trim(), preco: '', imagem: '' }; });
+      }
+      return [];
+    })();
+    var variantSelectorHtml = (function () {
+      if (!_kitItems.length) return '';
+      var label = exp.variantLabel || 'Escolha a sua opção';
+      var btns = _kitItems.map(function (it, i) {
+        var priceTxt = it.preco ? ' · ' + esc(it.preco) : '';
+        return '<button type="button" class="exp-variant-btn" data-vi="' + i + '" ' +
+          'style="padding:8px 14px;border:1.5px solid #d8c9b6;background:#fff;border-radius:999px;font-size:.9rem;cursor:pointer;font-family:inherit;color:#2c211a;">' +
+          esc(it.nome) + priceTxt + '</button>';
+      }).join('');
+      return '<div class="exp-detail__variants" style="margin:14px 0;">' +
+        '<div style="font-size:.85rem;font-weight:600;color:#2c211a;margin-bottom:8px;">' + esc(label) + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;" id="exp-variant-btns">' + btns + '</div>' +
+      '</div>';
+    })();
+
+    var container = document.getElementById('exp-content');
+    container.innerHTML =
+      '<a href="javascript:history.back()" class="exp-detail__back">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+        'Voltar' +
+      '</a>' +
+      '<div class="exp-detail__layout">' +
+      '<div class="exp-detail__head">' +
+      heroHtml +
+      '<span class="exp-detail__category">' + esc(exp.categoria) + '</span>' +
+      '<h1 class="exp-detail__title">' + esc(exp.nome) + '</h1>' +
+      // Aviso de PACOTE/PASSAPORTE quando a experiencia tem multiplas
+      // datas inclusas (cliente vai a TODAS, nao escolhe). Aparece
+      // logo acima da meta normal pra ficar bem visivel.
+      (Array.isArray(exp.pacoteDatas) && exp.pacoteDatas.length >= 2
+        ? '<div class="exp-detail__pacote" style="margin:14px 0 18px;padding:14px 18px;background:linear-gradient(135deg,#fff4e0,#ffe9d6);border:1.5px solid #f0a05e;border-radius:12px;">' +
+            '<div style="font-size:.72rem;color:#a4663b;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">' +
+              '✨ Pacote · ' + exp.pacoteDatas.length + ' encontros inclusos' +
+            '</div>' +
+            '<div style="font-size:.95rem;color:#5a3a32;font-weight:600;line-height:1.5;">' +
+              'Esta experiência é um pacote completo. Você participa de <b>todos</b> os encontros:' +
+            '</div>' +
+            '<ul style="margin:8px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px;">' +
+              exp.pacoteDatas.map(function (d, i) {
+                return '<li style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fff;border:1px solid #f0a05e;border-radius:999px;font-size:.85rem;font-weight:700;color:#a4663b;">' +
+                  '<span style="font-size:.7rem;color:#888;">Encontro ' + (i + 1) + '</span>' +
+                  '<span>' + esc(d) + '</span>' +
+                '</li>';
+              }).join('') +
+            '</ul>' +
+          '</div>'
+        : '') +
+      '<div class="exp-detail__meta">' +
+        ((!useScheduleNew && exp.data) ? '<span class="exp-detail__meta-item">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+          esc(exp.data) +
+        '</span>' : '') +
+        (exp.duracao ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' + esc(exp.duracao) + '</span>' : '') +
+        (exp.bairro ? '<span class="exp-detail__meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + esc(exp.bairro) + '</span>' : '') +
+        (exp.endereco ? '<span class="exp-detail__meta-item">' + esc(exp.endereco) + '</span>' : '') +
+      '</div>' +
+      '</div>' +
+      '<aside class="exp-detail__booking">' +
+      '<div class="exp-detail__price" id="exp-detail-price">' + esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) + '</div>' +
+      '<div class="exp-detail__installments" style="font-size:.85rem;color:#6b5d4f;margin-top:2px;">ou em até <strong>12x</strong> no cartão</div>' +
+      variantSelectorHtml +
+      horariosHtml +
+      includesHtml +
+      trustHtml +
+      '<div class="exp-detail__actions">' +
+        '<button type="button" class="exp-detail__reserve-btn" id="exp-reserve-btn"' +
+          ' data-reserve' +
+          ' data-skip-description="true"' +
+          ' data-experience-id="' + esc(exp.id) + '"' +
+          ' data-experience-nome="' + esc(exp.nome) + '"' +
+          ' data-analytics="reserve_click"' +
+          ' data-analytics-category="booking"' +
+          ' data-analytics-label="' + esc(exp.nome) + '"' +
+        '>Reservar</button>' +
+        '<button type="button" class="exp-detail__share-btn" id="exp-share-btn">' +
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
+          'Copiar link' +
+        '</button>' +
+      '</div>' +
+      groupHtml +
+      '</aside>' +
+      '<div class="exp-detail__body">' +
+      descHtml +
+      '<div id="exp-reviews" class="exp-detail__reviews"></div>' +
+      '</div>' +
+      '</div>';
+
+    // Avaliações reais (prova social) — carrega async e injeta.
+    loadReviews(exp.id, exp.nome);
+
+    // Wire variações do kit — troca foto + preço e guarda a escolha em
+    // window.__elarahKitVariant (lido pelo kit-checkout.js no checkout).
+    (function wireKitVariantButtons() {
+      window.__elarahKitVariant = null;
+      if (!_kitItems.length) return;
+      var heroImg = container.querySelector('.exp-detail__hero');
+      var priceEl = document.getElementById('exp-detail-price');
+      var btns = container.querySelectorAll('.exp-variant-btn');
+      function fmtPreco(p) {
+        return (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(p) : p;
+      }
+      function select(i) {
+        var it = _kitItems[i];
+        if (!it) return;
+        btns.forEach(function (b) {
+          var on = Number(b.dataset.vi) === i;
+          b.style.borderColor = on ? '#b9764f' : '#d8c9b6';
+          b.style.background = on ? '#fbf2e9' : '#fff';
+          b.style.fontWeight = on ? '700' : '400';
+        });
+        if (it.imagem && heroImg) heroImg.src = it.imagem;
+        if (priceEl) priceEl.textContent = fmtPreco(it.preco ? it.preco : exp.preco);
+        window.__elarahKitVariant = {
+          expId: exp.id,
+          label: exp.variantLabel || 'Escolha a sua opção',
+          nome: it.nome,
+          preco: it.preco || '',
+          imagem: it.imagem || ''
+        };
+      }
+      btns.forEach(function (b) {
+        b.addEventListener('click', function () { select(Number(b.dataset.vi)); });
+      });
+      select(0); // pré-seleciona a primeira opção
+    })();
+
+    // Wire DATA chip clicks — re-renderiza chips de horário e reseta seleção
+    function wireHorarioButtons() {
+      container.querySelectorAll('.exp-detail__horario-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          container.querySelectorAll('.exp-detail__horario-btn').forEach(function (b) {
+            b.classList.remove('exp-detail__horario-btn--active');
+          });
+          btn.classList.add('exp-detail__horario-btn--active');
+          syncReserveButton(btn);
+        });
+      });
+    }
+
+    function syncReserveButton(horarioBtn) {
+      var reserveBtn = document.getElementById('exp-reserve-btn');
+      if (!reserveBtn) return;
+      if (horarioBtn) {
+        reserveBtn.dataset.horario = horarioBtn.dataset.horario || '';
+        reserveBtn.dataset.data = horarioBtn.dataset.data || '';
+        reserveBtn.dataset.dataLabel = horarioBtn.dataset.dataLabel || '';
+        reserveBtn.dataset.slotId = horarioBtn.dataset.slotId || '';
+      } else {
+        reserveBtn.dataset.horario = '';
+        reserveBtn.dataset.data = '';
+        reserveBtn.dataset.dataLabel = '';
+        reserveBtn.dataset.slotId = '';
+      }
+    }
+
+    if (useScheduleNew && window.__expScheduleData) {
+      var schedData = window.__expScheduleData;
+      var horariosEl = document.getElementById('exp-horarios');
+
+      container.querySelectorAll('.exp-detail__data-btn').forEach(function (dBtn) {
+        if (dBtn.disabled) return;
+        dBtn.addEventListener('click', function () {
+          container.querySelectorAll('.exp-detail__data-btn').forEach(function (b) {
+            b.classList.remove('exp-detail__data-btn--active');
+          });
+          dBtn.classList.add('exp-detail__data-btn--active');
+          if (horariosEl) {
+            horariosEl.innerHTML = schedData.renderHorariosFor(dBtn.dataset.dateKey);
+            wireHorarioButtons();
+            // Sincroniza botão Reservar com primeiro horário ativo da nova data
+            var firstActive = horariosEl.querySelector('.exp-detail__horario-btn--active') ||
+                              horariosEl.querySelector('.exp-detail__horario-btn:not([disabled])');
+            syncReserveButton(firstActive);
+          }
+        });
+      });
+
+      wireHorarioButtons();
+      // Estado inicial: primeiro horário da primeira data
+      var firstHorario = container.querySelector('.exp-detail__horario-btn--active') ||
+                        container.querySelector('.exp-detail__horario-btn:not([disabled])');
+      syncReserveButton(firstHorario);
+    } else {
+      // Fluxo legado (sem slots configurados)
+      wireHorarioButtons();
+      var reserveBtn = document.getElementById('exp-reserve-btn');
+      if (reserveBtn && firstAvailable >= 0) {
+        reserveBtn.dataset.horario = horarios[firstAvailable];
+      }
+    }
+
+    // Wire share button
+    var shareBtn = document.getElementById('exp-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function () {
+        var url = window.location.origin + '/experiencia.html?id=' + encodeURIComponent(exp.id);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () {
+            shareBtn.textContent = 'Link copiado!';
+            setTimeout(function () { shareBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Copiar link'; }, 2000);
+          });
+        } else {
+          prompt('Copie o link:', url);
+        }
+      });
+    }
+  }
+
+  function showNotFound() {
+    var container = document.getElementById('exp-content');
+    container.innerHTML =
+      '<div class="exp-detail__not-found">' +
+        '<h2>Experiencia nao encontrada</h2>' +
+        '<p>O link pode estar incorreto ou a experiencia nao esta mais disponivel.</p>' +
+        '<a href="/">Explorar experiencias</a>' +
+      '</div>';
+  }
+})();
+</script>
+
+<!-- ============================================================
+     STICKY CTA MOBILE — Sprint 1 / PR D
+     ------------------------------------------------------------
+     Cria um botão "Reservar" fixo no rodapé que aparece SÓ no
+     mobile e SÓ quando o botão original sai da viewport.
+     Espelha data-attributes do botão original via MutationObserver
+     pra que o handler global de [data-reserve] em script.js
+     processe normalmente (mesmo experienceId, mesmo horário,
+     mesma data — clique no sticky = clique no original).
+     ============================================================ -->
+<script>
+(function setupExpStickyCta() {
+  'use strict';
+
+  // Detecta mobile com base no viewport — sticky só faz sentido aí.
+  // No desktop nem montamos o elemento (poupar memória + DOM).
+  var MOBILE_BREAKPOINT = 768;
+  function isMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+
+  var hostBtn = null;
+  var sticky = null;
+  var stickyBtn = null;
+  var stickyPriceEl = null;
+  var observer = null;
+
+  function build() {
+    if (sticky) return;
+    sticky = document.createElement('div');
+    sticky.className = 'exp-sticky-cta';
+    sticky.setAttribute('aria-hidden', 'true');
+    sticky.innerHTML =
+      '<div class="exp-sticky-cta__price"><small>A partir de</small><span class="exp-sticky-cta__price-val">—</span></div>' +
+      '<button type="button" class="exp-sticky-cta__btn" data-reserve' +
+      ' data-skip-description="true"' +
+      ' data-analytics="reserve_click" data-analytics-category="booking">Reservar</button>';
+    document.body.appendChild(sticky);
+    stickyBtn = sticky.querySelector('.exp-sticky-cta__btn');
+    stickyPriceEl = sticky.querySelector('.exp-sticky-cta__price-val');
+  }
+
+  // Copia data-attributes essenciais do botão original pro sticky.
+  // Mantém em sync com mudanças de horário/data feitas pelo usuário.
+  var DATA_KEYS = [
+    'experienceId', 'experienceNome', 'experiencePreco',
+    'horario', 'data', 'dataLabel', 'slotId',
+  ];
+  function syncFromHost() {
+    if (!stickyBtn || !hostBtn) return;
+    DATA_KEYS.forEach(function (k) {
+      var v = hostBtn.dataset[k];
+      if (v != null && v !== '') {
+        stickyBtn.dataset[k] = v;
+      } else {
+        delete stickyBtn.dataset[k];
+      }
+    });
+    stickyBtn.dataset.analyticsLabel = hostBtn.dataset.experienceNome || '';
+    var priceEl = document.querySelector('.exp-detail__price');
+    if (priceEl && stickyPriceEl) {
+      var t = (priceEl.textContent || '').trim();
+      if (t) stickyPriceEl.textContent = t;
+    }
+  }
+
+  function setupObserver() {
+    if (!hostBtn) return;
+    if (observer) observer.disconnect();
+    if (typeof IntersectionObserver === 'undefined') {
+      // Fallback: navegador antigo — mostra sempre.
+      sticky.classList.add('is-visible');
+      return;
+    }
+    observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        // Original FORA da viewport → mostra sticky.
+        // Original DENTRO da viewport → some.
+        sticky.classList.toggle('is-visible', !entry.isIntersecting);
+      });
+    }, { rootMargin: '0px 0px -20px 0px', threshold: 0 });
+    observer.observe(hostBtn);
+  }
+
+  function tryWire() {
+    if (!isMobile()) return;
+    var btn = document.getElementById('exp-reserve-btn');
+    if (!btn) return;
+    if (btn === hostBtn) return;
+    hostBtn = btn;
+    build();
+    syncFromHost();
+    setupObserver();
+  }
+
+  // Inicializa quando a página termina de renderizar o detalhe.
+  // O conteúdo é injetado async (após ElarahData carregar), então
+  // observamos o body via MutationObserver até o botão aparecer.
+  tryWire();
+  var mo = new MutationObserver(function () { tryWire(); });
+  mo.observe(document.body, { childList: true, subtree: true });
+
+  // Re-sync periódico — usuário pode trocar horário/data e os
+  // data-attrs do botão original mudam. Polling leve cobre isso
+  // sem precisar plugar em cada handler individual.
+  setInterval(function () {
+    if (hostBtn && sticky) syncFromHost();
+  }, 1500);
+
+  // Em resize cross-breakpoint, desliga sticky se virou desktop.
+  window.addEventListener('resize', function () {
+    if (!isMobile() && sticky) {
+      sticky.classList.remove('is-visible');
+    }
+  });
+})();
+</script>
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

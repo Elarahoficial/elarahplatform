@@ -2918,15 +2918,18 @@
       const plural = nomes.length > 1;
       const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
       const lista = joinNames(nomes) || '(participante)';
-      // Local da experiência (endereço + bairro). Mesma fonte dos
-      // dados que aparecem no e-mail de confirmação e em Minhas
-      // compras: bookings.metadata.endereco + bookings.metadata.bairro.
-      // CRÍTICO pra fornecedores que atendem em múltiplos locais nas
-      // mesmas datas/horários — sem isso o fornecedor não sabe pra
-      // onde ir e pode aparecer no endereço errado.
+      // Local da experiência (endereço + bairro).
+      // Prefere o endereço da experiência ATUAL (expById) — é a fonte da
+      // verdade e reflete a troca de experiência na hora, SEM depender de
+      // re-salvar a reserva. Cai no snapshot gravado na reserva
+      // (metadata.endereco/bairro) só pra reservas antigas ou experiência
+      // sem endereço cadastrado. CRÍTICO em troca de experiência/
+      // fornecedor: sem isso a nova parceira recebe o endereço da
+      // experiência antiga (o snapshot ficava stale).
       const meta = (b && b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
-      const endereco = String(meta.endereco || '').trim();
-      const bairro = String(meta.bairro || '').trim();
+      const expAtual = expById.get(b.experiencia_id) || null;
+      const endereco = String((expAtual && expAtual.endereco) || meta.endereco || '').trim();
+      const bairro = String((expAtual && expAtual.bairro) || meta.bairro || '').trim();
       const localFull = endereco && bairro
         ? endereco + ' — ' + bairro
         : (endereco || bairro || '');
@@ -2968,6 +2971,120 @@
         'title="Não avisado ainda. Clique pra abrir o WhatsApp e marcar como avisado.">' +
         '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
         'Avisar</a></td>';
+    }
+
+    // ===== Mensagem automática pro CLIENTE por fornecedor =====
+    // Dois fornecedores têm um fluxo pós-compra próprio: o cliente
+    // precisa receber uma mensagem específica (link pra concluir a
+    // reserva no BaresSp; dados + endereço/estacionamento no Lado B).
+    // Em vez de disparar sozinho, a gente monta o texto pronto e deixa
+    // a admin revisar e clicar em enviar — por WhatsApp OU e-mail
+    // (botões na linha da compra). Match por nome normalizado (sem
+    // acento, minúsculo) pra tolerar variações de cadastro no banco.
+    function normalizeFornecedorNome(s) {
+      return String(s || '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    // Retorna { key, label, subject, body } com a mensagem pronta pro
+    // cliente, ou null quando o fornecedor não tem fluxo dedicado.
+    // `body` é texto puro (sem markdown) — serve igual pro WhatsApp e
+    // pro corpo do e-mail.
+    function customerSupplierMessage(fornecedorNome, primeiroNome) {
+      const n = normalizeFornecedorNome(fornecedorNome);
+      if (!n) return null;
+      const oi = primeiroNome ? ('Oi ' + primeiroNome + '!') : 'Oi!';
+      // BaresSp — link pra concluir a reserva.
+      if (n.includes('bares')) {
+        return {
+          key: 'baressp',
+          label: 'BaresSp',
+          subject: 'Sua reserva na Elarah — falta só concluir 💛',
+          body: oi + ' Muito obrigado pela compra 💛\n\n' +
+            'Para concluirmos a sua reserva, precisamos que você preencha ' +
+            'este link:\n' +
+            'https://kommo.cc/K/X9OYUQ/X5FUBM\n\n' +
+            'Muito obrigado!',
+        };
+      }
+      // Lado B — dados + orientações + endereço/estacionamento.
+      if (n.replace(/\s+/g, '').includes('ladob')) {
+        return {
+          key: 'ladob',
+          label: 'Lado B',
+          subject: 'Sua aula no Lado B — informações importantes 💛',
+          body: (primeiroNome ? ('Oi ' + primeiroNome + '!') : 'Oi!') +
+            ' Muito obrigada pela compra 💛\n\n' +
+            'Vou precisar do seu nome completo, CPF, CEP, e-mail e endereço, ' +
+            'por gentileza.\n\n' +
+            'Pedimos a gentileza de que todos cheguem no horário de início ' +
+            'da aula, pois não dispomos de sala de espera.\n\n' +
+            'Caso haja desistência da aula, favor avisar com 48 horas de ' +
+            'antecedência, para podermos nos organizar quanto aos horários ' +
+            'dos professores.\n\n' +
+            '📍 Endereço do Lado B: Avenida Brigadeiro Faria Lima, 1572 — ' +
+            'sala 1607 (próximo à estação de metrô Faria Lima, na linha ' +
+            'amarela).\n\n' +
+            '🚗 Estacionamento: Rua Tavares Cabral, 61 (é o estacionamento ' +
+            'do Ibis Hotel, tem uma parede branca com um grafite grandão). ' +
+            'Quando chegar no estacionamento, avise que você é aluna do ' +
+            'Lado B e traga o ticket para carimbarmos — eles dão desconto ' +
+            'no valor.',
+        };
+      }
+      return null;
+    }
+
+    // Monta os botões "WhatsApp cliente" / "E-mail cliente" com a
+    // mensagem pré-preenchida. Só aparece em compras pagas de um
+    // fornecedor com fluxo dedicado (BaresSp / Lado B). Cada botão só
+    // renderiza quando há o canal (telefone → WhatsApp; e-mail → mail).
+    function renderCustomerMessageButtons(b, nomeResolved, telefone) {
+      if (b.status !== 'pago') return '';
+      const primeiroNome = String(nomeResolved || '').trim().split(/\s+/)[0] || '';
+      // Candidatos de nome: fornecedor principal resolvido + qualquer
+      // fornecedor no snapshot de repasses[] (modelo multi-fornecedor).
+      // Cobre tanto a experiência de 1 fornecedor quanto a que lista
+      // vários — basta um bater com BaresSp/Lado B.
+      const candidatos = [b._fornecedorResolvido || ''];
+      if (Array.isArray(b.repasses)) {
+        b.repasses.forEach(function (r) {
+          if (r && r.fornecedor_nome) candidatos.push(r.fornecedor_nome);
+        });
+      }
+      let tpl = null;
+      for (const nome of candidatos) {
+        tpl = customerSupplierMessage(nome, primeiroNome);
+        if (tpl) break;
+      }
+      if (!tpl) return '';
+      const btns = [];
+      const digits = String(telefone || '').replace(/\D+/g, '');
+      if (digits) {
+        const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+        // api.whatsapp.com/send (em vez de wa.me) — mais robusto pra
+        // emojis fora do BMP, mesmo motivo do follow-up de leads.
+        const waUrl = 'https://api.whatsapp.com/send/?phone=' + waDigits +
+          '&text=' + encodeURIComponent(tpl.body);
+        btns.push('<a href="' + escapeHtml(waUrl) + '" target="_blank" rel="noopener" ' +
+          'title="Abrir WhatsApp com a mensagem do ' + escapeHtml(tpl.label) +
+          ' pronta. Revise e clique enviar." ' +
+          'style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;text-decoration:none;line-height:1.4;">💬 WhatsApp cliente</a>');
+      }
+      if (b.email) {
+        // Envio real pelo servidor (edge function) — a mensagem sai
+        // direto pro e-mail do cliente com o template da Elarah. Não é
+        // mailto: um clique já dispara (com confirmação antes).
+        btns.push('<button type="button" class="admin__send-supplier-msg-btn" ' +
+          'data-booking-id="' + escapeHtml(b.id) + '" ' +
+          'title="Enviar a mensagem do ' + escapeHtml(tpl.label) +
+          ' por e-mail pro cliente (' + escapeHtml(b.email) + ')" ' +
+          'style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #cfe0f3;background:#eef4fb;color:#3068a8;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Enviar e-mail</button>');
+      }
+      if (!btns.length) return '';
+      return '<br><span style="display:inline-block;margin-top:6px;font-size:.66rem;color:#a07c4c;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">✉️ Mensagem ' +
+        escapeHtml(tpl.label) + '</span><br>' + btns.join('');
     }
 
     // Renderiza uma linha da tabela. Extraído pra reaproveitar em
@@ -3222,6 +3339,15 @@
       const cancelBookingBtn = b.status === 'pago'
         ? '<button type="button" class="admin__cancel-booking-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Cancelar reserva e marcar como reembolsada. Remove dos totais da contabilidade." style="display:inline-block;margin:6px 0 0;padding:3px 9px;border:1px solid #f4c7c1;background:#fdecea;color:#c0392b;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">❌ Cancelar</button>'
         : '';
+      // Reenviar confirmação: dispara de novo o e-mail "Sua reserva está
+      // confirmada" com os dados ATUAIS da reserva. Uso principal: depois
+      // de editar/trocar a experiência, mandar a confirmação certa pro
+      // cliente (o webhook original já rodou com os dados antigos). Só
+      // reservas pagas do site com e-mail (venda manual/gift card não).
+      const canResendConfirm = b.status === 'pago' && b.email && !b._isManualSale && !b._isGiftCard;
+      const resendConfirmBtn = canResendConfirm
+        ? '<button type="button" class="admin__resend-confirm-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Reenviar o e-mail de confirmação pro cliente com os dados atuais da reserva (use depois de editar/trocar a experiência)" style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Reenviar confirmação</button>'
+        : '';
 
       return `
         <tr>
@@ -3230,7 +3356,7 @@
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
           <td>${telefoneCell}</td>
-          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn ? '<br>' + editBookingBtn + cancelBookingBtn : ''}${variantCell}${shippingCell}</td>
+          <td>${escapeHtml(b.experiencia_nome || '—')}${editBookingBtn || cancelBookingBtn || resendConfirmBtn ? '<br>' + editBookingBtn + resendConfirmBtn + cancelBookingBtn : ''}${variantCell}${shippingCell}${renderCustomerMessageButtons(b, nomeResolved, telefone)}</td>
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
@@ -3516,17 +3642,25 @@
         return [];
       }
 
-      // Per-pessoa em centavos. Booking pode ter valor_cheio_centavos
-      // (que é total já × qty) ou cair no fallback da experiência.
-      function unitCheioCentavos(exp, totalCentavos, qty) {
+      // Valor "limpo" da experiência por pessoa, em centavos — SEMPRE
+      // sem a taxa do cartão. A diferença de troca é "sem taxas": não
+      // pode usar amount_total nem o valor_cheio_centavos snapshot da
+      // reserva, que podem carregar a taxa do cartão repassada ao
+      // cliente (ex.: vendas manuais gravam o total pago COM taxa em
+      // valor_cheio_centavos). Prioriza o Valor Cheio cadastrado na
+      // experiência, cai no preço dela e, por fim, no preço limpo
+      // registrado na própria reserva (preco_label).
+      function unitCheioCentavos(exp, bookingRef) {
         if (exp && exp.valorCheioCentavos != null) return Number(exp.valorCheioCentavos) || 0;
-        if (totalCentavos && qty > 0) return Math.round(Number(totalCentavos) / qty);
-        return 0;
+        var fromExpPreco = exp ? precoLabelToCents(exp.preco) : null;
+        if (fromExpPreco) return fromExpPreco;
+        var fromBookingPreco = bookingRef ? precoLabelToCents(bookingRef.preco_label) : null;
+        return fromBookingPreco || 0;
       }
 
       var originalQty = Number(booking.quantidade) || 1;
       var originalExp = current;
-      var originalUnit = unitCheioCentavos(originalExp, booking._valorCheioResolvido, originalQty);
+      var originalUnit = unitCheioCentavos(originalExp, booking);
 
       function horasUntilEvent() {
         var ts = booking._eventTsResolvido;
@@ -3656,7 +3790,7 @@
         var chosen = experiencesList.find(function (e) { return e && e.id === expSel.value; });
         if (!chosen) { refundBox.innerHTML = ''; return; }
         var novaQty = Math.max(1, Math.floor(Number(qtyInput.value) || 1));
-        var newUnit = unitCheioCentavos(chosen, null, novaQty);
+        var newUnit = unitCheioCentavos(chosen, null);
         var newTotal = newUnit * novaQty;
         var sameExp = chosen.id === booking.experiencia_id;
         var sameQty = novaQty === originalQty;
@@ -3783,10 +3917,30 @@
           console.warn('[Admin] exp', chosenExp.id, 'sem valorCheioCentavos — repasse não foi recalculado');
         }
 
+        // Trocou de experiência → o local muda e a PARCEIRA NOVA ainda
+        // não foi avisada. Zera o "avisado" pra a célula do WhatsApp
+        // voltar a vermelho e cobrar o aviso da nova parceira — senão
+        // ela herdaria o "✓ Avisado" da parceira antiga e ninguém a
+        // confirmaria de fato.
+        var expTrocada = chosenExp.id !== booking.experiencia_id;
+        if (expTrocada) {
+          update.fornecedor_avisado_at = null;
+        }
+
         // Histórico de auditoria no metadata. Não-bloqueante.
         var metaToSave = null;
         try {
           var meta = (booking.metadata && typeof booking.metadata === 'object') ? Object.assign({}, booking.metadata) : {};
+          // Sincroniza o LOCAL (endereço + bairro) com a experiência
+          // escolhida — mesma fonte que o checkout grava (exp.endereco/
+          // exp.bairro). CRÍTICO na troca: a confirmação da parceira
+          // (mensagem de WhatsApp) e o e-mail do cliente leem o local
+          // daqui; sem isso a nova parceira receberia o endereço da
+          // experiência antiga.
+          meta.endereco = (chosenExp.endereco != null && String(chosenExp.endereco).trim())
+            ? String(chosenExp.endereco).trim() : null;
+          meta.bairro = (chosenExp.bairro != null && String(chosenExp.bairro).trim())
+            ? String(chosenExp.bairro).trim() : null;
           var hist = Array.isArray(meta.admin_edit_history) ? meta.admin_edit_history.slice() : [];
           hist.push({
             at: new Date().toISOString(),
@@ -3928,6 +4082,113 @@
           return;
         }
         openEditBookingModal(booking, allExperiences || []);
+      });
+    });
+
+    // Wire "📧 Reenviar confirmação" — dispara de novo o e-mail de
+    // confirmação pro cliente com os dados ATUAIS da reserva (via edge
+    // function resend-booking-confirmation, que reusa o mesmo template
+    // do webhook). Uso: depois de editar/trocar a experiência.
+    tbody.querySelectorAll('.admin__resend-confirm-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var bookingId = btn.dataset.bookingId;
+        var booking = bookings.find(function (b) { return b && b.id === bookingId; });
+        if (!booking) {
+          console.warn('[Admin] booking não encontrada pra reenviar confirmação:', bookingId);
+          return;
+        }
+        var destino = booking.email || '';
+        if (!confirm('Reenviar o e-mail de confirmação para ' + destino + '?\n\n' +
+          'Experiência: ' + (booking.experiencia_nome || '—') + '\n' +
+          'Data: ' + (booking.data || '—') + ' · ' + (booking.horario || '—') + '\n\n' +
+          'O e-mail usa os dados ATUAIS da reserva.')) {
+          return;
+        }
+        var sb = window.supabaseClient;
+        if (!sb || !sb.functions || !sb.functions.invoke) {
+          alert('Supabase indisponível. Recarregue a página e tente de novo.');
+          return;
+        }
+        var original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+        try {
+          var res = await sb.functions.invoke('resend-booking-confirmation', {
+            body: { booking_id: bookingId },
+          });
+          var data = res && res.data;
+          var err = res && res.error;
+          if (err || !data || !data.ok) {
+            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+            console.error('[Admin] reenviar confirmação falhou:', err || data);
+            alert('Não consegui reenviar a confirmação.\nMotivo: ' + motivo);
+            btn.disabled = false;
+            btn.textContent = original;
+            return;
+          }
+          btn.textContent = '✓ Enviado';
+          alert('Confirmação reenviada para ' + (data.to || destino) + ' ✨');
+        } catch (e) {
+          console.error('[Admin] exceção ao reenviar confirmação:', e);
+          alert('Erro ao reenviar a confirmação:\n' + ((e && e.message) || String(e)));
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      });
+    });
+
+    // Wire "📧 Enviar e-mail" — dispara a mensagem pós-compra do
+    // fornecedor (BaresSp / Lado B) direto pro e-mail do cliente, via
+    // edge function send-supplier-customer-message. Confirmação antes,
+    // pra a admin não mandar sem querer.
+    tbody.querySelectorAll('.admin__send-supplier-msg-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var bookingId = btn.dataset.bookingId;
+        var booking = bookings.find(function (b) { return b && b.id === bookingId; });
+        if (!booking) {
+          console.warn('[Admin] booking não encontrada pra enviar mensagem:', bookingId);
+          return;
+        }
+        var destino = booking.email || '';
+        if (!destino) { alert('Esta reserva não tem e-mail do cliente.'); return; }
+        if (!confirm('Enviar a mensagem por e-mail para ' + destino + '?\n\n' +
+          'Fornecedor: ' + (booking._fornecedorResolvido || '—') + '\n' +
+          'Experiência: ' + (booking.experiencia_nome || '—'))) {
+          return;
+        }
+        var sb = window.supabaseClient;
+        if (!sb || !sb.functions || !sb.functions.invoke) {
+          alert('Supabase indisponível. Recarregue a página e tente de novo.');
+          return;
+        }
+        var original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+        try {
+          var res = await sb.functions.invoke('send-supplier-customer-message', {
+            body: {
+              booking_id: bookingId,
+              fornecedor_nome: booking._fornecedorResolvido || '',
+            },
+          });
+          var data = res && res.data;
+          var err = res && res.error;
+          if (err || !data || !data.ok) {
+            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+            console.error('[Admin] enviar mensagem fornecedor falhou:', err || data);
+            alert('Não consegui enviar o e-mail.\nMotivo: ' + motivo);
+            btn.disabled = false;
+            btn.textContent = original;
+            return;
+          }
+          btn.textContent = '✓ Enviado';
+          alert('Mensagem enviada para ' + (data.to || destino) + ' ✨');
+        } catch (e) {
+          console.error('[Admin] exceção ao enviar mensagem fornecedor:', e);
+          alert('Erro ao enviar o e-mail:\n' + ((e && e.message) || String(e)));
+          btn.disabled = false;
+          btn.textContent = original;
+        }
       });
     });
 
@@ -13784,9 +14045,46 @@
     if (payload.unit_price_centavos < 0) {
       msgEl.textContent = 'Valor unitário inválido.'; msgEl.style.color = '#c0392b'; return;
     }
+    // ===== Aviso de lotação =====
+    // A venda manual passa a descontar vaga do estoque (gatilho no banco,
+    // sql/elarah_manual_sales_inventory.sql). Se a venda OCUPA vaga
+    // (pago/pendente) e não há vaga sobrando na experiência, avisa —
+    // mas NÃO trava: a admin pode registrar acima da lotação de propósito.
+    // Best-effort: qualquer erro na checagem não impede o salvamento.
+    if (payload.experience_id &&
+        (payload.payment_status === 'pago' || payload.payment_status === 'pendente')) {
+      try {
+        const { data: slotRows } = await sb
+          .from('experience_slots')
+          .select('vagas_total, vagas_restantes')
+          .eq('experience_id', payload.experience_id);
+        if (Array.isArray(slotRows) && slotRows.length) {
+          let restSum = 0, temTeto = false;
+          slotRows.forEach(sl => {
+            if (sl.vagas_total != null) {
+              temTeto = true;
+              restSum += (sl.vagas_restantes != null ? Number(sl.vagas_restantes) : Number(sl.vagas_total)) || 0;
+            }
+          });
+          // Em edição, a vaga desta própria venda já está descontada do
+          // estoque; ela será re-somada pelo gatilho. Só bloqueamos o
+          // aviso pra vendas NOVAS, onde o cálculo é direto.
+          if (temTeto && isNew && restSum < qty) {
+            const disponivel = Math.max(0, restSum);
+            const ok = confirm(
+              'Atenção: esta experiência tem apenas ' + disponivel + ' vaga(s) livre(s) e você está ' +
+              'registrando ' + qty + '. Isso vai passar da lotação (overbooking).\n\n' +
+              'Deseja registrar mesmo assim?'
+            );
+            if (!ok) { msgEl.textContent = ''; return; }
+          }
+        }
+      } catch (e) { /* checagem best-effort — não impede salvar */ }
+    }
     msgEl.textContent = 'Salvando...'; msgEl.style.color = '#666';
     try {
       let res;
+      const isNew = !id;
       if (id) {
         res = await sb.from('manual_sales').update(payload).eq('id', id);
       } else {
@@ -13796,6 +14094,12 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+      // Só em venda NOVA: dispara o mesmo aviso "Nova venda 🎉" que sai
+      // nas vendas automáticas (Stripe/MP). Best-effort — não bloqueia
+      // nem falha o salvamento se o e-mail não sair (a venda já gravou).
+      if (isNew) {
+        _finNotifyManualSale(payload);
+      }
       // Mutação em manual_sales afeta Compras/Fornecedores/Analytics
       // via RPC. Limpa o cache pra refletir imediatamente.
       invalidateBookings();
@@ -13824,6 +14128,55 @@
         : '';
       msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
+    }
+  }
+
+  // Dispara o aviso de nova venda pros admins (mesmo e-mail das vendas
+  // automáticas), via edge function notify-manual-sale. Fire-and-forget:
+  // não usa await no fluxo de salvamento e engole qualquer erro — o
+  // aviso é secundário, a venda já foi gravada.
+  function _finNotifyManualSale(payload) {
+    try {
+      const sb = window.supabaseClient;
+      if (!sb || !sb.functions || !sb.functions.invoke) return;
+      // Soma o que já entrou (entrada/sinal + parcelas marcadas como pagas)
+      // pra o e-mail mostrar "Pago (entrada)" e o restante em aberto.
+      let paidCentavos = 0;
+      if (Array.isArray(payload.payments)) {
+        payload.payments.forEach((p) => {
+          if (p && p.pago) paidCentavos += Number(p.valor_centavos) || 0;
+        });
+      }
+      sb.functions.invoke('notify-manual-sale', {
+        body: {
+          experience_name: payload.experience_name,
+          customer_name: payload.customer_name,
+          customer_email: payload.customer_email,
+          slot_date: payload.slot_date,
+          slot_time: payload.slot_time,
+          quantity: payload.quantity,
+          total_amount_centavos: payload.total_amount_centavos,
+          payment_method: payload.payment_method,
+          payment_status: payload.payment_status,
+          coupon_code: payload.coupon_code,
+          discount_centavos: payload.discount_centavos,
+          supplier_name: payload.supplier_name,
+          event_type: payload.event_type,
+          is_event: payload.is_event,
+          event_type_custom: payload.event_type_custom,
+          paid_centavos: paidCentavos,
+        },
+      }).then((r) => {
+        if (r && r.error) {
+          console.warn('[Contabilidade] aviso de venda manual não enviado:', r.error.message || r.error);
+        } else if (r && r.data && r.data.ok === false) {
+          console.warn('[Contabilidade] aviso de venda manual não enviado:', r.data.error);
+        }
+      }).catch((e) => {
+        console.warn('[Contabilidade] aviso de venda manual falhou:', e && (e.message || e));
+      });
+    } catch (e) {
+      console.warn('[Contabilidade] aviso de venda manual (exceção):', e && (e.message || e));
     }
   }
 

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Experiências para grupos, equipes e celebrações — encontros memoráveis curados pela Elarah.">
+  <title>Experiências para Grupos — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="grupos.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="/" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macramê</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="singles-day.html" class="header__nav-link" style="color:#c44e3a;font-weight:600;">Single's Day</a>
+        <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a>
+        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Elarah em Casa</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="blog.html" class="header__nav-link">Blog</a>
+        <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO SPLIT ========== -->
+  <section class="grp-hero">
+    <div class="grp-hero__inner">
+      <div class="grp-hero__content">
+        <span class="grp-hero__tag">Experiências para grupos</span>
+        <h1 class="grp-hero__title">Transforme seu<br>próximo encontro<br>em algo inesquecível.</h1>
+        <p class="grp-hero__text">A Elarah conecta seu grupo com experiências criativas e offline em São Paulo. Aulas de culinária, ateliês de pintura, workshops de vela, cerâmica e muito mais — tudo pensado para grupos de 5 a 50 pessoas.</p>
+        <div class="grp-hero__buttons">
+          <a href="#grp-occasions" class="grp-hero__btn grp-hero__btn--birthday">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="22" height="22"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 1v2"/></svg>
+            Aniversário
+          </a>
+          <a href="#grp-occasions" class="grp-hero__btn grp-hero__btn--corporate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="22" height="22"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            Team Building
+          </a>
+          <a href="#grp-occasions" class="grp-hero__btn grp-hero__btn--friends">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="22" height="22"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Entre Amigos
+          </a>
+        </div>
+      </div>
+      <div class="grp-hero__image">
+        <div class="grp-hero__image-inner">
+          <img loading="lazy" decoding="async" src="assets/experiences/pintura-taca.jpg" alt="Experiência em grupo na Elarah" class="grp-hero__photo">
+          <div class="grp-hero__image-badge">
+            <span class="grp-hero__image-badge-number">5–50</span>
+            <span class="grp-hero__image-badge-label">pessoas</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TRUST BAR ========== -->
+  <section class="grp-trust">
+    <div class="grp-trust__inner">
+      <div class="grp-trust__item">
+        <strong>2.400+</strong>
+        <span>experiências realizadas</span>
+      </div>
+      <div class="grp-trust__divider"></div>
+      <div class="grp-trust__item">
+        <strong>50+</strong>
+        <span>parceiros criativos</span>
+      </div>
+      <div class="grp-trust__divider"></div>
+      <div class="grp-trust__item">
+        <strong>4.9</strong>
+        <span>avaliação média</span>
+      </div>
+      <div class="grp-trust__divider"></div>
+      <div class="grp-trust__item">
+        <strong>9</strong>
+        <span>categorias</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== OCASIÕES ========== -->
+  <section class="grp-occasions" id="grp-occasions">
+    <div class="grp-occasions__inner">
+      <div class="grp-occasions__header">
+        <h2 class="grp-occasions__title">Para qualquer ocasião especial</h2>
+        <p class="grp-occasions__subtitle">Seja uma comemoração, uma reunião de time ou um encontro entre amigos, temos a experiência certa para o seu grupo.</p>
+      </div>
+      <div class="grp-occasions__grid">
+
+        <div class="grp-occasion-card">
+          <div class="grp-occasion-card__icon grp-occasion-card__icon--birthday">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="32" height="32"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 1v2"/></svg>
+          </div>
+          <h3 class="grp-occasion-card__title">Festa de aniversário</h3>
+          <p class="grp-occasion-card__desc">Surpreenda o aniversariante com uma experiência que ninguém vai esquecer. Aulas de culinária, ateliê de pintura com vinho, workshops de vela — tudo personalizado para o grupo.</p>
+          <ul class="grp-occasion-card__tags">
+            <li>5 a 30 pessoas</li>
+            <li>Decoração inclusa</li>
+            <li>Personalizável</li>
+          </ul>
+          <a href="#grp-contact" class="grp-occasion-card__link">Planejar aniversário</a>
+        </div>
+
+        <div class="grp-occasion-card">
+          <div class="grp-occasion-card__icon grp-occasion-card__icon--corporate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="32" height="32"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><path d="M12 12v.01"/></svg>
+          </div>
+          <h3 class="grp-occasion-card__title">Team building</h3>
+          <p class="grp-occasion-card__desc">Tire seu time da rotina com experiências que unem, divertem e criam memórias. Perfeito para integração, happy hours criativos e eventos corporativos.</p>
+          <ul class="grp-occasion-card__tags">
+            <li>10 a 50 pessoas</li>
+            <li>Nota fiscal</li>
+            <li>Espaço exclusivo</li>
+          </ul>
+          <a href="#grp-contact" class="grp-occasion-card__link">Organizar para o time</a>
+        </div>
+
+        <div class="grp-occasion-card">
+          <div class="grp-occasion-card__icon grp-occasion-card__icon--friends">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="32" height="32"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h3 class="grp-occasion-card__title">Entre amigos</h3>
+          <p class="grp-occasion-card__desc">Chega de sair sempre para o mesmo lugar. Reúna a galera para viver algo diferente: cerâmica, tufting, coquetelaria, pintura ou o que a imaginação pedir.</p>
+          <ul class="grp-occasion-card__tags">
+            <li>5 a 20 pessoas</li>
+            <li>Agenda flexível</li>
+            <li>Vários bairros</li>
+          </ul>
+          <a href="#grp-contact" class="grp-occasion-card__link">Montar programa</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== COMO FUNCIONA ========== -->
+  <section class="grp-how">
+    <div class="grp-how__inner">
+      <h2 class="grp-how__title">Como funciona</h2>
+      <div class="grp-how__steps">
+        <div class="grp-how__step">
+          <div class="grp-how__step-num">1</div>
+          <h3 class="grp-how__step-name">Conte sobre o grupo</h3>
+          <p class="grp-how__step-desc">Qual a ocasião, quantas pessoas e o que o grupo curte. Quanto mais soubermos, melhor a sugestão.</p>
+        </div>
+        <div class="grp-how__step">
+          <div class="grp-how__step-num">2</div>
+          <h3 class="grp-how__step-name">Receba sugestões</h3>
+          <p class="grp-how__step-desc">Nosso time monta opções sob medida com experiências, datas, horários e orçamento.</p>
+        </div>
+        <div class="grp-how__step">
+          <div class="grp-how__step-num">3</div>
+          <h3 class="grp-how__step-name">Confirme e viva</h3>
+          <p class="grp-how__step-desc">Escolha a experiência, confirme a reserva e pronto. O grupo só precisa aparecer e aproveitar.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIÊNCIAS POPULARES ========== -->
+  <section class="grp-popular">
+    <div class="grp-popular__inner">
+      <div class="grp-popular__header">
+        <h2 class="grp-popular__title">Experiências mais pedidas para grupos</h2>
+        <p class="grp-popular__subtitle">As favoritas dos nossos grupos em São Paulo.</p>
+      </div>
+      <div class="grp-popular__grid">
+
+        <div class="grp-popular__card">
+          <div class="grp-popular__card-image">
+            <img loading="lazy" decoding="async" src="assets/experiences/ceo-kitchen.jpg" alt="Aula de culinária em grupo">
+          </div>
+          <div class="grp-popular__card-body">
+            <span class="grp-popular__card-cat">Gastronomia</span>
+            <h3 class="grp-popular__card-title">Aula de culinária</h3>
+            <p class="grp-popular__card-info">Até 30 pessoas &middot; A partir de R$280/pessoa</p>
+          </div>
+        </div>
+
+        <div class="grp-popular__card">
+          <div class="grp-popular__card-image">
+            <img loading="lazy" decoding="async" src="assets/experiences/pintura-taca.jpg" alt="Pintura em taça com vinho">
+          </div>
+          <div class="grp-popular__card-body">
+            <span class="grp-popular__card-cat">Pintura</span>
+            <h3 class="grp-popular__card-title">Pintura em taça com vinho</h3>
+            <p class="grp-popular__card-info">Até 25 pessoas &middot; A partir de R$200/pessoa</p>
+          </div>
+        </div>
+
+        <div class="grp-popular__card">
+          <div class="grp-popular__card-image">
+            <img loading="lazy" decoding="async" src="assets/experiences/vela-floral.jpg" alt="Workshop de velas">
+          </div>
+          <div class="grp-popular__card-body">
+            <span class="grp-popular__card-cat">Vela</span>
+            <h3 class="grp-popular__card-title">Workshop de velas artesanais</h3>
+            <p class="grp-popular__card-info">Até 20 pessoas &middot; A partir de R$150/pessoa</p>
+          </div>
+        </div>
+
+        <div class="grp-popular__card">
+          <div class="grp-popular__card-image">
+            <img loading="lazy" decoding="async" src="assets/experiences/tufting.jpg" alt="Aula de tufting">
+          </div>
+          <div class="grp-popular__card-body">
+            <span class="grp-popular__card-cat">Tufting</span>
+            <h3 class="grp-popular__card-title">Aula de tufting</h3>
+            <p class="grp-popular__card-info">Até 15 pessoas &middot; A partir de R$162/pessoa</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section class="grp-faq">
+    <div class="grp-faq__inner">
+      <h2 class="grp-faq__title">Dúvidas frequentes sobre grupos</h2>
+      <div class="grp-faq__list">
+
+        <details class="grp-faq__item">
+          <summary class="grp-faq__question">Qual o tamanho mínimo e máximo de um grupo?</summary>
+          <p class="grp-faq__answer">Grupos a partir de 5 pessoas. Para eventos maiores (até 50 pessoas), montamos uma proposta personalizada com espaço exclusivo.</p>
+        </details>
+
+        <details class="grp-faq__item">
+          <summary class="grp-faq__question">Quanto custa uma experiência para grupo?</summary>
+          <p class="grp-faq__answer">O valor varia conforme a experiência, número de participantes e personalização. Envie sua solicitação e receba um orçamento sem compromisso.</p>
+        </details>
+
+        <details class="grp-faq__item">
+          <summary class="grp-faq__question">Posso personalizar a experiência?</summary>
+          <p class="grp-faq__answer">Sim! Podemos adaptar duração, incluir brinde personalizado, decoração temática, coffee break especial e muito mais.</p>
+        </details>
+
+        <details class="grp-faq__item">
+          <summary class="grp-faq__question">Vocês emitem nota fiscal para empresas?</summary>
+          <p class="grp-faq__answer">Sim. Emitimos nota fiscal para todas as reservas corporativas. Basta informar os dados da empresa no momento da contratação.</p>
+        </details>
+
+        <details class="grp-faq__item">
+          <summary class="grp-faq__question">Com quanto tempo de antecedência devo reservar?</summary>
+          <p class="grp-faq__answer">Recomendamos pelo menos 7 dias úteis para grupos de até 15 pessoas e 15 dias úteis para grupos maiores. Para datas especiais, quanto antes melhor.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FORMULÁRIO DE CONTATO ========== -->
+  <section class="grp-contact" id="grp-contact">
+    <div class="grp-contact__inner">
+      <div class="grp-contact__content">
+        <div class="grp-contact__text">
+          <h2 class="grp-contact__title">Vamos montar a experiência do seu grupo?</h2>
+          <p class="grp-contact__desc">Conte um pouco sobre o evento e nosso time responde em até 24 horas com sugestões personalizadas. Sem compromisso.</p>
+          <div class="grp-contact__perks">
+            <div class="grp-contact__perk">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              <span>Orçamento personalizado</span>
+            </div>
+            <div class="grp-contact__perk">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              <span>Resposta em até 24h</span>
+            </div>
+            <div class="grp-contact__perk">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              <span>Sem compromisso</span>
+            </div>
+          </div>
+        </div>
+        <form class="grp-contact__form" id="grp-form">
+          <div class="grp-contact__form-row">
+            <label class="sr-only" for="grp-nome">Seu nome</label>
+            <input id="grp-nome" name="nome" type="text" class="grp-contact__input" placeholder="Seu nome" autocomplete="name" required>
+            <label class="sr-only" for="grp-email">E-mail</label>
+            <input id="grp-email" name="email" type="email" class="grp-contact__input" placeholder="E-mail" autocomplete="email" required>
+          </div>
+          <div class="grp-contact__form-row">
+            <label class="sr-only" for="grp-whats">WhatsApp</label>
+            <input id="grp-whats" name="whatsapp" type="tel" class="grp-contact__input" placeholder="WhatsApp" autocomplete="tel" required>
+            <label class="sr-only" for="grp-tipo-evento">Tipo de evento</label>
+            <select id="grp-tipo-evento" name="tipo_evento" class="grp-contact__input grp-contact__select" required>
+              <option value="" disabled selected>Tipo de evento</option>
+              <option>Aniversário</option>
+              <option>Team building / Empresa</option>
+              <option>Encontro de amigos</option>
+              <option>Despedida de solteiro(a)</option>
+              <option>Chá de bebê / revelação</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="grp-contact__form-row">
+            <label class="sr-only" for="grp-pessoas-num">Número de pessoas</label>
+            <input id="grp-pessoas-num" name="pessoas" type="number" class="grp-contact__input" placeholder="Número de pessoas" min="5" required>
+            <label class="sr-only" for="grp-data">Data desejada</label>
+            <input id="grp-data" name="data" type="date" class="grp-contact__input" placeholder="Data desejada">
+          </div>
+          <label class="sr-only" for="grp-mensagem">Conte mais sobre o evento</label>
+          <textarea id="grp-mensagem" name="mensagem" class="grp-contact__textarea" rows="4" placeholder="Conte mais sobre o evento: o que o grupo curte, se tem alguma preferência de experiência, orçamento..."></textarea>
+          <button type="submit" class="grp-contact__btn">Solicitar orçamento</button>
+          <p class="grp-contact__success" id="grp-form-success" style="display:none;">Solicitação enviada! Nosso time entra em contato em breve.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA FINAL ========== -->
+  <section class="grp-cta">
+    <div class="grp-cta__inner">
+      <div class="grp-cta__content">
+        <h2 class="grp-cta__title">Offline is a feeling.<br>Melhor ainda, em grupo.</h2>
+        <p class="grp-cta__text">Dê ao seu grupo uma experiência que ninguém vai encontrar numa tela.</p>
+        <div class="grp-cta__actions">
+          <a href="#grp-contact" class="grp-cta__btn">Falar com a Elarah</a>
+          <a href="/" class="grp-cta__btn grp-cta__btn--outline">Ver experiências</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+
+    <!-- LOGO + FRASE -->
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+
+        <!-- INSTAGRAM -->
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/>
+          </svg>
+        </a>
+
+        <!-- WHATSAPP -->
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/>
+          </svg>
+        </a>
+
+        <!-- TIKTOK -->
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/>
+          </svg>
+        </a>
+
+        <!-- LINKEDIN -->
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- EXPLORAR -->
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting">Tufting</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <!-- ELARAH -->
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <!-- INFORMAÇÕES -->
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+
+  </div>
+
+  <div class="footer__bottom">
+    <p>© 2026 Elarah. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="explorar-menu.js?v=2" defer></script>
+<script src="auth.js?v=12"></script>
+<script src="analytics.js?v=3"></script>
+<script src="script.js?v=73"></script><script>  (function () {
+    'use strict';
+    var form = document.getElementById('grp-form');
+    var success = document.getElementById('grp-form-success');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var nome    = (document.getElementById('grp-nome').value || '').trim();
+      var email   = (document.getElementById('grp-email').value || '').trim();
+      var whats   = (document.getElementById('grp-whats').value || '').trim();
+      var tipo    = document.getElementById('grp-tipo-evento').value || '';
+      var pessoas = document.getElementById('grp-pessoas-num').value || '';
+      var data    = document.getElementById('grp-data').value || '';
+      var msg     = (document.getElementById('grp-mensagem').value || '').trim();
+
+      var dataFmt = data ? data.split('-').reverse().join('/') : 'Não informada';
+
+      var texto =
+        'Oi! Quero organizar uma experiência em grupo com a Elarah ✨%0A%0A' +
+        '📌 Tipo de evento: ' + encodeURIComponent(tipo) + '%0A' +
+        '👤 Nome: ' + encodeURIComponent(nome) + '%0A' +
+        '📧 E-mail: ' + encodeURIComponent(email) + '%0A' +
+        '📱 WhatsApp: ' + encodeURIComponent(whats) + '%0A' +
+        '👥 Número de pessoas: ' + encodeURIComponent(pessoas) + '%0A' +
+        '📅 Data desejada: ' + encodeURIComponent(dataFmt) + '%0A' +
+        '📝 Observações: ' + encodeURIComponent(msg || 'Nenhuma');
+
+      var url = 'https://wa.me/5511914455930?text=' + texto;
+      window.open(url, '_blank');
+
+      if (success) success.style.display = 'block';
+      form.reset();
+    });
+  })();
+</script>
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

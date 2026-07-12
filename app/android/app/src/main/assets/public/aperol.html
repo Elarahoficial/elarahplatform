@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <!-- =====================================================
+       PÁGINA DE LANDING — Pintura de Quadro com Cristal & Aperol Spritz
+       -----------------------------------------------------
+       Esta página existe SOMENTE para servir o preview correto
+       no WhatsApp/Facebook/Twitter quando o link é compartilhado
+       no follow-up da campanha. Crawlers leem as meta tags og:* e
+       mostram a imagem da capa + título + descrição da campanha.
+
+       Visitantes humanos são redirecionados imediatamente pra
+       experiencia.html?id=<UUID> via JS — usuário nunca vê esta
+       página, só o crawler.
+
+       Por que não usar experiencia.html direto? Aquela página popula
+       título/imagem via JavaScript, e o crawler do WhatsApp não roda
+       JS — ele só lê o HTML estático. Por isso uma landing dedicada
+       com og:* hardcoded é a única forma de garantir o preview certo
+       sem depender de SSR.
+       ===================================================== -->
+
+  <!-- ===== Open Graph (WhatsApp / Facebook / iMessage) ===== -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Elarah">
+  <meta property="og:title" content="Pintura de Quadro com Cristal & Aperol Spritz · 2ª Edição">
+  <meta property="og:description" content="A 1ª edição esgotou. Garante a sua agora — vagas limitadas em SP.">
+  <meta property="og:image" content="https://elarah.com.br/assets/APEROLPINTURA.jpg">
+  <meta property="og:image:secure_url" content="https://elarah.com.br/assets/APEROLPINTURA.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1254">
+  <meta property="og:image:height" content="1254">
+  <meta property="og:image:alt" content="Pintura de Quadro com Cristal & Aperol Spritz — 2ª Edição (Elarah)">
+  <meta property="og:url" content="https://elarah.com.br/aperol.html">
+
+  <!-- ===== Twitter Card (compartilhamentos no Twitter/X) ===== -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pintura de Quadro com Cristal & Aperol Spritz · 2ª Edição">
+  <meta name="twitter:description" content="A 1ª edição esgotou. Garante a sua agora — vagas limitadas em SP.">
+  <meta name="twitter:image" content="https://elarah.com.br/assets/APEROLPINTURA.jpg">
+
+  <!-- Description padrão pra SEO/clientes que não leem og:* -->
+  <meta name="description" content="A 1ª edição esgotou. Garante a sua agora — vagas limitadas em SP.">
+
+  <title>Pintura de Quadro com Cristal & Aperol Spritz — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+
+  <!-- Fallback meta refresh (caso JS falhe). 1 segundo dá tempo pro
+       JS rodar; senão o navegador faz o redirect manualmente.
+       Aponta pra index com âncora By Elarah como fallback seguro. -->
+  <meta http-equiv="refresh" content="2;url=index.html#by-elarah">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #faf6f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .wrap {
+      max-width: 520px;
+      text-align: center;
+    }
+    .wrap img {
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.12);
+      margin-bottom: 24px;
+    }
+    .wrap h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.6rem;
+      margin: 0 0 12px;
+      color: #1a1a1a;
+      line-height: 1.25;
+    }
+    .wrap p {
+      color: #555;
+      font-size: .96rem;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #f0a05e;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fallback-btn {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 12px 24px;
+      background: #f0a05e;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: .92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img loading="lazy" decoding="async" src="assets/APEROLPINTURA.jpg" alt="Pintura de Quadro com Cristal & Aperol Spritz">
+    <h1>Pintura de Quadro com Cristal & Aperol Spritz</h1>
+    <p><span class="spinner"></span>Te levando para a página da experiência…</p>
+    <a href="index.html#by-elarah" class="fallback-btn" id="fallback-btn" style="display:none;">Ver no site</a>
+  </div>
+
+  <!-- ============================================================
+       REDIRECT DINÂMICO
+       ------------------------------------------------------------
+       Busca o ID da experiência no Supabase pelo nome (idempotente
+       a renomeações cosméticas — usa ILIKE com wildcards) e
+       redireciona pra experiencia.html?id=<uuid>. Se a busca falhar
+       por qualquer motivo (offline, banco, etc.) o meta-refresh acima
+       leva pra index.html#by-elarah em 2s.
+
+       Importante: este JS NÃO roda no crawler do WhatsApp. Ele só lê
+       as meta tags og:* acima. Por isso a página existe — pra dar o
+       preview correto sem perder a navegação dinâmica.
+       ============================================================ -->
+  <script src="supabase-loader.js?v=11"></script>
+  <script src="supabase-client.js?v=12"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    // Tempo máximo pra esperar pelo client antes de cair no fallback
+    var MAX_WAIT_MS = 4000;
+    var POLL_INTERVAL_MS = 80;
+    var startedAt = Date.now();
+
+    function showFallbackBtn() {
+      var btn = document.getElementById('fallback-btn');
+      if (btn) btn.style.display = 'inline-block';
+    }
+
+    function waitForClient(cb) {
+      if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+        cb(window.supabaseClient);
+        return;
+      }
+      if (Date.now() - startedAt > MAX_WAIT_MS) {
+        console.warn('[aperol] supabaseClient indisponível, usando meta-refresh');
+        showFallbackBtn();
+        return;
+      }
+      setTimeout(function () { waitForClient(cb); }, POLL_INTERVAL_MS);
+    }
+
+    function redirectTo(url) {
+      try {
+        // location.replace pra não poluir histórico (back não volta aqui)
+        window.location.replace(url);
+      } catch (e) {
+        window.location.href = url;
+      }
+    }
+
+    waitForClient(async function (sb) {
+      try {
+        // Busca pelo nome — tolera variações leves ("Cristal" / "Aperol Spritz" etc).
+        // Limit 1 + ordem por created_at desc pra pegar a versão mais recente
+        // se houver duplicatas (não deve haver).
+        var resp = await sb
+          .from('experiences')
+          .select('id, nome')
+          .or('nome.ilike.%pintura%cristal%aperol%,nome.ilike.%pintura%aperol%')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        var data = resp && resp.data;
+        var error = resp && resp.error;
+        if (error) throw error;
+        if (data && data.length && data[0].id) {
+          var id = data[0].id;
+          console.log('[aperol] redirecting to experiencia.html?id=' + id);
+          redirectTo('experiencia.html?id=' + encodeURIComponent(id));
+          return;
+        }
+        console.warn('[aperol] experiência não encontrada por nome, fallback');
+        showFallbackBtn();
+      } catch (e) {
+        console.error('[aperol] erro ao buscar experiência:', e);
+        showFallbackBtn();
+      }
+    });
+  })();
+  </script>
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

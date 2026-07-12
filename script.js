@@ -325,17 +325,18 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return matchCat && matchBairro && matchBusca && matchData;
     });
 
-    // Ordem manual do admin primeiro (arrastar pra cima = aparece antes);
-    // empate/sem ordem cai no cronológico pela proxima ocorrencia futura.
-    // Experiencias sem data conhecida (recorrente sem slot programado,
-    // one-off com data ausente, etc) vao pro fim.
+    // Ordem CRONOLÓGICA: a próxima experiência a acontecer aparece
+    // primeiro (proxima ocorrencia futura). Empate no mesmo horário cai
+    // na ordem manual do admin. Experiencias sem data conhecida
+    // (recorrente sem slot programado, one-off com data ausente, etc)
+    // vao pro fim.
     filtered.sort(function (a, b) {
-      var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
-      var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
-      if (oa !== ob) return oa - ob;
       var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
       var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
-      return ta - tb;
+      if (ta !== tb) return ta - tb;
+      var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
+      var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
+      return oa - ob;
     });
 
     grid.innerHTML = '';
@@ -487,7 +488,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // Encodado em data-attribute pra que o onerror possa trocar inline.
     const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
     const primaryImg = normalizeImg(exp.imagem);
-    const catFallback = defaultImgForCategory(exp.categoria);
+    const catFallback = ""; /* fotos genericas de categoria desativadas: mostra placeholder neutro ate a foto real carregar */
     const imgSrc = primaryImg || catFallback;
     const imageContent = imgSrc
       ? `<img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" loading="lazy" ` +
@@ -906,14 +907,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // entram aqui: a imagem do admin é fonte da verdade. Se ela
     // falhar, exibe placeholder neutro — nunca substitui pela foto
     // de outra experiência (era o bug "cadastrei foto X mas aparece Y").
-    var ORIGINALS_IMAGE_FALLBACKS = {
-      'pintura-aperol': 'assets/pintura-aperol.png',
-      'perfumaria-criativa': 'assets/perfumariaa.jpg',
-      'ourivesaria-joia': 'assets/ourivesariaa.jpg',
-      'pintura de quadro com cristal & aperol spritz': 'assets/pintura-aperol.png',
-      'oficina de perfumaria criativa': 'assets/perfumariaa.jpg',
-      'workshop de ourivesaria: crie sua joia': 'assets/ourivesariaa.jpg'
-    };
+    // Fotos fixas antigas desativadas: os cards Originals agora usam SOMENTE a
+    // imagem real cadastrada; se faltar, mostram o placeholder neutro (logo) —
+    // nunca uma foto antiga hardcoded.
+    var ORIGINALS_IMAGE_FALLBACKS = {};
     // Placeholder neutro: a logo. Reusa asset que já está no site.
     // Usado quando uma imagem custom falha de carregar — bem melhor
     // que servir foto aleatória de outra experiência.
@@ -1067,8 +1064,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? 'Quero participar'
         : 'Entrar na lista de espera';
 
-      var imgSrc = resolveImage(it);
-      var imgFallback = resolveOnErrorFallback(it);
+      // SOMENTE a imagem real cadastrada. Sem foto real, o espaco fica VAZIO
+      // (nada aparece) ate a foto real carregar — nunca mostra foto antiga nem
+      // logo no lugar. Se a foto real falhar, some (fica vazio tambem).
+      var realImg = normalizeImagePath(it.imagem);
+      var imgHtml = realImg
+        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" onerror="this.style.display=&quot;none&quot;;">'
+        : '';
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
       // CRÍTICO: cards compráveis recebem `data-reserve` — o listener
@@ -1120,16 +1122,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return '' +
         '<article class="' + cardClass + '" style="position:relative;">' +
           '<div class="originals__card-image">' +
-            '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
-              // onerror: loga URL que falhou (admin vê no DevTools)
-              // e troca pro placeholder neutro. Flag dataset.fb evita
-              // loop se o próprio fallback der erro.
-              'onerror="if(this.dataset.fb!==&quot;1&quot;){' +
-                'this.dataset.fb=&quot;1&quot;;' +
-                'console.warn(&quot;[Elarah] imagem do card falhou — usando placeholder. URL original: &quot;+this.dataset.originalSrc);' +
-                'this.classList.add(&quot;originals__image--placeholder&quot;);' +
-                'this.src=&quot;' + esc(imgFallback) + '&quot;;' +
-              '}" data-original-src="' + esc(imgSrc) + '">' +
+            imgHtml +
             '<span class="originals__card-badge">' + esc(badgeLabel) + '</span>' +
             shareBtnHtml +
           '</div>' +

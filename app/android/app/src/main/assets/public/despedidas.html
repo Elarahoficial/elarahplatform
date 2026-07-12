@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Despedida de solteira e de solteiro com a Elarah — uma celebração criativa e presencial com a sua galera. Drinks, criatividade e a melhor das memórias.">
+<link rel="canonical" href="https://elarah.com.br/despedidas.html">
+<title>Despedida de solteira & solteiro — Elarah</title>
+<link rel="icon" href="assets/logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#db5e92;--orange-light:#f29ec0;--orange-dark:#b83a6e;
+    --cream:#fff6f4;--cream-dark:#fbe7ef;
+    --ink:#3a2230;--ink-soft:#7c6070;--line:#f3dbe6;--white:#fff;
+    --pink:#db5e92;--pink-dark:#b83a6e;--pink-soft:#fceaf1;
+    --wine:#7d2a49;
+    --shadow:0 18px 50px -28px rgba(140,40,80,.42);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:var(--cream);line-height:1.6;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'DM Serif Display',Georgia,serif;font-weight:400;line-height:1.12;letter-spacing:-.01em}
+  .serif-i{font-style:italic}
+  a{color:inherit}
+  img{max-width:100%;display:block}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .eyebrow{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--orange-dark);margin-bottom:18px}
+  .eyebrow--light{color:#ffc8de}
+  .eyebrow--pink{color:var(--pink-dark)}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:15px 30px;border-radius:999px;font-weight:600;font-size:.95rem;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease;cursor:pointer;border:0}
+  .btn--primary{background:#bc3d73;color:#fff;box-shadow:0 12px 30px -12px rgba(188,61,115,.7)}
+  .btn--primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(188,61,115,.85)}
+  .btn--ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn--ghost:hover{border-color:var(--orange);color:var(--orange-dark)}
+  .btn--light{background:#fff;color:var(--orange-dark)}
+  .btn--light:hover{transform:translateY(-2px)}
+  .btn--pink{background:#bc3d73;color:#fff;box-shadow:0 12px 30px -12px rgba(188,61,115,.7)}
+  .btn--pink:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(188,61,115,.85)}
+
+  /* ===== top bar ===== */
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(255,246,244,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar__inner{display:flex;align-items:center;justify-content:space-between;height:78px}
+  .topbar__logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  .topbar__logo img{height:46px;width:auto}
+  .topbar__tag{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);background:var(--cream-dark);padding:5px 11px;border-radius:999px}
+  .topbar__nav{display:flex;gap:26px;align-items:center}
+  .topbar__nav a{font-size:.9rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
+  .topbar__nav a:hover{color:var(--orange-dark)}
+  .topbar__nav .btn{padding:10px 20px;color:#fff}
+  @media(max-width:940px){.topbar__nav a:not(.btn){display:none}}
+
+  /* ===== hero ===== */
+  .hero{position:relative;overflow:hidden;padding:84px 0 76px;
+    background:radial-gradient(900px 480px at 88% -8%,rgba(219,94,146,.24),transparent 60%),radial-gradient(700px 420px at -5% 110%,rgba(184,58,110,.12),transparent 55%),var(--cream)}
+  .hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:54px;align-items:center}
+  .hero h1{font-size:clamp(2.5rem,5.2vw,4rem);margin-bottom:20px}
+  .hero h1 em{color:var(--orange-dark)}
+  .hero__lead{font-size:1.18rem;color:var(--ink-soft);max-width:548px;margin-bottom:30px}
+  .hero__actions{display:flex;gap:14px;flex-wrap:wrap}
+  .hero__visual{position:relative;height:450px}
+  .hero__visual img{position:absolute;border-radius:22px;box-shadow:var(--shadow);object-fit:cover}
+  .hero__visual .v1{width:54%;height:80%;top:0;right:0;z-index:1}
+  .hero__visual .v2{width:48%;height:58%;bottom:0;left:0;z-index:3;border:6px solid var(--cream)}
+  .hero__visual .v3{width:43%;height:45%;top:0;left:2%;z-index:2;border:6px solid var(--cream)}
+  @media(max-width:860px){.hero__grid{grid-template-columns:1fr;gap:40px}.hero__visual{height:330px;order:-1}}
+
+  /* ===== sections ===== */
+  section{padding:80px 0}
+  .section-head{max-width:730px;margin-bottom:46px}
+  .section-head--center{margin-left:auto;margin-right:auto;text-align:center}
+  .section-head h2{font-size:clamp(2rem,3.6vw,2.9rem);margin-bottom:16px}
+  .section-head p{font-size:1.1rem;color:var(--ink-soft)}
+  .lead-narrow{max-width:760px}
+  .soft{background:var(--cream-dark)}
+  .ink-bg{background:linear-gradient(150deg,#9a3a62,#6e2444);color:#ffe9f1}
+  .ink-bg h2{color:#fff}.ink-bg .section-head p{color:#d9c7b6}
+
+  /* ===== pillars ===== */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  .pillar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px 24px;box-shadow:0 10px 30px -24px rgba(108,70,20,.5)}
+  .pillar__ic{width:48px;height:48px;border-radius:13px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--orange-dark)}
+  .pillar h3{font-size:1.18rem;margin-bottom:9px}
+  .pillar p{color:var(--ink-soft);font-size:.95rem}
+  @media(max-width:860px){.pillars{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.pillars{grid-template-columns:1fr}}
+
+  /* ===== track ===== */
+  .track{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center}
+  .track--rev .track__media{order:2}
+  .track__media{position:relative}
+  .track__media img{border-radius:22px;box-shadow:var(--shadow);height:480px;width:100%;object-fit:cover}
+  .track__badge{position:absolute;right:-20px;bottom:26px;background:#fff;border-radius:16px;padding:15px 20px;box-shadow:var(--shadow);max-width:220px;border:1px solid var(--line);z-index:4}
+  .track--rev .track__badge{right:auto;left:-20px}
+  .track__badge strong{display:block;font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--orange-dark)}
+  .track__badge span{font-size:.84rem;color:var(--ink-soft)}
+  .track h2{font-size:clamp(1.9rem,3.4vw,2.7rem);margin-bottom:14px}
+  .track__intro{font-size:1.08rem;color:var(--ink-soft);margin-bottom:22px;max-width:520px}
+  .mini-h{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);margin:0 0 14px}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .tag{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.85rem;color:var(--ink);font-weight:500}
+  .soft .tag{background:#fff}
+  .pink-bg{background:linear-gradient(180deg,var(--pink-soft),#fff)}
+  .track--bride .mini-h{color:var(--pink-dark)}
+  .track--bride .tag{background:var(--pink-soft);border-color:#f6d3e3}
+  .track__badge.is-pink strong{color:var(--pink-dark)}
+  @media(max-width:1180px){.track__badge{right:10px;bottom:16px}.track--rev .track__badge{left:10px}}
+  @media(max-width:860px){.track{grid-template-columns:1fr;gap:34px}.track--rev .track__media{order:0}.track__media img{height:360px}}
+
+  /* ===== included ===== */
+  .incl{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 36px;max-width:860px;margin:0 auto}
+  .incl li{list-style:none;display:flex;gap:13px;align-items:flex-start;font-size:1rem;color:#ffe9f1}
+  .incl svg{flex:none;color:var(--orange-light);margin-top:3px}
+  @media(max-width:680px){.incl{grid-template-columns:1fr}}
+
+  /* ===== cta ===== */
+  .cta{background:linear-gradient(135deg,var(--orange),var(--orange-dark));color:#fff;border-radius:28px;padding:62px 48px;text-align:center}
+  .cta h2{color:#fff;font-size:clamp(2rem,4vw,3rem);margin-bottom:16px}
+  .cta p{font-size:1.15rem;color:#fff;opacity:.95;max-width:580px;margin:0 auto 30px}
+  .cta__actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  /* ===== footer ===== */
+  footer{padding:46px 0;border-top:1px solid var(--line)}
+  .footer__inner{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .footer__inner img{height:26px}
+  .footer__inner p{font-size:.86rem;color:var(--ink-soft)}
+  .footer__inner a{color:var(--orange-dark);text-decoration:none;font-weight:600}
+  /* ===== mobile polish ===== */
+  .cols3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:860px){.cols3{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.cols3{grid-template-columns:1fr}}
+  @media(max-width:600px){
+    section{padding:56px 0}
+    .wrap{padding:0 20px}
+    .topbar__tag{display:none}
+    .topbar__nav .btn{padding:9px 16px;font-size:.85rem}
+    .cta{padding:46px 26px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="#topo" class="topbar__logo">
+      <img src="assets/logo.png" alt="Elarah">
+      <span class="topbar__tag">Despedidas</span>
+    </a>
+    <nav class="topbar__nav">
+      <a href="#solteira">Solteira</a>
+      <a href="#solteiro">Solteiro</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#incluso">O que inclui</a>
+      <a href="#contato" class="btn btn--primary">Reservar despedida</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="topo">
+  <div class="wrap hero__grid">
+    <div>
+      <span class="eyebrow">Despedida de solteira &amp; de solteiro</span>
+      <h1>A despedida mais <em>inesquecível</em> de todas.</h1>
+      <p class="hero__lead">
+        Esqueça o bar de sempre. A Elarah cria uma celebração cheia de estilo pra
+        <strong>surpreender a noiva</strong> (ou o noivo) e a galera: experiência criativa, drinks,
+        <strong>decoração linda</strong> e aquele clima de festa que vira memória pra sempre.
+      </p>
+      <div class="hero__actions">
+        <a href="#solteira" class="btn btn--pink">Despedida de solteira</a>
+        <a href="#solteiro" class="btn btn--ghost">Despedida de solteiro</a>
+      </div>
+    </div>
+    <div class="hero__visual">
+      <img class="v1" src="assets/desp-hero1.jpg" alt="Decoração de despedida de solteira com parede de balões BRIDE" loading="lazy">
+      <img class="v2" src="assets/desp-hero2.jpg" alt="Brinde com taças rosé na despedida" loading="lazy">
+      <img class="v3" src="assets/desp-hero4.jpg" alt="Mesa montada para a experiência de despedida" loading="lazy" style="object-position:center 35%">
+    </div>
+  </div>
+</section>
+
+<!-- ===== POR QUE ASSIM ===== -->
+<section id="por-que">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Por que comemorar assim</span>
+      <h2>Mais que uma festa: um momento juntos.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Uma despedida que une o melhor dos dois mundos — o clima de celebração e uma experiência que ninguém esquece.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 21l-5 2.6 1-5.5-4-3.9 5.5-.8z"/></svg>
+        </div>
+        <h3>Foge do clichê</h3>
+        <p>Nada de mais um bar lotado. Uma experiência criativa que combina com quem está se casando.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>A galera junta</h3>
+        <p>Todo mundo interagindo e criando junto — perfeito até pra quem está se conhecendo ali.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8M6 7h12l-1 5a5 5 0 0 1-10 0z"/><path d="M12 12v7M8 22h8"/></svg>
+        </div>
+        <h3>Clima de festa</h3>
+        <p>Drinks, petiscos e aquele brinde especial fazem parte — celebração do começo ao fim.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        </div>
+        <h3>Lembrança pra levar</h3>
+        <p>Cada um leva pra casa o que criou — e a noiva/noivo, uma despedida diferente de todas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SOLTEIRA ===== -->
+<section class="pink-bg track--bride" id="solteira">
+  <div class="wrap track">
+    <div class="track__media">
+      <img src="assets/noiva.jpg" alt="Despedida de solteira no jardim com a noiva" loading="lazy">
+      <div class="track__badge is-pink">
+        <strong>Pra noiva</strong>
+        <span>um dia perfeito com as amigas</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow eyebrow--pink">Despedida de solteira</span>
+      <h2>Um brinde à noiva — <span class="serif-i">do jeito dela</span>.</h2>
+      <p class="track__intro">
+        Reúna as amigas para uma tarde (ou noite) leve e cheia de estilo: pintura em taça com um
+        spritz na mão, muita conversa e risada. Aquela despedida aconchegante e instagramável que
+        a noiva merece.
+      </p>
+      <p class="mini-h">Experiências favoritas</p>
+      <div class="tags">
+        <span class="tag">Pintura em taça + spritz</span>
+        <span class="tag">Coquetelaria</span>
+        <span class="tag">Confeitaria &amp; brunch</span>
+        <span class="tag">Cerâmica &amp; modelagem</span>
+        <span class="tag">Arranjos florais</span>
+        <span class="tag">Velas aromáticas</span>
+      </div>
+      <a href="#contato" class="btn btn--pink">Reservar despedida de solteira</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SOLTEIRO ===== -->
+<section id="solteiro">
+  <div class="wrap track track--rev">
+    <div class="track__media">
+      <img src="assets/desp-solteiro.jpg" alt="Despedida de solteiro — noite dos amigos no bar" loading="lazy">
+      <div class="track__badge">
+        <strong>Pro noivo</strong>
+        <span>com os amigos, fora do óbvio</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">Despedida de solteiro</span>
+      <h2>A despedida que <span class="serif-i">foge do clichê</span>.</h2>
+      <p class="track__intro">
+        Junte os amigos para uma experiência com clima de bar, mas muito mais original: uma aula de
+        coquetelaria pra criar os próprios drinks, um menu pra colocar a mão na massa e aquele
+        brinde à última noite de solteiro.
+      </p>
+      <p class="mini-h">Experiências favoritas</p>
+      <div class="tags">
+        <span class="tag">Coquetelaria &amp; mixology</span>
+        <span class="tag">Gastronomia &amp; churrasco</span>
+        <span class="tag">Drinks &amp; petiscos</span>
+        <span class="tag">Cerâmica</span>
+        <span class="tag">Pintura</span>
+      </div>
+      <a href="#contato" class="btn btn--primary">Reservar despedida de solteiro</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== O QUE INCLUI ===== -->
+<section class="ink-bg" id="incluso">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow eyebrow--light">O que está incluso</span>
+      <h2>É só reunir a galera.</h2>
+    </div>
+    <ul class="incl">
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Experiência conduzida por profissionais</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Todos os materiais inclusos</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Grupo privativo, só com a sua turma</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Espaço da Elarah ou no local que você escolher</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Opção de drinks, petiscos e bolo</li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Uma lembrança feita à mão para cada convidado</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== COMO FUNCIONA ===== -->
+<section id="como-funciona">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Do "vamos fazer" ao brinde final.</h2>
+      <p class="lead-narrow" style="margin:0 auto;">Você organiza a galera, a Elarah cuida do resto.</p>
+    </div>
+    <div class="pillars cols3">
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3>1 · Conta pra gente</h3>
+        <p>Data, número de convidados e se é despedida de solteira ou de solteiro. Sugerimos as melhores experiências.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h12"/></svg>
+        </div>
+        <h3>2 · A Elarah monta tudo</h3>
+        <p>Experiência, espaço, profissionais, materiais, drinks e ambientação — proposta sob medida pra vocês.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8M6 7h12l-1 5a5 5 0 0 1-10 0z"/><path d="M12 12v7M8 22h8"/></svg>
+        </div>
+        <h3>3 · A galera celebra</h3>
+        <p>É só chegar e curtir. No fim, cada um leva sua criação e a melhor das despedidas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section id="contato">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Bora organizar essa despedida?</h2>
+      <p>Conta pra gente a data e de quem é a despedida (solteira ou solteiro) que a Elarah monta uma experiência sob medida pra sua turma.</p>
+      <div class="cta__actions">
+        <a class="btn btn--light" href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Quero%20organizar%20uma%20despedida%20de%20solteira%2Fsolteiro%20com%20a%20Elarah." target="_blank" rel="noopener">Falar no WhatsApp</a>
+        <a class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.6)" href="https://mail.google.com/mail/?view=cm&fs=1&to=contato.elarah@gmail.com&su=Despedida%20de%20solteira%2Fsolteiro%20com%20a%20Elarah" target="_blank" rel="noopener">Enviar e-mail</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap footer__inner">
+    <img src="assets/logo.png" alt="Elarah">
+    <p>Offline is a feeling. — © 2026 Elarah · <a href="https://wa.me/5511914455930" target="_blank" rel="noopener">+55 11 91445-5930</a> · <a href="https://mail.google.com/mail/?view=cm&fs=1&to=contato.elarah@gmail.com" target="_blank" rel="noopener">contato.elarah@gmail.com</a></p>
+  </div>
+</footer>
+
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

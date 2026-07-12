@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         : '';
 
       const primaryImg = normalizeImg(exp.imagem);
-      const catFallback = defaultImgForCategory(exp.categoria);
+      const catFallback = ""; /* fotos genericas de categoria desativadas: mostra placeholder neutro ate a foto real carregar */
       const imgSrc = primaryImg || catFallback;
       const onErr =
         "if(this.dataset.fbStep==='final')return;" +

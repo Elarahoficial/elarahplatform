@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Sua área pessoal na Elarah — reservas, favoritos e dados da conta.">
+  <title>Minha conta — Elarah</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="conta.css?v=5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="/" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macramê</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="singles-day.html" class="header__nav-link" style="color:#c44e3a;font-weight:600;">Single's Day</a>
+        <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a>
+        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Elarah em Casa</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="blog.html" class="header__nav-link">Blog</a>
+        <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== ACCOUNT CONTENT ========== -->
+  <main class="account">
+    <div class="account__inner">
+
+      <!-- Sidebar -->
+      <aside class="account__sidebar">
+        <div class="account__avatar" id="account-avatar"></div>
+        <h2 class="account__name" id="account-name"></h2>
+        <p class="account__email" id="account-email"></p>
+        <span class="account__badge" id="account-badge"></span>
+
+        <nav class="account__menu">
+          <button class="account__menu-item account__menu-item--active" data-section="dados">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Meus dados
+          </button>
+          <button class="account__menu-item" data-section="compras">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            Minhas compras
+          </button>
+          <button class="account__menu-item" data-section="fidelidade">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 19.3 7.2 17l.9-5.4L4.2 7.7l5.4-.8z"/></svg>
+            Cartão fidelidade
+          </button>
+          <button class="account__menu-item" data-section="parceiro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+            Oferecer experiência
+          </button>
+          <button class="account__menu-item" data-section="favoritos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            Favoritos
+          </button>
+        </nav>
+
+        <button class="account__logout" id="account-logout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair da conta
+        </button>
+      </aside>
+
+      <!-- Content panels -->
+      <div class="account__content">
+
+        <!-- MEUS DADOS -->
+        <section class="account__section account__section--active" id="section-dados">
+          <h2 class="account__section-title">Meus dados</h2>
+          <form class="account__form" id="form-dados">
+            <div class="account__form-row">
+              <div class="account__form-field">
+                <label class="account__form-label">Nome completo</label>
+                <input type="text" class="account__form-input" id="dados-nome" required>
+              </div>
+              <div class="account__form-field">
+                <label class="account__form-label">E-mail</label>
+                <input type="email" class="account__form-input" id="dados-email" disabled>
+              </div>
+            </div>
+            <div class="account__form-row">
+              <div class="account__form-field">
+                <label class="account__form-label">WhatsApp</label>
+                <input type="tel" class="account__form-input" id="dados-telefone" required>
+              </div>
+              <div class="account__form-field">
+                <label class="account__form-label">Cidade</label>
+                <input type="text" class="account__form-input" id="dados-cidade">
+              </div>
+            </div>
+            <div class="account__form-actions">
+              <button type="submit" class="account__form-btn">Salvar alterações</button>
+              <span class="account__form-success" id="dados-success">Dados atualizados!</span>
+            </div>
+          </form>
+        </section>
+
+        <!-- OFERECER EXPERIÊNCIA -->
+        <section class="account__section" id="section-parceiro">
+          <div id="parceiro-status"></div>
+
+          <!-- Form to become partner -->
+          <div id="parceiro-form-wrap">
+            <h2 class="account__section-title">Oferecer uma experiência</h2>
+            <p class="account__section-desc">Preencha os dados abaixo para se tornar um parceiro Elarah e começar a oferecer suas experiências na plataforma.</p>
+            <form class="account__form" id="form-parceiro">
+              <div class="account__form-row">
+                <div class="account__form-field">
+                  <label class="account__form-label">Nome da marca/empresa</label>
+                  <input type="text" class="account__form-input" id="parceiro-marca" required>
+                </div>
+                <div class="account__form-field">
+                  <label class="account__form-label">Tipo de experiência</label>
+                  <select class="account__form-input account__form-select" id="parceiro-tipo" required>
+                    <option value="" disabled selected>Selecione</option>
+                    <option>Bartenderia</option>
+                    <option>Cerâmica</option>
+                    <option>Floral</option>
+                    <option>Gastronomia</option>
+                    <option>Macramê</option>
+                    <option>Pintura</option>
+                    <option>Sabonete</option>
+                    <option>Tufting</option>
+                    <option>Vela</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+              </div>
+              <div class="account__form-row">
+                <div class="account__form-field">
+                  <label class="account__form-label">Bairro / Local de atuação</label>
+                  <input type="text" class="account__form-input" id="parceiro-bairro" required>
+                </div>
+                <div class="account__form-field">
+                  <label class="account__form-label">Cidade</label>
+                  <input type="text" class="account__form-input" id="parceiro-cidade" value="São Paulo" required>
+                </div>
+              </div>
+              <div class="account__form-row">
+                <div class="account__form-field">
+                  <label class="account__form-label">Instagram ou site</label>
+                  <input type="text" class="account__form-input" id="parceiro-social" placeholder="@seuinstagram ou https://...">
+                </div>
+              </div>
+              <div class="account__form-field">
+                <label class="account__form-label">Conte sobre sua experiência</label>
+                <textarea class="account__form-input account__form-textarea" id="parceiro-descricao" rows="4" placeholder="O que você oferece, para quem, e o que torna sua experiência especial..." required></textarea>
+              </div>
+              <div class="account__form-actions">
+                <button type="submit" class="account__form-btn">Quero ser parceiro</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Partner pending view -->
+<div id="parceiro-pending" style="display:none;">
+  <h2 class="account__section-title">Solicitação enviada! </h2>
+  <p class="account__section-desc">
+    Recebemos suas informações e vamos analisar seu perfil com carinho.
+    O retorno acontece em até <strong>48 horas úteis</strong>.
+  </p>
+
+  <div class="account__partner-info">
+    <div class="account__partner-detail">
+      <strong>Status</strong>
+      <span>Em análise</span>
+    </div>
+    <div class="account__partner-detail">
+      <strong>Próximo passo</strong>
+      <span>Se aprovado(a), sua conta será liberada para cadastrar experiências na ELARAH.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Partner approved view -->
+<div id="parceiro-approved" style="display:none;">
+  <h2 class="account__section-title">Sua parceria foi aprovada! </h2>
+  <p class="account__section-desc">
+    Agora você já pode acessar sua área de parceiro e começar a cadastrar experiências.
+  </p>
+
+  <div class="account__partner-info" id="parceiro-info"></div>
+
+  <div class="account__form-actions" style="margin-top: 24px;">
+    <button type="button" class="account__form-btn" onclick="window.open('https://wa.me/5511914455930?text=Oi!%20Quero%20cadastrar%20uma%20nova%20experi%C3%AAncia%20na%20Elarah.%0A%0ANome%20da%20experi%C3%AAncia%3A%0ACategoria%3A%0AResumo%20da%20experi%C3%AAncia%3A%0ADescri%C3%A7%C3%A3o%20completa%3A%0A%0AData(s)%20da%20experi%C3%AAncia%3A%0AHor%C3%A1rio(s)%20dispon%C3%ADvel(is)%3A%0AN%C3%BAmero%20m%C3%ADnimo%20de%20vagas%3A%0AN%C3%BAmero%20m%C3%A1ximo%20de%20vagas%3A%0A%0AEndere%C3%A7o%3A%0ABairro%3A%0ACidade%3A%0A%0APre%C3%A7o%20cheio%20da%20experi%C3%AAncia%3A%0AO%20que%20est%C3%A1%20incluso%3A%0AInforma%C3%A7%C3%B5es%20importantes%3A%0AInstagram%2Fportf%C3%B3lio%3A%0A%0AImportante%3A%20sei%20que%20a%20Elarah%20aplica%20taxa%2Fcomiss%C3%A3o%20sobre%20a%20experi%C3%AAncia.', '_blank')">
+  Cadastrar experiência
+</button>
+  </div>
+</div>
+
+<!-- Partner rejected view -->
+<div id="parceiro-rejected" style="display:none;">
+  <h2 class="account__section-title">Precisamos revisar seu cadastro</h2>
+  <p class="account__section-desc">
+    No momento, sua solicitação não foi aprovada.
+    Você pode revisar suas informações e enviar novamente quando quiser.
+  </p>
+
+  <div class="account__partner-info">
+    <div class="account__partner-detail">
+      <strong>Status</strong>
+      <span>Cadastro não aprovado</span>
+    </div>
+  </div>
+</div>
+          </section>
+                
+        <!-- FAVORITOS (placeholder) -->
+      <!-- MINHAS COMPRAS -->
+      <section class="account__section" id="section-compras">
+        <h2 class="account__section-title">Minhas compras</h2>
+        <p class="account__section-desc">Reservas e gift cards organizados por período. Próximas ficam no topo, anteriores vão pro histórico.</p>
+
+        <div class="purchases__tabs" role="tablist" aria-label="Filtrar compras">
+          <button type="button" class="purchases__tab purchases__tab--active" role="tab" aria-selected="true" data-purchases-tab="upcoming">
+            Próximas <span class="purchases__tab-count" id="purchases-upcoming-count">0</span>
+          </button>
+          <button type="button" class="purchases__tab" role="tab" aria-selected="false" data-purchases-tab="past">
+            Anteriores <span class="purchases__tab-count" id="purchases-past-count">0</span>
+          </button>
+        </div>
+
+        <!-- Estado de carregamento -->
+        <div class="purchases__loading" id="purchases-loading">
+          <p>Carregando suas compras…</p>
+        </div>
+
+        <!-- Estado de erro -->
+        <div class="purchases__error" id="purchases-error" style="display:none;"></div>
+
+        <!-- Grupo: Próximas -->
+        <div class="purchases__group purchases__group--active" id="purchases-upcoming" role="tabpanel" aria-label="Compras próximas">
+          <div class="purchases__list" id="purchases-upcoming-list"></div>
+          <div class="account__empty" id="purchases-upcoming-empty" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="48" height="48">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <p>Você ainda não tem compras próximas.</p>
+            <a href="/" class="account__empty-link">Explorar experiências</a>
+          </div>
+        </div>
+
+        <!-- Grupo: Anteriores -->
+        <div class="purchases__group" id="purchases-past" role="tabpanel" aria-label="Compras anteriores" style="display:none;">
+          <div class="purchases__list" id="purchases-past-list"></div>
+          <div class="account__empty" id="purchases-past-empty" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="48" height="48">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <p>Você ainda não tem compras anteriores.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CARTÃO FIDELIDADE -->
+      <section class="account__section" id="section-fidelidade">
+        <h2 class="account__section-title">Cartão fidelidade</h2>
+        <p class="account__section-desc">A cada <strong>10 experiências</strong> (ou gift cards) que você compra na Elarah, você ganha um cupom de <strong>20% de desconto</strong> em qualquer experiência. Vale pra sempre — quando completar, o cartão começa de novo. ✨</p>
+
+        <!-- Estado de carregamento -->
+        <div class="loyalty__loading" id="loyalty-loading">
+          <p>Carregando seu cartão…</p>
+        </div>
+
+        <!-- Estado de erro -->
+        <div class="purchases__error" id="loyalty-error" style="display:none;"></div>
+
+        <!-- Cartão -->
+        <div class="loyalty__card" id="loyalty-card" style="display:none;">
+          <div class="loyalty__card-header">
+            <img src="assets/logo-simbolo.png" alt="Elarah" class="loyalty__card-logo">
+            <div class="loyalty__card-headtext">
+              <span class="loyalty__card-kicker">Cartão Fidelidade</span>
+              <span class="loyalty__card-progress" id="loyalty-progress">0 de 10</span>
+            </div>
+          </div>
+
+          <div class="loyalty__stamps" id="loyalty-stamps" aria-label="Carimbos do cartão fidelidade"></div>
+
+          <p class="loyalty__hint" id="loyalty-hint"></p>
+        </div>
+
+        <!-- Cupons conquistados -->
+        <div class="loyalty__rewards" id="loyalty-rewards" style="display:none;">
+          <h3 class="loyalty__rewards-title">Seus cupons de 20%</h3>
+          <div class="loyalty__rewards-list" id="loyalty-rewards-list"></div>
+        </div>
+      </section>
+
+      <section class="account__section" id="section-favoritos">
+  <h2 class="account__section-title">Favoritos</h2>
+
+  <div class="account__empty" id="favoritos-empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="48" height="48">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+    <p>Você ainda não favoritou nenhuma experiência.</p>
+    <a href="/" class="account__empty-link">Explorar experiências</a>
+  </div>
+
+  <div id="favoritos-lista" style="display:none;"></div>
+</section>
+
+<!-- ========== FRASE / VIVA MOMENTOS ========== -->
+<section class="viva-momentos" aria-label="Viva momentos com a Elarah">
+  <div class="viva-momentos__inner">
+    <span class="viva-momentos__kicker">Elarah</span>
+    <h2 class="viva-momentos__title">Viva momentos, não apenas dias.</h2>
+    <p class="viva-momentos__text">A vida é feita de instantes que valem a pena guardar. Escolha o seu próximo. ✨</p>
+    <a href="/" class="viva-momentos__cta">Explorar experiências</a>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+
+    <!-- LOGO + FRASE -->
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+
+        <!-- INSTAGRAM -->
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/>
+          </svg>
+        </a>
+
+        <!-- WHATSAPP -->
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/>
+          </svg>
+        </a>
+
+        <!-- TIKTOK -->
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/>
+          </svg>
+        </a>
+
+        <!-- LINKEDIN -->
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- EXPLORAR -->
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting">Tufting</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <!-- ELARAH -->
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <!-- INFORMAÇÕES -->
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+
+  </div>
+
+  <div class="footer__bottom">
+    <p>© 2026 Elarah. Todos os direitos reservados.</p>
+  </div>
+</footer>
+        
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="explorar-menu.js?v=2" defer></script>
+<script src="auth.js?v=12"></script>
+<script src="analytics.js?v=3"></script>
+<script src="conta.js?v=13"></script>
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>

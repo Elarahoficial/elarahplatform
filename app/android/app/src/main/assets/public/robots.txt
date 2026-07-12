@@ -1,0 +1,26 @@
+# robots.txt — elarah.com.br
+# Permite indexação geral; bloqueia áreas internas, de conta e de checkout.
+
+User-agent: *
+Allow: /
+
+# Áreas internas / administrativas
+Disallow: /admin.html
+Disallow: /admin-novo.html
+Disallow: /feed.html
+Disallow: /conectar-frete.html
+Disallow: /preview-byelarah.html
+
+# Conta / autenticação
+Disallow: /conta.html
+Disallow: /reset-password.html
+
+# Páginas de resultado de checkout (sem valor de busca)
+Disallow: /success.html
+Disallow: /cancel.html
+
+# Páginas de preview de compartilhamento (somente meta tags)
+Disallow: /og/
+
+Sitemap: https://elarah.com.br/sitemap.xml
+Sitemap: https://elarah.com.br/sitemap-experiencias.xml

@@ -372,6 +372,14 @@ export function adminNotifyRecipients(): string[] {
 
 export interface AdminSaleNotificationOpts {
   experienciaNome: string;
+  // Rótulo do tipo de evento (ex.: "Aniversário adulto"). Quando
+  // presente, aparece no assunto e no corpo do aviso. Usado nas
+  // vendas manuais classificadas como evento.
+  eventoLabel?: string | null;
+  // Valor já pago quando a venda é parcial (ex.: só a entrada/sinal).
+  // Quando > 0 e menor que o total, o aviso mostra "Pago (entrada)"
+  // e o restante em aberto. Usado nas vendas manuais com entrada.
+  pagoParcialCentavos?: number | null;
   clienteNome?: string | null;
   clienteEmail?: string | null;
   data?: string | null;
@@ -403,6 +411,14 @@ export function adminSaleNotificationEmailHtml(opts: AdminSaleNotificationOpts):
     ? brl(amountCents)
     : (opts.precoLabel || "—");
 
+  // Pagamento parcial (só entrada/sinal): mostra quanto entrou e
+  // quanto falta. Só quando o pago é positivo e menor que o total.
+  const pagoCents = Number(opts.pagoParcialCentavos);
+  const isParcial = Number.isFinite(pagoCents) && pagoCents > 0 &&
+    Number.isFinite(amountCents) && amountCents > 0 && pagoCents < amountCents;
+  const pagoLabel = isParcial ? brl(pagoCents) : null;
+  const emAbertoLabel = isParcial ? brl(amountCents - pagoCents) : null;
+
   const enderecoFull = opts.endereco && opts.bairro
     ? `${opts.endereco} — ${opts.bairro}`
     : (opts.endereco || opts.bairro || null);
@@ -430,6 +446,9 @@ export function adminSaleNotificationEmailHtml(opts: AdminSaleNotificationOpts):
       <div style="font-family:Georgia,serif;font-size:19px;color:#1a1a1a;margin-bottom:14px;line-height:1.3;">${escapeHtml(opts.experienciaNome)}</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr><td style="padding:6px 0;color:#888;font-size:13px;vertical-align:top;width:40%;">Cliente</td><td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right;">${clienteLinha}</td></tr>
+        ${linha("Evento", opts.eventoLabel)}
+        ${linha("Pago (entrada)", pagoLabel)}
+        ${linha("Em aberto", emAbertoLabel)}
         ${linha("Data", opts.data)}
         ${linha("Horário", opts.horario)}
         ${linha("Quantidade", qtyLabel)}
@@ -460,7 +479,7 @@ export async function sendAdminSaleNotification(
   const valorLabel = Number.isFinite(amountCents) && amountCents > 0
     ? brl(amountCents)
     : (opts.precoLabel || "");
-  const subject = `🎉 Nova venda: ${opts.experienciaNome}` +
+  const subject = `🎉 Nova venda${opts.eventoLabel ? ` · ${opts.eventoLabel}` : ""}: ${opts.experienciaNome}` +
     (valorLabel ? ` — ${valorLabel}` : "");
   const result = await sendEmail({
     to,
@@ -578,6 +597,97 @@ export async function sendAnalyticsDigest(opts: AnalyticsDigestOpts): Promise<Em
     );
   }
   return result;
+}
+
+// ---------------- MENSAGEM PÓS-COMPRA POR FORNECEDOR ----------------
+// Dois fornecedores têm um fluxo pós-compra próprio: o cliente precisa
+// receber uma mensagem específica logo depois da compra. Em vez de um
+// template genérico, cada um tem o seu texto. Fonte da verdade do
+// CONTEÚDO fica aqui (servidor) — o painel só dispara o envio.
+//   - BaresSp: link pra concluir a reserva.
+//   - Lado B:  pedido de dados + orientações + endereço/estacionamento.
+// Match por nome de fornecedor normalizado (sem acento, minúsculo) pra
+// tolerar variações de cadastro ("BaresSp", "Bares SP", "Lado B", ...).
+
+export interface SupplierCustomerMessage {
+  key: string;
+  label: string;
+  subject: string;
+  // Corpo em texto puro (serve pro WhatsApp e de base pro HTML/e-mail).
+  text: string;
+}
+
+export function supplierCustomerMessage(
+  fornecedorNome: string | null | undefined,
+  primeiroNome?: string | null,
+): SupplierCustomerMessage | null {
+  const n = String(fornecedorNome || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/\s+/g, " ").trim();
+  if (!n) return null;
+  const nome = (primeiroNome || "").trim();
+  const oiM = nome ? `Oi ${nome}!` : "Oi!";
+
+  // BaresSp — link pra concluir a reserva.
+  if (n.includes("bares")) {
+    return {
+      key: "baressp",
+      label: "BaresSp",
+      subject: "Sua reserva na Elarah — falta só concluir 💛",
+      text: `${oiM} Muito obrigado pela compra 💛\n\n` +
+        `Para concluirmos a sua reserva, precisamos que você preencha ` +
+        `este link:\n` +
+        `https://kommo.cc/K/X9OYUQ/X5FUBM\n\n` +
+        `Muito obrigado!`,
+    };
+  }
+
+  // Lado B — dados + orientações + endereço/estacionamento.
+  if (n.replace(/\s+/g, "").includes("ladob")) {
+    return {
+      key: "ladob",
+      label: "Lado B",
+      subject: "Sua aula no Lado B — informações importantes 💛",
+      text: `${oiM} Muito obrigada pela compra 💛\n\n` +
+        `Vou precisar do seu nome completo, CPF, CEP, e-mail e endereço, ` +
+        `por gentileza.\n\n` +
+        `Pedimos a gentileza de que todos cheguem no horário de início da ` +
+        `aula, pois não dispomos de sala de espera.\n\n` +
+        `Caso haja desistência da aula, favor avisar com 48 horas de ` +
+        `antecedência, para podermos nos organizar quanto aos horários dos ` +
+        `professores.\n\n` +
+        `📍 Endereço do Lado B: Avenida Brigadeiro Faria Lima, 1572 — sala ` +
+        `1607 (próximo à estação de metrô Faria Lima, na linha amarela).\n\n` +
+        `🚗 Estacionamento: Rua Tavares Cabral, 61 (é o estacionamento do ` +
+        `Ibis Hotel, tem uma parede branca com um grafite grandão). Quando ` +
+        `chegar no estacionamento, avise que você é aluna do Lado B e traga ` +
+        `o ticket para carimbarmos — eles dão desconto no valor.`,
+    };
+  }
+
+  return null;
+}
+
+// Renderiza a mensagem do fornecedor no shell de e-mail da Elarah:
+// escapa o texto, transforma URLs em links clicáveis e quebra os
+// parágrafos (linha dupla = novo parágrafo, linha simples = <br>).
+export function supplierCustomerMessageHtml(
+  msg: SupplierCustomerMessage,
+): string {
+  const esc = escapeHtml(msg.text);
+  const linked = esc.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    (u) => `<a href="${u}" style="color:#f0a05e;font-weight:600;">${u}</a>`,
+  );
+  const paragraphs = linked
+    .split(/\n{2,}/)
+    .map((p) =>
+      `<p style="margin:0 0 14px;line-height:1.6;font-size:15px;color:#222;">${
+        p.replace(/\n/g, "<br>")
+      }</p>`
+    )
+    .join("");
+  return htmlShell(paragraphs);
 }
 
 function escapeHtml(s: string): string {

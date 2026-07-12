@@ -1,0 +1,885 @@
+/* ===== ACCOUNT PAGE ===== */
+
+.account {
+  min-height: calc(100vh - 72px);
+  background: var(--gray-50);
+  padding: 40px 0 80px;
+}
+
+.account__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* ===== SIDEBAR ===== */
+.account__sidebar {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: 32px 24px;
+  text-align: center;
+  position: sticky;
+  top: 104px;
+}
+
+.account__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--cream);
+  color: var(--orange);
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.account__name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 2px;
+}
+
+.account__email {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  margin-bottom: 12px;
+}
+
+.account__badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  margin-bottom: 24px;
+}
+
+.account__badge--user {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.account__badge--partner {
+  background: var(--cream);
+  color: var(--orange);
+}
+
+/* Menu */
+.account__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-top: 1px solid var(--gray-200);
+  padding-top: 20px;
+}
+
+.account__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gray-600);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.account__menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.account__menu-item:hover {
+  background: var(--gray-50);
+  color: var(--gray-800);
+}
+
+.account__menu-item--active {
+  background: var(--cream);
+  color: var(--orange);
+  font-weight: 600;
+}
+
+/* Logout */
+.account__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+}
+
+.account__logout svg {
+  width: 18px;
+  height: 18px;
+}
+
+.account__logout:hover {
+  color: #dc3545;
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+/* ===== CONTENT SECTIONS ===== */
+.account__content {
+  min-height: 400px;
+}
+
+.account__section {
+  display: none;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: 36px 32px;
+}
+
+.account__section--active {
+  display: block;
+}
+
+.account__section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+}
+
+.account__section-desc {
+  font-size: 0.95rem;
+  color: var(--gray-500);
+  margin-bottom: 28px;
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* ===== FORMS ===== */
+.account__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.account__form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.account__form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account__form-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.account__form-input {
+  padding: 12px 16px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  color: var(--gray-800);
+  background: var(--white);
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.account__form-input:disabled {
+  background: var(--gray-50);
+  color: var(--gray-500);
+  cursor: not-allowed;
+}
+
+.account__form-input::placeholder {
+  color: var(--gray-400);
+}
+
+.account__form-input:focus {
+  outline: none;
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(242, 118, 35, 0.1);
+}
+
+.account__form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23737373' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.account__form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.account__form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.account__form-btn {
+  padding: 12px 28px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.account__form-btn:hover {
+  background: var(--orange-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.account__form-success {
+  font-size: 0.88rem;
+  color: #16a34a;
+  font-weight: 500;
+  display: none;
+}
+
+.account__form-success--show {
+  display: inline;
+}
+
+/* ===== PARTNER INFO ===== */
+.account__partner-info {
+  margin-top: 20px;
+}
+
+.account__partner-detail {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 0.92rem;
+}
+
+.account__partner-detail strong {
+  color: var(--gray-700);
+  min-width: 140px;
+  font-weight: 600;
+}
+
+.account__partner-detail span {
+  color: var(--gray-500);
+}
+
+/* ===== EMPTY STATE ===== */
+.account__empty {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--gray-400);
+}
+
+.account__empty svg {
+  margin-bottom: 16px;
+}
+
+.account__empty p {
+  font-size: 1rem;
+  color: var(--gray-500);
+  margin-bottom: 16px;
+}
+
+.account__empty-link {
+  display: inline-block;
+  padding: 10px 24px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+}
+
+.account__empty-link:hover {
+  background: var(--orange-dark);
+  transform: translateY(-1px);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .account__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .account__sidebar {
+    position: static;
+  }
+
+  .account__form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .account__section {
+    padding: 24px 20px;
+  }
+}
+
+/* =============================================================
+   MINHAS COMPRAS (section-compras)
+   ============================================================= */
+
+.purchases__tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--gray-100, #faf6f0);
+  border-radius: var(--radius-full, 999px);
+  margin-bottom: 24px;
+  border: 1px solid var(--gray-200, #eee);
+}
+
+.purchases__tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gray-500, #888);
+  border-radius: var(--radius-full, 999px);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition, all .18s ease);
+}
+
+.purchases__tab:hover {
+  color: var(--gray-900, #1a1a1a);
+}
+
+.purchases__tab--active {
+  background: var(--white, #fff);
+  color: var(--gray-900, #1a1a1a);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.purchases__tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 11px;
+  background: var(--gray-200, #eee);
+  color: var(--gray-500, #888);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.purchases__tab--active .purchases__tab-count {
+  background: var(--orange, #f0a05e);
+  color: var(--white, #fff);
+}
+
+.purchases__loading,
+.purchases__error {
+  padding: 24px 0;
+  color: var(--gray-500, #888);
+  font-size: 0.95rem;
+}
+
+.purchases__error {
+  color: #c0392b;
+  background: #fdecea;
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.purchases__group {
+  display: none;
+}
+
+.purchases__group--active {
+  display: block;
+}
+
+.purchases__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 720px) {
+  .purchases__list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.purchase-card {
+  display: flex;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--white, #fff);
+  border: 1px solid var(--gray-200, #eee);
+  border-radius: var(--radius-md, 14px);
+  transition: var(--transition, all .18s ease);
+}
+
+.purchase-card:hover {
+  border-color: var(--orange, #f0a05e);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(240, 160, 94, 0.08);
+}
+
+.purchase-card--past {
+  opacity: 0.82;
+}
+
+.purchase-card__icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fff3e6, #ffe0c2);
+  color: #a4663b;
+}
+
+.purchase-card--gift .purchase-card__icon {
+  background: linear-gradient(135deg, #f6e6a8, #f0a05e);
+  color: #5a3a10;
+}
+
+.purchase-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.purchase-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.purchase-card__type {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--orange, #f0a05e);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.purchase-card__status {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.purchase-card__status--pago,
+.purchase-card__status--active {
+  background: #e6f4ea;
+  color: #1a8a4a;
+}
+
+.purchase-card__status--pending {
+  background: #fff4de;
+  color: #b07b00;
+}
+
+.purchase-card__status--cancelado,
+.purchase-card__status--expirado,
+.purchase-card__status--cancelled,
+.purchase-card__status--expired {
+  background: #fdecea;
+  color: #c0392b;
+}
+
+.purchase-card__status--used,
+.purchase-card__status--reembolsado {
+  background: #ececec;
+  color: #666;
+}
+
+.purchase-card__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.05rem;
+  color: var(--gray-900, #1a1a1a);
+  margin: 0 0 6px;
+  font-weight: 400;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.purchase-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.82rem;
+  color: var(--gray-500, #888);
+}
+
+.purchase-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.purchase-card__price {
+  font-weight: 600;
+  color: var(--gray-900, #1a1a1a);
+}
+
+/* Linha do endereço/local da experiência (logo abaixo da meta de
+   data/horário/preço). Mostra "📍 endereço — bairro" pra que o
+   cliente identifique rápido onde será a experiência sem precisar
+   abrir o e-mail de confirmação. */
+.purchase-card__location {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--gray-500, #888);
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  line-height: 1.35;
+}
+
+.purchase-card__location-icon {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+/* line-clamp em 2 linhas pra endereços longos não estourarem o card.
+   webkit-line-clamp é suportado em todos os browsers modernos
+   (Chrome, Edge, Firefox 68+, Safari). Hover mostra o tooltip
+   (title attribute) com o endereço completo. */
+.purchase-card__location-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+/* =============================================================
+   CARTÃO FIDELIDADE (section-fidelidade)
+   ============================================================= */
+
+.loyalty__loading {
+  padding: 24px 0;
+  color: var(--gray-500, #888);
+  font-size: 0.95rem;
+}
+
+.loyalty__card {
+  background: linear-gradient(135deg, #fff8f0 0%, #ffe9d3 100%);
+  border: 1px solid #f3d9bf;
+  border-radius: var(--radius-lg, 20px);
+  padding: 28px 28px 32px;
+  box-shadow: 0 8px 24px rgba(240, 160, 94, 0.12);
+}
+
+.loyalty__card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.loyalty__card-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.loyalty__card-headtext {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.loyalty__card-kicker {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+  color: var(--gray-900, #1a1a1a);
+}
+
+.loyalty__card-progress {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--orange, #f0a05e);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Grade de carimbos — 5 por linha, 2 linhas (10 no total). */
+.loyalty__stamps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  max-width: 360px;
+}
+
+.loyalty__stamp {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px dashed #e0b58c;
+  background: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition, all .2s ease);
+}
+
+.loyalty__stamp-num {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #d3a06f;
+}
+
+.loyalty__stamp--filled {
+  border-style: solid;
+  border-color: var(--orange, #f0a05e);
+  background: var(--white, #fff);
+  box-shadow: 0 2px 8px rgba(240, 160, 94, 0.25);
+}
+
+.loyalty__stamp--filled .loyalty__stamp-num {
+  display: none;
+}
+
+.loyalty__stamp-logo {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
+.loyalty__hint {
+  margin: 22px 0 0;
+  font-size: 0.92rem;
+  color: var(--gray-600, #555);
+  line-height: 1.5;
+}
+
+.loyalty__hint strong {
+  color: var(--orange-dark, #d97a2b);
+}
+
+/* Cupons conquistados */
+.loyalty__rewards {
+  margin-top: 32px;
+}
+
+.loyalty__rewards-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--gray-900, #1a1a1a);
+  margin-bottom: 16px;
+}
+
+.loyalty__rewards-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .loyalty__rewards-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.loyalty-coupon {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1.5px dashed var(--orange, #f0a05e);
+  border-radius: var(--radius-md, 14px);
+  background: #fff9f3;
+}
+
+.loyalty-coupon--spent {
+  opacity: 0.55;
+  border-style: solid;
+  border-color: var(--gray-200, #eee);
+  background: var(--gray-50, #faf6f0);
+}
+
+.loyalty-coupon__badge {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffb877, #f0772a);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loyalty-coupon--spent .loyalty-coupon__badge {
+  background: var(--gray-300, #ccc);
+}
+
+.loyalty-coupon__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.loyalty-coupon__code {
+  font-family: Menlo, Consolas, monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-900, #1a1a1a);
+  letter-spacing: 0.5px;
+}
+
+.loyalty-coupon__meta {
+  font-size: 0.8rem;
+  color: var(--gray-500, #888);
+  margin-top: 3px;
+}
+
+.loyalty-coupon__copy {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--orange, #f0a05e);
+  background: none;
+  border: 1.5px solid var(--orange, #f0a05e);
+  border-radius: var(--radius-full, 999px);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition, all .18s ease);
+}
+
+.loyalty-coupon__copy:hover {
+  background: var(--orange, #f0a05e);
+  color: #fff;
+}
+
+/* ===== FRASE "VIVA MOMENTOS" (antes do rodapé) ===== */
+.viva-momentos {
+  background: linear-gradient(180deg, var(--gray-50, #fafafa) 0%, #fff3e6 45%, #ffe0c2 100%);
+  padding: 80px 24px 96px;
+  text-align: center;
+}
+
+.viva-momentos__inner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.viva-momentos__kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--orange-dark, #d4600e);
+  margin-bottom: 16px;
+}
+
+.viva-momentos__title {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  line-height: 1.12;
+  color: var(--gray-900, #1a1a1a);
+  margin: 0 0 18px;
+}
+
+.viva-momentos__text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--gray-600, #525252);
+  margin: 0 0 32px;
+  max-width: 520px;
+}
+
+.viva-momentos__cta {
+  display: inline-block;
+  background: var(--orange, #f27623);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.98rem;
+  text-decoration: none;
+  padding: 14px 32px;
+  border-radius: var(--radius-full, 999px);
+  box-shadow: 0 8px 24px rgba(242, 118, 35, 0.28);
+  transition: var(--transition, all .2s ease);
+}
+
+.viva-momentos__cta:hover {
+  background: var(--orange-dark, #d4600e);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(242, 118, 35, 0.34);
+}
+
+@media (max-width: 600px) {
+  .viva-momentos {
+    padding: 60px 20px 72px;
+  }
+}

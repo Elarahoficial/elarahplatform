@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="google-site-verification" content="CviuIO3skKBdovKvjg-GUGn2FlhntPCysmKqxsGREqs" />
+  <meta name="description" content="Descubra, reserve e viva experiências presenciais em São Paulo: cerâmica, pintura, coquetelaria, gastronomia e mais. Sozinha, a dois ou com as amigas — fora do óbvio.">
+  <title>Elarah — Experiências criativas presenciais em SP</title>
+  <link rel="canonical" href="https://elarah.com.br/">
+  <meta property="og:title" content="Elarah — Experiências criativas presenciais em SP">
+  <meta property="og:description" content="Descubra, reserve e viva experiências presenciais em São Paulo. Sozinha, a dois ou com as amigas — fora do óbvio.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://elarah.com.br/">
+  <meta property="og:image" content="https://elarah.com.br/assets/logo.png">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <!-- PWA: permite instalar o site como app na tela inicial (iPhone e Android) -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Elarah">
+  <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css?v=15">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://nwijxjmenbfyehvscogs.supabase.co">
+  <link rel="dns-prefetch" href="https://nwijxjmenbfyehvscogs.supabase.co">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Elarah",
+    "url": "https://elarah.com.br/",
+    "logo": "https://elarah.com.br/assets/logo.png",
+    "description": "Curadoria de experiências presenciais criativas em São Paulo.",
+    "slogan": "Offline is a feeling",
+    "sameAs": [
+      "https://www.instagram.com/elarah.oficial",
+      "https://www.tiktok.com/@elarah.oficial",
+      "https://www.linkedin.com/company/elarah/"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+55-11-91445-5930",
+      "contactType": "customer service",
+      "areaServed": "BR",
+      "availableLanguage": "Portuguese"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Elarah",
+    "url": "https://elarah.com.br/"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+ <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+</a>
+
+      <div class="header__search">
+  <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+  <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+ <button id="search-btn" class="header__search-btn"></button>
+</div>
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cerâmica" class="header__dropdown-item">Cerâmica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macramê" class="header__dropdown-item">Macramê</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="singles-day.html" class="header__nav-link" style="color:#c44e3a;font-weight:600;">Single's Day</a>
+        <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a>
+        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Elarah em Casa</a>
+        <a href="presentear.html" class="header__nav-link">Presentear</a>
+        <a href="blog.html" class="header__nav-link">Blog</a>
+        <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO SECTION ========== -->
+  <section class="hero">
+    <!-- Hero com video de fundo. O .hero__video-bg (imagem estatica) fica
+         atras como fallback/poster: aparece enquanto o video carrega e
+         continua aparecendo caso o arquivo .mp4 ainda nao exista. O <video>
+         e mudo + autoplay + loop + playsinline, entao roda sozinho tambem no
+         mobile (iOS exige muted e playsinline pra autoplay inline) e sem
+         botao de play. Basta colocar o arquivo em assets/hero-video.mp4. -->
+    <div class="hero__video-bg"></div>
+    <video class="hero__video" autoplay muted loop playsinline preload="auto"
+           poster="https://i.ytimg.com/vi/pmaXSOTo_qU/maxresdefault.jpg">
+      <source src="assets/hero-video.mp4" type="video/mp4">
+    </video>
+    <div class="hero__overlay"></div>
+    <div class="hero__content">
+      <h1 class="hero__title">
+        <span>descubra</span>
+        <span>experiências criativas</span>
+        <span>perto de você</span>
+      </h1>
+      <p class="hero__subtitle">Um convite para sair da tela e viver algo novo</p>
+      <a href="#experiencias" class="hero__cta">Explorar experiências</a>
+    </div>
+  </section>
+
+  <!-- ========== ELARAH ORIGINALS ========== -->
+  <section class="originals" id="originals">
+    <div class="originals__inner">
+      <div class="originals__header">
+        <span class="originals__label">By Elarah</span>
+        <h2 class="originals__title">Elarah Originals</h2>
+        <p class="originals__subtitle">Experiências autorais criadas e organizadas pela Elarah para conectar pessoas por meio de momentos criativos e especiais.</p>
+      </div>
+      <div class="originals__grid">
+
+        <!-- Card 1 -->
+        <article class="originals__card">
+          <div class="originals__card-image">
+  <img loading="lazy" decoding="async" src="assets/pintura-aperol.png" alt="Pintura com Aperol" class="originals__image">
+            <span class="originals__card-badge">Original Elarah</span>
+          </div>
+          <div class="originals__card-body">
+            <h3 class="originals__card-title">Pintura de Quadro com Cristal & Aperol Spritz</h3>
+            <div class="originals__card-details">
+              <p class="originals__card-detail">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                24 de abril
+              </p>
+              <p class="originals__card-detail">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                10h às 13h &nbsp;|&nbsp; 14h às 17h
+              </p>
+              <p class="originals__card-detail">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Rua Nova Orleans, 34 – Brooklin, São Paulo
+              </p>
+            </div>
+            <button class="originals__card-btn" data-experience="Pintura de Quadro com Cristal & Aperol Spritz" data-type="participar">Quero participar</button>
+          </div>
+        </article>
+
+       <!-- Card 2 -->
+<article class="originals__card">
+  <div class="originals__card-image">
+    <img loading="lazy" decoding="async" src="assets/perfumariaa.jpg" alt="Oficina de Perfumaria" class="originals__image">
+
+    <span class="originals__card-badge">Original Elarah</span>
+  </div>
+
+  <div class="originals__card-body">
+    <h3 class="originals__card-title">Oficina de Perfumaria Criativa</h3>
+
+    <div class="originals__card-details">
+      <p class="originals__card-detail originals__card-detail--highlight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        Descubra notas, combinações e crie uma fragrância única que é a sua cara
+      </p>
+
+      <p class="originals__card-detail originals__card-detail--soon">
+        Data em breve
+      </p>
+    </div>
+
+    <button class="originals__card-btn originals__card-btn--outline" data-experience="Oficina de Perfumaria Criativa" data-type="espera">
+      Entrar na lista de espera
+    </button>
+  </div>
+</article>
+
+       <!-- Card 3 -->
+<article class="originals__card">
+  <div class="originals__card-image">
+    <img loading="lazy" decoding="async" src="assets/ourivesariaa.jpg" alt="Workshop de Ourivesaria" class="originals__image">
+
+    <span class="originals__card-badge">Original Elarah</span>
+  </div>
+
+  <div class="originals__card-body">
+    <h3 class="originals__card-title">Workshop de Ourivesaria: Crie sua Joia</h3>
+
+    <div class="originals__card-details">
+      <p class="originals__card-detail originals__card-detail--highlight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        Uma vivência para conhecer o processo artesanal e criar algo único
+      </p>
+
+      <p class="originals__card-detail originals__card-detail--soon">
+        Data em breve
+      </p>
+    </div>
+
+    <button class="originals__card-btn originals__card-btn--outline"
+      data-experience="Workshop de Ourivesaria: Crie sua Joia"
+      data-type="espera">
+      Entrar na lista de espera
+    </button>
+  </div>
+</article>
+              </div>
+    </div>
+  </section>
+
+  <!-- ========== FILTER SECTION ========== -->
+  <section class="filters">
+    <div class="filters__inner">
+      <h2 class="filters__title">Encontre sua próxima experiência</h2>
+      <div class="filters__row">
+        <div class="filters__group">
+          <label class="filters__label">Bairro</label>
+          <select class="filters__select" id="filter-bairro">
+            <option value="">Todos os bairros</option>
+            <option>Brooklin</option>
+            <option>Jardim das Bandeiras</option>
+            <option>Pinheiros</option>
+          </select>
+        </div>
+        <div class="filters__group">
+          <label class="filters__label">Categoria</label>
+          <select class="filters__select" id="filter-categoria">
+            <option value="">Todas as experiências</option>
+            <option>Gastronomia</option>
+            <option>Pintura</option>
+            <option>Sabonete</option>
+            <option>Tufting</option>
+            <option>Vela</option>
+          </select>
+        </div>
+        <button class="filters__btn" id="filter-btn">Explorar experiências</button>
+      </div>
+      <div class="date-filter" id="date-filter">
+        <span class="date-filter__title">Quando?</span>
+        <button type="button" class="date-filter__chip" data-date-range="weekend">Este fim de semana</button>
+        <button type="button" class="date-filter__chip" data-date-range="next-week">Próxima semana</button>
+        <button type="button" class="date-filter__chip" data-date-range="next-month">Próximo mês</button>
+        <div class="date-filter__chip-wrap" style="position:relative;display:inline-block;">
+          <button type="button" class="date-filter__chip" id="date-filter-custom-btn">
+            <span id="date-filter-custom-label">Escolher data</span>
+          </button>
+          <div class="date-filter__popover" id="date-filter-popover" hidden style="position:absolute;top:calc(100% + 8px);left:0;z-index:50;background:#fff;border:1px solid #e6dccb;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,0.12);padding:16px;min-width:280px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">De</label>
+                <input type="date" id="date-filter-from" style="width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;font-family:inherit;">
+              </div>
+              <div>
+                <label style="display:block;font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Até <span style="color:#bbb;font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+                <input type="date" id="date-filter-to" style="width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;font-family:inherit;">
+              </div>
+            </div>
+            <p style="font-size:.72rem;color:#888;margin:0 0 12px;line-height:1.4;">Deixe <b>Até</b> vazio pra filtrar só por um dia.</p>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+              <button type="button" id="date-filter-popover-clear" style="padding:7px 12px;border:1px solid #ddd;background:#fff;color:#666;border-radius:8px;font-weight:600;font-size:.78rem;cursor:pointer;">Limpar</button>
+              <button type="button" id="date-filter-popover-apply" style="padding:7px 14px;border:none;background:#f0a05e;color:#fff;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;">Aplicar</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="date-filter__clear" id="date-filter-clear" hidden>limpar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CATEGORIES STRIP ========== -->
+  <section class="categories">
+    <nav class="categories__inner">
+      <a href="categoria.html" class="category-link category-link--active">Todas</a>
+      <a href="categoria.html?cat=Bartenderia" class="category-link">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica" class="category-link">Cerâmica</a>
+      <a href="categoria.html?cat=Floral" class="category-link">Floral</a>
+      <a href="categoria.html?cat=Gastronomia" class="category-link">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê" class="category-link">Macramê</a>
+      <a href="categoria.html?cat=Pintura" class="category-link">Pintura</a>
+      <a href="categoria.html?cat=Sabonete" class="category-link">Sabonete</a>
+      <a href="categoria.html?cat=Tufting" class="category-link">Tufting</a>
+      <a href="categoria.html?cat=Vela" class="category-link">Vela</a>
+    </nav>
+  </section>
+
+  <!-- ========== EXPERIENCES GRID ========== -->
+  <section class="experiences" id="experiencias">
+    <div class="experiences__inner">
+      <div class="experiences__header">
+        <h2 class="experiences__title">Experiências em destaque</h2>
+        <span class="experiences__count" id="experiences-count"></span>
+      </div>
+      <div class="experiences__grid" id="experiences-grid">
+        <!-- Cards rendered by JS -->
+      </div>
+      <p class="experiences__empty" id="experiences-empty" style="display:none;">Nenhuma experiência encontrada com esses filtros.</p>
+    </div>
+  </section>
+
+  <!-- ========== GIFT SECTION ========== -->
+  <section class="gift-section">
+    <div class="gift-section__inner">
+      <div class="gift-section__content">
+        <h2 class="gift-section__title">Presentear experiências inesquecíveis</h2>
+        <p class="gift-section__subtitle">Um presente criativo, diferente e cheio de significado</p>
+        <ul class="gift-section__list">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+            Escolha uma experiência ou deixe a pessoa escolher
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Perfeito para datas especiais (aniversário, dia das mães, etc.)
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4z"/></svg>
+            Entrega digital simples e rápida
+          </li>
+        </ul>
+        <a href="presentear.html" class="gift-section__btn" data-analytics="cta_click" data-analytics-category="cta" data-analytics-label="Explorar opções de presente">Explorar opções de presente</a>
+      </div>
+      <div class="gift-section__visual">
+        <div class="gift-section__card-stack">
+          <div class="gift-section__card-back">
+            <div class="gift-section__card-logo">Elarah</div>
+          </div>
+          <div class="gift-section__card-front">
+            <div class="gift-section__card-logo gift-section__card-logo--white">Elarah</div>
+            <div class="gift-section__card-title">Gift Card</div>
+            <div class="gift-section__card-footer">
+              <span class="gift-section__card-site">elarah.com.br</span>
+              <span class="gift-section__card-value">R$300</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ORIGINALS MODAL ========== -->
+  <div class="originals-modal" id="originals-modal">
+    <div class="originals-modal__backdrop" id="originals-modal-backdrop"></div>
+    <div class="originals-modal__content">
+      <button class="originals-modal__close" id="originals-modal-close" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <div class="originals-modal__body" id="originals-modal-body">
+        <h3 class="originals-modal__title" id="originals-modal-title"></h3>
+        <p class="originals-modal__desc" id="originals-modal-desc"></p>
+        <form class="originals-modal__form" id="originals-modal-form">
+          <input type="hidden" id="originals-modal-experience" name="experiencia">
+          <div class="originals-modal__field" id="originals-horario-field" style="display:none;">
+            <label for="originals-horario">Horário preferido</label>
+            <select id="originals-horario" name="horario" class="originals-modal__select">
+              <option value="10h às 13h">10h às 13h</option>
+              <option value="14h às 17h">14h às 17h</option>
+            </select>
+          </div>
+          <div class="originals-modal__field">
+            <label for="originals-nome">Nome</label>
+            <input type="text" id="originals-nome" name="nome" placeholder="Seu nome completo" required>
+          </div>
+          <div class="originals-modal__field">
+            <label for="originals-email">E-mail</label>
+            <input type="email" id="originals-email" name="email" placeholder="seu@email.com" required>
+          </div>
+          <div class="originals-modal__field">
+            <label for="originals-telefone">Telefone</label>
+            <input type="tel" id="originals-telefone" name="telefone" placeholder="(11) 99999-9999" required>
+          </div>
+          <button type="submit" class="originals-modal__submit" id="originals-modal-submit">Confirmar interesse</button>
+        </form>
+      </div>
+      <div class="originals-modal__success" id="originals-modal-success" style="display:none;">
+        <div class="originals-modal__success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="48" height="48"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        </div>
+        <h3 class="originals-modal__success-title">Interesse registrado!</h3>
+        <p class="originals-modal__success-text">Avisaremos você em primeira mão sobre essa experiência. Fique de olho no seu e-mail!</p>
+        <button class="originals-modal__success-btn" id="originals-modal-success-close">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== GROUP SECTION ========== -->
+  <section class="group-section" id="grupos">
+    <div class="group-section__inner">
+      <div class="group-section__content">
+        <h2 class="group-section__title">Viva algo incrível com o seu grupo</h2>
+        <p class="group-section__subtitle">Perfeito para aniversários, eventos de empresa ou simplesmente reunir amigos</p>
+        <div class="group-section__buttons">
+          <button class="group-section__btn" data-event="Aniversário">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><path d="M20 21v-2a4 4 0 00-3-3.87"/><path d="M4 21v-2a4 4 0 013-3.87"/><circle cx="12" cy="10" r="3"/><path d="M12 2v2"/><path d="M12 7c-1.5 0-3 .5-3 2"/><path d="M12 7c1.5 0 3 .5 3 2"/></svg>
+            Aniversário
+          </button>
+          <button class="group-section__btn" data-event="Evento corporativo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><path d="M12 12v4"/><path d="M2 12h20"/></svg>
+            Evento corporativo
+          </button>
+          <button class="group-section__btn" data-event="Despedida de solteira(o)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M8 22h8"/><path d="M12 15v7"/><path d="M5 3h14l-1.5 7a5.5 5.5 0 01-11 0L5 3z"/><path d="M4.5 3h15"/></svg>
+            Despedida de solteira(o)
+          </button>
+          <button class="group-section__btn" data-event="Meu grupo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Meu grupo
+          </button>
+        </div>
+      </div>
+      <div class="group-section__form-area" id="group-form-area">
+        <div class="group-section__form-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="40" height="40"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <p>Escolha o tipo de evento ao lado para preencher o formulário</p>
+        </div>
+        <form class="group-section__form" id="group-form" style="display:none;">
+          <h3 class="group-section__form-title" id="group-form-title">Conte mais sobre seu evento</h3>
+          <a href="#" id="group-form-saibamais" class="group-section__form-link" target="_blank" rel="noopener" style="display:none;">Saiba mais sobre essa experiência →</a>
+          <div class="group-section__form-grid">
+            <div class="group-section__field">
+              <label for="group-nome">Nome</label>
+              <input type="text" id="group-nome" name="nome" placeholder="Seu nome" required>
+            </div>
+            <div class="group-section__field">
+              <label for="group-whatsapp">WhatsApp</label>
+              <input type="tel" id="group-whatsapp" name="whatsapp" placeholder="(11) 99999-9999" required>
+            </div>
+            <div class="group-section__field">
+              <label for="group-tipo">Tipo de evento</label>
+              <input type="text" id="group-tipo" name="tipo_evento" readonly>
+            </div>
+            <div class="group-section__field">
+              <label for="group-pessoas">Número de pessoas</label>
+              <input type="number" id="group-pessoas" name="pessoas" placeholder="Ex: 10" min="2" required>
+            </div>
+            <div class="group-section__field">
+              <label for="group-data">Data desejada</label>
+              <input type="date" id="group-data" name="data">
+            </div>
+            <div class="group-section__field">
+              <label for="group-experiencia">Tipo de experiência</label>
+              <select id="group-experiencia" name="experiencia">
+                <option value="">Ainda não sei</option>
+                <option>Gastronomia</option>
+                <option>Pintura</option>
+                <option>Cerâmica</option>
+                <option>Vela</option>
+                <option>Sabonete</option>
+                <option>Tufting</option>
+                <option>Bartenderia</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <div class="group-section__field group-section__field--full">
+              <label for="group-obs">Observações</label>
+              <textarea id="group-obs" name="observacoes" rows="3" placeholder="Conte mais sobre o que imagina para o evento..."></textarea>
+            </div>
+          </div>
+          <button type="submit" class="group-section__submit">Enviar solicitação</button>
+        </form>
+        <div class="group-section__success" id="group-success" style="display:none;">
+          <div class="group-section__success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="48" height="48"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+          </div>
+          <h3 class="group-section__success-title">Solicitação enviada!</h3>
+          <p class="group-section__success-text">Recebemos seu interesse. Entraremos em contato pelo WhatsApp em breve para montar a experiência perfeita para o seu grupo!</p>
+          <button class="group-section__success-btn" id="group-success-close">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA SECTION ========== -->
+  <section class="cta-section">
+    <div class="cta-section__inner">
+      <div class="cta-section__left">
+        <span class="cta-section__tag">Para parceiros</span>
+        <h2 class="cta-section__title">Leve sua experiência para mais pessoas</h2>
+        <p class="cta-section__text">Conecte-se com uma comunidade que busca viver mais — menos rotina, mais presença.</p>
+        <ul class="cta-section__list">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Alcance um público novo e qualificado
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Preencha suas vagas com mais frequência
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Faça parte de uma curadoria criativa
+          </li>
+        </ul>
+        <a href="oferecer.html" class="cta-section__btn" data-analytics="cta_click" data-analytics-category="cta" data-analytics-label="Quero oferecer minha experiência">Quero oferecer minha experiência</a>
+      </div>
+      <div class="cta-section__right">
+        <div class="cta-section__image-wrapper">
+          <img loading="lazy" decoding="async" src="assets/experiences/pintura-taca.jpg" alt="Experiência criativa acontecendo" class="cta-section__image">
+          <div class="cta-section__image-accent"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STORIES SECTION ========== -->
+  <section class="stories" id="historias">
+    <div class="stories__inner">
+      <div class="stories__header">
+        <h2 class="stories__title">Histórias que inspiram você</h2>
+      </div>
+      <div class="stories__grid">
+
+        <article class="stories__card" data-story="0">
+          <div class="stories__card-image">
+            <img loading="lazy" decoding="async" src="assets/experiences/pintura-ceramica.jpg" alt="Ideias criativas para um encontro diferente" class="stories__card-img">
+          </div>
+          <div class="stories__card-body">
+            <span class="stories__card-author">Por Elarah</span>
+            <h3 class="stories__card-title">Ideias criativas para um encontro diferente</h3>
+            <p class="stories__card-excerpt">Esqueça o jantar de sempre. Descubra experiências que transformam um encontro comum em uma memória inesquecível.</p>
+          </div>
+        </article>
+
+        <article class="stories__card" data-story="1">
+          <div class="stories__card-image">
+            <img loading="lazy" decoding="async" src="assets/experiences/vela-floral.jpg" alt="Experiências para presentear alguém especial" class="stories__card-img">
+          </div>
+          <div class="stories__card-body">
+            <span class="stories__card-author">Por Elarah</span>
+            <h3 class="stories__card-title">Experiências para presentear alguém especial</h3>
+            <p class="stories__card-excerpt">Dar algo feito à mão, vivido de verdade — esse é o presente que ninguém esquece. Veja nossas sugestões.</p>
+          </div>
+        </article>
+
+        <article class="stories__card" data-story="2">
+          <div class="stories__card-image">
+            <img loading="lazy" decoding="async" src="assets/experiences/ceo-kitchen.jpg" alt="O que fazer em São Paulo além do óbvio" class="stories__card-img">
+          </div>
+          <div class="stories__card-body">
+            <span class="stories__card-author">Por Elarah</span>
+            <h3 class="stories__card-title">O que fazer em São Paulo além do óbvio</h3>
+            <p class="stories__card-excerpt">A cidade tem muito mais do que bares e shoppings. Conheça experiências criativas que vão mudar sua rotina.</p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STORY READER MODAL ========== -->
+  <div class="story-reader" id="story-reader">
+    <div class="story-reader__backdrop" id="story-reader-backdrop"></div>
+    <div class="story-reader__container">
+      <button class="story-reader__close" id="story-reader-close" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="24" height="24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <article class="story-reader__content">
+        <img loading="lazy" decoding="async" class="story-reader__image" id="story-reader-image" src="" alt="">
+        <div class="story-reader__body">
+          <span class="story-reader__author" id="story-reader-author"></span>
+          <h2 class="story-reader__title" id="story-reader-title"></h2>
+          <div class="story-reader__text" id="story-reader-text"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+
+    <!-- LOGO + FRASE -->
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+
+        <!-- INSTAGRAM -->
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/>
+          </svg>
+        </a>
+
+        <!-- WHATSAPP -->
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/>
+          </svg>
+        </a>
+
+        <!-- TIKTOK -->
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/>
+          </svg>
+        </a>
+
+        <!-- LINKEDIN -->
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- EXPLORAR -->
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting">Tufting</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <!-- ELARAH -->
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <!-- INFORMAÇÕES -->
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+
+  </div>
+
+  <div class="footer__bottom">
+  <p>© 2026 Elarah. Todos os direitos reservados.</p>
+</div>
+</footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="explorar-menu.js?v=2" defer></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=31"></script>
+<script src="date-filter.js?v=3"></script>
+<script src="byelarah-data.js?v=5"></script>
+<script src="analytics.js?v=4"></script>
+<script src="script.js?v=73"></script>
+<script>
+  // Reforca o autoplay do video do hero: alguns navegadores mobile so tocam
+  // apos um .play() explicito. Se falhar (ex.: economia de dados), o poster
+  // (imagem estatica) continua aparecendo, sem quebrar nada.
+  (function () {
+    var v = document.querySelector('.hero__video');
+    if (!v) return;
+    var tryPlay = function () { var p = v.play(); if (p && p.catch) p.catch(function () {}); };
+    tryPlay();
+    v.addEventListener('loadeddata', tryPlay);
+  })();
+</script>
+  <script src="capacitor-bridge.js" defer></script>
+</body></html>

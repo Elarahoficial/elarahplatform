@@ -71,6 +71,24 @@ jobs:
           echo "→ redeem-gift-card"
           supabase functions deploy redeem-gift-card \
             --project-ref "$PROJECT_REF" --no-verify-jwt
+          # notify-manual-sale mantém verify_jwt (default): só admin
+          # autenticada dispara o aviso de venda manual. NÃO usar
+          # --no-verify-jwt aqui.
+          echo "→ notify-manual-sale"
+          supabase functions deploy notify-manual-sale \
+            --project-ref "$PROJECT_REF"
+          # resend-booking-confirmation mantém verify_jwt (default): só
+          # admin autenticada reenvia a confirmação pro cliente. NÃO usar
+          # --no-verify-jwt aqui.
+          echo "→ resend-booking-confirmation"
+          supabase functions deploy resend-booking-confirmation \
+            --project-ref "$PROJECT_REF"
+          # send-supplier-customer-message mantém verify_jwt (default): só
+          # admin autenticada envia a mensagem pós-compra do fornecedor
+          # (BaresSp / Lado B) pro cliente. NÃO usar --no-verify-jwt aqui.
+          echo "→ send-supplier-customer-message"
+          supabase functions deploy send-supplier-customer-message \
+            --project-ref "$PROJECT_REF"
           # analytics-insights faz a própria autorização por dentro
           # (authorizeRequest: CRON_SECRET, service_role ou admin), então
           # precisa de --no-verify-jwt — senão o cron do relatório (que

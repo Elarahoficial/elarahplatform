@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+
+  <!-- =====================================================
+       MODO FEED — Visualização de experiências pra gravação
+       -----------------------------------------------------
+       Página standalone (chamada do admin) que mostra TODAS as
+       experiências num grid contínuo, sem categorias/filtros.
+       Visual idêntico aos cards da home.
+
+       Reusa: styles.css, experiences-data.js, script.js (todo
+       o card render + auto-fill de telefone/profile).
+       Modo ativado via window.__elarahFeedMode = true ANTES do
+       script.js carregar — script.js detecta a flag e desativa
+       o limite MAX_HOME_CARDS, mostrando tudo.
+
+       Não é indexado (noindex). Não tem checkout (clicar no card
+       leva pra experiencia.html como cliente normal).
+       ===================================================== -->
+
+  <title>Modo Feed — Elarah Admin</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    body {
+      background: #faf6f0;
+      min-height: 100vh;
+    }
+    .feed-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(250, 246, 240, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #ece4d6;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .feed-toolbar__brand {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      color: #1a1a1a;
+      letter-spacing: .04em;
+    }
+    .feed-toolbar__actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .feed-toolbar__btn {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: .85rem;
+      font-weight: 600;
+      color: #444;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .feed-toolbar__btn:hover {
+      border-color: #f0a05e;
+      color: #f0a05e;
+    }
+    .feed-toolbar__btn--primary {
+      background: #f0a05e;
+      color: #fff;
+      border-color: #f0a05e;
+    }
+    .feed-toolbar__btn--primary:hover {
+      background: #e0904e;
+      color: #fff;
+    }
+    .feed-section {
+      padding: 24px 24px 64px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    /* Hide things that script.js may try to populate but a feed
+       doesn't want — counter and empty message. */
+    #experiences-count, #experiences-empty {
+      display: none !important;
+    }
+    .feed-loading {
+      text-align: center;
+      padding: 48px 24px;
+      color: #888;
+      font-size: .92rem;
+    }
+    /* Esconde o link "Ver todas" que o script.js gera ao final
+       — em modo feed mostramos tudo, então o atalho é redundante. */
+    .feed-section .experiences__ver-mais {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="feed-toolbar">
+  <div class="feed-toolbar__brand">Modo Feed · Elarah</div>
+  <div class="feed-toolbar__actions">
+    <button type="button" class="feed-toolbar__btn" id="feed-shuffle">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+      Embaralhar
+    </button>
+    <a href="admin.html" class="feed-toolbar__btn">← Voltar pro admin</a>
+  </div>
+</div>
+
+<section class="feed-section">
+  <p class="feed-loading" id="feed-loading">Carregando experiências…</p>
+  <!-- Mesma estrutura da home pro script.js renderizar dentro. -->
+  <div class="experiences__grid" id="experiences-grid"></div>
+  <span id="experiences-count"></span>
+  <div id="experiences-empty"></div>
+</section>
+
+<!-- ===== Flags do modo feed (DEFINIDAS ANTES do script.js) =====
+     __elarahFeedMode = true   → script.js desativa limite de cards
+     __elarahFeedShuffle = false → começa em ordem padrão (mais recentes)
+     ============================================================= -->
+<script>
+  window.__elarahFeedMode = true;
+  window.__elarahFeedShuffle = false;
+</script>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="experiences-data.js?v=31"></script>
+<script src="byelarah-data.js?v=6"></script>
+<script src="auth.js?v=12"></script>
+<script src="script.js?v=73"></script><script>
+(function () {
+  'use strict';
+
+  // Esconde "Carregando…" assim que o grid receber filhos
+  // (o script.js renderiza assincronamente após fetch).
+  var loadingEl = document.getElementById('feed-loading');
+  var grid = document.getElementById('experiences-grid');
+  var observer = new MutationObserver(function () {
+    if (grid && grid.children.length > 0 && loadingEl) {
+      loadingEl.style.display = 'none';
+      observer.disconnect();
+    }
+  });
+  if (grid) observer.observe(grid, { childList: true });
+
+  // Embaralhar: troca a flag e re-renderiza via hook exposto.
+  // Cada clique re-shuffle (ordem nova).
+  var shuffleBtn = document.getElementById('feed-shuffle');
+  if (shuffleBtn) {
+    shuffleBtn.addEventListener('click', function () {
+      window.__elarahFeedShuffle = true;
+      if (typeof window.__elarahRenderCards === 'function') {
+        window.__elarahRenderCards();
+      }
+    });
+  }
+})();
+</script>
+
+  <script src="capacitor-bridge.js" defer></script>
+</body>
+</html>
