@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v34 — venda manual: chips de dia/horário = disponibilidade REAL do site (sem inventar ano/data) + botão "Avisar fornecedor" na aba Compras');
+  console.info('[Elarah Admin] admin.js v35 — venda manual: lista de experiências filtra ocultas/vencidas + mostra a próxima data/horário em cada opção (desambigua nomes repetidos)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -12528,6 +12528,7 @@
   let _finCategoriesCache = null;
   let _finWired = false;
   let _finExpById = new Map();          // experience_id → exp object (preenche em populate)
+  let _finMsExpOptionById = new Map();  // valor exibido no datalist da venda manual → experience_id
   let _finByElarahById = new Map();     // byelarah_item_id → item object
   let _finExpenseLinkByName = new Map();// nome (lower) → 'exp:<id>'/'bye:<id>' (datalist do gasto)
   let _finCurrentLedgerRows = [];       // pra busca + export CSV
@@ -12958,15 +12959,78 @@
     });
     if (expFinDl) expFinDl.innerHTML = expOpts.join('');
 
-    // Datalist da venda manual — buscável por nome. Só experiências
-    // (vendas manuais não vinculam a By Elarah via UI atual).
+    // Datalist da venda manual — MESMO recorte do site: só experiências
+    // ativas e ainda vigentes (com data futura OU agenda aberta). As
+    // ocultas/vencidas somem daqui (a admin ainda pode digitar o nome
+    // livre pra registrar venda de uma experiência encerrada).
+    // Cada opção mostra a PRÓXIMA data + horário no label pra desambiguar
+    // experiências de mesmo nome, e a lista vem ordenada pela data mais
+    // próxima. O valor exibido mapeia pro id exato via _finMsExpOptionById.
     const dl = document.getElementById('ms-experience-datalist');
     if (dl) {
-      dl.innerHTML = (exps || [])
-        .filter(e => e && e.id && (e.nome || '').trim())
-        .map(e => '<option value="' + _finEsc(e.nome) + '"></option>')
-        .join('');
+      let slotsMap = new Map();
+      try {
+        if (window.ElarahData && ElarahData.loadAllSlots) slotsMap = await ElarahData.loadAllSlots();
+      } catch (e) { slotsMap = new Map(); }
+      const now = Date.now();
+      _finMsExpOptionById = new Map();
+      const items = [];
+      (exps || []).forEach(e => {
+        if (!e || !e.id || !(e.nome || '').trim()) return;
+        if (e.isActive === false) return;                     // oculta manualmente
+        const slotsForExp = (slotsMap && slotsMap.get) ? (slotsMap.get(e.id) || []) : [];
+        let fut = [];
+        try {
+          if (window.ElarahData && ElarahData.experienceFutureDates) {
+            fut = ElarahData.experienceFutureDates(e, slotsForExp, now) || [];
+          }
+        } catch (err) { fut = []; }
+        const hasConcreteDate = _finExpHasAnyConcreteDate(e, slotsForExp);
+        // Vencida = tem data concreta mas nenhuma futura → tira da lista.
+        if (hasConcreteDate && fut.length === 0) return;
+        const nextTs = fut.length ? fut[0] : Infinity;        // sem data → fim da lista
+        items.push({ exp: e, nextTs });
+      });
+      // Ordena: próxima data primeiro; agenda aberta (sem data) depois;
+      // desempate por nome.
+      items.sort((a, b) => (a.nextTs - b.nextTs) ||
+        (a.exp.nome || '').localeCompare(b.exp.nome || '', 'pt-BR'));
+      const seenValue = new Set();
+      const opts = items.map(({ exp, nextTs }) => {
+        const nome = exp.nome.trim();
+        // Data/horário da próxima ocorrência pro label (desambigua nomes
+        // repetidos). Sem data futura → sem sufixo.
+        let dateHint = '';
+        if (Number.isFinite(nextTs)) {
+          const d = new Date(nextTs);
+          if (!isNaN(d.getTime())) {
+            const iso = d.toISOString().slice(0, 10);
+            const hor = (Array.isArray(exp.horarios) && exp.horarios[0]) || exp.horario || '';
+            dateHint = '📅 ' + _finIsoDateLabel(iso) + (hor ? ' · ' + hor : '');
+          }
+        }
+        // Valor único por opção (nome + data) pra mapear pro id certo
+        // mesmo quando dois registros têm o mesmo nome.
+        let value = dateHint ? (nome + '  ·  ' + dateHint) : nome;
+        if (seenValue.has(value.toLowerCase())) value = value + '  #' + exp.id.slice(0, 4);
+        seenValue.add(value.toLowerCase());
+        _finMsExpOptionById.set(value.toLowerCase(), exp.id);
+        return '<option value="' + _finEsc(value) + '"></option>';
+      });
+      dl.innerHTML = opts.join('');
     }
+  }
+
+  // Existe pelo menos uma data concreta (passada ou futura) pra decidir se
+  // uma experiência está "vencida" (tem data, mas nenhuma futura) vs.
+  // "agenda aberta" (nenhuma data derivável — mantém na lista).
+  function _finExpHasAnyConcreteDate(exp, slots) {
+    if (!exp) return false;
+    if (exp.eventAt) return true;
+    if (_finExpDateToISO(exp.data)) return true;
+    if (Array.isArray(exp.pacoteDatas) && exp.pacoteDatas.some(d => _finExpDateToISO(d))) return true;
+    return (Array.isArray(slots) ? slots : []).some(sl =>
+      sl && sl.isActive !== false && (sl.eventAt || _finExpDateToISO(sl.data)));
   }
 
   // ===== Gasto: experiência digitável → resolve 'exp:'/'bye:' no hidden =====
@@ -13015,8 +13079,18 @@
     }
     const want = name.toLowerCase();
     let found = null;
-    for (const exp of _finExpById.values()) {
-      if ((exp.nome || '').trim().toLowerCase() === want) { found = exp; break; }
+    // 1) Opção do datalist (nome + data) → id exato. Resolve nomes
+    //    repetidos: cada opção mapeia pra experiência certa.
+    if (_finMsExpOptionById.has(want)) {
+      const id = _finMsExpOptionById.get(want);
+      if (id && _finExpById.has(id)) found = _finExpById.get(id);
+    }
+    // 2) Só o nome (sem o sufixo de data) — digitação parcial ou colagem.
+    if (!found) {
+      const bare = want.split('  ·  ')[0].trim();
+      for (const exp of _finExpById.values()) {
+        if ((exp.nome || '').trim().toLowerCase() === bare) { found = exp; break; }
+      }
     }
     if (!found) {
       hidden.value = '';
