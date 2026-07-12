@@ -71,8 +71,20 @@ const PUBLIC_SITE_URL =
 // Lida uma vez no boot. Se o admin mudar as envs, basta redeploy da
 // function. Defaults conservadores (0) — sem repasse se não tiver
 // config, pra não quebrar deploys antigos silenciosamente.
-const CARD_FEE_PERCENT = Number(Deno.env.get("CARD_FEE_PERCENT") ?? "0");
-const CARD_FEE_FIXED_CENTS = Number(Deno.env.get("CARD_FEE_FIXED_CENTS") ?? "0");
+// Parse tolerante: aceita vírgula OU ponto (BR digita "5,24") e cai no
+// fallback se vier algo inválido — evita NaN no valor/exibição da taxa.
+function parseFeeEnv(name: string, fallback: number): number {
+  const raw = Deno.env.get(name);
+  if (raw == null || raw === "") return fallback;
+  const n = Number(String(raw).replace(",", ".").trim());
+  if (!Number.isFinite(n) || n < 0) {
+    console.warn("[create-checkout-session] " + name + " inválido ('" + raw + "') — fallback " + fallback);
+    return fallback;
+  }
+  return n;
+}
+const CARD_FEE_PERCENT = parseFeeEnv("CARD_FEE_PERCENT", 0);
+const CARD_FEE_FIXED_CENTS = parseFeeEnv("CARD_FEE_FIXED_CENTS", 0);
 
 // Calcula o preço final repassando a taxa do cartão ao cliente.
 // Formula: final = base + round(base * percent/100) + fixed
@@ -94,7 +106,8 @@ function applyCardFee(baseCents: number): {
   }
   const feePercentCents = Math.round(baseCents * (CARD_FEE_PERCENT / 100));
   const feeFixedCents = CARD_FEE_FIXED_CENTS;
-  const feeTotalCents = feePercentCents + feeFixedCents;
+  let feeTotalCents = feePercentCents + feeFixedCents;
+  if (!Number.isFinite(feeTotalCents) || feeTotalCents < 0) feeTotalCents = 0;
   return {
     finalCents: baseCents + feeTotalCents,
     feePercentCents,
