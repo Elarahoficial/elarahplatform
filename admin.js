@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v35 — venda manual: lista de experiências filtra ocultas/vencidas + mostra a próxima data/horário em cada opção (desambigua nomes repetidos)');
+  console.info('[Elarah Admin] admin.js v36 — venda manual: envia e-mail de confirmação pro cliente (auto no cadastro pago + botão "Enviar confirmação" na aba Compras)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -14332,12 +14332,16 @@
     try {
       let res;
       const isNew = !id;
+      let savedId = id;
       if (id) {
         res = await sb.from('manual_sales').update(payload).eq('id', id);
       } else {
         const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
         if (user) payload.created_by = user.id;
-        res = await sb.from('manual_sales').insert(payload);
+        // .select('id') pra obter o id da venda recém-criada — usado no
+        // envio da confirmação pro cliente logo abaixo.
+        res = await sb.from('manual_sales').insert(payload).select('id').maybeSingle();
+        savedId = res && res.data && res.data.id;
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
@@ -14346,6 +14350,12 @@
       // nem falha o salvamento se o e-mail não sair (a venda já gravou).
       if (isNew) {
         _finNotifyManualSale(payload);
+        // E manda pro CLIENTE a confirmação da compra (mesmo e-mail das
+        // vendas do site) — só quando é venda paga e tem e-mail. Silencioso:
+        // não trava o fluxo; o botão "Enviar confirmação" cobre reenvio.
+        if (savedId && payload.customer_email && payload.payment_status === 'pago') {
+          _finSendManualSaleConfirmation(savedId, { silent: true });
+        }
       }
       // Mutação em manual_sales afeta Compras/Fornecedores/Analytics
       // via RPC. Limpa o cache pra refletir imediatamente.
@@ -14424,6 +14434,41 @@
       });
     } catch (e) {
       console.warn('[Contabilidade] aviso de venda manual (exceção):', e && (e.message || e));
+    }
+  }
+
+  // Envia pro CLIENTE o e-mail de confirmação da compra (mesmo template
+  // das vendas do site), via edge function send-manual-sale-confirmation.
+  // Recebe o id da venda manual. opts.silent = não abre alert em erro
+  // (usado no cadastro; o botão manual mostra o resultado).
+  async function _finSendManualSaleConfirmation(saleId, opts) {
+    opts = opts || {};
+    try {
+      const sb = window.supabaseClient;
+      if (!sb || !sb.functions || !sb.functions.invoke) {
+        if (!opts.silent) alert('Não foi possível enviar (cliente Supabase indisponível).');
+        return { ok: false };
+      }
+      const r = await sb.functions.invoke('send-manual-sale-confirmation', {
+        body: { manual_sale_id: saleId },
+      });
+      const data = r && r.data;
+      const err = r && r.error;
+      if (err || (data && data.ok === false)) {
+        const msg = (err && (err.message || err)) || (data && data.error) || 'falha';
+        console.warn('[Contabilidade] confirmação venda manual não enviada:', msg);
+        if (!opts.silent) {
+          // skipped (sem e-mail / não paga) é aviso, não erro grave.
+          if (data && data.skipped) alert('Não enviei: a venda precisa estar PAGA e ter e-mail do cliente.');
+          else alert('Não consegui enviar a confirmação: ' + msg + '\n(A edge function já foi deployada?)');
+        }
+        return { ok: false, error: msg };
+      }
+      return { ok: true, to: data && data.to };
+    } catch (e) {
+      console.warn('[Contabilidade] confirmação venda manual (exceção):', e && (e.message || e));
+      if (!opts.silent) alert('Erro ao enviar confirmação: ' + (e && (e.message || e)));
+      return { ok: false };
     }
   }
 
@@ -14651,6 +14696,9 @@
       // cliente, e estado verde "✓ Avisado" quando já disparado.
       const avisarCell = _finBuildManualSaleAvisarCell(r, supplierDisplay, expObj, fornMetaByKey);
 
+      // ===== Confirmação pro cliente (mesmo e-mail das vendas do site) =====
+      const confirmCell = _finBuildManualSaleConfirmCell(r);
+
       const sfBadge = r.payout_status === 'pago'
         ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">Repasse feito</span>'
         : (r.payout_status === 'pendente'
@@ -14677,6 +14725,7 @@
         '<td>' +
           '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">' +
             avisarCell +
+            confirmCell +
             '<button type="button" class="admin__add-btn" data-fin-edit-sale="' + _finEsc(r.id) + '" style="padding:3px 8px;font-size:.72rem;">Editar</button>' +
           '</div>' +
         '</td>' +
@@ -14684,6 +14733,56 @@
     }).join('');
     tbody.insertAdjacentHTML('beforeend', html);
     _finWireManualSaleAvisar(tbody);
+    _finWireManualSaleConfirm(tbody);
+  }
+
+  // Botão/estado "Enviar confirmação" pro cliente numa linha de venda
+  // manual (aba Compras). Só aparece quando a venda tem e-mail (todas
+  // aqui já são pagas — o append filtra payment_status='pago').
+  function _finBuildManualSaleConfirmCell(r) {
+    if (!r || !(r.customer_email && String(r.customer_email).trim())) {
+      return '<span style="font-size:.7rem;color:#bbb;" title="Sem e-mail do cliente — não dá pra enviar confirmação">— sem e-mail</span>';
+    }
+    const id = _finEsc(r.id);
+    const sentAt = r.confirmation_email_sent_at ? new Date(r.confirmation_email_sent_at) : null;
+    const isSent = sentAt && !isNaN(sentAt.getTime());
+    if (isSent) {
+      const when = sentAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return '<button type="button" data-fin-confirm-sale="' + id + '" ' +
+        'style="padding:4px 9px;background:#e6f4ea;color:#1a8a4a;border:1px solid #1a8a4a;border-radius:6px;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;" ' +
+        'title="Confirmação enviada em ' + _finEsc(when) + '. Clique pra reenviar.">✓ Confirmação enviada</button>';
+    }
+    return '<button type="button" data-fin-confirm-sale="' + id + '" ' +
+      'style="padding:4px 9px;background:#1a8a4a;color:#fff;border:none;border-radius:6px;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;" ' +
+      'title="Enviar pro cliente o e-mail de confirmação da compra">📧 Enviar confirmação</button>';
+  }
+
+  // Liga os botões de "Enviar confirmação" das vendas manuais em Compras.
+  function _finWireManualSaleConfirm(tbody) {
+    if (!tbody) return;
+    tbody.querySelectorAll('[data-fin-confirm-sale]').forEach(btn => {
+      if (btn.dataset.finConfirmWired) return;
+      btn.dataset.finConfirmWired = '1';
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.finConfirmSale;
+        if (!id) return;
+        const already = btn.textContent.indexOf('✓') === 0;
+        if (already && !confirm('Reenviar o e-mail de confirmação pro cliente?')) return;
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+        const res = await _finSendManualSaleConfirmation(id, {});
+        btn.disabled = false;
+        if (res && res.ok) {
+          btn.textContent = '✓ Confirmação enviada';
+          btn.style.background = '#e6f4ea';
+          btn.style.color = '#1a8a4a';
+          btn.style.border = '1px solid #1a8a4a';
+        } else {
+          btn.textContent = original;
+        }
+      });
+    });
   }
 
   // Resolve o WhatsApp da fornecedora de uma venda manual pelo nome
