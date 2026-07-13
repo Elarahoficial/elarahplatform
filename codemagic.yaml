@@ -61,6 +61,10 @@ workflows:
             || /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string A Elarah usa suas fotos apenas quando voce escolhe uma imagem para enviar. Nada e acessado sem sua acao." "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription A camera e usada apenas se voce optar por tirar uma foto para enviar dentro do app. Nada e capturado sem sua acao." "$PLIST" 2>/dev/null \
             || /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string A camera e usada apenas se voce optar por tirar uma foto para enviar dentro do app. Nada e capturado sem sua acao." "$PLIST" || true
+          # Conformidade de exportacao: o app so usa HTTPS padrao (isento). Declarar
+          # aqui evita ficar preso em "Missing Compliance" no TestFlight.
+          /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || true
           # Numero de build UNICO e sempre crescente (timestamp). O App Store
           # Connect recusa build number repetido; regenerar o projeto zerava p/ 1.
           BUILD_NO=$(date +%s)
@@ -86,17 +90,33 @@ workflows:
           # Assim o certificado de distribuicao e criado UMA vez e reutilizado
           # em todos os builds — sem acumular certificados (evita o erro 409
           # "You already have a current Distribution certificate").
-          # Se a variavel nao existir, cai no modo antigo (gera uma nova chave).
+          # Aceita a CERT_KEY em PEM (multi-linha) OU base64 de uma linha, e
+          # valida ANTES de falar com a Apple — assim um erro de colagem aparece
+          # aqui com mensagem clara, em vez de virar um 409 confuso.
+          KEYFILE=/tmp/cert_key.pem
           if [ -n "$CERT_KEY" ]; then
-            printf '%s\n' "$CERT_KEY" > /tmp/cert_key.pem
-            echo "Usando chave de assinatura persistente (CERT_KEY)."
+            if printf '%s' "$CERT_KEY" | grep -q "BEGIN.*PRIVATE KEY"; then
+              printf '%s\n' "$CERT_KEY" > "$KEYFILE"
+            else
+              printf '%s' "$CERT_KEY" | tr -d ' \r\n' | base64 --decode > "$KEYFILE" 2>/dev/null || true
+            fi
+            if openssl pkey -in "$KEYFILE" -noout -check >/dev/null 2>&1; then
+              echo "OK: usando chave de assinatura persistente (CERT_KEY valida)."
+            else
+              echo "ERRO: CERT_KEY definida mas invalida. Confira o valor colado no"
+              echo "      Codemagic (grupo elarah_signing). Cole o bloco base64 inteiro,"
+              echo "      sem espacos extras, ou o PEM completo com as linhas BEGIN/END."
+              exit 1
+            fi
           else
-            echo "CERT_KEY nao definida — gerando chave nova (pode acumular certificados)."
-            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/cert_key.pem
+            echo "AVISO: CERT_KEY nao definida — gerando chave nova (vai acumular"
+            echo "       certificados e pode dar erro 409). Defina CERT_KEY no grupo"
+            echo "       elarah_signing (variavel Secure) para resolver de vez."
+            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$KEYFILE"
           fi
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key @file:/tmp/cert_key.pem \
+            --certificate-key @file:"$KEYFILE" \
             --create
           keychain add-certificates
           xcode-project use-profiles --project "$XCODE_PROJECT"
