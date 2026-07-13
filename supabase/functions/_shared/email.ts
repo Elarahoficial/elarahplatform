@@ -357,6 +357,39 @@ export function bookingConfirmationEmailHtml(opts: {
   return htmlShell(inner);
 }
 
+// ---------------- RECUPERAÇÃO DE SENHA ----------------
+// A Elarah dispara TODO e-mail transacional pelo Resend (confiável).
+// O único que dependia do serviço de e-mail NATIVO do Supabase Auth
+// era o de recuperação de senha (auth.resetPasswordForEmail no front),
+// que tem rate limit agressivo (poucos e-mails/hora no projeto inteiro)
+// e muitas vezes não entrega pra clientes reais. Resultado: cliente
+// pede "esqueci minha senha" e o e-mail nunca chega.
+//
+// Solução: a Edge Function send-password-recovery gera o link de
+// recuperação server-side (service role, generateLink) e manda o link
+// por AQUI (Resend), igual a todo o resto. Este é o template.
+
+export function passwordRecoveryEmailHtml(opts: {
+  nome?: string | null;
+  actionLink: string;
+}): string {
+  const firstName = (opts.nome || "").trim().split(/\s+/)[0] || "";
+  const greeting = firstName ? `Olá, ${firstName}!` : "Olá!";
+  const link = opts.actionLink;
+
+  const inner = `
+    <h2 style="font-family:Georgia,'DM Serif Display',serif;color:#1a1a1a;margin:0 0 12px;font-size:22px;">${greeting}</h2>
+    <p style="margin:0 0 12px;">Recebemos um pedido pra redefinir a senha da sua conta Elarah. Clique no botão abaixo pra escolher uma nova senha:</p>
+    <div style="text-align:center;margin:26px 0;">
+      <a href="${escapeHtml(link)}" style="display:inline-block;padding:14px 30px;background:#f0a05e;color:#1a1a1a;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;">Redefinir minha senha</a>
+    </div>
+    <p style="margin:0 0 12px;font-size:13px;color:#666;">Se o botão não funcionar, copie e cole este endereço no navegador:</p>
+    <p style="margin:0 0 18px;font-size:12px;word-break:break-all;"><a href="${escapeHtml(link)}" style="color:#f0a05e;">${escapeHtml(link)}</a></p>
+    <p style="margin:18px 0 0;font-size:13px;color:#888;">Por segurança, este link expira em pouco tempo. Se você não pediu pra redefinir a senha, pode ignorar este e-mail — sua senha atual continua valendo.</p>
+  `;
+  return htmlShell(inner);
+}
+
 // ---------------- NOTIFICAÇÃO DE VENDA (ADMIN) ----------------
 
 // Lista de destinatários do aviso de venda. Lê ADMIN_NOTIFY_EMAILS

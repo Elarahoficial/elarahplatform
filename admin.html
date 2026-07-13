@@ -692,6 +692,34 @@
         </div>
       </div>
 
+      <!-- ===== SUPORTE: DESTRAVAR ACESSO DO CLIENTE ===== -->
+      <!-- Cliente com conta que não consegue entrar (esqueceu a senha,
+           e-mail de recuperação/confirmação não chegou). A admin digita
+           o e-mail, define uma senha temporária + confirma o e-mail, e
+           manda pronto pro cliente por WhatsApp. Não depende de e-mail
+           chegar no cliente. Ver função admin-account-access. -->
+      <div class="admin__table-wrap" style="margin-bottom:16px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Destravar acesso de um cliente</span>
+        </div>
+        <div style="padding:16px 18px;">
+          <p style="margin:0 0 12px;font-size:.85rem;color:#666;">
+            Cliente com conta que não consegue entrar? Digite o e-mail dela.
+            A gente define uma senha temporária, confirma o e-mail e gera um
+            link de acesso — é só mandar pro cliente. Não depende de nenhum
+            e-mail chegar nela.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input type="email" id="unlock-email" placeholder="email@cliente.com"
+                   autocomplete="off" autocapitalize="off" spellcheck="false"
+                   style="flex:1;min-width:220px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:.9rem;">
+            <button type="button" id="unlock-btn" class="admin__btn admin__btn--primary"
+                    style="white-space:nowrap;">Destravar acesso</button>
+          </div>
+          <div id="unlock-result" style="display:none;margin-top:14px;"></div>
+        </div>
+      </div>
+
       <div class="admin__table-wrap">
         <div class="admin__table-header">
           <span class="admin__table-title">Lista de usuários</span>
