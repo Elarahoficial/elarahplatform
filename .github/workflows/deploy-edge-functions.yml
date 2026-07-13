@@ -81,6 +81,9 @@ jobs:
           deploy mp-webhook --no-verify-jwt
           deploy check-mp-payment-status --no-verify-jwt
           deploy redeem-gift-card --no-verify-jwt
+          # delete-account: --no-verify-jwt porque valida o token do
+          # usuário por dentro (auth.getUser) e só apaga a conta DELE.
+          deploy delete-account --no-verify-jwt
           # As funções abaixo mantêm verify_jwt (default): só admin
           # autenticada dispara. NÃO usar --no-verify-jwt nelas.
           deploy notify-manual-sale
