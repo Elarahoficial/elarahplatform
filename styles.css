@@ -44,9 +44,15 @@ html, body {
   --transition: 0.2s ease;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* NÃO usar `scroll-behavior: smooth` global aqui.
+   Com essa regra, cada "clique" da roda do mouse dispara uma animação de
+   scroll; mouses modernos (Logitech e afins, com rolagem suave/hiper)
+   disparam vários eventos por segundo e cada um REINICIA a animação antes
+   de ela andar — resultado: a roda do mouse parece travada e a página só
+   desce arrastando a barra de rolagem. Removido para o scroll da roda
+   voltar ao normal em todas as páginas. (Se um dia quiser rolagem suave em
+   âncoras específicas, use scrollIntoView({behavior:'smooth'}) pontual, não
+   uma regra global no html.) */
 
 body {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
