@@ -3913,3 +3913,29 @@ select {
 @media (orientation: landscape) {
   body { padding-left: var(--safe-left); padding-right: var(--safe-right); }
 }
+
+/* =============================================================
+   "CARA DE APP" (Capacitor) — reduz os sinais de navegador
+   -------------------------------------------------------------
+   Tudo conservador: só melhora a percepção nativa, sem quebrar
+   funcionalidade. Conteúdo (descrições, preços) continua
+   selecionável; só o "chrome" (cabeçalho, botões, menus) não é.
+   ============================================================= */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Sem flash azul de toque e sem menu de long-press nos controles */
+a, button, [role="button"], .card, input, select, textarea, .header, .footer {
+  -webkit-tap-highlight-color: transparent;
+}
+a[class], button, [role="button"], .header, .footer, .card__title, .card__category, img {
+  -webkit-touch-callout: none;
+}
+/* Remove o atraso de ~300ms no toque dos elementos interativos */
+a, button, [role="button"], .card__reserve-btn, input[type="submit"] {
+  touch-action: manipulation;
+}
+/* "Chrome" do app não é selecionável como texto de página (conteúdo é) */
+.header, .footer, .account__menu, .account__sidebar, button, [role="button"], .card__category {
+  -webkit-user-select: none; user-select: none;
+}
+/* Evita scroll-chaining/pull-to-refresh dentro de modais e da página */
+body { overscroll-behavior-y: none; }
