@@ -1,0 +1,29 @@
+{
+  "appId": "com.elarah.app",
+  "appName": "Elarah",
+  "webDir": "www",
+  "backgroundColor": "#ffffff",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#ffffff",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "*.mercadopago.com",
+      "*.mercadopago.com.br",
+      "*.mercadolibre.com",
+      "*.mercadolivre.com",
+      "elarah.com.br",
+      "*.elarah.com.br"
+    ]
+  }
+}

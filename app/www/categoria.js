@@ -339,6 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="card__footer">
           <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco || '') : (exp.preco || ''))}</strong></p>
+          ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
           <button type="button" class="card__reserve-btn"
             data-reserve
             data-experience-id="${exp.id || ''}"
@@ -444,16 +445,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       return true;
     });
 
-    // Ordem manual do admin primeiro (quem foi arrastado pra cima vem
-    // antes); empate/sem ordem cai no cronológico pela proxima ocorrencia
-    // (futureDates[0]). Sem data futura conhecida vai pro fim.
+    // Ordem CRONOLÓGICA: a próxima experiência a acontecer aparece
+    // primeiro (proxima ocorrencia futura, futureDates[0]). Empate no
+    // mesmo horário cai na ordem manual do admin. Sem data futura
+    // conhecida vai pro fim.
     base.sort(function (a, b) {
-      var oa = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
-      var ob = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
-      if (oa !== ob) return oa - ob;
       var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
       var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
-      return ta - tb;
+      if (ta !== tb) return ta - tb;
+      var oa = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
+      var ob = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
+      return oa - ob;
     });
 
     grid.innerHTML = '';

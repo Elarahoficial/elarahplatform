@@ -1,0 +1,24 @@
+{
+  "name": "elarah-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App Elarah (Capacitor) — empacota o site elarah.com.br como app nativo iOS/Android.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/copy-web.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/share": "^7.0.0",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor/status-bar": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.0",
+    "@capacitor/cli": "^7.0.0"
+  }
+}

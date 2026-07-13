@@ -1,11 +1,14 @@
-# Configuração do Codemagic para gerar o app iOS da Elarah na nuvem
-# (sem precisar de Mac — o Codemagic usa Macs deles).
+# Configuração do Codemagic para gerar o app iOS da Elarah na nuvem.
 #
-# Pré-requisitos (feitos uma vez, pelo navegador do Dell):
-#   1. Conta Apple Developer (US$ 99/ano).
-#   2. No App Store Connect, criar o app com o Bundle ID: com.elarah.app
-#   3. No Codemagic, criar a integração "App Store Connect API key" com o
-#      nome EXATO: ElarahASC (em Settings -> Integrations -> Developer Portal)
+# O projeto nativo (App.xcodeproj, Podfile, Info.plist, AppDelegate) NÃO é
+# versionado no git — ele é REGENERADO a cada build a partir da fonte Capacitor
+# (app/package.json + app/capacitor.config.json + app/www). Assim o build é
+# determinístico e não depende de nenhum cache do Codemagic.
+#
+# Pré-requisitos (feitos uma vez, pelo navegador):
+#   1. Conta Apple Developer.
+#   2. App no App Store Connect com o Bundle ID: com.elarah.app
+#   3. Integração "App Store Connect API key" no Codemagic com o nome: ElarahASC
 #
 # Depois é só apertar "Start new build" no workflow "Elarah iOS".
 
@@ -19,42 +22,65 @@ workflows:
     environment:
       vars:
         XCODE_PROJECT: "app/ios/App/App.xcodeproj"
+        XCODE_WORKSPACE: "app/ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.elarah.app"
       node: 22
       xcode: latest
+      cocoapods: default
     scripts:
       - name: Instalar dependencias do app
         script: |
           cd app
           npm install
-      - name: Gerar conteudo web e sincronizar iOS
+      - name: Gerar conteudo web (copy-web)
         script: |
           cd app
           npm run build
+      - name: Regenerar projeto iOS nativo
+        script: |
+          set -e
+          cd app
+          # o projeto nativo nao e versionado: regeneramos do zero
+          rm -rf ios
+          npx cap add ios
           npx cap sync ios
+      - name: Aplicar ajustes nativos (privacidade + permissoes)
+        script: |
+          cd app
+          PLIST="ios/App/App/Info.plist"
+          # Privacy manifest da Elarah (sobre o gerado pelo Capacitor)
+          cp -f native-overrides/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy || true
+          # Descricoes de uso (evita crash em <input type=file> nas telas de admin)
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription A Elarah usa suas fotos apenas quando voce escolhe uma imagem para enviar. Nada e acessado sem sua acao." "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string A Elarah usa suas fotos apenas quando voce escolhe uma imagem para enviar. Nada e acessado sem sua acao." "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription A camera e usada apenas se voce optar por tirar uma foto para enviar dentro do app. Nada e capturado sem sua acao." "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string A camera e usada apenas se voce optar por tirar uma foto para enviar dentro do app. Nada e capturado sem sua acao." "$PLIST" || true
+          echo "--- Info.plist (chaves de uso) ---"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$PLIST" 2>/dev/null || true
       - name: Gerar icones e splash da Elarah
         script: |
           cd app
-          npx @capacitor/assets generate --ios || true
+          mkdir -p assets
+          cp -f www/assets/pwa/icon-512.png assets/icon.png || true
+          npx @capacitor/assets generate --ios --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff' || true
       - name: Configurar assinatura (certificado + perfil)
         script: |
           set -e
           keychain initialize
-          # gera a chave privada (PKCS#8) usada para criar o certificado de distribuicao
+          # gera a chave privada usada para criar o certificado de distribuicao
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/cert_key.pem
-          # cria o certificado de distribuicao (usando a chave) e o perfil de provisionamento
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --certificate-key @file:/tmp/cert_key.pem \
             --create
-          # adiciona o certificado ao keychain e aplica o perfil no projeto
           keychain add-certificates
           xcode-project use-profiles --project "$XCODE_PROJECT"
       - name: Montar o app (IPA)
         script: |
           xcode-project build-ipa \
-            --project "$XCODE_PROJECT" \
+            --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
@@ -62,6 +88,6 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        # Envia automaticamente para o TestFlight (teste). Depois, quando quiser,
-        # dá pra promover para a App Store pública pelo App Store Connect.
+        # Envia automaticamente para o TestFlight. Depois, quando quiser, da pra
+        # promover para a App Store publica pelo App Store Connect.
         submit_to_testflight: true

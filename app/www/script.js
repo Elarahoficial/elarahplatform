@@ -325,17 +325,18 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return matchCat && matchBairro && matchBusca && matchData;
     });
 
-    // Ordem manual do admin primeiro (arrastar pra cima = aparece antes);
-    // empate/sem ordem cai no cronológico pela proxima ocorrencia futura.
-    // Experiencias sem data conhecida (recorrente sem slot programado,
-    // one-off com data ausente, etc) vao pro fim.
+    // Ordem CRONOLÓGICA: a próxima experiência a acontecer aparece
+    // primeiro (proxima ocorrencia futura). Empate no mesmo horário cai
+    // na ordem manual do admin. Experiencias sem data conhecida
+    // (recorrente sem slot programado, one-off com data ausente, etc)
+    // vao pro fim.
     filtered.sort(function (a, b) {
-      var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
-      var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
-      if (oa !== ob) return oa - ob;
       var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
       var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
-      return ta - tb;
+      if (ta !== tb) return ta - tb;
+      var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
+      var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
+      return oa - ob;
     });
 
     grid.innerHTML = '';
@@ -584,6 +585,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
         </div>
         <div class="card__footer">
           <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
+          ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
           <button type="button" class="card__reserve-btn"
             data-reserve
             data-experience-id="${exp.id}"
@@ -905,14 +907,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // entram aqui: a imagem do admin é fonte da verdade. Se ela
     // falhar, exibe placeholder neutro — nunca substitui pela foto
     // de outra experiência (era o bug "cadastrei foto X mas aparece Y").
-    var ORIGINALS_IMAGE_FALLBACKS = {
-      'pintura-aperol': 'assets/pintura-aperol.png',
-      'perfumaria-criativa': 'assets/perfumariaa.jpg',
-      'ourivesaria-joia': 'assets/ourivesariaa.jpg',
-      'pintura de quadro com cristal & aperol spritz': 'assets/pintura-aperol.png',
-      'oficina de perfumaria criativa': 'assets/perfumariaa.jpg',
-      'workshop de ourivesaria: crie sua joia': 'assets/ourivesariaa.jpg'
-    };
+    // Fotos fixas antigas desativadas: os cards Originals agora usam SOMENTE a
+    // imagem real cadastrada; se faltar, mostram o placeholder neutro (logo) —
+    // nunca uma foto antiga hardcoded.
+    var ORIGINALS_IMAGE_FALLBACKS = {};
     // Placeholder neutro: a logo. Reusa asset que já está no site.
     // Usado quando uma imagem custom falha de carregar — bem melhor
     // que servir foto aleatória de outra experiência.
@@ -1066,8 +1064,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? 'Quero participar'
         : 'Entrar na lista de espera';
 
-      var imgSrc = resolveImage(it);
-      var imgFallback = resolveOnErrorFallback(it);
+      // SOMENTE a imagem real cadastrada. Sem foto real, o espaco fica VAZIO
+      // (nada aparece) ate a foto real carregar — nunca mostra foto antiga nem
+      // logo no lugar. Se a foto real falhar, some (fica vazio tambem).
+      var realImg = normalizeImagePath(it.imagem);
+      var imgHtml = realImg
+        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" onerror="this.style.display=&quot;none&quot;;">'
+        : '';
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
       // CRÍTICO: cards compráveis recebem `data-reserve` — o listener
@@ -1119,16 +1122,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return '' +
         '<article class="' + cardClass + '" style="position:relative;">' +
           '<div class="originals__card-image">' +
-            '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
-              // onerror: loga URL que falhou (admin vê no DevTools)
-              // e troca pro placeholder neutro. Flag dataset.fb evita
-              // loop se o próprio fallback der erro.
-              'onerror="if(this.dataset.fb!==&quot;1&quot;){' +
-                'this.dataset.fb=&quot;1&quot;;' +
-                'console.warn(&quot;[Elarah] imagem do card falhou — usando placeholder. URL original: &quot;+this.dataset.originalSrc);' +
-                'this.classList.add(&quot;originals__image--placeholder&quot;);' +
-                'this.src=&quot;' + esc(imgFallback) + '&quot;;' +
-              '}" data-original-src="' + esc(imgSrc) + '">' +
+            imgHtml +
             '<span class="originals__card-badge">' + esc(badgeLabel) + '</span>' +
             shareBtnHtml +
           '</div>' +
@@ -2580,7 +2574,7 @@ if (groupForm) {
       if (hint) {
         hint.textContent = ctx.paymentMethod === 'pix'
           ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
-          : 'Cartão via Stripe — taxa de processamento é repassada ao cliente.';
+          : 'Cartão via Mercado Pago — taxa de processamento é repassada ao cliente.';
       }
       // Mostra/esconde campo CPF. O reset do valor NÃO acontece aqui
       // pra preservar o que o usuário digitou se ele alternar entre
@@ -3116,7 +3110,13 @@ if (groupForm) {
       // encontrado". Chamando direto via RPC, ignoramos qualquer drift
       // de deploy de Edge Function.
 
-      const amountCentavos = currentReservationCtx.precoCentavos;
+      // Base do desconto = preço UNITÁRIO × quantidade (o subtotal real).
+      // Antes usava só o unitário: pra cupom de porcentagem com 2+
+      // ingressos, a tela mostrava um desconto menor (e total maior) do
+      // que o backend de fato aplica (que calcula sobre unit × qty).
+      // Agora o preview do cupom bate exatamente com o valor cobrado.
+      const _qtyForCoupon = Math.max(1, currentReservationCtx.quantidade || 1);
+      const amountCentavos = (currentReservationCtx.precoCentavos || 0) * _qtyForCoupon;
       const experienciaId = currentReservationCtx.experienceId || null;
 
       // ----- Camada 1: preview_coupon via supabaseClient -----
@@ -4282,6 +4282,15 @@ if (groupForm) {
       divider.style.cssText = 'height:1px;background:#f0e8de;margin:0 0 22px;';
       body.appendChild(divider);
 
+      // ===== Bloco de ESCOLHA (data/horário + variação/kit) =====
+      // Vem ANTES de "Sobre a experiência". Antes esses seletores eram
+      // anexados lá no fim do corpo (depois da descrição, includes e
+      // endereço), então a data e a escolha de kit ficavam "lá embaixo",
+      // difíceis de achar e ler. A seção de schedule e a de variação são
+      // preenchidas mais abaixo, mas ancoram AQUI no topo.
+      const pickSection = document.createElement('div');
+      body.appendChild(pickSection);
+
       // Seção "Sobre a experiência"
       const descHeader = document.createElement('div');
       descHeader.textContent = 'Sobre a experiência';
@@ -4357,8 +4366,8 @@ if (groupForm) {
       window.__elarahDescVariant = null;
 
       var schedSection = document.createElement('div');
-      schedSection.style.cssText = 'margin-top:28px;';
-      body.appendChild(schedSection);
+      schedSection.style.cssText = 'margin-top:4px;margin-bottom:28px;';
+      pickSection.appendChild(schedSection);
 
       (async function loadSchedule() {
         var allSlots = [];
@@ -4369,9 +4378,16 @@ if (groupForm) {
         } catch (e) { /* tabela ausente */ }
 
         var now = new Date();
+        // Janela de antecedência (cutoff): não oferece data que já está
+        // dentro do prazo mínimo de compra (default 24h). Antes, o chip
+        // aparecia, o cliente clicava pra comprar e só então o backend
+        // recusava com "falta menos de 24h" — opção que não deveria existir.
+        // Mesma regra de isPubliclyVisible/booking_guard, agora por slot.
+        var cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+        var cutoffMs = now.getTime() + cutoffH * 60 * 60 * 1000;
         var futureSlots = allSlots
           .filter(function (s) { return s.isActive !== false; })
-          .filter(function (s) { return s.eventAt && new Date(s.eventAt) >= now; })
+          .filter(function (s) { return s.eventAt && new Date(s.eventAt).getTime() >= cutoffMs; })
           .filter(function (s) {
             if (s.vagasTotal == null) return true;
             var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
@@ -4525,7 +4541,7 @@ if (groupForm) {
       // window.__elarahDescVariant pro checkout.
       if (_descVariantItems.length) {
         var variantSection = document.createElement('div');
-        variantSection.style.cssText = 'margin-top:28px;';
+        variantSection.style.cssText = 'margin-top:4px;margin-bottom:28px;';
         var variantHeader = document.createElement('div');
         variantHeader.textContent = _descVariantLabel;
         variantHeader.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
@@ -4564,7 +4580,9 @@ if (groupForm) {
         });
         variantSection.appendChild(variantBtnsWrap);
         variantSection.appendChild(descVariantMsg);
-        body.appendChild(variantSection);
+        // Escolha do kit/variação vai ANTES da data (pick "o quê" → "quando")
+        // e, junto com o schedule, ANTES de "Sobre a experiência".
+        pickSection.insertBefore(variantSection, pickSection.firstChild);
         // Refs pro onContinue avisar/rolar até aqui se faltar escolha.
         root.__elarahVariantMsg = descVariantMsg;
         root.__elarahVariantSection = variantSection;
@@ -5094,7 +5112,17 @@ if (groupForm) {
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
             }
             if (Array.isArray(exp.horarios) && exp.horarios.length) {
-              horariosArr = exp.horarios.slice();
+              // Dedup textual: recorrência repete o mesmo horario_label pra
+              // cada data (ex: 9 segundas × "19h00 – 21h00"). Sem dedup, o
+              // seletor de horário do modal virava 9 botões idênticos. Só
+              // horários REALMENTE distintos viram opção.
+              var _seenH = new Set();
+              horariosArr = exp.horarios.filter(function (h) {
+                var k = String(h || '').trim();
+                if (!k || _seenH.has(k)) return false;
+                _seenH.add(k);
+                return true;
+              });
             } else if (exp.horario) {
               horariosArr = [exp.horario];
             }
