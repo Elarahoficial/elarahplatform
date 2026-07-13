@@ -20,6 +20,11 @@ workflows:
     integrations:
       app_store_connect: ElarahASC
     environment:
+      groups:
+        # Grupo de variaveis criado no Codemagic. Deve conter CERT_KEY (chave
+        # privada de assinatura, marcada como "Secure"). Sem isso o build cai
+        # no modo antigo (gera chave nova e acumula certificados).
+        - elarah_signing
       vars:
         XCODE_PROJECT: "app/ios/App/App.xcodeproj"
         XCODE_WORKSPACE: "app/ios/App/App.xcworkspace"
