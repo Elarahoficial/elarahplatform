@@ -317,7 +317,7 @@
 <script src="experiences-data.js?v=31"></script>
 <script src="analytics.js?v=3"></script>
 <script src="kit-checkout.js?v=3"></script>
-<script src="script.js?v=73"></script><script>(function () {
+<script src="script.js?v=78"></script><script>(function () {
   'use strict';
 
   function esc(s) {
@@ -544,12 +544,18 @@
       ddnStart = new Date(_now.getFullYear(), _now.getMonth(), 25);
       ddnEnd = new Date(_now.getFullYear(), _now.getMonth() + 1, 25);
     }
+    // Janela de antecedência (cutoff): esconde data que já está dentro do
+    // prazo mínimo de compra (default 24h). Sem isso, o chip aparecia mas a
+    // reserva era recusada pelo backend ("falta menos de 24h") — opção que
+    // não deveria existir. Mesma regra de isPubliclyVisible/booking_guard.
+    var cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    var cutoffMs = now.getTime() + cutoffH * 60 * 60 * 1000;
     var futureSlots = allSlots
       .filter(function (s) { return s.isActive !== false; })
       .filter(function (s) {
         if (!s.eventAt) return false;
         var d = new Date(s.eventAt);
-        if (d < now) return false;
+        if (d.getTime() < cutoffMs) return false;
         if (ddnStart && (d < ddnStart || d >= ddnEnd)) return false;
         return true;
       })

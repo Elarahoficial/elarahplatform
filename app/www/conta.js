@@ -983,6 +983,122 @@ renderFavoritos();
     });
   }
 
+  // ===== EXCLUIR CONTA (App Store 5.1.1 + LGPD) =====
+  const deleteBtn = document.getElementById('account-delete');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openDeleteAccountModal();
+    });
+  }
+
+  function openDeleteAccountModal() {
+    // Remove modal anterior se houver.
+    const existing = document.getElementById('del-acc-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'del-acc-overlay';
+    overlay.style.cssText =
+      'position:fixed;inset:0;z-index:9999;background:rgba(20,14,10,.55);display:flex;' +
+      'align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML =
+      '<div role="dialog" aria-modal="true" aria-labelledby="del-acc-title" ' +
+        'style="background:#fff;max-width:440px;width:100%;border-radius:16px;padding:24px;' +
+        'box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow:auto;">' +
+        '<h2 id="del-acc-title" style="margin:0 0 12px;font-size:1.25rem;color:#b23b3b;">Excluir minha conta</h2>' +
+        '<p style="margin:0 0 10px;color:#3a3a3a;font-size:.92rem;line-height:1.55;">' +
+          'Esta ação é <strong>definitiva e não pode ser desfeita</strong>. Ao excluir sua conta:' +
+        '</p>' +
+        '<ul style="margin:0 0 14px;padding-left:18px;color:#5a5a5a;font-size:.88rem;line-height:1.6;">' +
+          '<li>seu login e seus dados pessoais são apagados;</li>' +
+          '<li>seus favoritos e preferências são removidos;</li>' +
+          '<li>você perde o acesso ao histórico de reservas nesta conta;</li>' +
+          '<li>reservas já pagas são mantidas apenas como registro fiscal, de forma <strong>anonimizada</strong> (sem seus dados), conforme a LGPD.</li>' +
+        '</ul>' +
+        '<label for="del-acc-confirm" style="display:block;margin:0 0 6px;font-size:.85rem;color:#3a3a3a;">' +
+          'Para confirmar, digite <strong>EXCLUIR</strong>:</label>' +
+        '<input id="del-acc-confirm" type="text" autocomplete="off" autocapitalize="characters" ' +
+          'style="width:100%;padding:11px 12px;border:1px solid #d8cdbd;border-radius:10px;font-size:1rem;box-sizing:border-box;" ' +
+          'placeholder="EXCLUIR">' +
+        '<p id="del-acc-err" style="display:none;margin:8px 0 0;color:#b23b3b;font-size:.82rem;"></p>' +
+        '<div style="display:flex;gap:10px;margin-top:18px;">' +
+          '<button id="del-acc-cancel" type="button" style="flex:1;padding:12px;border:1px solid #d8cdbd;background:#fff;color:#3a3a3a;border-radius:10px;font-size:.95rem;cursor:pointer;">Cancelar</button>' +
+          '<button id="del-acc-go" type="button" disabled style="flex:1;padding:12px;border:none;background:#c9564f;color:#fff;border-radius:10px;font-size:.95rem;cursor:pointer;opacity:.55;">Excluir conta</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    const input = overlay.querySelector('#del-acc-confirm');
+    const goBtn = overlay.querySelector('#del-acc-go');
+    const cancelBtn = overlay.querySelector('#del-acc-cancel');
+    const errEl = overlay.querySelector('#del-acc-err');
+
+    function close() {
+      overlay.remove();
+      document.body.style.overflow = '';
+    }
+    cancelBtn.addEventListener('click', close);
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) close(); });
+
+    input.addEventListener('input', () => {
+      const ok = input.value.trim().toUpperCase() === 'EXCLUIR';
+      goBtn.disabled = !ok;
+      goBtn.style.opacity = ok ? '1' : '.55';
+    });
+    setTimeout(() => input.focus(), 50);
+
+    goBtn.addEventListener('click', async () => {
+      if (input.value.trim().toUpperCase() !== 'EXCLUIR') return;
+      goBtn.disabled = true;
+      goBtn.textContent = 'Excluindo...';
+      errEl.style.display = 'none';
+      try {
+        const sb = window.supabaseClient;
+        let token = null;
+        if (sb && sb.auth) {
+          const { data } = await sb.auth.getSession();
+          token = data && data.session ? data.session.access_token : null;
+        }
+        if (!token) {
+          errEl.textContent = 'Sua sessão expirou. Faça login de novo e tente outra vez.';
+          errEl.style.display = 'block';
+          goBtn.disabled = false; goBtn.textContent = 'Excluir conta';
+          return;
+        }
+        // apikey (anon, público) é exigido pelo gateway do Supabase;
+        // Authorization = token do PRÓPRIO usuário (a função identifica
+        // quem é por ele e só apaga a conta dele).
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
+        const res = await fetch(
+          'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/delete-account',
+          { method: 'POST', headers: {
+            'Content-Type': 'application/json',
+            'apikey': ANON_KEY,
+            'Authorization': 'Bearer ' + token,
+          } }
+        );
+        const out = await res.json().catch(() => null);
+        if (!res.ok || !out || !out.ok) {
+          errEl.textContent = (out && out.message) || 'Não foi possível excluir agora. Tente novamente em instantes.';
+          errEl.style.display = 'block';
+          goBtn.disabled = false; goBtn.textContent = 'Excluir conta';
+          return;
+        }
+        // Sucesso: encerra a sessão e volta pra home com aviso.
+        try { await ElarahAuth.logout(); } catch (_) {}
+        try { localStorage.clear(); } catch (_) {}
+        window.location.href = 'index.html?conta_excluida=1';
+      } catch (err) {
+        console.error('[Elarah conta] erro ao excluir conta:', err);
+        errEl.textContent = 'Erro de conexão. Tente novamente.';
+        errEl.style.display = 'block';
+        goBtn.disabled = false; goBtn.textContent = 'Excluir conta';
+      }
+    });
+  }
+
   // ===== HEADER SEARCH =====
   const searchInput = document.querySelector('.header__search-input');
 

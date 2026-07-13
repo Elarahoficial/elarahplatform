@@ -2,3 +2,11 @@ node_modules/
 supabase/.temp/
 .env
 .env.*
+
+# App Capacitor — artefatos gerados no build (não versionar)
+app/node_modules/
+app/assets/
+app/ios/App/Pods/
+app/ios/App/App.xcworkspace/
+app/ios/App/App/public/
+app/android/app/src/main/assets/public/
