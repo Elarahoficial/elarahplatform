@@ -7,6 +7,7 @@ on:
       - claude/fix-purchase-errors-2GrQL
       - claude/peaceful-wright-oh8k98
       - claude/mercado-pago-audit-update-n4r6l8
+      - claude/account-access-password-recovery-k1o8t4
     paths:
       - 'supabase/functions/**'
   workflow_dispatch:
@@ -84,6 +85,11 @@ jobs:
           # delete-account: --no-verify-jwt porque valida o token do
           # usuário por dentro (auth.getUser) e só apaga a conta DELE.
           deploy delete-account --no-verify-jwt
+          # send-password-recovery: endpoint público ("esqueci minha
+          # senha"). Gera o link server-side (service role) e manda
+          # pelo Resend — não depende do e-mail nativo do Supabase, que
+          # tinha rate limit e não entregava pra clientes reais.
+          deploy send-password-recovery --no-verify-jwt
           # As funções abaixo mantêm verify_jwt (default): só admin
           # autenticada dispara. NÃO usar --no-verify-jwt nelas.
           deploy notify-manual-sale

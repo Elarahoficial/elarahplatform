@@ -347,6 +347,18 @@ const ElarahAuth = (function () {
   async function loginWithGoogle() { return loginWithProvider('google'); }
   async function loginWithApple()  { return loginWithProvider('apple'); }
 
+  // Envia o link de recuperação de senha via Edge Function
+  // send-password-recovery, que gera o link server-side e manda pelo
+  // Resend — o MESMO caminho confiável dos outros e-mails da Elarah.
+  //
+  // Antes usávamos só supabase.auth.resetPasswordForEmail(), que
+  // depende do e-mail NATIVO do Supabase Auth. Esse serviço tem rate
+  // limit agressivo (poucos e-mails/hora no projeto inteiro) e não
+  // entregava pra clientes reais — a pessoa pedia "esqueci minha
+  // senha" e o e-mail nunca chegava. A Edge Function resolve isso.
+  //
+  // Fallback: se a Edge Function estiver indisponível (deploy pendente,
+  // 5xx, rede), cai no método nativo pra não deixar a pessoa sem opção.
   async function resetPassword(email) {
     const s = sb();
     if (!s) {
@@ -354,14 +366,32 @@ const ElarahAuth = (function () {
       if (bootErr) return { success: false, error: networkErrorMsg() };
       return { success: false, error: 'Serviço indisponível. Recarregue a página (Ctrl+F5).' };
     }
+    const cleanEmail = (email || '').trim().toLowerCase();
     const base = (window.ElarahSupabase && window.ElarahSupabase.siteBase())
       || (window.location.origin + '/');
     const redirectTo = base + 'reset-password.html';
+
+    // ---- 1) Caminho principal: Edge Function + Resend ----
     try {
-      const { error } = await s.auth.resetPasswordForEmail(
-        (email || '').trim().toLowerCase(),
-        { redirectTo }
-      );
+      const { data, error } = await s.functions.invoke('send-password-recovery', {
+        body: { email: cleanEmail, redirectTo }
+      });
+      // Sucesso da função → e-mail saiu pelo Resend. A função responde
+      // ok:true genérico mesmo pra e-mail sem conta (anti-enumeração),
+      // então o usuário sempre vê a mesma mensagem de sucesso.
+      if (!error && data && data.ok) {
+        return { success: true };
+      }
+      // A função respondeu com erro real (5xx/502) → cai no fallback.
+      console.warn('[Elarah AUTH] send-password-recovery indisponível, usando fallback nativo', error || data);
+    } catch (e) {
+      // Rede/função não deployada ainda → fallback nativo.
+      console.warn('[Elarah AUTH] send-password-recovery exceção, usando fallback nativo', e);
+    }
+
+    // ---- 2) Fallback: e-mail nativo do Supabase Auth ----
+    try {
+      const { error } = await s.auth.resetPasswordForEmail(cleanEmail, { redirectTo });
       if (error) {
         if (isNetworkError(error)) {
           return { success: false, error: networkErrorMsg() };
