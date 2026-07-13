@@ -104,6 +104,15 @@
       const directBookingId = params.get('booking_id');
       const detailsEl = document.getElementById('result-details');
 
+      // Espera o cliente Supabase terminar de carregar (ele é criado de
+      // forma assíncrona pelo supabase-loader). Antes a página lia
+      // window.supabaseClient de forma síncrona — quando ainda era
+      // undefined — e o quadro de detalhes ficava preso em "Carregando…".
+      // waitClient resolve na hora se já estiver pronto; senão espera até 8s.
+      const supa = (window.ElarahSupabase && window.ElarahSupabase.waitClient)
+        ? await window.ElarahSupabase.waitClient(8000)
+        : window.supabaseClient;
+
       // Funnel step final — pagamento aprovado. Dispara cedo (antes de
       // qualquer fetch) pra garantir registro mesmo se a pagina falhar
       // depois. Metadata inclui session_id (Stripe) ou booking_id (PIX
@@ -133,21 +142,34 @@
         return;
       }
 
-      // Reserva paga 100% com gift card — não há sessionId Stripe
+      // Reserva confirmada sem sessionId Stripe — PIX, cartão (Mercado
+      // Pago) ou 100% via gift card. A mensagem se adapta ao método real
+      // lido do booking (metadata.payment_method / paid_with_gift_card_only).
       if (isDirect) {
         const titleEl = document.querySelector('.checkout-result__title');
         const subEl   = document.querySelector('.checkout-result__subtitle');
         if (titleEl) titleEl.textContent = 'Reserva confirmada!';
-        if (subEl) subEl.textContent = 'Sua reserva foi paga integralmente com o gift card. Em instantes você recebe os detalhes por e-mail.';
-        if (detailsEl && directBookingId && window.supabaseClient) {
-          const { data } = await window.supabaseClient
+        if (subEl) subEl.textContent = 'Recebemos seu pagamento. Em instantes você recebe os detalhes por e-mail.';
+        if (detailsEl && directBookingId && supa) {
+          const { data } = await supa
             .from('bookings').select('*').eq('id', directBookingId).maybeSingle();
           if (data) {
+            const meta = (data.metadata || {});
+            const isPaid = data.status === 'pago';
+            let statusHtml;
+            if (isPaid && meta.paid_with_gift_card_only) {
+              statusHtml = '<strong style="color:#1a8a4a;">Pago (gift card)</strong>';
+            } else if (isPaid) {
+              statusHtml = '<strong style="color:#1a8a4a;">Pago</strong>';
+            } else {
+              statusHtml = '<strong style="color:#b07b00;">Processando</strong>';
+              if (subEl) subEl.textContent = 'Seu pagamento está em processamento. Assim que aprovar, você recebe a confirmação por e-mail.';
+            }
             detailsEl.innerHTML =
               '<p><strong>Experiência:</strong> ' + (data.experiencia_nome || '') + '</p>' +
               (data.data ? '<p><strong>Data:</strong> ' + data.data + '</p>' : '') +
               (data.horario ? '<p><strong>Horário:</strong> ' + data.horario + '</p>' : '') +
-              '<p><strong>Status:</strong> <strong style="color:#1a8a4a;">Pago (gift card)</strong></p>';
+              '<p><strong>Status:</strong> ' + statusHtml + '</p>';
           } else {
             detailsEl.innerHTML = '<p>Reserva registrada com sucesso.</p>';
           }
@@ -173,7 +195,7 @@
         }
       } catch {}
 
-      if (!sessionId || !window.supabaseClient) {
+      if (!sessionId || !supa) {
         detailsEl.innerHTML = '<p>Não conseguimos carregar os detalhes agora, mas seu pagamento está em processamento.</p>';
         return;
       }
@@ -184,7 +206,7 @@
       let attempt = 0;
       let booking = null;
       while (attempt < 6 && !booking) {
-        const { data } = await window.supabaseClient
+        const { data } = await supa
           .from('bookings')
           .select('*')
           .eq('stripe_session_id', sessionId)

@@ -151,7 +151,18 @@ serve(async (req) => {
       // fallback nativo (resetPasswordForEmail).
       return json({ error: "generate_link_failed", detail: error.message }, 500);
     }
-    actionLink = (data as { properties?: { action_link?: string } })?.properties?.action_link ?? "";
+    const props = (data as { properties?: { action_link?: string; hashed_token?: string } })?.properties ?? {};
+    actionLink = props.action_link ?? "";
+    // Link BROWSER/DISPOSITIVO-INDEPENDENTE: em vez do action_link (que passa
+    // pelo /verify do Supabase e depende de allowlist de redirect + parsing de
+    // hash + mesmo navegador), montamos um link direto pra reset-password.html
+    // com o token_hash. A página chama verifyOtp() e valida o token na hora —
+    // funciona mesmo quando o pedido saiu do app e o link abre no Safari.
+    const hashedToken = props.hashed_token ?? "";
+    if (hashedToken) {
+      const sep = redirectTo.includes("?") ? "&" : "?";
+      actionLink = `${redirectTo}${sep}token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
+    }
     const u = (data as { user?: { user_metadata?: Record<string, unknown> } })?.user;
     const meta = u?.user_metadata ?? {};
     nome = (meta.nome as string) || (meta.full_name as string) || (meta.name as string) || null;
@@ -161,7 +172,7 @@ serve(async (req) => {
   }
 
   if (!actionLink) {
-    console.error("[send-password-recovery] generateLink sem action_link para", email);
+    console.error("[send-password-recovery] generateLink sem link para", email);
     return json({ error: "no_action_link" }, 500);
   }
 

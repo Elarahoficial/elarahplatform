@@ -1893,6 +1893,100 @@ if (groupForm) {
     const SUPABASE_ANON_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
 
+    // =============================================================
+    // MercadoPago.js V2 — Checkout Transparente (Secure Fields + Device ID)
+    // -------------------------------------------------------------
+    // Carrega o SDK oficial da MP sob demanda e busca a PUBLIC KEY do
+    // backend (get-mp-public-key). Quando ambos existem, o cartão usa o
+    // Checkout Transparente (formulário inline com Secure Fields + Device
+    // ID → /v1/payments). Sem public key ou se o SDK falhar, o cartão cai
+    // automaticamente no Checkout Pro (redirect) — zero regressão.
+    //
+    // O SDK, ao inicializar, também injeta o script de segurança da MP
+    // (security.js) que popula window.MP_DEVICE_SESSION_ID — o Device ID
+    // que enviamos no header X-meli-session-id via backend.
+    //
+    // Escotilha: ?mptransparent=0 força o Checkout Pro (rollback rápido).
+    const MP_SDK_URL = 'https://sdk.mercadopago.com/js/v2';
+    const MP_TRANSPARENT_FORCED_OFF = (function () {
+      try {
+        var q = new URLSearchParams(window.location.search);
+        return q.get('mptransparent') === '0';
+      } catch (e) { return false; }
+    })();
+
+    let _mpSdkPromise = null;
+    function loadMercadoPagoSdk() {
+      if (window.MercadoPago) return Promise.resolve(window.MercadoPago);
+      if (_mpSdkPromise) return _mpSdkPromise;
+      _mpSdkPromise = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = MP_SDK_URL;
+        s.async = true;
+        s.onload = function () {
+          if (window.MercadoPago) resolve(window.MercadoPago);
+          else reject(new Error('MercadoPago.js carregou sem global MercadoPago'));
+        };
+        s.onerror = function () { reject(new Error('Falha ao carregar MercadoPago.js')); };
+        document.head.appendChild(s);
+      });
+      return _mpSdkPromise;
+    }
+
+    // undefined = ainda não buscado; null = indisponível; string = chave.
+    let _mpPublicKey;
+    let _mpPublicKeyPromise = null;
+    function getMpPublicKey() {
+      if (typeof _mpPublicKey !== 'undefined') return Promise.resolve(_mpPublicKey);
+      if (_mpPublicKeyPromise) return _mpPublicKeyPromise;
+      _mpPublicKeyPromise = fetch(CHECKOUT_FN_BASE + '/get-mp-public-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: '{}',
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          _mpPublicKey = (d && d.public_key) ? String(d.public_key) : null;
+          if (_mpPublicKey) {
+            console.log('[Elarah Payment/MP] Checkout Transparente disponível (public key carregada).');
+          } else {
+            console.log('[Elarah Payment/MP] sem public key — cartão usará Checkout Pro.');
+          }
+          return _mpPublicKey;
+        })
+        .catch(function (e) {
+          console.warn('[Elarah Payment/MP] get-mp-public-key falhou — cartão usará Checkout Pro.', e);
+          _mpPublicKey = null;
+          return null;
+        });
+      return _mpPublicKeyPromise;
+    }
+
+    // Pré-aquece SDK + chave quando o cliente ABRE o checkout (não no
+    // load da página, pra não gerar invocações à toa em cada pageview).
+    // Chamado por openReservationModal.
+    function warmUpMercadoPago() {
+      if (MP_TRANSPARENT_FORCED_OFF) return;
+      try {
+        getMpPublicKey().then(function (pk) {
+          if (pk) loadMercadoPagoSdk().catch(function () {});
+        });
+      } catch (e) {}
+    }
+
+    // Instância única do MercadoPago (criada quando a public key chega).
+    let _mpInstance = null;
+    function getMpInstance() {
+      if (_mpInstance) return _mpInstance;
+      if (!window.MercadoPago || !_mpPublicKey) return null;
+      _mpInstance = new window.MercadoPago(_mpPublicKey, { locale: 'pt-BR' });
+      return _mpInstance;
+    }
+
     // ===== Tradução de erros do checkout =====
     // O backend pode retornar códigos técnicos (ex.: vagas_check_failed,
     // experience_sold_out) — sem mensagem humana, isso vaza pro modal e
@@ -1926,9 +2020,13 @@ if (groupForm) {
       stripe_line_items_mismatch:
         'Erro interno no cálculo do total. Recarregue a página e tente de novo.',
       mp_create_failed:
-        'Não foi possível gerar o PIX agora. Tente de novo ou pague no cartão.',
+        'Não foi possível processar o pagamento agora. Tente de novo ou use outro método.',
       mp_qr_missing:
         'Mercado Pago não devolveu o QR code. Tente novamente ou pague no cartão.',
+      payment_method_id_required:
+        'Dados do cartão incompletos. Recarregue a página e tente novamente.',
+      booking_failed_after_charge:
+        'O pagamento foi processado, mas houve um erro ao registrar a reserva. Guarde o código exibido e nos chame no WhatsApp.',
       amount_mismatch:
         'Erro interno no cálculo do total. Recarregue a página e tente novamente.',
       booking_failed:
@@ -2231,6 +2329,58 @@ if (groupForm) {
         +     '<button type="button" id="erm-pix-cancel" style="width:100%;padding:11px;border:none;background:transparent;color:#999;border-radius:10px;font-size:.85rem;cursor:pointer;">Cancelar e voltar</button>'
         +     '<style>@keyframes erm-spin { to { transform: rotate(360deg); } }</style>'
         +   '</div>' // fim erm-pix-section
+        +   // ===== SEÇÃO CARTÃO — Checkout Transparente (Secure Fields) =====
+            // Só aparece quando o cliente escolhe cartão E o Checkout
+            // Transparente está disponível. Os campos número/validade/CVV
+            // são iframes seguros da MP (Secure Fields → PCI). O restante
+            // (nome, CPF, parcelas) são inputs nossos. O Device ID é
+            // coletado automaticamente pelo SDK (window.MP_DEVICE_SESSION_ID).
+            '<div id="erm-card-section" style="display:none;">'
+        +     '<p style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;">Pague com cartão</p>'
+        +     '<p id="erm-card-exp" style="margin:0 0 14px;color:#666;font-size:.85rem;"></p>'
+        +     '<form id="erm-card-form">'
+        +       '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Número do cartão</label>'
+        +       '<div id="erm-cc-number" style="height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;background:#fff;"></div>'
+        +       '<div style="display:flex;gap:10px;">'
+        +         '<div style="flex:1;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Validade</label>'
+        +           '<div id="erm-cc-exp" style="height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;background:#fff;"></div>'
+        +         '</div>'
+        +         '<div style="flex:1;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">CVV</label>'
+        +           '<div id="erm-cc-cvv" style="height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;background:#fff;"></div>'
+        +         '</div>'
+        +       '</div>'
+        +       '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Nome impresso no cartão</label>'
+        +       '<input id="erm-cc-name" type="text" autocomplete="cc-name" placeholder="Como está no cartão" style="width:100%;height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px;box-sizing:border-box;">'
+        +       '<div style="display:flex;gap:10px;">'
+        +         '<div style="width:120px;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Documento</label>'
+        +           '<select id="erm-cc-idtype" style="width:100%;height:44px;padding:0 8px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:10px;background:#fff;box-sizing:border-box;"></select>'
+        +         '</div>'
+        +         '<div style="flex:1;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Número do documento</label>'
+        +           '<input id="erm-cc-idnumber" type="text" inputmode="numeric" placeholder="000.000.000-00" style="width:100%;height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px;box-sizing:border-box;">'
+        +         '</div>'
+        +       '</div>'
+        +       '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Parcelas</label>'
+        +       '<select id="erm-cc-installments" style="width:100%;height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px;background:#fff;box-sizing:border-box;"></select>'
+        +       '<select id="erm-cc-issuer" style="display:none;"></select>'
+        +       '<input id="erm-cc-email" type="hidden">'
+        +       '<button type="submit" id="erm-card-pay" style="width:100%;margin-top:8px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Pagar</button>'
+        +     '</form>'
+        +     '<p id="erm-card-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>'
+        +     '<div id="erm-card-status" style="display:none;padding:12px 14px;border-radius:10px;background:#fff8ef;border:1px solid #f4c48a;color:#8a5a1a;font-size:.88rem;text-align:center;margin-top:12px;">'
+        +       '<span id="erm-card-status-text">Confirmando pagamento...</span>'
+        +       '<div style="display:inline-block;width:12px;height:12px;border:2px solid #f0a05e;border-top-color:transparent;border-radius:50%;margin-left:8px;vertical-align:middle;animation:erm-spin 0.8s linear infinite;"></div>'
+        +     '</div>'
+        +     '<div id="erm-card-3ds" style="display:none;margin-top:12px;">'
+        +       '<p style="margin:0 0 8px;font-size:.82rem;color:#666;text-align:center;">Autenticação do seu banco — conclua abaixo pra aprovar o pagamento.</p>'
+        +       '<iframe id="erm-card-3ds-frame" name="erm-card-3ds-frame" style="width:100%;height:420px;border:1px solid #eee;border-radius:10px;background:#fff;"></iframe>'
+        +     '</div>'
+        +     '<button type="button" id="erm-card-back" style="width:100%;margin-top:10px;padding:11px;border:none;background:transparent;color:#999;border-radius:10px;font-size:.85rem;cursor:pointer;">Cancelar e voltar</button>'
+        +     '<p style="margin:12px 0 0;font-size:.72rem;color:#aaa;text-align:center;">🔒 Dados do cartão protegidos pela Mercado Pago (Secure Fields).</p>'
+        +   '</div>' // fim erm-card-section
         + '</div>';
       document.body.appendChild(modalRoot);
 
@@ -2269,13 +2419,16 @@ if (groupForm) {
     function closeReservationModal() {
       if (!modalRoot) return;
       stopPixPolling();
+      stopCardPolling();
       modalRoot.style.display = 'none';
       document.body.style.overflow = '';
       // Volta o modal pro estado "formulário" pra próxima abertura.
       const form = modalRoot.querySelector('#erm-form-section');
       const pix = modalRoot.querySelector('#erm-pix-section');
+      const card = modalRoot.querySelector('#erm-card-section');
       if (form) form.style.display = 'block';
       if (pix) pix.style.display = 'none';
+      if (card) card.style.display = 'none';
     }
 
     // ===== PIX polling state =====
@@ -2438,6 +2591,301 @@ if (groupForm) {
 
       // Começa polling
       startPixPolling(resp.booking_id);
+    }
+
+    // =============================================================
+    // CARTÃO — Checkout Transparente (Secure Fields + Device ID)
+    // =============================================================
+    let _cardFormInstance = null;
+    let cardPollingHandle = null;
+    let cardPollingStartedAt = 0;
+    const CARD_POLLING_INTERVAL_MS = 2500;
+    const CARD_POLLING_TIMEOUT_MS = 3 * 60 * 1000; // 3 min
+
+    function cardEl(sel) { return modalRoot ? modalRoot.querySelector(sel) : null; }
+
+    function setCardStatus(text) {
+      const st = cardEl('#erm-card-status');
+      const t = cardEl('#erm-card-status-text');
+      if (st) st.style.display = 'block';
+      if (t) t.textContent = text;
+    }
+    function showCardError(msg) {
+      const e = cardEl('#erm-card-error');
+      if (e) e.textContent = msg || '';
+      const pay = cardEl('#erm-card-pay');
+      if (pay) { pay.disabled = false; pay.textContent = 'Pagar'; }
+      const st = cardEl('#erm-card-status');
+      if (st) st.style.display = 'none';
+    }
+    function setCardProcessing() {
+      const pay = cardEl('#erm-card-pay');
+      if (pay) { pay.disabled = true; pay.textContent = 'Processando...'; }
+      const e = cardEl('#erm-card-error');
+      if (e) e.textContent = '';
+      setCardStatus('Confirmando pagamento...');
+    }
+
+    function stopCardPolling() {
+      if (cardPollingHandle) { clearInterval(cardPollingHandle); cardPollingHandle = null; }
+    }
+
+    function startCardPolling(bookingId) {
+      stopCardPolling();
+      cardPollingStartedAt = Date.now();
+      const tick = async function () {
+        if (Date.now() - cardPollingStartedAt > CARD_POLLING_TIMEOUT_MS) {
+          stopCardPolling();
+          setCardStatus('Ainda confirmando… você receberá um e-mail assim que o pagamento aprovar.');
+          return;
+        }
+        // Backup do webhook: força reconciliação server-side.
+        try {
+          await fetch(CHECKOUT_FN_BASE + '/check-mp-payment-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ booking_id: bookingId }),
+          });
+        } catch (e) {}
+        const status = await pollBookingStatus(bookingId);
+        if (status === 'pago') {
+          stopCardPolling();
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(bookingId);
+        } else if (status === 'cancelado' || status === 'reembolsado' || status === 'expirado') {
+          stopCardPolling();
+          showCardError('Pagamento não aprovado. Tente outro cartão ou pague no PIX.');
+        }
+      };
+      cardPollingHandle = setInterval(tick, CARD_POLLING_INTERVAL_MS);
+      tick();
+    }
+
+    // Traduz status_detail da MP em mensagens claras pro cliente. Cobre
+    // os motivos de recusa mais comuns (documentação oficial da MP).
+    function translateCardStatusDetail(detail) {
+      const map = {
+        cc_rejected_bad_filled_card_number: 'Confira o número do cartão.',
+        cc_rejected_bad_filled_date: 'Confira a data de validade.',
+        cc_rejected_bad_filled_security_code: 'Confira o código de segurança (CVV).',
+        cc_rejected_bad_filled_other: 'Confira os dados do cartão.',
+        cc_rejected_insufficient_amount: 'Cartão sem saldo/limite suficiente.',
+        cc_rejected_high_risk: 'Pagamento recusado por segurança. Tente outro cartão ou pague no PIX.',
+        cc_rejected_max_attempts: 'Muitas tentativas. Aguarde um pouco ou use outro cartão.',
+        cc_rejected_call_for_authorize: 'Autorize o pagamento com seu banco e tente de novo.',
+        cc_rejected_card_disabled: 'Cartão desabilitado. Ligue pro seu banco ou use outro cartão.',
+        cc_rejected_duplicated_payment: 'Pagamento duplicado. Confira se já não foi aprovado.',
+        cc_rejected_card_error: 'Não foi possível processar o cartão. Tente novamente.',
+        cc_rejected_blacklist: 'Pagamento recusado. Tente outro cartão ou pague no PIX.',
+        cc_rejected_invalid_installments: 'Parcelamento indisponível pra este cartão.',
+        cc_rejected_other_reason: 'O banco recusou o pagamento. Tente outro cartão ou pague no PIX.',
+      };
+      return (detail && map[detail]) || null;
+    }
+
+    // Renderiza o desafio 3-D Secure 2 do banco dentro de um iframe.
+    function renderThreeDsChallenge(threeds) {
+      const wrap = cardEl('#erm-card-3ds');
+      const frame = cardEl('#erm-card-3ds-frame');
+      if (!wrap || !frame || !threeds || !threeds.external_resource_url) return;
+      setCardStatus('Aguardando a autenticação do seu banco...');
+      wrap.style.display = 'block';
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = threeds.external_resource_url;
+      form.target = 'erm-card-3ds-frame';
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'creq';
+      input.value = threeds.creq || '';
+      form.appendChild(input);
+      document.body.appendChild(form);
+      try { form.submit(); } catch (e) { console.warn('[Elarah MP card] 3DS submit falhou', e); }
+      setTimeout(function () { try { document.body.removeChild(form); } catch (e) {} }, 1500);
+    }
+
+    // Monta e exibe o painel de cartão (Secure Fields). PODE LANÇAR
+    // (SDK/chave indisponível) — o chamador cai no Checkout Pro nesse caso.
+    async function showCardPanel(ctx, extra) {
+      const pk = await getMpPublicKey();
+      if (!pk) throw new Error('sem_public_key');
+      await loadMercadoPagoSdk();
+      const mp = getMpInstance();
+      if (!mp || typeof mp.cardForm !== 'function') throw new Error('mp_indisponivel');
+
+      // Só troca o modal DEPOIS de garantir que o SDK está pronto.
+      const formSec = modalRoot.querySelector('#erm-form-section');
+      const pixSec = modalRoot.querySelector('#erm-pix-section');
+      const cardSec = modalRoot.querySelector('#erm-card-section');
+      if (formSec) formSec.style.display = 'none';
+      if (pixSec) pixSec.style.display = 'none';
+      if (cardSec) cardSec.style.display = 'block';
+
+      // Reset visual do painel.
+      const errEl = cardEl('#erm-card-error'); if (errEl) errEl.textContent = '';
+      const statusEl = cardEl('#erm-card-status'); if (statusEl) statusEl.style.display = 'none';
+      const threeDsEl = cardEl('#erm-card-3ds'); if (threeDsEl) threeDsEl.style.display = 'none';
+      const payBtn = cardEl('#erm-card-pay');
+      if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar ' + brl(ctx.totalCentavos || 0); }
+      const expEl = cardEl('#erm-card-exp');
+      if (expEl) expEl.textContent = [ctx.experienceNome, ctx.horario].filter(Boolean).join(' · ');
+
+      const authEmail = (extra && extra.authEmail) || ctx.email || '';
+      const emailHidden = cardEl('#erm-cc-email'); if (emailHidden) emailHidden.value = authEmail;
+      const nameInput = cardEl('#erm-cc-name'); if (nameInput && ctx.nome) nameInput.value = ctx.nome;
+      const idNumber = cardEl('#erm-cc-idnumber'); if (idNumber && ctx.cpf) idNumber.value = formatCpf(ctx.cpf);
+
+      const backBtn = cardEl('#erm-card-back');
+      if (backBtn) backBtn.onclick = function () { closeReservationModal(); };
+
+      const amountReais = ((ctx.totalCentavos || 0) / 100).toFixed(2);
+
+      // Desmonta uma instância anterior (nova tentativa/experiência).
+      if (_cardFormInstance && typeof _cardFormInstance.unmount === 'function') {
+        try { _cardFormInstance.unmount(); } catch (e) {}
+        _cardFormInstance = null;
+      }
+
+      _cardFormInstance = mp.cardForm({
+        amount: amountReais,
+        iframe: true,
+        form: {
+          id: 'erm-card-form',
+          cardNumber: { id: 'erm-cc-number', placeholder: '0000 0000 0000 0000' },
+          expirationDate: { id: 'erm-cc-exp', placeholder: 'MM/AA' },
+          securityCode: { id: 'erm-cc-cvv', placeholder: 'CVV' },
+          cardholderName: { id: 'erm-cc-name', placeholder: 'Nome impresso no cartão' },
+          cardholderEmail: { id: 'erm-cc-email' },
+          issuer: { id: 'erm-cc-issuer' },
+          installments: { id: 'erm-cc-installments' },
+          identificationType: { id: 'erm-cc-idtype' },
+          identificationNumber: { id: 'erm-cc-idnumber' },
+        },
+        callbacks: {
+          onFormMounted: function (error) {
+            if (error) {
+              console.error('[Elarah MP card] cardForm mount error', error);
+              showCardError('Não foi possível carregar o formulário do cartão. Recarregue ou pague no PIX.');
+            }
+          },
+          onSubmit: function (event) {
+            event.preventDefault();
+            submitCardPayment(ctx, extra);
+          },
+          onError: function (error) {
+            console.warn('[Elarah MP card] cardForm error', error);
+          },
+        },
+      });
+    }
+
+    // Tokeniza (já feito pelo cardForm) + envia pro backend criar o
+    // pagamento no /v1/payments com Device ID.
+    async function submitCardPayment(ctx, extra) {
+      if (!_cardFormInstance || typeof _cardFormInstance.getCardFormData !== 'function') {
+        showCardError('Formulário do cartão não está pronto. Recarregue e tente de novo.');
+        return;
+      }
+      setCardProcessing();
+
+      let cardData;
+      try { cardData = _cardFormInstance.getCardFormData(); }
+      catch (e) { showCardError('Confira os dados do cartão.'); return; }
+      if (!cardData || !cardData.token) {
+        showCardError('Não conseguimos validar o cartão. Confira número, validade e CVV.');
+        return;
+      }
+
+      // Device ID coletado automaticamente pelo MercadoPago.js (security.js).
+      const deviceId = window.MP_DEVICE_SESSION_ID || '';
+      if (!deviceId) console.warn('[Elarah MP card] MP_DEVICE_SESSION_ID vazio — Device ID não coletado ainda.');
+
+      const body = {
+        token: cardData.token,
+        payment_method_id: cardData.paymentMethodId,
+        issuer_id: cardData.issuerId,
+        installments: Number(cardData.installments) || 1,
+        identification_type: cardData.identificationType || 'CPF',
+        device_id: deviceId,
+        experiencia_id: ctx.experienceId,
+        horario: ctx.horario,
+        data: ctx.data || null,
+        slot_id: ctx.slotId || null,
+        email: ctx.email || (extra && extra.authEmail) || null,
+        nome: ctx.nome || null,
+        telefone: (extra && extra.telefoneRaw) || null,
+        telefone_digits: (extra && extra.telefoneNormalized) || null,
+        cupom: ctx.cupomCode || null,
+        quantidade: ctx.quantidade || 1,
+        participantes: ctx.participantes || [],
+        variant_label: ctx.variantLabel || null,
+        variant_selected: ctx.variantSelected || null,
+        cpf: String(cardData.identificationNumber || '').replace(/\D+/g, ''),
+      };
+
+      try {
+        const res = await fetch(MP_CARD_FN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify(body),
+        });
+        const resp = await res.json().catch(function () { return null; });
+
+        if (!res.ok || !resp) {
+          showCardError(translateCheckoutError(resp, 'Não foi possível processar o cartão. Tente de novo ou pague no PIX.'));
+          return;
+        }
+        if (resp.direct === true) {
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(resp.booking_id || '');
+          return;
+        }
+        if (resp.rejected === true || resp.status === 'rejected' || resp.status === 'cancelled') {
+          showCardError(translateCardStatusDetail(resp.status_detail) || resp.message || 'Pagamento recusado. Tente outro cartão ou pague no PIX.');
+          return;
+        }
+
+        // Funil — cartão enviado, aguardando confirmação.
+        try {
+          if (window.ElarahAnalytics && ElarahAnalytics.track) {
+            ElarahAnalytics.track('payment_pending', {
+              category: 'checkout',
+              targetId: ctx.experienceId || null,
+              targetLabel: (ctx.experienceNome || '').slice(0, 120),
+              metadata: {
+                payment_method: 'card',
+                provider: 'mercado_pago',
+                integration: 'checkout_transparente',
+                booking_id: resp.booking_id,
+                total_centavos: ctx.totalCentavos || 0,
+              },
+            });
+          }
+        } catch (_) {}
+
+        // 3-D Secure 2: banco pediu autenticação → renderiza o desafio.
+        if (resp.three_ds && resp.three_ds.external_resource_url && resp.three_ds.creq) {
+          renderThreeDsChallenge(resp.three_ds);
+          startCardPolling(resp.booking_id);
+          return;
+        }
+
+        if (resp.status === 'approved' || resp.status === 'authorized') {
+          setCardStatus('Pagamento aprovado! Confirmando sua reserva...');
+        } else {
+          setCardStatus('Pagamento em análise. Assim que aprovar, você recebe a confirmação por e-mail.');
+        }
+        startCardPolling(resp.booking_id);
+      } catch (e) {
+        console.error('[Elarah MP card] submit exception', e);
+        showCardError('Erro de conexão ao processar o cartão. Tente novamente.');
+      }
     }
 
     let currentReservationCtx = null;
@@ -2619,6 +3067,9 @@ if (groupForm) {
       // ao modal por um piscar. Agora a transição é limpa: modal abriu
       // = spinner some.
       try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (e) {}
+      // Pré-aquece o MercadoPago.js (SDK + public key) já na abertura do
+      // checkout, pra que os Secure Fields do cartão apareçam sem espera.
+      try { warmUpMercadoPago(); } catch (e) {}
       const root = buildReservationModal();
       currentReservationCtx = ctx;
       root.querySelector('#erm-exp').textContent = ctx.experienceNome || 'Experiência';
@@ -3686,12 +4137,41 @@ if (groupForm) {
           return;
         }
 
-        // ===== Cartão via Mercado Pago (Checkout Pro) =====
-        // Só entra aqui quando a chave de migração está ligada. Cria a
-        // preference no backend e redireciona pro Checkout Pro da MP,
-        // onde o cliente digita o cartão e escolhe o parcelamento (12x).
-        // A confirmação vem pelo mp-webhook (mesmo fluxo do PIX).
+        // ===== Cartão via Mercado Pago =====
+        // Preferimos o CHECKOUT TRANSPARENTE (Secure Fields + Device ID,
+        // formulário inline → /v1/payments). Só quando ele NÃO está
+        // disponível (sem public key / SDK falhou / ?mptransparent=0) é
+        // que caímos no Checkout Pro (redirect). A confirmação vem pelo
+        // mp-webhook (mesmo fluxo do PIX) nos dois casos.
         if (MP_CARD_ENABLED) {
+          // --- Tenta primeiro o Checkout Transparente ---
+          if (!MP_TRANSPARENT_FORCED_OFF) {
+            let mpPublicKey = null;
+            try { mpPublicKey = await getMpPublicKey(); } catch (e) { mpPublicKey = null; }
+            if (mpPublicKey) {
+              try {
+                await showCardPanel(ctx, {
+                  telefoneRaw: telefoneRaw,
+                  telefoneNormalized: telefoneNormalized,
+                  authEmail: auth.email || ctx.email,
+                });
+                return; // o painel de cartão (Secure Fields) assumiu o fluxo
+              } catch (eTransparent) {
+                console.warn(
+                  '[Elarah MP card] Checkout Transparente indisponível — fallback pro Checkout Pro',
+                  eTransparent,
+                );
+                // Reexibe o formulário (showCardPanel pode ter escondido) e
+                // segue pro Checkout Pro abaixo.
+                const formSec = root.querySelector('#erm-form-section');
+                const cardSec = root.querySelector('#erm-card-section');
+                if (formSec) formSec.style.display = 'block';
+                if (cardSec) cardSec.style.display = 'none';
+              }
+            }
+          }
+
+          // --- Fallback: Checkout Pro (preference + redirect) ---
           const mpCardBody = {
             experiencia_id: ctx.experienceId,
             horario: ctx.horario,
