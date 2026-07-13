@@ -146,7 +146,20 @@
      necessário, fica dentro do .admin__table-wrap, não no body. */
   min-width: 0;
   max-width: calc(100vw - 240px);
-  overflow-x: hidden;
+  /* IMPORTANTE: usar `clip`, NÃO `hidden`.
+     Com `overflow-x: hidden`, o CSS força o outro eixo (`overflow-y`)
+     de `visible` para `auto` — e isso transforma o .admin__main num
+     container de scroll PRÓPRIO, aninhado dentro do scroll do documento.
+     No Chrome real, com o padding de 32px + arredondamento de subpixel,
+     o .admin__main fica "1px rolável": a roda do mouse passa a rolar ESSE
+     container interno (que quase não anda) em vez da página, e por causa
+     do overscroll-behavior o scroll não repassa pro documento. Resultado:
+     a barra de rolagem funciona (arrastando), mas a RODA DO MOUSE não
+     rola a parte branca. `overflow-x: clip` recorta o excesso horizontal
+     igual, MAS não coage o overflow-y (fica `visible`), então o
+     .admin__main deixa de ser scroll-container e o documento volta a ser
+     o único a rolar — a roda do mouse funciona em qualquer lugar. */
+  overflow-x: clip;
 }
 
 .admin__header {
