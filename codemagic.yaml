@@ -80,8 +80,10 @@ workflows:
         script: |
           cd app
           mkdir -p assets
-          cp -f www/assets/pwa/icon-512.png assets/icon.png || true
-          npx @capacitor/assets generate --ios --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff' || true
+          # Icone oficial da Elarah (1024x1024, laranja com simbolo branco),
+          # versionado em app/assets-src/. Antes usava o icone-512 branco.
+          cp -f assets-src/icon.png assets/icon.png
+          npx @capacitor/assets generate --ios --iconBackgroundColor '#F27725' --splashBackgroundColor '#ffffff' || true
       - name: Limpar certificados de distribuicao orfaos
         script: |
           # Os certificados de distribuicao existentes foram criados por builds
