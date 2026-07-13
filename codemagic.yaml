@@ -77,8 +77,18 @@ workflows:
         script: |
           set -e
           keychain initialize
-          # gera a chave privada usada para criar o certificado de distribuicao
-          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/cert_key.pem
+          # Chave PRIVADA PERSISTENTE (variavel segura CERT_KEY no Codemagic).
+          # Assim o certificado de distribuicao e criado UMA vez e reutilizado
+          # em todos os builds — sem acumular certificados (evita o erro 409
+          # "You already have a current Distribution certificate").
+          # Se a variavel nao existir, cai no modo antigo (gera uma nova chave).
+          if [ -n "$CERT_KEY" ]; then
+            printf '%s\n' "$CERT_KEY" > /tmp/cert_key.pem
+            echo "Usando chave de assinatura persistente (CERT_KEY)."
+          else
+            echo "CERT_KEY nao definida — gerando chave nova (pode acumular certificados)."
+            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/cert_key.pem
+          fi
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --certificate-key @file:/tmp/cert_key.pem \
