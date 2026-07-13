@@ -98,6 +98,13 @@ function splitName(fullName: string): { first: string; last: string } {
   return { first: parts[0], last: parts.slice(1).join(" ") };
 }
 
+// Telefone BR (só dígitos) → { areaCode, number } pro payer.phone.
+function splitPhone(digitsRaw: string | null): { areaCode: string; number: string } | undefined {
+  const d = String(digitsRaw || "").replace(/\D+/g, "");
+  if (d.length < 10) return undefined;
+  return { areaCode: d.slice(0, 2), number: d.slice(2) };
+}
+
 // Marcador único de versão. Mude a cada release pra confirmar via logs
 // do Supabase qual versão está rodando. Se você ver esse marcador nos
 // logs ao testar uma reserva, o deploy passou e o código novo está ativo.
@@ -231,10 +238,11 @@ async function handleGiftCardPixRequest(
     buyerNome || "Cliente Elarah",
   );
 
+  const giftDescription = ("Gift Card Elarah para " +
+    (recipientNome || recipientEmail)).slice(0, 250);
   const mpResult = await createPixPayment(MP_ACCESS_TOKEN, {
     transactionAmountCents: valor,
-    description: ("Gift Card Elarah para " +
-      (recipientNome || recipientEmail)).slice(0, 250),
+    description: giftDescription,
     externalReference: externalReference,
     payerEmail: buyerEmail,
     payerFirstName: firstName,
@@ -243,6 +251,16 @@ async function handleGiftCardPixRequest(
     expiresInMinutes: 30,
     notificationUrl: buildMpNotificationUrl(),
     idempotencyKey: giftCardId,
+    // Device ID + additional_info (boas práticas de aprovação).
+    deviceId: payload.device_id ? String(payload.device_id).trim() : undefined,
+    items: [{
+      id: giftCardId,
+      title: "Gift Card Elarah",
+      description: giftDescription,
+      categoryId: "gift_cards",
+      quantity: 1,
+      unitPriceCents: valor,
+    }],
   });
 
   if (!mpResult.ok || !mpResult.payment) {
@@ -575,9 +593,10 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     "giftCardCentavos=" + giftCardCentavos,
   );
 
+  const pixDescription = [exp.nome, exp.data, horario].filter(Boolean).join(" · ").slice(0, 250);
   const mpResult = await createPixPayment(MP_ACCESS_TOKEN, {
     transactionAmountCents: amountToChargeCents,
-    description: [exp.nome, exp.data, horario].filter(Boolean).join(" · ").slice(0, 250),
+    description: pixDescription,
     externalReference: bookingId,
     payerEmail: email,
     payerFirstName: firstName,
@@ -586,6 +605,17 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     expiresInMinutes: 30,
     notificationUrl: buildMpNotificationUrl(),
     idempotencyKey: bookingId,
+    // ===== Boas práticas de aprovação (Device ID + additional_info) =====
+    deviceId: payload.device_id ? String(payload.device_id).trim() : undefined,
+    payerPhone: splitPhone(telefoneDigits),
+    items: [{
+      id: bookingId,
+      title: String(exp.nome).slice(0, 250),
+      description: pixDescription,
+      categoryId: "entertainment",
+      quantity: 1,
+      unitPriceCents: amountToChargeCents,
+    }],
   });
 
   if (!mpResult.ok || !mpResult.payment) {

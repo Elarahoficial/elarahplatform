@@ -6,6 +6,7 @@ on:
       - claude/create-elarah-homepage-VsE5i
       - claude/fix-purchase-errors-2GrQL
       - claude/peaceful-wright-oh8k98
+      - claude/mercado-pago-audit-update-n4r6l8
     paths:
       - 'supabase/functions/**'
   workflow_dispatch:
@@ -50,70 +51,49 @@ jobs:
       - name: Deploy das Edge Functions
         run: |
           set -e
-          echo "→ create-checkout-session"
-          supabase functions deploy create-checkout-session \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ create-mp-pix-payment"
-          supabase functions deploy create-mp-pix-payment \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ create-mp-card-payment"
-          supabase functions deploy create-mp-card-payment \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ stripe-webhook"
-          supabase functions deploy stripe-webhook \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ mp-webhook"
-          supabase functions deploy mp-webhook \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ check-mp-payment-status"
-          supabase functions deploy check-mp-payment-status \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ redeem-gift-card"
-          supabase functions deploy redeem-gift-card \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
+          # Retry automático: o bundling baixa dependências do esm.sh, que
+          # às vezes responde 522 (timeout transitório do Cloudflare) e
+          # derrubava o deploy inteiro. Aqui cada função tenta até 3x com
+          # espera crescente antes de falhar de verdade.
+          deploy() {
+            local name="$1"; shift
+            local attempt=1
+            until [ "$attempt" -gt 3 ]; do
+              echo "→ $name (tentativa $attempt)"
+              if supabase functions deploy "$name" --project-ref "$PROJECT_REF" "$@"; then
+                return 0
+              fi
+              echo "::warning::deploy de $name falhou (tentativa $attempt/3) — nova tentativa em $((attempt*10))s"
+              sleep "$((attempt*10))"
+              attempt=$((attempt+1))
+            done
+            echo "::error::deploy de $name falhou após 3 tentativas"
+            return 1
+          }
+
+          deploy create-checkout-session --no-verify-jwt
+          deploy create-mp-pix-payment --no-verify-jwt
+          deploy create-mp-card-payment --no-verify-jwt
+          # get-mp-public-key: só devolve a public key publicável da MP
+          # pro front. Sem JWT (o front chama com a anon key como apikey).
+          deploy get-mp-public-key --no-verify-jwt
+          deploy stripe-webhook --no-verify-jwt
+          deploy mp-webhook --no-verify-jwt
+          deploy check-mp-payment-status --no-verify-jwt
+          deploy redeem-gift-card --no-verify-jwt
           # delete-account: --no-verify-jwt porque valida o token do
           # usuário por dentro (auth.getUser) e só apaga a conta DELE.
-          echo "→ delete-account"
-          supabase functions deploy delete-account \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          # notify-manual-sale mantém verify_jwt (default): só admin
-          # autenticada dispara o aviso de venda manual. NÃO usar
-          # --no-verify-jwt aqui.
-          echo "→ notify-manual-sale"
-          supabase functions deploy notify-manual-sale \
-            --project-ref "$PROJECT_REF"
-          # resend-booking-confirmation mantém verify_jwt (default): só
-          # admin autenticada reenvia a confirmação pro cliente. NÃO usar
-          # --no-verify-jwt aqui.
-          echo "→ resend-booking-confirmation"
-          supabase functions deploy resend-booking-confirmation \
-            --project-ref "$PROJECT_REF"
-          # send-supplier-customer-message mantém verify_jwt (default): só
-          # admin autenticada envia a mensagem pós-compra do fornecedor
-          # (BaresSp / Lado B) pro cliente. NÃO usar --no-verify-jwt aqui.
-          echo "→ send-supplier-customer-message"
-          supabase functions deploy send-supplier-customer-message \
-            --project-ref "$PROJECT_REF"
-          # send-manual-sale-confirmation mantém verify_jwt (default): só
-          # admin autenticada envia a confirmação de compra pro cliente de
-          # uma venda manual. NÃO usar --no-verify-jwt aqui.
-          echo "→ send-manual-sale-confirmation"
-          supabase functions deploy send-manual-sale-confirmation \
-            --project-ref "$PROJECT_REF"
+          deploy delete-account --no-verify-jwt
+          # As funções abaixo mantêm verify_jwt (default): só admin
+          # autenticada dispara. NÃO usar --no-verify-jwt nelas.
+          deploy notify-manual-sale
+          deploy resend-booking-confirmation
+          deploy send-supplier-customer-message
+          deploy send-manual-sale-confirmation
           # analytics-insights faz a própria autorização por dentro
-          # (authorizeRequest: CRON_SECRET, service_role ou admin), então
-          # precisa de --no-verify-jwt — senão o cron do relatório (que
-          # manda o CRON_SECRET, não um JWT do Supabase) tomaria 401.
-          echo "→ analytics-insights"
-          supabase functions deploy analytics-insights \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ calculate-shipping"
-          supabase functions deploy calculate-shipping \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ melhor-envio-callback"
-          supabase functions deploy melhor-envio-callback \
-            --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "→ melhor-envio-connect"
-          supabase functions deploy melhor-envio-connect \
-            --project-ref "$PROJECT_REF"
+          # (CRON_SECRET/service_role/admin), então precisa de --no-verify-jwt.
+          deploy analytics-insights --no-verify-jwt
+          deploy calculate-shipping --no-verify-jwt
+          deploy melhor-envio-callback --no-verify-jwt
+          deploy melhor-envio-connect
           echo "✓ Deploy completo"

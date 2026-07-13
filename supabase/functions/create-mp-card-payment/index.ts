@@ -3,49 +3,62 @@
 // -------------------------------------------------------------
 // POST /functions/v1/create-mp-card-payment
 //
-// Cria uma preferência de Checkout Pro (Mercado Pago) pro cliente
-// pagar no CARTÃO — com parcelamento em até 12x, juros repassados
-// ao cliente (regra da Elarah). Pré-grava a booking em
-// status='pending' e devolve o `init_point` pro frontend redirecionar.
+// Cria um pagamento no CARTÃO via Mercado Pago. Suporta DOIS modos,
+// escolhidos automaticamente pelo payload:
 //
-// Espelha create-mp-pix-payment (mesma validação, booking_guard,
-// mapa financeiro e pré-insert), MAS:
-//   - não exige CPF (a MP coleta os dados do cartão na página dela);
-//   - em vez de gerar QR, cria uma preference e redireciona;
-//   - a confirmação vem pelo MESMO mp-webhook, que reconcilia a
-//     booking por external_reference == booking.id. Nenhuma mudança
-//     no webhook é necessária.
+//   1) CHECKOUT TRANSPARENTE (Checkout API) — PREFERIDO / MODERNO
+//      Ativado quando o front manda `token` (gerado pelo MercadoPago.js
+//      V2 Secure Fields). O cliente digita o cartão DENTRO do site, sem
+//      redirect. A gente cria o pagamento direto no /v1/payments com:
+//        - token + payment_method_id + issuer_id + installments
+//        - Device ID no header X-meli-session-id
+//        - payer completo (email, nome, sobrenome, CPF, telefone, endereço)
+//        - additional_info (items com description, payer)
+//        - 3-D Secure 2 opcional
+//      Resolve as pendências OBRIGATÓRIAS da Qualidade da Integração
+//      (Secure Fields + Device ID) e as recomendadas (issuer_id, payer
+//      fields, items.description).
 //
-// NÃO substitui nem toca no fluxo de PIX nem no Stripe. É aditivo.
+//   2) CHECKOUT PRO (preference + redirect) — FALLBACK / COMPAT
+//      Ativado quando NÃO vem `token` (ou o front não conseguiu montar
+//      os Secure Fields por falta de public key / erro de SDK). Mantém
+//      o comportamento antigo: cria uma preference e devolve init_point
+//      pro front redirecionar. Garante que o cartão NUNCA quebra mesmo
+//      que o fluxo transparente falhe.
 //
-// Payload esperado (igual ao do PIX, cpf opcional):
-//   {
-//     "experiencia_id": "uuid",
-//     "horario":        "19h00 – 22h30",
-//     "email":          "cliente@dominio",
-//     "nome":           "Maria Silva",
-//     "telefone":       "(11) 91234-5678",
-//     "cupom":          "ELRH-..." | null,
-//     "quantidade":     1
-//   }
+// Em AMBOS os casos a confirmação vem pelo MESMO mp-webhook, que
+// reconcilia a booking por external_reference == booking.id (igual PIX).
 //
-// Respostas:
-//   200 { booking_id, preference_id, init_point, sandbox_init_point,
-//         amount_total_centavos, direct?: true }
+// NÃO substitui nem toca no fluxo de PIX nem no Stripe.
+//
+// Respostas (transparente):
+//   200 { booking_id, payment_id, status, status_detail,
+//         amount_total_centavos, three_ds?: {...} }
+//   200 { direct: true, booking_id }          (cupom cobre 100%)
+//   200 { rejected: true, status, status_detail, message }
 //   4xx { error, message }
 //   502 { error: "mp_create_failed", detail }
 //
-// Variáveis de ambiente (as MESMAS já usadas pelo PIX):
-//   MERCADO_PAGO_ACCESS_TOKEN
+// Respostas (checkout pro):
+//   200 { booking_id, preference_id, init_point, sandbox_init_point, ... }
+//
+// Variáveis de ambiente:
+//   MP_CARD_ACCESS_TOKEN   (preferido — conta CNPJ do cartão)
+//   MERCADO_PAGO_ACCESS_TOKEN (fallback)
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
-//   PUBLIC_SITE_URL              (back_urls / notification_url)
+//   PUBLIC_SITE_URL
+//   CARD_FEE_PERCENT / CARD_FEE_FIXED_CENTS  (taxa repassada ao cliente)
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
-import { createCheckoutPreference } from "../_shared/mercadopago.ts";
+import {
+  createCardPayment,
+  createCheckoutPreference,
+  type MPItemInfo,
+} from "../_shared/mercadopago.ts";
 import {
   reserveExperienceSlot,
   computeChargeAmount,
@@ -58,9 +71,7 @@ import {
 
 // Token da conta que processa o CARTÃO. Usa MP_CARD_ACCESS_TOKEN se
 // existir (conta CNPJ nova) e cai pro MERCADO_PAGO_ACCESS_TOKEN (a
-// conta do PIX) só como fallback. Isso permite rodar o cartão numa
-// conta e o PIX em outra AO MESMO TEMPO — o PIX nunca é afetado quando
-// só o MP_CARD_ACCESS_TOKEN é configurado.
+// conta do PIX) só como fallback.
 const MP_ACCESS_TOKEN =
   Deno.env.get("MP_CARD_ACCESS_TOKEN") ??
   Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ??
@@ -72,15 +83,7 @@ const PUBLIC_SITE_URL =
   (Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "") ||
   "https://elarah.com.br";
 
-// ===== Taxa do cartão (repasse pro cliente) =====
-// MESMAS envs que o fluxo do Stripe (create-checkout-session) usa —
-// já estão configuradas no Supabase. Assim o cartão via Mercado Pago
-// cobra a MESMA taxa que o cartão via Stripe cobrava, repassada ao
-// cliente inclusive no à vista. O PIX NÃO usa isso (preço limpo).
-// Parse tolerante: aceita vírgula OU ponto (BR usa "5,24"), e se vier
-// algo inválido, cai no fallback em vez de virar NaN — porque um NaN
-// no valor da cobrança faria a Mercado Pago RECUSAR criar o pagamento,
-// quebrando o cartão pra todo mundo. Blindagem contra erro de digitação.
+// ===== Taxa do cartão (repasse pro cliente) — igual ao Stripe/Checkout Pro =====
 function parseFeeEnv(name: string, fallback: number): number {
   const raw = Deno.env.get(name);
   if (raw == null || raw === "") return fallback;
@@ -97,7 +100,16 @@ function parseFeeEnv(name: string, fallback: number): number {
 const CARD_FEE_PERCENT = parseFeeEnv("CARD_FEE_PERCENT", 0);
 const CARD_FEE_FIXED_CENTS = parseFeeEnv("CARD_FEE_FIXED_CENTS", 0);
 
-// final = base + round(base * percent/100) + fixed  (idêntico ao Stripe)
+// Modo 3-D Secure 2. "optional" (recomendado) melhora a aprovação: a MP
+// só pede o desafio quando o emissor exige. Escotilha: se a conta ainda
+// não tem 3DS habilitado e a MP recusar o campo, basta setar
+// MP_CARD_3DS_MODE=not_supported pra desligar sem tocar no código.
+const CARD_3DS_MODE = (function (): "not_supported" | "optional" | "mandatory" {
+  const raw = String(Deno.env.get("MP_CARD_3DS_MODE") ?? "optional").trim();
+  if (raw === "not_supported" || raw === "mandatory") return raw;
+  return "optional";
+})();
+
 function applyCardFee(baseCents: number): {
   finalCents: number;
   feePercentCents: number;
@@ -110,8 +122,6 @@ function applyCardFee(baseCents: number): {
   const feePercentCents = Math.round(baseCents * (CARD_FEE_PERCENT / 100));
   const feeFixedCents = CARD_FEE_FIXED_CENTS;
   let feeTotalCents = feePercentCents + feeFixedCents;
-  // Defesa final: se por qualquer motivo a taxa der NaN/negativa, zera —
-  // nunca deixamos o valor final virar inválido (isso quebraria a MP).
   if (!Number.isFinite(feeTotalCents) || feeTotalCents < 0) feeTotalCents = 0;
   return {
     finalCents: baseCents + feeTotalCents,
@@ -125,7 +135,7 @@ const IS_TEST_TOKEN = MP_ACCESS_TOKEN.startsWith("TEST-");
 
 // Marcador de versão — confirme nos logs do Supabase qual versão está
 // ativa ao testar uma reserva.
-const CARD_FN_VERSION = "v1-mp-card-checkout-pro-2026-07-05";
+const CARD_FN_VERSION = "v2-mp-card-checkout-transparente-2026-07-13";
 
 function buildMpNotificationUrl(): string | undefined {
   if (!SUPABASE_URL) return undefined;
@@ -150,10 +160,26 @@ function splitName(fullName: string): { first: string; last: string } {
   return { first: parts[0], last: parts.slice(1).join(" ") };
 }
 
+// Telefone BR (só dígitos) → { areaCode, number } pro payer.phone.
+function splitPhone(digitsRaw: string | null): { areaCode: string; number: string } | undefined {
+  const d = String(digitsRaw || "").replace(/\D+/g, "");
+  if (d.length < 10) return undefined;
+  return { areaCode: d.slice(0, 2), number: d.slice(2) };
+}
+
+// ===============================================================
+// Handler principal — parte compartilhada (guard, financeiro, taxa),
+// depois ramifica entre transparente e Checkout Pro.
+// ===============================================================
 async function handleCardRequest(
   payload: Record<string, unknown>,
 ): Promise<Response> {
-  // ===== Parse do payload (espelha o PIX) =====
+  // ===== Detecta o modo =====
+  // Transparente quando vem `token` (MercadoPago.js Secure Fields).
+  const cardToken = payload.token ? String(payload.token).trim() : "";
+  const isTransparent = cardToken.length > 0;
+
+  // ===== Parse do payload (comum aos dois modos) =====
   const experienciaId = String(payload.experiencia_id ?? "").trim();
   const horario = payload.horario ? String(payload.horario).trim() : null;
   const dataFromPayload = payload.data ? String(payload.data).trim() : null;
@@ -161,13 +187,20 @@ async function handleCardRequest(
   const email = payload.email ? String(payload.email).trim() : null;
   const nomeFromPayload = payload.nome ? String(payload.nome).trim() : null;
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
-  // CPF é OPCIONAL no cartão — a MP coleta na página dela. Se vier,
-  // repassamos pra pré-preencher.
   const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
   const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
   const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+
+  // ===== Dados do cartão (só no modo transparente) =====
+  const paymentMethodId = payload.payment_method_id ? String(payload.payment_method_id).trim() : "";
+  const issuerId = payload.issuer_id ? String(payload.issuer_id).trim() : "";
+  const installments = Math.max(1, Math.floor(Number(payload.installments) || 1));
+  const deviceId = payload.device_id ? String(payload.device_id).trim() : "";
+  const identificationType = payload.identification_type
+    ? String(payload.identification_type).trim()
+    : "CPF";
 
   const telefoneHuman = payload.telefone ? String(payload.telefone).trim() : null;
   const telefoneDigits = payload.telefone_digits
@@ -189,8 +222,19 @@ async function handleCardRequest(
       400,
     );
   }
+  if (isTransparent && !paymentMethodId) {
+    return jsonResponse(
+      { error: "payment_method_id_required", message: "Dados do cartão incompletos. Recarregue e tente novamente." },
+      400,
+    );
+  }
+  if (isTransparent && !deviceId) {
+    // Não bloqueia (a MP aceita sem), mas registra — é uma pendência de
+    // aprovação. O front DEVE mandar; se não veio, algo falhou no SDK.
+    console.warn("[Elarah Payment/MP card] device_id ausente no pagamento transparente — aprovação pode cair");
+  }
 
-  // ===== Reserva slot (valida exp, decrementa vaga, hold cupom) =====
+  // ===== Reserva slot =====
   const guard = await reserveExperienceSlot(supabase, {
     experienciaId,
     horario,
@@ -281,7 +325,6 @@ async function handleCardRequest(
   const repassesArray = breakdownFin ? breakdownFin.repasses : [];
 
   // ===== CASO especial: cupom cobre 100% — pula MP =====
-  // Idêntico ao PIX: grava direto como pago, nenhum pagamento criado.
   if (amountToChargeCents === 0) {
     const directBookingId = crypto.randomUUID();
     const { error: directErr } = await supabase.from("bookings").insert({
@@ -344,9 +387,7 @@ async function handleCardRequest(
     });
   }
 
-  // ===== Caso normal: criar preferência de Checkout Pro =====
-  // Reserva booking_id ANTES de chamar a MP pra usar como
-  // external_reference (o webhook reconcilia por bookings.id == ref).
+  // ===== Caso normal: cobra no cartão =====
   const bookingId = crypto.randomUUID();
   const { first: firstName, last: lastName } = splitName(resolvedNome || "Cliente Elarah");
 
@@ -364,38 +405,255 @@ async function handleCardRequest(
   }
 
   // ===== Taxa do cartão repassada ao cliente =====
-  // amountToChargeCents é o preço "limpo" (base − desconto). No cartão,
-  // somamos a taxa de processamento por cima — igual o Stripe fazia —
-  // pra a Elarah não arcar com a taxa (inclusive no à vista). O
-  // parcelamento (juros) que a MP mostra é aplicado SOBRE este total.
   const feeInfo = applyCardFee(amountToChargeCents);
   const finalChargeCents = feeInfo.finalCents;
   console.info(
     "[Elarah Payment/MP card] taxa do cartão",
+    "mode=" + (isTransparent ? "transparente" : "checkout_pro"),
     "base=" + amountToChargeCents,
-    "fee_percent=" + feeInfo.feePercentCents,
-    "fee_fixed=" + feeInfo.feeFixedCents,
     "fee_total=" + feeInfo.feeTotalCents,
     "final=" + finalChargeCents,
   );
 
-  // stripe_session_id é UNIQUE; usamos "MPCARD-<bookingId>" como
-  // placeholder. Esse MESMO valor vai no back_url de sucesso
-  // (?session_id=MPCARD-<id>), então a success.html localiza a booking
-  // pela coluna stripe_session_id e mostra o status (Pago/Processando).
+  // Título/descrição do item (com description — pendência recomendada).
+  const itemTitle = [exp.nome, exp.data, horario].filter(Boolean).join(" · ") || exp.nome;
+  const itemDescription = [exp.nome, exp.bairro, exp.data, horario]
+    .filter(Boolean).join(" · ") || exp.nome;
+  const mpItems: MPItemInfo[] = [{
+    id: bookingId,
+    title: String(exp.nome).slice(0, 250),
+    description: String(itemDescription).slice(0, 250),
+    categoryId: "entertainment",
+    quantity: 1,
+    unitPriceCents: finalChargeCents,
+  }];
+
+  // Metadata comum do booking.
+  const bookingMetadata: Record<string, unknown> = {
+    bairro: exp.bairro ?? null,
+    endereco: exp.endereco ?? null,
+    telefone_digits: telefoneDigits || null,
+    unit_price_centavos: breakdown.unitCents,
+    subtotal_centavos: breakdown.subtotalCents,
+    discount_centavos: breakdown.discountCents,
+    total_after_discount_centavos: breakdown.totalCents,
+    preco_total_centavos: breakdown.subtotalCents,
+    card_fee_percent_centavos: feeInfo.feePercentCents,
+    card_fee_fixed_centavos: feeInfo.feeFixedCents,
+    card_fee_total_centavos: feeInfo.feeTotalCents,
+    amount_before_fee_centavos: amountToChargeCents,
+    payment_method: "card",
+    payment_provider: "mercado_pago",
+    cpf: cpfRaw || null,
+    inventory_skipped: inventorySkipped || undefined,
+    variant_label: variantLabel || undefined,
+    variant_selected: variantSelected || undefined,
+  };
+
+  // Insere a booking pending (com fallback pra colunas novas ausentes).
+  // Reutilizado pelos dois modos.
+  async function insertPendingBooking(
+    stripeSessionId: string,
+    mpPaymentId: string | null,
+    extraMeta: Record<string, unknown>,
+  ): Promise<{ ok: boolean }> {
+    const fullMeta = { ...bookingMetadata, ...extraMeta, participantes };
+    const baseRow: Record<string, unknown> = {
+      id: bookingId,
+      user_id: userId,
+      email: email,
+      nome: resolvedNome,
+      telefone: telefoneToSave,
+      experiencia_id: exp.id,
+      experiencia_nome: exp.nome,
+      data: slotData ?? dataFromPayload ?? exp.data ?? null,
+      horario: horario,
+      preco_label: exp.preco,
+      amount_total: finalChargeCents,
+      currency: "brl",
+      status: "pending",
+      stripe_session_id: stripeSessionId,
+      gift_card_id: giftCardId,
+      gift_card_centavos: giftCardCentavos || null,
+      gift_card_code: cupomCode,
+      coupon_id: couponId,
+      coupon_code: couponId ? cupomCode : null,
+      coupon_discount_centavos: couponId ? couponDiscountCents : null,
+      slot_id: slotId,
+      quantidade: guardQty,
+      fornecedor_nome: fornecedorNome,
+      fornecedor_id: fornecedorId,
+      valor_cheio_centavos: valorCheioFinal,
+      valor_repasse_centavos: valorRepasseCentavos,
+      valor_comissao_centavos: valorComissaoCentavos,
+      repasses: repassesArray.length ? repassesArray : null,
+      status_fornecedor: "repasse_pendente",
+      payment_provider: "mercado_pago",
+      metadata: fullMeta,
+    };
+    if (mpPaymentId) baseRow.mp_payment_id = mpPaymentId;
+
+    const { error: insertErr } = await supabase.from("bookings").insert(baseRow);
+    if (!insertErr) return { ok: true };
+
+    const msg = String(insertErr.message || "").toLowerCase();
+    const looksLikeNewColumnsMissing =
+      (msg.includes("payment_provider") || msg.includes("mp_payment_id")) &&
+      (msg.includes("column") || msg.includes("schema cache"));
+    if (looksLikeNewColumnsMissing) {
+      console.warn("[Elarah Payment/MP card] colunas novas ausentes — retry sem elas");
+      const retryRow = { ...baseRow };
+      delete retryRow.payment_provider;
+      delete retryRow.mp_payment_id;
+      const { error: retryErr } = await supabase.from("bookings").insert(retryRow);
+      if (retryErr) {
+        console.error("[Elarah Payment/MP card] retry insert falhou", retryErr);
+        return { ok: false };
+      }
+      return { ok: true };
+    }
+    console.error("[Elarah Payment/MP card] booking insert error", insertErr);
+    return { ok: false };
+  }
+
+  // =============================================================
+  // MODO 1 — CHECKOUT TRANSPARENTE (/v1/payments com token)
+  // =============================================================
+  if (isTransparent) {
+    const mpResult = await createCardPayment(MP_ACCESS_TOKEN, {
+      transactionAmountCents: finalChargeCents,
+      token: cardToken,
+      paymentMethodId,
+      installments,
+      issuerId: issuerId || undefined,
+      description: itemTitle.slice(0, 250),
+      externalReference: bookingId,
+      payerEmail: email,
+      payerFirstName: firstName,
+      payerLastName: lastName,
+      payerCpf: cpfRaw,
+      payerIdentificationType: identificationType,
+      payerPhone: splitPhone(telefoneDigits),
+      deviceId: deviceId || undefined,
+      items: mpItems,
+      statementDescriptor: "ELARAH",
+      threeDSecureMode: CARD_3DS_MODE,
+      notificationUrl: buildMpNotificationUrl(),
+      idempotencyKey: bookingId,
+    });
+
+    if (!mpResult.ok || !mpResult.payment) {
+      console.error(
+        "[Elarah Payment/MP card] /v1/payments falhou, rollback",
+        "status=" + mpResult.errorStatus,
+        "body=" + JSON.stringify(mpResult.errorBody),
+      );
+      await rollback();
+      return jsonResponse(
+        {
+          error: "mp_create_failed",
+          message: "Não foi possível processar o cartão. Confira os dados ou pague no PIX.",
+          detail: mpResult.errorBody,
+        },
+        502,
+      );
+    }
+
+    const payment = mpResult.payment;
+    const status = String(payment.status || "");
+    const statusDetail = String(payment.status_detail || "");
+
+    console.info(
+      "[Elarah Payment/MP card] resultado transparente",
+      "booking=" + bookingId,
+      "payment=" + payment.id,
+      "status=" + status,
+      "status_detail=" + statusDetail,
+      "installments=" + installments,
+      "issuer=" + (issuerId || "?"),
+    );
+
+    // ----- Recusado / cancelado: libera estoque e devolve o motivo -----
+    if (status === "rejected" || status === "cancelled") {
+      await rollback();
+      return jsonResponse({
+        rejected: true,
+        payment_id: String(payment.id),
+        status,
+        status_detail: statusDetail,
+        message: "Pagamento recusado pelo emissor. Tente outro cartão ou pague no PIX.",
+      });
+    }
+
+    // ----- Aprovado / em processamento / 3DS: grava booking pending -----
+    // Mesmo aprovado, gravamos 'pending' e deixamos o mp-webhook (ou o
+    // polling do front) marcar 'pago' e disparar os e-mails — igual PIX.
+    // Isso evita e-mail duplicado e reaproveita toda a idempotência.
+    const insertRes = await insertPendingBooking(
+      "MPCARD-" + bookingId,
+      String(payment.id),
+      {
+        mp_payment_id: String(payment.id),
+        mp_status_inicial: status,
+        mp_status_detail_inicial: statusDetail,
+        mp_installments: installments,
+        mp_issuer_id: issuerId || null,
+        mp_payment_method_id: paymentMethodId,
+        mp_device_id_sent: deviceId ? true : false,
+      },
+    );
+    if (!insertRes.ok) {
+      // A cobrança JÁ foi feita — não dá pra rollback do estoque sem
+      // deixar pagamento órfão. Registra em alto volume pro admin.
+      console.error(
+        "[Elarah Payment/MP card] PAGAMENTO FEITO MAS BOOKING NÃO GRAVOU",
+        "payment=" + payment.id,
+        "booking=" + bookingId,
+        "amount=" + finalChargeCents,
+      );
+      return jsonResponse(
+        {
+          error: "booking_failed_after_charge",
+          payment_id: String(payment.id),
+          message: "O pagamento foi processado, mas houve um erro ao registrar a reserva. " +
+            "Guarde este código e nos chame no WhatsApp: " + bookingId,
+        },
+        500,
+      );
+    }
+
+    const threeDs = payment.three_ds_info && payment.three_ds_info.external_resource_url
+      ? {
+        external_resource_url: payment.three_ds_info.external_resource_url,
+        creq: payment.three_ds_info.creq,
+      }
+      : null;
+
+    return jsonResponse({
+      booking_id: bookingId,
+      payment_id: String(payment.id),
+      status,
+      status_detail: statusDetail,
+      amount_total_centavos: finalChargeCents,
+      card_fee_total_centavos: feeInfo.feeTotalCents,
+      is_test: IS_TEST_TOKEN,
+      three_ds: threeDs,
+    });
+  }
+
+  // =============================================================
+  // MODO 2 — CHECKOUT PRO (preference + redirect) — fallback
+  // =============================================================
   const stripeSessionIdPlaceholder = "MPCARD-" + bookingId;
 
-  // Item único com o valor final (preço − desconto + taxa do cartão).
-  // Mandamos 1 item com quantity=1 e unit_price = finalChargeCents, pra
-  // o valor cobrado bater EXATAMENTE com o total (com taxa repassada).
   const preferenceInput = {
-    items: [
-      {
-        title: [exp.nome, exp.data, horario].filter(Boolean).join(" · ") || exp.nome,
-        quantity: 1,
-        unitPriceCents: finalChargeCents,
-      },
-    ],
+    items: [{
+      title: itemTitle,
+      description: itemDescription,
+      categoryId: "entertainment",
+      quantity: 1,
+      unitPriceCents: finalChargeCents,
+    }],
     externalReference: bookingId,
     payerEmail: email,
     payerFirstName: firstName,
@@ -424,7 +682,7 @@ async function handleCardRequest(
 
   if (!mpResult.ok || !mpResult.preference) {
     console.error(
-      "[Elarah Payment/MP card] MP retornou erro, fazendo rollback",
+      "[Elarah Payment/MP card] preference falhou, rollback",
       "status=" + mpResult.errorStatus,
       "body=" + JSON.stringify(mpResult.errorBody),
     );
@@ -441,129 +699,23 @@ async function handleCardRequest(
 
   const preference = mpResult.preference;
 
-  // ===== Grava booking pending =====
-  const bookingMetadata = {
-    bairro: exp.bairro ?? null,
-    endereco: exp.endereco ?? null,
-    telefone_digits: telefoneDigits || null,
-    unit_price_centavos: breakdown.unitCents,
-    subtotal_centavos: breakdown.subtotalCents,
-    discount_centavos: breakdown.discountCents,
-    total_after_discount_centavos: breakdown.totalCents,
-    preco_total_centavos: breakdown.subtotalCents,
-    // Taxa do cartão repassada ao cliente (por cima do preço limpo).
-    card_fee_percent_centavos: feeInfo.feePercentCents,
-    card_fee_fixed_centavos: feeInfo.feeFixedCents,
-    card_fee_total_centavos: feeInfo.feeTotalCents,
-    amount_before_fee_centavos: amountToChargeCents,
-    payment_method: "card",
-    payment_provider: "mercado_pago",
-    cpf: cpfRaw || null,
-    mp_preference_id: preference.id,
-    inventory_skipped: inventorySkipped || undefined,
-    variant_label: variantLabel || undefined,
-    variant_selected: variantSelected || undefined,
-  };
-
-  const { error: insertErr } = await supabase.from("bookings").insert({
-    id: bookingId,
-    user_id: userId,
-    email: email,
-    nome: resolvedNome,
-    telefone: telefoneToSave,
-    experiencia_id: exp.id,
-    experiencia_nome: exp.nome,
-    data: slotData ?? dataFromPayload ?? exp.data ?? null,
-    horario: horario,
-    preco_label: exp.preco,
-    amount_total: finalChargeCents,
-    currency: "brl",
-    status: "pending",
-    stripe_session_id: stripeSessionIdPlaceholder,
-    gift_card_id: giftCardId,
-    gift_card_centavos: giftCardCentavos || null,
-    gift_card_code: cupomCode,
-    coupon_id: couponId,
-    coupon_code: couponId ? cupomCode : null,
-    coupon_discount_centavos: couponId ? couponDiscountCents : null,
-    slot_id: slotId,
-    quantidade: guardQty,
-    fornecedor_nome: fornecedorNome,
-    fornecedor_id: fornecedorId,
-    valor_cheio_centavos: valorCheioFinal,
-    valor_repasse_centavos: valorRepasseCentavos,
-    valor_comissao_centavos: valorComissaoCentavos,
-    repasses: repassesArray.length ? repassesArray : null,
-    status_fornecedor: "repasse_pendente",
-    payment_provider: "mercado_pago",
-    metadata: { ...bookingMetadata, participantes },
-  });
-
-  if (insertErr) {
-    // Fallback: se as colunas novas (payment_provider) ainda não
-    // existirem, tenta sem elas — o metadata preserva o rastro.
-    const msg = String(insertErr.message || "").toLowerCase();
-    const looksLikeNewColumnsMissing =
-      (msg.includes("payment_provider") || msg.includes("mp_payment_id")) &&
-      (msg.includes("column") || msg.includes("schema cache"));
-    if (looksLikeNewColumnsMissing) {
-      console.warn(
-        "[Elarah Payment/MP card] coluna payment_provider ausente — retry sem ela",
-      );
-      const { error: retryErr } = await supabase.from("bookings").insert({
-        id: bookingId,
-        user_id: userId,
-        email: email,
-        nome: resolvedNome,
-        telefone: telefoneToSave,
-        experiencia_id: exp.id,
-        experiencia_nome: exp.nome,
-        data: slotData ?? dataFromPayload ?? exp.data ?? null,
-        horario: horario,
-        preco_label: exp.preco,
-        amount_total: finalChargeCents,
-        currency: "brl",
-        status: "pending",
-        stripe_session_id: stripeSessionIdPlaceholder,
-        gift_card_id: giftCardId,
-        gift_card_centavos: giftCardCentavos || null,
-        gift_card_code: cupomCode,
-        coupon_id: couponId,
-        coupon_code: couponId ? cupomCode : null,
-        coupon_discount_centavos: couponId ? couponDiscountCents : null,
-        slot_id: slotId,
-        quantidade: guardQty,
-        fornecedor_nome: fornecedorNome,
-        fornecedor_id: fornecedorId,
-        valor_cheio_centavos: valorCheioFinal,
-        valor_repasse_centavos: valorRepasseCentavos,
-        valor_comissao_centavos: valorComissaoCentavos,
-        repasses: repassesArray.length ? repassesArray : null,
-        status_fornecedor: "repasse_pendente",
-        metadata: { ...bookingMetadata, participantes },
-      });
-      if (retryErr) {
-        console.error("[Elarah Payment/MP card] retry insert falhou", retryErr);
-        await rollback();
-        return jsonResponse({ error: "booking_failed" }, 500);
-      }
-    } else {
-      console.error("[Elarah Payment/MP card] booking insert error", insertErr);
-      await rollback();
-      return jsonResponse({ error: "booking_failed" }, 500);
-    }
+  const insertRes = await insertPendingBooking(
+    stripeSessionIdPlaceholder,
+    null,
+    { mp_preference_id: preference.id },
+  );
+  if (!insertRes.ok) {
+    await rollback();
+    return jsonResponse({ error: "booking_failed" }, 500);
   }
 
   console.info(
-    "[Elarah Payment/MP card] booking pending + preference criada",
+    "[Elarah Payment/MP card] booking pending + preference (checkout pro)",
     "booking=" + bookingId,
     "preference=" + preference.id,
     "amount_cents=" + finalChargeCents,
-    "(base=" + amountToChargeCents + " + fee=" + feeInfo.feeTotalCents + ")",
   );
 
-  // Em TESTE (credenciais TEST-), o front deve usar sandbox_init_point.
-  // Devolvemos os dois — o front decide.
   return jsonResponse({
     booking_id: bookingId,
     preference_id: preference.id,
@@ -608,7 +760,6 @@ serve(async (req) => {
     return jsonResponse({ error: "invalid_json" }, 400);
   }
 
-  // Defesa final: qualquer exceção vira erro nomeado + mensagem PT.
   try {
     return await handleCardRequest(payload);
   } catch (e) {
