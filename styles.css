@@ -3904,8 +3904,9 @@ select {
 }
 /* Cabeçalho fixo/sticky: o fundo cobre a status bar e o conteúdo desce */
 .header { padding-top: var(--safe-top); }
-/* Rodapé respeita o home indicator */
-.footer { padding-bottom: calc(var(--safe-bottom) + 24px); }
+/* Rodapé respeita o home indicator (só o inset — no web env()=0,
+   então o rodapé fica exatamente como era, sem px extra). */
+.footer { padding-bottom: var(--safe-bottom); }
 /* Barras/CTAs fixas no rodapé (mobile) não ficam sob o home indicator */
 .safe-area-bottom,
 [data-safe-bottom] { padding-bottom: calc(var(--safe-bottom) + 8px); }
@@ -3933,8 +3934,9 @@ a[class], button, [role="button"], .header, .footer, .card__title, .card__catego
 a, button, [role="button"], .card__reserve-btn, input[type="submit"] {
   touch-action: manipulation;
 }
-/* "Chrome" do app não é selecionável como texto de página (conteúdo é) */
-.header, .footer, .account__menu, .account__sidebar, button, [role="button"], .card__category {
+/* "Chrome" do app não é selecionável como texto de página. O rodapé
+   fica de fora de propósito (endereço/contato devem poder ser copiados). */
+.header, .account__menu, .account__sidebar, button, [role="button"], .card__category {
   -webkit-user-select: none; user-select: none;
 }
 /* Evita scroll-chaining/pull-to-refresh dentro de modais e da página */
