@@ -82,6 +82,35 @@ workflows:
           mkdir -p assets
           cp -f www/assets/pwa/icon-512.png assets/icon.png || true
           npx @capacitor/assets generate --ios --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff' || true
+      - name: Limpar certificados de distribuicao orfaos
+        script: |
+          # Os certificados de distribuicao existentes foram criados por builds
+          # antigos do Codemagic em maquinas efemeras — as chaves privadas deles
+          # NAO existem mais (orfaos, inutilizaveis para assinar). Removemos para
+          # liberar o limite da Apple (evita o 409). Seguro: a conta so usa CI,
+          # sem Mac. O certificado bom e recriado no passo seguinte.
+          for T in DISTRIBUTION IOS_DISTRIBUTION; do
+            app-store-connect certificates list --type "$T" --json > "/tmp/certs_$T.json" 2>/dev/null || echo '[]' > "/tmp/certs_$T.json"
+          done
+          echo "--- certificados encontrados ---"; head -c 600 /tmp/certs_DISTRIBUTION.json; echo
+          IDS=$(python3 -c "
+          import json
+          ids=set()
+          for f in ('/tmp/certs_DISTRIBUTION.json','/tmp/certs_IOS_DISTRIBUTION.json'):
+              try: data=json.load(open(f))
+              except Exception: data=[]
+              if isinstance(data,dict): data=[data]
+              for c in data:
+                  cid=c.get('id') if isinstance(c,dict) else None
+                  if cid: ids.add(cid)
+          print(' '.join(sorted(ids)))
+          ")
+          echo "IDs a revogar: [$IDS]"
+          for CID in $IDS; do
+            echo "Revogando certificado $CID"
+            yes | app-store-connect certificates delete "$CID" --ignore-not-found 2>&1 | tail -3 || true
+          done
+          echo "Limpeza concluida."
       - name: Configurar assinatura (certificado + perfil)
         script: |
           set -e
