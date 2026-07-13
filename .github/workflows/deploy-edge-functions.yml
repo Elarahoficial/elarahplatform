@@ -6,6 +6,7 @@ on:
       - claude/create-elarah-homepage-VsE5i
       - claude/fix-purchase-errors-2GrQL
       - claude/peaceful-wright-oh8k98
+      - claude/mercado-pago-audit-update-n4r6l8
     paths:
       - 'supabase/functions/**'
   workflow_dispatch:
@@ -58,6 +59,11 @@ jobs:
             --project-ref "$PROJECT_REF" --no-verify-jwt
           echo "→ create-mp-card-payment"
           supabase functions deploy create-mp-card-payment \
+            --project-ref "$PROJECT_REF" --no-verify-jwt
+          # get-mp-public-key: só devolve a public key publicável da MP
+          # pro front. Sem JWT (o front chama com a anon key como apikey).
+          echo "→ get-mp-public-key"
+          supabase functions deploy get-mp-public-key \
             --project-ref "$PROJECT_REF" --no-verify-jwt
           echo "→ stripe-webhook"
           supabase functions deploy stripe-webhook \
