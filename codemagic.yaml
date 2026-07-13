@@ -56,9 +56,17 @@ workflows:
             || /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string A Elarah usa suas fotos apenas quando voce escolhe uma imagem para enviar. Nada e acessado sem sua acao." "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription A camera e usada apenas se voce optar por tirar uma foto para enviar dentro do app. Nada e capturado sem sua acao." "$PLIST" 2>/dev/null \
             || /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string A camera e usada apenas se voce optar por tirar uma foto para enviar dentro do app. Nada e capturado sem sua acao." "$PLIST" || true
-          echo "--- Info.plist (chaves de uso) ---"
+          # Numero de build UNICO e sempre crescente (timestamp). O App Store
+          # Connect recusa build number repetido; regenerar o projeto zerava p/ 1.
+          BUILD_NO=$(date +%s)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NO" "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD_NO" "$PLIST" || true
+          # tambem no projeto (caso o Info.plist use \$(CURRENT_PROJECT_VERSION))
+          ( cd ios/App && agvtool new-version -all "$BUILD_NO" ) 2>/dev/null || true
+          echo "--- Info.plist (chaves de uso + build) ---"
           /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryUsageDescription" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST" 2>/dev/null || true
       - name: Gerar icones e splash da Elarah
         script: |
           cd app
