@@ -3886,3 +3886,30 @@ select {
   .date-filter__chip,
   .date-filter__clear { flex-shrink: 0; }
 }
+
+/* =============================================================
+   iOS SAFE AREA (Capacitor) — Guideline 4 / "nada cortado"
+   -------------------------------------------------------------
+   Requer viewport-fit=cover no <meta viewport> (adicionado em todas
+   as páginas). Em navegador comum e no Android sem notch, env() = 0,
+   então NÃO afeta o site — só empurra o conteúdo pra longe da barra
+   de status, do home indicator e dos cantos arredondados no iPad/
+   iPhone. Corrige cabeçalho sob a status bar e conteúdo cortado.
+   ============================================================= */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+/* Cabeçalho fixo/sticky: o fundo cobre a status bar e o conteúdo desce */
+.header { padding-top: var(--safe-top); }
+/* Rodapé respeita o home indicator */
+.footer { padding-bottom: calc(var(--safe-bottom) + 24px); }
+/* Barras/CTAs fixas no rodapé (mobile) não ficam sob o home indicator */
+.safe-area-bottom,
+[data-safe-bottom] { padding-bottom: calc(var(--safe-bottom) + 8px); }
+/* Paisagem (iPad/iPhone deitado): conteúdo escapa do notch e dos cantos */
+@media (orientation: landscape) {
+  body { padding-left: var(--safe-left); padding-right: var(--safe-right); }
+}

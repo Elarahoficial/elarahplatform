@@ -1067,9 +1067,17 @@ renderFavoritos();
           goBtn.disabled = false; goBtn.textContent = 'Excluir conta';
           return;
         }
+        // apikey (anon, público) é exigido pelo gateway do Supabase;
+        // Authorization = token do PRÓPRIO usuário (a função identifica
+        // quem é por ele e só apaga a conta dele).
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
         const res = await fetch(
           'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/delete-account',
-          { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } }
+          { method: 'POST', headers: {
+            'Content-Type': 'application/json',
+            'apikey': ANON_KEY,
+            'Authorization': 'Bearer ' + token,
+          } }
         );
         const out = await res.json().catch(() => null);
         if (!res.ok || !out || !out.ok) {

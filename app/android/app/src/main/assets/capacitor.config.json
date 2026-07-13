@@ -16,6 +16,14 @@
 		}
 	},
 	"server": {
-		"androidScheme": "https"
+		"androidScheme": "https",
+		"allowNavigation": [
+			"*.mercadopago.com",
+			"*.mercadopago.com.br",
+			"*.mercadolibre.com",
+			"*.mercadolivre.com",
+			"elarah.com.br",
+			"*.elarah.com.br"
+		]
 	}
 }
