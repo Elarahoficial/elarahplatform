@@ -43,6 +43,14 @@
 
 .admin__nav {
   flex: 1;
+  /* min-height:0 é ESSENCIAL: num flex-container em coluna, o filho tem
+     min-height:auto por padrão e se recusa a encolher abaixo do próprio
+     conteúdo. Com ~30 itens de menu, o nav crescia além da altura do
+     sidebar (fixo, top:0/bottom:0) e o overflow-y:auto NUNCA ativava —
+     os itens de baixo (Analytics, CEO) e o botão "Sair" ficavam fora da
+     tela e inalcançáveis, tanto no dedo quanto no mouse. Com min-height:0
+     o nav respeita o flex:1, encolhe pra caber e o scroll interno funciona. */
+  min-height: 0;
   padding: 16px 0;
   display: flex;
   flex-direction: column;
