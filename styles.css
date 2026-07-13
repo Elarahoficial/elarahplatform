@@ -3945,5 +3945,12 @@ a, button, [role="button"], .card__reserve-btn, input[type="submit"] {
 .header, .account__menu, .account__sidebar, button, [role="button"], .card__category {
   -webkit-user-select: none; user-select: none;
 }
-/* Evita scroll-chaining/pull-to-refresh dentro de modais e da página */
-body { overscroll-behavior-y: none; }
+/* REGRESSÃO (removido): `body { overscroll-behavior-y: none; }`
+   Esse hack era pra impedir "puxar pra atualizar" no app iOS, mas no
+   site web ele QUEBRAVA a roda do mouse: como o body aqui não é o
+   elemento que rola (quem rola é o html/viewport), o overscroll-behavior:
+   none no body faz o Chrome do desktop NÃO repassar a rolagem da roda pra
+   página — a roda "morre" e só a barra de rolagem funciona. Foi o que
+   quebrou o scroll do site inteiro. Se precisar impedir pull-to-refresh
+   só no app, aplicar de forma escopada (ex.: classe no <html> só no
+   Capacitor), nunca global no body do site. */
