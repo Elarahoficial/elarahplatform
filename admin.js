@@ -14575,27 +14575,20 @@
       // nas vendas automáticas (Stripe/MP). Best-effort — não bloqueia
       // nem falha o salvamento se o e-mail não sair (a venda já gravou).
       if (isNew) {
+        // Aviso interno "Nova venda 🎉" pros admins (não é status da linha).
         _finNotifyManualSale(payload);
-        // E manda pro CLIENTE a confirmação da compra (mesmo e-mail das
-        // vendas do site) — só quando é venda paga e tem e-mail. Silencioso:
-        // não trava o fluxo; o botão "Enviar confirmação" cobre reenvio.
-        if (savedId && payload.customer_email && payload.payment_status === 'pago') {
-          _finSendManualSaleConfirmation(savedId, { silent: true });
-        }
-        // Venda manual já nasce "fornecedor avisado" — a admin avisa as
-        // fornecedoras direto no WhatsApp, então não precisa clicar linha
-        // a linha. Best-effort: se a coluna não existir, ignora (não trava
-        // o salvamento, que já foi feito).
-        if (savedId) {
-          try {
-            sb.from('manual_sales')
-              .update({ fornecedor_avisado_at: new Date().toISOString() })
-              .eq('id', savedId)
-              .then(r => {
-                if (r && r.error) console.warn('[Contabilidade] auto-marcar avisado falhou (ok se migration não rodou):', r.error.message);
-              });
-          } catch (e) { /* best-effort */ }
-        }
+        // IMPORTANTE: NÃO enviar a confirmação pro cliente nem marcar o
+        // fornecedor como avisado automaticamente.
+        // Antes a venda "nascia" com "✓ Confirmação enviada" e "✓ Avisado"
+        // (verdinho) mesmo sem nada ter sido disparado de fato — passava
+        // informação falsa (parecia que o cliente e a fornecedora já tinham
+        // sido avisados quando não tinham). Agora esses dois passos são
+        // MANUAIS, feitos na aba Compras quando a admin realmente avisar:
+        //   • "📧 Enviar confirmação" dispara o e-mail pro cliente e só então
+        //     marca "✓ Confirmação enviada".
+        //   • "Avisar fornecedor" abre o WhatsApp e só marca "✓ Avisado"
+        //     depois do clique.
+        // Assim o verde sempre reflete o que de fato foi feito.
       }
       // Mutação em manual_sales afeta Compras/Fornecedores/Analytics
       // via RPC. Limpa o cache pra refletir imediatamente.
