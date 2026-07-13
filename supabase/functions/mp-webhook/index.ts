@@ -825,11 +825,18 @@ serve(async (req) => {
   }
 
   const payment = result.payment;
+  // Log rico pra auditoria de aprovação — inclui os campos que a MP usa
+  // pra recusar/aprovar. NUNCA logamos dado sensível do cartão (número,
+  // CVV, nome do titular): a MP não os devolve e a gente não os tem.
   console.info(
     "[Elarah Payment/MP] pagamento consultado",
     "id=" + payment.id,
     "status=" + payment.status,
     "status_detail=" + payment.status_detail,
+    "payment_method_id=" + ((payment as { payment_method_id?: string }).payment_method_id ?? "?"),
+    "payment_type_id=" + ((payment as { payment_type_id?: string }).payment_type_id ?? "?"),
+    "issuer_id=" + ((payment as { issuer_id?: string }).issuer_id ?? "?"),
+    "installments=" + ((payment as { installments?: number }).installments ?? "?"),
     "external_reference=" + (payment.external_reference ?? "?"),
   );
 

@@ -527,6 +527,19 @@ serve(async (req) => {
       booking.status = "pago";
       booking.amount_total = paidCents;
       await sendConfirmationEmail(booking);
+      // Rótulo do método pro admin — distingue cartão de PIX/carteira,
+      // derivado do payment_type_id (igual ao mp-webhook). Antes ficava
+      // fixo "Pix" e mislabelava cartões reconciliados via polling.
+      const ptype = String((payment as { payment_type_id?: string }).payment_type_id ?? "");
+      let reconcileLabel = "Pix (Mercado Pago)";
+      if (ptype === "credit_card" || ptype === "debit_card") {
+        const inst = Number((payment as { installments?: number }).installments) || 1;
+        reconcileLabel = inst > 1
+          ? "Cartão " + inst + "x (Mercado Pago)"
+          : "Cartão (Mercado Pago)";
+      } else if (ptype === "account_money" || ptype === "digital_wallet") {
+        reconcileLabel = "Carteira Mercado Pago";
+      }
       // Avisa os admins da venda (best-effort — só loga se falhar).
       const meta = (booking.metadata ?? {}) as Record<string, unknown>;
       await sendAdminSaleNotification({
@@ -539,7 +552,7 @@ serve(async (req) => {
         amountTotalCentavos: booking.amount_total ?? null,
         precoLabel: booking.preco_label,
         bookingId: booking.id,
-        paymentMethod: "Pix (Mercado Pago)",
+        paymentMethod: reconcileLabel,
         couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
         couponDiscountCentavos:
           (booking as { coupon_discount_centavos?: number | null }).coupon_discount_centavos ?? null,

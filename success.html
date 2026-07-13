@@ -133,21 +133,34 @@
         return;
       }
 
-      // Reserva paga 100% com gift card — não há sessionId Stripe
+      // Reserva confirmada sem sessionId Stripe — PIX, cartão (Mercado
+      // Pago) ou 100% via gift card. A mensagem se adapta ao método real
+      // lido do booking (metadata.payment_method / paid_with_gift_card_only).
       if (isDirect) {
         const titleEl = document.querySelector('.checkout-result__title');
         const subEl   = document.querySelector('.checkout-result__subtitle');
         if (titleEl) titleEl.textContent = 'Reserva confirmada!';
-        if (subEl) subEl.textContent = 'Sua reserva foi paga integralmente com o gift card. Em instantes você recebe os detalhes por e-mail.';
+        if (subEl) subEl.textContent = 'Recebemos seu pagamento. Em instantes você recebe os detalhes por e-mail.';
         if (detailsEl && directBookingId && window.supabaseClient) {
           const { data } = await window.supabaseClient
             .from('bookings').select('*').eq('id', directBookingId).maybeSingle();
           if (data) {
+            const meta = (data.metadata || {});
+            const isPaid = data.status === 'pago';
+            let statusHtml;
+            if (isPaid && meta.paid_with_gift_card_only) {
+              statusHtml = '<strong style="color:#1a8a4a;">Pago (gift card)</strong>';
+            } else if (isPaid) {
+              statusHtml = '<strong style="color:#1a8a4a;">Pago</strong>';
+            } else {
+              statusHtml = '<strong style="color:#b07b00;">Processando</strong>';
+              if (subEl) subEl.textContent = 'Seu pagamento está em processamento. Assim que aprovar, você recebe a confirmação por e-mail.';
+            }
             detailsEl.innerHTML =
               '<p><strong>Experiência:</strong> ' + (data.experiencia_nome || '') + '</p>' +
               (data.data ? '<p><strong>Data:</strong> ' + data.data + '</p>' : '') +
               (data.horario ? '<p><strong>Horário:</strong> ' + data.horario + '</p>' : '') +
-              '<p><strong>Status:</strong> <strong style="color:#1a8a4a;">Pago (gift card)</strong></p>';
+              '<p><strong>Status:</strong> ' + statusHtml + '</p>';
           } else {
             detailsEl.innerHTML = '<p>Reserva registrada com sucesso.</p>';
           }
