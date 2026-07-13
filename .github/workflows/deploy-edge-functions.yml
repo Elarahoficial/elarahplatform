@@ -92,6 +92,10 @@ jobs:
           deploy send-password-recovery --no-verify-jwt
           # As funções abaixo mantêm verify_jwt (default): só admin
           # autenticada dispara. NÃO usar --no-verify-jwt nelas.
+          # admin-account-access: destrava o acesso de um cliente
+          # (senha temporária + confirma e-mail + link). Valida por
+          # dentro que o caller é admin (profiles.role='admin').
+          deploy admin-account-access
           deploy notify-manual-sale
           deploy resend-booking-confirmation
           deploy send-supplier-customer-message

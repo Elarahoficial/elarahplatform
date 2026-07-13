@@ -1934,8 +1934,165 @@
     `).join('');
   }
 
+  // ===== SUPORTE: DESTRAVAR ACESSO DO CLIENTE =====
+  // Cliente com conta que não consegue entrar (esqueceu a senha, e-mail
+  // de recuperação/confirmação não chegou). A admin digita o e-mail; a
+  // função admin-account-access define uma senha temporária, confirma o
+  // e-mail (tira a trava de "email não confirmado") e gera um link de
+  // acesso. Aqui a gente monta o resultado pronto pra mandar no WhatsApp.
+
+  // Copia texto pro clipboard com fallback pra navegadores antigos.
+  function unlockCopy(text, btnEl) {
+    const done = () => {
+      if (!btnEl) return;
+      const orig = btnEl.textContent;
+      btnEl.textContent = 'Copiado ✓';
+      setTimeout(() => { btnEl.textContent = orig; }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallback());
+    } else {
+      fallback();
+    }
+    function fallback() {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+      } catch (e) { /* silencioso */ }
+    }
+  }
+
+  function renderUnlockResult(resultEl, data) {
+    const email = data.email || '';
+    const nome = (data.name || '').trim();
+    const primeiro = nome ? nome.split(/\s+/)[0] : '';
+    const senha = data.tempPassword || '';
+    const link = data.recoveryLink || '';
+
+    // Mensagem pronta pro WhatsApp. Prioriza a senha temporária (não
+    // depende de e-mail nem de link/redirect); o link vai como extra.
+    const oi = primeiro ? ('Oi, ' + primeiro + '! ') : 'Oi! ';
+    let msg = oi + 'Já deixei o acesso da sua conta Elarah pronto 💛\n\n' +
+      'É só entrar em elarah.com.br, clicar em "Entrar" e usar:\n\n';
+    if (senha) {
+      msg += 'E-mail: ' + email + '\n' + 'Senha: ' + senha + '\n\n' +
+        'Depois que entrar, se quiser você troca a senha em "Minha conta". ';
+    }
+    if (link && !senha) {
+      msg += 'Acesse por este link pra definir sua senha:\n' + link + '\n\n';
+    }
+    msg += 'Qualquer coisa é só me chamar aqui!';
+
+    const waHref = 'https://wa.me/?text=' + encodeURIComponent(msg);
+
+    const box = (inner) =>
+      '<div style="padding:14px 16px;background:#f0fdf4;border:1px solid #bbe6c9;border-radius:10px;">' + inner + '</div>';
+
+    const senhaRow = senha
+      ? '<div style="margin:0 0 10px;">' +
+          '<div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:#1a8a4a;margin-bottom:2px;">Senha temporária</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+            '<code style="font-family:Menlo,Consolas,monospace;font-size:1.05rem;font-weight:700;color:#1a1a1a;background:#fff;padding:6px 10px;border-radius:6px;border:1px solid #cde8d6;">' + escapeHtml(senha) + '</code>' +
+            '<button type="button" class="admin__btn unlock-copy" data-copy="' + escapeHtml(senha) + '" style="font-size:.78rem;padding:5px 10px;">Copiar senha</button>' +
+          '</div>' +
+        '</div>'
+      : '';
+
+    const linkRow = link
+      ? '<div style="margin:10px 0 0;">' +
+          '<div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:#1a8a4a;margin-bottom:2px;">Link de acesso (alternativa)</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+            '<span style="font-size:.75rem;word-break:break-all;color:#555;max-width:100%;">' + escapeHtml(link) + '</span>' +
+            '<button type="button" class="admin__btn unlock-copy" data-copy="' + escapeHtml(link) + '" style="font-size:.78rem;padding:5px 10px;white-space:nowrap;">Copiar link</button>' +
+          '</div>' +
+        '</div>'
+      : '';
+
+    const warn = data.warning
+      ? '<div style="margin:0 0 10px;font-size:.8rem;color:#8a5a1a;">⚠️ ' + escapeHtml(data.warning) + '</div>'
+      : '';
+
+    resultEl.innerHTML = box(
+      '<div style="font-size:.9rem;font-weight:600;color:#1a8a4a;margin-bottom:10px;">✓ Acesso destravado para ' + escapeHtml(email) + (nome ? ' (' + escapeHtml(nome) + ')' : '') + '</div>' +
+      warn +
+      senhaRow +
+      linkRow +
+      '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<a href="' + escapeHtml(waHref) + '" target="_blank" rel="noopener" class="admin__btn admin__btn--primary" style="text-decoration:none;font-size:.82rem;">Abrir no WhatsApp</a>' +
+        '<button type="button" class="admin__btn unlock-copy" data-copy="' + escapeHtml(msg) + '" style="font-size:.82rem;">Copiar mensagem pronta</button>' +
+      '</div>'
+    );
+
+    resultEl.querySelectorAll('.unlock-copy').forEach((b) => {
+      b.addEventListener('click', () => unlockCopy(b.getAttribute('data-copy') || '', b));
+    });
+  }
+
+  function wireUnlockAccessTool() {
+    const btn = document.getElementById('unlock-btn');
+    const input = document.getElementById('unlock-email');
+    const resultEl = document.getElementById('unlock-result');
+    if (!btn || !input || !resultEl) return;
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+
+    async function run() {
+      const email = (input.value || '').trim().toLowerCase();
+      resultEl.style.display = 'block';
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        resultEl.innerHTML = '<span style="color:#c0392b;font-size:.85rem;">Digite um e-mail válido.</span>';
+        return;
+      }
+      const s = window.supabaseClient;
+      if (!s || !s.functions || !s.functions.invoke) {
+        resultEl.innerHTML = '<span style="color:#c0392b;font-size:.85rem;">Supabase indisponível. Recarregue a página (Ctrl+F5).</span>';
+        return;
+      }
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Destravando...';
+      resultEl.innerHTML = '<span style="color:#666;font-size:.85rem;">Processando...</span>';
+      try {
+        const { data, error } = await s.functions.invoke('admin-account-access', { body: { email } });
+        if (error || !data || !data.ok) {
+          const msg = (data && data.message) || (error && error.message) ||
+            'Não foi possível destravar. Confirme que você está logada como admin e tente de novo.';
+          resultEl.innerHTML = '<span style="color:#c0392b;font-size:.85rem;">' + escapeHtml(msg) + '</span>';
+          return;
+        }
+        if (data.found === false) {
+          resultEl.innerHTML =
+            '<div style="padding:12px 14px;background:#fff4e0;border:1px solid #f0d8bf;border-radius:8px;font-size:.85rem;color:#8a5a1a;">' +
+            'Esse e-mail <strong>não tem conta</strong> na Elarah. A cliente precisa se cadastrar primeiro ' +
+            '(no site: Entrar → Criar conta).</div>';
+          return;
+        }
+        renderUnlockResult(resultEl, data);
+      } catch (e) {
+        resultEl.innerHTML = '<span style="color:#c0392b;font-size:.85rem;">Erro: ' +
+          escapeHtml(String((e && e.message) || e)) + '</span>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    btn.addEventListener('click', run);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); run(); }
+    });
+  }
+
   // ===== USERS =====
   async function renderUsers() {
+    wireUnlockAccessTool();
     const users = await getProfiles();
     const tbody = document.getElementById('users-body');
     const countEl = document.getElementById('users-count');
