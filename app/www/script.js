@@ -1084,7 +1084,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ' data-experience="' + esc(it.nome) + '"' +
         ' data-cta-mode="' + esc(ctaMode) + '"' +
         ' data-type="' + esc(it.tipo || '') + '"';
-      if (it.fromExperience && it.experienceId) {
+      // data-reserve (→ startCheckout) SOMENTE para cards compráveis
+      // (ctaMode === 'buy'). Cards de lista de espera NUNCA podem receber
+      // data-reserve: se recebem, o listener global de checkout intercepta
+      // o clique em "Entrar na lista de espera" e leva a pessoa pra um
+      // "pagamento" de R$ 0,00 — em vez de coletar nome/telefone/e-mail.
+      // Sem data-reserve, o clique cai no handler local → openOriginalsModal
+      // → submitInterest → byelarah_submissions (aparece em "Respostas do
+      // formulário" no admin), que é o comportamento correto de waitlist.
+      if (it.fromExperience && it.experienceId && ctaMode === 'buy') {
         dataAttrs += ' data-experience-id="' + esc(it.experienceId) + '"';
         // ✅ data-reserve = listener global vai pegar esse click e
         // disparar startCheckout. Garantia de que cards compráveis
