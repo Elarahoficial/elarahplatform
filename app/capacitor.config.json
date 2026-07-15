@@ -3,6 +3,7 @@
   "appName": "Elarah",
   "webDir": "www",
   "backgroundColor": "#ffffff",
+  "appendUserAgent": "ElarahApp",
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 1200,
@@ -16,6 +17,8 @@
     }
   },
   "server": {
+    "url": "https://elarah.com.br",
+    "cleartext": false,
     "androidScheme": "https"
   }
 }
