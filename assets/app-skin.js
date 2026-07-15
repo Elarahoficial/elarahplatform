@@ -51,6 +51,7 @@
     'jardinagem': '🌿', 'plantas': '🌿', 'bem-estar': '🌿', 'yoga': '🧘', 'meditação': '🧘',
     'vinho': '🍷', 'vinhos': '🍷', 'café': '☕', 'cafe': '☕',
     'perfumaria': '🌷', 'perfume': '🌷',
+    'perfumaria de ambiente': '🏠', 'aromatizador': '🏠', 'aromatizadores': '🏠', 'ambiente': '🏠', 'home': '🏠',
     'ourivesaria': '💍', 'joalheria': '💍', 'joias': '💍',
     'moda': '👗', 'maquiagem': '💄', 'beleza': '💄',
     'escrita': '✍️', 'gift card': '🎁', 'presente': '🎁'
@@ -124,7 +125,17 @@
       // deixa o form navegar para index.html?busca=term (comportamento nativo do GET)
     });
 
-    header.insertAdjacentElement('afterend', form);
+    // Fileira: [☰ menu] + [busca]. Move o botão de menu (hambúrguer) do
+    // cabeçalho pra cá, do lado esquerdo da busca (como você pediu).
+    var row = document.createElement('div');
+    row.className = 'sk-searchrow';
+    var toggle = header.querySelector('.header__mobile-toggle');
+    if (toggle) {
+      toggle.classList.add('sk-menu-moved');
+      row.appendChild(toggle);
+    }
+    row.appendChild(form);
+    header.insertAdjacentElement('afterend', row);
   }
 
   // Filtros viram menu suspenso: toca no título -> abre/fecha os controles.
