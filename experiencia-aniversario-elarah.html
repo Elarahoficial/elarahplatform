@@ -70,28 +70,36 @@
     border-radius:999px;padding:7px 15px;font-size:12.5px;color:var(--navy-soft)}
   .note-line b{color:var(--navy);font-weight:700}
 
-  /* hero band (experiências com preço) */
-  .hero-band{border-radius:16px;overflow:hidden;height:210px;box-shadow:var(--shadow)}
-  .hero-band img{width:100%;height:100%;object-fit:cover}
+  /* experiência com preço: foto grande + lista de níveis */
+  .expgrid{display:grid;grid-template-columns:0.82fr 1.18fr;gap:38px;align-items:center;margin-top:4px}
+  .expgrid-photo{border-radius:18px;overflow:hidden;aspect-ratio:1/1;box-shadow:var(--shadow)}
+  .expgrid-photo img{width:100%;height:100%;object-fit:cover}
 
   /* galeria 4 fotos (wellness) */
-  .gallery4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .gallery4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
   .gallery4 figure{border-radius:14px;overflow:hidden;aspect-ratio:3/4;box-shadow:var(--shadow)}
   .gallery4 img{width:100%;height:100%;object-fit:cover}
 
-  /* cartões de plano (níveis) */
-  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:20px}
-  .plan{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 18px;display:flex;flex-direction:column}
-  .plan.featured{border:2px solid var(--orange);background:#F4ECFB;box-shadow:0 18px 36px -22px rgba(139,95,192,.5)}
-  .plan .ptag{font-size:10.5px;letter-spacing:.06em;font-weight:700;text-transform:uppercase;color:var(--navy-soft);margin-bottom:9px;min-height:24px;line-height:1.2}
-  .plan.featured .ptag{color:var(--orange-dark)}
-  .plan .pprice{font-family:'DM Serif Display',serif;font-size:32px;color:var(--navy);line-height:1}
-  .plan .pprice small{font-size:15px;color:var(--navy-soft)}
-  .plan .pper{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 13px}
-  .plan ul{list-style:none;display:flex;flex-direction:column;gap:7px}
-  .plan li{position:relative;padding-left:18px;font-size:12px;color:var(--ink);line-height:1.4}
-  .plan li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
-  .plan li b{font-weight:700}
+  /* lista de níveis (Básico / Prêmio / VIP) */
+  .tierlist{display:flex;flex-direction:column;gap:12px}
+  .tierrow{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:16px 22px;
+    border:1px solid var(--line);border-radius:15px;background:var(--card);box-shadow:0 10px 26px -22px rgba(44,37,66,.35)}
+  .tierrow.featured{border:2px solid var(--orange);background:#F4ECFB}
+  .ti{display:flex;flex-direction:column;gap:4px}
+  .tname{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1}
+  .tierrow.featured .tname{color:var(--orange-dark)}
+  .tfeat{font-size:12px;color:var(--muted);line-height:1.4;max-width:44ch}
+  .tfeat b{color:var(--ink);font-weight:600}
+  .tprice{font-family:'DM Serif Display',serif;font-size:27px;color:var(--navy);white-space:nowrap;text-align:right;line-height:1}
+  .tprice sup{font-size:14px;color:var(--orange-dark)}
+  .tprice small{display:block;font-family:'DM Sans';font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
+
+  /* placeholder de foto */
+  .ph-box{aspect-ratio:1/1;border-radius:18px;background:linear-gradient(135deg,#F0E9F9,#E4D8F4);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;
+    padding:24px;font-size:13px;font-weight:600;color:var(--orange-dark);box-shadow:var(--shadow)}
+  .ph-box .ic{font-size:32px}
+  .ph-box em{font-style:normal;font-weight:400;color:var(--muted);font-size:11.5px}
 
   /* placeholder de foto */
   .ph-box{aspect-ratio:1/1;border-radius:18px;background:linear-gradient(135deg,#F0E9F9,#E4D8F4);
@@ -136,8 +144,9 @@
 
   @media (max-width:820px){
     .slide{padding:32px 22px;min-height:auto}
-    .cover,.exp{grid-template-columns:1fr;gap:24px}
-    .steps,.venues,.plans,.gallery4{grid-template-columns:1fr}
+    .cover,.exp,.expgrid{grid-template-columns:1fr;gap:24px}
+    .steps,.venues,.gallery4{grid-template-columns:1fr}
+    .tierrow{flex-direction:row}
     h1{font-size:38px}h2{font-size:29px}
     .slide__head{flex-direction:column;align-items:flex-start}
     .head-right{align-items:flex-start;text-align:left}
@@ -152,13 +161,14 @@
     .slide:last-child{page-break-after:auto}
     .slide__head{flex-direction:row;align-items:center}
     .head-right{align-items:flex-end;text-align:right}
-    .cover,.exp{grid-template-columns:1fr 1fr}
-    .steps,.plans,.gallery4{grid-template-columns:repeat(3,1fr)}
+    .cover,.exp,.expgrid{grid-template-columns:1fr 1fr}
+    .expgrid{grid-template-columns:0.82fr 1.18fr}
+    .steps{grid-template-columns:repeat(3,1fr)}
     .gallery4{grid-template-columns:repeat(4,1fr)}
     .venues{grid-template-columns:1fr 1fr}
     h1{font-size:46px}h2{font-size:34px}
-    .mid{padding:10px 0}
-    .hero-band{height:190px}
+    .mid{padding:8px 0}
+    .expgrid-photo{aspect-ratio:5/5}
     .gallery4 figure{aspect-ratio:4/3}
     .venue-photo{aspect-ratio:4/3}
     @page{size:A4 landscape;margin:0}
@@ -233,33 +243,21 @@
       <h2>Perfumaria <em>Autoral</em> 🌸</h2>
       <p class="lead">Guiadas por uma perfumista, cada uma mergulha na arte da perfumaria e cria o <strong>seu próprio perfume autoral</strong> — e leva a fragrância pra casa.</p>
       <div class="rule"></div>
-      <div class="hero-band"><img src="assets/amai3.jpg" alt="Mesa da experiência de perfumaria autoral"></div>
-      <div class="plans">
-        <div class="plan">
-          <span class="ptag">Experiência</span>
-          <span class="pprice">R$ 260</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Vivência guiada da perfumaria</li>
-            <li>Matérias-primas + material de apoio</li>
-            <li><b>Frasco exclusivo</b> com rótulo</li>
-            <li>Seu <b>perfume autoral</b> pra levar</li>
-          </ul>
-        </div>
-        <div class="plan">
-          <span class="ptag">+ Coffee break</span>
-          <span class="pprice">R$ 343</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Tudo da <b>Experiência</b></li>
-            <li><b>Coffee break</b> à vontade, à escolha</li>
-          </ul>
-        </div>
-        <div class="plan featured">
-          <span class="ptag">+ Personalização</span>
-          <span class="pprice">R$ 429</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Tudo do <b>+ Coffee break</b></li>
-            <li><b>Brindes personalizados</b> amai</li>
-          </ul>
+      <div class="expgrid">
+        <div class="expgrid-photo"><img src="assets/amai3.jpg" alt="Mesa da experiência de perfumaria autoral"></div>
+        <div class="tierlist">
+          <div class="tierrow">
+            <div class="ti"><span class="tname">Básico</span><span class="tfeat">Vivência guiada · matérias-primas + material · <b>frasco exclusivo</b> com rótulo · seu perfume autoral pra levar</span></div>
+            <div class="tprice">R$ 260<small>por pessoa</small></div>
+          </div>
+          <div class="tierrow">
+            <div class="ti"><span class="tname">Prêmio</span><span class="tfeat">Tudo do Básico <b>+ coffee break</b> à vontade, à escolha</span></div>
+            <div class="tprice">R$ 343<small>por pessoa</small></div>
+          </div>
+          <div class="tierrow featured">
+            <div class="ti"><span class="tname">VIP</span><span class="tfeat">Tudo do Prêmio <b>+ personalização</b> (brindes amai)</span></div>
+            <div class="tprice">R$ 429<small>por pessoa</small></div>
+          </div>
         </div>
       </div>
     </div>
@@ -277,32 +275,21 @@
       <h2>Oficina de <em>Colagem</em> 📓</h2>
       <p class="lead">Entre recortes, palavras e imagens, cada uma monta o seu <strong>mapa de intenções</strong> — pausa e autoconhecimento, com tema sob medida pra amai.</p>
       <div class="note-line">✦ Tema personalizável — ex.: <b>“O que é autocuidado pra você?”</b></div>
-      <div class="hero-band"><img src="assets/amai4.jpg" alt="Materiais de colagem e vision board"></div>
-      <div class="plans">
-        <div class="plan">
-          <span class="ptag">Experiência</span>
-          <span class="pprice">R$ 159</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Facilitação + reflexão guiada</li>
-            <li>Todo o material (recortes, molduras…)</li>
-            <li>Sua colagem pra levar pra casa</li>
-          </ul>
-        </div>
-        <div class="plan">
-          <span class="ptag">+ Refeição</span>
-          <span class="pprice">R$ 233</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Tudo da <b>Experiência</b></li>
-            <li><b>Refeição</b> inclusa no espaço</li>
-          </ul>
-        </div>
-        <div class="plan featured">
-          <span class="ptag">+ Personalização</span>
-          <span class="pprice">R$ 325</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Tudo do <b>+ Refeição</b></li>
-            <li><b>Brindes personalizados</b> amai</li>
-          </ul>
+      <div class="expgrid">
+        <div class="expgrid-photo"><img src="assets/amai4.jpg" alt="Materiais de colagem e vision board"></div>
+        <div class="tierlist">
+          <div class="tierrow">
+            <div class="ti"><span class="tname">Básico</span><span class="tfeat">Facilitação + reflexão guiada · todo o material (recortes, molduras…) · sua colagem pra levar</span></div>
+            <div class="tprice">R$ 159<small>por pessoa</small></div>
+          </div>
+          <div class="tierrow">
+            <div class="ti"><span class="tname">Prêmio</span><span class="tfeat">Tudo do Básico <b>+ refeição</b> inclusa no espaço</span></div>
+            <div class="tprice">R$ 233<small>por pessoa</small></div>
+          </div>
+          <div class="tierrow featured">
+            <div class="ti"><span class="tname">VIP</span><span class="tfeat">Tudo do Prêmio <b>+ personalização</b> (brindes amai)</span></div>
+            <div class="tprice">R$ 325<small>por pessoa</small></div>
+          </div>
         </div>
       </div>
     </div>
@@ -320,32 +307,21 @@
       <h2>Pintura em Vaso &amp; <em>Arranjo Floral</em> 🎨</h2>
       <p class="lead">Cada uma pinta o seu <strong>vaso de vidro</strong> à mão e monta um <strong>arranjo floral</strong> pra levar — delicado, criativo e cheio de personalidade.</p>
       <div class="note-line">🌿 Sugestão de espaço: <b>o Jardim</b> — combina com a proposta do encontro</div>
-      <div class="hero-band"><img src="assets/pinturavasoearranjo.jpg" alt="Vasos de vidro pintados à mão com flores" style="object-position:center 40%"></div>
-      <div class="plans">
-        <div class="plan">
-          <span class="ptag">Experiência</span>
-          <span class="pprice">R$ 199</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Facilitação com instrutora</li>
-            <li>Vaso, tintas e arranjo floral</li>
-            <li>A sua peça pra levar pra casa</li>
-          </ul>
-        </div>
-        <div class="plan">
-          <span class="ptag">+ Refeição</span>
-          <span class="pprice">R$ 273</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Tudo da <b>Experiência</b></li>
-            <li><b>Refeição</b> inclusa no espaço</li>
-          </ul>
-        </div>
-        <div class="plan featured">
-          <span class="ptag">+ Personalização</span>
-          <span class="pprice">R$ 365</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Tudo do <b>+ Refeição</b></li>
-            <li><b>Brindes personalizados</b> amai</li>
-          </ul>
+      <div class="expgrid">
+        <div class="expgrid-photo"><img src="assets/pinturavasoearranjo.jpg" alt="Vasos de vidro pintados à mão com flores"></div>
+        <div class="tierlist">
+          <div class="tierrow">
+            <div class="ti"><span class="tname">Básico</span><span class="tfeat">Facilitação com instrutora · vaso, tintas e arranjo floral · a sua peça pra levar</span></div>
+            <div class="tprice">R$ 199<small>por pessoa</small></div>
+          </div>
+          <div class="tierrow">
+            <div class="ti"><span class="tname">Prêmio</span><span class="tfeat">Tudo do Básico <b>+ refeição</b> inclusa no espaço</span></div>
+            <div class="tprice">R$ 273<sup>*</sup><small>por pessoa · a confirmar</small></div>
+          </div>
+          <div class="tierrow featured">
+            <div class="ti"><span class="tname">VIP</span><span class="tfeat">Tudo do Prêmio <b>+ personalização</b> (brindes amai)</span></div>
+            <div class="tprice">R$ 365<sup>*</sup><small>por pessoa · a confirmar</small></div>
+          </div>
         </div>
       </div>
     </div>
@@ -369,31 +345,18 @@
         <figure><img src="assets/gangga1.jpg" alt="Lounge café by Smoov"></figure>
         <figure><img src="assets/gangga3.jpg" alt="Área de recovery"></figure>
       </div>
-      <div class="plans">
-        <div class="plan">
-          <span class="ptag">Experiência</span>
-          <span class="pprice">R$ 399</span><span class="pper">por pessoa</span>
-          <ul>
-            <li>Aula de yoga / MedPilates</li>
-            <li>Área de recovery + lounge café by Smoov</li>
-            <li>Até <b>18 pessoas</b> na aula</li>
-          </ul>
+      <div class="tierlist">
+        <div class="tierrow">
+          <div class="ti"><span class="tname">Básico</span><span class="tfeat">Aula de yoga / MedPilates · área de recovery · <b>lounge café by Smoov</b> · até 18 pessoas</span></div>
+          <div class="tprice">R$ 399<small>por pessoa</small></div>
         </div>
-        <div class="plan">
-          <span class="ptag">+ Refeição</span>
-          <span class="pprice">R$ 473<small> *</small></span><span class="pper">por pessoa · a confirmar</span>
-          <ul>
-            <li>Tudo da <b>Experiência</b></li>
-            <li><b>Refeição</b> inclusa</li>
-          </ul>
+        <div class="tierrow">
+          <div class="ti"><span class="tname">Prêmio</span><span class="tfeat">Tudo do Básico <b>+ refeição</b> inclusa</span></div>
+          <div class="tprice">R$ 473<sup>*</sup><small>por pessoa · a confirmar</small></div>
         </div>
-        <div class="plan featured">
-          <span class="ptag">+ Personalização</span>
-          <span class="pprice">R$ 565<small> *</small></span><span class="pper">por pessoa · a confirmar</span>
-          <ul>
-            <li>Tudo do <b>+ Refeição</b></li>
-            <li><b>Brindes personalizados</b> amai</li>
-          </ul>
+        <div class="tierrow featured">
+          <div class="ti"><span class="tname">VIP</span><span class="tfeat">Tudo do Prêmio <b>+ personalização</b> (brindes amai)</span></div>
+          <div class="tprice">R$ 565<sup>*</sup><small>por pessoa · a confirmar</small></div>
         </div>
       </div>
     </div>
@@ -438,7 +401,7 @@
       <div class="rule"></div>
       <div class="venues">
         <div class="venue">
-          <div class="venue-photo"><img src="assets/amai6.jpg" alt="Terraço d'O Jardim Café"></div>
+          <div class="venue-photo"><img src="assets/amai6.jpg" alt="Terraço d'O Jardim Café" style="object-position:center 72%"></div>
           <div class="venue-body"><h3>Espaço 1 · Terraço</h3><p>O Jardim Café · Campo Belo, SP</p></div>
         </div>
         <div class="venue">
@@ -478,7 +441,7 @@
           </div>
         </div>
       </div>
-      <p class="fineprint">Valores por pessoa. Cada experiência tem três níveis (experiência · + refeição/coffee break · + personalização). Experiências n'O Jardim Café (Campo Belo, SP); wellness em estúdio parceiro (até 18 pessoas). * Níveis do wellness a confirmar. Incluem material, condução e estrutura no espaço. Proposta válida mediante confirmação de experiência, número de convidadas, data e disponibilidade de agenda.</p>
+      <p class="fineprint">Valores por pessoa. Cada experiência tem três níveis — Básico · Prêmio · VIP (Básico + refeição/coffee break · VIP + personalização). Experiências n'O Jardim Café (Campo Belo, SP); wellness em estúdio parceiro (até 18 pessoas). * Níveis do wellness a confirmar. Incluem material, condução e estrutura no espaço. Proposta válida mediante confirmação de experiência, número de convidadas, data e disponibilidade de agenda.</p>
     </div>
     <div class="slide__foot"><span>elarah.com.br · @elarah.oficial</span><span>Experiência de Aniversário · amai · 2026</span></div>
   </section>
