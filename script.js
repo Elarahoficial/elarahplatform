@@ -1977,11 +1977,23 @@ if (groupForm) {
     // Pré-aquece SDK + chave quando o cliente ABRE o checkout (não no
     // load da página, pra não gerar invocações à toa em cada pageview).
     // Chamado por openReservationModal.
+    //
+    // IMPORTANTE (captura do fingerprint): além de baixar o SDK, já
+    // INSTANCIA o MercadoPago aqui. É a instanciação (`new MercadoPago`)
+    // que faz o SDK carregar o security.js e gerar o Device ID
+    // (window.MP_DEVICE_SESSION_ID). Fazendo isso na ABERTURA do modal, o
+    // fingerprint tem vários segundos de folga pra ficar pronto antes de o
+    // cliente clicar em pagar — elimina a race que mandava device_id vazio.
     function warmUpMercadoPago() {
       if (MP_TRANSPARENT_FORCED_OFF) return;
       try {
         getMpPublicKey().then(function (pk) {
-          if (pk) loadMercadoPagoSdk().catch(function () {});
+          if (!pk) return;
+          loadMercadoPagoSdk().then(function () {
+            try {
+              getMpInstance(); // dispara security.js + geração do Device ID
+            } catch (e) {}
+          }).catch(function () {});
         });
       } catch (e) {}
     }
@@ -1991,8 +2003,44 @@ if (groupForm) {
     function getMpInstance() {
       if (_mpInstance) return _mpInstance;
       if (!window.MercadoPago || !_mpPublicKey) return null;
-      _mpInstance = new window.MercadoPago(_mpPublicKey, { locale: 'pt-BR' });
+      // advancedFraudPrevention:true (default do SDK) é o que carrega o
+      // security.js e popula window.MP_DEVICE_SESSION_ID. Deixamos EXPLÍCITO
+      // pra não depender do default e pra documentar a intenção.
+      _mpInstance = new window.MercadoPago(_mpPublicKey, {
+        locale: 'pt-BR',
+        advancedFraudPrevention: true,
+      });
+      console.log('[Elarah MP] MercadoPago instanciado — security.js/fingerprint iniciando…');
       return _mpInstance;
+    }
+
+    // Espera o Device ID (fingerprint gerado pelo security.js) ficar
+    // disponível. O security.js é carregado de forma assíncrona pelo SDK ao
+    // instanciar o MercadoPago; o window.MP_DEVICE_SESSION_ID só aparece um
+    // instante depois. Sem esperar, um submit rápido mandaria device_id
+    // vazio pro MP (foi o que a análise do MP apontou). Resolve com o valor
+    // assim que existir, ou com '' após o timeout (nunca trava pra sempre).
+    function waitForDeviceId(timeoutMs) {
+      if (typeof timeoutMs !== 'number' || timeoutMs < 0) timeoutMs = 8000;
+      var start = Date.now();
+      function current() {
+        var v = window.MP_DEVICE_SESSION_ID;
+        return (typeof v === 'string' && v.length > 0) ? v : '';
+      }
+      var immediate = current();
+      if (immediate) return Promise.resolve({ id: immediate, waitedMs: 0 });
+      return new Promise(function (resolve) {
+        var poll = setInterval(function () {
+          var v = current();
+          if (v) {
+            clearInterval(poll);
+            resolve({ id: v, waitedMs: Date.now() - start });
+          } else if (Date.now() - start > timeoutMs) {
+            clearInterval(poll);
+            resolve({ id: '', waitedMs: Date.now() - start });
+          }
+        }, 100);
+      });
     }
 
     // ===== Tradução de erros do checkout =====
@@ -2807,9 +2855,37 @@ if (groupForm) {
         return;
       }
 
-      // Device ID coletado automaticamente pelo MercadoPago.js (security.js).
-      const deviceId = window.MP_DEVICE_SESSION_ID || '';
-      if (!deviceId) console.warn('[Elarah MP card] MP_DEVICE_SESSION_ID vazio — Device ID não coletado ainda.');
+      // Device ID (fingerprint do security.js). ESPERA ficar disponível
+      // antes de criar o pagamento — elimina a race condition que mandava
+      // device_id vazio pro MP. Como a instância já foi criada na abertura
+      // do modal, na prática ele já está pronto aqui (waitedMs ~0).
+      const deviceInfo = await waitForDeviceId(8000);
+      const deviceId = deviceInfo.id;
+
+      // ===== Logs de diagnóstico do fingerprint (SEM dado sensível) =====
+      // Exposto em window.__elarahMpDeviceDiag pra inspeção fácil no
+      // console em produção. NÃO logamos o valor do device id — só se
+      // carregou, se gerou, o tamanho e quanto tempo esperamos.
+      try {
+        window.__elarahMpDeviceDiag = {
+          sdk_loaded: !!window.MercadoPago,
+          mp_instance_created: !!_mpInstance,
+          fingerprint_ready: !!deviceId,
+          mp_device_session_id_present: (typeof window.MP_DEVICE_SESSION_ID === 'string' && window.MP_DEVICE_SESSION_ID.length > 0),
+          device_id_len: deviceId ? deviceId.length : 0,
+          waited_ms: deviceInfo.waitedMs,
+          at: new Date().toISOString(),
+        };
+        console.log('[Elarah MP card] fingerprint diag →', window.__elarahMpDeviceDiag);
+      } catch (e) {}
+
+      if (!deviceId) {
+        console.warn(
+          '[Elarah MP card] MP_DEVICE_SESSION_ID vazio após ' + deviceInfo.waitedMs +
+          'ms — security.js pode estar bloqueado (rede/adblock do cliente). ' +
+          'O pagamento segue, mas SEM fingerprint. Verifique CSP/extensões.'
+        );
+      }
 
       const body = {
         token: cardData.token,
