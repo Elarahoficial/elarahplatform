@@ -11,9 +11,20 @@
    ============================================================ */
 (function () {
   var ua = navigator.userAgent || '';
+
+  // Modo de teste pelo navegador: ?app=1 liga e FICA ligado enquanto navega
+  // (guardamos na sessão). Some ao fechar a aba. Não afeta o site normal.
+  var qApp = /[?&]app=1\b/.test(window.location.search);
+  var stored = false;
+  try {
+    if (qApp) sessionStorage.setItem('elarah_app_preview', '1');
+    stored = sessionStorage.getItem('elarah_app_preview') === '1';
+  } catch (e) {}
+
   var isApp =
     ua.indexOf('ElarahApp') > -1 ||
-    /[?&]app=1\b/.test(window.location.search) ||
+    qApp ||
+    stored ||
     (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
   if (!isApp) return;
