@@ -38,10 +38,12 @@
    Aparece só o título; tocando, abre os controles. */
 .is-app .filters { background: var(--sk-surface); padding: 14px 0 8px; }
 .is-app .filters__inner {
+  box-sizing: border-box;
   padding: 4px 16px;
   border: 1px solid var(--sk-line);
   border-radius: 14px;
-  margin: 0 16px;
+  margin: 0 auto;
+  max-width: calc(100% - 32px);
   background: var(--sk-surface);
 }
 .is-app .filters__title {
