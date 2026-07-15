@@ -83,14 +83,12 @@
   color: var(--sk-ink);
   border-bottom-color: var(--sk-ink);
 }
-/* ícone injetado pelo app-skin.js */
+/* emoji injetado pelo app-skin.js */
 .is-app .category-link .cat-ico {
-  width: 25px;
-  height: 25px;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  fill: none;
+  font-size: 23px;
+  line-height: 1;
   display: block;
+  filter: saturate(1.05);
 }
 
 /* ---------- Section headers ---------- */
@@ -150,16 +148,28 @@
   font-weight: 700;
   color: var(--sk-ink);
   margin-bottom: 4px;
+  /* no máximo 2 linhas (evita cards muito compridos) */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-/* Esconde o "excesso" (endereço, inclui, horários) pra ficar limpo como Airbnb.
-   Mostra só a 1ª linha (data/horário curto). */
+/* Deixa o card curto e limpo: mostra só data + bairro. Esconde o resto
+   (duração, endereço, "o que inclui", horários) — o detalhe completo
+   aparece ao tocar no card (página da experiência). */
 .is-app .card__details { gap: 2px; margin-bottom: 6px; }
 .is-app .card__detail--address,
 .is-app .card__detail--includes,
-.is-app .card__horarios { display: none; }
+.is-app .card__horarios,
+.is-app .card__details .card__detail:nth-of-type(2) { display: none; }
 .is-app .card__detail {
   font-size: .8rem;
   color: var(--sk-ink-soft);
+  /* cada linha no máximo 2 linhas de texto */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .is-app .card__footer {
   border-top: none;
@@ -176,7 +186,7 @@
 .is-app .originals { background: var(--sk-surface); padding: 8px 0 4px; }
 .is-app .originals__inner { padding-left: 0; padding-right: 0; }
 .is-app .originals__header {
-  text-align: left;
+  text-align: center;
   padding: 0 16px;
   margin-bottom: 14px;
   max-width: none;
@@ -268,7 +278,7 @@
   .is-app .experiences__grid { grid-template-columns: repeat(4, 1fr) !important; }
 }
 
-/* ---------- Busca em pílula injetada no topo (só no app) ---------- */
+/* ---------- Busca em pílula FUNCIONAL injetada no topo (só no app) ---------- */
 .is-app .sk-search {
   position: sticky;
   top: 0;
@@ -282,10 +292,20 @@
   border: 1px solid var(--sk-line-strong);
   border-radius: 999px;
   box-shadow: var(--sk-shadow-pill);
-  cursor: pointer;
 }
 .is-app .sk-search__ico { width: 18px; height: 18px; color: var(--sk-orange); flex-shrink: 0; }
-.is-app .sk-search__txt { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.is-app .sk-search__a { font-size: .82rem; font-weight: 700; color: var(--sk-ink); }
-.is-app .sk-search__b { font-size: .74rem; color: var(--sk-ink-faint); }
+.is-app .sk-search__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--sk-ink);
+  padding: 0;
+}
+.is-app .sk-search__input::placeholder { color: var(--sk-ink-faint); font-weight: 500; }
+.is-app .sk-search__input::-webkit-search-cancel-button { -webkit-appearance: none; }
 
