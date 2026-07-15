@@ -3,7 +3,7 @@
    Liga os controles do header (Explorar, Buscar e menu mobile) em
    páginas que NÃO têm a lógica completa da home (script.js) nem a de
    presentear.js/categoria.js — caso das páginas de campanha
-   (singles-day, dia-dos-namorados, elarah-kids, elarah-em-casa).
+   (dia-dos-namorados, elarah-kids, elarah-em-casa).
 
    Sem este script, nessas páginas o dropdown "Explorar" nunca abre
    (a classe .open só é adicionada via JS) e a busca não responde,
