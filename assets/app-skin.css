@@ -91,6 +91,27 @@
 }
 .is-app .header__search-icon { color: var(--sk-orange); }
 
+/* ---------- Capa enxuta de boas-vindas (só no app) ---------- */
+.is-app .sk-intro {
+  padding: 14px 20px 6px;
+  text-align: center;
+}
+.is-app .sk-intro__title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(1.5rem, 6.5vw, 1.95rem);
+  line-height: 1.15;
+  color: var(--sk-ink);
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+.is-app .sk-intro__sub {
+  font-size: .9rem;
+  color: var(--sk-ink-soft);
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* ---------- Category strip: icon + label (Airbnb style) ---------- */
 .is-app .categories {
   border-bottom: 1px solid var(--sk-line);
