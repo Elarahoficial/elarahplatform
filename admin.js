@@ -2091,18 +2091,64 @@
   }
 
   // ===== USERS =====
+  // Guarda a lista completa de usuários carregada do banco pra permitir
+  // filtrar por nome na hora (client-side), sem ir no banco a cada tecla.
+  let allUsers = [];
+  let usersSearchWired = false;
+
+  // Normaliza texto pra busca: minúsculo e sem acentos. Assim "Leticia"
+  // acha "Letícia" e vice-versa.
+  function normalizeForSearch(str) {
+    return String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
+  }
+
   async function renderUsers() {
     wireUnlockAccessTool();
-    const users = await getProfiles();
+    allUsers = await getProfiles();
+    const totalEl = document.getElementById('stat-users-total');
+    if (totalEl) totalEl.textContent = allUsers.length;
+
+    wireUsersSearch();
+
+    const searchEl = document.getElementById('users-search');
+    renderUsersList(searchEl ? searchEl.value : '');
+  }
+
+  // Liga o campo de busca por nome uma única vez. A cada tecla, refiltra
+  // a lista já carregada em memória.
+  function wireUsersSearch() {
+    if (usersSearchWired) return;
+    const searchEl = document.getElementById('users-search');
+    if (!searchEl) return;
+    searchEl.addEventListener('input', () => renderUsersList(searchEl.value));
+    usersSearchWired = true;
+  }
+
+  // Renderiza a tabela de usuários aplicando o filtro de nome (term).
+  // Termo vazio mostra todos.
+  function renderUsersList(term) {
     const tbody = document.getElementById('users-body');
     const countEl = document.getElementById('users-count');
-    const totalEl = document.getElementById('stat-users-total');
+    if (!tbody) return;
 
-    countEl.textContent = users.length + ' usuário' + (users.length !== 1 ? 's' : '');
-    if (totalEl) totalEl.textContent = users.length;
+    const q = normalizeForSearch(term).trim();
+    const users = q
+      ? allUsers.filter(u => normalizeForSearch(u.nome).includes(q))
+      : allUsers;
+
+    if (countEl) {
+      countEl.textContent = users.length + ' usuário' + (users.length !== 1 ? 's' : '') +
+        (q ? ' encontrado' + (users.length !== 1 ? 's' : '') : '');
+    }
 
     if (users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="admin__table-empty">Nenhum usuário cadastrado.</td></tr>';
+      const msg = q
+        ? 'Nenhum usuário encontrado com esse nome.'
+        : 'Nenhum usuário cadastrado.';
+      tbody.innerHTML = '<tr><td colspan="6" class="admin__table-empty">' + msg + '</td></tr>';
       return;
     }
 
