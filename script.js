@@ -296,7 +296,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
   // Atualizado depois da geração dinâmica (links novos).
   const categoryLinks = document.querySelectorAll('.category-link');
 
-  const MAX_HOME_CARDS = 3;
+  const MAX_HOME_CARDS = 4;
 
   function renderCards() {
     if (!grid || !countEl || !emptyEl) return;
