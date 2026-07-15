@@ -167,7 +167,7 @@
     intro.className = 'sk-intro';
     intro.innerHTML =
       '<h1 class="sk-intro__title">Experiências criativas em São Paulo</h1>' +
-      '<p class="sk-intro__sub">Saia da rotina e viva algo novo — presencial e feito à mão.</p>';
+      '<p class="sk-intro__sub">Saia da rotina e viva algo novo, presencial e feito à mão.</p>';
     anchor.insertAdjacentElement('afterend', intro);
   }
 
