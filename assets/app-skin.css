@@ -108,8 +108,10 @@
 .is-app .sk-intro__sub {
   font-size: .9rem;
   color: var(--sk-ink-soft);
-  margin: 0;
+  margin: 0 auto;
+  max-width: 300px;
   line-height: 1.4;
+  text-wrap: balance;
 }
 
 /* ---------- Category strip: icon + label (Airbnb style) ---------- */
