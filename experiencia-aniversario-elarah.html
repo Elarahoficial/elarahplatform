@@ -108,6 +108,14 @@
   .ph-box .ic{font-size:32px}
   .ph-box em{font-style:normal;font-weight:400;color:var(--muted);font-size:11.5px}
 
+  /* logo amai */
+  .amai-logo{height:50px;width:50px;border-radius:50%;display:block;box-shadow:0 6px 16px -8px rgba(139,95,192,.5)}
+
+  /* galeria "a vibe da experiência" */
+  .vibe{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:6px}
+  .vibe figure{border-radius:16px;overflow:hidden;aspect-ratio:1/1;box-shadow:var(--shadow)}
+  .vibe img{width:100%;height:100%;object-fit:cover;display:block}
+
   /* espaço / venues */
   .venues{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:6px}
   .venue{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card);box-shadow:0 12px 30px -24px rgba(44,37,66,.4)}
@@ -184,8 +192,8 @@
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
-        <span class="kicker">Proposta de experiência · Aniversário</span>
-        <span class="client--amai">amai<small>POR MULHERES, PARA MULHERES</small></span>
+        <span class="kicker">Proposta de experiência · Aniversário para</span>
+        <img src="assets/amailogo.png" alt="amai" class="amai-logo">
       </div>
     </div>
     <div class="mid">
@@ -248,11 +256,11 @@
         <div class="tierlist">
           <div class="tierrow">
             <div class="ti"><span class="tname">Básico</span><span class="tfeat">Vivência guiada · matérias-primas + material · <b>frasco exclusivo</b> com rótulo · seu perfume autoral pra levar</span></div>
-            <div class="tprice">R$ 260<small>por pessoa</small></div>
+            <div class="tprice">R$ 269<small>por pessoa</small></div>
           </div>
           <div class="tierrow">
             <div class="ti"><span class="tname">Prêmio</span><span class="tfeat">Tudo do Básico <b>+ coffee break</b> à vontade, à escolha</span></div>
-            <div class="tprice">R$ 343<small>por pessoa</small></div>
+            <div class="tprice">R$ 349<small>por pessoa</small></div>
           </div>
           <div class="tierrow featured">
             <div class="ti"><span class="tname">VIP</span><span class="tfeat">Tudo do Prêmio <b>+ personalização</b> (brindes amai)</span></div>
@@ -284,11 +292,11 @@
           </div>
           <div class="tierrow">
             <div class="ti"><span class="tname">Prêmio</span><span class="tfeat">Tudo do Básico <b>+ refeição</b> inclusa no espaço</span></div>
-            <div class="tprice">R$ 233<small>por pessoa</small></div>
+            <div class="tprice">R$ 239<small>por pessoa</small></div>
           </div>
           <div class="tierrow featured">
             <div class="ti"><span class="tname">VIP</span><span class="tfeat">Tudo do Prêmio <b>+ personalização</b> (brindes amai)</span></div>
-            <div class="tprice">R$ 325<small>por pessoa</small></div>
+            <div class="tprice">R$ 329<small>por pessoa</small></div>
           </div>
         </div>
       </div>
@@ -316,11 +324,11 @@
           </div>
           <div class="tierrow">
             <div class="ti"><span class="tname">Prêmio</span><span class="tfeat">Tudo do Básico <b>+ refeição</b> inclusa no espaço</span></div>
-            <div class="tprice">R$ 273<sup>*</sup><small>por pessoa · a confirmar</small></div>
+            <div class="tprice">R$ 279<small>por pessoa</small></div>
           </div>
           <div class="tierrow featured">
             <div class="ti"><span class="tname">VIP</span><span class="tfeat">Tudo do Prêmio <b>+ personalização</b> (brindes amai)</span></div>
-            <div class="tprice">R$ 365<sup>*</sup><small>por pessoa · a confirmar</small></div>
+            <div class="tprice">R$ 369<small>por pessoa</small></div>
           </div>
         </div>
       </div>
@@ -363,29 +371,24 @@
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 4 · Wellness</span></div>
   </section>
 
-  <!-- ============ 7 · PERSONALIZAÇÃO ============ -->
+  <!-- ============ 7 · A VIBE DA EXPERIÊNCIA ============ -->
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Personalização</span></div>
+      <div class="head-right"><span class="kicker">A vibe da experiência</span></div>
     </div>
     <div class="mid">
-      <span class="eyebrow orange">◆ O toque amai</span>
-      <h2>Personalização <em>que encanta</em> 💜</h2>
+      <span class="eyebrow orange">✦ Um gostinho</span>
+      <h2>A vibe da <em>experiência</em></h2>
+      <p class="lead">Mesa posta com carinho, flores e clima leve — e um mimo pra levar: no plano <strong>VIP</strong>, cada convidada ganha <strong>escova e piranha de cabelo personalizadas</strong> com a inicial dela. 💜</p>
       <div class="rule"></div>
-      <div class="exp">
-        <div class="ph-box"><span class="ic">📷</span>Foto: escova + piranha personalizada<em>(a adicionar — me envie a foto)</em></div>
-        <div class="exp-info">
-          <p class="lead">Nos planos com <strong>personalização</strong>, cada convidada leva um mimo exclusivo com a cara dela: <strong>escova e piranha de cabelo personalizadas</strong> com a inicial de cada uma — um detalhe afetivo que fica de lembrança.</p>
-          <ul class="feat">
-            <li>Disponível como <b>“+ Personalização”</b> em qualquer experiência</li>
-            <li>Brindes customizados com a inicial de cada convidada</li>
-            <li>Na identidade e nas cores da <b>amai</b></li>
-          </ul>
-        </div>
+      <div class="vibe">
+        <figure><img src="assets/amai4.jpg" alt="Clima da experiência — mesa de colagem"></figure>
+        <figure><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Escova e piranha personalizadas com a inicial da convidada"></figure>
+        <figure><img src="assets/amai1.jpg" alt="Convidadas na experiência ao ar livre"></figure>
       </div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Personalização</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vibe da experiência</span></div>
   </section>
 
   <!-- ============ 8 · O ESPAÇO ============ -->
