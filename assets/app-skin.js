@@ -191,4 +191,77 @@
     var mo = new MutationObserver(function () { decorateCategories(); });
     mo.observe(host, { childList: true, subtree: true });
   }
+
+  // ============================================================
+  // PONTE NATIVA — só roda DENTRO do app (Capacitor nativo).
+  // Como o app carrega o site ao vivo, esta ponte precisa viver
+  // no site. No navegador normal, nada disso roda.
+  // ============================================================
+  (function nativeBridge() {
+    var Cap = window.Capacitor;
+    if (!Cap || !Cap.isNativePlatform || !Cap.isNativePlatform()) return;
+
+    function plugin(name) {
+      return (Cap.Plugins && Cap.Plugins[name]) || null;
+    }
+    var AppP = plugin('App');
+    var SITE_HOSTS = ['elarah.com.br', 'www.elarah.com.br', 'localhost'];
+
+    function openExternal(url) {
+      var Browser = plugin('Browser');
+      if (Browser && Browser.open) Browser.open({ url: url });
+      else if (AppP && AppP.openUrl) AppP.openUrl({ url: url });
+      else window.open(url, '_system');
+    }
+
+    // 1) Botão voltar (Android)
+    if (AppP && AppP.addListener) {
+      AppP.addListener('backButton', function (e) {
+        if (window.history.length > 1 && e.canGoBack !== false) window.history.back();
+        else AppP.exitApp();
+      });
+    }
+
+    // 2) Links externos -> navegador do sistema (não trava dentro do app)
+    document.addEventListener('click', function (ev) {
+      var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
+      if (!a) return;
+      var href = a.getAttribute('href');
+      if (!href || href.charAt(0) === '#') return;
+      var u;
+      try { u = new URL(href, window.location.href); } catch (err) { return; }
+      var isHttp = u.protocol === 'http:' || u.protocol === 'https:';
+      if (!isHttp) { ev.preventDefault(); openExternal(href); return; }
+      var isSameSite = SITE_HOSTS.indexOf(u.hostname) !== -1;
+      if (!isSameSite || a.target === '_blank') { ev.preventDefault(); openExternal(u.href); }
+    }, true);
+
+    // 3) Esconde a splash quando carrega
+    function hideSplash() { var S = plugin('SplashScreen'); if (S && S.hide) S.hide(); }
+    if (document.readyState === 'complete') hideSplash();
+    else window.addEventListener('load', hideSplash);
+
+    // 4) Compartilhamento nativo nos botões de compartilhar
+    var SHARE_BASE = 'https://elarah.com.br';
+    var SHARE_SELECTOR = '.card__share-btn, .originals__card-share-btn, #exp-share-btn, .exp-detail__share-btn';
+    document.addEventListener('click', function (ev) {
+      var Share = plugin('Share');
+      if (!Share || !Share.share) return;
+      var btn = ev.target && ev.target.closest ? ev.target.closest(SHARE_SELECTOR) : null;
+      if (!btn) return;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      var id = btn.dataset.shareId || btn.dataset.shareExperienceId;
+      var url = id
+        ? SHARE_BASE + '/experiencia.html?id=' + encodeURIComponent(id)
+        : SHARE_BASE + window.location.pathname + window.location.search;
+      var nome = (document.title || 'Elarah').split('—')[0].split('|')[0].trim() || 'Elarah';
+      Share.share({
+        title: 'Elarah',
+        text: 'Descubra essa experiência na Elarah: ' + nome,
+        url: url,
+        dialogTitle: 'Compartilhar experiência'
+      }).catch(function () {});
+    }, true);
+  })();
 })();
