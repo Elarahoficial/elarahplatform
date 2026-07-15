@@ -172,12 +172,92 @@
 .is-app .card__reserve-btn,
 .is-app .card__share-btn { display: none; }
 
-/* ---------- Elarah Originals: cards mais limpos ---------- */
+/* ---------- Elarah Originals → CARROSSEL (rola pro lado) ---------- */
+.is-app .originals { background: var(--sk-surface); padding: 8px 0 4px; }
+.is-app .originals__inner { padding-left: 0; padding-right: 0; }
+.is-app .originals__header {
+  text-align: left;
+  padding: 0 16px;
+  margin-bottom: 14px;
+  max-width: none;
+}
+.is-app .originals__label {
+  display: inline-block;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--sk-orange);
+  margin-bottom: 2px;
+}
+.is-app .originals__title {
+  font-size: clamp(1.35rem, 5.5vw, 1.7rem);
+  margin: 0;
+}
+.is-app .originals__subtitle { display: none; }
+
+/* a grade vira uma fileira horizontal com "encaixe" (scroll-snap) */
+.is-app .originals__grid {
+  display: flex !important;
+  grid-template-columns: none !important;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 16px 10px;
+}
+.is-app .originals__grid::-webkit-scrollbar { display: none; }
+
 .is-app .originals__card {
+  flex: 0 0 auto;
+  width: 210px;
+  scroll-snap-align: start;
   border: none;
-  box-shadow: var(--sk-shadow-card);
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+}
+.is-app .originals__card-image {
+  aspect-ratio: 1 / 1;
+  background: var(--sk-surface-2);
   border-radius: var(--sk-r-card);
+  box-shadow: var(--sk-shadow-card);
   overflow: hidden;
+  position: relative;
+}
+.is-app .originals__card-badge {
+  top: 10px; left: 10px;
+  background: var(--sk-surface);
+  color: var(--sk-ink);
+  box-shadow: var(--sk-shadow-card);
+  font-size: .66rem;
+  font-weight: 700;
+}
+.is-app .originals__card-body { padding: 10px 2px 0; }
+.is-app .originals__card-title {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--sk-ink);
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+/* esconde os detalhes verbosos (data/hora/endereço); deixa só "Data em breve" */
+.is-app .originals__card-details { margin: 0 0 8px; }
+.is-app .originals__card-detail { display: none; }
+.is-app .originals__card-detail--soon {
+  display: block;
+  font-size: .8rem;
+  color: var(--sk-ink-soft);
+  font-weight: 600;
+}
+/* botão vira um "pill" pequeno e discreto */
+.is-app .originals__card-btn {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: .82rem;
+  border-radius: 999px;
 }
 
 /* 3 por fileira em telas maiores (tablet) */
@@ -209,8 +289,3 @@
 .is-app .sk-search__a { font-size: .82rem; font-weight: 700; color: var(--sk-ink); }
 .is-app .sk-search__b { font-size: .74rem; color: var(--sk-ink-faint); }
 
-/* ---------- Originals: evita "buraco" enquanto a foto não carrega ---------- */
-.is-app .originals__card-image {
-  aspect-ratio: 4 / 3;
-  background: var(--sk-surface-2);
-}
