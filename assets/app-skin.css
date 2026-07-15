@@ -343,8 +343,16 @@
   .is-app .experiences__grid { grid-template-columns: repeat(4, 1fr) !important; }
 }
 
-/* ---------- Cabeçalho: logo à ESQUERDA ---------- */
-.is-app .header__logo { justify-content: flex-start !important; }
+/* ---------- Cabeçalho: logo GRUDADO na esquerda ---------- */
+.is-app .header__logo {
+  justify-content: flex-start !important;
+  flex: 0 0 auto !important;
+  margin-right: auto !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+.is-app .header__logo-img { margin-left: -10px !important; }
+.is-app .header__inner { padding-left: 10px !important; }
 
 /* ---------- Fileira: [☰ menu] + [busca em pílula] ---------- */
 .is-app .sk-searchrow {
