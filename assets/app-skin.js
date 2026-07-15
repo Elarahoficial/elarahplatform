@@ -38,7 +38,10 @@
     'floral': '🌸', 'flores': '🌸',
     'gastronomia': '🍽️', 'culinária': '👩‍🍳', 'culinaria': '👩‍🍳', 'confeitaria': '🧁', 'panificação': '🥐',
     'macramê': '🧶', 'macrame': '🧶',
-    'pintura': '🎨', 'desenho': '✏️', 'arte': '🎨',
+    'pintura': '🖌️', 'desenho': '✏️', 'arte': '🎨',
+    'barismo': '☕', 'barista': '☕',
+    'wellness': '🏋️', 'academia': '🏋️', 'fitness': '🏋️', 'pilates': '🤸',
+    'mandala': '🪷', 'mandalas': '🪷', 'lótus': '🪷',
     'sabonete': '🧼', 'sabonetes': '🧼',
     'tufting': '🧵', 'bordado': '🪡', 'costura': '🧵', 'crochê': '🧶', 'croche': '🧶', 'tricô': '🧶', 'trico': '🧶',
     'vela': '🕯️', 'velas': '🕯️',
@@ -67,11 +70,33 @@
   function decorateCategories() {
     var links = document.querySelectorAll('.categories .category-link');
     links.forEach(function (a) {
-      if (a.querySelector('.cat-ico')) return;
-      var span = document.createElement('span');
-      span.className = 'cat-ico';
-      span.textContent = emojiFor(a.textContent);
-      a.insertAdjacentElement('afterbegin', span);
+      if (a.getAttribute('data-emoji')) return;
+      // IMPORTANTE: o emoji vai num ATRIBUTO (mostrado via CSS ::before),
+      // NÃO no texto do link — senão quebra o filtro (que lê o texto).
+      a.setAttribute('data-emoji', emojiFor(a.textContent));
+    });
+  }
+
+  // Elarah Originals: some com os detalhes; deixa só nome + "ver mais" + botão.
+  // "ver mais" abre (mostra) tudo que está incluso, ali mesmo no card.
+  function decorateOriginals() {
+    var cards = document.querySelectorAll('.originals .originals__card');
+    cards.forEach(function (card) {
+      if (card.querySelector('.sk-vermais')) return;
+      var body = card.querySelector('.originals__card-body');
+      if (!body) return;
+      var btn = card.querySelector('.originals__card-btn');
+      var link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'sk-vermais';
+      link.textContent = 'ver mais';
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        var open = card.classList.toggle('sk-open');
+        link.textContent = open ? 'ver menos' : 'ver mais';
+      });
+      if (btn) body.insertBefore(link, btn);
+      else body.appendChild(link);
     });
   }
 
@@ -104,6 +129,7 @@
 
   function enhance() {
     decorateCategories();
+    decorateOriginals();
     injectSearch();
   }
 

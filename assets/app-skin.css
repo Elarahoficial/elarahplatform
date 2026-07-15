@@ -31,10 +31,13 @@
 
 .is-app body { background: var(--sk-surface); }
 
-/* ---------- Some heavy sections hidden in the app (Airbnb goes
-   straight to search + categories + grid) ---------- */
-.is-app .hero,
-.is-app .filters { display: none !important; }
+/* ---------- Hero (banner de vídeo) escondido no app ---------- */
+.is-app .hero { display: none !important; }
+
+/* Filtros (bairro / categoria / data) — MANTIDOS, só deixados mais clean */
+.is-app .filters { background: var(--sk-surface); padding: 20px 0 8px; }
+.is-app .filters__title { font-size: 1.15rem; }
+.is-app .filters__inner { padding-left: 16px; padding-right: 16px; }
 
 /* ---------- Header ---------- */
 .is-app .header {
@@ -83,12 +86,13 @@
   color: var(--sk-ink);
   border-bottom-color: var(--sk-ink);
 }
-/* emoji injetado pelo app-skin.js */
-.is-app .category-link .cat-ico {
+/* emoji mostrado via atributo data-emoji (NÃO entra no texto do link,
+   pra não quebrar o filtro que lê o texto da categoria) */
+.is-app .category-link::before {
+  content: attr(data-emoji);
   font-size: 23px;
   line-height: 1;
   display: block;
-  filter: saturate(1.05);
 }
 
 /* ---------- Section headers ---------- */
@@ -182,6 +186,13 @@
 .is-app .card__reserve-btn,
 .is-app .card__share-btn { display: none; }
 
+/* "Ver todas as X experiências" — afastado das categorias/cards */
+.is-app .experiences__ver-mais {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
 /* ---------- Elarah Originals → CARROSSEL (rola pro lado) ---------- */
 .is-app .originals { background: var(--sk-surface); padding: 8px 0 4px; }
 .is-app .originals__inner { padding-left: 0; padding-right: 0; }
@@ -253,15 +264,38 @@
   margin: 0 0 4px;
   line-height: 1.3;
 }
-/* esconde os detalhes verbosos (data/hora/endereço); deixa só "Data em breve" */
-.is-app .originals__card-details { margin: 0 0 8px; }
-.is-app .originals__card-detail { display: none; }
-.is-app .originals__card-detail--soon {
+/* Card = só NOME + "ver mais" + BOTÃO. Os detalhes (o que está incluso)
+   ficam escondidos e aparecem quando toca em "ver mais". */
+.is-app .originals__card-details { display: none; }
+.is-app .originals__card.sk-open .originals__card-details {
   display: block;
+  margin: 0 0 10px;
+}
+.is-app .originals__card.sk-open .originals__card-detail,
+.is-app .originals__card.sk-open .originals__card-detail--highlight,
+.is-app .originals__card.sk-open .originals__card-detail--soon {
+  display: flex;
   font-size: .8rem;
   color: var(--sk-ink-soft);
-  font-weight: 600;
+  font-weight: 500;
+  margin-bottom: 4px;
 }
+
+/* link "ver mais" — laranja pequeno */
+.is-app .sk-vermais {
+  display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 2px 0 10px;
+  color: var(--sk-orange);
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.is-app .sk-vermais:hover { color: var(--sk-orange-dark); }
+
 /* botão vira um "pill" pequeno e discreto */
 .is-app .originals__card-btn {
   width: 100%;
