@@ -127,9 +127,30 @@
     header.insertAdjacentElement('afterend', form);
   }
 
+  // Filtros viram menu suspenso: toca no título -> abre/fecha os controles.
+  function decorateFilters() {
+    var filters = document.querySelector('.filters');
+    if (!filters || filters.getAttribute('data-sk-filters')) return;
+    var title = filters.querySelector('.filters__title');
+    if (!title) return;
+    filters.setAttribute('data-sk-filters', '1');
+    title.setAttribute('role', 'button');
+    title.setAttribute('tabindex', '0');
+    title.setAttribute('aria-expanded', 'false');
+    function toggle() {
+      var open = filters.classList.toggle('sk-open');
+      title.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    title.addEventListener('click', toggle);
+    title.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  }
+
   function enhance() {
     decorateCategories();
     decorateOriginals();
+    decorateFilters();
     injectSearch();
   }
 
