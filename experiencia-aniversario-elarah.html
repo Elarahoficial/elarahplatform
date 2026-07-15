@@ -69,7 +69,7 @@
   .quote strong{color:var(--ink);font-weight:700}
 
   /* experience slide */
-  .exp{display:grid;grid-template-columns:1fr 1.02fr;gap:44px;align-items:center;flex:1;align-content:center}
+  .exp{display:grid;grid-template-columns:1fr 1.02fr;gap:44px;align-items:center;margin-top:6px}
   .exp-photo{border-radius:18px;overflow:hidden;aspect-ratio:1/1;box-shadow:var(--shadow)}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-info .lead{margin-top:0;max-width:46ch}
@@ -133,6 +133,10 @@
     h1{font-size:44px}h2{font-size:34px}
     .rule{margin:4mm 0}
     .cover-photo{aspect-ratio:4/4.3}
+    /* na impressão (A4 alto), centraliza os blocos pra preencher a página */
+    .exp{flex:1;align-content:center;margin-top:0}
+    .cover{align-content:center;align-items:center}
+    .cover-photo{aspect-ratio:4/4.8}
     @page{size:A4 portrait;margin:0}
   }
 </style>
@@ -164,10 +168,9 @@
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/yogaecacau1.jpg" alt="Encontro de yoga e cerimônia do cacau em meio à natureza">
+        <img src="assets/pintura-taca.jpg" alt="Taça pintada à mão, resultado de uma experiência artesanal Elarah">
       </div>
     </div>
-    <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Nubank</b> e <b>Adyen</b> · visto no <b>Mais Você</b> (Globo)</div>
 
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência de Aniversário</span></div>
   </section>
@@ -181,18 +184,18 @@
 
     <span class="eyebrow orange">◆ A experiência</span>
     <h2>Um tempo <em>só delas</em></h2>
-    <p class="lead">No aniversário da marca, um gesto de carinho com quem é especial: um momento de <strong>pausa, autoconhecimento e presença</strong>. As convidadas só chegam e vivem — sem custo pra elas, é <strong>um presente de vocês</strong>.</p>
     <div class="rule"></div>
 
-    <div class="grid3">
-      <div class="infocard"><div class="ico">🧘‍♀️</div><h3>Desligar do mundo</h3><p>Um respiro longe da rotina — chegar, respirar e simplesmente estar presente.</p></div>
-      <div class="infocard"><div class="ico">🤍</div><h3>Foco nelas mesmas</h3><p>Práticas de autoconhecimento e autocuidado, no ritmo e no tempo de cada uma.</p></div>
-      <div class="infocard"><div class="ico">🎁</div><h3>Lembrança afetiva</h3><p>Cada convidada leva pra casa algo que criou — a memória viva do encontro.</p></div>
-    </div>
-
-    <div class="quote">
-      <i>“Os momentos mais lembrados são os que fazem a gente parar e sentir.”</i><br>
-      — É esse cuidado que a Elarah leva pro aniversário de vocês: um encontro que <strong>fica no coração</strong>.
+    <div class="exp">
+      <div class="exp-photo"><img src="assets/pinturatacavinho1.jpg" alt="Grupo de convidadas criando juntas numa experiência artesanal"></div>
+      <div class="exp-info">
+        <p class="lead">No aniversário da marca, um gesto de carinho com quem é especial: um momento de <strong>pausa, autoconhecimento e presença</strong>. As convidadas só chegam e vivem — sem custo pra elas, é <strong>um presente de vocês</strong>.</p>
+        <ul class="feat">
+          <li><b>Desligar do mundo</b> — um respiro longe da rotina, pra estar presente.</li>
+          <li><b>Foco nelas mesmas</b> — autoconhecimento e autocuidado, no tempo de cada uma.</li>
+          <li><b>Lembrança afetiva</b> — cada uma leva pra casa algo que criou.</li>
+        </ul>
+      </div>
     </div>
 
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
@@ -202,42 +205,10 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiência 1 · Yoga &amp; Cacau</span></div>
+      <div class="head-right"><span class="kicker">Experiência 1 · Perfumaria</span></div>
     </div>
 
     <span class="eyebrow orange">◆ Experiência 1</span>
-    <h2>Yoga + Cerimônia do <em>Cacau</em> 🧘‍♀️</h2>
-    <div class="rule"></div>
-
-    <div class="exp">
-      <div class="exp-photo"><img src="assets/yogaecacau2.jpg" alt="Prática de yoga seguida do ritual do cacau"></div>
-      <div class="exp-info">
-        <p class="lead">Uma prática suave de yoga seguida do <strong>ritual do cacau</strong> — pra desacelerar o corpo, abrir o coração e se reconectar. A mais “desligar do mundo” de todas.</p>
-        <div class="inc-label">O que inclui</div>
-        <ul class="feat">
-          <li>Condução por instrutora e facilitadora</li>
-          <li>Prática de yoga pra todos os níveis</li>
-          <li>Ritual da cerimônia do cacau</li>
-          <li>Todo o material e estrutura</li>
-        </ul>
-        <div class="price-row">
-          <span class="price-tag">Valor a confirmar<small>por pessoa</small></span>
-          <span class="allin">Turma reduzida</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 1 · Yoga &amp; Cacau</span></div>
-  </section>
-
-  <!-- ============ SLIDE 4 · EXP 2 · PERFUMARIA ============ -->
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiência 2 · Perfumaria</span></div>
-    </div>
-
-    <span class="eyebrow orange">◆ Experiência 2</span>
     <h2>Perfumaria <em>Autoral</em> 🌸</h2>
     <div class="rule"></div>
 
@@ -259,24 +230,24 @@
       </div>
     </div>
 
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 2 · Perfumaria</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 1 · Perfumaria</span></div>
   </section>
 
-  <!-- ============ SLIDE 5 · EXP 3 · COLAGEM ============ -->
+  <!-- ============ SLIDE 4 · EXP 2 · PERFUMARIA ============ -->
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiência 3 · Vision Board</span></div>
+      <div class="head-right"><span class="kicker">Experiência 2 · Colagem</span></div>
     </div>
 
-    <span class="eyebrow orange">◆ Experiência 3</span>
-    <h2>Vision Board &amp; <em>Colagem</em> 📓</h2>
+    <span class="eyebrow orange">◆ Experiência 2</span>
+    <h2>Colagem &amp; <em>Autoconhecimento</em> 📓</h2>
     <div class="rule"></div>
 
     <div class="exp">
       <div class="exp-photo"><img src="assets/colagem.jpg" alt="Colagem e mapa dos sonhos com recortes e imagens"></div>
       <div class="exp-info">
-        <p class="lead">Um momento de <strong>pausa e intenção</strong>: entre recortes, palavras e imagens, cada uma monta o seu <strong>mapa dos sonhos</strong> pra levar — reflexão e presença no coração do dia.</p>
+        <p class="lead">Um momento de <strong>pausa e intenção</strong>: entre recortes, palavras e imagens, cada uma monta o seu <strong>mapa dos sonhos</strong> pra levar — reflexão e autoconhecimento no coração do dia.</p>
         <div class="inc-label">O que inclui</div>
         <ul class="feat">
           <li>Facilitação e momento de reflexão guiada</li>
@@ -291,7 +262,39 @@
       </div>
     </div>
 
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 3 · Vision Board</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 2 · Colagem</span></div>
+  </section>
+
+  <!-- ============ SLIDE 5 · EXP 3 · COLAGEM ============ -->
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Experiência 3 · Pintura em Vidro</span></div>
+    </div>
+
+    <span class="eyebrow orange">◆ Experiência 3</span>
+    <h2>Pintura em <em>Vidro</em> 🎨</h2>
+    <div class="rule"></div>
+
+    <div class="exp">
+      <div class="exp-photo"><img src="assets/pinturatacavinho2.jpg" alt="Convidada pintando a própria taça de vidro à mão"></div>
+      <div class="exp-info">
+        <p class="lead">Com tinta própria pra vidro, cada uma pinta a <strong>sua taça</strong> do jeitinho dela — delicado, criativo e cheio de personalidade. E leva a peça pra casa.</p>
+        <div class="inc-label">O que inclui</div>
+        <ul class="feat">
+          <li>Facilitação com instrutora</li>
+          <li>Todo o material e tintas próprias pra vidro</li>
+          <li><b>A sua taça pintada</b> pra levar pra casa</li>
+          <li>Estrutura completa</li>
+        </ul>
+        <div class="price-row">
+          <span class="price-tag">Valor a confirmar<small>por pessoa</small></span>
+          <span class="allin">Turma reduzida</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 3 · Pintura em Vidro</span></div>
   </section>
 
   <!-- ============ SLIDE 6 · COMO FUNCIONA & CONTATO ============ -->
@@ -307,7 +310,7 @@
     <div class="rule"></div>
 
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Yoga &amp; cacau, perfumaria autoral ou vision board.</p></div>
+      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Perfumaria autoral, colagem ou pintura em vidro.</p></div>
       <div class="step"><div class="num">2</div><h3>A gente organiza</h3><p>Espaço em São Paulo (Pinheiros / centro), material e condução — tudo por nossa conta.</p></div>
       <div class="step"><div class="num">3</div><h3>Elas vivem</h3><p>As convidadas só chegam, desaceleram e se reconectam.</p></div>
     </div>
