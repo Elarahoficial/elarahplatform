@@ -1,0 +1,216 @@
+/* ============================================================
+   ELARAH — "Roupa Airbnb" do APP
+   ------------------------------------------------------------
+   Este arquivo SÓ tem efeito dentro do aplicativo. Ele fica
+   ativo quando o <html> tem a classe .is-app (adicionada pelo
+   app-skin.js quando detecta que está rodando no app Elarah).
+
+   No navegador normal do site, nada disso é aplicado — o site
+   continua com o visual atual.
+
+   Regra de ouro: TODOS os seletores começam com html.is-app
+   (ou .is-app) para não vazar pro site.
+   ============================================================ */
+
+.is-app {
+  --sk-ink: #241d17;
+  --sk-ink-soft: #6f645b;
+  --sk-ink-faint: #9c9188;
+  --sk-line: #ece4da;
+  --sk-line-strong: #ddd2c5;
+  --sk-surface: #ffffff;
+  --sk-surface-2: #faf7f3;
+  --sk-orange: #f27623;
+  --sk-orange-dark: #d4600e;
+  --sk-heart: #e4553b;
+  --sk-r-card: 14px;
+  --sk-shadow-card: 0 1px 2px rgba(36,29,23,.06);
+  --sk-shadow-hover: 0 12px 30px rgba(36,29,23,.14);
+  --sk-shadow-pill: 0 3px 14px rgba(36,29,23,.10);
+}
+
+.is-app body { background: var(--sk-surface); }
+
+/* ---------- Some heavy sections hidden in the app (Airbnb goes
+   straight to search + categories + grid) ---------- */
+.is-app .hero,
+.is-app .filters { display: none !important; }
+
+/* ---------- Header ---------- */
+.is-app .header {
+  border-bottom: 1px solid var(--sk-line);
+  box-shadow: none;
+}
+.is-app .header__search-input {
+  border: 1px solid var(--sk-line-strong);
+  border-radius: 999px;
+  box-shadow: var(--sk-shadow-pill);
+  padding: 12px 16px 12px 44px;
+}
+.is-app .header__search-input:focus {
+  box-shadow: 0 5px 20px rgba(36,29,23,.14);
+  border-color: var(--sk-line-strong);
+}
+.is-app .header__search-icon { color: var(--sk-orange); }
+
+/* ---------- Category strip: icon + label (Airbnb style) ---------- */
+.is-app .categories {
+  border-bottom: 1px solid var(--sk-line);
+  background: var(--sk-surface);
+}
+.is-app .categories__inner {
+  justify-content: safe flex-start;
+  padding: 6px 16px 0;
+  gap: 4px;
+}
+.is-app .category-link {
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--sk-ink-faint);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border-bottom: 2px solid transparent;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+.is-app .category-link:hover { color: var(--sk-ink); }
+.is-app .category-link--active {
+  color: var(--sk-ink);
+  border-bottom-color: var(--sk-ink);
+}
+/* ícone injetado pelo app-skin.js */
+.is-app .category-link .cat-ico {
+  width: 25px;
+  height: 25px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  fill: none;
+  display: block;
+}
+
+/* ---------- Section headers ---------- */
+.is-app .experiences__inner,
+.is-app .originals__inner { padding-left: 16px; padding-right: 16px; }
+.is-app .experiences__title,
+.is-app .originals__title {
+  font-size: clamp(1.35rem, 5.5vw, 1.7rem);
+}
+
+/* ---------- Experience cards → compact, photo-forward ---------- */
+.is-app .experiences__grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 20px 12px !important;
+}
+.is-app .card {
+  border: none;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+.is-app .card:hover {
+  transform: none;
+  box-shadow: none;
+}
+.is-app .card__image {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--sk-r-card);
+  box-shadow: var(--sk-shadow-card);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.is-app .card:hover .card__image {
+  transform: translateY(-3px);
+  box-shadow: var(--sk-shadow-hover);
+}
+.is-app .card__favorite {
+  width: 30px; height: 30px;
+  top: 10px; right: 10px;
+  background: rgba(255,255,255,.9);
+}
+.is-app .card__badge {
+  top: 10px; left: 10px;
+  background: var(--sk-surface);
+  color: var(--sk-ink);
+  box-shadow: var(--sk-shadow-card);
+  font-size: .68rem;
+  font-weight: 700;
+}
+.is-app .card__body { padding: 10px 2px 0; }
+.is-app .card__category {
+  color: var(--sk-ink-faint);
+  font-weight: 700;
+  font-size: .68rem;
+}
+.is-app .card__title {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--sk-ink);
+  margin-bottom: 4px;
+}
+/* Esconde o "excesso" (endereço, inclui, horários) pra ficar limpo como Airbnb.
+   Mostra só a 1ª linha (data/horário curto). */
+.is-app .card__details { gap: 2px; margin-bottom: 6px; }
+.is-app .card__detail--address,
+.is-app .card__detail--includes,
+.is-app .card__horarios { display: none; }
+.is-app .card__detail {
+  font-size: .8rem;
+  color: var(--sk-ink-soft);
+}
+.is-app .card__footer {
+  border-top: none;
+  padding-top: 4px;
+  margin-top: 4px;
+}
+.is-app .card__price { font-size: .9rem; color: var(--sk-ink); }
+.is-app .card__price strong { color: var(--sk-ink); font-weight: 800; }
+/* O botão "reservar" some do card (a pessoa toca no card pra abrir) */
+.is-app .card__reserve-btn,
+.is-app .card__share-btn { display: none; }
+
+/* ---------- Elarah Originals: cards mais limpos ---------- */
+.is-app .originals__card {
+  border: none;
+  box-shadow: var(--sk-shadow-card);
+  border-radius: var(--sk-r-card);
+  overflow: hidden;
+}
+
+/* 3 por fileira em telas maiores (tablet) */
+@media (min-width: 720px) {
+  .is-app .experiences__grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (min-width: 1000px) {
+  .is-app .experiences__grid { grid-template-columns: repeat(4, 1fr) !important; }
+}
+
+/* ---------- Busca em pílula injetada no topo (só no app) ---------- */
+.is-app .sk-search {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 16px;
+  padding: 12px 16px;
+  background: var(--sk-surface);
+  border: 1px solid var(--sk-line-strong);
+  border-radius: 999px;
+  box-shadow: var(--sk-shadow-pill);
+  cursor: pointer;
+}
+.is-app .sk-search__ico { width: 18px; height: 18px; color: var(--sk-orange); flex-shrink: 0; }
+.is-app .sk-search__txt { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.is-app .sk-search__a { font-size: .82rem; font-weight: 700; color: var(--sk-ink); }
+.is-app .sk-search__b { font-size: .74rem; color: var(--sk-ink-faint); }
+
+/* ---------- Originals: evita "buraco" enquanto a foto não carrega ---------- */
+.is-app .originals__card-image {
+  aspect-ratio: 4 / 3;
+  background: var(--sk-surface-2);
+}

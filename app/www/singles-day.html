@@ -3,21 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Elarah Kids — experiências criativas e presenciais para crianças aprenderem, explorarem e criarem memórias inesquecíveis. Menos telas, mais descobertas.">
-  <title>Elarah Kids — Menos telas. Mais descobertas.</title>
-  <meta property="og:title" content="Elarah Kids — Menos telas. Mais descobertas.">
-  <meta property="og:description" content="Experiências criativas e presenciais pra crianças aprenderem, explorarem e criarem memórias.">
+  <meta name="description" content="Single's Day na Elarah — experiências feitas pra quem celebra a própria companhia ou rola com as amigas. Leve, divertido, autoral.">
+  <title>Single's Day — Elarah</title>
+  <meta property="og:title" content="Single's Day — Elarah">
+  <meta property="og:description" content="O dia em que você se escolhe. Experiências pra curtir sozinha ou com a galera.">
   <meta property="og:image" content="https://elarah.com.br/assets/logo.png">
   <link rel="icon" href="assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="elarah-kids.css?v=3">
+  <link rel="stylesheet" href="singles-day.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/app-skin.css">
 </head>
-<body class="ek-body">
+<body class="sd-body">
 
   <!-- ========== HEADER ========== -->
   <header class="header">
@@ -29,7 +28,7 @@
         <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+        <input id="search-input" type="text" placeholder="o que você quer viver?" class="header__search-input">
         <button id="search-btn" class="header__search-btn"></button>
       </div>
       <nav class="header__nav">
@@ -46,7 +45,8 @@
             <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
           </div>
         </div>
-        <a href="elarah-kids.html" class="header__nav-link" aria-current="page" style="color:#7a9a6e;font-weight:700;">Elarah Kids</a>
+        <a href="singles-day.html" class="header__nav-link" aria-current="page" style="color:var(--sd-coral-dark);font-weight:700;">Single's Day</a>
+        <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a>
         <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Elarah em Casa</a>
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="blog.html" class="header__nav-link">Blog</a>
@@ -72,153 +72,122 @@
   </header>
 
   <!-- ========== HERO ========== -->
-  <section class="ek-hero">
-    <svg class="ek-hero__decor ek-hero__decor--left" viewBox="0 0 60 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="30" cy="30" r="14"/>
-      <path d="M30 8v6M30 46v6M8 30h6M46 30h6M14 14l4 4M42 42l4 4M14 46l4-4M42 18l4-4"/>
-    </svg>
-    <svg class="ek-hero__decor ek-hero__decor--right" viewBox="0 0 60 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M30 12c-6 6-6 9 0 12s6 6 0 12-6 6 0 8"/>
-      <path d="M16 30a14 14 0 0 0 28 0c0-5-7-9-14-14-7 5-14 9-14 14z"/>
-    </svg>
-    <div class="ek-hero__inner">
-      <span class="ek-hero__kicker">Elarah Kids · Curadoria pra crianças</span>
-      <h1 class="ek-hero__title">
-        Eles vão esquecer o desenho que assistiram hoje.
+  <section class="sd-hero">
+    <div class="sd-hero__decor sd-hero__decor--left" aria-hidden="true"></div>
+    <div class="sd-hero__decor sd-hero__decor--right" aria-hidden="true"></div>
+    <div class="sd-hero__inner">
+      <span class="sd-hero__kicker">Single's Day · Curadoria Elarah</span>
+      <h1 class="sd-hero__title">
+        12 de junho.<br>
+        <em>O dia em que você se escolhe.</em>
       </h1>
-      <p class="ek-hero__sub">
-        <em>Mas talvez nunca esqueçam a primeira peça que criaram com as próprias mãos.</em>
+      <p class="sd-hero__sub">
+        Pra curtir sozinha, com as amigas ou com quem você quiser.
+        Experiências feitas pra celebrar você, do seu jeito.
       </p>
-      <a href="#ek-experiencias" class="ek-hero__cta">
-        Ver experiências para crianças
+      <a href="#sd-experiencias" class="sd-hero__cta">
+        Ver experiências
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
         </svg>
       </a>
-    </div>
-  </section>
-
-  <!-- ========== MENOS TELAS. MAIS INFÂNCIA. ========== -->
-  <section class="ek-benefits">
-    <div class="ek-benefits__inner">
-      <span class="ek-benefits__kicker">Para os pais</span>
-      <h2 class="ek-benefits__title">Menos telas. <em>Mais infância.</em></h2>
-      <p class="ek-benefits__sub">
-        Algumas das melhores lembranças começam quando a criatividade sai da
-        tela e vai para o mundo real.
-      </p>
-      <div class="ek-benefits__grid">
-        <article class="ek-benefit">
-          <h3 class="ek-benefit__title">Mãos sujas de tinta</h3>
-          <p class="ek-benefit__text">
-            Porque algumas das melhores lembranças começam quando a criatividade
-            sai da tela e vai para o mundo real.
-          </p>
-        </article>
-        <article class="ek-benefit">
-          <h3 class="ek-benefit__title">Novas descobertas</h3>
-          <p class="ek-benefit__text">
-            Cada experiência é uma oportunidade pra explorar, experimentar e
-            ganhar confiança.
-          </p>
-        </article>
-        <article class="ek-benefit">
-          <h3 class="ek-benefit__title">Amizades e conexões</h3>
-          <p class="ek-benefit__text">
-            Momentos compartilhados ajudam crianças a criar vínculos e
-            desenvolver habilidades sociais naturalmente.
-          </p>
-        </article>
-        <article class="ek-benefit">
-          <h3 class="ek-benefit__title">Orgulho de criar com as próprias mãos</h3>
-          <p class="ek-benefit__text">
-            Existe uma magia especial quando uma criança olha pra algo e diz:
-            <em>"Eu que fiz."</em>
-          </p>
-        </article>
-        <article class="ek-benefit">
-          <h3 class="ek-benefit__title">Memórias que ficam</h3>
-          <p class="ek-benefit__text">
-            As melhores histórias da infância raramente acontecem em frente a
-            uma tela.
-          </p>
-        </article>
+      <div class="sd-hero__countdown" id="sd-countdown" aria-live="polite">
+        Faltam <strong>—</strong> dias para o 12 de junho
       </div>
     </div>
   </section>
 
-  <!-- ========== EXPERIENCIAS ========== -->
-  <section id="ek-experiencias" class="ek-experiences">
-    <div class="ek-experiences__inner">
-      <header class="ek-experiences__head">
-        <span class="ek-experiences__kicker">Vitrine Elarah Kids</span>
-        <h2 class="ek-experiences__title">Experiências <em>em destaque</em></h2>
-        <p class="ek-experiences__sub">
-          Curadas pra crianças explorarem, criarem e descobrirem do jeito delas — sempre presencial, sempre com propósito.
+  <!-- ========== PILARES ========== -->
+  <section class="sd-pillars">
+    <div class="sd-pillars__inner">
+      <h2 class="sd-pillars__title">Esse dia também é seu.</h2>
+      <p class="sd-pillars__sub">Curtir junto não precisa ser a dois. Pode ser com você mesma, com a melhor amiga ou com a roda toda.</p>
+      <div class="sd-pillars__grid">
+
+        <article class="sd-pillar">
+          <div class="sd-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="24" cy="18" r="7"/>
+              <path d="M10 40c0-8 6-13 14-13s14 5 14 13"/>
+              <path d="M24 8v2M30 11l-1.5 1.5M18 11l1.5 1.5"/>
+            </svg>
+          </div>
+          <h3 class="sd-pillar__title">Você, primeiro</h3>
+          <p class="sd-pillar__text">Algumas horas só pra você. Sem agenda, sem expectativa de ninguém. Só você sentindo o que sente vontade.</p>
+        </article>
+
+        <article class="sd-pillar">
+          <div class="sd-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="16" cy="18" r="6"/>
+              <circle cx="32" cy="18" r="6"/>
+              <path d="M6 38c0-6 4-10 10-10s10 4 10 10"/>
+              <path d="M22 38c0-6 4-10 10-10s10 4 10 10"/>
+            </svg>
+          </div>
+          <h3 class="sd-pillar__title">Com as amigas</h3>
+          <p class="sd-pillar__text">Reúne quem te faz bem. Tarot, pasta, cerâmica — qualquer desculpa serve pra estar com elas em algo gostoso e fora do automático.</p>
+        </article>
+
+        <article class="sd-pillar">
+          <div class="sd-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 8l4 10 11 1-8 7 2 11-9-6-9 6 2-11-8-7 11-1z"/>
+            </svg>
+          </div>
+          <h3 class="sd-pillar__title">Vibe leve</h3>
+          <p class="sd-pillar__text">Sem peso, sem cobrança, sem clichê. Experiências autorais que cabem no seu dia e te dão uma memória nova pra contar.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIÊNCIAS ========== -->
+  <section id="sd-experiencias" class="sd-experiences">
+    <div class="sd-experiences__inner">
+      <header class="sd-experiences__head">
+        <span class="sd-experiences__kicker">Vitrine Single's Day</span>
+        <h2 class="sd-experiences__title">Pra viver <em>do seu jeito</em></h2>
+        <p class="sd-experiences__sub">
+          Três experiências autorais pensadas pra essa data — íntimas, divertidas e bem a cara de quem celebra a própria companhia.
         </p>
       </header>
 
-      <div class="ek-experiences__grid" id="ek-grid">
+      <div class="sd-experiences__grid" id="sd-grid">
         <p style="grid-column:1/-1;text-align:center;color:#888;padding:40px 20px;font-style:italic;">Carregando experiências…</p>
       </div>
     </div>
   </section>
 
-  <!-- ========== POR QUE OS PAIS AMAM A ELARAH KIDS? (9 itens) ==========
-       Mescla das antigas secoes "tarde offline" + "valores". 9 itens
-       em grid 3x3, mistura promessas concretas com qualidades de marca.
-  -->
-  <section class="ek-values">
-    <div class="ek-values__inner">
-      <h2 class="ek-values__title">Por que os pais <em>amam a Elarah Kids?</em></h2>
-      <div class="ek-values__grid">
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>A primeira peça de cerâmica feita sozinha</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Uma nova amizade</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Mais confiança pra criar</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Atividades criativas e presenciais</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Menos tempo de tela</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Educativas sem parecer aula</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Ambientes seguros e acolhedores</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Uma lembrança pra levar pra casa</div>
-        <div class="ek-value"><span class="ek-value__check" aria-hidden="true">✓</span>Uma história pra contar depois</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========== MANIFESTO (movido pra depois do "Por que os pais amam") ========== -->
-  <section class="ek-manifesto">
-    <div class="ek-manifesto__inner">
-      <svg class="ek-manifesto__mark" viewBox="0 0 32 24" aria-hidden="true">
+  <!-- ========== MANIFESTO ========== -->
+  <section class="sd-manifesto">
+    <div class="sd-manifesto__inner">
+      <svg class="sd-manifesto__mark" viewBox="0 0 32 24" aria-hidden="true">
         <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
       </svg>
-      <p class="ek-manifesto__text">
-        Acreditamos que algumas das melhores aprendizagens acontecem longe das
-        telas. Quando uma criança pinta, modela, cozinha, constrói ou cria algo
-        com as próprias mãos, ela desenvolve habilidades, confiança e
-        criatividade enquanto se diverte.
+      <p class="sd-manifesto__text">
+        Não é sobre estar sozinha. É sobre estar inteira.
+        E o melhor lugar pra estar inteira é onde você se escolhe primeiro.
       </p>
-      <span class="ek-manifesto__signature">— Elarah Kids</span>
+      <span class="sd-manifesto__signature">— Single's Day · Elarah</span>
     </div>
   </section>
 
   <!-- ========== CTA FINAL ========== -->
-  <section class="ek-cta-final">
-    <h2 class="ek-cta-final__title">
-      Presentes passam.<br>
-      <em>Experiências ficam.</em>
+  <section class="sd-cta-final">
+    <h2 class="sd-cta-final__title">
+      Esse 12 de junho<br>
+      é <em>seu também</em>.
     </h2>
-    <p class="ek-cta-final__sub">
-      As melhores lembranças da infância não costumam vir de objetos, mas dos
-      momentos vividos. Na Elarah, ajudamos crianças a explorar sua criatividade,
-      descobrir novos interesses e criar memórias que permanecem por muito mais
-      tempo.
+    <p class="sd-cta-final__sub">
+      Reserva pra você. Marca com a sua pessoa favorita. Ou chama a roda toda.
+      Do jeito que fizer mais sentido pro seu dia.
     </p>
-    <a href="#ek-experiencias" class="ek-cta-final__btn">
-      Ver experiências para crianças
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-      </svg>
-    </a>
+    <div class="sd-cta-final__buttons">
+      <a href="#sd-experiencias" class="sd-cta-primary">Escolher experiência</a>
+      <a href="presentear.html" class="sd-cta-secondary">Presentear uma amiga</a>
+    </div>
   </section>
 
   <!-- ========== FOOTER ========== -->
@@ -279,7 +248,7 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=31"></script>
 <script src="header-nav.js?v=1" defer></script>
-<script src="elarah-kids.js?v=2"></script>
-  <script src="assets/app-skin.js" defer></script>
+<script src="singles-day.js?v=1"></script>
+  <script src="capacitor-bridge.js" defer></script>
 </body>
 </html>
