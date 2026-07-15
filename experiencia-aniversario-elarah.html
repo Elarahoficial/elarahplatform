@@ -11,7 +11,6 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* paleta amai · lilás */
     --orange:#8B5FC0;--orange-dark:#6E48A6;--navy:#2C2542;--navy-soft:#5A4F73;
     --blue-accent:#9E7BD0;--cream:#F6F2FA;--card:#FFFFFF;--ink:#2A2438;--muted:#7A7290;
     --line:#E7DDF2;--shadow:0 18px 50px -24px rgba(44,37,66,.30);
@@ -22,115 +21,124 @@
     -webkit-font-smoothing:antialiased;padding:32px 16px 64px;line-height:1.55}
   .deck{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
 
-  .slide{background:var(--cream);border-radius:22px;padding:52px 58px;box-shadow:var(--shadow);
-    position:relative;overflow:hidden;min-height:640px;display:flex;flex-direction:column}
+  .slide{background:var(--cream);border-radius:22px;padding:50px 56px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden;min-height:660px;display:flex;flex-direction:column}
   .slide__head{display:flex;justify-content:space-between;align-items:center;gap:16px;
-    padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:30px}
+    padding-bottom:18px;border-bottom:1px solid var(--line)}
   .brand{display:flex;align-items:center;gap:9px}
   .brand img{height:26px;width:auto;display:block}
   .head-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
   .kicker{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:600}
-  .client{font-weight:700;font-size:15px;letter-spacing:.03em;color:var(--navy);line-height:1.1}
   .client--amai{font-family:'DM Serif Display',serif;font-weight:400;font-size:28px;letter-spacing:-.01em;
     color:var(--orange);text-transform:lowercase;line-height:1}
   .client--amai small{font-family:'DM Sans';font-weight:500;letter-spacing:.16em;color:var(--navy-soft);
     text-transform:none;font-size:8.5px;margin-top:5px}
 
+  /* centraliza o miolo entre topo e rodapé — sem vãos */
+  .mid{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:26px 0}
+
   .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.2em;
-    text-transform:uppercase;font-weight:700;color:var(--blue-accent);margin-bottom:14px}
+    text-transform:uppercase;font-weight:700;color:var(--blue-accent);margin-bottom:12px}
   .eyebrow.orange{color:var(--orange-dark)}
   h1{font-family:'DM Serif Display',serif;font-weight:400;font-size:52px;line-height:1.04;color:var(--navy);letter-spacing:-.01em}
-  h2{font-family:'DM Serif Display',serif;font-weight:400;font-size:38px;line-height:1.06;color:var(--navy);letter-spacing:-.01em}
+  h2{font-family:'DM Serif Display',serif;font-weight:400;font-size:37px;line-height:1.06;color:var(--navy);letter-spacing:-.01em}
   h1 em,h2 em{font-style:italic;color:var(--blue-accent)}
-  .lead{font-size:15px;color:var(--navy-soft);max-width:52ch;margin-top:14px}
+  .lead{font-size:15px;color:var(--navy-soft);max-width:60ch;margin-top:12px}
   .lead strong{color:var(--ink);font-weight:600}
-  .rule{width:56px;height:3px;background:var(--orange);border-radius:2px;margin:22px 0}
+  .rule{width:56px;height:3px;background:var(--orange);border-radius:2px;margin:18px 0}
 
   /* cover */
-  .cover{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:start;flex:1}
-  .cover-photo{border-radius:18px;overflow:hidden;aspect-ratio:4/4.6;box-shadow:0 24px 48px -20px rgba(44,37,66,.45)}
+  .cover{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+  .cover-photo{border-radius:18px;overflow:hidden;aspect-ratio:4/4.5;box-shadow:0 24px 48px -20px rgba(44,37,66,.45)}
   .cover-photo img{width:100%;height:100%;object-fit:cover;object-position:center}
-  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
   .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:13px;
     font-weight:500;color:var(--ink);box-shadow:0 4px 14px -8px rgba(44,37,66,.25)}
   .chip b{font-weight:700;color:var(--navy)}
 
-  /* experience slide */
-  .exp{display:grid;grid-template-columns:1fr 1.05fr;gap:40px;align-items:center;margin-top:4px}
+  /* concept photo+text */
+  .exp{display:grid;grid-template-columns:1fr 1.05fr;gap:40px;align-items:center}
   .exp-photo{border-radius:18px;overflow:hidden;aspect-ratio:1/1;box-shadow:var(--shadow)}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
-  .exp-info .lead{margin-top:0;max-width:48ch}
-  .note-line{display:inline-flex;align-items:center;gap:7px;margin-top:12px;background:#F0E9F9;border:1px solid #E1D5F2;
-    border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--navy-soft)}
-  .note-line b{color:var(--navy);font-weight:700}
-  .inc-label{font-size:10.5px;letter-spacing:.14em;font-weight:700;text-transform:uppercase;color:var(--orange-dark);margin:16px 0 9px}
-  ul.feat{list-style:none;display:flex;flex-direction:column;gap:7px}
-  ul.feat li{position:relative;padding-left:22px;font-size:13.5px;color:var(--ink)}
+  .exp-info .lead{margin-top:0;max-width:46ch}
+  ul.feat{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:4px}
+  ul.feat li{position:relative;padding-left:22px;font-size:14px;color:var(--ink)}
   ul.feat li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:12px}
   ul.feat li b{font-weight:700}
 
-  /* pricing tiers */
-  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
-  .tier{border:1px solid var(--line);border-radius:13px;padding:13px 10px;text-align:center;background:var(--card)}
-  .tier.featured{border:1.5px solid var(--orange);background:#F4ECFB}
-  .tier .tt{display:block;font-size:10.5px;font-weight:700;color:var(--navy-soft);text-transform:uppercase;
-    letter-spacing:.02em;margin-bottom:7px;min-height:26px;line-height:1.25}
-  .tier.featured .tt{color:var(--orange-dark)}
-  .tier .tp{font-family:'DM Serif Display',serif;font-size:21px;color:var(--navy);line-height:1}
-  .tier .tps{display:block;font-size:8.5px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+  .note-line{display:inline-flex;align-items:center;gap:7px;margin-bottom:14px;background:#F0E9F9;border:1px solid #E1D5F2;
+    border-radius:999px;padding:7px 15px;font-size:12.5px;color:var(--navy-soft)}
+  .note-line b{color:var(--navy);font-weight:700}
 
-  /* single price */
-  .price-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:20px}
-  .price-tag{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);line-height:1.1}
-  .price-tag small{display:block;font-family:'DM Sans';font-size:10px;letter-spacing:.14em;color:var(--muted);
-    text-transform:uppercase;font-weight:600;margin-top:3px}
-  .allin{align-self:center;font-size:11px;font-weight:600;color:var(--navy-soft);background:#F0E9F9;border-radius:999px;padding:7px 14px}
-  .allin::before{content:"✓ ";color:#2e7d52;font-weight:800}
+  /* hero band (experiências com preço) */
+  .hero-band{border-radius:16px;overflow:hidden;height:210px;box-shadow:var(--shadow)}
+  .hero-band img{width:100%;height:100%;object-fit:cover}
 
-  /* personalização */
-  .perso{display:grid;grid-template-columns:1fr 1.1fr;gap:40px;align-items:center;margin-top:4px}
-  .perso-photo{border-radius:18px;overflow:hidden;aspect-ratio:1/1;box-shadow:var(--shadow)}
-  .perso-photo img{width:100%;height:100%;object-fit:cover}
+  /* galeria 4 fotos (wellness) */
+  .gallery4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .gallery4 figure{border-radius:14px;overflow:hidden;aspect-ratio:3/4;box-shadow:var(--shadow)}
+  .gallery4 img{width:100%;height:100%;object-fit:cover}
+
+  /* cartões de plano (níveis) */
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:20px}
+  .plan{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 18px;display:flex;flex-direction:column}
+  .plan.featured{border:2px solid var(--orange);background:#F4ECFB;box-shadow:0 18px 36px -22px rgba(139,95,192,.5)}
+  .plan .ptag{font-size:10.5px;letter-spacing:.06em;font-weight:700;text-transform:uppercase;color:var(--navy-soft);margin-bottom:9px;min-height:24px;line-height:1.2}
+  .plan.featured .ptag{color:var(--orange-dark)}
+  .plan .pprice{font-family:'DM Serif Display',serif;font-size:32px;color:var(--navy);line-height:1}
+  .plan .pprice small{font-size:15px;color:var(--navy-soft)}
+  .plan .pper{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 13px}
+  .plan ul{list-style:none;display:flex;flex-direction:column;gap:7px}
+  .plan li{position:relative;padding-left:18px;font-size:12px;color:var(--ink);line-height:1.4}
+  .plan li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
+  .plan li b{font-weight:700}
+
+  /* placeholder de foto */
+  .ph-box{aspect-ratio:1/1;border-radius:18px;background:linear-gradient(135deg,#F0E9F9,#E4D8F4);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;
+    padding:24px;font-size:13px;font-weight:600;color:var(--orange-dark);box-shadow:var(--shadow)}
+  .ph-box .ic{font-size:32px}
+  .ph-box em{font-style:normal;font-weight:400;color:var(--muted);font-size:11.5px}
 
   /* espaço / venues */
-  .venues{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:8px}
+  .venues{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:6px}
   .venue{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card);box-shadow:0 12px 30px -24px rgba(44,37,66,.4)}
-  .venue-photo{aspect-ratio:16/11;overflow:hidden;background:linear-gradient(135deg,#F0E9F9,#E4D8F4)}
+  .venue-photo{aspect-ratio:1/1;overflow:hidden;background:#eee}
   .venue-photo img{width:100%;height:100%;object-fit:cover;display:block}
-  .venue-body{padding:15px 20px 17px}
-  .venue-body h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin-bottom:3px}
+  .venue-body{padding:14px 20px 16px}
+  .venue-body h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin-bottom:3px}
   .venue-body p{font-size:12.5px;color:var(--muted)}
 
   /* how / cta */
-  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:6px}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:4px}
   .step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 18px}
   .step .num{font-family:'DM Serif Display',serif;font-size:32px;color:var(--orange);line-height:1}
   .step h3{font-size:15px;font-weight:700;color:var(--navy);margin:8px 0 6px}
   .step p{font-size:12.5px;color:var(--muted)}
-  .cta{margin-top:22px;background:var(--navy);color:#fff;border-radius:18px;padding:28px 32px;
+  .cta{margin-top:20px;background:var(--navy);color:#fff;border-radius:18px;padding:26px 30px;
     background-image:radial-gradient(circle at 88% 20%,rgba(158,123,208,.30),transparent 45%)}
-  .cta h2{color:#fff;font-size:28px}
+  .cta h2{color:#fff;font-size:26px}
   .cta h2 em{color:#C9AEEE}
   .cta p{color:#D3CAE4;font-size:13.5px;margin-top:9px;max-width:60ch}
-  .cta-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px;align-items:center}
+  .cta-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;align-items:center}
   .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#0b3d1e;font-weight:700;
     text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;box-shadow:0 10px 24px -12px rgba(37,211,102,.7)}
   .contact-links{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:#D3CAE4}
   .contact-links a{color:#fff;text-decoration:none;font-weight:600}
-  .fineprint{margin-top:16px;font-size:10.5px;color:var(--muted);line-height:1.55;max-width:82ch}
+  .fineprint{margin-top:14px;font-size:10.5px;color:var(--muted);line-height:1.55;max-width:84ch}
 
   .slide__foot{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);
-    letter-spacing:.04em;padding-top:20px;margin-top:auto;border-top:1px solid var(--line)}
+    letter-spacing:.04em;padding-top:16px;border-top:1px solid var(--line)}
 
   .toolbar{position:fixed;bottom:22px;right:22px;z-index:50;display:flex;gap:10px}
   .toolbar button{font-family:inherit;border:none;cursor:pointer;background:var(--navy);color:#fff;font-weight:600;
     padding:12px 20px;border-radius:999px;font-size:13.5px;box-shadow:0 12px 30px -12px rgba(44,37,66,.6)}
 
   @media (max-width:820px){
-    .slide{padding:34px 24px;min-height:auto}
-    .cover,.exp,.perso{grid-template-columns:1fr;gap:26px}
-    .steps,.venues,.tiers{grid-template-columns:1fr}
-    h1{font-size:38px}h2{font-size:30px}
+    .slide{padding:32px 22px;min-height:auto}
+    .cover,.exp{grid-template-columns:1fr;gap:24px}
+    .steps,.venues,.plans,.gallery4{grid-template-columns:1fr}
+    h1{font-size:38px}h2{font-size:29px}
     .slide__head{flex-direction:column;align-items:flex-start}
     .head-right{align-items:flex-start;text-align:left}
   }
@@ -139,23 +147,21 @@
     body{background:#fff;padding:0}
     .toolbar{display:none}
     .deck{gap:0;max-width:none}
-    .slide{box-shadow:none;border-radius:0;width:210mm;height:297mm;min-height:0;overflow:hidden;
-      padding:12mm 15mm;page-break-after:always;break-after:page;page-break-inside:avoid}
+    .slide{box-shadow:none;border-radius:0;width:297mm;height:210mm;min-height:0;overflow:hidden;
+      padding:11mm 16mm;page-break-after:always;break-after:page;page-break-inside:avoid}
     .slide:last-child{page-break-after:auto}
-    .slide__head{flex-direction:row;align-items:center;margin-bottom:6mm;padding-bottom:4mm}
+    .slide__head{flex-direction:row;align-items:center}
     .head-right{align-items:flex-end;text-align:right}
-    .cover,.exp,.perso{grid-template-columns:1fr 1fr}
-    .steps{grid-template-columns:repeat(3,1fr)}
-    .venues,.tiers{grid-template-columns:repeat(3,1fr)}
+    .cover,.exp{grid-template-columns:1fr 1fr}
+    .steps,.plans,.gallery4{grid-template-columns:repeat(3,1fr)}
+    .gallery4{grid-template-columns:repeat(4,1fr)}
     .venues{grid-template-columns:1fr 1fr}
-    h1{font-size:44px}h2{font-size:32px}
-    .rule{margin:4mm 0}
-    .exp,.perso{flex:1;align-content:center;margin-top:0}
-    .venues{flex:1;align-content:center}
-    .venue-photo{aspect-ratio:16/11}
-    .cover{align-content:center;align-items:center}
-    .cover-photo{aspect-ratio:4/4.8}
-    @page{size:A4 portrait;margin:0}
+    h1{font-size:46px}h2{font-size:34px}
+    .mid{padding:10px 0}
+    .hero-band{height:190px}
+    .gallery4 figure{aspect-ratio:4/3}
+    .venue-photo{aspect-ratio:4/3}
+    @page{size:A4 landscape;margin:0}
   }
 </style>
 </head>
@@ -169,27 +175,25 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
         <span class="kicker">Proposta de experiência · Aniversário</span>
-        <span class="client client--amai">amai<small>POR MULHERES, PARA MULHERES</small></span>
+        <span class="client--amai">amai<small>POR MULHERES, PARA MULHERES</small></span>
       </div>
     </div>
-
-    <div class="cover">
-      <div>
-        <span class="eyebrow">✦ Experiência · Autocuidado &amp; Presença</span>
-        <h1>Um presente<br>pra <em>desacelerar</em></h1>
-        <p class="lead">Um encontro pensado pras clientes mais especiais da amai <strong>desligarem do mundo lá fora e se reconectarem com elas mesmas</strong> — íntimo, sensorial e com uma lembrança pra levar pra casa. A Elarah cuida de tudo, num espaço acolhedor em São Paulo.</p>
-        <div class="rule"></div>
-        <div class="chips">
-          <span class="chip">Turma <b>reduzida</b></span>
-          <span class="chip"><b>O Jardim Café</b> · Campo Belo</span>
-          <span class="chip">Um <b>presente da amai</b></span>
+    <div class="mid">
+      <div class="cover">
+        <div>
+          <span class="eyebrow">✦ Experiência · Autocuidado &amp; Presença</span>
+          <h1>Um presente<br>pra <em>desacelerar</em></h1>
+          <p class="lead">Um encontro pensado pras clientes mais especiais da amai <strong>desligarem do mundo lá fora e se reconectarem com elas mesmas</strong> — íntimo, sensorial e com uma lembrança pra levar pra casa. A Elarah cuida de tudo, num espaço acolhedor em São Paulo.</p>
+          <div class="rule"></div>
+          <div class="chips">
+            <span class="chip">Turma <b>reduzida</b></span>
+            <span class="chip"><b>O Jardim Café</b> · Campo Belo</span>
+            <span class="chip">Um <b>presente da amai</b></span>
+          </div>
         </div>
-      </div>
-      <div class="cover-photo">
-        <img src="assets/amai1.jpg" alt="Grupo de convidadas numa experiência ao ar livre no jardim">
+        <div class="cover-photo"><img src="assets/amai1.jpg" alt="Grupo de convidadas numa experiência ao ar livre no jardim"></div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência de Aniversário · amai</span></div>
   </section>
 
@@ -199,23 +203,22 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ A experiência</span>
-    <h2>Um tempo <em>só delas</em></h2>
-    <div class="rule"></div>
-
-    <div class="exp">
-      <div class="exp-photo"><img src="assets/amai2.jpg" alt="Convidadas criando juntas numa experiência ao ar livre"></div>
-      <div class="exp-info">
-        <p class="lead">No aniversário da amai, um gesto de carinho com quem é especial: um momento de <strong>pausa, autocuidado e presença</strong>. As convidadas só chegam e vivem — sem custo pra elas, é <strong>um presente de vocês</strong>.</p>
-        <ul class="feat">
-          <li><b>Desligar do mundo</b> — um respiro longe da rotina, pra estar presente.</li>
-          <li><b>Foco nelas mesmas</b> — autocuidado no tempo de cada uma.</li>
-          <li><b>Lembrança afetiva</b> — cada uma leva pra casa algo que criou.</li>
-        </ul>
+    <div class="mid">
+      <span class="eyebrow orange">◆ A experiência</span>
+      <h2>Um tempo <em>só delas</em></h2>
+      <div class="rule"></div>
+      <div class="exp">
+        <div class="exp-photo"><img src="assets/amai2.jpg" alt="Convidadas criando juntas numa experiência ao ar livre"></div>
+        <div class="exp-info">
+          <p class="lead">No aniversário da amai, um gesto de carinho com quem é especial: um momento de <strong>pausa, autocuidado e presença</strong>. As convidadas só chegam e vivem — sem custo pra elas, é <strong>um presente de vocês</strong>.</p>
+          <ul class="feat">
+            <li><b>Desligar do mundo</b> — um respiro longe da rotina, pra estar presente.</li>
+            <li><b>Foco nelas mesmas</b> — autocuidado no tempo de cada uma.</li>
+            <li><b>Lembrança afetiva</b> — cada uma leva pra casa algo que criou.</li>
+          </ul>
+        </div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
   </section>
 
@@ -225,30 +228,41 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Experiência 1 · Perfumaria</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ Experiência 1</span>
-    <h2>Perfumaria <em>Autoral</em> 🌸</h2>
-    <div class="rule"></div>
-
-    <div class="exp">
-      <div class="exp-photo"><img src="assets/amai3.jpg" alt="Mesa da experiência de perfumaria autoral"></div>
-      <div class="exp-info">
-        <p class="lead">Guiadas por uma perfumista, cada uma mergulha na arte da perfumaria e cria o <strong>seu próprio perfume autoral</strong> — e leva a fragrância pra casa.</p>
-        <div class="inc-label">O que inclui</div>
-        <ul class="feat">
-          <li>Vivência guiada sobre a arte da perfumaria</li>
-          <li>Matérias-primas selecionadas + material de apoio</li>
-          <li><b>Frasco exclusivo</b> com rótulo personalizado</li>
-          <li>Seu <b>perfume autoral</b> criado na experiência, pra levar</li>
-        </ul>
-        <div class="tiers">
-          <div class="tier"><span class="tt">Experiência</span><span class="tp">R$ 260</span><span class="tps">por pessoa</span></div>
-          <div class="tier"><span class="tt">+ Coffee break</span><span class="tp">R$ 343</span><span class="tps">por pessoa</span></div>
-          <div class="tier featured"><span class="tt">+ Personalização</span><span class="tp">R$ 429</span><span class="tps">por pessoa</span></div>
+    <div class="mid">
+      <span class="eyebrow orange">◆ Experiência 1</span>
+      <h2>Perfumaria <em>Autoral</em> 🌸</h2>
+      <p class="lead">Guiadas por uma perfumista, cada uma mergulha na arte da perfumaria e cria o <strong>seu próprio perfume autoral</strong> — e leva a fragrância pra casa.</p>
+      <div class="rule"></div>
+      <div class="hero-band"><img src="assets/amai3.jpg" alt="Mesa da experiência de perfumaria autoral"></div>
+      <div class="plans">
+        <div class="plan">
+          <span class="ptag">Experiência</span>
+          <span class="pprice">R$ 260</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Vivência guiada da perfumaria</li>
+            <li>Matérias-primas + material de apoio</li>
+            <li><b>Frasco exclusivo</b> com rótulo</li>
+            <li>Seu <b>perfume autoral</b> pra levar</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <span class="ptag">+ Coffee break</span>
+          <span class="pprice">R$ 343</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Tudo da <b>Experiência</b></li>
+            <li><b>Coffee break</b> à vontade, à escolha</li>
+          </ul>
+        </div>
+        <div class="plan featured">
+          <span class="ptag">+ Personalização</span>
+          <span class="pprice">R$ 429</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Tudo do <b>+ Coffee break</b></li>
+            <li><b>Brindes personalizados</b> amai</li>
+          </ul>
         </div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 1 · Perfumaria</span></div>
   </section>
 
@@ -258,30 +272,40 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Experiência 2 · Colagem</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ Experiência 2</span>
-    <h2>Oficina de <em>Colagem</em> 📓</h2>
-    <div class="rule"></div>
-
-    <div class="exp">
-      <div class="exp-photo"><img src="assets/amai4.jpg" alt="Materiais de colagem e vision board"></div>
-      <div class="exp-info">
-        <p class="lead">Entre recortes, palavras e imagens, cada uma monta o seu <strong>mapa de intenções</strong> — pausa e autoconhecimento. O tema é feito sob medida pra amai.</p>
-        <div class="note-line">✦ Tema personalizável — ex.: <b>“O que é autocuidado pra você?”</b></div>
-        <div class="inc-label">O que inclui</div>
-        <ul class="feat">
-          <li>Facilitação e momento de reflexão guiada</li>
-          <li>Todo o material (revistas, recortes, molduras…)</li>
-          <li>Sua colagem / mapa dos sonhos pra levar pra casa</li>
-        </ul>
-        <div class="tiers">
-          <div class="tier"><span class="tt">Experiência</span><span class="tp">R$ 159</span><span class="tps">por pessoa</span></div>
-          <div class="tier"><span class="tt">+ Refeição</span><span class="tp">R$ 233</span><span class="tps">por pessoa</span></div>
-          <div class="tier featured"><span class="tt">+ Personalização</span><span class="tp">R$ 325</span><span class="tps">por pessoa</span></div>
+    <div class="mid">
+      <span class="eyebrow orange">◆ Experiência 2</span>
+      <h2>Oficina de <em>Colagem</em> 📓</h2>
+      <p class="lead">Entre recortes, palavras e imagens, cada uma monta o seu <strong>mapa de intenções</strong> — pausa e autoconhecimento, com tema sob medida pra amai.</p>
+      <div class="note-line">✦ Tema personalizável — ex.: <b>“O que é autocuidado pra você?”</b></div>
+      <div class="hero-band"><img src="assets/amai4.jpg" alt="Materiais de colagem e vision board"></div>
+      <div class="plans">
+        <div class="plan">
+          <span class="ptag">Experiência</span>
+          <span class="pprice">R$ 159</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Facilitação + reflexão guiada</li>
+            <li>Todo o material (recortes, molduras…)</li>
+            <li>Sua colagem pra levar pra casa</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <span class="ptag">+ Refeição</span>
+          <span class="pprice">R$ 233</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Tudo da <b>Experiência</b></li>
+            <li><b>Refeição</b> inclusa no espaço</li>
+          </ul>
+        </div>
+        <div class="plan featured">
+          <span class="ptag">+ Personalização</span>
+          <span class="pprice">R$ 325</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Tudo do <b>+ Refeição</b></li>
+            <li><b>Brindes personalizados</b> amai</li>
+          </ul>
         </div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 2 · Colagem</span></div>
   </section>
 
@@ -291,30 +315,40 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Experiência 3 · Pintura em Vaso</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ Experiência 3</span>
-    <h2>Pintura em Vaso &amp; <em>Arranjo Floral</em> 🎨</h2>
-    <div class="rule"></div>
-
-    <div class="exp">
-      <div class="exp-photo"><img src="assets/amai5.png" alt="Vaso de vidro pintado à mão com arranjo floral"></div>
-      <div class="exp-info">
-        <p class="lead">Cada uma pinta o seu <strong>vaso de vidro</strong> à mão e monta um <strong>arranjo floral</strong> pra levar — delicado, criativo e cheio de personalidade.</p>
-        <div class="note-line">🌿 Sugestão de espaço: <b>o Jardim</b> — combina com a proposta do encontro</div>
-        <div class="inc-label">O que inclui</div>
-        <ul class="feat">
-          <li>Facilitação com instrutora</li>
-          <li>Vaso de vidro, tintas e arranjo floral</li>
-          <li>A sua peça pra levar pra casa</li>
-        </ul>
-        <div class="tiers">
-          <div class="tier"><span class="tt">Experiência</span><span class="tp">R$ 199</span><span class="tps">por pessoa</span></div>
-          <div class="tier"><span class="tt">+ Refeição</span><span class="tp">R$ 273</span><span class="tps">por pessoa</span></div>
-          <div class="tier featured"><span class="tt">+ Personalização</span><span class="tp">R$ 365</span><span class="tps">por pessoa</span></div>
+    <div class="mid">
+      <span class="eyebrow orange">◆ Experiência 3</span>
+      <h2>Pintura em Vaso &amp; <em>Arranjo Floral</em> 🎨</h2>
+      <p class="lead">Cada uma pinta o seu <strong>vaso de vidro</strong> à mão e monta um <strong>arranjo floral</strong> pra levar — delicado, criativo e cheio de personalidade.</p>
+      <div class="note-line">🌿 Sugestão de espaço: <b>o Jardim</b> — combina com a proposta do encontro</div>
+      <div class="hero-band"><img src="assets/pinturavasoearranjo.jpg" alt="Vasos de vidro pintados à mão com flores" style="object-position:center 40%"></div>
+      <div class="plans">
+        <div class="plan">
+          <span class="ptag">Experiência</span>
+          <span class="pprice">R$ 199</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Facilitação com instrutora</li>
+            <li>Vaso, tintas e arranjo floral</li>
+            <li>A sua peça pra levar pra casa</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <span class="ptag">+ Refeição</span>
+          <span class="pprice">R$ 273</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Tudo da <b>Experiência</b></li>
+            <li><b>Refeição</b> inclusa no espaço</li>
+          </ul>
+        </div>
+        <div class="plan featured">
+          <span class="ptag">+ Personalização</span>
+          <span class="pprice">R$ 365</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Tudo do <b>+ Refeição</b></li>
+            <li><b>Brindes personalizados</b> amai</li>
+          </ul>
         </div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 3 · Pintura em Vaso</span></div>
   </section>
 
@@ -324,29 +358,45 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Experiência 4 · Wellness</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ Experiência 4</span>
-    <h2><em>Wellness</em> 🧘‍♀️</h2>
-    <div class="rule"></div>
-
-    <div class="exp">
-      <div class="exp-photo"><img src="assets/gangga2.jpg" alt="Aula de yoga e pilates no estúdio de wellness"></div>
-      <div class="exp-info">
-        <p class="lead">Uma aula de <strong>yoga ou MedPilates</strong> pra mexer o corpo e relaxar, com <strong>área de recovery</strong> e <strong>lounge café by Smoov</strong> — puro bem-estar, do começo ao fim.</p>
-        <div class="inc-label">O que inclui</div>
-        <ul class="feat">
-          <li>Aula de yoga / MedPilates com instrutora</li>
-          <li>Área de recovery (sauna e relaxamento)</li>
-          <li><b>Lounge café by Smoov</b></li>
-          <li>Turma de até <b>18 pessoas</b> na aula</li>
-        </ul>
-        <div class="price-row">
-          <span class="price-tag">R$ 399<small>por pessoa</small></span>
-          <span class="allin">Até 18 pessoas</span>
+    <div class="mid">
+      <span class="eyebrow orange">◆ Experiência 4</span>
+      <h2><em>Wellness</em> 🧘‍♀️</h2>
+      <p class="lead">Uma aula de <strong>yoga ou MedPilates</strong> pra mexer o corpo e relaxar, com <strong>área de recovery</strong> e <strong>lounge café by Smoov</strong>. Turma de até <strong>18 pessoas</strong>.</p>
+      <div class="rule"></div>
+      <div class="gallery4">
+        <figure><img src="assets/gangga2.jpg" alt="Aula de yoga"></figure>
+        <figure><img src="assets/gangga4.jpg" alt="Aula de MedPilates"></figure>
+        <figure><img src="assets/gangga1.jpg" alt="Lounge café by Smoov"></figure>
+        <figure><img src="assets/gangga3.jpg" alt="Área de recovery"></figure>
+      </div>
+      <div class="plans">
+        <div class="plan">
+          <span class="ptag">Experiência</span>
+          <span class="pprice">R$ 399</span><span class="pper">por pessoa</span>
+          <ul>
+            <li>Aula de yoga / MedPilates</li>
+            <li>Área de recovery + lounge café by Smoov</li>
+            <li>Até <b>18 pessoas</b> na aula</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <span class="ptag">+ Refeição</span>
+          <span class="pprice">R$ 473<small> *</small></span><span class="pper">por pessoa · a confirmar</span>
+          <ul>
+            <li>Tudo da <b>Experiência</b></li>
+            <li><b>Refeição</b> inclusa</li>
+          </ul>
+        </div>
+        <div class="plan featured">
+          <span class="ptag">+ Personalização</span>
+          <span class="pprice">R$ 565<small> *</small></span><span class="pper">por pessoa · a confirmar</span>
+          <ul>
+            <li>Tudo do <b>+ Refeição</b></li>
+            <li><b>Brindes personalizados</b> amai</li>
+          </ul>
         </div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 4 · Wellness</span></div>
   </section>
 
@@ -356,24 +406,22 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Personalização</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ O toque amai</span>
-    <h2>Personalização <em>que encanta</em> 💜</h2>
-    <div class="rule"></div>
-
-    <div class="perso">
-      <div class="perso-photo"><img src="assets/piranhapersonalizada.jpg" alt="Escova e piranhas de cabelo personalizadas com a inicial de cada convidada"></div>
-      <div class="exp-info">
-        <p class="lead">Nos planos com <strong>personalização</strong>, cada convidada leva um mimo exclusivo com a cara dela: <strong>escova e piranha de cabelo personalizadas</strong> com a inicial de cada uma — um detalhe afetivo que fica de lembrança.</p>
-        <div class="inc-label">Como funciona</div>
-        <ul class="feat">
-          <li>Disponível como <b>“+ Personalização”</b> em qualquer experiência</li>
-          <li>Brindes customizados com a inicial de cada convidada</li>
-          <li>Na identidade e nas cores da <b>amai</b></li>
-        </ul>
+    <div class="mid">
+      <span class="eyebrow orange">◆ O toque amai</span>
+      <h2>Personalização <em>que encanta</em> 💜</h2>
+      <div class="rule"></div>
+      <div class="exp">
+        <div class="ph-box"><span class="ic">📷</span>Foto: escova + piranha personalizada<em>(a adicionar — me envie a foto)</em></div>
+        <div class="exp-info">
+          <p class="lead">Nos planos com <strong>personalização</strong>, cada convidada leva um mimo exclusivo com a cara dela: <strong>escova e piranha de cabelo personalizadas</strong> com a inicial de cada uma — um detalhe afetivo que fica de lembrança.</p>
+          <ul class="feat">
+            <li>Disponível como <b>“+ Personalização”</b> em qualquer experiência</li>
+            <li>Brindes customizados com a inicial de cada convidada</li>
+            <li>Na identidade e nas cores da <b>amai</b></li>
+          </ul>
+        </div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Personalização</span></div>
   </section>
 
@@ -383,23 +431,22 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">O espaço</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ O espaço</span>
-    <h2>O Jardim <em>Café</em></h2>
-    <p class="lead">As experiências acontecem n'<strong>O Jardim Café</strong>, em <strong>Campo Belo</strong> — um espaço acolhedor cercado de verde, só de vocês. Temos <strong>duas áreas</strong>; vocês escolhem a que mais combina com o encontro.</p>
-    <div class="rule"></div>
-
-    <div class="venues">
-      <div class="venue">
-        <div class="venue-photo"><img src="assets/amai6.jpg" alt="Terraço d'O Jardim Café"></div>
-        <div class="venue-body"><h3>Espaço 1 · Terraço</h3><p>O Jardim Café · Campo Belo, SP</p></div>
-      </div>
-      <div class="venue">
-        <div class="venue-photo"><img src="assets/amai7.jpg" alt="O Jardim d'O Jardim Café"></div>
-        <div class="venue-body"><h3>Espaço 2 · O Jardim 🌿</h3><p>O Jardim Café · Campo Belo, SP</p></div>
+    <div class="mid">
+      <span class="eyebrow orange">◆ O espaço</span>
+      <h2>O Jardim <em>Café</em></h2>
+      <p class="lead">As experiências acontecem n'<strong>O Jardim Café</strong>, em <strong>Campo Belo</strong> — um espaço acolhedor cercado de verde, só de vocês. Temos <strong>duas áreas</strong>; vocês escolhem a que mais combina com o encontro.</p>
+      <div class="rule"></div>
+      <div class="venues">
+        <div class="venue">
+          <div class="venue-photo"><img src="assets/amai6.jpg" alt="Terraço d'O Jardim Café"></div>
+          <div class="venue-body"><h3>Espaço 1 · Terraço</h3><p>O Jardim Café · Campo Belo, SP</p></div>
+        </div>
+        <div class="venue">
+          <div class="venue-photo"><img src="assets/amai7.jpg" alt="O Jardim d'O Jardim Café"></div>
+          <div class="venue-body"><h3>Espaço 2 · O Jardim 🌿</h3><p>O Jardim Café · Campo Belo, SP</p></div>
+        </div>
       </div>
     </div>
-
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O espaço · O Jardim Café</span></div>
   </section>
 
@@ -409,33 +456,30 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Como funciona &amp; contato</span></div>
     </div>
-
-    <span class="eyebrow orange">◆ Simples e sob medida</span>
-    <h2>É só <em>reunir as convidadas</em></h2>
-    <p class="lead">A Elarah cuida de toda a produção pra o encontro ser leve do começo ao fim:</p>
-    <div class="rule"></div>
-
-    <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Perfumaria, colagem, pintura em vaso ou wellness.</p></div>
-      <div class="step"><div class="num">2</div><h3>A gente organiza</h3><p>Espaço n'O Jardim Café (Campo Belo), material e condução — tudo por nossa conta.</p></div>
-      <div class="step"><div class="num">3</div><h3>Elas vivem</h3><p>As convidadas só chegam, desaceleram e se reconectam.</p></div>
-    </div>
-
-    <div class="cta">
-      <h2>Bora presentear as clientes da <em>amai?</em> ✦</h2>
-      <p>Me conta qual experiência mais chamou, o número de convidadas e a data que têm em mente, que a gente fecha cada detalhe do encontro.</p>
-      <div class="cta-actions">
-        <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Quero%20fechar%20a%20experi%C3%AAncia%20de%20anivers%C3%A1rio%20da%20amai." target="_blank" rel="noopener">💬 Falar no WhatsApp</a>
-        <div class="contact-links">
-          <span>+55 (11) 91445-5930</span>
-          <a href="https://instagram.com/elarah.oficial" target="_blank" rel="noopener">@elarah.oficial</a>
-          <a href="https://elarah.com.br" target="_blank" rel="noopener">elarah.com.br</a>
+    <div class="mid">
+      <span class="eyebrow orange">◆ Simples e sob medida</span>
+      <h2>É só <em>reunir as convidadas</em></h2>
+      <p class="lead">A Elarah cuida de toda a produção pra o encontro ser leve do começo ao fim:</p>
+      <div class="rule"></div>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Perfumaria, colagem, pintura em vaso ou wellness.</p></div>
+        <div class="step"><div class="num">2</div><h3>A gente organiza</h3><p>Espaço n'O Jardim Café (Campo Belo), material e condução — tudo por nossa conta.</p></div>
+        <div class="step"><div class="num">3</div><h3>Elas vivem</h3><p>As convidadas só chegam, desaceleram e se reconectam.</p></div>
+      </div>
+      <div class="cta">
+        <h2>Bora presentear as clientes da <em>amai?</em> ✦</h2>
+        <p>Me conta qual experiência mais chamou, o número de convidadas e a data que têm em mente, que a gente fecha cada detalhe do encontro.</p>
+        <div class="cta-actions">
+          <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Quero%20fechar%20a%20experi%C3%AAncia%20de%20anivers%C3%A1rio%20da%20amai." target="_blank" rel="noopener">💬 Falar no WhatsApp</a>
+          <div class="contact-links">
+            <span>+55 (11) 91445-5930</span>
+            <a href="https://instagram.com/elarah.oficial" target="_blank" rel="noopener">@elarah.oficial</a>
+            <a href="https://elarah.com.br" target="_blank" rel="noopener">elarah.com.br</a>
+          </div>
         </div>
       </div>
+      <p class="fineprint">Valores por pessoa. Cada experiência tem três níveis (experiência · + refeição/coffee break · + personalização). Experiências n'O Jardim Café (Campo Belo, SP); wellness em estúdio parceiro (até 18 pessoas). * Níveis do wellness a confirmar. Incluem material, condução e estrutura no espaço. Proposta válida mediante confirmação de experiência, número de convidadas, data e disponibilidade de agenda.</p>
     </div>
-
-    <p class="fineprint">Valores por pessoa. Cada experiência tem três níveis (experiência · + refeição/coffee break · + personalização); wellness em valor único, até 18 pessoas. Experiências n'O Jardim Café (Campo Belo, SP); wellness em estúdio parceiro. Incluem material, condução e estrutura no espaço. Proposta válida mediante confirmação de experiência, número de convidadas, data e disponibilidade de agenda.</p>
-
     <div class="slide__foot"><span>elarah.com.br · @elarah.oficial</span><span>Experiência de Aniversário · amai · 2026</span></div>
   </section>
 
