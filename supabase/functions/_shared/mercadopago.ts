@@ -423,7 +423,10 @@ export async function createCardPayment(
     "pmethod=" + input.paymentMethodId,
     "issuer=" + (input.issuerId ?? "?"),
     "installments=" + installments,
+    // Loga presença + TAMANHO do device_id (nunca o valor) — permite
+    // confirmar em produção que o fingerprint chegou não-vazio e íntegro.
     "device_id=" + (input.deviceId ? "yes" : "no"),
+    "device_id_len=" + (input.deviceId ? String(input.deviceId).length : 0),
     "3ds=" + (input.threeDSecureMode ?? "optional"),
     "external_ref=" + input.externalReference,
     "idem=" + idemKey,
