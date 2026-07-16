@@ -290,7 +290,7 @@
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 12px);
   left: 12px;
-  z-index: 45;
+  z-index: 300;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -440,6 +440,10 @@
   gap: 12px;
   padding: 12px 16px;
   background: var(--sk-surface);
+  /* fica ACIMA do painel do menu (z-index 200) — o ☰ continua visível
+     e clicável pra fechar o menu */
+  position: relative;
+  z-index: 205;
 }
 .is-app .header__mobile-toggle.sk-menu-moved {
   order: 0;

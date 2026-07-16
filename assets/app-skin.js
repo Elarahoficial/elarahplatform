@@ -230,6 +230,22 @@
     document.body.appendChild(back);
   }
 
+  // O menu (☰) abre abaixo da fileira de busca (senão cobriria o ☰).
+  function fixMenuPosition() {
+    var nav = document.querySelector('.header__nav');
+    if (!nav || !window.MutationObserver) return;
+    function reposition() {
+      if (!nav.classList.contains('mobile-open')) return;
+      var row = document.querySelector('.sk-searchrow') || document.querySelector('.header');
+      if (!row) return;
+      var bottom = Math.max(0, Math.round(row.getBoundingClientRect().bottom));
+      nav.style.top = bottom + 'px';
+      nav.style.maxHeight = 'calc(100dvh - ' + bottom + 'px)';
+    }
+    var mo = new MutationObserver(reposition);
+    mo.observe(nav, { attributes: true, attributeFilter: ['class'] });
+  }
+
   function enhance() {
     decorateCategories();
     enableCardTap();
@@ -241,6 +257,7 @@
       decorateFilters();
       injectSearch();
       injectIntro();
+      fixMenuPosition();
     }
   }
 
