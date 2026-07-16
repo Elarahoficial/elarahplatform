@@ -59,16 +59,16 @@ jobs:
           deploy() {
             local name="$1"; shift
             local attempt=1
-            until [ "$attempt" -gt 3 ]; do
+            until [ "$attempt" -gt 5 ]; do
               echo "→ $name (tentativa $attempt)"
               if supabase functions deploy "$name" --project-ref "$PROJECT_REF" "$@"; then
                 return 0
               fi
-              echo "::warning::deploy de $name falhou (tentativa $attempt/3) — nova tentativa em $((attempt*10))s"
-              sleep "$((attempt*10))"
+              echo "::warning::deploy de $name falhou (tentativa $attempt/5) — nova tentativa em $((attempt*15))s"
+              sleep "$((attempt*15))"
               attempt=$((attempt+1))
             done
-            echo "::error::deploy de $name falhou após 3 tentativas"
+            echo "::error::deploy de $name falhou após 5 tentativas"
             return 1
           }
 
