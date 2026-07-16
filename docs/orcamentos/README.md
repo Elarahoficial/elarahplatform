@@ -17,7 +17,7 @@ Fotos usadas na proposta (em `/assets`):
 
 ### Arquivos
 - `Experiencia_Hidratei_Elarah_v6.pdf` — versão-fonte recebida (base do trabalho).
-- `Experiencia_Hidratei_Elarah_v10.pdf` — **versão final**.
+- `Experiencia_Hidratei_Elarah_v11.pdf` — **versão final**.
 - `build.py` — reconstrói a versão final a partir da v6 (requer as imagens em
   `/assets`). O histórico das versões intermediárias está no git.
 
@@ -35,4 +35,13 @@ Fotos usadas na proposta (em `/assets`):
    laranja (centralizados); removido o emoji do botão de WhatsApp; selo
    "OPÇÃO 3" ajustado pro mesmo tom carvão dos demais.
 
-Documento final não contém nenhum emoji (nem visível nem na camada de texto).
+7. **Logo Hidratei** — o "quadrado azul" foi removido em todas as páginas: a
+   gota vira um mark ciano com fundo transparente (o "H" fica em negativo), e os
+   chips ciano translúcidos atrás do logo (capa e última página) foram removidos
+   direto do content stream, preservando foto/creme por baixo.
+8. **Cards da página 2** — a sombra (com máscara suave, que alguns celulares
+   renderizam como caixa marrom dura) foi neutralizada; os cards ficam limpos
+   (branco + bordinha), como na última página.
+
+Documento final não contém nenhum emoji (nem visível nem na camada de texto) e
+nenhum quadrado azul de logo.

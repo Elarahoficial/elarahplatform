@@ -91,6 +91,33 @@ def place_icon(page, icon_im, center, size_pt):
 
 doc = fitz.open(SRC)
 
+# ======== remove the translucent cyan logo "chip" rectangles (pages 1 & 6) ========
+# they are single filled rects in the page content stream; deleting the fill
+# leaves the photo (p1) / cream (p6) underneath perfectly intact.
+for _pi, _badge in [(0, b"3186 98 209 210 re\nf"), (5, b"3220 105 166 165 re\nf")]:
+    _x = doc[_pi].get_contents()[0]
+    _s = doc.xref_stream(_x)
+    if _badge in _s:
+        doc.update_stream(_x, _s.replace(_badge, b""))
+
+# ======== LOGO — turn the cyan square badge into a transparent cyan drop ========
+from PIL import ImageChops
+_logo = Image.open(A+"hidrateilogo.jpg").convert("RGB")
+_lw,_lh = _logo.size
+_lr,_lg,_lb = _logo.split()
+_minC = ImageChops.darker(ImageChops.darker(_lr,_lg),_lb)   # white drop -> high, cyan bg -> low
+_alpha = _minC.point(lambda v: 0 if v<70 else (255 if v>200 else int((v-70)*255/130)))
+_cyan = _logo.getpixel((5,5))                            # brand cyan (~9,177,214)
+_drop = Image.composite(Image.new("RGBA",(_lw,_lh),_cyan+(255,)),
+                        Image.new("RGBA",(_lw,_lh),(0,0,0,0)), _alpha)
+_bio = io.BytesIO(); _drop.save(_bio, format="PNG"); DROP_PNG = _bio.getvalue()
+_logo_xref = [i[0] for i in doc[0].get_images(full=True)
+              if doc.extract_image(i[0])["width"]==447 and doc.extract_image(i[0])["height"]==447][0]
+doc[0].replace_image(_logo_xref, stream=DROP_PNG)  # shared xref -> fixes every page
+
+def redraw_drop(page, rect):
+    page.insert_image(fitz.Rect(rect), stream=DROP_PNG, overlay=True)
+
 # ======== PAGE 1 — cover ========
 p1 = doc[0]
 cx = [i[0] for i in p1.get_images(full=True) if doc.extract_image(i[0])["width"]>2000][0]
@@ -114,6 +141,18 @@ bio=io.BytesIO(); cov.save(bio,format="JPEG",quality=90); p1.replace_image(cx, s
 # ======== PAGE 2 — replace card emojis with flat orange icons ========
 p2 = doc[1]
 PEACHf = (1.0, 0.863, 0.733)
+# Neutralise the soft card shadows: their alpha soft-mask is ignored by some
+# viewers (phones) and renders as a hard brown box. Cover the halo around each
+# card with the page cream so the cards read clean (white + light border).
+for strip in [
+    (23,327,819,333),      # top edge above the cards
+    (23,498,819,515),      # bottom edge below the cards (meets the quote banner)
+    (23,333,40,498),       # left margin
+    (283,333,299,498),     # gap between card 1 and 2
+    (543,333,558,498),     # gap between card 2 and 3
+    (802,333,819,498),     # right margin
+]:
+    p2.draw_rect(fitz.Rect(*strip), color=None, fill=CREAM)
 p2emoji = [(66.7,362.1,89.1,383.2),(325.9,362.1,348.3,383.2),(585.0,362.1,607.5,383.2)]
 for bb in p2emoji:  # remove the emoji glyph from the text layer, fill with box peach
     p2.add_redact_annot(fitz.Rect(bb[0]-2,bb[1]-2,bb[2]+2,bb[3]+2), fill=PEACHf)
