@@ -270,6 +270,21 @@
 .is-app.is-filtering .sk-intro,
 .is-app.is-filtering .originals { display: none !important; }
 
+/* ---------- Páginas de conteúdo (blog): área segura + cards próprios ---------- */
+/* O cabeçalho do blog respeita o notch (não fica ilegível no topo) */
+.is-app .topbar { padding-top: env(safe-area-inset-top, 0px); }
+/* Restaura o visual original dos cards do blog (o app-skin não mexe neles) */
+.is-app.sk-article .card {
+  border: 1px solid var(--line, #ece4da) !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 30px -24px rgba(108,70,20,.5) !important;
+  cursor: pointer;
+}
+.is-app.sk-article .card:hover { transform: translateY(-4px); }
+.is-app.sk-article .card__body { padding: 20px 22px 24px !important; }
+
 /* Botão voltar (páginas internas) */
 .is-app .sk-back {
   position: fixed;

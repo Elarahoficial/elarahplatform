@@ -30,6 +30,10 @@
   var root = document.documentElement;
   root.classList.add('is-app');
 
+  // Páginas de conteúdo com cabeçalho próprio (blog etc.) usam .topbar —
+  // essas NÃO devem receber os ajustes de card/layout do app-skin.
+  if (document.querySelector('.topbar')) root.classList.add('sk-article');
+
   // ---------- Emojis por categoria ----------
   var EMOJI = {
     'todas': '✨',
