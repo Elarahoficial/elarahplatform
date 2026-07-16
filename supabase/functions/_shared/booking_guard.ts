@@ -101,6 +101,24 @@ export interface GuardFailure {
 
 export type GuardResult = GuardSuccess | GuardFailure;
 
+// ===== safeRpc =====
+// O builder do supabase-js (o retorno de supabase.rpc(...)) NÃO tem o
+// método .catch(): ele é um "thenable" (só .then). Chamar `.catch(...)`
+// nele lançava `TypeError: supabase.rpc(...).catch is not a function`,
+// abortando o rollback e devolvendo 500 em pagamentos recusados/cancelados
+// (a vaga nem chegava a ser liberada). Este helper faz o await de forma
+// segura: nunca lança e devolve { data, error } igual ao await normal —
+// em exceção de rede/runtime, devolve { data: null, error }.
+async function safeRpc<T = unknown>(
+  query: PromiseLike<{ data: T; error: unknown }>,
+): Promise<{ data: T | null; error: unknown }> {
+  try {
+    return await query;
+  } catch (e) {
+    return { data: null, error: e };
+  }
+}
+
 // ===== parsePrecoToCents (duplicado em create-checkout-session pra
 // evitar dependência circular — ambos usam a mesma implementação) =====
 function parsePrecoToCents(raw: unknown): number | null {
@@ -691,8 +709,10 @@ export async function reserveExperienceSlot(
       });
     }
     if (couponId) {
-      await supabase.rpc("refund_coupon", { p_coupon_id: couponId })
-        .catch((e) => console.warn("[Elarah Guard] refund_coupon falhou", e));
+      const { error: refundCouponErr } = await safeRpc(
+        supabase.rpc("refund_coupon", { p_coupon_id: couponId }),
+      );
+      if (refundCouponErr) console.warn("[Elarah Guard] refund_coupon falhou", refundCouponErr);
     }
   };
 
@@ -755,7 +775,7 @@ export async function reserveExperienceSlot(
       if (legacy.error) {
         // Compensa parcial e cai pra camada 3
         for (let j = 0; j < decremented; j++) {
-          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+          await safeRpc(supabase.rpc(incrementRpc, baseArg));
         }
         console.error(
           "[Elarah Guard] decrement legacy também falhou — pulando estoque",
@@ -770,7 +790,7 @@ export async function reserveExperienceSlot(
       const vr = row as any;
       if (!vr || vr.ok === false) {
         for (let j = 0; j < decremented; j++) {
-          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+          await safeRpc(supabase.rpc(incrementRpc, baseArg));
         }
         await refundGiftCard();
         return {
@@ -820,12 +840,12 @@ export async function reserveExperienceSlot(
       "vagas_a_devolver=" + vagasDecrementadas,
     );
     if (vagasDecrementadas > 0) {
-      const modernInc = await supabase
-        .rpc(incrementRpc, { ...baseArg, p_qty: vagasDecrementadas })
-        .catch((e) => ({ error: e }));
+      const modernInc = await safeRpc(
+        supabase.rpc(incrementRpc, { ...baseArg, p_qty: vagasDecrementadas }),
+      );
       if (modernInc.error) {
         for (let i = 0; i < vagasDecrementadas; i++) {
-          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+          await safeRpc(supabase.rpc(incrementRpc, baseArg));
         }
       }
     }
