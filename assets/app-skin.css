@@ -171,6 +171,7 @@
   border-radius: 0;
   background: none;
   overflow: visible;
+  cursor: pointer;
 }
 .is-app .card:hover {
   transform: none;
@@ -248,6 +249,28 @@
   margin-bottom: 12px;
   text-align: center;
 }
+
+/* Ao buscar: esconde a capa e o "By Elarah", mostra só os resultados */
+.is-app.is-filtering .sk-intro,
+.is-app.is-filtering .originals { display: none !important; }
+
+/* Botão voltar (páginas internas) */
+.is-app .sk-back {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 12px;
+  z-index: 45;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--sk-surface);
+  border: 1px solid var(--sk-line-strong);
+  box-shadow: var(--sk-shadow-pill);
+  color: var(--sk-ink);
+  display: grid;
+  place-items: center;
+}
+.is-app .sk-back svg { width: 20px; height: 20px; }
 
 /* ---------- Elarah Originals → CARROSSEL (rola pro lado) ---------- */
 .is-app .originals { background: var(--sk-surface); padding: 8px 0 4px; }
