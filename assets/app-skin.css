@@ -250,6 +250,22 @@
   text-align: center;
 }
 
+/* Fotos preenchem o quadro INTEIRO, centralizadas (sem branco sobrando) */
+.is-app .card__image-photo {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+.is-app .exp-detail__hero {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block;
+}
+
 /* Ao buscar: esconde a capa e o "By Elarah", mostra só os resultados */
 .is-app.is-filtering .sk-intro,
 .is-app.is-filtering .originals { display: none !important; }
