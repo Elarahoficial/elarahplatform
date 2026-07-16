@@ -58,6 +58,7 @@
     'perfumaria de ambiente': '🏠', 'aromatizador': '🏠', 'aromatizadores': '🏠', 'ambiente': '🏠', 'home': '🏠',
     'ourivesaria': '💍', 'joalheria': '💍', 'joias': '💍',
     'moda': '👗', 'maquiagem': '💄', 'beleza': '💄',
+    'acessório': '👛', 'acessorio': '👛', 'acessórios': '👛', 'acessorios': '👛',
     'escrita': '✍️', 'gift card': '🎁', 'presente': '🎁'
   };
   var EMOJI_DEFAULT = '✨';
