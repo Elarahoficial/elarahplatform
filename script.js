@@ -2653,6 +2653,14 @@ if (groupForm) {
     // CARTÃO — Checkout Transparente (Secure Fields + Device ID)
     // =============================================================
     let _cardFormInstance = null;
+    // Guard de reentrância: impede que um duplo-clique / duplo-submit
+    // (ex.: Enter + clique) reenvie o MESMO card_token_id → o MP responde
+    // 3003 Invalid card_token_id (o token é de uso único).
+    let _cardSubmitInFlight = false;
+    // Contexto da tentativa atual — guardado pra permitir RE-MONTAR o
+    // cardForm a cada nova tentativa (cada montagem gera um token novo).
+    let _cardCtx = null;
+    let _cardExtra = null;
     let cardPollingHandle = null;
     let cardPollingStartedAt = 0;
     const CARD_POLLING_INTERVAL_MS = 2500;
@@ -2673,6 +2681,11 @@ if (groupForm) {
       if (pay) { pay.disabled = false; pay.textContent = 'Pagar'; }
       const st = cardEl('#erm-card-status');
       if (st) st.style.display = 'none';
+      // Libera um novo submit. (A regeneração do token — quando o anterior
+      // foi consumido — é feita por remountCardFormFresh nas branches de
+      // falha pós-envio, não aqui, pra não limpar os campos à toa em erros
+      // de validação que nem chegaram a criar token.)
+      _cardSubmitInFlight = false;
     }
     function setCardProcessing() {
       const pay = cardEl('#erm-card-pay');
@@ -2713,7 +2726,8 @@ if (groupForm) {
           window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(bookingId);
         } else if (status === 'cancelado' || status === 'reembolsado' || status === 'expirado') {
           stopCardPolling();
-          showCardError('Pagamento não aprovado. Tente outro cartão ou pague no PIX.');
+          showCardError('Pagamento não aprovado. Digite os dados do cartão novamente para tentar, ou pague no PIX.');
+          remountCardFormFresh(); // token já foi consumido → recria pra gerar um novo
         }
       };
       cardPollingHandle = setInterval(tick, CARD_POLLING_INTERVAL_MS);
@@ -2797,14 +2811,30 @@ if (groupForm) {
       const backBtn = cardEl('#erm-card-back');
       if (backBtn) backBtn.onclick = function () { closeReservationModal(); };
 
-      const amountReais = ((ctx.totalCentavos || 0) / 100).toFixed(2);
+      // Guarda o contexto da tentativa e monta o cardForm. Guardar ctx/extra
+      // permite RE-MONTAR o formulário a cada nova tentativa (token de uso
+      // único → recriar garante um card_token_id novo por tentativa).
+      _cardCtx = ctx;
+      _cardExtra = extra;
+      _cardSubmitInFlight = false;
+      buildCardForm(ctx, extra);
+    }
 
-      // Desmonta uma instância anterior (nova tentativa/experiência).
+    // Cria (ou recria) a instância do cardForm num estado limpo. Cada
+    // montagem produz um cardForm que gera um token NOVO no próximo submit.
+    // Como o token do Mercado Pago é de USO ÚNICO, recriar aqui é o que
+    // garante um card_token_id novo por tentativa e elimina o 3003
+    // (Invalid card_token_id) em retries. Não afeta o pagamento aprovado:
+    // a 1ª tentativa sempre usa o token fresco desta montagem.
+    function buildCardForm(ctx, extra) {
+      const mp = getMpInstance();
+      if (!mp || typeof mp.cardForm !== 'function') return null;
+      // Desmonta a instância anterior (descarta qualquer token já usado).
       if (_cardFormInstance && typeof _cardFormInstance.unmount === 'function') {
         try { _cardFormInstance.unmount(); } catch (e) {}
-        _cardFormInstance = null;
       }
-
+      _cardFormInstance = null;
+      const amountReais = ((ctx.totalCentavos || 0) / 100).toFixed(2);
       _cardFormInstance = mp.cardForm({
         amount: amountReais,
         iframe: true,
@@ -2836,15 +2866,34 @@ if (groupForm) {
           },
         },
       });
+      return _cardFormInstance;
+    }
+
+    // Re-monta o cardForm após uma tentativa que CONSUMIU o token (recusa,
+    // erro do backend/MP, ou falha de rede após o envio). A instância antiga
+    // — e o token que ela já usou — são descartados; o próximo submit gera
+    // um card_token_id NOVO. É a garantia definitiva contra reuso de token.
+    function remountCardFormFresh() {
+      if (!_cardCtx) return;
+      try { buildCardForm(_cardCtx, _cardExtra); }
+      catch (e) { console.warn('[Elarah MP card] remount do cardForm falhou', e); }
     }
 
     // Tokeniza (já feito pelo cardForm) + envia pro backend criar o
     // pagamento no /v1/payments com Device ID.
     async function submitCardPayment(ctx, extra) {
+      // Guard de reentrância: se já existe um submit em andamento, ignora
+      // este (duplo-clique / Enter + clique). Sem isso, dois submits leriam
+      // o mesmo token e o segundo tomaria 3003 Invalid card_token_id.
+      if (_cardSubmitInFlight) {
+        console.warn('[Elarah MP card] submit já em andamento — ignorando envio duplicado');
+        return;
+      }
       if (!_cardFormInstance || typeof _cardFormInstance.getCardFormData !== 'function') {
         showCardError('Formulário do cartão não está pronto. Recarregue e tente de novo.');
         return;
       }
+      _cardSubmitInFlight = true;
       setCardProcessing();
 
       let cardData;
@@ -2923,7 +2972,10 @@ if (groupForm) {
         const resp = await res.json().catch(function () { return null; });
 
         if (!res.ok || !resp) {
-          showCardError(translateCheckoutError(resp, 'Não foi possível processar o cartão. Tente de novo ou pague no PIX.'));
+          // O token JÁ foi enviado ao /v1/payments — está consumido.
+          // Recria o cardForm pra a próxima tentativa nascer com token novo.
+          showCardError(translateCheckoutError(resp, 'Não foi possível processar o cartão. Digite os dados novamente e tente, ou pague no PIX.'));
+          remountCardFormFresh();
           return;
         }
         if (resp.direct === true) {
@@ -2931,7 +2983,10 @@ if (groupForm) {
           return;
         }
         if (resp.rejected === true || resp.status === 'rejected' || resp.status === 'cancelled') {
-          showCardError(translateCardStatusDetail(resp.status_detail) || resp.message || 'Pagamento recusado. Tente outro cartão ou pague no PIX.');
+          // Recusa = token consumido. Recria pra o retry gerar um token novo
+          // (senão o reenvio do mesmo token daria 3003 Invalid card_token_id).
+          showCardError(translateCardStatusDetail(resp.status_detail) || resp.message || 'Pagamento recusado. Digite os dados do cartão novamente para tentar, ou pague no PIX.');
+          remountCardFormFresh();
           return;
         }
 
@@ -2968,7 +3023,10 @@ if (groupForm) {
         startCardPolling(resp.booking_id);
       } catch (e) {
         console.error('[Elarah MP card] submit exception', e);
-        showCardError('Erro de conexão ao processar o cartão. Tente novamente.');
+        // A requisição pode ter saído (token possivelmente consumido) —
+        // recria por segurança pra o retry não reusar o mesmo token.
+        showCardError('Erro de conexão ao processar o cartão. Digite os dados novamente e tente de novo.');
+        remountCardFormFresh();
       }
     }
 
