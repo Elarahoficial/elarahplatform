@@ -213,21 +213,39 @@
     }
   }
 
-  // Botão voltar (páginas internas, ex.: experiência).
-  function injectBack() {
-    if (isHome) return;
-    if (document.querySelector('.sk-back')) return;
-    var back = document.createElement('button');
-    back.type = 'button';
-    back.className = 'sk-back';
-    back.setAttribute('aria-label', 'Voltar');
-    back.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
-    back.addEventListener('click', function () {
-      if (window.history.length > 1) window.history.back();
-      else window.location.assign('index.html');
-    });
-    document.body.appendChild(back);
+  function goBack() {
+    if (window.history.length > 1) window.history.back();
+    else window.location.assign('index.html');
+  }
+
+  // Faz os botões "Voltar" da página funcionarem no app.
+  // (O site usa href="javascript:history.back()", que o webview do app
+  // costuma bloquear — aqui interceptamos o clique e voltamos via JS.)
+  function enableBackLinks() {
+    document.addEventListener('click', function (e) {
+      var back = e.target.closest('.exp-detail__back, [href="javascript:history.back()"], .js-voltar, .voltar');
+      if (!back) return;
+      e.preventDefault();
+      goBack();
+    }, true);
+  }
+
+  // Voltar arrastando o dedo da borda esquerda pra direita (swipe back).
+  function enableSwipeBack() {
+    var x0 = 0, y0 = 0, on = false;
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) { on = false; return; }
+      var t = e.touches[0];
+      if (t.clientX > 28) { on = false; return; } // só perto da borda esquerda
+      x0 = t.clientX; y0 = t.clientY; on = true;
+    }, { passive: true });
+    document.addEventListener('touchend', function (e) {
+      if (!on) return;
+      on = false;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - x0, dy = t.clientY - y0;
+      if (dx > 60 && Math.abs(dy) < 50) goBack();
+    }, { passive: true });
   }
 
   // O menu (☰) abre abaixo da fileira de busca (senão cobriria o ☰).
@@ -249,7 +267,8 @@
   function enhance() {
     decorateCategories();
     enableCardTap();
-    injectBack();
+    enableBackLinks();
+    enableSwipeBack();
     applyFilterView();
     // Capa, busca e Originais só na página inicial (páginas internas ficam limpas)
     if (isHome) {
