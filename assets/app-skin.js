@@ -171,12 +171,73 @@
     anchor.insertAdjacentElement('afterend', intro);
   }
 
+  // É a página inicial? (home tem a capa, busca, originais)
+  var path = window.location.pathname || '';
+  var isHome = path === '' || path === '/' || /(^|\/)index\.html$/i.test(path);
+
+  // Está buscando/filtrando? (?busca= ou ?categoria=)
+  function filterParams() {
+    try {
+      var sp = new URLSearchParams(window.location.search);
+      return { busca: sp.get('busca'), cat: sp.get('categoria') || sp.get('cat') };
+    } catch (e) { return {}; }
+  }
+
+  // Card INTEIRO clicável (foto e corpo abrem a experiência; coração e
+  // links/botões continuam funcionando normalmente).
+  function enableCardTap() {
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('a, button, input, select, textarea, label')) return;
+      var card = e.target.closest('.card');
+      if (!card) return;
+      var link = card.querySelector('.card__title-link') || card.querySelector('a[href]');
+      var href = link && link.getAttribute('href');
+      if (href) window.location.assign(href);
+    });
+  }
+
+  // Ao buscar, esconde a capa + "By Elarah" e mostra só os resultados.
+  function applyFilterView() {
+    var f = filterParams();
+    if (!f.busca && !f.cat) return;
+    root.classList.add('is-filtering');
+    var titleEl = document.querySelector('.experiences__title');
+    if (titleEl) {
+      titleEl.textContent = f.busca
+        ? 'Resultados para "' + f.busca + '"'
+        : (f.cat || 'Resultados');
+    }
+  }
+
+  // Botão voltar (páginas internas, ex.: experiência).
+  function injectBack() {
+    if (isHome) return;
+    if (document.querySelector('.sk-back')) return;
+    var back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'sk-back';
+    back.setAttribute('aria-label', 'Voltar');
+    back.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+    back.addEventListener('click', function () {
+      if (window.history.length > 1) window.history.back();
+      else window.location.assign('index.html');
+    });
+    document.body.appendChild(back);
+  }
+
   function enhance() {
     decorateCategories();
-    decorateOriginals();
-    decorateFilters();
-    injectSearch();
-    injectIntro();
+    enableCardTap();
+    injectBack();
+    applyFilterView();
+    // Capa, busca e Originais só na página inicial (páginas internas ficam limpas)
+    if (isHome) {
+      decorateOriginals();
+      decorateFilters();
+      injectSearch();
+      injectIntro();
+    }
   }
 
   if (document.readyState === 'loading') {
