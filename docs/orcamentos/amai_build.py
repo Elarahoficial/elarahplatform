@@ -35,14 +35,12 @@ remove_text(p1, (388.0, 365.5, 559.0, 388.0))      # BY COLLAGE CLUB (whole line
 remove_text(p1, (352.5, 666.0, 559.0, 686.5))      # price line
 write_spaced(p1, "R$159,00 POR PESSOA,", 353.3, 681.8, 19)
 
-# ---- PAGES 3 & 4: relabel supplier line ----
-for pg, y, rect in [(2, 300.6, (85.0, 287.0, 330.0, 305.0)),
-                    (3, 222.0, (85.0, 208.5, 330.0, 226.0))]:
-    remove_text(d[pg], rect)
-    write_spaced(d[pg], "FORNECIDO PELA ELARAH:", 85.9, y, 16)
+# ---- PAGE 3: relabel supplier line ----
+remove_text(d[2], (85.0, 287.0, 330.0, 305.0))
+write_spaced(d[2], "FORNECIDO PELA ELARAH:", 85.9, 300.6, 16)
 
-# ---- remove collage-option page (5) and supplier 'QUEM SOMOS' page (6) ----
-d.delete_pages([4, 5])
+# ---- remove porta-retratos (4), collage-option (5) and supplier 'QUEM SOMOS' (6) ----
+d.delete_pages([3, 4, 5])
 
 d.save(OUT, garbage=4, deflate=True)
 print("saved", OUT, "pages:", d.page_count)
