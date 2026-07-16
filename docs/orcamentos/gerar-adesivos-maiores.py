@@ -73,16 +73,28 @@ def place(page, img_path, center, card_pt, angle_ccw):
     rot.save(bio, format="PNG")
     page.insert_image(rect, stream=bio.getvalue(), keep_proportion=False, overlay=True)
 
-FACTOR = float(sys.argv[1]) if len(sys.argv) > 1 else 1.28
+FACTOR = float(sys.argv[1]) if len(sys.argv) > 1 else 1.5
 A_ADES = float(sys.argv[2]) if len(sys.argv) > 2 else 6.0    # adesivo angle (ccw+)
 A_ADES1 = float(sys.argv[3]) if len(sys.argv) > 3 else -5.0  # adesivo1 angle
 
 doc = fitz.open(SRC_PDF)
 page = doc[2]
 # draw big sticker (94) first, then washi (98) on top.
-# nudge up/right a touch so the larger cards keep the original clean margin.
-place(page, ASSETS+"hidrateiadesivo.jpg", (71.0, 521.0), 91.5*FACTOR, A_ADES)
-place(page, ASSETS+"hidrateiadesivo1.jpg", (143.0, 494.0), 79.5*FACTOR, A_ADES1)
+# Anchor the collage card's bbox bottom-left near (margin, page_bottom-margin)
+# and grow up/right; keep the washi overlapping its upper-right, scaling the gap.
+MARGIN = 12.0
+PAGE_H = 594.96
+size_a = 91.5 * FACTOR
+size_a1 = 79.5 * FACTOR
+bbox_a = size_a * 1.099   # rotated square bounding box (~6 deg)
+cx_a = MARGIN + bbox_a/2
+cy_a = (PAGE_H - MARGIN) - bbox_a/2
+# original center gap adesivo->adesivo1 was (73.5, -28.5); scale it with FACTOR
+cx_a1 = cx_a + 73.5 * (FACTOR/1.0) * 0.80
+cy_a1 = cy_a - 28.5 * (FACTOR/1.0) * 0.80
+place(page, ASSETS+"hidrateiadesivo.jpg", (cx_a, cy_a), size_a, A_ADES)
+place(page, ASSETS+"hidrateiadesivo1.jpg", (cx_a1, cy_a1), size_a1, A_ADES1)
+print("centers:", (round(cx_a,1),round(cy_a,1)), (round(cx_a1,1),round(cy_a1,1)))
 doc.save(OUT_PDF, garbage=4, deflate=True)
 print("saved", OUT_PDF, "factor", FACTOR, "angles", A_ADES, A_ADES1)
 
