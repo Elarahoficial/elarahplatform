@@ -54,12 +54,40 @@ def crop_aspect(img, aspect, vbias=0.5, hbias=0.5):
         ch = round(W/aspect); ex = H-ch; t = round(ex*vbias); im = im.crop((0,t,W,t+ch))
     return im
 
-def pill(page, rect, text, radius=None):
-    r = fitz.Rect(rect); radius = radius or r.height/2
-    page.draw_rect(r, color=None, fill=(0.13,0.1,0.08), fill_opacity=0.55, radius=radius/ r.height)
-    # center the label
-    page.insert_textbox(fitz.Rect(r.x0, r.y0+r.height/2-5, r.x1, r.y1), text,
+def pill(page, rect, text):
+    r = fitz.Rect(rect); rr = r.height/2
+    # soft drop shadow (subtle, matches the glassy pills on the photo pages)
+    sh = fitz.Rect(r.x0-0.6, r.y0+1.4, r.x1+0.6, r.y1+2.2)
+    page.draw_rect(sh, color=None, fill=(0.13,0.1,0.08), fill_opacity=0.10, radius=(sh.height/2)/sh.height)
+    # solid charcoal matching the perceived colour of the other OPÇÃO pills (~#5e5b56)
+    page.draw_rect(r, color=None, fill=(0.37,0.357,0.337), radius=rr/r.height)
+    # vertically-centred label
+    page.insert_textbox(fitz.Rect(r.x0, r.y0+(r.height-8.2)/2-1.2, r.x1, r.y1), text,
                         fontname="hebo", fontsize=8.2, color=(1,1,1), align=1)
+
+# ---------- flat orange line icons (replace the emojis) ----------
+IC_ORANGE = (238,122,30,255); IC_PEACH = (255,220,187,255); _S=4
+def _cv():
+    im=Image.new("RGBA",(100*_S,100*_S),(0,0,0,0)); return im, ImageDraw.Draw(im)
+def _R(*v): return [x*_S for x in v]
+def ic_heart():
+    im,d=_cv(); d.ellipse(_R(24,26,52,54),fill=IC_ORANGE); d.ellipse(_R(48,26,76,54),fill=IC_ORANGE)
+    d.polygon(_R(27,42,73,42,50,74),fill=IC_ORANGE); return im
+def ic_camera():
+    im,d=_cv(); d.rounded_rectangle(_R(20,36,80,74),radius=8*_S,fill=IC_ORANGE)
+    d.rounded_rectangle(_R(38,28,58,40),radius=4*_S,fill=IC_ORANGE); d.ellipse(_R(40,44,60,64),fill=IC_PEACH)
+    d.ellipse(_R(46,50,54,58),fill=IC_ORANGE); d.ellipse(_R(68,42,74,48),fill=IC_PEACH); return im
+def ic_gift():
+    im,d=_cv(); d.rounded_rectangle(_R(24,44,76,78),radius=5*_S,fill=IC_ORANGE)
+    d.rectangle(_R(45,44,55,78),fill=IC_PEACH); d.rectangle(_R(24,56,76,64),fill=IC_PEACH)
+    d.polygon(_R(50,44,30,28,34,46),fill=IC_ORANGE); d.polygon(_R(50,44,70,28,66,46),fill=IC_ORANGE)
+    d.ellipse(_R(46,40,54,48),fill=IC_ORANGE); return im
+def place_icon(page, icon_im, center, size_pt):
+    im = icon_im.resize((300,300), Image.LANCZOS)
+    bio=io.BytesIO(); im.save(bio,format="PNG")
+    cx,cy=center
+    page.insert_image(fitz.Rect(cx-size_pt/2,cy-size_pt/2,cx+size_pt/2,cy+size_pt/2),
+                      stream=bio.getvalue(), overlay=True)
 
 doc = fitz.open(SRC)
 
@@ -82,6 +110,17 @@ for y in range(bs,ch):
 dark = Image.new("RGB",(cov.size),(28,20,14))
 cov = Image.composite(dark, cov, ov); cov = Image.composite(dark, cov, bot)
 bio=io.BytesIO(); cov.save(bio,format="JPEG",quality=90); p1.replace_image(cx, stream=bio.getvalue())
+
+# ======== PAGE 2 — replace card emojis with flat orange icons ========
+p2 = doc[1]
+PEACHf = (1.0, 0.863, 0.733)
+p2emoji = [(66.7,362.1,89.1,383.2),(325.9,362.1,348.3,383.2),(585.0,362.1,607.5,383.2)]
+for bb in p2emoji:  # remove the emoji glyph from the text layer, fill with box peach
+    p2.add_redact_annot(fitz.Rect(bb[0]-2,bb[1]-2,bb[2]+2,bb[3]+2), fill=PEACHf)
+p2.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=fitz.PDF_REDACT_LINE_ART_NONE)
+p2icons = [(ic_heart(),(77.9,372.6)), (ic_camera(),(337.1,372.6)), (ic_gift(),(596.25,372.6))]
+for icon, ctr in p2icons:
+    place_icon(p2, icon, ctr, 27)
 
 # ======== PAGE 3 — enlarge the two sticker minis (~1.5x) ========
 p3 = doc[2]; F=1.5; MARGIN=12.0; PH=594.96
@@ -113,16 +152,24 @@ place_card(p5, A+"hidrateibedezzled.jpg",(148,490), 188, -4.0)
 
 # ======== PAGE 6 — replace clashing emojis with elegant orange numerals ========
 p6 = doc[5]
-emojis = {"01":(65.2,94.1,83.9,111.7),"02":(258.4,94.1,277.1,111.7),
-          "03":(451.7,94.1,470.4,111.7),"04":(644.9,94.1,663.6,111.7)}
-cardx0 = [40.1,233.6,426.4,619.9]
-for i,(num,bb) in enumerate(emojis.items()):
-    # cover the emoji glyph with the white card bg
-    p6.draw_rect(fitz.Rect(bb[0]-6,88,bb[2]+30,114), color=None, fill=(1,1,1))
-    # draw the numeral in brand orange serif, left-aligned like the title
-    p6.insert_text(fitz.Point(cardx0[i]+12, 111), num, fontname="tibo", fontsize=20, color=ORANGE)
-# remove the small chat emoji in the WhatsApp button (cover with button white)
-p6.draw_rect(fitz.Rect(82,489,101,506), color=None, fill=(1,1,1))
+# (numeral, emoji_bbox, icon_box_rect) — numeral centred inside the icon box
+ICON = [
+    ("01",(65.2,94.1,83.9,111.7),(52.9,79.1,209.6,127.1)),
+    ("02",(258.4,94.1,277.1,111.7),(246.4,79.1,402.4,127.1)),
+    ("03",(451.7,94.1,470.4,111.7),(439.1,79.1,595.9,127.1)),
+    ("04",(644.9,94.1,663.6,111.7),(632.6,79.1,789.4,127.1)),
+]
+NUMSIZE = 23
+# remove all emoji glyphs from the text layer first (fill white to match boxes/button)
+for num, bb, box in ICON:
+    p6.add_redact_annot(fitz.Rect(bb[0]-4,bb[1]-4,bb[2]+4,bb[3]+4), fill=(1,1,1))
+p6.add_redact_annot(fitz.Rect(82,489,101,506), fill=(1,1,1))  # chat emoji in WhatsApp button
+p6.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=fitz.PDF_REDACT_LINE_ART_NONE)
+for num, bb, box in ICON:
+    bcx = (box[0]+box[2])/2; bcy = (box[1]+box[3])/2
+    w = fitz.get_text_length(num, fontname="tibo", fontsize=NUMSIZE)
+    p6.insert_text(fitz.Point(bcx-w/2, bcy+NUMSIZE*0.34), num,
+                   fontname="tibo", fontsize=NUMSIZE, color=ORANGE)
 
 doc.save(OUT, garbage=4, deflate=True)
 print("saved", OUT)
