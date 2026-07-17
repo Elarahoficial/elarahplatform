@@ -363,6 +363,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         }
       }
       toShow = arr;
+    } else if (activeBusca && document.documentElement.classList.contains('is-app')) {
+      // No APP: quando a pessoa DIGITA uma busca ("vela"), a home mostra
+      // TODOS os resultados daquele termo e mantém a barra de busca no topo.
+      // Antes cortava em MAX_HOME_CARDS e o "Ver todas" ia pra listagem geral
+      // (categoria.html), perdendo o que foi digitado. No site normal (sem
+      // .is-app) o comportamento continua exatamente igual.
+      toShow = filtered;
     } else {
       toShow = isFiltered ? filtered.slice(0, MAX_HOME_CARDS) : filtered.slice(0, MAX_HOME_CARDS * 3);
     }
