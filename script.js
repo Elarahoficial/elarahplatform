@@ -1889,19 +1889,19 @@ if (groupForm) {
     const REDEEM_FN_URL =
       CHECKOUT_FN_BASE + '/redeem-gift-card';
 
-    // ===== Chave de migração do cartão: Stripe → Mercado Pago =====
-    // LIGADO (go-live): o cartão vai pro Checkout Pro da Mercado Pago
-    // (conta CNPJ), com parcelamento em até 12x e juros repassados ao
-    // cliente. O PIX NÃO é afetado por esta chave.
-    // Escotilha de emergência: ?mpcard=0 na URL força o cartão de volta
-    // pro Stripe (rollback rápido pra testar sem depender de deploy).
+    // ===== Chave de migração do cartão: Mercado Pago → Stripe =====
+    // DESLIGADO: o cartão vai pro STRIPE (Checkout), enquanto o motor de
+    // risco do Mercado Pago recusa 100% dos cartões (cc_rejected_high_risk).
+    // O PIX NÃO é afetado por esta chave — continua no Mercado Pago.
+    // Escotilha de emergência: ?mpcard=1 na URL força o cartão de volta
+    // pro Mercado Pago (rollback rápido sem depender de deploy).
     const MP_CARD_ENABLED = (function () {
       try {
         var q = new URLSearchParams(window.location.search);
-        if (q.get('mpcard') === '0') return false; // força Stripe (rollback)
-        if (q.get('mpcard') === '1') return true;
+        if (q.get('mpcard') === '0') return false; // força Stripe
+        if (q.get('mpcard') === '1') return true;   // força Mercado Pago
       } catch (e) {}
-      return true; // ← cartão via Mercado Pago LIGADO
+      return false; // ← cartão via STRIPE (MP recusando no cartão)
     })();
     // Anon key do Supabase (JWT). Pode ficar exposta no front — é o
     // "publishable key" do projeto, sem privilégios além do RLS.
