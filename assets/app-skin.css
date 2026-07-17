@@ -399,6 +399,35 @@
   border-radius: 999px;
 }
 
+/* ---------- Página CHEIA "Elarah Originals" (byelarah.html) ----------
+   Aqui NÃO é o carrossel da home: é a lista completa. Volta a ser uma
+   GRADE vertical de 2 colunas, mostra o subtítulo (contexto) e deixa
+   respiro antes do rodapé — some a sensação de página "crua". */
+.is-app body[data-originals="all"] .originals {
+  padding: 10px 0 30px;
+}
+.is-app body[data-originals="all"] .originals__subtitle {
+  display: block;
+  font-size: .85rem;
+  color: var(--sk-ink-soft);
+  font-weight: 500;
+  max-width: 34ch;
+  margin: 6px auto 0;
+  line-height: 1.45;
+}
+.is-app body[data-originals="all"] .originals__grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 16px;
+  overflow: visible;
+  scroll-snap-type: none;
+  padding: 6px 16px 8px;
+}
+.is-app body[data-originals="all"] .originals__card {
+  width: auto;
+  scroll-snap-align: none;
+}
+
 /* 3 por fileira em telas maiores (tablet) */
 @media (min-width: 720px) {
   .is-app .experiences__grid { grid-template-columns: repeat(3, 1fr) !important; }
