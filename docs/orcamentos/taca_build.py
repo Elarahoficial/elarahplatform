@@ -97,14 +97,11 @@ p2 = d[1]
 rm(p2, [(458, 793, 543, 803)])
 put_right(p2, "Aniversário da Isa", FS, 7.9, MUTED, 541.4, 801.0)
 
-# ---- PAGE 3: keep only 'por pessoa' (remove 'TOTAL PARA 12 CONVIDADAS' + value + divider) ----
-p3 = d[2]
-rm(p3, [(327, 359, 492, 405)])                                   # total label + R$ 3.456
-p3.draw_rect(fitz.Rect(328, 350.5, 521, 355), color=None, fill=(0.82, 0.306, 0.447))  # hide divider
-
-# ---- PAGE 3: add 'Onde acontece' — two venue options (Aretha & BETC) ----
+# ================= PAGE 3: 3-tier pricing (189/289/389 por pessoa) + venues =================
 FSB = fitz.Font(fontfile=LF+"LiberationSans-Bold.ttf")
 A_DIR = "/home/user/elarahplatform/assets/"
+HEAD = "#3F2F2C"; MUTc = "#8C7E74"; BODYc = "#4A3F3A"; CORALc = "#FF5E8A"; GOLDc = "#B8912E"; CREAMc = "#FBF6EF"
+BLUSH = (0.988, 0.945, 0.95)
 def crop_ratio(path, ratio, vbias=0.5):
     im = Image.open(path).convert("RGB"); W, H = im.size
     if W/H > ratio:
@@ -117,23 +114,85 @@ def put_spaced(page, text, x, y, size, color, font, track=1.9):
     for ch in text:
         tw.append((cx, y), ch, font=font, fontsize=size); cx += font.text_length(ch, size)+track
     tw.write_text(page, color=color)
+
+p3 = d[2]
+# wipe the old body: 'O que está incluso' + list + single price card + '10 a 15 / 12' note
+rm(p3, [(40, 240, 560, 456)])
+p3.draw_rect(fitz.Rect(276, 243, 554, 445), color=None, fill=BLUSH)   # cover old rose price card
+
+TIERS = [
+    dict(name="Básico", tag="A experiência, em sua essência.", price="189", more=None,
+         bullets=["Experiência de pintura em taça", "Todos os materiais inclusos",
+                  "Condução por facilitadora", "Cada convidada leva a sua taça"], kind="plain"),
+    dict(name="Premium", tag="Experiência + celebração.", price="289",
+         badge="O MAIS QUERIDINHO", more="TUDO DO BÁSICO, E MAIS",
+         bullets=["Brinde de Aperol Spritz", "Registro fotográfico profissional",
+                  "Piranha personalizada com a inicial", "Avental personalizado"], kind="highlight"),
+    dict(name="Signature", tag="A celebração completa, sem preocupação.", price="389",
+         badge="TUDO RESOLVIDO", more="TUDO DO PREMIUM, E MAIS",
+         bullets=["Brunch para o grupo", "Mesa de parabéns decorada",
+                  "Bolo de aniversário + docinhos", "Produção de todos os detalhes"], kind="dark"),
+]
+CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 262, 452
+for i, t in enumerate(TIERS):
+    card = fitz.Rect(CX[i], CY0, CX[i]+CW, CY1)
+    if t["kind"] == "plain":
+        p3.draw_rect(card, color=(0.906, 0.863, 0.796), fill=(1, 1, 1), width=1, radius=0.055)
+        head, mut, body, acc, cream_txt = HEAD, MUTc, BODYc, CORALc, False
+    elif t["kind"] == "highlight":
+        p3.draw_rect(card, color=(1, 0.369, 0.541), fill=(1, 1, 1), width=1.6, radius=0.055)
+        head, mut, body, acc, cream_txt = HEAD, MUTc, BODYc, CORALc, False
+    else:
+        p3.draw_rect(card, color=None, fill=(0.82, 0.306, 0.447), radius=0.055)
+        head, mut, body, acc, cream_txt = CREAMc, "#F0D9DF", "#FBEDF0", GOLDc, True
+    # badge pill (Premium / Signature)
+    if t.get("badge"):
+        bw = FSB.text_length(t["badge"], 6.3) + 0.8*(len(t["badge"])-1) + 17
+        bx = CX[i] + (CW-bw)/2
+        bcol = (1, 0.369, 0.541) if t["kind"] == "highlight" else (0.72, 0.55, 0.22)
+        p3.draw_rect(fitz.Rect(bx, CY0-9, bx+bw, CY0+9), color=None, fill=bcol, radius=0.5)
+        put_spaced(p3, t["badge"], bx+8.5, CY0+2.5, 6.3, (1, 1, 1), FSB, track=0.8)
+    # content via html (handles wrapping + bullets)
+    more_html = f'<div class="more">{t["more"]}</div>' if t.get("more") else ''
+    lis = "".join(f'<div class="li"><span class="mk">◆</span>&nbsp;{b}</div>' for b in t["bullets"])
+    html = (f'<div class="nm">{t["name"]}</div><div class="tg">{t["tag"]}</div>'
+            f'<div class="pr">R$&nbsp;{t["price"]}</div><div class="pp">POR PESSOA</div>'
+            f'{more_html}{lis}')
+    css = (f'.nm{{font-family:serif;font-size:15px;font-weight:bold;color:{head}}}'
+           f'.tg{{font-size:7px;color:{mut};margin-top:3px}}'
+           f'.pr{{font-family:serif;font-size:22px;font-weight:bold;color:{head};margin-top:10px}}'
+           f'.pp{{font-size:6.5px;color:{mut};letter-spacing:1px}}'
+           f'.more{{font-size:6.5px;font-weight:bold;color:{acc};margin-top:9px}}'
+           f'.li{{font-size:7.6px;color:{body};margin-top:5px;line-height:1.25}}'
+           f'.mk{{color:{acc};font-size:6px}}')
+    p3.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+16, card.x1-10, card.y1-8), html, css=css)
+
+# small per-person note (no more '10 a 15 / 12')
+put(p3, "Valores por pessoa · Aperol Spritz incluso nos planos Premium e Signature.",
+    FS, 7.6, (0.549, 0.494, 0.455), 54, 474)
+
+# ---- venues 'Onde acontece' (Aretha & BETC) below the pricing ----
 def venue(page, path, rect, name, vbias=0.5):
-    r = fitz.Rect(rect)
-    im = crop_ratio(path, r.width/r.height, vbias)
+    r = fitz.Rect(rect); im = crop_ratio(path, r.width/r.height, vbias)
     b = io.BytesIO(); im.save(b, format="JPEG", quality=90)
     page.insert_image(r, stream=b.getvalue())
-    put(page, name, FSB, 11, DARKt, r.x0, r.y1+16)
+    put(page, name, FSB, 10.5, DARKt, r.x0, r.y1+14)
 
-put_spaced(p3, "✦ ONDE ACONTECE", 53.8, 512, 9, CORAL_RGB, FSB)
-put(p3, "Escolha o seu ", FB, 20, (0.118,0.086,0.098), 53.8, 543)
-put(p3, "local", FI, 20, CORAL_RGB, 53.8+FB.text_length("Escolha o seu ", 20), 543)
-GRID_Y = 566
-venue(p3, A_DIR+"arethasoulkitchen.jpg", (53.8, GRID_Y, 293, GRID_Y+150), "Aretha Soul Kitchen")
-venue(p3, A_DIR+"betchavas.jpg",         (301, GRID_Y, 541, GRID_Y+150), "BETC", vbias=0.42)
+put_spaced(p3, "✦ ONDE ACONTECE", 54, 512, 9, CORAL_RGB, FSB)
+put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 541)
+put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 541)
+VY = 560
+venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, VY, 293, VY+118), "Aretha Soul Kitchen")
+venue(p3, A_DIR+"betchavas.jpg",         (301, VY, 541, VY+118), "BETC", vbias=0.42)
 
-# ---- PAGE 4 banner headline + footer ----
+# ---- PAGE 4 banner headline + footer + disclaimer (remove '12 / 10 a 15') ----
 p4 = d[3]
-rm(p4, [(76, 534, 487, 559), (434, 793, 543, 803)])
+rm(p4, [(76, 534, 487, 559), (434, 793, 543, 803), (50, 655, 745, 686)])
+p4.insert_textbox(fitz.Rect(53.8, 655, 538, 690),
+    "Valores por pessoa. Bebidas, brunch, bolo, mesa de parabéns e itens "
+    "personalizados conforme o plano escolhido. Proposta válida mediante confirmação de data.",
+    fontsize=7.9, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
+    color=(0.549, 0.494, 0.455), lineheight=1.35)
 x = 77.8
 put(p4, "Uma festa pra Isa ", FB, 20.2, CREAM, x, 553.5)
 x += FB.text_length("Uma festa pra Isa ", 20.2)
