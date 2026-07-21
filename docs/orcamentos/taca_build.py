@@ -102,6 +102,35 @@ p3 = d[2]
 rm(p3, [(327, 359, 492, 405)])                                   # total label + R$ 3.456
 p3.draw_rect(fitz.Rect(328, 350.5, 521, 355), color=None, fill=(0.82, 0.306, 0.447))  # hide divider
 
+# ---- PAGE 3: add 'Onde acontece' — two venue options (Aretha & BETC) ----
+FSB = fitz.Font(fontfile=LF+"LiberationSans-Bold.ttf")
+A_DIR = "/home/user/elarahplatform/assets/"
+def crop_ratio(path, ratio, vbias=0.5):
+    im = Image.open(path).convert("RGB"); W, H = im.size
+    if W/H > ratio:
+        cw = round(H*ratio); l = (W-cw)//2; im = im.crop((l, 0, l+cw, H))
+    else:
+        ch = round(W/ratio); t = round((H-ch)*vbias); im = im.crop((0, t, W, t+ch))
+    return im
+def put_spaced(page, text, x, y, size, color, font, track=1.9):
+    tw = fitz.TextWriter(page.rect); cx = x
+    for ch in text:
+        tw.append((cx, y), ch, font=font, fontsize=size); cx += font.text_length(ch, size)+track
+    tw.write_text(page, color=color)
+def venue(page, path, rect, name, vbias=0.5):
+    r = fitz.Rect(rect)
+    im = crop_ratio(path, r.width/r.height, vbias)
+    b = io.BytesIO(); im.save(b, format="JPEG", quality=90)
+    page.insert_image(r, stream=b.getvalue())
+    put(page, name, FSB, 11, DARKt, r.x0, r.y1+16)
+
+put_spaced(p3, "✦ ONDE ACONTECE", 53.8, 512, 9, CORAL_RGB, FSB)
+put(p3, "Escolha o seu ", FB, 20, (0.118,0.086,0.098), 53.8, 543)
+put(p3, "local", FI, 20, CORAL_RGB, 53.8+FB.text_length("Escolha o seu ", 20), 543)
+GRID_Y = 566
+venue(p3, A_DIR+"arethasoulkitchen.jpg", (53.8, GRID_Y, 293, GRID_Y+150), "Aretha Soul Kitchen")
+venue(p3, A_DIR+"betchavas.jpg",         (301, GRID_Y, 541, GRID_Y+150), "BETC", vbias=0.42)
+
 # ---- PAGE 4 banner headline + footer ----
 p4 = d[3]
 rm(p4, [(76, 534, 487, 559), (434, 793, 543, 803)])
