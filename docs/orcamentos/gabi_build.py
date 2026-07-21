@@ -7,7 +7,7 @@ import fitz, io, sys
 from PIL import Image
 
 SRC = "/root/.claude/uploads/9abf7e9a-5852-5ed9-badc-3da0f14e2577/d2b59d51-Pintura_em_Taca_Elarah_1.pdf"
-OUT = sys.argv[1] if len(sys.argv) > 1 else "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad/Vela_HP_final.pdf"
+OUT = sys.argv[1] if len(sys.argv) > 1 else "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad/Vela_Gabi_final.pdf"
 CORAL = "1 .3686 .5412"   # #FF5E8A
 
 d = fitz.open(SRC)
@@ -95,7 +95,7 @@ p1 = d[0]
 rm(p1, [(64, 286, 252, 410),      # the big '20' (below the coral eyebrow at y274-284)
         (70, 401, 252, 456),      # 'vinte anos — bora celebrar!'
         (70, 476, 305, 592)])     # body paragraph
-put(p1, "Parabéns, HP!", FB, 34, CORAL_RGB, 70, 360)
+put(p1, "Parabéns, Gabi!", FB, 34, CORAL_RGB, 70, 360)
 put(p1, "vem comemorar!", FI, 26, DARKt, 70.9, 405)
 BODY = ('<p>O seu aniversário pede uma festa à altura: '
         '<b style="color:#FF5E8A">diferente, animada e inesquecível</b>. '
@@ -114,7 +114,7 @@ put_spaced(p1, "POR PESSOA", fx, 766.5, 8.25, (1, 0.369, 0.541), FSB, track=2.4)
 # ---- PAGE 2 footer ----
 p2 = d[1]
 rm(p2, [(458, 793, 543, 803)])
-put_right(p2, "Aniversário da HP", FS, 7.9, MUTED, 541.4, 801.0)
+put_right(p2, "Aniversário da Gabi", FS, 7.9, MUTED, 541.4, 801.0)
 
 # ================= PAGE 3: 3-tier pricing (189/289/389 por pessoa) + venues =================
 A_DIR = "/home/user/elarahplatform/assets/"
@@ -184,23 +184,12 @@ def venue(page, path, rect, name, vbias=0.5):
     page.insert_image(r, stream=b.getvalue())
     put(page, name, FSB, 10.5, DARKt, r.x0, r.y1+14)
 
-# ---- 'Mais opções de pintura' (pode trocar a vela por qualquer uma destas) ----
-put_spaced(p3, "✦ MAIS OPÇÕES", 54, 512, 9, CORAL_RGB, FSB)
-put(p3, "Prefere outra ", FB, 19, (0.118, 0.086, 0.098), 54, 541)
-put(p3, "pintura?", FI, 19, CORAL_RGB, 54+FB.text_length("Prefere outra ", 19), 541)
-p3.insert_textbox(fitz.Rect(54, 553, 541, 576),
-    "A vela é só o começo — dá pra trocar por qualquer uma destas opções, "
-    "sem mudar o valor do plano:",
-    fontsize=9, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
-    color=(0.431, 0.388, 0.357), lineheight=1.4)
-OPTS = [("Copo", "Vaso com plantinha"), ("Xícara", "Tela com textura"),
-        ("Caneca", "Aquarela botânica"), ("Ecobag", "Bowl de vidro (poke)")]
-for j, (a, b) in enumerate(OPTS):
-    yy = 594 + j*20
-    p3.draw_circle((62, yy-2.6), 1.9, color=None, fill=CORAL_RGB)
-    put(p3, a, FS, 10, (0.29, 0.24, 0.22), 71, yy)
-    p3.draw_circle((300, yy-2.6), 1.9, color=None, fill=CORAL_RGB)
-    put(p3, b, FS, 10, (0.29, 0.24, 0.22), 309, yy)
+# ---- venues 'Onde acontece' (Aretha & BETC) below the pricing ----
+put_spaced(p3, "✦ ONDE ACONTECE", 54, 512, 9, CORAL_RGB, FSB)
+put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 541)
+put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 541)
+venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 560, 293, 678), "Aretha Soul Kitchen")
+venue(p3, A_DIR+"betchavas.jpg",         (301, 560, 541, 678), "BETC", vbias=0.42)
 
 # ---- PAGE 4 banner headline + footer + disclaimer (remove '12 / 10 a 15') ----
 p4 = d[3]
@@ -211,10 +200,10 @@ p4.insert_textbox(fitz.Rect(53.8, 655, 538, 690),
     fontsize=7.9, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
     color=(0.549, 0.494, 0.455), lineheight=1.35)
 x = 77.8
-put(p4, "Uma festa pra HP ", FB, 20.2, CREAM, x, 553.5)
-x += FB.text_length("Uma festa pra HP ", 20.2)
+put(p4, "Uma festa pra Gabi ", FB, 20.2, CREAM, x, 553.5)
+x += FB.text_length("Uma festa pra Gabi ", 20.2)
 put(p4, "lembrar para sempre", FBI, 20.2, GOLD, x, 553.5)
-put_right(p4, "Aniversário da HP · 2026", FS, 7.9, MUTED, 541.4, 801.0)
+put_right(p4, "Aniversário da Gabi · 2026", FS, 7.9, MUTED, 541.4, 801.0)
 
 # ================= taça -> vela in the source paragraphs (redact + reinsert) =================
 def retext(page, rect, text, size, color=(0.431, 0.388, 0.357), width_rect=None):
@@ -237,14 +226,28 @@ retext(d[1], (52, 171, 505, 250),
        "e cheia de estilo — perfeita para celebrar entre amigas (e render ótimas fotos). "
        "O ateliê vai até você, com tudo pronto.", 10.5, color=(0.431, 0.388, 0.357),
        width_rect=(53.8, 173, 502, 268))
-# p2 'Criar' column
-retext(d[1], (52, 326, 206, 378),
-       "Cada convidada pinta a sua vela com cores e estilo próprios. Sem regra — só boas vibes.",
-       9.4, width_rect=(53.8, 328, 202, 384))
-# p2 'Levar' column
-retext(d[1], (398, 326, 534, 380),
-       "No fim, cada uma leva a própria vela — uma lembrança real e afetiva do dia.",
-       9.4, width_rect=(401.4, 328, 535, 386))
+# p2: remove the 'I / II / III' block (Criar/Celebrar/Levar + rule/dividers) ...
+d[1].add_redact_annot(fitz.Rect(40, 258, 558, 402))
+d[1].apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE,
+                      graphics=fitz.PDF_REDACT_LINE_ART_NONE,
+                      text=fitz.PDF_REDACT_TEXT_REMOVE)
+d[1].draw_rect(fitz.Rect(40, 256, 558, 404), color=None, fill=(0.984, 0.965, 0.937))
+# ... and put the painting options there instead
+put_spaced(d[1], "✦ MAIS OPÇÕES", 53.8, 284, 9, CORAL_RGB, FSB)
+put(d[1], "Prefere outra ", FB, 18, (0.118, 0.086, 0.098), 53.8, 310)
+put(d[1], "pintura?", FI, 18, CORAL_RGB, 53.8+FB.text_length("Prefere outra ", 18), 310)
+d[1].insert_textbox(fitz.Rect(53.8, 321, 548, 344),
+    "A vela é só o começo — dá pra trocar por qualquer uma destas opções, "
+    "sem mudar o valor do plano:", fontsize=8.6, fontname="lib",
+    fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.35)
+OPTS = [("Copo", "Vaso com plantinha"), ("Xícara", "Tela com textura"),
+        ("Caneca", "Aquarela botânica"), ("Ecobag", "Bowl de vidro (poke)")]
+for j, (a, b) in enumerate(OPTS):
+    yy = 358 + j*13.5
+    d[1].draw_circle((62, yy-2.4), 1.8, color=None, fill=CORAL_RGB)
+    put(d[1], a, FS, 9.3, (0.29, 0.24, 0.22), 71, yy)
+    d[1].draw_circle((302, yy-2.4), 1.8, color=None, fill=CORAL_RGB)
+    put(d[1], b, FS, 9.3, (0.29, 0.24, 0.22), 311, yy)
 # p3 intro
 retext(d[2], (52, 171, 505, 230),
        "A experiência de pintura em vela com toda a estrutura, os mimos personalizados e o "
