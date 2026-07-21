@@ -134,7 +134,7 @@ TIERS = [
          badge="O MAIS QUERIDINHO", more="TUDO DO BÁSICO, E MAIS",
          bullets=["Brinde: Aperol Spritz ou Coffee Break", "Registro fotográfico profissional",
                   "Piranha personalizada com a inicial", "Avental personalizado"], kind="highlight"),
-    dict(name="Signature", tag="A celebração completa, sem preocupação.", price="389",
+    dict(name="Signature", tag="A celebração completa, sem preocupação.", price="429",
          badge="TUDO RESOLVIDO", more="TUDO DO PREMIUM, E MAIS",
          bullets=["Bolo de aniversário", "Docinhos",
                   "Personalização completa da festa"], kind="dark"),
