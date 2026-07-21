@@ -1,13 +1,13 @@
 """Transform the Pintura em Taça proposal:
 - accent burnt-orange -> festive coral-pink (#FF5E8A)
 - lighten the dark cover + banners (happy/bright)
-- remove '20 / vinte anos', personalise to Iza ('Parabéns, Iza! ... venha comemorar')
+- remove '20 / vinte anos', personalise to Isa ('Parabéns, Isa! ... venha comemorar')
 Phase A here = accent recolor + logo recolor. Later phases add lightening + text."""
 import fitz, io, sys
 from PIL import Image
 
 SRC = "/root/.claude/uploads/9abf7e9a-5852-5ed9-badc-3da0f14e2577/d2b59d51-Pintura_em_Taca_Elarah_1.pdf"
-OUT = sys.argv[1] if len(sys.argv) > 1 else "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad/Taca_Iza_final.pdf"
+OUT = sys.argv[1] if len(sys.argv) > 1 else "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad/Taca_Isa_final.pdf"
 CORAL = "1 .3686 .5412"   # #FF5E8A
 
 d = fitz.open(SRC)
@@ -53,7 +53,7 @@ swap(1, [("/Pattern CS/Pattern cs/P32 SCN/P32 scn", BANNER)])   # p2 quote banne
 swap(2, [("/Pattern CS/Pattern cs/P50 SCN/P50 scn", BANNER)])   # p3 investment card
 swap(3, [("/Pattern CS/Pattern cs/P61 SCN/P61 scn", BANNER)])   # p4 contact banner
 
-# ================= TEXT CHANGES (remove '20/vinte anos', personalise to Iza) =================
+# ================= TEXT CHANGES (remove '20/vinte anos', personalise to Isa) =================
 LF = "/usr/share/fonts/truetype/liberation/"
 FB  = fitz.Font(fontfile=LF+"LiberationSerif-Bold.ttf")
 FI  = fitz.Font(fontfile=LF+"LiberationSerif-Italic.ttf")
@@ -82,7 +82,7 @@ p1 = d[0]
 rm(p1, [(64, 286, 252, 410),      # the big '20' (below the coral eyebrow at y274-284)
         (70, 401, 252, 456),      # 'vinte anos — bora celebrar!'
         (70, 476, 305, 592)])     # body paragraph
-put(p1, "Parabéns, Iza!", FB, 34, CORAL_RGB, 70, 360)
+put(p1, "Parabéns, Isa!", FB, 34, CORAL_RGB, 70, 360)
 put(p1, "vem comemorar!", FI, 26, DARKt, 70.9, 405)
 BODY = ('<p>O seu aniversário pede uma festa à altura: '
         '<b style="color:#FF5E8A">diferente, animada e inesquecível</b>. '
@@ -95,16 +95,16 @@ p1.insert_htmlbox(fitz.Rect(70.9, 478, 300, 592), BODY,
 # ---- PAGE 2 footer ----
 p2 = d[1]
 rm(p2, [(458, 793, 543, 803)])
-put_right(p2, "Aniversário da Iza", FS, 7.9, MUTED, 541.4, 801.0)
+put_right(p2, "Aniversário da Isa", FS, 7.9, MUTED, 541.4, 801.0)
 
 # ---- PAGE 4 banner headline + footer ----
 p4 = d[3]
 rm(p4, [(76, 534, 487, 559), (434, 793, 543, 803)])
 x = 77.8
-put(p4, "Uma festa pra Iza ", FB, 20.2, CREAM, x, 553.5)
-x += FB.text_length("Uma festa pra Iza ", 20.2)
+put(p4, "Uma festa pra Isa ", FB, 20.2, CREAM, x, 553.5)
+x += FB.text_length("Uma festa pra Isa ", 20.2)
 put(p4, "lembrar para sempre", FBI, 20.2, GOLD, x, 553.5)
-put_right(p4, "Aniversário da Iza · 2026", FS, 7.9, MUTED, 541.4, 801.0)
+put_right(p4, "Aniversário da Isa · 2026", FS, 7.9, MUTED, 541.4, 801.0)
 
 d.save(OUT, garbage=4, deflate=True)
 print("saved", OUT)
