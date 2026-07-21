@@ -97,6 +97,11 @@ p2 = d[1]
 rm(p2, [(458, 793, 543, 803)])
 put_right(p2, "Aniversário da Isa", FS, 7.9, MUTED, 541.4, 801.0)
 
+# ---- PAGE 3: keep only 'por pessoa' (remove 'TOTAL PARA 12 CONVIDADAS' + value + divider) ----
+p3 = d[2]
+rm(p3, [(327, 359, 492, 405)])                                   # total label + R$ 3.456
+p3.draw_rect(fitz.Rect(328, 350.5, 521, 355), color=None, fill=(0.82, 0.306, 0.447))  # hide divider
+
 # ---- PAGE 4 banner headline + footer ----
 p4 = d[3]
 rm(p4, [(76, 534, 487, 559), (434, 793, 543, 803)])
