@@ -76,6 +76,19 @@ def put(page, text, font, size, color, x, y):
     tw.write_text(page, color=color)
 def put_right(page, text, font, size, color, xr, y):
     put(page, text, font, size, color, xr - font.text_length(text, size), y)
+def put_spaced(page, text, x, y, size, color, font, track=1.9):
+    tw = fitz.TextWriter(page.rect); cx = x
+    for ch in text:
+        tw.append((cx, y), ch, font=font, fontsize=size); cx += font.text_length(ch, size)+track
+    tw.write_text(page, color=color)
+def crop_ratio(path, ratio, vbias=0.5):
+    im = Image.open(path).convert("RGB"); W, H = im.size
+    if W/H > ratio:
+        cw = round(H*ratio); l = (W-cw)//2; im = im.crop((l, 0, l+cw, H))
+    else:
+        ch = round(W/ratio); t = round((H-ch)*vbias); im = im.crop((0, t, W, t+ch))
+    return im
+FSB = fitz.Font(fontfile=LF+"LiberationSans-Bold.ttf")
 
 # ---- PAGE 1: replace the '20 / vinte anos' headline + reword body ----
 p1 = d[0]
@@ -91,6 +104,12 @@ BODY = ('<p>O seu aniversário pede uma festa à altura: '
         '<b style="color:#FF5E8A">Você escolhe o clima, a Elarah faz acontecer.</b></p>')
 p1.insert_htmlbox(fitz.Rect(70.9, 478, 300, 592), BODY,
                   css="p{margin:0;font-family:sans-serif;font-size:10.5px;line-height:1.5;color:#3F2F2C}")
+# reword the cover footer (remove '10–15 CONVIDADAS' and 'ORÇAMENTO PARA 12')
+rm(p1, [(66, 752, 548, 771)])
+f1 = "EXPERIÊNCIA ELARAH  ·  PINTURA EM TAÇA  ·  "
+put_spaced(p1, f1, 70.9, 766.5, 8.25, (0.247, 0.184, 0.173), FS, track=2.4)
+fx = 70.9 + sum(FS.text_length(c, 8.25)+2.4 for c in f1)
+put_spaced(p1, "POR PESSOA", fx, 766.5, 8.25, (1, 0.369, 0.541), FSB, track=2.4)
 
 # ---- PAGE 2 footer ----
 p2 = d[1]
@@ -98,22 +117,9 @@ rm(p2, [(458, 793, 543, 803)])
 put_right(p2, "Aniversário da Isa", FS, 7.9, MUTED, 541.4, 801.0)
 
 # ================= PAGE 3: 3-tier pricing (189/289/389 por pessoa) + venues =================
-FSB = fitz.Font(fontfile=LF+"LiberationSans-Bold.ttf")
 A_DIR = "/home/user/elarahplatform/assets/"
 HEAD = "#3F2F2C"; MUTc = "#8C7E74"; BODYc = "#4A3F3A"; CORALc = "#FF5E8A"; GOLDc = "#B8912E"; CREAMc = "#FBF6EF"
 BLUSH = (0.988, 0.945, 0.95)
-def crop_ratio(path, ratio, vbias=0.5):
-    im = Image.open(path).convert("RGB"); W, H = im.size
-    if W/H > ratio:
-        cw = round(H*ratio); l = (W-cw)//2; im = im.crop((l, 0, l+cw, H))
-    else:
-        ch = round(W/ratio); t = round((H-ch)*vbias); im = im.crop((0, t, W, t+ch))
-    return im
-def put_spaced(page, text, x, y, size, color, font, track=1.9):
-    tw = fitz.TextWriter(page.rect); cx = x
-    for ch in text:
-        tw.append((cx, y), ch, font=font, fontsize=size); cx += font.text_length(ch, size)+track
-    tw.write_text(page, color=color)
 
 p3 = d[2]
 # wipe the old body: 'O que está incluso' + list + single price card + '10 a 15 / 12' note
@@ -126,12 +132,12 @@ TIERS = [
                   "Condução por facilitadora", "Cada convidada leva a sua taça"], kind="plain"),
     dict(name="Premium", tag="Experiência + celebração.", price="289",
          badge="O MAIS QUERIDINHO", more="TUDO DO BÁSICO, E MAIS",
-         bullets=["Brinde de Aperol Spritz", "Registro fotográfico profissional",
+         bullets=["Brinde: Aperol Spritz ou Coffee Break", "Registro fotográfico profissional",
                   "Piranha personalizada com a inicial", "Avental personalizado"], kind="highlight"),
     dict(name="Signature", tag="A celebração completa, sem preocupação.", price="389",
          badge="TUDO RESOLVIDO", more="TUDO DO PREMIUM, E MAIS",
-         bullets=["Brunch para o grupo", "Mesa de parabéns decorada",
-                  "Bolo de aniversário + docinhos", "Produção de todos os detalhes"], kind="dark"),
+         bullets=["Bolo de aniversário", "Docinhos",
+                  "Personalização completa da festa"], kind="dark"),
 ]
 CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 262, 452
 for i, t in enumerate(TIERS):
@@ -168,7 +174,7 @@ for i, t in enumerate(TIERS):
     p3.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+16, card.x1-10, card.y1-8), html, css=css)
 
 # small per-person note (no more '10 a 15 / 12')
-put(p3, "Valores por pessoa · Aperol Spritz incluso nos planos Premium e Signature.",
+put(p3, "Valores por pessoa · Aperol Spritz ou Coffee Break incluso nos planos Premium e Signature.",
     FS, 7.6, (0.549, 0.494, 0.455), 54, 474)
 
 # ---- venues 'Onde acontece' (Aretha & BETC) below the pricing ----
