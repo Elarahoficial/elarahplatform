@@ -188,8 +188,20 @@ def venue(page, path, rect, name, vbias=0.5):
 put_spaced(p3, "✦ ONDE ACONTECE", 54, 512, 9, CORAL_RGB, FSB)
 put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 541)
 put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 541)
-venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 560, 293, 678), "Aretha Soul Kitchen")
-venue(p3, A_DIR+"betchavas.jpg",         (301, 560, 541, 678), "BETC", vbias=0.42)
+venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 558, 293, 662), "Aretha Soul Kitchen")
+venue(p3, A_DIR+"betchavas.jpg",         (301, 558, 541, 662), "BETC", vbias=0.42)
+
+# ---- personalization callout (what 'personalização' means) ----
+_pz = crop_ratio(A_DIR+"personalizaçaobrindeescovapiranha.jpg", 1.0, vbias=0.42)
+_pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=90)
+p3.insert_image(fitz.Rect(54, 700, 128, 784), stream=_pb.getvalue())
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 142, 714, 8.5, CORAL_RGB, FSB)
+put(p3, "Com a cara ", FB, 15, (0.118, 0.086, 0.098), 142, 737)
+put(p3, "dela", FI, 15, CORAL_RGB, 142+FB.text_length("Com a cara ", 15), 737)
+p3.insert_textbox(fitz.Rect(142, 748, 545, 784),
+    "Cada convidada leva um mimo só dela — a taça autoral, a piranha e o avental "
+    "personalizados com a inicial.", fontsize=8.7, fontname="lib",
+    fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
 
 # ---- PAGE 4 banner headline + footer + disclaimer (remove '12 / 10 a 15') ----
 p4 = d[3]
