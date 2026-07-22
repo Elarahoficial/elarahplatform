@@ -126,10 +126,27 @@ HEAD = "#3F2F2C"; MUTc = "#8C7E74"; BODYc = "#4A3F3A"; CORALc = "#A75D3A"; GOLDc
 BLUSH = (0.98, 0.965, 0.94)
 
 p3 = d[2]
-# wipe the old body: 'O que está incluso' + list + single price card + '10 a 15 / 12' note
+# wipe the old body (list + single price card) and kill the old rose-card fill
 rm(p3, [(40, 240, 560, 456)])
-p3.draw_rect(fitz.Rect(276, 243, 554, 445), color=None, fill=BLUSH)   # cover old rose price card
+p3.draw_rect(fitz.Rect(40, 240, 558, 456), color=None, fill=BLUSH)
 
+def venue(page, path, rect, name, vbias=0.5):
+    r = fitz.Rect(rect); im = crop_ratio(path, r.width/r.height, vbias)
+    b = io.BytesIO(); im.save(b, format="JPEG", quality=90)
+    page.insert_image(r, stream=b.getvalue())
+    put(page, name, FSB, 9, DARKt, r.x0, r.y1+13)
+
+# ---- 1) ONDE ACONTECE — three venues (Aretha, BETC Havas Café, Jardim) ----
+put_spaced(p3, "✦ ONDE ACONTECE", 54, 244, 9, CORAL_RGB, FSB)
+put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 270)
+put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 270)
+VW = 157.3
+venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 280, 54+VW, 364), "Aretha Soul Kitchen")
+venue(p3, A_DIR+"betchavas.jpg",         (218.9, 280, 218.9+VW, 364), "BETC Havas Café", vbias=0.42)
+venue(p3, A_DIR+"nutrify1.jpg",          (383.7, 280, 383.7+VW, 364), "Jardim (ao ar livre)")
+
+# ---- 2) INVESTIMENTO — 3 tiers (price at the partner spaces) ----
+put_spaced(p3, "✦ INVESTIMENTO", 54, 392, 9, CORAL_RGB, FSB)
 TIERS = [
     dict(name="Básico", tag="A experiência, em sua essência.", price="189", more=None,
          bullets=["Pintura em xícara, taça ou vela aromática", "Todos os materiais inclusos",
@@ -143,8 +160,7 @@ TIERS = [
          bullets=["Coffee break reforçado", "Docinhos & mimos",
                   "Personalização com o logo da Nutrify"], kind="dark"),
 ]
-CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 448, 636
-put_spaced(p3, "✦ INVESTIMENTO", 54, 424, 9, CORAL_RGB, FSB)
+CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 414, 600
 for i, t in enumerate(TIERS):
     card = fitz.Rect(CX[i], CY0, CX[i]+CW, CY1)
     if t["kind"] == "plain":
@@ -178,32 +194,31 @@ for i, t in enumerate(TIERS):
            f'.mk{{color:{acc};font-size:6px}}')
     p3.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+16, card.x1-10, card.y1-8), html, css=css)
 
-# small per-person note (no more '10 a 15 / 12')
-put(p3, "Valores por pessoa · Coffee break incluso nos planos Premium e Signature.",
-    FS, 7.6, (0.549, 0.494, 0.455), 54, 654)
+# per-person note (partner-space prices)
+put(p3, "Valores por pessoa nos espaços parceiros · Coffee break incluso no Premium e no Signature.",
+    FS, 7.4, (0.549, 0.494, 0.455), 54, 612)
 
-# ---- venues 'Onde acontece' (Aretha & BETC) below the pricing ----
-def venue(page, path, rect, name, vbias=0.5):
-    r = fitz.Rect(rect); im = crop_ratio(path, r.width/r.height, vbias)
-    b = io.BytesIO(); im.save(b, format="JPEG", quality=90)
-    page.insert_image(r, stream=b.getvalue())
-    put(page, name, FSB, 10.5, DARKt, r.x0, r.y1+14)
-
-# ---- venues 'Onde acontece' (Aretha & BETC) below the pricing ----
-put_spaced(p3, "✦ ONDE ACONTECE", 54, 258, 9, CORAL_RGB, FSB)
-put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 286)
-put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 286)
-venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 296, 293, 386), "Aretha Soul Kitchen")
-venue(p3, A_DIR+"betchavas.jpg",         (301, 296, 541, 386), "BETC Havas Café", vbias=0.42)
+# ---- Jardim package: outdoor (9h–12h), its own pricing ----
+JY0, JY1 = 622, 660
+p3.draw_rect(fitz.Rect(54, JY0, 541, JY1), color=(0.047, 0.427, 0.325),
+             fill=(0.933, 0.965, 0.949), width=0.9, radius=0.09)
+put_spaced(p3, "✦ OPÇÃO JARDIM · AO AR LIVRE · DAS 9H ÀS 12H", 67, JY0+15, 7.3,
+           (0.047, 0.427, 0.325), FSB, track=0.7)
+jhtml = ('<span class="l">Experiência</span> <b>R$&nbsp;239</b> &nbsp;·&nbsp; '
+         '<span class="l">com Gastronomia</span> <b>R$&nbsp;329</b> &nbsp;·&nbsp; '
+         '<span class="l">Experiência completa</span> <b>R$&nbsp;429</b> &nbsp;·&nbsp; '
+         '<span class="l">por pessoa</span>')
+p3.insert_htmlbox(fitz.Rect(65, JY0+21, 539, JY1-2), jhtml,
+    css='*{font-family:sans-serif}.l{font-size:8.2px;color:#4A3F3A}b{font-size:8.7px;color:#A75D3A}')
 
 # ---- personalization callout (what 'personalização' means) ----
 _pz = crop_ratio(A_DIR+"personalizaçãonutrify.jpg", 1.0, vbias=0.5)
 _pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=92)
-p3.insert_image(fitz.Rect(54, 660, 150, 756), stream=_pb.getvalue())
-put_spaced(p3, "✦ PERSONALIZAÇÃO", 166, 684, 8.5, CORAL_RGB, FSB)
-put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 166, 706)
-put(p3, "vocês", FI, 15, CORAL_RGB, 166+FB.text_length("Com a cara de ", 15), 706)
-p3.insert_textbox(fitz.Rect(166, 716, 545, 752),
+p3.insert_image(fitz.Rect(54, 670, 142, 758), stream=_pb.getvalue())
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 158, 692, 8.5, CORAL_RGB, FSB)
+put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 158, 714)
+put(p3, "vocês", FI, 15, CORAL_RGB, 158+FB.text_length("Com a cara de ", 15), 714)
+p3.insert_textbox(fitz.Rect(158, 724, 545, 760),
     "Cada pessoa leva um mimo personalizado — a peça autoral e os itens com a "
     "inicial ou o logo da Nutrify.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
