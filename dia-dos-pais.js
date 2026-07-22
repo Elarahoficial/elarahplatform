@@ -169,7 +169,10 @@
     const gastroSeen = new Set();
     experiences.forEach(function (e) {
       if (!e || e.id == null) return;
-      if (!gastroWl.has(slug(e.nome))) return;
+      // O churrasco (ex.: "Churrasco sem Churrasqueira") entra SEMPRE,
+      // mesmo fora da lista — é o especial, fica em primeiro com estrela.
+      var isChurrasco = normalize(e.nome).indexOf('churrasco') !== -1;
+      if (!gastroWl.has(slug(e.nome)) && !isChurrasco) return;
       const k = String(e.id);
       if (!gastroSeen.has(k)) { gastroSeen.add(k); gastroSet.push(e); }
     });
