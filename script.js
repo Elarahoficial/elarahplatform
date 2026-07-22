@@ -2299,6 +2299,16 @@ if (groupForm) {
             '<div id="erm-form-section">'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== INFO COMPLETA (voucher) — descrição, inclui, onde acontece,
+            // horário de funcionamento e aviso, tudo numa tela só (sem tela de
+            // descrição separada). Escondido por padrão; ligado via ctx.showFullInfo.
+            '<div id="erm-info" style="display:none;margin:0 0 18px;">'
+        +     '<div id="erm-info-hours" style="display:none;padding:14px 16px;background:#fbf3e6;border:1px solid #f0dcc0;border-radius:12px;margin-bottom:14px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#a4663b;margin-bottom:6px;">Horário de funcionamento</div><div id="erm-info-hours-text" style="font-size:.92rem;color:#3a2f28;line-height:1.5;font-weight:600;"></div></div>'
+        +     '<div id="erm-info-desc" style="font-size:.92rem;color:#3a2f28;line-height:1.6;white-space:pre-line;margin-bottom:14px;"></div>'
+        +     '<div id="erm-info-inclui" style="display:none;padding:14px 16px;background:#fff8ee;border:1px solid #f0cfa0;border-radius:12px;margin-bottom:12px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#a4663b;margin-bottom:6px;">O que está incluso</div><div id="erm-info-inclui-text" style="font-size:.9rem;color:#3a2410;line-height:1.5;"></div></div>'
+        +     '<div id="erm-info-local" style="display:none;padding:14px 16px;background:#faf6f0;border:1px solid #eadfce;border-radius:12px;margin-bottom:12px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#888;margin-bottom:6px;">Onde acontece</div><div id="erm-info-local-text" style="font-size:.9rem;color:#3a2410;line-height:1.5;"></div></div>'
+        +     '<div id="erm-info-note" style="display:none;padding:12px 14px;background:#fbf3e6;border:1px solid #f0dcc0;border-radius:10px;font-size:.84rem;color:#6b5744;line-height:1.5;"></div>'
+        +   '</div>'
         +   // ===== SELETOR DE HORÁRIO (escondido por padrão) =====
             // Renderizado em openReservationModal quando exp.horarios > 1.
             // Sem isso, usuário ficava preso no horário escolhido fora do
@@ -3234,6 +3244,41 @@ if (groupForm) {
       var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(ctx.precoLabel) : ctx.precoLabel;
       root.querySelector('#erm-meta').textContent = [ctx.horario, precoFmt]
         .filter(Boolean).join(' · ');
+
+      // Info completa numa tela só (voucher): descrição, inclui, onde
+      // acontece, horário de funcionamento e aviso — pra não ter uma tela
+      // de descrição separada com a mesma capa.
+      (function fillFullInfo() {
+        var wrap = root.querySelector('#erm-info');
+        if (!wrap) return;
+        if (!ctx.showFullInfo) { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
+        function setBlock(boxId, textId, val) {
+          var box = root.querySelector(boxId), txt = root.querySelector(textId);
+          var v = (val == null ? '' : String(val)).trim();
+          if (box) box.style.display = v ? 'block' : 'none';
+          if (txt && v) txt.textContent = v;
+        }
+        setBlock('#erm-info-hours', '#erm-info-hours-text', ctx.horarioFuncionamento);
+        var descEl = root.querySelector('#erm-info-desc');
+        if (descEl) {
+          var d = (ctx.descricao == null ? '' : String(ctx.descricao)).trim();
+          descEl.textContent = d;
+          descEl.style.display = d ? 'block' : 'none';
+        }
+        setBlock('#erm-info-inclui', '#erm-info-inclui-text', ctx.inclui);
+        setBlock('#erm-info-local', '#erm-info-local-text', ctx.endereco);
+        var note = root.querySelector('#erm-info-note');
+        if (note) {
+          if (ctx.horarioFuncionamento) {
+            note.style.display = 'block';
+            note.innerHTML = 'É só reservar. Se quiser, deixe um dia/horário de preferência — mas não precisa. ' +
+              '<strong>No momento da compra, a Elarah entra em contato com você no mesmo dia</strong> para acertar o melhor horário, dentro do horário de funcionamento. 🤍';
+          } else {
+            note.style.display = 'none';
+          }
+        }
+      })();
       root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-total').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-discount-row').style.display = 'none';
@@ -5747,11 +5792,16 @@ if (groupForm) {
       let variantLabel = null;
       let variantOptions = [];
       let horariosArr = [];
+      let expDescricao = '', expInclui = '', expEndereco = '', expHorarioFunc = '';
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
           const exp = await ElarahData.getExperienceById(experienceId);
           if (exp) {
+            expDescricao = exp.descricao || '';
+            expInclui = exp.inclui || '';
+            expEndereco = [exp.endereco, exp.bairro].filter(Boolean).join(' — ');
+            expHorarioFunc = (exp.horarioFuncionamento || '').trim();
             if (!precoLabel || !precoCentavos) {
               precoLabel = exp.preco || precoLabel;
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
@@ -5814,6 +5864,14 @@ if (groupForm) {
         experienceId: experienceId,
         experienceNome: experienceNome,
         horario: horario,
+        // Info completa dentro do checkout (voucher): descrição, inclui,
+        // onde acontece, horário de funcionamento e aviso — tudo numa tela
+        // só, sem a tela de descrição separada.
+        showFullInfo: !!expHorarioFunc,
+        descricao: expDescricao,
+        inclui: expInclui,
+        endereco: expEndereco,
+        horarioFuncionamento: expHorarioFunc,
         // Lista completa de horários — se > 1, modal renderiza seletor
         // pra usuário trocar antes de confirmar.
         horarios: horariosArr,
