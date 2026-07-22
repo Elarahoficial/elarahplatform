@@ -3705,6 +3705,30 @@
       <span id="followup-counter" style="font-size:.85rem;color:#666;">—</span>
     </div>
 
+    <!-- Disparo AUTOMÁTICO em massa (Z-API) -->
+    <div id="followup-bulk-bar" style="margin:0 0 14px;padding:14px 16px;background:#f0faf3;border:1px solid #bfe6cd;border-radius:10px;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button type="button" id="followup-bulk-btn" class="admin__add-btn" style="background:#25D366;border-color:#25D366;font-weight:700;">
+          🚀 Enviar automático pra todos
+        </button>
+        <button type="button" id="followup-test-btn" class="admin__add-btn" style="background:#fff;color:#1a8a4a;border:1px solid #1a8a4a;">
+          Testar no meu WhatsApp
+        </button>
+        <span id="followup-bulk-status" style="flex:1;min-width:180px;font-size:.82rem;color:#666;"></span>
+      </div>
+      <div id="followup-bulk-progress-wrap" style="display:none;margin-top:12px;">
+        <div style="height:8px;background:#e3efe7;border-radius:999px;overflow:hidden;">
+          <div id="followup-bulk-progress" style="height:100%;width:0;background:#25D366;transition:width .3s;"></div>
+        </div>
+        <div id="followup-bulk-progress-label" style="margin-top:6px;font-size:.78rem;color:#1a8a4a;font-weight:600;"></div>
+      </div>
+      <p style="margin:10px 0 0;font-size:.74rem;color:#8a9a8f;line-height:1.5;">
+        Dispara pela Z-API pra <strong>todos os interessados com telefone</strong> — respeitando o filtro
+        "Esconder já contatados" acima. Quem preencheu duas vezes recebe só uma mensagem.
+        Os botões individuais abaixo continuam servindo pra envio manual pontual.
+      </p>
+    </div>
+
     <!-- Lista de pessoas -->
     <div id="followup-list" style="max-height:50vh;overflow-y:auto;border:1px solid #eee;border-radius:8px;">
       <p style="padding:24px;color:#888;text-align:center;">Carregando...</p>
