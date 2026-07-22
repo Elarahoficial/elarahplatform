@@ -140,17 +140,38 @@
     // Não-gastronomia: só o que a Elarah marcou na campanha.
     const taggedNonGastro = experiences.filter(function (e) { return isTagged(e) && !isGastro(e); });
 
-    // Gastronomia: TUDO de agosto (menos kids) + qualquer gastro marcada
-    // ou especial (churrasco). Sem precisar marcar uma a uma.
+    // Gastronomia: lista curada — SÓ estas aulas aparecem (match pelo
+    // nome, ignorando acento/pontuação). Editar aqui pra incluir/remover.
+    const GASTRO_WHITELIST = [
+      'Cozinha Coreana',
+      'Hambúrgueres Clássicos',
+      'Cozinha Japonesa: Sushi & Sashimi',
+      'Cozinha Tailandesa: Curry Masaman & Pad Thai',
+      'Risotos da Terra',
+      'Harmonização de Queijos',
+      'Salgadinhos: Os Mais Pedidos',
+      'Massas & Molhos - Os Mais Pedidos',
+      'Nhoques Artesanais',
+      'Segredos do Lamen',
+      'Hambúrgueres - As Tendências',
+      'Gastronomia Molecular: Gelatinização & Espumas',
+      'Risotos do Mar',
+      'Cozinha Americana',
+      'Pizza'
+    ];
+    function slug(s) {
+      return String(s == null ? '' : s)
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    }
+    const gastroWl = new Set(GASTRO_WHITELIST.map(slug));
     const gastroSet = [];
     const gastroSeen = new Set();
     experiences.forEach(function (e) {
-      if (!isGastro(e) || e.id == null) return;
-      if (isKids(e)) return;
-      if (isTagged(e) || isAugust(e) || isSpecial(e)) {
-        const k = String(e.id);
-        if (!gastroSeen.has(k)) { gastroSeen.add(k); gastroSet.push(e); }
-      }
+      if (!e || e.id == null) return;
+      if (!gastroWl.has(slug(e.nome))) return;
+      const k = String(e.id);
+      if (!gastroSeen.has(k)) { gastroSeen.add(k); gastroSet.push(e); }
     });
 
     const total = taggedNonGastro.length + gastroSet.length;
@@ -300,12 +321,8 @@
       const rest = items.filter(function (e) { return !isSpecial(e); }).sort(byDateAsc);
       const ordered = specials.concat(rest);
 
-      let hero = '';
-      for (let i = 0; i < ordered.length; i++) {
-        const src = normalizeImg(ordered[i].campanhaImagem) || normalizeImg(ordered[i].imagem);
-        if (src) { hero = src; break; }
-      }
-      if (!hero) hero = 'assets/gastronomiamolecular.jpg';
+      // Capa fixa de churrasco (pedido da Elarah).
+      const hero = 'assets/churrasco1.jpg';
 
       const rows = ordered.map(function (exp) {
         const precoRaw = (exp.preco || '').trim();
