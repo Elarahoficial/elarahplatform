@@ -6430,6 +6430,35 @@
       if (ElarahData.loadAllSlots) allSlotsMap = await ElarahData.loadAllSlots();
     } catch (e) { /* tabela pode não existir */ }
 
+    // DEDUP: o site (getVisibleExperiences) descarta cópias com a mesma
+    // assinatura (nome+categoria+data+horário+bairro+preço), mantendo só a
+    // PRIMEIRA na ordem — entre as publicamente visíveis. O selo do admin
+    // precisa modelar isso também, senão uma experiência DUPLICADA aparece
+    // "Visível" aqui mas some do site (o site mostra só uma). Reproduz a
+    // MESMA assinatura e ordem de getVisibleExperiences pra achar o "dono"
+    // de cada assinatura; os outros são cópias descartadas.
+    const _dupSig = function (e) {
+      return [
+        String(e.nome || '').trim().toLowerCase(),
+        String(e.categoria || '').trim().toLowerCase(),
+        String(e.data || '').trim().toLowerCase(),
+        String((Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '').trim().toLowerCase(),
+        String(e.bairro || '').trim().toLowerCase(),
+        String(e.preco || '').trim().toLowerCase(),
+      ].join('|');
+    };
+    const _dupWinnerBySig = {};
+    const _nowDedup = Date.now();
+    (allExperiences || []).forEach(function (e) {
+      // Dedup do site só considera as publicamente visíveis (a filtragem
+      // acontece dentro de getVisibleExperiences, sobre isPubliclyVisible).
+      const pv = (window.ElarahData && ElarahData.isPubliclyVisible)
+        ? ElarahData.isPubliclyVisible(e, _nowDedup) : (e.isActive !== false);
+      if (!pv) return;
+      const sig = _dupSig(e);
+      if (!(sig in _dupWinnerBySig)) _dupWinnerBySig[sig] = e.id;
+    });
+
     if (activeExpFilter) {
       countEl.textContent = experiences.length + ' de ' + allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
     } else {
@@ -6520,6 +6549,12 @@
         ? ED.isExpiredRecurring(exp, expSlots, Date.now())
         : false;
       const hiddenFromListings = exp.hideFromCategorias === true;
+      // Cópia descartada pela dedup do site: é publicamente visível, mas
+      // NÃO é a "dona" da assinatura — o site mostra só a primeira. Sem
+      // esse gate o admin dizia "Visível" e a experiência sumia do site.
+      const isDupLoser = publicVisible
+        && _dupWinnerBySig[_dupSig(exp)]
+        && _dupWinnerBySig[_dupSig(exp)] !== exp.id;
 
       // Decide selo + motivo. Vermelho "Oculta" = sumiu do site inteiro.
       // Âmbar "Só By Elarah" = fora das categorias/home, visível apenas
@@ -6539,6 +6574,10 @@
         badgeKind = 'bylistings';
         badgeLabel = 'Só By Elarah';
         tooltip = 'Marcada como "ocultar das categorias": não aparece nas listagens de categoria nem no grid da home — só na faixa By Elarah. Pra mostrar nas categorias, edite a experiência e desmarque essa opção.';
+      } else if (isDupLoser) {
+        badgeKind = 'dup';
+        badgeLabel = 'Duplicada';
+        tooltip = 'É uma CÓPIA de outra experiência idêntica (mesmo nome, categoria, data, horário, bairro e preço). O site mostra só UMA — esta some por ser a segunda. Pra ela aparecer: edite e mude algo (data ou horário) pra diferenciar, ou exclua a cópia.';
       } else {
         badgeKind = 'visible';
         badgeLabel = 'Visível';
@@ -6553,6 +6592,7 @@
         visible: 'background:#e6f4ea;color:#1a8a4a;',
         hidden: 'background:#fdecea;color:#c0392b;',
         bylistings: 'background:#fff1de;color:#a05f1e;',
+        dup: 'background:#f3e8ff;color:#7b2fbe;',
       };
       const statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;'
         + BADGE_BG[badgeKind] + 'font-size:11px;font-weight:600;'
