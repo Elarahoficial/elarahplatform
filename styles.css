@@ -212,6 +212,29 @@ select {
   background: #fbeef0;
 }
 
+/* Dia dos Pais — navy elegante com dot latão/whisky (âmbar).
+   Masculino, sóbrio e premium. */
+.header__nav-link--ddp {
+  color: #1b2f3f !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.header__nav-link--ddp::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d8ac63 0%, #8a5e22 100%);
+  box-shadow: 0 0 0 3px rgba(176,123,50,0.18);
+}
+.header__nav-link--ddp:hover {
+  color: #0e1922 !important;
+  background: #f4ede0;
+}
+
 .header__nav-chevron {
   width: 16px;
   height: 16px;

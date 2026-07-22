@@ -3,28 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <!--
-    Campanha de Dia das Mães desativada (substituída por Dia dos Namorados
-    em 2026-05-12). Arquivo preservado pra histórico/SEO. Visitas são
-    redirecionadas pra nova campanha via meta refresh + canonical.
-  -->
-  <link rel="canonical" href="https://elarah.com.br/dia-dos-namorados.html">
-  <meta http-equiv="refresh" content="0; url=dia-dos-namorados.html">
-  <script>window.location.replace('dia-dos-namorados.html');</script>
-  <meta name="description" content="Dia das Mães na Elarah — experiências curadas para presentear quem é seu lugar de paz. Mais do que um presente, uma memória que fica.">
-  <title>Dia das Mães — Elarah</title>
-  <meta property="og:title" content="Dia das Mães — Elarah">
-  <meta property="og:description" content="Mais do que um presente, uma experiência que vira memória.">
+  <meta name="description" content="Dia dos Pais na Elarah — experiências para viver com ele, não mais um presente pra guardar na gaveta. Porque o melhor presente é presença.">
+  <title>Dia dos Pais — Elarah</title>
+  <link rel="canonical" href="https://elarah.com.br/dia-dos-pais.html">
+  <meta property="og:title" content="Dia dos Pais — Elarah">
+  <meta property="og:description" content="Esqueça o presente. Dê presença. Experiências para viver com o seu pai neste Dia dos Pais.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://elarah.com.br/dia-dos-pais.html">
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=20">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="dia-das-maes.css?v=2">
+  <link rel="stylesheet" href="dia-dos-pais.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
   <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
 </head>
-<body class="ddm-body">
+<body class="ddp-body">
 
   <!-- ========== HEADER ========== -->
   <header class="header">
@@ -61,7 +56,7 @@
             <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
           </div>
         </div>
-        <a href="dia-das-maes.html" class="header__nav-link header__nav-link--ddm" aria-current="page">Dia das Mães</a>
+        <a href="dia-dos-pais.html" class="header__nav-link header__nav-link--ddp" aria-current="page">Dia dos Pais</a>
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="blog.html" class="header__nav-link">Blog</a>
         <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
@@ -89,195 +84,232 @@
   </header>
 
   <!-- ========== HERO ========== -->
-  <section class="ddm-hero">
-    <div class="ddm-hero__decor ddm-hero__decor--left" aria-hidden="true"></div>
-    <div class="ddm-hero__decor ddm-hero__decor--right" aria-hidden="true"></div>
-    <div class="ddm-hero__inner">
-      <span class="ddm-hero__kicker">Dia das Mães · Curadoria Elarah</span>
-      <h1 class="ddm-hero__title">
-        Mais do que um presente,<br>
-        <em>uma experiência que vira memória.</em>
+  <section class="ddp-hero">
+    <div class="ddp-hero__inner">
+      <span class="ddp-hero__kicker">Dia dos Pais · 9 de agosto</span>
+      <h1 class="ddp-hero__title">
+        Neste Dia dos Pais,<br>
+        esqueça o presente.<br>
+        <em>Dê presença.</em>
       </h1>
-      <p class="ddm-hero__sub">
-        Selecionamos vivências para presentear quem é seu lugar de paz.
-        Tempo juntas — leve, criativo e inesquecível.
+      <p class="ddp-hero__sub">
+        Gravata, perfume, carteira — ele agradece e guarda na gaveta.
+        O que ele nunca esquece é o <strong>tempo com você</strong>.
+        E faltam menos domingos do que você imagina.
       </p>
-      <a href="#ddm-experiencias" class="ddm-hero__cta">
-        Ver experiências
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
-        </svg>
-      </a>
+
+      <div class="ddp-countdown" id="ddp-countdown" aria-label="Contagem regressiva para o Dia dos Pais">
+        <span class="ddp-countdown__label">Falta pouco para o Dia dos Pais</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-days">--</span><span class="ddp-count-cell__unit">dias</span></span>
+        <span class="ddp-count-sep">:</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-hours">--</span><span class="ddp-count-cell__unit">horas</span></span>
+        <span class="ddp-count-sep">:</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-min">--</span><span class="ddp-count-cell__unit">min</span></span>
+        <span class="ddp-count-sep">:</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-sec">--</span><span class="ddp-count-cell__unit">seg</span></span>
+      </div>
+
+      <div>
+        <a href="#ddp-experiencias" class="ddp-hero__cta">
+          Ver experiências para viver com ele
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+          </svg>
+        </a>
+      </div>
     </div>
   </section>
 
-  <!-- ========== POR QUE UMA EXPERIÊNCIA ========== -->
-  <section class="ddm-pillars">
-    <div class="ddm-pillars__inner">
-      <h2 class="ddm-pillars__title">Por que dar uma experiência?</h2>
-      <p class="ddm-pillars__sub">Porque o que importa de verdade é o tempo que vocês passam juntas.</p>
-      <div class="ddm-pillars__grid">
-        <article class="ddm-pillar">
-          <div class="ddm-pillar__icon" aria-hidden="true">
-            <!-- Tempo / clock floral -->
+  <!-- ========== MANIFESTO / REFLEXÃO ========== -->
+  <section class="ddp-manifesto" aria-labelledby="ddp-manifesto-title">
+    <div class="ddp-manifesto__inner">
+      <span class="ddp-manifesto__kicker">A conta que ninguém quer fazer</span>
+      <h2 id="ddp-manifesto-title" class="ddp-manifesto__title">
+        Você não tem Dias dos Pais <em>infinitos</em> com ele.
+      </h2>
+      <p class="ddp-manifesto__lead">
+        A gente age como se houvesse sempre um próximo ano. Mas se você vê o seu pai
+        só nas datas, dá pra contar nos dedos os momentos que ainda restam.
+      </p>
+      <p class="ddp-manifesto__lead">
+        <strong>Cada Dia dos Pais é um dos poucos que sobraram.</strong>
+        Nenhum objeto compra de volta um que passou em branco.
+      </p>
+
+      <div class="ddp-calc">
+        <p class="ddp-calc__q" id="ddp-calc-q">Quantos anos o seu pai tem?</p>
+        <div class="ddp-calc__field">
+          <input class="ddp-calc__input" id="ddp-calc-input" type="number" inputmode="numeric" min="1" max="120" placeholder="ex.: 62" aria-labelledby="ddp-calc-q">
+          <button class="ddp-calc__btn" id="ddp-calc-btn" type="button">Ver a conta</button>
+        </div>
+        <div class="ddp-calc__result" id="ddp-calc-result" aria-live="polite">
+          <p class="ddp-calc__big" id="ddp-calc-num">≈ 0</p>
+          <span class="ddp-calc__big-label" id="ddp-calc-num-label">Dias dos Pais pela frente</span>
+          <p class="ddp-calc__note" id="ddp-calc-note"></p>
+          <p class="ddp-calc__disclaimer">Só uma estimativa carinhosa — um convite pra não deixar pra depois.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PILARES ========== -->
+  <section class="ddp-pillars">
+    <div class="ddp-pillars__inner">
+      <h2 class="ddp-pillars__title">Por que dar uma experiência?</h2>
+      <p class="ddp-pillars__sub">Porque o que fica não é o que você compra — é o que vocês vivem juntos.</p>
+      <div class="ddp-pillars__grid">
+        <article class="ddp-pillar">
+          <div class="ddp-pillar__icon" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="24" cy="24" r="14"/>
               <path d="M24 16v8l5 3"/>
               <path d="M24 6c1 2 1 4 0 6M24 36c-1 2-1 4 0 6M6 24c2-1 4-1 6 0M36 24c2 1 4 1 6 0"/>
             </svg>
           </div>
-          <h3 class="ddm-pillar__title">Tempo de qualidade</h3>
-          <p class="ddm-pillar__text">Horas juntas valem mais do que qualquer objeto. É uma pausa do mundo, no ritmo de vocês.</p>
+          <h3 class="ddp-pillar__title">Tempo, não objeto</h3>
+          <p class="ddp-pillar__text">Ele já tem gravata demais. O que ele não tem é mais uma tarde ao seu lado, sem pressa e sem tela.</p>
         </article>
 
-        <article class="ddm-pillar">
-          <div class="ddm-pillar__icon" aria-hidden="true">
-            <!-- Coração / memória -->
+        <article class="ddp-pillar">
+          <div class="ddp-pillar__icon" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M24 41c-7-5-15-11-15-21a8 8 0 0 1 15-4 8 8 0 0 1 15 4c0 10-8 16-15 21z"/>
             </svg>
           </div>
-          <h3 class="ddm-pillar__title">Memória que fica</h3>
-          <p class="ddm-pillar__text">Presentes acabam, vivências viram história. A foto, o cheiro, a risada — tudo fica.</p>
+          <h3 class="ddp-pillar__title">Memória que fica</h3>
+          <p class="ddp-pillar__text">O presente vira poeira na estante. A risada de vocês cozinhando ou brindando juntos fica pra sempre.</p>
         </article>
 
-        <article class="ddm-pillar">
-          <div class="ddm-pillar__icon" aria-hidden="true">
-            <!-- Estrela / curadoria -->
+        <article class="ddp-pillar">
+          <div class="ddp-pillar__icon" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M24 6l5 12 13 1-10 9 3 13-11-7-11 7 3-13L6 19l13-1z"/>
             </svg>
           </div>
-          <h3 class="ddm-pillar__title">Curadoria Elarah</h3>
-          <p class="ddm-pillar__text">Cada experiência foi escolhida com carinho — pra ser bonita, segura e do tamanho do dia.</p>
+          <h3 class="ddp-pillar__title">Curadoria Elarah</h3>
+          <p class="ddp-pillar__text">Escolhemos experiências com a cara dele — do drink ao churrasco, da cozinha à cerâmica. É só reservar.</p>
         </article>
       </div>
     </div>
   </section>
 
   <!-- ========== EXPERIÊNCIAS ========== -->
-  <section id="ddm-experiencias" class="ddm-experiences">
-    <div class="ddm-experiences__inner">
-      <header class="ddm-experiences__head">
-        <span class="ddm-experiences__kicker">Vitrine de presente</span>
-        <h2 class="ddm-experiences__title">Presentes perfeitos para viver juntas</h2>
-        <p class="ddm-experiences__sub">
-          Cada uma destas experiências foi pensada para o Dia das Mães. Escolha a que mais combina com ela
-          — e transforme o dia em uma lembrança que vocês vão querer guardar.
+  <section id="ddp-experiencias" class="ddp-experiences">
+    <div class="ddp-experiences__inner">
+      <header class="ddp-experiences__head">
+        <span class="ddp-experiences__kicker">Vitrine de Dia dos Pais</span>
+        <h2 class="ddp-experiences__title">Experiências para viver com ele</h2>
+        <p class="ddp-experiences__sub">
+          Selecionamos vivências com o jeito do seu pai — pra vocês fazerem algo juntos
+          em vez de só trocar mais um pacote. Escolha uma e transforme o dia numa
+          memória que vale a pena guardar.
         </p>
-        <p class="ddm-experiences__count" id="ddm-count" aria-live="polite"></p>
+        <p class="ddp-experiences__count" id="ddp-count" aria-live="polite"></p>
       </header>
 
-      <div class="ddm-experiences__grid" id="ddm-grid"></div>
+      <div class="ddp-experiences__grid" id="ddp-grid"></div>
 
-      <p class="ddm-experiences__empty" id="ddm-empty" style="display:none;">
-        Em breve, novas experiências chegam para a campanha do Dia das Mães. Volte logo —
+      <p class="ddp-experiences__empty" id="ddp-empty" style="display:none;">
+        Em breve, novas experiências chegam para a campanha do Dia dos Pais. Volte logo —
         ou <a href="categoria.html">explore todas as experiências</a>.
       </p>
 
-      <div class="ddm-experiences__cta-row">
-        <a href="categoria.html" class="ddm-cta-secondary">Ver todas as experiências →</a>
+      <div class="ddp-experiences__cta-row">
+        <a href="categoria.html" class="ddp-cta-secondary">Ver todas as experiências →</a>
       </div>
     </div>
   </section>
 
   <!-- ========== DEPOIMENTOS ========== -->
-  <section class="ddm-testimonials" aria-labelledby="ddm-testimonials-title">
-    <div class="ddm-testimonials__inner">
-      <span class="ddm-testimonials__kicker">Quem viveu, conta</span>
-      <h2 id="ddm-testimonials-title" class="ddm-testimonials__title">
-        Histórias de quem deu — e de quem recebeu
+  <section class="ddp-testimonials" aria-labelledby="ddp-testimonials-title">
+    <div class="ddp-testimonials__inner">
+      <span class="ddp-testimonials__kicker">Quem viveu, conta</span>
+      <h2 id="ddp-testimonials-title" class="ddp-testimonials__title">
+        O que ficou não coube em nenhuma caixa
       </h2>
-      <div class="ddm-testimonials__grid">
-        <figure class="ddm-testimonial">
-          <svg class="ddm-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+      <div class="ddp-testimonials__grid">
+        <figure class="ddp-testimonial">
+          <svg class="ddp-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
             <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
           </svg>
-          <blockquote class="ddm-testimonial__text">
-            Foi um dos momentos mais especiais que já vivi com minha mãe. <span aria-hidden="true">🤍</span>
+          <blockquote class="ddp-testimonial__text">
+            Faz anos que eu não via meu pai rir daquele jeito. Valeu cada segundo. <span aria-hidden="true">🥃</span>
           </blockquote>
-          <figcaption class="ddm-testimonial__author">
-            <span class="ddm-testimonial__name">Marina</span>
-            <span class="ddm-testimonial__detail">Workshop de Cerâmica</span>
+          <figcaption class="ddp-testimonial__author">
+            <span class="ddp-testimonial__name">Rafael</span>
+            <span class="ddp-testimonial__detail">Aula de Coquetelaria</span>
           </figcaption>
         </figure>
 
-        <figure class="ddm-testimonial">
-          <svg class="ddm-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+        <figure class="ddp-testimonial">
+          <svg class="ddp-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
             <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
           </svg>
-          <blockquote class="ddm-testimonial__text">
-            Experiência linda, diferente de qualquer presente tradicional.
+          <blockquote class="ddp-testimonial__text">
+            Dei de presente e acabei ganhando junto: uma tarde inteira só nossa.
           </blockquote>
-          <figcaption class="ddm-testimonial__author">
-            <span class="ddm-testimonial__name">Carolina</span>
-            <span class="ddm-testimonial__detail">Pintura em Taça</span>
+          <figcaption class="ddp-testimonial__author">
+            <span class="ddp-testimonial__name">Juliana</span>
+            <span class="ddp-testimonial__detail">Workshop de Gastronomia</span>
           </figcaption>
         </figure>
 
-        <figure class="ddm-testimonial">
-          <svg class="ddm-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+        <figure class="ddp-testimonial">
+          <svg class="ddp-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
             <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
           </svg>
-          <blockquote class="ddm-testimonial__text">
-            A gente se divertiu, criou juntas e ainda levou uma lembrança pra casa.
+          <blockquote class="ddp-testimonial__text">
+            Ele vive dizendo que "não quer nada". Só não contava com um dia assim.
           </blockquote>
-          <figcaption class="ddm-testimonial__author">
-            <span class="ddm-testimonial__name">Beatriz</span>
-            <span class="ddm-testimonial__detail">Sabonete Artesanal</span>
+          <figcaption class="ddp-testimonial__author">
+            <span class="ddp-testimonial__name">Marcos</span>
+            <span class="ddp-testimonial__detail">Cerâmica no Torno</span>
           </figcaption>
         </figure>
       </div>
     </div>
   </section>
 
-  <!-- ========== FECHAMENTO DE CAMPANHA ========== -->
-  <section class="ddm-closer" aria-labelledby="ddm-closer-title">
-    <div class="ddm-closer__decor ddm-closer__decor--left" aria-hidden="true"></div>
-    <div class="ddm-closer__decor ddm-closer__decor--right" aria-hidden="true"></div>
-
-    <div class="ddm-closer__inner">
-      <div class="ddm-closer__quote-wrap">
-        <span class="ddm-closer__ornament" aria-hidden="true">
+  <!-- ========== FECHAMENTO ========== -->
+  <section class="ddp-closer" aria-labelledby="ddp-closer-title">
+    <div class="ddp-closer__inner">
+      <div class="ddp-closer__quote-wrap">
+        <span class="ddp-closer__ornament" aria-hidden="true">
           <svg viewBox="0 0 80 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
-            <line x1="0" y1="6" x2="30" y2="6"/>
-            <circle cx="40" cy="6" r="3"/>
-            <line x1="50" y1="6" x2="80" y2="6"/>
+            <line x1="0" y1="6" x2="30" y2="6"/><circle cx="40" cy="6" r="3"/><line x1="50" y1="6" x2="80" y2="6"/>
           </svg>
         </span>
-        <p id="ddm-closer-title" class="ddm-closer__quote">
-          “O melhor presente é<br><em>estar presente.</em>”
+        <p id="ddp-closer-title" class="ddp-closer__quote">
+          “O melhor presente<br>é <em>estar presente.</em>”
         </p>
-        <span class="ddm-closer__ornament ddm-closer__ornament--bottom" aria-hidden="true">
+        <span class="ddp-closer__ornament ddp-closer__ornament--bottom" aria-hidden="true">
           <svg viewBox="0 0 80 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
-            <line x1="0" y1="6" x2="30" y2="6"/>
-            <circle cx="40" cy="6" r="3"/>
-            <line x1="50" y1="6" x2="80" y2="6"/>
+            <line x1="0" y1="6" x2="30" y2="6"/><circle cx="40" cy="6" r="3"/><line x1="50" y1="6" x2="80" y2="6"/>
           </svg>
         </span>
       </div>
 
-      <p class="ddm-closer__lead">
-        Mais do que um presente, é um momento para viver juntas, criar memórias
-        e sair da rotina. <strong>Escolha como você quer viver esse Dia das Mães.</strong>
+      <p class="ddp-closer__lead">
+        Um ano que passa não volta. Um Dia dos Pais bem vivido, sim — fica pra sempre.
+        <strong>Escolha como você quer lembrar deste.</strong>
       </p>
 
-      <div class="ddm-closer__ctas">
-        <a href="#ddm-experiencias" class="ddm-closer__cta ddm-closer__cta--primary">
-          Ver experiências de Dia das Mães
+      <div class="ddp-closer__ctas">
+        <a href="#ddp-experiencias" class="ddp-closer__cta ddp-closer__cta--primary">
+          Ver experiências de Dia dos Pais
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
         </a>
-        <a href="presentear.html" class="ddm-closer__cta ddm-closer__cta--secondary">
-          Presentear agora
+        <a href="presentear.html" class="ddp-closer__cta ddp-closer__cta--secondary">
+          Dar um vale-presente
         </a>
-        <a href="#ddm-experiencias" class="ddm-closer__cta ddm-closer__cta--ghost">
-          Reservar minha experiência
+        <a href="#ddp-experiencias" class="ddp-closer__cta ddp-closer__cta--ghost">
+          Reservar agora
         </a>
       </div>
 
-      <p class="ddm-closer__finepoint">
+      <p class="ddp-closer__finepoint">
         Vagas limitadas · Reserva por experiência · Curadoria Elarah
       </p>
     </div>
@@ -350,6 +382,7 @@
 <script src="auth.js?v=12"></script>
 <script src="experiences-data.js?v=33"></script>
 <script src="analytics.js?v=3"></script>
-<script src="script.js?v=78"></script><script src="dia-das-maes.js?v=6"></script>
+<script src="header-nav.js?v=1" defer></script>
+<script src="dia-dos-pais.js?v=3"></script>
 </body>
 </html>
