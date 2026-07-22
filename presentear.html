@@ -89,6 +89,88 @@
       background: var(--ddn-bg-warm, #f5ebe0);
     }
     body.ddn-mode .ddn-back-link:hover { color: var(--ddn-wine-dark); }
+
+    /* TEMA DIA DOS PAIS — aplicado quando body.ddp-mode
+       (visitas via ?campaign=dia-dos-pais). Paleta navy + latão/âmbar. */
+    body.ddp-mode {
+      background: #f6f1e9;
+      color: #15222e;
+    }
+    body.ddp-mode .header {
+      background: rgba(246, 241, 233, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e7dbc7;
+    }
+    body.ddp-mode .presentear-hero,
+    body.ddp-mode .presentear-bonus,
+    body.ddp-mode .presentear-section,
+    body.ddp-mode section[class*="presentear"] {
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(176, 123, 50, 0.14), transparent 60%),
+        #f6f1e9 !important;
+    }
+    body.ddp-mode h1,
+    body.ddp-mode h2,
+    body.ddp-mode h3 {
+      font-family: 'DM Serif Display', serif !important;
+      color: #15222e !important;
+    }
+    body.ddp-mode h1 em,
+    body.ddp-mode h2 em,
+    body.ddp-mode h3 em {
+      color: #b07b32 !important;
+      font-style: italic;
+    }
+    body.ddp-mode button[class*="primary"],
+    body.ddp-mode button[class*="cta"],
+    body.ddp-mode .btn-primary,
+    body.ddp-mode [class*="continuar"],
+    body.ddp-mode [class*="presentear-btn"] {
+      background: #15222e !important;
+      color: #fff !important;
+      box-shadow: 0 12px 28px rgba(21, 34, 46, 0.28) !important;
+      border-color: #15222e !important;
+    }
+    body.ddp-mode button[class*="primary"]:hover,
+    body.ddp-mode .btn-primary:hover {
+      background: #0e1922 !important;
+    }
+    /* Elementos específicos da página de gift card */
+    body.ddp-mode .gift-hero__cta {
+      background: #15222e !important;
+      color: #fff !important;
+      box-shadow: 0 12px 28px rgba(21, 34, 46, 0.28) !important;
+      border-color: #15222e !important;
+    }
+    body.ddp-mode .gift-hero__cta:hover { background: #0e1922 !important; }
+    body.ddp-mode .gift-hero__tag {
+      color: #8a5e22 !important;
+      background: rgba(176, 123, 50, 0.14) !important;
+    }
+    body.ddp-mode .gift-card-front {
+      background: linear-gradient(135deg, #24384b, #15222e) !important;
+    }
+    body.ddp-mode .gift-card-front__value { color: #e7c489 !important; }
+    body.ddp-mode .gift-steps__number {
+      color: #8a5e22 !important;
+      background: rgba(176, 123, 50, 0.14) !important;
+    }
+    /* Banner promocional DDP — faixa no topo */
+    body.ddp-mode::before {
+      content: "🥃 Gift Card · Especial Dia dos Pais";
+      display: block;
+      text-align: center;
+      padding: 10px 20px;
+      background: linear-gradient(90deg, #15222e, #0e1922);
+      color: #e7c489;
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
   </style>
   <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
 </head>
@@ -107,6 +189,11 @@
         document.title = 'Gift Card · Especial Dia dos Namorados — Elarah';
         var meta = document.querySelector('meta[name="description"]');
         if (meta) meta.content = 'Cartão-presente Especial Dia dos Namorados — vivam juntos uma experiência Elarah.';
+      } else if (camp === 'dia-dos-pais') {
+        document.body.classList.add('ddp-mode');
+        document.title = 'Gift Card · Especial Dia dos Pais — Elarah';
+        var metaP = document.querySelector('meta[name="description"]');
+        if (metaP) metaP.content = 'Cartão-presente Especial Dia dos Pais — dê a ele uma experiência pra viver com você.';
       }
     })();
   </script>
