@@ -293,10 +293,10 @@ put_spaced(p1, "✦ DIA DO NUTRICIONISTA", 70.9, 300, 8.6, CORAL_RGB, FSB, track
 # P1 cover co-brand: Nutrify logo in the upper-right whitespace
 _lg = Image.open(A_DIR+"logonutrify.png").convert("RGBA").crop((9, 0, 1733, 1659))
 _lb = io.BytesIO(); _lg.save(_lb, format="PNG")
-_lgt = fitz.Rect(422, 183, 524, 275)           # sits clear above the cover photo (top y=295.5)
+_lgt = fitz.Rect(422, 120, 524, 212)           # tucked right under the 'ELARAH · EXPERIÊNCIAS' header
 _lbl = "PREPARADO PARA"
 _lw = sum(FSB.text_length(c, 7.6)+2.2 for c in _lbl) - 2.2
-put_spaced(p1, _lbl, (_lgt.x0+_lgt.x1)/2 - _lw/2, 172, 7.6, MUTED, FSB, track=2.2)
+put_spaced(p1, _lbl, (_lgt.x0+_lgt.x1)/2 - _lw/2, 112, 7.6, MUTED, FSB, track=2.2)
 p1.insert_image(_lgt, stream=_lb.getvalue(), keep_proportion=True)
 
 # P2 eyebrow: 'A ESTRELA DA FESTA' -> 'A ESTRELA DO ENCONTRO'
