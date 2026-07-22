@@ -255,7 +255,9 @@
       card.setAttribute('role', 'link');
       card.setAttribute('tabindex', '0');
 
-      const primary = normalizeImg(exp.imagem);
+      // Foto exclusiva da campanha tem prioridade AQUI (só nesta aba);
+      // a foto oficial (exp.imagem) segue no resto do site.
+      const primary = normalizeImg(exp.campanhaImagem) || normalizeImg(exp.imagem);
       const catFallback = '';
       const initialSrc = primary || catFallback;
       const placeholder =

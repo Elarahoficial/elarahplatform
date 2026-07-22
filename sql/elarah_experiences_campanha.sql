@@ -1,6 +1,11 @@
 -- =============================================================
 -- ELARAH — Campanha (data especial) em experiences
 -- -------------------------------------------------------------
+-- Adiciona 2 colunas em public.experiences:
+--   * campanha        → slug da campanha (ver abaixo)
+--   * campanha_imagem → foto alternativa usada SÓ na aba da campanha
+--                       (a foto oficial `imagem` não muda no site)
+--
 -- Adiciona a coluna `campanha` em public.experiences pra marcar
 -- uma experiência como parte de uma campanha temática (Dia dos
 -- Pais, Dia das Mães, etc). As abas temáticas (ex.: dia-dos-pais.html)
@@ -23,6 +28,12 @@
 
 alter table public.experiences
   add column if not exists campanha text;
+
+-- Foto exclusiva da campanha (opcional). Quando preenchida, é usada SÓ
+-- na aba da campanha; a coluna `imagem` (foto oficial) continua sendo a
+-- foto no resto do site. null/'' = a aba usa a foto oficial.
+alter table public.experiences
+  add column if not exists campanha_imagem text;
 
 -- Index parcial pra acelerar a query "todas as experiências de uma
 -- campanha" usada no render das abas temáticas. Só indexa as linhas

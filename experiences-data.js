@@ -51,7 +51,10 @@
     // Campanha / data especial (slug: "dia-dos-pais", "dia-das-maes"…).
     // Marca a experiência para aparecer na aba temática correspondente.
     // null/'' = não entra em nenhuma campanha. sql/elarah_experiences_campanha.sql.
-    'campanha'
+    'campanha',
+    // Foto exclusiva da campanha. Quando preenchida, é usada SÓ na aba
+    // da campanha (a imagem oficial continua no resto do site).
+    'campanha_imagem'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -157,6 +160,8 @@
       // Campanha / data especial (slug). '' ou null = nenhuma.
       // sql/elarah_experiences_campanha.sql.
       campanha: (row.campanha == null || row.campanha === '') ? null : String(row.campanha).trim().toLowerCase(),
+      // Foto exclusiva da campanha ('' = usa a imagem oficial).
+      campanhaImagem: row.campanha_imagem || '',
       // --- Variantes (escolha extra do cliente) ---
       // Exemplo: Pintura com Cristal & Aperol → label="Modelo do quadro",
       // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
@@ -310,6 +315,13 @@
         var raw = exp.campanha != null ? exp.campanha : exp.campanha_;
         if (raw == null) return null;
         var s = String(raw).trim().toLowerCase();
+        return s ? s : null;
+      })(),
+      // Foto exclusiva da campanha. Vazio → null (usa a imagem oficial).
+      campanha_imagem: (function () {
+        var raw = exp.campanhaImagem != null ? exp.campanhaImagem : exp.campanha_imagem;
+        if (raw == null) return null;
+        var s = String(raw).trim();
         return s ? s : null;
       })(),
       // --- Variantes ---

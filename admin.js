@@ -5484,6 +5484,11 @@
       // Campanha (data especial). Vazio = nenhuma.
       var campEl = document.getElementById('exp-campanha');
       if (campEl) campEl.value = exp.campanha || '';
+      // Foto exclusiva da campanha (só na aba temática).
+      var campImgEl = document.getElementById('exp-campanha-imagem');
+      if (campImgEl) campImgEl.value = exp.campanhaImagem || '';
+      if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
+      if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
 
       // Fornecedor fields. WhatsApp do fornecedor é centralizado no
       // painel "Fornecedores" (fornecedores_metadata.whatsapp), não
@@ -5597,6 +5602,10 @@
       if (ctaEl2) ctaEl2.value = 'buy';
       var campEl2 = document.getElementById('exp-campanha');
       if (campEl2) campEl2.value = '';
+      var campImgEl2 = document.getElementById('exp-campanha-imagem');
+      if (campImgEl2) campImgEl2.value = '';
+      if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
+      if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
       document.getElementById('exp-edit-id').value = '';
 
       // Esconde a seção de recorrência em "nova experiência" — só
@@ -5774,6 +5783,99 @@
         }
       });
     }
+
+    // ===== Foto exclusiva da campanha =====
+    // Mesmo mecanismo da imagem principal (preview + upload pro bucket
+    // 'experience-images'), mas grava em campo separado (campanha_imagem)
+    // que só é usado na aba da campanha. O campo inteiro só aparece
+    // quando há uma campanha selecionada.
+    (function setupCampanhaImagem() {
+      var selEl = document.getElementById('exp-campanha');
+      var fieldEl = document.getElementById('exp-campanha-imagem-field');
+      var urlEl = document.getElementById('exp-campanha-imagem');
+      var pWrap = document.getElementById('exp-campanha-imagem-preview-wrap');
+      var pImg = document.getElementById('exp-campanha-imagem-preview');
+      var pStatus = document.getElementById('exp-campanha-imagem-preview-status');
+      var cFileInput = document.getElementById('exp-campanha-imagem-file');
+      var cFileStatus = document.getElementById('exp-campanha-imagem-file-status');
+
+      function toggleField() {
+        if (!fieldEl) return;
+        var has = !!(selEl && (selEl.value || '').trim());
+        fieldEl.style.display = has ? '' : 'none';
+      }
+      function setPStatus(ok, msg) {
+        if (!pStatus) return;
+        pStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
+        pStatus.textContent = msg;
+      }
+      function refreshPreview() {
+        if (!urlEl || !pWrap || !pImg) return;
+        var raw = (urlEl.value || '').trim();
+        if (!raw) { pWrap.style.display = 'none'; return; }
+        pWrap.style.display = 'block';
+        var src = /^(https?:\/\/|\/|assets\/|images\/|img\/)/i.test(raw) ? raw : 'assets/' + raw;
+        setPStatus(true, 'Carregando…');
+        pImg.onload = function () { setPStatus(true, '✓ Esta foto vai aparecer só na aba da campanha.'); };
+        pImg.onerror = function () {
+          setPStatus(false, '⚠ Não consegui carregar essa imagem. Use uma URL direta (.jpg/.png) ou faça upload.');
+        };
+        pImg.src = src;
+      }
+      function setFStatus(ok, msg) {
+        if (!cFileStatus) return;
+        cFileStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
+        cFileStatus.textContent = msg;
+      }
+
+      if (selEl) selEl.addEventListener('change', toggleField);
+      if (urlEl) {
+        urlEl.addEventListener('input', refreshPreview);
+        urlEl.addEventListener('blur', refreshPreview);
+      }
+      if (cFileInput) {
+        cFileInput.addEventListener('change', async function () {
+          var file = cFileInput.files && cFileInput.files[0];
+          if (!file) return;
+          if (file.size > 10 * 1024 * 1024) {
+            setFStatus(false, '⚠ Arquivo maior que 10MB. Comprima a imagem antes.');
+            cFileInput.value = '';
+            return;
+          }
+          var s = window.supabaseClient;
+          if (!s || !s.storage) { setFStatus(false, '⚠ Storage indisponível. Recarregue a página.'); return; }
+          setFStatus(true, 'Enviando…');
+          var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [, 'jpg'])[1].toLowerCase();
+          var safeBase = ((document.getElementById('exp-nome')?.value || 'exp') + '-campanha')
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'campanha';
+          var path = safeBase + '-' + Date.now() + '.' + ext;
+          try {
+            var { data: uploadData, error: uploadErr } = await s.storage
+              .from('experience-images')
+              .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || ('image/' + ext) });
+            if (uploadErr) {
+              console.error('[Admin] upload da imagem de campanha falhou:', uploadErr);
+              setFStatus(false, '⚠ Falha no upload: ' + (uploadErr.message || 'erro desconhecido'));
+              return;
+            }
+            var { data: urlData } = s.storage.from('experience-images').getPublicUrl(uploadData.path);
+            var publicUrl = urlData && urlData.publicUrl;
+            if (!publicUrl) { setFStatus(false, '⚠ Upload ok mas sem URL pública. Veja o console.'); return; }
+            if (urlEl) { urlEl.value = publicUrl; refreshPreview(); }
+            setFStatus(true, '✓ Enviada! URL preenchida automaticamente.');
+          } catch (e) {
+            console.error('[Admin] exceção no upload da imagem de campanha:', e);
+            setFStatus(false, '⚠ Erro inesperado no upload: ' + (e.message || String(e)));
+          }
+        });
+      }
+
+      // Exposto pro openExpModal chamar depois de preencher os campos.
+      window._toggleCampanhaImagemField = toggleField;
+      window._refreshCampanhaImagePreview = refreshPreview;
+      toggleField();
+    })();
 
     // ===== Construtor de variações (nome + preço + foto) =====
     // Cada variação vira uma linha com nome, preço e upload de foto
@@ -6054,7 +6156,9 @@
         campanha: (function () {
           var raw = (document.getElementById('exp-campanha')?.value || '').trim();
           return raw || null;
-        })()
+        })(),
+        // Foto exclusiva da campanha. Vazio = usa a foto oficial.
+        campanhaImagem: (document.getElementById('exp-campanha-imagem')?.value || '').trim()
       };
 
       const editId = document.getElementById('exp-edit-id').value;

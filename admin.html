@@ -3949,6 +3949,31 @@
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Marque uma campanha pra esta experiência aparecer na aba temática (ex.: <code>dia-dos-pais.html</code>). "Nenhuma" = não entra em nenhuma aba de campanha.</p>
         </div>
 
+        <!-- ===== FOTO EXCLUSIVA DA CAMPANHA ===== -->
+        <!-- Aparece só quando uma campanha está selecionada. Opcional:
+             se preenchida, ESTA foto é usada só na aba da campanha; a
+             foto oficial (acima) continua em todo o resto do site. -->
+        <div class="admin__form-field admin__form-field--full" id="exp-campanha-imagem-field" style="display:none;">
+          <label>Foto exclusiva da campanha (opcional)</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <input type="file" id="exp-campanha-imagem-file" accept="image/png,image/jpeg,image/webp,image/heic,image/avif" style="font-size:12px;">
+            <span id="exp-campanha-imagem-file-status" style="font-size:12px;color:#888;"></span>
+          </div>
+          <input type="text" id="exp-campanha-imagem" placeholder="https://... ou faça upload acima">
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Deixe em branco pra usar a <b>foto oficial</b> também na campanha. Se preencher, esta foto aparece
+            <b>só na aba da campanha</b> (ex.: Dia dos Pais) — a foto oficial não muda no resto do site.
+          </p>
+          <div id="exp-campanha-imagem-preview-wrap"
+               style="margin-top:10px;display:none;border:1px dashed #ddd;border-radius:8px;padding:8px;background:#fafafa;">
+            <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Preview (só na aba da campanha)</div>
+            <img id="exp-campanha-imagem-preview" alt="Preview da imagem da campanha"
+                 style="max-width:200px;max-height:140px;display:block;border-radius:6px;background:#fff;">
+            <div id="exp-campanha-imagem-preview-status"
+                 style="margin-top:6px;font-size:12px;color:#1a8a4a;font-weight:600;"></div>
+          </div>
+        </div>
+
         <!-- ===== RECORRÊNCIA SEMANAL ===== -->
         <!-- Aparece só quando editando uma experiência (não em "nova").
              Cada experiência pode ter N regras (terça + quinta etc).
@@ -4554,7 +4579,7 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=32"></script>
+<script src="experiences-data.js?v=33"></script>
 <script src="byelarah-data.js?v=7"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-social.js?v=11"></script>
@@ -4567,7 +4592,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=209"></script>
+<script src="admin.js?v=210"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
