@@ -359,14 +359,35 @@
       return wrap;
     }
 
-    // Monta as seções (não-gastro + gastro) e ordena cronologicamente
-    // pela data mais cedo de cada categoria.
+    // Ordem FIXA das categorias na aba (definida pela Elarah). Editar aqui
+    // pra mudar a ordem. Categorias fora desta lista vão pro fim (ordem
+    // cronológica entre elas). Nomes normalizados (sem acento, minúsculo).
+    const CATEGORY_ORDER = [
+      'gastronomia',
+      'bartenderia',
+      'charutaria',
+      'fotografia',
+      'barismo',
+      'constiparista',
+      'ceramica',
+      'perfumaria',
+      'joalheria',
+      'tufting',
+      'pintura'
+    ];
+    function orderIndex(catKey) {
+      const i = CATEGORY_ORDER.indexOf(normalize(catKey));
+      return i === -1 ? 999 : i;
+    }
+
+    // Monta as seções (não-gastro + gastro) e ordena pela lista fixa acima;
+    // dentro de cada categoria as experiências já estão em ordem cronológica.
     const sections = [];
     Object.keys(groups).forEach(function (key) {
       const g = groups[key];
       const minKey = Math.min.apply(null, g.items.map(dateKey));
       sections.push({
-        label: g.label, count: g.items.length, minKey: minKey,
+        key: g.key, label: g.label, count: g.items.length, minKey: minKey,
         render: function () {
           const cg = document.createElement('div');
           cg.className = 'ddp-catgroup__grid';
@@ -377,12 +398,14 @@
     });
     if (gastroSet.length) {
       sections.push({
-        label: 'Gastronomia', count: gastroSet.length,
+        key: 'gastronomia', label: 'Gastronomia', count: gastroSet.length,
         minKey: Math.min.apply(null, gastroSet.map(dateKey)),
         render: function () { return buildGastroBlock(gastroSet); }
       });
     }
     sections.sort(function (a, b) {
+      const oa = orderIndex(a.key), ob = orderIndex(b.key);
+      if (oa !== ob) return oa - ob;
       if (a.minKey !== b.minKey) return a.minKey - b.minKey;
       return String(a.label).localeCompare(String(b.label), 'pt-BR');
     });
