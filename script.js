@@ -3814,6 +3814,7 @@ if (groupForm) {
               p_code: code,
               p_experience_id: experienciaId,
               p_amount_centavos: amountCentavos,
+              p_quantidade: _qtyForCoupon,
             }
           );
           if (!cpErr) {
@@ -3878,6 +3879,7 @@ if (groupForm) {
             code: code,
             amount_centavos: amountCentavos,
             experiencia_id: experienciaId,
+            quantidade: _qtyForCoupon,
           }),
         });
         const data = await res.json().catch(() => ({}));

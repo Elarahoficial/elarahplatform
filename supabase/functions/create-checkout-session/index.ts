@@ -673,6 +673,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         p_code: cupomCode,
         p_experience_id: exp.id,
         p_amount_centavos: totalCents,
+        p_quantidade: quantidade,
       },
     );
     if (cpErr) {
