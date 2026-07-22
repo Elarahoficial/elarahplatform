@@ -642,7 +642,7 @@
             '<div class="exp-detail__hours-label">Horário de funcionamento</div>' +
             '<div class="exp-detail__hours-text">' + esc(exp.horarioFuncionamento).replace(/\n/g, '<br>') + '</div>' +
           '</div>' +
-          '<div class="exp-detail__schedule-label">Escolha o dia e a hora que você quer</div>' +
+          '<div class="exp-detail__schedule-label">Dia e hora de preferência <span style="text-transform:none;letter-spacing:0;color:#a89b8c;">(opcional)</span></div>' +
           '<div class="exp-detail__freepick-fields">' +
             '<label class="exp-detail__freepick-field"><span>Dia</span>' +
               '<input type="date" id="exp-freepick-date" min="' + _minDate + '"></label>' +
@@ -650,8 +650,9 @@
               '<input type="time" id="exp-freepick-time"></label>' +
           '</div>' +
           '<p class="exp-detail__freepick-hint">' +
-            '<strong>Como funciona:</strong> escolha um dia e horário de preferência dentro do horário de funcionamento. ' +
-            'No momento da compra, a <strong>Elarah entra em contato com você no mesmo dia</strong> para acertar o melhor horário pra você, dentro do horário de funcionamento. 🤍' +
+            '<strong>Como funciona:</strong> é só reservar. Se quiser, deixe acima um dia e horário de preferência — ' +
+            'mas não precisa. <strong>No momento da compra, a Elarah entra em contato com você no mesmo dia</strong> ' +
+            'para acertar o melhor horário pra você, dentro do horário de funcionamento. 🤍' +
           '</p>' +
         '</div>';
     } else if (useScheduleNew) {
@@ -998,54 +999,35 @@
     }
 
     if (useFreePick) {
-      // Agendamento livre: os seletores de dia/hora setam os data-attrs do
-      // botão Reservar (mesma via que o checkout já lê). Bloqueia a reserva
-      // — inclusive o botão fixo do mobile — até dia E hora escolhidos.
+      // Agendamento livre: os seletores de dia/hora são OPCIONAIS. Quando
+      // preenchidos, viram a preferência do cliente e vão pro pedido pela
+      // mesma via que o checkout já lê. SEM bloqueio: clicar em Reservar
+      // sempre segue — a Elarah acerta o melhor horário no contato.
       var fpDate = document.getElementById('exp-freepick-date');
       var fpTime = document.getElementById('exp-freepick-time');
       var fpReserve = document.getElementById('exp-reserve-btn');
-      var fpBox = container.querySelector('.exp-detail__freepick');
       function fpFmtBR(iso) {
         if (!iso) return '';
         var p = String(iso).split('-');
         return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
       }
-      function fpReady() { return !!(fpDate && fpDate.value && fpTime && fpTime.value); }
       function fpSync() {
         if (!fpReserve) return;
-        if (fpReady()) {
-          var label = fpFmtBR(fpDate.value);
-          fpReserve.dataset.data = fpDate.value;
-          fpReserve.dataset.dataLabel = label;
-          fpReserve.dataset.horario = label + ' às ' + fpTime.value;
-          fpReserve.dataset.slotId = '';
-          if (fpBox) fpBox.classList.remove('exp-detail__freepick--error');
-        } else {
-          fpReserve.dataset.data = '';
-          fpReserve.dataset.dataLabel = '';
-          fpReserve.dataset.horario = '';
-          fpReserve.dataset.slotId = '';
-        }
+        var d = (fpDate && fpDate.value) || '';
+        var t = (fpTime && fpTime.value) || '';
+        var label = d ? fpFmtBR(d) : '';
+        var pref = '';
+        if (label && t) pref = label + ' às ' + t;
+        else if (label) pref = label;
+        else if (t) pref = 'às ' + t;
+        fpReserve.dataset.data = d;
+        fpReserve.dataset.dataLabel = label;
+        fpReserve.dataset.horario = pref;   // vazio = Elarah acerta no contato
+        fpReserve.dataset.slotId = '';
       }
       if (fpDate) fpDate.addEventListener('change', fpSync);
       if (fpTime) fpTime.addEventListener('change', fpSync);
       fpSync();
-      // Guard em fase de captura no WINDOW: precisa rodar ANTES do handler
-      // global de [data-reserve] do script.js — que é capture-phase no
-      // document com stopImmediatePropagation. Como o window está acima do
-      // document na captura, este listener dispara primeiro e bloqueia a
-      // reserva (inclusive o botão fixo do mobile) até dia E hora escolhidos.
-      window.addEventListener('click', function (e) {
-        var trg = e.target && e.target.closest && e.target.closest('[data-reserve]');
-        if (!trg) return;
-        if (fpReady()) return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        if (fpBox) fpBox.classList.add('exp-detail__freepick--error');
-        var miss = (fpDate && !fpDate.value) ? fpDate : fpTime;
-        if (miss && miss.focus) { try { miss.focus(); } catch (_) {} }
-        try { if (fpBox && fpBox.scrollIntoView) fpBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
-      }, true);
     } else if (useScheduleNew && window.__expScheduleData) {
       var schedData = window.__expScheduleData;
       var horariosEl = document.getElementById('exp-horarios');
