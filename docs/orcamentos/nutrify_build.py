@@ -99,14 +99,14 @@ put(p1, "Uma pausa que nutre", FB, 26, CORAL_RGB, 70, 353)
 put(p1, "vem criar com o time", FI, 22, DARKt, 70.9, 398)
 BODY = ('<p>O Dia do Nutricionista pede uma pausa à altura: '
         '<b style="color:#A75D3A">leve, criativa e memorável</b>. '
-        'A pintura em xícara ou taça é o ponto de partida — e a partir daí a Elarah '
+        'A pintura em xícara, taça ou vela aromática é o ponto de partida — e a partir daí a Elarah '
         'transforma o dia da equipe numa experiência única. '
         '<b style="color:#A75D3A">Vocês escolhem o clima, a gente faz acontecer.</b></p>')
 p1.insert_htmlbox(fitz.Rect(70.9, 478, 300, 592), BODY,
                   css="p{margin:0;font-family:sans-serif;font-size:10.5px;line-height:1.5;color:#3F2F2C}")
 # reword the cover footer (remove '10–15 CONVIDADAS' and 'ORÇAMENTO PARA 12')
 rm(p1, [(66, 752, 548, 771)])
-f1 = "ELARAH × NUTRIFY  ·  PINTURA EM XÍCARA OU TAÇA  ·  "
+f1 = "ELARAH × NUTRIFY  ·  XÍCARA · TAÇA · VELA  ·  "
 put_spaced(p1, f1, 70.9, 766.5, 8.25, (0.247, 0.184, 0.173), FS, track=2.4)
 fx = 70.9 + sum(FS.text_length(c, 8.25)+2.4 for c in f1)
 put_spaced(p1, "POR PESSOA", fx, 766.5, 8.25, (0.655, 0.365, 0.227), FSB, track=2.4)
@@ -128,18 +128,19 @@ p3.draw_rect(fitz.Rect(276, 243, 554, 445), color=None, fill=BLUSH)   # cover ol
 
 TIERS = [
     dict(name="Básico", tag="A experiência, em sua essência.", price="189", more=None,
-         bullets=["Experiência de pintura (xícara ou taça)", "Todos os materiais inclusos",
+         bullets=["Pintura em xícara, taça ou vela aromática", "Todos os materiais inclusos",
                   "Condução por facilitadora", "Cada pessoa leva a sua peça autoral"], kind="plain"),
     dict(name="Premium", tag="Experiência + celebração.", price="289",
          badge="O MAIS QUERIDINHO", more="TUDO DO BÁSICO, E MAIS",
-         bullets=["Brinde: Aperol Spritz ou Coffee Break", "Registro fotográfico profissional",
-                  "Peça personalizada com inicial ou logo", "Avental personalizado"], kind="highlight"),
+         bullets=["Coffee break de boas-vindas", "Registro fotográfico profissional",
+                  "Avental personalizado"], kind="highlight"),
     dict(name="Signature", tag="A celebração completa, sem preocupação.", price="429",
          badge="TUDO RESOLVIDO", more="TUDO DO PREMIUM, E MAIS",
          bullets=["Coffee break reforçado", "Docinhos & mimos",
                   "Personalização com o logo da Nutrify"], kind="dark"),
 ]
-CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 262, 452
+CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 448, 636
+put_spaced(p3, "✦ INVESTIMENTO", 54, 424, 9, CORAL_RGB, FSB)
 for i, t in enumerate(TIERS):
     card = fitz.Rect(CX[i], CY0, CX[i]+CW, CY1)
     if t["kind"] == "plain":
@@ -174,8 +175,8 @@ for i, t in enumerate(TIERS):
     p3.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+16, card.x1-10, card.y1-8), html, css=css)
 
 # small per-person note (no more '10 a 15 / 12')
-put(p3, "Valores por pessoa · Aperol Spritz ou Coffee Break incluso nos planos Premium e Signature.",
-    FS, 7.6, (0.549, 0.494, 0.455), 54, 474)
+put(p3, "Valores por pessoa · Coffee break incluso nos planos Premium e Signature.",
+    FS, 7.6, (0.549, 0.494, 0.455), 54, 654)
 
 # ---- venues 'Onde acontece' (Aretha & BETC) below the pricing ----
 def venue(page, path, rect, name, vbias=0.5):
@@ -185,20 +186,20 @@ def venue(page, path, rect, name, vbias=0.5):
     put(page, name, FSB, 10.5, DARKt, r.x0, r.y1+14)
 
 # ---- venues 'Onde acontece' (Aretha & BETC) below the pricing ----
-put_spaced(p3, "✦ ONDE ACONTECE", 54, 512, 9, CORAL_RGB, FSB)
-put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 541)
-put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 541)
-venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 558, 293, 662), "Aretha Soul Kitchen")
-venue(p3, A_DIR+"betchavas.jpg",         (301, 558, 541, 662), "BETC", vbias=0.42)
+put_spaced(p3, "✦ ONDE ACONTECE", 54, 258, 9, CORAL_RGB, FSB)
+put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 286)
+put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 286)
+venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 296, 293, 386), "Aretha Soul Kitchen")
+venue(p3, A_DIR+"betchavas.jpg",         (301, 296, 541, 386), "BETC Havas Café", vbias=0.42)
 
 # ---- personalization callout (what 'personalização' means) ----
-_pz = crop_ratio(A_DIR+"personalizaçaobrindeescovapiranha.jpg", 1.0, vbias=0.42)
+_pz = crop_ratio(A_DIR+"pinturaemvela.jpg", 68/76, vbias=0.5)
 _pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=90)
-p3.insert_image(fitz.Rect(54, 700, 128, 784), stream=_pb.getvalue())
-put_spaced(p3, "✦ PERSONALIZAÇÃO", 142, 714, 8.5, CORAL_RGB, FSB)
-put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 142, 737)
-put(p3, "vocês", FI, 15, CORAL_RGB, 142+FB.text_length("Com a cara de ", 15), 737)
-p3.insert_textbox(fitz.Rect(142, 748, 545, 784),
+p3.insert_image(fitz.Rect(54, 674, 122, 750), stream=_pb.getvalue())
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 136, 688, 8.5, CORAL_RGB, FSB)
+put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 136, 710)
+put(p3, "vocês", FI, 15, CORAL_RGB, 136+FB.text_length("Com a cara de ", 15), 710)
+p3.insert_textbox(fitz.Rect(136, 720, 545, 752),
     "Cada pessoa leva um mimo personalizado — a peça autoral e os itens com a "
     "inicial ou o logo da Nutrify.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
@@ -230,10 +231,10 @@ def retext(page, rect, text, size, color=(0.431, 0.388, 0.357), width_rect=None)
 d[1].add_redact_annot(fitz.Rect(184, 130, 244, 165))
 d[1].apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=fitz.PDF_REDACT_LINE_ART_NONE,
                       text=fitz.PDF_REDACT_TEXT_REMOVE)
-put(d[1], "Xícara ou Taça", FBI, 27, CORAL_RGB, 187.9, 156.2)
+put(d[1], "Xícara, Taça ou Vela", FBI, 27, CORAL_RGB, 187.9, 156.2)
 # p2 intro
 retext(d[1], (52, 171, 505, 250),
-       "Esqueça o happy hour comum! Aqui cada pessoa do time vira artista por um dia: pinta, "
+       "Esqueça a confraternização de sempre! Aqui cada pessoa do time vira artista por um dia: pinta, "
        "personaliza e leva para casa a própria peça autoral. Uma experiência criativa, relaxante "
        "e cheia de estilo — perfeita pra integrar a equipe (e desacelerar na correria). "
        "O ateliê vai até você, com tudo pronto.", 10.5, color=(0.431, 0.388, 0.357),
@@ -244,25 +245,22 @@ d[1].apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE,
                       graphics=fitz.PDF_REDACT_LINE_ART_NONE,
                       text=fitz.PDF_REDACT_TEXT_REMOVE)
 d[1].draw_rect(fitz.Rect(40, 256, 558, 404), color=None, fill=(0.984, 0.965, 0.937))
-# ... and put the painting options there instead
-put_spaced(d[1], "✦ MAIS OPÇÕES", 53.8, 284, 9, CORAL_RGB, FSB)
-put(d[1], "Prefere outra ", FB, 18, (0.118, 0.086, 0.098), 53.8, 310)
-put(d[1], "pintura?", FI, 18, CORAL_RGB, 53.8+FB.text_length("Prefere outra ", 18), 310)
-d[1].insert_textbox(fitz.Rect(53.8, 321, 548, 344),
-    "A xícara e a taça são só o começo — dá pra escolher também qualquer uma "
-    "destas, sem mudar o valor:", fontsize=8.6, fontname="lib",
-    fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.35)
-OPTS = [("Copo", "Vaso com plantinha"), ("Xícara", "Tela com textura"),
-        ("Caneca", "Aquarela botânica"), ("Ecobag", "Bowl de vidro (poke)")]
-for j, (a, b) in enumerate(OPTS):
-    yy = 358 + j*13.5
-    d[1].draw_circle((62, yy-2.4), 1.8, color=None, fill=CORAL_RGB)
-    put(d[1], a, FS, 9.3, (0.29, 0.24, 0.22), 71, yy)
-    d[1].draw_circle((302, yy-2.4), 1.8, color=None, fill=CORAL_RGB)
-    put(d[1], b, FS, 9.3, (0.29, 0.24, 0.22), 311, yy)
+# ... and put a clean corporate 'Como funciona' 3-step there instead
+put_spaced(d[1], "✦ COMO FUNCIONA", 53.8, 292, 9, CORAL_RGB, FSB)
+put(d[1], "Simples ", FB, 18, (0.118, 0.086, 0.098), 53.8, 316)
+put(d[1], "do começo ao fim", FI, 18, CORAL_RGB, 53.8+FB.text_length("Simples ", 18), 316)
+STEPS = [("01", "Escolher", "Cada um escolhe a peça: xícara, taça ou vela aromática."),
+         ("02", "Criar", "Pinta, personaliza e relaxa — com tudo pronto."),
+         ("03", "Levar", "Leva para casa a própria peça autoral.")]
+colx = [53.8, 230, 406]
+for (num, ti, desc), x in zip(STEPS, colx):
+    put(d[1], num, FB, 21, CORAL_RGB, x, 351)
+    put(d[1], ti, FB, 12.5, (0.118, 0.086, 0.098), x+30, 351)
+    d[1].insert_textbox(fitz.Rect(x, 360, x+152, 400), desc, fontsize=8.6, fontname="lib",
+        fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.35)
 # p3 intro
 retext(d[2], (52, 171, 505, 230),
-       "A experiência de pintura (xícara ou taça) com toda a estrutura, os mimos personalizados e o "
+       "A experiência de pintura (xícara, taça ou vela aromática) com toda a estrutura, os mimos e o "
        "registro profissional do dia. É só reunir o time — a Elarah leva tudo até vocês "
        "e cuida de cada detalhe.", 10.5, width_rect=(53.8, 173, 500, 232))
 # p4 intro
@@ -271,6 +269,10 @@ retext(d[3], (52, 171, 482, 214),
        "participantes. A experiência vai até o espaço parceiro, com toda a energia da Elarah.",
        10.5, width_rect=(53.8, 173, 478, 232))
 
+# p2: replace the busy left photo with the group-painting workshop shot
+_lft = crop_ratio(A_DIR+"atelieleroy-2.jpg", 159.7/176.3, vbias=0.5)
+_lb2 = io.BytesIO(); _lft.save(_lb2, format="JPEG", quality=90)
+d[1].insert_image(fitz.Rect(51.8, 436.5, 211.5, 612.8), stream=_lb2.getvalue())
 # p2: replace the middle 'vibe' photo with a painted-glass (pintura em taça) photo
 _mid = crop_ratio(A_DIR+"pinturatacanova.jpg", 175.5/176.3, vbias=0.5)
 _b = io.BytesIO(); _mid.save(_b, format="JPEG", quality=90)
@@ -287,8 +289,11 @@ put_spaced(p1, "✦ DIA DO NUTRICIONISTA", 70.9, 282.3, 8.6, CORAL_RGB, FSB, tra
 # P1 cover co-brand: Nutrify logo in the upper-right whitespace
 _lg = Image.open(A_DIR+"logonutrify.png").convert("RGBA").crop((9, 0, 1733, 1659))
 _lb = io.BytesIO(); _lg.save(_lb, format="PNG")
-put_spaced(p1, "PREPARADO PARA", 420.5, 196, 7.6, MUTED, FSB, track=2.2)
-p1.insert_image(fitz.Rect(410, 205, 512, 303), stream=_lb.getvalue(), keep_proportion=True)
+_lgt = fitz.Rect(422, 183, 524, 275)           # sits clear above the cover photo (top y=295.5)
+_lbl = "PREPARADO PARA"
+_lw = sum(FSB.text_length(c, 7.6)+2.2 for c in _lbl) - 2.2
+put_spaced(p1, _lbl, (_lgt.x0+_lgt.x1)/2 - _lw/2, 172, 7.6, MUTED, FSB, track=2.2)
+p1.insert_image(_lgt, stream=_lb.getvalue(), keep_proportion=True)
 
 # P2 eyebrow: 'A ESTRELA DA FESTA' -> 'A ESTRELA DO ENCONTRO'
 rm(d[1], [(52, 113, 235, 128)])
