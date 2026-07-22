@@ -197,15 +197,18 @@ put(p3, "Valores por pessoa · Coffee break incluso nos planos Premium e Signatu
     FS, 7.6, (0.549, 0.494, 0.455), 54, 654)
 
 # ---- personalization callout (what 'personalização' means) ----
-_pz = crop_ratio(A_DIR+"personalizaçãonutrify.jpg", 1.0, vbias=0.5)
-_pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=92)
-p3.insert_image(fitz.Rect(54, 660, 150, 756), stream=_pb.getvalue())
-put_spaced(p3, "✦ PERSONALIZAÇÃO", 166, 684, 8.5, CORAL_RGB, FSB)
-put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 166, 706)
-put(p3, "vocês", FI, 15, CORAL_RGB, 166+FB.text_length("Com a cara de ", 15), 706)
-p3.insert_textbox(fitz.Rect(166, 716, 545, 752),
-    "Cada pessoa leva um mimo personalizado — a peça autoral e os itens com a "
-    "inicial ou o logo da Nutrify.", fontsize=8.7, fontname="lib",
+# two thumbs side by side: the painted piece (theme) + the Nutrify-branded kit (logo)
+def _thumb(path, rect, vbias=0.5):
+    r = fitz.Rect(rect); im = crop_ratio(path, r.width/r.height, vbias)
+    b = io.BytesIO(); im.save(b, format="JPEG", quality=92); p3.insert_image(r, stream=b.getvalue())
+_thumb(A_DIR+"pinturaemvela.jpg", (54, 662, 138, 748))
+_thumb(A_DIR+"personalizaçãonutrify.jpg", (142, 662, 226, 748))
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 242, 684, 8.5, CORAL_RGB, FSB)
+put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 242, 706)
+put(p3, "vocês", FI, 15, CORAL_RGB, 242+FB.text_length("Com a cara de ", 15), 706)
+p3.insert_textbox(fitz.Rect(242, 716, 545, 752),
+    "A peça autoral que cada um pinta e leva pra casa — mais os itens com a inicial "
+    "ou o logo da Nutrify.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
 
 # ---- PAGE 4 banner headline + footer + disclaimer (remove '12 / 10 a 15') ----
