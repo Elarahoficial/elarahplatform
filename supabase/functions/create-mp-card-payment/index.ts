@@ -244,6 +244,7 @@ async function handleCardRequest(
     nome: nomeFromPayload,
     cupomCode,
     quantidade,
+    variantSelected,
   });
 
   if (!guard.ok) {

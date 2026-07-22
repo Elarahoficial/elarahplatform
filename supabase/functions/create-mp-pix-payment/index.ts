@@ -402,6 +402,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     nome: nomeFromPayload,
     cupomCode,
     quantidade,
+    variantSelected,
   });
 
   if (!guard.ok) {
