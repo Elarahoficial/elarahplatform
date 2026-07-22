@@ -163,60 +163,14 @@
       return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
     }
 
-    // ---- FONTE PRIMÁRIA: experiências marcadas na campanha pelo admin ----
-    // (campo "Campanha" = Dia dos Pais no cadastro). Isso dá controle
-    // total: aparece exatamente o que a Elarah escolher marcar.
-    const tagged = experiences.filter(function (e) {
-      return e && normalize(e.campanha) === CAMPAIGN;
-    });
-
-    let filtered;
-    if (tagged.length) {
-      filtered = tagged.slice().sort(sortByDateThenName);
-      console.info('[Elarah DDP] vitrine por campanha (marcadas no admin):', filtered.length);
-    } else {
-      // ---- FALLBACK: enquanto nada estiver marcado, a página não fica
-      // vazia. Prioriza menção a "pai/pais" no texto e completa com
-      // curadoria de categorias com a cara dele (rodízio, variedade). ----
-      const fatherRegex = /\b(pai|pais|papai)\b/;
-      function matchesFather(exp) {
-        if (!exp) return false;
-        return fatherRegex.test(normalize(exp.nome)) ||
-               fatherRegex.test(normalize(exp.categoria)) ||
-               fatherRegex.test(normalize(exp.descricao));
-      }
-      const DAD_CATEGORIES = ['bartenderia', 'gastronomia', 'ceramica'];
-      const MAX = 12;
-      const seen = new Set();
-      const picked = [];
-      function add(exp) {
-        if (!exp || exp.id == null) return;
-        const k = String(exp.id);
-        if (seen.has(k)) return;
-        seen.add(k);
-        picked.push(exp);
-      }
-      experiences.filter(matchesFather).forEach(add);
-      if (picked.length < MAX) {
-        const buckets = {};
-        DAD_CATEGORIES.forEach(function (c) { buckets[c] = []; });
-        experiences.forEach(function (exp) {
-          const c = normalize(exp && exp.categoria);
-          if (buckets[c]) buckets[c].push(exp);
-        });
-        Object.keys(buckets).forEach(function (c) { buckets[c].sort(sortByDateThenName); });
-        let progress = true;
-        while (picked.length < MAX && progress) {
-          progress = false;
-          for (let i = 0; i < DAD_CATEGORIES.length && picked.length < MAX; i++) {
-            const bucket = buckets[DAD_CATEGORIES[i]];
-            if (bucket && bucket.length) { add(bucket.shift()); progress = true; }
-          }
-        }
-      }
-      filtered = picked.slice(0, MAX);
-      console.info('[Elarah DDP] vitrine por curadoria (fallback — nenhuma marcada):', filtered.length);
-    }
+    // A vitrine mostra EXCLUSIVAMENTE as experiências marcadas na campanha
+    // pelo admin (campo "Campanha" = Dia dos Pais no cadastro). Sem
+    // curadoria automática: aparece só o que a Elarah escolher marcar.
+    // Enquanto nada estiver marcado, cai no estado "em breve".
+    const filtered = experiences
+      .filter(function (e) { return e && normalize(e.campanha) === CAMPAIGN; })
+      .sort(sortByDateThenName);
+    console.info('[Elarah DDP] vitrine por campanha (marcadas no admin):', filtered.length);
 
     if (filtered.length === 0) {
       if (empty) empty.style.display = 'block';
