@@ -601,6 +601,38 @@
 }
 .ddp-gastro__item:hover .ddp-gastro__item-arrow { transform: translateX(3px); }
 
+/* Item especial (churrasco / Dia dos Pais) — primeiro, com estrela. */
+.ddp-gastro__item--special {
+  background: linear-gradient(90deg, rgba(216,172,99,0.16), rgba(216,172,99,0.04));
+  border-radius: 10px;
+  border-bottom-color: transparent;
+}
+.ddp-gastro__item--special:hover {
+  background: linear-gradient(90deg, rgba(216,172,99,0.26), rgba(216,172,99,0.08));
+}
+.ddp-gastro__star {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 3px;
+  color: var(--ddp-brass);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.ddp-gastro__tag {
+  display: inline-block;
+  margin-left: 7px;
+  vertical-align: middle;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ddp-brass-deep);
+  background: rgba(216,172,99,0.22);
+  padding: 3px 9px;
+  border-radius: 9999px;
+}
+
 @media (max-width: 760px) {
   .ddp-gastro { grid-template-columns: 1fr; }
   .ddp-gastro__media { min-height: 200px; }
