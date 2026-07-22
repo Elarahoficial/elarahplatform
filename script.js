@@ -4610,6 +4610,13 @@ if (groupForm) {
         return true;
       }
 
+      // Voucher / agendamento livre: pula a tela de descrição e vai direto
+      // pro checkout — evita duas telas com a mesma capa ("Reservar" →
+      // "Continuar para pagamento" viravam duas etapas idênticas).
+      if (exp.horarioFuncionamento && String(exp.horarioFuncionamento).trim()) {
+        return true;
+      }
+
       // --- Log completo do objeto experiência pra diagnóstico ---
       // Se "descricao" não aparecer aqui ou vier vazia, o problema
       // é nos DADOS (banco/seeds), não no código do modal.
@@ -5740,13 +5747,11 @@ if (groupForm) {
       let variantLabel = null;
       let variantOptions = [];
       let horariosArr = [];
-      let expHorarioFunc = '';
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
           const exp = await ElarahData.getExperienceById(experienceId);
           if (exp) {
-            expHorarioFunc = (exp.horarioFuncionamento || '').trim();
             if (!precoLabel || !precoCentavos) {
               precoLabel = exp.preco || precoLabel;
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
@@ -5775,16 +5780,6 @@ if (groupForm) {
             }
           }
         } catch (e) {}
-      }
-
-      // Voucher / agendamento livre: a escolha de dia e hora vive na página
-      // de detalhe (experiencia.html), com o horário de funcionamento e o
-      // aviso. Se o clique veio de um CARD (sem o seletor na tela) e ainda
-      // não há dia/hora escolhidos, manda pra página de detalhe em vez de
-      // abrir o checkout direto — pra o cliente escolher a preferência.
-      if (expHorarioFunc && !scheduleSel.horario && !document.getElementById('exp-freepick-date')) {
-        try { window.location.href = 'experiencia.html?id=' + encodeURIComponent(experienceId); } catch (e) {}
-        return;
       }
 
       if (!precoCentavos) {
