@@ -105,23 +105,65 @@
       return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
     }
 
-    // A vitrine mostra EXCLUSIVAMENTE as experiências marcadas na campanha
-    // pelo admin (campo "Campanha" = Dia dos Pais no cadastro). Sem
-    // curadoria automática: aparece só o que a Elarah escolher marcar.
-    // Enquanto nada estiver marcado, cai no estado "em breve".
-    const filtered = experiences
-      .filter(function (e) { return e && normalize(e.campanha) === CAMPAIGN; })
-      .sort(sortByDateThenName);
-    console.info('[Elarah DDP] vitrine por campanha (marcadas no admin):', filtered.length);
+    // ---- Helpers de data (ordenação cronológica) e regras de seleção ----
+    const MESES = { janeiro:1, fevereiro:2, marco:3, abril:4, maio:5, junho:6, julho:7, agosto:8, setembro:9, outubro:10, novembro:11, dezembro:12 };
+    function dateKey(exp) {
+      const raw = String(exp && exp.data != null ? exp.data : '').trim().toLowerCase();
+      if (!raw) return Infinity;
+      let m = raw.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);       // "DD/MM"
+      if (m) return parseInt(m[2], 10) * 100 + parseInt(m[1], 10);
+      const semAcento = raw.normalize('NFD').replace(/[̀-ͯ]/g, '');
+      m = semAcento.match(/(\d{1,2})\s*de\s*([a-z]+)/);        // "9 de agosto"
+      if (m && MESES[m[2]]) return MESES[m[2]] * 100 + parseInt(m[1], 10);
+      return Infinity;
+    }
+    function isAugust(exp) {
+      const k = dateKey(exp);
+      return k !== Infinity && Math.floor(k / 100) === 8;
+    }
+    function isGastro(exp) { return normalize(exp && exp.categoria) === 'gastronomia'; }
+    function isKids(exp) {
+      const s = normalize((exp && exp.nome || '') + ' ' + (exp && exp.categoria || '') + ' ' + (exp && exp.descricao || ''));
+      return /\bkids?\b/.test(s) || s.indexOf('crianc') !== -1 || s.indexOf('infantil') !== -1;
+    }
+    function isSpecial(exp) {
+      const n = normalize(exp && exp.nome);
+      return n.indexOf('churrasco') !== -1 || n.indexOf('especial') !== -1 || n.indexOf('dia dos pais') !== -1;
+    }
+    function isTagged(e) { return e && normalize(e.campanha) === CAMPAIGN; }
+    function byDateAsc(a, b) {
+      const da = dateKey(a), db = dateKey(b);
+      if (da !== db) return da - db;
+      return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+    }
 
-    if (filtered.length === 0) {
+    // Não-gastronomia: só o que a Elarah marcou na campanha.
+    const taggedNonGastro = experiences.filter(function (e) { return isTagged(e) && !isGastro(e); });
+
+    // Gastronomia: TUDO de agosto (menos kids) + qualquer gastro marcada
+    // ou especial (churrasco). Sem precisar marcar uma a uma.
+    const gastroSet = [];
+    const gastroSeen = new Set();
+    experiences.forEach(function (e) {
+      if (!isGastro(e) || e.id == null) return;
+      if (isKids(e)) return;
+      if (isTagged(e) || isAugust(e) || isSpecial(e)) {
+        const k = String(e.id);
+        if (!gastroSeen.has(k)) { gastroSeen.add(k); gastroSet.push(e); }
+      }
+    });
+
+    const total = taggedNonGastro.length + gastroSet.length;
+    console.info('[Elarah DDP] vitrine — não-gastro(marcadas):', taggedNonGastro.length, '| gastro(agosto+marcadas):', gastroSet.length);
+
+    if (total === 0) {
       if (empty) empty.style.display = 'block';
       if (countEl) countEl.textContent = '';
       return;
     }
     if (countEl) {
-      countEl.textContent = filtered.length + ' experiência' + (filtered.length !== 1 ? 's' : '') +
-        ' selecionada' + (filtered.length !== 1 ? 's' : '');
+      countEl.textContent = total + ' experiência' + (total !== 1 ? 's' : '') +
+        ' selecionada' + (total !== 1 ? 's' : '');
     }
 
     function normalizeImg(p) {
@@ -233,49 +275,51 @@
       return card;
     }
 
-    // ---- Agrupa por categoria (evita fila de fotos repetidas) ----
+    // ---- Agrupa não-gastronomia por categoria (cronológico interno) ----
     function catLabel(exp) {
       if (window.ElarahData && ElarahData.categoriaLabel) return ElarahData.categoriaLabel(exp);
       return exp.categoria || 'Experiência';
     }
-    const GASTRO = 'gastronomia';
     const groups = {};
-    filtered.forEach(function (exp) {
+    taggedNonGastro.forEach(function (exp) {
       const key = normalize(exp.categoria) || 'outros';
       if (!groups[key]) groups[key] = { key: key, label: catLabel(exp) || (exp.categoria || 'Experiência'), items: [] };
       groups[key].items.push(exp);
     });
-    // Ordem: alfabético, com gastronomia por último (é o bloco grande).
-    const keys = Object.keys(groups).sort(function (a, b) {
-      if (a === GASTRO) return 1;
-      if (b === GASTRO) return -1;
-      return String(groups[a].label).localeCompare(String(groups[b].label), 'pt-BR');
-    });
+    Object.keys(groups).forEach(function (k) { groups[k].items.sort(byDateAsc); });
 
     grid.classList.add('ddp-experiences__grid--grouped');
 
-    // Bloco especial da gastronomia: foto grande + lista de títulos
-    // clicáveis (muitas experiências → escolha a preferida e reserve).
-    function buildGastroBlock(g) {
+    // Bloco de gastronomia: especiais (com estrela) primeiro, depois o
+    // resto — tudo em ordem cronológica. Foto grande = a do especial.
+    function buildGastroBlock(items) {
       const wrap = document.createElement('div');
       wrap.className = 'ddp-gastro';
 
+      const specials = items.filter(isSpecial).sort(byDateAsc);
+      const rest = items.filter(function (e) { return !isSpecial(e); }).sort(byDateAsc);
+      const ordered = specials.concat(rest);
+
       let hero = '';
-      for (let i = 0; i < g.items.length; i++) {
-        const src = normalizeImg(g.items[i].campanhaImagem) || normalizeImg(g.items[i].imagem);
+      for (let i = 0; i < ordered.length; i++) {
+        const src = normalizeImg(ordered[i].campanhaImagem) || normalizeImg(ordered[i].imagem);
         if (src) { hero = src; break; }
       }
       if (!hero) hero = 'assets/gastronomiamolecular.jpg';
 
-      const rows = g.items.map(function (exp) {
+      const rows = ordered.map(function (exp) {
         const precoRaw = (exp.preco || '').trim();
         const preco = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(precoRaw) : precoRaw;
+        const special = isSpecial(exp);
         const meta = [exp.bairro, exp.data]
           .map(function (x) { return (x == null ? '' : String(x)).trim(); })
           .filter(Boolean).map(escapeHtml).join(' · ');
-        return '<a class="ddp-gastro__item" href="experiencia.html?id=' + encodeURIComponent(exp.id) + '">' +
+        return '<a class="ddp-gastro__item' + (special ? ' ddp-gastro__item--special' : '') + '" href="experiencia.html?id=' + encodeURIComponent(exp.id) + '">' +
+          (special ? '<span class="ddp-gastro__star" aria-hidden="true">★</span>' : '') +
           '<span class="ddp-gastro__item-main">' +
-            '<span class="ddp-gastro__item-name">' + escapeHtml(exp.nome || 'Experiência') + '</span>' +
+            '<span class="ddp-gastro__item-name">' + escapeHtml(exp.nome || 'Experiência') +
+              (special ? ' <span class="ddp-gastro__tag">Especial Dia dos Pais</span>' : '') +
+            '</span>' +
             (meta ? '<span class="ddp-gastro__item-meta">' + meta + '</span>' : '') +
           '</span>' +
           (preco ? '<span class="ddp-gastro__item-price">' + escapeHtml(preco) + '</span>' : '') +
@@ -289,31 +333,50 @@
           '<span class="ddp-gastro__media-badge">Gastronomia</span>' +
         '</div>' +
         '<div class="ddp-gastro__panel">' +
-          '<p class="ddp-gastro__lead">São muitas aulas e jantares chegando. <strong>Escolha a preferida dele</strong> e clique pra reservar:</p>' +
+          '<p class="ddp-gastro__lead">São muitas aulas e jantares em agosto. <strong>Escolha a preferida dele</strong> e clique pra reservar:</p>' +
           '<div class="ddp-gastro__list">' + rows + '</div>' +
         '</div>';
       return wrap;
     }
 
-    keys.forEach(function (key) {
+    // Monta as seções (não-gastro + gastro) e ordena cronologicamente
+    // pela data mais cedo de cada categoria.
+    const sections = [];
+    Object.keys(groups).forEach(function (key) {
       const g = groups[key];
+      const minKey = Math.min.apply(null, g.items.map(dateKey));
+      sections.push({
+        label: g.label, count: g.items.length, minKey: minKey,
+        render: function () {
+          const cg = document.createElement('div');
+          cg.className = 'ddp-catgroup__grid';
+          g.items.forEach(function (exp) { cg.appendChild(createCard(exp)); });
+          return cg;
+        }
+      });
+    });
+    if (gastroSet.length) {
+      sections.push({
+        label: 'Gastronomia', count: gastroSet.length,
+        minKey: Math.min.apply(null, gastroSet.map(dateKey)),
+        render: function () { return buildGastroBlock(gastroSet); }
+      });
+    }
+    sections.sort(function (a, b) {
+      if (a.minKey !== b.minKey) return a.minKey - b.minKey;
+      return String(a.label).localeCompare(String(b.label), 'pt-BR');
+    });
+
+    sections.forEach(function (s) {
       const section = document.createElement('section');
       section.className = 'ddp-catgroup';
       const head = document.createElement('div');
       head.className = 'ddp-catgroup__head';
       head.innerHTML =
-        '<h3 class="ddp-catgroup__title">' + escapeHtml(g.label) + '</h3>' +
-        '<span class="ddp-catgroup__count">' + g.items.length + ' experiência' + (g.items.length !== 1 ? 's' : '') + '</span>';
+        '<h3 class="ddp-catgroup__title">' + escapeHtml(s.label) + '</h3>' +
+        '<span class="ddp-catgroup__count">' + s.count + ' experiência' + (s.count !== 1 ? 's' : '') + '</span>';
       section.appendChild(head);
-
-      if (key === GASTRO) {
-        section.appendChild(buildGastroBlock(g));
-      } else {
-        const cg = document.createElement('div');
-        cg.className = 'ddp-catgroup__grid';
-        g.items.forEach(function (exp) { cg.appendChild(createCard(exp)); });
-        section.appendChild(cg);
-      }
+      section.appendChild(s.render());
       grid.appendChild(section);
     });
 
@@ -321,7 +384,7 @@
       if (window.ElarahAnalytics && ElarahAnalytics.track) {
         ElarahAnalytics.track('page_view', {
           page: 'dia-dos-pais',
-          experiences_count: filtered.length,
+          experiences_count: total,
         });
       }
     } catch (e) {}
