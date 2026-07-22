@@ -3934,6 +3934,21 @@
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">"Compra direta" abre o checkout normal; "Lista de espera" abre o formulário de lead que envia pro WhatsApp.</p>
         </div>
 
+        <!-- ===== CAMPANHA / DATA ESPECIAL ===== -->
+        <div class="admin__form-field admin__form-field--full">
+          <label>Campanha (data especial)</label>
+          <select id="exp-campanha" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:.95rem;">
+            <option value="">Nenhuma — experiência normal</option>
+            <option value="dia-dos-pais">Dia dos Pais</option>
+            <option value="dia-das-maes">Dia das Mães</option>
+            <option value="dia-dos-namorados">Dia dos Namorados</option>
+            <option value="dia-das-criancas">Dia das Crianças</option>
+            <option value="natal">Natal</option>
+            <option value="ano-novo">Ano Novo</option>
+          </select>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Marque uma campanha pra esta experiência aparecer na aba temática (ex.: <code>dia-dos-pais.html</code>). "Nenhuma" = não entra em nenhuma aba de campanha.</p>
+        </div>
+
         <!-- ===== RECORRÊNCIA SEMANAL ===== -->
         <!-- Aparece só quando editando uma experiência (não em "nova").
              Cada experiência pode ter N regras (terça + quinta etc).
@@ -4539,7 +4554,7 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=31"></script>
+<script src="experiences-data.js?v=32"></script>
 <script src="byelarah-data.js?v=7"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-social.js?v=11"></script>
@@ -4552,7 +4567,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=208"></script>
+<script src="admin.js?v=209"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

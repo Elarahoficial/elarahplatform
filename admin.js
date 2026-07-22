@@ -5481,6 +5481,10 @@
       if (hfcEl) hfcEl.checked = exp.hideFromCategorias === true;
       if (ctaEl) ctaEl.value = exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy';
 
+      // Campanha (data especial). Vazio = nenhuma.
+      var campEl = document.getElementById('exp-campanha');
+      if (campEl) campEl.value = exp.campanha || '';
+
       // Fornecedor fields. WhatsApp do fornecedor é centralizado no
       // painel "Fornecedores" (fornecedores_metadata.whatsapp), não
       // por experiência — evita duplicação.
@@ -5591,6 +5595,8 @@
       if (ieoEl2) ieoEl2.checked = false;
       if (hfcEl2) hfcEl2.checked = false;
       if (ctaEl2) ctaEl2.value = 'buy';
+      var campEl2 = document.getElementById('exp-campanha');
+      if (campEl2) campEl2.value = '';
       document.getElementById('exp-edit-id').value = '';
 
       // Esconde a seção de recorrência em "nova experiência" — só
@@ -6043,6 +6049,11 @@
         ctaMode: (function () {
           var raw = (document.getElementById('exp-cta-mode')?.value || 'buy').trim();
           return raw === 'waitlist' ? 'waitlist' : 'buy';
+        })(),
+        // Campanha (data especial). Vazio = nenhuma.
+        campanha: (function () {
+          var raw = (document.getElementById('exp-campanha')?.value || '').trim();
+          return raw || null;
         })()
       };
 

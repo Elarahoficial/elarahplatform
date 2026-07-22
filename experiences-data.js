@@ -47,7 +47,11 @@
     // Ordem manual de exibição (admin arrasta pra reordenar). null =
     // sem ordem definida → cai no fim, mantendo o sort cronológico
     // padrão. sql/elarah_experiences_ordem.sql.
-    'ordem'
+    'ordem',
+    // Campanha / data especial (slug: "dia-dos-pais", "dia-das-maes"…).
+    // Marca a experiência para aparecer na aba temática correspondente.
+    // null/'' = não entra em nenhuma campanha. sql/elarah_experiences_campanha.sql.
+    'campanha'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -150,6 +154,9 @@
       isElarahOriginal: row.is_elarah_original === true,
       hideFromCategorias: row.hide_from_categorias === true,
       ctaMode: row.cta_mode === 'waitlist' ? 'waitlist' : 'buy',
+      // Campanha / data especial (slug). '' ou null = nenhuma.
+      // sql/elarah_experiences_campanha.sql.
+      campanha: (row.campanha == null || row.campanha === '') ? null : String(row.campanha).trim().toLowerCase(),
       // --- Variantes (escolha extra do cliente) ---
       // Exemplo: Pintura com Cristal & Aperol → label="Modelo do quadro",
       // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
@@ -297,6 +304,13 @@
       cta_mode: (function () {
         var raw = exp.ctaMode != null ? exp.ctaMode : exp.cta_mode;
         return raw === 'waitlist' ? 'waitlist' : 'buy';
+      })(),
+      // Campanha / data especial (slug). Vazio → null (sem campanha).
+      campanha: (function () {
+        var raw = exp.campanha != null ? exp.campanha : exp.campanha_;
+        if (raw == null) return null;
+        var s = String(raw).trim().toLowerCase();
+        return s ? s : null;
       })(),
       // --- Variantes ---
       variant_label: (function () {
