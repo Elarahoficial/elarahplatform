@@ -5363,6 +5363,14 @@
     return !!(el && el.value === 'waitlist');
   }
 
+  // Agendamento livre / voucher: quando "horário de funcionamento" está
+  // preenchido, o cliente escolhe o dia e a hora — então NÃO faz sentido
+  // exigir horário fixo (nem data fixa) no cadastro.
+  function expFormIsFreePick() {
+    var el = document.getElementById('exp-horario-funcionamento');
+    return !!(el && (el.value || '').trim());
+  }
+
   // Kits Elarah em Casa não têm data/horário/local/vagas presencial —
   // são produtos físicos enviados. Cards de lista de espera (waitlist)
   // são pré-lançamentos sem data. Em ambos os casos liberamos Data,
@@ -5372,11 +5380,13 @@
   function applyCasaKitRequired() {
     var isKit = expFormIsCasaKit();
     var isWaitlist = expFormIsWaitlist();
+    var isFreePick = expFormIsFreePick();
     var relax = isKit || isWaitlist;
     ['exp-data', 'exp-duracao', 'exp-bairro', 'exp-endereco'].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
-      if (relax) el.removeAttribute('required');
+      // Voucher (agendamento livre) não tem DATA fixa — libera exp-data.
+      if (relax || (isFreePick && id === 'exp-data')) el.removeAttribute('required');
       else el.setAttribute('required', '');
     });
     // Lista de espera é pré-lançamento sem checkout — Preço e "O que inclui"
@@ -5392,6 +5402,7 @@
   // Expõe pra o submit handler reusar a mesma detecção.
   window._expFormIsCasaKit = expFormIsCasaKit;
   window._expFormIsWaitlist = expFormIsWaitlist;
+  window._expFormIsFreePick = expFormIsFreePick;
 
   async function openExpModal(editId) {
     // Garante que o datalist de categorias esteja atualizado ANTES
@@ -6012,6 +6023,9 @@
     if (casaKitEl) casaKitEl.addEventListener('change', applyCasaKitRequired);
     // Trocar pra "Lista de espera" precisa relaxar Data/Duração/etc na hora.
     if (ctaModeEl) ctaModeEl.addEventListener('change', applyCasaKitRequired);
+    // Preencher "horário de funcionamento" (voucher) libera horário/data fixos.
+    var hfuncEl = document.getElementById('exp-horario-funcionamento');
+    if (hfuncEl) hfuncEl.addEventListener('input', applyCasaKitRequired);
 
     addBtn.addEventListener('click', () => openExpModal(null));
     modalBackdrop.addEventListener('click', closeExpModal);
@@ -6034,8 +6048,12 @@
         && window._expFormIsCasaKit();
       const isWaitlist = typeof window._expFormIsWaitlist === 'function'
         && window._expFormIsWaitlist();
+      // Voucher (agendamento livre): cliente escolhe dia/hora — não exige
+      // horário fixo no cadastro.
+      const isFreePick = typeof window._expFormIsFreePick === 'function'
+        && window._expFormIsFreePick();
       const horarios = collectHorarios();
-      if (horarios.length === 0 && !isCasaKit && !isWaitlist) {
+      if (horarios.length === 0 && !isCasaKit && !isWaitlist && !isFreePick) {
         alert('Adicione pelo menos um horário.');
         return;
       }
