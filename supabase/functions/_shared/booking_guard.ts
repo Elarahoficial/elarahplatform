@@ -33,6 +33,9 @@ export interface GuardInput {
   nome: string | null;
   cupomCode: string | null;
   quantidade: number;
+  // Opção escolhida (Individual/Dupla/Trio...) — quando tem preço próprio
+  // em variant_items, esse vira o preço autoritativo (recalculado no banco).
+  variantSelected?: string | null;
 }
 
 export interface ExperienceSnapshot {
@@ -125,9 +128,12 @@ function parsePrecoToCents(raw: unknown): number | null {
   if (raw == null) return null;
   const text = String(raw).replace(/\s/g, "").replace(/^R\$/i, "");
   if (!text) return null;
+  // Formato BR: vírgula = decimal, ponto = milhar. Sem vírgula, qualquer
+  // ponto é milhar — "1.320" = 1320 (não 1.32). Sem isso, Number("1.320")
+  // virava 1.32 e cobrava R$1,32 por uma experiência de R$1.320.
   const normalized = text.includes(",")
     ? text.replace(/\./g, "").replace(",", ".")
-    : text;
+    : text.replace(/\./g, "");
   const num = Number(normalized);
   if (!isFinite(num) || num <= 0) return null;
   return Math.round(num * 100);
@@ -559,7 +565,7 @@ export async function reserveExperienceSlot(
   }
 
   // ===== 5. Preço =====
-  const baseCents = parsePrecoToCents(exp.preco);
+  let baseCents = parsePrecoToCents(exp.preco);
   if (!baseCents) {
     console.error("[Elarah Guard] invalid price", exp.preco);
     return {
@@ -568,6 +574,41 @@ export async function reserveExperienceSlot(
       errorMessage: "Preço inválido na experiência.",
       errorStatus: 422,
     };
+  }
+
+  // ===== 5b. Preço por variação (Individual/Dupla/Trio...) =====
+  // Se o cliente escolheu uma opção COM preço próprio em variant_items,
+  // esse é o preço autoritativo — recalculado no banco, nunca do cliente.
+  // Mesma lógica do create-checkout-session (Stripe), aqui pro PIX/MP.
+  if (input.variantSelected && String(input.variantSelected).trim()) {
+    try {
+      const { data: vRow } = await supabase
+        .from("experiences")
+        .select("variant_items")
+        .eq("id", input.experienciaId)
+        .maybeSingle();
+      const items = Array.isArray((vRow as { variant_items?: unknown[] } | null)?.variant_items)
+        ? (vRow as { variant_items: unknown[] }).variant_items
+        : [];
+      const want = String(input.variantSelected).trim().toLowerCase();
+      const match = items.find((it) => {
+        const nome = (it && typeof it === "object")
+          ? String((it as Record<string, unknown>).nome ?? (it as Record<string, unknown>).name ?? "")
+          : String(it ?? "");
+        return nome.trim().toLowerCase() === want;
+      });
+      if (match && typeof match === "object") {
+        const vPreco = (match as Record<string, unknown>).preco ??
+          (match as Record<string, unknown>).price;
+        const vCents = parsePrecoToCents(vPreco);
+        if (vCents) {
+          baseCents = vCents;
+          console.info("[Elarah Guard] preço por variação aplicado", "variante=" + input.variantSelected, "cents=" + vCents);
+        }
+      }
+    } catch (e) {
+      console.warn("[Elarah Guard] falha ao aplicar preço da variação", e);
+    }
   }
 
   // ===== 6. Resolve user_id + nome =====

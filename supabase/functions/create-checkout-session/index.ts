@@ -155,9 +155,12 @@ function parsePrecoToCents(raw: unknown): number | null {
   if (raw == null) return null;
   const text = String(raw).replace(/\s/g, "").replace(/^R\$/i, "");
   if (!text) return null;
+  // Formato BR: vírgula = decimal, ponto = milhar. Sem vírgula, qualquer
+  // ponto é milhar — "1.320" = 1320 (não 1.32). Sem isso, Number("1.320")
+  // virava 1.32 e cobrava R$1,32 por uma experiência de R$1.320.
   const normalized = text.includes(",")
     ? text.replace(/\./g, "").replace(",", ".")
-    : text;
+    : text.replace(/\./g, "");
   const num = Number(normalized);
   if (!isFinite(num) || num <= 0) return null;
   return Math.round(num * 100);

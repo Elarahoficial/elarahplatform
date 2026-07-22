@@ -2203,16 +2203,25 @@ if (groupForm) {
       if (raw == null) return null;
       const text = String(raw).replace(/\s/g, '').replace(/^R\$/i, '');
       if (!text) return null;
+      // Formato brasileiro: a vírgula é o separador DECIMAL e o ponto é
+      // separador de MILHAR. Sem vírgula, qualquer ponto é milhar — por
+      // isso "1.320" = 1320 (e não 1.32). Antes o código usava o texto
+      // direto e Number("1.320") virava 1.32, cobrando R$1,32 por R$1.320.
       const norm = text.indexOf(',') !== -1
         ? text.replace(/\./g, '').replace(',', '.')
-        : text;
+        : text.replace(/\./g, '');
       const num = Number(norm);
       if (!isFinite(num) || num <= 0) return null;
       return Math.round(num * 100);
     }
 
     function brl(centavos) {
-      return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
+      var v = Number(centavos || 0) / 100;
+      try {
+        return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } catch (e) {
+        return 'R$ ' + v.toFixed(2).replace('.', ',');
+      }
     }
 
     // Pega e-mail + nome do usuário logado (para pré-preencher o modal
@@ -3416,6 +3425,8 @@ if (groupForm) {
       // recebe variant_selected antes do submit.
       ctx.variantSelected = null;
       ctx.variantByParticipant = {};
+      // Preço-base (usado quando a variante escolhida não tem preço próprio).
+      ctx.baseCentavos = ctx.precoCentavos || 0;
       var variantSection = root.querySelector('#erm-variant-section');
       var variantLabelEl = root.querySelector('#erm-variant-label');
       var variantOptsEl = root.querySelector('#erm-variant-options');
@@ -3476,6 +3487,26 @@ if (groupForm) {
               variantMsgEl.style.color = '#1a8a4a';
               variantMsgEl.textContent = '✓ ' + ctx.variantLabel + ': ' + opt;
             }
+            // Aplica o PREÇO da opção escolhida (Individual/Dupla/Trio com
+            // valores diferentes). Sem preço próprio → mantém o preço-base.
+            (function applyVariantPrice() {
+              var cr = currentReservationCtx;
+              var items = cr.variantItems;
+              var it = Array.isArray(items)
+                ? items.filter(function (x) { return x && x.nome === opt; })[0]
+                : null;
+              var pc = (it && it.preco && String(it.preco).trim())
+                ? parsePrecoToCents(it.preco) : null;
+              cr.precoCentavos = pc || cr.baseCentavos || cr.precoCentavos || 0;
+              if (pc && it && it.preco) cr.precoLabel = it.preco;
+              try {
+                var precoFmt2 = (window.ElarahData && ElarahData.formatPrecoBR)
+                  ? ElarahData.formatPrecoBR(cr.precoLabel) : cr.precoLabel;
+                var metaEl = root.querySelector('#erm-meta');
+                if (metaEl) metaEl.textContent = [cr.horario, precoFmt2].filter(Boolean).join(' · ');
+              } catch (_e) {}
+              try { refreshPriceBreakdown(); } catch (_e) {}
+            })();
           });
           variantOptsEl.appendChild(btn);
         });
@@ -5791,6 +5822,7 @@ if (groupForm) {
       let precoCentavos = parsePrecoToCents(precoLabel);
       let variantLabel = null;
       let variantOptions = [];
+      let variantItemsArr = [];
       let horariosArr = [];
       let expDescricao = '', expInclui = '', expEndereco = '', expHorarioFunc = '';
 
@@ -5827,6 +5859,11 @@ if (groupForm) {
             if (exp.variantLabel && Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
               variantLabel = exp.variantLabel;
               variantOptions = exp.variantOptions.slice();
+            }
+            // Itens ricos (nome + preço) — pra o modal cobrar o preço certo
+            // de cada opção (Individual/Dupla/Trio com valores diferentes).
+            if (Array.isArray(exp.variantItems) && exp.variantItems.length) {
+              variantItemsArr = exp.variantItems.slice();
             }
           }
         } catch (e) {}
@@ -5892,6 +5929,8 @@ if (groupForm) {
         // Variantes (escolha extra). Vazio = sem seletor no modal.
         variantLabel: variantLabel,
         variantOptions: variantOptions,
+        // Itens com preço por opção — o modal cobra o preço da escolhida.
+        variantItems: variantItemsArr,
       });
     }
 
