@@ -64,64 +64,6 @@
     setInterval(tick, 1000);
   })();
 
-  /* ---------- 2. Reflexão interativa (Dias dos Pais que restam) ---------- */
-  (function initCalc() {
-    const input = document.getElementById('ddp-calc-input');
-    const btn = document.getElementById('ddp-calc-btn');
-    const result = document.getElementById('ddp-calc-result');
-    if (!input || !btn || !result) return;
-
-    // Horizonte otimista de convivência. Não é previsão — é um convite
-    // a valorizar o tempo. Mantido generoso de propósito.
-    const HORIZON = 90;
-
-    const bigNum = document.getElementById('ddp-calc-num');
-    const bigLabel = document.getElementById('ddp-calc-num-label');
-    const note = document.getElementById('ddp-calc-note');
-
-    function run() {
-      const age = parseInt(input.value, 10);
-      if (isNaN(age) || age < 1 || age > 120) {
-        input.focus();
-        input.style.borderColor = '#E7C489';
-        return;
-      }
-
-      let remaining = HORIZON - age;
-      let numText, labelText, noteHtml;
-
-      if (remaining <= 0) {
-        numText = 'Agora';
-        labelText = 'É o único momento que existe';
-        noteHtml = 'Cada dia ao lado dele já é um presente raro. ' +
-          '<strong>Não deixe este Dia dos Pais passar em branco.</strong>';
-      } else {
-        remaining = Math.max(1, remaining);
-        numText = '≈ ' + remaining;
-        labelText = remaining === 1 ? 'Dia dos Pais pela frente' : 'Dias dos Pais pela frente';
-        noteHtml = 'São <strong>cerca de ' + remaining + ' domingos de agosto</strong> — e nem todos ' +
-          'vocês vão passar juntos. Os que já foram, ninguém devolve. ' +
-          'Este, você ainda pode escolher <strong>viver</strong>.';
-      }
-
-      if (bigNum) bigNum.textContent = numText;
-      if (bigLabel) bigLabel.textContent = labelText;
-      if (note) note.innerHTML = noteHtml;
-      result.classList.add('is-visible');
-
-      try {
-        if (window.ElarahAnalytics && ElarahAnalytics.track) {
-          ElarahAnalytics.track('ddp_calc_used', { age: age, remaining: remaining });
-        }
-      } catch (e) {}
-    }
-
-    btn.addEventListener('click', run);
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); run(); }
-      input.style.borderColor = '';
-    });
-  })();
 
   /* ---------- 3. Vitrine de experiências ---------- */
   (async function initGrid() {
@@ -291,7 +233,89 @@
       return card;
     }
 
-    filtered.forEach(function (exp) { grid.appendChild(createCard(exp)); });
+    // ---- Agrupa por categoria (evita fila de fotos repetidas) ----
+    function catLabel(exp) {
+      if (window.ElarahData && ElarahData.categoriaLabel) return ElarahData.categoriaLabel(exp);
+      return exp.categoria || 'Experiência';
+    }
+    const GASTRO = 'gastronomia';
+    const groups = {};
+    filtered.forEach(function (exp) {
+      const key = normalize(exp.categoria) || 'outros';
+      if (!groups[key]) groups[key] = { key: key, label: catLabel(exp) || (exp.categoria || 'Experiência'), items: [] };
+      groups[key].items.push(exp);
+    });
+    // Ordem: alfabético, com gastronomia por último (é o bloco grande).
+    const keys = Object.keys(groups).sort(function (a, b) {
+      if (a === GASTRO) return 1;
+      if (b === GASTRO) return -1;
+      return String(groups[a].label).localeCompare(String(groups[b].label), 'pt-BR');
+    });
+
+    grid.classList.add('ddp-experiences__grid--grouped');
+
+    // Bloco especial da gastronomia: foto grande + lista de títulos
+    // clicáveis (muitas experiências → escolha a preferida e reserve).
+    function buildGastroBlock(g) {
+      const wrap = document.createElement('div');
+      wrap.className = 'ddp-gastro';
+
+      let hero = '';
+      for (let i = 0; i < g.items.length; i++) {
+        const src = normalizeImg(g.items[i].campanhaImagem) || normalizeImg(g.items[i].imagem);
+        if (src) { hero = src; break; }
+      }
+      if (!hero) hero = 'assets/gastronomiamolecular.jpg';
+
+      const rows = g.items.map(function (exp) {
+        const precoRaw = (exp.preco || '').trim();
+        const preco = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(precoRaw) : precoRaw;
+        const meta = [exp.bairro, exp.data]
+          .map(function (x) { return (x == null ? '' : String(x)).trim(); })
+          .filter(Boolean).map(escapeHtml).join(' · ');
+        return '<a class="ddp-gastro__item" href="experiencia.html?id=' + encodeURIComponent(exp.id) + '">' +
+          '<span class="ddp-gastro__item-main">' +
+            '<span class="ddp-gastro__item-name">' + escapeHtml(exp.nome || 'Experiência') + '</span>' +
+            (meta ? '<span class="ddp-gastro__item-meta">' + meta + '</span>' : '') +
+          '</span>' +
+          (preco ? '<span class="ddp-gastro__item-price">' + escapeHtml(preco) + '</span>' : '') +
+          '<span class="ddp-gastro__item-arrow" aria-hidden="true">→</span>' +
+        '</a>';
+      }).join('');
+
+      wrap.innerHTML =
+        '<div class="ddp-gastro__media">' +
+          '<img src="' + escapeHtml(hero) + '" alt="Gastronomia — Dia dos Pais" loading="lazy">' +
+          '<span class="ddp-gastro__media-badge">Gastronomia</span>' +
+        '</div>' +
+        '<div class="ddp-gastro__panel">' +
+          '<p class="ddp-gastro__lead">São muitas aulas e jantares chegando. <strong>Escolha a preferida dele</strong> e clique pra reservar:</p>' +
+          '<div class="ddp-gastro__list">' + rows + '</div>' +
+        '</div>';
+      return wrap;
+    }
+
+    keys.forEach(function (key) {
+      const g = groups[key];
+      const section = document.createElement('section');
+      section.className = 'ddp-catgroup';
+      const head = document.createElement('div');
+      head.className = 'ddp-catgroup__head';
+      head.innerHTML =
+        '<h3 class="ddp-catgroup__title">' + escapeHtml(g.label) + '</h3>' +
+        '<span class="ddp-catgroup__count">' + g.items.length + ' experiência' + (g.items.length !== 1 ? 's' : '') + '</span>';
+      section.appendChild(head);
+
+      if (key === GASTRO) {
+        section.appendChild(buildGastroBlock(g));
+      } else {
+        const cg = document.createElement('div');
+        cg.className = 'ddp-catgroup__grid';
+        g.items.forEach(function (exp) { cg.appendChild(createCard(exp)); });
+        section.appendChild(cg);
+      }
+      grid.appendChild(section);
+    });
 
     try {
       if (window.ElarahAnalytics && ElarahAnalytics.track) {
