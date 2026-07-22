@@ -3739,14 +3739,16 @@
             type="text"
             list="exp-categoria-datalist"
             required
-            placeholder="Ex: Cerâmica, Pintura, Tufting, ou digite uma nova..."
+            placeholder="Ex: Cerâmica, Pintura, ou Barismo | Bartenderia..."
             autocomplete="off">
           <!-- Datalist populado dinamicamente pelo admin.js a partir
                das experiências já cadastradas. Permite escolher uma
                categoria existente (autocomplete) OU digitar uma nova
-               categoria — qualquer texto é aceito. -->
+               categoria — qualquer texto é aceito. Duas ou mais
+               categorias separadas por "|" colocam a experiência em
+               várias abas ao mesmo tempo (ver ElarahData.categoriasOf). -->
           <datalist id="exp-categoria-datalist"></datalist>
-          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Escolha uma categoria existente ou digite um nome novo. Categorias novas aparecem automaticamente nos filtros do site.</p>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Escolha uma categoria existente ou digite um nome novo. <strong>Pra deixar a experiência em duas abas</strong>, separe com <code>|</code> — ex.: <code>Barismo | Bartenderia</code>. Categorias novas aparecem automaticamente nos filtros do site.</p>
         </div>
 
         <!-- Kit Elarah em Casa: produto físico enviado, sem data/horário/

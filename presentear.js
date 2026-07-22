@@ -73,7 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!grid) return;
 
     const filtered = giftExperiences.filter((exp) => {
-      return !activeFilter || exp.categoria === activeFilter;
+      return !activeFilter ||
+        ((window.ElarahData && ElarahData.matchesCategoria)
+          ? ElarahData.matchesCategoria(exp, activeFilter)
+          : exp.categoria === activeFilter);
     });
 
     // Quando não expandido, mostra no máximo GIFT_LIMIT cards. O resto
@@ -126,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="card__badge">${exp.data}</span>
         </div>
         <div class="card__body">
-          <span class="card__category">${exp.categoria}</span>
+          <span class="card__category">${(window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : exp.categoria}</span>
           <h3 class="card__title">${exp.nome}</h3>
           <div class="card__details">
             <p class="card__detail">

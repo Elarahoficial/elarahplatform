@@ -399,6 +399,58 @@
     return cat.indexOf('em casa') !== -1;
   }
 
+  // =====================================================
+  //  CATEGORIAS (uma experiência pode ficar em MAIS de uma aba)
+  // =====================================================
+  // O campo `categoria` continua sendo UM texto no banco — sem migração.
+  // Pra colocar a experiência em duas abas, basta separar as categorias
+  // por "|" no mesmo campo. Ex.: "Barismo | Bartenderia" faz a
+  // experiência aparecer tanto na aba Barismo quanto na Bartenderia.
+  //
+  // O "|" foi escolhido de propósito: nunca aparece num nome de categoria
+  // real, ao contrário de "&", "/" e "," que já aparecem em nomes tipo
+  // "Cerveja & Caipirinha" ou "Vinho, Queijo e Pão".
+
+  // Lista as categorias de uma experiência (1 ou mais). Faz trim, remove
+  // vazias e duplicadas (case-insensitive), preservando a ordem digitada.
+  function categoriasOf(exp) {
+    if (!exp || exp.categoria == null) return [];
+    var seen = {};
+    var out = [];
+    String(exp.categoria).split('|').forEach(function (part) {
+      var c = String(part).trim();
+      if (!c) return;
+      var k = c.toLowerCase();
+      if (seen[k]) return;
+      seen[k] = true;
+      out.push(c);
+    });
+    return out;
+  }
+
+  // Categoria principal (a primeira) — usada onde só cabe uma, ex.:
+  // agrupamentos que precisam de uma chave única de fallback.
+  function categoriaPrimary(exp) {
+    var list = categoriasOf(exp);
+    return list.length ? list[0] : '';
+  }
+
+  // Texto pra exibir no selo do card. Uma categoria → "Barismo".
+  // Duas → "Barismo · Bartenderia" (nunca mostra o "|" cru pro cliente).
+  function categoriaLabel(exp) {
+    return categoriasOf(exp).join(' · ');
+  }
+
+  // A experiência pertence à categoria/aba `cat`? Case-insensitive.
+  // Sem `cat` (Todas) → sempre true.
+  function matchesCategoria(exp, cat) {
+    var target = String(cat == null ? '' : cat).trim().toLowerCase();
+    if (!target) return true;
+    return categoriasOf(exp).some(function (c) {
+      return c.toLowerCase() === target;
+    });
+  }
+
   // Persiste a nova ordem das experiências. Recebe a lista de ids JÁ na
   // ordem desejada e grava `ordem` = posição (0,1,2…) só nos que mudaram.
   // Admin-only. Invalida o cache no fim pra refletir na hora.
@@ -1394,6 +1446,10 @@
     reorderExperiences,
     ordemKey,
     isHomeKit,
+    categoriasOf,
+    categoriaPrimary,
+    categoriaLabel,
+    matchesCategoria,
     scarcityRest,
     scarcityLabel,
     scarcityForSlots,

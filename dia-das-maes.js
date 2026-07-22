@@ -188,7 +188,7 @@
         mediaInner +
       '</div>' +
       '<div class="ddm-card__body">' +
-        (exp.categoria ? '<span class="ddm-card__categoria">' + escapeHtml(exp.categoria) + '</span>' : '') +
+        (exp.categoria ? '<span class="ddm-card__categoria">' + escapeHtml((window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : exp.categoria) + '</span>' : '') +
         '<h3 class="ddm-card__title">' + escapeHtml(exp.nome || 'Experiência') + '</h3>' +
         (metaItems.length ? '<div class="ddm-card__meta">' + metaItems.join('') + '</div>' : '') +
         '<div class="ddm-card__price">' +
