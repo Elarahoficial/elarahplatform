@@ -95,14 +95,18 @@ p1 = d[0]
 rm(p1, [(64, 286, 252, 410),      # the big '20' (below the coral eyebrow at y274-284)
         (70, 401, 252, 456),      # 'vinte anos — bora celebrar!'
         (70, 476, 305, 592)])     # body paragraph
-put(p1, "Uma pausa que nutre", FB, 26, CORAL_RGB, 70, 353)
-put(p1, "vem criar com o time", FI, 22, DARKt, 70.9, 398)
+# wipe the whole left column so nothing from the template lingers, then rebuild it TIGHT
+p1.draw_rect(fitz.Rect(58, 292, 313, 606), color=None, fill=(0.976, 0.965, 0.937))
+put(p1, "Uma pausa", FB, 37, CORAL_RGB, 70, 342)      # big display headline fills the void the '20' left
+put(p1, "que nutre", FB, 37, CORAL_RGB, 70, 385)
+put(p1, "vem criar com o time", FI, 20, DARKt, 70.9, 420)
+p1.draw_rect(fitz.Rect(70.9, 441, 116, 443.2), color=None, fill=CORAL_RGB)   # short accent rule
 BODY = ('<p>O Dia do Nutricionista pede uma pausa à altura: '
         '<b style="color:#A75D3A">leve, criativa e memorável</b>. '
         'A pintura em xícara, taça ou vela aromática é o ponto de partida — e a partir daí a Elarah '
         'transforma o dia da equipe numa experiência única. '
         '<b style="color:#A75D3A">Vocês escolhem o clima, a gente faz acontecer.</b></p>')
-p1.insert_htmlbox(fitz.Rect(70.9, 478, 300, 592), BODY,
+p1.insert_htmlbox(fitz.Rect(70.9, 458, 302, 588), BODY,
                   css="p{margin:0;font-family:sans-serif;font-size:10.5px;line-height:1.5;color:#3F2F2C}")
 # reword the cover footer (remove '10–15 CONVIDADAS' and 'ORÇAMENTO PARA 12')
 rm(p1, [(66, 752, 548, 771)])
@@ -193,13 +197,13 @@ venue(p3, A_DIR+"arethasoulkitchen.jpg", (54, 296, 293, 386), "Aretha Soul Kitch
 venue(p3, A_DIR+"betchavas.jpg",         (301, 296, 541, 386), "BETC Havas Café", vbias=0.42)
 
 # ---- personalization callout (what 'personalização' means) ----
-_pz = crop_ratio(A_DIR+"pinturaemvela.jpg", 68/76, vbias=0.5)
-_pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=90)
-p3.insert_image(fitz.Rect(54, 674, 122, 750), stream=_pb.getvalue())
-put_spaced(p3, "✦ PERSONALIZAÇÃO", 136, 688, 8.5, CORAL_RGB, FSB)
-put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 136, 710)
-put(p3, "vocês", FI, 15, CORAL_RGB, 136+FB.text_length("Com a cara de ", 15), 710)
-p3.insert_textbox(fitz.Rect(136, 720, 545, 752),
+_pz = crop_ratio(A_DIR+"personalizaçãonutrify.jpg", 1.0, vbias=0.5)
+_pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=92)
+p3.insert_image(fitz.Rect(54, 660, 150, 756), stream=_pb.getvalue())
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 166, 684, 8.5, CORAL_RGB, FSB)
+put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 166, 706)
+put(p3, "vocês", FI, 15, CORAL_RGB, 166+FB.text_length("Com a cara de ", 15), 706)
+p3.insert_textbox(fitz.Rect(166, 716, 545, 752),
     "Cada pessoa leva um mimo personalizado — a peça autoral e os itens com a "
     "inicial ou o logo da Nutrify.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
@@ -284,7 +288,7 @@ NEARBLK = (0.118, 0.086, 0.098)
 
 # P1 eyebrow: 'UMA CELEBRAÇÃO ÚNICA' -> 'DIA DO NUTRICIONISTA'
 rm(p1, [(69, 271, 300, 287)])
-put_spaced(p1, "✦ DIA DO NUTRICIONISTA", 70.9, 282.3, 8.6, CORAL_RGB, FSB, track=2.4)
+put_spaced(p1, "✦ DIA DO NUTRICIONISTA", 70.9, 300, 8.6, CORAL_RGB, FSB, track=2.4)
 
 # P1 cover co-brand: Nutrify logo in the upper-right whitespace
 _lg = Image.open(A_DIR+"logonutrify.png").convert("RGBA").crop((9, 0, 1733, 1659))
@@ -313,6 +317,11 @@ put(d[3], "data?", FBI, 27, CORAL_RGB, 53.8+FB.text_length("Bora marcar essa ", 
 rm(d[3], [(53, 229, 300, 249)])
 put_spaced(d[3], "✦ INSPIRAÇÃO", 53.8, 244.5, 8.2, CORAL_RGB, FSB, track=1.5)
 put(d[3], "Como o seu dia pode ser", FSER, 14.2, NEARBLK, 149.4, 244.5)
+
+# p4: replace the right 'inspiração' photo with a joyful group-painting shot
+_ins = crop_ratio(A_DIR+"nutrify1.jpg", 240/224, vbias=0.5)
+_ib = io.BytesIO(); _ins.save(_ib, format="JPEG", quality=90)
+d[3].insert_image(fitz.Rect(302, 257, 542, 481), stream=_ib.getvalue())
 
 d.save(OUT, garbage=4, deflate=True)
 print("saved", OUT)
