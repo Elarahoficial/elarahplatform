@@ -5291,8 +5291,12 @@
     try {
       if (window.ElarahData && ElarahData.getAllExperiences) {
         const all = await ElarahData.getAllExperiences();
+        // Uma experiência pode ter várias categorias ("Barismo |
+        // Bartenderia") — cada uma entra no datalist separadamente.
         dbCategorias = (all || [])
-          .map(e => (e && e.categoria ? String(e.categoria).trim() : ''))
+          .flatMap(e => (window.ElarahData && ElarahData.categoriasOf)
+            ? ElarahData.categoriasOf(e)
+            : (e && e.categoria ? [String(e.categoria).trim()] : []))
           .filter(Boolean);
       }
     } catch (e) {
@@ -6195,8 +6199,16 @@
     const seen = new Map();
     (experiences || []).forEach(function (e) {
       if (!e || !e.categoria) return;
-      var key = e.categoria.toLowerCase();
-      if (!seen.has(key)) seen.set(key, e.categoria);
+      // Uma experiência em duas abas ("Barismo | Bartenderia") gera uma
+      // pílula de filtro pra cada categoria.
+      var cats = (window.ElarahData && ElarahData.categoriasOf)
+        ? ElarahData.categoriasOf(e)
+        : [String(e.categoria).trim()];
+      cats.forEach(function (c) {
+        if (!c) return;
+        var key = c.toLowerCase();
+        if (!seen.has(key)) seen.set(key, c);
+      });
     });
     var cats = Array.from(seen.values()).sort(function (a, b) {
       return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
@@ -6252,7 +6264,10 @@
     const experiences = (allExperiences || []).filter(function (e) {
       if (!e) return false;
       if (activeExpFilter) {
-        if (!e.categoria || e.categoria.toLowerCase() !== activeExpFilter.toLowerCase()) return false;
+        var _match = (window.ElarahData && ElarahData.matchesCategoria)
+          ? ElarahData.matchesCategoria(e, activeExpFilter)
+          : (e.categoria && e.categoria.toLowerCase() === activeExpFilter.toLowerCase());
+        if (!_match) return false;
       }
       if (activeExpFornecedorFilter) {
         const nome = (e.fornecedorNome || '').toLowerCase();
@@ -6420,7 +6435,7 @@
       return `
       <tr data-exp-row="${escapeHtml(exp.id)}"${rowStyle}>
         <td>${dragHandle}${escapeHtml(exp.nome)}${byElarahBadge}</td>
-        <td>${escapeHtml(exp.categoria)}</td>
+        <td>${escapeHtml((window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : (exp.categoria || ''))}</td>
         <td>${escapeHtml(exp.data)}</td>
         <td>${horariosDisplay}</td>
         <td>${escapeHtml(exp.bairro)}</td>

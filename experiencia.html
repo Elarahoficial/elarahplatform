@@ -467,7 +467,12 @@
         'brand': { '@type': 'Brand', 'name': 'Elarah' },
         'url': pageUrl
       };
-      if (exp.categoria) ld.category = exp.categoria;
+      // Categoria pode ter várias abas ("Barismo | Bartenderia") — no
+      // JSON-LD usamos a principal (primeira) pra manter o valor limpo.
+      var _catPrincipal = (window.ElarahData && ElarahData.categoriaPrimary)
+        ? ElarahData.categoriaPrimary(exp)
+        : (exp.categoria || '');
+      if (_catPrincipal) ld.category = _catPrincipal;
       if (priceNum) {
         ld.offers = {
           '@type': 'Offer',
@@ -487,8 +492,8 @@
 
       // Breadcrumb: Início › Categoria › Experiência (breadcrumb rich result)
       var crumbs = [{ '@type': 'ListItem', 'position': 1, 'name': 'Início', 'item': 'https://elarah.com.br/' }];
-      if (exp.categoria) {
-        crumbs.push({ '@type': 'ListItem', 'position': 2, 'name': exp.categoria, 'item': 'https://elarah.com.br/categoria.html?cat=' + encodeURIComponent(exp.categoria) });
+      if (_catPrincipal) {
+        crumbs.push({ '@type': 'ListItem', 'position': 2, 'name': _catPrincipal, 'item': 'https://elarah.com.br/categoria.html?cat=' + encodeURIComponent(_catPrincipal) });
       }
       crumbs.push({ '@type': 'ListItem', 'position': crumbs.length + 1, 'name': exp.nome, 'item': pageUrl });
       var bc = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', 'itemListElement': crumbs };

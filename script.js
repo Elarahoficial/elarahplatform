@@ -170,19 +170,25 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const categoriasOriginalCase = new Map();
     (experiences || []).forEach(function (exp) {
       if (!exp || !exp.categoria) return;
-      const c = String(exp.categoria).trim();
-      if (!c) return;
-      const k = c.toLowerCase();
       // Kits "em casa" (Kit em casa / Lar em casa) não entram na navegação
       // (menu/faixa de categorias) — acessíveis só pelo link "Elarah em
       // Casa" no topo do header. Mesmo critério de ElarahData.isHomeKit.
       if ((window.ElarahData && ElarahData.isHomeKit)
         ? ElarahData.isHomeKit(exp)
-        : k.indexOf('em casa') !== -1) return;
-      if (!categoriasSet.has(k)) {
-        categoriasSet.add(k);
-        categoriasOriginalCase.set(k, c);
-      }
+        : String(exp.categoria).toLowerCase().indexOf('em casa') !== -1) return;
+      // Uma experiência pode estar em mais de uma aba (ex.: "Barismo |
+      // Bartenderia") — cada categoria vira um link/opção separada.
+      const cats = (window.ElarahData && ElarahData.categoriasOf)
+        ? ElarahData.categoriasOf(exp)
+        : [String(exp.categoria).trim()];
+      cats.forEach(function (c) {
+        if (!c) return;
+        const k = c.toLowerCase();
+        if (!categoriasSet.has(k)) {
+          categoriasSet.add(k);
+          categoriasOriginalCase.set(k, c);
+        }
+      });
     });
     const categorias = Array.from(categoriasOriginalCase.values()).sort(function (a, b) {
       return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
@@ -305,7 +311,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // Kits "Elarah em Casa" são produto, não experiência: fora da
       // listagem (só aparecem na vitrine própria em-casa.html).
       if (window.ElarahData && ElarahData.isHomeKit && ElarahData.isHomeKit(exp)) return false;
-      const matchCat = !activeCategoria || exp.categoria === activeCategoria;
+      const matchCat = !activeCategoria ||
+        ((window.ElarahData && ElarahData.matchesCategoria)
+          ? ElarahData.matchesCategoria(exp, activeCategoria)
+          : exp.categoria === activeCategoria);
       const matchBairro = !activeBairro || exp.bairro === activeBairro;
 
       const textoBusca = activeBusca.toLowerCase();
@@ -568,7 +577,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ${scarcePill}
       </div>
       <div class="card__body">
-        <span class="card__category">${exp.categoria}</span>
+        <span class="card__category">${(window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : exp.categoria}</span>
         <h3 class="card__title"><a href="experiencia.html?id=${encodeURIComponent(exp.id)}" class="card__title-link">${exp.nome}</a></h3>
         <div class="card__details">
           <p class="card__detail">
