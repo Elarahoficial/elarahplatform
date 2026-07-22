@@ -3129,6 +3129,7 @@ if (groupForm) {
               p_code: code,
               p_experience_id: experienciaId,
               p_amount_centavos: amountCentavos,
+              p_quantidade: Math.max(1, (currentReservationCtx.quantidade || 1)),
             }
           );
           if (!cpErr) {

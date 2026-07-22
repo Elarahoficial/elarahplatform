@@ -63,6 +63,7 @@ serve(async (req) => {
 
   const code = String(payload.code ?? "").trim();
   const amountCentavos = Number(payload.amount_centavos ?? 0);
+  const quantidade = Math.max(1, Math.floor(Number(payload.quantidade ?? 1)) || 1);
   const experienceId = payload.experiencia_id
     ? String(payload.experiencia_id).trim()
     : (payload.experience_id ? String(payload.experience_id).trim() : null);
@@ -84,6 +85,7 @@ serve(async (req) => {
         p_code: code,
         p_experience_id: experienceId,
         p_amount_centavos: amountCentavos,
+        p_quantidade: quantidade,
       },
     );
     if (!cpErr) {

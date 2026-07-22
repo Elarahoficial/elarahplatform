@@ -667,6 +667,7 @@ export async function reserveExperienceSlot(
         p_code: input.cupomCode,
         p_experience_id: exp.id,
         p_amount_centavos: totalBaseCentsForCupom,
+        p_quantidade: quantidade,
       },
     );
     if (cpErr) {
