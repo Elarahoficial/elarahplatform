@@ -9,6 +9,14 @@
     <priority>1.0</priority>
   </url>
 
+  <!-- ===== Campanha Dia dos Pais ===== -->
+  <url>
+    <loc>https://elarah.com.br/dia-dos-pais.html</loc>
+    <lastmod>2026-07-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- ===== Descoberta / catálogo ===== -->
   <url>
     <loc>https://elarah.com.br/categoria.html</loc>
