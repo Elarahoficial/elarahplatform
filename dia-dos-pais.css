@@ -43,14 +43,14 @@
   color: #F4EEE4;
   border-bottom: 1px solid rgba(216,172,99,0.20);
 }
-/* textura fotográfica sutil sobre o navy — só atmosfera */
+/* Foto de capa do Dia dos Pais — visível, com scrim escuro por cima
+   pra manter o texto claro sempre legível. */
 .ddp-hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: url('assets/churrasco1.jpg') center/cover no-repeat;
-  opacity: 0.10;
-  mix-blend-mode: luminosity;
+  background: url('assets/diadospaiscapa.jpg') center 30% / cover no-repeat;
+  opacity: 0.55;
   pointer-events: none;
   z-index: 0;
 }
@@ -58,7 +58,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(14,25,34,0.55) 100%);
+  background: linear-gradient(180deg, rgba(14,25,34,0.62) 0%, rgba(14,25,34,0.68) 50%, rgba(14,25,34,0.82) 100%);
   pointer-events: none;
   z-index: 0;
 }
