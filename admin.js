@@ -5487,6 +5487,9 @@
       // Foto exclusiva da campanha (só na aba temática).
       var campImgEl = document.getElementById('exp-campanha-imagem');
       if (campImgEl) campImgEl.value = exp.campanhaImagem || '';
+      // Horário de funcionamento (agendamento livre / voucher).
+      var hfEl = document.getElementById('exp-horario-funcionamento');
+      if (hfEl) hfEl.value = exp.horarioFuncionamento || '';
       if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
       if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
 
@@ -5604,6 +5607,8 @@
       if (campEl2) campEl2.value = '';
       var campImgEl2 = document.getElementById('exp-campanha-imagem');
       if (campImgEl2) campImgEl2.value = '';
+      var hfEl2 = document.getElementById('exp-horario-funcionamento');
+      if (hfEl2) hfEl2.value = '';
       if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
       if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
       document.getElementById('exp-edit-id').value = '';
@@ -6158,7 +6163,9 @@
           return raw || null;
         })(),
         // Foto exclusiva da campanha. Vazio = usa a foto oficial.
-        campanhaImagem: (document.getElementById('exp-campanha-imagem')?.value || '').trim()
+        campanhaImagem: (document.getElementById('exp-campanha-imagem')?.value || '').trim(),
+        // Horário de funcionamento (agendamento livre / voucher).
+        horarioFuncionamento: (document.getElementById('exp-horario-funcionamento')?.value || '').trim()
       };
 
       const editId = document.getElementById('exp-edit-id').value;

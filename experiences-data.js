@@ -54,7 +54,11 @@
     'campanha',
     // Foto exclusiva da campanha. Quando preenchida, é usada SÓ na aba
     // da campanha (a imagem oficial continua no resto do site).
-    'campanha_imagem'
+    'campanha_imagem',
+    // Horário de funcionamento (agendamento livre / voucher). Quando
+    // preenchido, a página da experiência mostra esse horário e deixa o
+    // cliente escolher o dia e a hora que quiser. sql/elarah_experiences_horario_funcionamento.sql.
+    'horario_funcionamento'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -162,6 +166,8 @@
       campanha: (row.campanha == null || row.campanha === '') ? null : String(row.campanha).trim().toLowerCase(),
       // Foto exclusiva da campanha ('' = usa a imagem oficial).
       campanhaImagem: row.campanha_imagem || '',
+      // Horário de funcionamento (agendamento livre). '' = agenda normal.
+      horarioFuncionamento: row.horario_funcionamento || '',
       // --- Variantes (escolha extra do cliente) ---
       // Exemplo: Pintura com Cristal & Aperol → label="Modelo do quadro",
       // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
@@ -320,6 +326,13 @@
       // Foto exclusiva da campanha. Vazio → null (usa a imagem oficial).
       campanha_imagem: (function () {
         var raw = exp.campanhaImagem != null ? exp.campanhaImagem : exp.campanha_imagem;
+        if (raw == null) return null;
+        var s = String(raw).trim();
+        return s ? s : null;
+      })(),
+      // Horário de funcionamento (agendamento livre). Vazio → null.
+      horario_funcionamento: (function () {
+        var raw = exp.horarioFuncionamento != null ? exp.horarioFuncionamento : exp.horario_funcionamento;
         if (raw == null) return null;
         var s = String(raw).trim();
         return s ? s : null;

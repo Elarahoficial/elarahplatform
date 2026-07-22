@@ -44,6 +44,19 @@
       .exp-detail__data-btn { padding: 8px 12px; font-size: .78rem; min-width: 80px; }
       .exp-detail__horario-btn { padding: 8px 14px; font-size: .82rem; }
     }
+    /* ===== Agendamento livre (voucher) ===== */
+    .exp-detail__freepick { margin-bottom: 24px; }
+    .exp-detail__hours { padding: 14px 18px; background: #faf6f0; border: 1px solid #efe3d3; border-radius: 12px; margin-bottom: 18px; }
+    .exp-detail__hours-label { font-size: .7rem; font-weight: 700; color: #a4663b; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+    .exp-detail__hours-text { font-size: .95rem; color: #3a2f28; line-height: 1.5; font-weight: 600; }
+    .exp-detail__freepick-fields { display: flex; flex-wrap: wrap; gap: 12px; }
+    .exp-detail__freepick-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 150px; }
+    .exp-detail__freepick-field span { font-size: .72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+    .exp-detail__freepick-field input { padding: 11px 14px; font-size: .95rem; font-family: inherit; color: #1a1a1a; border: 1.5px solid #ddd; border-radius: 10px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .exp-detail__freepick-field input:focus { outline: none; border-color: var(--orange, #f0a05e); box-shadow: 0 0 0 3px rgba(240,160,94,.18); }
+    .exp-detail__freepick-hint { margin: 12px 0 0; font-size: .8rem; color: #8a7d6f; line-height: 1.4; }
+    .exp-detail__freepick--error .exp-detail__freepick-field input { border-color: #c0392b; }
+    .exp-detail__freepick--error .exp-detail__freepick-hint { color: #c0392b; font-weight: 600; }
     .exp-detail__includes { font-size: .9rem; color: #666; margin-bottom: 24px; padding: 14px 18px; background: #faf6f0; border-radius: 12px; }
     .exp-detail__includes strong { color: #1a1a1a; }
     /* PR K — Section destacada "O que você vai viver".
@@ -315,7 +328,7 @@
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=2" defer></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=33"></script>
+<script src="experiences-data.js?v=34"></script>
 <script src="analytics.js?v=3"></script>
 <script src="kit-checkout.js?v=3"></script>
 <script src="script.js?v=78"></script><script>(function () {
@@ -612,9 +625,32 @@
     // legado exp.horarios (sem datas) — preserva fluxo antigo.
     var firstAvailable = -1;
     var horariosHtml = '';
-    var useScheduleNew = futureSlots.length > 0;
+    // Agendamento livre (voucher): quando a experiência tem "horário de
+    // funcionamento" preenchido, o cliente escolhe o dia e a hora que quiser.
+    var useFreePick = !!(exp.horarioFuncionamento && String(exp.horarioFuncionamento).trim());
+    var useScheduleNew = !useFreePick && futureSlots.length > 0;
 
-    if (useScheduleNew) {
+    if (useFreePick) {
+      var _now = new Date();
+      var _minDate = _now.getFullYear() + '-' +
+        String(_now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(_now.getDate()).padStart(2, '0');
+      horariosHtml =
+        '<div class="exp-detail__freepick">' +
+          '<div class="exp-detail__hours">' +
+            '<div class="exp-detail__hours-label">Horário de funcionamento</div>' +
+            '<div class="exp-detail__hours-text">' + esc(exp.horarioFuncionamento).replace(/\n/g, '<br>') + '</div>' +
+          '</div>' +
+          '<div class="exp-detail__schedule-label">Escolha o dia e a hora que você quer</div>' +
+          '<div class="exp-detail__freepick-fields">' +
+            '<label class="exp-detail__freepick-field"><span>Dia</span>' +
+              '<input type="date" id="exp-freepick-date" min="' + _minDate + '"></label>' +
+            '<label class="exp-detail__freepick-field"><span>Hora</span>' +
+              '<input type="time" id="exp-freepick-time"></label>' +
+          '</div>' +
+          '<p class="exp-detail__freepick-hint">Escolha dentro do horário de funcionamento acima. Você recebe a confirmação por e-mail.</p>' +
+        '</div>';
+    } else if (useScheduleNew) {
       // Agrupa por data (chave: YYYY-MM-DD do event_at).
       var byDate = {};
       var dateOrder = [];
@@ -850,7 +886,7 @@
           '</div>'
         : '') +
       '<div class="exp-detail__meta">' +
-        ((!useScheduleNew && exp.data) ? '<span class="exp-detail__meta-item">' +
+        ((!useScheduleNew && !useFreePick && exp.data) ? '<span class="exp-detail__meta-item">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
           esc(exp.data) +
         '</span>' : '') +
@@ -957,7 +993,56 @@
       }
     }
 
-    if (useScheduleNew && window.__expScheduleData) {
+    if (useFreePick) {
+      // Agendamento livre: os seletores de dia/hora setam os data-attrs do
+      // botão Reservar (mesma via que o checkout já lê). Bloqueia a reserva
+      // — inclusive o botão fixo do mobile — até dia E hora escolhidos.
+      var fpDate = document.getElementById('exp-freepick-date');
+      var fpTime = document.getElementById('exp-freepick-time');
+      var fpReserve = document.getElementById('exp-reserve-btn');
+      var fpBox = container.querySelector('.exp-detail__freepick');
+      function fpFmtBR(iso) {
+        if (!iso) return '';
+        var p = String(iso).split('-');
+        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+      }
+      function fpReady() { return !!(fpDate && fpDate.value && fpTime && fpTime.value); }
+      function fpSync() {
+        if (!fpReserve) return;
+        if (fpReady()) {
+          var label = fpFmtBR(fpDate.value);
+          fpReserve.dataset.data = fpDate.value;
+          fpReserve.dataset.dataLabel = label;
+          fpReserve.dataset.horario = label + ' às ' + fpTime.value;
+          fpReserve.dataset.slotId = '';
+          if (fpBox) fpBox.classList.remove('exp-detail__freepick--error');
+        } else {
+          fpReserve.dataset.data = '';
+          fpReserve.dataset.dataLabel = '';
+          fpReserve.dataset.horario = '';
+          fpReserve.dataset.slotId = '';
+        }
+      }
+      if (fpDate) fpDate.addEventListener('change', fpSync);
+      if (fpTime) fpTime.addEventListener('change', fpSync);
+      fpSync();
+      // Guard em fase de captura no WINDOW: precisa rodar ANTES do handler
+      // global de [data-reserve] do script.js — que é capture-phase no
+      // document com stopImmediatePropagation. Como o window está acima do
+      // document na captura, este listener dispara primeiro e bloqueia a
+      // reserva (inclusive o botão fixo do mobile) até dia E hora escolhidos.
+      window.addEventListener('click', function (e) {
+        var trg = e.target && e.target.closest && e.target.closest('[data-reserve]');
+        if (!trg) return;
+        if (fpReady()) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (fpBox) fpBox.classList.add('exp-detail__freepick--error');
+        var miss = (fpDate && !fpDate.value) ? fpDate : fpTime;
+        if (miss && miss.focus) { try { miss.focus(); } catch (_) {} }
+        try { if (fpBox && fpBox.scrollIntoView) fpBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+      }, true);
+    } else if (useScheduleNew && window.__expScheduleData) {
       var schedData = window.__expScheduleData;
       var horariosEl = document.getElementById('exp-horarios');
 

@@ -3974,6 +3974,19 @@
           </div>
         </div>
 
+        <!-- ===== HORÁRIO DE FUNCIONAMENTO (AGENDAMENTO LIVRE / VOUCHER) ===== -->
+        <div class="admin__form-field admin__form-field--full">
+          <label>Horário de funcionamento (agendamento livre / voucher)</label>
+          <textarea id="exp-horario-funcionamento" rows="3"
+            placeholder="Ex.: Terça a domingo, das 10h às 22h&#10;(deixe em branco para usar a agenda normal com datas/horários fixos)"
+            style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:.95rem;font-family:inherit;resize:vertical;"></textarea>
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Preencha <b>só</b> para experiências tipo <b>voucher</b>, em que o cliente compra e escolhe o dia e a hora que quiser.
+            Quando preenchido, a página da experiência mostra este horário <b>em cima</b> e um seletor de <b>dia e hora</b> <b>embaixo</b>
+            (a agenda de datas fixas some). Deixe em branco para o funcionamento normal.
+          </p>
+        </div>
+
         <!-- ===== RECORRÊNCIA SEMANAL ===== -->
         <!-- Aparece só quando editando uma experiência (não em "nova").
              Cada experiência pode ter N regras (terça + quinta etc).
@@ -4579,7 +4592,7 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=33"></script>
+<script src="experiences-data.js?v=34"></script>
 <script src="byelarah-data.js?v=7"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-social.js?v=11"></script>
@@ -4592,7 +4605,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=210"></script>
+<script src="admin.js?v=211"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
