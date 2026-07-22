@@ -54,7 +54,8 @@
     .exp-detail__freepick-field span { font-size: .72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .5px; }
     .exp-detail__freepick-field input { padding: 11px 14px; font-size: .95rem; font-family: inherit; color: #1a1a1a; border: 1.5px solid #ddd; border-radius: 10px; background: #fff; transition: border-color .15s, box-shadow .15s; }
     .exp-detail__freepick-field input:focus { outline: none; border-color: var(--orange, #f0a05e); box-shadow: 0 0 0 3px rgba(240,160,94,.18); }
-    .exp-detail__freepick-hint { margin: 12px 0 0; font-size: .8rem; color: #8a7d6f; line-height: 1.4; }
+    .exp-detail__freepick-hint { margin: 14px 0 0; font-size: .84rem; color: #6b5744; line-height: 1.5; padding: 12px 14px; background: #fbf3e6; border: 1px solid #f0dcc0; border-radius: 10px; }
+    .exp-detail__freepick-hint strong { color: #a4663b; }
     .exp-detail__freepick--error .exp-detail__freepick-field input { border-color: #c0392b; }
     .exp-detail__freepick--error .exp-detail__freepick-hint { color: #c0392b; font-weight: 600; }
     .exp-detail__includes { font-size: .9rem; color: #666; margin-bottom: 24px; padding: 14px 18px; background: #faf6f0; border-radius: 12px; }
@@ -648,7 +649,10 @@
             '<label class="exp-detail__freepick-field"><span>Hora</span>' +
               '<input type="time" id="exp-freepick-time"></label>' +
           '</div>' +
-          '<p class="exp-detail__freepick-hint">Escolha dentro do horário de funcionamento acima. Você recebe a confirmação por e-mail.</p>' +
+          '<p class="exp-detail__freepick-hint">' +
+            '<strong>Como funciona:</strong> escolha um dia e horário de preferência dentro do horário de funcionamento. ' +
+            'No momento da compra, a <strong>Elarah entra em contato com você no mesmo dia</strong> para acertar o melhor horário pra você, dentro do horário de funcionamento. 🤍' +
+          '</p>' +
         '</div>';
     } else if (useScheduleNew) {
       // Agrupa por data (chave: YYYY-MM-DD do event_at).
