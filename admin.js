@@ -6469,6 +6469,16 @@
         '. Abrindo a edição pra ajuste manual.', false);
       return false; // deixa o fallback abrir o modal
     }
+    // 0 turmas criadas NÃO é sucesso — não engana com toast verde. Pode
+    // ser regra sem datas novas no horizonte, ou a função SQL antiga que
+    // fazia "do nothing" em rótulo DD/MM sem ano (ver
+    // sql/elarah_recurrence_materialize_fix_ano.sql). Abre a edição pra
+    // admin usar a seção de Recorrência (↻ Materializar) e ajustar.
+    if (materialized === 0) {
+      _adminToast('Nenhuma turma futura foi criada. Abrindo a edição — ' +
+        'confira a seção "Recorrência semanal" (regra ativa? horizonte?).', false);
+      return false;
+    }
     _adminToast('✓ Experiência reativada — ' + materialized +
       ' turma' + (materialized === 1 ? '' : 's') + ' futura' +
       (materialized === 1 ? '' : 's') + ' recriada' + (materialized === 1 ? '' : 's') + '.');
