@@ -9215,21 +9215,46 @@
     } catch (e) { console.error('[Extrato] bookings', e); }
 
     try {
-      const { data } = await sb.from('manual_sales').select('*').eq('payout_status', 'pago');
+      // Sem filtro payout_status no banco: uma venda pode ter o fornecedor
+      // principal pago pra OUTRO fornecedor e um EXTRA pago pra este — as
+      // duas fontes (principal + extras) são conferidas por venda.
+      const { data } = await sb.from('manual_sales').select('*').eq('payment_status', 'pago');
       (data || []).forEach(m => {
-        const k = (m.supplier_key && m.supplier_key.trim()) || (m.supplier_name ? fornecedorKey(m.supplier_name) : '');
-        if (k !== supplierKey && fornecedorKey(m.supplier_name || '') !== supplierKey) return;
-        const rdate = m.payout_paid_at || m.updated_at || m.sale_date;
-        if (!inMonth(rdate)) return;
-        rows.push({
-          participantes: [m.customer_name].filter(Boolean),
-          experiencia: m.experience_name || '—',
-          dataCompra: m.sale_date || m.created_at,
-          dataExp: m.slot_date || '',
-          horario: m.slot_time || '',
-          repasse: Number(m.payout_amount_centavos) || 0,
-          dataRepasse: rdate,
-        });
+        // Fornecedor principal — só se pago e for este fornecedor.
+        if (m.payout_status === 'pago') {
+          const k = (m.supplier_key && m.supplier_key.trim()) || (m.supplier_name ? fornecedorKey(m.supplier_name) : '');
+          const rdate = m.payout_paid_at || m.updated_at || m.sale_date;
+          if ((k === supplierKey || fornecedorKey(m.supplier_name || '') === supplierKey) && inMonth(rdate)) {
+            rows.push({
+              participantes: [m.customer_name].filter(Boolean),
+              experiencia: m.experience_name || '—',
+              dataCompra: m.sale_date || m.created_at,
+              dataExp: m.slot_date || '',
+              horario: m.slot_time || '',
+              repasse: Number(m.payout_amount_centavos) || 0,
+              dataRepasse: rdate,
+            });
+          }
+        }
+        // Fornecedores extras — cada um pago separadamente.
+        if (Array.isArray(m.extra_payouts)) {
+          m.extra_payouts.forEach(p => {
+            if (!p || p.status !== 'pago') return;
+            const pk = (p.supplier_key && String(p.supplier_key).trim()) || fornecedorKey(p.supplier_name || '');
+            if (pk !== supplierKey) return;
+            const rdate = p.paid_at || m.updated_at || m.sale_date;
+            if (!inMonth(rdate)) return;
+            rows.push({
+              participantes: [m.customer_name].filter(Boolean),
+              experiencia: m.experience_name || '—',
+              dataCompra: m.sale_date || m.created_at,
+              dataExp: m.slot_date || '',
+              horario: m.slot_time || '',
+              repasse: Number(p.amount_centavos) || 0,
+              dataRepasse: rdate,
+            });
+          });
+        }
       });
     } catch (e) { console.error('[Extrato] manual_sales', e); }
 
@@ -9595,10 +9620,12 @@
     try {
       const sb = window.supabaseClient;
       if (sb) {
+        // Puxa TODAS as vendas pagas (não só payout_status=pendente): uma
+        // venda pode ter o fornecedor principal já pago mas um fornecedor
+        // EXTRA ainda pendente — o filtro no banco perderia esse caso.
         const { data: msRows, error: msErr } = await sb.from('manual_sales')
-          .select('id, supplier_name, payout_amount_centavos, payout_status, experience_id')
-          .eq('payment_status', 'pago')
-          .eq('payout_status', 'pendente');
+          .select('id, supplier_name, payout_amount_centavos, payout_status, experience_id, extra_payouts')
+          .eq('payment_status', 'pago');
         if (!msErr && Array.isArray(msRows)) {
           // Mapa exp → fornecedor (usa o cache _finExpById se disponível,
           // senão tenta ElarahData.getAllExperiences). Preserva semântica
@@ -9606,12 +9633,8 @@
           const expById = (typeof _finExpById !== 'undefined' && _finExpById && _finExpById.size)
             ? _finExpById
             : new Map();
-          msRows.forEach(r => {
-            const valor = Number(r.payout_amount_centavos) || 0;
-            if (valor <= 0) return;
-            const expObj = r.experience_id && expById.has(r.experience_id) ? expById.get(r.experience_id) : null;
-            const nomeRaw = (r.supplier_name && r.supplier_name.trim()) ||
-              (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
+          const addPendente = (nomeRaw, valor) => {
+            if (!(valor > 0)) return;
             const nome = nomeRaw || '— sem fornecedor —';
             if (!byForn.has(nome)) byForn.set(nome, { nome, count: 0, total: 0, isUnknown: !nomeRaw });
             const agg = byForn.get(nome);
@@ -9619,6 +9642,23 @@
             agg.total += valor;
             totalGlobal += valor;
             countGlobal += 1;
+          };
+          msRows.forEach(r => {
+            const expObj = r.experience_id && expById.has(r.experience_id) ? expById.get(r.experience_id) : null;
+            // Fornecedor principal — só se ainda pendente.
+            if (r.payout_status === 'pendente') {
+              const nomeRaw = (r.supplier_name && r.supplier_name.trim()) ||
+                (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
+              addPendente(nomeRaw, Number(r.payout_amount_centavos) || 0);
+            }
+            // Fornecedores extras — cada um com seu próprio status.
+            if (Array.isArray(r.extra_payouts)) {
+              r.extra_payouts.forEach(p => {
+                if (!p || p.status === 'pago') return;
+                const nomeRaw = (p.supplier_name && String(p.supplier_name).trim()) || '';
+                addPendente(nomeRaw, Number(p.amount_centavos) || 0);
+              });
+            }
           });
         }
       }
@@ -9786,7 +9826,11 @@
   function _eventosMoney(s) {
     const paid = s.payment_status === 'pago';
     const total = paid ? (Number(s.total_amount_centavos) || 0) : 0;
-    const payout = paid ? (Number(s.payout_amount_centavos) || 0) : 0;
+    let payout = paid ? (Number(s.payout_amount_centavos) || 0) : 0;
+    // Soma os repasses dos fornecedores extras (eventos com 2+ fornecedores).
+    if (paid && Array.isArray(s.extra_payouts)) {
+      s.extra_payouts.forEach(p => { payout += Number(p && p.amount_centavos) || 0; });
+    }
     return { total: total, margin: Math.max(0, total - payout) };
   }
   // Resumo do cronograma de pagamentos (entrada + parcelas). null = sem.
@@ -14567,10 +14611,75 @@
   }
 
   function _finTogglePayoutFields(show) {
-    ['ms-payout-supplier-wrap','ms-payout-amount-wrap','ms-payout-status-wrap'].forEach(id => {
+    ['ms-payout-supplier-wrap','ms-payout-amount-wrap','ms-payout-status-wrap','ms-extra-payouts-wrap'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = show ? '' : 'none';
     });
+  }
+
+  // ===== Fornecedores EXTRAS do repasse (eventos com 2+ fornecedores) =====
+  // O fornecedor principal fica nos campos ms-payout-*; os demais entram
+  // aqui, cada linha = {supplier_name, amount_centavos, status}. Fonte de
+  // verdade é o DOM (#ms-extra-payouts-list); coletado no save. Salvo em
+  // manual_sales.extra_payouts (jsonb). _finMsOrigHadExtraPayouts lembra se
+  // a venda já tinha extras, pra permitir limpar tudo.
+  let _finMsOrigHadExtraPayouts = false;
+  let _finMsOrigExtraPayouts = [];   // extras ao abrir (pra preservar paid_at)
+  function _finExtraPayoutRowHtml(p) {
+    p = p || {};
+    const valor = (p.amount_centavos != null && p.amount_centavos !== '') ? _finCentsToInput(p.amount_centavos) : '';
+    const st = p.status === 'pago' ? 'pago' : 'pendente';
+    return '<div class="ms-extra-payout-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">' +
+      '<input type="text" class="ms-extra-supplier" list="ms-payout-supplier-datalist" autocomplete="off" placeholder="Fornecedor" value="' + _finEsc(p.supplier_name || '') + '" style="flex:1;min-width:130px;">' +
+      '<input type="text" class="ms-extra-valor" inputmode="decimal" placeholder="R$ repasse" value="' + _finEsc(valor) + '" style="width:120px;">' +
+      '<select class="ms-extra-status" style="width:120px;">' +
+        '<option value="pendente"' + (st === 'pendente' ? ' selected' : '') + '>Pendente</option>' +
+        '<option value="pago"' + (st === 'pago' ? ' selected' : '') + '>Pago</option>' +
+      '</select>' +
+      '<button type="button" class="ms-extra-remove" title="Remover" style="border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;padding:4px 9px;font-size:.85rem;color:#c0392b;">✕</button>' +
+    '</div>';
+  }
+  function _finAddExtraPayoutRow(p) {
+    const list = document.getElementById('ms-extra-payouts-list');
+    if (!list) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = _finExtraPayoutRowHtml(p);
+    const row = tmp.firstElementChild;
+    list.appendChild(row);
+    const rm = row.querySelector('.ms-extra-remove');
+    if (rm) rm.addEventListener('click', () => row.remove());
+  }
+  function _finSetExtraPayouts(arr) {
+    const list = document.getElementById('ms-extra-payouts-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (Array.isArray(arr) ? arr : []).forEach(p => _finAddExtraPayoutRow(p));
+  }
+  // Coleta as linhas de fornecedor extra. carimba paid_at nos que estão
+  // "pago" (preserva o que já existia via prevByKey pra não trocar a data).
+  function _finCollectExtraPayouts(prevByKey) {
+    const list = document.getElementById('ms-extra-payouts-list');
+    if (!list) return [];
+    const nowISO = new Date().toISOString();
+    const out = [];
+    list.querySelectorAll('.ms-extra-payout-row').forEach(row => {
+      const nome = (row.querySelector('.ms-extra-supplier').value || '').trim();
+      const valor = _finParseBRL(row.querySelector('.ms-extra-valor').value);
+      const status = row.querySelector('.ms-extra-status').value === 'pago' ? 'pago' : 'pendente';
+      if (!nome && !valor) return; // linha vazia
+      const key = fornecedorKey(nome);
+      const prev = prevByKey && prevByKey.get ? prevByKey.get(key) : null;
+      out.push({
+        supplier_name: nome || null,
+        supplier_key: key || null,
+        amount_centavos: valor,
+        status: status,
+        paid_at: status === 'pago'
+          ? ((prev && prev.status === 'pago' && prev.paid_at) ? prev.paid_at : nowISO)
+          : null,
+      });
+    });
+    return out;
   }
 
   // ===== Pagamentos (entrada + parcelas) do modal de venda manual =====
@@ -14732,6 +14841,14 @@
       // Em duplicar, o repasse vira novo (sem data); em editar, preserva.
       _finMsOrigPayoutStatus = mode === 'edit' ? (data.payout_status || null) : null;
       _finMsOrigPayoutPaidAt = mode === 'edit' ? (data.payout_paid_at || null) : null;
+      // Fornecedores extras (eventos com 2+ fornecedores). Em duplicar, os
+      // repasses voltam pra "pendente" (venda nova, nada pago ainda).
+      const extraSrc = Array.isArray(data.extra_payouts) ? data.extra_payouts : [];
+      _finMsOrigHadExtraPayouts = extraSrc.length > 0;
+      _finMsOrigExtraPayouts = mode === 'edit' ? extraSrc.slice() : [];
+      _finSetExtraPayouts(mode === 'duplicate'
+        ? extraSrc.map(p => Object.assign({}, p, { status: 'pendente', paid_at: null }))
+        : extraSrc);
       _finSetPayments(Array.isArray(data.payments) ? data.payments : []);
       $('ms-notes').value = data.notes || '';
       const hasPayout = data.payout_status && data.payout_status !== 'nao_aplicavel';
@@ -14766,6 +14883,9 @@
       _finMsOrigHadPayments = false;
       _finMsOrigPayoutStatus = null;
       _finMsOrigPayoutPaidAt = null;
+      _finMsOrigHadExtraPayouts = false;
+      _finMsOrigExtraPayouts = [];
+      _finSetExtraPayouts([]);
       _finSetPayments([]);
       $('ms-discount').value = '0';
       $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
@@ -14857,6 +14977,20 @@
     const paymentsArr = _finCollectPayments();
     if (paymentsArr.length > 0 || _finMsOrigHadPayments) {
       payload.payments = paymentsArr;
+    }
+    // Fornecedores extras (eventos com 2+ fornecedores). Só coleta quando há
+    // repasse; se não tiver, fica lista vazia. Só envia a coluna quando há
+    // linhas ou quando a venda já tinha extras (pra permitir limpar) — assim
+    // vendas sem a migração de extra_payouts rodada continuam salvando.
+    const prevExtraByKey = new Map();
+    (Array.isArray(_finMsOrigExtraPayouts) ? _finMsOrigExtraPayouts : []).forEach(p => {
+      if (p && (p.supplier_key || p.supplier_name)) {
+        prevExtraByKey.set(p.supplier_key || fornecedorKey(p.supplier_name), p);
+      }
+    });
+    const extraPayoutsArr = hasPayout ? _finCollectExtraPayouts(prevExtraByKey) : [];
+    if (extraPayoutsArr.length > 0 || _finMsOrigHadExtraPayouts) {
+      payload.extra_payouts = extraPayoutsArr;
     }
     if (!payload.customer_name) {
       msgEl.textContent = 'Nome do cliente é obrigatório.'; msgEl.style.color = '#c0392b'; return;
@@ -14967,9 +15101,13 @@
       // Qualquer "coluna não encontrada no schema cache" = falta rodar uma
       // migração no banco. Aponta o script consolidado que cria todas de
       // uma vez (idempotente), em vez de adivinhar qual coluna falta.
-      const missingCol = /schema cache|could not find the .* column|column .* does not exist/i.test(em)
+      const schemaMiss = /schema cache|could not find the .* column|column .* does not exist/i.test(em);
+      const missingExtra = schemaMiss && /extra_payouts/i.test(em);
+      const missingCol = schemaMiss
         && /payments|event_type|event_type_custom|is_event|sale_date/i.test(em);
-      const hint = missingCol
+      const hint = missingExtra
+        ? ' — rode sql/elarah_manual_sales_extra_payouts.sql no SQL Editor do Supabase (cria a coluna dos fornecedores extras e recarrega o schema).'
+        : missingCol
         ? ' — rode sql/elarah_manual_sales_fix_save.sql no SQL Editor do Supabase (cria as colunas que faltam e recarrega o schema).'
         : '';
       msgEl.textContent = 'Erro: ' + em + hint;
@@ -15552,6 +15690,9 @@
     // Pagamentos (entrada + parcelas)
     document.getElementById('ms-payment-add')?.addEventListener('click', () => { _finAddPaymentRow({}); _finRenderPaymentsSummary(); });
     document.getElementById('ms-entrada-apply')?.addEventListener('click', _finApplyEntradaPct);
+
+    // Fornecedores extras do repasse (eventos com 2+ fornecedores)
+    document.getElementById('ms-extra-payout-add')?.addEventListener('click', () => _finAddExtraPayoutRow({}));
 
     // Tipo de evento "Outro": mostra o campo de texto livre só quando
     // "Outro (digitar)" estiver selecionado.

@@ -4573,6 +4573,14 @@
           </select>
         </div>
 
+        <!-- Fornecedores EXTRAS — eventos com 2+ fornecedores (buffet + oficina, etc.) -->
+        <div class="admin__form-field admin__form-field--full" id="ms-extra-payouts-wrap" style="display:none;">
+          <label style="display:block;margin-bottom:6px;">Outros fornecedores deste evento</label>
+          <p style="margin:0 0 8px;font-size:.78rem;color:#888;">Quando o evento tem mais de um fornecedor pra pagar, some cada repasse aqui.</p>
+          <div id="ms-extra-payouts-list"></div>
+          <button type="button" id="ms-extra-payout-add" class="admin__add-btn" style="padding:5px 12px;font-size:.82rem;margin-top:4px;">+ Adicionar fornecedor</button>
+        </div>
+
         <div class="admin__form-field admin__form-field--full">
           <label>Observações</label>
           <input type="text" id="ms-notes">
@@ -4605,7 +4613,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=212"></script>
+<script src="admin.js?v=213"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
