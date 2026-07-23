@@ -83,6 +83,7 @@
             <th>Experiência</th>
             <th>Categoria</th>
             <th>Data / Horário</th>
+            <th>Turmas</th>
             <th>No site?</th>
             <th>Portões (gates)</th>
             <th>Motivo &amp; como resolver</th>
@@ -178,6 +179,18 @@
       var expiredRec = ED.isExpiredRecurring ? ED.isExpiredRecurring(e, slots, now) : false;
       var future = ED.experienceFutureDates ? ED.experienceFutureDates(e, slots, now) : [];
       var nextTs = future && future.length ? future[0] : null;
+
+      // Estatística de turmas (slots) — ajuda a diagnosticar recorrentes.
+      var slotsAtivos = slots.filter(function (s) { return s && s.isActive !== false; });
+      var isRecorrente = slots.some(function (s) { return s && s.recurrenceRuleId; });
+      var futuras = 0, passadas = 0, semData = 0;
+      slotsAtivos.forEach(function (s) {
+        var ts = null;
+        if (s.eventAt) { var t = new Date(s.eventAt).getTime(); if (!isNaN(t)) ts = t; }
+        if (ts == null && ED.deriveEventTimestamp) ts = ED.deriveEventTimestamp(s.data, s.horario, now);
+        if (ts == null) { semData++; return; }
+        if (ts >= now) futuras++; else passadas++;
+      });
       var sig = sigOf(e);
       var isDupLoser = publicVisible && dedupWinner[sig] && dedupWinner[sig] !== e.id;
 
@@ -204,8 +217,12 @@
         reason = 'Marcada como “ocultar das categorias” — só aparece na faixa By Elarah.';
         fix = 'Edite a experiência e desmarque “ocultar das categorias / Só By Elarah”.';
       } else if (expiredRec) {
-        reason = 'TODAS as turmas/horários têm data no passado (nenhuma turma futura).';
-        fix = 'Edite a experiência, atualize as datas dos horários pra o futuro e Salve — isso recria as turmas com o ano atual.';
+        reason = 'TODAS as turmas têm data no passado (' + passadas + ' passada' +
+          (passadas === 1 ? '' : 's') + ', 0 futura). ' +
+          (isRecorrente ? 'É recorrente (Semanal) e o horizonte de datas venceu.' : '');
+        fix = isRecorrente
+          ? 'Clique em “Reativar” na lista — agora ele reativa a regra e recria as próximas turmas automaticamente. (Ou entre na edição › recorrência › ↻ Materializar.)'
+          : 'Edite a experiência, atualize as datas dos horários pra o futuro e Salve.';
       } else if (isDupLoser) {
         reason = 'É uma CÓPIA de outra experiência idêntica (mesmo nome, categoria, data, horário, bairro e preço). O site mostra só uma.';
         fix = 'Renomeie ou exclua a cópia duplicada — ou mude algo (data/horário) pra elas ficarem distintas.';
@@ -215,7 +232,8 @@
         e: e, slots: slots, onSite: onSite, gates: gates,
         reason: reason, fix: fix, nextTs: nextTs,
         isActive: isActive, publicVisible: publicVisible,
-        hideFromCat: hideFromCat, expiredRec: expiredRec, isDupLoser: isDupLoser
+        hideFromCat: hideFromCat, expiredRec: expiredRec, isDupLoser: isDupLoser,
+        isRecorrente: isRecorrente, futuras: futuras, passadas: passadas, semData: semData
       };
     });
 
@@ -269,6 +287,11 @@
             (e.isElarahOriginal ? ' <span class="muted">· By Elarah</span>' : '') + '</td>' +
           '<td>' + esc(cat) + '</td>' +
           '<td>' + esc(e.data || '—') + '<br><span class="muted">' + esc(horario) + '</span></td>' +
+          '<td>' + (r.isRecorrente ? '<span class="muted">↻ Semanal</span><br>' : '') +
+            '<span style="color:' + (r.futuras > 0 ? '#1a8a4a' : '#c0392b') + ';font-weight:600;">' +
+            r.futuras + ' futura' + (r.futuras === 1 ? '' : 's') + '</span>' +
+            (r.passadas ? '<br><span class="muted">' + r.passadas + ' passada' + (r.passadas === 1 ? '' : 's') + '</span>' : '') +
+            (r.semData ? '<br><span class="muted">' + r.semData + ' s/ data</span>' : '') + '</td>' +
           '<td>' + (r.onSite
             ? '<span class="pill pill-site-yes">✓ Aparece</span>'
             : '<span class="pill pill-site-no">✕ Some</span>') + '</td>' +

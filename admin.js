@@ -6379,6 +6379,102 @@
     });
   }
 
+  // Toast simples de confirmação (reusado pelos fluxos de reativação).
+  function _adminToast(msg, ok) {
+    try {
+      var t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:' +
+        (ok === false ? '#c0392b' : '#1a8a4a') + ';color:#fff;padding:12px 18px;' +
+        'border-radius:10px;font-weight:600;font-size:.9rem;box-shadow:0 8px 24px rgba(0,0,0,.18);' +
+        'z-index:9999;font-family:inherit;max-width:360px;';
+      document.body.appendChild(t);
+      setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 3200);
+      setTimeout(function () { t.remove(); }, 3700);
+    } catch (e) { /* ignora */ }
+  }
+
+  // "Reativar" de uma experiência auto-oculta. O caso difícil é a
+  // recorrente (Semanal): apertar Reativar antes só abria o modal, mas o
+  // que a esconde é NÃO ter turma futura — todas as datas materializadas
+  // pela regra já passaram (horizon venceu, cron parou). Editar+Salvar a
+  // experiência NÃO recria essas turmas. Então aqui, quando há regra de
+  // recorrência, a gente:
+  //   1. Garante is_active = true.
+  //   2. Reativa qualquer regra desativada.
+  //   3. Re-materializa (RPC materialize_recurrence_slots) → cria as
+  //      próximas turmas dentro do horizon a partir de HOJE.
+  // Sem regra (slots manuais com data no passado, ou expiração simples),
+  // cai pro modal de edição pra admin ajustar a data à mão.
+  // Retorna true se resolveu por recorrência; false pra usar o fallback.
+  async function _reactivateRecurringExperience(id) {
+    const sb = window.supabaseClient;
+    if (!sb) return false;
+
+    // Garante is_active = true (barato; no-op se já estiver ativa).
+    try {
+      if (ElarahData && typeof ElarahData.setExperienceActive === 'function') {
+        const upd = await ElarahData.setExperienceActive(id, true);
+        if (upd && upd._error) {
+          const e = upd._error;
+          _adminToast('Não consegui reativar (is_active): ' + (e.message || e.code || 'erro'), false);
+          // segue tentando materializar mesmo assim — o bloqueio pode ser
+          // só de RLS numa coluna, e a regra ainda pode gerar turma.
+        }
+      }
+    } catch (e) { /* segue */ }
+
+    // Busca regras de recorrência da experiência.
+    let rules = [];
+    try {
+      const res = await sb
+        .from('experience_recurrence_rules')
+        .select('id, is_active')
+        .eq('experience_id', id);
+      if (res.error) {
+        // Tabela ausente (recorrência não instalada) → não é recorrente.
+        return false;
+      }
+      rules = res.data || [];
+    } catch (e) {
+      return false;
+    }
+    if (!rules.length) return false; // não é recorrente → fallback modal
+
+    // Reativa regras desativadas e re-materializa todas.
+    let materialized = 0;
+    let anyError = null;
+    for (const r of rules) {
+      try {
+        if (r.is_active === false) {
+          const { error: errAct } = await sb
+            .from('experience_recurrence_rules')
+            .update({ is_active: true })
+            .eq('id', r.id);
+          if (errAct) anyError = errAct;
+        }
+        const { data, error } = await sb.rpc('materialize_recurrence_slots', { p_rule_id: r.id });
+        if (error) { anyError = error; continue; }
+        materialized += (typeof data === 'number' ? data : (data && data[0]) || 0);
+      } catch (e) {
+        anyError = e;
+      }
+    }
+
+    _recurrenceInvalidateCaches();
+
+    if (anyError && materialized === 0) {
+      _adminToast('Não consegui recriar as turmas: ' +
+        (anyError.message || anyError.code || 'erro') +
+        '. Abrindo a edição pra ajuste manual.', false);
+      return false; // deixa o fallback abrir o modal
+    }
+    _adminToast('✓ Experiência reativada — ' + materialized +
+      ' turma' + (materialized === 1 ? '' : 's') + ' futura' +
+      (materialized === 1 ? '' : 's') + ' recriada' + (materialized === 1 ? '' : 's') + '.');
+    return true;
+  }
+
   async function renderExperiences() {
     const allExperiencesRaw = await getExperiences();
 
@@ -6644,11 +6740,30 @@
         const currentlyActive = btn.dataset.toggleActive === '1';
         const autoHidden = btn.dataset.autoHidden === '1';
         // Reativar uma experiência auto-oculta (passou do horário ou
-        // está dentro do cutoff de 24h) só faz sentido se o admin
-        // mudar a data — alternar is_active seria no-op porque já
-        // está true. Abre o modal de edição direto.
+        // está dentro do cutoff de 24h). Se for RECORRENTE (Semanal), o
+        // que a esconde é não ter turma futura — a gente reativa a regra
+        // e recria as turmas automaticamente (sem isso, apertar Reativar
+        // não trazia a experiência de volta "por nada"). Se não for
+        // recorrente, cai pro modal pra admin ajustar a data à mão.
         if (autoHidden) {
-          openExpModal(id);
+          const origLabel = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'Reativando…';
+          let handled = false;
+          try {
+            handled = await _reactivateRecurringExperience(id);
+          } catch (e) {
+            console.error('[Admin] reactivate recurring exception:', e);
+          }
+          btn.disabled = false;
+          btn.textContent = origLabel;
+          if (handled) {
+            await renderExperiences();
+            await renderOverview();
+          } else {
+            // Não é recorrente (ou a recriação falhou) → edição manual.
+            openExpModal(id);
+          }
           return;
         }
         const nextActive = !currentlyActive;
