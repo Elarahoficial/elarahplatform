@@ -14986,9 +14986,13 @@
       // Qualquer "coluna não encontrada no schema cache" = falta rodar uma
       // migração no banco. Aponta o script consolidado que cria todas de
       // uma vez (idempotente), em vez de adivinhar qual coluna falta.
-      const missingCol = /schema cache|could not find the .* column|column .* does not exist/i.test(em)
+      const schemaMiss = /schema cache|could not find the .* column|column .* does not exist/i.test(em);
+      const missingExtra = schemaMiss && /extra_payouts/i.test(em);
+      const missingCol = schemaMiss
         && /payments|event_type|event_type_custom|is_event|sale_date/i.test(em);
-      const hint = missingCol
+      const hint = missingExtra
+        ? ' — rode sql/elarah_manual_sales_extra_payouts.sql no SQL Editor do Supabase (cria a coluna dos fornecedores extras e recarrega o schema).'
+        : missingCol
         ? ' — rode sql/elarah_manual_sales_fix_save.sql no SQL Editor do Supabase (cria as colunas que faltam e recarrega o schema).'
         : '';
       msgEl.textContent = 'Erro: ' + em + hint;
