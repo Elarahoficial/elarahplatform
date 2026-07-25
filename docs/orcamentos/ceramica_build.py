@@ -141,29 +141,34 @@ def venue(page, path, rect, name, vbias=0.5):
     page.insert_image(r, stream=b.getvalue())
     put(page, name, FSB, 10.5, DARKt, r.x0, r.y1+14)
 
-# ---- 1) ONDE ACONTECE — partner venues (Aretha, BETC Havas Café) ----
-put_spaced(p3, "✦ ONDE ACONTECE", 54, 258, 9, CORAL_RGB, FSB)
-put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 286)
-put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 286)
-venue(p3, A_DIR+"pintura.jpg", (54, 296, 293, 386), "W Café", vbias=0.5)
-venue(p3, A_DIR+"ojardim1.jpg", (301, 296, 541, 386), "O Jardim (ao ar livre)", vbias=0.5)
+# ---- 1) ONDE ACONTECE — two square venues: BETC + Aretha ----
+put_spaced(p3, "✦ ONDE ACONTECE", 54, 232, 9, CORAL_RGB, FSB)
+put(p3, "Escolha o seu ", FB, 19, (0.118, 0.086, 0.098), 54, 258)
+put(p3, "local", FI, 19, CORAL_RGB, 54+FB.text_length("Escolha o seu ", 19), 258)
+def sq_venue(path, x0, size, name, vbias=0.5):
+    r = fitz.Rect(x0, 268, x0+size, 268+size)
+    im = crop_ratio(path, 1.0, vbias); b = io.BytesIO(); im.save(b, format="JPEG", quality=90)
+    p3.insert_image(r, stream=b.getvalue())
+    put(p3, name, FSB, 9.5, DARKt, x0 + (size - FSB.text_length(name, 9.5))/2, 268+size+15)
+sq_venue(A_DIR+"betchavas.jpg", 120, 160, "BETC Havas Café", vbias=0.42)
+sq_venue(A_DIR+"arethasoulkitchen.jpg", 315, 160, "Aretha Soul Kitchen")
 
-# ---- 2) INVESTIMENTO — 3 tiers (price at the partner spaces) ----
-put_spaced(p3, "✦ INVESTIMENTO", 54, 424, 9, CORAL_RGB, FSB)
+# ---- 2) INVESTIMENTO — Aretha tiers (BETC is à la carte) ----
+put_spaced(p3, "✦ INVESTIMENTO · NO ARETHA", 54, 462, 9, CORAL_RGB, FSB)
 TIERS = [
     dict(name="Básico", tag="A experiência, em sua essência.", price="189", more=None,
          bullets=["Pintura ou cerâmica (tela, taça, prato, modelagem)", "Todos os materiais inclusos",
                   "Condução por facilitadora", "Cada um leva a sua peça autoral"], kind="plain"),
-    dict(name="Premium", tag="Experiência + celebração.", price="289",
+    dict(name="Premium", tag="Tudo incluso — a mais querida.", price="279",
          badge="O MAIS QUERIDINHO", more="TUDO DO BÁSICO, E MAIS",
-         bullets=["Brinde: Aperol Spritz ou espumante", "Registro fotográfico profissional",
+         bullets=["Tudo incluso (bebida + coffee break)", "Registro fotográfico profissional",
                   "Avental personalizado"], kind="highlight"),
-    dict(name="Signature", tag="A celebração completa, sem preocupação.", price="429",
+    dict(name="Signature", tag="A celebração completa, sem preocupação.", price="399",
          badge="TUDO RESOLVIDO", more="TUDO DO PREMIUM, E MAIS",
          bullets=["Docinhos & mimos", "Mesa de boas-vindas",
                   "Personalização (inicial ou nome)"], kind="dark"),
 ]
-CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 448, 636
+CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 482, 640
 for i, t in enumerate(TIERS):
     card = fitz.Rect(CX[i], CY0, CX[i]+CW, CY1)
     if t["kind"] == "plain":
@@ -197,18 +202,18 @@ for i, t in enumerate(TIERS):
            f'.mk{{color:{acc};font-size:6px}}')
     p3.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+16, card.x1-10, card.y1-8), html, css=css)
 
-# per-person note (partner-space prices; garden option detailed on its own page)
-put(p3, "Valores por pessoa · brinde incluso nos planos Premium e Signature.",
-    FS, 7.6, (0.549, 0.494, 0.455), 54, 654)
+# per-person note (Aretha prices; BETC is à la carte)
+put(p3, "Valores por pessoa no Aretha — pintura ou cerâmica, mesmo valor. No BETC, à la carte (sob consulta).",
+    FS, 7.6, (0.549, 0.494, 0.455), 54, 652)
 
 # ---- personalization callout ----
 _pz = crop_ratio(A_DIR+"ceramicacool.jpg", 1.0, vbias=0.5)
 _pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=92)
-p3.insert_image(fitz.Rect(54, 660, 150, 756), stream=_pb.getvalue())
-put_spaced(p3, "✦ PERSONALIZAÇÃO", 166, 684, 8.5, CORAL_RGB, FSB)
-put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 166, 706)
-put(p3, "vocês", FI, 15, CORAL_RGB, 166+FB.text_length("Com a cara de ", 15), 706)
-p3.insert_textbox(fitz.Rect(166, 716, 545, 752),
+p3.insert_image(fitz.Rect(54, 664, 132, 742), stream=_pb.getvalue())
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 148, 686, 8.5, CORAL_RGB, FSB)
+put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 148, 708)
+put(p3, "vocês", FI, 15, CORAL_RGB, 148+FB.text_length("Com a cara de ", 15), 708)
+p3.insert_textbox(fitz.Rect(148, 718, 545, 748),
     "Cada um leva a sua peça autoral — pintada ou modelada — com a inicial, o nome "
     "ou a frase que quiser.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
@@ -270,7 +275,7 @@ for (nm, ds), (x, yy) in zip(OPTS4, pos):
     d[1].insert_textbox(fitz.Rect(x+13, yy+2.5, x+248, yy+18), ds, fontsize=8, fontname="lib",
         fontfile=LF+"LiberationSans-Regular.ttf", color=(0.5, 0.45, 0.42), lineheight=1.2)
 # p3 intro
-retext(d[2], (52, 171, 505, 230),
+retext(d[2], (52, 171, 505, 220),
        "A experiência de pintura & cerâmica (tela, taça, prato ou modelagem) com toda a estrutura "
        "e os mimos. É só reunir o grupo — a Elarah leva tudo até vocês "
        "e cuida de cada detalhe.", 10.5, width_rect=(53.8, 173, 500, 232))
@@ -337,13 +342,13 @@ put_right(jp, "O JARDIM · AO AR LIVRE", FS, 8.6, MUTED, 541.4, 72)
 put_right(jp, "Opção Jardim", FS, 7.9, MUTED, 541.4, 800.5)
 
 # ---- heading (matches the other pages' rhythm) ----
-put_spaced(jp, "✦ OPÇÃO JARDIM · DAS 9H ÀS 12H", 54, 122, 9, CORAL_RGB, FSB)
-put(jp, "Uma manhã no ", FB, 25, NEARBLK, 54, 155)
-put(jp, "jardim", FI, 25, CORAL_RGB, 54+FB.text_length("Uma manhã no ", 25), 155)
+put_spaced(jp, "✦ OPÇÃO JARDIM · SÁBADO · 16H ÀS 19H", 54, 122, 9, CORAL_RGB, FSB)
+put(jp, "Uma tarde no ", FB, 25, NEARBLK, 54, 155)
+put(jp, "jardim", FI, 25, CORAL_RGB, 54+FB.text_length("Uma tarde no ", 25), 155)
 jp.insert_textbox(fitz.Rect(54, 170, 541, 226),
-    "Das 9h às 12h, vocês ocupam o O Jardim — um café-ateliê cercado de verde. "
-    "Pintura, cerâmica e a gastronomia da casa, tudo ao ar livre. O cenário perfeito para "
-    "desacelerar, criar junto e curtir uma manhã diferente com o grupo.",
+    "No sábado, das 16h às 19h, vocês reservam o espaço biblioteca do O Jardim — um café-ateliê "
+    "cercado de verde. Pintura, cerâmica e tudo incluso, ao ar livre. O cenário perfeito para "
+    "criar junto e curtir uma tarde diferente com o grupo.",
     fontsize=10.5, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
     color=(0.431, 0.388, 0.357), lineheight=1.5)
 
@@ -358,14 +363,14 @@ jphoto(A_DIR+"ojardim4.jpg", (383.7, 240, 541, 434), vbias=0.55)
 # ---- pricing (Básico / Premium / Signature — garden values) ----
 put_spaced(jp, "✦ INVESTIMENTO NO JARDIM", 54, 468, 9, CORAL_RGB, FSB)
 JTIERS = [
-    dict(name="Básico", price="239", tag="A experiência, ao ar livre.", kind="plain", more=None,
+    dict(name="Básico", price="189", tag="Só a experiência, ao ar livre.", kind="plain", more=None,
          bullets=["Pintura ou cerâmica (tela, taça, prato...)", "Materiais + facilitadora", "Cada um leva a sua peça"]),
-    dict(name="Premium", price="329", tag="Experiência + gastronomia.", kind="highlight",
+    dict(name="Premium", price="399", tag="Espaço reservado + tudo incluso.", kind="highlight",
          badge="O MAIS QUERIDINHO", more="TUDO DO BÁSICO, E MAIS",
-         bullets=["Gastronomia da casa (O Jardim)", "Registro fotográfico profissional", "Avental personalizado"]),
-    dict(name="Signature", price="429", tag="Tudo resolvido, no verde.", kind="dark",
+         bullets=["Espaço biblioteca reservado (sáb, 16h–19h)", "Tudo incluso (coffee break)", "Espumante pra brinde"]),
+    dict(name="Signature", price="529", tag="Tudo resolvido, no verde.", kind="dark",
          badge="TUDO RESOLVIDO", more="TUDO DO PREMIUM, E MAIS",
-         bullets=["Gastronomia reforçada", "Docinhos & mimos", "Personalização (inicial ou nome)"]),
+         bullets=["Docinhos & mimos", "Registro fotográfico", "Personalização (inicial ou nome)"]),
 ]
 JCX = [54, 220.5, 387]; JCW = 154; JY0, JY1 = 490, 654
 for i, t in enumerate(JTIERS):
@@ -388,7 +393,7 @@ for i, t in enumerate(JTIERS):
     more_html = f'<div class="more">{t["more"]}</div>' if t.get("more") else ''
     lis = "".join(f'<div class="li"><span class="mk">◆</span>&nbsp;{b}</div>' for b in t["bullets"])
     html = (f'<div class="nm">{t["name"]}</div><div class="tg">{t["tag"]}</div>'
-            f'<div class="pr">R$&nbsp;{t["price"]}</div><div class="pp">POR PESSOA · 9H–12H</div>'
+            f'<div class="pr">R$&nbsp;{t["price"]}</div><div class="pp">POR PESSOA</div>'
             f'{more_html}{lis}')
     css = (f'.nm{{font-family:serif;font-size:15px;font-weight:bold;color:{head}}}'
            f'.tg{{font-size:7px;color:{mut};margin-top:3px}}'
@@ -398,7 +403,7 @@ for i, t in enumerate(JTIERS):
            f'.li{{font-size:7.6px;color:{body};margin-top:5px;line-height:1.25}}'
            f'.mk{{color:{acc};font-size:6px}}')
     jp.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+15, card.x1-10, card.y1-8), html, css=css)
-put(jp, "Valores por pessoa · pacote ao ar livre no O Jardim, das 9h às 12h.",
+put(jp, "Valores por pessoa no O Jardim · reserva do espaço biblioteca (sáb, 16h–19h) nos planos Premium e Signature.",
     FS, 7.6, (0.549, 0.494, 0.455), 54, 672)
 
 d.save(OUT, garbage=4, deflate=True)
