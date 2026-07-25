@@ -435,10 +435,10 @@ bphoto(A_DIR+"gastronomiamolecular.jpg", (383.7, 240, 541, 434))
 
 put_spaced(bp, "✦ ONDE E QUANTO", 54, 468, 9, CORAL_RGB, FSB)
 BTIERS = [
-    dict(name="Jardim das Bandeiras", price="425", tag="Preço único · tema à escolha.", kind="highlight",
-         badge="MAIS COMPLETO",
-         bullets=["Bartenderia ou gastronomia", "Experiência completa, tudo incluso", "+ Personalização: R$ 529"]),
-    dict(name="Pacaembu", price="229", tag="Preço único · tema à escolha.", kind="plain", badge=None,
+    dict(name="Jardim das Bandeiras", price="429", tag="Preço único · tema à escolha.", kind="highlight",
+         badge="MAIS COMPLETO", plus="529",
+         bullets=["Bartenderia ou gastronomia", "Experiência completa, tudo incluso"]),
+    dict(name="Pacaembu", price="229", tag="Preço único · tema à escolha.", kind="plain", badge=None, plus="329",
          bullets=["Gin, caipirinha e mais", "Vocês escolhem o tema", "Materiais + bartender/chef"]),
 ]
 BCX = [54, 313]; BCW = 228; BY0, BY1 = 492, 656
@@ -455,14 +455,17 @@ for i, t in enumerate(BTIERS):
         bp.draw_rect(fitz.Rect(bx, BY0-9, bx+bw, BY0+9), color=None, fill=(1, 0.3686, 0.5412), radius=0.5)
         put_spaced(bp, t["badge"], bx+8.5, BY0+2.5, 6.3, (1, 1, 1), FSB, track=0.8)
     lis = "".join(f'<div class="li"><span class="mk">◆</span>&nbsp;{b}</div>' for b in t["bullets"])
+    plus_html = (f'<div class="plus">+ personalização &nbsp;·&nbsp; R$&nbsp;{t["plus"]} / pessoa</div>'
+                 if t.get("plus") else '')
     html = (f'<div class="nm">{t["name"]}</div><div class="tg">{t["tag"]}</div>'
-            f'<div class="pr">R$&nbsp;{t["price"]}</div><div class="pp">POR PESSOA</div>{lis}')
+            f'<div class="pr">R$&nbsp;{t["price"]}</div><div class="pp">POR PESSOA</div>{lis}{plus_html}')
     css = (f'.nm{{font-family:serif;font-size:15px;font-weight:bold;color:{head}}}'
            f'.tg{{font-size:7.5px;color:{mut};margin-top:3px}}'
            f'.pr{{font-family:serif;font-size:24px;font-weight:bold;color:{head};margin-top:10px}}'
            f'.pp{{font-size:6.5px;color:{mut};letter-spacing:1px}}'
            f'.li{{font-size:8px;color:{body};margin-top:6px;line-height:1.25}}'
-           f'.mk{{color:{acc};font-size:6px}}')
+           f'.mk{{color:{acc};font-size:6px}}'
+           f'.plus{{margin-top:10px;font-size:8.5px;font-weight:bold;color:#FF5E8A}}')
     bp.insert_htmlbox(fitz.Rect(card.x0+14, card.y0+16, card.x1-12, card.y1-8), html, css=css)
 put(bp, "Valores por pessoa · vocês escolhem o tema (bartenderia ou gastronomia).",
     FS, 7.6, (0.549, 0.494, 0.455), 54, 672)
