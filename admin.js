@@ -2774,6 +2774,19 @@
         || '';
       b._fornecedorResolvido = fornecedorNome;
 
+      // Reserva com VARIAÇÃO de preço (Individual/Dupla/Trio): a experiência
+      // guarda só o preço-BASE, então recalcular a partir dela mostra o valor
+      // do Individual mesmo quando a pessoa comprou a Dupla. Igual ao caso
+      // multi-fornecedor abaixo, o valor real da opção só existe no snapshot
+      // da reserva — então, quando há variação, respeitamos os valores
+      // gravados na própria reserva em vez de recomputar do preço-base.
+      const temVariante = !!(b.metadata && (
+        (b.metadata.variant_selected && String(b.metadata.variant_selected).trim()) ||
+        (Array.isArray(b.metadata.participantes) && b.metadata.participantes.some(function (p) {
+          return p && p.variant_selected && String(p.variant_selected).trim();
+        }))
+      ));
+
       // Valor Elarah: preço ATUAL da experiência × qty (o que a Elarah
       // cobra hoje). Antes a coluna mostrava só amount_total — o valor
       // pago na época da compra — então editar o preço da experiência
@@ -2782,8 +2795,13 @@
       // Valor cheio/Repasse/Comissão já fazem. Cai em amount_total quando
       // a experiência não resolve (ex.: experiência deletada) ou o preço
       // não é parseável.
+      // EXCEÇÃO: reserva com variação usa o amount_total (o que a pessoa
+      // realmente pagou pela opção), senão a Dupla apareceria no preço-base.
       let valorElarah = null;
-      if (exp && exp.preco) {
+      if (temVariante && b.amount_total != null) {
+        valorElarah = Number(b.amount_total);
+      }
+      if (valorElarah == null && exp && exp.preco) {
         const precoCents = precoLabelToCents(exp.preco);
         if (precoCents) valorElarah = precoCents * qty;
       }
@@ -2795,8 +2813,14 @@
       // Rateio resolvido sobre o Valor Cheio ATUAL da experiência (fonte
       // única — resolveRateioLegado). Valor cheio prefere a config atual
       // (pra "puxar" edições), cai no snapshot do booking e, por fim, null.
+      // EXCEÇÃO: reserva com variação prefere o valor_cheio_centavos gravado
+      // na reserva (o cheio da opção), quando existir.
       const rateio = resolveRateioLegado(b, exp);
-      b._valorCheioResolvido = rateio.valorCheio;
+      let valorCheioResolvido = rateio.valorCheio;
+      if (temVariante && b.valor_cheio_centavos != null) {
+        valorCheioResolvido = Number(b.valor_cheio_centavos);
+      }
+      b._valorCheioResolvido = valorCheioResolvido;
 
       // Multi-fornecedor: quando o booking tem repasses[] com +1 entrada,
       // o rateio entre vários fornecedores só existe no snapshot — é a
@@ -2806,14 +2830,24 @@
       //     prioridade, então uma reserva antiga podia mostrar repasse sobre
       //     outro valor (ex: 70% de 243 = R$170,10 em vez de 70% de 270 =
       //     R$189).
+      // Reserva com variação entra no mesmo caminho: o repasse/comissão da
+      // opção (Dupla) só está no snapshot; recomputar daria o valor do base.
       const isMultiFornecedor = Array.isArray(b.repasses) && b.repasses.length > 1;
+      const usaSnapshot = isMultiFornecedor || temVariante;
       let valorRepasse;
       let valorComissao;
-      if (isMultiFornecedor) {
-        valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-        valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-        if (valorComissao == null && rateio.valorCheio && valorRepasse != null) {
-          valorComissao = Math.max(0, rateio.valorCheio - valorRepasse);
+      if (usaSnapshot) {
+        valorRepasse = b.valor_repasse_centavos != null
+          ? Number(b.valor_repasse_centavos)
+          : (temVariante ? rateio.valorRepasse : null);
+        valorComissao = b.valor_comissao_centavos != null
+          ? Number(b.valor_comissao_centavos)
+          : null;
+        if (valorComissao == null && valorCheioResolvido && valorRepasse != null) {
+          valorComissao = Math.max(0, valorCheioResolvido - valorRepasse);
+        }
+        if (valorComissao == null && temVariante) {
+          valorComissao = rateio.valorComissao;
         }
       } else {
         valorRepasse = rateio.valorRepasse;
