@@ -145,69 +145,43 @@ venue(p3, A_DIR+"betchavas.jpg",         (301, 296, 541, 386), "BETC Havas Café
 
 # ---- 2) INVESTIMENTO — 3 tiers (price at the partner spaces) ----
 put_spaced(p3, "✦ INVESTIMENTO", 54, 424, 9, CORAL_RGB, FSB)
-TIERS = [
-    dict(name="Básico", tag="A experiência, em sua essência.", price="a definir", more=None,
-         bullets=["A experiência que vocês escolherem", "Todos os materiais inclusos",
-                  "Condução por facilitadora", "Cada uma leva a sua peça autoral"], kind="plain"),
-    dict(name="Premium", tag="Experiência + celebração.", price="a definir",
-         badge="O MAIS QUERIDINHO", more="TUDO DO BÁSICO, E MAIS",
-         bullets=["Brinde: Aperol Spritz ou espumante", "Registro fotográfico profissional",
-                  "Avental personalizado"], kind="highlight"),
-    dict(name="Signature", tag="A celebração completa, sem preocupação.", price="a definir",
-         badge="TUDO RESOLVIDO", more="TUDO DO PREMIUM, E MAIS",
-         bullets=["Docinhos & mimos", "Mesa de boas-vindas",
-                  "Personalização (inicial ou nome)"], kind="dark"),
-]
-CX = [54, 220.5, 387]; CW = 154; CY0, CY1 = 448, 636
-for i, t in enumerate(TIERS):
-    card = fitz.Rect(CX[i], CY0, CX[i]+CW, CY1)
-    if t["kind"] == "plain":
-        p3.draw_rect(card, color=(0.906, 0.863, 0.796), fill=(1, 1, 1), width=1, radius=0.055)
-        head, mut, body, acc, cream_txt = HEAD, MUTc, BODYc, CORALc, False
-    elif t["kind"] == "highlight":
-        p3.draw_rect(card, color=(1, 0.3686, 0.5412), fill=(1, 1, 1), width=1.6, radius=0.055)
-        head, mut, body, acc, cream_txt = HEAD, MUTc, BODYc, CORALc, False
-    else:
-        p3.draw_rect(card, color=None, fill=(0.82, 0.306, 0.447), radius=0.055)
-        head, mut, body, acc, cream_txt = CREAMc, "#F0D9DF", "#FBEDF0", GOLDc, True
-    # badge pill (Premium / Signature)
-    if t.get("badge"):
-        bw = FSB.text_length(t["badge"], 6.3) + 0.8*(len(t["badge"])-1) + 17
-        bx = CX[i] + (CW-bw)/2
-        bcol = (1, 0.3686, 0.5412) if t["kind"] == "highlight" else (0.72, 0.55, 0.22)
-        p3.draw_rect(fitz.Rect(bx, CY0-9, bx+bw, CY0+9), color=None, fill=bcol, radius=0.5)
-        put_spaced(p3, t["badge"], bx+8.5, CY0+2.5, 6.3, (1, 1, 1), FSB, track=0.8)
-    # content via html (handles wrapping + bullets)
-    more_html = f'<div class="more">{t["more"]}</div>' if t.get("more") else ''
-    lis = "".join(f'<div class="li"><span class="mk">◆</span>&nbsp;{b}</div>' for b in t["bullets"])
-    _pr = (f'R$&nbsp;{t["price"]}' if t["price"][:1].isdigit() else t["price"])
-    _prcls = "pr" if t["price"][:1].isdigit() else "pr prx"
-    html = (f'<div class="nm">{t["name"]}</div><div class="tg">{t["tag"]}</div>'
-            f'<div class="{_prcls}">{_pr}</div><div class="pp">POR PESSOA</div>'
-            f'{more_html}{lis}')
-    css = (f'.nm{{font-family:serif;font-size:15px;font-weight:bold;color:{head}}}'
-           f'.tg{{font-size:7px;color:{mut};margin-top:3px}}'
-           f'.prx{{font-size:15px!important;font-style:italic}}'
-           f'.pr{{font-family:serif;font-size:22px;font-weight:bold;color:{head};margin-top:10px}}'
-           f'.pp{{font-size:6.5px;color:{mut};letter-spacing:1px}}'
-           f'.more{{font-size:6.5px;font-weight:bold;color:{acc};margin-top:9px}}'
-           f'.li{{font-size:7.6px;color:{body};margin-top:5px;line-height:1.25}}'
-           f'.mk{{color:{acc};font-size:6px}}')
-    p3.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+16, card.x1-10, card.y1-8), html, css=css)
+put(p3, "cada experiência, o seu valor por pessoa", FI, 8.5, MUTED, 214, 423)
+TABLE = (
+    '<table>'
+    '<tr class="hd"><th class="lbl">Experiência</th>'
+    '<th>Básico<div class="s">A EXPERIÊNCIA</div></th>'
+    '<th class="hl">Premium<div class="s">+ ESPAÇO INCLUSO</div></th>'
+    '<th>Signature<div class="s">+ PERSONALIZAÇÃO</div></th></tr>'
+    '<tr><td class="ex">Tufting</td><td>R$&nbsp;585</td><td class="hl">R$&nbsp;699</td><td>R$&nbsp;789</td></tr>'
+    '<tr><td class="ex">Buquê de flores &amp; home spray</td><td>R$&nbsp;219</td><td class="hl">R$&nbsp;339</td><td>R$&nbsp;439</td></tr>'
+    '<tr><td class="ex">Cerâmica · Pintura (xícara/copo) · Vela</td><td>R$&nbsp;199</td><td class="hl">R$&nbsp;299</td><td>R$&nbsp;399</td></tr>'
+    '</table>')
+tcss = (
+    'table{width:100%;border-collapse:collapse;font-family:sans-serif}'
+    '.hd th{font-family:serif;font-size:12.5px;font-weight:bold;color:#3F2F2C;'
+    'padding:0 3px 7px 3px;text-align:center;border-bottom:2px solid #FF5E8A}'
+    '.hd .lbl{text-align:left}'
+    '.s{font-family:sans-serif;font-size:5.6px;font-weight:normal;color:#8C7E74;'
+    'letter-spacing:0.4px;margin-top:2px}'
+    'td{text-align:center;font-size:12.5px;font-weight:bold;color:#4A3F3A;'
+    'padding:10px 3px;border-bottom:1px solid #EFE3DD}'
+    '.ex{text-align:left;font-size:8.6px;color:#3F2F2C}'
+    '.hl{color:#A8324F}')
+p3.insert_htmlbox(fitz.Rect(54, 446, 541, 620), TABLE, css=tcss)
 
 # per-person note (partner-space prices; garden option detailed on its own page)
-put(p3, "Valores sempre por pessoa · a combinar conforme a experiência escolhida.",
-    FS, 7.6, (0.549, 0.494, 0.455), 54, 654)
+put(p3, "Valores por pessoa · Premium inclui o espaço reservado · Signature inclui a personalização (o brinde).",
+    FS, 7.6, (0.549, 0.494, 0.455), 54, 600)
 
 # ---- personalization callout ----
 _pz = crop_ratio(A_DIR+"personalizaçaobrindeescovapiranha.jpg", 1.0, vbias=0.42)
 _pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=92)
-p3.insert_image(fitz.Rect(54, 660, 150, 756), stream=_pb.getvalue())
-put_spaced(p3, "✦ PERSONALIZAÇÃO", 166, 684, 8.5, CORAL_RGB, FSB)
-put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 166, 706)
-put(p3, "vocês", FI, 15, CORAL_RGB, 166+FB.text_length("Com a cara de ", 15), 706)
-p3.insert_textbox(fitz.Rect(166, 716, 545, 752),
-    "Cada amiga leva um mimo personalizado — a peça autoral e itens com a inicial "
+p3.insert_image(fitz.Rect(54, 636, 150, 732), stream=_pb.getvalue())
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 166, 660, 8.5, CORAL_RGB, FSB)
+put(p3, "O brinde do ", FB, 15, (0.118, 0.086, 0.098), 166, 682)
+put(p3, "Signature", FI, 15, CORAL_RGB, 166+FB.text_length("O brinde do ", 15), 682)
+p3.insert_textbox(fitz.Rect(166, 692, 545, 726),
+    "No plano Signature, cada amiga ganha um brinde personalizado — com a inicial "
     "ou o nome de cada uma.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
 
