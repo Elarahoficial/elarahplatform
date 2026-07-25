@@ -207,15 +207,15 @@ put(p3, "Valores por pessoa no Aretha — pintura ou cerâmica, mesmo valor. No 
     FS, 7.6, (0.549, 0.494, 0.455), 54, 652)
 
 # ---- personalization callout ----
-_pz = crop_ratio(A_DIR+"ceramicacool.jpg", 1.0, vbias=0.5)
+_pz = crop_ratio(A_DIR+"personalizaçaobrindeescovapiranha.jpg", 1.0, vbias=0.42)
 _pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=92)
 p3.insert_image(fitz.Rect(54, 664, 132, 742), stream=_pb.getvalue())
 put_spaced(p3, "✦ PERSONALIZAÇÃO", 148, 686, 8.5, CORAL_RGB, FSB)
-put(p3, "Com a cara de ", FB, 15, (0.118, 0.086, 0.098), 148, 708)
-put(p3, "vocês", FI, 15, CORAL_RGB, 148+FB.text_length("Com a cara de ", 15), 708)
+put(p3, "O brinde do ", FB, 15, (0.118, 0.086, 0.098), 148, 708)
+put(p3, "Signature", FI, 15, CORAL_RGB, 148+FB.text_length("O brinde do ", 15), 708)
 p3.insert_textbox(fitz.Rect(148, 718, 545, 748),
-    "Cada um leva a sua peça autoral — pintada ou modelada — com a inicial, o nome "
-    "ou a frase que quiser.", fontsize=8.7, fontname="lib",
+    "No último plano, cada pessoa ganha um brinde personalizado — com a inicial ou o "
+    "nome de cada uma.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
 
 # ---- PAGE 4 banner headline + footer + disclaimer (remove '12 / 10 a 15') ----
