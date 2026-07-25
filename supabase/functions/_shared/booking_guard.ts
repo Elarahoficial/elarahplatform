@@ -36,6 +36,15 @@ export interface GuardInput {
   // Opção escolhida (Individual/Dupla/Trio...) — quando tem preço próprio
   // em variant_items, esse vira o preço autoritativo (recalculado no banco).
   variantSelected?: string | null;
+  // Preço unitário (em centavos) da variação que o FRONT mostrou ao cliente.
+  // É só uma DICA de segurança: o banco continua sendo a fonte autoritativa.
+  // Usado apenas como rede de proteção quando o lookup de variant_items no
+  // banco não devolve um preço válido pra opção escolhida (dado dessincronizado,
+  // nome divergente, função momentaneamente desatualizada). Nesse caso, se a
+  // dica for MAIOR que o preço-base, ela prevalece — nunca deixamos o PIX sair
+  // com o valor do ingresso individual quando o cliente escolheu uma opção mais
+  // cara. Como só aceitamos pra CIMA, o cliente não consegue pagar a menos.
+  variantExpectedCents?: number | null;
 }
 
 export interface ExperienceSnapshot {
@@ -580,7 +589,15 @@ export async function reserveExperienceSlot(
   // Se o cliente escolheu uma opção COM preço próprio em variant_items,
   // esse é o preço autoritativo — recalculado no banco, nunca do cliente.
   // Mesma lógica do create-checkout-session (Stripe), aqui pro PIX/MP.
+  //
+  // Rede de proteção: se o lookup no banco NÃO devolver um preço válido pra
+  // opção escolhida (variant_items vazio, nome divergente, preço sem valor,
+  // função desatualizada), caímos pro preço que o FRONT informou — mas SÓ
+  // quando ele é MAIOR que o base. Assim o PIX nunca sai com o valor do
+  // ingresso individual quando o cliente escolheu a opção "Dupla" mais cara,
+  // e como só aceitamos pra cima, ninguém consegue pagar a menos.
   if (input.variantSelected && String(input.variantSelected).trim()) {
+    let dbVariantCents: number | null = null;
     try {
       const { data: vRow } = await supabase
         .from("experiences")
@@ -600,14 +617,44 @@ export async function reserveExperienceSlot(
       if (match && typeof match === "object") {
         const vPreco = (match as Record<string, unknown>).preco ??
           (match as Record<string, unknown>).price;
-        const vCents = parsePrecoToCents(vPreco);
-        if (vCents) {
-          baseCents = vCents;
-          console.info("[Elarah Guard] preço por variação aplicado", "variante=" + input.variantSelected, "cents=" + vCents);
-        }
+        dbVariantCents = parsePrecoToCents(vPreco);
       }
     } catch (e) {
-      console.warn("[Elarah Guard] falha ao aplicar preço da variação", e);
+      console.warn("[Elarah Guard] falha ao consultar preço da variação no banco", e);
+    }
+
+    if (dbVariantCents) {
+      // Caminho normal: banco é autoritativo.
+      baseCents = dbVariantCents;
+      console.info(
+        "[Elarah Guard] preço por variação aplicado (banco)",
+        "variante=" + input.variantSelected,
+        "cents=" + dbVariantCents,
+      );
+    } else {
+      // Fallback: banco não resolveu. Usa a dica do front SÓ se for maior
+      // que o base (upward-only — impossível pagar a menos por aqui).
+      const hintCents = Number(input.variantExpectedCents);
+      if (Number.isFinite(hintCents) && hintCents > baseCents) {
+        console.warn(
+          "[Elarah Guard] variant_items no banco não resolveu preço — usando dica do front (maior que o base)",
+          "variante=" + input.variantSelected,
+          "base_cents=" + baseCents,
+          "hint_cents=" + hintCents,
+          "ação=verifique se variant_items desta experiência tem o preço da opção",
+        );
+        baseCents = Math.round(hintCents);
+      } else if (Number.isFinite(hintCents) && hintCents > 0 && hintCents < baseCents) {
+        // Dica menor que o base: ignora (nunca cobramos a menos por dica do
+        // cliente). Loga pra visibilidade caso seja variação legítima mais
+        // barata cujo preço sumiu do banco.
+        console.warn(
+          "[Elarah Guard] dica de preço da variação menor que o base — ignorada (mantém base)",
+          "variante=" + input.variantSelected,
+          "base_cents=" + baseCents,
+          "hint_cents=" + hintCents,
+        );
+      }
     }
   }
 
