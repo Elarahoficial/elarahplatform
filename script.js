@@ -2991,6 +2991,10 @@ if (groupForm) {
         participantes: ctx.participantes || [],
         variant_label: ctx.variantLabel || null,
         variant_selected: ctx.variantSelected || null,
+        // Preço unitário da opção escolhida (centavos) — dica de segurança
+        // pro backend não sair com o valor individual se o banco não
+        // resolver o preço da variação. Backend só aceita pra cima.
+        variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
         cpf: String(cardData.identificationNumber || '').replace(/\D+/g, ''),
       };
 
@@ -4285,6 +4289,10 @@ if (groupForm) {
             participantes: ctx.participantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
+            // Preço unitário da opção escolhida (centavos) — dica de segurança
+            // pro backend: se o banco não resolver o preço da variação, ele usa
+            // isto (só quando maior que o base) em vez do valor individual.
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
           };
           console.log('[Elarah CHECKOUT FINAL] PIX payload:', JSON.stringify({
             selectedQuantity: ctx.quantidade,
@@ -4422,6 +4430,9 @@ if (groupForm) {
             participantes: ctx.participantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
+            // Dica de segurança do preço da variação (centavos) — backend
+            // só usa se maior que o base. Ver create-checkout-session/guard.
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
           };
           console.log('[Elarah Payment/MP card] iniciando Checkout Pro', {
             base: ctx.precoCentavos,
@@ -4509,6 +4520,9 @@ if (groupForm) {
           participantes: ctx.participantes || [],
           variant_label: ctx.variantLabel || null,
           variant_selected: ctx.variantSelected || null,
+          // Dica de segurança do preço da variação (centavos) — backend só
+          // usa se maior que o base. Ver create-checkout-session.
+          variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
         };
         console.log('[Elarah CHECKOUT FINAL] Stripe payload:', JSON.stringify({
           selectedQuantity: ctx.quantidade,

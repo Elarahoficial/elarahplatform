@@ -108,7 +108,7 @@ function splitPhone(digitsRaw: string | null): { areaCode: string; number: strin
 // Marcador único de versão. Mude a cada release pra confirmar via logs
 // do Supabase qual versão está rodando. Se você ver esse marcador nos
 // logs ao testar uma reserva, o deploy passou e o código novo está ativo.
-const PIX_FN_VERSION = "v4-gift-card-pix-2026-05-09";
+const PIX_FN_VERSION = "v5-variant-price-guard-2026-07-25";
 
 // =============================================================
 // MODO B — gift card via PIX (Mercado Pago)
@@ -359,6 +359,12 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
   // metadata.variant_label + metadata.variant_selected. Não afetam preço.
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+  // Preço unitário da variação exibido no front (centavos). Só dica de
+  // segurança — o banco continua autoritativo. Ver booking_guard §5b.
+  const variantExpectedCents = (function () {
+    const n = Number(payload.variant_price_expected_centavos);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+  })();
 
   const telefoneHuman = payload.telefone
     ? String(payload.telefone).trim()
@@ -403,6 +409,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     cupomCode,
     quantidade,
     variantSelected,
+    variantExpectedCents,
   });
 
   if (!guard.ok) {
