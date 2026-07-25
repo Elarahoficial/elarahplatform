@@ -97,14 +97,14 @@ rm(p1, [(64, 286, 252, 410),      # the big '20' (below the coral eyebrow at y27
         (70, 476, 305, 592)])     # body paragraph
 # wipe the whole left column so nothing from the template lingers, then rebuild it TIGHT
 p1.draw_rect(fitz.Rect(58, 292, 313, 606), color=None, fill=(0.988, 0.945, 0.95))
-put(p1, "Pintura &", FB, 37, CORAL_RGB, 70, 342)      # big display headline fills the void the '20' left
-put(p1, "cerâmica", FB, 37, CORAL_RGB, 70, 385)
-put(p1, "vem criar com a gente", FI, 20, DARKt, 70.9, 420)
-p1.draw_rect(fitz.Rect(70.9, 441, 116, 443.2), color=None, fill=CORAL_RGB)   # short accent rule
-BODY = ('<p>Uma experiência de arte pra reunir o grupo: '
-        '<b style="color:#FF5E8A">leve, criativa e cheia de estilo</b>. '
-        'Cada pessoa escolhe o que quer criar — pintura em tela, em taça, em cerâmica ou modelagem —, '
-        'relaxa, se diverte e leva pra casa a sua peça autoral. '
+put(p1, "Escolha a sua", FB, 34, CORAL_RGB, 70, 342)      # menu-style hero
+put(p1, "experiência", FB, 34, CORAL_RGB, 70, 384)
+put(p1, "vem criar com a gente", FI, 20, DARKt, 70.9, 418)
+p1.draw_rect(fitz.Rect(70.9, 439, 116, 441.2), color=None, fill=CORAL_RGB)   # short accent rule
+BODY = ('<p>Um menu de experiências pra reunir o grupo: '
+        '<b style="color:#FF5E8A">pintura, cerâmica, bartenderia ou gastronomia</b>. '
+        'Vocês escolhem o que criar (ou agitar!), relaxam, se divertem e levam pra casa a peça — '
+        'ou a receita. '
         '<b style="color:#FF5E8A">Vocês escolhem o clima, a gente leva tudo até vocês.</b></p>')
 p1.insert_htmlbox(fitz.Rect(70.9, 458, 302, 588), BODY,
                   css="p{margin:0;font-family:sans-serif;font-size:10.5px;line-height:1.5;color:#3F2F2C}")
@@ -150,8 +150,8 @@ def sq_venue(path, x0, size, name, vbias=0.5):
     im = crop_ratio(path, 1.0, vbias); b = io.BytesIO(); im.save(b, format="JPEG", quality=90)
     p3.insert_image(r, stream=b.getvalue())
     put(p3, name, FSB, 9.5, DARKt, x0 + (size - FSB.text_length(name, 9.5))/2, 268+size+15)
-sq_venue(A_DIR+"betchavas.jpg", 120, 160, "BETC Havas Café", vbias=0.42)
-sq_venue(A_DIR+"arethasoulkitchen.jpg", 315, 160, "Aretha Soul Kitchen")
+sq_venue(A_DIR+"betchavas.jpg", 54, 160, "BETC Havas Café", vbias=0.42)
+sq_venue(A_DIR+"arethasoulkitchen.jpg", 230, 160, "Aretha Soul Kitchen")
 
 # ---- 2) INVESTIMENTO — Aretha tiers (BETC is à la carte) ----
 put_spaced(p3, "✦ INVESTIMENTO · NO ARETHA", 54, 462, 9, CORAL_RGB, FSB)
@@ -404,6 +404,67 @@ for i, t in enumerate(JTIERS):
            f'.mk{{color:{acc};font-size:6px}}')
     jp.insert_htmlbox(fitz.Rect(card.x0+11, card.y0+15, card.x1-10, card.y1-8), html, css=css)
 put(jp, "Valores por pessoa no O Jardim · reserva do espaço biblioteca (sáb, 16h–19h) nos planos Premium e Signature.",
+    FS, 7.6, (0.549, 0.494, 0.455), 54, 672)
+
+# ================= NEW PAGE: BARTENDERIA & GASTRONOMIA =================
+d.fullcopy_page(2, 4)           # clone p2 template; contact -> index 5
+bp = d[4]
+bp.draw_rect(fitz.Rect(42, 112, 553, 776), color=None, fill=CREAMbg)
+bp.add_redact_annot(fitz.Rect(410, 62, 541, 77))
+bp.add_redact_annot(fitz.Rect(470, 789, 544, 806))
+bp.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=fitz.PDF_REDACT_LINE_ART_NONE,
+                    text=fitz.PDF_REDACT_TEXT_REMOVE)
+put_right(bp, "DRINKS & SABORES", FS, 8.6, MUTED, 541.4, 72)
+put_right(bp, "Bartenderia & Gastronomia", FS, 7.9, MUTED, 541.4, 800.5)
+
+put_spaced(bp, "✦ BARTENDERIA & GASTRONOMIA", 54, 122, 9, CORAL_RGB, FSB)
+put(bp, "Mão na ", FB, 25, NEARBLK, 54, 155)
+put(bp, "coqueteleira", FI, 25, CORAL_RGB, 54+FB.text_length("Mão na ", 25), 155)
+bp.insert_textbox(fitz.Rect(54, 170, 541, 226),
+    "Prefere agitar a coqueteleira ou colocar a mão na massa? Vocês escolhem o tema — bartenderia "
+    "ou gastronomia — e a Elarah leva a experiência completa até o grupo, com preço único por pessoa.",
+    fontsize=10.5, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
+    color=(0.431, 0.388, 0.357), lineheight=1.5)
+
+def bphoto(path, rect, vbias=0.5):
+    r = fitz.Rect(rect); im = crop_ratio(path, r.width/r.height, vbias)
+    b = io.BytesIO(); im.save(b, format="JPEG", quality=90); bp.insert_image(r, stream=b.getvalue())
+bphoto(A_DIR+"drinksclassicos.jpg", (54, 240, 211.3, 434))
+bphoto(A_DIR+"drinkspetisco.jpg", (218.9, 240, 376.2, 434))
+bphoto(A_DIR+"gastronomiamolecular.jpg", (383.7, 240, 541, 434))
+
+put_spaced(bp, "✦ ONDE E QUANTO", 54, 468, 9, CORAL_RGB, FSB)
+BTIERS = [
+    dict(name="Jardim das Bandeiras", price="425", tag="Preço único · tema à escolha.", kind="highlight",
+         badge="MAIS COMPLETO",
+         bullets=["Bartenderia ou gastronomia", "Experiência completa, tudo incluso", "+ Personalização: R$ 529"]),
+    dict(name="Pacaembu", price="229", tag="Preço único · tema à escolha.", kind="plain", badge=None,
+         bullets=["Gin, caipirinha e mais", "Vocês escolhem o tema", "Materiais + bartender/chef"]),
+]
+BCX = [54, 313]; BCW = 228; BY0, BY1 = 492, 656
+for i, t in enumerate(BTIERS):
+    card = fitz.Rect(BCX[i], BY0, BCX[i]+BCW, BY1)
+    if t["kind"] == "highlight":
+        bp.draw_rect(card, color=(1, 0.3686, 0.5412), fill=(1, 1, 1), width=1.6, radius=0.05)
+    else:
+        bp.draw_rect(card, color=(0.906, 0.863, 0.796), fill=(1, 1, 1), width=1, radius=0.05)
+    head, mut, body, acc = HEAD, MUTc, BODYc, CORALc
+    if t.get("badge"):
+        bw = FSB.text_length(t["badge"], 6.3) + 0.8*(len(t["badge"])-1) + 17
+        bx = BCX[i] + (BCW-bw)/2
+        bp.draw_rect(fitz.Rect(bx, BY0-9, bx+bw, BY0+9), color=None, fill=(1, 0.3686, 0.5412), radius=0.5)
+        put_spaced(bp, t["badge"], bx+8.5, BY0+2.5, 6.3, (1, 1, 1), FSB, track=0.8)
+    lis = "".join(f'<div class="li"><span class="mk">◆</span>&nbsp;{b}</div>' for b in t["bullets"])
+    html = (f'<div class="nm">{t["name"]}</div><div class="tg">{t["tag"]}</div>'
+            f'<div class="pr">R$&nbsp;{t["price"]}</div><div class="pp">POR PESSOA</div>{lis}')
+    css = (f'.nm{{font-family:serif;font-size:15px;font-weight:bold;color:{head}}}'
+           f'.tg{{font-size:7.5px;color:{mut};margin-top:3px}}'
+           f'.pr{{font-family:serif;font-size:24px;font-weight:bold;color:{head};margin-top:10px}}'
+           f'.pp{{font-size:6.5px;color:{mut};letter-spacing:1px}}'
+           f'.li{{font-size:8px;color:{body};margin-top:6px;line-height:1.25}}'
+           f'.mk{{color:{acc};font-size:6px}}')
+    bp.insert_htmlbox(fitz.Rect(card.x0+14, card.y0+16, card.x1-12, card.y1-8), html, css=css)
+put(bp, "Valores por pessoa · vocês escolhem o tema (bartenderia ou gastronomia).",
     FS, 7.6, (0.549, 0.494, 0.455), 54, 672)
 
 d.save(OUT, garbage=4, deflate=True)
