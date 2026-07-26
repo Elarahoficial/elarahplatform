@@ -11,6 +11,13 @@ verify_jwt = false
 [functions.mp-webhook]
 verify_jwt = false
 
+# Webhook do Pagar.me — chamado pelo Pagar.me (sem JWT do Supabase).
+# Autentica pela Basic auth do endpoint (PAGARME_WEBHOOK_USER/PASSWORD)
+# e, principalmente, RE-BUSCA a order na API com a secret key antes de
+# aplicar qualquer status. Ver supabase/functions/pagarme-webhook/index.ts.
+[functions.pagarme-webhook]
+verify_jwt = false
+
 # OAuth callback da Meta — chamado por redirect do navegador
 # (sem header Authorization). A autenticidade é garantida pelo
 # `state` aleatório criado em oauth-start (validado em uma tabela
