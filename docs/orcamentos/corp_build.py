@@ -203,6 +203,12 @@ put(p4, "Uma tarde que vocês vão ", FB, 20.2, CREAM, x, 553.5)
 x += FB.text_length("Uma tarde que vocês vão ", 20.2)
 put(p4, "lembrar para sempre", FBI, 20.2, GOLD, x, 553.5)
 put_right(p4, "Elarah × AMAI · 2026", FS, 7.9, MUTED, 541.4, 801.0)
+# banner sub: replace original template ('...pincelada, do bolo...') with neutral copy
+rm(p4, [(76, 561, 432, 598)])
+put(p4, "Do primeiro gesto criativo à última risada — cuidamos de cada detalhe",
+    FI, 9.8, (0.835, 0.788, 0.733), 77.8, 576.5)
+put(p4, "para que o evento seja tão especial quanto inesquecível.",
+    FI, 9.8, (0.835, 0.788, 0.733), 77.8, 593.0)
 
 # ================= taça -> taça in the source paragraphs (redact + reinsert) =================
 def retext(page, rect, text, size, color=(0.431, 0.388, 0.357), width_rect=None):
@@ -256,8 +262,8 @@ retext(d[3], (52, 171, 482, 214),
 
 # p2 vibe: 3 photos of the EXACT same size + even gaps — arranjo, tufting, pessoas (evento AMAI)
 _BG = (0.9843, 0.9647, 0.9373)
-d[1].draw_rect(fitz.Rect(48, 430, 388, 646), color=None, fill=_BG)   # wipe left + mid originals
-d[1].draw_rect(fitz.Rect(384, 405, 545, 646), color=None, fill=_BG)  # wipe the tall right original
+d[1].draw_rect(fitz.Rect(48, 430, 388, 629), color=None, fill=_BG)   # wipe left+mid (stop above banner y630.8)
+d[1].draw_rect(fitz.Rect(384, 405, 545, 629), color=None, fill=_BG)  # wipe tall right (stop above banner)
 _VW = 157.2
 for _pth, _x0, _vb in [("buque.jpg", 51.8, 0.45), ("tuftingpacote8.jpg", 218.0, 0.4), ("amai2.jpg", 384.3, 0.4)]:
     _im = crop_ratio(A_DIR+_pth, _VW/176.3, vbias=_vb)
@@ -304,7 +310,11 @@ put_spaced(d[3], "✦ INSPIRAÇÃO", 53.8, 244.5, 8.2, CORAL_RGB, FSB, track=1.5
 put(d[3], "Como o seu dia pode ser", FSER, 14.2, NEARBLK, 149.4, 244.5)
 
 # p4: replace the right 'inspiração' photo with a joyful group-painting shot
-_ins = crop_ratio(A_DIR+"nutrify1.jpg", 240/224, vbias=0.5)
+# p4 inspiration: left (was a painted taça — not in this budget!) + right (was duplicate of p2)
+_insL = crop_ratio(A_DIR+"amai4.jpg", 242/224, vbias=0.5)
+_ibL = io.BytesIO(); _insL.save(_ibL, format="JPEG", quality=90)
+d[3].insert_image(fitz.Rect(52, 257, 294, 481), stream=_ibL.getvalue())
+_ins = crop_ratio(A_DIR+"amai1.jpg", 240/224, vbias=0.5)
 _ib = io.BytesIO(); _ins.save(_ib, format="JPEG", quality=90)
 d[3].insert_image(fitz.Rect(302, 257, 542, 481), stream=_ib.getvalue())
 
