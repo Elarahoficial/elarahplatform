@@ -305,6 +305,11 @@ export class PagarmeProvider implements PaymentProvider {
           "Content-Type": "application/json",
           "Accept": "application/json",
           "User-Agent": PAGARME_INTEGRATION_UA,
+          // Best-effort: a Core API v5 não documenta idempotência por este
+          // header (mecanismo/nome diferem do Stripe), e um clique novo do
+          // cliente gera outro booking id. A proteção anti-duplicidade real
+          // vem do fluxo (guard reserva a vaga antes de cobrar). Mandamos
+          // mesmo assim — header desconhecido é ignorado, sem custo.
           "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify(body),
@@ -407,6 +412,10 @@ export class PagarmeProvider implements PaymentProvider {
           statement_descriptor: (input.statementDescriptor || "ELARAH")
             .replace(/[^A-Za-z0-9 ]/g, "").slice(0, 13),
           // Captura imediata por padrão (auth + capture na mesma chamada).
+          // AVISO: "auth_only" só autoriza — NÃO há fluxo de captura
+          // posterior implementado (nem aqui nem no webhook). Só use
+          // capture:false depois de implementar a captura, senão a
+          // cobrança fica autorizada e nunca é capturada.
           operation_type: input.capture === false ? "auth_only" : "auth_and_capture",
           card_token: input.cardToken,
         },

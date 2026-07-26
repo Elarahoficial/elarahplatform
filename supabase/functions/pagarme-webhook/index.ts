@@ -45,8 +45,16 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
 });
 const pagarme = pagarmeFromEnv();
 
+// NÃO inclui pagarme_order_id/pagarme_charge_id de propósito: essas
+// colunas são novas (sql/elarah_bookings_pagarme.sql). Pedi-las no SELECT
+// faria o PostgREST errar TODAS as queries de findBooking num deploy onde
+// as functions subiram mas o SQL ainda não rodou — deixando a booking
+// presa em 'pending' (sem e-mail, sem repasse). Como a reconciliação por
+// stripe_session_id ('PME-<order>') e por id==code não depende delas, o
+// select fica sem as colunas novas e o webhook sobrevive à migration
+// ausente (espelhando o fallback que o insert já faz).
 const BOOKING_COLS =
-  "id, email, nome, user_id, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, coupon_id, coupon_discount_centavos, coupon_code, slot_id, quantidade, metadata, pagarme_order_id, pagarme_charge_id, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor";
+  "id, email, nome, user_id, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, gift_card_id, gift_card_centavos, coupon_id, coupon_discount_centavos, coupon_code, slot_id, quantidade, metadata, payment_provider, fornecedor_id, fornecedor_nome, valor_cheio_centavos, valor_repasse_centavos, valor_comissao_centavos, status_fornecedor";
 
 interface BookingRow {
   id: string;
@@ -65,8 +73,10 @@ interface BookingRow {
   coupon_discount_centavos: number | null;
   user_id: string | null;
   metadata: Record<string, unknown> | null;
-  pagarme_order_id: string | null;
-  pagarme_charge_id: string | null;
+  // Opcionais: não vêm no SELECT (ver BOOKING_COLS) — a reconciliação não
+  // depende deles. Mantidos no tipo só por documentação do schema.
+  pagarme_order_id?: string | null;
+  pagarme_charge_id?: string | null;
   payment_provider: string | null;
   fornecedor_id: string | null;
   fornecedor_nome: string | null;
