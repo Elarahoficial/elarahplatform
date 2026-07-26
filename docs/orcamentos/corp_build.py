@@ -254,18 +254,15 @@ retext(d[3], (52, 171, 482, 214),
        "participantes. A experiência vai até o O Jardim (ou espaço parceiro), com toda a energia da Elarah.",
        10.5, width_rect=(53.8, 173, 478, 232))
 
-# p2 vibe photos: arranjo de flores, tufting (cool)
-_lft = crop_ratio(A_DIR+"buque.jpg", 159.7/176.3, vbias=0.45)
-_lb2 = io.BytesIO(); _lft.save(_lb2, format="JPEG", quality=90)
-d[1].insert_image(fitz.Rect(51.8, 436.5, 211.5, 612.8), stream=_lb2.getvalue())
-_mid = crop_ratio(A_DIR+"tuftingpacote8.jpg", 175.5/176.3, vbias=0.4)
-_b = io.BytesIO(); _mid.save(_b, format="JPEG", quality=90)
-d[1].insert_image(fitz.Rect(210, 436.5, 385.5, 612.8), stream=_b.getvalue())
-# right photo = people having fun (AMAI event), same size as the other two
-d[1].draw_rect(fitz.Rect(384, 405, 544, 644), color=None, fill=(0.9843, 0.9647, 0.9373))
-_rgt = crop_ratio(A_DIR+"amai2.jpg", 155.3/176.3, vbias=0.4)
-_rb = io.BytesIO(); _rgt.save(_rb, format="JPEG", quality=90)
-d[1].insert_image(fitz.Rect(386.2, 436.5, 541.5, 612.8), stream=_rb.getvalue())
+# p2 vibe: 3 photos of the EXACT same size + even gaps — arranjo, tufting, pessoas (evento AMAI)
+_BG = (0.9843, 0.9647, 0.9373)
+d[1].draw_rect(fitz.Rect(48, 430, 388, 646), color=None, fill=_BG)   # wipe left + mid originals
+d[1].draw_rect(fitz.Rect(384, 405, 545, 646), color=None, fill=_BG)  # wipe the tall right original
+_VW = 157.2
+for _pth, _x0, _vb in [("buque.jpg", 51.8, 0.45), ("tuftingpacote8.jpg", 218.0, 0.4), ("amai2.jpg", 384.3, 0.4)]:
+    _im = crop_ratio(A_DIR+_pth, _VW/176.3, vbias=_vb)
+    _bb = io.BytesIO(); _im.save(_bb, format="JPEG", quality=90)
+    d[1].insert_image(fitz.Rect(_x0, 436.5, _x0+_VW, 612.8), stream=_bb.getvalue())
 
 # ================= CORPORATE polish: eyebrows, banner, headings + Nutrify logo =================
 FSER = fitz.Font(fontfile=LF+"LiberationSerif-Regular.ttf")
