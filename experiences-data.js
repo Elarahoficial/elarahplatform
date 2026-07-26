@@ -1169,23 +1169,49 @@
 
     slotsCachePromise = (async () => {
       try {
-        const { data, error } = await s
-          .from(SLOTS_TABLE)
-          .select('*')
-          .order('created_at', { ascending: true });
-        if (error) {
+        // PAGINAÇÃO OBRIGATÓRIA: o Supabase/PostgREST corta a resposta em
+        // no máximo 1000 linhas por request (default max-rows). Sem
+        // paginar, com muitos slots (recorrência materializa dezenas por
+        // regra), os slots ALÉM da 1000ª linha simplesmente não vinham —
+        // e como ordenávamos por created_at ASC, os cortados eram os mais
+        // NOVOS (justo as turmas de recorrência recém-geradas). Resultado:
+        // a experiência tinha datas no banco mas NENHUMA aparecia no site
+        // (detalhe, home e categoria), enquanto o painel Recorrência do
+        // admin — que usa query escopada por experience_id — mostrava
+        // tudo. Agora buscamos em páginas de 1000 via .range() até acabar.
+        const PAGE = 1000;
+        let all = [];
+        let from = 0;
+        let pageErr = null;
+        for (let guard = 0; guard < 1000; guard++) { // teto de segurança: 1M slots
+          const { data, error } = await s
+            .from(SLOTS_TABLE)
+            .select('*')
+            .order('created_at', { ascending: true })
+            .range(from, from + PAGE - 1);
+          if (error) { pageErr = error; break; }
+          const batch = data || [];
+          all = all.concat(batch);
+          if (batch.length < PAGE) break; // última página
+          from += PAGE;
+        }
+        if (pageErr && all.length === 0) {
           // Tabela provavelmente não existe — silencia
-          console.warn('[Elarah] loadAllSlots: ' + (error.message || 'erro'));
+          console.warn('[Elarah] loadAllSlots: ' + (pageErr.message || 'erro'));
           slotsCache = new Map();
         } else {
+          if (pageErr) {
+            console.warn('[Elarah] loadAllSlots: erro numa página, usando ' +
+              all.length + ' slots já carregados. ' + (pageErr.message || ''));
+          }
           const map = new Map();
-          (data || []).forEach(function (row) {
+          all.forEach(function (row) {
             const slot = dbRowToSlot(row);
             if (!map.has(slot.experienceId)) map.set(slot.experienceId, []);
             map.get(slot.experienceId).push(slot);
           });
           slotsCache = map;
-          console.info('[Elarah] loadAllSlots: ' + (data || []).length + ' slots carregados');
+          console.info('[Elarah] loadAllSlots: ' + all.length + ' slots carregados');
         }
       } catch (e) {
         console.warn('[Elarah] loadAllSlots exception:', e);
@@ -1199,7 +1225,30 @@
 
   async function getSlotsForExperience(experienceId) {
     const map = await loadAllSlots();
-    return (map.get(experienceId) || []).slice();
+    const fromCache = map.get(experienceId);
+    if (fromCache && fromCache.length) return fromCache.slice();
+    // Garantia extra pros caminhos de UMA experiência (página de detalhe
+    // e edição no admin): se o cache global não tem slots pra ela — por
+    // truncamento, cache frio ou erro de página —, busca DIRETO e escopado
+    // por experience_id. Query pequena e sempre confiável (é a mesma
+    // abordagem do painel Recorrência, que nunca falhou em mostrar as
+    // datas). Popula o cache pra não repetir na mesma sessão.
+    const s = sb();
+    if (!s || !experienceId) return [];
+    try {
+      const { data, error } = await s
+        .from(SLOTS_TABLE)
+        .select('*')
+        .eq('experience_id', experienceId)
+        .order('created_at', { ascending: true });
+      if (error || !data || !data.length) return [];
+      const slots = data.map(dbRowToSlot);
+      if (slotsCache) slotsCache.set(experienceId, slots);
+      return slots.slice();
+    } catch (e) {
+      console.warn('[Elarah] getSlotsForExperience fallback escopado falhou:', e && e.message);
+      return [];
+    }
   }
 
   // Salva (upsert) slots pra uma experiência. Recebe array de objetos:
