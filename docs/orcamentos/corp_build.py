@@ -97,23 +97,23 @@ rm(p1, [(64, 286, 252, 410),      # the big '20' (below the coral eyebrow at y27
         (70, 476, 305, 592)])     # body paragraph
 # wipe the whole left column so nothing from the template lingers, then rebuild it TIGHT
 p1.draw_rect(fitz.Rect(58, 292, 313, 606), color=None, fill=(0.988, 0.945, 0.95))
-put(p1, "Uma experiência", FB, 32, CORAL_RGB, 70, 342)      # corporate hero
-put(p1, "pro time", FB, 32, CORAL_RGB, 70, 383)
-put(p1, "criar juntos, no verde", FI, 20, DARKt, 70.9, 418)
+put(p1, "Uma experiência", FB, 32, CORAL_RGB, 70, 342)      # neutral hero
+put(p1, "inesquecível", FB, 32, CORAL_RGB, 70, 383)
+put(p1, "criar juntas, no verde", FI, 20, DARKt, 70.9, 418)
 p1.draw_rect(fitz.Rect(70.9, 439, 116, 441.2), color=None, fill=CORAL_RGB)   # short accent rule
-BODY = ('<p>Uma pausa criativa pra reunir o time da AMAI: '
+BODY = ('<p>Uma experiência criativa pra o evento da AMAI: '
         '<b style="color:#FF5E8A">leve, mão na arte e memorável</b>. '
-        'Vocês escolhem a experiência — pintura em vaso com arranjo, vela aromática ou tufting —, '
-        'criam juntos e ainda curtem a gastronomia do O Jardim. '
+        'As convidadas escolhem a experiência — pintura em vaso com arranjo ou tufting —, '
+        'criam e ainda curtem a gastronomia do O Jardim. '
         '<b style="color:#FF5E8A">Vocês escolhem o clima, a gente leva tudo até vocês.</b></p>')
 p1.insert_htmlbox(fitz.Rect(70.9, 458, 302, 588), BODY,
                   css="p{margin:0;font-family:sans-serif;font-size:10.5px;line-height:1.5;color:#3F2F2C}")
 # reword the cover footer (remove '10–15 CONVIDADAS' and 'ORÇAMENTO PARA 12')
 rm(p1, [(66, 752, 548, 771)])
-f1 = "ELARAH × AMAI  ·  EXPERIÊNCIA CORPORATIVA  ·  "
+f1 = "ELARAH × AMAI  ·  EXPERIÊNCIA ELARAH  ·  "
 put_spaced(p1, f1, 70.9, 766.5, 8.25, (0.247, 0.184, 0.173), FS, track=2.4)
 fx = 70.9 + sum(FS.text_length(c, 8.25)+2.4 for c in f1)
-put_spaced(p1, "PARA O TIME", fx, 766.5, 8.25, (1, 0.3686, 0.5412), FSB, track=2.4)
+put_spaced(p1, "PARA AS CONVIDADAS", fx, 766.5, 8.25, (1, 0.3686, 0.5412), FSB, track=2.4)
 
 # ---- PAGE 2 footer ----
 p2 = d[1]
@@ -140,21 +140,25 @@ def venue(page, path, rect, name, vbias=0.5):
 put_spaced(p3, "✦ ONDE ACONTECE", 54, 230, 9, CORAL_RGB, FSB)
 put(p3, "No ", FB, 19, (0.118, 0.086, 0.098), 54, 256)
 put(p3, "O Jardim", FI, 19, CORAL_RGB, 54+FB.text_length("No ", 19), 256)
-venue(p3, A_DIR+"ojardim1.jpg", (54, 266, 293, 356), "O espaço")
-venue(p3, A_DIR+"ojardim4.jpg", (301, 266, 541, 356), "A gastronomia", vbias=0.55)
-put(p3, "No plano Premium, o O Jardim já inclui local, experiência e refeição completa.",
-    FS, 8, (0.431, 0.388, 0.357), 54, 388)
+venue(p3, A_DIR+"ojardim1.jpg", (54, 268, 204, 418), "O espaço", vbias=0.55)
+venue(p3, A_DIR+"ojardim4.jpg", (220, 268, 370, 418), "A gastronomia", vbias=0.55)
+put_spaced(p3, "✦ COM REFEIÇÃO", 388, 296, 8, CORAL_RGB, FSB)
+p3.insert_textbox(fitz.Rect(388, 308, 543, 418),
+    "No plano Premium, o O Jardim já inclui o local, a experiência e a refeição completa "
+    "— tudo num lugar só, cercadas de verde.",
+    fontsize=9.5, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
+    color=(0.431, 0.388, 0.357), lineheight=1.5)
 
 # ---- 2) INVESTIMENTO — price table ----
-put_spaced(p3, "✦ INVESTIMENTO", 54, 412, 9, CORAL_RGB, FSB)
-put(p3, "cada experiência, o seu valor por pessoa", FI, 8.5, MUTED, 214, 411)
+put_spaced(p3, "✦ INVESTIMENTO", 54, 456, 9, CORAL_RGB, FSB)
+put(p3, "cada experiência, o seu valor por pessoa", FI, 8.5, MUTED, 214, 455)
 TABLE = (
     '<table>'
     '<tr class="hd"><th class="lbl">Experiência</th>'
     '<th>Básico<div class="s">A EXPERIÊNCIA</div></th>'
     '<th class="hl">Premium<div class="s">+ REFEIÇÃO INCLUSA</div></th>'
     '<th>Signature<div class="s">+ PERSONALIZAÇÃO</div></th></tr>'
-    '<tr><td class="ex">Pintura em vaso com arranjo · Vela aromática</td><td>R$&nbsp;299</td><td class="hl">R$&nbsp;399</td><td>R$&nbsp;499</td></tr>'
+    '<tr><td class="ex">Pintura em vaso com arranjo</td><td>R$&nbsp;299</td><td class="hl">R$&nbsp;399</td><td>R$&nbsp;499</td></tr>'
     '<tr><td class="ex">Tufting</td><td>R$&nbsp;585</td><td class="hl">R$&nbsp;689</td><td>R$&nbsp;789</td></tr>'
     '</table>')
 tcss = (
@@ -168,20 +172,20 @@ tcss = (
     'padding:11px 3px;border-bottom:1px solid #EFE3DD}'
     '.ex{text-align:left;font-size:8.6px;color:#3F2F2C}'
     '.hl{color:#A8324F}')
-p3.insert_htmlbox(fitz.Rect(54, 432, 541, 556), TABLE, css=tcss)
+p3.insert_htmlbox(fitz.Rect(54, 476, 541, 600), TABLE, css=tcss)
 put(p3, "Valores por pessoa · Premium (no O Jardim) inclui a refeição · Signature inclui a personalização (o brinde).",
-    FS, 7.6, (0.549, 0.494, 0.455), 54, 568)
-put(p3, "Tufting no Aretha · Demais experiências também em Aretha, BETC ou Sterna Café.",
-    FS, 7.6, (0.549, 0.494, 0.455), 54, 580)
+    FS, 7.6, (0.549, 0.494, 0.455), 54, 610)
+put(p3, "Tufting no Aretha · Pintura em vaso também em Aretha, BETC ou Sterna Café.",
+    FS, 7.6, (0.549, 0.494, 0.455), 54, 622)
 
 # ---- personalization callout ----
 _pz = crop_ratio(A_DIR+"personalizaçaobrindeescovapiranha.jpg", 1.0, vbias=0.42)
 _pb = io.BytesIO(); _pz.save(_pb, format="JPEG", quality=92)
-p3.insert_image(fitz.Rect(54, 620, 138, 704), stream=_pb.getvalue())
-put_spaced(p3, "✦ PERSONALIZAÇÃO", 154, 644, 8.5, CORAL_RGB, FSB)
-put(p3, "O brinde do ", FB, 15, (0.118, 0.086, 0.098), 154, 666)
-put(p3, "Signature", FI, 15, CORAL_RGB, 154+FB.text_length("O brinde do ", 15), 666)
-p3.insert_textbox(fitz.Rect(154, 676, 545, 710),
+p3.insert_image(fitz.Rect(54, 640, 134, 720), stream=_pb.getvalue())
+put_spaced(p3, "✦ PERSONALIZAÇÃO", 150, 662, 8.5, CORAL_RGB, FSB)
+put(p3, "O brinde do ", FB, 15, (0.118, 0.086, 0.098), 150, 684)
+put(p3, "Signature", FI, 15, CORAL_RGB, 150+FB.text_length("O brinde do ", 15), 684)
+p3.insert_textbox(fitz.Rect(150, 694, 545, 728),
     "No plano Signature, cada pessoa ganha um brinde personalizado — com a inicial "
     "ou o nome de cada uma.", fontsize=8.7, fontname="lib",
     fontfile=LF+"LiberationSans-Regular.ttf", color=(0.431, 0.388, 0.357), lineheight=1.4)
@@ -217,9 +221,9 @@ put(d[1], "As ", FB, 27, (0.118, 0.086, 0.098), 53.8, 156.2)
 put(d[1], "experiências", FBI, 27, CORAL_RGB, 53.8+FB.text_length("As ", 27), 156.2)
 # p2 intro
 retext(d[1], (52, 171, 505, 250),
-       "Uma pausa criativa pra reunir o time: cada pessoa escolhe a experiência que mais tem a "
-       "ver, coloca a mão na arte, se diverte e leva pra casa a sua peça autoral. Uma tarde pra "
-       "desacelerar e criar junto — o ateliê vai até vocês, com tudo pronto.", 10.5,
+       "Uma experiência criativa pra o evento da AMAI: cada convidada escolhe a experiência que "
+       "mais tem a ver, coloca a mão na arte, se diverte e leva pra casa a sua peça autoral. Uma "
+       "tarde pra criar e conectar — o ateliê vai até vocês, com tudo pronto.", 10.5,
        color=(0.431, 0.388, 0.357), width_rect=(53.8, 173, 502, 268))
 # p2: remove the 'I / II / III' block (Criar/Celebrar/Levar + rule/dividers) ...
 d[1].add_redact_annot(fitz.Rect(40, 258, 558, 402))
@@ -228,22 +232,21 @@ d[1].apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE,
                       text=fitz.PDF_REDACT_TEXT_REMOVE)
 d[1].draw_rect(fitz.Rect(40, 256, 558, 404), color=None, fill=(0.984, 0.965, 0.937))
 # ... and put the painting options there (cada uma escolhe o que quiser)
-put_spaced(d[1], "✦ AS OPÇÕES", 53.8, 290, 9, CORAL_RGB, FSB)
-put(d[1], "3 experiências ", FB, 17, (0.118, 0.086, 0.098), 53.8, 313)
-put(d[1], "pra escolher", FI, 17, CORAL_RGB, 53.8+FB.text_length("3 experiências ", 17), 313)
-OPTS3 = [("Pintura em vaso com arranjo", "pinte o vaso e monte o seu arranjo floral"),
-         ("Vela aromática", "uma vela aromática autoral pra levar pra casa"),
-         ("Tufting", "o seu tapetinho felpudo, feito à mão")]
-for i, (nm, ds) in enumerate(OPTS3):
-    yy = 344 + i*24
+put_spaced(d[1], "✦ AS OPÇÕES", 53.8, 292, 9, CORAL_RGB, FSB)
+put(d[1], "2 experiências ", FB, 17, (0.118, 0.086, 0.098), 53.8, 315)
+put(d[1], "pra escolher", FI, 17, CORAL_RGB, 53.8+FB.text_length("2 experiências ", 17), 315)
+OPTS2 = [("Pintura em vaso com arranjo", "pinte o seu vaso e monte um arranjo de flores pra levar"),
+         ("Tufting", "o seu quadrinho em tufting, moderno e feito à mão")]
+for i, (nm, ds) in enumerate(OPTS2):
+    yy = 348 + i*26
     d[1].draw_circle((57, yy-3.2), 2.3, color=None, fill=CORAL_RGB)
     put(d[1], nm, FSB, 11, (0.16, 0.12, 0.13), 68, yy)
-    d[1].insert_textbox(fitz.Rect(68, yy+3, 500, yy+16), ds, fontsize=8.2, fontname="lib",
+    d[1].insert_textbox(fitz.Rect(68, yy+3, 505, yy+16), ds, fontsize=8.2, fontname="lib",
         fontfile=LF+"LiberationSans-Regular.ttf", color=(0.5, 0.45, 0.42), lineheight=1.2)
 # p3 intro
 retext(d[2], (52, 171, 505, 230),
-       "A experiência que o time escolher, com toda a estrutura e os mimos. "
-       "É só reunir a equipe — a Elarah leva tudo até vocês "
+       "A experiência que as convidadas escolherem, com toda a estrutura e os mimos. "
+       "É só reunir o grupo — a Elarah leva tudo até vocês "
        "e cuida de cada detalhe.", 10.5, width_rect=(53.8, 173, 500, 232))
 # p4 intro
 retext(d[3], (52, 171, 482, 214),
@@ -251,14 +254,14 @@ retext(d[3], (52, 171, 482, 214),
        "participantes. A experiência vai até o O Jardim (ou espaço parceiro), com toda a energia da Elarah.",
        10.5, width_rect=(53.8, 173, 478, 232))
 
-# p2 vibe photos: vaso+arranjo, vela aromática, tufting
-_lft = crop_ratio(A_DIR+"pinturavasoearranjo.jpg", 159.7/176.3, vbias=0.5)
+# p2 vibe photos: arranjo de flores, tufting (cool)
+_lft = crop_ratio(A_DIR+"buque.jpg", 159.7/176.3, vbias=0.45)
 _lb2 = io.BytesIO(); _lft.save(_lb2, format="JPEG", quality=90)
 d[1].insert_image(fitz.Rect(51.8, 436.5, 211.5, 612.8), stream=_lb2.getvalue())
-_mid = crop_ratio(A_DIR+"pinturaemvela.jpg", 175.5/176.3, vbias=0.5)
+_mid = crop_ratio(A_DIR+"tuftingpacote8.jpg", 175.5/176.3, vbias=0.4)
 _b = io.BytesIO(); _mid.save(_b, format="JPEG", quality=90)
 d[1].insert_image(fitz.Rect(210, 436.5, 385.5, 612.8), stream=_b.getvalue())
-_rgt = crop_ratio(A_DIR+"tuftingcapote82.jpg", 155.3/233.2, vbias=0.5)
+_rgt = crop_ratio(A_DIR+"tufting1.jpg", 155.3/233.2, vbias=0.4)
 _rb = io.BytesIO(); _rgt.save(_rb, format="JPEG", quality=90)
 d[1].insert_image(fitz.Rect(386.2, 408, 541.5, 641.2), stream=_rb.getvalue())
 
@@ -268,7 +271,7 @@ NEARBLK = (0.118, 0.086, 0.098)
 
 # P1 eyebrow: 'UMA CELEBRAÇÃO ÚNICA' -> 'ENTRE AMIGAS'
 rm(p1, [(69, 271, 300, 287)])
-put_spaced(p1, "✦ EXPERIÊNCIA CORPORATIVA", 70.9, 300, 8.6, CORAL_RGB, FSB, track=2.4)
+put_spaced(p1, "✦ EXPERIÊNCIA ELARAH", 70.9, 300, 8.6, CORAL_RGB, FSB, track=2.4)
 
 # ---- AMAI logo co-brand (circular, top-right under header) ----
 _al = Image.open(A_DIR+"amailogo.png").convert("RGBA")
@@ -289,7 +292,7 @@ put_spaced(d[1], "✦ A ESTRELA DO ENCONTRO", 53.8, 124.2, 8.6, CORAL_RGB, FSB, 
 # P2 banner text -> corporate
 rm(d[1], [(98, 640, 500, 684)])
 put(d[1], "Não é só um evento — é arte, sabor e conexão.", FI, 12.8, CREAM, 100.7, 658.5)
-put(d[1], "Uma tarde que o time inteiro vai lembrar.", FB, 12.8, GOLD, 100.7, 678.0)
+put(d[1], "Uma tarde que todas vão lembrar pra sempre.", FB, 12.8, GOLD, 100.7, 678.0)
 
 # P4 heading: 'Bora marcar essa festa?' -> 'data?'
 rm(d[3], [(53, 129, 327, 165)])
