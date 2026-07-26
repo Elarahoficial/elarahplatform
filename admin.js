@@ -5443,6 +5443,13 @@
     // de abrir o modal — assim o autocomplete funciona na hora.
     await populateCategoriaDatalist();
 
+    // Reseta o flag "tem recorrência" a cada abertura. Ele é religado
+    // de forma assíncrona por _recurrenceLoadAndRender quando a
+    // experiência editada tem regras/turmas de recorrência. É consultado
+    // na validação do submit pra NÃO exigir horário fixo quando os
+    // horários vêm da recorrência semanal (ver form submit abaixo).
+    window._expHasRecurrence = false;
+
     if (editId) {
       const exp = await ElarahData.getExperienceById(editId);
       if (!exp) return;
@@ -6086,8 +6093,16 @@
       // horário fixo no cadastro.
       const isFreePick = typeof window._expFormIsFreePick === 'function'
         && window._expFormIsFreePick();
+      // Recorrência semanal: se a experiência já tem regra(s) de
+      // recorrência ou turmas futuras materializadas, os horários vêm
+      // de lá — não faz sentido exigir um horário fixo no formulário.
+      // Sem isso, editar uma experiência recorrente (ex.: só pra
+      // adicionar/ajustar uma variação) era BLOQUEADO por "Adicione pelo
+      // menos um horário", e o save nunca acontecia — a mudança não
+      // aparecia no site. O flag é ligado por _recurrenceLoadAndRender.
+      const hasRecurrence = !!window._expHasRecurrence;
       const horarios = collectHorarios();
-      if (horarios.length === 0 && !isCasaKit && !isWaitlist && !isFreePick) {
+      if (horarios.length === 0 && !isCasaKit && !isWaitlist && !isFreePick && !hasRecurrence) {
         alert('Adicione pelo menos um horário.');
         return;
       }
@@ -18461,6 +18476,14 @@
 
     const rules = rulesRes.data || [];
     const slots = slotsRes.error ? [] : (slotsRes.data || []);
+
+    // Marca que esta experiência tem horários vindos da recorrência —
+    // seja por regra cadastrada (mesmo desativada, o admin pode reativar)
+    // ou por turma futura já materializada em experience_slots. A validação
+    // do submit usa isso pra NÃO exigir um horário fixo: numa experiência
+    // com recorrência de horários variados (ex.: 11h sáb, 15h30 dom) não
+    // faz sentido travar num único horário no formulário.
+    window._expHasRecurrence = (rules.length > 0) || (slots.length > 0);
 
     _recurrenceRenderRules(experienceId, rules);
     _recurrenceRenderSlots(rules, slots);
