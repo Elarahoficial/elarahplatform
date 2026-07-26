@@ -6100,8 +6100,42 @@
       // adicionar/ajustar uma variação) era BLOQUEADO por "Adicione pelo
       // menos um horário", e o save nunca acontecia — a mudança não
       // aparecia no site. O flag é ligado por _recurrenceLoadAndRender.
-      const hasRecurrence = !!window._expHasRecurrence;
       const horarios = collectHorarios();
+      let hasRecurrence = !!window._expHasRecurrence;
+      // Fallback à prova de corrida: se essa experiência não tem horário
+      // fixo e o flag ainda não foi marcado (carregamento assíncrono da
+      // recorrência não terminou, OU o cache global de slots está
+      // truncado no limite de 1000 linhas do Supabase e não trouxe os
+      // slots desta experiência), consulta a recorrência DIRETO agora —
+      // consulta escopada, sempre confiável — antes de bloquear.
+      if (horarios.length === 0 && !hasRecurrence && !isCasaKit && !isWaitlist && !isFreePick) {
+        const _editIdForRec = (document.getElementById('exp-edit-id')?.value || '').trim();
+        const _sbRec = window.supabaseClient;
+        if (_editIdForRec && _sbRec) {
+          try {
+            const rr = await _sbRec
+              .from('experience_recurrence_rules')
+              .select('id')
+              .eq('experience_id', _editIdForRec)
+              .limit(1);
+            if (rr && rr.data && rr.data.length) hasRecurrence = true;
+            if (!hasRecurrence) {
+              const fs = await _sbRec
+                .from('experience_slots')
+                .select('id')
+                .eq('experience_id', _editIdForRec)
+                .gte('event_at', new Date().toISOString())
+                .limit(1);
+              if (fs && fs.data && fs.data.length) hasRecurrence = true;
+            }
+            if (hasRecurrence) window._expHasRecurrence = true;
+          } catch (recErr) {
+            // Tabela ausente / rede — segue pro comportamento antigo
+            // (exige horário). Não piora nada.
+            console.warn('[Admin] checagem de recorrência no submit falhou:', recErr && recErr.message);
+          }
+        }
+      }
       if (horarios.length === 0 && !isCasaKit && !isWaitlist && !isFreePick && !hasRecurrence) {
         alert('Adicione pelo menos um horário.');
         return;
