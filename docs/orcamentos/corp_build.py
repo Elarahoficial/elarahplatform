@@ -311,10 +311,10 @@ put(d[3], "Como o seu dia pode ser", FSER, 14.2, NEARBLK, 149.4, 244.5)
 
 # p4: replace the right 'inspiração' photo with a joyful group-painting shot
 # p4 inspiration: left (was a painted taça — not in this budget!) + right (was duplicate of p2)
-_insL = crop_ratio(A_DIR+"amai4.jpg", 242/224, vbias=0.5)
+_insL = crop_ratio(A_DIR+"pinturavasoearranjo.jpg", 242/224, vbias=0.5)
 _ibL = io.BytesIO(); _insL.save(_ibL, format="JPEG", quality=90)
 d[3].insert_image(fitz.Rect(52, 257, 294, 481), stream=_ibL.getvalue())
-_ins = crop_ratio(A_DIR+"amai1.jpg", 240/224, vbias=0.5)
+_ins = crop_ratio(A_DIR+"tufting12.jpg", 240/224, vbias=0.45)
 _ib = io.BytesIO(); _ins.save(_ib, format="JPEG", quality=90)
 d[3].insert_image(fitz.Rect(302, 257, 542, 481), stream=_ib.getvalue())
 
