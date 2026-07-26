@@ -140,7 +140,7 @@ def venue(page, path, rect, name, vbias=0.5):
 put_spaced(p3, "✦ ONDE ACONTECE", 54, 230, 9, CORAL_RGB, FSB)
 put(p3, "No ", FB, 19, (0.118, 0.086, 0.098), 54, 256)
 put(p3, "O Jardim", FI, 19, CORAL_RGB, 54+FB.text_length("No ", 19), 256)
-venue(p3, A_DIR+"ojardim1.jpg", (54, 268, 204, 418), "O espaço", vbias=0.55)
+venue(p3, A_DIR+"amai7.jpg", (54, 268, 204, 418), "O espaço", vbias=0.5)
 venue(p3, A_DIR+"ojardim4.jpg", (220, 268, 370, 418), "A gastronomia", vbias=0.55)
 put_spaced(p3, "✦ COM REFEIÇÃO", 388, 296, 8, CORAL_RGB, FSB)
 p3.insert_textbox(fitz.Rect(388, 308, 543, 418),
@@ -261,9 +261,11 @@ d[1].insert_image(fitz.Rect(51.8, 436.5, 211.5, 612.8), stream=_lb2.getvalue())
 _mid = crop_ratio(A_DIR+"tuftingpacote8.jpg", 175.5/176.3, vbias=0.4)
 _b = io.BytesIO(); _mid.save(_b, format="JPEG", quality=90)
 d[1].insert_image(fitz.Rect(210, 436.5, 385.5, 612.8), stream=_b.getvalue())
-_rgt = crop_ratio(A_DIR+"tufting1.jpg", 155.3/233.2, vbias=0.4)
+# right photo = people having fun (AMAI event), same size as the other two
+d[1].draw_rect(fitz.Rect(384, 405, 544, 644), color=None, fill=(0.9843, 0.9647, 0.9373))
+_rgt = crop_ratio(A_DIR+"amai2.jpg", 155.3/176.3, vbias=0.4)
 _rb = io.BytesIO(); _rgt.save(_rb, format="JPEG", quality=90)
-d[1].insert_image(fitz.Rect(386.2, 408, 541.5, 641.2), stream=_rb.getvalue())
+d[1].insert_image(fitz.Rect(386.2, 436.5, 541.5, 612.8), stream=_rb.getvalue())
 
 # ================= CORPORATE polish: eyebrows, banner, headings + Nutrify logo =================
 FSER = fitz.Font(fontfile=LF+"LiberationSerif-Regular.ttf")
