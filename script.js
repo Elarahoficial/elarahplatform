@@ -3435,8 +3435,16 @@ if (groupForm) {
       var variantLabelEl = root.querySelector('#erm-variant-label');
       var variantOptsEl = root.querySelector('#erm-variant-options');
       var variantMsgEl = root.querySelector('#erm-variant-msg');
+      // Presença de variação = TER OPÇÕES. O rótulo é opcional: se vier
+      // vazio, usa "Escolha a sua opção" (mesmo padrão do detalhe e do
+      // modal de descrição). Antes isso exigia ctx.variantLabel truthy e
+      // uma variação salva sem rótulo sumia do checkout — o cliente
+      // escolhia no detalhe mas nunca virava escolha obrigatória aqui.
+      if (!ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length) {
+        ctx.variantLabel = 'Escolha a sua opção';
+      }
       var hasVariantsForExp = !!(
-        ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
+        Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
       );
 
       // Helper: atualiza o rótulo do seletor do comprador conforme a
@@ -5872,8 +5880,15 @@ if (groupForm) {
             if (!horario) {
               horario = horariosArr[0] || (exp.horario || null);
             }
-            if (exp.variantLabel && Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
-              variantLabel = exp.variantLabel;
+            // Copia as opções de variação SEMPRE que houver opções —
+            // NÃO condiciona ao variantLabel estar preenchido. O rótulo é
+            // só o texto do seletor; sua ausência não pode fazer a
+            // variação sumir do checkout (a página de detalhe e o modal
+            // de descrição já usam "Escolha a sua opção" como padrão).
+            // Sem esse fallback, uma variação salva sem rótulo aparecia no
+            // detalhe mas nunca virava escolha obrigatória no pagamento.
+            if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
+              variantLabel = exp.variantLabel || 'Escolha a sua opção';
               variantOptions = exp.variantOptions.slice();
             }
             // Itens ricos (nome + preço) — pra o modal cobrar o preço certo

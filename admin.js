@@ -5443,6 +5443,13 @@
     // de abrir o modal — assim o autocomplete funciona na hora.
     await populateCategoriaDatalist();
 
+    // Reseta o flag "tem recorrência" a cada abertura. Ele é religado
+    // de forma assíncrona por _recurrenceLoadAndRender quando a
+    // experiência editada tem regras/turmas de recorrência. É consultado
+    // na validação do submit pra NÃO exigir horário fixo quando os
+    // horários vêm da recorrência semanal (ver form submit abaixo).
+    window._expHasRecurrence = false;
+
     if (editId) {
       const exp = await ElarahData.getExperienceById(editId);
       if (!exp) return;
@@ -6086,8 +6093,50 @@
       // horário fixo no cadastro.
       const isFreePick = typeof window._expFormIsFreePick === 'function'
         && window._expFormIsFreePick();
+      // Recorrência semanal: se a experiência já tem regra(s) de
+      // recorrência ou turmas futuras materializadas, os horários vêm
+      // de lá — não faz sentido exigir um horário fixo no formulário.
+      // Sem isso, editar uma experiência recorrente (ex.: só pra
+      // adicionar/ajustar uma variação) era BLOQUEADO por "Adicione pelo
+      // menos um horário", e o save nunca acontecia — a mudança não
+      // aparecia no site. O flag é ligado por _recurrenceLoadAndRender.
       const horarios = collectHorarios();
-      if (horarios.length === 0 && !isCasaKit && !isWaitlist && !isFreePick) {
+      let hasRecurrence = !!window._expHasRecurrence;
+      // Fallback à prova de corrida: se essa experiência não tem horário
+      // fixo e o flag ainda não foi marcado (carregamento assíncrono da
+      // recorrência não terminou, OU o cache global de slots está
+      // truncado no limite de 1000 linhas do Supabase e não trouxe os
+      // slots desta experiência), consulta a recorrência DIRETO agora —
+      // consulta escopada, sempre confiável — antes de bloquear.
+      if (horarios.length === 0 && !hasRecurrence && !isCasaKit && !isWaitlist && !isFreePick) {
+        const _editIdForRec = (document.getElementById('exp-edit-id')?.value || '').trim();
+        const _sbRec = window.supabaseClient;
+        if (_editIdForRec && _sbRec) {
+          try {
+            const rr = await _sbRec
+              .from('experience_recurrence_rules')
+              .select('id')
+              .eq('experience_id', _editIdForRec)
+              .limit(1);
+            if (rr && rr.data && rr.data.length) hasRecurrence = true;
+            if (!hasRecurrence) {
+              const fs = await _sbRec
+                .from('experience_slots')
+                .select('id')
+                .eq('experience_id', _editIdForRec)
+                .gte('event_at', new Date().toISOString())
+                .limit(1);
+              if (fs && fs.data && fs.data.length) hasRecurrence = true;
+            }
+            if (hasRecurrence) window._expHasRecurrence = true;
+          } catch (recErr) {
+            // Tabela ausente / rede — segue pro comportamento antigo
+            // (exige horário). Não piora nada.
+            console.warn('[Admin] checagem de recorrência no submit falhou:', recErr && recErr.message);
+          }
+        }
+      }
+      if (horarios.length === 0 && !isCasaKit && !isWaitlist && !isFreePick && !hasRecurrence) {
         alert('Adicione pelo menos um horário.');
         return;
       }
@@ -18461,6 +18510,14 @@
 
     const rules = rulesRes.data || [];
     const slots = slotsRes.error ? [] : (slotsRes.data || []);
+
+    // Marca que esta experiência tem horários vindos da recorrência —
+    // seja por regra cadastrada (mesmo desativada, o admin pode reativar)
+    // ou por turma futura já materializada em experience_slots. A validação
+    // do submit usa isso pra NÃO exigir um horário fixo: numa experiência
+    // com recorrência de horários variados (ex.: 11h sáb, 15h30 dom) não
+    // faz sentido travar num único horário no formulário.
+    window._expHasRecurrence = (rules.length > 0) || (slots.length > 0);
 
     _recurrenceRenderRules(experienceId, rules);
     _recurrenceRenderSlots(rules, slots);
