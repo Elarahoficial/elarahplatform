@@ -438,12 +438,22 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const card = document.createElement('article');
     card.className = 'card';
 
+    // Horários do card: prioriza os horários REAIS das turmas (slots),
+    // incluindo os gerados por recorrência. Assim experiências que só têm
+    // horário na recorrência (campo "Horários" vazio) também mostram os
+    // botões. Cai pro campo horarios/horario da experiência quando não há
+    // slot futuro.
+    const _slotHorarios = (typeof ElarahData !== 'undefined' && ElarahData.distinctSlotHorarios)
+      ? ElarahData.distinctSlotHorarios(exp._slots || [], Date.now())
+      : [];
     // Dedup textual + ordem original. Recorrência popula exp.horarios
     // com 1 entrada por slot (ex: 8 datas × 2 horários = 16 entradas
     // repetidas). Sem dedup, o card mostra 16 chips idênticos.
-    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
-      ? exp.horarios
-      : (exp.horario ? [exp.horario] : []);
+    const horariosRaw = _slotHorarios.length
+      ? _slotHorarios
+      : (Array.isArray(exp.horarios) && exp.horarios.length
+          ? exp.horarios
+          : (exp.horario ? [exp.horario] : []));
     const seenHorarios = new Set();
     const horarios = [];
     horariosRaw.forEach(function (h) {

@@ -104,10 +104,23 @@
     return window.supabaseClient || null;
   }
 
+  // Um "horário" só é válido se tiver ao menos um caractere alfanumérico
+  // (dígito de hora ou letra tipo "A combinar"). Descarta lixo que às
+  // vezes entrava na lista — ex.: ".", "-", "·" — que virava um chip
+  // vazio no card e na página de detalhe. Trim + normaliza.
+  function _sanitizeHorarios(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map(function (h) { return String(h == null ? '' : h).trim(); })
+      .filter(function (h) { return /[0-9a-zA-ZÀ-ÿ]/.test(h); });
+  }
+
   function dbRowToExperience(row) {
     if (!row) return null;
-    const horarios = Array.isArray(row.horarios) ? row.horarios.slice() : [];
-    const horario = horarios[0] || row.horario || '';
+    const horarios = _sanitizeHorarios(row.horarios);
+    const horarioRaw = String(row.horario == null ? '' : row.horario).trim();
+    const horarioValid = /[0-9a-zA-ZÀ-ÿ]/.test(horarioRaw) ? horarioRaw : '';
+    const horario = horarios[0] || horarioValid || '';
     return {
       id: row.id,
       nome: row.nome || '',
@@ -740,6 +753,39 @@
       if (et != null) pushTs(et);
     }
     out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  // Horários DISTINTOS e válidos das turmas FUTURAS de uma experiência
+  // (inclui as geradas por recorrência). Ordenados por hora de início.
+  // Usado pelos cards pra mostrar os botões de horário mesmo quando o
+  // campo "horarios" da experiência está vazio — caso das experiências
+  // que gerenciam horário só pela recorrência semanal. Filtra lixo
+  // (ex.: ".") e turmas já passadas. Vazio = usar fallback do chamador.
+  function distinctSlotHorarios(slotsArr, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    var slots = Array.isArray(slotsArr) ? slotsArr : [];
+    var seen = new Set();
+    var out = [];
+    slots.forEach(function (sl) {
+      if (!sl || sl.isActive === false) return;
+      var ts = null;
+      if (sl.eventAt) {
+        var t = new Date(sl.eventAt).getTime();
+        if (!isNaN(t)) ts = t;
+      }
+      if (ts != null && ts < nowMs) return; // turma já passou
+      var h = String(sl.horario == null ? '' : sl.horario).trim();
+      if (!h || !/[0-9a-zA-ZÀ-ÿ]/.test(h) || seen.has(h)) return;
+      seen.add(h);
+      out.push(h);
+    });
+    out.sort(function (a, b) {
+      var pa = parseStartHour(a), pb = parseStartHour(b);
+      var ma = pa ? pa.hh * 60 + pa.mm : 9999;
+      var mb = pb ? pb.hh * 60 + pb.mm : 9999;
+      return ma - mb;
+    });
     return out;
   }
 
@@ -1545,6 +1591,7 @@
     isPubliclyVisible,
     deriveEventTimestamp,
     experienceFutureDates,
+    distinctSlotHorarios,
     isExpiredRecurring,
     dateQuickRange,
     // Slots
