@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Curadoria Fora de Casa · Elarah</title>
+<style>
+  :root{
+    --ground:#FBF7EF; --panel:#FFFFFF; --ink:#2A2018; --ink-soft:#5C4F42;
+    --line:#EADFCE; --neutral:#8B7E6D;
+    --terra:#C96F4A; --terra-deep:#A9542F;
+    --marigold:#E3A027; --sage:#77894A; --wine:#7C2E44;
+    --terra-wash:#F6E7DC; --sage-wash:#ECEEDB; --wine-wash:#F3E2E6; --gold-wash:#F8ECD2;
+    --shadow:0 1px 2px rgba(42,32,24,.05),0 8px 24px rgba(42,32,24,.06);
+    --radius:14px;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#1C1712; --panel:#26201A; --ink:#F3EADD; --ink-soft:#C4B4A2;
+      --line:#3A3025; --neutral:#9C8D7A;
+      --terra:#E08a5f; --terra-deep:#E08a5f;
+      --marigold:#EDB652; --sage:#A2B36B; --wine:#D98AA0;
+      --terra-wash:#33241b; --sage-wash:#272b1a; --wine-wash:#331f26; --gold-wash:#322718;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#FBF7EF; --panel:#FFFFFF; --ink:#2A2018; --ink-soft:#5C4F42;
+    --line:#EADFCE; --neutral:#8B7E6D;
+    --terra:#C96F4A; --terra-deep:#A9542F; --marigold:#E3A027; --sage:#77894A; --wine:#7C2E44;
+    --terra-wash:#F6E7DC; --sage-wash:#ECEEDB; --wine-wash:#F3E2E6; --gold-wash:#F8ECD2;
+    --shadow:0 1px 2px rgba(42,32,24,.05),0 8px 24px rgba(42,32,24,.06);
+  }
+  :root[data-theme="dark"]{
+    --ground:#1C1712; --panel:#26201A; --ink:#F3EADD; --ink-soft:#C4B4A2;
+    --line:#3A3025; --neutral:#9C8D7A;
+    --terra:#E08a5f; --terra-deep:#E08a5f; --marigold:#EDB652; --sage:#A2B36B; --wine:#D98AA0;
+    --terra-wash:#33241b; --sage-wash:#272b1a; --wine-wash:#331f26; --gold-wash:#322718;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+    line-height:1.62;-webkit-font-smoothing:antialiased;font-size:17px}
+  .wrap{max-width:920px;margin:0 auto;padding:clamp(24px,5vw,64px) clamp(18px,4vw,40px)}
+
+  /* ---- header ---- */
+  .eyebrow{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--terra-deep);font-weight:700;margin:0 0 14px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2.3rem,6vw,3.5rem);
+    line-height:1.04;letter-spacing:-.01em;text-wrap:balance;margin:0 0 18px}
+  h1 em{font-style:italic;color:var(--terra)}
+  .lede{font-size:clamp(1.05rem,2.4vw,1.28rem);color:var(--ink-soft);max-width:60ch;margin:0}
+  .rule{height:3px;width:64px;background:linear-gradient(90deg,var(--terra),var(--marigold));
+    border-radius:3px;margin:28px 0 0}
+
+  /* ---- brief strip ---- */
+  .brief{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;margin:40px 0 8px}
+  .brief div{background:var(--panel);padding:18px 20px}
+  .brief dt{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--neutral);
+    font-weight:700;margin:0 0 6px}
+  .brief dd{margin:0;font-size:.98rem;color:var(--ink);font-weight:500}
+
+  section{margin-top:56px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .sec-num{font-family:var(--serif);font-style:italic;font-size:1.3rem;color:var(--terra)}
+  h2{font-family:var(--serif);font-weight:600;font-size:clamp(1.5rem,3.5vw,2rem);
+    letter-spacing:-.01em;margin:0;line-height:1.1}
+  .sec-sub{color:var(--ink-soft);margin:6px 0 24px;max-width:64ch;font-size:1.02rem}
+
+  /* ---- cards ---- */
+  .cards{display:grid;gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px 26px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--terra)}
+  .card.sage::before{background:var(--sage)} .card.wine::before{background:var(--wine)}
+  .card.gold::before{background:var(--marigold)}
+  .card-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:4px}
+  .card h3{font-family:var(--serif);font-weight:600;font-size:1.32rem;margin:0;letter-spacing:-.01em}
+  .cat{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+    color:var(--terra-deep);background:var(--terra-wash);padding:3px 9px;border-radius:20px}
+  .card.sage .cat{color:var(--sage);background:var(--sage-wash)}
+  .card.wine .cat{color:var(--wine);background:var(--wine-wash)}
+  .card.gold .cat{color:#9a6a12;background:var(--gold-wash)}
+  @media (prefers-color-scheme:dark){.card.gold .cat{color:var(--marigold)}}
+  :root[data-theme="dark"] .card.gold .cat{color:var(--marigold)}
+  .price{margin-left:auto;font-family:var(--serif);font-weight:600;font-size:1.35rem;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .price small{font-size:.72rem;color:var(--neutral);font-family:var(--sans);font-weight:600;
+    display:block;text-align:right;letter-spacing:.02em;margin-top:-2px}
+  .why{color:var(--ink-soft);margin:10px 0 16px;font-size:1rem}
+  .why b{color:var(--ink);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-size:.8rem;font-weight:600;color:var(--ink-soft);background:var(--ground);
+    border:1px solid var(--line);padding:4px 11px;border-radius:20px;white-space:nowrap}
+  .chip b{color:var(--ink);font-weight:700}
+
+  /* ---- champion ---- */
+  .champ{background:linear-gradient(135deg,var(--terra-wash),var(--gold-wash));
+    border:1px solid var(--line);border-radius:var(--radius);padding:clamp(24px,4vw,38px);
+    box-shadow:var(--shadow)}
+  .champ .tag{display:inline-block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+    font-weight:700;color:#fff;background:var(--terra-deep);padding:5px 12px;border-radius:20px;margin-bottom:16px}
+  .champ h3{font-family:var(--serif);font-size:clamp(1.5rem,4vw,2.05rem);font-weight:600;
+    margin:0 0 12px;letter-spacing:-.01em;line-height:1.12;color:var(--ink)}
+  .champ p{margin:0 0 22px;color:var(--ink-soft);max-width:60ch;font-size:1.05rem}
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px}
+  .step{flex:1 1 150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px}
+  .step span{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+    color:var(--terra-deep)}
+  .step b{display:block;font-family:var(--serif);font-size:1.08rem;margin-top:3px;color:var(--ink)}
+  .step small{color:var(--ink-soft);font-size:.86rem}
+  .arrow{align-self:center;color:var(--terra);font-size:1.3rem;font-weight:700}
+  @media (max-width:560px){.arrow{transform:rotate(90deg)}}
+
+  /* ---- notes ---- */
+  .notes{display:grid;gap:14px}
+  .note{display:flex;gap:14px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px 20px}
+  .note .k{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:var(--sage-wash);
+    color:var(--sage);display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:1.1rem}
+  .note p{margin:0;font-size:.98rem}
+  .note b{color:var(--ink)}
+
+  /* ---- footer ---- */
+  footer{margin-top:64px;padding-top:28px;border-top:1px solid var(--line);color:var(--neutral);
+    font-size:.86rem}
+  footer a{color:var(--terra-deep);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  .sig{font-family:var(--serif);font-style:italic;color:var(--ink-soft);font-size:1.05rem;margin-bottom:14px}
+  ::selection{background:var(--gold-wash)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Curadoria de experiências · Elarah</p>
+    <h1>Fora de Casa,<br><em>de mãos ocupadas</em> e taça na mesa</h1>
+    <p class="lede">Uma seleção pensada para um grupo 60+ ativo e social: artesanato que rende conversa, sempre com “algo incluso” — uma florzinha, uma vela, um brinde — e o clima de harmonização que eles amam.</p>
+    <div class="rule"></div>
+  </header>
+
+  <dl class="brief">
+    <div><dt>Perfil</dt><dd>Aposentados 60+, ativos e sociáveis</dd></div>
+    <div><dt>Querem</dt><dd>Movimento, cor e leveza — não “quietinho”</dd></div>
+    <div><dt>Amam</dt><dd>Vinho, queijo e um bom papo</dd></div>
+    <div><dt>Formato</dt><dd>Turma fechada · a Elarah vai até eles</dd></div>
+  </dl>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>A cara do grupo</h2></div>
+    <p class="sec-sub">As três que traduzem exatamente o que você descreveu: mão na obra, resultado bonito pra levar pra casa e um mimo incluso. Começaria por aqui.</p>
+    <div class="cards">
+
+      <article class="card sage">
+        <div class="card-top">
+          <h3>Cachepô Florido</h3><span class="cat">Sugestão nova · Floral</span>
+          <span class="price">~R$150<small>por pessoa</small></span>
+        </div>
+        <p class="why">A experiência exata que você imaginou: cada um <b>pinta e decora o próprio vaso</b> e planta uma suculenta ou florzinha pra levar viva pra casa. Colorido, com as mãos na terra, e todo mundo sai com algo que continua crescendo. <b>Montamos sob medida</b> — não está no catálogo ainda, mas é a que mais tem a cara deles.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> leve · sentados</span>
+          <span class="chip"><b>~1h30</b></span>
+          <span class="chip">Leva planta viva</span>
+          <span class="chip">Coffee incluso</span>
+        </div>
+      </article>
+
+      <article class="card sage">
+        <div class="card-top">
+          <h3>Buquê de Flores</h3><span class="cat">Floral</span>
+          <span class="price">R$180<small>por pessoa</small></span>
+        </div>
+        <p class="why">Cada participante monta o <b>próprio buquê</b>, escolhendo cores e texturas — leve, estético e muito fotogênico (ótimo pro Instagram do clube). Já vem com <b>coffee break e todo material incluso</b>.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> leve · sentados</span>
+          <span class="chip"><b>3h</b> (dá pra encurtar)</span>
+          <span class="chip">Coffee break incluso</span>
+          <span class="chip">Rende foto</span>
+        </div>
+      </article>
+
+      <article class="card gold">
+        <div class="card-top">
+          <h3>Vela · Cerveja &amp; Caipirinha</h3><span class="cat">Vela</span>
+          <span class="price">R$180<small>por pessoa</small></span>
+        </div>
+        <p class="why">O artesanato “com coisa inclusa” em pessoa: fazem a <b>própria vela</b> enquanto tomam uma <b>cerveja ou caipirinha</b> com petisco. Curtinha (1h30), animada e descontraída — o tom exato do grupo.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> leve · sentados</span>
+          <span class="chip"><b>1h30</b></span>
+          <span class="chip">Bebida + petisco inclusos</span>
+          <span class="chip">Leva a vela</span>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Mão na massa, com clima</h2></div>
+    <p class="sec-sub">Artesanato mais “fazedor”, ainda tranquilo pra 60+. Todos sentados, com resultado que dá orgulho de mostrar.</p>
+    <div class="cards">
+
+      <article class="card">
+        <div class="card-top">
+          <h3>Pintura em Cerâmica</h3><span class="cat">Cerâmica</span>
+          <span class="price">R$360<small>por pessoa</small></span>
+        </div>
+        <p class="why">Pintam peças de cerâmica com cores livres — <b>zero esforço físico</b>, muito papo e um resultado lindo pra usar em casa. Das mais seguras pra agradar o grupo inteiro.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> mínimo · sentados</span>
+          <span class="chip"><b>3h</b></span>
+          <span class="chip">Material incluso</span>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <h3>Cerâmica em Torno</h3><span class="cat">Cerâmica</span>
+          <span class="price">R$248<small>por pessoa</small></span>
+        </div>
+        <p class="why">O “uau” da lista: sentir a argila girando entre as mãos. É <b>sentado e guiado passo a passo</b>, mas mexe mais — reserve pros mais dispostos, em turmas menores.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> moderado · sentados</span>
+          <span class="chip"><b>1h30</b></span>
+          <span class="chip">Fator “uau”</span>
+        </div>
+      </article>
+
+      <article class="card gold">
+        <div class="card-top">
+          <h3>Luz da Colmeia · Velas de Cera de Abelha</h3><span class="cat">Vela</span>
+          <span class="price">R$180<small>por pessoa</small></span>
+        </div>
+        <p class="why">Enrolam velas de cera de abelha — <b>cheiroso, sensorial e sem sujeira</b>. Vem com coffee break e material. Ótima alternativa mais “zen” à vela com drink.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> leve · sentados</span>
+          <span class="chip"><b>2h30</b></span>
+          <span class="chip">Coffee break incluso</span>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Pra brindar</h2></div>
+    <p class="sec-sub">O lado que eles já pediram: vinho, queijo e coquetel. Funciona sozinho ou como fechamento de qualquer oficina acima.</p>
+    <div class="cards">
+
+      <article class="card wine">
+        <div class="card-top">
+          <h3>Tábua &amp; Taça · Harmonização de Vinho e Queijo</h3><span class="cat">Sugestão nova · Harmonização</span>
+          <span class="price">~R$160<small>por pessoa</small></span>
+        </div>
+        <p class="why">Um <b>sommelier conduz uma harmonização</b> de vinhos com uma tábua de queijos e frios — do jeitinho que o grupo gosta. <b>Combina como “módulo final”</b> de uma oficina: fazem a florzinha/vela e fecham brindando. Montamos sob medida.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> nenhum · sentados</span>
+          <span class="chip"><b>~1h30</b></span>
+          <span class="chip">Vinho + tábua inclusos</span>
+          <span class="chip">Alto astral</span>
+        </div>
+      </article>
+
+      <article class="card wine">
+        <div class="card-top">
+          <h3>Drinks &amp; Petiscos · Gin e Moscow Mule</h3><span class="cat">Bartenderia</span>
+          <span class="price">R$383<small>por pessoa</small></span>
+        </div>
+        <p class="why">Colocam a mão na coqueteleira e <b>preparam os próprios drinks</b> com petiscos. Animadíssima e interativa — ideal pra uma turma menor e mais agitada. É mais longa (3h30), melhor no fim de tarde.</p>
+        <div class="chips">
+          <span class="chip"><b>Esforço</b> leve · em pé/sentados</span>
+          <span class="chip"><b>3h30</b></span>
+          <span class="chip">Drinks + petiscos inclusos</span>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>O modelo campeão</h2></div>
+    <p class="sec-sub">Se eu tivesse que apostar em um único formato pra emplacar com esse grupo, seria este combo — junta tudo que eles amam num encontro só.</p>
+    <div class="champ">
+      <span class="tag">Recomendação da casa</span>
+      <h3>Oficina leve + tábua e taça no fim</h3>
+      <p>Duas horas sentados, de mãos ocupadas numa criação bonita e, no encerramento, o brinde com vinho e queijo. Movimento, cor, mimo pra levar pra casa e a harmonização que eles pedem — na medida certa de energia pra 60+.</p>
+      <div class="flow">
+        <div class="step"><span>Chegada</span><b>Coffee &amp; boas-vindas</b><small>quebra-gelo, 15 min</small></div>
+        <div class="arrow">→</div>
+        <div class="step"><span>Mãos à obra</span><b>Cachepô ou vela</b><small>a criação, ~1h</small></div>
+        <div class="arrow">→</div>
+        <div class="step"><span>Brinde</span><b>Tábua &amp; taça</b><small>harmonização, ~40 min</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Pra dar certo na prática</h2></div>
+    <div class="notes">
+      <div class="note"><div class="k">a</div><p><b>Turmas de 10 a 15.</b> O grupo é grande (a iniciativa já reuniu centenas de aposentados); turmas reduzidas garantem atenção individual e conversa — e dá pra rodar a mesma oficina em várias levas.</p></div>
+      <div class="note"><div class="k">b</div><p><b>Sessões curtas, de dia.</b> O ponto doce é 1h30–2h, de manhã ou fim de tarde. As gastronômicas noturnas de 3h30 são as menos indicadas como padrão pra esse público.</p></div>
+      <div class="note"><div class="k">c</div><p><b>Sempre com opção de sentar</b> e esforço leve. Deixaria o Tufting (pistola, em pé) fora do padrão — só se aparecer uma turma mais animada pedindo.</p></div>
+      <div class="note"><div class="k">d</div><p><b>A Elarah vai até eles.</b> O catálogo atual é de São Paulo e o grupo é do Rio — o caminho é <b>turma fechada / Elarah em Casa</b>, levando a experiência ao espaço de convivência do clube.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="sig">É por aqui que eu começaria — e ajusto a lista assim que você me mandar o que eles mais curtiram no Instagram.</p>
+    <p>Preços “~” são estimativas para as experiências sob medida (Cachepô Florido e Harmonização); os demais são do catálogo atual da Elarah, em São Paulo. Perfil do grupo baseado na reportagem <a href="https://www.correiobraziliense.com.br/revista-do-correio/2026/03/7373558-fora-de-casa-iniciativa-estimula-convivencia-social-entre-idosos.html">“Fora de Casa”, Correio Braziliense</a>.</p>
+  </footer>
+
+</div>
+</body>
+</html>
