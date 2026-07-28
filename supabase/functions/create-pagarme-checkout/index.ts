@@ -63,6 +63,11 @@ const MONTHLY_INTEREST = Math.max(
   0,
   Number(Deno.env.get("PAGARME_MONTHLY_INTEREST")) || 0,
 );
+// Expiração do PIX em SEGUNDOS (doc V5). Default 1h; mínimo 60s.
+const PIX_EXPIRES_IN = Math.max(
+  60,
+  Math.floor(Number(Deno.env.get("PAGARME_PIX_EXPIRES_IN")) || 3600),
+);
 
 if (PAGARME_SECRET_KEY.startsWith("sk_test_")) {
   console.warn(
@@ -309,6 +314,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     maxInstallments: MAX_INSTALLMENTS,
     freeInstallments: FREE_INSTALLMENTS,
     monthlyInterestPct: MONTHLY_INTEREST,
+    pixExpiresInSeconds: PIX_EXPIRES_IN,
   });
 
   if (!result.ok || !result.checkoutUrl) {

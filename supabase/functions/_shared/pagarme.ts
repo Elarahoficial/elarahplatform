@@ -171,10 +171,12 @@ export async function createPaymentLink(
         operation_type: "auth_and_capture",
         installments,
       },
-      // pix_settings SEM expires_in por ora: a unidade/formato desse
-      // campo específico ainda não foi confirmada na doc — usa o default
-      // do Pagar.me. Confirmar antes de definir um valor.
-      pix_settings: {},
+      // pix_settings.expires_in é OBRIGATÓRIO e vem em SEGUNDOS (doc V5:
+      // "Data de expiração do Pix em segundos"). Default 3600 (1h),
+      // configurável por env (PAGARME_PIX_EXPIRES_IN).
+      pix_settings: {
+        expires_in: input.pixExpiresInSeconds ?? 3600,
+      },
     },
     cart_settings: {
       items: items.map((it) => ({
