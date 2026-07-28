@@ -1907,6 +1907,20 @@ if (groupForm) {
       CHECKOUT_FN_BASE + '/create-mp-card-payment';
     const REDEEM_FN_URL =
       CHECKOUT_FN_BASE + '/redeem-gift-card';
+    const PAGARME_CHECKOUT_FN_URL =
+      CHECKOUT_FN_BASE + '/create-pagarme-checkout';
+
+    // ===== Flag de TESTE do Pagar.me (?pay=pagarme) =====
+    // Só ativa com ?pay=pagarme na URL. Quando ativa, roteia TODO o
+    // checkout (cartão à vista + parcelado até 12x + Pix) pro checkout
+    // hospedado do Pagar.me. SEM esse parâmetro, nada muda — o cliente
+    // normal segue no fluxo atual (Stripe/MP). Usada pra validar o
+    // Pagar.me em produção-teste antes de virar o padrão.
+    const PAY_PAGARME_TEST = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('pay') === 'pagarme';
+      } catch (e) { return false; }
+    })();
 
     // ===== Chave de migração do cartão: Mercado Pago → Stripe =====
     // DESLIGADO: o cartão vai pro STRIPE (Checkout), enquanto o motor de
@@ -4288,6 +4302,60 @@ if (groupForm) {
           }
         } catch (e) {
           console.warn('[Elarah checkout] não foi possível atualizar profile.telefone:', e);
+        }
+
+        // ===== TESTE Pagar.me (?pay=pagarme): checkout hospedado =====
+        // Roteia cartão à vista + parcelado + Pix pro Pagar.me. Só entra
+        // aqui quem abriu o site com ?pay=pagarme — cliente normal pula.
+        if (PAY_PAGARME_TEST) {
+          const pagarmeBody = {
+            experiencia_id: ctx.experienceId,
+            horario: ctx.horario,
+            data: ctx.data || null,
+            slot_id: ctx.slotId || null,
+            email: auth.email || ctx.email,
+            nome: ctx.nome || null,
+            cpf: cpfDigits,
+            telefone: telefoneRaw,
+            telefone_digits: telefoneNormalized,
+            cupom: ctx.cupomCode || null,
+            quantidade: ctx.quantidade || 1,
+            participantes: ctx.participantes || [],
+            variant_label: ctx.variantLabel || null,
+            variant_selected: ctx.variantSelected || null,
+          };
+          console.log('[Elarah Payment/Pagarme TESTE] criando checkout', {
+            total: ctx.totalCentavos || 0,
+          });
+          const res = await fetch(PAGARME_CHECKOUT_FN_URL, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(pagarmeBody),
+          });
+          const data = await res.json().catch(function () { return null; });
+          if (!res.ok || !data) {
+            let msg = translateCheckoutError(data, 'Não foi possível iniciar o pagamento (Pagar.me teste). Confira os dados.');
+            if (data && data.detail) {
+              msg += ' (Pagar.me: ' + JSON.stringify(data.detail).slice(0, 200) + ')';
+            }
+            errEl.textContent = msg;
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+          // Cupom cobriu 100% — vai direto pra success.
+          if (data.direct === true) {
+            window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(data.booking_id || '');
+            return;
+          }
+          if (data.checkout_url) {
+            window.location.href = data.checkout_url;
+            return;
+          }
+          errEl.textContent = 'Resposta inesperada do servidor (sem checkout_url).';
+          confirmBtn.disabled = false;
+          refreshPriceBreakdown();
+          return;
         }
 
         // ===== Branch: PIX (Mercado Pago) OU Cartão (Stripe) =====

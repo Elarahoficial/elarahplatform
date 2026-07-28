@@ -18,6 +18,13 @@ verify_jwt = false
 [functions.stripe-reconcile]
 verify_jwt = false
 
+# pagarme-webhook — notificações do Pagar.me (API V5). Não mandam JWT
+# do Supabase; autenticam via Basic Auth (PAGARME_WEBHOOK_USER/PASSWORD),
+# validado dentro da função. Sem verify_jwt=false o Supabase responde
+# 401 antes do código rodar.
+[functions.pagarme-webhook]
+verify_jwt = false
+
 # OAuth callback da Meta — chamado por redirect do navegador
 # (sem header Authorization). A autenticidade é garantida pelo
 # `state` aleatório criado em oauth-start (validado em uma tabela
