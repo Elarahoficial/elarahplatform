@@ -3402,7 +3402,9 @@ if (groupForm) {
         const cpfMsgReset = root.querySelector('#erm-cpf-msg');
         if (cpfMsgReset) {
           cpfMsgReset.style.color = '#888';
-          cpfMsgReset.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+          cpfMsgReset.textContent = PAY_PAGARME_TEST
+            ? 'Exigido para emitir o pagamento no Pagar.me.'
+            : 'Exigido pelo Mercado Pago pra gerar o PIX.';
         }
       }
       // Garante o estado "formulário" (pode estar no PIX section
@@ -4078,27 +4080,36 @@ if (groupForm) {
         ctx.email = emailRaw;
       }
 
-      // ===== VALIDAÇÃO CPF (só pra PIX) =====
+      // ===== VALIDAÇÃO CPF =====
+      // Normal: exigido só no PIX. Modo Pagar.me: SEMPRE (cartão E pix),
+      // porque o Pagar.me exige CPF em todas as cobranças. Normaliza pra
+      // os 11 dígitos ANTES de validar/enviar (a máscara 000.000.000-00
+      // não pode chegar ao isValidCpfFront nem ao backend).
       let cpfDigits = '';
-      if (ctx.paymentMethod === 'pix') {
+      const cpfRequired = ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST;
+      if (cpfRequired) {
         const cpfInput = root.querySelector('#erm-cpf');
         const cpfMsg = root.querySelector('#erm-cpf-msg');
         const cpfRaw = cpfInput ? cpfInput.value.trim() : '';
-        cpfDigits = cpfRaw.replace(/\D+/g, '');
+        cpfDigits = cpfRaw.replace(/\D+/g, ''); // "393.033.608-18" → "39303360818"
         if (!isValidCpfFront(cpfDigits)) {
           if (cpfMsg) {
             cpfMsg.style.color = '#c0392b';
-            cpfMsg.textContent = 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
+            cpfMsg.textContent = PAY_PAGARME_TEST
+              ? 'CPF inválido. Digite os 11 números.'
+              : 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
           }
           if (cpfInput) {
             try { cpfInput.focus({ preventScroll: true }); } catch (e) {}
           }
-          console.warn('[Elarah Payment/MP] CPF inválido bloqueou o submit:', cpfDigits);
+          console.warn('[Elarah checkout] CPF inválido bloqueou o submit:', cpfDigits);
           return;
         }
         if (cpfMsg) {
           cpfMsg.style.color = '#888';
-          cpfMsg.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+          cpfMsg.textContent = PAY_PAGARME_TEST
+            ? 'Exigido para emitir o pagamento no Pagar.me.'
+            : 'Exigido pelo Mercado Pago pra gerar o PIX.';
         }
         ctx.cpf = cpfDigits;
       }
