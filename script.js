@@ -3241,16 +3241,32 @@ if (groupForm) {
       });
       const hint = modalRoot.querySelector('#erm-pm-hint');
       if (hint) {
-        hint.textContent = ctx.paymentMethod === 'pix'
-          ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
-          : 'Cartão via Mercado Pago — taxa de processamento é repassada ao cliente.';
+        if (PAY_PAGARME_TEST) {
+          // Modo teste Pagar.me: nada de "Mercado Pago". O pagamento
+          // (cartão à vista/parcelado + Pix) é finalizado no Pagar.me.
+          hint.textContent = 'Cartão (à vista ou em até 12x) ou PIX — você finaliza na página segura do Pagar.me.';
+        } else {
+          hint.textContent = ctx.paymentMethod === 'pix'
+            ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
+            : 'Cartão via Mercado Pago — taxa de processamento é repassada ao cliente.';
+        }
       }
       // Mostra/esconde campo CPF. O reset do valor NÃO acontece aqui
       // pra preservar o que o usuário digitou se ele alternar entre
       // os dois métodos.
       const cpfWrap = modalRoot.querySelector('#erm-cpf-wrap');
       if (cpfWrap) {
-        cpfWrap.style.display = ctx.paymentMethod === 'pix' ? 'block' : 'none';
+        // Pagar.me exige CPF no cartão E no PIX. No modo teste, sempre
+        // mostra o campo (senão não há onde digitar e a validação falha).
+        const needsCpf = ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST;
+        cpfWrap.style.display = needsCpf ? 'block' : 'none';
+        if (PAY_PAGARME_TEST) {
+          // Sem "Mercado Pago" no modo Pagar.me.
+          const cpfMsg = modalRoot.querySelector('#erm-cpf-msg');
+          if (cpfMsg && !/inválido|obrigat/i.test(cpfMsg.textContent || '')) {
+            cpfMsg.textContent = 'Exigido para emitir o pagamento no Pagar.me.';
+          }
+        }
       }
     }
 
