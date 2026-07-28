@@ -84,6 +84,13 @@ jobs:
           # dentro (CRON_SECRET/service_role/admin), então --no-verify-jwt.
           deploy stripe-reconcile --no-verify-jwt
           deploy mp-webhook --no-verify-jwt
+          # Pagar.me (Stone) — checkout hospedado via Payment Links V5.
+          # create-pagarme-checkout: chamada pelo front com a anon key,
+          # então --no-verify-jwt (mesmo padrão do create-mp-pix-payment).
+          # pagarme-webhook: notificação do Pagar.me (sem JWT do Supabase),
+          # autentica por Basic Auth por dentro — --no-verify-jwt.
+          deploy create-pagarme-checkout --no-verify-jwt
+          deploy pagarme-webhook --no-verify-jwt
           deploy check-mp-payment-status --no-verify-jwt
           deploy redeem-gift-card --no-verify-jwt
           # delete-account: --no-verify-jwt porque valida o token do
