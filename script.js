@@ -1917,32 +1917,32 @@ if (groupForm) {
     const PAGARME_PIX_FN_URL =
       CHECKOUT_FN_BASE + '/create-pagarme-pix-payment';
 
-    // ===== Flag de TESTE do Pagar.me (?pay=pagarme) =====
-    // Só ativa com ?pay=pagarme na URL. Quando ativa, roteia TODO o
-    // checkout (cartão à vista + parcelado até 12x + Pix) pro checkout
-    // hospedado do Pagar.me. SEM esse parâmetro, nada muda — o cliente
-    // normal segue no fluxo atual (Stripe/MP). Usada pra validar o
-    // Pagar.me em produção-teste antes de virar o padrão.
+    // ===== Roteamento do CARTÃO: Pagar.me é o PADRÃO (oficial) =====
+    // Validado em produção: CARTÃO (1x + parcelado) = Pagar.me · PIX = Mercado
+    // Pago. Agora é o comportamento OFICIAL do checkout — NÃO precisa mais de
+    // ?pay=pagarme. (Nome da flag mantido de propósito pra não refatorar os
+    // usos já validados; o que muda é só o DEFAULT.)
+    // Escotilha de emergência: ?pay=off (ou ?pay=normal) devolve o CARTÃO pro
+    // fluxo antigo (MP/Stripe) e PERSISTE na sessão até reativar com ?pay=pagarme.
+    // O PIX é SEMPRE Mercado Pago, independente desta flag.
     const PAY_PAGARME_TEST = (function () {
       var KEY = 'elarah_pay_pagarme';
       try {
         var v = new URLSearchParams(window.location.search).get('pay');
         if (v === 'pagarme') {
-          // Persiste o modo teste — o site é multi-página (cada navegação
-          // é um page load novo), então sem isso o ?pay se perderia ao ir
-          // da home pra experiência/checkout.
           try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
           return true;
         }
         if (v === 'off' || v === 'normal') {
-          // Escotilha pra sair do modo teste do Pagar.me.
-          try { sessionStorage.removeItem(KEY); } catch (e) {}
+          // Escotilha PERSISTENTE: cartão volta pro fluxo antigo até reativar.
+          try { sessionStorage.setItem(KEY, '0'); } catch (e) {}
           return false;
         }
-        // Sem parâmetro na URL: mantém o que ficou guardado na sessão.
-        try { return sessionStorage.getItem(KEY) === '1'; } catch (e) {}
+        // Sem parâmetro: PADRÃO = Pagar.me (true), exceto se a escotilha
+        // ('0') tiver sido acionada nesta sessão.
+        try { return sessionStorage.getItem(KEY) !== '0'; } catch (e) {}
       } catch (e) {}
-      return false;
+      return true; // default oficial: cartão no Pagar.me
     })();
 
     // ===== Chave de migração do cartão: Mercado Pago → Stripe =====
