@@ -1917,9 +1917,25 @@ if (groupForm) {
     // normal segue no fluxo atual (Stripe/MP). Usada pra validar o
     // Pagar.me em produção-teste antes de virar o padrão.
     const PAY_PAGARME_TEST = (function () {
+      var KEY = 'elarah_pay_pagarme';
       try {
-        return new URLSearchParams(window.location.search).get('pay') === 'pagarme';
-      } catch (e) { return false; }
+        var v = new URLSearchParams(window.location.search).get('pay');
+        if (v === 'pagarme') {
+          // Persiste o modo teste — o site é multi-página (cada navegação
+          // é um page load novo), então sem isso o ?pay se perderia ao ir
+          // da home pra experiência/checkout.
+          try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+          return true;
+        }
+        if (v === 'off' || v === 'normal') {
+          // Escotilha pra sair do modo teste do Pagar.me.
+          try { sessionStorage.removeItem(KEY); } catch (e) {}
+          return false;
+        }
+        // Sem parâmetro na URL: mantém o que ficou guardado na sessão.
+        try { return sessionStorage.getItem(KEY) === '1'; } catch (e) {}
+      } catch (e) {}
+      return false;
     })();
 
     // ===== Chave de migração do cartão: Mercado Pago → Stripe =====
