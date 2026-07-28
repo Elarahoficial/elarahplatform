@@ -319,6 +319,215 @@ export async function getOrder(
   }
 }
 
+// =============================================================
+// CHECKOUT TRANSPARENTE — Orders API (POST /orders)
+// -------------------------------------------------------------
+// Aqui o cliente digita o cartão no NOSSO site; o front tokeniza
+// direto no Pagar.me (POST /tokens?appId=pk_...) e nos manda só o
+// card_token. A gente cria a Order já com o `amount` FINAL:
+//   - cartão: amount = total grossed-up da parcela escolhida
+//     (o acréscimo JÁ está no amount → installments só divide, SEM
+//     installments_setup/juros → evita o 400 do Payment Link).
+//   - pix: amount = valor-base (o PIX nunca leva gross-up).
+// `code` = booking.id → o pagarme-webhook concilia igual ao link.
+// =============================================================
+
+export interface PagarmeOrderCustomer {
+  name: string;
+  email: string;
+  cpf: string; // só dígitos
+  phone?: { areaCode?: string; number?: string };
+}
+
+export interface PagarmeCardOrderInput {
+  amountCents: number; // total grossed-up da parcela escolhida
+  installments: number;
+  cardToken: string;
+  bookingId: string; // vira order.code (reconciliação)
+  description: string;
+  customer: PagarmeOrderCustomer;
+  statementDescriptor?: string;
+  itemCode?: string;
+}
+
+export interface PagarmePixOrderInput {
+  amountCents: number; // valor-base
+  bookingId: string;
+  description: string;
+  customer: PagarmeOrderCustomer;
+  pixExpiresInSeconds?: number;
+  itemCode?: string;
+}
+
+export interface PagarmeOrderResult {
+  ok: boolean;
+  order?: PagarmeOrderResponse;
+  orderId?: string;
+  orderStatus?: string; // paid | pending | processing | failed | canceled
+  chargeId?: string;
+  chargeStatus?: string;
+  transactionStatus?: string; // last_transaction.status
+  acquirerMessage?: string; // motivo da recusa (cartão)
+  installments?: number;
+  qrCode?: string; // pix copia-e-cola
+  qrCodeUrl?: string; // pix imagem
+  errorStatus?: number;
+  errorBody?: unknown;
+}
+
+function buildOrderCustomer(c: PagarmeOrderCustomer): Record<string, unknown> {
+  const areaCode = digits(c.phone?.areaCode);
+  const number = digits(c.phone?.number);
+  const phones = areaCode && number
+    ? { mobile_phone: { country_code: "55", area_code: areaCode, number } }
+    : undefined;
+  return {
+    name: (c.name || "Cliente Elarah").slice(0, 64),
+    email: c.email,
+    type: "individual",
+    document: digits(c.cpf),
+    document_type: "CPF",
+    ...(phones ? { phones } : {}),
+  };
+}
+
+// POST /orders — envia o body e normaliza a resposta (order + charge +
+// last_transaction). NÃO loga PAN/cvv (o cartão nunca chega aqui — só o
+// card_token). Loga status pra diagnóstico.
+async function postOrder(
+  secretKey: string,
+  body: Record<string, unknown>,
+  label: string,
+): Promise<PagarmeOrderResult> {
+  if (!secretKey) return { ok: false, errorStatus: 0, errorBody: "no_secret_key" };
+
+  const url = baseUrl(secretKey) + "/orders";
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": buildAuthHeader(secretKey),
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    console.error("[Elarah Payment/Pagarme] network error (" + label + ")", e);
+    return { ok: false, errorStatus: 0, errorBody: String(e) };
+  }
+
+  let parsed: unknown = null;
+  try {
+    parsed = await res.json();
+  } catch {
+    parsed = null;
+  }
+
+  if (!res.ok) {
+    console.error(
+      "[Elarah Payment/Pagarme] " + label + " falhou",
+      "status=" + res.status,
+      "body=" + JSON.stringify(parsed),
+    );
+    return { ok: false, errorStatus: res.status, errorBody: parsed };
+  }
+
+  const order = parsed as PagarmeOrderResponse;
+  const charge = order.charges && order.charges[0] ? order.charges[0] : undefined;
+  const tx = charge?.last_transaction;
+  console.info(
+    "[Elarah Payment/Pagarme] " + label + " ok",
+    "order=" + order.id,
+    "order_status=" + order.status,
+    "charge_status=" + (charge?.status ?? "?"),
+    "tx_status=" + (tx?.status ?? "?"),
+  );
+  return {
+    ok: true,
+    order,
+    orderId: order.id,
+    orderStatus: order.status,
+    chargeId: charge?.id,
+    chargeStatus: charge?.status,
+    transactionStatus: tx?.status,
+    acquirerMessage: tx?.acquirer_message,
+    installments: tx?.installments,
+    qrCode: tx?.qr_code,
+    qrCodeUrl: tx?.qr_code_url,
+  };
+}
+
+// ===== API: criar Order de CARTÃO (transparente, com card_token) =====
+export async function createCardOrder(
+  secretKey: string,
+  input: PagarmeCardOrderInput,
+): Promise<PagarmeOrderResult> {
+  const n = Math.max(1, Math.min(12, Math.floor(input.installments || 1)));
+  const body: Record<string, unknown> = {
+    code: input.bookingId,
+    closed: true,
+    customer: buildOrderCustomer(input.customer),
+    items: [{
+      amount: input.amountCents, // total grossed-up (acréscimo já embutido)
+      description: (input.description || "Reserva Elarah").slice(0, 64),
+      quantity: 1,
+      code: input.itemCode || input.bookingId,
+    }],
+    payments: [{
+      payment_method: "credit_card",
+      // amount da parcela escolhida — o acréscimo já está aqui; installments
+      // só DIVIDE esse total, sem juros extra (nada de installments_setup).
+      amount: input.amountCents,
+      credit_card: {
+        installments: n,
+        statement_descriptor: (input.statementDescriptor || "ELARAH").slice(0, 13),
+        card_token: input.cardToken,
+        operation_type: "auth_and_capture",
+      },
+    }],
+  };
+  console.info(
+    "[Elarah Payment/Pagarme] POST /orders (card)",
+    "base=" + (secretKey.startsWith("sk_test_") ? "sandbox" : "prod"),
+    "amount=" + input.amountCents,
+    "installments=" + n,
+    "booking=" + input.bookingId,
+  );
+  return await postOrder(secretKey, body, "order card");
+}
+
+// ===== API: criar Order de PIX (transparente, QR inline) =====
+export async function createPixOrder(
+  secretKey: string,
+  input: PagarmePixOrderInput,
+): Promise<PagarmeOrderResult> {
+  const body: Record<string, unknown> = {
+    code: input.bookingId,
+    closed: true,
+    customer: buildOrderCustomer(input.customer),
+    items: [{
+      amount: input.amountCents, // valor-base (PIX nunca leva gross-up)
+      description: (input.description || "Reserva Elarah").slice(0, 64),
+      quantity: 1,
+      code: input.itemCode || input.bookingId,
+    }],
+    payments: [{
+      payment_method: "pix",
+      amount: input.amountCents,
+      pix: { expires_in: Math.max(60, Math.floor(input.pixExpiresInSeconds || 3600)) },
+    }],
+  };
+  console.info(
+    "[Elarah Payment/Pagarme] POST /orders (pix)",
+    "base=" + (secretKey.startsWith("sk_test_") ? "sandbox" : "prod"),
+    "amount=" + input.amountCents,
+    "booking=" + input.bookingId,
+  );
+  return await postOrder(secretKey, body, "order pix");
+}
+
 // ===== Webhook: validação por Basic Auth =====
 // O Pagar.me protege o webhook com HTTP Basic Auth: no painel você
 // cadastra a URL com usuário/senha, e o Pagar.me envia esse Basic Auth
