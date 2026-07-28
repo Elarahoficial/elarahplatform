@@ -202,6 +202,12 @@ export async function createPaymentLink(
       accepted_payment_methods: ["credit_card", "pix"],
       statement_descriptor: (input.statementDescriptor || "ELARAH").slice(0, 13),
       credit_card_settings: {
+        // installments_setup.interest_type="simple" faz o Pagar.me HONRAR
+        // os installments[].total como total-com-juros (gross-up). Sem ele,
+        // o Pagar.me cobra o valor do carrinho (sem juros). Confirmado na
+        // doc oficial V5. cart_settings.items.amount fica no valor-base →
+        // o PIX cobra o base; só o cartão usa os totais grossed-up.
+        installments_setup: { interest_type: "simple" },
         operation_type: "auth_and_capture",
         installments,
       },
@@ -230,6 +236,9 @@ export async function createPaymentLink(
     "booking=" + input.externalReference,
     "installments=" + installments.length,
   );
+  // Diagnóstico: payload COMPLETO enviado (installments com os totais
+  // grossed-up). Fica SÓ nos logs da Edge Function — nunca no cliente.
+  console.info("[Elarah Payment/Pagarme] payload /paymentlinks", JSON.stringify(body));
 
   let res: Response;
   try {
@@ -253,6 +262,14 @@ export async function createPaymentLink(
   } catch {
     parsed = null;
   }
+
+  // Diagnóstico: resposta COMPLETA do Pagar.me (ecoa como ele interpretou
+  // os installments/totais). Só nos logs — confirma se o gross-up foi aceito.
+  console.info(
+    "[Elarah Payment/Pagarme] resposta /paymentlinks",
+    "http=" + res.status,
+    JSON.stringify(parsed),
+  );
 
   if (!res.ok) {
     console.error(
