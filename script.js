@@ -2778,36 +2778,69 @@ if (groupForm) {
         },
         body: '{}',
       })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
+        .then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (d) {
+            return { httpStatus: r.status, data: d };
+          });
+        })
+        .then(function (res) {
+          const d = res.data;
           _pgPk = (d && d.public_key)
             ? { key: String(d.public_key), isTest: !!d.is_test }
             : null;
+          if (!_pgPk) {
+            // Diagnóstico explícito (só console): distingue "função respondeu
+            // sem chave" (secret PAGARME_PUBLIC_KEY ausente no Supabase) de
+            // erro de rota (função não deployada / 404).
+            if (res.httpStatus === 200) {
+              console.error('[Elarah Payment/Pagarme] chave pública AUSENTE: a função respondeu 200 mas sem public_key. Configure o secret PAGARME_PUBLIC_KEY (pk_test_…) no Supabase.');
+            } else {
+              console.error('[Elarah Payment/Pagarme] get-pagarme-public-key http=' + res.httpStatus + ' — a função pode não estar deployada.');
+            }
+          }
           return _pgPk;
         })
         .catch(function (e) {
-          console.warn('[Elarah Payment/Pagarme] get-pagarme-public-key falhou', e);
+          console.error('[Elarah Payment/Pagarme] get-pagarme-public-key falhou (rede/CORS)', e);
           _pgPk = null;
           return null;
         });
       return _pgPkPromise;
     }
 
-    // Tokeniza o cartão DIRETO no Pagar.me (browser → Pagar.me). Retorna
-    // { ok, status, body }. O card_token = body.id.
+    // Tokeniza o cartão DIRETO no Pagar.me (browser → Pagar.me; o cartão
+    // NUNCA passa pelo nosso servidor). Retorna { ok, status, body }; o
+    // card_token = body.id. A tokenização autentica só pela chave PÚBLICA no
+    // appId (a secret nunca vai pro front).
+    //
+    // Host: a doc oficial usa api.pagar.me/core/v5/tokens?appId=pk_ (a chave
+    // pk_test_/pk_live_ define o ambiente). Como fallback (só no teste),
+    // tenta o sdx-api — assim ficamos robustos a qualquer divergência de
+    // host sem depender de tentativa/erro.
     function pagarmeTokenizeCard(pk, card) {
-      const base = pk.isTest
-        ? 'https://sdx-api.pagar.me/core/v5'
-        : 'https://api.pagar.me/core/v5';
-      return fetch(base + '/tokens?appId=' + encodeURIComponent(pk.key), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ type: 'card', card: card }),
-      }).then(function (r) {
-        return r.json().catch(function () { return null; }).then(function (j) {
-          return { ok: r.ok, status: r.status, body: j };
-        });
-      });
+      const hosts = pk.isTest
+        ? ['https://api.pagar.me/core/v5', 'https://sdx-api.pagar.me/core/v5']
+        : ['https://api.pagar.me/core/v5'];
+      const payload = JSON.stringify({ type: 'card', card: card });
+      function attempt(i) {
+        if (i >= hosts.length) return Promise.resolve({ ok: false, status: 0, body: null });
+        return fetch(hosts[i] + '/tokens?appId=' + encodeURIComponent(pk.key), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: payload,
+        }).then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (j) {
+            if (r.ok && j && j.id) return { ok: true, status: r.status, body: j };
+            // Só troca de host quando parece problema de ROTA (404/401/403),
+            // nunca em 422 de validação de cartão (o host está certo).
+            if ((r.status === 404 || r.status === 401 || r.status === 403) && i + 1 < hosts.length) {
+              return attempt(i + 1);
+            }
+            return { ok: false, status: r.status, body: j };
+          });
+        }).catch(function () { return attempt(i + 1); });
+      }
+      return attempt(0);
     }
 
     // Injeta (uma vez) e devolve a seção do cartão Pagar.me no modal.
@@ -2940,6 +2973,7 @@ if (groupForm) {
             tok = await pagarmeTokenizeCard(pk, {
               number: numRaw,
               holder_name: holder,
+              holder_document: extra.cpfDigits || undefined,
               exp_month: expMonth,
               exp_year: expYear,
               cvv: cvv,

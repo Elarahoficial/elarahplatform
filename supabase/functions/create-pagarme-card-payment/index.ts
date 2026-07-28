@@ -238,6 +238,45 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     "installments=" + installments, "charge=" + chargeCents,
   );
 
+  // ===== PRÉ-INSERE a booking pending ANTES de cobrar =====
+  // auth_and_capture aprova SÍNCRONO → o pagarme-webhook dispara order.paid
+  // quase imediato. Se a booking não existisse ainda, o webhook não acharia
+  // a reserva (booking_not_found → 200 sem retry) e ela ficaria presa em
+  // pending. Pré-inserir garante que a linha existe quando o webhook chega.
+  const { error: insertErr } = await supabase.from("bookings").insert({
+    id: bookingId, user_id: userId, email, nome: resolvedNome,
+    telefone: telefoneToSave, experiencia_id: exp.id, experiencia_nome: exp.nome,
+    data: slotData ?? dataFromPayload ?? exp.data ?? null, horario,
+    preco_label: exp.preco, amount_total: chargeCents, currency: "brl",
+    status: "pending", stripe_session_id: "PAGARME-CARD-" + bookingId.slice(0, 12),
+    gift_card_id: giftCardId, gift_card_centavos: giftCardCentavos || null,
+    gift_card_code: cupomCode, coupon_id: couponId,
+    coupon_code: couponId ? cupomCode : null,
+    coupon_discount_centavos: couponId ? couponDiscountCents : null,
+    slot_id: slotId, quantidade: guardQty, fornecedor_nome: fornecedorNome,
+    fornecedor_id: fornecedorId, valor_cheio_centavos: valorCheioFinal,
+    valor_repasse_centavos: valorRepasseCentavos, valor_comissao_centavos: valorComissaoCentavos,
+    repasses: repassesArray.length ? repassesArray : null,
+    status_fornecedor: "repasse_pendente", payment_provider: "pagarme",
+    metadata: {
+      bairro: exp.bairro ?? null, endereco: exp.endereco ?? null,
+      participantes, telefone_digits: telefoneDigits || null,
+      payment_method: "card", cpf: cpfRaw,
+      variant_label: variantLabel, variant_selected: variantSelected,
+      // Auditoria do gross-up: base × total cobrado × parcela.
+      amount_before_grossup_centavos: amountToChargeCents,
+      grossup_centavos: chargeCents - amountToChargeCents,
+      installments: installments,
+      inventory_skipped: inventorySkipped || undefined,
+    },
+  });
+  if (insertErr) {
+    console.error("[Elarah Payment/Pagarme card] pre-insert booking falhou", insertErr);
+    await rollback();
+    return jsonResponse({ error: "booking_save_failed", detail: insertErr.message }, 500);
+  }
+
+  // ===== Cobra no cartão (Order auth_and_capture) =====
   const cardResult = await createCardOrder(PAGARME_SECRET_KEY, {
     amountCents: chargeCents, // total grossed-up da parcela escolhida
     installments,
@@ -254,13 +293,14 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     itemCode: exp.id,
   });
 
-  // ----- Erro de comunicação/validação com o Pagar.me: rollback + 502 -----
+  // ----- Erro de comunicação/validação com o Pagar.me: cancela + rollback -----
   if (!cardResult.ok) {
     console.error(
       "[Elarah Payment/Pagarme card] order card falhou",
       "status=" + cardResult.errorStatus,
       "body=" + JSON.stringify(cardResult.errorBody),
     );
+    await supabase.from("bookings").update({ status: "cancelled" }).eq("id", bookingId);
     await rollback();
     return jsonResponse(
       {
@@ -272,7 +312,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     );
   }
 
-  // ----- Cartão recusado (order/charge failed): libera e devolve motivo -----
+  // ----- Cartão recusado (order/charge failed): cancela + libera + motivo -----
   const orderStatus = String(cardResult.orderStatus || "");
   const txStatus = String(cardResult.transactionStatus || "");
   const refused = orderStatus === "failed" || orderStatus === "canceled" ||
@@ -283,6 +323,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       "order_status=" + orderStatus, "tx_status=" + txStatus,
       "acq=" + (cardResult.acquirerMessage || "?"),
     );
+    await supabase.from("bookings").update({ status: "cancelled" }).eq("id", bookingId);
     await rollback();
     return jsonResponse({
       rejected: true,
@@ -292,59 +333,26 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     });
   }
 
-  // ----- Aprovado / em captura: grava booking pending (webhook finaliza) -----
-  // Igual ao MP card: mesmo aprovado, gravamos pending e deixamos o
-  // pagarme-webhook marcar 'pago' + disparar e-mails (idempotência).
-  const { error: insertErr } = await supabase.from("bookings").insert({
-    id: bookingId, user_id: userId, email, nome: resolvedNome,
-    telefone: telefoneToSave, experiencia_id: exp.id, experiencia_nome: exp.nome,
-    data: slotData ?? dataFromPayload ?? exp.data ?? null, horario,
-    preco_label: exp.preco, amount_total: chargeCents, currency: "brl",
-    status: "pending", stripe_session_id: "PAGARME-CARD-" + bookingId.slice(0, 12),
-    gift_card_id: giftCardId, gift_card_centavos: giftCardCentavos || null,
-    gift_card_code: cupomCode, coupon_id: couponId,
-    coupon_code: couponId ? cupomCode : null,
-    coupon_discount_centavos: couponId ? couponDiscountCents : null,
-    slot_id: slotId, quantidade: guardQty, fornecedor_nome: fornecedorNome,
-    fornecedor_id: fornecedorId, valor_cheio_centavos: valorCheioFinal,
-    valor_repasse_centavos: valorRepasseCentavos, valor_comissao_centavos: valorComissaoCentavos,
-    repasses: repassesArray.length ? repassesArray : null,
-    status_fornecedor: "repasse_pendente", mp_payment_id: cardResult.orderId ?? null,
-    payment_provider: "pagarme",
+  // ----- Aprovado / em captura: guarda o order_id; o webhook marca 'pago' -----
+  // (compare-and-set no webhook garante e-mail/efeitos uma única vez; o front
+  // faz polling até 'pago'.)
+  await supabase.from("bookings").update({
+    mp_payment_id: cardResult.orderId ?? null,
     metadata: {
       bairro: exp.bairro ?? null, endereco: exp.endereco ?? null,
       participantes, telefone_digits: telefoneDigits || null,
       payment_method: "card", cpf: cpfRaw,
       variant_label: variantLabel, variant_selected: variantSelected,
       pagarme_order_id: cardResult.orderId ?? null,
-      // Auditoria do gross-up: base × total cobrado × parcela.
       amount_before_grossup_centavos: amountToChargeCents,
       grossup_centavos: chargeCents - amountToChargeCents,
       installments: installments,
       inventory_skipped: inventorySkipped || undefined,
     },
-  });
-
-  if (insertErr) {
-    // A cobrança JÁ foi feita — não dá rollback sem deixar pagamento órfão.
-    console.error(
-      "[Elarah Payment/Pagarme card] PAGAMENTO FEITO MAS BOOKING NÃO GRAVOU",
-      "order=" + cardResult.orderId, "booking=" + bookingId, "amount=" + chargeCents,
-      "err=" + insertErr.message,
-    );
-    return jsonResponse(
-      {
-        error: "booking_failed_after_charge",
-        order_id: cardResult.orderId,
-        message: "O pagamento foi processado, mas houve um erro ao registrar a reserva. " +
-          "Guarde este código e nos chame no WhatsApp: " + bookingId,
-      },
-      500,
-    );
-  }
+  }).eq("id", bookingId);
 
   console.info(
-    "[Elarah Payment/Pagarme card] booking pending",
+    "[Elarah Payment/Pagarme card] booking pending + cobrado",
     "booking=" + bookingId, "order=" + cardResult.orderId,
     "order_status=" + orderStatus, "amount=" + chargeCents, "installments=" + installments,
   );
