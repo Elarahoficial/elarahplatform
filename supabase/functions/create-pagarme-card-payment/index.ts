@@ -345,15 +345,20 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     );
   }
 
-  // ----- Cartão recusado (order/charge failed): cancela + libera + motivo -----
+  // ----- Charge falhou: cancela + libera + mensagem ADEQUADA ao motivo -----
   const orderStatus = String(cardResult.orderStatus || "");
   const txStatus = String(cardResult.transactionStatus || "");
-  const refused = orderStatus === "failed" || orderStatus === "canceled" ||
-    txStatus === "not_authorized" || txStatus === "refused" || txStatus === "with_error";
-  if (refused) {
+  // Recusa REAL do emissor (autorização negada) vs. erro de validação/gateway
+  // (ex.: billing/antifraude — a transação nem chega a ser autorizada). Só a
+  // recusa do emissor mostra "recusado"; validação vira mensagem genérica.
+  const declinedByIssuer = txStatus === "not_authorized" || txStatus === "refused";
+  const failed = declinedByIssuer || orderStatus === "failed" || orderStatus === "canceled" ||
+    txStatus === "with_error" || txStatus === "error_on_sending_to_acquirer";
+  if (failed) {
     console.info(
-      "[Elarah Payment/Pagarme card] recusado",
+      "[Elarah Payment/Pagarme card] charge falhou",
       "order_status=" + orderStatus, "tx_status=" + txStatus,
+      "declinedByIssuer=" + declinedByIssuer,
       "acq=" + (cardResult.acquirerMessage || "?"),
     );
     await supabase.from("bookings").update({ status: "cancelled" }).eq("id", bookingId);
@@ -362,7 +367,9 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       rejected: true,
       order_id: cardResult.orderId,
       status: orderStatus || txStatus,
-      message: "Pagamento recusado pelo emissor. Tente outro cartão ou pague no PIX.",
+      message: declinedByIssuer
+        ? "Pagamento recusado pelo emissor. Tente outro cartão ou pague no PIX."
+        : "Não foi possível processar o pagamento. Tente novamente.",
     });
   }
 

@@ -500,6 +500,23 @@ export async function createCardOrder(
   input: PagarmeCardOrderInput,
 ): Promise<PagarmeOrderResult> {
   const n = Math.max(1, Math.min(12, Math.floor(input.installments || 1)));
+
+  // billing_address do CARTÃO — obrigatório no charge (doc V5). O card_token
+  // NÃO carrega o billing, então ele vai aqui, no card do pedido. Sem isto:
+  // validation_error | billing | "value" is required. Mesmo endereço que já
+  // coletamos (customer.address); só reaproveitado no formato do card.
+  const a = input.customer.address;
+  const billingAddress = (a && digits(a.zipCode) && a.line1 && a.city && a.state)
+    ? {
+      line_1: String(a.line1).slice(0, 256),
+      zip_code: digits(a.zipCode),
+      city: String(a.city).slice(0, 64),
+      state: String(a.state).toUpperCase().slice(0, 2),
+      country: (a.country || "BR").toUpperCase().slice(0, 2),
+      ...(a.line2 ? { line_2: String(a.line2).slice(0, 256) } : {}),
+    }
+    : undefined;
+
   const body: Record<string, unknown> = {
     code: input.bookingId,
     closed: true,
@@ -520,6 +537,8 @@ export async function createCardOrder(
         statement_descriptor: (input.statementDescriptor || "ELARAH").slice(0, 13),
         card_token: input.cardToken,
         operation_type: "auth_and_capture",
+        // billing_address no card do pedido (o token não o carrega).
+        ...(billingAddress ? { card: { billing_address: billingAddress } } : {}),
       },
     }],
   };
