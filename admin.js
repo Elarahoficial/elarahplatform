@@ -2579,6 +2579,88 @@
       invalidateGiftCardsCache();
       renderBookings();
     });
+
+    // Botão "↻ Recuperar vendas do Stripe" — rede de segurança manual.
+    // Quando o webhook do Stripe falha (ou não existia ainda), a venda
+    // paga no cartão fica presa em 'pending': some da aba Compras e
+    // ninguém recebe e-mail. Este botão chama a edge function
+    // stripe-reconcile, que confere no Stripe cada reserva pendente,
+    // recupera as que foram REALMENTE pagas (marca 'pago', envia a
+    // confirmação pro cliente + o aviso de venda pro admin) e conta o
+    // fidelidade. Idempotente: só toca no que ainda está 'pending'.
+    const recoverBtn = document.getElementById('btn-recover-stripe');
+    if (recoverBtn) recoverBtn.addEventListener('click', async () => {
+      if (!confirm(
+        'Recuperar vendas pagas no cartão que ficaram presas?\n\n' +
+        'Vou conferir no Stripe as reservas pendentes dos últimos 7 dias ' +
+        'e, pras que foram realmente pagas:\n' +
+        '• marcar como paga (aparece na aba Compras)\n' +
+        '• enviar a confirmação pro cliente\n' +
+        '• te enviar o aviso de "Nova venda"\n\n' +
+        'É seguro rodar mais de uma vez.'
+      )) {
+        return;
+      }
+      const sb = window.supabaseClient;
+      if (!sb || !sb.functions || !sb.functions.invoke) {
+        alert('Supabase indisponível. Recarregue a página e tente de novo.');
+        return;
+      }
+      const original = recoverBtn.textContent;
+      recoverBtn.disabled = true;
+      recoverBtn.textContent = 'Recuperando…';
+      try {
+        const res = await sb.functions.invoke('stripe-reconcile', {
+          body: { period_days: 7 },
+        });
+        const data = res && res.data;
+        const err = res && res.error;
+        if (err || !data) {
+          const motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+          console.error('[Admin] stripe-reconcile falhou:', err || data);
+          alert('Não consegui rodar a recuperação.\nMotivo: ' + motivo);
+          recoverBtn.disabled = false;
+          recoverBtn.textContent = original;
+          return;
+        }
+        const recuperadas = Array.isArray(data.recovered) ? data.recovered.length : 0;
+        const aindaNaoPagas = Array.isArray(data.still_unpaid) ? data.still_unpaid.length : 0;
+        const erros = Array.isArray(data.errors) ? data.errors.length : 0;
+        let msg;
+        if (recuperadas > 0) {
+          const lista = data.recovered.map(function (r) {
+            return '• ' + (r.experiencia || 'Experiência') +
+              (r.email ? ' — ' + r.email : '');
+          }).join('\n');
+          msg = '✓ ' + recuperadas + ' venda(s) recuperada(s)!\n\n' + lista +
+            '\n\nOs e-mails de confirmação já foram enviados e as vendas ' +
+            'aparecem agora na aba Compras.';
+        } else {
+          msg = 'Nenhuma venda presa encontrada pra recuperar nos últimos 7 dias.\n\n' +
+            '(Conferidas: ' + (data.scanned || 0) + ' · ainda não pagas no Stripe: ' +
+            aindaNaoPagas + ')';
+        }
+        if (erros > 0) {
+          msg += '\n\n⚠️ ' + erros + ' com erro — confira os logs da função stripe-reconcile no Supabase.';
+        }
+        recoverBtn.textContent = recuperadas > 0 ? ('✓ ' + recuperadas + ' recuperada(s)') : '↻ Recuperar vendas do Stripe';
+        alert(msg);
+        // Recarrega a lista pra as vendas recuperadas aparecerem já.
+        invalidateBookings();
+        renderBookings();
+        recoverBtn.disabled = false;
+        if (recuperadas > 0) {
+          setTimeout(function () { recoverBtn.textContent = original; }, 4000);
+        } else {
+          recoverBtn.textContent = original;
+        }
+      } catch (e) {
+        console.error('[Admin] exceção na recuperação Stripe:', e);
+        alert('Erro ao rodar a recuperação:\n' + ((e && e.message) || String(e)));
+        recoverBtn.disabled = false;
+        recoverBtn.textContent = original;
+      }
+    });
     if (filterExp) {
       // 'input' (não 'change') pra filtrar conforme o admin digita —
       // sem precisar dar Tab/Enter pra aplicar. Cobre tanto digitação
