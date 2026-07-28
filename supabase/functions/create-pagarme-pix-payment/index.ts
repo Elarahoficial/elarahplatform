@@ -219,17 +219,35 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   });
 
   if (!pixResult.ok || !pixResult.qrCode) {
+    // Diagnóstico REAL: o log antigo mostrava só errorStatus/errorBody, que
+    // NÃO existem quando a Order é criada (ok=true) mas vem SEM QR — daí o
+    // "status=undefined body=undefined". Aqui distinguimos os casos e
+    // expomos a resposta crua do Pagar.me (status/charge/tx + gateway_response
+    // + request_id), onde aparece, p.ex., "PIX não habilitado". Sem secrets.
+    // deno-lint-ignore no-explicit-any
+    const order = (pixResult.order ?? null) as any;
+    const charge = order?.charges?.[0] ?? null;
+    const tx = charge?.last_transaction ?? null;
     console.error(
-      "[Elarah Payment/Pagarme PIX] order pix falhou",
-      "status=" + pixResult.errorStatus,
-      "body=" + JSON.stringify(pixResult.errorBody),
+      "[Elarah Payment/Pagarme PIX] order pix sem QR / falhou",
+      "ok=" + pixResult.ok,
+      "http=" + (pixResult.errorStatus ?? (pixResult.ok ? "2xx" : "n/a")),
+      "order_id=" + (pixResult.orderId ?? "?"),
+      "order_status=" + (pixResult.orderStatus ?? "?"),
+      "charge_status=" + (charge?.status ?? "?"),
+      "tx_status=" + (tx?.status ?? "?"),
+      "acquirer_message=" + (tx?.acquirer_message ?? "?"),
+      "gateway_response=" + JSON.stringify(tx?.gateway_response ?? null),
+      "request_id=" + (order?.gateway_response?.request_id ?? tx?.gateway_id ?? "?"),
+      "qr_present=" + (pixResult.qrCode ? "yes" : "no"),
+      "errorBody=" + JSON.stringify(pixResult.errorBody ?? null),
     );
     await rollback();
     return jsonResponse(
       {
         error: "pagarme_create_failed",
         message: "Não foi possível gerar o PIX. Tente novamente ou pague no cartão.",
-        detail: pixResult.errorBody,
+        detail: pixResult.errorBody ?? null,
       },
       502,
     );
