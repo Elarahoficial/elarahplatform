@@ -11,9 +11,9 @@
 //     de PARCELAS, PIX e antifraude do Pagar.me. Nenhum dado de cartão
 //     passa pelo nosso servidor.
 //
-// Base URL:
-//   - TESTE  (sk_test_...): https://sdx-api.pagar.me/core/v5
-//   - PRODUÇÃO (sk_...):     https://api.pagar.me/core/v5
+// Base URL (host ÚNICO): https://api.pagar.me/core/v5
+//   O ambiente (teste/produção) é definido pela CHAVE (sk_test_/sk_live_),
+//   não pelo host. (O sdx-api.pagar.me antigo não serve /orders.)
 //
 // Autenticação: Basic com a Secret Key como usuário e senha vazia:
 //   Authorization: Basic base64("sk_xxx:")
@@ -22,11 +22,14 @@
 //   order.paid, order.payment_failed, charge.paid, charge.refunded
 // =============================================================
 
-const PAGARME_PROD_BASE = "https://api.pagar.me/core/v5";
-const PAGARME_TEST_BASE = "https://sdx-api.pagar.me/core/v5";
+// Host ÚNICO da API V5. O AMBIENTE (teste/produção) é definido pela CHAVE
+// (sk_test_ / sk_live_), NÃO pelo host. O antigo sdx-api.pagar.me NÃO serve
+// a rota /orders (retornava 404 "no Route matched with those values"); a
+// Orders API vive em api.pagar.me. Doc oficial: POST api.pagar.me/core/v5/orders.
+const PAGARME_API_BASE = "https://api.pagar.me/core/v5";
 
-function baseUrl(secretKey: string): string {
-  return secretKey.startsWith("sk_test_") ? PAGARME_TEST_BASE : PAGARME_PROD_BASE;
+function baseUrl(_secretKey: string): string {
+  return PAGARME_API_BASE;
 }
 
 // ===== Tipos =====
@@ -428,6 +431,12 @@ async function postOrder(
   if (!secretKey) return { ok: false, errorStatus: 0, errorBody: "no_secret_key" };
 
   const url = baseUrl(secretKey) + "/orders";
+  // Log seguro (temporário): SÓ método + host + path. Sem secret (vai no
+  // header Authorization, não aqui), sem card_token, sem dado de cartão.
+  try {
+    const u = new URL(url);
+    console.info("[Elarah Payment/Pagarme] " + label + " → POST", u.hostname, u.pathname);
+  } catch (_) { /* noop */ }
   let res: Response;
   try {
     res = await fetch(url, {
