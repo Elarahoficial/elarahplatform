@@ -93,6 +93,21 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   const cardToken = payload.card_token ? String(payload.card_token).trim() : "";
   const installments = Math.max(1, Math.min(12, Math.floor(Number(payload.installments) || 1)));
 
+  // ===== Endereço de cobrança (EXIGIDO pelo antifraude — doc V5) =====
+  // Vem do front já no formato { zip_code, line_1, city, state, country }.
+  const addrRaw = (payload.address && typeof payload.address === "object")
+    ? payload.address as Record<string, unknown>
+    : null;
+  const billingAddress = addrRaw
+    ? {
+      zipCode: String(addrRaw.zip_code ?? "").replace(/\D+/g, ""),
+      line1: String(addrRaw.line_1 ?? "").trim(),
+      city: String(addrRaw.city ?? "").trim(),
+      state: String(addrRaw.state ?? "").trim(),
+      country: String(addrRaw.country ?? "BR").trim(),
+    }
+    : null;
+
   const telefoneHuman = payload.telefone ? String(payload.telefone).trim() : null;
   const telefoneDigits = payload.telefone_digits
     ? String(payload.telefone_digits).replace(/\D+/g, "")
@@ -112,6 +127,17 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   if (!cardToken) {
     return jsonResponse(
       { error: "card_token_required", message: "Dados do cartão incompletos. Recarregue e tente novamente." },
+      400,
+    );
+  }
+  // Endereço é obrigatório pra análise antifraude (doc V5). Exige o núcleo:
+  // CEP (8 dígitos), linha, cidade e UF.
+  if (
+    !billingAddress || billingAddress.zipCode.length !== 8 ||
+    !billingAddress.line1 || !billingAddress.city || billingAddress.state.length !== 2
+  ) {
+    return jsonResponse(
+      { error: "address_required", message: "Informe o endereço de cobrança (CEP, endereço, número, cidade e UF)." },
       400,
     );
   }
@@ -288,6 +314,13 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       email: email!,
       cpf: cpfRaw,
       phone: { areaCode: phoneAreaCode, number: phoneNumber },
+      address: {
+        zipCode: billingAddress.zipCode,
+        line1: billingAddress.line1,
+        city: billingAddress.city,
+        state: billingAddress.state,
+        country: billingAddress.country || "BR",
+      },
     },
     statementDescriptor: "ELARAH",
     itemCode: exp.id,

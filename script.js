@@ -2861,6 +2861,16 @@ if (groupForm) {
         + '    <input id="erm-pg-exp" inputmode="numeric" autocomplete="cc-exp" placeholder="Validade (MM/AA)" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
         + '    <input id="erm-pg-cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV" style="width:110px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
         + '  </div>'
+        + '  <label style="font-size:.82rem;color:#666;margin-top:6px;">Endereço de cobrança</label>'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-cep" inputmode="numeric" autocomplete="postal-code" placeholder="CEP" style="width:130px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-num" inputmode="numeric" placeholder="Número" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  </div>'
+        + '  <input id="erm-pg-street" autocomplete="address-line1" placeholder="Endereço (rua/avenida)" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-city" autocomplete="address-level2" placeholder="Cidade" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-uf" autocomplete="address-level1" maxlength="2" placeholder="UF" style="width:80px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;text-transform:uppercase;">'
+        + '  </div>'
         + '  <label style="font-size:.82rem;color:#666;margin-top:2px;">Parcelas</label>'
         + '  <select id="erm-pg-installments" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;background:#fff;"></select>'
         + '</div>'
@@ -2953,11 +2963,22 @@ if (groupForm) {
           const expRaw = (sec.querySelector('#erm-pg-exp').value || '').replace(/\D+/g, '');
           const cvv = (sec.querySelector('#erm-pg-cvv').value || '').replace(/\D+/g, '');
           const installments = Math.max(1, Math.min(12, parseInt(sel && sel.value, 10) || 1));
+          // Endereço de cobrança (exigido pelo antifraude — doc V5).
+          const cep = (sec.querySelector('#erm-pg-cep').value || '').replace(/\D+/g, '');
+          const num = (sec.querySelector('#erm-pg-num').value || '').trim();
+          const street = (sec.querySelector('#erm-pg-street').value || '').trim();
+          const city = (sec.querySelector('#erm-pg-city').value || '').trim();
+          const uf = (sec.querySelector('#erm-pg-uf').value || '').trim().toUpperCase();
 
           if (numRaw.length < 13) return pgCardError('Confira o número do cartão.');
           if (!holder) return pgCardError('Informe o nome impresso no cartão.');
           if (expRaw.length < 4) return pgCardError('Confira a validade (MM/AA).');
           if (cvv.length < 3) return pgCardError('Confira o CVV.');
+          if (cep.length !== 8) return pgCardError('Confira o CEP (8 dígitos).');
+          if (!street) return pgCardError('Informe o endereço (rua/avenida).');
+          if (!num) return pgCardError('Informe o número do endereço.');
+          if (!city) return pgCardError('Informe a cidade.');
+          if (uf.length !== 2) return pgCardError('Informe a UF (2 letras).');
           const expMonth = parseInt(expRaw.slice(0, 2), 10);
           let expYear = parseInt(expRaw.slice(2), 10);
           if (expRaw.length === 4) expYear = 2000 + expYear; // AA → 20AA
@@ -3007,6 +3028,14 @@ if (groupForm) {
             variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
             card_token: cardToken,
             installments: installments,
+            // Endereço de cobrança pro antifraude (customer.address no pedido).
+            address: {
+              zip_code: cep,
+              line_1: num + ', ' + street,
+              city: city,
+              state: uf,
+              country: 'BR',
+            },
           };
           const stEl = sec.querySelector('#erm-pg-status');
           const stText = sec.querySelector('#erm-pg-status-text');
