@@ -157,9 +157,10 @@ export async function createPaymentLink(
   const body: Record<string, unknown> = {
     name: (input.description || "Reserva Elarah").slice(0, 64),
     type: "order",
-    // metadata propaga pra order criada a partir do link → usamos pra
-    // reconciliar no webhook (order.paid traz metadata.booking_id).
-    metadata: { booking_id: input.externalReference },
+    // order_code = identificador do lojista pra correlação (doc oficial).
+    // A order paga carrega esse mesmo code, então o webhook reconcilia a
+    // reserva por order.code == booking.id — sem depender de metadata.
+    order_code: input.externalReference,
     payment_settings: {
       accepted_payment_methods: ["credit_card", "pix"],
       statement_descriptor: (input.statementDescriptor || "ELARAH").slice(0, 13),
@@ -167,9 +168,10 @@ export async function createPaymentLink(
         operation_type: "auth_and_capture",
         installments,
       },
-      pix_settings: {
-        expires_in: input.pixExpiresInSeconds ?? 3600,
-      },
+      // pix_settings SEM expires_in por ora: a unidade/formato desse
+      // campo específico ainda não foi confirmada na doc — usa o default
+      // do Pagar.me. Confirmar antes de definir um valor.
+      pix_settings: {},
     },
     cart_settings: {
       items: items.map((it) => ({
