@@ -55,14 +55,9 @@ const MAX_INSTALLMENTS = Math.max(
   1,
   Math.min(12, Math.floor(Number(Deno.env.get("PAGARME_MAX_INSTALLMENTS")) || 12)),
 );
-const FREE_INSTALLMENTS = Math.max(
-  1,
-  Math.floor(Number(Deno.env.get("PAGARME_FREE_INSTALLMENTS")) || 1),
-);
-const MONTHLY_INTEREST = Math.max(
-  0,
-  Number(Deno.env.get("PAGARME_MONTHLY_INTEREST")) || 0,
-);
+// Parcelamento: o TOTAL de cada parcela é gross-up das taxas reais da conta
+// (tabela centralizada em _shared/pagarme.ts → PAGARME_FEES). Não há mais
+// juros genérico por env aqui.
 // Expiração do PIX em SEGUNDOS (doc V5). Default 1h; mínimo 60s.
 const PIX_EXPIRES_IN = Math.max(
   60,
@@ -312,8 +307,6 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     successUrl,
     statementDescriptor: "ELARAH",
     maxInstallments: MAX_INSTALLMENTS,
-    freeInstallments: FREE_INSTALLMENTS,
-    monthlyInterestPct: MONTHLY_INTEREST,
     pixExpiresInSeconds: PIX_EXPIRES_IN,
   });
 
