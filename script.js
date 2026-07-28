@@ -4377,11 +4377,15 @@ if (groupForm) {
           });
           const data = await res.json().catch(function () { return null; });
           if (!res.ok || !data) {
-            let msg = translateCheckoutError(data, 'Não foi possível iniciar o pagamento (Pagar.me teste). Confira os dados.');
-            if (data && data.detail) {
-              msg += ' (Pagar.me: ' + JSON.stringify(data.detail).slice(0, 200) + ')';
-            }
-            errEl.textContent = msg;
+            // O detalhe técnico (status/errors/payload do Pagar.me) fica
+            // SÓ no console e nos logs da Edge Function — nunca na tela.
+            try {
+              console.error('[Elarah Payment/Pagarme TESTE] falha ao iniciar checkout',
+                'http=' + (res && res.status),
+                'body=' + JSON.stringify(data));
+            } catch (e) {}
+            // Usuário vê apenas uma mensagem amigável.
+            errEl.textContent = 'Não foi possível iniciar o pagamento. Tente novamente ou pague no PIX.';
             confirmBtn.disabled = false;
             refreshPriceBreakdown();
             return;
