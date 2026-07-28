@@ -79,6 +79,10 @@ jobs:
           # pro front. Sem JWT (o front chama com a anon key como apikey).
           deploy get-mp-public-key --no-verify-jwt
           deploy stripe-webhook --no-verify-jwt
+          # stripe-reconcile: rede de segurança que recupera reservas
+          # pagas no cartão que o webhook não confirmou. Autentica por
+          # dentro (CRON_SECRET/service_role/admin), então --no-verify-jwt.
+          deploy stripe-reconcile --no-verify-jwt
           deploy mp-webhook --no-verify-jwt
           deploy check-mp-payment-status --no-verify-jwt
           deploy redeem-gift-card --no-verify-jwt
