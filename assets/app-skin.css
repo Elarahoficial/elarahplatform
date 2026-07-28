@@ -497,3 +497,12 @@
 .is-app .sk-search__input::placeholder { color: var(--sk-ink-faint); font-weight: 500; }
 .is-app .sk-search__input::-webkit-search-cancel-button { -webkit-appearance: none; }
 
+/* ---------- Home: seção "Viva algo incrível com o seu grupo" ----------
+   No app tudo empilha (o form não fica "ao lado"). Some o quadro vazio
+   "Escolha o tipo de evento ao lado…" — que fica feio/sem sentido no
+   celular — e a área colapsa. O formulário aparece normalmente quando a
+   pessoa toca num tipo de evento (o JS mostra o #group-form no clique).
+   No site normal (sem .is-app) continua igual, com as duas colunas. */
+.is-app .group-section__form-placeholder { display: none !important; }
+.is-app .group-section__form-area { min-height: 0; }
+
