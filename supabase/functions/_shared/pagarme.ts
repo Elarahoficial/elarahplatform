@@ -54,8 +54,6 @@ export interface PagarmeCheckoutInput {
   statementDescriptor?: string; // texto na fatura
   // Parcelamento:
   maxInstallments?: number; // default 12
-  freeInstallments?: number; // parcelas SEM juros (default 1)
-  monthlyInterestPct?: number; // juros a.m. repassado ao cliente (default 0)
   pixExpiresInSeconds?: number; // default 3600
 }
 
@@ -105,25 +103,63 @@ function digits(raw: unknown): string {
   return String(raw ?? "").replace(/\D+/g, "");
 }
 
-// Monta a lista de parcelas com o TOTAL de cada opção (em centavos).
-// É aqui que o repasse de juros ao cliente acontece: até
-// `freeInstallments` o total é o valor base (sem juros); a partir daí
-// aplicamos juros compostos mensais (`monthlyInterestPct`).
+// ===== Taxas comerciais Pagar.me/Stone (NÃO são credenciais) =====
+// Config CENTRALIZADA pra ajuste rápido se a liquidação real divergir.
+// Override opcional por env PAGARME_FEES_JSON = {"fixedCents":99,"cardRatesPct":{...}}.
+// Fonte: painel da conta Elarah.
+//
+// ANTECIPAÇÃO: a conta está com "antecipação automática ATIVA" (1,25% a.m.).
+// NÃO somamos 1,25% adicional aqui — usamos EXATAMENTE as taxas do painel.
+// Se a liquidação real da 1ª transação divergir, ajustar por env (sem PR).
+const DEFAULT_PAGARME_FEES = {
+  // Fixo por transação de cartão aprovada: processamento R$0,55 + antifraude R$0,44.
+  fixedCents: 55 + 44, // 99
+  // Taxa % por nº de parcelas (tabela real do painel).
+  cardRatesPct: {
+    1: 5.59, 2: 8.59, 3: 9.84, 4: 11.09, 5: 12.34, 6: 13.59,
+    7: 15.34, 8: 16.59, 9: 17.84, 10: 19.09, 11: 20.34, 12: 21.59,
+  } as Record<number, number>,
+};
+
+function loadPagarmeFees(): { fixedCents: number; cardRatesPct: Record<number, number> } {
+  try {
+    const raw = Deno.env.get("PAGARME_FEES_JSON");
+    if (raw) {
+      const o = JSON.parse(raw);
+      return {
+        fixedCents: Number.isFinite(o.fixedCents) ? o.fixedCents : DEFAULT_PAGARME_FEES.fixedCents,
+        cardRatesPct: (o.cardRatesPct && typeof o.cardRatesPct === "object")
+          ? o.cardRatesPct
+          : DEFAULT_PAGARME_FEES.cardRatesPct,
+      };
+    }
+  } catch (e) {
+    console.warn("[Elarah Payment/Pagarme] PAGARME_FEES_JSON inválido — usando default", e);
+  }
+  return DEFAULT_PAGARME_FEES;
+}
+
+export const PAGARME_FEES = loadPagarmeFees();
+
+// Monta a lista de parcelas com GROSS-UP: cada opção é calculada pra que,
+// depois de o Pagar.me descontar a taxa% daquela parcela + o fixo, sobre o
+// valor-base (B) integral pra Elarah.
+//   T = teto[ (B + F) / (1 - r) ]   (centavos; arredonda p/ CIMA → líquido ≥ B)
+// B já vem líquido de cupom/gift card (é o amountToChargeCents do checkout).
+// O PIX NÃO passa por aqui — paga o valor-base do carrinho (cart_settings).
 export function buildInstallmentOptions(
   baseCents: number,
   maxInstallments: number,
-  freeInstallments: number,
-  monthlyInterestPct: number,
 ): Array<{ number: number; total: number }> {
   const max = Math.max(1, Math.min(12, Math.floor(maxInstallments || 12)));
-  const free = Math.max(1, Math.floor(freeInstallments || 1));
-  const rate = Math.max(0, Number(monthlyInterestPct || 0)) / 100;
+  const F = PAGARME_FEES.fixedCents;
   const out: Array<{ number: number; total: number }> = [];
   for (let n = 1; n <= max; n++) {
-    let total = baseCents;
-    if (n > free && rate > 0) {
-      total = Math.round(baseCents * Math.pow(1 + rate, n));
-    }
+    const ratePct = PAGARME_FEES.cardRatesPct[n];
+    if (!Number.isFinite(ratePct)) continue; // parcela sem taxa definida → pula
+    const r = ratePct / 100;
+    // Arredonda p/ CIMA garante que o líquido nunca cai abaixo de B.
+    const total = Math.ceil((baseCents + F) / (1 - r));
     out.push({ number: n, total });
   }
   return out;
@@ -150,8 +186,6 @@ export async function createPaymentLink(
   const installments = buildInstallmentOptions(
     input.amountCents,
     input.maxInstallments ?? 12,
-    input.freeInstallments ?? 1,
-    input.monthlyInterestPct ?? 0,
   );
 
   const body: Record<string, unknown> = {
