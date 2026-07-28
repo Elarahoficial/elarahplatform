@@ -4755,59 +4755,14 @@ if (groupForm) {
           console.warn('[Elarah checkout] não foi possível atualizar profile.telefone:', e);
         }
 
-        // ===== TESTE Pagar.me (?pay=pagarme): checkout hospedado =====
-        // Roteia cartão à vista + parcelado + Pix pro Pagar.me. Só entra
-        // aqui quem abriu o site com ?pay=pagarme — cliente normal pula.
-        if (PAY_PAGARME_TEST) {
-          // ----- PIX transparente (valor-base, QR inline) -----
-          if (ctx.paymentMethod === 'pix') {
-            const pgPixBody = {
-              experiencia_id: ctx.experienceId,
-              horario: ctx.horario,
-              data: ctx.data || null,
-              slot_id: ctx.slotId || null,
-              email: auth.email || ctx.email,
-              nome: ctx.nome || null,
-              cpf: cpfDigits,
-              telefone: telefoneRaw,
-              telefone_digits: telefoneNormalized,
-              cupom: ctx.cupomCode || null,
-              quantidade: ctx.quantidade || 1,
-              participantes: ctx.participantes || [],
-              variant_label: ctx.variantLabel || null,
-              variant_selected: ctx.variantSelected || null,
-              variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
-            };
-            const res = await fetch(PAGARME_PIX_FN_URL, {
-              method: 'POST',
-              headers: headers,
-              body: JSON.stringify(pgPixBody),
-            });
-            const data = await res.json().catch(function () { return null; });
-            if (!res.ok || !data) {
-              try {
-                console.error('[Elarah Payment/Pagarme] falha PIX', 'http=' + (res && res.status), 'body=' + JSON.stringify(data));
-              } catch (e) {}
-              errEl.textContent = (data && data.message) || 'Não foi possível gerar o PIX. Tente novamente ou pague no cartão.';
-              confirmBtn.disabled = false;
-              refreshPriceBreakdown();
-              return;
-            }
-            if (data.direct === true) {
-              window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(data.booking_id || '');
-              return;
-            }
-            if (!data.booking_id || !data.qr_code) {
-              errEl.textContent = 'Resposta inesperada do servidor (QR ausente).';
-              confirmBtn.disabled = false;
-              refreshPriceBreakdown();
-              return;
-            }
-            showPixPanel(data, ctx);
-            return;
-          }
+        // ===== ?pay=pagarme: CARTÃO = Pagar.me · PIX = Mercado Pago =====
+        // Decisão de arquitetura: só o CARTÃO (à vista + parcelado) roteia pro
+        // checkout transparente do Pagar.me. O PIX NÃO entra neste bloco — cai
+        // no fluxo Mercado Pago logo abaixo (create-mp-pix-payment), que nunca
+        // foi removido. Assim o PIX volta a cobrar o VALOR-BASE via MP.
+        if (PAY_PAGARME_TEST && ctx.paymentMethod !== 'pix') {
 
-          // ----- Cartão transparente (gross-up por parcela) -----
+          // ----- Cartão transparente Pagar.me (gross-up por parcela) -----
           try {
             await showPagarmeCardPanel(ctx, {
               authEmail: auth.email || ctx.email,
