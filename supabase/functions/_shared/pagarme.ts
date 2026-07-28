@@ -161,6 +161,9 @@ export async function createPaymentLink(
     // A order paga carrega esse mesmo code, então o webhook reconcilia a
     // reserva por order.code == booking.id — sem depender de metadata.
     order_code: input.externalReference,
+    // Cada link corresponde a UMA reserva específica da Elarah: no máximo
+    // 1 sessão paga por link — impede o mesmo link gerar 2 pagamentos.
+    max_paid_sessions: 1,
     payment_settings: {
       accepted_payment_methods: ["credit_card", "pix"],
       statement_descriptor: (input.statementDescriptor || "ELARAH").slice(0, 13),
