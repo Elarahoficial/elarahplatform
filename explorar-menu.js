@@ -27,12 +27,21 @@
     var map = new Map();
     (experiences || []).forEach(function (e) {
       if (!e || !e.categoria) return;
-      var c = String(e.categoria).trim();
-      if (!c) return;
-      var low = c.toLowerCase();
-      if (low === 'elarah originals' || low === 'kit em casa') return;
-      var k = low;
-      if (!map.has(k)) map.set(k, c);
+      // Uma experiência pode estar em duas categorias ("Colagem | Artesanato"):
+      // o "|" precisa gerar DOIS itens no menu, um pra cada categoria — nunca
+      // um item só com o traço cru. Usa categoriasOf pra separar, igual ao
+      // resto do site; sem ele, cai no split manual como fallback.
+      var cats = (window.ElarahData &&
+                  typeof window.ElarahData.categoriasOf === 'function')
+        ? window.ElarahData.categoriasOf(e)
+        : String(e.categoria).split('|');
+      cats.forEach(function (raw) {
+        var c = String(raw).trim();
+        if (!c) return;
+        var low = c.toLowerCase();
+        if (low === 'elarah originals' || low === 'kit em casa') return;
+        if (!map.has(low)) map.set(low, c);
+      });
     });
     return Array.from(map.values()).sort(function (a, b) {
       return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
