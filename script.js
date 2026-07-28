@@ -2881,6 +2881,53 @@ if (groupForm) {
       const formSec = modalRoot.querySelector('#erm-form-section');
       if (formSec && formSec.parentNode) formSec.parentNode.appendChild(sec);
       else modalRoot.appendChild(sec);
+
+      // ===== Máscaras VISUAIS + autofill de CEP (UX apenas) =====
+      // Não alteram o payload: o handler de pagamento já normaliza tudo com
+      // replace(/\D+/g,'') (número/validade/CVV/CEP) e toUpperCase() (UF).
+      // As máscaras só formatam o que o usuário vê enquanto digita.
+      const numEl = sec.querySelector('#erm-pg-number');
+      const expEl = sec.querySelector('#erm-pg-exp');
+      const cvvEl = sec.querySelector('#erm-pg-cvv');
+      const cepEl = sec.querySelector('#erm-pg-cep');
+      const ufEl = sec.querySelector('#erm-pg-uf');
+      const streetEl = sec.querySelector('#erm-pg-street');
+      const cityEl = sec.querySelector('#erm-pg-city');
+      if (numEl) numEl.addEventListener('input', function () {
+        const d = this.value.replace(/\D+/g, '').slice(0, 19); // até 19 (Amex/Elo)
+        this.value = d.replace(/(.{4})/g, '$1 ').trim();
+      });
+      if (expEl) expEl.addEventListener('input', function () {
+        const d = this.value.replace(/\D+/g, '').slice(0, 4);
+        this.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+      });
+      if (cvvEl) cvvEl.addEventListener('input', function () {
+        this.value = this.value.replace(/\D+/g, '').slice(0, 4);
+      });
+      if (ufEl) ufEl.addEventListener('input', function () {
+        this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2);
+      });
+      if (cepEl) {
+        cepEl.addEventListener('input', function () {
+          const d = this.value.replace(/\D+/g, '').slice(0, 8);
+          this.value = d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;
+        });
+        // Autofill por CEP (ViaCEP). SÓ conveniência: falha nunca bloqueia o
+        // pagamento nem gera erro — o usuário pode preencher manualmente.
+        cepEl.addEventListener('blur', function () {
+          const d = cepEl.value.replace(/\D+/g, '');
+          if (d.length !== 8) return;
+          fetch('https://viacep.com.br/ws/' + d + '/json/')
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+              if (!j || j.erro) return;
+              if (j.logradouro && streetEl) streetEl.value = j.logradouro;
+              if (j.localidade && cityEl) cityEl.value = j.localidade;
+              if (j.uf && ufEl) ufEl.value = String(j.uf).toUpperCase().slice(0, 2);
+            })
+            .catch(function () { /* silencioso — autofill é opcional */ });
+        });
+      }
       return sec;
     }
 
