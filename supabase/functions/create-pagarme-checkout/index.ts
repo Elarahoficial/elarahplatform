@@ -32,7 +32,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
-import { createCheckoutOrder } from "../_shared/pagarme.ts";
+import { createPaymentLink } from "../_shared/pagarme.ts";
 import { isValidCpf } from "../_shared/mercadopago.ts";
 import {
   assertExpectedTotal,
@@ -288,7 +288,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   const phoneAreaCode = telefoneDigits ? telefoneDigits.slice(0, 2) : undefined;
   const phoneNumber = telefoneDigits ? telefoneDigits.slice(2) : undefined;
 
-  const result = await createCheckoutOrder(PAGARME_SECRET_KEY, {
+  const result = await createPaymentLink(PAGARME_SECRET_KEY, {
     amountCents: amountToChargeCents,
     description: itemTitle.slice(0, 250),
     externalReference: bookingId,
@@ -330,17 +330,17 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     );
   }
 
-  // Guarda o order id no metadata pra reconciliação.
+  // Guarda o payment link id no metadata pra reconciliação.
   await supabase
     .from("bookings")
     .update({
-      mp_payment_id: result.order?.id ?? null,
+      mp_payment_id: result.paymentLink?.id ?? null,
       metadata: {
         bairro: exp.bairro ?? null, endereco: exp.endereco ?? null,
         participantes, telefone_digits: telefoneDigits || null,
         payment_method: "card_or_pix", cpf: cpfRaw,
         variant_label: variantLabel, variant_selected: variantSelected,
-        pagarme_order_id: result.order?.id ?? null,
+        pagarme_payment_link_id: result.paymentLink?.id ?? null,
       },
     })
     .eq("id", bookingId);
@@ -348,7 +348,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   console.info(
     "[Elarah Payment/Pagarme] checkout criado",
     "booking=" + bookingId,
-    "order=" + (result.order?.id ?? "?"),
+    "payment_link=" + (result.paymentLink?.id ?? "?"),
     "amount=" + amountToChargeCents,
   );
 

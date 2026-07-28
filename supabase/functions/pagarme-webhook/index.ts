@@ -99,10 +99,14 @@ serve(async (req) => {
     );
   }
 
-  // Resolve o booking_id: o `code` que enviamos na order == booking.id.
+  // Resolve o booking_id. Enviamos metadata.booking_id no Payment Link,
+  // que propaga pra order criada — então priorizamos metadata. Fallbacks:
+  // order.code e, por último, o pl_/or_ id salvo em booking.mp_payment_id.
   let bookingId = "";
   const orderObj = (data.order ?? data) as Record<string, unknown>;
-  if (orderObj && typeof orderObj.code === "string") bookingId = orderObj.code;
+  const meta = (orderObj?.metadata ?? data.metadata ?? {}) as Record<string, unknown>;
+  if (typeof meta.booking_id === "string") bookingId = meta.booking_id;
+  else if (typeof orderObj?.code === "string") bookingId = orderObj.code as string;
 
   // Fallback: acha pelo pagarme_order_id salvo no metadata/mp_payment_id.
   let bookingRow: { id: string; status: string } | null = null;

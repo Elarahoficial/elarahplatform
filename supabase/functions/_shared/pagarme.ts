@@ -1,32 +1,35 @@
 // =============================================================
-// ELARAH — Pagar.me (Stone) helper — API V5
+// ELARAH — Pagar.me (Stone) helper — API V5 (Payment Links)
 // -------------------------------------------------------------
-// Wrapper fino sobre a REST API V5 do Pagar.me, no mesmo estilo do
+// Wrapper fino sobre a API V5 do Pagar.me, no mesmo estilo do
 // _shared/mercadopago.ts (fetch nativo do Deno, sem SDK).
 //
-// Estratégia: CHECKOUT HOSPEDADO (Pagar.me Checkout via Orders).
-//   - Criamos uma "order" com payment_method="checkout" e o Pagar.me
-//     devolve uma URL hospedada (payment_url) pra onde redirecionamos
-//     o cliente — igual ao Checkout Pro (MP) e ao Stripe Checkout que
-//     já existem no projeto.
-//   - A página hospedada cuida de: tokenização do cartão (PCI),
-//     seleção de PARCELAS, PIX, e antifraude do Pagar.me.
-//   - Nenhum dado de cartão passa pelo nosso servidor.
+// Estratégia: CHECKOUT HOSPEDADO via PAYMENT LINKS.
+//   - POST /paymentlinks com type="order" → o Pagar.me devolve
+//     { id: "pl_...", url, status }. Redirecionamos o cliente pra `url`.
+//   - A página hospedada cuida de tokenização do cartão (PCI), seleção
+//     de PARCELAS, PIX e antifraude do Pagar.me. Nenhum dado de cartão
+//     passa pelo nosso servidor.
 //
-// Cobertura:
-//   - createCheckoutOrder → POST /orders (cartão à vista + parcelado + Pix)
-//   - getOrder            → GET  /orders/:id (reconciliação/webhook)
-//   - verifyWebhookBasicAuth → valida o Basic Auth do webhook
+// Base URL:
+//   - TESTE  (sk_test_...): https://sdx-api.pagar.me/core/v5
+//   - PRODUÇÃO (sk_...):     https://api.pagar.me/core/v5
 //
 // Autenticação: Basic com a Secret Key como usuário e senha vazia:
 //   Authorization: Basic base64("sk_xxx:")
 //
-// Docs: https://docs.pagar.me/reference (API Core V5 — Pedidos/Orders)
+// Webhooks (eventos oficiais que tratamos):
+//   order.paid, order.payment_failed, charge.paid, charge.refunded
 // =============================================================
 
-const PAGARME_BASE_URL = "https://api.pagar.me/core/v5";
+const PAGARME_PROD_BASE = "https://api.pagar.me/core/v5";
+const PAGARME_TEST_BASE = "https://sdx-api.pagar.me/core/v5";
 
-// ===== Tipos (só o essencial que a gente usa) =====
+function baseUrl(secretKey: string): string {
+  return secretKey.startsWith("sk_test_") ? PAGARME_TEST_BASE : PAGARME_PROD_BASE;
+}
+
+// ===== Tipos =====
 
 export interface PagarmeCustomerInput {
   name: string;
@@ -45,10 +48,9 @@ export interface PagarmeItemInput {
 export interface PagarmeCheckoutInput {
   amountCents: number; // total da cobrança em centavos
   description: string;
-  externalReference: string; // booking.id — pra reconciliar no webhook
+  externalReference: string; // booking.id — reconciliação no webhook
   customer: PagarmeCustomerInput;
   items?: PagarmeItemInput[];
-  successUrl: string; // pra onde o cliente volta após pagar
   statementDescriptor?: string; // texto na fatura
   // Parcelamento:
   maxInstallments?: number; // default 12
@@ -57,37 +59,37 @@ export interface PagarmeCheckoutInput {
   pixExpiresInSeconds?: number; // default 3600
 }
 
+export interface PagarmePaymentLinkResponse {
+  id: string; // pl_xxxxx
+  url?: string;
+  status?: string;
+  // A order paga é criada a partir do link — carrega o metadata que
+  // enviamos (booking_id) pra reconciliação no webhook.
+}
+
+// Order retornada pela consulta / recebida no webhook.
 export interface PagarmeOrderResponse {
   id: string; // or_xxxxx
   code?: string;
-  status: string; // pending | paid | canceled | failed ...
-  amount?: number;
-  // Charges = tentativas de cobrança da order (cartão/pix)
+  status?: string;
+  metadata?: Record<string, unknown>;
   charges?: Array<{
     id: string;
-    status: string; // pending | paid | ... | failed
-    payment_method?: string; // credit_card | pix
+    status?: string;
+    payment_method?: string;
     last_transaction?: {
       status?: string;
-      acquirer_message?: string; // motivo da recusa (ex.: "high risk")
+      acquirer_message?: string;
       installments?: number;
-      // PIX:
       qr_code?: string;
       qr_code_url?: string;
     };
-  }>;
-  // Checkout hospedado: a URL pra redirecionar o cliente
-  checkouts?: Array<{
-    id: string;
-    status?: string;
-    payment_url?: string;
-    success_url?: string;
   }>;
 }
 
 export interface PagarmeCreateResult {
   ok: boolean;
-  order?: PagarmeOrderResponse;
+  paymentLink?: PagarmePaymentLinkResponse;
   checkoutUrl?: string;
   errorStatus?: number;
   errorBody?: unknown;
@@ -95,7 +97,6 @@ export interface PagarmeCreateResult {
 
 // ===== Helpers internos =====
 
-// Basic auth com a secret key como "usuário" e senha vazia.
 function buildAuthHeader(secretKey: string): string {
   return "Basic " + btoa(secretKey + ":");
 }
@@ -108,8 +109,7 @@ function digits(raw: unknown): string {
 // É aqui que o repasse de juros ao cliente acontece: até
 // `freeInstallments` o total é o valor base (sem juros); a partir daí
 // aplicamos juros compostos mensais (`monthlyInterestPct`).
-// O Pagar.me Checkout mostra cada opção com o total calculado.
-function buildInstallmentOptions(
+export function buildInstallmentOptions(
   baseCents: number,
   maxInstallments: number,
   freeInstallments: number,
@@ -122,7 +122,6 @@ function buildInstallmentOptions(
   for (let n = 1; n <= max; n++) {
     let total = baseCents;
     if (n > free && rate > 0) {
-      // Juros compostos: total = base * (1 + i)^n. Arredonda pra centavo.
       total = Math.round(baseCents * Math.pow(1 + rate, n));
     }
     out.push({ number: n, total });
@@ -130,8 +129,8 @@ function buildInstallmentOptions(
   return out;
 }
 
-// ===== API: criar order com Checkout hospedado =====
-export async function createCheckoutOrder(
+// ===== API: criar Payment Link (checkout hospedado) =====
+export async function createPaymentLink(
   secretKey: string,
   input: PagarmeCheckoutInput,
 ): Promise<PagarmeCreateResult> {
@@ -140,7 +139,6 @@ export async function createCheckoutOrder(
     return { ok: false, errorStatus: 0, errorBody: "no_secret_key" };
   }
 
-  const cpf = digits(input.customer.cpf);
   const items = (input.items && input.items.length)
     ? input.items
     : [{
@@ -157,66 +155,44 @@ export async function createCheckoutOrder(
   );
 
   const body: Record<string, unknown> = {
-    // code = referência externa pra achar a order depois (booking.id)
-    code: input.externalReference,
-    items: items.map((it) => ({
-      amount: it.amountCents,
-      description: String(it.description).slice(0, 256),
-      quantity: Math.max(1, Math.floor(it.quantity || 1)),
-      code: it.code,
-    })),
-    customer: {
-      name: input.customer.name,
-      email: input.customer.email,
-      type: "individual",
-      document: cpf,
-      document_type: "CPF",
-      ...(input.customer.phone &&
-          (input.customer.phone.areaCode || input.customer.phone.number)
-        ? {
-          phones: {
-            mobile_phone: {
-              country_code: "55",
-              area_code: input.customer.phone.areaCode || "",
-              number: input.customer.phone.number || "",
-            },
-          },
-        }
-        : {}),
-    },
-    payments: [
-      {
-        payment_method: "checkout",
-        checkout: {
-          expires_in: 3600,
-          default_payment_method: "credit_card",
-          accepted_payment_methods: ["credit_card", "pix"],
-          success_url: input.successUrl,
-          customer_editable: true,
-          skip_checkout_success_page: true,
-          credit_card: {
-            statement_descriptor: (input.statementDescriptor || "ELARAH")
-              .slice(0, 13),
-            installments,
-          },
-          pix: {
-            expires_in: input.pixExpiresInSeconds ?? 3600,
-          },
-        },
+    name: (input.description || "Reserva Elarah").slice(0, 64),
+    type: "order",
+    // metadata propaga pra order criada a partir do link → usamos pra
+    // reconciliar no webhook (order.paid traz metadata.booking_id).
+    metadata: { booking_id: input.externalReference },
+    payment_settings: {
+      accepted_payment_methods: ["credit_card", "pix"],
+      statement_descriptor: (input.statementDescriptor || "ELARAH").slice(0, 13),
+      credit_card_settings: {
+        operation_type: "auth_and_capture",
+        installments,
       },
-    ],
+      pix_settings: {
+        expires_in: input.pixExpiresInSeconds ?? 3600,
+      },
+    },
+    cart_settings: {
+      items: items.map((it) => ({
+        name: String(it.description).slice(0, 64),
+        description: String(it.description).slice(0, 256),
+        amount: it.amountCents,
+        default_quantity: Math.max(1, Math.floor(it.quantity || 1)),
+      })),
+    },
   };
 
+  const url = baseUrl(secretKey) + "/paymentlinks";
   console.info(
-    "[Elarah Payment/Pagarme] POST /orders (checkout)",
+    "[Elarah Payment/Pagarme] POST /paymentlinks",
+    "base=" + (secretKey.startsWith("sk_test_") ? "sandbox" : "prod"),
     "amount=" + input.amountCents,
-    "external_ref=" + input.externalReference,
-    "max_installments=" + (input.maxInstallments ?? 12),
+    "booking=" + input.externalReference,
+    "installments=" + installments.length,
   );
 
   let res: Response;
   try {
-    res = await fetch(PAGARME_BASE_URL + "/orders", {
+    res = await fetch(url, {
       method: "POST",
       headers: {
         "Authorization": buildAuthHeader(secretKey),
@@ -226,7 +202,7 @@ export async function createCheckoutOrder(
       body: JSON.stringify(body),
     });
   } catch (e) {
-    console.error("[Elarah Payment/Pagarme] network error (order)", e);
+    console.error("[Elarah Payment/Pagarme] network error (paymentlink)", e);
     return { ok: false, errorStatus: 0, errorBody: String(e) };
   }
 
@@ -239,28 +215,26 @@ export async function createCheckoutOrder(
 
   if (!res.ok) {
     console.error(
-      "[Elarah Payment/Pagarme] create order failed",
+      "[Elarah Payment/Pagarme] create paymentlink failed",
       "status=" + res.status,
       "body=" + JSON.stringify(parsed),
     );
     return { ok: false, errorStatus: res.status, errorBody: parsed };
   }
 
-  const order = parsed as PagarmeOrderResponse;
-  const checkoutUrl = order.checkouts?.[0]?.payment_url;
-
+  const link = parsed as PagarmePaymentLinkResponse;
   console.info(
-    "[Elarah Payment/Pagarme] order criada",
-    "id=" + order.id,
-    "status=" + order.status,
-    "checkout_url=" + (checkoutUrl ? "yes" : "no"),
+    "[Elarah Payment/Pagarme] paymentlink criado",
+    "id=" + link.id,
+    "status=" + link.status,
+    "url=" + (link.url ? "yes" : "no"),
   );
 
-  if (!checkoutUrl) {
+  if (!link.url) {
     return { ok: false, errorStatus: res.status, errorBody: parsed };
   }
 
-  return { ok: true, order, checkoutUrl };
+  return { ok: true, paymentLink: link, checkoutUrl: link.url };
 }
 
 // ===== API: consultar order (webhook / reconciliação) =====
@@ -270,7 +244,7 @@ export async function getOrder(
 ): Promise<PagarmeOrderResponse | null> {
   if (!secretKey || !orderId) return null;
   try {
-    const res = await fetch(PAGARME_BASE_URL + "/orders/" + orderId, {
+    const res = await fetch(baseUrl(secretKey) + "/orders/" + orderId, {
       method: "GET",
       headers: {
         "Authorization": buildAuthHeader(secretKey),
@@ -278,10 +252,7 @@ export async function getOrder(
       },
     });
     if (!res.ok) {
-      console.error(
-        "[Elarah Payment/Pagarme] getOrder failed",
-        "status=" + res.status,
-      );
+      console.error("[Elarah Payment/Pagarme] getOrder failed", "status=" + res.status);
       return null;
     }
     return (await res.json()) as PagarmeOrderResponse;
@@ -292,9 +263,9 @@ export async function getOrder(
 }
 
 // ===== Webhook: validação por Basic Auth =====
-// O Pagar.me V5 protege o webhook com HTTP Basic Auth: no painel você
+// O Pagar.me protege o webhook com HTTP Basic Auth: no painel você
 // cadastra a URL com usuário/senha, e o Pagar.me envia esse Basic Auth
-// em cada POST. A gente compara (timing-safe) com o que está no env.
+// em cada POST. Comparação timing-safe com o que está no env.
 export function verifyWebhookBasicAuth(
   authHeader: string | null,
   expectedUser: string,
@@ -309,7 +280,6 @@ export function verifyWebhookBasicAuth(
     return false;
   }
   const expected = expectedUser + ":" + expectedPass;
-  // Comparação timing-safe (mesmo comprimento) pra não vazar por timing.
   if (decoded.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < decoded.length; i++) {
