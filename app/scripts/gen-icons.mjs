@@ -26,6 +26,7 @@ mkdirSync(outDir, { recursive: true });
 
 const BRAND_ORANGE = [0xf2, 0x76, 0x23]; // #F27623
 const WHITE = [0xff, 0xff, 0xff];
+const CREAM = [0xff, 0xf8, 0xf2]; // #FFF8F2 (creme da marca — símbolo na capa)
 const DARK = [0x1b, 0x0f, 0x17]; // #1B0F17 (tom escuro do site)
 
 const symbol = PNG.sync.read(readFileSync(join(repoRoot, 'assets', 'logo-simbolo.png')));
@@ -105,7 +106,9 @@ save('icon.png', compose({ size: 1024, bg: WHITE, tint: BRAND_ORANGE, coverage: 
 // Ícone adaptativo Android: fundo branco + símbolo laranja na área segura (~56%)
 save('icon-background.png', compose({ size: 1024, bg: WHITE, tint: WHITE, coverage: 0 }));
 save('icon-foreground.png', compose({ size: 1024, bg: null, tint: BRAND_ORANGE, coverage: 0.52 }));
-// Splash claro e escuro
-save('splash.png', compose({ size: 2732, bg: WHITE, tint: BRAND_ORANGE, coverage: 0.22 }));
-save('splash-dark.png', compose({ size: 2732, bg: DARK, tint: BRAND_ORANGE, coverage: 0.22 }));
+// Splash claro e escuro — CAPA LARANJA: fundo laranja da marca + símbolo
+// creme centralizado (mesma linguagem visual do ícone). Igual nos dois
+// modos, pra a capa ser sempre laranja (claro ou escuro).
+save('splash.png', compose({ size: 2732, bg: BRAND_ORANGE, tint: CREAM, coverage: 0.30 }));
+save('splash-dark.png', compose({ size: 2732, bg: BRAND_ORANGE, tint: CREAM, coverage: 0.30 }));
 console.log('Concluído.');
