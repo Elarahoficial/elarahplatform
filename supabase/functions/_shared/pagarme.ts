@@ -332,11 +332,24 @@ export async function getOrder(
 // `code` = booking.id → o pagarme-webhook concilia igual ao link.
 // =============================================================
 
+// Endereço do comprador — EXIGIDO pela análise antifraude (doc V5:
+// pelo menos um de customer.address / card.billing_address). NÃO é
+// tokenizado com o card_token; vai no pedido.
+export interface PagarmeOrderAddress {
+  zipCode: string; // CEP (dígitos)
+  line1: string; // "número, logradouro, bairro"
+  city: string;
+  state: string; // UF (2 letras)
+  line2?: string;
+  country?: string; // default BR
+}
+
 export interface PagarmeOrderCustomer {
   name: string;
   email: string;
   cpf: string; // só dígitos
   phone?: { areaCode?: string; number?: string };
+  address?: PagarmeOrderAddress;
 }
 
 export interface PagarmeCardOrderInput {
@@ -381,7 +394,7 @@ function buildOrderCustomer(c: PagarmeOrderCustomer): Record<string, unknown> {
   const phones = areaCode && number
     ? { mobile_phone: { country_code: "55", area_code: areaCode, number } }
     : undefined;
-  return {
+  const out: Record<string, unknown> = {
     name: (c.name || "Cliente Elarah").slice(0, 64),
     email: c.email,
     type: "individual",
@@ -389,6 +402,19 @@ function buildOrderCustomer(c: PagarmeOrderCustomer): Record<string, unknown> {
     document_type: "CPF",
     ...(phones ? { phones } : {}),
   };
+  // Endereço p/ antifraude — só inclui quando completo (CEP+linha+cidade+UF).
+  const a = c.address;
+  if (a && digits(a.zipCode) && a.line1 && a.city && a.state) {
+    out.address = {
+      country: (a.country || "BR").toUpperCase().slice(0, 2),
+      state: String(a.state).toUpperCase().slice(0, 2),
+      city: String(a.city).slice(0, 64),
+      zip_code: digits(a.zipCode),
+      line_1: String(a.line1).slice(0, 256),
+      ...(a.line2 ? { line_2: String(a.line2).slice(0, 256) } : {}),
+    };
+  }
+  return out;
 }
 
 // POST /orders — envia o body e normaliza a resposta (order + charge +
