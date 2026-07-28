@@ -202,12 +202,11 @@ export async function createPaymentLink(
       accepted_payment_methods: ["credit_card", "pix"],
       statement_descriptor: (input.statementDescriptor || "ELARAH").slice(0, 13),
       credit_card_settings: {
-        // installments_setup.interest_type="simple" faz o Pagar.me HONRAR
-        // os installments[].total como total-com-juros (gross-up). Sem ele,
-        // o Pagar.me cobra o valor do carrinho (sem juros). Confirmado na
-        // doc oficial V5. cart_settings.items.amount fica no valor-base →
-        // o PIX cobra o base; só o cartão usa os totais grossed-up.
-        installments_setup: { interest_type: "simple" },
+        // installments explícito {number,total} com os totais já grossed-up
+        // por parcela. NÃO enviar installments_setup junto: em link
+        // type=order os dois são MUTUAMENTE EXCLUSIVOS (a API retorna 400 —
+        // confirmado no sandbox). cart_settings.items.amount fica no
+        // valor-base → PIX cobra o base; só o cartão usa estes totais.
         operation_type: "auth_and_capture",
         installments,
       },
