@@ -89,6 +89,23 @@ select 'Meu Ateliê Arteterapia', 'arterapia', 'meuatelie.arterapia', '119896596
 where not exists (select 1 from public.prospects where lower(nome) = lower('Meu Ateliê Arteterapia'));
 
 
+-- ===== 7b. Casa de Pedra (escalada) =====
+-- Pode já existir de sql/elarah_crm_prospects_seed_experiencias_10.sql
+-- (lá entrou sem WhatsApp). O insert abaixo só cria se não existir;
+-- o update logo em seguida preenche o WhatsApp quando ele estiver
+-- vazio — sem sobrescrever edições manuais (coalesce no valor atual).
+insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
+select 'Casa de Pedra', 'escalada', null, '11999295034', null, 'https://casadepedra.com.br/', 'Pompeia', 'São Paulo',
+  'Referência e acessível. Maior ginásio de escalada da América do Sul, com unidades na Pompeia/Perdizes e em Moema; day pass com instrução inicial inclusa, boulder e top rope para iniciantes. WhatsApp por unidade — Perdizes (11) 99929-5034, Moema (11) 98608-2476. Aluguel de sapatilha/cadeirinha à parte.'
+where not exists (select 1 from public.prospects where lower(nome) = lower('Casa de Pedra'));
+
+-- Backfill do WhatsApp se a linha já existia sem número.
+update public.prospects
+   set whatsapp = coalesce(nullif(trim(whatsapp), ''), '11999295034'),
+       site     = coalesce(nullif(trim(site), ''), 'https://casadepedra.com.br/')
+ where lower(nome) = lower('Casa de Pedra');
+
+
 -- =============================================================
 -- CLUBES DE LEITURA (categoria = leitura)
 -- =============================================================
@@ -175,11 +192,11 @@ notify pgrst, 'reload schema';
 --
 --   select nome, categoria, bairro, whatsapp, status
 --   from public.prospects
---   where categoria in ('patinacao','voo','arterapia','leitura')
+--   where categoria in ('patinacao','voo','arterapia','leitura','escalada')
 --      or lower(nome) in ('circa-nos lab','tammy montagna','tokyo sp')
 --   order by categoria, nome;
 --
--- Esperado: 11 linhas, todas com status 'nao_contatado'.
+-- Esperado: 12 linhas (Casa de Pedra inclusa).
 --
 -- Templates novos:
 --
