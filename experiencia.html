@@ -285,6 +285,24 @@
     </div>
   </header>
 
+  <!-- ========== FAIXA DE PRESENTE ========== -->
+  <!-- Aparece só quando a pessoa chega pela aba Presentear (?presente=1).
+       Deixa claro que ela está reservando pra presentear: escolhe a data,
+       o horário e a quantidade de pessoas normalmente. -->
+  <div id="presente-banner" style="display:none;background:linear-gradient(90deg,#fff4e6,#ffeede);border-bottom:1px solid #f0d9bd;color:#a4663b;text-align:center;padding:12px 20px;font-size:.9rem;font-weight:600;">
+    🎁 Você está presenteando esta experiência — escolha a data, o horário e a quantidade de pessoas. A reserva vai no nome de quem for viver.
+  </div>
+  <script>
+    (function () {
+      try {
+        if (new URLSearchParams(window.location.search).get('presente') === '1') {
+          var b = document.getElementById('presente-banner');
+          if (b) b.style.display = 'block';
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- ========== CONTENT ========== -->
   <div id="exp-content" class="exp-detail">
     <div class="exp-detail__loading">Carregando experiencia...</div>

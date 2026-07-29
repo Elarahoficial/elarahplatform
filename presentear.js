@@ -184,20 +184,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       grid.appendChild(card);
     });
 
-    // ===== BOTÃO "RESERVAR" → presentear ESTA experiência =====
-    // Nesta página o clique NÃO vai pro checkout normal (script.js não é
-    // carregado aqui). Ele abre o modal de gift card já amarrado à
-    // experiência escolhida: valor pré-preenchido com o preço dela e o
-    // nome dela impresso no topo. Sem isso o botão ficava morto.
+    // ===== BOTÃO "RESERVAR" → reserva de verdade da experiência =====
+    // Presentear uma experiência é uma RESERVA (data + horário + quantidade
+    // de pessoas), não um gift card de valor. Esse fluxo já existe, testado
+    // em produção, na página da experiência (experiencia.html + script.js):
+    // escolha de data, horário (inclusive slots semanais/recorrentes) e
+    // quantidade no checkout. A reserva aparece na aba Compras com o NOME
+    // da experiência — que era o que faltava. Mandamos ?presente=1 só pra
+    // sinalizar o contexto de presente na página de destino.
+    //
+    // (Antes o clique não fazia nada: o listener global de [data-reserve]
+    // vive em script.js, que não é carregado nesta página.)
     grid.querySelectorAll('[data-reserve]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         const expId = btn.getAttribute('data-experience-id');
-        const exp = giftExperiences.find(
-          (x) => String(x.id) === String(expId)
-        );
-        openGiftModal(exp || null);
+        if (!expId) return;
+        window.location.href =
+          'experiencia.html?id=' + encodeURIComponent(expId) + '&presente=1';
       });
     });
 
@@ -462,23 +467,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     return 'R$ ' + (v / 100).toFixed(2).replace('.', ',');
   }
 
-  // Converte o preço textual da experiência ("R$180", "R$ 1.200",
-  // "R$180,00") em centavos, pra pré-preencher o valor do gift card.
-  // Vírgula = decimal; ponto = separador de milhar.
-  function parsePrecoToCentavos(preco) {
-    if (preco == null) return 0;
-    let s = String(preco).replace(/[^\d.,]/g, '').trim();
-    if (!s) return 0;
-    if (s.indexOf(',') !== -1) {
-      s = s.replace(/\./g, '').replace(',', '.');
-    } else {
-      s = s.replace(/\./g, '');
-    }
-    const reais = parseFloat(s);
-    if (!isFinite(reais) || reais <= 0) return 0;
-    return Math.round(reais * 100);
-  }
-
   // Validador CPF (algoritmo dos dígitos verificadores). Mesmo do
   // checkout de experiência (script.js#isValidCpfFront). Replicado
   // pra não acoplar presentear.js a script.js (páginas distintas).
@@ -519,7 +507,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   let pixGiftCardId = null;        // id atual do gift card pending
   let selectedCentavos = 0;
   let paymentMethod = 'card';      // 'card' | 'pix'
-  let giftExperienceCtx = null;    // experiência sendo presenteada (ou null)
 
   function buildGiftModal() {
     if (giftModal) return giftModal;
@@ -539,14 +526,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         'padding:28px 28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:92vh;overflow-y:auto;">' +
 
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;">' +
-          '<h3 id="gcm-title" style="font-family:\'DM Serif Display\',serif;font-size:1.45rem;color:#1a1a1a;margin:0;">Comprar gift card</h3>' +
+          '<h3 style="font-family:\'DM Serif Display\',serif;font-size:1.45rem;color:#1a1a1a;margin:0;">Comprar gift card</h3>' +
           '<button type="button" id="gcm-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;padding:0 4px;">&times;</button>' +
         '</div>' +
 
         // ===== FORM SECTION =====
         '<div id="gcm-form-section">' +
           '<form id="gcm-form" novalidate>' +
-            '<div id="gcm-exp-context" style="display:none;background:#fff8ee;border:1px solid #f0d9bd;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:.88rem;color:#a4663b;line-height:1.35;"></div>' +
             '<label style="display:block;font-size:.85rem;color:#333;margin:8px 0 6px;">Valor</label>' +
             '<div id="gcm-values" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
               '<button type="button" class="gcm-val" data-val="10000">R$100</button>' +
@@ -724,13 +710,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== Open / Close =====
   // Reset COMPLETO do estado ao abrir (não confia em estado prévio).
-  // `experience` opcional: quando presente (clique em "Reservar" num card),
-  // o gift card já vem amarrado àquela experiência — valor pré-preenchido
-  // com o preço dela e o nome dela no topo do formulário.
-  function openGiftModal(experience) {
+  // Este modal é SÓ pro gift card de valor livre. Presentear uma
+  // experiência específica é uma reserva — vai pra experiencia.html.
+  function openGiftModal() {
     const m = buildGiftModal();
-
-    giftExperienceCtx = experience || null;
 
     // 1. Para qualquer polling que esteja rodando (paranóia)
     stopPixPolling();
@@ -771,34 +754,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Pagar e enviar gift card';
-    }
-
-    // 5b. Contexto da experiência: banner + título + valor pré-preenchido.
-    const titleEl   = m.querySelector('#gcm-title');
-    const contextEl = m.querySelector('#gcm-exp-context');
-    if (giftExperienceCtx) {
-      const nome = String(giftExperienceCtx.nome || 'experiência');
-      const escNome = nome
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      if (titleEl) titleEl.textContent = 'Presentear experiência';
-      if (contextEl) {
-        contextEl.innerHTML =
-          '🎁 Você está presenteando: <strong>' + escNome + '</strong>' +
-          '<br><span style="color:#8a7a68;font-size:.8rem;">A pessoa recebe um gift card para viver esta experiência. O valor já vem sugerido — você pode ajustar.</span>';
-        contextEl.style.display = 'block';
-      }
-      // Pré-preenche com o preço da experiência (ajustável pela pessoa).
-      const centavos = parsePrecoToCentavos(giftExperienceCtx.preco);
-      if (centavos >= 5000 && customEl) {
-        selectedCentavos = centavos;
-        customEl.value = centavos % 100 === 0
-          ? String(centavos / 100)
-          : (centavos / 100).toFixed(2);
-        if (totalEl) totalEl.textContent = brl(centavos);
-      }
-    } else {
-      if (titleEl) titleEl.textContent = 'Comprar gift card';
-      if (contextEl) { contextEl.style.display = 'none'; contextEl.innerHTML = ''; }
     }
 
     // 6. Abre
@@ -894,8 +849,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         recipient_email: d.recEmail,
         recipient_nome: d.recNome,
         mensagem: d.mensagem,
-        experience_id: giftExperienceCtx ? giftExperienceCtx.id : null,
-        experience_nome: giftExperienceCtx ? giftExperienceCtx.nome : null,
       }),
     });
     const data = await res.json().catch(() => null);
@@ -932,8 +885,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         recipient_nome: d.recNome,
         mensagem: d.mensagem,
         cpf: d.cpfDigits,
-        experience_id: giftExperienceCtx ? giftExperienceCtx.id : null,
-        experience_nome: giftExperienceCtx ? giftExperienceCtx.nome : null,
       }),
     });
     const data = await res.json().catch(() => null);
