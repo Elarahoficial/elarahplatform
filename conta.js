@@ -169,6 +169,7 @@ if (currentUser.partnerStatus === 'approved') {
       <div class="account__partner-detail"><strong>Bairro / Local de atuação</strong><span>${pd.bairro || '-'}</span></div>
       <div class="account__partner-detail"><strong>Cidade</strong><span>${pd.cidade || '-'}</span></div>
       <div class="account__partner-detail"><strong>Instagram ou site</strong><span>${formatSocialHandle(pd.social) || '-'}</span></div>
+      <div class="account__partner-detail"><strong>WhatsApp para contato</strong><span>${pd.whatsapp || currentUser.telefone || '-'}</span></div>
       <div class="account__partner-detail"><strong>Conte sobre sua experiência</strong><span>${pd.descricao || '-'}</span></div>
     `;
   }
@@ -186,7 +187,15 @@ if (currentUser.partnerStatus === 'rejected') {
   return;
 }
 
-if (formWrap) formWrap.style.display = 'block';
+if (formWrap) {
+  formWrap.style.display = 'block';
+  // Pré-preenche o WhatsApp com o telefone da conta (se houver e o campo
+  // estiver vazio) — o parceiro pode trocar por um número comercial.
+  const waInput = document.getElementById('parceiro-whatsapp');
+  if (waInput && !waInput.value && currentUser.telefone) {
+    waInput.value = currentUser.telefone;
+  }
+}
 }
 
 renderPartnerSection();
@@ -203,6 +212,7 @@ renderPartnerSection();
         bairro: document.getElementById('parceiro-bairro')?.value.trim() || '',
         cidade: document.getElementById('parceiro-cidade')?.value.trim() || '',
         social: document.getElementById('parceiro-social')?.value.trim() || '',
+        whatsapp: document.getElementById('parceiro-whatsapp')?.value.trim() || '',
         descricao: document.getElementById('parceiro-descricao')?.value.trim() || ''
       };
 
