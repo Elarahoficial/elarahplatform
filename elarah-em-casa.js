@@ -62,7 +62,7 @@
           esc(custom && custom.title ? custom.title : 'Chegando em casa') + '</h3>' +
         '<p style="color:#6a584a;font-size:.95rem;max-width:440px;margin:0 auto;line-height:1.55;">' +
           (custom && custom.text ? esc(custom.text) :
-            'Os kits Elarah em Casa estão sendo finalizados com todo o carinho. Enquanto isso, ') +
+            'Os Kits Elarah estão sendo finalizados com todo o carinho. Enquanto isso, ') +
           (custom && custom.text ? '' :
             '<a href="categoria.html" style="color:#b9764f;font-weight:600;text-decoration:underline;">explore as experiências presenciais</a>.') +
         '</p>' +
@@ -87,7 +87,7 @@
       ? esc(window.ElarahData && typeof window.ElarahData.formatPrecoBR === 'function'
           ? window.ElarahData.formatPrecoBR(e.preco) : e.preco)
       : '';
-    var titulo = String(e.nome || '').trim() || 'Kit Elarah em Casa';
+    var titulo = String(e.nome || '').trim() || 'Kit Elarah';
 
     var descTrunc = '';
     if (e.descricao) {
