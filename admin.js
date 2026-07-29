@@ -76,6 +76,21 @@
     }
   }
 
+  // Igual ao formatDate, mas inclui a hora (dd/mm/aaaa HH:MM) — usado onde
+  // o horário importa, como no momento do cadastro de parceiro.
+  function formatDateTime(isoString) {
+    if (!isoString) return '—';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    } catch {
+      return isoString;
+    }
+  }
+
   function escapeHtml(str) {
     if (str == null) return '';
     const div = document.createElement('div');
@@ -2261,6 +2276,31 @@
     return v.startsWith('@') ? v : '@' + v;
   }
 
+  // Célula de telefone da tabela de Parceiros. O formulário de parceiro não
+  // pede telefone, então o número vem do perfil da conta (profiles.telefone,
+  // obrigatório no cadastro) e, como fallback, do WhatsApp que o parceiro
+  // opcionalmente informa no formulário (partner_data.whatsapp). Mostra o
+  // número + botão verde que abre o WhatsApp com uma saudação pronta sobre
+  // o cadastro de parceiro. Sem número, mostra só o traço.
+  function buildPartnerPhoneCell(u, pd) {
+    const raw = ((u.telefone || '') || (pd && pd.whatsapp) || '').trim();
+    if (!raw) return '<span style="color:#bbb;">—</span>';
+    const digits = raw.replace(/\D+/g, '').replace(/^55/, '');
+    if (!digits) return escapeHtml(raw);
+    const nome = String((pd && pd.marca) || u.nome || '').trim().split(/\s+/)[0] || '';
+    const saud = nome ? ('Oii, ' + nome + '! ') : 'Oii! ';
+    const msg = saud + 'Aqui é da Elarah 🧡 Recebemos o seu cadastro de parceiro e queremos conversar sobre as suas experiências.';
+    const href = 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(msg);
+    const numero = '<a href="' + href + '" target="_blank" rel="noopener"' +
+      ' style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;white-space:nowrap;">' +
+      escapeHtml(formatPhoneBR(raw)) + '</a>';
+    const botao = '<a href="' + href + '" target="_blank" rel="noopener" title="Falar no WhatsApp"' +
+      ' style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 10px;background:#25D366;color:#fff;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;line-height:1;vertical-align:middle;">' +
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.52 3.48A11.78 11.78 0 0 0 12.04 0C5.46 0 .12 5.34.12 11.92c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.65a11.9 11.9 0 0 0 5.77 1.47h.01c6.58 0 11.92-5.34 11.92-11.92 0-3.18-1.24-6.17-3.45-8.42zM12.05 21.8h-.01a9.86 9.86 0 0 1-5.03-1.38l-.36-.21-3.72.98 1-3.62-.23-.37a9.85 9.85 0 0 1-1.51-5.27c0-5.45 4.43-9.88 9.87-9.88 2.64 0 5.12 1.03 6.99 2.9a9.81 9.81 0 0 1 2.89 6.99c-.01 5.45-4.44 9.86-9.89 9.86zm5.42-7.39c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.09 3.2 5.07 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35z"/></svg>' +
+      'WhatsApp</a>';
+    return numero + botao;
+  }
+
   // ===== PARTNERS =====
   async function renderPartners() {
     const profiles = await getProfiles();
@@ -2268,10 +2308,17 @@
     const tbody = document.getElementById('partners-body');
     const countEl = document.getElementById('partners-count');
 
+    // Ordena pelo momento do cadastro de parceiro (partner_data.requestedAt),
+    // caindo pro created_at do perfil quando o cadastro é antigo e não tem
+    // requestedAt. Mais recentes primeiro — quem acabou de se cadastrar
+    // aparece no topo.
+    const submittedAt = (p) => (p.partner_data && p.partner_data.requestedAt) || p.created_at || '';
+    partners.sort((a, b) => String(submittedAt(b)).localeCompare(String(submittedAt(a))));
+
     countEl.textContent = partners.length + ' parceiro' + (partners.length !== 1 ? 's' : '');
 
     if (partners.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>';
       return;
     }
 
@@ -2309,7 +2356,10 @@
           <td>${escapeHtml(pd.bairro || '—')}</td>
           <td>${escapeHtml(pd.cidade || '—')}</td>
           <td>${escapeHtml(formatSocialHandle(pd.social) || '—')}</td>
+          <td>${buildPartnerPhoneCell(u, pd)}</td>
+          <td>${u.email ? '<a href="mailto:' + escapeHtml(u.email) + '" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;white-space:nowrap;">' + escapeHtml(u.email) + '</a>' : '<span style="color:#bbb;">—</span>'}</td>
           <td title="${escapeHtml(desc)}">${escapeHtml(descShort)}</td>
+          <td style="white-space:nowrap;">${formatDateTime(pd.requestedAt || u.created_at)}</td>
           <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
           <td>${actions}</td>
         </tr>
