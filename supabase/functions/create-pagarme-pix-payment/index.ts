@@ -25,6 +25,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { buildAcompanhantes } from "../_shared/acompanhantes.ts";
 import { createPixOrder } from "../_shared/pagarme.ts";
 import { isValidCpf } from "../_shared/mercadopago.ts";
 import {
@@ -77,6 +78,9 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
   const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
   const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
+  // Acompanhantes → coluna dedicada `acompanhantes` (jsonb) da bookings.
+  // [{ nome, telefone(dígitos, DDD+número) }]. Ver _shared/acompanhantes.ts.
+  const acompanhantes = buildAcompanhantes(payload, participantes);
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
   const variantExpectedCents = (function () {
@@ -171,6 +175,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       valor_repasse_centavos: valorRepasseCentavos, valor_comissao_centavos: valorComissaoCentavos,
       repasses: repassesArray.length ? repassesArray : null,
       status_fornecedor: "repasse_pendente", payment_provider: "pagarme",
+      acompanhantes: acompanhantes,
       metadata: {
         bairro: exp.bairro ?? null, endereco: exp.endereco ?? null,
         paid_with_gift_card_only: true, participantes,
@@ -270,6 +275,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     repasses: repassesArray.length ? repassesArray : null,
     status_fornecedor: "repasse_pendente", mp_payment_id: pixResult.orderId ?? null,
     payment_provider: "pagarme",
+    acompanhantes: acompanhantes,
     metadata: {
       bairro: exp.bairro ?? null, endereco: exp.endereco ?? null,
       participantes, telefone_digits: telefoneDigits || null,

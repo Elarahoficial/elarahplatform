@@ -3070,6 +3070,7 @@ if (groupForm) {
             cupom: ctx.cupomCode || null,
             quantidade: ctx.quantidade || 1,
             participantes: ctx.participantes || [],
+            acompanhantes: ctx.acompanhantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
             variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
@@ -3432,6 +3433,7 @@ if (groupForm) {
         cupom: ctx.cupomCode || null,
         quantidade: ctx.quantidade || 1,
         participantes: ctx.participantes || [],
+        acompanhantes: ctx.acompanhantes || [],
         variant_label: ctx.variantLabel || null,
         variant_selected: ctx.variantSelected || null,
         // Preço unitário da opção escolhida (centavos) — dica de segurança
@@ -4025,6 +4027,10 @@ if (groupForm) {
       // ===== Quantidade + Participantes =====
       ctx.quantidade = 1;
       ctx.participantes = [];
+      // Acompanhantes (só as Pessoas 2..N, sem o comprador) no formato que
+      // vai pra coluna `acompanhantes` (jsonb) da tabela bookings:
+      // [{ nome, telefone }] com telefone em dígitos (DDD + número).
+      ctx.acompanhantes = [];
       var qtyEl = root.querySelector('#erm-qty');
       var participantsEl = root.querySelector('#erm-participants');
       if (qtyEl) qtyEl.textContent = '1';
@@ -4552,6 +4558,9 @@ if (groupForm) {
 
       // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
       var participantes = [];
+      // Acompanhantes = só as Pessoas 2..N (sem o comprador), no formato
+      // da coluna `acompanhantes`: [{ nome, telefone(dígitos) }].
+      var acompanhantes = [];
       if (ctx.quantidade > 1 && modalRoot) {
         var partNomes = modalRoot.querySelectorAll('.erm-part-nome');
         var partTels = modalRoot.querySelectorAll('.erm-part-telefone');
@@ -4570,10 +4579,15 @@ if (groupForm) {
             break;
           }
           partNomes[pi].style.borderColor = '#ddd';
+          // Telefone precisa ter DDD + número (10 ou 11 dígitos) — sem isso
+          // não dá pra contatar no dia. normalizePhoneBR devolve null quando
+          // falta o DDD ou o número está incompleto.
           var pTelNorm = normalizePhoneBR(pTel);
           if (!pTelNorm) {
             partTels[pi].style.borderColor = '#c0392b';
-            errEl.textContent = 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
+            errEl.textContent = pTel
+              ? 'WhatsApp da Pessoa ' + pIdx + ' inválido — use DDD + número (ex: 11999999999).'
+              : 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
             try { partTels[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
             break;
@@ -4610,9 +4624,12 @@ if (groupForm) {
             // sem essa feature.
             variant_selected: pVariant || undefined,
           });
+          // telefone já normalizado (pTelNorm) = só dígitos com DDD + número.
+          acompanhantes.push({ nome: pNome, telefone: pTelNorm });
         }
         if (!partValid) return;
       }
+      ctx.acompanhantes = acompanhantes;
       // Inclui o comprador como Pessoa 1 (índice 0 do array, mas Pessoa 1
       // na UI). Quando a experiência tem variantes, anexa a escolha do
       // comprador. Esse array vira metadata.participantes no booking.
@@ -4795,6 +4812,7 @@ if (groupForm) {
             cupom: ctx.cupomCode || null,
             quantidade: ctx.quantidade || 1,
             participantes: ctx.participantes || [],
+            acompanhantes: ctx.acompanhantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
             // Preço unitário da opção escolhida (centavos) — dica de segurança
@@ -5026,6 +5044,7 @@ if (groupForm) {
           payment_method: 'card',
           quantidade: ctx.quantidade || 1,
           participantes: ctx.participantes || [],
+          acompanhantes: ctx.acompanhantes || [],
           variant_label: ctx.variantLabel || null,
           variant_selected: ctx.variantSelected || null,
           // Dica de segurança do preço da variação (centavos) — backend só

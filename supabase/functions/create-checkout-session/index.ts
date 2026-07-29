@@ -49,6 +49,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { buildAcompanhantes } from "../_shared/acompanhantes.ts";
 import {
   computeChargeAmount,
   assertExpectedTotal,
@@ -350,6 +351,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const cupomCode = payload.cupom ? String(payload.cupom).trim() : null;
   const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
   const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
+  // Acompanhantes → coluna dedicada `acompanhantes` (jsonb) da bookings.
+  // [{ nome, telefone(dígitos, DDD+número) }]. Ver _shared/acompanhantes.ts.
+  const acompanhantes = buildAcompanhantes(payload, participantes);
   // Variantes (escolha extra do cliente, ex.: Pintura → Lagosta).
   // Persistidas em metadata.variant_label + metadata.variant_selected
   // pra exibir no e-mail e admin. Não afetam preço nem estoque.
@@ -1045,6 +1049,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       valor_comissao_centavos: valorComissaoCentavos,
       repasses: repassesArray.length ? repassesArray : null,
       status_fornecedor: "repasse_pendente",
+      acompanhantes: acompanhantes,
       metadata: {
         bairro: exp.bairro ?? null,
         endereco: exp.endereco ?? null,
@@ -1406,6 +1411,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     valor_comissao_centavos: valorComissaoCentavos,
     repasses: repassesArray.length ? repassesArray : null,
     status_fornecedor: "repasse_pendente",
+    acompanhantes: acompanhantes,
     metadata: { ...bookingMetadataBase, participantes },
   });
 
@@ -1451,6 +1457,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         valor_comissao_centavos: valorComissaoCentavos,
         repasses: repassesArray.length ? repassesArray : null,
         status_fornecedor: "repasse_pendente",
+        acompanhantes: acompanhantes,
         metadata: {
           ...bookingMetadataBase,
           telefone: telefoneToSave,
