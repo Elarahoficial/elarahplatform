@@ -33,10 +33,17 @@
   }
   function isKit(exp) {
     if (!exp) return false;
+    // Presencial (data + horário marcados, ou slot event_at) nunca é kit,
+    // mesmo com "em casa"/"kit" no nome. Ex.: "Café Bom & em Casa" (aula).
+    if (exp.event_at) return false;
+    var temData = exp.data && String(exp.data).trim() !== '';
+    var temHora = (exp.horario && String(exp.horario).trim() !== '')
+      || (exp.horarios && exp.horarios.length > 0);
+    if (temData && temHora) return false;
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
     if (hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1) return true;
-    // "em casa" conta SÓ na categoria (não no nome): "Café Bom & em Casa"
-    // é aula presencial, não kit. Mesma regra do isHomeKit / isCasaKit.
+    // "em casa" conta SÓ na categoria (não no nome). Mesma regra do
+    // isHomeKit / isCasaKit.
     return /\bem casa\b/.test(norm(exp.categoria || '')); // palavra inteira (não "Bem Casado")
   }
   // Variação escolhida na página do produto (experiencia.html). Só vale
