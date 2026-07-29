@@ -76,6 +76,21 @@
     }
   }
 
+  // Igual ao formatDate, mas inclui a hora (dd/mm/aaaa HH:MM) — usado onde
+  // o horário importa, como no momento do cadastro de parceiro.
+  function formatDateTime(isoString) {
+    if (!isoString) return '—';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    } catch {
+      return isoString;
+    }
+  }
+
   function escapeHtml(str) {
     if (str == null) return '';
     const div = document.createElement('div');
@@ -2293,10 +2308,17 @@
     const tbody = document.getElementById('partners-body');
     const countEl = document.getElementById('partners-count');
 
+    // Ordena pelo momento do cadastro de parceiro (partner_data.requestedAt),
+    // caindo pro created_at do perfil quando o cadastro é antigo e não tem
+    // requestedAt. Mais recentes primeiro — quem acabou de se cadastrar
+    // aparece no topo.
+    const submittedAt = (p) => (p.partner_data && p.partner_data.requestedAt) || p.created_at || '';
+    partners.sort((a, b) => String(submittedAt(b)).localeCompare(String(submittedAt(a))));
+
     countEl.textContent = partners.length + ' parceiro' + (partners.length !== 1 ? 's' : '');
 
     if (partners.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="10" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>';
       return;
     }
 
@@ -2337,6 +2359,7 @@
           <td>${buildPartnerPhoneCell(u, pd)}</td>
           <td>${u.email ? '<a href="mailto:' + escapeHtml(u.email) + '" style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;white-space:nowrap;">' + escapeHtml(u.email) + '</a>' : '<span style="color:#bbb;">—</span>'}</td>
           <td title="${escapeHtml(desc)}">${escapeHtml(descShort)}</td>
+          <td style="white-space:nowrap;">${formatDateTime(pd.requestedAt || u.created_at)}</td>
           <td><span class="admin__badge admin__badge--${statusClass}">${statusLabel}</span></td>
           <td>${actions}</td>
         </tr>
