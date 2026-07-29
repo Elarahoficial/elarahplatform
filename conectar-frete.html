@@ -38,7 +38,7 @@
     <img src="assets/logo.png" alt="Elarah" class="logo">
     <h1>Conectar o frete dos Correios</h1>
     <p class="sub">
-      Liga a sua conta do <b>Melhor Envio</b> à Elarah em Casa. Depois disso, o
+      Liga a sua conta do <b>Melhor Envio</b> aos Kits Elarah. Depois disso, o
       site calcula e cobra o frete real dos Correios (PAC/SEDEX) automaticamente
       no checkout dos kits.
     </p>
@@ -74,7 +74,7 @@
     (function showReturnState() {
       var p = new URLSearchParams(location.search);
       if (p.get('frete_conectado') === '1') {
-        setMsg('✅ <b>Frete conectado!</b> A Elarah em Casa já mostra o preço ' +
+        setMsg('✅ <b>Frete conectado!</b> Os Kits Elarah já mostram o preço ' +
           'real dos Correios automaticamente. Pode fechar esta página.', 'ok');
       } else if (p.get('frete_conectado') === '0') {
         setMsg('⚠️ Não deu certo: ' + (p.get('frete_erro') || 'erro desconhecido') +
