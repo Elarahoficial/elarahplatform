@@ -34,7 +34,10 @@
   function isKit(exp) {
     if (!exp) return false;
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
-    return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || /\bem casa\b/.test(hay); // "em casa" como palavra inteira (não "Bem Casado")
+    if (hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1) return true;
+    // "em casa" conta SÓ na categoria (não no nome): "Café Bom & em Casa"
+    // é aula presencial, não kit. Mesma regra do isHomeKit / isCasaKit.
+    return /\bem casa\b/.test(norm(exp.categoria || '')); // palavra inteira (não "Bem Casado")
   }
   // Variação escolhida na página do produto (experiencia.html). Só vale
   // se for do MESMO kit aberto. Devolve {nome, preco, label} ou null.

@@ -25,16 +25,18 @@
       .normalize('NFD').replace(/[̀-ͯ]/g, ''); // remove acentos
   }
 
-  // Casa "kit", "diy", "faça você mesmo", "em casa"
-  // "em casa" exige palavra inteira (\b) — senão "Bem Casado" (b-em-casa-do)
-  // cai aqui por engano e não há como tirar pelo admin.
+  // Casa "kit", "diy", "faça você mesmo" (no nome OU categoria). Já
+  // "em casa" conta SÓ na categoria — mesma regra do isHomeKit em
+  // experiences-data.js (fonte única de verdade). Senão um nome como
+  // "Café Bom & em Casa" (aula presencial de barismo) entraria aqui por
+  // engano só por ter "em casa" no nome. A categoria é quem decide.
   function isCasaKit(exp) {
     if (!exp) return false;
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
-    return hay.indexOf('kit') !== -1
+    if (hay.indexOf('kit') !== -1
         || hay.indexOf('diy') !== -1
-        || hay.indexOf('faca voce mesmo') !== -1
-        || /\bem casa\b/.test(hay);
+        || hay.indexOf('faca voce mesmo') !== -1) return true;
+    return /\bem casa\b/.test(norm(exp.categoria || '')); // palavra inteira (não "Bem Casado")
   }
 
   // Mapa de palavras-chave por tipo/coleção pros filtros do cliente.
