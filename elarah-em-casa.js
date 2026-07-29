@@ -25,16 +25,33 @@
       .normalize('NFD').replace(/[̀-ͯ]/g, ''); // remove acentos
   }
 
-  // Casa "kit", "diy", "faça você mesmo", "em casa"
-  // "em casa" exige palavra inteira (\b) — senão "Bem Casado" (b-em-casa-do)
-  // cai aqui por engano e não há como tirar pelo admin.
+  // Kit é produto enviado: NUNCA tem agenda presencial (data + horário
+  // marcados, ou slot com event_at). Se tem, é experiência presencial —
+  // ex.: "Café Bom & em Casa" (aula de barismo, 15/08 14h-17h30). Sinal
+  // mais forte que qualquer heurística de texto: vale mesmo se a
+  // categoria tiver "em casa".
+  function temAgenda(exp) {
+    if (!exp) return false;
+    if (exp.event_at) return true;
+    var temData = exp.data && String(exp.data).trim() !== '';
+    var temHora = (exp.horario && String(exp.horario).trim() !== '')
+      || (exp.horarios && exp.horarios.length > 0);
+    return !!(temData && temHora);
+  }
+
+  // Casa "kit", "diy", "faça você mesmo" (no nome OU categoria). Já
+  // "em casa" conta SÓ na categoria — mesma regra do isHomeKit em
+  // experiences-data.js (fonte única de verdade). Senão um nome como
+  // "Café Bom & em Casa" (aula presencial de barismo) entraria aqui por
+  // engano só por ter "em casa" no nome. A categoria é quem decide.
   function isCasaKit(exp) {
     if (!exp) return false;
+    if (temAgenda(exp)) return false; // presencial nunca é kit
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
-    return hay.indexOf('kit') !== -1
+    if (hay.indexOf('kit') !== -1
         || hay.indexOf('diy') !== -1
-        || hay.indexOf('faca voce mesmo') !== -1
-        || /\bem casa\b/.test(hay);
+        || hay.indexOf('faca voce mesmo') !== -1) return true;
+    return /\bem casa\b/.test(norm(exp.categoria || '')); // palavra inteira (não "Bem Casado")
   }
 
   // Mapa de palavras-chave por tipo/coleção pros filtros do cliente.
