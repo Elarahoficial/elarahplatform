@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Diagnóstico de Visibilidade — Elarah</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0; background: #faf7f2; color: #2a2320; line-height: 1.45;
+    }
+    header {
+      background: #fff; border-bottom: 1px solid #eee; padding: 20px 24px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    header h1 { margin: 0 0 4px; font-size: 1.3rem; }
+    header p { margin: 0; color: #777; font-size: .88rem; }
+    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+    .summary {
+      display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;
+    }
+    .card {
+      background: #fff; border: 1px solid #eee; border-radius: 12px;
+      padding: 16px 20px; min-width: 150px; flex: 1;
+    }
+    .card .n { font-size: 1.8rem; font-weight: 700; }
+    .card .l { font-size: .8rem; color: #777; text-transform: uppercase; letter-spacing: .03em; }
+    .card.ok .n { color: #1a8a4a; }
+    .card.bad .n { color: #c0392b; }
+    .card.warn .n { color: #a05f1e; }
+    .status-msg { padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-weight: 600; }
+    .status-loading { background: #eef4ff; color: #2c5aa0; }
+    .status-error { background: #fdecea; color: #c0392b; }
+    .filters { margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .filters button {
+      padding: 8px 14px; border: 1.5px solid #ddd; background: #fff; border-radius: 999px;
+      font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; color: #555;
+    }
+    .filters button.active { background: #f0a05e; border-color: #f0a05e; color: #fff; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #f0ece5; font-size: .86rem; vertical-align: top; }
+    th { background: #f7f2ea; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: #888; }
+    tr.row-bad { background: #fff8f7; }
+    tr.row-warn { background: #fffaf2; }
+    .pill {
+      display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700;
+      white-space: nowrap;
+    }
+    .pill-site-yes { background: #e6f4ea; color: #1a8a4a; }
+    .pill-site-no { background: #fdecea; color: #c0392b; }
+    .gate { display: inline-block; margin: 1px 3px 1px 0; padding: 1px 7px; border-radius: 6px; font-size: .7rem; font-weight: 600; }
+    .gate-pass { background: #eef7f0; color: #2e7d4f; }
+    .gate-fail { background: #fbe4e0; color: #b23b2a; }
+    .reason { color: #b23b2a; font-weight: 600; }
+    .fix { color: #555; display: block; margin-top: 3px; font-size: .8rem; }
+    .nome { font-weight: 700; }
+    .muted { color: #999; }
+    footer { text-align: center; padding: 30px; color: #aaa; font-size: .8rem; }
+    code { background: #f2ede5; padding: 1px 5px; border-radius: 4px; font-size: .82rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔎 Diagnóstico de Visibilidade das Experiências</h1>
+    <p>Varredura ao vivo: por que cada experiência <strong>aparece</strong> ou <strong>some</strong> do site. Usa exatamente a mesma lógica do site público.</p>
+  </header>
+
+  <main>
+    <div id="status" class="status-msg status-loading">Carregando experiências e horários do banco…</div>
+    <div class="summary" id="summary" style="display:none;"></div>
+    <div class="filters" id="filters" style="display:none;">
+      <span style="font-size:.82rem;color:#888;font-weight:600;">Mostrar:</span>
+      <button data-f="all" class="active">Todas</button>
+      <button data-f="hidden">Só as que somem do site</button>
+      <button data-f="visible">Só as que aparecem</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="tbl" style="display:none;">
+        <thead>
+          <tr>
+            <th>Experiência</th>
+            <th>Categoria</th>
+            <th>Data / Horário</th>
+            <th>Turmas</th>
+            <th>No site?</th>
+            <th>Portões (gates)</th>
+            <th>Motivo &amp; como resolver</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    Elarah · ferramenta interna de diagnóstico · <span id="ts"></span>
+  </footer>
+
+  <!-- Mesma ordem/versão de scripts das páginas públicas (categoria.html) -->
+  <script src="supabase-loader.js?v=11"></script>
+  <script src="supabase-client.js?v=12"></script>
+  <script src="auth.js?v=12"></script>
+  <script src="experiences-data.js?v=34"></script>
+
+  <script>
+  (async function () {
+    var statusEl = document.getElementById('status');
+    var ED = window.ElarahData;
+    if (!ED) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.textContent = 'ElarahData não carregou. Recarregue a página.';
+      return;
+    }
+
+    var all = [];
+    var slotMap = new Map();
+    try {
+      all = await ED.getAllExperiences();
+      if (ED.loadAllSlots) {
+        var sm = await ED.loadAllSlots();
+        if (sm && sm.forEach) slotMap = sm;
+      }
+    } catch (e) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.textContent = 'Erro ao carregar do banco: ' + ((e && e.message) || e);
+      return;
+    }
+
+    var now = Date.now();
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+    function fmtDate(ts) {
+      if (ts == null) return '—';
+      try {
+        return new Date(ts).toLocaleDateString('pt-BR', {
+          day: '2-digit', month: '2-digit', year: 'numeric'
+        });
+      } catch (e) { return '—'; }
+    }
+
+    // --- Reproduz o pipeline EXATO do site (script.js) ---
+    // 1) getVisibleExperiences = isPubliclyVisible + dedup por assinatura
+    // 2) filtro hideFromCategorias !== true
+    // 3) filtro !isExpiredRecurring(exp, slots)
+    // Aqui calculamos gate por gate pra cada experiência, inclusive as
+    // que somem, e apontamos QUAL portão a derrubou.
+
+    // Pré-calcula assinatura de dedup na MESMA ordem do getAllExperiences
+    // (que já vem ordenado por ordem/created_at). O primeiro de cada
+    // assinatura, ENTRE os publicamente visíveis, é o que o site mantém.
+    function sigOf(e) {
+      return [
+        String(e.nome || '').trim().toLowerCase(),
+        String(e.categoria || '').trim().toLowerCase(),
+        String(e.data || '').trim().toLowerCase(),
+        String((Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '').trim().toLowerCase(),
+        String(e.bairro || '').trim().toLowerCase(),
+        String(e.preco || '').trim().toLowerCase()
+      ].join('|');
+    }
+    var dedupWinner = {};
+    all.forEach(function (e) {
+      if (!ED.isPubliclyVisible(e, now)) return; // dedup só vê os visíveis
+      var sig = sigOf(e);
+      if (!(sig in dedupWinner)) dedupWinner[sig] = e.id;
+    });
+
+    var rows = all.map(function (e) {
+      var slots = slotMap.get(e.id) || [];
+      var isActive = e.isActive !== false;
+      var publicVisible = ED.isPubliclyVisible(e, now);
+      var hideFromCat = e.hideFromCategorias === true;
+      var expiredRec = ED.isExpiredRecurring ? ED.isExpiredRecurring(e, slots, now) : false;
+      var future = ED.experienceFutureDates ? ED.experienceFutureDates(e, slots, now) : [];
+      var nextTs = future && future.length ? future[0] : null;
+
+      // Estatística de turmas (slots) — ajuda a diagnosticar recorrentes.
+      var slotsAtivos = slots.filter(function (s) { return s && s.isActive !== false; });
+      var isRecorrente = slots.some(function (s) { return s && s.recurrenceRuleId; });
+      var futuras = 0, passadas = 0, semData = 0;
+      slotsAtivos.forEach(function (s) {
+        var ts = null;
+        if (s.eventAt) { var t = new Date(s.eventAt).getTime(); if (!isNaN(t)) ts = t; }
+        if (ts == null && ED.deriveEventTimestamp) ts = ED.deriveEventTimestamp(s.data, s.horario, now);
+        if (ts == null) { semData++; return; }
+        if (ts >= now) futuras++; else passadas++;
+      });
+      var sig = sigOf(e);
+      var isDupLoser = publicVisible && dedupWinner[sig] && dedupWinner[sig] !== e.id;
+
+      // Portão a portão (na ordem do site).
+      var gates = [];
+      gates.push({ nome: 'Ativa', pass: isActive });
+      gates.push({ nome: 'Visível (24h/expira)', pass: publicVisible });
+      gates.push({ nome: 'Não é só By Elarah', pass: !hideFromCat });
+      gates.push({ nome: 'Tem turma futura', pass: !expiredRec });
+      gates.push({ nome: 'Não é cópia', pass: !isDupLoser });
+
+      var onSite = publicVisible && !hideFromCat && !expiredRec && !isDupLoser;
+
+      // Motivo + como resolver (primeiro portão que falhou).
+      var reason = '', fix = '';
+      if (!isActive) {
+        reason = 'Você ocultou manualmente (botão Ocultar).';
+        fix = 'Clique em “Reativar” na lista de experiências.';
+      } else if (!publicVisible) {
+        // Descobre se é passado ou dentro do cutoff de 24h.
+        reason = 'O horário já passou ou falta menos de 24h pro início.';
+        fix = 'Edite a experiência, coloque uma DATA FUTURA no horário e Salve. Pra fixar o ano, use o formato DD/MM/AAAA.';
+      } else if (hideFromCat) {
+        reason = 'Marcada como “ocultar das categorias” — só aparece na faixa By Elarah.';
+        fix = 'Edite a experiência e desmarque “ocultar das categorias / Só By Elarah”.';
+      } else if (expiredRec) {
+        reason = 'TODAS as turmas têm data no passado (' + passadas + ' passada' +
+          (passadas === 1 ? '' : 's') + ', 0 futura). ' +
+          (isRecorrente ? 'É recorrente (Semanal) e o horizonte de datas venceu.' : '');
+        fix = isRecorrente
+          ? 'Clique em “Reativar” na lista — agora ele reativa a regra e recria as próximas turmas automaticamente. (Ou entre na edição › recorrência › ↻ Materializar.)'
+          : 'Edite a experiência, atualize as datas dos horários pra o futuro e Salve.';
+      } else if (isDupLoser) {
+        reason = 'É uma CÓPIA de outra experiência idêntica (mesmo nome, categoria, data, horário, bairro e preço). O site mostra só uma.';
+        fix = 'Renomeie ou exclua a cópia duplicada — ou mude algo (data/horário) pra elas ficarem distintas.';
+      }
+
+      return {
+        e: e, slots: slots, onSite: onSite, gates: gates,
+        reason: reason, fix: fix, nextTs: nextTs,
+        isActive: isActive, publicVisible: publicVisible,
+        hideFromCat: hideFromCat, expiredRec: expiredRec, isDupLoser: isDupLoser,
+        isRecorrente: isRecorrente, futuras: futuras, passadas: passadas, semData: semData
+      };
+    });
+
+    // --- Resumo ---
+    var totalOnSite = rows.filter(function (r) { return r.onSite; }).length;
+    var totalHidden = rows.length - totalOnSite;
+    // "Fantasma": admin acha que devia aparecer (ativa e não é By Elarah)
+    // mas o site esconde — o caso da Elarah.
+    var ghosts = rows.filter(function (r) {
+      return !r.onSite && r.isActive && !r.hideFromCat;
+    });
+
+    var summaryEl = document.getElementById('summary');
+    summaryEl.innerHTML =
+      '<div class="card"><div class="n">' + rows.length + '</div><div class="l">Total cadastradas</div></div>' +
+      '<div class="card ok"><div class="n">' + totalOnSite + '</div><div class="l">Aparecem no site</div></div>' +
+      '<div class="card bad"><div class="n">' + totalHidden + '</div><div class="l">Somem do site</div></div>' +
+      '<div class="card warn"><div class="n">' + ghosts.length + '</div><div class="l">Deveriam aparecer mas somem ⚠️</div></div>';
+    summaryEl.style.display = 'flex';
+
+    // --- Tabela ---
+    var tbody = document.getElementById('tbody');
+    function render(filter) {
+      var list = rows.filter(function (r) {
+        if (filter === 'hidden') return !r.onSite;
+        if (filter === 'visible') return r.onSite;
+        return true;
+      });
+      // Ordena: fantasmas primeiro, depois somem, depois aparecem.
+      list.sort(function (a, b) {
+        var ga = (!a.onSite && a.isActive && !a.hideFromCat) ? 0 : (a.onSite ? 2 : 1);
+        var gb = (!b.onSite && b.isActive && !b.hideFromCat) ? 0 : (b.onSite ? 2 : 1);
+        return ga - gb;
+      });
+      tbody.innerHTML = list.map(function (r) {
+        var e = r.e;
+        var rowCls = r.onSite ? '' : ((r.isActive && !r.hideFromCat) ? 'row-bad' : 'row-warn');
+        var cat = (ED.categoriaLabel ? ED.categoriaLabel(e) : (e.categoria || ''));
+        var horario = (Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '';
+        var gatesHtml = r.gates.map(function (g) {
+          return '<span class="gate ' + (g.pass ? 'gate-pass' : 'gate-fail') + '">' +
+            (g.pass ? '✓ ' : '✕ ') + esc(g.nome) + '</span>';
+        }).join('');
+        var reasonHtml = r.onSite
+          ? '<span class="muted">Tudo certo — aparece no site.' +
+            (r.nextTs ? ' Próxima turma: ' + fmtDate(r.nextTs) + '.' : '') + '</span>'
+          : '<span class="reason">' + esc(r.reason) + '</span>' +
+            '<span class="fix">✅ ' + esc(r.fix) + '</span>';
+        return '<tr class="' + rowCls + '">' +
+          '<td><span class="nome">' + esc(e.nome) + '</span>' +
+            (e.isElarahOriginal ? ' <span class="muted">· By Elarah</span>' : '') + '</td>' +
+          '<td>' + esc(cat) + '</td>' +
+          '<td>' + esc(e.data || '—') + '<br><span class="muted">' + esc(horario) + '</span></td>' +
+          '<td>' + (r.isRecorrente ? '<span class="muted">↻ Semanal</span><br>' : '') +
+            '<span style="color:' + (r.futuras > 0 ? '#1a8a4a' : '#c0392b') + ';font-weight:600;">' +
+            r.futuras + ' futura' + (r.futuras === 1 ? '' : 's') + '</span>' +
+            (r.passadas ? '<br><span class="muted">' + r.passadas + ' passada' + (r.passadas === 1 ? '' : 's') + '</span>' : '') +
+            (r.semData ? '<br><span class="muted">' + r.semData + ' s/ data</span>' : '') + '</td>' +
+          '<td>' + (r.onSite
+            ? '<span class="pill pill-site-yes">✓ Aparece</span>'
+            : '<span class="pill pill-site-no">✕ Some</span>') + '</td>' +
+          '<td>' + gatesHtml + '</td>' +
+          '<td>' + reasonHtml + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+    render('all');
+
+    document.getElementById('filters').style.display = 'flex';
+    document.getElementById('tbl').style.display = 'table';
+    statusEl.style.display = 'none';
+    document.getElementById('ts').textContent = new Date().toLocaleString('pt-BR');
+
+    document.querySelectorAll('#filters button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('#filters button').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        render(btn.dataset.f);
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

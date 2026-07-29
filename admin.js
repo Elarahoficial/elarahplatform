@@ -2629,6 +2629,88 @@
       invalidateGiftCardsCache();
       renderBookings();
     });
+
+    // Botão "↻ Recuperar vendas do Stripe" — rede de segurança manual.
+    // Quando o webhook do Stripe falha (ou não existia ainda), a venda
+    // paga no cartão fica presa em 'pending': some da aba Compras e
+    // ninguém recebe e-mail. Este botão chama a edge function
+    // stripe-reconcile, que confere no Stripe cada reserva pendente,
+    // recupera as que foram REALMENTE pagas (marca 'pago', envia a
+    // confirmação pro cliente + o aviso de venda pro admin) e conta o
+    // fidelidade. Idempotente: só toca no que ainda está 'pending'.
+    const recoverBtn = document.getElementById('btn-recover-stripe');
+    if (recoverBtn) recoverBtn.addEventListener('click', async () => {
+      if (!confirm(
+        'Recuperar vendas pagas no cartão que ficaram presas?\n\n' +
+        'Vou conferir no Stripe as reservas pendentes dos últimos 7 dias ' +
+        'e, pras que foram realmente pagas:\n' +
+        '• marcar como paga (aparece na aba Compras)\n' +
+        '• enviar a confirmação pro cliente\n' +
+        '• te enviar o aviso de "Nova venda"\n\n' +
+        'É seguro rodar mais de uma vez.'
+      )) {
+        return;
+      }
+      const sb = window.supabaseClient;
+      if (!sb || !sb.functions || !sb.functions.invoke) {
+        alert('Supabase indisponível. Recarregue a página e tente de novo.');
+        return;
+      }
+      const original = recoverBtn.textContent;
+      recoverBtn.disabled = true;
+      recoverBtn.textContent = 'Recuperando…';
+      try {
+        const res = await sb.functions.invoke('stripe-reconcile', {
+          body: { period_days: 7 },
+        });
+        const data = res && res.data;
+        const err = res && res.error;
+        if (err || !data) {
+          const motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+          console.error('[Admin] stripe-reconcile falhou:', err || data);
+          alert('Não consegui rodar a recuperação.\nMotivo: ' + motivo);
+          recoverBtn.disabled = false;
+          recoverBtn.textContent = original;
+          return;
+        }
+        const recuperadas = Array.isArray(data.recovered) ? data.recovered.length : 0;
+        const aindaNaoPagas = Array.isArray(data.still_unpaid) ? data.still_unpaid.length : 0;
+        const erros = Array.isArray(data.errors) ? data.errors.length : 0;
+        let msg;
+        if (recuperadas > 0) {
+          const lista = data.recovered.map(function (r) {
+            return '• ' + (r.experiencia || 'Experiência') +
+              (r.email ? ' — ' + r.email : '');
+          }).join('\n');
+          msg = '✓ ' + recuperadas + ' venda(s) recuperada(s)!\n\n' + lista +
+            '\n\nOs e-mails de confirmação já foram enviados e as vendas ' +
+            'aparecem agora na aba Compras.';
+        } else {
+          msg = 'Nenhuma venda presa encontrada pra recuperar nos últimos 7 dias.\n\n' +
+            '(Conferidas: ' + (data.scanned || 0) + ' · ainda não pagas no Stripe: ' +
+            aindaNaoPagas + ')';
+        }
+        if (erros > 0) {
+          msg += '\n\n⚠️ ' + erros + ' com erro — confira os logs da função stripe-reconcile no Supabase.';
+        }
+        recoverBtn.textContent = recuperadas > 0 ? ('✓ ' + recuperadas + ' recuperada(s)') : '↻ Recuperar vendas do Stripe';
+        alert(msg);
+        // Recarrega a lista pra as vendas recuperadas aparecerem já.
+        invalidateBookings();
+        renderBookings();
+        recoverBtn.disabled = false;
+        if (recuperadas > 0) {
+          setTimeout(function () { recoverBtn.textContent = original; }, 4000);
+        } else {
+          recoverBtn.textContent = original;
+        }
+      } catch (e) {
+        console.error('[Admin] exceção na recuperação Stripe:', e);
+        alert('Erro ao rodar a recuperação:\n' + ((e && e.message) || String(e)));
+        recoverBtn.disabled = false;
+        recoverBtn.textContent = original;
+      }
+    });
     if (filterExp) {
       // 'input' (não 'change') pra filtrar conforme o admin digita —
       // sem precisar dar Tab/Enter pra aplicar. Cobre tanto digitação
@@ -2824,6 +2906,19 @@
         || '';
       b._fornecedorResolvido = fornecedorNome;
 
+      // Reserva com VARIAÇÃO de preço (Individual/Dupla/Trio): a experiência
+      // guarda só o preço-BASE, então recalcular a partir dela mostra o valor
+      // do Individual mesmo quando a pessoa comprou a Dupla. Igual ao caso
+      // multi-fornecedor abaixo, o valor real da opção só existe no snapshot
+      // da reserva — então, quando há variação, respeitamos os valores
+      // gravados na própria reserva em vez de recomputar do preço-base.
+      const temVariante = !!(b.metadata && (
+        (b.metadata.variant_selected && String(b.metadata.variant_selected).trim()) ||
+        (Array.isArray(b.metadata.participantes) && b.metadata.participantes.some(function (p) {
+          return p && p.variant_selected && String(p.variant_selected).trim();
+        }))
+      ));
+
       // Valor Elarah: preço ATUAL da experiência × qty (o que a Elarah
       // cobra hoje). Antes a coluna mostrava só amount_total — o valor
       // pago na época da compra — então editar o preço da experiência
@@ -2832,8 +2927,13 @@
       // Valor cheio/Repasse/Comissão já fazem. Cai em amount_total quando
       // a experiência não resolve (ex.: experiência deletada) ou o preço
       // não é parseável.
+      // EXCEÇÃO: reserva com variação usa o amount_total (o que a pessoa
+      // realmente pagou pela opção), senão a Dupla apareceria no preço-base.
       let valorElarah = null;
-      if (exp && exp.preco) {
+      if (temVariante && b.amount_total != null) {
+        valorElarah = Number(b.amount_total);
+      }
+      if (valorElarah == null && exp && exp.preco) {
         const precoCents = precoLabelToCents(exp.preco);
         if (precoCents) valorElarah = precoCents * qty;
       }
@@ -2845,8 +2945,14 @@
       // Rateio resolvido sobre o Valor Cheio ATUAL da experiência (fonte
       // única — resolveRateioLegado). Valor cheio prefere a config atual
       // (pra "puxar" edições), cai no snapshot do booking e, por fim, null.
+      // EXCEÇÃO: reserva com variação prefere o valor_cheio_centavos gravado
+      // na reserva (o cheio da opção), quando existir.
       const rateio = resolveRateioLegado(b, exp);
-      b._valorCheioResolvido = rateio.valorCheio;
+      let valorCheioResolvido = rateio.valorCheio;
+      if (temVariante && b.valor_cheio_centavos != null) {
+        valorCheioResolvido = Number(b.valor_cheio_centavos);
+      }
+      b._valorCheioResolvido = valorCheioResolvido;
 
       // Multi-fornecedor: quando o booking tem repasses[] com +1 entrada,
       // o rateio entre vários fornecedores só existe no snapshot — é a
@@ -2856,14 +2962,24 @@
       //     prioridade, então uma reserva antiga podia mostrar repasse sobre
       //     outro valor (ex: 70% de 243 = R$170,10 em vez de 70% de 270 =
       //     R$189).
+      // Reserva com variação entra no mesmo caminho: o repasse/comissão da
+      // opção (Dupla) só está no snapshot; recomputar daria o valor do base.
       const isMultiFornecedor = Array.isArray(b.repasses) && b.repasses.length > 1;
+      const usaSnapshot = isMultiFornecedor || temVariante;
       let valorRepasse;
       let valorComissao;
-      if (isMultiFornecedor) {
-        valorRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
-        valorComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-        if (valorComissao == null && rateio.valorCheio && valorRepasse != null) {
-          valorComissao = Math.max(0, rateio.valorCheio - valorRepasse);
+      if (usaSnapshot) {
+        valorRepasse = b.valor_repasse_centavos != null
+          ? Number(b.valor_repasse_centavos)
+          : (temVariante ? rateio.valorRepasse : null);
+        valorComissao = b.valor_comissao_centavos != null
+          ? Number(b.valor_comissao_centavos)
+          : null;
+        if (valorComissao == null && valorCheioResolvido && valorRepasse != null) {
+          valorComissao = Math.max(0, valorCheioResolvido - valorRepasse);
+        }
+        if (valorComissao == null && temVariante) {
+          valorComissao = rateio.valorComissao;
         }
       } else {
         valorRepasse = rateio.valorRepasse;
@@ -5341,8 +5457,12 @@
     try {
       if (window.ElarahData && ElarahData.getAllExperiences) {
         const all = await ElarahData.getAllExperiences();
+        // Uma experiência pode ter várias categorias ("Barismo |
+        // Bartenderia") — cada uma entra no datalist separadamente.
         dbCategorias = (all || [])
-          .map(e => (e && e.categoria ? String(e.categoria).trim() : ''))
+          .flatMap(e => (window.ElarahData && ElarahData.categoriasOf)
+            ? ElarahData.categoriasOf(e)
+            : (e && e.categoria ? [String(e.categoria).trim()] : []))
           .filter(Boolean);
       }
     } catch (e) {
@@ -5409,6 +5529,14 @@
     return !!(el && el.value === 'waitlist');
   }
 
+  // Agendamento livre / voucher: quando "horário de funcionamento" está
+  // preenchido, o cliente escolhe o dia e a hora — então NÃO faz sentido
+  // exigir horário fixo (nem data fixa) no cadastro.
+  function expFormIsFreePick() {
+    var el = document.getElementById('exp-horario-funcionamento');
+    return !!(el && (el.value || '').trim());
+  }
+
   // Kits Elarah em Casa não têm data/horário/local/vagas presencial —
   // são produtos físicos enviados. Cards de lista de espera (waitlist)
   // são pré-lançamentos sem data. Em ambos os casos liberamos Data,
@@ -5418,11 +5546,13 @@
   function applyCasaKitRequired() {
     var isKit = expFormIsCasaKit();
     var isWaitlist = expFormIsWaitlist();
+    var isFreePick = expFormIsFreePick();
     var relax = isKit || isWaitlist;
     ['exp-data', 'exp-duracao', 'exp-bairro', 'exp-endereco'].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
-      if (relax) el.removeAttribute('required');
+      // Voucher (agendamento livre) não tem DATA fixa — libera exp-data.
+      if (relax || (isFreePick && id === 'exp-data')) el.removeAttribute('required');
       else el.setAttribute('required', '');
     });
     // Lista de espera é pré-lançamento sem checkout — Preço e "O que inclui"
@@ -5438,11 +5568,19 @@
   // Expõe pra o submit handler reusar a mesma detecção.
   window._expFormIsCasaKit = expFormIsCasaKit;
   window._expFormIsWaitlist = expFormIsWaitlist;
+  window._expFormIsFreePick = expFormIsFreePick;
 
   async function openExpModal(editId) {
     // Garante que o datalist de categorias esteja atualizado ANTES
     // de abrir o modal — assim o autocomplete funciona na hora.
     await populateCategoriaDatalist();
+
+    // Reseta o flag "tem recorrência" a cada abertura. Ele é religado
+    // de forma assíncrona por _recurrenceLoadAndRender quando a
+    // experiência editada tem regras/turmas de recorrência. É consultado
+    // na validação do submit pra NÃO exigir horário fixo quando os
+    // horários vêm da recorrência semanal (ver form submit abaixo).
+    window._expHasRecurrence = false;
 
     if (editId) {
       const exp = await ElarahData.getExperienceById(editId);
@@ -5526,6 +5664,18 @@
       if (ieoEl) ieoEl.checked = exp.isElarahOriginal === true;
       if (hfcEl) hfcEl.checked = exp.hideFromCategorias === true;
       if (ctaEl) ctaEl.value = exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy';
+
+      // Campanha (data especial). Vazio = nenhuma.
+      var campEl = document.getElementById('exp-campanha');
+      if (campEl) campEl.value = exp.campanha || '';
+      // Foto exclusiva da campanha (só na aba temática).
+      var campImgEl = document.getElementById('exp-campanha-imagem');
+      if (campImgEl) campImgEl.value = exp.campanhaImagem || '';
+      // Horário de funcionamento (agendamento livre / voucher).
+      var hfEl = document.getElementById('exp-horario-funcionamento');
+      if (hfEl) hfEl.value = exp.horarioFuncionamento || '';
+      if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
+      if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
 
       // Fornecedor fields. WhatsApp do fornecedor é centralizado no
       // painel "Fornecedores" (fornecedores_metadata.whatsapp), não
@@ -5637,6 +5787,14 @@
       if (ieoEl2) ieoEl2.checked = false;
       if (hfcEl2) hfcEl2.checked = false;
       if (ctaEl2) ctaEl2.value = 'buy';
+      var campEl2 = document.getElementById('exp-campanha');
+      if (campEl2) campEl2.value = '';
+      var campImgEl2 = document.getElementById('exp-campanha-imagem');
+      if (campImgEl2) campImgEl2.value = '';
+      var hfEl2 = document.getElementById('exp-horario-funcionamento');
+      if (hfEl2) hfEl2.value = '';
+      if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
+      if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
       document.getElementById('exp-edit-id').value = '';
 
       // Esconde a seção de recorrência em "nova experiência" — só
@@ -5815,6 +5973,99 @@
       });
     }
 
+    // ===== Foto exclusiva da campanha =====
+    // Mesmo mecanismo da imagem principal (preview + upload pro bucket
+    // 'experience-images'), mas grava em campo separado (campanha_imagem)
+    // que só é usado na aba da campanha. O campo inteiro só aparece
+    // quando há uma campanha selecionada.
+    (function setupCampanhaImagem() {
+      var selEl = document.getElementById('exp-campanha');
+      var fieldEl = document.getElementById('exp-campanha-imagem-field');
+      var urlEl = document.getElementById('exp-campanha-imagem');
+      var pWrap = document.getElementById('exp-campanha-imagem-preview-wrap');
+      var pImg = document.getElementById('exp-campanha-imagem-preview');
+      var pStatus = document.getElementById('exp-campanha-imagem-preview-status');
+      var cFileInput = document.getElementById('exp-campanha-imagem-file');
+      var cFileStatus = document.getElementById('exp-campanha-imagem-file-status');
+
+      function toggleField() {
+        if (!fieldEl) return;
+        var has = !!(selEl && (selEl.value || '').trim());
+        fieldEl.style.display = has ? '' : 'none';
+      }
+      function setPStatus(ok, msg) {
+        if (!pStatus) return;
+        pStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
+        pStatus.textContent = msg;
+      }
+      function refreshPreview() {
+        if (!urlEl || !pWrap || !pImg) return;
+        var raw = (urlEl.value || '').trim();
+        if (!raw) { pWrap.style.display = 'none'; return; }
+        pWrap.style.display = 'block';
+        var src = /^(https?:\/\/|\/|assets\/|images\/|img\/)/i.test(raw) ? raw : 'assets/' + raw;
+        setPStatus(true, 'Carregando…');
+        pImg.onload = function () { setPStatus(true, '✓ Esta foto vai aparecer só na aba da campanha.'); };
+        pImg.onerror = function () {
+          setPStatus(false, '⚠ Não consegui carregar essa imagem. Use uma URL direta (.jpg/.png) ou faça upload.');
+        };
+        pImg.src = src;
+      }
+      function setFStatus(ok, msg) {
+        if (!cFileStatus) return;
+        cFileStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
+        cFileStatus.textContent = msg;
+      }
+
+      if (selEl) selEl.addEventListener('change', toggleField);
+      if (urlEl) {
+        urlEl.addEventListener('input', refreshPreview);
+        urlEl.addEventListener('blur', refreshPreview);
+      }
+      if (cFileInput) {
+        cFileInput.addEventListener('change', async function () {
+          var file = cFileInput.files && cFileInput.files[0];
+          if (!file) return;
+          if (file.size > 10 * 1024 * 1024) {
+            setFStatus(false, '⚠ Arquivo maior que 10MB. Comprima a imagem antes.');
+            cFileInput.value = '';
+            return;
+          }
+          var s = window.supabaseClient;
+          if (!s || !s.storage) { setFStatus(false, '⚠ Storage indisponível. Recarregue a página.'); return; }
+          setFStatus(true, 'Enviando…');
+          var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [, 'jpg'])[1].toLowerCase();
+          var safeBase = ((document.getElementById('exp-nome')?.value || 'exp') + '-campanha')
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'campanha';
+          var path = safeBase + '-' + Date.now() + '.' + ext;
+          try {
+            var { data: uploadData, error: uploadErr } = await s.storage
+              .from('experience-images')
+              .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || ('image/' + ext) });
+            if (uploadErr) {
+              console.error('[Admin] upload da imagem de campanha falhou:', uploadErr);
+              setFStatus(false, '⚠ Falha no upload: ' + (uploadErr.message || 'erro desconhecido'));
+              return;
+            }
+            var { data: urlData } = s.storage.from('experience-images').getPublicUrl(uploadData.path);
+            var publicUrl = urlData && urlData.publicUrl;
+            if (!publicUrl) { setFStatus(false, '⚠ Upload ok mas sem URL pública. Veja o console.'); return; }
+            if (urlEl) { urlEl.value = publicUrl; refreshPreview(); }
+            setFStatus(true, '✓ Enviada! URL preenchida automaticamente.');
+          } catch (e) {
+            console.error('[Admin] exceção no upload da imagem de campanha:', e);
+            setFStatus(false, '⚠ Erro inesperado no upload: ' + (e.message || String(e)));
+          }
+        });
+      }
+
+      // Exposto pro openExpModal chamar depois de preencher os campos.
+      window._toggleCampanhaImagemField = toggleField;
+      window._refreshCampanhaImagePreview = refreshPreview;
+      toggleField();
+    })();
+
     // ===== Construtor de variações (nome + preço + foto) =====
     // Cada variação vira uma linha com nome, preço e upload de foto
     // próprio (reaproveita o bucket 'experience-images'). Exposto via
@@ -5945,6 +6196,9 @@
     if (casaKitEl) casaKitEl.addEventListener('change', applyCasaKitRequired);
     // Trocar pra "Lista de espera" precisa relaxar Data/Duração/etc na hora.
     if (ctaModeEl) ctaModeEl.addEventListener('change', applyCasaKitRequired);
+    // Preencher "horário de funcionamento" (voucher) libera horário/data fixos.
+    var hfuncEl = document.getElementById('exp-horario-funcionamento');
+    if (hfuncEl) hfuncEl.addEventListener('input', applyCasaKitRequired);
 
     addBtn.addEventListener('click', () => openExpModal(null));
     modalBackdrop.addEventListener('click', closeExpModal);
@@ -5967,8 +6221,54 @@
         && window._expFormIsCasaKit();
       const isWaitlist = typeof window._expFormIsWaitlist === 'function'
         && window._expFormIsWaitlist();
+      // Voucher (agendamento livre): cliente escolhe dia/hora — não exige
+      // horário fixo no cadastro.
+      const isFreePick = typeof window._expFormIsFreePick === 'function'
+        && window._expFormIsFreePick();
+      // Recorrência semanal: se a experiência já tem regra(s) de
+      // recorrência ou turmas futuras materializadas, os horários vêm
+      // de lá — não faz sentido exigir um horário fixo no formulário.
+      // Sem isso, editar uma experiência recorrente (ex.: só pra
+      // adicionar/ajustar uma variação) era BLOQUEADO por "Adicione pelo
+      // menos um horário", e o save nunca acontecia — a mudança não
+      // aparecia no site. O flag é ligado por _recurrenceLoadAndRender.
       const horarios = collectHorarios();
-      if (horarios.length === 0 && !isCasaKit && !isWaitlist) {
+      let hasRecurrence = !!window._expHasRecurrence;
+      // Fallback à prova de corrida: se essa experiência não tem horário
+      // fixo e o flag ainda não foi marcado (carregamento assíncrono da
+      // recorrência não terminou, OU o cache global de slots está
+      // truncado no limite de 1000 linhas do Supabase e não trouxe os
+      // slots desta experiência), consulta a recorrência DIRETO agora —
+      // consulta escopada, sempre confiável — antes de bloquear.
+      if (horarios.length === 0 && !hasRecurrence && !isCasaKit && !isWaitlist && !isFreePick) {
+        const _editIdForRec = (document.getElementById('exp-edit-id')?.value || '').trim();
+        const _sbRec = window.supabaseClient;
+        if (_editIdForRec && _sbRec) {
+          try {
+            const rr = await _sbRec
+              .from('experience_recurrence_rules')
+              .select('id')
+              .eq('experience_id', _editIdForRec)
+              .limit(1);
+            if (rr && rr.data && rr.data.length) hasRecurrence = true;
+            if (!hasRecurrence) {
+              const fs = await _sbRec
+                .from('experience_slots')
+                .select('id')
+                .eq('experience_id', _editIdForRec)
+                .gte('event_at', new Date().toISOString())
+                .limit(1);
+              if (fs && fs.data && fs.data.length) hasRecurrence = true;
+            }
+            if (hasRecurrence) window._expHasRecurrence = true;
+          } catch (recErr) {
+            // Tabela ausente / rede — segue pro comportamento antigo
+            // (exige horário). Não piora nada.
+            console.warn('[Admin] checagem de recorrência no submit falhou:', recErr && recErr.message);
+          }
+        }
+      }
+      if (horarios.length === 0 && !isCasaKit && !isWaitlist && !isFreePick && !hasRecurrence) {
         alert('Adicione pelo menos um horário.');
         return;
       }
@@ -6089,7 +6389,16 @@
         ctaMode: (function () {
           var raw = (document.getElementById('exp-cta-mode')?.value || 'buy').trim();
           return raw === 'waitlist' ? 'waitlist' : 'buy';
-        })()
+        })(),
+        // Campanha (data especial). Vazio = nenhuma.
+        campanha: (function () {
+          var raw = (document.getElementById('exp-campanha')?.value || '').trim();
+          return raw || null;
+        })(),
+        // Foto exclusiva da campanha. Vazio = usa a foto oficial.
+        campanhaImagem: (document.getElementById('exp-campanha-imagem')?.value || '').trim(),
+        // Horário de funcionamento (agendamento livre / voucher).
+        horarioFuncionamento: (document.getElementById('exp-horario-funcionamento')?.value || '').trim()
       };
 
       const editId = document.getElementById('exp-edit-id').value;
@@ -6245,8 +6554,16 @@
     const seen = new Map();
     (experiences || []).forEach(function (e) {
       if (!e || !e.categoria) return;
-      var key = e.categoria.toLowerCase();
-      if (!seen.has(key)) seen.set(key, e.categoria);
+      // Uma experiência em duas abas ("Barismo | Bartenderia") gera uma
+      // pílula de filtro pra cada categoria.
+      var cats = (window.ElarahData && ElarahData.categoriasOf)
+        ? ElarahData.categoriasOf(e)
+        : [String(e.categoria).trim()];
+      cats.forEach(function (c) {
+        if (!c) return;
+        var key = c.toLowerCase();
+        if (!seen.has(key)) seen.set(key, c);
+      });
     });
     var cats = Array.from(seen.values()).sort(function (a, b) {
       return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
@@ -6277,6 +6594,102 @@
     });
   }
 
+  // Toast simples de confirmação (reusado pelos fluxos de reativação).
+  function _adminToast(msg, ok) {
+    try {
+      var t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:' +
+        (ok === false ? '#c0392b' : '#1a8a4a') + ';color:#fff;padding:12px 18px;' +
+        'border-radius:10px;font-weight:600;font-size:.9rem;box-shadow:0 8px 24px rgba(0,0,0,.18);' +
+        'z-index:9999;font-family:inherit;max-width:360px;';
+      document.body.appendChild(t);
+      setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 3200);
+      setTimeout(function () { t.remove(); }, 3700);
+    } catch (e) { /* ignora */ }
+  }
+
+  // "Reativar" de uma experiência auto-oculta. O caso difícil é a
+  // recorrente (Semanal): apertar Reativar antes só abria o modal, mas o
+  // que a esconde é NÃO ter turma futura — todas as datas materializadas
+  // pela regra já passaram (horizon venceu, cron parou). Editar+Salvar a
+  // experiência NÃO recria essas turmas. Então aqui, quando há regra de
+  // recorrência, a gente:
+  //   1. Garante is_active = true.
+  //   2. Reativa qualquer regra desativada.
+  //   3. Re-materializa (RPC materialize_recurrence_slots) → cria as
+  //      próximas turmas dentro do horizon a partir de HOJE.
+  // Sem regra (slots manuais com data no passado, ou expiração simples),
+  // cai pro modal de edição pra admin ajustar a data à mão.
+  // Retorna true se resolveu por recorrência; false pra usar o fallback.
+  async function _reactivateRecurringExperience(id) {
+    const sb = window.supabaseClient;
+    if (!sb) return false;
+
+    // Garante is_active = true (barato; no-op se já estiver ativa).
+    try {
+      if (ElarahData && typeof ElarahData.setExperienceActive === 'function') {
+        const upd = await ElarahData.setExperienceActive(id, true);
+        if (upd && upd._error) {
+          const e = upd._error;
+          _adminToast('Não consegui reativar (is_active): ' + (e.message || e.code || 'erro'), false);
+          // segue tentando materializar mesmo assim — o bloqueio pode ser
+          // só de RLS numa coluna, e a regra ainda pode gerar turma.
+        }
+      }
+    } catch (e) { /* segue */ }
+
+    // Busca regras de recorrência da experiência.
+    let rules = [];
+    try {
+      const res = await sb
+        .from('experience_recurrence_rules')
+        .select('id, is_active')
+        .eq('experience_id', id);
+      if (res.error) {
+        // Tabela ausente (recorrência não instalada) → não é recorrente.
+        return false;
+      }
+      rules = res.data || [];
+    } catch (e) {
+      return false;
+    }
+    if (!rules.length) return false; // não é recorrente → fallback modal
+
+    // Reativa regras desativadas e re-materializa todas.
+    let materialized = 0;
+    let anyError = null;
+    for (const r of rules) {
+      try {
+        if (r.is_active === false) {
+          const { error: errAct } = await sb
+            .from('experience_recurrence_rules')
+            .update({ is_active: true })
+            .eq('id', r.id);
+          if (errAct) anyError = errAct;
+        }
+        const { data, error } = await sb.rpc('materialize_recurrence_slots', { p_rule_id: r.id });
+        if (error) { anyError = error; continue; }
+        materialized += (typeof data === 'number' ? data : (data && data[0]) || 0);
+      } catch (e) {
+        anyError = e;
+      }
+    }
+
+    _recurrenceInvalidateCaches();
+
+    if (anyError && materialized === 0) {
+      _adminToast('Não consegui recriar as turmas: ' +
+        (anyError.message || anyError.code || 'erro') +
+        '. Abrindo a edição pra ajuste manual.', false);
+      return false; // deixa o fallback abrir o modal
+    }
+    _adminToast('✓ Experiência reativada — ' + materialized +
+      ' turma' + (materialized === 1 ? '' : 's') + ' futura' +
+      (materialized === 1 ? '' : 's') + ' recriada' + (materialized === 1 ? '' : 's') + '.');
+    return true;
+  }
+
   async function renderExperiences() {
     const allExperiencesRaw = await getExperiences();
 
@@ -6302,7 +6715,10 @@
     const experiences = (allExperiences || []).filter(function (e) {
       if (!e) return false;
       if (activeExpFilter) {
-        if (!e.categoria || e.categoria.toLowerCase() !== activeExpFilter.toLowerCase()) return false;
+        var _match = (window.ElarahData && ElarahData.matchesCategoria)
+          ? ElarahData.matchesCategoria(e, activeExpFilter)
+          : (e.categoria && e.categoria.toLowerCase() === activeExpFilter.toLowerCase());
+        if (!_match) return false;
       }
       if (activeExpFornecedorFilter) {
         const nome = (e.fornecedorNome || '').toLowerCase();
@@ -6324,6 +6740,35 @@
     try {
       if (ElarahData.loadAllSlots) allSlotsMap = await ElarahData.loadAllSlots();
     } catch (e) { /* tabela pode não existir */ }
+
+    // DEDUP: o site (getVisibleExperiences) descarta cópias com a mesma
+    // assinatura (nome+categoria+data+horário+bairro+preço), mantendo só a
+    // PRIMEIRA na ordem — entre as publicamente visíveis. O selo do admin
+    // precisa modelar isso também, senão uma experiência DUPLICADA aparece
+    // "Visível" aqui mas some do site (o site mostra só uma). Reproduz a
+    // MESMA assinatura e ordem de getVisibleExperiences pra achar o "dono"
+    // de cada assinatura; os outros são cópias descartadas.
+    const _dupSig = function (e) {
+      return [
+        String(e.nome || '').trim().toLowerCase(),
+        String(e.categoria || '').trim().toLowerCase(),
+        String(e.data || '').trim().toLowerCase(),
+        String((Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '').trim().toLowerCase(),
+        String(e.bairro || '').trim().toLowerCase(),
+        String(e.preco || '').trim().toLowerCase(),
+      ].join('|');
+    };
+    const _dupWinnerBySig = {};
+    const _nowDedup = Date.now();
+    (allExperiences || []).forEach(function (e) {
+      // Dedup do site só considera as publicamente visíveis (a filtragem
+      // acontece dentro de getVisibleExperiences, sobre isPubliclyVisible).
+      const pv = (window.ElarahData && ElarahData.isPubliclyVisible)
+        ? ElarahData.isPubliclyVisible(e, _nowDedup) : (e.isActive !== false);
+      if (!pv) return;
+      const sig = _dupSig(e);
+      if (!(sig in _dupWinnerBySig)) _dupWinnerBySig[sig] = e.id;
+    });
 
     if (activeExpFilter) {
       countEl.textContent = experiences.length + ' de ' + allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
@@ -6415,6 +6860,12 @@
         ? ED.isExpiredRecurring(exp, expSlots, Date.now())
         : false;
       const hiddenFromListings = exp.hideFromCategorias === true;
+      // Cópia descartada pela dedup do site: é publicamente visível, mas
+      // NÃO é a "dona" da assinatura — o site mostra só a primeira. Sem
+      // esse gate o admin dizia "Visível" e a experiência sumia do site.
+      const isDupLoser = publicVisible
+        && _dupWinnerBySig[_dupSig(exp)]
+        && _dupWinnerBySig[_dupSig(exp)] !== exp.id;
 
       // Decide selo + motivo. Vermelho "Oculta" = sumiu do site inteiro.
       // Âmbar "Só By Elarah" = fora das categorias/home, visível apenas
@@ -6434,6 +6885,10 @@
         badgeKind = 'bylistings';
         badgeLabel = 'Só By Elarah';
         tooltip = 'Marcada como "ocultar das categorias": não aparece nas listagens de categoria nem no grid da home — só na faixa By Elarah. Pra mostrar nas categorias, edite a experiência e desmarque essa opção.';
+      } else if (isDupLoser) {
+        badgeKind = 'dup';
+        badgeLabel = 'Duplicada';
+        tooltip = 'É uma CÓPIA de outra experiência idêntica (mesmo nome, categoria, data, horário, bairro e preço). O site mostra só UMA — esta some por ser a segunda. Pra ela aparecer: edite e mude algo (data ou horário) pra diferenciar, ou exclua a cópia.';
       } else {
         badgeKind = 'visible';
         badgeLabel = 'Visível';
@@ -6448,6 +6903,7 @@
         visible: 'background:#e6f4ea;color:#1a8a4a;',
         hidden: 'background:#fdecea;color:#c0392b;',
         bylistings: 'background:#fff1de;color:#a05f1e;',
+        dup: 'background:#f3e8ff;color:#7b2fbe;',
       };
       const statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;'
         + BADGE_BG[badgeKind] + 'font-size:11px;font-weight:600;'
@@ -6470,7 +6926,7 @@
       return `
       <tr data-exp-row="${escapeHtml(exp.id)}"${rowStyle}>
         <td>${dragHandle}${escapeHtml(exp.nome)}${byElarahBadge}</td>
-        <td>${escapeHtml(exp.categoria)}</td>
+        <td>${escapeHtml((window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : (exp.categoria || ''))}</td>
         <td>${escapeHtml(exp.data)}</td>
         <td>${horariosDisplay}</td>
         <td>${escapeHtml(exp.bairro)}</td>
@@ -6499,11 +6955,30 @@
         const currentlyActive = btn.dataset.toggleActive === '1';
         const autoHidden = btn.dataset.autoHidden === '1';
         // Reativar uma experiência auto-oculta (passou do horário ou
-        // está dentro do cutoff de 24h) só faz sentido se o admin
-        // mudar a data — alternar is_active seria no-op porque já
-        // está true. Abre o modal de edição direto.
+        // está dentro do cutoff de 24h). Se for RECORRENTE (Semanal), o
+        // que a esconde é não ter turma futura — a gente reativa a regra
+        // e recria as turmas automaticamente (sem isso, apertar Reativar
+        // não trazia a experiência de volta "por nada"). Se não for
+        // recorrente, cai pro modal pra admin ajustar a data à mão.
         if (autoHidden) {
-          openExpModal(id);
+          const origLabel = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'Reativando…';
+          let handled = false;
+          try {
+            handled = await _reactivateRecurringExperience(id);
+          } catch (e) {
+            console.error('[Admin] reactivate recurring exception:', e);
+          }
+          btn.disabled = false;
+          btn.textContent = origLabel;
+          if (handled) {
+            await renderExperiences();
+            await renderOverview();
+          } else {
+            // Não é recorrente (ou a recriação falhou) → edição manual.
+            openExpModal(id);
+          }
           return;
         }
         const nextActive = !currentlyActive;
@@ -8955,21 +9430,46 @@
     } catch (e) { console.error('[Extrato] bookings', e); }
 
     try {
-      const { data } = await sb.from('manual_sales').select('*').eq('payout_status', 'pago');
+      // Sem filtro payout_status no banco: uma venda pode ter o fornecedor
+      // principal pago pra OUTRO fornecedor e um EXTRA pago pra este — as
+      // duas fontes (principal + extras) são conferidas por venda.
+      const { data } = await sb.from('manual_sales').select('*').eq('payment_status', 'pago');
       (data || []).forEach(m => {
-        const k = (m.supplier_key && m.supplier_key.trim()) || (m.supplier_name ? fornecedorKey(m.supplier_name) : '');
-        if (k !== supplierKey && fornecedorKey(m.supplier_name || '') !== supplierKey) return;
-        const rdate = m.payout_paid_at || m.updated_at || m.sale_date;
-        if (!inMonth(rdate)) return;
-        rows.push({
-          participantes: [m.customer_name].filter(Boolean),
-          experiencia: m.experience_name || '—',
-          dataCompra: m.sale_date || m.created_at,
-          dataExp: m.slot_date || '',
-          horario: m.slot_time || '',
-          repasse: Number(m.payout_amount_centavos) || 0,
-          dataRepasse: rdate,
-        });
+        // Fornecedor principal — só se pago e for este fornecedor.
+        if (m.payout_status === 'pago') {
+          const k = (m.supplier_key && m.supplier_key.trim()) || (m.supplier_name ? fornecedorKey(m.supplier_name) : '');
+          const rdate = m.payout_paid_at || m.updated_at || m.sale_date;
+          if ((k === supplierKey || fornecedorKey(m.supplier_name || '') === supplierKey) && inMonth(rdate)) {
+            rows.push({
+              participantes: [m.customer_name].filter(Boolean),
+              experiencia: m.experience_name || '—',
+              dataCompra: m.sale_date || m.created_at,
+              dataExp: m.slot_date || '',
+              horario: m.slot_time || '',
+              repasse: Number(m.payout_amount_centavos) || 0,
+              dataRepasse: rdate,
+            });
+          }
+        }
+        // Fornecedores extras — cada um pago separadamente.
+        if (Array.isArray(m.extra_payouts)) {
+          m.extra_payouts.forEach(p => {
+            if (!p || p.status !== 'pago') return;
+            const pk = (p.supplier_key && String(p.supplier_key).trim()) || fornecedorKey(p.supplier_name || '');
+            if (pk !== supplierKey) return;
+            const rdate = p.paid_at || m.updated_at || m.sale_date;
+            if (!inMonth(rdate)) return;
+            rows.push({
+              participantes: [m.customer_name].filter(Boolean),
+              experiencia: m.experience_name || '—',
+              dataCompra: m.sale_date || m.created_at,
+              dataExp: m.slot_date || '',
+              horario: m.slot_time || '',
+              repasse: Number(p.amount_centavos) || 0,
+              dataRepasse: rdate,
+            });
+          });
+        }
       });
     } catch (e) { console.error('[Extrato] manual_sales', e); }
 
@@ -9335,10 +9835,12 @@
     try {
       const sb = window.supabaseClient;
       if (sb) {
+        // Puxa TODAS as vendas pagas (não só payout_status=pendente): uma
+        // venda pode ter o fornecedor principal já pago mas um fornecedor
+        // EXTRA ainda pendente — o filtro no banco perderia esse caso.
         const { data: msRows, error: msErr } = await sb.from('manual_sales')
-          .select('id, supplier_name, payout_amount_centavos, payout_status, experience_id')
-          .eq('payment_status', 'pago')
-          .eq('payout_status', 'pendente');
+          .select('id, supplier_name, payout_amount_centavos, payout_status, experience_id, extra_payouts')
+          .eq('payment_status', 'pago');
         if (!msErr && Array.isArray(msRows)) {
           // Mapa exp → fornecedor (usa o cache _finExpById se disponível,
           // senão tenta ElarahData.getAllExperiences). Preserva semântica
@@ -9346,12 +9848,8 @@
           const expById = (typeof _finExpById !== 'undefined' && _finExpById && _finExpById.size)
             ? _finExpById
             : new Map();
-          msRows.forEach(r => {
-            const valor = Number(r.payout_amount_centavos) || 0;
-            if (valor <= 0) return;
-            const expObj = r.experience_id && expById.has(r.experience_id) ? expById.get(r.experience_id) : null;
-            const nomeRaw = (r.supplier_name && r.supplier_name.trim()) ||
-              (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
+          const addPendente = (nomeRaw, valor) => {
+            if (!(valor > 0)) return;
             const nome = nomeRaw || '— sem fornecedor —';
             if (!byForn.has(nome)) byForn.set(nome, { nome, count: 0, total: 0, isUnknown: !nomeRaw });
             const agg = byForn.get(nome);
@@ -9359,6 +9857,23 @@
             agg.total += valor;
             totalGlobal += valor;
             countGlobal += 1;
+          };
+          msRows.forEach(r => {
+            const expObj = r.experience_id && expById.has(r.experience_id) ? expById.get(r.experience_id) : null;
+            // Fornecedor principal — só se ainda pendente.
+            if (r.payout_status === 'pendente') {
+              const nomeRaw = (r.supplier_name && r.supplier_name.trim()) ||
+                (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
+              addPendente(nomeRaw, Number(r.payout_amount_centavos) || 0);
+            }
+            // Fornecedores extras — cada um com seu próprio status.
+            if (Array.isArray(r.extra_payouts)) {
+              r.extra_payouts.forEach(p => {
+                if (!p || p.status === 'pago') return;
+                const nomeRaw = (p.supplier_name && String(p.supplier_name).trim()) || '';
+                addPendente(nomeRaw, Number(p.amount_centavos) || 0);
+              });
+            }
           });
         }
       }
@@ -9526,7 +10041,11 @@
   function _eventosMoney(s) {
     const paid = s.payment_status === 'pago';
     const total = paid ? (Number(s.total_amount_centavos) || 0) : 0;
-    const payout = paid ? (Number(s.payout_amount_centavos) || 0) : 0;
+    let payout = paid ? (Number(s.payout_amount_centavos) || 0) : 0;
+    // Soma os repasses dos fornecedores extras (eventos com 2+ fornecedores).
+    if (paid && Array.isArray(s.extra_payouts)) {
+      s.extra_payouts.forEach(p => { payout += Number(p && p.amount_centavos) || 0; });
+    }
     return { total: total, margin: Math.max(0, total - payout) };
   }
   // Resumo do cronograma de pagamentos (entrada + parcelas). null = sem.
@@ -14307,10 +14826,75 @@
   }
 
   function _finTogglePayoutFields(show) {
-    ['ms-payout-supplier-wrap','ms-payout-amount-wrap','ms-payout-status-wrap'].forEach(id => {
+    ['ms-payout-supplier-wrap','ms-payout-amount-wrap','ms-payout-status-wrap','ms-extra-payouts-wrap'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = show ? '' : 'none';
     });
+  }
+
+  // ===== Fornecedores EXTRAS do repasse (eventos com 2+ fornecedores) =====
+  // O fornecedor principal fica nos campos ms-payout-*; os demais entram
+  // aqui, cada linha = {supplier_name, amount_centavos, status}. Fonte de
+  // verdade é o DOM (#ms-extra-payouts-list); coletado no save. Salvo em
+  // manual_sales.extra_payouts (jsonb). _finMsOrigHadExtraPayouts lembra se
+  // a venda já tinha extras, pra permitir limpar tudo.
+  let _finMsOrigHadExtraPayouts = false;
+  let _finMsOrigExtraPayouts = [];   // extras ao abrir (pra preservar paid_at)
+  function _finExtraPayoutRowHtml(p) {
+    p = p || {};
+    const valor = (p.amount_centavos != null && p.amount_centavos !== '') ? _finCentsToInput(p.amount_centavos) : '';
+    const st = p.status === 'pago' ? 'pago' : 'pendente';
+    return '<div class="ms-extra-payout-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">' +
+      '<input type="text" class="ms-extra-supplier" list="ms-payout-supplier-datalist" autocomplete="off" placeholder="Fornecedor" value="' + _finEsc(p.supplier_name || '') + '" style="flex:1;min-width:130px;">' +
+      '<input type="text" class="ms-extra-valor" inputmode="decimal" placeholder="R$ repasse" value="' + _finEsc(valor) + '" style="width:120px;">' +
+      '<select class="ms-extra-status" style="width:120px;">' +
+        '<option value="pendente"' + (st === 'pendente' ? ' selected' : '') + '>Pendente</option>' +
+        '<option value="pago"' + (st === 'pago' ? ' selected' : '') + '>Pago</option>' +
+      '</select>' +
+      '<button type="button" class="ms-extra-remove" title="Remover" style="border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;padding:4px 9px;font-size:.85rem;color:#c0392b;">✕</button>' +
+    '</div>';
+  }
+  function _finAddExtraPayoutRow(p) {
+    const list = document.getElementById('ms-extra-payouts-list');
+    if (!list) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = _finExtraPayoutRowHtml(p);
+    const row = tmp.firstElementChild;
+    list.appendChild(row);
+    const rm = row.querySelector('.ms-extra-remove');
+    if (rm) rm.addEventListener('click', () => row.remove());
+  }
+  function _finSetExtraPayouts(arr) {
+    const list = document.getElementById('ms-extra-payouts-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (Array.isArray(arr) ? arr : []).forEach(p => _finAddExtraPayoutRow(p));
+  }
+  // Coleta as linhas de fornecedor extra. carimba paid_at nos que estão
+  // "pago" (preserva o que já existia via prevByKey pra não trocar a data).
+  function _finCollectExtraPayouts(prevByKey) {
+    const list = document.getElementById('ms-extra-payouts-list');
+    if (!list) return [];
+    const nowISO = new Date().toISOString();
+    const out = [];
+    list.querySelectorAll('.ms-extra-payout-row').forEach(row => {
+      const nome = (row.querySelector('.ms-extra-supplier').value || '').trim();
+      const valor = _finParseBRL(row.querySelector('.ms-extra-valor').value);
+      const status = row.querySelector('.ms-extra-status').value === 'pago' ? 'pago' : 'pendente';
+      if (!nome && !valor) return; // linha vazia
+      const key = fornecedorKey(nome);
+      const prev = prevByKey && prevByKey.get ? prevByKey.get(key) : null;
+      out.push({
+        supplier_name: nome || null,
+        supplier_key: key || null,
+        amount_centavos: valor,
+        status: status,
+        paid_at: status === 'pago'
+          ? ((prev && prev.status === 'pago' && prev.paid_at) ? prev.paid_at : nowISO)
+          : null,
+      });
+    });
+    return out;
   }
 
   // ===== Pagamentos (entrada + parcelas) do modal de venda manual =====
@@ -14472,6 +15056,14 @@
       // Em duplicar, o repasse vira novo (sem data); em editar, preserva.
       _finMsOrigPayoutStatus = mode === 'edit' ? (data.payout_status || null) : null;
       _finMsOrigPayoutPaidAt = mode === 'edit' ? (data.payout_paid_at || null) : null;
+      // Fornecedores extras (eventos com 2+ fornecedores). Em duplicar, os
+      // repasses voltam pra "pendente" (venda nova, nada pago ainda).
+      const extraSrc = Array.isArray(data.extra_payouts) ? data.extra_payouts : [];
+      _finMsOrigHadExtraPayouts = extraSrc.length > 0;
+      _finMsOrigExtraPayouts = mode === 'edit' ? extraSrc.slice() : [];
+      _finSetExtraPayouts(mode === 'duplicate'
+        ? extraSrc.map(p => Object.assign({}, p, { status: 'pendente', paid_at: null }))
+        : extraSrc);
       _finSetPayments(Array.isArray(data.payments) ? data.payments : []);
       $('ms-notes').value = data.notes || '';
       const hasPayout = data.payout_status && data.payout_status !== 'nao_aplicavel';
@@ -14506,6 +15098,9 @@
       _finMsOrigHadPayments = false;
       _finMsOrigPayoutStatus = null;
       _finMsOrigPayoutPaidAt = null;
+      _finMsOrigHadExtraPayouts = false;
+      _finMsOrigExtraPayouts = [];
+      _finSetExtraPayouts([]);
       _finSetPayments([]);
       $('ms-discount').value = '0';
       $('ms-sale-date').value = new Date().toISOString().slice(0, 10);
@@ -14597,6 +15192,20 @@
     const paymentsArr = _finCollectPayments();
     if (paymentsArr.length > 0 || _finMsOrigHadPayments) {
       payload.payments = paymentsArr;
+    }
+    // Fornecedores extras (eventos com 2+ fornecedores). Só coleta quando há
+    // repasse; se não tiver, fica lista vazia. Só envia a coluna quando há
+    // linhas ou quando a venda já tinha extras (pra permitir limpar) — assim
+    // vendas sem a migração de extra_payouts rodada continuam salvando.
+    const prevExtraByKey = new Map();
+    (Array.isArray(_finMsOrigExtraPayouts) ? _finMsOrigExtraPayouts : []).forEach(p => {
+      if (p && (p.supplier_key || p.supplier_name)) {
+        prevExtraByKey.set(p.supplier_key || fornecedorKey(p.supplier_name), p);
+      }
+    });
+    const extraPayoutsArr = hasPayout ? _finCollectExtraPayouts(prevExtraByKey) : [];
+    if (extraPayoutsArr.length > 0 || _finMsOrigHadExtraPayouts) {
+      payload.extra_payouts = extraPayoutsArr;
     }
     if (!payload.customer_name) {
       msgEl.textContent = 'Nome do cliente é obrigatório.'; msgEl.style.color = '#c0392b'; return;
@@ -14707,9 +15316,13 @@
       // Qualquer "coluna não encontrada no schema cache" = falta rodar uma
       // migração no banco. Aponta o script consolidado que cria todas de
       // uma vez (idempotente), em vez de adivinhar qual coluna falta.
-      const missingCol = /schema cache|could not find the .* column|column .* does not exist/i.test(em)
+      const schemaMiss = /schema cache|could not find the .* column|column .* does not exist/i.test(em);
+      const missingExtra = schemaMiss && /extra_payouts/i.test(em);
+      const missingCol = schemaMiss
         && /payments|event_type|event_type_custom|is_event|sale_date/i.test(em);
-      const hint = missingCol
+      const hint = missingExtra
+        ? ' — rode sql/elarah_manual_sales_extra_payouts.sql no SQL Editor do Supabase (cria a coluna dos fornecedores extras e recarrega o schema).'
+        : missingCol
         ? ' — rode sql/elarah_manual_sales_fix_save.sql no SQL Editor do Supabase (cria as colunas que faltam e recarrega o schema).'
         : '';
       msgEl.textContent = 'Erro: ' + em + hint;
@@ -15292,6 +15905,9 @@
     // Pagamentos (entrada + parcelas)
     document.getElementById('ms-payment-add')?.addEventListener('click', () => { _finAddPaymentRow({}); _finRenderPaymentsSummary(); });
     document.getElementById('ms-entrada-apply')?.addEventListener('click', _finApplyEntradaPct);
+
+    // Fornecedores extras do repasse (eventos com 2+ fornecedores)
+    document.getElementById('ms-extra-payout-add')?.addEventListener('click', () => _finAddExtraPayoutRow({}));
 
     // Tipo de evento "Outro": mostra o campo de texto livre só quando
     // "Outro (digitar)" estiver selecionado.
@@ -18026,6 +18642,14 @@
 
     const rules = rulesRes.data || [];
     const slots = slotsRes.error ? [] : (slotsRes.data || []);
+
+    // Marca que esta experiência tem horários vindos da recorrência —
+    // seja por regra cadastrada (mesmo desativada, o admin pode reativar)
+    // ou por turma futura já materializada em experience_slots. A validação
+    // do submit usa isso pra NÃO exigir um horário fixo: numa experiência
+    // com recorrência de horários variados (ex.: 11h sáb, 15h30 dom) não
+    // faz sentido travar num único horário no formulário.
+    window._expHasRecurrence = (rules.length > 0) || (slots.length > 0);
 
     _recurrenceRenderRules(experienceId, rules);
     _recurrenceRenderSlots(rules, slots);

@@ -84,6 +84,8 @@
   border-radius: 999px;
   box-shadow: var(--sk-shadow-pill);
   padding: 12px 16px 12px 44px;
+  /* 16px evita o zoom automatico do iOS ao focar o campo. */
+  font-size: 16px;
 }
 .is-app .header__search-input:focus {
   box-shadow: 0 5px 20px rgba(36,29,23,.14);
@@ -397,6 +399,35 @@
   border-radius: 999px;
 }
 
+/* ---------- Página CHEIA "Elarah Originals" (byelarah.html) ----------
+   Aqui NÃO é o carrossel da home: é a lista completa. Volta a ser uma
+   GRADE vertical de 2 colunas, mostra o subtítulo (contexto) e deixa
+   respiro antes do rodapé — some a sensação de página "crua". */
+.is-app body[data-originals="all"] .originals {
+  padding: 10px 0 30px;
+}
+.is-app body[data-originals="all"] .originals__subtitle {
+  display: block;
+  font-size: .85rem;
+  color: var(--sk-ink-soft);
+  font-weight: 500;
+  max-width: 34ch;
+  margin: 6px auto 0;
+  line-height: 1.45;
+}
+.is-app body[data-originals="all"] .originals__grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 16px;
+  overflow: visible;
+  scroll-snap-type: none;
+  padding: 6px 16px 8px;
+}
+.is-app body[data-originals="all"] .originals__card {
+  width: auto;
+  scroll-snap-align: none;
+}
+
 /* 3 por fileira em telas maiores (tablet) */
 @media (min-width: 720px) {
   .is-app .experiences__grid { grid-template-columns: repeat(3, 1fr) !important; }
@@ -456,11 +487,22 @@
   outline: none;
   background: transparent;
   font-family: inherit;
-  font-size: .92rem;
+  /* 16px evita o zoom automático do iOS ao focar o campo (fontes <16px
+     disparam o zoom, que o iPhone depois nao desfaz sozinho). */
+  font-size: 16px;
   font-weight: 600;
   color: var(--sk-ink);
   padding: 0;
 }
 .is-app .sk-search__input::placeholder { color: var(--sk-ink-faint); font-weight: 500; }
 .is-app .sk-search__input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* ---------- Home: seção "Viva algo incrível com o seu grupo" ----------
+   No app tudo empilha (o form não fica "ao lado"). Some o quadro vazio
+   "Escolha o tipo de evento ao lado…" — que fica feio/sem sentido no
+   celular — e a área colapsa. O formulário aparece normalmente quando a
+   pessoa toca num tipo de evento (o JS mostra o #group-form no clique).
+   No site normal (sem .is-app) continua igual, com as duas colunas. */
+.is-app .group-section__form-placeholder { display: none !important; }
+.is-app .group-section__form-area { min-height: 0; }
 

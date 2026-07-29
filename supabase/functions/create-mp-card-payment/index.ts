@@ -192,6 +192,12 @@ async function handleCardRequest(
   const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+  // Preço unitário da variação exibido no front (centavos). Só dica —
+  // o banco continua autoritativo. Ver booking_guard §5b.
+  const variantExpectedCents = (function () {
+    const n = Number(payload.variant_price_expected_centavos);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+  })();
 
   // ===== Dados do cartão (só no modo transparente) =====
   const paymentMethodId = payload.payment_method_id ? String(payload.payment_method_id).trim() : "";
@@ -244,6 +250,8 @@ async function handleCardRequest(
     nome: nomeFromPayload,
     cupomCode,
     quantidade,
+    variantSelected,
+    variantExpectedCents,
   });
 
   if (!guard.ok) {

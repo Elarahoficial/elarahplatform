@@ -817,6 +817,9 @@
                   title="Marca todas as vendas manuais ainda não marcadas como &quot;fornecedor avisado&quot; hoje (útil se você já avisa direto no WhatsApp)">✓ Marcar manuais avisadas</button>
           <button class="admin__add-btn" id="btn-register-manual-sale" type="button"
                   style="background:#1a8a4a;color:#fff;border:0;">+ Registrar venda manual</button>
+          <button class="admin__add-btn" id="btn-recover-stripe" type="button"
+                  style="background:#635bff;color:#fff;border:0;"
+                  title="Confere no Stripe as vendas pagas no cartão que ficaram presas (webhook não confirmou) e as recupera: marca como paga, envia a confirmação pro cliente e o aviso de venda pra você, e conta o carimbo do fidelidade.">↻ Recuperar vendas do Stripe</button>
           <button class="admin__add-btn" id="btn-refresh-bookings" type="button">Atualizar</button>
         </div>
       </div>
@@ -3742,14 +3745,16 @@
             type="text"
             list="exp-categoria-datalist"
             required
-            placeholder="Ex: Cerâmica, Pintura, Tufting, ou digite uma nova..."
+            placeholder="Ex: Cerâmica, Pintura, ou Barismo | Bartenderia..."
             autocomplete="off">
           <!-- Datalist populado dinamicamente pelo admin.js a partir
                das experiências já cadastradas. Permite escolher uma
                categoria existente (autocomplete) OU digitar uma nova
-               categoria — qualquer texto é aceito. -->
+               categoria — qualquer texto é aceito. Duas ou mais
+               categorias separadas por "|" colocam a experiência em
+               várias abas ao mesmo tempo (ver ElarahData.categoriasOf). -->
           <datalist id="exp-categoria-datalist"></datalist>
-          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Escolha uma categoria existente ou digite um nome novo. Categorias novas aparecem automaticamente nos filtros do site.</p>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Escolha uma categoria existente ou digite um nome novo. <strong>Pra deixar a experiência em duas abas</strong>, separe com <code>|</code> — ex.: <code>Barismo | Bartenderia</code>. Categorias novas aparecem automaticamente nos filtros do site.</p>
         </div>
 
         <!-- Kit Elarah em Casa: produto físico enviado, sem data/horário/
@@ -3759,9 +3764,9 @@
         <div class="admin__form-field admin__form-field--full" id="exp-casa-kit-field" style="background:#fbf3ea;border:1px solid #f0d8bf;border-radius:8px;padding:12px 14px;">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin:0;">
             <input type="checkbox" id="exp-is-casa-kit" style="width:auto;margin:0;">
-            <span>🏠 É um Kit Elarah em Casa (produto enviado)</span>
+            <span>🏠 É um Kit Elarah (produto enviado)</span>
           </label>
-          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#a4663b;">Marque pra kits DIY/enviados. Data, Duração, Horário, Vagas, Bairro e Endereço deixam de ser obrigatórios. Pra aparecer na vitrine "Elarah em Casa", mantenha "kit" ou "em casa" no nome ou na categoria.</p>
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#a4663b;">Marque pra kits DIY/enviados. Data, Duração, Horário, Vagas, Bairro e Endereço deixam de ser obrigatórios. Pra aparecer na vitrine "Kits Elarah", mantenha "kit" ou "em casa" no nome ou na categoria.</p>
         </div>
 
         <div class="admin__form-field">
@@ -3933,6 +3938,59 @@
             <option value="waitlist">Lista de espera (lead) — pra experiências em pré-lançamento sem data</option>
           </select>
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">"Compra direta" abre o checkout normal; "Lista de espera" abre o formulário de lead que envia pro WhatsApp.</p>
+        </div>
+
+        <!-- ===== CAMPANHA / DATA ESPECIAL ===== -->
+        <div class="admin__form-field admin__form-field--full">
+          <label>Campanha (data especial)</label>
+          <select id="exp-campanha" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:.95rem;">
+            <option value="">Nenhuma — experiência normal</option>
+            <option value="dia-dos-pais">Dia dos Pais</option>
+            <option value="dia-das-maes">Dia das Mães</option>
+            <option value="dia-dos-namorados">Dia dos Namorados</option>
+            <option value="dia-das-criancas">Dia das Crianças</option>
+            <option value="natal">Natal</option>
+            <option value="ano-novo">Ano Novo</option>
+          </select>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Marque uma campanha pra esta experiência aparecer na aba temática (ex.: <code>dia-dos-pais.html</code>). "Nenhuma" = não entra em nenhuma aba de campanha.</p>
+        </div>
+
+        <!-- ===== FOTO EXCLUSIVA DA CAMPANHA ===== -->
+        <!-- Aparece só quando uma campanha está selecionada. Opcional:
+             se preenchida, ESTA foto é usada só na aba da campanha; a
+             foto oficial (acima) continua em todo o resto do site. -->
+        <div class="admin__form-field admin__form-field--full" id="exp-campanha-imagem-field" style="display:none;">
+          <label>Foto exclusiva da campanha (opcional)</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <input type="file" id="exp-campanha-imagem-file" accept="image/png,image/jpeg,image/webp,image/heic,image/avif" style="font-size:12px;">
+            <span id="exp-campanha-imagem-file-status" style="font-size:12px;color:#888;"></span>
+          </div>
+          <input type="text" id="exp-campanha-imagem" placeholder="https://... ou faça upload acima">
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Deixe em branco pra usar a <b>foto oficial</b> também na campanha. Se preencher, esta foto aparece
+            <b>só na aba da campanha</b> (ex.: Dia dos Pais) — a foto oficial não muda no resto do site.
+          </p>
+          <div id="exp-campanha-imagem-preview-wrap"
+               style="margin-top:10px;display:none;border:1px dashed #ddd;border-radius:8px;padding:8px;background:#fafafa;">
+            <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Preview (só na aba da campanha)</div>
+            <img id="exp-campanha-imagem-preview" alt="Preview da imagem da campanha"
+                 style="max-width:200px;max-height:140px;display:block;border-radius:6px;background:#fff;">
+            <div id="exp-campanha-imagem-preview-status"
+                 style="margin-top:6px;font-size:12px;color:#1a8a4a;font-weight:600;"></div>
+          </div>
+        </div>
+
+        <!-- ===== HORÁRIO DE FUNCIONAMENTO (AGENDAMENTO LIVRE / VOUCHER) ===== -->
+        <div class="admin__form-field admin__form-field--full">
+          <label>Horário de funcionamento (agendamento livre / voucher)</label>
+          <textarea id="exp-horario-funcionamento" rows="3"
+            placeholder="Ex.: Terça a domingo, das 10h às 22h&#10;(deixe em branco para usar a agenda normal com datas/horários fixos)"
+            style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:.95rem;font-family:inherit;resize:vertical;"></textarea>
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;">
+            Preencha <b>só</b> para experiências tipo <b>voucher</b>, em que o cliente compra e escolhe o dia e a hora que quiser.
+            Quando preenchido, a página da experiência mostra este horário <b>em cima</b> e um seletor de <b>dia e hora</b> <b>embaixo</b>
+            (a agenda de datas fixas some). Deixe em branco para o funcionamento normal.
+          </p>
         </div>
 
         <!-- ===== RECORRÊNCIA SEMANAL ===== -->
@@ -4521,6 +4579,14 @@
           </select>
         </div>
 
+        <!-- Fornecedores EXTRAS — eventos com 2+ fornecedores (buffet + oficina, etc.) -->
+        <div class="admin__form-field admin__form-field--full" id="ms-extra-payouts-wrap" style="display:none;">
+          <label style="display:block;margin-bottom:6px;">Outros fornecedores deste evento</label>
+          <p style="margin:0 0 8px;font-size:.78rem;color:#888;">Quando o evento tem mais de um fornecedor pra pagar, some cada repasse aqui.</p>
+          <div id="ms-extra-payouts-list"></div>
+          <button type="button" id="ms-extra-payout-add" class="admin__add-btn" style="padding:5px 12px;font-size:.82rem;margin-top:4px;">+ Adicionar fornecedor</button>
+        </div>
+
         <div class="admin__form-field admin__form-field--full">
           <label>Observações</label>
           <input type="text" id="ms-notes">
@@ -4540,7 +4606,7 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=31"></script>
+<script src="experiences-data.js?v=34"></script>
 <script src="byelarah-data.js?v=7"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-social.js?v=11"></script>
@@ -4553,7 +4619,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=210"></script>
+<script src="admin.js?v=215"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

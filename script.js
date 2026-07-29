@@ -170,19 +170,25 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const categoriasOriginalCase = new Map();
     (experiences || []).forEach(function (exp) {
       if (!exp || !exp.categoria) return;
-      const c = String(exp.categoria).trim();
-      if (!c) return;
-      const k = c.toLowerCase();
       // Kits "em casa" (Kit em casa / Lar em casa) não entram na navegação
       // (menu/faixa de categorias) — acessíveis só pelo link "Elarah em
       // Casa" no topo do header. Mesmo critério de ElarahData.isHomeKit.
       if ((window.ElarahData && ElarahData.isHomeKit)
         ? ElarahData.isHomeKit(exp)
-        : k.indexOf('em casa') !== -1) return;
-      if (!categoriasSet.has(k)) {
-        categoriasSet.add(k);
-        categoriasOriginalCase.set(k, c);
-      }
+        : String(exp.categoria).toLowerCase().indexOf('em casa') !== -1) return;
+      // Uma experiência pode estar em mais de uma aba (ex.: "Barismo |
+      // Bartenderia") — cada categoria vira um link/opção separada.
+      const cats = (window.ElarahData && ElarahData.categoriasOf)
+        ? ElarahData.categoriasOf(exp)
+        : [String(exp.categoria).trim()];
+      cats.forEach(function (c) {
+        if (!c) return;
+        const k = c.toLowerCase();
+        if (!categoriasSet.has(k)) {
+          categoriasSet.add(k);
+          categoriasOriginalCase.set(k, c);
+        }
+      });
     });
     const categorias = Array.from(categoriasOriginalCase.values()).sort(function (a, b) {
       return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
@@ -305,7 +311,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // Kits "Elarah em Casa" são produto, não experiência: fora da
       // listagem (só aparecem na vitrine própria em-casa.html).
       if (window.ElarahData && ElarahData.isHomeKit && ElarahData.isHomeKit(exp)) return false;
-      const matchCat = !activeCategoria || exp.categoria === activeCategoria;
+      const matchCat = !activeCategoria ||
+        ((window.ElarahData && ElarahData.matchesCategoria)
+          ? ElarahData.matchesCategoria(exp, activeCategoria)
+          : exp.categoria === activeCategoria);
       const matchBairro = !activeBairro || exp.bairro === activeBairro;
 
       const textoBusca = activeBusca.toLowerCase();
@@ -363,6 +372,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         }
       }
       toShow = arr;
+    } else if (activeBusca && document.documentElement.classList.contains('is-app')) {
+      // No APP: quando a pessoa DIGITA uma busca ("vela"), a home mostra
+      // TODOS os resultados daquele termo e mantém a barra de busca no topo.
+      // Antes cortava em MAX_HOME_CARDS e o "Ver todas" ia pra listagem geral
+      // (categoria.html), perdendo o que foi digitado. No site normal (sem
+      // .is-app) o comportamento continua exatamente igual.
+      toShow = filtered;
     } else {
       toShow = isFiltered ? filtered.slice(0, MAX_HOME_CARDS) : filtered.slice(0, MAX_HOME_CARDS * 3);
     }
@@ -422,12 +438,22 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const card = document.createElement('article');
     card.className = 'card';
 
+    // Horários do card: prioriza os horários REAIS das turmas (slots),
+    // incluindo os gerados por recorrência. Assim experiências que só têm
+    // horário na recorrência (campo "Horários" vazio) também mostram os
+    // botões. Cai pro campo horarios/horario da experiência quando não há
+    // slot futuro.
+    const _slotHorarios = (typeof ElarahData !== 'undefined' && ElarahData.distinctSlotHorarios)
+      ? ElarahData.distinctSlotHorarios(exp._slots || [], Date.now())
+      : [];
     // Dedup textual + ordem original. Recorrência popula exp.horarios
     // com 1 entrada por slot (ex: 8 datas × 2 horários = 16 entradas
     // repetidas). Sem dedup, o card mostra 16 chips idênticos.
-    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
-      ? exp.horarios
-      : (exp.horario ? [exp.horario] : []);
+    const horariosRaw = _slotHorarios.length
+      ? _slotHorarios
+      : (Array.isArray(exp.horarios) && exp.horarios.length
+          ? exp.horarios
+          : (exp.horario ? [exp.horario] : []));
     const seenHorarios = new Set();
     const horarios = [];
     horariosRaw.forEach(function (h) {
@@ -561,7 +587,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ${scarcePill}
       </div>
       <div class="card__body">
-        <span class="card__category">${exp.categoria}</span>
+        <span class="card__category">${(window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : exp.categoria}</span>
         <h3 class="card__title"><a href="experiencia.html?id=${encodeURIComponent(exp.id)}" class="card__title-link">${exp.nome}</a></h3>
         <div class="card__details">
           <p class="card__detail">
@@ -1881,20 +1907,57 @@ if (groupForm) {
       CHECKOUT_FN_BASE + '/create-mp-card-payment';
     const REDEEM_FN_URL =
       CHECKOUT_FN_BASE + '/redeem-gift-card';
+    const PAGARME_CHECKOUT_FN_URL =
+      CHECKOUT_FN_BASE + '/create-pagarme-checkout';
+    // Checkout TRANSPARENTE Pagar.me (cartão com gross-up por parcela + PIX
+    // no valor-base, sem redirect). Ver create-pagarme-card-payment /
+    // create-pagarme-pix-payment.
+    const PAGARME_CARD_FN_URL =
+      CHECKOUT_FN_BASE + '/create-pagarme-card-payment';
+    const PAGARME_PIX_FN_URL =
+      CHECKOUT_FN_BASE + '/create-pagarme-pix-payment';
 
-    // ===== Chave de migração do cartão: Stripe → Mercado Pago =====
-    // LIGADO (go-live): o cartão vai pro Checkout Pro da Mercado Pago
-    // (conta CNPJ), com parcelamento em até 12x e juros repassados ao
-    // cliente. O PIX NÃO é afetado por esta chave.
-    // Escotilha de emergência: ?mpcard=0 na URL força o cartão de volta
-    // pro Stripe (rollback rápido pra testar sem depender de deploy).
+    // ===== Roteamento do CARTÃO: Pagar.me é o PADRÃO (oficial) =====
+    // Validado em produção: CARTÃO (1x + parcelado) = Pagar.me · PIX = Mercado
+    // Pago. Agora é o comportamento OFICIAL do checkout — NÃO precisa mais de
+    // ?pay=pagarme. (Nome da flag mantido de propósito pra não refatorar os
+    // usos já validados; o que muda é só o DEFAULT.)
+    // Escotilha de emergência: ?pay=off (ou ?pay=normal) devolve o CARTÃO pro
+    // fluxo antigo (MP/Stripe) e PERSISTE na sessão até reativar com ?pay=pagarme.
+    // O PIX é SEMPRE Mercado Pago, independente desta flag.
+    const PAY_PAGARME_TEST = (function () {
+      var KEY = 'elarah_pay_pagarme';
+      try {
+        var v = new URLSearchParams(window.location.search).get('pay');
+        if (v === 'pagarme') {
+          try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+          return true;
+        }
+        if (v === 'off' || v === 'normal') {
+          // Escotilha PERSISTENTE: cartão volta pro fluxo antigo até reativar.
+          try { sessionStorage.setItem(KEY, '0'); } catch (e) {}
+          return false;
+        }
+        // Sem parâmetro: PADRÃO = Pagar.me (true), exceto se a escotilha
+        // ('0') tiver sido acionada nesta sessão.
+        try { return sessionStorage.getItem(KEY) !== '0'; } catch (e) {}
+      } catch (e) {}
+      return true; // default oficial: cartão no Pagar.me
+    })();
+
+    // ===== Chave de migração do cartão: Mercado Pago → Stripe =====
+    // DESLIGADO: o cartão vai pro STRIPE (Checkout), enquanto o motor de
+    // risco do Mercado Pago recusa 100% dos cartões (cc_rejected_high_risk).
+    // O PIX NÃO é afetado por esta chave — continua no Mercado Pago.
+    // Escotilha de emergência: ?mpcard=1 na URL força o cartão de volta
+    // pro Mercado Pago (rollback rápido sem depender de deploy).
     const MP_CARD_ENABLED = (function () {
       try {
         var q = new URLSearchParams(window.location.search);
-        if (q.get('mpcard') === '0') return false; // força Stripe (rollback)
-        if (q.get('mpcard') === '1') return true;
+        if (q.get('mpcard') === '0') return false; // força Stripe
+        if (q.get('mpcard') === '1') return true;   // força Mercado Pago
       } catch (e) {}
-      return true; // ← cartão via Mercado Pago LIGADO
+      return false; // ← cartão via STRIPE (MP recusando no cartão)
     })();
     // Anon key do Supabase (JWT). Pode ficar exposta no front — é o
     // "publishable key" do projeto, sem privilégios além do RLS.
@@ -2187,16 +2250,25 @@ if (groupForm) {
       if (raw == null) return null;
       const text = String(raw).replace(/\s/g, '').replace(/^R\$/i, '');
       if (!text) return null;
+      // Formato brasileiro: a vírgula é o separador DECIMAL e o ponto é
+      // separador de MILHAR. Sem vírgula, qualquer ponto é milhar — por
+      // isso "1.320" = 1320 (e não 1.32). Antes o código usava o texto
+      // direto e Number("1.320") virava 1.32, cobrando R$1,32 por R$1.320.
       const norm = text.indexOf(',') !== -1
         ? text.replace(/\./g, '').replace(',', '.')
-        : text;
+        : text.replace(/\./g, '');
       const num = Number(norm);
       if (!isFinite(num) || num <= 0) return null;
       return Math.round(num * 100);
     }
 
     function brl(centavos) {
-      return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
+      var v = Number(centavos || 0) / 100;
+      try {
+        return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } catch (e) {
+        return 'R$ ' + v.toFixed(2).replace('.', ',');
+      }
     }
 
     // Pega e-mail + nome do usuário logado (para pré-preencher o modal
@@ -2283,6 +2355,16 @@ if (groupForm) {
             '<div id="erm-form-section">'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== INFO COMPLETA (voucher) — descrição, inclui, onde acontece,
+            // horário de funcionamento e aviso, tudo numa tela só (sem tela de
+            // descrição separada). Escondido por padrão; ligado via ctx.showFullInfo.
+            '<div id="erm-info" style="display:none;margin:0 0 18px;">'
+        +     '<div id="erm-info-hours" style="display:none;padding:14px 16px;background:#fbf3e6;border:1px solid #f0dcc0;border-radius:12px;margin-bottom:14px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#a4663b;margin-bottom:6px;">Horário de funcionamento</div><div id="erm-info-hours-text" style="font-size:.92rem;color:#3a2f28;line-height:1.5;font-weight:600;"></div></div>'
+        +     '<div id="erm-info-desc" style="font-size:.92rem;color:#3a2f28;line-height:1.6;white-space:pre-line;margin-bottom:14px;"></div>'
+        +     '<div id="erm-info-inclui" style="display:none;padding:14px 16px;background:#fff8ee;border:1px solid #f0cfa0;border-radius:12px;margin-bottom:12px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#a4663b;margin-bottom:6px;">O que está incluso</div><div id="erm-info-inclui-text" style="font-size:.9rem;color:#3a2410;line-height:1.5;"></div></div>'
+        +     '<div id="erm-info-local" style="display:none;padding:14px 16px;background:#faf6f0;border:1px solid #eadfce;border-radius:12px;margin-bottom:12px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#888;margin-bottom:6px;">Onde acontece</div><div id="erm-info-local-text" style="font-size:.9rem;color:#3a2410;line-height:1.5;"></div></div>'
+        +     '<div id="erm-info-note" style="display:none;padding:12px 14px;background:#fbf3e6;border:1px solid #f0dcc0;border-radius:10px;font-size:.84rem;color:#6b5744;line-height:1.5;"></div>'
+        +   '</div>'
         +   // ===== SELETOR DE HORÁRIO (escondido por padrão) =====
             // Renderizado em openReservationModal quando exp.horarios > 1.
             // Sem isso, usuário ficava preso no horário escolhido fora do
@@ -2570,10 +2652,13 @@ if (groupForm) {
       if (form) form.style.display = 'none';
       if (pix) pix.style.display = 'block';
 
-      // QR code (imagem PNG base64)
+      // QR code — MP manda base64 (qr_code_base64); Pagar.me manda a URL
+      // da imagem (qr_code_url). Aceita os dois.
       const img = modalRoot.querySelector('#erm-pix-qr');
       if (img && resp.qr_code_base64) {
         img.src = 'data:image/png;base64,' + resp.qr_code_base64;
+      } else if (img && resp.qr_code_url) {
+        img.src = resp.qr_code_url;
       }
       // Código copia-e-cola
       const codeInput = modalRoot.querySelector('#erm-pix-code');
@@ -2647,6 +2732,399 @@ if (groupForm) {
 
       // Começa polling
       startPixPolling(resp.booking_id);
+    }
+
+    // =============================================================
+    // PAGAR.ME — Checkout Transparente (cartão com gross-up + PIX base)
+    // -------------------------------------------------------------
+    // Cartão: o cliente digita no site, tokenizamos DIRETO no Pagar.me
+    // (o cartão nunca passa pelo nosso servidor) e mandamos só o
+    // card_token + a parcela escolhida pra create-pagarme-card-payment.
+    // Cada parcela mostra o total grossed-up (tabela idêntica ao backend
+    // _shared/pagarme.ts → o servidor recomputa e é autoritativo).
+    // =============================================================
+
+    // Tabela de taxas — DEVE bater com PAGARME_FEES do backend.
+    const PAGARME_FEE_FIXED_CENTS = 99; // R$0,55 proc + R$0,44 antifraude
+    const PAGARME_FEE_RATES = {
+      1: 5.59, 2: 8.59, 3: 9.84, 4: 11.09, 5: 12.34, 6: 13.59,
+      7: 15.34, 8: 16.59, 9: 17.84, 10: 19.09, 11: 20.34, 12: 21.59,
+    };
+    function pagarmeInstallmentOptions(baseCents) {
+      const out = [];
+      const b = Math.max(0, Math.floor(baseCents || 0));
+      for (let n = 1; n <= 12; n++) {
+        const r = PAGARME_FEE_RATES[n];
+        if (!r) continue;
+        // Espelha buildInstallmentOptions: ceil((B + F) / (1 - r)).
+        out.push({ number: n, total: Math.ceil((b + PAGARME_FEE_FIXED_CENTS) / (1 - r / 100)) });
+      }
+      return out;
+    }
+
+    // Chave pública do Pagar.me (pk_test_/pk_live_). undefined=não buscado,
+    // null=indisponível, {key,isTest}=ok.
+    let _pgPk;
+    let _pgPkPromise = null;
+    function getPagarmePublicKey() {
+      if (typeof _pgPk !== 'undefined') return Promise.resolve(_pgPk);
+      if (_pgPkPromise) return _pgPkPromise;
+      _pgPkPromise = fetch(CHECKOUT_FN_BASE + '/get-pagarme-public-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: '{}',
+      })
+        .then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (d) {
+            return { httpStatus: r.status, data: d };
+          });
+        })
+        .then(function (res) {
+          const d = res.data;
+          _pgPk = (d && d.public_key)
+            ? { key: String(d.public_key), isTest: !!d.is_test }
+            : null;
+          if (!_pgPk) {
+            // Diagnóstico explícito (só console): distingue "função respondeu
+            // sem chave" (secret PAGARME_PUBLIC_KEY ausente no Supabase) de
+            // erro de rota (função não deployada / 404).
+            if (res.httpStatus === 200) {
+              console.error('[Elarah Payment/Pagarme] chave pública AUSENTE: a função respondeu 200 mas sem public_key. Configure o secret PAGARME_PUBLIC_KEY (pk_test_…) no Supabase.');
+            } else {
+              console.error('[Elarah Payment/Pagarme] get-pagarme-public-key http=' + res.httpStatus + ' — a função pode não estar deployada.');
+            }
+          }
+          return _pgPk;
+        })
+        .catch(function (e) {
+          console.error('[Elarah Payment/Pagarme] get-pagarme-public-key falhou (rede/CORS)', e);
+          _pgPk = null;
+          return null;
+        });
+      return _pgPkPromise;
+    }
+
+    // Tokeniza o cartão DIRETO no Pagar.me (browser → Pagar.me; o cartão
+    // NUNCA passa pelo nosso servidor). Retorna { ok, status, body }; o
+    // card_token = body.id. A tokenização autentica só pela chave PÚBLICA no
+    // appId (a secret nunca vai pro front).
+    //
+    // Host: a doc oficial usa api.pagar.me/core/v5/tokens?appId=pk_ (a chave
+    // pk_test_/pk_live_ define o ambiente). Como fallback (só no teste),
+    // tenta o sdx-api — assim ficamos robustos a qualquer divergência de
+    // host sem depender de tentativa/erro.
+    function pagarmeTokenizeCard(pk, card) {
+      const hosts = pk.isTest
+        ? ['https://api.pagar.me/core/v5', 'https://sdx-api.pagar.me/core/v5']
+        : ['https://api.pagar.me/core/v5'];
+      const payload = JSON.stringify({ type: 'card', card: card });
+      function attempt(i) {
+        if (i >= hosts.length) return Promise.resolve({ ok: false, status: 0, body: null });
+        return fetch(hosts[i] + '/tokens?appId=' + encodeURIComponent(pk.key), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: payload,
+        }).then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (j) {
+            if (r.ok && j && j.id) return { ok: true, status: r.status, body: j };
+            // Só troca de host quando parece problema de ROTA (404/401/403),
+            // nunca em 422 de validação de cartão (o host está certo).
+            if ((r.status === 404 || r.status === 401 || r.status === 403) && i + 1 < hosts.length) {
+              return attempt(i + 1);
+            }
+            return { ok: false, status: r.status, body: j };
+          });
+        }).catch(function () { return attempt(i + 1); });
+      }
+      return attempt(0);
+    }
+
+    // Injeta (uma vez) e devolve a seção do cartão Pagar.me no modal.
+    function ensurePagarmeCardSection() {
+      if (!modalRoot) return null;
+      let sec = modalRoot.querySelector('#erm-pgcard-section');
+      if (sec) return sec;
+      sec = document.createElement('div');
+      sec.id = 'erm-pgcard-section';
+      sec.style.display = 'none';
+      sec.innerHTML =
+        '<h3 style="margin:0 0 4px;font-size:1.05rem;color:#2a2a2a;">Pagamento no cartão</h3>'
+        + '<p style="margin:0 0 14px;color:#888;font-size:.82rem;">Seus dados vão criptografados direto pro Pagar.me. Não guardamos o cartão.</p>'
+        + '<div style="display:flex;flex-direction:column;gap:10px;">'
+        + '  <input id="erm-pg-number" inputmode="numeric" autocomplete="cc-number" placeholder="Número do cartão" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  <input id="erm-pg-holder" autocomplete="cc-name" placeholder="Nome impresso no cartão" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-exp" inputmode="numeric" autocomplete="cc-exp" placeholder="Validade (MM/AA)" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV" style="width:110px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  </div>'
+        + '  <label style="font-size:.82rem;color:#666;margin-top:6px;">Endereço de cobrança</label>'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-cep" inputmode="numeric" autocomplete="postal-code" placeholder="CEP" style="width:130px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-num" inputmode="numeric" placeholder="Número" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  </div>'
+        + '  <input id="erm-pg-street" autocomplete="address-line1" placeholder="Endereço (rua/avenida)" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-city" autocomplete="address-level2" placeholder="Cidade" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-uf" autocomplete="address-level1" maxlength="2" placeholder="UF" style="width:80px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;text-transform:uppercase;">'
+        + '  </div>'
+        + '  <label style="font-size:.82rem;color:#666;margin-top:2px;">Parcelas</label>'
+        + '  <select id="erm-pg-installments" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;background:#fff;"></select>'
+        + '</div>'
+        + '<div id="erm-pg-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></div>'
+        + '<div id="erm-pg-status" style="display:none;padding:12px 14px;border-radius:10px;background:#fff8ef;border:1px solid #f4c48a;color:#8a5a1a;font-size:.88rem;text-align:center;margin-top:10px;"><span id="erm-pg-status-text">Confirmando pagamento...</span></div>'
+        + '<button type="button" id="erm-pg-pay" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;">Pagar</button>'
+        + '<button type="button" id="erm-pg-back" style="width:100%;margin-top:8px;padding:11px;border:none;background:transparent;color:#999;font-size:.85rem;cursor:pointer;">Voltar</button>';
+      const formSec = modalRoot.querySelector('#erm-form-section');
+      if (formSec && formSec.parentNode) formSec.parentNode.appendChild(sec);
+      else modalRoot.appendChild(sec);
+
+      // ===== Máscaras VISUAIS + autofill de CEP (UX apenas) =====
+      // Não alteram o payload: o handler de pagamento já normaliza tudo com
+      // replace(/\D+/g,'') (número/validade/CVV/CEP) e toUpperCase() (UF).
+      // As máscaras só formatam o que o usuário vê enquanto digita.
+      const numEl = sec.querySelector('#erm-pg-number');
+      const expEl = sec.querySelector('#erm-pg-exp');
+      const cvvEl = sec.querySelector('#erm-pg-cvv');
+      const cepEl = sec.querySelector('#erm-pg-cep');
+      const ufEl = sec.querySelector('#erm-pg-uf');
+      const streetEl = sec.querySelector('#erm-pg-street');
+      const cityEl = sec.querySelector('#erm-pg-city');
+      if (numEl) numEl.addEventListener('input', function () {
+        const d = this.value.replace(/\D+/g, '').slice(0, 19); // até 19 (Amex/Elo)
+        this.value = d.replace(/(.{4})/g, '$1 ').trim();
+      });
+      if (expEl) expEl.addEventListener('input', function () {
+        const d = this.value.replace(/\D+/g, '').slice(0, 4);
+        this.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+      });
+      if (cvvEl) cvvEl.addEventListener('input', function () {
+        this.value = this.value.replace(/\D+/g, '').slice(0, 4);
+      });
+      if (ufEl) ufEl.addEventListener('input', function () {
+        this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2);
+      });
+      if (cepEl) {
+        cepEl.addEventListener('input', function () {
+          const d = this.value.replace(/\D+/g, '').slice(0, 8);
+          this.value = d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;
+        });
+        // Autofill por CEP (ViaCEP). SÓ conveniência: falha nunca bloqueia o
+        // pagamento nem gera erro — o usuário pode preencher manualmente.
+        cepEl.addEventListener('blur', function () {
+          const d = cepEl.value.replace(/\D+/g, '');
+          if (d.length !== 8) return;
+          fetch('https://viacep.com.br/ws/' + d + '/json/')
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+              if (!j || j.erro) return;
+              if (j.logradouro && streetEl) streetEl.value = j.logradouro;
+              if (j.localidade && cityEl) cityEl.value = j.localidade;
+              if (j.uf && ufEl) ufEl.value = String(j.uf).toUpperCase().slice(0, 2);
+            })
+            .catch(function () { /* silencioso — autofill é opcional */ });
+        });
+      }
+      return sec;
+    }
+
+    function pgCardError(msg) {
+      const e = modalRoot && modalRoot.querySelector('#erm-pg-error');
+      if (e) e.textContent = msg || '';
+      const pay = modalRoot && modalRoot.querySelector('#erm-pg-pay');
+      if (pay) { pay.disabled = false; pay.textContent = 'Pagar'; }
+      const st = modalRoot && modalRoot.querySelector('#erm-pg-status');
+      if (st) st.style.display = 'none';
+    }
+
+    let _pgCardPollHandle = null;
+    function stopPagarmeCardPolling() {
+      if (_pgCardPollHandle) { clearInterval(_pgCardPollHandle); _pgCardPollHandle = null; }
+    }
+    function startPagarmeCardPolling(bookingId) {
+      stopPagarmeCardPolling();
+      const startedAt = Date.now();
+      const tick = async function () {
+        if (Date.now() - startedAt > 3 * 60 * 1000) {
+          stopPagarmeCardPolling();
+          const t = modalRoot && modalRoot.querySelector('#erm-pg-status-text');
+          if (t) t.textContent = 'Ainda confirmando… você receberá um e-mail assim que aprovar.';
+          return;
+        }
+        const status = await pollBookingStatus(bookingId);
+        if (status === 'pago') {
+          stopPagarmeCardPolling();
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(bookingId);
+        } else if (status === 'cancelado' || status === 'reembolsado' || status === 'expirado') {
+          stopPagarmeCardPolling();
+          pgCardError('Pagamento não aprovado. Tente outro cartão ou pague no PIX.');
+        }
+      };
+      _pgCardPollHandle = setInterval(tick, 2500);
+      tick();
+    }
+
+    // Mostra o painel de cartão Pagar.me e assume o fluxo. `extra` traz
+    // authEmail, cpfDigits, telefoneRaw, telefoneNormalized.
+    async function showPagarmeCardPanel(ctx, extra) {
+      const pk = await getPagarmePublicKey();
+      if (!pk) throw new Error('pagarme_public_key_indisponivel');
+
+      const sec = ensurePagarmeCardSection();
+      if (!sec) throw new Error('modal_indisponivel');
+      const formSec = modalRoot.querySelector('#erm-form-section');
+      if (formSec) formSec.style.display = 'none';
+      sec.style.display = 'block';
+
+      // Popula as parcelas com os totais grossed-up.
+      const baseCents = ctx.totalCentavos || 0;
+      const opts = pagarmeInstallmentOptions(baseCents);
+      const sel = sec.querySelector('#erm-pg-installments');
+      if (sel) {
+        sel.innerHTML = opts.map(function (o) {
+          const per = Math.round(o.total / o.number);
+          const label = o.number === 1
+            ? '1x de ' + brl(o.total)
+            : o.number + 'x de ' + brl(per) + ' (total ' + brl(o.total) + ')';
+          return '<option value="' + o.number + '">' + label + '</option>';
+        }).join('');
+      }
+      pgCardError('');
+
+      const payBtn = sec.querySelector('#erm-pg-pay');
+      const backBtn = sec.querySelector('#erm-pg-back');
+      if (backBtn) {
+        backBtn.onclick = function () {
+          stopPagarmeCardPolling();
+          sec.style.display = 'none';
+          if (formSec) formSec.style.display = 'block';
+        };
+      }
+      if (payBtn) {
+        payBtn.onclick = async function () {
+          const numRaw = (sec.querySelector('#erm-pg-number').value || '').replace(/\D+/g, '');
+          const holder = (sec.querySelector('#erm-pg-holder').value || '').trim();
+          const expRaw = (sec.querySelector('#erm-pg-exp').value || '').replace(/\D+/g, '');
+          const cvv = (sec.querySelector('#erm-pg-cvv').value || '').replace(/\D+/g, '');
+          const installments = Math.max(1, Math.min(12, parseInt(sel && sel.value, 10) || 1));
+          // Endereço de cobrança (exigido pelo antifraude — doc V5).
+          const cep = (sec.querySelector('#erm-pg-cep').value || '').replace(/\D+/g, '');
+          const num = (sec.querySelector('#erm-pg-num').value || '').trim();
+          const street = (sec.querySelector('#erm-pg-street').value || '').trim();
+          const city = (sec.querySelector('#erm-pg-city').value || '').trim();
+          const uf = (sec.querySelector('#erm-pg-uf').value || '').trim().toUpperCase();
+
+          if (numRaw.length < 13) return pgCardError('Confira o número do cartão.');
+          if (!holder) return pgCardError('Informe o nome impresso no cartão.');
+          if (expRaw.length < 4) return pgCardError('Confira a validade (MM/AA).');
+          if (cvv.length < 3) return pgCardError('Confira o CVV.');
+          if (cep.length !== 8) return pgCardError('Confira o CEP (8 dígitos).');
+          if (!street) return pgCardError('Informe o endereço (rua/avenida).');
+          if (!num) return pgCardError('Informe o número do endereço.');
+          if (!city) return pgCardError('Informe a cidade.');
+          if (uf.length !== 2) return pgCardError('Informe a UF (2 letras).');
+          const expMonth = parseInt(expRaw.slice(0, 2), 10);
+          let expYear = parseInt(expRaw.slice(2), 10);
+          if (expRaw.length === 4) expYear = 2000 + expYear; // AA → 20AA
+          if (!(expMonth >= 1 && expMonth <= 12)) return pgCardError('Mês de validade inválido.');
+
+          payBtn.disabled = true;
+          payBtn.textContent = 'Processando...';
+          pgCardError('');
+
+          // 1) Tokeniza direto no Pagar.me.
+          let tok;
+          try {
+            tok = await pagarmeTokenizeCard(pk, {
+              number: numRaw,
+              holder_name: holder,
+              holder_document: extra.cpfDigits || undefined,
+              exp_month: expMonth,
+              exp_year: expYear,
+              cvv: cvv,
+            });
+          } catch (e) {
+            console.error('[Elarah Payment/Pagarme] tokenização falhou', e);
+            return pgCardError('Não foi possível validar o cartão. Confira os dados e tente de novo.');
+          }
+          if (!tok.ok || !tok.body || !tok.body.id) {
+            console.error('[Elarah Payment/Pagarme] token inválido', 'http=' + tok.status, JSON.stringify(tok.body));
+            return pgCardError('Confira os dados do cartão e tente novamente.');
+          }
+          const cardToken = tok.body.id;
+
+          // 2) Cria a Order no backend (amount = total grossed-up da parcela).
+          const body = {
+            experiencia_id: ctx.experienceId,
+            horario: ctx.horario,
+            data: ctx.data || null,
+            slot_id: ctx.slotId || null,
+            email: extra.authEmail,
+            nome: ctx.nome || null,
+            cpf: extra.cpfDigits,
+            telefone: extra.telefoneRaw,
+            telefone_digits: extra.telefoneNormalized,
+            cupom: ctx.cupomCode || null,
+            quantidade: ctx.quantidade || 1,
+            participantes: ctx.participantes || [],
+            variant_label: ctx.variantLabel || null,
+            variant_selected: ctx.variantSelected || null,
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
+            card_token: cardToken,
+            installments: installments,
+            // Endereço de cobrança pro antifraude (customer.address no pedido).
+            address: {
+              zip_code: cep,
+              line_1: num + ', ' + street,
+              city: city,
+              state: uf,
+              country: 'BR',
+            },
+          };
+          const stEl = sec.querySelector('#erm-pg-status');
+          const stText = sec.querySelector('#erm-pg-status-text');
+          if (stEl) stEl.style.display = 'block';
+          if (stText) stText.textContent = 'Confirmando pagamento...';
+
+          let data;
+          try {
+            const res = await fetch(PAGARME_CARD_FN_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+              },
+              body: JSON.stringify(body),
+            });
+            data = await res.json().catch(function () { return null; });
+            if (!res.ok || !data) {
+              console.error('[Elarah Payment/Pagarme] card create falhou', 'http=' + res.status, JSON.stringify(data));
+              return pgCardError((data && data.message) || 'Não foi possível processar o cartão. Tente novamente ou pague no PIX.');
+            }
+          } catch (e) {
+            console.error('[Elarah Payment/Pagarme] card create erro', e);
+            return pgCardError('Falha de conexão. Tente novamente ou pague no PIX.');
+          }
+
+          if (data.direct === true) {
+            window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(data.booking_id || '');
+            return;
+          }
+          if (data.rejected === true) {
+            return pgCardError(data.message || 'Pagamento recusado. Tente outro cartão ou pague no PIX.');
+          }
+          if (!data.booking_id) {
+            return pgCardError('Resposta inesperada do servidor.');
+          }
+          // Aprovado / em captura — o webhook finaliza. Poll até 'pago'.
+          if (stText) stText.textContent = 'Pagamento enviado! Confirmando...';
+          startPagarmeCardPolling(data.booking_id);
+        };
+      }
     }
 
     // =============================================================
@@ -2956,6 +3434,10 @@ if (groupForm) {
         participantes: ctx.participantes || [],
         variant_label: ctx.variantLabel || null,
         variant_selected: ctx.variantSelected || null,
+        // Preço unitário da opção escolhida (centavos) — dica de segurança
+        // pro backend não sair com o valor individual se o banco não
+        // resolver o preço da variação. Backend só aceita pra cima.
+        variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
         cpf: String(cardData.identificationNumber || '').replace(/\D+/g, ''),
       };
 
@@ -3110,7 +3592,10 @@ if (groupForm) {
       const baseAfterCupom = Math.max(0, subtotalCents - cupomCents);
 
       let feeCents = 0;
-      if (ctx.paymentMethod === 'card' && baseAfterCupom > 0 && ctx.feeConfig) {
+      // No modo Pagar.me transparente NÃO há taxa fixa: o total do modal é o
+      // VALOR-BASE (o que o PIX cobra). O acréscimo do cartão é por parcela e
+      // aparece dentro do painel de cartão (gross-up), não aqui.
+      if (!PAY_PAGARME_TEST && ctx.paymentMethod === 'card' && baseAfterCupom > 0 && ctx.feeConfig) {
         feeCents = computeCardFee(baseAfterCupom, ctx.feeConfig);
       }
       const total = baseAfterCupom + feeCents;
@@ -3162,16 +3647,34 @@ if (groupForm) {
       });
       const hint = modalRoot.querySelector('#erm-pm-hint');
       if (hint) {
-        hint.textContent = ctx.paymentMethod === 'pix'
-          ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
-          : 'Cartão via Mercado Pago — taxa de processamento é repassada ao cliente.';
+        if (PAY_PAGARME_TEST) {
+          // Modo teste Pagar.me (transparente): cartão inline com parcelas
+          // e PIX por QR, sem sair do site. Nada de "Mercado Pago".
+          hint.textContent = ctx.paymentMethod === 'pix'
+            ? 'PIX no valor à vista — pague pelo QR Code e a reserva confirma sozinha.'
+            : 'Cartão em até 12x — o acréscimo do parcelamento é do processamento (Pagar.me).';
+        } else {
+          hint.textContent = ctx.paymentMethod === 'pix'
+            ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
+            : 'Cartão via Mercado Pago — taxa de processamento é repassada ao cliente.';
+        }
       }
       // Mostra/esconde campo CPF. O reset do valor NÃO acontece aqui
       // pra preservar o que o usuário digitou se ele alternar entre
       // os dois métodos.
       const cpfWrap = modalRoot.querySelector('#erm-cpf-wrap');
       if (cpfWrap) {
-        cpfWrap.style.display = ctx.paymentMethod === 'pix' ? 'block' : 'none';
+        // Pagar.me exige CPF no cartão E no PIX. No modo teste, sempre
+        // mostra o campo (senão não há onde digitar e a validação falha).
+        const needsCpf = ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST;
+        cpfWrap.style.display = needsCpf ? 'block' : 'none';
+        if (PAY_PAGARME_TEST) {
+          // Sem "Mercado Pago" no modo Pagar.me.
+          const cpfMsg = modalRoot.querySelector('#erm-cpf-msg');
+          if (cpfMsg && !/inválido|obrigat/i.test(cpfMsg.textContent || '')) {
+            cpfMsg.textContent = 'Exigido para emitir o pagamento no Pagar.me.';
+          }
+        }
       }
     }
 
@@ -3218,6 +3721,41 @@ if (groupForm) {
       var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(ctx.precoLabel) : ctx.precoLabel;
       root.querySelector('#erm-meta').textContent = [ctx.horario, precoFmt]
         .filter(Boolean).join(' · ');
+
+      // Info completa numa tela só (voucher): descrição, inclui, onde
+      // acontece, horário de funcionamento e aviso — pra não ter uma tela
+      // de descrição separada com a mesma capa.
+      (function fillFullInfo() {
+        var wrap = root.querySelector('#erm-info');
+        if (!wrap) return;
+        if (!ctx.showFullInfo) { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
+        function setBlock(boxId, textId, val) {
+          var box = root.querySelector(boxId), txt = root.querySelector(textId);
+          var v = (val == null ? '' : String(val)).trim();
+          if (box) box.style.display = v ? 'block' : 'none';
+          if (txt && v) txt.textContent = v;
+        }
+        setBlock('#erm-info-hours', '#erm-info-hours-text', ctx.horarioFuncionamento);
+        var descEl = root.querySelector('#erm-info-desc');
+        if (descEl) {
+          var d = (ctx.descricao == null ? '' : String(ctx.descricao)).trim();
+          descEl.textContent = d;
+          descEl.style.display = d ? 'block' : 'none';
+        }
+        setBlock('#erm-info-inclui', '#erm-info-inclui-text', ctx.inclui);
+        setBlock('#erm-info-local', '#erm-info-local-text', ctx.endereco);
+        var note = root.querySelector('#erm-info-note');
+        if (note) {
+          if (ctx.horarioFuncionamento) {
+            note.style.display = 'block';
+            note.innerHTML = 'É só reservar. Se quiser, deixe um dia/horário de preferência — mas não precisa. ' +
+              '<strong>No momento da compra, a Elarah entra em contato com você no mesmo dia</strong> para acertar o melhor horário, dentro do horário de funcionamento. 🤍';
+          } else {
+            note.style.display = 'none';
+          }
+        }
+      })();
       root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-total').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-discount-row').style.display = 'none';
@@ -3272,7 +3810,9 @@ if (groupForm) {
         const cpfMsgReset = root.querySelector('#erm-cpf-msg');
         if (cpfMsgReset) {
           cpfMsgReset.style.color = '#888';
-          cpfMsgReset.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+          cpfMsgReset.textContent = PAY_PAGARME_TEST
+            ? 'Exigido para emitir o pagamento no Pagar.me.'
+            : 'Exigido pelo Mercado Pago pra gerar o PIX.';
         }
       }
       // Garante o estado "formulário" (pode estar no PIX section
@@ -3355,12 +3895,22 @@ if (groupForm) {
       // recebe variant_selected antes do submit.
       ctx.variantSelected = null;
       ctx.variantByParticipant = {};
+      // Preço-base (usado quando a variante escolhida não tem preço próprio).
+      ctx.baseCentavos = ctx.precoCentavos || 0;
       var variantSection = root.querySelector('#erm-variant-section');
       var variantLabelEl = root.querySelector('#erm-variant-label');
       var variantOptsEl = root.querySelector('#erm-variant-options');
       var variantMsgEl = root.querySelector('#erm-variant-msg');
+      // Presença de variação = TER OPÇÕES. O rótulo é opcional: se vier
+      // vazio, usa "Escolha a sua opção" (mesmo padrão do detalhe e do
+      // modal de descrição). Antes isso exigia ctx.variantLabel truthy e
+      // uma variação salva sem rótulo sumia do checkout — o cliente
+      // escolhia no detalhe mas nunca virava escolha obrigatória aqui.
+      if (!ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length) {
+        ctx.variantLabel = 'Escolha a sua opção';
+      }
       var hasVariantsForExp = !!(
-        ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
+        Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
       );
 
       // Helper: atualiza o rótulo do seletor do comprador conforme a
@@ -3415,6 +3965,26 @@ if (groupForm) {
               variantMsgEl.style.color = '#1a8a4a';
               variantMsgEl.textContent = '✓ ' + ctx.variantLabel + ': ' + opt;
             }
+            // Aplica o PREÇO da opção escolhida (Individual/Dupla/Trio com
+            // valores diferentes). Sem preço próprio → mantém o preço-base.
+            (function applyVariantPrice() {
+              var cr = currentReservationCtx;
+              var items = cr.variantItems;
+              var it = Array.isArray(items)
+                ? items.filter(function (x) { return x && x.nome === opt; })[0]
+                : null;
+              var pc = (it && it.preco && String(it.preco).trim())
+                ? parsePrecoToCents(it.preco) : null;
+              cr.precoCentavos = pc || cr.baseCentavos || cr.precoCentavos || 0;
+              if (pc && it && it.preco) cr.precoLabel = it.preco;
+              try {
+                var precoFmt2 = (window.ElarahData && ElarahData.formatPrecoBR)
+                  ? ElarahData.formatPrecoBR(cr.precoLabel) : cr.precoLabel;
+                var metaEl = root.querySelector('#erm-meta');
+                if (metaEl) metaEl.textContent = [cr.horario, precoFmt2].filter(Boolean).join(' · ');
+              } catch (_e) {}
+              try { refreshPriceBreakdown(); } catch (_e) {}
+            })();
           });
           variantOptsEl.appendChild(btn);
         });
@@ -3722,6 +4292,7 @@ if (groupForm) {
               p_code: code,
               p_experience_id: experienciaId,
               p_amount_centavos: amountCentavos,
+              p_quantidade: _qtyForCoupon,
             }
           );
           if (!cpErr) {
@@ -3786,6 +4357,7 @@ if (groupForm) {
             code: code,
             amount_centavos: amountCentavos,
             experiencia_id: experienciaId,
+            quantidade: _qtyForCoupon,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -3916,27 +4488,36 @@ if (groupForm) {
         ctx.email = emailRaw;
       }
 
-      // ===== VALIDAÇÃO CPF (só pra PIX) =====
+      // ===== VALIDAÇÃO CPF =====
+      // Normal: exigido só no PIX. Modo Pagar.me: SEMPRE (cartão E pix),
+      // porque o Pagar.me exige CPF em todas as cobranças. Normaliza pra
+      // os 11 dígitos ANTES de validar/enviar (a máscara 000.000.000-00
+      // não pode chegar ao isValidCpfFront nem ao backend).
       let cpfDigits = '';
-      if (ctx.paymentMethod === 'pix') {
+      const cpfRequired = ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST;
+      if (cpfRequired) {
         const cpfInput = root.querySelector('#erm-cpf');
         const cpfMsg = root.querySelector('#erm-cpf-msg');
         const cpfRaw = cpfInput ? cpfInput.value.trim() : '';
-        cpfDigits = cpfRaw.replace(/\D+/g, '');
+        cpfDigits = cpfRaw.replace(/\D+/g, ''); // "393.033.608-18" → "39303360818"
         if (!isValidCpfFront(cpfDigits)) {
           if (cpfMsg) {
             cpfMsg.style.color = '#c0392b';
-            cpfMsg.textContent = 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
+            cpfMsg.textContent = PAY_PAGARME_TEST
+              ? 'CPF inválido. Digite os 11 números.'
+              : 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
           }
           if (cpfInput) {
             try { cpfInput.focus({ preventScroll: true }); } catch (e) {}
           }
-          console.warn('[Elarah Payment/MP] CPF inválido bloqueou o submit:', cpfDigits);
+          console.warn('[Elarah checkout] CPF inválido bloqueou o submit:', cpfDigits);
           return;
         }
         if (cpfMsg) {
           cpfMsg.style.color = '#888';
-          cpfMsg.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+          cpfMsg.textContent = PAY_PAGARME_TEST
+            ? 'Exigido para emitir o pagamento no Pagar.me.'
+            : 'Exigido pelo Mercado Pago pra gerar o PIX.';
         }
         ctx.cpf = cpfDigits;
       }
@@ -4174,6 +4755,31 @@ if (groupForm) {
           console.warn('[Elarah checkout] não foi possível atualizar profile.telefone:', e);
         }
 
+        // ===== ?pay=pagarme: CARTÃO = Pagar.me · PIX = Mercado Pago =====
+        // Decisão de arquitetura: só o CARTÃO (à vista + parcelado) roteia pro
+        // checkout transparente do Pagar.me. O PIX NÃO entra neste bloco — cai
+        // no fluxo Mercado Pago logo abaixo (create-mp-pix-payment), que nunca
+        // foi removido. Assim o PIX volta a cobrar o VALOR-BASE via MP.
+        if (PAY_PAGARME_TEST && ctx.paymentMethod !== 'pix') {
+
+          // ----- Cartão transparente Pagar.me (gross-up por parcela) -----
+          try {
+            await showPagarmeCardPanel(ctx, {
+              authEmail: auth.email || ctx.email,
+              cpfDigits: cpfDigits,
+              telefoneRaw: telefoneRaw,
+              telefoneNormalized: telefoneNormalized,
+            });
+            return; // o painel de cartão assumiu o fluxo
+          } catch (e) {
+            console.error('[Elarah Payment/Pagarme] painel de cartão indisponível', e);
+            errEl.textContent = 'Não foi possível iniciar o pagamento no cartão. Tente o PIX ou recarregue a página.';
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+        }
+
         // ===== Branch: PIX (Mercado Pago) OU Cartão (Stripe) =====
         if (ctx.paymentMethod === 'pix') {
           const pixBody = {
@@ -4191,6 +4797,10 @@ if (groupForm) {
             participantes: ctx.participantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
+            // Preço unitário da opção escolhida (centavos) — dica de segurança
+            // pro backend: se o banco não resolver o preço da variação, ele usa
+            // isto (só quando maior que o base) em vez do valor individual.
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
           };
           console.log('[Elarah CHECKOUT FINAL] PIX payload:', JSON.stringify({
             selectedQuantity: ctx.quantidade,
@@ -4328,6 +4938,9 @@ if (groupForm) {
             participantes: ctx.participantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
+            // Dica de segurança do preço da variação (centavos) — backend
+            // só usa se maior que o base. Ver create-checkout-session/guard.
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
           };
           console.log('[Elarah Payment/MP card] iniciando Checkout Pro', {
             base: ctx.precoCentavos,
@@ -4415,6 +5028,9 @@ if (groupForm) {
           participantes: ctx.participantes || [],
           variant_label: ctx.variantLabel || null,
           variant_selected: ctx.variantSelected || null,
+          // Dica de segurança do preço da variação (centavos) — backend só
+          // usa se maior que o base. Ver create-checkout-session.
+          variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
         };
         console.log('[Elarah CHECKOUT FINAL] Stripe payload:', JSON.stringify({
           selectedQuantity: ctx.quantidade,
@@ -4591,6 +5207,13 @@ if (groupForm) {
 
       if (!exp) {
         console.warn('[Elarah Description Flow] experiência não encontrada em ElarahData, indo direto para checkout');
+        return true;
+      }
+
+      // Voucher / agendamento livre: pula a tela de descrição e vai direto
+      // pro checkout — evita duas telas com a mesma capa ("Reservar" →
+      // "Continuar para pagamento" viravam duas etapas idênticas).
+      if (exp.horarioFuncionamento && String(exp.horarioFuncionamento).trim()) {
         return true;
       }
 
@@ -5723,12 +6346,18 @@ if (groupForm) {
       let precoCentavos = parsePrecoToCents(precoLabel);
       let variantLabel = null;
       let variantOptions = [];
+      let variantItemsArr = [];
       let horariosArr = [];
+      let expDescricao = '', expInclui = '', expEndereco = '', expHorarioFunc = '';
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
           const exp = await ElarahData.getExperienceById(experienceId);
           if (exp) {
+            expDescricao = exp.descricao || '';
+            expInclui = exp.inclui || '';
+            expEndereco = [exp.endereco, exp.bairro].filter(Boolean).join(' — ');
+            expHorarioFunc = (exp.horarioFuncionamento || '').trim();
             if (!precoLabel || !precoCentavos) {
               precoLabel = exp.preco || precoLabel;
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
@@ -5751,13 +6380,26 @@ if (groupForm) {
             if (!horario) {
               horario = horariosArr[0] || (exp.horario || null);
             }
-            if (exp.variantLabel && Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
-              variantLabel = exp.variantLabel;
+            // Copia as opções de variação SEMPRE que houver opções —
+            // NÃO condiciona ao variantLabel estar preenchido. O rótulo é
+            // só o texto do seletor; sua ausência não pode fazer a
+            // variação sumir do checkout (a página de detalhe e o modal
+            // de descrição já usam "Escolha a sua opção" como padrão).
+            // Sem esse fallback, uma variação salva sem rótulo aparecia no
+            // detalhe mas nunca virava escolha obrigatória no pagamento.
+            if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
+              variantLabel = exp.variantLabel || 'Escolha a sua opção';
               variantOptions = exp.variantOptions.slice();
+            }
+            // Itens ricos (nome + preço) — pra o modal cobrar o preço certo
+            // de cada opção (Individual/Dupla/Trio com valores diferentes).
+            if (Array.isArray(exp.variantItems) && exp.variantItems.length) {
+              variantItemsArr = exp.variantItems.slice();
             }
           }
         } catch (e) {}
       }
+
       if (!precoCentavos) {
         // Fallback: deixa o backend dizer. Sem cupom faz sentido nesse caso.
         precoCentavos = 0;
@@ -5790,6 +6432,14 @@ if (groupForm) {
         experienceId: experienceId,
         experienceNome: experienceNome,
         horario: horario,
+        // Info completa dentro do checkout (voucher): descrição, inclui,
+        // onde acontece, horário de funcionamento e aviso — tudo numa tela
+        // só, sem a tela de descrição separada.
+        showFullInfo: !!expHorarioFunc,
+        descricao: expDescricao,
+        inclui: expInclui,
+        endereco: expEndereco,
+        horarioFuncionamento: expHorarioFunc,
         // Lista completa de horários — se > 1, modal renderiza seletor
         // pra usuário trocar antes de confirmar.
         horarios: horariosArr,
@@ -5810,6 +6460,8 @@ if (groupForm) {
         // Variantes (escolha extra). Vazio = sem seletor no modal.
         variantLabel: variantLabel,
         variantOptions: variantOptions,
+        // Itens com preço por opção — o modal cobra o preço da escolhida.
+        variantItems: variantItemsArr,
       });
     }
 

@@ -422,12 +422,21 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const card = document.createElement('article');
     card.className = 'card';
 
+    // Horários do card: prioriza os horários REAIS das turmas (slots),
+    // incluindo os gerados por recorrência. Assim experiências que só têm
+    // horário na recorrência (campo "Horários" vazio) também mostram os
+    // botões. Cai pro campo horarios/horario quando não há slot futuro.
+    const _slotHorarios = (typeof ElarahData !== 'undefined' && ElarahData.distinctSlotHorarios)
+      ? ElarahData.distinctSlotHorarios(exp._slots || [], Date.now())
+      : [];
     // Dedup textual + ordem original. Recorrência popula exp.horarios
     // com 1 entrada por slot (ex: 8 datas × 2 horários = 16 entradas
     // repetidas). Sem dedup, o card mostra 16 chips idênticos.
-    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
-      ? exp.horarios
-      : (exp.horario ? [exp.horario] : []);
+    const horariosRaw = _slotHorarios.length
+      ? _slotHorarios
+      : (Array.isArray(exp.horarios) && exp.horarios.length
+          ? exp.horarios
+          : (exp.horario ? [exp.horario] : []));
     const seenHorarios = new Set();
     const horarios = [];
     horariosRaw.forEach(function (h) {
@@ -3225,8 +3234,16 @@ if (groupForm) {
       var variantLabelEl = root.querySelector('#erm-variant-label');
       var variantOptsEl = root.querySelector('#erm-variant-options');
       var variantMsgEl = root.querySelector('#erm-variant-msg');
+      // Presença de variação = TER OPÇÕES. O rótulo é opcional: se vier
+      // vazio, usa "Escolha a sua opção" (mesmo padrão do detalhe e do
+      // modal de descrição). Antes isso exigia ctx.variantLabel truthy e
+      // uma variação salva sem rótulo sumia do checkout — o cliente
+      // escolhia no detalhe mas nunca virava escolha obrigatória aqui.
+      if (!ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length) {
+        ctx.variantLabel = 'Escolha a sua opção';
+      }
       var hasVariantsForExp = !!(
-        ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
+        Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
       );
 
       // Helper: atualiza o rótulo do seletor do comprador conforme a
@@ -3588,6 +3605,7 @@ if (groupForm) {
               p_code: code,
               p_experience_id: experienciaId,
               p_amount_centavos: amountCentavos,
+              p_quantidade: _qtyForCoupon,
             }
           );
           if (!cpErr) {
@@ -5617,8 +5635,15 @@ if (groupForm) {
             if (!horario) {
               horario = horariosArr[0] || (exp.horario || null);
             }
-            if (exp.variantLabel && Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
-              variantLabel = exp.variantLabel;
+            // Copia as opções de variação SEMPRE que houver opções —
+            // NÃO condiciona ao variantLabel estar preenchido. O rótulo é
+            // só o texto do seletor; sua ausência não pode fazer a
+            // variação sumir do checkout (a página de detalhe e o modal
+            // de descrição já usam "Escolha a sua opção" como padrão).
+            // Sem esse fallback, uma variação salva sem rótulo aparecia no
+            // detalhe mas nunca virava escolha obrigatória no pagamento.
+            if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
+              variantLabel = exp.variantLabel || 'Escolha a sua opção';
               variantOptions = exp.variantOptions.slice();
             }
           }

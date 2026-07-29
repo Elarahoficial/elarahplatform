@@ -155,9 +155,12 @@ function parsePrecoToCents(raw: unknown): number | null {
   if (raw == null) return null;
   const text = String(raw).replace(/\s/g, "").replace(/^R\$/i, "");
   if (!text) return null;
+  // Formato BR: vírgula = decimal, ponto = milhar. Sem vírgula, qualquer
+  // ponto é milhar — "1.320" = 1320 (não 1.32). Sem isso, Number("1.320")
+  // virava 1.32 e cobrava R$1,32 por uma experiência de R$1.320.
   const normalized = text.includes(",")
     ? text.replace(/\./g, "").replace(",", ".")
-    : text;
+    : text.replace(/\./g, "");
   const num = Number(normalized);
   if (!isFinite(num) || num <= 0) return null;
   return Math.round(num * 100);
@@ -352,6 +355,12 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // pra exibir no e-mail e admin. Não afetam preço nem estoque.
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+  // Preço unitário da variação exibido no front (centavos). Só dica de
+  // segurança — o banco continua autoritativo (ver bloco de preço abaixo).
+  const variantExpectedCents = (function () {
+    const n = Number(payload.variant_price_expected_centavos);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+  })();
 
   // ===== Frete (kits físicos — Elarah em Casa) =====
   // Só presente quando o frontend manda `shipping` (fluxo de kit). Pra
@@ -575,6 +584,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // experiences.variant_items, ESSE é o preço autoritativo. Recalculado
   // no servidor a partir do banco — nunca confia no valor do cliente.
   if (variantSelected) {
+    let dbVariantCents: number | null = null;
     try {
       // Consulta SEPARADA da coluna variant_items (jsonb). Isolada de
       // propósito: se a migration sql/elarah_experiences_variant_items.sql
@@ -598,18 +608,36 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       if (match && typeof match === "object") {
         const vPreco = (match as Record<string, unknown>).preco ??
           (match as Record<string, unknown>).price;
-        const vCents = parsePrecoToCents(vPreco);
-        if (vCents) {
-          cents = vCents;
-          console.info(
-            "[create-checkout-session] preço por variação aplicado",
-            "variante=" + variantSelected,
-            "cents=" + vCents,
-          );
-        }
+        dbVariantCents = parsePrecoToCents(vPreco);
       }
     } catch (e) {
-      console.warn("[create-checkout-session] falha ao aplicar preço da variação", e);
+      console.warn("[create-checkout-session] falha ao consultar preço da variação no banco", e);
+    }
+
+    if (dbVariantCents) {
+      cents = dbVariantCents;
+      console.info(
+        "[create-checkout-session] preço por variação aplicado (banco)",
+        "variante=" + variantSelected,
+        "cents=" + dbVariantCents,
+      );
+    } else if (
+      variantExpectedCents != null &&
+      cents != null &&
+      variantExpectedCents > cents
+    ) {
+      // Rede de proteção: banco não resolveu o preço da variação. Usa a dica
+      // do front SÓ quando maior que o base (upward-only — o cliente nunca
+      // consegue pagar a menos por aqui). Evita cobrar o valor individual
+      // quando o cliente escolheu a opção mais cara (ex.: "Dupla").
+      console.warn(
+        "[create-checkout-session] variant_items no banco não resolveu preço — usando dica do front (maior que o base)",
+        "variante=" + variantSelected,
+        "base_cents=" + cents,
+        "hint_cents=" + variantExpectedCents,
+        "ação=verifique se variant_items desta experiência tem o preço da opção",
+      );
+      cents = variantExpectedCents;
     }
   }
   if (!cents) {
@@ -670,6 +698,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         p_code: cupomCode,
         p_experience_id: exp.id,
         p_amount_centavos: totalCents,
+        p_quantidade: quantidade,
       },
     );
     if (cpErr) {

@@ -59,6 +59,10 @@
     'ourivesaria': '💍', 'joalheria': '💍', 'joias': '💍',
     'moda': '👗', 'maquiagem': '💄', 'beleza': '💄',
     'acessório': '👛', 'acessorio': '👛', 'acessórios': '👛', 'acessorios': '👛',
+    'cervejaria': '🍺', 'cerveja': '🍺', 'cervejas': '🍺',
+    'charutaria': '🚬', 'charuto': '🚬', 'charutos': '🚬',
+    'colagem': '✂️', 'colagens': '✂️', 'collage': '✂️',
+    'lip balm': '💄', 'lipbalm': '💄', 'lip-balm': '💄',
     'escrita': '✍️', 'gift card': '🎁', 'presente': '🎁'
   };
   var EMOJI_DEFAULT = '✨';

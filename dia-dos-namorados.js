@@ -334,7 +334,7 @@
             media +
           '</div>' +
           '<div class="ddn-card__body">' +
-            (e.categoria ? '<span class="ddn-card__categoria">' + esc(e.categoria) + '</span>' : '') +
+            (e.categoria ? '<span class="ddn-card__categoria">' + esc((window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(e) : e.categoria) + '</span>' : '') +
             '<h3 class="ddn-card__title">' + esc(titulo) + '</h3>' +
             (meta.length ? '<div class="ddn-card__meta">' + meta.join('') + '</div>' : '') +
             '<div class="ddn-card__price">' +

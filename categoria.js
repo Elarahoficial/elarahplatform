@@ -83,16 +83,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const catMap = new Map();
   experiences.forEach(exp => {
     if (!exp || !exp.categoria) return;
-    const c = String(exp.categoria).trim();
-    if (!c) return;
-    const k = c.toLowerCase();
-    // "Kit em casa" não entra na navegação de categorias — acessível
-    // só pelo link "Elarah em Casa" no topo do header.
-    if (k === 'kit em casa') return;
-    if (!catSet.has(k)) {
-      catSet.add(k);
-      catMap.set(k, c);
-    }
+    // Uma experiência pode estar em mais de uma aba (ex.: "Barismo |
+    // Bartenderia") — cada categoria vira uma opção separada no filtro.
+    const cats = (window.ElarahData && ElarahData.categoriasOf)
+      ? ElarahData.categoriasOf(exp)
+      : [String(exp.categoria).trim()];
+    cats.forEach(c => {
+      if (!c) return;
+      const k = c.toLowerCase();
+      // "Kit em casa" não entra na navegação de categorias — acessível
+      // só pelo link "Elarah em Casa" no topo do header.
+      if (k === 'kit em casa') return;
+      if (!catSet.has(k)) {
+        catSet.add(k);
+        catMap.set(k, c);
+      }
+    });
   });
   const categoriasDinamicas = Array.from(catMap.values()).sort(
     (a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' })
@@ -184,9 +190,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const card = document.createElement('article');
     card.className = 'card';
 
-    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
-      ? exp.horarios
-      : (exp.horario ? [exp.horario] : []);
+    // Prioriza os horários REAIS das turmas (slots), incluindo os da
+    // recorrência — assim experiências com o campo "Horários" vazio (que
+    // gerenciam horário só pela recorrência) também mostram os botões.
+    const _slotHorarios = (typeof ElarahData !== 'undefined' && ElarahData.distinctSlotHorarios)
+      ? ElarahData.distinctSlotHorarios(exp._slots || [], Date.now())
+      : [];
+    const horariosRaw = _slotHorarios.length
+      ? _slotHorarios
+      : (Array.isArray(exp.horarios) && exp.horarios.length
+          ? exp.horarios
+          : (exp.horario ? [exp.horario] : []));
     // Dedup textual — recorrência popula horarios com 1 entrada por
     // slot/data (8 datas × 2 horários = 16 entradas). Sem dedup, card
     // mostra 16 chips idênticos.
@@ -315,7 +329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${scarcePill}
       </div>
       <div class="card__body">
-        <span class="card__category">${exp.categoria || ''}</span>
+        <span class="card__category">${(window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : (exp.categoria || '')}</span>
         <h3 class="card__title"><a href="experiencia.html?id=${encodeURIComponent(exp.id || '')}" class="card__title-link">${exp.nome || ''}</a></h3>
         <div class="card__details">
           <p class="card__detail">
@@ -402,17 +416,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const order = [];
     list.forEach(function (exp) {
       if (!exp) return;
-      let cat = exp.categoria;
-      if (cat == null || String(cat).trim() === '') {
-        cat = 'Outros';
-      } else {
-        cat = String(cat).trim();
-      }
-      if (!map.has(cat)) {
-        order.push(cat);
-        map.set(cat, []);
-      }
-      map.get(cat).push(exp);
+      // Uma experiência em duas abas (ex.: "Barismo | Bartenderia")
+      // aparece nas DUAS seções de categoria.
+      var cats = (window.ElarahData && ElarahData.categoriasOf)
+        ? ElarahData.categoriasOf(exp)
+        : (exp.categoria == null ? [] : [String(exp.categoria).trim()]);
+      cats = cats.filter(Boolean);
+      if (!cats.length) cats = ['Outros'];
+      cats.forEach(function (cat) {
+        if (!map.has(cat)) {
+          order.push(cat);
+          map.set(cat, []);
+        }
+        map.get(cat).push(exp);
+      });
     });
     // Ordena por popularidade (desc), com "Outros" sempre no fim.
     const groups = order.map(function (cat) {
@@ -480,7 +497,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       const targetNorm = norm(activeCategoria);
       const filtered = base.filter(function (exp) {
-        return norm(exp.categoria) === targetNorm;
+        // Uma experiência em duas abas ("Barismo | Bartenderia") casa se
+        // QUALQUER uma das suas categorias bater com a aba aberta.
+        var cats = (window.ElarahData && ElarahData.categoriasOf)
+          ? ElarahData.categoriasOf(exp)
+          : [exp.categoria];
+        return cats.some(function (c) { return norm(c) === targetNorm; });
       });
       grid.style.display = '';
       emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';

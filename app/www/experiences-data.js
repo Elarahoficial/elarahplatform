@@ -93,10 +93,23 @@
     return window.supabaseClient || null;
   }
 
+  // Um "horário" só é válido se tiver ao menos um caractere alfanumérico
+  // (dígito de hora ou letra tipo "A combinar"). Descarta lixo que às
+  // vezes entrava na lista — ex.: ".", "-", "·" — que virava um chip
+  // vazio no card e na página de detalhe. Trim + normaliza.
+  function _sanitizeHorarios(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map(function (h) { return String(h == null ? '' : h).trim(); })
+      .filter(function (h) { return /[0-9a-zA-ZÀ-ÿ]/.test(h); });
+  }
+
   function dbRowToExperience(row) {
     if (!row) return null;
-    const horarios = Array.isArray(row.horarios) ? row.horarios.slice() : [];
-    const horario = horarios[0] || row.horario || '';
+    const horarios = _sanitizeHorarios(row.horarios);
+    const horarioRaw = String(row.horario == null ? '' : row.horario).trim();
+    const horarioValid = /[0-9a-zA-ZÀ-ÿ]/.test(horarioRaw) ? horarioRaw : '';
+    const horario = horarios[0] || horarioValid || '';
     return {
       id: row.id,
       nome: row.nome || '',
@@ -652,6 +665,39 @@
     return out;
   }
 
+  // Horários DISTINTOS e válidos das turmas FUTURAS de uma experiência
+  // (inclui as geradas por recorrência). Ordenados por hora de início.
+  // Usado pelos cards pra mostrar os botões de horário mesmo quando o
+  // campo "horarios" da experiência está vazio — caso das experiências
+  // que gerenciam horário só pela recorrência semanal. Filtra lixo
+  // (ex.: ".") e turmas já passadas. Vazio = usar fallback do chamador.
+  function distinctSlotHorarios(slotsArr, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    var slots = Array.isArray(slotsArr) ? slotsArr : [];
+    var seen = new Set();
+    var out = [];
+    slots.forEach(function (sl) {
+      if (!sl || sl.isActive === false) return;
+      var ts = null;
+      if (sl.eventAt) {
+        var t = new Date(sl.eventAt).getTime();
+        if (!isNaN(t)) ts = t;
+      }
+      if (ts != null && ts < nowMs) return; // turma já passou
+      var h = String(sl.horario == null ? '' : sl.horario).trim();
+      if (!h || !/[0-9a-zA-ZÀ-ÿ]/.test(h) || seen.has(h)) return;
+      seen.add(h);
+      out.push(h);
+    });
+    out.sort(function (a, b) {
+      var pa = parseStartHour(a), pb = parseStartHour(b);
+      var ma = pa ? pa.hh * 60 + pa.mm : 9999;
+      var mb = pb ? pb.hh * 60 + pb.mm : 9999;
+      return ma - mb;
+    });
+    return out;
+  }
+
   // Decide se uma recorrente está "vencida" pra varredura da home/
   // categoria: TODAS as turmas ativas têm data concreta e já passaram.
   // Turma sem data parseável (ex: data "Semanal" — só controle de vagas
@@ -1078,23 +1124,49 @@
 
     slotsCachePromise = (async () => {
       try {
-        const { data, error } = await s
-          .from(SLOTS_TABLE)
-          .select('*')
-          .order('created_at', { ascending: true });
-        if (error) {
+        // PAGINAÇÃO OBRIGATÓRIA: o Supabase/PostgREST corta a resposta em
+        // no máximo 1000 linhas por request (default max-rows). Sem
+        // paginar, com muitos slots (recorrência materializa dezenas por
+        // regra), os slots ALÉM da 1000ª linha simplesmente não vinham —
+        // e como ordenávamos por created_at ASC, os cortados eram os mais
+        // NOVOS (justo as turmas de recorrência recém-geradas). Resultado:
+        // a experiência tinha datas no banco mas NENHUMA aparecia no site
+        // (detalhe, home e categoria), enquanto o painel Recorrência do
+        // admin — que usa query escopada por experience_id — mostrava
+        // tudo. Agora buscamos em páginas de 1000 via .range() até acabar.
+        const PAGE = 1000;
+        let all = [];
+        let from = 0;
+        let pageErr = null;
+        for (let guard = 0; guard < 1000; guard++) { // teto de segurança: 1M slots
+          const { data, error } = await s
+            .from(SLOTS_TABLE)
+            .select('*')
+            .order('created_at', { ascending: true })
+            .range(from, from + PAGE - 1);
+          if (error) { pageErr = error; break; }
+          const batch = data || [];
+          all = all.concat(batch);
+          if (batch.length < PAGE) break; // última página
+          from += PAGE;
+        }
+        if (pageErr && all.length === 0) {
           // Tabela provavelmente não existe — silencia
-          console.warn('[Elarah] loadAllSlots: ' + (error.message || 'erro'));
+          console.warn('[Elarah] loadAllSlots: ' + (pageErr.message || 'erro'));
           slotsCache = new Map();
         } else {
+          if (pageErr) {
+            console.warn('[Elarah] loadAllSlots: erro numa página, usando ' +
+              all.length + ' slots já carregados. ' + (pageErr.message || ''));
+          }
           const map = new Map();
-          (data || []).forEach(function (row) {
+          all.forEach(function (row) {
             const slot = dbRowToSlot(row);
             if (!map.has(slot.experienceId)) map.set(slot.experienceId, []);
             map.get(slot.experienceId).push(slot);
           });
           slotsCache = map;
-          console.info('[Elarah] loadAllSlots: ' + (data || []).length + ' slots carregados');
+          console.info('[Elarah] loadAllSlots: ' + all.length + ' slots carregados');
         }
       } catch (e) {
         console.warn('[Elarah] loadAllSlots exception:', e);
@@ -1108,7 +1180,30 @@
 
   async function getSlotsForExperience(experienceId) {
     const map = await loadAllSlots();
-    return (map.get(experienceId) || []).slice();
+    const fromCache = map.get(experienceId);
+    if (fromCache && fromCache.length) return fromCache.slice();
+    // Garantia extra pros caminhos de UMA experiência (página de detalhe
+    // e edição no admin): se o cache global não tem slots pra ela — por
+    // truncamento, cache frio ou erro de página —, busca DIRETO e escopado
+    // por experience_id. Query pequena e sempre confiável (é a mesma
+    // abordagem do painel Recorrência, que nunca falhou em mostrar as
+    // datas). Popula o cache pra não repetir na mesma sessão.
+    const s = sb();
+    if (!s || !experienceId) return [];
+    try {
+      const { data, error } = await s
+        .from(SLOTS_TABLE)
+        .select('*')
+        .eq('experience_id', experienceId)
+        .order('created_at', { ascending: true });
+      if (error || !data || !data.length) return [];
+      const slots = data.map(dbRowToSlot);
+      if (slotsCache) slotsCache.set(experienceId, slots);
+      return slots.slice();
+    } catch (e) {
+      console.warn('[Elarah] getSlotsForExperience fallback escopado falhou:', e && e.message);
+      return [];
+    }
   }
 
   // Salva (upsert) slots pra uma experiência. Recebe array de objetos:
@@ -1401,6 +1496,7 @@
     isPubliclyVisible,
     deriveEventTimestamp,
     experienceFutureDates,
+    distinctSlotHorarios,
     isExpiredRecurring,
     dateQuickRange,
     // Slots

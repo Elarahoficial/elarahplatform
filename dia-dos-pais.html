@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Dia dos Pais na Elarah — experiências para viver com ele, não mais um presente pra guardar na gaveta. Porque o melhor presente é presença.">
+  <title>Dia dos Pais — Elarah</title>
+  <link rel="canonical" href="https://elarah.com.br/dia-dos-pais.html">
+  <meta property="og:title" content="Dia dos Pais — Elarah">
+  <meta property="og:description" content="Esqueça o presente. Dê presença. Experiências para viver com o seu pai neste Dia dos Pais.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://elarah.com.br/dia-dos-pais.html">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="dia-dos-pais.css?v=4">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
+</head>
+<body class="ddp-body">
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+        <button id="search-btn" class="header__search-btn"></button>
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macramê</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="dia-dos-pais.html" class="header__nav-link header__nav-link--ddp" aria-current="page">Dia dos Pais</a>
+        <a href="presentear.html?campaign=dia-dos-pais" class="header__nav-link">Presentear</a>
+        <a href="blog.html" class="header__nav-link">Blog</a>
+        <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="ddp-hero">
+    <div class="ddp-hero__inner">
+      <span class="ddp-hero__kicker">Dia dos Pais · 9 de agosto</span>
+      <h1 class="ddp-hero__title">
+        Neste Dia dos Pais,<br>
+        esqueça o presente.<br>
+        <em>Dê presença.</em>
+      </h1>
+      <p class="ddp-hero__sub">
+        Gravata, perfume, carteira — ele agradece e guarda na gaveta.
+        O que ele nunca esquece é o <strong>tempo com você</strong>.
+        E faltam menos domingos do que você imagina.
+      </p>
+
+      <div class="ddp-countdown" id="ddp-countdown" aria-label="Contagem regressiva para o Dia dos Pais">
+        <span class="ddp-countdown__label">Falta pouco para o Dia dos Pais</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-days">--</span><span class="ddp-count-cell__unit">dias</span></span>
+        <span class="ddp-count-sep">:</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-hours">--</span><span class="ddp-count-cell__unit">horas</span></span>
+        <span class="ddp-count-sep">:</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-min">--</span><span class="ddp-count-cell__unit">min</span></span>
+        <span class="ddp-count-sep">:</span>
+        <span class="ddp-count-cell"><span class="ddp-count-cell__num" id="ddp-cd-sec">--</span><span class="ddp-count-cell__unit">seg</span></span>
+      </div>
+
+      <div>
+        <a href="#ddp-experiencias" class="ddp-hero__cta">
+          Ver experiências para viver com ele
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PILARES ========== -->
+  <section class="ddp-pillars">
+    <div class="ddp-pillars__inner">
+      <h2 class="ddp-pillars__title">Por que dar uma experiência?</h2>
+      <p class="ddp-pillars__sub">Porque o que fica não é o que você compra — é o que vocês vivem juntos.</p>
+      <div class="ddp-pillars__grid">
+        <article class="ddp-pillar">
+          <div class="ddp-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="24" cy="24" r="14"/>
+              <path d="M24 16v8l5 3"/>
+              <path d="M24 6c1 2 1 4 0 6M24 36c-1 2-1 4 0 6M6 24c2-1 4-1 6 0M36 24c2 1 4 1 6 0"/>
+            </svg>
+          </div>
+          <h3 class="ddp-pillar__title">Tempo, não objeto</h3>
+          <p class="ddp-pillar__text">Ele já tem gravata demais. O que ele não tem é mais uma tarde ao seu lado, sem pressa e sem tela.</p>
+        </article>
+
+        <article class="ddp-pillar">
+          <div class="ddp-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 41c-7-5-15-11-15-21a8 8 0 0 1 15-4 8 8 0 0 1 15 4c0 10-8 16-15 21z"/>
+            </svg>
+          </div>
+          <h3 class="ddp-pillar__title">Memória que fica</h3>
+          <p class="ddp-pillar__text">O presente vira poeira na estante. A risada de vocês cozinhando ou brindando juntos fica pra sempre.</p>
+        </article>
+
+        <article class="ddp-pillar">
+          <div class="ddp-pillar__icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 6l5 12 13 1-10 9 3 13-11-7-11 7 3-13L6 19l13-1z"/>
+            </svg>
+          </div>
+          <h3 class="ddp-pillar__title">Curadoria Elarah</h3>
+          <p class="ddp-pillar__text">Escolhemos experiências com a cara dele — do drink ao churrasco, da cozinha à cerâmica. É só reservar.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIÊNCIAS ========== -->
+  <section id="ddp-experiencias" class="ddp-experiences">
+    <div class="ddp-experiences__inner">
+      <header class="ddp-experiences__head">
+        <span class="ddp-experiences__kicker">Vitrine de Dia dos Pais</span>
+        <h2 class="ddp-experiences__title">Experiências para viver com ele</h2>
+        <p class="ddp-experiences__sub">
+          Selecionamos vivências com o jeito do seu pai — pra vocês fazerem algo juntos
+          em vez de só trocar mais um pacote. Escolha uma e transforme o dia numa
+          memória que vale a pena guardar.
+        </p>
+        <p class="ddp-experiences__count" id="ddp-count" aria-live="polite"></p>
+      </header>
+
+      <div class="ddp-experiences__grid" id="ddp-grid"></div>
+
+      <p class="ddp-experiences__empty" id="ddp-empty" style="display:none;">
+        Em breve, novas experiências chegam para a campanha do Dia dos Pais. Volte logo —
+        ou <a href="presentear.html?campaign=dia-dos-pais">presenteie com um vale-experiência</a>.
+      </p>
+
+      <div class="ddp-experiences__cta-row">
+        <a href="presentear.html?campaign=dia-dos-pais" class="ddp-cta-secondary">Dar um vale-presente pra ele →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== DEPOIMENTOS ========== -->
+  <section class="ddp-testimonials" aria-labelledby="ddp-testimonials-title">
+    <div class="ddp-testimonials__inner">
+      <span class="ddp-testimonials__kicker">Quem viveu, conta</span>
+      <h2 id="ddp-testimonials-title" class="ddp-testimonials__title">
+        O que ficou não coube em nenhuma caixa
+      </h2>
+      <div class="ddp-testimonials__grid">
+        <figure class="ddp-testimonial">
+          <svg class="ddp-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddp-testimonial__text">
+            Faz anos que eu não via meu pai rir daquele jeito. Valeu cada segundo. <span aria-hidden="true">🥃</span>
+          </blockquote>
+          <figcaption class="ddp-testimonial__author">
+            <span class="ddp-testimonial__name">Rafael</span>
+            <span class="ddp-testimonial__detail">Aula de Coquetelaria</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ddp-testimonial">
+          <svg class="ddp-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddp-testimonial__text">
+            Dei de presente e acabei ganhando junto: uma tarde inteira só nossa.
+          </blockquote>
+          <figcaption class="ddp-testimonial__author">
+            <span class="ddp-testimonial__name">Juliana</span>
+            <span class="ddp-testimonial__detail">Workshop de Gastronomia</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ddp-testimonial">
+          <svg class="ddp-testimonial__mark" viewBox="0 0 32 24" aria-hidden="true">
+            <path d="M0 24V14C0 6 4 0 12 0v6c-3 1-5 3-5 6h5v12H0zm20 0V14c0-8 4-14 12-14v6c-3 1-5 3-5 6h5v12H20z" fill="currentColor"/>
+          </svg>
+          <blockquote class="ddp-testimonial__text">
+            Ele vive dizendo que "não quer nada". Só não contava com um dia assim.
+          </blockquote>
+          <figcaption class="ddp-testimonial__author">
+            <span class="ddp-testimonial__name">Marcos</span>
+            <span class="ddp-testimonial__detail">Cerâmica no Torno</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FECHAMENTO ========== -->
+  <section class="ddp-closer" aria-labelledby="ddp-closer-title">
+    <div class="ddp-closer__inner">
+      <div class="ddp-closer__quote-wrap">
+        <span class="ddp-closer__ornament" aria-hidden="true">
+          <svg viewBox="0 0 80 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <line x1="0" y1="6" x2="30" y2="6"/><circle cx="40" cy="6" r="3"/><line x1="50" y1="6" x2="80" y2="6"/>
+          </svg>
+        </span>
+        <p id="ddp-closer-title" class="ddp-closer__quote">
+          “O melhor presente<br>é <em>estar presente.</em>”
+        </p>
+        <span class="ddp-closer__ornament ddp-closer__ornament--bottom" aria-hidden="true">
+          <svg viewBox="0 0 80 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <line x1="0" y1="6" x2="30" y2="6"/><circle cx="40" cy="6" r="3"/><line x1="50" y1="6" x2="80" y2="6"/>
+          </svg>
+        </span>
+      </div>
+
+      <p class="ddp-closer__lead">
+        Um ano que passa não volta. Um Dia dos Pais bem vivido, sim — fica pra sempre.
+        <strong>Escolha como você quer lembrar deste.</strong>
+      </p>
+
+      <div class="ddp-closer__ctas">
+        <a href="#ddp-experiencias" class="ddp-closer__cta ddp-closer__cta--primary">
+          Ver experiências de Dia dos Pais
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+        <a href="presentear.html?campaign=dia-dos-pais" class="ddp-closer__cta ddp-closer__cta--secondary">
+          Dar um vale-presente
+        </a>
+        <a href="#ddp-experiencias" class="ddp-closer__cta ddp-closer__cta--ghost">
+          Reservar agora
+        </a>
+      </div>
+
+      <p class="ddp-closer__finepoint">
+        Vagas limitadas · Reserva por experiência · Curadoria Elarah
+      </p>
+    </div>
+  </section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/></svg>
+        </a>
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting">Tufting</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+  </div>
+
+  <div class="footer__bottom">
+    <p>© 2026 Elarah. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="explorar-menu.js?v=2" defer></script>
+<script src="auth.js?v=12"></script>
+<script src="experiences-data.js?v=34"></script>
+<script src="analytics.js?v=3"></script>
+<script src="header-nav.js?v=1" defer></script>
+<script src="dia-dos-pais.js?v=9"></script>
+</body>
+</html>

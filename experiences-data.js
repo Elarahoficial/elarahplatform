@@ -47,7 +47,18 @@
     // Ordem manual de exibição (admin arrasta pra reordenar). null =
     // sem ordem definida → cai no fim, mantendo o sort cronológico
     // padrão. sql/elarah_experiences_ordem.sql.
-    'ordem'
+    'ordem',
+    // Campanha / data especial (slug: "dia-dos-pais", "dia-das-maes"…).
+    // Marca a experiência para aparecer na aba temática correspondente.
+    // null/'' = não entra em nenhuma campanha. sql/elarah_experiences_campanha.sql.
+    'campanha',
+    // Foto exclusiva da campanha. Quando preenchida, é usada SÓ na aba
+    // da campanha (a imagem oficial continua no resto do site).
+    'campanha_imagem',
+    // Horário de funcionamento (agendamento livre / voucher). Quando
+    // preenchido, a página da experiência mostra esse horário e deixa o
+    // cliente escolher o dia e a hora que quiser. sql/elarah_experiences_horario_funcionamento.sql.
+    'horario_funcionamento'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -93,10 +104,23 @@
     return window.supabaseClient || null;
   }
 
+  // Um "horário" só é válido se tiver ao menos um caractere alfanumérico
+  // (dígito de hora ou letra tipo "A combinar"). Descarta lixo que às
+  // vezes entrava na lista — ex.: ".", "-", "·" — que virava um chip
+  // vazio no card e na página de detalhe. Trim + normaliza.
+  function _sanitizeHorarios(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map(function (h) { return String(h == null ? '' : h).trim(); })
+      .filter(function (h) { return /[0-9a-zA-ZÀ-ÿ]/.test(h); });
+  }
+
   function dbRowToExperience(row) {
     if (!row) return null;
-    const horarios = Array.isArray(row.horarios) ? row.horarios.slice() : [];
-    const horario = horarios[0] || row.horario || '';
+    const horarios = _sanitizeHorarios(row.horarios);
+    const horarioRaw = String(row.horario == null ? '' : row.horario).trim();
+    const horarioValid = /[0-9a-zA-ZÀ-ÿ]/.test(horarioRaw) ? horarioRaw : '';
+    const horario = horarios[0] || horarioValid || '';
     return {
       id: row.id,
       nome: row.nome || '',
@@ -150,6 +174,13 @@
       isElarahOriginal: row.is_elarah_original === true,
       hideFromCategorias: row.hide_from_categorias === true,
       ctaMode: row.cta_mode === 'waitlist' ? 'waitlist' : 'buy',
+      // Campanha / data especial (slug). '' ou null = nenhuma.
+      // sql/elarah_experiences_campanha.sql.
+      campanha: (row.campanha == null || row.campanha === '') ? null : String(row.campanha).trim().toLowerCase(),
+      // Foto exclusiva da campanha ('' = usa a imagem oficial).
+      campanhaImagem: row.campanha_imagem || '',
+      // Horário de funcionamento (agendamento livre). '' = agenda normal.
+      horarioFuncionamento: row.horario_funcionamento || '',
       // --- Variantes (escolha extra do cliente) ---
       // Exemplo: Pintura com Cristal & Aperol → label="Modelo do quadro",
       // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
@@ -298,6 +329,27 @@
         var raw = exp.ctaMode != null ? exp.ctaMode : exp.cta_mode;
         return raw === 'waitlist' ? 'waitlist' : 'buy';
       })(),
+      // Campanha / data especial (slug). Vazio → null (sem campanha).
+      campanha: (function () {
+        var raw = exp.campanha != null ? exp.campanha : exp.campanha_;
+        if (raw == null) return null;
+        var s = String(raw).trim().toLowerCase();
+        return s ? s : null;
+      })(),
+      // Foto exclusiva da campanha. Vazio → null (usa a imagem oficial).
+      campanha_imagem: (function () {
+        var raw = exp.campanhaImagem != null ? exp.campanhaImagem : exp.campanha_imagem;
+        if (raw == null) return null;
+        var s = String(raw).trim();
+        return s ? s : null;
+      })(),
+      // Horário de funcionamento (agendamento livre). Vazio → null.
+      horario_funcionamento: (function () {
+        var raw = exp.horarioFuncionamento != null ? exp.horarioFuncionamento : exp.horario_funcionamento;
+        if (raw == null) return null;
+        var s = String(raw).trim();
+        return s ? s : null;
+      })(),
       // --- Variantes ---
       variant_label: (function () {
         var raw = exp.variantLabel != null ? exp.variantLabel : exp.variant_label;
@@ -397,6 +449,58 @@
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .toLowerCase().trim();
     return cat.indexOf('em casa') !== -1;
+  }
+
+  // =====================================================
+  //  CATEGORIAS (uma experiência pode ficar em MAIS de uma aba)
+  // =====================================================
+  // O campo `categoria` continua sendo UM texto no banco — sem migração.
+  // Pra colocar a experiência em duas abas, basta separar as categorias
+  // por "|" no mesmo campo. Ex.: "Barismo | Bartenderia" faz a
+  // experiência aparecer tanto na aba Barismo quanto na Bartenderia.
+  //
+  // O "|" foi escolhido de propósito: nunca aparece num nome de categoria
+  // real, ao contrário de "&", "/" e "," que já aparecem em nomes tipo
+  // "Cerveja & Caipirinha" ou "Vinho, Queijo e Pão".
+
+  // Lista as categorias de uma experiência (1 ou mais). Faz trim, remove
+  // vazias e duplicadas (case-insensitive), preservando a ordem digitada.
+  function categoriasOf(exp) {
+    if (!exp || exp.categoria == null) return [];
+    var seen = {};
+    var out = [];
+    String(exp.categoria).split('|').forEach(function (part) {
+      var c = String(part).trim();
+      if (!c) return;
+      var k = c.toLowerCase();
+      if (seen[k]) return;
+      seen[k] = true;
+      out.push(c);
+    });
+    return out;
+  }
+
+  // Categoria principal (a primeira) — usada onde só cabe uma, ex.:
+  // agrupamentos que precisam de uma chave única de fallback.
+  function categoriaPrimary(exp) {
+    var list = categoriasOf(exp);
+    return list.length ? list[0] : '';
+  }
+
+  // Texto pra exibir no selo do card. Uma categoria → "Barismo".
+  // Duas → "Barismo · Bartenderia" (nunca mostra o "|" cru pro cliente).
+  function categoriaLabel(exp) {
+    return categoriasOf(exp).join(' · ');
+  }
+
+  // A experiência pertence à categoria/aba `cat`? Case-insensitive.
+  // Sem `cat` (Todas) → sempre true.
+  function matchesCategoria(exp, cat) {
+    var target = String(cat == null ? '' : cat).trim().toLowerCase();
+    if (!target) return true;
+    return categoriasOf(exp).some(function (c) {
+      return c.toLowerCase() === target;
+    });
   }
 
   // Persiste a nova ordem das experiências. Recebe a lista de ids JÁ na
@@ -649,6 +753,39 @@
       if (et != null) pushTs(et);
     }
     out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  // Horários DISTINTOS e válidos das turmas FUTURAS de uma experiência
+  // (inclui as geradas por recorrência). Ordenados por hora de início.
+  // Usado pelos cards pra mostrar os botões de horário mesmo quando o
+  // campo "horarios" da experiência está vazio — caso das experiências
+  // que gerenciam horário só pela recorrência semanal. Filtra lixo
+  // (ex.: ".") e turmas já passadas. Vazio = usar fallback do chamador.
+  function distinctSlotHorarios(slotsArr, nowMs) {
+    if (nowMs == null) nowMs = Date.now();
+    var slots = Array.isArray(slotsArr) ? slotsArr : [];
+    var seen = new Set();
+    var out = [];
+    slots.forEach(function (sl) {
+      if (!sl || sl.isActive === false) return;
+      var ts = null;
+      if (sl.eventAt) {
+        var t = new Date(sl.eventAt).getTime();
+        if (!isNaN(t)) ts = t;
+      }
+      if (ts != null && ts < nowMs) return; // turma já passou
+      var h = String(sl.horario == null ? '' : sl.horario).trim();
+      if (!h || !/[0-9a-zA-ZÀ-ÿ]/.test(h) || seen.has(h)) return;
+      seen.add(h);
+      out.push(h);
+    });
+    out.sort(function (a, b) {
+      var pa = parseStartHour(a), pb = parseStartHour(b);
+      var ma = pa ? pa.hh * 60 + pa.mm : 9999;
+      var mb = pb ? pb.hh * 60 + pb.mm : 9999;
+      return ma - mb;
+    });
     return out;
   }
 
@@ -1078,23 +1215,49 @@
 
     slotsCachePromise = (async () => {
       try {
-        const { data, error } = await s
-          .from(SLOTS_TABLE)
-          .select('*')
-          .order('created_at', { ascending: true });
-        if (error) {
+        // PAGINAÇÃO OBRIGATÓRIA: o Supabase/PostgREST corta a resposta em
+        // no máximo 1000 linhas por request (default max-rows). Sem
+        // paginar, com muitos slots (recorrência materializa dezenas por
+        // regra), os slots ALÉM da 1000ª linha simplesmente não vinham —
+        // e como ordenávamos por created_at ASC, os cortados eram os mais
+        // NOVOS (justo as turmas de recorrência recém-geradas). Resultado:
+        // a experiência tinha datas no banco mas NENHUMA aparecia no site
+        // (detalhe, home e categoria), enquanto o painel Recorrência do
+        // admin — que usa query escopada por experience_id — mostrava
+        // tudo. Agora buscamos em páginas de 1000 via .range() até acabar.
+        const PAGE = 1000;
+        let all = [];
+        let from = 0;
+        let pageErr = null;
+        for (let guard = 0; guard < 1000; guard++) { // teto de segurança: 1M slots
+          const { data, error } = await s
+            .from(SLOTS_TABLE)
+            .select('*')
+            .order('created_at', { ascending: true })
+            .range(from, from + PAGE - 1);
+          if (error) { pageErr = error; break; }
+          const batch = data || [];
+          all = all.concat(batch);
+          if (batch.length < PAGE) break; // última página
+          from += PAGE;
+        }
+        if (pageErr && all.length === 0) {
           // Tabela provavelmente não existe — silencia
-          console.warn('[Elarah] loadAllSlots: ' + (error.message || 'erro'));
+          console.warn('[Elarah] loadAllSlots: ' + (pageErr.message || 'erro'));
           slotsCache = new Map();
         } else {
+          if (pageErr) {
+            console.warn('[Elarah] loadAllSlots: erro numa página, usando ' +
+              all.length + ' slots já carregados. ' + (pageErr.message || ''));
+          }
           const map = new Map();
-          (data || []).forEach(function (row) {
+          all.forEach(function (row) {
             const slot = dbRowToSlot(row);
             if (!map.has(slot.experienceId)) map.set(slot.experienceId, []);
             map.get(slot.experienceId).push(slot);
           });
           slotsCache = map;
-          console.info('[Elarah] loadAllSlots: ' + (data || []).length + ' slots carregados');
+          console.info('[Elarah] loadAllSlots: ' + all.length + ' slots carregados');
         }
       } catch (e) {
         console.warn('[Elarah] loadAllSlots exception:', e);
@@ -1108,7 +1271,30 @@
 
   async function getSlotsForExperience(experienceId) {
     const map = await loadAllSlots();
-    return (map.get(experienceId) || []).slice();
+    const fromCache = map.get(experienceId);
+    if (fromCache && fromCache.length) return fromCache.slice();
+    // Garantia extra pros caminhos de UMA experiência (página de detalhe
+    // e edição no admin): se o cache global não tem slots pra ela — por
+    // truncamento, cache frio ou erro de página —, busca DIRETO e escopado
+    // por experience_id. Query pequena e sempre confiável (é a mesma
+    // abordagem do painel Recorrência, que nunca falhou em mostrar as
+    // datas). Popula o cache pra não repetir na mesma sessão.
+    const s = sb();
+    if (!s || !experienceId) return [];
+    try {
+      const { data, error } = await s
+        .from(SLOTS_TABLE)
+        .select('*')
+        .eq('experience_id', experienceId)
+        .order('created_at', { ascending: true });
+      if (error || !data || !data.length) return [];
+      const slots = data.map(dbRowToSlot);
+      if (slotsCache) slotsCache.set(experienceId, slots);
+      return slots.slice();
+    } catch (e) {
+      console.warn('[Elarah] getSlotsForExperience fallback escopado falhou:', e && e.message);
+      return [];
+    }
   }
 
   // Salva (upsert) slots pra uma experiência. Recebe array de objetos:
@@ -1394,6 +1580,10 @@
     reorderExperiences,
     ordemKey,
     isHomeKit,
+    categoriasOf,
+    categoriaPrimary,
+    categoriaLabel,
+    matchesCategoria,
     scarcityRest,
     scarcityLabel,
     scarcityForSlots,
@@ -1401,6 +1591,7 @@
     isPubliclyVisible,
     deriveEventTimestamp,
     experienceFutureDates,
+    distinctSlotHorarios,
     isExpiredRecurring,
     dateQuickRange,
     // Slots

@@ -33,6 +33,18 @@ export interface GuardInput {
   nome: string | null;
   cupomCode: string | null;
   quantidade: number;
+  // Opção escolhida (Individual/Dupla/Trio...) — quando tem preço próprio
+  // em variant_items, esse vira o preço autoritativo (recalculado no banco).
+  variantSelected?: string | null;
+  // Preço unitário (em centavos) da variação que o FRONT mostrou ao cliente.
+  // É só uma DICA de segurança: o banco continua sendo a fonte autoritativa.
+  // Usado apenas como rede de proteção quando o lookup de variant_items no
+  // banco não devolve um preço válido pra opção escolhida (dado dessincronizado,
+  // nome divergente, função momentaneamente desatualizada). Nesse caso, se a
+  // dica for MAIOR que o preço-base, ela prevalece — nunca deixamos o PIX sair
+  // com o valor do ingresso individual quando o cliente escolheu uma opção mais
+  // cara. Como só aceitamos pra CIMA, o cliente não consegue pagar a menos.
+  variantExpectedCents?: number | null;
 }
 
 export interface ExperienceSnapshot {
@@ -125,9 +137,12 @@ function parsePrecoToCents(raw: unknown): number | null {
   if (raw == null) return null;
   const text = String(raw).replace(/\s/g, "").replace(/^R\$/i, "");
   if (!text) return null;
+  // Formato BR: vírgula = decimal, ponto = milhar. Sem vírgula, qualquer
+  // ponto é milhar — "1.320" = 1320 (não 1.32). Sem isso, Number("1.320")
+  // virava 1.32 e cobrava R$1,32 por uma experiência de R$1.320.
   const normalized = text.includes(",")
     ? text.replace(/\./g, "").replace(",", ".")
-    : text;
+    : text.replace(/\./g, "");
   const num = Number(normalized);
   if (!isFinite(num) || num <= 0) return null;
   return Math.round(num * 100);
@@ -559,7 +574,7 @@ export async function reserveExperienceSlot(
   }
 
   // ===== 5. Preço =====
-  const baseCents = parsePrecoToCents(exp.preco);
+  let baseCents = parsePrecoToCents(exp.preco);
   if (!baseCents) {
     console.error("[Elarah Guard] invalid price", exp.preco);
     return {
@@ -568,6 +583,79 @@ export async function reserveExperienceSlot(
       errorMessage: "Preço inválido na experiência.",
       errorStatus: 422,
     };
+  }
+
+  // ===== 5b. Preço por variação (Individual/Dupla/Trio...) =====
+  // Se o cliente escolheu uma opção COM preço próprio em variant_items,
+  // esse é o preço autoritativo — recalculado no banco, nunca do cliente.
+  // Mesma lógica do create-checkout-session (Stripe), aqui pro PIX/MP.
+  //
+  // Rede de proteção: se o lookup no banco NÃO devolver um preço válido pra
+  // opção escolhida (variant_items vazio, nome divergente, preço sem valor,
+  // função desatualizada), caímos pro preço que o FRONT informou — mas SÓ
+  // quando ele é MAIOR que o base. Assim o PIX nunca sai com o valor do
+  // ingresso individual quando o cliente escolheu a opção "Dupla" mais cara,
+  // e como só aceitamos pra cima, ninguém consegue pagar a menos.
+  if (input.variantSelected && String(input.variantSelected).trim()) {
+    let dbVariantCents: number | null = null;
+    try {
+      const { data: vRow } = await supabase
+        .from("experiences")
+        .select("variant_items")
+        .eq("id", input.experienciaId)
+        .maybeSingle();
+      const items = Array.isArray((vRow as { variant_items?: unknown[] } | null)?.variant_items)
+        ? (vRow as { variant_items: unknown[] }).variant_items
+        : [];
+      const want = String(input.variantSelected).trim().toLowerCase();
+      const match = items.find((it) => {
+        const nome = (it && typeof it === "object")
+          ? String((it as Record<string, unknown>).nome ?? (it as Record<string, unknown>).name ?? "")
+          : String(it ?? "");
+        return nome.trim().toLowerCase() === want;
+      });
+      if (match && typeof match === "object") {
+        const vPreco = (match as Record<string, unknown>).preco ??
+          (match as Record<string, unknown>).price;
+        dbVariantCents = parsePrecoToCents(vPreco);
+      }
+    } catch (e) {
+      console.warn("[Elarah Guard] falha ao consultar preço da variação no banco", e);
+    }
+
+    if (dbVariantCents) {
+      // Caminho normal: banco é autoritativo.
+      baseCents = dbVariantCents;
+      console.info(
+        "[Elarah Guard] preço por variação aplicado (banco)",
+        "variante=" + input.variantSelected,
+        "cents=" + dbVariantCents,
+      );
+    } else {
+      // Fallback: banco não resolveu. Usa a dica do front SÓ se for maior
+      // que o base (upward-only — impossível pagar a menos por aqui).
+      const hintCents = Number(input.variantExpectedCents);
+      if (Number.isFinite(hintCents) && hintCents > baseCents) {
+        console.warn(
+          "[Elarah Guard] variant_items no banco não resolveu preço — usando dica do front (maior que o base)",
+          "variante=" + input.variantSelected,
+          "base_cents=" + baseCents,
+          "hint_cents=" + hintCents,
+          "ação=verifique se variant_items desta experiência tem o preço da opção",
+        );
+        baseCents = Math.round(hintCents);
+      } else if (Number.isFinite(hintCents) && hintCents > 0 && hintCents < baseCents) {
+        // Dica menor que o base: ignora (nunca cobramos a menos por dica do
+        // cliente). Loga pra visibilidade caso seja variação legítima mais
+        // barata cujo preço sumiu do banco.
+        console.warn(
+          "[Elarah Guard] dica de preço da variação menor que o base — ignorada (mantém base)",
+          "variante=" + input.variantSelected,
+          "base_cents=" + baseCents,
+          "hint_cents=" + hintCents,
+        );
+      }
+    }
   }
 
   // ===== 6. Resolve user_id + nome =====
@@ -626,6 +714,7 @@ export async function reserveExperienceSlot(
         p_code: input.cupomCode,
         p_experience_id: exp.id,
         p_amount_centavos: totalBaseCentsForCupom,
+        p_quantidade: quantidade,
       },
     );
     if (cpErr) {
