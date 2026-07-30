@@ -1,7 +1,7 @@
 // Bateria de testes de quebra do portão de WhatsApp.
 // Importa o MÓDULO REAL (whatsapp_gate.js) — não uma reimplementação.
 // Nada é enviado: `send` é um mock que só CONTA chamadas.
-import { gatedSend, normalizePhoneBR, maskPhone } from
+import { gatedSend, normalizePhoneBR, maskPhone, rolloutBucket } from
   "./whatsapp_gate.js";
 
 const MY_TEST = "5511999990000"; // "meu número de teste" (fictício, autorizado)
@@ -244,9 +244,65 @@ async function run() {
     const st = makeStore(); const s = makeSender();
     const deps = { config: PROD, ...st, send: s.send };
     const res = await Promise.all(Array.from({ length: 50 }, () => gatedSend(deps, baseParams({ dedupeKey: "confirmation:stress" }))));
+    const sent = res.filter(r => r.sent).length;
+    const dup = res.filter(r => r.reason === "duplicate").length;
+    log.push(`  ── EVIDÊNCIA #20: requisições=50 | chamadas à Z-API(mock)=${s.state.calls} | sent=${sent} | duplicate=${dup} | linhas na send_log=${st.keys.size}`);
     check("20) 50 simultâneos → exatamente 1 envio", s.state.calls === 1, "calls=" + s.state.calls);
-    check("20) exatamente 1 sent, 49 duplicate",
-      res.filter(r => r.sent).length === 1 && res.filter(r => r.reason === "duplicate").length === 49);
+    check("20) exatamente 1 sent, 49 duplicate", sent === 1 && dup === 49);
+    check("20) send_log tem exatamente 1 linha", st.keys.size === 1, "rows=" + st.keys.size);
+  }
+
+  // 21) MODO OBSERVAÇÃO: registra quem receberia, NÃO envia, não consome a
+  //     chave real (envio real depois ainda ocorre).
+  {
+    const st = makeStore(); const s = makeSender();
+    const cfg = { ...PROD, observe: true, sendingDisabled: true }; // observe roda mesmo com kill switch
+    const deps = { config: cfg, ...st, send: s.send };
+    const r = await gatedSend(deps, baseParams({ dedupeKey: "confirmation:obs-1" }));
+    check("21) observe → não envia", r.sent === false && r.reason === "observed" && s.state.calls === 0);
+    check("21) observe registra na send_log (namespace observe:)", st.keys.has("observe:confirmation:obs-1"));
+    check("21) observe NÃO consome a chave real", !st.keys.has("confirmation:obs-1"));
+    // Depois, com observe desligado e envio ligado, a chave real ainda envia:
+    const r2 = await gatedSend({ config: PROD, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:obs-1" }));
+    check("21) envio real depois do observe ocorre", r2.sent === true && s.state.calls === 1);
+  }
+
+  // 22) ROLLOUT etapa 1/2: allowlist-only (só meu número, mesmo em produção)
+  {
+    const st = makeStore(); const s = makeSender();
+    const cfg = { ...PROD, allowlistOnly: true, allowlist: new Set([MY_TEST]) };
+    // fora da allowlist → não envia
+    const outro = await gatedSend({ config: cfg, ...st, send: s.send },
+      baseParams({ rawPhone: "5521988887777", dedupeKey: "confirmation:al-out" }));
+    check("22) allowlist-only: fora da lista → não envia", outro.sent === false && outro.reason === "not_in_allowlist");
+    // meu número → envia
+    const meu = await gatedSend({ config: cfg, ...st, send: s.send },
+      baseParams({ rawPhone: MY_TEST, dedupeKey: "confirmation:al-me" }));
+    check("22) allowlist-only: meu número → envia", meu.sent === true);
+    check("22) só 1 envio (só o meu)", s.state.calls === 1);
+  }
+
+  // 23) ROLLOUT etapa 3: porcentagem determinística
+  {
+    // pct=0 → ninguém
+    {
+      const st = makeStore(); const s = makeSender();
+      const r = await gatedSend({ config: { ...PROD, rolloutPercent: 0 }, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:r0" }));
+      check("23) rollout 0% → não envia", r.sent === false && r.reason === "rollout_zero" && s.state.calls === 0);
+    }
+    // pct=100 → envia
+    {
+      const st = makeStore(); const s = makeSender();
+      const r = await gatedSend({ config: { ...PROD, rolloutPercent: 100 }, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:r100" }));
+      check("23) rollout 100% → envia", r.sent === true);
+    }
+    // pct=50 sobre 1000 chaves → ~metade, e DETERMINÍSTICO (mesmo conjunto ao repetir)
+    const incl = (key) => rolloutBucket(key) < 50;
+    let included = 0;
+    for (let i = 0; i < 1000; i++) if (incl("confirmation:booking-" + i)) included++;
+    check("23) rollout 50% libera ~metade (medido=" + included + ")", included > 400 && included < 600, "incl=" + included);
+    const sameKey = "confirmation:booking-777";
+    check("23) rollout é determinístico (mesma chave, mesmo bucket)", rolloutBucket(sameKey) === rolloutBucket(sameKey));
   }
 
   // Relatório

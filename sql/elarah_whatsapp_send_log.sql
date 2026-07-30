@@ -26,7 +26,7 @@ create table if not exists public.whatsapp_send_log (
   experiencia_id uuid,
   phone_masked  text,                       -- NUNCA o número inteiro
   status        text not null default 'pending'
-    check (status in ('pending','sent','failed','dry_run','skipped')),
+    check (status in ('pending','sent','failed','dry_run','skipped','observed','skipped_rollout')),
   provider_id   text,
   error         text,
   created_by    uuid,

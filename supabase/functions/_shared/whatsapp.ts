@@ -57,6 +57,26 @@ const TEST_ALLOWLIST = new Set(
     .filter((x): x is string => !!x),
 );
 
+// MODO OBSERVAÇÃO: WHATSAPP_OBSERVE_MODE = "true" → roda tudo em produção,
+// registra na whatsapp_send_log quem RECEBERIA, mas NÃO envia. Pra validar
+// por dias antes de ligar de verdade.
+const OBSERVE_MODE = ["1", "true", "yes"].includes(
+  (Deno.env.get("WHATSAPP_OBSERVE_MODE") ?? "").trim().toLowerCase(),
+);
+// ROLLOUT ETAPA 1/2: WHATSAPP_ALLOWLIST_ONLY = "true" → mesmo em produção,
+// só a allowlist recebe (só meu número → pequeno grupo).
+const ALLOWLIST_ONLY = ["1", "true", "yes"].includes(
+  (Deno.env.get("WHATSAPP_ALLOWLIST_ONLY") ?? "").trim().toLowerCase(),
+);
+// ROLLOUT ETAPA 3: WHATSAPP_ROLLOUT_PERCENT = 0..100 (fração de reservas
+// reais liberada). Ausente = 100 (todos). Determinístico por dedupe_key.
+const ROLLOUT_PERCENT = (() => {
+  const raw = (Deno.env.get("WHATSAPP_ROLLOUT_PERCENT") ?? "").trim();
+  if (raw === "") return 100;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 100;
+})();
+
 export function whatsappSendingDisabled(): boolean {
   return SENDING_DISABLED;
 }
@@ -65,6 +85,9 @@ export function whatsappDryRun(): boolean {
 }
 export function whatsappIsProd(): boolean {
   return IS_PROD;
+}
+export function whatsappObserveMode(): boolean {
+  return OBSERVE_MODE;
 }
 
 // DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
@@ -355,6 +378,9 @@ export async function gatedSendWhatsApp(
       dryRun: DRY_RUN,
       isProd: IS_PROD,
       allowlist: TEST_ALLOWLIST,
+      observe: OBSERVE_MODE,
+      allowlistOnly: ALLOWLIST_ONLY,
+      rolloutPercent: ROLLOUT_PERCENT,
     },
     reserve: async (key: string, meta: Record<string, unknown>) => {
       const { error } = await supabase.from("whatsapp_send_log").insert({
@@ -363,7 +389,7 @@ export async function gatedSendWhatsApp(
         booking_id: meta.booking_id ?? null,
         experiencia_id: meta.experiencia_id ?? null,
         phone_masked: meta.phone_masked ?? null,
-        status: "pending",
+        status: (meta.status as string) ?? "pending",
         created_by: params.createdBy ?? null,
       });
       if (!error) return { reserved: true };

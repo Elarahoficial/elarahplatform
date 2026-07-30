@@ -49,6 +49,18 @@ export function maskPhone(raw) {
   return d.slice(0, 4) + "•••••" + d.slice(-4);
 }
 
+// Bucket determinístico 0–99 a partir de uma string (rollout gradual).
+// Determinístico: a mesma reserva cai sempre no mesmo bucket (não usa random).
+export function rolloutBucket(str) {
+  let h = 2166136261 >>> 0;
+  const s = String(str ?? "");
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h % 100;
+}
+
 // Resultado padronizado de uma tentativa.
 function result(sent, reason, extra) {
   return Object.assign({ sent: !!sent, reason: reason || null }, extra || {});
@@ -109,10 +121,8 @@ export async function gatedSend(deps, params) {
     return result(false, "invalid_phone");
   }
 
-  // 6) KILL SWITCH global.
-  if (cfg.sendingDisabled === true) {
-    return result(false, "sending_disabled");
-  }
+  // (kill switch é aplicado mais abaixo, DEPOIS do modo observação — observe
+  //  precisa rodar mesmo com o envio desligado, pois nunca envia.)
 
   // 7) AMBIENTE. Fora de produção só pode número da allowlist (senão,
   //    staging/preview atingiria cliente real).
@@ -124,7 +134,53 @@ export async function gatedSend(deps, params) {
     }
   }
 
-  // 8) DRY-RUN: simula ANTES de reservar — assim NÃO grava na send_log e não
+  // 7b) ROLLOUT — ETAPA 1/2: allowlist-only. Mesmo em produção, se
+  //     allowlistOnly estiver ligado, só números da allowlist recebem
+  //     (só meu número → pequeno grupo de teste). Fora dela → não envia.
+  if (cfg.allowlistOnly === true) {
+    const allow = cfg.allowlist instanceof Set ? cfg.allowlist : null;
+    if (!allow || !allow.has(phone)) {
+      return result(false, "not_in_allowlist");
+    }
+  }
+
+  // 7c) ROLLOUT — ETAPA 3: porcentagem. rolloutPercent < 100 libera só uma
+  //     fração determinística das reservas (ex.: 10 = poucas reservas reais).
+  //     100 (ou ausente) = todos. Determinístico pela dedupeKey.
+  const pct = Number.isFinite(cfg.rolloutPercent) ? cfg.rolloutPercent : 100;
+  if (pct <= 0) {
+    return result(false, "rollout_zero");
+  }
+  if (pct < 100 && rolloutBucket(p.dedupeKey) >= pct) {
+    return result(false, "rollout_excluded");
+  }
+
+  // 7d) MODO OBSERVAÇÃO: roda TODAS as validações acima (só chega aqui quem
+  //     REALMENTE receberia), REGISTRA na send_log com status 'observed' e
+  //     NÃO envia. Serve pra validar por dias, em produção, se haveria algum
+  //     envio errado — sem enviar. Independe do kill switch (nunca envia).
+  //     Usa um namespace próprio ("observe:") pra NÃO consumir a chave de
+  //     idempotência real (o envio real depois ainda ocorre).
+  if (cfg.observe === true) {
+    try {
+      await deps.reserve("observe:" + p.dedupeKey, {
+        kind: "observe:" + p.kind,
+        status: "observed",
+        phone_masked: maskPhone(phone),
+        booking_id: p.bookingId ?? null,
+        experiencia_id: p.experienciaId ?? null,
+      });
+    } catch (_e) { /* audit best-effort */ }
+    log("info", "gate: OBSERVE (registra quem receberia, não envia)", { kind: p.kind, key: p.dedupeKey });
+    return result(false, "observed", { observed: true, phone });
+  }
+
+  // 8) KILL SWITCH global (aplica só ao envio real).
+  if (cfg.sendingDisabled === true) {
+    return result(false, "sending_disabled");
+  }
+
+  // 9) DRY-RUN: simula ANTES de reservar — assim NÃO grava na send_log e não
   //    "envenena" a chave de idempotência (um envio real depois ainda ocorre).
   if (cfg.dryRun === true) {
     log("info", "gate: DRY-RUN (não reserva, não envia)", { kind: p.kind, key: p.dedupeKey });
