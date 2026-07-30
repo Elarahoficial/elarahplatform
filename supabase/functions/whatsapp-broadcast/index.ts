@@ -47,6 +47,8 @@ import {
   normalizePhoneBR,
   sendWhatsAppText,
   whatsappConfigured,
+  whatsappDryRun,
+  whatsappSendingDisabled,
 } from "../_shared/whatsapp.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -99,8 +101,19 @@ interface SubRow {
   whatsapp_followup_count: number | null;
 }
 
-// Carrega os interessados de uma experiência. Mesmo filtro do modal do
-// painel: por item_slug OU por nome (ILIKE).
+// Carrega os interessados de UMA experiência.
+//
+// SEGURANÇA (fix crítico): usa MATCH EXATO — nunca "pedaço do nome".
+// Antes era `experiencia ILIKE '%NOME%'`, que casava "Vela" com "Vela
+// Aromática", "Vela (Cerveja...)", etc. → carregava gente de VÁRIAS
+// experiências e mandava pra quem não era. Além disso o nome ia cru pro
+// `.or(...)` do PostgREST, e nome com vírgula/parênteses quebrava a query.
+//
+// Regra agora:
+//   - Se veio item_slug → filtra SÓ por ele (identificador único, exato).
+//   - Senão → filtra pelo nome EXATO (.eq), com parâmetro seguro (sem
+//     interpolar em string de filtro). Under-match (não achar) é seguro;
+//     over-match (mandar pra estranho) não é.
 async function loadSubmissions(
   experiencia: string,
   itemSlug: string | null,
@@ -111,11 +124,10 @@ async function loadSubmissions(
     .order("created_at", { ascending: false })
     .limit(2000);
 
-  const nomeLike = "%" + experiencia.replace(/[%_]/g, " ") + "%";
   if (itemSlug) {
-    query = query.or(`item_slug.eq.${itemSlug},experiencia.ilike.${nomeLike}`);
+    query = query.eq("item_slug", itemSlug);
   } else {
-    query = query.ilike("experiencia", nomeLike);
+    query = query.eq("experiencia", experiencia);
   }
   const { data, error } = await query;
   if (error) throw error;
@@ -252,12 +264,21 @@ serve(async (req) => {
   if (mode !== "send") {
     return jsonResponse({ ok: false, error: "mode_invalido" }, 400);
   }
+  // KILL SWITCH: se o envio estiver desligado, nem começa.
+  if (whatsappSendingDisabled()) {
+    return jsonResponse(
+      { ok: false, error: "envio_desligado", detail: "WHATSAPP_SENDING_ENABLED=false — envio bloqueado (kill switch)." },
+      423,
+    );
+  }
   if (!whatsappConfigured()) {
     return jsonResponse({ ok: false, error: "nao_configurado" }, 400);
   }
   if (!message.trim()) {
     return jsonResponse({ ok: false, error: "mensagem_vazia" }, 400);
   }
+
+  const dryRun = whatsappDryRun();
 
   // Alvo = telefones pendentes (novos, se only_new; senão todos).
   const pendentes = onlyNew ? groups.filter((g) => !g.anyContacted) : groups;
@@ -271,28 +292,41 @@ serve(async (req) => {
 
   let enviados = 0;
   let falharam = 0;
+  let abortReason: string | null = null;
   const nowIso = () => new Date().toISOString();
 
   for (let i = 0; i < lote.length; i++) {
     const g = lote[i];
     const r = await sendWhatsAppText(g.phone, personalize(message, g.nome));
-    if (r.ok) {
+    // Em DRY-RUN o adaptador devolve { ok:true, skipped:true }: conta como
+    // "enviado" pra a barra de progresso andar, mas NÃO marca o tracking
+    // (senão numa simulação a pessoa ficaria "já contatada" e o envio real
+    // depois puларia ela).
+    if (r.skipped) {
       enviados++;
-      // Marca TODAS as respostas desse telefone como contatadas.
-      try {
-        await supabase
-          .from("byelarah_submissions")
-          .update({
-            whatsapp_followup_sent_at: nowIso(),
-            whatsapp_followup_count: g.maxCount + 1,
-          })
-          .in("id", g.ids);
-      } catch (e) {
-        console.warn(
-          "[Elarah whatsapp-broadcast] envio ok, mas update de tracking falhou —",
+      if (i < lote.length - 1) await sleep(50);
+      continue;
+    }
+    if (r.ok) {
+      // Marca ANTES de seguir: se a marcação falhar, ABORTA o lote — senão
+      // a próxima rodada reenviaria pra essa pessoa (duplicata). Nota:
+      // supabase update devolve { error } (não lança), então checamos ele.
+      const { error: upErr } = await supabase
+        .from("byelarah_submissions")
+        .update({
+          whatsapp_followup_sent_at: nowIso(),
+          whatsapp_followup_count: g.maxCount + 1,
+        })
+        .in("id", g.ids);
+      enviados++; // a mensagem JÁ saiu
+      if (upErr) {
+        console.error(
+          "[Elarah whatsapp-broadcast] envio OK mas TRACKING FALHOU — abortando lote pra não duplicar —",
           "phone=" + g.phone,
-          "err=" + String(e),
+          "err=" + upErr.message,
         );
+        abortReason = "tracking_failed";
+        break;
       }
     } else {
       falharam++;
@@ -339,5 +373,9 @@ serve(async (req) => {
     falharam,
     restantes,
     sem_telefone_ignorados: semTelefone,
+    dry_run: dryRun,
+    // Quando o tracking falha, o painel deve PARAR o loop (não rechamar send)
+    // pra não arriscar duplicar. Mostra o aviso pra admin.
+    abort_reason: abortReason,
   });
 });

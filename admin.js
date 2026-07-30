@@ -1556,14 +1556,14 @@
         .select('id, nome, email, telefone, created_at, status, whatsapp_followup_sent_at, whatsapp_followup_count, item_slug, experiencia')
         .order('created_at', { ascending: false })
         .limit(1000);
+      // SEGURANÇA: match EXATO (slug preferencial; senão nome exato). Antes
+      // era ILIKE '%nome%', que misturava interessados de experiências
+      // diferentes (ex.: "Vela" pegava "Vela Aromática"). O que aparece aqui
+      // tem que ser EXATAMENTE quem o disparo vai atingir.
       if (byelarahSlug) {
-        query = query.or(
-          'item_slug.eq.' + byelarahSlug + ',experiencia.ilike.' +
-          '%' + experienceName.replace(/[%_]/g, ' ') + '%'
-        );
+        query = query.eq('item_slug', byelarahSlug);
       } else {
-        query = query.ilike('experiencia',
-          '%' + experienceName.replace(/[%_]/g, ' ') + '%');
+        query = query.eq('experiencia', experienceName);
       }
       const { data, error } = await query;
       if (error) throw error;
@@ -1887,10 +1887,11 @@
       .select('id, nome, email, telefone, created_at, status, whatsapp_followup_sent_at, whatsapp_followup_count, item_slug, experiencia')
       .order('created_at', { ascending: false })
       .limit(1000);
+    // SEGURANÇA: match EXATO (ver comentário na outra query). Nunca substring.
     if (byelarahSlug) {
-      query = query.or('item_slug.eq.' + byelarahSlug + ',experiencia.ilike.%' + experienceName.replace(/[%_]/g, ' ') + '%');
+      query = query.eq('item_slug', byelarahSlug);
     } else {
-      query = query.ilike('experiencia', '%' + experienceName.replace(/[%_]/g, ' ') + '%');
+      query = query.eq('experiencia', experienceName);
     }
     try {
       const { data, error } = await query;
@@ -1998,7 +1999,21 @@
           (d.restantes ? ' · ' + d.restantes + ' restantes…' : '');
       }
       statusEl.style.color = '#1a8a4a';
-      statusEl.textContent = 'Enviando…';
+      statusEl.textContent = d.dry_run ? 'Simulando (DRY-RUN, nada é enviado)…' : 'Enviando…';
+      // DRY-RUN: o backend só simula (não marca ninguém), então o loop nunca
+      // "zera" — para depois do 1º lote pra não rodar pra sempre.
+      if (d.dry_run) {
+        stoppedMsg = '🧪 DRY-RUN ligado (WHATSAPP_DRY_RUN): simulei ' + d.enviados +
+          ' envio(s), NADA foi enviado de verdade. Desligue o dry-run pra valer.';
+        break;
+      }
+      // Tracking falhou no backend → ele abortou pra não duplicar. NÃO
+      // rechama (senão arrisca mandar de novo pra quem já recebeu).
+      if (d.abort_reason === 'tracking_failed') {
+        stoppedMsg = 'Parei por segurança: não consegui registrar quem já recebeu ' +
+          '(evitando duplicar). Confira a conexão e tente de novo.';
+        break;
+      }
       if ((d.restantes || 0) <= 0) break;
       if (d.enviados === 0) {
         // Nenhum progresso neste lote → evita loop infinito.

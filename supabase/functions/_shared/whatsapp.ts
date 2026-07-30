@@ -29,6 +29,39 @@ const INSTANCE = Deno.env.get("ZAPI_INSTANCE_ID") ?? "";
 const TOKEN = Deno.env.get("ZAPI_TOKEN") ?? "";
 const CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN") ?? "";
 
+// ===== TRAVAS DE SEGURANÇA (contra envio errado / em massa acidental) =====
+// KILL SWITCH: WHATSAPP_SENDING_ENABLED = "false" desliga TODO envio na hora
+// (botão de pânico). Ausente/qualquer outro valor = ligado (não quebra o que
+// já funciona). Setar "false" nos Secrets bloqueia todos os disparos.
+const SENDING_DISABLED =
+  (Deno.env.get("WHATSAPP_SENDING_ENABLED") ?? "").trim().toLowerCase() === "false";
+// DRY-RUN: WHATSAPP_DRY_RUN = "true"/"1" → simula (loga o destinatário e a
+// mensagem) mas NÃO chama a Z-API. Pra validar quem receberia sem enviar nada.
+const DRY_RUN = ["1", "true", "yes"].includes(
+  (Deno.env.get("WHATSAPP_DRY_RUN") ?? "").trim().toLowerCase(),
+);
+
+export function whatsappSendingDisabled(): boolean {
+  return SENDING_DISABLED;
+}
+export function whatsappDryRun(): boolean {
+  return DRY_RUN;
+}
+
+// DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
+// num BR plausível — o que mandaria mensagem pra desconhecido).
+const VALID_DDDS = new Set([
+  11, 12, 13, 14, 15, 16, 17, 18, 19,
+  21, 22, 24, 27, 28,
+  31, 32, 33, 34, 35, 37, 38,
+  41, 42, 43, 44, 45, 46, 47, 48, 49,
+  51, 53, 54, 55,
+  61, 62, 63, 64, 65, 66, 67, 68, 69,
+  71, 73, 74, 75, 77, 79,
+  81, 82, 83, 84, 85, 86, 87, 88, 89,
+  91, 92, 93, 94, 95, 96, 97, 98, 99,
+]);
+
 // True quando as credenciais mínimas (instância + token) existem.
 export function whatsappConfigured(): boolean {
   return !!(INSTANCE && TOKEN);
@@ -48,26 +81,43 @@ export type WhatsAppResult = WaResult;
 
 // Normaliza telefone BR pra E.164 sem "+" (55DDNXXXXXXXX) — formato que a
 // Z-API aceita em `phone`. Aceita "(11) 91234-5678", "11912345678",
-// "+5511912345678", etc. Retorna null se inválido.
+// "+5511912345678", etc.
+//
+// SEGURANÇA (fix crítico): NUNCA coage um número estrangeiro/torto num BR
+// plausível. Só devolve um número se ele for CLARAMENTE brasileiro válido
+// (DDD real + formato de celular/fixo). Qualquer outra coisa → null (o
+// chamador PULA o envio, em vez de mandar pra um desconhecido).
 export function normalizePhoneBR(raw: string | null | undefined): string | null {
-  const digits = String(raw ?? "").replace(/\D+/g, "");
-  if (!digits) return null;
-  // Já vem com 55 (E.164 completo): 12 dígitos (fixo) ou 13 (celular).
-  if (digits.length === 12 || digits.length === 13) {
-    if (digits.startsWith("55")) return digits;
-    return "55" + digits.slice(-11);
-  }
-  // 10 (fixo) ou 11 (celular) dígitos: assume BR sem o 55.
-  if (digits.length === 10 || digits.length === 11) {
-    return "55" + digits;
-  }
-  return null;
+  let d = String(raw ?? "").replace(/\D+/g, "");
+  if (!d) return null;
+  // Remove o código do país 55 SÓ quando sobra um número nacional válido
+  // (55 + 11 díg = 13, ou 55 + 10 díg = 12). Assim "5511..." vira "11...".
+  if (d.length === 13 && d.startsWith("55")) d = d.slice(2);
+  else if (d.length === 12 && d.startsWith("55")) d = d.slice(2);
+  // Agora precisa ser nacional: 11 dígitos (celular) ou 10 (fixo).
+  if (d.length !== 10 && d.length !== 11) return null;
+  const ddd = Number(d.slice(0, 2));
+  if (!VALID_DDDS.has(ddd)) return null;
+  // Celular (11 díg): o 3º dígito é obrigatoriamente 9.
+  if (d.length === 11 && d[2] !== "9") return null;
+  // Fixo (10 díg): o 3º dígito vai de 2 a 5. (WhatsApp normalmente só entrega
+  // em celular; fixo é aceito aqui mas a Z-API simplesmente não vai achar.)
+  if (d.length === 10 && !/[2-5]/.test(d[2])) return null;
+  return "55" + d;
 }
 // Alias — nome usado pelo fluxo de confirmação de reserva.
 export const normalizeWhatsAppPhoneBR = normalizePhoneBR;
 
 // Núcleo do envio (telefone JÁ normalizado em 55DDNXXXXXXXX).
 async function sendTextCore(phone: string, message: string): Promise<WaResult> {
+  if (SENDING_DISABLED) {
+    console.warn("[elarah/whatsapp] KILL SWITCH ligado (WHATSAPP_SENDING_ENABLED=false) — envio bloqueado", "phone=" + phone);
+    return { ok: false, skipped: true, error: "sending_disabled" };
+  }
+  if (DRY_RUN) {
+    console.info("[elarah/whatsapp] DRY-RUN — NÃO enviado", "phone=" + phone, "msg=" + message.slice(0, 120));
+    return { ok: true, skipped: true, status: 0 };
+  }
   if (!INSTANCE || !TOKEN) {
     return {
       ok: false,
@@ -162,6 +212,14 @@ export async function sendWhatsAppImage(opts: {
     typeof opts.to === "string" ? opts.to : String(opts.to ?? ""),
   );
   if (!phone) return { ok: false, error: "invalid_phone" };
+  if (SENDING_DISABLED) {
+    console.warn("[elarah/whatsapp] KILL SWITCH ligado — imagem bloqueada", "phone=" + phone);
+    return { ok: false, skipped: true, error: "sending_disabled" };
+  }
+  if (DRY_RUN) {
+    console.info("[elarah/whatsapp] DRY-RUN imagem — NÃO enviada", "phone=" + phone, "caption=" + (opts.caption ?? "").slice(0, 120));
+    return { ok: true, skipped: true, status: 0 };
+  }
   if (!opts.image) {
     // Sem imagem: cai pro texto puro, pra não deixar de avisar o cliente.
     return sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
