@@ -29,6 +29,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
+  isCustomerMessagingSuppressed,
   sendEmail,
   supplierCustomerMessage,
   supplierCustomerMessageHtml,
@@ -87,6 +88,15 @@ serve(async (req) => {
   }
   if (!booking.email) {
     return jsonResponse({ ok: false, error: "booking_sem_email" }, 422);
+  }
+  // Reserva "aguardando experiência" não recebe nenhuma mensagem — inclui
+  // a mensagem pós-compra do fornecedor. Guarda no servidor.
+  if (isCustomerMessagingSuppressed(booking)) {
+    console.info(
+      "[Elarah supplier-msg] envio bloqueado (aguardando_experiencia)",
+      "booking_id=" + booking.id,
+    );
+    return jsonResponse({ ok: false, error: "aguardando_experiencia" }, 409);
   }
 
   // Candidatos de nome do fornecedor: o que o painel exibia (body) +

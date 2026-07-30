@@ -41,6 +41,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { buildAcompanhantes } from "../_shared/acompanhantes.ts";
 import {
   createPixPayment,
   isValidCpf,
@@ -355,6 +356,11 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
   const cpfRaw = String(payload.cpf ?? "").replace(/\D+/g, "");
   const quantidade = Math.max(1, Math.floor(Number(payload.quantidade) || 1));
   const participantes = Array.isArray(payload.participantes) ? payload.participantes : [];
+  // Acompanhantes → coluna dedicada `acompanhantes` (jsonb) da tabela bookings.
+  // Formato: [{ nome, telefone }] com telefone só em dígitos (DDD + número).
+  // Usa o array explícito enviado pelo checkout; se ausente, deriva de
+  // `participantes` (índice 0 = titular/comprador; 1..N = acompanhantes).
+  const acompanhantes = buildAcompanhantes(payload, participantes);
   // Variantes (Pintura → Lagosta/Beijo/Olho grego). Persistidas em
   // metadata.variant_label + metadata.variant_selected. Não afetam preço.
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
@@ -540,6 +546,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
       repasses: repassesArray.length ? repassesArray : null,
       status_fornecedor: "repasse_pendente",
       payment_provider: "mercado_pago",
+      acompanhantes: acompanhantes,
       metadata: {
         bairro: exp.bairro ?? null,
         endereco: exp.endereco ?? null,
@@ -734,6 +741,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     status_fornecedor: "repasse_pendente",
     mp_payment_id: String(payment.id),
     payment_provider: "mercado_pago",
+    acompanhantes: acompanhantes,
     metadata: { ...bookingMetadata, participantes },
   });
 
@@ -780,6 +788,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
         valor_comissao_centavos: valorComissaoCentavos,
         repasses: repassesArray.length ? repassesArray : null,
         status_fornecedor: "repasse_pendente",
+        acompanhantes: acompanhantes,
         metadata: { ...bookingMetadata, participantes },
       });
       if (retryErr) {

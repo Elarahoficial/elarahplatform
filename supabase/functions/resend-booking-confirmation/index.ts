@@ -24,7 +24,11 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
-import { bookingConfirmationEmailHtml, sendEmail } from "../_shared/email.ts";
+import {
+  bookingConfirmationEmailHtml,
+  isCustomerMessagingSuppressed,
+  sendEmail,
+} from "../_shared/email.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -79,6 +83,16 @@ serve(async (req) => {
   }
   if (!booking.email) {
     return jsonResponse({ ok: false, error: "booking_sem_email" }, 422);
+  }
+  // Reserva "aguardando experiência" (cliente desmarcou sem reembolso) não
+  // pode receber confirmação — mesmo que a admin clique sem querer. Guarda
+  // no servidor porque o botão do painel pode ser burlado.
+  if (isCustomerMessagingSuppressed(booking)) {
+    console.info(
+      "[Elarah resend-confirmation] envio bloqueado (aguardando_experiencia)",
+      "booking_id=" + booking.id,
+    );
+    return jsonResponse({ ok: false, error: "aguardando_experiencia" }, 409);
   }
 
   // Mesma montagem do mp-webhook/sendBookingConfirmation — os dados
