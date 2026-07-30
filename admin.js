@@ -1730,39 +1730,14 @@
 
     const template = document.getElementById('followup-message').value;
 
-    // Resolve placeholders
-    const exp = followupCtx;
-    const cup = exp.coupon;
-    const link = buildExperienceUrl(exp.experienceId, exp.byelarahSlug, exp.experienceName);
-
-    let precoCheioCents = exp.precoCheioCents;
-    let descCents = 0;
-    let descPercent = '';
-    let cupomCode = '';
-    if (cup) {
-      cupomCode = cup.code || '';
-      if (cup.discount_type === 'percent') {
-        descPercent = String(cup.discount_value);
-        if (precoCheioCents) {
-          descCents = Math.floor(precoCheioCents * cup.discount_value / 100);
-        }
-      } else {
-        descCents = Number(cup.discount_value) || 0;
-      }
-    }
-    const precoDescontoCents = precoCheioCents != null
-      ? Math.max(0, precoCheioCents - descCents)
-      : null;
-
-    const filled = fillTemplate(template, {
-      NOME_PRIMEIRO: firstName(sub.nome),
-      EXPERIENCIA_NOME: exp.experienceName || '',
-      LINK: link,
-      PRECO_CHEIO: precoCheioCents != null ? centsToBRL(precoCheioCents) : '',
-      PRECO_DESCONTO: precoDescontoCents != null ? centsToBRL(precoDescontoCents) : '',
-      DESCONTO_PERCENT: descPercent,
-      CUPOM: cupomCode,
-    });
+    // Resolve placeholders. As constantes (LINK/CUPOM/PRECO_*) vêm da
+    // fonte única followupConstantVars() — a MESMA usada pelo disparo
+    // automático em massa, pra manual e automático dizerem exatamente
+    // o mesmo texto (só o nome da pessoa muda).
+    const filled = fillTemplate(template, Object.assign(
+      { NOME_PRIMEIRO: firstName(sub.nome) },
+      followupConstantVars()
+    ));
 
     // Endpoint api.whatsapp.com/send (em vez de wa.me) — mais robusto
     // pra emojis fora do BMP (😭 ✨ 👉 etc.). O wa.me em alguns clientes
@@ -1809,6 +1784,289 @@
     }
   }
 
+  // Resolve TODOS os placeholders da mensagem menos {NOME_PRIMEIRO}
+  // (que é por pessoa). LINK/CUPOM/PRECO_* são constantes da campanha.
+  // Fonte única usada tanto pelo envio manual (wa.me) quanto pelo
+  // disparo automático em massa (Z-API via Edge Function).
+  function followupConstantVars() {
+    const exp = followupCtx || {};
+    const cup = exp.coupon;
+    const link = buildExperienceUrl(exp.experienceId, exp.byelarahSlug, exp.experienceName);
+    let precoCheioCents = exp.precoCheioCents;
+    let descCents = 0;
+    let descPercent = '';
+    let cupomCode = '';
+    if (cup) {
+      cupomCode = cup.code || '';
+      if (cup.discount_type === 'percent') {
+        descPercent = String(cup.discount_value);
+        if (precoCheioCents) descCents = Math.floor(precoCheioCents * cup.discount_value / 100);
+      } else {
+        descCents = Number(cup.discount_value) || 0;
+      }
+    }
+    const precoDescontoCents = precoCheioCents != null
+      ? Math.max(0, precoCheioCents - descCents)
+      : null;
+    return {
+      EXPERIENCIA_NOME: exp.experienceName || '',
+      LINK: link,
+      PRECO_CHEIO: precoCheioCents != null ? centsToBRL(precoCheioCents) : '',
+      PRECO_DESCONTO: precoDescontoCents != null ? centsToBRL(precoDescontoCents) : '',
+      DESCONTO_PERCENT: descPercent,
+      CUPOM: cupomCode,
+    };
+  }
+
+  // =====================================================
+  //  DISPARO AUTOMÁTICO EM MASSA (Z-API via Edge Function)
+  // -----------------------------------------------------
+  // Em vez de abrir o WhatsApp pessoa por pessoa, chama a Edge Function
+  // whatsapp-broadcast que envia sozinha pra todos os interessados.
+  // Pra listas grandes, o servidor manda em lotes e devolve "restantes";
+  // este loop chama de novo até zerar, mostrando barra de progresso.
+  // =====================================================
+  function _fnBase() {
+    const c = window.supabaseClient;
+    if (c && c.supabaseUrl) return c.supabaseUrl;
+    return 'https://nwijxjmenbfyehvscogs.supabase.co';
+  }
+
+  async function callWhatsappBroadcast(payload) {
+    const sb = window.supabaseClient;
+    if (!sb) throw new Error('Cliente Supabase não inicializado. Recarregue a página.');
+    const { data: sessData } = await sb.auth.getSession();
+    const session = sessData && sessData.session;
+    if (!session) throw new Error('Sessão expirou — faça login de novo.');
+    const res = await fetch(_fnBase() + '/functions/v1/whatsapp-broadcast', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      const err = new Error(data.error || data.detail || ('HTTP ' + res.status));
+      err.code = data.error;
+      err.detail = data.detail;
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  // Mensagens amigáveis pros códigos de erro da Edge Function.
+  function waErrorMessage(e) {
+    switch (e && e.code) {
+      case 'nao_autorizado':
+        return 'Você precisa estar logada como admin pra disparar.';
+      case 'nao_configurado':
+        return 'Z-API ainda não configurada. Cadastre ZAPI_INSTANCE_ID, ZAPI_TOKEN e ZAPI_CLIENT_TOKEN nos Secrets do Supabase e faça o deploy da função whatsapp-broadcast.';
+      case 'tracking_ausente':
+        return 'Falta rodar sql/elarah_byelarah_followup_tracking.sql no Supabase.';
+      case 'telefone_teste_invalido':
+        return 'Número de teste inválido. Use DDD + número.';
+      case 'mensagem_vazia':
+        return 'A mensagem está vazia.';
+      default:
+        return (e && (e.detail || e.message)) || 'Erro desconhecido.';
+    }
+  }
+
+  // Re-lê as respostas (só pra atualizar o status "contatado" na lista
+  // depois de um disparo). Não mexe no textarea da mensagem.
+  async function refreshFollowupTracking() {
+    if (!followupCtx) return;
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const experienceName = followupCtx.experienceName || '';
+    const byelarahSlug = followupCtx.byelarahSlug;
+    let query = sb.from('byelarah_submissions')
+      .select('id, nome, email, telefone, created_at, status, whatsapp_followup_sent_at, whatsapp_followup_count, item_slug, experiencia')
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (byelarahSlug) {
+      query = query.or('item_slug.eq.' + byelarahSlug + ',experiencia.ilike.%' + experienceName.replace(/[%_]/g, ' ') + '%');
+    } else {
+      query = query.ilike('experiencia', '%' + experienceName.replace(/[%_]/g, ' ') + '%');
+    }
+    try {
+      const { data, error } = await query;
+      if (!error && data) {
+        followupCtx.submissions = data;
+        renderFollowupList();
+      }
+    } catch (_) { /* silencioso — é só refresh visual */ }
+  }
+
+  async function sendFollowupBulk() {
+    if (!followupCtx) return;
+    const btn = document.getElementById('followup-bulk-btn');
+    const testBtn = document.getElementById('followup-test-btn');
+    const statusEl = document.getElementById('followup-bulk-status');
+    const progWrap = document.getElementById('followup-bulk-progress-wrap');
+    const progBar = document.getElementById('followup-bulk-progress');
+    const progLabel = document.getElementById('followup-bulk-progress-label');
+    if (!btn || !statusEl) return;
+
+    const onlyNew = !!(document.getElementById('followup-hide-contacted') || {}).checked;
+    const template = (document.getElementById('followup-message') || {}).value || '';
+    if (!template.trim()) {
+      statusEl.style.color = '#c0392b';
+      statusEl.textContent = 'Escreva a mensagem primeiro.';
+      return;
+    }
+
+    // Mensagem com tudo resolvido MENOS {NOME_PRIMEIRO} (o servidor
+    // preenche o nome de cada pessoa).
+    const message = fillTemplate(template, followupConstantVars());
+    const base = {
+      experiencia: followupCtx.experienceName,
+      item_slug: followupCtx.byelarahSlug || null,
+      message: message,
+      only_new: onlyNew,
+    };
+
+    // 1) Conta destinatários pra confirmar antes de disparar de verdade.
+    statusEl.style.color = '#666';
+    statusEl.textContent = 'Verificando destinatários…';
+    btn.disabled = true;
+    if (testBtn) testBtn.disabled = true;
+    let info;
+    try {
+      info = await callWhatsappBroadcast(Object.assign({ mode: 'count' }, base));
+    } catch (e) {
+      statusEl.style.color = '#c0392b';
+      statusEl.textContent = waErrorMessage(e);
+      btn.disabled = false;
+      if (testBtn) testBtn.disabled = false;
+      return;
+    }
+
+    const alvo = onlyNew ? info.novos : info.unicos;
+    if (!alvo) {
+      statusEl.style.color = '#a4663b';
+      statusEl.textContent = onlyNew
+        ? 'Ninguém novo pra enviar — todos já foram contatados. Desmarque "Esconder já contatados" pra reenviar.'
+        : 'Nenhum interessado com telefone válido nessa experiência.';
+      btn.disabled = false;
+      if (testBtn) testBtn.disabled = false;
+      return;
+    }
+
+    const semTel = info.sem_telefone
+      ? '\n\n(' + info.sem_telefone + ' resposta(s) sem telefone válido serão ignoradas.)'
+      : '';
+    const ok = window.confirm(
+      'Enviar a mensagem por WhatsApp AUTOMATICAMENTE pra ' + alvo + ' pessoa(s) ' +
+      'interessadas em "' + followupCtx.experienceName + '"?\n\n' +
+      'Isso dispara de verdade pela Z-API, uma mensagem a cada ~1 segundo.' + semTel
+    );
+    if (!ok) {
+      statusEl.textContent = '';
+      btn.disabled = false;
+      if (testBtn) testBtn.disabled = false;
+      return;
+    }
+
+    // 2) Envia em lotes até zerar (ou parar de progredir).
+    if (progWrap) progWrap.style.display = 'block';
+    if (progBar) progBar.style.width = '0%';
+    let enviadosTotal = 0;
+    let falharamTotal = 0;
+    let denom = alvo;
+    let guard = 0;
+    let stoppedMsg = '';
+    while (guard++ < 500) {
+      let d;
+      try {
+        d = await callWhatsappBroadcast(Object.assign({ mode: 'send', batch: 50 }, base));
+      } catch (e) {
+        stoppedMsg = 'Parou: ' + waErrorMessage(e);
+        break;
+      }
+      enviadosTotal += d.enviados;
+      falharamTotal += d.falharam;
+      denom = Math.max(denom, enviadosTotal + (d.restantes || 0));
+      const pct = denom ? Math.min(100, Math.round(enviadosTotal / denom * 100)) : 100;
+      if (progBar) progBar.style.width = pct + '%';
+      if (progLabel) {
+        progLabel.textContent = enviadosTotal + ' enviados' +
+          (falharamTotal ? ' · ' + falharamTotal + ' falharam' : '') +
+          (d.restantes ? ' · ' + d.restantes + ' restantes…' : '');
+      }
+      statusEl.style.color = '#1a8a4a';
+      statusEl.textContent = 'Enviando…';
+      if ((d.restantes || 0) <= 0) break;
+      if (d.enviados === 0) {
+        // Nenhum progresso neste lote → evita loop infinito.
+        stoppedMsg = 'Parei: as ' + d.restantes + ' restantes falharam no envio. ' +
+          'Confira se a instância da Z-API está conectada.';
+        break;
+      }
+    }
+
+    if (progBar) progBar.style.width = '100%';
+    if (stoppedMsg) {
+      statusEl.style.color = '#a4663b';
+      statusEl.textContent = stoppedMsg + ' · ' + enviadosTotal + ' enviado(s) até aqui.';
+    } else {
+      statusEl.style.color = '#1a8a4a';
+      statusEl.textContent = '✅ ' + enviadosTotal + ' enviado(s)' +
+        (falharamTotal ? ' · ' + falharamTotal + ' falharam' : '') + '.';
+    }
+    if (progLabel) {
+      progLabel.textContent = 'Concluído: ' + enviadosTotal + ' enviado(s)' +
+        (falharamTotal ? ', ' + falharamTotal + ' falharam' : '') + '.';
+    }
+    btn.disabled = false;
+    if (testBtn) testBtn.disabled = false;
+
+    // Atualiza o status "contatado" na lista de pessoas.
+    refreshFollowupTracking();
+  }
+
+  async function sendFollowupTest() {
+    if (!followupCtx) return;
+    const statusEl = document.getElementById('followup-bulk-status');
+    const testBtn = document.getElementById('followup-test-btn');
+    const template = (document.getElementById('followup-message') || {}).value || '';
+    if (!template.trim()) {
+      if (statusEl) { statusEl.style.color = '#c0392b'; statusEl.textContent = 'Escreva a mensagem primeiro.'; }
+      return;
+    }
+    let phone = window.prompt('Seu número de WhatsApp pra receber o teste (com DDD):', '');
+    if (phone == null) return;
+    phone = String(phone).trim();
+    if (!phone) return;
+
+    const message = fillTemplate(template, followupConstantVars());
+    if (statusEl) { statusEl.style.color = '#666'; statusEl.textContent = 'Enviando teste…'; }
+    if (testBtn) testBtn.disabled = true;
+    try {
+      const d = await callWhatsappBroadcast({
+        mode: 'test',
+        experiencia: followupCtx.experienceName,
+        item_slug: followupCtx.byelarahSlug || null,
+        message: message,
+        test_phone: phone,
+      });
+      if (statusEl) {
+        statusEl.style.color = '#1a8a4a';
+        statusEl.textContent = '✅ Teste enviado pra ' + (d.to || phone) + '. Confere seu WhatsApp.';
+      }
+    } catch (e) {
+      if (statusEl) {
+        statusEl.style.color = '#c0392b';
+        statusEl.textContent = 'Falha no teste: ' + waErrorMessage(e);
+      }
+    } finally {
+      if (testBtn) testBtn.disabled = false;
+    }
+  }
+
   function closeFollowupModal() {
     const m = document.getElementById('followup-modal');
     if (m) m.classList.remove('open');
@@ -1824,6 +2082,16 @@
     if (backdrop) backdrop.addEventListener('click', closeFollowupModal);
     const hideToggle = document.getElementById('followup-hide-contacted');
     if (hideToggle) hideToggle.addEventListener('change', renderFollowupList);
+    const bulkBtn = document.getElementById('followup-bulk-btn');
+    if (bulkBtn && !bulkBtn.dataset.wired) {
+      bulkBtn.dataset.wired = '1';
+      bulkBtn.addEventListener('click', sendFollowupBulk);
+    }
+    const testBtn = document.getElementById('followup-test-btn');
+    if (testBtn && !testBtn.dataset.wired) {
+      testBtn.dataset.wired = '1';
+      testBtn.addEventListener('click', sendFollowupTest);
+    }
   }
 
   // Expõe pro listener da tabela By Elarah (ver wireByElarahTableListeners)
@@ -8344,6 +8612,20 @@
     subsBody.addEventListener('click', async (e) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (!target) return;
+      // Botão "WhatsApp automático" no header do grupo — precisa vir ANTES
+      // do accordion (ele vive dentro da mesma <tr data-by-subs-toggle>).
+      const subsFollowBtn = target.closest('.admin__subs-followup-trigger');
+      if (subsFollowBtn) {
+        e.stopPropagation();
+        if (typeof window._adminOpenFollowupModal === 'function') {
+          window._adminOpenFollowupModal({
+            experienceName: subsFollowBtn.dataset.followupName || '',
+            experienceId: subsFollowBtn.dataset.followupExpId || null,
+            byelarahSlug: subsFollowBtn.dataset.followupSlug || null,
+          });
+        }
+        return;
+      }
       // Accordion: clique no cabeçalho do grupo abre/fecha só as respostas
       // daquele grupo (toggle DOM). Os botões Atendido/Excluir ficam em
       // linhas separadas, então não colidem com este handler.
@@ -8626,6 +8908,22 @@
         const novasPill = novasDoGrupo > 0
           ? '<span class="admin__group-header-pill" style="' + pillGreen + 'margin-left:8px;">' + novasDoGrupo + ' nova' + (novasDoGrupo !== 1 ? 's' : '') + ' (24h)</span>'
           : '';
+        // Botão de disparo automático por WhatsApp no header do grupo —
+        // atalho direto daqui (a lista que a operadora está olhando) pro
+        // mesmo modal de follow-up. Resolve experienceId/slug via o item
+        // By Elarah correspondente (quando existe) pra puxar cupom/link.
+        const matchedItemG = findByElarahItemFor(items, group.nome);
+        const subsFollowExpId = (matchedItemG && matchedItemG.experienceId) || '';
+        const subsFollowSlug = (matchedItemG && matchedItemG.slug) || '';
+        const subsFollowBtn =
+          '<button type="button" class="admin__subs-followup-trigger" ' +
+            'data-followup-name="' + escapeHtml(group.nome) + '" ' +
+            'data-followup-exp-id="' + escapeHtml(subsFollowExpId) + '" ' +
+            'data-followup-slug="' + escapeHtml(subsFollowSlug) + '" ' +
+            'style="margin-left:10px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:#25D366;color:#fff;font-size:.72rem;font-weight:700;border:none;cursor:pointer;" ' +
+            'title="Disparar WhatsApp automático pra todos os interessados nessa experiência">' +
+            '📱 WhatsApp automático' +
+          '</button>';
         html.push(
           '<tr class="admin__group-header" data-by-subs-toggle="' + gi + '" style="cursor:pointer;">' +
             '<td colspan="9" style="' + headerStyle + '">' +
@@ -8635,6 +8933,7 @@
                 '<span class="admin__group-header-pill admin__group-header-pill--muted" style="' + pillOrange + '">' + respLabel + '</span>' +
                 novasPill +
                 '<span style="margin-left:auto;font-size:.72rem;color:#a07c4c;font-weight:600;">clique pra abrir</span>' +
+                subsFollowBtn +
               '</div>' +
             '</td>' +
           '</tr>'
