@@ -136,21 +136,34 @@ serve(async (req) => {
   async function runPass(
     kind: string,
     column: "reminder_48h_sent_at" | "feedback_whatsapp_sent_at" | "pending_recovery_sent_at",
+    expectedStatus: "pago" | "pending",
     rows: unknown[],
     // deno-lint-ignore no-explicit-any
-    build: (b: any) => Promise<{ statusAllowed: boolean; message: string }>,
+    build: (b: any) => Promise<string>,
   ): Promise<PassResult> {
     const r: PassResult = { candidatos: rows.length, enviados: 0, observados: 0, pulados: 0 };
     for (const raw of rows) {
       // deno-lint-ignore no-explicit-any
       const b = raw as any;
-      const { statusAllowed, message } = await build(b);
+      // RELEITURA AUTORITATIVA NA HORA DO ENVIO (fecha a race: a query em lote
+      // pode ter uns minutos; se a reserva foi cancelada/reembolsada/marcada
+      // "aguardando" nesse meio tempo, NÃO envia). Fail-closed: leitura
+      // falhou/sumiu → pula.
+      const { data: fresh, error: freshErr } = await supabase
+        .from("bookings")
+        .select("status, aguardando_experiencia")
+        .eq("id", b.id)
+        .maybeSingle();
+      if (freshErr || !fresh) { r.pulados++; continue; }
+      const statusAllowed = fresh.status === expectedStatus;
+      const suppressed = fresh.aguardando_experiencia === true || isSuppressed(b);
+      const message = await build(b);
       const res = await gatedSendWhatsApp(supabase, {
         kind,
         dedupeKey: kind + ":" + b.id,
         identifierOk: !!b.id && !!b.experiencia_id,
         rawPhone: phoneOf(b),
-        suppressed: isSuppressed(b),
+        suppressed,
         statusAllowed,
         image: expImageUrl(b),
         caption: message,
@@ -183,14 +196,11 @@ serve(async (req) => {
       const ts = deriveEventTs((b as any).data, (b as any).horario, now);
       return ts != null && ts >= now + 36 * H && ts <= now + 48 * H;
     });
-    out.lembrete = await runPass("reminder48", "reminder_48h_sent_at", elig, (b) =>
-      Promise.resolve({
-        statusAllowed: b.status === "pago",
-        message: reminder48hWhatsAppText({
-          nome: b.nome, experienciaNome: b.experiencia_nome ?? "Sua experiência",
-          data: b.data, horario: b.horario, ...localOf(b),
-        }),
-      }));
+    out.lembrete = await runPass("reminder48", "reminder_48h_sent_at", "pago", elig, (b) =>
+      Promise.resolve(reminder48hWhatsAppText({
+        nome: b.nome, experienciaNome: b.experiencia_nome ?? "Sua experiência",
+        data: b.data, horario: b.horario, ...localOf(b),
+      })));
   }
 
   // ===== 2) FEEDBACK ~2 dias depois (evento entre now-72h e now-36h) =====
@@ -204,15 +214,12 @@ serve(async (req) => {
       const ts = deriveEventTs((b as any).data, (b as any).horario, now);
       return ts != null && ts <= now - 36 * H && ts >= now - 72 * H;
     });
-    out.feedback = await runPass("feedback", "feedback_whatsapp_sent_at", elig, async (b) => {
+    out.feedback = await runPass("feedback", "feedback_whatsapp_sent_at", "pago", elig, async (b) => {
       const token = await reviewToken(b.id);
       const link = `${SITE}/avaliar.html?b=${encodeURIComponent(b.id)}&t=${token}`;
-      return {
-        statusAllowed: b.status === "pago",
-        message: feedbackWhatsAppText({
-          nome: b.nome, experienciaNome: b.experiencia_nome ?? "sua experiência", link,
-        }),
-      };
+      return feedbackWhatsAppText({
+        nome: b.nome, experienciaNome: b.experiencia_nome ?? "sua experiência", link,
+      });
     });
   }
 
@@ -224,14 +231,11 @@ serve(async (req) => {
       .gte("created_at", new Date(now - 6 * H).toISOString())
       .lte("created_at", new Date(now - 3 * H).toISOString())
       .limit(300);
-    out.pendente = await runPass("pending", "pending_recovery_sent_at", (data ?? []), (b) =>
-      Promise.resolve({
-        statusAllowed: b.status === "pending",
-        message: pendingRecoveryWhatsAppText({
-          nome: b.nome, experienciaNome: b.experiencia_nome ?? "a experiência",
-          data: b.data, horario: b.horario, ...localOf(b),
-        }),
-      }));
+    out.pendente = await runPass("pending", "pending_recovery_sent_at", "pending", (data ?? []), (b) =>
+      Promise.resolve(pendingRecoveryWhatsAppText({
+        nome: b.nome, experienciaNome: b.experiencia_nome ?? "a experiência",
+        data: b.data, horario: b.horario, ...localOf(b),
+      })));
   }
 
   console.info("[automated-notifications] resumo", JSON.stringify(out));
