@@ -33,6 +33,23 @@ const INSTANCE = Deno.env.get("ZAPI_INSTANCE_ID") ?? "";
 const TOKEN = Deno.env.get("ZAPI_TOKEN") ?? "";
 const CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN") ?? "";
 
+// DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
+// num BR plausível). DEFINIDO AQUI EM CIMA de propósito: normalizePhoneBR o
+// usa, e TEST_ALLOWLIST (abaixo) chama normalizePhoneBR na carga do módulo —
+// se VALID_DDDS ficasse depois, dava "Cannot access before initialization"
+// (crash no boot de TODA função que importa este arquivo).
+const VALID_DDDS = new Set([
+  11, 12, 13, 14, 15, 16, 17, 18, 19,
+  21, 22, 24, 27, 28,
+  31, 32, 33, 34, 35, 37, 38,
+  41, 42, 43, 44, 45, 46, 47, 48, 49,
+  51, 53, 54, 55,
+  61, 62, 63, 64, 65, 66, 67, 68, 69,
+  71, 73, 74, 75, 77, 79,
+  81, 82, 83, 84, 85, 86, 87, 88, 89,
+  91, 92, 93, 94, 95, 96, 97, 98, 99,
+]);
+
 // ===== TRAVAS DE SEGURANÇA (fail-closed) =====
 // KILL SWITCH + fail-closed: SÓ envia se WHATSAPP_SENDING_ENABLED === "true".
 // Ausente/qualquer outro valor = DESLIGADO — nada sai até habilitar de
@@ -95,20 +112,6 @@ export function whatsappAllowlistHas(rawPhone: unknown): boolean {
   const p = normalizePhoneBR(typeof rawPhone === "string" ? rawPhone : String(rawPhone ?? ""));
   return !!p && TEST_ALLOWLIST.has(p);
 }
-
-// DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
-// num BR plausível — o que mandaria mensagem pra desconhecido).
-const VALID_DDDS = new Set([
-  11, 12, 13, 14, 15, 16, 17, 18, 19,
-  21, 22, 24, 27, 28,
-  31, 32, 33, 34, 35, 37, 38,
-  41, 42, 43, 44, 45, 46, 47, 48, 49,
-  51, 53, 54, 55,
-  61, 62, 63, 64, 65, 66, 67, 68, 69,
-  71, 73, 74, 75, 77, 79,
-  81, 82, 83, 84, 85, 86, 87, 88, 89,
-  91, 92, 93, 94, 95, 96, 97, 98, 99,
-]);
 
 // True quando as credenciais mínimas (instância + token) existem.
 export function whatsappConfigured(): boolean {
