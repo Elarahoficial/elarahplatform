@@ -488,6 +488,15 @@ export async function gatedSendWhatsApp(
   return (await gatedSend(deps, params)) as GatedResult;
 }
 
+// URL pública da foto da experiência (ou logo da Elarah como fallback).
+const ELARAH_SITE = "https://elarah.com.br";
+export function experienceImageUrl(rawImagem: unknown): string {
+  const s = String(rawImagem ?? "").trim();
+  if (!s) return ELARAH_SITE + "/assets/logo.png";
+  if (/^https?:\/\//i.test(s)) return s;
+  return ELARAH_SITE + "/" + s.replace(/^\/+/, "");
+}
+
 // Confirmação de reserva GATEADA — caminho ÚNICO das 4 funções de pagamento
 // (stripe/mp/pagarme/check-mp). Calcula suppression e status aqui, fail-closed.
 export async function sendBookingConfirmationGated(
@@ -499,26 +508,38 @@ export async function sendBookingConfirmationGated(
   const bookingId = String(booking?.id ?? "");
   // RELEITURA AUTORITATIVA (fail-closed): não confia no objeto que o webhook
   // trouxe (pode estar desatualizado). Busca status + aguardando_experiencia
-  // AGORA, direto do banco. Se a leitura falhar → assume o pior (não envia).
+  // + a foto da experiência AGORA. Se a leitura falhar → assume o pior.
   let statusAllowed = false;
   let aguardando: boolean = true;
+  let imagem: string = ELARAH_SITE + "/assets/logo.png";
   if (bookingId) {
     try {
       const { data, error } = await supabase
         .from("bookings")
-        .select("status, aguardando_experiencia")
+        .select("status, aguardando_experiencia, experiences(imagem)")
         .eq("id", bookingId)
         .maybeSingle();
       if (!error && data) {
         statusAllowed = data.status === "pago";
         aguardando = data.aguardando_experiencia === true ||
           (meta && (meta.aguardando_experiencia === true || meta.suppress_customer_messaging === true));
+        const exp = (data as { experiences?: { imagem?: unknown } }).experiences;
+        imagem = experienceImageUrl(exp?.imagem);
       }
     } catch (_e) {
       // fail-closed: mantém statusAllowed=false / aguardando=true
     }
   }
   const rawPhone = (meta?.telefone_digits as string | undefined) ?? booking?.telefone;
+  const texto = bookingConfirmationWhatsAppText({
+    nome: booking?.nome,
+    experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+    data: booking?.data,
+    horario: booking?.horario,
+    endereco: (meta?.endereco as string | null) ?? null,
+    bairro: (meta?.bairro as string | null) ?? null,
+    quantidade: booking?.quantidade ?? null,
+  });
   return await gatedSendWhatsApp(supabase, {
     kind: "confirmation",
     dedupeKey: "confirmation:" + String(booking?.id ?? ""),
@@ -526,15 +547,9 @@ export async function sendBookingConfirmationGated(
     rawPhone,
     suppressed: aguardando ? true : false,
     statusAllowed,
-    message: bookingConfirmationWhatsAppText({
-      nome: booking?.nome,
-      experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
-      data: booking?.data,
-      horario: booking?.horario,
-      endereco: (meta?.endereco as string | null) ?? null,
-      bairro: (meta?.bairro as string | null) ?? null,
-      quantidade: booking?.quantidade ?? null,
-    }),
+    image: imagem, // foto da experiência (cartão)
+    caption: texto,
+    message: texto,
     bookingId: booking?.id ?? null,
     experienciaId: booking?.experiencia_id ?? null,
   });
