@@ -20,6 +20,31 @@
 // o domínio dele.
 // =============================================================
 
+// ===== Supressão de mensagens ao cliente =====
+// Uma reserva marcada como "aguardando_experiencia" (o cliente desmarcou
+// a experiência SEM reembolso e vai remarcar depois) NÃO pode receber
+// NENHUMA mensagem automática — nem confirmação, nem lembrete, nem o
+// pedido de avaliação pós-evento.
+//
+// REGRA: toda função que envia mensagem PRO CLIENTE (e-mail ou WhatsApp
+// automático) deve checar isCustomerMessagingSuppressed(booking) e sair
+// sem enviar se retornar true. As automações de lembrete/pós-compra que
+// forem criadas depois também precisam chamar isto.
+export function isCustomerMessagingSuppressed(
+  booking:
+    | { aguardando_experiencia?: unknown; metadata?: unknown }
+    | null
+    | undefined,
+): boolean {
+  if (!booking) return false;
+  if (booking.aguardando_experiencia === true) return true;
+  // Fallback via metadata, caso a coluna dedicada ainda não exista no
+  // deploy (migração sql/elarah_bookings_aguardando_experiencia.sql).
+  const meta = (booking.metadata ?? {}) as Record<string, unknown>;
+  return meta.aguardando_experiencia === true ||
+    meta.suppress_customer_messaging === true;
+}
+
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM = Deno.env.get("ELARAH_FROM_EMAIL") ?? "Elarah <contato@elarah.com.br>";
 // Endereço sandbox do Resend que funciona sem verificação.

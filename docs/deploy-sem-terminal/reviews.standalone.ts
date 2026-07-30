@@ -151,13 +151,20 @@ serve(async (req) => {
   const now = Date.now();
   const desde = new Date(now - 21 * 86400000).toISOString();
   // Reservas pagas recentes, sem pedido de avaliação ainda.
+  // NOTA: depende da coluna aguardando_experiencia (migração
+  // sql/elarah_bookings_aguardando_experiencia.sql). Rode a migração ANTES
+  // de re-deployar esta função. Reservas "aguardando experiência" (cliente
+  // desmarcou sem reembolso) NÃO recebem o pedido de avaliação.
   const { data: bks, error } = await sb.from("bookings")
-    .select("id, email, nome, experiencia_nome, data, horario, status, created_at, review_request_sent_at")
-    .eq("status", "pago").is("review_request_sent_at", null).gte("created_at", desde).limit(500);
+    .select("id, email, nome, experiencia_nome, data, horario, status, aguardando_experiencia, created_at, review_request_sent_at")
+    .eq("status", "pago").eq("aguardando_experiencia", false).is("review_request_sent_at", null).gte("created_at", desde).limit(500);
   if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   let enviados = 0;
   for (const b of (bks ?? [])) {
+    // Defesa extra além do filtro SQL: nunca manda avaliação pra reserva
+    // aguardando experiência.
+    if (b.aguardando_experiencia === true) continue;
     const ts = deriveEventTs(b.data, b.horario, now);
     // Já aconteceu (entre 12h e 14 dias atrás). Sem data derivável: usa
     // created_at + 2 dias como aproximação.

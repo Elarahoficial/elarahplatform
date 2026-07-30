@@ -3476,6 +3476,9 @@
     // renderiza quando há o canal (telefone → WhatsApp; e-mail → mail).
     function renderCustomerMessageButtons(b, nomeResolved, telefone) {
       if (b.status !== 'pago') return '';
+      // Reserva aguardando experiência não recebe nenhuma mensagem — nem
+      // WhatsApp/e-mail do fornecedor. Esconde os botões (servidor também barra).
+      if (b.aguardando_experiencia) return '';
       const primeiroNome = String(nomeResolved || '').trim().split(/\s+/)[0] || '';
       // Candidatos de nome: fornecedor principal resolvido + qualquer
       // fornecedor no snapshot de repasses[] (modelo multi-fornecedor).
@@ -3778,7 +3781,9 @@
       // de editar/trocar a experiência, mandar a confirmação certa pro
       // cliente (o webhook original já rodou com os dados antigos). Só
       // reservas pagas do site com e-mail (venda manual/gift card não).
-      const canResendConfirm = b.status === 'pago' && b.email && !b._isManualSale && !b._isGiftCard;
+      // "Aguardando experiência" silencia toda mensagem automática: não
+      // oferece o botão de reenviar confirmação (o servidor também barra).
+      const canResendConfirm = b.status === 'pago' && b.email && !b._isManualSale && !b._isGiftCard && !b.aguardando_experiencia;
       const resendConfirmBtn = canResendConfirm
         ? '<button type="button" class="admin__resend-confirm-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Reenviar o e-mail de confirmação pro cliente com os dados atuais da reserva (use depois de editar/trocar a experiência)" style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Reenviar confirmação</button>'
         : '';
@@ -3799,7 +3804,7 @@
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorComissao ? escapeHtml(formatCents(valorComissao, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
-          <td>${bookingStatusBadge(b.status)}</td>
+          <td>${bookingStatusBadge(b.status)}${b.aguardando_experiencia ? '<br><span title="Cliente desmarcou sem reembolso e vai remarcar. Nenhuma mensagem automática é enviada e a vaga voltou pro estoque." style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:10px;background:#fff3e0;color:#b56a15;border:1px solid #f0d3a8;font-size:.66rem;font-weight:700;letter-spacing:.03em;white-space:nowrap;">⏳ Aguardando experiência</span>' : ''}</td>
           ${renderPrazoCell(b)}
           <td>${b.status === 'pago' ? '<select class="admin__sf-select" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;' + ((b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;') + '"><option value="repasse_pendente"' + ((b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : '') + '>Repasse pendente</option><option value="repasse_feito"' + (b.status_fornecedor === 'repasse_feito' ? ' selected' : '') + '>Repasse feito</option></select>' : ''}</td>
           ${renderWhatsappCell(b, nomeResolved, telefone)}
@@ -4167,6 +4172,20 @@
             '</div>' +
 
             '<div id="admin-edit-booking-refund" style="margin-top:14px;"></div>' +
+
+            // ===== Aguardando experiência (desmarcou sem reembolso) =====
+            // Cliente pediu pra desmarcar SEM reembolso e vai remarcar
+            // depois. Enquanto ligado: nenhuma mensagem automática vai
+            // pro cliente e a vaga volta pro estoque (feito no servidor).
+            '<div style="margin-top:16px;padding:12px 14px;background:#fff8ef;border:1px solid #f0ddc8;border-radius:10px;">' +
+              '<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;">' +
+                '<input type="checkbox" id="admin-edit-booking-aguardando"' + (booking.aguardando_experiencia ? ' checked' : '') + ' style="margin-top:2px;width:16px;height:16px;cursor:pointer;flex:0 0 auto;">' +
+                '<span>' +
+                  '<span style="display:block;font-size:.84rem;font-weight:700;color:#1a1a1a;">⏳ Aguardando experiência (sem reembolso)</span>' +
+                  '<span style="display:block;font-size:.74rem;color:#7a6a52;margin-top:3px;line-height:1.45;">Cliente desmarcou e vai escolher outra experiência depois. Enquanto marcado, <b>nenhuma mensagem automática</b> é enviada pro cliente e a <b>vaga volta pro estoque</b>. O valor continua com a Elarah (sem reembolso).</span>' +
+                '</span>' +
+              '</label>' +
+            '</div>' +
           '</div>' +
           '<div style="padding:14px 22px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;">' +
             '<button type="button" id="admin-edit-booking-cancel" style="padding:9px 16px;border:1px solid #ddd;background:#fff;color:#444;border-radius:9px;font-weight:600;font-size:.85rem;cursor:pointer;">Cancelar</button>' +
@@ -4413,6 +4432,20 @@
           saveBtn.textContent = 'Salvar';
           return;
         }
+
+        // "Aguardando experiência" muda? Precisa da edge function (libera a
+        // vaga + histórico no servidor). Roda DEPOIS do update dos campos,
+        // pra a função ler o metadata já atualizado e não ser sobrescrita.
+        var aguardarChk = modal.querySelector('#admin-edit-booking-aguardando');
+        var novoAguardando = !!(aguardarChk && aguardarChk.checked);
+        var mudouAguardando = novoAguardando !== (booking.aguardando_experiencia === true);
+        if (mudouAguardando && (!s.functions || !s.functions.invoke)) {
+          alert('Supabase indisponível pra alterar "Aguardando experiência". Recarregue a página.');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Salvar';
+          return;
+        }
+
         var resp;
         try {
           resp = await s.from('bookings').update(update).eq('id', booking.id);
@@ -4434,6 +4467,32 @@
           return;
         }
         Object.assign(booking, update);
+
+        // Agora sim o toggle de "Aguardando experiência" (se mudou). A edge
+        // function relê a reserva do banco (metadata já atualizado acima),
+        // liga/desliga o estado, libera/re-segura a vaga (service_role) e
+        // anexa o próprio histórico — sem sobrescrever o que salvamos.
+        if (mudouAguardando) {
+          try {
+            var agRes = await s.functions.invoke('admin-set-aguardando-experiencia', {
+              body: { booking_id: booking.id, aguardando: novoAguardando },
+            });
+            var agData = agRes && agRes.data;
+            var agErr = agRes && agRes.error;
+            if (agErr || !agData || !agData.ok) {
+              var agMotivo = (agData && agData.error) || (agErr && agErr.message) || 'erro desconhecido';
+              console.error('[Admin] set aguardando_experiencia falhou:', agErr || agData);
+              alert('Os dados da reserva foram salvos, mas NÃO consegui alterar "Aguardando experiência".\nMotivo: ' + agMotivo + '\n\nTente de novo abrindo o editar.');
+            } else {
+              booking.aguardando_experiencia = novoAguardando;
+              if (agData.warning) alert('Atenção: ' + agData.warning);
+            }
+          } catch (agEx) {
+            console.error('[Admin] exceção ao alterar aguardando_experiencia:', agEx);
+            alert('Os dados da reserva foram salvos, mas houve erro ao alterar "Aguardando experiência":\n' + ((agEx && agEx.message) || String(agEx)));
+          }
+        }
+
         invalidateBookings();
         close();
         try {
