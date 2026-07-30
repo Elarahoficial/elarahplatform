@@ -47,6 +47,7 @@ import {
   gatedSendWhatsApp,
   normalizePhoneBR,
   sendWhatsAppText,
+  whatsappAllowlistHas,
   whatsappConfigured,
   whatsappDryRun,
   whatsappSendingDisabled,
@@ -213,6 +214,14 @@ serve(async (req) => {
     const testPhone = normalizePhoneBR(String(payload.test_phone ?? ""));
     if (!testPhone) {
       return jsonResponse({ ok: false, error: "telefone_teste_invalido" }, 400);
+    }
+    // TRAVA: o teste só pode ir pra número na allowlist — nunca pra um
+    // estranho, mesmo em produção, mesmo com typo da admin.
+    if (!whatsappAllowlistHas(testPhone)) {
+      return jsonResponse(
+        { ok: false, error: "fora_da_allowlist", message: "O teste só envia pra números em WHATSAPP_TEST_ALLOWLIST." },
+        403,
+      );
     }
     if (!message.trim()) {
       return jsonResponse({ ok: false, error: "mensagem_vazia" }, 400);
