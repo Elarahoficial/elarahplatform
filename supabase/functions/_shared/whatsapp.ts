@@ -376,7 +376,7 @@ export function reminder48hWhatsAppText(opts: MsgOpts): string {
   const nome = primeiroNome(opts.nome);
   const exp = String(opts.experienciaNome ?? "sua experiência").trim();
   const linhas: string[] = [];
-  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}Sua experiência na Elarah é daqui a 2 dias 💛`);
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}Sua experiência na Elarah é daqui a 2 dias 🧡`);
   linhas.push("");
   linhas.push(`*${exp}*`);
   linhas.push(..._linhaDataLocal(opts));
@@ -396,7 +396,7 @@ export function feedbackWhatsAppText(opts: MsgOpts & { link?: unknown }): string
   linhas.push(`Queremos muito saber o que você achou de *${exp}* — leva 1 minutinho e ajuda demais a gente a melhorar.`);
   if (link) {
     linhas.push("");
-    linhas.push(`👉 Avaliar aqui: ${link}`);
+    linhas.push(`⭐ Avaliar aqui: ${link}`);
   }
   linhas.push("");
   linhas.push("Obrigada por viver isso com a Elarah ✨");
@@ -410,7 +410,7 @@ export function pendingRecoveryWhatsAppText(opts: MsgOpts): string {
   const linhas: string[] = [];
   linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}Vi que você começou a reservar *${exp}* e o pagamento não foi concluído 🙈`);
   linhas.push("");
-  linhas.push("Sua vaga ainda pode estar disponível — quer que eu te ajude a finalizar? É só me responder por aqui. 💛");
+  linhas.push("Sua vaga ainda pode estar disponível — quer que eu te ajude a finalizar? É só me responder por aqui. 🧡");
   const dl = _linhaDataLocal(opts);
   if (dl.length) { linhas.push(""); linhas.push(...dl); }
   return linhas.join("\n");

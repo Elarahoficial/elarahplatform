@@ -30,9 +30,14 @@ import {
   isWhatsAppConfigured,
   pendingRecoveryWhatsAppText,
   reminder48hWhatsAppText,
-  sendWhatsAppText,
+  sendWhatsAppImage,
   whatsappAllowlistHas,
 } from "../_shared/whatsapp.ts";
+
+// Foto de exemplo (uma experiência real do site). Em produção, cada mensagem
+// usa a foto da experiência que a pessoa comprou. Se a URL falhar, o envio
+// cai pro texto puro automaticamente (fallback no sendWhatsAppImage).
+const SAMPLE_IMAGE = "https://elarah.com.br/assets/APEROLPINTURA.jpg";
 
 // Dados de exemplo pros testes (não usa reserva real).
 const SAMPLE = {
@@ -128,7 +133,9 @@ serve(async (req) => {
     }, 422);
   }
 
-  const result = await sendWhatsAppText({ to: telefone, message: mensagem });
+  // Envia COM a foto da experiência (caption = a mensagem). Se a imagem
+  // falhar, o sendWhatsAppImage cai pro texto sozinho.
+  const result = await sendWhatsAppImage({ to: telefone, image: SAMPLE_IMAGE, caption: mensagem });
   if (!result.ok) {
     return json({
       ok: false,
