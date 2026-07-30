@@ -32,9 +32,14 @@ import {
   bookingConfirmationEmailHtml,
   generateGiftCardCode,
   giftCardEmailHtml,
+  isCustomerMessagingSuppressed,
   sendAdminSaleNotification,
   sendEmail,
 } from "../_shared/email.ts";
+import {
+  bookingConfirmationWhatsAppText,
+  sendWhatsAppText,
+} from "../_shared/whatsapp.ts";
 import {
   holdsInventory,
   reoccupyVagaOnReapproval,
@@ -117,6 +122,33 @@ async function sendConfirmationEmail(booking: Booking) {
       "booking_id=" + booking.id,
       "error=" + (result.error ?? "?"),
     );
+  }
+  // WhatsApp (Z-API) — paridade com o webhook. Best-effort; pula reservas
+  // "aguardando experiência" e some em silêncio se o Z-API não estiver setado.
+  if (!isCustomerMessagingSuppressed(booking)) {
+    const telefoneWa = (meta.telefone_digits as string | undefined) ??
+      (booking as { telefone?: string | null }).telefone;
+    if (telefoneWa) {
+      const waResult = await sendWhatsAppText({
+        to: telefoneWa,
+        message: bookingConfirmationWhatsAppText({
+          nome: booking.nome,
+          experienciaNome: booking.experiencia_nome ?? "Sua experiência",
+          data: booking.data,
+          horario: booking.horario,
+          endereco: (meta.endereco as string | null) ?? null,
+          bairro: (meta.bairro as string | null) ?? null,
+          quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
+        }),
+      });
+      if (!waResult.ok && !waResult.skipped) {
+        console.error(
+          "[Elarah Payment/MP] reconcile: WhatsApp falhou",
+          "booking_id=" + booking.id,
+          "error=" + (waResult.error ?? "?"),
+        );
+      }
+    }
   }
 }
 
