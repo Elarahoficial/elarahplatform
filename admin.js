@@ -1852,7 +1852,15 @@
       var res = await sb.functions.invoke('admin-send-whatsapp-test', { body: { telefone: tel, tipo: tipo } });
       var data = res && res.data; var err = res && res.error;
       if (err || !data || !data.ok) {
-        var motivo = (data && (data.message || data.error)) || (err && err.message) || 'erro desconhecido';
+        var motivo = (data && (data.message || data.error)) || 'erro desconhecido';
+        // Em erro non-2xx o supabase-js guarda a Response em err.context —
+        // lê o corpo real pra mostrar o motivo exato (kill switch, z-api, etc).
+        try {
+          if (err && err.context && typeof err.context.json === 'function') {
+            var body = await err.context.json();
+            if (body && (body.message || body.error)) motivo = body.message || body.error;
+          }
+        } catch (_e) { if (err && err.message) motivo = err.message; }
         setStatus('Não enviou: ' + motivo, '#c0392b');
       } else {
         setStatus('✅ Enviado pro ' + (data.to || tel) + '. Confira seu WhatsApp!', '#1a8a4a');
