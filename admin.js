@@ -1832,6 +1832,38 @@
     return 'https://nwijxjmenbfyehvscogs.supabase.co';
   }
 
+  // ===== Testar mensagens automáticas no meu WhatsApp (painel Pós-evento) =====
+  // Delegação no document: funciona mesmo com o painel escondido até abrir a aba.
+  document.addEventListener('click', async function (ev) {
+    var btn = ev.target && ev.target.closest ? ev.target.closest('.wa-test-btn') : null;
+    if (!btn) return;
+    var tipo = btn.getAttribute('data-tipo') || 'confirmation';
+    var phoneEl = document.getElementById('wa-test-phone');
+    var statusEl = document.getElementById('wa-test-status');
+    var tel = (phoneEl && phoneEl.value || '').trim();
+    function setStatus(msg, color) { if (statusEl) { statusEl.style.color = color || '#666'; statusEl.textContent = msg; } }
+    if (!tel) { setStatus('Digite o seu número (com DDD) primeiro.', '#c0392b'); return; }
+    var sb = window.supabaseClient;
+    if (!sb || !sb.functions || !sb.functions.invoke) { setStatus('Supabase indisponível. Recarregue a página.', '#c0392b'); return; }
+    var nomes = { confirmation: 'Confirmação', reminder: 'Lembrete 48h', feedback: 'Pós-compra', pending: 'Pendente' };
+    setStatus('Enviando "' + (nomes[tipo] || tipo) + '" pro seu WhatsApp…', '#666');
+    document.querySelectorAll('.wa-test-btn').forEach(function (b) { b.disabled = true; });
+    try {
+      var res = await sb.functions.invoke('admin-send-whatsapp-test', { body: { telefone: tel, tipo: tipo } });
+      var data = res && res.data; var err = res && res.error;
+      if (err || !data || !data.ok) {
+        var motivo = (data && (data.message || data.error)) || (err && err.message) || 'erro desconhecido';
+        setStatus('Não enviou: ' + motivo, '#c0392b');
+      } else {
+        setStatus('✅ Enviado pro ' + (data.to || tel) + '. Confira seu WhatsApp!', '#1a8a4a');
+      }
+    } catch (e) {
+      setStatus('Erro: ' + ((e && e.message) || String(e)), '#c0392b');
+    } finally {
+      document.querySelectorAll('.wa-test-btn').forEach(function (b) { b.disabled = false; });
+    }
+  });
+
   async function callWhatsappBroadcast(payload) {
     const sb = window.supabaseClient;
     if (!sb) throw new Error('Cliente Supabase não inicializado. Recarregue a página.');

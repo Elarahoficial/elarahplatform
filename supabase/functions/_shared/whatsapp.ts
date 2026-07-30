@@ -89,6 +89,12 @@ export function whatsappIsProd(): boolean {
 export function whatsappObserveMode(): boolean {
   return OBSERVE_MODE;
 }
+// True se o número (bruto) está na allowlist de teste. Usado pra travar o
+// "testar no meu WhatsApp" — só números autorizados, nunca um estranho.
+export function whatsappAllowlistHas(rawPhone: unknown): boolean {
+  const p = normalizePhoneBR(typeof rawPhone === "string" ? rawPhone : String(rawPhone ?? ""));
+  return !!p && TEST_ALLOWLIST.has(p);
+}
 
 // DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
 // num BR plausível — o que mandaria mensagem pra desconhecido).
@@ -340,6 +346,70 @@ export function bookingConfirmationWhatsAppText(opts: {
   if (qtd > 1) linhas.push(`👥 ${qtd} pessoas`);
   linhas.push("");
   linhas.push("Qualquer coisa é só responder por aqui. Até logo! 🧡");
+  return linhas.join("\n");
+}
+
+interface MsgOpts {
+  nome?: unknown;
+  experienciaNome?: unknown;
+  data?: unknown;
+  horario?: unknown;
+  endereco?: unknown;
+  bairro?: unknown;
+}
+function _linhaDataLocal(opts: MsgOpts): string[] {
+  const out: string[] = [];
+  const dataHora = [String(opts.data ?? "").trim(), String(opts.horario ?? "").trim()]
+    .filter(Boolean).join(" · ");
+  if (dataHora) out.push(`🗓️ ${dataHora}`);
+  const local = [String(opts.endereco ?? "").trim(), String(opts.bairro ?? "").trim()]
+    .filter(Boolean).join(" — ");
+  if (local) out.push(`📍 ${local}`);
+  return out;
+}
+
+// Lembrete 48h antes da experiência.
+export function reminder48hWhatsAppText(opts: MsgOpts): string {
+  const nome = primeiroNome(opts.nome);
+  const exp = String(opts.experienciaNome ?? "sua experiência").trim();
+  const linhas: string[] = [];
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}Sua experiência na Elarah é daqui a 2 dias 💛`);
+  linhas.push("");
+  linhas.push(`*${exp}*`);
+  linhas.push(..._linhaDataLocal(opts));
+  linhas.push("");
+  linhas.push("Tá tudo de pé pra você? Se precisar ajustar algo, é só responder por aqui. A gente te espera! ✨");
+  return linhas.join("\n");
+}
+
+// Pós-compra / feedback (2 dias depois da experiência) — COM link de avaliação.
+export function feedbackWhatsAppText(opts: MsgOpts & { link?: unknown }): string {
+  const nome = primeiroNome(opts.nome);
+  const exp = String(opts.experienciaNome ?? "sua experiência").trim();
+  const link = String(opts.link ?? "").trim();
+  const linhas: string[] = [];
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}Como foi a sua experiência? 🧡`);
+  linhas.push("");
+  linhas.push(`Queremos muito saber o que você achou de *${exp}* — leva 1 minutinho e ajuda demais a gente a melhorar.`);
+  if (link) {
+    linhas.push("");
+    linhas.push(`👉 Avaliar aqui: ${link}`);
+  }
+  linhas.push("");
+  linhas.push("Obrigada por viver isso com a Elarah ✨");
+  return linhas.join("\n");
+}
+
+// Recuperação de pendente (3–6h depois, se não pagou) — 1x só por reserva.
+export function pendingRecoveryWhatsAppText(opts: MsgOpts): string {
+  const nome = primeiroNome(opts.nome);
+  const exp = String(opts.experienciaNome ?? "a experiência").trim();
+  const linhas: string[] = [];
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}Vi que você começou a reservar *${exp}* e o pagamento não foi concluído 🙈`);
+  linhas.push("");
+  linhas.push("Sua vaga ainda pode estar disponível — quer que eu te ajude a finalizar? É só me responder por aqui. 💛");
+  const dl = _linhaDataLocal(opts);
+  if (dl.length) { linhas.push(""); linhas.push(...dl); }
   return linhas.join("\n");
 }
 
