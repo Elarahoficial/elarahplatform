@@ -24,7 +24,39 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
-import { isWhatsAppConfigured, sendWhatsAppText } from "../_shared/whatsapp.ts";
+import {
+  bookingConfirmationWhatsAppText,
+  feedbackWhatsAppText,
+  isWhatsAppConfigured,
+  pendingRecoveryWhatsAppText,
+  reminder48hWhatsAppText,
+  sendWhatsAppText,
+  whatsappAllowlistHas,
+} from "../_shared/whatsapp.ts";
+
+// Dados de exemplo pros testes (não usa reserva real).
+const SAMPLE = {
+  nome: "Você",
+  experienciaNome: "Aula de Cerâmica",
+  data: "12/04",
+  horario: "15h00 – 18h00",
+  endereco: "Rua Capote Valente, 697 – São Paulo",
+  bairro: "Pinheiros",
+  quantidade: 1,
+};
+function sampleMessage(tipo: string): string {
+  switch (tipo) {
+    case "reminder":
+      return reminder48hWhatsAppText(SAMPLE);
+    case "feedback":
+      return feedbackWhatsAppText({ ...SAMPLE, link: "https://elarah.com.br/avaliar.html?exemplo=1" });
+    case "pending":
+      return pendingRecoveryWhatsAppText(SAMPLE);
+    case "confirmation":
+    default:
+      return bookingConfirmationWhatsAppText(SAMPLE);
+  }
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -72,8 +104,21 @@ serve(async (req) => {
   }
   const telefone = String(payload.telefone ?? "").trim();
   if (!telefone) return json({ ok: false, error: "missing_telefone" }, 400);
-  const mensagem = String(payload.mensagem ?? "").trim() ||
-    "✅ Teste da Elarah: se você recebeu isto, o WhatsApp automático está funcionando. 🧡";
+  const tipo = String(payload.tipo ?? "confirmation").trim();
+  // Mensagem: ou a de um TIPO (confirmation/reminder/feedback/pending), ou
+  // texto livre.
+  const mensagem = String(payload.mensagem ?? "").trim() || sampleMessage(tipo);
+
+  // TRAVA DE SEGURANÇA: só envia pra número na allowlist de teste — nunca
+  // pra um estranho, mesmo em produção, mesmo com typo. Configure em
+  // WHATSAPP_TEST_ALLOWLIST.
+  if (!whatsappAllowlistHas(telefone)) {
+    return json({
+      ok: false,
+      error: "fora_da_allowlist",
+      message: "Por segurança, o teste só envia pra números em WHATSAPP_TEST_ALLOWLIST. Adicione o seu número lá primeiro.",
+    }, 403);
+  }
 
   if (!isWhatsAppConfigured()) {
     return json({
