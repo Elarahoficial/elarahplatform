@@ -44,10 +44,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin } from "../_shared/social_db.ts";
 import {
+  gatedSendWhatsApp,
   normalizePhoneBR,
   sendWhatsAppText,
   whatsappConfigured,
+  whatsappDryRun,
+  whatsappSendingDisabled,
 } from "../_shared/whatsapp.ts";
+import { maskPhone } from "../_shared/whatsapp_gate.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -99,8 +103,19 @@ interface SubRow {
   whatsapp_followup_count: number | null;
 }
 
-// Carrega os interessados de uma experiência. Mesmo filtro do modal do
-// painel: por item_slug OU por nome (ILIKE).
+// Carrega os interessados de UMA experiência.
+//
+// SEGURANÇA (fix crítico): usa MATCH EXATO — nunca "pedaço do nome".
+// Antes era `experiencia ILIKE '%NOME%'`, que casava "Vela" com "Vela
+// Aromática", "Vela (Cerveja...)", etc. → carregava gente de VÁRIAS
+// experiências e mandava pra quem não era. Além disso o nome ia cru pro
+// `.or(...)` do PostgREST, e nome com vírgula/parênteses quebrava a query.
+//
+// Regra agora:
+//   - Se veio item_slug → filtra SÓ por ele (identificador único, exato).
+//   - Senão → filtra pelo nome EXATO (.eq), com parâmetro seguro (sem
+//     interpolar em string de filtro). Under-match (não achar) é seguro;
+//     over-match (mandar pra estranho) não é.
 async function loadSubmissions(
   experiencia: string,
   itemSlug: string | null,
@@ -111,11 +126,10 @@ async function loadSubmissions(
     .order("created_at", { ascending: false })
     .limit(2000);
 
-  const nomeLike = "%" + experiencia.replace(/[%_]/g, " ") + "%";
   if (itemSlug) {
-    query = query.or(`item_slug.eq.${itemSlug},experiencia.ilike.${nomeLike}`);
+    query = query.eq("item_slug", itemSlug);
   } else {
-    query = query.ilike("experiencia", nomeLike);
+    query = query.eq("experiencia", experiencia);
   }
   const { data, error } = await query;
   if (error) throw error;
@@ -185,6 +199,11 @@ serve(async (req) => {
   const itemSlug = payload.item_slug ? String(payload.item_slug).trim() : null;
   const message = String(payload.message ?? "");
   const onlyNew = payload.only_new !== false; // default true
+  // ID da campanha (o painel gera 1 por clique em "enviar"). Entra na chave
+  // de idempotência (bcast:<campaign>:<phone>) → dois lotes/cliques da MESMA
+  // campanha nunca reenviam pro mesmo número; uma campanha NOVA (id novo) pode.
+  const campaignId = String(payload.campaign_id ?? "").trim() ||
+    ("noid-" + (itemSlug || experiencia).replace(/\s+/g, "_").slice(0, 40));
 
   // ---- TEST: manda pro número informado (o WhatsApp da própria admin) ----
   if (mode === "test") {
@@ -239,12 +258,26 @@ serve(async (req) => {
 
   // ---- COUNT: só informa números pra o painel montar o confirm ----
   if (mode === "count") {
+    // Amostra pra CONFIRMAÇÃO FINAL da audiência (trava #3/#10): nome +
+    // telefone MASCARADO + motivo. Nunca devolve o número inteiro.
+    const alvoSample = (onlyNew ? groups.filter((g) => !g.anyContacted) : groups).slice(0, 8);
+    const motivo = itemSlug
+      ? ("Preencheu o formulário de interesse (" + (experiencia || itemSlug) + ")")
+      : ("Interesse na experiência: " + experiencia);
+    const amostra = alvoSample.map((g) => ({
+      nome: g.nome || "(sem nome)",
+      telefone_mascarado: maskPhone(g.phone),
+      motivo,
+    }));
     return jsonResponse({
       ok: true,
       unicos,
       novos,
       ja_contatados: jaContatados,
       sem_telefone: semTelefone,
+      experiencia,
+      item_slug: itemSlug,
+      amostra,
     });
   }
 
@@ -252,12 +285,21 @@ serve(async (req) => {
   if (mode !== "send") {
     return jsonResponse({ ok: false, error: "mode_invalido" }, 400);
   }
+  // KILL SWITCH: se o envio estiver desligado, nem começa.
+  if (whatsappSendingDisabled()) {
+    return jsonResponse(
+      { ok: false, error: "envio_desligado", detail: "WHATSAPP_SENDING_ENABLED=false — envio bloqueado (kill switch)." },
+      423,
+    );
+  }
   if (!whatsappConfigured()) {
     return jsonResponse({ ok: false, error: "nao_configurado" }, 400);
   }
   if (!message.trim()) {
     return jsonResponse({ ok: false, error: "mensagem_vazia" }, 400);
   }
+
+  const dryRun = whatsappDryRun();
 
   // Alvo = telefones pendentes (novos, se only_new; senão todos).
   const pendentes = onlyNew ? groups.filter((g) => !g.anyContacted) : groups;
@@ -271,36 +313,55 @@ serve(async (req) => {
 
   let enviados = 0;
   let falharam = 0;
+  let abortReason: string | null = null;
   const nowIso = () => new Date().toISOString();
 
   for (let i = 0; i < lote.length; i++) {
     const g = lote[i];
-    const r = await sendWhatsAppText(g.phone, personalize(message, g.nome));
-    if (r.ok) {
-      enviados++;
-      // Marca TODAS as respostas desse telefone como contatadas.
-      try {
-        await supabase
+    // PORTÃO ÚNICO: idempotência (bcast:<campaign>:<phone>) + fail-closed +
+    // kill switch + ambiente. Dois broadcasts simultâneos → só 1 reserva/envia.
+    const res = await gatedSendWhatsApp(supabase, {
+      kind: "broadcast",
+      dedupeKey: "bcast:" + campaignId + ":" + g.phone,
+      identifierOk: true, // experiência veio por slug/nome EXATO (match .eq)
+      rawPhone: g.phone,
+      suppressed: false,
+      statusAllowed: true,
+      message: personalize(message, g.nome),
+      createdBy: adminId,
+    });
+    // Trava global / ambiente errado → para TUDO na hora.
+    if (res.reason === "sending_disabled" || res.reason === "staging_blocked") {
+      abortReason = res.reason;
+      break;
+    }
+    if (res.sent || res.dryRun || res.reason === "duplicate") {
+      enviados++; // conta pra barra andar (enviado, simulado ou já-enviado)
+      // Marca o tracking de campanha só em envio REAL (não em dry-run nem
+      // duplicate). Se a marcação falhar, ABORTA pra não arriscar re-spam.
+      if (res.sent) {
+        const { error: upErr } = await supabase
           .from("byelarah_submissions")
           .update({
             whatsapp_followup_sent_at: nowIso(),
             whatsapp_followup_count: g.maxCount + 1,
           })
           .in("id", g.ids);
-      } catch (e) {
-        console.warn(
-          "[Elarah whatsapp-broadcast] envio ok, mas update de tracking falhou —",
-          "phone=" + g.phone,
-          "err=" + String(e),
-        );
+        if (upErr) {
+          console.error(
+            "[Elarah whatsapp-broadcast] envio OK mas TRACKING FALHOU — abortando lote —",
+            "err=" + upErr.message,
+          );
+          abortReason = "tracking_failed";
+          break;
+        }
       }
     } else {
       falharam++;
       console.error(
-        "[Elarah whatsapp-broadcast] falha no envio —",
+        "[Elarah whatsapp-broadcast] não enviado —",
         "phone=" + g.phone,
-        "status=" + (r.status ?? "?"),
-        "error=" + (r.error ?? "?"),
+        "motivo=" + (res.reason ?? "?"),
       );
     }
     // Intervalo entre envios (menos no último).
@@ -339,5 +400,9 @@ serve(async (req) => {
     falharam,
     restantes,
     sem_telefone_ignorados: semTelefone,
+    dry_run: dryRun,
+    // Quando o tracking falha, o painel deve PARAR o loop (não rechamar send)
+    // pra não arriscar duplicar. Mostra o aviso pra admin.
+    abort_reason: abortReason,
   });
 });

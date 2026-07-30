@@ -24,10 +24,85 @@
 // personalizadas, intervalo entre envios, sem links suspeitos).
 // =============================================================
 
+// Portão de segurança (lógica pura, fail-closed + idempotência). Ver
+// _shared/whatsapp_gate.js. TODO envio automatizado passa por gatedSendWhatsApp.
+import { gatedSend } from "./whatsapp_gate.js";
+
 const ZAPI_BASE = Deno.env.get("ZAPI_BASE_URL") ?? "https://api.z-api.io";
 const INSTANCE = Deno.env.get("ZAPI_INSTANCE_ID") ?? "";
 const TOKEN = Deno.env.get("ZAPI_TOKEN") ?? "";
 const CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN") ?? "";
+
+// ===== TRAVAS DE SEGURANÇA (fail-closed) =====
+// KILL SWITCH + fail-closed: SÓ envia se WHATSAPP_SENDING_ENABLED === "true".
+// Ausente/qualquer outro valor = DESLIGADO — nada sai até habilitar de
+// propósito. (Antes era "ligado a menos que false"; agora é o contrário,
+// pra manter tudo desligado até a liberação explícita.)
+const SENDING_ENABLED =
+  (Deno.env.get("WHATSAPP_SENDING_ENABLED") ?? "").trim().toLowerCase() === "true";
+const SENDING_DISABLED = !SENDING_ENABLED;
+// DRY-RUN: WHATSAPP_DRY_RUN = "true"/"1" → simula (loga) mas NÃO chama a Z-API.
+const DRY_RUN = ["1", "true", "yes"].includes(
+  (Deno.env.get("WHATSAPP_DRY_RUN") ?? "").trim().toLowerCase(),
+);
+// AMBIENTE: só "production" é produção. Fora disso (staging/preview/local),
+// exige allowlist — assim um deploy de teste NUNCA atinge cliente real.
+const IS_PROD =
+  (Deno.env.get("WHATSAPP_ENV") ?? "").trim().toLowerCase() === "production";
+// Allowlist de teste (números que PODEM receber fora de produção), por vírgula.
+const TEST_ALLOWLIST = new Set(
+  (Deno.env.get("WHATSAPP_TEST_ALLOWLIST") ?? "")
+    .split(/[,\s]+/)
+    .map((x) => normalizePhoneBR(x))
+    .filter((x): x is string => !!x),
+);
+
+// MODO OBSERVAÇÃO: WHATSAPP_OBSERVE_MODE = "true" → roda tudo em produção,
+// registra na whatsapp_send_log quem RECEBERIA, mas NÃO envia. Pra validar
+// por dias antes de ligar de verdade.
+const OBSERVE_MODE = ["1", "true", "yes"].includes(
+  (Deno.env.get("WHATSAPP_OBSERVE_MODE") ?? "").trim().toLowerCase(),
+);
+// ROLLOUT ETAPA 1/2: WHATSAPP_ALLOWLIST_ONLY = "true" → mesmo em produção,
+// só a allowlist recebe (só meu número → pequeno grupo).
+const ALLOWLIST_ONLY = ["1", "true", "yes"].includes(
+  (Deno.env.get("WHATSAPP_ALLOWLIST_ONLY") ?? "").trim().toLowerCase(),
+);
+// ROLLOUT ETAPA 3: WHATSAPP_ROLLOUT_PERCENT = 0..100 (fração de reservas
+// reais liberada). Ausente = 100 (todos). Determinístico por dedupe_key.
+const ROLLOUT_PERCENT = (() => {
+  const raw = (Deno.env.get("WHATSAPP_ROLLOUT_PERCENT") ?? "").trim();
+  if (raw === "") return 100;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 100;
+})();
+
+export function whatsappSendingDisabled(): boolean {
+  return SENDING_DISABLED;
+}
+export function whatsappDryRun(): boolean {
+  return DRY_RUN;
+}
+export function whatsappIsProd(): boolean {
+  return IS_PROD;
+}
+export function whatsappObserveMode(): boolean {
+  return OBSERVE_MODE;
+}
+
+// DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
+// num BR plausível — o que mandaria mensagem pra desconhecido).
+const VALID_DDDS = new Set([
+  11, 12, 13, 14, 15, 16, 17, 18, 19,
+  21, 22, 24, 27, 28,
+  31, 32, 33, 34, 35, 37, 38,
+  41, 42, 43, 44, 45, 46, 47, 48, 49,
+  51, 53, 54, 55,
+  61, 62, 63, 64, 65, 66, 67, 68, 69,
+  71, 73, 74, 75, 77, 79,
+  81, 82, 83, 84, 85, 86, 87, 88, 89,
+  91, 92, 93, 94, 95, 96, 97, 98, 99,
+]);
 
 // True quando as credenciais mínimas (instância + token) existem.
 export function whatsappConfigured(): boolean {
@@ -48,26 +123,49 @@ export type WhatsAppResult = WaResult;
 
 // Normaliza telefone BR pra E.164 sem "+" (55DDNXXXXXXXX) — formato que a
 // Z-API aceita em `phone`. Aceita "(11) 91234-5678", "11912345678",
-// "+5511912345678", etc. Retorna null se inválido.
+// "+5511912345678", etc.
+//
+// SEGURANÇA (fix crítico): NUNCA coage um número estrangeiro/torto num BR
+// plausível. Só devolve um número se ele for CLARAMENTE brasileiro válido
+// (DDD real + formato de celular/fixo). Qualquer outra coisa → null (o
+// chamador PULA o envio, em vez de mandar pra um desconhecido).
 export function normalizePhoneBR(raw: string | null | undefined): string | null {
-  const digits = String(raw ?? "").replace(/\D+/g, "");
-  if (!digits) return null;
-  // Já vem com 55 (E.164 completo): 12 dígitos (fixo) ou 13 (celular).
-  if (digits.length === 12 || digits.length === 13) {
-    if (digits.startsWith("55")) return digits;
-    return "55" + digits.slice(-11);
-  }
-  // 10 (fixo) ou 11 (celular) dígitos: assume BR sem o 55.
-  if (digits.length === 10 || digits.length === 11) {
-    return "55" + digits;
-  }
-  return null;
+  let d = String(raw ?? "").replace(/\D+/g, "");
+  if (!d) return null;
+  // Remove o código do país 55 SÓ quando sobra um número nacional válido
+  // (55 + 11 díg = 13, ou 55 + 10 díg = 12). Assim "5511..." vira "11...".
+  if (d.length === 13 && d.startsWith("55")) d = d.slice(2);
+  else if (d.length === 12 && d.startsWith("55")) d = d.slice(2);
+  // Agora precisa ser nacional: 11 dígitos (celular) ou 10 (fixo).
+  if (d.length !== 10 && d.length !== 11) return null;
+  const ddd = Number(d.slice(0, 2));
+  if (!VALID_DDDS.has(ddd)) return null;
+  // Celular (11 díg): o 3º dígito é obrigatoriamente 9.
+  if (d.length === 11 && d[2] !== "9") return null;
+  // Fixo (10 díg): o 3º dígito vai de 2 a 5. (WhatsApp normalmente só entrega
+  // em celular; fixo é aceito aqui mas a Z-API simplesmente não vai achar.)
+  if (d.length === 10 && !/[2-5]/.test(d[2])) return null;
+  return "55" + d;
 }
 // Alias — nome usado pelo fluxo de confirmação de reserva.
 export const normalizeWhatsAppPhoneBR = normalizePhoneBR;
 
 // Núcleo do envio (telefone JÁ normalizado em 55DDNXXXXXXXX).
 async function sendTextCore(phone: string, message: string): Promise<WaResult> {
+  if (SENDING_DISABLED) {
+    console.warn("[elarah/whatsapp] KILL SWITCH ligado (WHATSAPP_SENDING_ENABLED=false) — envio bloqueado", "phone=" + phone);
+    return { ok: false, skipped: true, error: "sending_disabled" };
+  }
+  if (DRY_RUN) {
+    console.info("[elarah/whatsapp] DRY-RUN — NÃO enviado", "msg=" + message.slice(0, 80));
+    return { ok: true, skipped: true, status: 0 };
+  }
+  // Backstop de ambiente: fora de produção, só número da allowlist. Vale até
+  // pra chamadas diretas ao adaptador (ex.: teste), não só as gateadas.
+  if (!IS_PROD && !TEST_ALLOWLIST.has(phone)) {
+    console.warn("[elarah/whatsapp] fora de produção + fora da allowlist — bloqueado");
+    return { ok: false, skipped: true, error: "staging_blocked" };
+  }
   if (!INSTANCE || !TOKEN) {
     return {
       ok: false,
@@ -150,6 +248,63 @@ export async function sendWhatsAppText(
   return sendTextCore(phone, msg);
 }
 
+// Envia uma imagem com legenda (caption) pela Z-API. `image` pode ser uma
+// URL pública (ex.: foto da experiência) ou um data URI base64. Usado pelas
+// mensagens que mostram a foto da experiência (ou o logo da Elarah).
+export async function sendWhatsAppImage(opts: {
+  to: unknown;
+  image: string;
+  caption?: string;
+}): Promise<WaResult> {
+  const phone = normalizePhoneBR(
+    typeof opts.to === "string" ? opts.to : String(opts.to ?? ""),
+  );
+  if (!phone) return { ok: false, error: "invalid_phone" };
+  if (SENDING_DISABLED) {
+    console.warn("[elarah/whatsapp] KILL SWITCH ligado — imagem bloqueada", "phone=" + phone);
+    return { ok: false, skipped: true, error: "sending_disabled" };
+  }
+  if (DRY_RUN) {
+    console.info("[elarah/whatsapp] DRY-RUN imagem — NÃO enviada", "caption=" + (opts.caption ?? "").slice(0, 80));
+    return { ok: true, skipped: true, status: 0 };
+  }
+  if (!IS_PROD && !TEST_ALLOWLIST.has(phone)) {
+    console.warn("[elarah/whatsapp] imagem fora de produção + fora da allowlist — bloqueada");
+    return { ok: false, skipped: true, error: "staging_blocked" };
+  }
+  if (!opts.image) {
+    // Sem imagem: cai pro texto puro, pra não deixar de avisar o cliente.
+    return sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+  }
+  if (!INSTANCE || !TOKEN) {
+    return { ok: false, skipped: true, error: "ZAPI_INSTANCE_ID/ZAPI_TOKEN ausentes." };
+  }
+  const url = `${ZAPI_BASE}/instances/${INSTANCE}/token/${TOKEN}/send-image`;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (CLIENT_TOKEN) headers["Client-Token"] = CLIENT_TOKEN;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ phone, image: opts.image, caption: opts.caption ?? "" }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("[elarah/whatsapp] Z-API send-image erro", "status=" + res.status, "body=" + text.slice(0, 300));
+      // Fallback: se a imagem falhar (URL inacessível etc.), manda o texto.
+      const fb = await sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+      return fb.ok ? fb : { ok: false, status: res.status, error: text.slice(0, 300) };
+    }
+    const data = await res.json().catch(() => ({} as Record<string, unknown>));
+    const id = (data as { messageId?: string }).messageId ?? (data as { id?: string }).id;
+    return { ok: true, status: res.status, id };
+  } catch (e) {
+    console.error("[elarah/whatsapp] exceção send-image", e);
+    // Fallback pro texto.
+    return sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+  }
+}
+
 // ===== Textos das mensagens =====
 
 // Primeiro nome, pra deixar a mensagem pessoal.
@@ -186,4 +341,128 @@ export function bookingConfirmationWhatsAppText(opts: {
   linhas.push("");
   linhas.push("Qualquer coisa é só responder por aqui. Até logo! 🧡");
   return linhas.join("\n");
+}
+
+// ===== PORTÃO ÚNICO (idempotência + auditoria + fail-closed) =====
+// deno-lint-ignore no-explicit-any
+type SB = any;
+
+export interface GatedResult extends WaResult {
+  sent: boolean;
+  reason: string | null;
+}
+
+// Envio gateado: reserva na whatsapp_send_log (UNIQUE) ANTES de chamar a
+// Z-API. Sob concorrência, só UM reserva; os demais veem duplicate e não
+// enviam. Qualquer erro/dúvida = não envia (fail-closed). Ver whatsapp_gate.js.
+export async function gatedSendWhatsApp(
+  supabase: SB,
+  params: {
+    kind: string;
+    dedupeKey: string;
+    identifierOk: boolean;
+    rawPhone: unknown;
+    suppressed: boolean | undefined;
+    statusAllowed: boolean | undefined;
+    message?: string;
+    image?: string;
+    caption?: string;
+    bookingId?: string | null;
+    experienciaId?: string | null;
+    createdBy?: string | null;
+  },
+): Promise<GatedResult> {
+  const deps = {
+    config: {
+      sendingDisabled: SENDING_DISABLED,
+      dryRun: DRY_RUN,
+      isProd: IS_PROD,
+      allowlist: TEST_ALLOWLIST,
+      observe: OBSERVE_MODE,
+      allowlistOnly: ALLOWLIST_ONLY,
+      rolloutPercent: ROLLOUT_PERCENT,
+    },
+    reserve: async (key: string, meta: Record<string, unknown>) => {
+      const { error } = await supabase.from("whatsapp_send_log").insert({
+        dedupe_key: key,
+        kind: meta.kind ?? params.kind,
+        booking_id: meta.booking_id ?? null,
+        experiencia_id: meta.experiencia_id ?? null,
+        phone_masked: meta.phone_masked ?? null,
+        status: (meta.status as string) ?? "pending",
+        created_by: params.createdBy ?? null,
+      });
+      if (!error) return { reserved: true };
+      const code = (error as { code?: string }).code;
+      if (code === "23505" || /duplicate key|unique/i.test(error.message ?? "")) {
+        return { duplicate: true };
+      }
+      // Qualquer outro erro de banco → FAIL-CLOSED (não envia sem registrar).
+      console.error("[whatsapp gate] reserve erro (fail-closed) —", key, error.message);
+      return { error: true };
+    },
+    finalize: async (key: string, patch: Record<string, unknown>) => {
+      await supabase.from("whatsapp_send_log")
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("dedupe_key", key);
+    },
+    send: async (o: { phone: string; message?: string; image?: string; caption?: string }) => {
+      if (o.image) return await sendWhatsAppImage({ to: o.phone, image: o.image, caption: o.caption });
+      return await sendWhatsAppText({ to: o.phone, message: o.message ?? o.caption ?? "" });
+    },
+    log: (_level: string, _msg: string, _fields?: unknown) => {},
+  };
+  return (await gatedSend(deps, params)) as GatedResult;
+}
+
+// Confirmação de reserva GATEADA — caminho ÚNICO das 4 funções de pagamento
+// (stripe/mp/pagarme/check-mp). Calcula suppression e status aqui, fail-closed.
+export async function sendBookingConfirmationGated(
+  supabase: SB,
+  // deno-lint-ignore no-explicit-any
+  booking: any,
+  meta: Record<string, unknown>,
+): Promise<GatedResult> {
+  const bookingId = String(booking?.id ?? "");
+  // RELEITURA AUTORITATIVA (fail-closed): não confia no objeto que o webhook
+  // trouxe (pode estar desatualizado). Busca status + aguardando_experiencia
+  // AGORA, direto do banco. Se a leitura falhar → assume o pior (não envia).
+  let statusAllowed = false;
+  let aguardando: boolean = true;
+  if (bookingId) {
+    try {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("status, aguardando_experiencia")
+        .eq("id", bookingId)
+        .maybeSingle();
+      if (!error && data) {
+        statusAllowed = data.status === "pago";
+        aguardando = data.aguardando_experiencia === true ||
+          (meta && (meta.aguardando_experiencia === true || meta.suppress_customer_messaging === true));
+      }
+    } catch (_e) {
+      // fail-closed: mantém statusAllowed=false / aguardando=true
+    }
+  }
+  const rawPhone = (meta?.telefone_digits as string | undefined) ?? booking?.telefone;
+  return await gatedSendWhatsApp(supabase, {
+    kind: "confirmation",
+    dedupeKey: "confirmation:" + String(booking?.id ?? ""),
+    identifierOk: !!booking?.id,
+    rawPhone,
+    suppressed: aguardando ? true : false,
+    statusAllowed,
+    message: bookingConfirmationWhatsAppText({
+      nome: booking?.nome,
+      experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+      data: booking?.data,
+      horario: booking?.horario,
+      endereco: (meta?.endereco as string | null) ?? null,
+      bairro: (meta?.bairro as string | null) ?? null,
+      quantidade: booking?.quantidade ?? null,
+    }),
+    bookingId: booking?.id ?? null,
+    experienciaId: booking?.experiencia_id ?? null,
+  });
 }

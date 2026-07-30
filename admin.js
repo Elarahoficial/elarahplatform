@@ -1556,14 +1556,14 @@
         .select('id, nome, email, telefone, created_at, status, whatsapp_followup_sent_at, whatsapp_followup_count, item_slug, experiencia')
         .order('created_at', { ascending: false })
         .limit(1000);
+      // SEGURANÇA: match EXATO (slug preferencial; senão nome exato). Antes
+      // era ILIKE '%nome%', que misturava interessados de experiências
+      // diferentes (ex.: "Vela" pegava "Vela Aromática"). O que aparece aqui
+      // tem que ser EXATAMENTE quem o disparo vai atingir.
       if (byelarahSlug) {
-        query = query.or(
-          'item_slug.eq.' + byelarahSlug + ',experiencia.ilike.' +
-          '%' + experienceName.replace(/[%_]/g, ' ') + '%'
-        );
+        query = query.eq('item_slug', byelarahSlug);
       } else {
-        query = query.ilike('experiencia',
-          '%' + experienceName.replace(/[%_]/g, ' ') + '%');
+        query = query.eq('experiencia', experienceName);
       }
       const { data, error } = await query;
       if (error) throw error;
@@ -1887,10 +1887,11 @@
       .select('id, nome, email, telefone, created_at, status, whatsapp_followup_sent_at, whatsapp_followup_count, item_slug, experiencia')
       .order('created_at', { ascending: false })
       .limit(1000);
+    // SEGURANÇA: match EXATO (ver comentário na outra query). Nunca substring.
     if (byelarahSlug) {
-      query = query.or('item_slug.eq.' + byelarahSlug + ',experiencia.ilike.%' + experienceName.replace(/[%_]/g, ' ') + '%');
+      query = query.eq('item_slug', byelarahSlug);
     } else {
-      query = query.ilike('experiencia', '%' + experienceName.replace(/[%_]/g, ' ') + '%');
+      query = query.eq('experiencia', experienceName);
     }
     try {
       const { data, error } = await query;
@@ -1922,11 +1923,18 @@
     // Mensagem com tudo resolvido MENOS {NOME_PRIMEIRO} (o servidor
     // preenche o nome de cada pessoa).
     const message = fillTemplate(template, followupConstantVars());
+    // ID da campanha: 1 por clique em "enviar". Entra na chave de
+    // idempotência do servidor (bcast:<campanha>:<telefone>) → mesmo que o
+    // envio rode em vários lotes, ninguém recebe 2x nesta campanha.
+    const campaignId = (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : ('c' + Date.now() + Math.random().toString(36).slice(2));
     const base = {
       experiencia: followupCtx.experienceName,
       item_slug: followupCtx.byelarahSlug || null,
       message: message,
       only_new: onlyNew,
+      campaign_id: campaignId,
     };
 
     // 1) Conta destinatários pra confirmar antes de disparar de verdade.
@@ -1959,10 +1967,21 @@
     const semTel = info.sem_telefone
       ? '\n\n(' + info.sem_telefone + ' resposta(s) sem telefone válido serão ignoradas.)'
       : '';
+    // Confirmação final mostrando EXATAMENTE quem entra na audiência (amostra
+    // com nome + telefone mascarado + motivo). Trava contra "lista errada".
+    let audienciaTxt = '';
+    if (info.amostra && info.amostra.length) {
+      const linhas = info.amostra.map(function (a) {
+        return '• ' + a.nome + ' — ' + a.telefone_mascarado + '  (' + a.motivo + ')';
+      }).join('\n');
+      const resto = alvo > info.amostra.length ? ('\n…e mais ' + (alvo - info.amostra.length) + '.') : '';
+      audienciaTxt = '\n\nQuem vai receber (amostra):\n' + linhas + resto;
+    }
     const ok = window.confirm(
-      'Enviar a mensagem por WhatsApp AUTOMATICAMENTE pra ' + alvo + ' pessoa(s) ' +
-      'interessadas em "' + followupCtx.experienceName + '"?\n\n' +
-      'Isso dispara de verdade pela Z-API, uma mensagem a cada ~1 segundo.' + semTel
+      'CONFIRA A AUDIÊNCIA antes de enviar.\n\n' +
+      'Experiência: "' + followupCtx.experienceName + '"\n' +
+      'Vai enviar por WhatsApp pra ' + alvo + ' pessoa(s).' + audienciaTxt + '\n\n' +
+      'Dispara de verdade pela Z-API, ~1 msg/segundo.' + semTel + '\n\nConfirmar envio?'
     );
     if (!ok) {
       statusEl.textContent = '';
@@ -1998,7 +2017,21 @@
           (d.restantes ? ' · ' + d.restantes + ' restantes…' : '');
       }
       statusEl.style.color = '#1a8a4a';
-      statusEl.textContent = 'Enviando…';
+      statusEl.textContent = d.dry_run ? 'Simulando (DRY-RUN, nada é enviado)…' : 'Enviando…';
+      // DRY-RUN: o backend só simula (não marca ninguém), então o loop nunca
+      // "zera" — para depois do 1º lote pra não rodar pra sempre.
+      if (d.dry_run) {
+        stoppedMsg = '🧪 DRY-RUN ligado (WHATSAPP_DRY_RUN): simulei ' + d.enviados +
+          ' envio(s), NADA foi enviado de verdade. Desligue o dry-run pra valer.';
+        break;
+      }
+      // Tracking falhou no backend → ele abortou pra não duplicar. NÃO
+      // rechama (senão arrisca mandar de novo pra quem já recebeu).
+      if (d.abort_reason === 'tracking_failed') {
+        stoppedMsg = 'Parei por segurança: não consegui registrar quem já recebeu ' +
+          '(evitando duplicar). Confira a conexão e tente de novo.';
+        break;
+      }
       if ((d.restantes || 0) <= 0) break;
       if (d.enviados === 0) {
         // Nenhum progresso neste lote → evita loop infinito.
