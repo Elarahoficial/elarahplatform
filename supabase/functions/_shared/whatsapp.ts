@@ -1,93 +1,153 @@
 // =============================================================
 // ELARAH — WhatsApp helper (Z-API)
 // -------------------------------------------------------------
-// Envio de mensagens de WhatsApp via Z-API (https://z-api.io).
+// Adaptador ÚNICO de disparo de WhatsApp via Z-API (https://z-api.io),
+// usado por dois recursos:
+//   1) whatsapp-broadcast  — disparo em massa pros interessados.
+//   2) confirmação de reserva — mensagem automática na hora da compra
+//      (stripe/mp/pagarme webhooks + check-mp-payment-status).
+//
 // Configure em Supabase → Project Settings → Edge Functions → Secrets:
+//   ZAPI_INSTANCE_ID    ID da instância (painel Z-API)
+//   ZAPI_TOKEN          Token da instância (painel Z-API)
+//   ZAPI_CLIENT_TOKEN   Account Security Token (Z-API → Segurança) —
+//                       obrigatório no header se a conta tiver o token ativo.
+//   ZAPI_BASE_URL       (opcional) base da API; default https://api.z-api.io
 //
-//   ZAPI_INSTANCE_ID    id da instância (na tela da instância no Z-API)
-//   ZAPI_TOKEN          token da instância
-//   ZAPI_CLIENT_TOKEN   "Account Security Token" (vai no header Client-Token)
+// Se ZAPI_INSTANCE_ID / ZAPI_TOKEN não estiverem setados, o envio retorna
+// { ok:false, skipped:true } com erro claro — nada quebra enquanto o
+// WhatsApp não está configurado (mesma filosofia do _shared/email.ts).
 //
-// Se QUALQUER um faltar, sendWhatsAppText() loga um ERROR e retorna
-// { ok:false, skipped:true } — assim o resto do fluxo (marcar booking
-// paga, mandar e-mail) NÃO quebra enquanto o WhatsApp não está configurado.
-// Mesma filosofia do _shared/email.ts.
-//
-// IMPORTANTE: a instância do Z-API precisa estar CONECTADA (QR code lido
-// com o WhatsApp da Elarah) pra as mensagens saírem.
+// IMPORTANTE (risco de banimento): Z-API automatiza um número de WhatsApp
+// comum (não é a API oficial da Meta). Disparo em massa frio pode fazer a
+// Meta banir o número — dispare com bom senso (número aquecido, mensagens
+// personalizadas, intervalo entre envios, sem links suspeitos).
 // =============================================================
 
-const ZAPI_INSTANCE_ID = Deno.env.get("ZAPI_INSTANCE_ID") ?? "";
-const ZAPI_TOKEN = Deno.env.get("ZAPI_TOKEN") ?? "";
-const ZAPI_CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN") ?? "";
+const ZAPI_BASE = Deno.env.get("ZAPI_BASE_URL") ?? "https://api.z-api.io";
+const INSTANCE = Deno.env.get("ZAPI_INSTANCE_ID") ?? "";
+const TOKEN = Deno.env.get("ZAPI_TOKEN") ?? "";
+const CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN") ?? "";
 
-export interface WhatsAppResult {
+// True quando as credenciais mínimas (instância + token) existem.
+export function whatsappConfigured(): boolean {
+  return !!(INSTANCE && TOKEN);
+}
+// Alias — nome usado pelo fluxo de confirmação de reserva.
+export const isWhatsAppConfigured = whatsappConfigured;
+
+export interface WaResult {
   ok: boolean;
   skipped?: boolean;
   status?: number;
   error?: string;
+  id?: string;
 }
+// Alias de tipo (compat com o código de confirmação).
+export type WhatsAppResult = WaResult;
 
-export function isWhatsAppConfigured(): boolean {
-  return !!(ZAPI_INSTANCE_ID && ZAPI_TOKEN && ZAPI_CLIENT_TOKEN);
-}
-
-// Normaliza pra formato E.164 sem o "+": 55 (Brasil) + DDD + número.
-// Aceita: "11999999999" (DDD+num → prefixa 55), "5511999999999" (já ok),
-// telefones com máscara/espaços. Devolve null se não parecer um número BR.
-export function normalizeWhatsAppPhoneBR(raw: unknown): string | null {
+// Normaliza telefone BR pra E.164 sem "+" (55DDNXXXXXXXX) — formato que a
+// Z-API aceita em `phone`. Aceita "(11) 91234-5678", "11912345678",
+// "+5511912345678", etc. Retorna null se inválido.
+export function normalizePhoneBR(raw: string | null | undefined): string | null {
   const digits = String(raw ?? "").replace(/\D+/g, "");
   if (!digits) return null;
-  let d = digits;
-  // Sem código do país (10 = fixo, 11 = celular com 9) → prefixa 55.
-  if (d.length === 10 || d.length === 11) d = "55" + d;
-  // Já com 55 e tamanho de BR (12 ou 13) → ok.
-  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) return d;
+  // Já vem com 55 (E.164 completo): 12 dígitos (fixo) ou 13 (celular).
+  if (digits.length === 12 || digits.length === 13) {
+    if (digits.startsWith("55")) return digits;
+    return "55" + digits.slice(-11);
+  }
+  // 10 (fixo) ou 11 (celular) dígitos: assume BR sem o 55.
+  if (digits.length === 10 || digits.length === 11) {
+    return "55" + digits;
+  }
   return null;
 }
+// Alias — nome usado pelo fluxo de confirmação de reserva.
+export const normalizeWhatsAppPhoneBR = normalizePhoneBR;
 
-// Envia uma mensagem de texto simples pelo Z-API.
-export async function sendWhatsAppText(opts: {
-  to: unknown;
-  message: string;
-}): Promise<WhatsAppResult> {
-  const phone = normalizeWhatsAppPhoneBR(opts.to);
+// Núcleo do envio (telefone JÁ normalizado em 55DDNXXXXXXXX).
+async function sendTextCore(phone: string, message: string): Promise<WaResult> {
+  if (!INSTANCE || !TOKEN) {
+    return {
+      ok: false,
+      skipped: true,
+      error:
+        "ZAPI_INSTANCE_ID/ZAPI_TOKEN ausentes nos secrets do Supabase. " +
+        "Cadastre em Edge Functions → Secrets e faça redeploy.",
+    };
+  }
+
+  const url = `${ZAPI_BASE}/instances/${INSTANCE}/token/${TOKEN}/send-text`;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (CLIENT_TOKEN) headers["Client-Token"] = CLIENT_TOKEN;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ phone, message }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error(
+        "[elarah/whatsapp] Z-API rejeitou o envio —",
+        "status=" + res.status,
+        "phone=" + phone,
+        "body=" + text.slice(0, 500),
+      );
+      // Mensagens amigáveis pros 4xx mais comuns:
+      //   401/403 → Client-Token errado/ausente
+      //   4xx "not connected"/"disconnected" → instância deslogada
+      let friendly = text.slice(0, 300);
+      const low = (text || "").toLowerCase();
+      if (res.status === 401 || res.status === 403) {
+        friendly = "Client-Token inválido ou ausente (Z-API → Segurança). " + friendly;
+      } else if (low.includes("not connected") || low.includes("disconnected") || low.includes("smartphone")) {
+        friendly = "Instância Z-API desconectada — reconecte o WhatsApp (QR code) no painel Z-API. " + friendly;
+      }
+      return { ok: false, status: res.status, error: friendly };
+    }
+
+    const data = await res.json().catch(() => ({} as Record<string, unknown>));
+    const id =
+      (data as { messageId?: string }).messageId ??
+      (data as { id?: string }).id ??
+      (data as { zaapId?: string }).zaapId;
+    return { ok: true, status: res.status, id };
+  } catch (e) {
+    console.error("[elarah/whatsapp] exceção durante envio", e);
+    return { ok: false, error: String(e) };
+  }
+}
+
+// Envia uma mensagem de texto. Aceita as DUAS formas de chamada, pra
+// atender os dois recursos sem mudar quem já chama:
+//   sendWhatsAppText(phone, message)      → usado pelo whatsapp-broadcast
+//   sendWhatsAppText({ to, message })     → usado pelas confirmações
+// Em ambos os casos o telefone é normalizado aqui (idempotente).
+export async function sendWhatsAppText(
+  phoneOrOpts: string | { to: unknown; message: string },
+  message?: string,
+): Promise<WaResult> {
+  let rawPhone: unknown;
+  let msg: string;
+  if (typeof phoneOrOpts === "object" && phoneOrOpts !== null) {
+    rawPhone = phoneOrOpts.to;
+    msg = phoneOrOpts.message;
+  } else {
+    rawPhone = phoneOrOpts;
+    msg = message ?? "";
+  }
+  const phone = normalizePhoneBR(
+    typeof rawPhone === "string" ? rawPhone : String(rawPhone ?? ""),
+  );
   if (!phone) {
-    console.warn("[Elarah WhatsApp] telefone inválido — não enviado", String(opts.to ?? ""));
+    console.warn("[elarah/whatsapp] telefone inválido — não enviado", String(rawPhone ?? ""));
     return { ok: false, error: "invalid_phone" };
   }
-  if (!isWhatsAppConfigured()) {
-    console.error(
-      "[Elarah WhatsApp] Z-API não configurado — pulando envio.",
-      "Cadastre ZAPI_INSTANCE_ID / ZAPI_TOKEN / ZAPI_CLIENT_TOKEN nos Secrets.",
-    );
-    return { ok: false, skipped: true };
-  }
-  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
-  try {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Client-Token": ZAPI_CLIENT_TOKEN,
-      },
-      body: JSON.stringify({ phone, message: opts.message }),
-    });
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      console.error(
-        "[Elarah WhatsApp] Z-API respondeu erro",
-        "status=" + resp.status,
-        "body=" + body.slice(0, 300),
-      );
-      return { ok: false, status: resp.status, error: body.slice(0, 300) };
-    }
-    return { ok: true, status: resp.status };
-  } catch (e) {
-    const msg = String((e as { message?: string })?.message ?? e);
-    console.error("[Elarah WhatsApp] exceção ao chamar Z-API", msg);
-    return { ok: false, error: msg };
-  }
+  return sendTextCore(phone, msg);
 }
 
 // ===== Textos das mensagens =====

@@ -88,7 +88,7 @@ jobs:
           # validam profiles.role='admin' por dentro). TODO o resto é chamado
           # pelo front (anon key) ou por webhook/cron que autentica por dentro,
           # então recebe --no-verify-jwt. (Política idêntica à anterior.)
-          JWT_REQUIRED="admin-account-access admin-set-aguardando-experiencia admin-send-whatsapp-test notify-manual-sale resend-booking-confirmation send-supplier-customer-message send-manual-sale-confirmation melhor-envio-connect"
+          JWT_REQUIRED="admin-account-access admin-set-aguardando-experiencia admin-send-whatsapp-test whatsapp-broadcast notify-manual-sale resend-booking-confirmation send-supplier-customer-message send-manual-sale-confirmation melhor-envio-connect"
 
           echo "== Descobrindo funções em supabase/functions/ =="
           DEPLOYED=""
