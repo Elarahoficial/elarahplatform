@@ -1923,11 +1923,18 @@
     // Mensagem com tudo resolvido MENOS {NOME_PRIMEIRO} (o servidor
     // preenche o nome de cada pessoa).
     const message = fillTemplate(template, followupConstantVars());
+    // ID da campanha: 1 por clique em "enviar". Entra na chave de
+    // idempotência do servidor (bcast:<campanha>:<telefone>) → mesmo que o
+    // envio rode em vários lotes, ninguém recebe 2x nesta campanha.
+    const campaignId = (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : ('c' + Date.now() + Math.random().toString(36).slice(2));
     const base = {
       experiencia: followupCtx.experienceName,
       item_slug: followupCtx.byelarahSlug || null,
       message: message,
       only_new: onlyNew,
+      campaign_id: campaignId,
     };
 
     // 1) Conta destinatários pra confirmar antes de disparar de verdade.
@@ -1960,10 +1967,21 @@
     const semTel = info.sem_telefone
       ? '\n\n(' + info.sem_telefone + ' resposta(s) sem telefone válido serão ignoradas.)'
       : '';
+    // Confirmação final mostrando EXATAMENTE quem entra na audiência (amostra
+    // com nome + telefone mascarado + motivo). Trava contra "lista errada".
+    let audienciaTxt = '';
+    if (info.amostra && info.amostra.length) {
+      const linhas = info.amostra.map(function (a) {
+        return '• ' + a.nome + ' — ' + a.telefone_mascarado + '  (' + a.motivo + ')';
+      }).join('\n');
+      const resto = alvo > info.amostra.length ? ('\n…e mais ' + (alvo - info.amostra.length) + '.') : '';
+      audienciaTxt = '\n\nQuem vai receber (amostra):\n' + linhas + resto;
+    }
     const ok = window.confirm(
-      'Enviar a mensagem por WhatsApp AUTOMATICAMENTE pra ' + alvo + ' pessoa(s) ' +
-      'interessadas em "' + followupCtx.experienceName + '"?\n\n' +
-      'Isso dispara de verdade pela Z-API, uma mensagem a cada ~1 segundo.' + semTel
+      'CONFIRA A AUDIÊNCIA antes de enviar.\n\n' +
+      'Experiência: "' + followupCtx.experienceName + '"\n' +
+      'Vai enviar por WhatsApp pra ' + alvo + ' pessoa(s).' + audienciaTxt + '\n\n' +
+      'Dispara de verdade pela Z-API, ~1 msg/segundo.' + semTel + '\n\nConfirmar envio?'
     );
     if (!ok) {
       statusEl.textContent = '';

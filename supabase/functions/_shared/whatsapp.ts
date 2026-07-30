@@ -24,21 +24,37 @@
 // personalizadas, intervalo entre envios, sem links suspeitos).
 // =============================================================
 
+// Portão de segurança (lógica pura, fail-closed + idempotência). Ver
+// _shared/whatsapp_gate.js. TODO envio automatizado passa por gatedSendWhatsApp.
+import { gatedSend } from "./whatsapp_gate.js";
+
 const ZAPI_BASE = Deno.env.get("ZAPI_BASE_URL") ?? "https://api.z-api.io";
 const INSTANCE = Deno.env.get("ZAPI_INSTANCE_ID") ?? "";
 const TOKEN = Deno.env.get("ZAPI_TOKEN") ?? "";
 const CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN") ?? "";
 
-// ===== TRAVAS DE SEGURANÇA (contra envio errado / em massa acidental) =====
-// KILL SWITCH: WHATSAPP_SENDING_ENABLED = "false" desliga TODO envio na hora
-// (botão de pânico). Ausente/qualquer outro valor = ligado (não quebra o que
-// já funciona). Setar "false" nos Secrets bloqueia todos os disparos.
-const SENDING_DISABLED =
-  (Deno.env.get("WHATSAPP_SENDING_ENABLED") ?? "").trim().toLowerCase() === "false";
-// DRY-RUN: WHATSAPP_DRY_RUN = "true"/"1" → simula (loga o destinatário e a
-// mensagem) mas NÃO chama a Z-API. Pra validar quem receberia sem enviar nada.
+// ===== TRAVAS DE SEGURANÇA (fail-closed) =====
+// KILL SWITCH + fail-closed: SÓ envia se WHATSAPP_SENDING_ENABLED === "true".
+// Ausente/qualquer outro valor = DESLIGADO — nada sai até habilitar de
+// propósito. (Antes era "ligado a menos que false"; agora é o contrário,
+// pra manter tudo desligado até a liberação explícita.)
+const SENDING_ENABLED =
+  (Deno.env.get("WHATSAPP_SENDING_ENABLED") ?? "").trim().toLowerCase() === "true";
+const SENDING_DISABLED = !SENDING_ENABLED;
+// DRY-RUN: WHATSAPP_DRY_RUN = "true"/"1" → simula (loga) mas NÃO chama a Z-API.
 const DRY_RUN = ["1", "true", "yes"].includes(
   (Deno.env.get("WHATSAPP_DRY_RUN") ?? "").trim().toLowerCase(),
+);
+// AMBIENTE: só "production" é produção. Fora disso (staging/preview/local),
+// exige allowlist — assim um deploy de teste NUNCA atinge cliente real.
+const IS_PROD =
+  (Deno.env.get("WHATSAPP_ENV") ?? "").trim().toLowerCase() === "production";
+// Allowlist de teste (números que PODEM receber fora de produção), por vírgula.
+const TEST_ALLOWLIST = new Set(
+  (Deno.env.get("WHATSAPP_TEST_ALLOWLIST") ?? "")
+    .split(/[,\s]+/)
+    .map((x) => normalizePhoneBR(x))
+    .filter((x): x is string => !!x),
 );
 
 export function whatsappSendingDisabled(): boolean {
@@ -46,6 +62,9 @@ export function whatsappSendingDisabled(): boolean {
 }
 export function whatsappDryRun(): boolean {
   return DRY_RUN;
+}
+export function whatsappIsProd(): boolean {
+  return IS_PROD;
 }
 
 // DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
@@ -115,8 +134,14 @@ async function sendTextCore(phone: string, message: string): Promise<WaResult> {
     return { ok: false, skipped: true, error: "sending_disabled" };
   }
   if (DRY_RUN) {
-    console.info("[elarah/whatsapp] DRY-RUN — NÃO enviado", "phone=" + phone, "msg=" + message.slice(0, 120));
+    console.info("[elarah/whatsapp] DRY-RUN — NÃO enviado", "msg=" + message.slice(0, 80));
     return { ok: true, skipped: true, status: 0 };
+  }
+  // Backstop de ambiente: fora de produção, só número da allowlist. Vale até
+  // pra chamadas diretas ao adaptador (ex.: teste), não só as gateadas.
+  if (!IS_PROD && !TEST_ALLOWLIST.has(phone)) {
+    console.warn("[elarah/whatsapp] fora de produção + fora da allowlist — bloqueado");
+    return { ok: false, skipped: true, error: "staging_blocked" };
   }
   if (!INSTANCE || !TOKEN) {
     return {
@@ -217,8 +242,12 @@ export async function sendWhatsAppImage(opts: {
     return { ok: false, skipped: true, error: "sending_disabled" };
   }
   if (DRY_RUN) {
-    console.info("[elarah/whatsapp] DRY-RUN imagem — NÃO enviada", "phone=" + phone, "caption=" + (opts.caption ?? "").slice(0, 120));
+    console.info("[elarah/whatsapp] DRY-RUN imagem — NÃO enviada", "caption=" + (opts.caption ?? "").slice(0, 80));
     return { ok: true, skipped: true, status: 0 };
+  }
+  if (!IS_PROD && !TEST_ALLOWLIST.has(phone)) {
+    console.warn("[elarah/whatsapp] imagem fora de produção + fora da allowlist — bloqueada");
+    return { ok: false, skipped: true, error: "staging_blocked" };
   }
   if (!opts.image) {
     // Sem imagem: cai pro texto puro, pra não deixar de avisar o cliente.
@@ -289,4 +318,125 @@ export function bookingConfirmationWhatsAppText(opts: {
   linhas.push("");
   linhas.push("Qualquer coisa é só responder por aqui. Até logo! 🧡");
   return linhas.join("\n");
+}
+
+// ===== PORTÃO ÚNICO (idempotência + auditoria + fail-closed) =====
+// deno-lint-ignore no-explicit-any
+type SB = any;
+
+export interface GatedResult extends WaResult {
+  sent: boolean;
+  reason: string | null;
+}
+
+// Envio gateado: reserva na whatsapp_send_log (UNIQUE) ANTES de chamar a
+// Z-API. Sob concorrência, só UM reserva; os demais veem duplicate e não
+// enviam. Qualquer erro/dúvida = não envia (fail-closed). Ver whatsapp_gate.js.
+export async function gatedSendWhatsApp(
+  supabase: SB,
+  params: {
+    kind: string;
+    dedupeKey: string;
+    identifierOk: boolean;
+    rawPhone: unknown;
+    suppressed: boolean | undefined;
+    statusAllowed: boolean | undefined;
+    message?: string;
+    image?: string;
+    caption?: string;
+    bookingId?: string | null;
+    experienciaId?: string | null;
+    createdBy?: string | null;
+  },
+): Promise<GatedResult> {
+  const deps = {
+    config: {
+      sendingDisabled: SENDING_DISABLED,
+      dryRun: DRY_RUN,
+      isProd: IS_PROD,
+      allowlist: TEST_ALLOWLIST,
+    },
+    reserve: async (key: string, meta: Record<string, unknown>) => {
+      const { error } = await supabase.from("whatsapp_send_log").insert({
+        dedupe_key: key,
+        kind: meta.kind ?? params.kind,
+        booking_id: meta.booking_id ?? null,
+        experiencia_id: meta.experiencia_id ?? null,
+        phone_masked: meta.phone_masked ?? null,
+        status: "pending",
+        created_by: params.createdBy ?? null,
+      });
+      if (!error) return { reserved: true };
+      const code = (error as { code?: string }).code;
+      if (code === "23505" || /duplicate key|unique/i.test(error.message ?? "")) {
+        return { duplicate: true };
+      }
+      // Qualquer outro erro de banco → FAIL-CLOSED (não envia sem registrar).
+      console.error("[whatsapp gate] reserve erro (fail-closed) —", key, error.message);
+      return { error: true };
+    },
+    finalize: async (key: string, patch: Record<string, unknown>) => {
+      await supabase.from("whatsapp_send_log")
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("dedupe_key", key);
+    },
+    send: async (o: { phone: string; message?: string; image?: string; caption?: string }) => {
+      if (o.image) return await sendWhatsAppImage({ to: o.phone, image: o.image, caption: o.caption });
+      return await sendWhatsAppText({ to: o.phone, message: o.message ?? o.caption ?? "" });
+    },
+    log: (_level: string, _msg: string, _fields?: unknown) => {},
+  };
+  return (await gatedSend(deps, params)) as GatedResult;
+}
+
+// Confirmação de reserva GATEADA — caminho ÚNICO das 4 funções de pagamento
+// (stripe/mp/pagarme/check-mp). Calcula suppression e status aqui, fail-closed.
+export async function sendBookingConfirmationGated(
+  supabase: SB,
+  // deno-lint-ignore no-explicit-any
+  booking: any,
+  meta: Record<string, unknown>,
+): Promise<GatedResult> {
+  const bookingId = String(booking?.id ?? "");
+  // RELEITURA AUTORITATIVA (fail-closed): não confia no objeto que o webhook
+  // trouxe (pode estar desatualizado). Busca status + aguardando_experiencia
+  // AGORA, direto do banco. Se a leitura falhar → assume o pior (não envia).
+  let statusAllowed = false;
+  let aguardando: boolean = true;
+  if (bookingId) {
+    try {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("status, aguardando_experiencia")
+        .eq("id", bookingId)
+        .maybeSingle();
+      if (!error && data) {
+        statusAllowed = data.status === "pago";
+        aguardando = data.aguardando_experiencia === true ||
+          (meta && (meta.aguardando_experiencia === true || meta.suppress_customer_messaging === true));
+      }
+    } catch (_e) {
+      // fail-closed: mantém statusAllowed=false / aguardando=true
+    }
+  }
+  const rawPhone = (meta?.telefone_digits as string | undefined) ?? booking?.telefone;
+  return await gatedSendWhatsApp(supabase, {
+    kind: "confirmation",
+    dedupeKey: "confirmation:" + String(booking?.id ?? ""),
+    identifierOk: !!booking?.id,
+    rawPhone,
+    suppressed: aguardando ? true : false,
+    statusAllowed,
+    message: bookingConfirmationWhatsAppText({
+      nome: booking?.nome,
+      experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+      data: booking?.data,
+      horario: booking?.horario,
+      endereco: (meta?.endereco as string | null) ?? null,
+      bairro: (meta?.bairro as string | null) ?? null,
+      quantidade: booking?.quantidade ?? null,
+    }),
+    bookingId: booking?.id ?? null,
+    experienciaId: booking?.experiencia_id ?? null,
+  });
 }

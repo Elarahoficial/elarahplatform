@@ -44,12 +44,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin } from "../_shared/social_db.ts";
 import {
+  gatedSendWhatsApp,
   normalizePhoneBR,
   sendWhatsAppText,
   whatsappConfigured,
   whatsappDryRun,
   whatsappSendingDisabled,
 } from "../_shared/whatsapp.ts";
+import { maskPhone } from "../_shared/whatsapp_gate.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -197,6 +199,11 @@ serve(async (req) => {
   const itemSlug = payload.item_slug ? String(payload.item_slug).trim() : null;
   const message = String(payload.message ?? "");
   const onlyNew = payload.only_new !== false; // default true
+  // ID da campanha (o painel gera 1 por clique em "enviar"). Entra na chave
+  // de idempotência (bcast:<campaign>:<phone>) → dois lotes/cliques da MESMA
+  // campanha nunca reenviam pro mesmo número; uma campanha NOVA (id novo) pode.
+  const campaignId = String(payload.campaign_id ?? "").trim() ||
+    ("noid-" + (itemSlug || experiencia).replace(/\s+/g, "_").slice(0, 40));
 
   // ---- TEST: manda pro número informado (o WhatsApp da própria admin) ----
   if (mode === "test") {
@@ -251,12 +258,26 @@ serve(async (req) => {
 
   // ---- COUNT: só informa números pra o painel montar o confirm ----
   if (mode === "count") {
+    // Amostra pra CONFIRMAÇÃO FINAL da audiência (trava #3/#10): nome +
+    // telefone MASCARADO + motivo. Nunca devolve o número inteiro.
+    const alvoSample = (onlyNew ? groups.filter((g) => !g.anyContacted) : groups).slice(0, 8);
+    const motivo = itemSlug
+      ? ("Preencheu o formulário de interesse (" + (experiencia || itemSlug) + ")")
+      : ("Interesse na experiência: " + experiencia);
+    const amostra = alvoSample.map((g) => ({
+      nome: g.nome || "(sem nome)",
+      telefone_mascarado: maskPhone(g.phone),
+      motivo,
+    }));
     return jsonResponse({
       ok: true,
       unicos,
       novos,
       ja_contatados: jaContatados,
       sem_telefone: semTelefone,
+      experiencia,
+      item_slug: itemSlug,
+      amostra,
     });
   }
 
@@ -297,44 +318,50 @@ serve(async (req) => {
 
   for (let i = 0; i < lote.length; i++) {
     const g = lote[i];
-    const r = await sendWhatsAppText(g.phone, personalize(message, g.nome));
-    // Em DRY-RUN o adaptador devolve { ok:true, skipped:true }: conta como
-    // "enviado" pra a barra de progresso andar, mas NÃO marca o tracking
-    // (senão numa simulação a pessoa ficaria "já contatada" e o envio real
-    // depois puларia ela).
-    if (r.skipped) {
-      enviados++;
-      if (i < lote.length - 1) await sleep(50);
-      continue;
+    // PORTÃO ÚNICO: idempotência (bcast:<campaign>:<phone>) + fail-closed +
+    // kill switch + ambiente. Dois broadcasts simultâneos → só 1 reserva/envia.
+    const res = await gatedSendWhatsApp(supabase, {
+      kind: "broadcast",
+      dedupeKey: "bcast:" + campaignId + ":" + g.phone,
+      identifierOk: true, // experiência veio por slug/nome EXATO (match .eq)
+      rawPhone: g.phone,
+      suppressed: false,
+      statusAllowed: true,
+      message: personalize(message, g.nome),
+      createdBy: adminId,
+    });
+    // Trava global / ambiente errado → para TUDO na hora.
+    if (res.reason === "sending_disabled" || res.reason === "staging_blocked") {
+      abortReason = res.reason;
+      break;
     }
-    if (r.ok) {
-      // Marca ANTES de seguir: se a marcação falhar, ABORTA o lote — senão
-      // a próxima rodada reenviaria pra essa pessoa (duplicata). Nota:
-      // supabase update devolve { error } (não lança), então checamos ele.
-      const { error: upErr } = await supabase
-        .from("byelarah_submissions")
-        .update({
-          whatsapp_followup_sent_at: nowIso(),
-          whatsapp_followup_count: g.maxCount + 1,
-        })
-        .in("id", g.ids);
-      enviados++; // a mensagem JÁ saiu
-      if (upErr) {
-        console.error(
-          "[Elarah whatsapp-broadcast] envio OK mas TRACKING FALHOU — abortando lote pra não duplicar —",
-          "phone=" + g.phone,
-          "err=" + upErr.message,
-        );
-        abortReason = "tracking_failed";
-        break;
+    if (res.sent || res.dryRun || res.reason === "duplicate") {
+      enviados++; // conta pra barra andar (enviado, simulado ou já-enviado)
+      // Marca o tracking de campanha só em envio REAL (não em dry-run nem
+      // duplicate). Se a marcação falhar, ABORTA pra não arriscar re-spam.
+      if (res.sent) {
+        const { error: upErr } = await supabase
+          .from("byelarah_submissions")
+          .update({
+            whatsapp_followup_sent_at: nowIso(),
+            whatsapp_followup_count: g.maxCount + 1,
+          })
+          .in("id", g.ids);
+        if (upErr) {
+          console.error(
+            "[Elarah whatsapp-broadcast] envio OK mas TRACKING FALHOU — abortando lote —",
+            "err=" + upErr.message,
+          );
+          abortReason = "tracking_failed";
+          break;
+        }
       }
     } else {
       falharam++;
       console.error(
-        "[Elarah whatsapp-broadcast] falha no envio —",
+        "[Elarah whatsapp-broadcast] não enviado —",
         "phone=" + g.phone,
-        "status=" + (r.status ?? "?"),
-        "error=" + (r.error ?? "?"),
+        "motivo=" + (res.reason ?? "?"),
       );
     }
     // Intervalo entre envios (menos no último).

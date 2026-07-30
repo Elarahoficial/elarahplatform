@@ -28,14 +28,10 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   bookingConfirmationEmailHtml,
-  isCustomerMessagingSuppressed,
   sendAdminSaleNotification,
   sendEmail,
 } from "../_shared/email.ts";
-import {
-  bookingConfirmationWhatsAppText,
-  sendWhatsAppText,
-} from "../_shared/whatsapp.ts";
+import { sendBookingConfirmationGated } from "../_shared/whatsapp.ts";
 import {
   holdsInventory,
   reoccupyVagaOnReapproval,
@@ -116,33 +112,12 @@ async function sendBookingConfirmation(booking: BookingRow) {
       "error=" + (result.error ?? "?"),
     );
   }
-  // WhatsApp (Z-API) — best-effort, espelha o e-mail. Nunca quebra o fluxo
-  // e pula reservas "aguardando experiência" / Z-API não configurado.
-  if (!isCustomerMessagingSuppressed(booking)) {
-    const telefoneWa = (meta.telefone_digits as string | undefined) ??
-      (booking as { telefone?: string | null }).telefone;
-    if (telefoneWa) {
-      const waResult = await sendWhatsAppText({
-        to: telefoneWa,
-        message: bookingConfirmationWhatsAppText({
-          nome: booking.nome,
-          experienciaNome: booking.experiencia_nome ?? "Sua experiência",
-          data: booking.data,
-          horario: booking.horario,
-          endereco: (meta.endereco as string | null) ?? null,
-          bairro: (meta.bairro as string | null) ?? null,
-          quantidade: booking.quantidade ?? null,
-        }),
-      });
-      if (!waResult.ok && !waResult.skipped) {
-        console.error(
-          "[Elarah Payment/Pagarme] envio de WhatsApp falhou",
-          "booking_id=" + booking.id,
-          "status=" + (waResult.status ?? "?"),
-          "error=" + (waResult.error ?? "?"),
-        );
-      }
-    }
+  // WhatsApp da confirmação — passa pelo PORTÃO ÚNICO (idempotência +
+  // fail-closed + auditoria). Best-effort: nunca quebra o fluxo do pagamento.
+  try {
+    await sendBookingConfirmationGated(supabase, booking, meta);
+  } catch (e) {
+    console.error("[Elarah Payment/Pagarme] WhatsApp confirmação exceção (ignorada)", booking.id, String(e));
   }
 }
 
