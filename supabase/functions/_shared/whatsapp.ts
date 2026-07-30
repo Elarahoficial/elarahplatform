@@ -150,6 +150,51 @@ export async function sendWhatsAppText(
   return sendTextCore(phone, msg);
 }
 
+// Envia uma imagem com legenda (caption) pela Z-API. `image` pode ser uma
+// URL pública (ex.: foto da experiência) ou um data URI base64. Usado pelas
+// mensagens que mostram a foto da experiência (ou o logo da Elarah).
+export async function sendWhatsAppImage(opts: {
+  to: unknown;
+  image: string;
+  caption?: string;
+}): Promise<WaResult> {
+  const phone = normalizePhoneBR(
+    typeof opts.to === "string" ? opts.to : String(opts.to ?? ""),
+  );
+  if (!phone) return { ok: false, error: "invalid_phone" };
+  if (!opts.image) {
+    // Sem imagem: cai pro texto puro, pra não deixar de avisar o cliente.
+    return sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+  }
+  if (!INSTANCE || !TOKEN) {
+    return { ok: false, skipped: true, error: "ZAPI_INSTANCE_ID/ZAPI_TOKEN ausentes." };
+  }
+  const url = `${ZAPI_BASE}/instances/${INSTANCE}/token/${TOKEN}/send-image`;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (CLIENT_TOKEN) headers["Client-Token"] = CLIENT_TOKEN;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ phone, image: opts.image, caption: opts.caption ?? "" }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("[elarah/whatsapp] Z-API send-image erro", "status=" + res.status, "body=" + text.slice(0, 300));
+      // Fallback: se a imagem falhar (URL inacessível etc.), manda o texto.
+      const fb = await sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+      return fb.ok ? fb : { ok: false, status: res.status, error: text.slice(0, 300) };
+    }
+    const data = await res.json().catch(() => ({} as Record<string, unknown>));
+    const id = (data as { messageId?: string }).messageId ?? (data as { id?: string }).id;
+    return { ok: true, status: res.status, id };
+  } catch (e) {
+    console.error("[elarah/whatsapp] exceção send-image", e);
+    // Fallback pro texto.
+    return sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+  }
+}
+
 // ===== Textos das mensagens =====
 
 // Primeiro nome, pra deixar a mensagem pessoal.
