@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v38 — Compras: "aguardando experiência" sai da lista principal + selo/contador no topo + tipo (mesmo/outra) + fora das pendências de repasse');
+  console.info('[Elarah Admin] admin.js v39 — Compras: "aguardando experiência" sai da lista + selo no topo + tipo (mesmo/outra); "outra experiência" vira saldo a usar (esconde fornecedor/repasse/comissão antigos)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -4197,6 +4197,17 @@
         ? '<br><span title="Cliente desmarcou sem reembolso e vai remarcar. Nenhuma mensagem automática é enviada e a vaga voltou pro estoque." style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:10px;background:#fff3e0;color:#b56a15;border:1px solid #f0d3a8;font-size:.66rem;font-weight:700;letter-spacing:.03em;white-space:nowrap;">⏳ Aguardando experiência' + aguardandoTipoLabel + '</span>'
         : '';
 
+      // Aguardando experiência do tipo "outra experiência": a cliente vai
+      // usar o valor pago em OUTRA coisa, então o fornecedor/repasse antigos
+      // não valem mais. A linha vira um SALDO a usar — some o fornecedor, o
+      // valor cheio, o repasse, a comissão, o prazo e o aviso ao fornecedor;
+      // fica só o valor que a cliente pagou (o saldo). É só de exibição — os
+      // dados originais continuam salvos no banco.
+      const isOutraExpSaldo = b.aguardando_experiencia && aguardandoTipo === 'outro';
+      // Saldo = valor efetivamente pago pela cliente (amount_total). Cai no
+      // valor Elarah resolvido só se amount_total não existir (reserva antiga).
+      const saldoCentavos = b.amount_total != null ? b.amount_total : b._valorElarahResolvido;
+
       return `
         <tr>
           <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Site</span></td>
@@ -4208,15 +4219,19 @@
           <td>${escapeHtml(b.data || '—')}</td>
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
-          <td>${escapeHtml(formatCents(b._valorElarahResolvido != null ? b._valorElarahResolvido : b.amount_total, b.currency))}${mismatchBadge(b)}</td>
-          <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
-          <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
-          <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
-          <td>${b.status === 'pago' && valorComissao ? escapeHtml(formatCents(valorComissao, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
+          <td>${isOutraExpSaldo
+            ? '<span title="Valor pago pela cliente — saldo a usar em outra experiência." style="font-weight:700;color:#1a8a4a;">' + escapeHtml(formatCents(saldoCentavos, b.currency)) + '</span>'
+            : escapeHtml(formatCents(b._valorElarahResolvido != null ? b._valorElarahResolvido : b.amount_total, b.currency)) + mismatchBadge(b)}</td>
+          <td style="font-size:.82rem;">${isOutraExpSaldo
+            ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:.68rem;font-weight:700;white-space:nowrap;">💳 saldo a usar</span>'
+            : (b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : '')}</td>
+          <td>${isOutraExpSaldo ? '—' : (b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : ''))}</td>
+          <td>${isOutraExpSaldo ? '—' : (b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : ''))}</td>
+          <td>${isOutraExpSaldo ? '—' : (b.status === 'pago' && valorComissao ? escapeHtml(formatCents(valorComissao, b.currency)) : (b.status === 'pago' ? '—' : ''))}</td>
           <td>${bookingStatusBadge(b.status)}${aguardandoBadge}</td>
-          ${renderPrazoCell(b)}
-          <td>${b.status === 'pago' ? '<select class="admin__sf-select" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;' + ((b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;') + '"><option value="repasse_pendente"' + ((b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : '') + '>Repasse pendente</option><option value="repasse_feito"' + (b.status_fornecedor === 'repasse_feito' ? ' selected' : '') + '>Repasse feito</option></select>' : ''}</td>
-          ${renderWhatsappCell(b, nomeResolved, telefone)}
+          ${isOutraExpSaldo ? '<td></td>' : renderPrazoCell(b)}
+          <td>${!isOutraExpSaldo && b.status === 'pago' ? '<select class="admin__sf-select" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;' + ((b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;') + '"><option value="repasse_pendente"' + ((b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : '') + '>Repasse pendente</option><option value="repasse_feito"' + (b.status_fornecedor === 'repasse_feito' ? ' selected' : '') + '>Repasse feito</option></select>' : ''}</td>
+          ${isOutraExpSaldo ? '<td></td>' : renderWhatsappCell(b, nomeResolved, telefone)}
         </tr>
       `;
     }
