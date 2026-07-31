@@ -86,12 +86,16 @@ const ALLOWLIST_ONLY = ["1", "true", "yes"].includes(
   (Deno.env.get("WHATSAPP_ALLOWLIST_ONLY") ?? "").trim().toLowerCase(),
 );
 // ROLLOUT ETAPA 3: WHATSAPP_ROLLOUT_PERCENT = 0..100 (fração de reservas
-// reais liberada). Ausente = 100 (todos). Determinístico por dedupe_key.
+// reais liberada). Determinístico por dedupe_key.
+// FAIL-CLOSED: ausente OU inválido (não-numérico) → 0 (NÃO envia). Nunca
+// assume 100. Pra liberar geral é preciso setar WHATSAPP_ROLLOUT_PERCENT=100
+// DE PROPÓSITO — mesmo princípio do kill switch (desligado por padrão).
 const ROLLOUT_PERCENT = (() => {
   const raw = (Deno.env.get("WHATSAPP_ROLLOUT_PERCENT") ?? "").trim();
-  if (raw === "") return 100;
+  if (raw === "") return 0; // ausente → fail-closed
   const n = Number(raw);
-  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 100;
+  if (!Number.isFinite(n)) return 0; // inválido → fail-closed
+  return Math.max(0, Math.min(100, n));
 })();
 
 export function whatsappSendingDisabled(): boolean {

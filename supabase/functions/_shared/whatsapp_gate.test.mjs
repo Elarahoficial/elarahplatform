@@ -44,7 +44,10 @@ function makeSender(opts = {}) {
   };
   return { send, state };
 }
-const PROD = { isProd: true, sendingDisabled: false, dryRun: false, allowlist: null };
+// Produção EXPLICITAMENTE configurada (rollout 100 setado de propósito). Com o
+// fail-closed, rolloutPercent ausente = 0 = não envia — então os cenários que
+// esperam ENVIO precisam do 100 explícito, refletindo a config real de go-live.
+const PROD = { isProd: true, sendingDisabled: false, dryRun: false, allowlist: null, rolloutPercent: 100 };
 
 function baseParams(over = {}) {
   return Object.assign({
@@ -218,7 +221,7 @@ async function run() {
 
     // staging COM meu número na allowlist → pode (só pra mim)
     const st2 = makeStore(); const s2 = makeSender();
-    const cfg2 = { isProd: false, sendingDisabled: false, dryRun: false, allowlist: new Set([MY_TEST]) };
+    const cfg2 = { isProd: false, sendingDisabled: false, dryRun: false, allowlist: new Set([MY_TEST]), rolloutPercent: 100 };
     const r2 = await gatedSend({ config: cfg2, ...st2, send: s2.send }, baseParams({ dedupeKey: "confirmation:b-staging2" }));
     check("17) staging com allowlist (meu nº) → envia", r2.sent === true && s2.state.calls === 1);
   }
@@ -226,7 +229,7 @@ async function run() {
   // 18) kill switch → não envia
   {
     const st = makeStore(); const s = makeSender();
-    const cfg = { isProd: true, sendingDisabled: true, dryRun: false, allowlist: null };
+    const cfg = { isProd: true, sendingDisabled: true, dryRun: false, allowlist: null, rolloutPercent: 100 };
     const r = await gatedSend({ config: cfg, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:b-kill" }));
     check("18) kill switch → não envia", r.sent === false && r.reason === "sending_disabled" && s.state.calls === 0);
   }
@@ -234,7 +237,7 @@ async function run() {
   // 19) dry-run → reserva mas NÃO chama Z-API
   {
     const st = makeStore(); const s = makeSender();
-    const cfg = { isProd: true, sendingDisabled: false, dryRun: true, allowlist: null };
+    const cfg = { isProd: true, sendingDisabled: false, dryRun: true, allowlist: null, rolloutPercent: 100 };
     const r = await gatedSend({ config: cfg, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:b-dry" }));
     check("19) dry-run → não chama Z-API", r.sent === false && r.dryRun === true && s.state.calls === 0);
   }
@@ -289,6 +292,20 @@ async function run() {
       const st = makeStore(); const s = makeSender();
       const r = await gatedSend({ config: { ...PROD, rolloutPercent: 0 }, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:r0" }));
       check("23) rollout 0% → não envia", r.sent === false && r.reason === "rollout_zero" && s.state.calls === 0);
+    }
+    // FAIL-CLOSED: rolloutPercent AUSENTE/undefined → NÃO envia (nunca assume 100)
+    {
+      const st = makeStore(); const s = makeSender();
+      const cfg = { isProd: true, sendingDisabled: false, dryRun: false, allowlist: null }; // sem rolloutPercent
+      const r = await gatedSend({ config: cfg, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:rundef" }));
+      check("23) rollout AUSENTE → não envia (fail-closed)", r.sent === false && r.reason === "rollout_zero" && s.state.calls === 0, r.reason);
+    }
+    // FAIL-CLOSED: rolloutPercent NaN/inválido → NÃO envia
+    {
+      const st = makeStore(); const s = makeSender();
+      const cfg = { ...PROD, rolloutPercent: NaN };
+      const r = await gatedSend({ config: cfg, ...st, send: s.send }, baseParams({ dedupeKey: "confirmation:rnan" }));
+      check("23) rollout NaN → não envia (fail-closed)", r.sent === false && r.reason === "rollout_zero" && s.state.calls === 0, r.reason);
     }
     // pct=100 → envia
     {
