@@ -2035,6 +2035,7 @@
     if (progBar) progBar.style.width = '0%';
     let enviadosTotal = 0;
     let falharamTotal = 0;
+    let puladosCooldownTotal = 0;
     let denom = alvo;
     let guard = 0;
     let stoppedMsg = '';
@@ -2048,6 +2049,7 @@
       }
       enviadosTotal += d.enviados;
       falharamTotal += d.falharam;
+      puladosCooldownTotal += (d.pulados_cooldown || 0);
       denom = Math.max(denom, enviadosTotal + (d.restantes || 0));
       const pct = denom ? Math.min(100, Math.round(enviadosTotal / denom * 100)) : 100;
       if (progBar) progBar.style.width = pct + '%';
@@ -2075,8 +2077,13 @@
       if ((d.restantes || 0) <= 0) break;
       if (d.enviados === 0) {
         // Nenhum progresso neste lote → evita loop infinito.
-        stoppedMsg = 'Parei: as ' + d.restantes + ' restantes falharam no envio. ' +
-          'Confira se a instância da Z-API está conectada.';
+        if ((d.pulados_cooldown || 0) > 0) {
+          stoppedMsg = 'Parei: os ' + d.restantes + ' restantes receberam nas últimas 12h — ' +
+            'pulei pra não mandar de novo. Tente de novo mais tarde se quiser.';
+        } else {
+          stoppedMsg = 'Parei: as ' + d.restantes + ' restantes falharam no envio. ' +
+            'Confira se a instância da Z-API está conectada.';
+        }
         break;
       }
     }
@@ -2088,7 +2095,8 @@
     } else {
       statusEl.style.color = '#1a8a4a';
       statusEl.textContent = '✅ ' + enviadosTotal + ' enviado(s)' +
-        (falharamTotal ? ' · ' + falharamTotal + ' falharam' : '') + '.';
+        (falharamTotal ? ' · ' + falharamTotal + ' falharam' : '') +
+        (puladosCooldownTotal ? ' · ' + puladosCooldownTotal + ' pulados (já receberam nas últimas 12h)' : '') + '.';
     }
     if (progLabel) {
       progLabel.textContent = 'Concluído: ' + enviadosTotal + ' enviado(s)' +

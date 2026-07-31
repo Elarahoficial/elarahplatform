@@ -66,6 +66,12 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
 // abaixo do timeout da Edge Function. 50 × ~900ms ≈ 45s.
 const MAX_BATCH = 50;
 const DELAY_MS = 900;
+// JANELA ANTI-REENVIO: mesmo com only_new=false ("reenviar a todos"), um
+// número contatado nas últimas N horas NÃO recebe de novo. Isso mata o
+// cenário "cliquei duas vezes / re-disparei sem querer" — que, como o
+// campaign_id muda a cada clique, o portão sozinho NÃO deduplicaria entre
+// campanhas distintas. Uma recampanha legítima (dias depois) passa normal.
+const RECONTACT_COOLDOWN_MS = 12 * 3600_000; // 12h
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -146,6 +152,7 @@ interface PhoneGroup {
   ids: string[];
   anyContacted: boolean;
   maxCount: number;
+  lastSentAt: number | null; // ms do envio mais recente (null = nunca)
 }
 
 function groupByPhone(rows: SubRow[]): {
@@ -162,13 +169,17 @@ function groupByPhone(rows: SubRow[]): {
     }
     let g = map.get(phone);
     if (!g) {
-      g = { phone, nome: r.nome ?? "", ids: [], anyContacted: false, maxCount: 0 };
+      g = { phone, nome: r.nome ?? "", ids: [], anyContacted: false, maxCount: 0, lastSentAt: null };
       map.set(phone, g);
     }
     g.ids.push(r.id);
     // Guarda um nome não-vazio, se houver, pra personalizar.
     if (!g.nome && r.nome) g.nome = r.nome;
-    if (r.whatsapp_followup_sent_at) g.anyContacted = true;
+    if (r.whatsapp_followup_sent_at) {
+      g.anyContacted = true;
+      const t = Date.parse(r.whatsapp_followup_sent_at);
+      if (Number.isFinite(t)) g.lastSentAt = Math.max(g.lastSentAt ?? 0, t);
+    }
     g.maxCount = Math.max(g.maxCount, Number(r.whatsapp_followup_count) || 0);
   }
   return { groups: [...map.values()], semTelefone };
@@ -322,11 +333,22 @@ serve(async (req) => {
 
   let enviados = 0;
   let falharam = 0;
+  let puladosCooldown = 0;
   let abortReason: string | null = null;
   const nowIso = () => new Date().toISOString();
+  const agora = Date.now();
 
   for (let i = 0; i < lote.length; i++) {
     const g = lote[i];
+    // JANELA ANTI-REENVIO (fail-closed contra clique-duplo / re-disparo):
+    // contatado nas últimas RECONTACT_COOLDOWN_MS → PULA, mesmo com
+    // only_new=false. O portão só deduplica por campaign_id, e o painel gera
+    // um id novo a cada clique — então esta é a trava que impede a mesma
+    // pessoa de receber duas vezes entre cliques/campanhas próximas.
+    if (g.lastSentAt !== null && (agora - g.lastSentAt) < RECONTACT_COOLDOWN_MS) {
+      puladosCooldown++;
+      continue;
+    }
     // PORTÃO ÚNICO: idempotência (bcast:<campaign>:<phone>) + fail-closed +
     // kill switch + ambiente. Dois broadcasts simultâneos → só 1 reserva/envia.
     const res = await gatedSendWhatsApp(supabase, {
@@ -377,7 +399,9 @@ serve(async (req) => {
     if (i < lote.length - 1) await sleep(DELAY_MS);
   }
 
-  const restantes = Math.max(0, alvo - enviados);
+  // Cooldown-pulados contam como "resolvidos" (não serão reenviados nesta
+  // sessão) — senão o painel ficaria re-chamando send em loop pra eles.
+  const restantes = Math.max(0, alvo - enviados - puladosCooldown);
 
   // Log agregado por chamada (best-effort — não derruba o retorno).
   try {
@@ -407,6 +431,7 @@ serve(async (req) => {
     alvo,
     enviados,
     falharam,
+    pulados_cooldown: puladosCooldown,
     restantes,
     sem_telefone_ignorados: semTelefone,
     dry_run: dryRun,
