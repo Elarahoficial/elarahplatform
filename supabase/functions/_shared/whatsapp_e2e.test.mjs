@@ -160,6 +160,7 @@ async function loadWA(env) {
 const PROD_ENV = {
   WHATSAPP_SENDING_ENABLED: "true",
   WHATSAPP_ENV: "production",
+  WHATSAPP_ROLLOUT_PERCENT: "100", // liberado DE PROPÓSITO (fail-closed: ausente = 0)
   ZAPI_INSTANCE_ID: "INST_FAKE",
   ZAPI_TOKEN: "TOK_FAKE",
   ZAPI_CLIENT_TOKEN: "CLIENT_FAKE",
@@ -514,6 +515,18 @@ async function run() {
     check("observação → registra na send_log (namespace observe:)", sb._sendLog.has("observe:confirmation:bko-A") &&
       [...sb._sendLog.values()][0].status === "observed");
     check("observação → NÃO consome a chave real", !sb._sendLog.has("confirmation:bko-A"));
+  }
+  {
+    // FAIL-CLOSED: ROLLOUT_PERCENT ausente em produção → NÃO envia (nunca 100).
+    const envSemRollout = { ...PROD_ENV };
+    delete envSemRollout.WHATSAPP_ROLLOUT_PERCENT;
+    const WAnr = await loadWA(envSemRollout);
+    const znr = installZapiMock();
+    const sb = makeSupabase([bookingSeed({ id: "bknr-A" })]);
+    const b = sb._bookings.get("bknr-A");
+    const rnr = await WAnr.sendBookingConfirmationGated(sb, b, { telefone_digits: b.telefone });
+    check("ROLLOUT ausente → não envia (fail-closed)", rnr.sent === false && rnr.reason === "rollout_zero", rnr.reason);
+    check("ROLLOUT ausente → Z-API não chamada", znr.calls.length === 0);
   }
   {
     // Rollout allowlist-only: mesmo em produção, só o "meu número".

@@ -144,10 +144,13 @@ export async function gatedSend(deps, params) {
     }
   }
 
-  // 7c) ROLLOUT — ETAPA 3: porcentagem. rolloutPercent < 100 libera só uma
-  //     fração determinística das reservas (ex.: 10 = poucas reservas reais).
-  //     100 (ou ausente) = todos. Determinístico pela dedupeKey.
-  const pct = Number.isFinite(cfg.rolloutPercent) ? cfg.rolloutPercent : 100;
+  // 7c) ROLLOUT — ETAPA 3: porcentagem. rolloutPercent libera só uma fração
+  //     determinística das reservas (ex.: 10 = poucas reservas reais); 100 =
+  //     todos. Determinístico pela dedupeKey.
+  //     FAIL-CLOSED: ausente/NaN/não-configurado → 0 (NÃO envia). Nunca
+  //     assume 100 "por padrão" — pra liberar geral é preciso setar 100 DE
+  //     PROPÓSITO. Mesmo princípio do kill switch (desligado por padrão).
+  const pct = Number.isFinite(cfg.rolloutPercent) ? cfg.rolloutPercent : 0;
   if (pct <= 0) {
     return result(false, "rollout_zero");
   }
