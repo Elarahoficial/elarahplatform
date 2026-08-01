@@ -162,7 +162,7 @@ for j, (a, b) in enumerate(INCL):
     put(p2, "— "+b, FS, 9.3, (0.5, 0.45, 0.42), 74+FSB.text_length(a, 9.6)+6, yy)
 # 3 equal vibe photos
 _VW = 157.2
-for _pth, _x0, _vb in [("perfumes11.jpg", 51.8, 0.4), ("perfumariaharbolita.jpg", 218.0, 0.5), ("perfumes10.jpg", 384.3, 0.5)]:
+for _pth, _x0, _vb in [("perfumariaapresentação.jpg", 51.8, 0.3), ("perfumariaapresentação1.jpg", 218.0, 0.45), ("perfumariaapresentação2.jpg", 384.3, 0.25)]:
     photo(p2, A_DIR+_pth, (_x0, 436.5, _x0+_VW, 612.8), vbias=_vb)
 # banner text
 rm(p2, [(98, 640, 500, 684)])
