@@ -233,12 +233,7 @@ put(p3, "onde a opção parceira acontece", FSER, 11, MUTED, 232, 512)
 photo(p3, A_DIR+"betchavas.jpg", (54, 524, 294, 640), vbias=0.42)
 put(p3, "BETC Havas Café", FSB, 10.5, DARKt, 54, 656)
 put(p3, "consumação mínima de R$ 50", FS, 8.2, MUTED, 54+FSB.text_length("BETC Havas Café", 10.5)+10, 656)
-# Jules — photo pending: tasteful placeholder
-jr = fitz.Rect(300, 524, 541, 640)
-p3.draw_rect(jr, color=(0.86, 0.62, 0.70), fill=(0.988, 0.945, 0.95), width=1.1, radius=0.03,
-             dashes="[4 3] 0")
-_pw = FS.text_length("FOTO EM BREVE", 9) + 3.2*12
-put_spaced(p3, "FOTO EM BREVE", jr.x0+(jr.width-_pw)/2, 587, 9, (0.72, 0.45, 0.55), FS, track=3.2)
+photo(p3, A_DIR+"julescampobelo.jpg", (300, 524, 541, 640), vbias=0.5)
 put(p3, "Jules L'Art Du Pain", FSB, 10.5, DARKt, 300, 656)
 put(p3, "sem custo de espaço", FS, 8.2, MUTED, 300+FSB.text_length("Jules L'Art Du Pain", 10.5)+10, 656)
 put(p3, "R$ 289 por pessoa · imersão de 4 horas · base para 10 convidados · durante a semana.",
@@ -264,8 +259,8 @@ rm(p4, [(53, 229, 300, 249)])
 put_spaced(p4, "✦ INSPIRAÇÃO", 53.8, 244.5, 8.2, CORAL_RGB, FSB, track=1.5)
 put(p4, "Como o seu dia pode ser", FSER, 14.2, NEARBLK, 149.4, 244.5)
 # two inspiration photos (equal)
-photo(p4, A_DIR+"perfumaria.jpg", (52, 257, 294, 481), vbias=0.4)
-photo(p4, A_DIR+"maeefilhaperfume.jpg", (302, 257, 542, 481), vbias=0.35)
+photo(p4, A_DIR+"aniv-decor.jpg", (52, 257, 294, 481), vbias=0.45)
+photo(p4, A_DIR+"perfumariadecor.jpg", (302, 257, 542, 481), vbias=0.45)
 # banner headline
 rm(p4, [(76, 534, 487, 559), (76, 561, 432, 598)])
 x = 77.8
