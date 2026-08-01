@@ -19,11 +19,21 @@
     stored = sessionStorage.getItem('elarah_app_preview') === '1';
   } catch (e) {}
 
-  var isApp =
+  // Detecção original: estava DENTRO do app? (ElarahApp no User-Agent,
+  // ?app=1 no navegador, sessionStorage ou Capacitor nativo).
+  var isNativeOrAppView =
     ua.indexOf('ElarahApp') > -1 ||
     qApp ||
     stored ||
     (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+  // Agora o visual "app" (estilo Airbnb) vale TAMBÉM no site aberto no
+  // navegador, pra TODOS os visitantes — não só dentro do app. Por isso
+  // ligamos sempre. (A "ponte nativa" mais abaixo continua rodando só no
+  // app real, via Capacitor.isNativePlatform().)
+  // Para voltar a "visual só no app", troque a linha por:
+  //   var isApp = isNativeOrAppView;
+  var isApp = true || isNativeOrAppView;
 
   if (!isApp) return;
 
