@@ -112,14 +112,14 @@ put(p1, "Perfume", FB, 40, CORAL_RGB, 70, 350)
 put(p1, "Natural", FB, 40, CORAL_RGB, 70, 393)
 put(p1, "crie a sua fragrância", FI, 19.5, DARKt, 70.9, 425)
 p1.draw_rect(fitz.Rect(70.9, 445, 116, 447.2), color=None, fill=CORAL_RGB)
-BODY = ('<p>Uma experiência sensorial pra reunir o grupo: cada convidado vira '
-        '<b style="color:#FF5E8A">perfumista por um dia</b>. Sente as essências, escolhe as suas '
-        'notas e cria uma fragrância única — que leva pra casa de lembrança. '
+BODY = ('<p>Uma imersão de perfumaria botânica pra reunir o grupo: cada convidado vira '
+        '<b style="color:#FF5E8A">perfumista por um dia</b>. Aprende a estrutura de uma fragrância '
+        'e formula, do zero, o seu próprio perfume — que leva pra casa. '
         '<b style="color:#FF5E8A">Vocês escolhem o clima, a gente leva tudo até vocês.</b></p>')
 p1.insert_htmlbox(fitz.Rect(70.9, 462, 302, 592), BODY,
                   css="p{margin:0;font-family:sans-serif;font-size:10.5px;line-height:1.5;color:#3F2F2C}")
-# hero photo (template cover-photo slot)
-photo(p1, A_DIR+"perfumariaharbolita.jpg", (315.8, 295.5, 524.2, 555.0), vbias=0.5)
+# hero photo (template cover-photo slot) — decorative styled flat-lay
+photo(p1, A_DIR+"perfumariamaes.jpg", (315.8, 295.5, 524.2, 555.0), vbias=0.45)
 # footer
 rm(p1, [(66, 752, 548, 771)])
 f1 = "EXPERIÊNCIA ELARAH  ·  PERFUME NATURAL  ·  "
@@ -138,31 +138,31 @@ put(p2, "Perfumista por ", FB, 27, NEARBLK, 53.8, 156.2)
 put(p2, "um dia", FBI, 27, CORAL_RGB, 53.8+FB.text_length("Perfumista por ", 27), 156.2)
 # intro
 retext(p2, (52, 171, 505, 250),
-       "Aqui cada convidado vira perfumista por um dia: sente as essências, escolhe as notas e "
-       "cria a própria fragrância, que leva pra casa. Uma experiência sensorial, relaxante e cheia "
-       "de significado — o ateliê vai até vocês, com tudo pronto.",
-       10.5, width_rect=(53.8, 173, 502, 268))
-# middle block: 'como funciona' (wipe the I/II/III template block)
+       "Mais que uma experiência rápida: um verdadeiro laboratório de perfumaria botânica, com 4 "
+       "horas de teoria e prática. Você entende a estrutura de um perfume — famílias e pirâmide "
+       "olfativa, notas de topo, coração e fundo — e formula, do zero, a sua própria fragrância. "
+       "Uma imersão acessível pra iniciantes e rica pra quem já conhece.",
+       10.5, width_rect=(53.8, 173, 505, 268))
+# middle block: 'o que está incluso' (wipe the I/II/III template block)
 rm(p2, [(40, 258, 558, 404)])
 p2.draw_rect(fitz.Rect(40, 256, 558, 404), color=None, fill=CREAMbg)
-put_spaced(p2, "✦ COMO FUNCIONA", 53.8, 292, 9, CORAL_RGB, FSB)
-put(p2, "A sua fragrância, ", FB, 18, NEARBLK, 53.8, 316)
-put(p2, "passo a passo", FI, 18, CORAL_RGB, 53.8+FB.text_length("A sua fragrância, ", 18), 316)
-STEPS = [
-    ("Sentir as essências", "explore o menu de aromas naturais"),
-    ("Escolher as notas", "topo, coração e fundo, do seu jeito"),
-    ("Criar a fórmula", "com a condução da nossa perfumista"),
-    ("Batizar & levar", "nomeie o seu perfume e leve pra casa"),
+put_spaced(p2, "✦ A IMERSÃO", 53.8, 292, 9, CORAL_RGB, FSB)
+put(p2, "O que está ", FB, 18, NEARBLK, 53.8, 316)
+put(p2, "incluso", FI, 18, CORAL_RGB, 53.8+FB.text_length("O que está ", 18), 316)
+INCL = [
+    ("4 horas de imersão", "teoria e prática, lado a lado"),
+    ("Apostila de +30 páginas", "todo o conteúdo pra levar pra casa"),
+    ("+50 matérias-primas", "na bancada, pra formular do zero"),
+    ("Mentoria especializada", "profissional com +12 anos de perfumaria"),
 ]
-for j, (a, b) in enumerate(STEPS):
+for j, (a, b) in enumerate(INCL):
     yy = 348 + j*15.5
-    p2.draw_circle((62, yy-2.6), 2.0, color=None, fill=CORAL_RGB)
-    put(p2, str(j+1), FSB, 6.2, (1, 1, 1), 60.4, yy-0.7)
+    p2.draw_circle((62, yy-2.6), 2.2, color=None, fill=CORAL_RGB)
     put(p2, a, FSB, 9.6, (0.29, 0.24, 0.22), 74, yy)
     put(p2, "— "+b, FS, 9.3, (0.5, 0.45, 0.42), 74+FSB.text_length(a, 9.6)+6, yy)
 # 3 equal vibe photos
 _VW = 157.2
-for _pth, _x0, _vb in [("perfumes11.jpg", 51.8, 0.4), ("perfumes10.jpg", 218.0, 0.5), ("perfumariamaes.jpg", 384.3, 0.5)]:
+for _pth, _x0, _vb in [("perfumes11.jpg", 51.8, 0.4), ("perfumariaharbolita.jpg", 218.0, 0.5), ("perfumes10.jpg", 384.3, 0.5)]:
     photo(p2, A_DIR+_pth, (_x0, 436.5, _x0+_VW, 612.8), vbias=_vb)
 # banner text
 rm(p2, [(98, 640, 500, 684)])
@@ -198,9 +198,9 @@ OPTS = [
     dict(name="Em espaço parceiro", tag="Ambiente lindo, tudo preparado.",
          badge="ESPAÇO INCLUSO", kind="dark",
          bullets=["No BETC Havas Café ou Jules L'Art Du Pain",
-                  "Ambientação e estrutura completas",
                   "Essências, materiais e frasco inclusos",
-                  "Cada convidado leva o seu perfume"]),
+                  "Cada convidado leva o seu perfume",
+                  "Jules sem custo · BETC consumação mín. R$&nbsp;50"]),
 ]
 CX = [54, 300]; CW = 241; CY0, CY1 = 290, 478
 for i, t in enumerate(OPTS):
@@ -218,13 +218,13 @@ for i, t in enumerate(OPTS):
     put_spaced(p3, t["badge"], bx+9, CY0+2.7, 6.6, (1, 1, 1), FSB, track=0.8)
     lis = "".join(f'<div class="li"><span class="mk">◆</span>&nbsp;{b}</div>' for b in t["bullets"])
     html = (f'<div class="nm">{t["name"]}</div><div class="tg">{t["tag"]}</div>'
-            f'<div class="pr">valor <i>sob consulta</i></div><div class="pp">POR PESSOA</div>'
+            f'<div class="pr">R$&nbsp;289</div><div class="pp">POR PESSOA</div>'
             f'{lis}')
     css = (f'.nm{{font-family:serif;font-size:19px;font-weight:bold;color:{head}}}'
            f'.tg{{font-size:8px;color:{mut};margin-top:4px}}'
-           f'.pr{{font-family:serif;font-size:15px;color:{head};margin-top:12px}}'
+           f'.pr{{font-family:serif;font-size:23px;font-weight:bold;color:{head};margin-top:11px}}'
            f'.pp{{font-size:6.5px;color:{mut};letter-spacing:1px;margin-top:1px}}'
-           f'.li{{font-size:8.6px;color:{body};margin-top:7px;line-height:1.3}}'
+           f'.li{{font-size:8.4px;color:{body};margin-top:7px;line-height:1.3}}'
            f'.mk{{color:{acc};font-size:6.5px}}')
     p3.insert_htmlbox(fitz.Rect(card.x0+16, card.y0+18, card.x1-14, card.y1-10), html, css=css)
 # partner venues strip (option 2 acontece aqui)
@@ -232,6 +232,7 @@ put_spaced(p3, "✦ ESPAÇOS PARCEIROS", 54, 512, 9, CORAL_RGB, FSB)
 put(p3, "onde a opção parceira acontece", FSER, 11, MUTED, 232, 512)
 photo(p3, A_DIR+"betchavas.jpg", (54, 524, 294, 640), vbias=0.42)
 put(p3, "BETC Havas Café", FSB, 10.5, DARKt, 54, 656)
+put(p3, "consumação mínima de R$ 50", FS, 8.2, MUTED, 54+FSB.text_length("BETC Havas Café", 10.5)+10, 656)
 # Jules — photo pending: tasteful placeholder
 jr = fitz.Rect(300, 524, 541, 640)
 p3.draw_rect(jr, color=(0.86, 0.62, 0.70), fill=(0.988, 0.945, 0.95), width=1.1, radius=0.03,
@@ -239,7 +240,8 @@ p3.draw_rect(jr, color=(0.86, 0.62, 0.70), fill=(0.988, 0.945, 0.95), width=1.1,
 _pw = FS.text_length("FOTO EM BREVE", 9) + 3.2*12
 put_spaced(p3, "FOTO EM BREVE", jr.x0+(jr.width-_pw)/2, 587, 9, (0.72, 0.45, 0.55), FS, track=3.2)
 put(p3, "Jules L'Art Du Pain", FSB, 10.5, DARKt, 300, 656)
-put(p3, "Valores por pessoa · base para 10 convidados · durante a semana · confirmamos conforme a data.",
+put(p3, "sem custo de espaço", FS, 8.2, MUTED, 300+FSB.text_length("Jules L'Art Du Pain", 10.5)+10, 656)
+put(p3, "R$ 289 por pessoa · imersão de 4 horas · base para 10 convidados · durante a semana.",
     FS, 7.8, (0.549, 0.494, 0.455), 54, 686)
 # header tagline (top-right) + footer
 rm(p3, [(410, 62, 541, 77), (458, 793, 543, 803)])
@@ -276,8 +278,8 @@ put(p4, "para que o encontro seja tão especial quanto inesquecível.",
 # disclaimer + footer
 rm(p4, [(434, 793, 543, 803), (50, 655, 745, 686)])
 p4.insert_textbox(fitz.Rect(53.8, 655, 538, 690),
-    "Valores por pessoa. Essências, materiais e frasco personalizado inclusos. "
-    "Proposta válida mediante confirmação de data.",
+    "Valor por pessoa: R$ 289. Imersão de 4 horas, com apostila, matérias-primas e frasco "
+    "inclusos. Proposta válida mediante confirmação de data.",
     fontsize=7.9, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
     color=(0.549, 0.494, 0.455), lineheight=1.35)
 put_right(p4, "Experiência Elarah · 2026", FS, 7.9, MUTED, 541.4, 801.0)
