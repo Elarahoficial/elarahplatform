@@ -150,7 +150,7 @@ for j, (a, b) in enumerate(INCL):
     put(p2, a, FSB, 9.6, (0.29, 0.24, 0.22), 74, yy)
     put(p2, "— "+b, FS, 9.3, (0.5, 0.45, 0.42), 74+FSB.text_length(a, 9.6)+6, yy)
 _VW = 157.2
-for _pth, _x0, _vb in [("pintura.jpg", 51.8, 0.4), ("atelieleroy-2.jpg", 218.0, 0.5), ("quadropintado.jpg", 384.3, 0.55)]:
+for _pth, _x0, _vb in [("pintura.jpg", 51.8, 0.4), ("atelieleroy-2.jpg", 218.0, 0.5), ("aquarela1.jpg", 384.3, 0.35)]:
     photo(p2, A_DIR+_pth, (_x0, 436.5, _x0+_VW, 612.8), vbias=_vb)
 rm(p2, [(98, 640, 500, 684)])
 put(p2, "Não é só pintar — é criar, relaxar e levar pra casa a sua obra.", FI, 12.8, CREAM, 100.7, 658.5)
@@ -170,25 +170,19 @@ p3.insert_textbox(fitz.Rect(54, 196, 541, 236),
     "as telas e todos os materiais — vocês cuidam do transporte e só curtem o dia.",
     fontsize=10.5, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
     color=(0.431, 0.388, 0.357), lineheight=1.5)
-# sítio photo — pendente: placeholder + detalhes do encontro ao lado
-sr = fitz.Rect(54, 252, 300, 404)
-p3.draw_rect(sr, color=(0.86, 0.62, 0.70), fill=(0.988, 0.945, 0.95), width=1.1, radius=0.03,
-             dashes="[4 3] 0")
-_pw = FS.text_length("FOTO DO SÍTIO EM BREVE", 9) + 3.2*21
-put_spaced(p3, "FOTO DO SÍTIO EM BREVE", sr.x0+(sr.width-_pw)/2, 330, 9, (0.72, 0.45, 0.55), FS, track=3.2)
-put(p3, "Sítio · São Lourenço da Serra", FSB, 9.5, DARKt, 54, 420)
-# detalhes do encontro (à direita)
-put_spaced(p3, "✦ O ENCONTRO", 320, 268, 9, CORAL_RGB, FSB)
+# detalhes do encontro (linha horizontal, sem foto do sítio)
+put_spaced(p3, "✦ O ENCONTRO", 54, 272, 9, CORAL_RGB, FSB)
+p3.draw_line((54, 292), (541, 292), color=(0.9, 0.86, 0.83), width=0.6)
 DET = [("Data", "12 de setembro"), ("Horário", "das 10h às 15h"),
-       ("Grupo", "20 pessoas"), ("Duração", "5 horas de experiência")]
-for j, (k, v) in enumerate(DET):
-    yy = 296 + j*27
-    put(p3, k.upper(), FSB, 7.6, CORAL_RGB, 320, yy)
-    put(p3, v, FSER, 13, NEARBLK, 320, yy+15)
-    p3.draw_line((320, yy+22), (528, yy+22), color=(0.9, 0.86, 0.83), width=0.6)
+       ("Grupo", "20 pessoas"), ("Duração", "5 horas")]
+DCX = [54, 176, 298, 420]
+for (k, v), xx in zip(DET, DCX):
+    put(p3, k.upper(), FSB, 7.6, CORAL_RGB, xx, 312)
+    put(p3, v, FSER, 13, NEARBLK, xx, 329)
+p3.draw_line((54, 340), (541, 340), color=(0.9, 0.86, 0.83), width=0.6)
 # ---- INVESTIMENTO (dois valores: só a experiência x com brunch) ----
-put_spaced(p3, "✦ INVESTIMENTO", 54, 452, 9, CORAL_RGB, FSB)
-put(p3, "por pessoa · você escolhe", FSER, 11, MUTED, 174, 452)
+put_spaced(p3, "✦ INVESTIMENTO", 54, 378, 9, CORAL_RGB, FSB)
+put(p3, "por pessoa · você escolhe", FSER, 11, MUTED, 174, 378)
 HEADc="#3F2F2C"; MUTc="#8C7E74"; BODYc="#4A3F3A"; CORALc="#FF5E8A"; GOLDc="#B8912E"; CREAMc="#FBF6EF"
 OPTS = [
     dict(name="Só a experiência", price="199", tag="A pintura, com tudo incluso.", kind="plain",
@@ -201,7 +195,7 @@ OPTS = [
                   "Brunch completo, servido no sítio",
                   "Cada um leva a sua obra pra casa"]),
 ]
-CX = [54, 300]; CW = 241; CY0, CY1 = 476, 636
+CX = [54, 300]; CW = 241; CY0, CY1 = 402, 562
 for i, t in enumerate(OPTS):
     card = fitz.Rect(CX[i], CY0, CX[i]+CW, CY1)
     if t["kind"] == "plain":
@@ -226,13 +220,14 @@ for i, t in enumerate(OPTS):
            f'.mk{{color:{acc};font-size:6.5px}}')
     p3.insert_htmlbox(fitz.Rect(card.x0+15, card.y0+15, card.x1-13, card.y1-9), html, css=css)
 # foto profissional add-on + nota
-p3.draw_rect(fitz.Rect(54, 652, 541, 694), color=(0.906, 0.863, 0.796), fill=(1, 1, 1), width=1, radius=0.05)
-p3.draw_rect(fitz.Rect(54, 652, 60, 694), color=None, fill=CORAL_RGB)
-put_spaced(p3, "✦ OPCIONAL", 78, 670, 8, CORAL_RGB, FSB)
-put(p3, "Registro fotográfico profissional", FB, 12.5, NEARBLK, 78, 688)
-put_right(p3, "valor sob consulta", FI, 10.5, MUTED, 528, 686)
-put(p3, "Valores por pessoa · transporte por conta do grupo · proposta para 12 de setembro.",
-    FS, 7.8, (0.549, 0.494, 0.455), 54, 712)
+p3.draw_rect(fitz.Rect(54, 588, 541, 636), color=(0.906, 0.863, 0.796), fill=(1, 1, 1), width=1, radius=0.05)
+p3.draw_rect(fitz.Rect(54, 588, 60, 636), color=None, fill=CORAL_RGB)
+put_spaced(p3, "✦ OPCIONAL", 78, 606, 8, CORAL_RGB, FSB)
+put(p3, "Registro fotográfico profissional", FB, 12.5, NEARBLK, 78, 624)
+put(p3, "durante toda a experiência · valor único pelo evento", FS, 8.2, MUTED, 78+FB.text_length("Registro fotográfico profissional", 12.5)+10, 624)
+put_right(p3, "+ R$ 450", FB, 15, CORAL_RGB, 528, 622)
+put(p3, "Experiência por pessoa · registro fotográfico R$ 450 pelo evento · transporte por conta do grupo.",
+    FS, 7.8, (0.549, 0.494, 0.455), 54, 660)
 rm(p3, [(410, 62, 541, 77), (458, 793, 543, 803)])
 put_right(p3, "O SÍTIO · INVESTIMENTO", FS, 8.6, MUTED, 541.4, 72)
 put_right(p3, "Investimento", FS, 7.9, MUTED, 541.4, 801.0)
@@ -249,7 +244,7 @@ put(p4, "data?", FBI, 27, CORAL_RGB, 53.8+FB.text_length("Bora marcar essa ", 27
 rm(p4, [(53, 229, 300, 249)])
 put_spaced(p4, "✦ INSPIRAÇÃO", 53.8, 244.5, 8.2, CORAL_RGB, FSB, track=1.5)
 put(p4, "Como o seu dia pode ser", FSER, 14.2, NEARBLK, 149.4, 244.5)
-photo(p4, A_DIR+"pinturaportaretrato.jpg", (52, 257, 294, 481), vbias=0.5)
+photo(p4, A_DIR+"aquarela.jpg", (52, 257, 294, 481), vbias=0.5)
 photo(p4, A_DIR+"ojardim4.jpg", (302, 257, 542, 481), vbias=0.5)
 rm(p4, [(76, 534, 487, 559), (76, 561, 432, 598)])
 x = 77.8
@@ -262,7 +257,8 @@ put(p4, "para que o dia seja tão especial quanto inesquecível.",
 rm(p4, [(434, 793, 543, 803), (50, 655, 745, 686)])
 p4.insert_textbox(fitz.Rect(53.8, 655, 538, 690),
     "Valores por pessoa: R$ 199 (só a experiência) ou R$ 259 (com brunch). Registro fotográfico "
-    "opcional. Transporte por conta do grupo. Proposta válida mediante confirmação de data.",
+    "profissional opcional: + R$ 450 pelo evento. Transporte por conta do grupo. "
+    "Proposta válida mediante confirmação de data.",
     fontsize=7.9, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
     color=(0.549, 0.494, 0.455), lineheight=1.35)
 put_right(p4, "Experiência Elarah · 2026", FS, 7.9, MUTED, 541.4, 801.0)
