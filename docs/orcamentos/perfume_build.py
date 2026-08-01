@@ -186,7 +186,14 @@ p3.insert_textbox(fitz.Rect(54, 200, 541, 246),
     fontsize=10.5, fontname="lib", fontfile=LF+"LiberationSans-Regular.ttf",
     color=(0.431, 0.388, 0.357), lineheight=1.5)
 
-# two option cards
+# unified investment — o mesmo valor nas duas opções (não são planos diferentes)
+put_spaced(p3, "✦ INVESTIMENTO", 54, 270, 9, CORAL_RGB, FSB)
+put(p3, "R$ 289", FB, 30, NEARBLK, 54, 304)
+put(p3, "por pessoa · imersão de 4 horas", FS, 11, MUTED, 54+FB.text_length("R$ 289", 30)+14, 304)
+put(p3, "O mesmo valor nas duas opções — você escolhe só onde acontece.",
+    FI, 10.5, (0.5, 0.45, 0.42), 54, 325)
+
+# two option cards (só o local muda — sem preço repetido)
 HEADc="#3F2F2C"; MUTc="#8C7E74"; BODYc="#4A3F3A"; CORALc="#FF5E8A"; GOLDc="#B8912E"; CREAMc="#FBF6EF"
 OPTS = [
     dict(name="No seu espaço", tag="Salão do condomínio, casa ou escritório.",
@@ -202,7 +209,7 @@ OPTS = [
                   "Cada convidado leva o seu perfume",
                   "Jules sem custo · BETC consumação mín. R$&nbsp;50"]),
 ]
-CX = [54, 300]; CW = 241; CY0, CY1 = 290, 478
+CX = [54, 300]; CW = 241; CY0, CY1 = 352, 488
 for i, t in enumerate(OPTS):
     card = fitz.Rect(CX[i], CY0, CX[i]+CW, CY1)
     if t["kind"] == "highlight":
@@ -218,15 +225,13 @@ for i, t in enumerate(OPTS):
     put_spaced(p3, t["badge"], bx+9, CY0+2.7, 6.6, (1, 1, 1), FSB, track=0.8)
     lis = "".join(f'<div class="li"><span class="mk">◆</span>&nbsp;{b}</div>' for b in t["bullets"])
     html = (f'<div class="nm">{t["name"]}</div><div class="tg">{t["tag"]}</div>'
-            f'<div class="pr">R$&nbsp;289</div><div class="pp">POR PESSOA</div>'
-            f'{lis}')
+            f'<div class="sp">&nbsp;</div>{lis}')
     css = (f'.nm{{font-family:serif;font-size:19px;font-weight:bold;color:{head}}}'
-           f'.tg{{font-size:8px;color:{mut};margin-top:4px}}'
-           f'.pr{{font-family:serif;font-size:23px;font-weight:bold;color:{head};margin-top:11px}}'
-           f'.pp{{font-size:6.5px;color:{mut};letter-spacing:1px;margin-top:1px}}'
-           f'.li{{font-size:8.4px;color:{body};margin-top:7px;line-height:1.3}}'
-           f'.mk{{color:{acc};font-size:6.5px}}')
-    p3.insert_htmlbox(fitz.Rect(card.x0+16, card.y0+18, card.x1-14, card.y1-10), html, css=css)
+           f'.tg{{font-size:8.5px;color:{mut};margin-top:4px}}'
+           f'.sp{{font-size:5px;line-height:0.6}}'
+           f'.li{{font-size:9px;color:{body};margin-top:9px;line-height:1.3}}'
+           f'.mk{{color:{acc};font-size:7px}}')
+    p3.insert_htmlbox(fitz.Rect(card.x0+16, card.y0+16, card.x1-14, card.y1-12), html, css=css)
 # partner venues strip (option 2 acontece aqui)
 put_spaced(p3, "✦ ESPAÇOS PARCEIROS", 54, 512, 9, CORAL_RGB, FSB)
 put(p3, "onde a opção parceira acontece", FSER, 11, MUTED, 232, 512)
@@ -236,7 +241,7 @@ put(p3, "consumação mínima de R$ 50", FS, 8.2, MUTED, 54+FSB.text_length("BET
 photo(p3, A_DIR+"julescampobelo.jpg", (300, 524, 541, 640), vbias=0.5)
 put(p3, "Jules L'Art Du Pain", FSB, 10.5, DARKt, 300, 656)
 put(p3, "sem custo de espaço", FS, 8.2, MUTED, 300+FSB.text_length("Jules L'Art Du Pain", 10.5)+10, 656)
-put(p3, "R$ 289 por pessoa · imersão de 4 horas · base para 10 convidados · durante a semana.",
+put(p3, "Base para 10 convidados · durante a semana · valor por pessoa nas duas opções.",
     FS, 7.8, (0.549, 0.494, 0.455), 54, 686)
 # header tagline (top-right) + footer
 rm(p3, [(410, 62, 541, 77), (458, 793, 543, 803)])
