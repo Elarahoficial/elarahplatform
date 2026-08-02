@@ -720,6 +720,38 @@
         </div>
       </div>
 
+      <!-- ===== CONVIDAR PRO GRUPO DO WHATSAPP (EM MASSA, POR API) ===== -->
+      <!-- Cola a lista (nome + telefone) e dispara o convite do grupo por API,
+           pelo mesmo portão fail-closed (telefone validado, idempotência com
+           campaign_id fixo → ninguém recebe 2x, kill switch, pausa entre
+           envios). Testa no próprio WhatsApp antes. Ver whatsapp-broadcast
+           mode:list. -->
+      <div class="admin__table-wrap" style="margin-bottom:16px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title">🧡 Convidar pro grupo do WhatsApp (em massa)</span>
+        </div>
+        <div style="padding:16px 18px;">
+          <p style="margin:0 0 10px;font-size:.85rem;color:#666;">
+            Cole a lista de usuários (pode copiar direto da tabela abaixo — nome e telefone).
+            Cada pessoa recebe <b>uma vez só</b> (mesmo re-clicando), o telefone é validado e
+            há pausa entre envios pra não queimar o número. <b>Teste no seu WhatsApp antes.</b>
+          </p>
+          <textarea id="grp-list" rows="6" placeholder="Cole aqui (uma pessoa por linha): Nome ... (11) 99999-9999"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:.82rem;font-family:monospace;"></textarea>
+          <div id="grp-parsed" style="margin:8px 0;font-size:.82rem;color:#666;"></div>
+          <label style="display:block;margin-top:6px;font-size:.8rem;color:#888;">Mensagem (use <code>{NOME_PRIMEIRO}</code> pra personalizar):</label>
+          <textarea id="grp-msg" rows="4"
+            style="width:100%;box-sizing:border-box;margin-top:4px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;">Oii {NOME_PRIMEIRO}! 🧡 Você se cadastrou na Elarah e a gente tem um grupo no WhatsApp onde libera experiências antes de todo mundo — algumas esgotam só por lá. Entra pra não perder: https://chat.whatsapp.com/EKECUEVqH3DJo8rmdbYNLd</textarea>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;">
+            <input type="tel" id="grp-test-phone" value="11950522079" placeholder="Seu WhatsApp (teste)"
+              style="flex:0 0 190px;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:.9rem;">
+            <button type="button" id="grp-test-btn" class="admin__btn" style="background:#f0a05e;border-color:#f0a05e;color:#fff;white-space:nowrap;">🧪 Testar no meu WhatsApp</button>
+            <button type="button" id="grp-send-btn" class="admin__btn admin__btn--primary" style="white-space:nowrap;">🚀 Disparar pra lista</button>
+          </div>
+          <div id="grp-status" style="margin-top:12px;font-size:.85rem;color:#666;"></div>
+        </div>
+      </div>
+
       <div class="admin__table-wrap">
         <div class="admin__table-header">
           <span class="admin__table-title">Lista de usuários</span>

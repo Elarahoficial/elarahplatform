@@ -2469,8 +2469,87 @@
       .replace(/[̀-ͯ]/g, '');
   }
 
+  // ===== Convite em massa pro grupo do WhatsApp (aba Usuários) =====
+  // Cola nome+telefone, testa no próprio número, dispara pra lista pelo MESMO
+  // portão (whatsapp-broadcast mode:list). Idempotência por campaign_id fixo
+  // → ninguém recebe 2x, nem re-clicando.
+  const GRP_CAMPAIGN_ID = 'group-invite-elarah';
+  function parseGrpList(text) {
+    const out = [];
+    const seen = {};
+    (text || '').split(/\r?\n/).forEach((line) => {
+      const t = line.trim();
+      if (!t) return;
+      const m = t.match(/\(?\d{2}\)?[\s.\-]*9?\d{4}[\s.\-]?\d{4}/);
+      if (!m) return;
+      const digits = m[0].replace(/\D+/g, '');
+      if (seen[digits]) return;
+      seen[digits] = 1;
+      const nome = t.indexOf('\t') >= 0 ? t.split('\t')[0].trim() : t.slice(0, m.index).trim();
+      out.push({ nome: nome, telefone: m[0] });
+    });
+    return out;
+  }
+  function wireGroupInviteTool() {
+    const listEl = document.getElementById('grp-list');
+    const msgEl = document.getElementById('grp-msg');
+    const testPhoneEl = document.getElementById('grp-test-phone');
+    const testBtn = document.getElementById('grp-test-btn');
+    const sendBtn = document.getElementById('grp-send-btn');
+    const statusEl = document.getElementById('grp-status');
+    const parsedEl = document.getElementById('grp-parsed');
+    if (!listEl || !sendBtn || !testBtn) return;
+    if (sendBtn.dataset.wired === '1') return;
+    sendBtn.dataset.wired = '1';
+
+    function refreshParsed() {
+      const r = parseGrpList(listEl.value);
+      if (parsedEl) parsedEl.textContent = r.length ? (r.length + ' pessoa(s) reconhecida(s) na lista.') : '';
+      return r;
+    }
+    listEl.addEventListener('input', refreshParsed);
+
+    testBtn.addEventListener('click', async () => {
+      const tel = (testPhoneEl.value || '').trim();
+      const message = (msgEl.value || '').trim();
+      if (!message) { statusEl.style.color = '#c0392b'; statusEl.textContent = 'Escreva a mensagem.'; return; }
+      testBtn.disabled = true; statusEl.style.color = '#666'; statusEl.textContent = 'Enviando teste...';
+      try {
+        const d = await callWhatsappBroadcast({ mode: 'test', test_phone: tel, message: message });
+        statusEl.style.color = '#1a8a4a';
+        statusEl.textContent = '✅ Teste enviado pro ' + (d.to || tel) + '. Confira seu WhatsApp!';
+      } catch (e) {
+        statusEl.style.color = '#c0392b';
+        statusEl.textContent = 'Não enviou o teste: ' + waErrorMessage(e);
+      } finally { testBtn.disabled = false; }
+    });
+
+    sendBtn.addEventListener('click', async () => {
+      const recipients = refreshParsed();
+      const message = (msgEl.value || '').trim();
+      if (!recipients.length) { statusEl.style.color = '#c0392b'; statusEl.textContent = 'Cole a lista primeiro (nenhum telefone reconhecido).'; return; }
+      if (!message) { statusEl.style.color = '#c0392b'; statusEl.textContent = 'Escreva a mensagem.'; return; }
+      if (!confirm('Disparar o convite do grupo pra ' + recipients.length + ' pessoa(s)? Cada uma recebe UMA vez só.')) return;
+      sendBtn.disabled = true; testBtn.disabled = true;
+      statusEl.style.color = '#666';
+      statusEl.textContent = 'Disparando pra ' + recipients.length + ' pessoa(s)... (~' + Math.ceil(recipients.length * 0.9) + 's, aguarde)';
+      try {
+        const d = await callWhatsappBroadcast({ mode: 'list', recipients: recipients, message: message, campaign_id: GRP_CAMPAIGN_ID });
+        statusEl.style.color = '#1a8a4a';
+        statusEl.textContent = '✅ ' + (d.enviados || 0) + ' enviado(s)' +
+          (d.falharam ? ' · ' + d.falharam + ' falharam' : '') +
+          (d.invalidos ? ' · ' + d.invalidos + ' inválido(s) ignorado(s)' : '') +
+          (d.dry_run ? ' (DRY-RUN — nada foi enviado de verdade)' : '') + '.';
+      } catch (e) {
+        statusEl.style.color = '#c0392b';
+        statusEl.textContent = 'Não disparou: ' + waErrorMessage(e);
+      } finally { sendBtn.disabled = false; testBtn.disabled = false; }
+    });
+  }
+
   async function renderUsers() {
     wireUnlockAccessTool();
+    wireGroupInviteTool();
     allUsers = await getProfiles();
     const totalEl = document.getElementById('stat-users-total');
     if (totalEl) totalEl.textContent = allUsers.length;
