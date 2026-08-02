@@ -38,11 +38,25 @@ extra = '''
   .prow ul li{position:relative;padding-left:20px;font-size:13px;color:var(--ink);line-height:1.3}
   .prow ul li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:11px}
   .prow ul li b{font-weight:700}
+  /* ícones (svg) no lugar de emoji */
+  .infocard .ico svg{width:30px;height:30px;display:block}
+  /* tabela de investimento (2 coleções x 3 níveis) */
+  .itable{width:100%;border-collapse:collapse;margin-top:16px;font-family:'DM Sans'}
+  .itable th,.itable td{padding:15px 12px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+  .itable thead th{font-size:12px;color:var(--navy);font-weight:700;border-bottom:2px solid var(--navy);text-transform:uppercase;letter-spacing:.04em}
+  .itable thead th span{display:block;font-size:9.5px;font-weight:500;color:var(--muted);letter-spacing:.01em;margin-top:4px;text-transform:none}
+  .itable td.rl{text-align:left;width:36%}
+  .itable td.rl b{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy)}
+  .itable td.rl span{display:block;font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  .itable .val{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy);line-height:1}
+  .itable .hl{background:#EEF4EF}
+  .itable thead th.hl{color:var(--orange-dark)}
+  .itable tbody tr:last-child td{border-bottom:none}
 </style>'''
 head = head.replace("</style>", extra, 1)
 # print overrides for grid
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
-                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{grid-template-columns:repeat(3,1fr)}\n    .exp-photo{height:150px}")
+                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{grid-template-columns:repeat(3,1fr);gap:13px}\n    .exp-photo{height:120px}\n    .exp-body{padding:10px 13px 12px}\n    .exp h3{font-size:15.5px}\n    .exp p{font-size:10.5px;margin-top:4px;line-height:1.35}")
 # mobile: menu single col
 head = head.replace(".plans{grid-template-columns:1fr}",
                     ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}")
@@ -78,7 +92,7 @@ cover = f'''
         <img src="assets/eventocorporativo.jpg" alt="Time reunido em um encontro Elarah, criando e se conectando">
       </div>
     </div>
-    <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Nubank</b> e <b>Adyen</b> · visto no <b>Mais Você</b> (Globo)</div>
+    <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
     {foot("Experiência Corporativa · Riachuelo")}
   </section>'''
 
@@ -93,9 +107,9 @@ buscamos = f'''
     <p class="lead">Momentos de <strong>mão na massa</strong>, leves e criativos, em que o que importa é criar junto. Experiências pensadas pra soltar as pessoas, aproximar as áreas e render boas histórias — pra qualquer pessoa, sem talento nenhum.</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="ico">🤝</div><h3>Conexão de verdade</h3><p>Todo mundo criando junto — a atividade é o pretexto; a integração é o que fica.</p></div>
-      <div class="infocard"><div class="ico">🎨</div><h3>Criativo e sofisticado</h3><p>Um leque de experiências autorais — cada um cria e leva a sua peça pra casa.</p></div>
-      <div class="infocard"><div class="ico">🏢</div><h3>Aí na empresa</h3><p>A gente leva tudo até a Riachuelo — material, condução e estrutura. Vocês só vivem o dia.</p></div>
+      <div class="infocard"><div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="#2E7D5E" stroke-width="1.6"><circle cx="10.5" cy="14" r="6"/><circle cx="17.5" cy="14" r="6"/></svg></div><h3>Conexão de verdade</h3><p>Todo mundo criando junto — a atividade é o pretexto; a integração é o que fica.</p></div>
+      <div class="infocard"><div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="#2E7D5E" stroke-width="1.6" stroke-linejoin="round"><path d="M14 3.5 L16 12 L24.5 14 L16 16 L14 24.5 L12 16 L3.5 14 L12 12 Z"/></svg></div><h3>Criativo e sofisticado</h3><p>Um leque de experiências autorais — cada um cria e leva a sua peça pra casa.</p></div>
+      <div class="infocard"><div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="#2E7D5E" stroke-width="1.6" stroke-linejoin="round"><path d="M5 24 V11 L14 4.5 L23 11 V24"/><rect x="11.5" y="16" width="5" height="8"/></svg></div><h3>Espaço exclusivo</h3><p>Um espaço só de vocês, com tudo pronto — material, condução e estrutura por nossa conta.</p></div>
     </div>
     <div class="quote">
       <i>"Os melhores times se constroem fora da mesa de reunião."</i><br>
@@ -111,52 +125,53 @@ menu = f'''
       <div class="head-right"><span class="kicker">O menu</span></div>
     </div>
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Um menu <em>enxuto e autoral</em></h2>
-    <p class="lead">Seis experiências escolhidas a dedo pra Riachuelo — criativas, sofisticadas e com a sua energia. Cada um cria (e leva) a sua peça pra casa.</p>
+    <h2>Um menu <em>autoral</em></h2>
+    <p class="lead">Nove experiências criativas e sofisticadas — cada um cria (e leva) a sua peça pra casa. Os valores estão na página a seguir.</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","croche.jpg","Bolsa de Crochê","Aprenda crochê e faça a sua bolsinha autoral — a queridinha da moda.","Bolsinhas de crochê coloridas")}
-      {exp("02","fazendojoia.jpg","Crie a sua Joia","Cada um cria a própria joia — anel, colar ou pingente, pra usar e amar.","Mãos criando uma joia à mão","center 40%")}
-      {exp("03","perfumariaharbolita.jpg","Perfumaria Natural","Crie a sua fragrância botânica do zero, numa imersão sensorial.","Essências e frascos de perfumaria","center 45%")}
-      {exp("04","tufting6.jpg","Tufting","Com a pistola de tufting, cada um cria a sua peça decorativa pra levar.","Time exibindo peças de tufting")}
-      {exp("05","desp-hero4.jpg","Cerâmica","Modelagem em cerâmica fria, à mão. Cada um leva a sua peça.","Mesa montada para modelagem em cerâmica","center 30%")}
-      {exp("06","paorestaurante.jpg","Café &amp; Brunch · Bake Studio","Mão na massa: pães e docinhos artesanais + um brunch lindo, juntos.","Pão artesanal recém-assado","center 45%")}
+      {exp("01","croche.jpg","Bolsa de Crochê","Aprenda crochê e faça a sua bolsinha autoral.","Bolsinhas de crochê coloridas")}
+      {exp("02","desp-hero4.jpg","Cerâmica","Modelagem ou pintura em cerâmica — leve a sua peça.","Mesa montada para experiência de cerâmica","center 30%")}
+      {exp("03","perfumariaharbolita.jpg","Perfumaria Natural","Crie a sua fragrância botânica, numa imersão sensorial.","Essências e frascos de perfumaria","center 45%")}
+      {exp("04","pinturatacavinho.jpg","Pintura em Vidro","Em copo, xícara, vaso ou taça — leve a sua arte.","Taça de vidro pintada à mão")}
+      {exp("05","saboneteroxo.jpg","Sabonete Artesanal","Crie os próprios sabonetes botânicos, com aroma e cor.","Sabonetes artesanais de lavanda")}
+      {exp("06","velaaromatica.jpg","Vela Artesanal","Crie a sua vela perfumada, do aroma ao rótulo.","Vela aromática artesanal")}
+      {exp("07","tufting6.jpg","Tufting","Com a pistola de tufting, crie a sua peça decorativa.","Time exibindo peças de tufting")}
+      {exp("08","fazendojoia.jpg","Joalheria","Crie a própria joia — anel, colar ou pingente.","Mãos criando uma joia à mão","center 40%")}
+      {exp("09","massamolho.jpg","Gastronomia &amp; Bartenderia","Aula de gastronomia, bartenderia ou bake studio.","Prato preparado numa aula de gastronomia")}
     </div>
     {foot("O menu")}
   </section>'''
-
-def prow(tag, tagcls, name, more, feats, hl=False):
-    fl = "".join(f"<li>{x}</li>" for x in feats)
-    mlab = f'<div class="mlab">{more}</div>' if more else ''
-    cls = "prow hl" if hl else "prow"
-    return f'''<div class="{cls}">
-        <div class="pl">
-          <span class="tag {tagcls}">{tag}</span>
-          <h3>{name}</h3>
-          <div class="pc">sob consulta<small>por pessoa</small></div>
-        </div>
-        <div class="pr">{mlab}<ul>{fl}</ul></div>
-      </div>'''
 
 planos = f'''
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Os planos</span></div>
+      <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Escolham o plano</span>
+    <span class="eyebrow orange">◆ Escolham o nível</span>
     <h2>Do essencial ao <em>tudo incluso</em></h2>
-    <p class="lead">Qualquer experiência do menu pode vir em três formatos — vocês escolhem o quão completo querem o encontro.</p>
+    <p class="lead">Toda experiência já vem com <strong>espaço exclusivo</strong>. Vocês escolhem o quão completo querem o encontro — três níveis, dois valores por coleção.</p>
     <div class="rule"></div>
-    <div class="prows">
-      {prow("Plano 1 · Básico", "basic", "A experiência", None,
-            ["A experiência criativa escolhida","Todos os materiais e estrutura","Condução por profissional","Cada um leva a sua criação pra casa"])}
-      {prow("Plano 2 · Com gastronomia", "basic", "Experiência + comida", "Tudo do Básico, e mais",
-            ["Café &amp; brunch no O Jardim ou bake studio","Gastronomia servida pra todo o time","Opção de registro fotográfico profissional","Cada um leva a sua criação pra casa"])}
-      {prow("Plano 3 · Completo", "premium", "Tudo incluso", "Tudo dos anteriores, e mais",
-            ["Registro fotográfico profissional incluso","Kits personalizados com a marca da Riachuelo","Mesa de boas-vindas + coffee break","O período todo, sem correria"], hl=True)}
-    </div>
-    {foot("Os planos")}
+    <table class="itable">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>Básico<span>espaço exclusivo + experiência</span></th>
+        <th>Intermediário<span>+ foto profissional & coffee</span></th>
+        <th class="hl">Completo<span>+ personalização & lembrancinha</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Coleção Essencial</b><span>Crochê · Cerâmica · Perfumaria · Pintura em vidro · Sabonete · Vela</span></td>
+          <td class="val">R$ 289</td><td class="val">R$ 389</td><td class="val hl">R$ 499</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Coleção Premium</b><span>Tufting · Joalheria · Gastronomia & Bartenderia</span></td>
+          <td class="val">R$ 589</td><td class="val">R$ 689</td><td class="val hl">R$ 799</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:20px">◆ Valores <b>por pessoa</b>. O <b>espaço exclusivo</b> já está incluso no nível Básico. Cada nível seguinte acrescenta: <b>foto profissional & coffee break</b> e, no Completo, <b>personalização com a marca + lembrancinha</b> pra cada convidado.</div>
+    {foot("Investimento")}
   </section>'''
 
 personaliza = f'''
@@ -188,10 +203,10 @@ personaliza = f'''
         <div class="plan-photo sq"><img src="assets/nivergibrinde.jpg" alt="Kit personalizado com o nome de cada convidado" style="object-position:center 35%"></div>
         <div class="plan-body">
           <span class="tag premium">Personalização</span>
-          <h3>Kits personalizados</h3>
+          <h3>Kits &amp; lembrancinhas</h3>
           <ul class="feat">
-            <li>Cada convidado leva um kit da Riachuelo</li>
-            <li>Do avental ao brinde, com o nome de cada um</li>
+            <li>Cada convidado leva uma lembrancinha da Riachuelo</li>
+            <li>Kit e brinde com o nome de cada um</li>
             <li>Mesa de boas-vindas com a identidade da marca</li>
           </ul>
           <span class="allin">Cada um leva o seu mimo</span>
@@ -212,15 +227,15 @@ como = f'''
     <p class="lead">A Elarah cuida de toda a produção pra o encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolhem experiência + plano</h3><p>Do menu criativo, no formato Básico, Com gastronomia ou Completo.</p></div>
-      <div class="step"><div class="num">2</div><h3>A gente leva até vocês</h3><p>Aí na Riachuelo — material, condução e estrutura por nossa conta.</p></div>
+      <div class="step"><div class="num">1</div><h3>Escolhem experiência + nível</h3><p>Do menu criativo, no nível Básico, Intermediário ou Completo.</p></div>
+      <div class="step"><div class="num">2</div><h3>Num espaço exclusivo</h3><p>Só de vocês — a gente cuida do espaço, do material, da condução e da estrutura.</p></div>
       <div class="step"><div class="num">3</div><h3>O time vive e integra</h3><p>Vocês só chegam, criam juntos e se conectam.</p></div>
     </div>
     <div class="addon">
-      <span class="plus">➕</span>
+      <span class="plus">+</span>
       <div>
         <h4>Momento da empresa</h4>
-        <p>Reservem <b>+1h no mesmo encontro</b> pra fala, brinde e agradecimento do time — assim vocês têm o período todo, sem correria. <b>Sem custo adicional: é por nossa conta.</b> 💛</p>
+        <p>Reservem <b>+1h no mesmo encontro</b> pra fala, brinde e agradecimento do time — assim vocês têm o período todo, sem correria. <b>Sem custo adicional: é por nossa conta.</b></p>
       </div>
     </div>
     <div class="cta">
@@ -237,7 +252,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências criativas para integração de time, para cerca de 20 participantes, realizada na Riachuelo. Escolham a experiência e o plano (Básico · Com gastronomia · Completo). Cada experiência dura cerca de 2h30–3h, com +1h para o momento da empresa, sem custo adicional. Valores por pessoa sob consulta. Proposta válida mediante confirmação de data (02 de setembro), experiência e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiências criativas para integração de time, para cerca de 20 participantes, em espaço exclusivo. Coleção Essencial a partir de R$ 289/pessoa (Crochê, Cerâmica, Perfumaria, Pintura em vidro, Sabonete, Vela). Coleção Premium a partir de R$ 589/pessoa (Tufting, Joalheria, Gastronomia & Bartenderia). Cada nível acrescenta foto profissional & coffee break e, no Completo, personalização com a marca + lembrancinha. Cada experiência dura cerca de 2h30–3h, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (02 de setembro) e disponibilidade de agenda.</p>
     {foot("Experiência Corporativa · Riachuelo · 2026")}
   </section>'''
 
