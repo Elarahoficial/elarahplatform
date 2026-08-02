@@ -142,6 +142,23 @@ menu = f'''
     {foot("O menu")}
   </section>'''
 
+espaco = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">O espaço exclusivo</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Já incluso desde o Básico</span>
+    <h2>Um espaço <em>só de vocês</em></h2>
+    <p class="lead">Um estúdio lindo e reservado — <strong>lounge acolhedor e cozinha equipada</strong>. O cenário perfeito pra criar, comer junto e relaxar, com toda a estrutura pronta pra receber o time.</p>
+    <div class="rule"></div>
+    <div class="pizza-hero">
+      <div class="pizza-photo"><img src="assets/espaco1.jpg" alt="Lounge do espaço exclusivo"></div>
+      <div class="pizza-photo"><img src="assets/espa%C3%A7o2.jpg" alt="Cozinha equipada do espaço exclusivo"></div>
+    </div>
+    {foot("O espaço exclusivo")}
+  </section>'''
+
 planos = f'''
   <section class="slide">
     <div class="slide__head">
@@ -256,7 +273,7 @@ como = f'''
     {foot("Experiência Corporativa · Riachuelo · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu + planos + personaliza + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + espaco + menu + planos + personaliza + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Experiência Corporativa · Elarah × Riachuelo</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de experiência corporativa criativa da Elarah para a Riachuelo — menu de experiências e planos de integração.">', head)
