@@ -47,14 +47,35 @@ extra = '''
   .itable tbody tr:last-child td{border-bottom:none}
   .itable thead th.hl{position:relative}
   .itable .pill{display:inline-block;background:var(--navy);color:#fff;font-size:8px;letter-spacing:.08em;padding:3px 9px;border-radius:999px;margin-bottom:7px;font-weight:700;text-transform:uppercase}
+  /* wtrio de experiências com vinho (3 quadrados na mesma linha) */
+  .wtrio{display:flex;gap:16px;justify-content:center;margin-top:12px}
+  .wcard{position:relative;flex:1;max-width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.34)}
+  .wcard .top{position:absolute;top:11px;left:11px;z-index:3;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(158,52,83,.55)}
+  .wcard .sq{aspect-ratio:1/1;overflow:hidden;background:#eee}
+  .wcard .sq img{width:100%;height:100%;object-fit:cover}
+  .wcard-body{padding:13px 15px 15px}
+  .wcard .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:5px}
+  .wcard h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.06}
+  .wcard p{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4}
+  /* bartenderia — destaque horizontal */
+  .bfeat{display:flex;margin-top:18px;background:var(--card);border:1.6px solid var(--orange);border-radius:18px;overflow:hidden;box-shadow:0 18px 42px -24px rgba(0,0,0,.34)}
+  .bfeat .bphoto{width:38%;overflow:hidden;background:#eee}
+  .bfeat .bphoto img{width:100%;height:100%;object-fit:cover;display:block}
+  .bfeat .bbody{flex:1;padding:22px 28px 24px;display:flex;flex-direction:column;justify-content:center}
+  .bfeat .btag{align-self:flex-start;background:var(--navy);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:6px 13px;border-radius:999px;margin-bottom:12px}
+  .bfeat h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:24px;color:var(--navy);line-height:1}
+  .bfeat .sub{display:inline-block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-top:6px}
+  .bfeat p{font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.45}
+  .dchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+  .dchips span{background:#F5E9EE;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:11.5px;color:var(--navy);font-weight:500}
 </style>'''
 head = head.replace("</style>", extra, 1)
-# print overrides for the 2x2 menu grid
+# print overrides for the wtrio + bartenderia layout
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
-                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{gap:15px}\n    .exp{width:calc(50% - 8px)}\n    .exp-photo{height:150px}\n    .exp-body{padding:11px 15px 13px}\n    .exp h3{font-size:18px}\n    .exp p{font-size:11.5px;margin-top:5px;line-height:1.4}")
-# mobile: menu single col
+                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .wtrio{flex-direction:row;gap:14px}\n    .wcard{max-width:calc(33.333% - 10px)}\n    .bfeat{flex-direction:row}\n    .bfeat .bphoto{width:38%;height:auto}\n    .wcard-body{padding:10px 13px 12px}\n    .wcard h3{font-size:16px}\n    .wcard p{font-size:10.5px;margin-top:4px;line-height:1.34}\n    .bfeat{margin-top:15px}\n    .bfeat .bbody{padding:16px 22px 17px}\n    .bfeat h3{font-size:21px}\n    .bfeat p{font-size:11.5px;margin-top:7px}\n    .dchips{margin-top:10px;gap:7px}\n    .dchips span{font-size:11px;padding:5px 11px}")
+# mobile: wtrio + bfeat stack
 head = head.replace(".plans{grid-template-columns:1fr}",
-                    ".plans{grid-template-columns:1fr}\n    .exp{width:100%}")
+                    ".plans{grid-template-columns:1fr}\n    .wtrio{flex-direction:column}\n    .wcard{max-width:100%}\n    .bfeat{flex-direction:column}\n    .bfeat .bphoto{width:100%;height:220px}")
 
 def foot(right):
     return f'<div class="slide__foot"><span>Elarah · Experiências</span><span>{right}</span></div>'
@@ -85,10 +106,9 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/pinturatacavinho.jpg" alt="Taça pintada à mão, cheia de vinho, numa mesa de celebração" style="object-position:center 45%">
+        <img src="assets/desp-hero2.jpg" alt="Amigas comemorando juntas, taça na mão, numa despedida de solteira" style="object-position:center 28%">
       </div>
     </div>
-    <div class="proof proof--wide"><span class="star">★</span> Já realizado para grupos de amigas por toda São Paulo · visto no <b>Mais Você</b> (Globo)</div>
     {foot("Experiência · Despedida de solteira")}
   </section>'''
 
@@ -122,13 +142,21 @@ menu = f'''
     </div>
     <span class="eyebrow orange">◆ Escolham a experiência</span>
     <h2>Um menu <em>com vinho incluso</em></h2>
-    <p class="lead">Quatro experiências pensadas pra despedida — <strong>criativas e cheias de brinde</strong>. Nas três primeiras, o <strong>vinho já vem incluso</strong>. A quarta é toda sobre bons drinks.</p>
+    <p class="lead">Três experiências criativas com o <strong>vinho já incluso</strong> — todas pelo mesmo valor, é só escolher a preferida. E, pra quem ama um bom brinde, a <strong>Bartenderia</strong>.</p>
     <div class="rule"></div>
-    <div class="menu">
-      {exp("01","desp-hero4.jpg","Cerâmica","Modele a sua peça à mão, à mesa posta e com taça na mão. Leve a sua criação pra casa.","Mesa posta para a experiência de modelagem em cerâmica","center 35%",top="🍷 Vinho incluso")}
-      {exp("02","velaaromatica.jpg","Vela Aromática","Crie a sua vela perfumada, do aroma ao rótulo — enquanto brinda com as amigas.","Vela aromática artesanal","center 50%",top="🍷 Vinho incluso")}
-      {exp("03","pinturatacavinho.jpg","Pintura em Taça","Pinte a sua taça autoral e brinde com ela na mesma hora. A cara da despedida.","Taça de vinho pintada à mão","center 45%",top="🍷 Vinho incluso")}
-      {exp("04","drinks.jpg","Bartenderia","Aprendam a fazer drinks autorais com um bartender — pra quem ama um bom brinde.","Drink autoral servido numa aula de bartenderia","center 50%",top="★ Só drinks")}
+    <div class="wtrio">
+      <div class="wcard"><span class="top">🍷 Vinho incluso</span><div class="sq"><img src="assets/desp-hero4.jpg" alt="Mesa posta para a experiência de modelagem em cerâmica" style="object-position:center 35%"></div><div class="wcard-body"><span class="n">01</span><h3>Cerâmica</h3><p>Modele a sua peça à mão, à mesa posta e com taça na mão. Leve a sua criação pra casa.</p></div></div>
+      <div class="wcard"><span class="top">🍷 Vinho incluso</span><div class="sq"><img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal" style="object-position:center 50%"></div><div class="wcard-body"><span class="n">02</span><h3>Vela Aromática</h3><p>Crie a sua vela perfumada, do aroma ao rótulo — enquanto brinda com as amigas.</p></div></div>
+      <div class="wcard"><span class="top">🍷 Vinho incluso</span><div class="sq"><img src="assets/pinturatacavinho.jpg" alt="Taça de vinho pintada à mão" style="object-position:center 45%"></div><div class="wcard-body"><span class="n">03</span><h3>Pintura em Taça</h3><p>Pinte a sua taça autoral e brinde com ela na mesma hora. A cara da despedida.</p></div></div>
+    </div>
+    <div class="bfeat">
+      <div class="bphoto"><img src="assets/drinks.jpg" alt="Drink autoral servido numa aula de bartenderia" style="object-position:center 50%"></div>
+      <div class="bbody">
+        <span class="btag">★ Top 1 em despedida de solteira</span>
+        <h3>Bartenderia <span class="sub">Só drinks</span></h3>
+        <p>Um bartender ensina o grupo a preparar os próprios drinks autorais — cada uma escolhe o que quer aprender e sair fazendo. Puro brinde do começo ao fim.</p>
+        <div class="dchips"><span>Gin tônica</span><span>Caipirinha</span><span>Moscow Mule</span><span>Drink com café</span><span>e mais clássicos</span></div>
+      </div>
     </div>
     {foot("O menu")}
   </section>'''
@@ -177,7 +205,7 @@ personaliza = f'''
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/pinturatacavinho10.jpg" alt="Momento da despedida registrado" style="object-position:center 45%"></div>
+        <div class="plan-photo sq"><img src="assets/desp-hero3.jpg" alt="Grupo de amigas comemorando a despedida, registrado por um fotógrafo" style="object-position:center 25%"></div>
         <div class="plan-body">
           <span class="tag basic">Nível Com registro</span>
           <h3>Registro fotográfico profissional</h3>
