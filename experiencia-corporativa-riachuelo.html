@@ -404,9 +404,20 @@
   .itable td.rl b{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy)}
   .itable td.rl span{display:block;font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.45}
   .itable .val{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy);line-height:1}
-  .itable .hl{background:#EEF4EF}
+  .itable .hl{background:#E6F0E9}
   .itable thead th.hl{color:var(--orange-dark)}
   .itable tbody tr:last-child td{border-bottom:none}
+  .itable thead th.hl{position:relative}
+  .itable .pill{display:inline-block;background:var(--navy);color:#fff;font-size:8px;letter-spacing:.08em;padding:3px 9px;border-radius:999px;margin-bottom:7px;font-weight:700;text-transform:uppercase}
+  /* espaço exclusivo — fotos quadradas */
+  .spaces{display:flex;gap:26px;justify-content:center;margin-top:20px}
+  .space{width:330px;max-width:42%;margin:0}
+  .space .sq{aspect-ratio:1/1;border-radius:16px;overflow:hidden;box-shadow:0 22px 46px -26px rgba(0,0,0,.42)}
+  .space .sq img{width:100%;height:100%;object-fit:cover;display:block}
+  .space figcaption{margin-top:13px;text-align:center;font-family:'DM Serif Display',serif;font-size:15.5px;color:var(--navy)}
+  /* logo co-brand na capa */
+  .cllogo{height:29px;width:auto;display:block;margin:3px 0 1px}
+  .cbsub{font-size:8.5px;letter-spacing:.28em;color:var(--navy-soft);font-weight:500;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -418,7 +429,7 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
         <span class="kicker">Proposta de experiência corporativa para</span>
-        <span class="compass">RIACHUELO<small>integração do time</small></span>
+        <img class="cllogo" src="assets/riachuelo-logo_brandlogos.net_66ni5-scaled.png" alt="Riachuelo"><span class="cbsub">integração do time</span>
       </div>
     </div>
     <div class="cover">
@@ -469,9 +480,9 @@
     <h2>Um espaço <em>só de vocês</em></h2>
     <p class="lead">Um estúdio lindo e reservado — <strong>lounge acolhedor e cozinha equipada</strong>. O cenário perfeito pra criar, comer junto e relaxar, com toda a estrutura pronta pra receber o time.</p>
     <div class="rule"></div>
-    <div class="pizza-hero">
-      <div class="pizza-photo"><img src="assets/espaco1.jpg" alt="Lounge do espaço exclusivo"></div>
-      <div class="pizza-photo"><img src="assets/espa%C3%A7o2.jpg" alt="Cozinha equipada do espaço exclusivo"></div>
+    <div class="spaces">
+      <figure class="space"><div class="sq"><img src="assets/espaco1.jpg" alt="Lounge do espaço exclusivo" style="object-position:center 55%"></div><figcaption>Lounge acolhedor</figcaption></figure>
+      <figure class="space"><div class="sq"><img src="assets/espa%C3%A7o2.jpg" alt="Cozinha equipada do espaço exclusivo"></div><figcaption>Cozinha equipada</figcaption></figure>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O espaço exclusivo</span></div>
   </section>
@@ -511,7 +522,7 @@
         <th class="corner"></th>
         <th>Básico<span>espaço exclusivo + experiência</span></th>
         <th>Intermediário<span>+ foto profissional & coffee</span></th>
-        <th class="hl">Completo<span>+ personalização & lembrancinha</span></th>
+        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização & lembrancinha</span></th>
       </tr></thead>
       <tbody>
         <tr>
