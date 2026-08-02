@@ -15,20 +15,34 @@ head = head.replace("#FF9A4D", "#86C2A5")
 head = head.replace("rgba(242,118,35,.22)", "rgba(46,125,94,.30)")
 # extra CSS: experience menu grid + 3-plan variant
 extra = '''
-  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:6px}
-  .exp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 28px -22px rgba(0,0,0,.32)}
-  .exp-photo{height:116px;overflow:hidden;background:#eee}
+  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px}
+  .exp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .exp-photo{height:150px;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
-  .exp-body{padding:12px 15px 15px}
+  .exp-body{padding:13px 16px 16px}
   .exp .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:5px}
-  .exp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:16.5px;color:var(--navy);line-height:1.08}
-  .exp p{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}
-  .plans.three{grid-template-columns:repeat(3,1fr)}
+  .exp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.08}
+  .exp p{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.42}
+  /* plano rows (horizontais, legíveis) */
+  .prows{margin-top:12px;display:flex;flex-direction:column;gap:14px}
+  .prow{display:flex;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 30px -24px rgba(0,0,0,.3)}
+  .prow.hl{border:2px solid var(--navy)}
+  .prow .pl{width:33%;padding:20px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:7px}
+  .prow.hl .pl{background:#F1F5F1}
+  .prow .pr{flex:1;padding:20px 26px;display:flex;flex-direction:column;justify-content:center}
+  .prow h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:23px;color:var(--navy);line-height:1}
+  .prow .pc{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy-soft)}
+  .prow .pc small{font-family:'DM Sans';font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-left:6px}
+  .prow .mlab{font-size:10px;letter-spacing:.1em;font-weight:700;text-transform:uppercase;color:var(--orange-dark);margin-bottom:9px}
+  .prow ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:9px 22px}
+  .prow ul li{position:relative;padding-left:20px;font-size:13px;color:var(--ink);line-height:1.3}
+  .prow ul li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:11px}
+  .prow ul li b{font-weight:700}
 </style>'''
 head = head.replace("</style>", extra, 1)
 # print overrides for grid
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
-                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{grid-template-columns:repeat(3,1fr)}\n    .plans.three{grid-template-columns:repeat(3,1fr)}\n    .exp-photo{height:118px}")
+                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{grid-template-columns:repeat(3,1fr)}\n    .exp-photo{height:150px}")
 # mobile: menu single col
 head = head.replace(".plans{grid-template-columns:1fr}",
                     ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}")
@@ -90,59 +104,39 @@ buscamos = f'''
     {foot("Pensado pra Riachuelo")}
   </section>'''
 
-menu1 = f'''
+menu = f'''
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O menu · parte 1</span></div>
+      <div class="head-right"><span class="kicker">O menu</span></div>
     </div>
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Um menu que <em>encanta</em></h2>
-    <p class="lead">Da cozinha à perfumaria, do tufting à cerâmica — experiências autorais pra todo tipo de time. Escolham uma (ou combinem!) e a gente monta tudo.</p>
+    <h2>Um menu <em>enxuto e autoral</em></h2>
+    <p class="lead">Seis experiências escolhidas a dedo pra Riachuelo — criativas, sofisticadas e com a sua energia. Cada um cria (e leva) a sua peça pra casa.</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","massamolho.jpg","Gastronomia","Mão na massa com um chef — o time cozinha e senta pra comer junto.","Prato preparado numa aula de gastronomia")}
-      {exp("02","drinks.jpg","Coquetelaria & Drinks","Cada um cria o próprio drink autoral com um bartender — com ou sem álcool.","Drink autoral em caneca de cobre","center 40%")}
-      {exp("03","desp-hero4.jpg","Cerâmica","Modelagem em cerâmica fria, à mão. Cada um leva a sua peça.","Mesa montada para modelagem em cerâmica","center 30%")}
-      {exp("04","perfumariaharbolita.jpg","Perfumaria Natural","Crie a sua fragrância botânica do zero, numa imersão sensorial.","Essências e frascos de perfumaria","center 45%")}
-      {exp("05","tufting6.jpg","Tufting","Com a pistola de tufting, cada um cria a sua peça decorativa.","Time exibindo peças de tufting")}
-      {exp("06","pinturatacavinho.jpg","Pintura Criativa","Em tela, taça, copo ou xícara — cada um leva a sua arte.","Taça pintada à mão")}
+      {exp("01","croche.jpg","Bolsa de Crochê","Aprenda crochê e faça a sua bolsinha autoral — a queridinha da moda.","Bolsinhas de crochê coloridas")}
+      {exp("02","fazendojoia.jpg","Crie a sua Joia","Cada um cria a própria joia — anel, colar ou pingente, pra usar e amar.","Mãos criando uma joia à mão","center 40%")}
+      {exp("03","perfumariaharbolita.jpg","Perfumaria Natural","Crie a sua fragrância botânica do zero, numa imersão sensorial.","Essências e frascos de perfumaria","center 45%")}
+      {exp("04","tufting6.jpg","Tufting","Com a pistola de tufting, cada um cria a sua peça decorativa pra levar.","Time exibindo peças de tufting")}
+      {exp("05","desp-hero4.jpg","Cerâmica","Modelagem em cerâmica fria, à mão. Cada um leva a sua peça.","Mesa montada para modelagem em cerâmica","center 30%")}
+      {exp("06","paorestaurante.jpg","Café &amp; Brunch · Bake Studio","Mão na massa: pães e docinhos artesanais + um brunch lindo, juntos.","Pão artesanal recém-assado","center 45%")}
     </div>
-    {foot("O menu · parte 1")}
+    {foot("O menu")}
   </section>'''
 
-menu2 = f'''
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O menu · parte 2</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>E tem <em>muito mais</em></h2>
-    <p class="lead">Experiências diferentes e cheias de personalidade — as que mais têm a ver com a energia da Riachuelo.</p>
-    <div class="rule"></div>
-    <div class="menu">
-      {exp("07","velaaromatica.jpg","Velas Aromáticas","Cada um cria a sua vela perfumada, do aroma ao rótulo.","Vela aromática artesanal")}
-      {exp("08","buqueflor.jpg","Buquê de Flores","Monte o seu próprio buquê autoral, pra levar pra casa.","Buquê de flores do campo","center 40%")}
-      {exp("09","fazendojoia.jpg","Crie a sua Joia","Cada um cria a própria joia — anel, colar ou pingente.","Mãos criando uma joia à mão","center 40%")}
-      {exp("10","croche.jpg","Bolsa de Crochê","Aprenda crochê e faça a sua bolsinha — a queridinha do momento.","Bolsinhas de crochê coloridas")}
-      {exp("11","saboneteroxo.jpg","Sabonete Artesanal","Cada um cria os próprios sabonetes botânicos, com aroma e cor.","Sabonetes artesanais de lavanda")}
-      {exp("12","aulateatro.jpg","Teatro & Dinâmicas","Jogos de improviso pra soltar o time e dar muita risada.","Time numa dinâmica de teatro","center 40%")}
-    </div>
-    {foot("O menu · parte 2")}
-  </section>'''
-
-def plan(tag, tagcls, name, more, feats, allin, featured=False):
+def prow(tag, tagcls, name, more, feats, hl=False):
     fl = "".join(f"<li>{x}</li>" for x in feats)
-    more_html = f'<div class="more">{more}</div>' if more else ''
-    cls = "plan featured" if featured else "plan"
-    return f'''<div class="{cls}"><div class="plan-body">
-        <span class="tag {tagcls}">{tag}</span>
-        <h3>{name}</h3>
-        <div class="price soft">sob consulta<small>por pessoa</small></div>
-        {more_html}<ul class="feat">{fl}</ul>
-        <span class="allin">{allin}</span>
-      </div></div>'''
+    mlab = f'<div class="mlab">{more}</div>' if more else ''
+    cls = "prow hl" if hl else "prow"
+    return f'''<div class="{cls}">
+        <div class="pl">
+          <span class="tag {tagcls}">{tag}</span>
+          <h3>{name}</h3>
+          <div class="pc">sob consulta<small>por pessoa</small></div>
+        </div>
+        <div class="pr">{mlab}<ul>{fl}</ul></div>
+      </div>'''
 
 planos = f'''
   <section class="slide">
@@ -154,16 +148,13 @@ planos = f'''
     <h2>Do essencial ao <em>tudo incluso</em></h2>
     <p class="lead">Qualquer experiência do menu pode vir em três formatos — vocês escolhem o quão completo querem o encontro.</p>
     <div class="rule"></div>
-    <div class="plans three">
-      {plan("Plano 1 · Básico", "basic", "A experiência", None,
-            ["A experiência criativa escolhida","Todos os materiais e estrutura","Condução por profissional","Cada um leva a sua criação pra casa"],
-            "Tudo da experiência")}
-      {plan("Plano 2 · Com gastronomia", "basic", "Experiência + comida", "Tudo do Básico, e mais",
-            ["Gastronomia: brunch, almoço ou coquetelaria","Opção de drinks / coquetelaria autoral","Registro fotográfico profissional (opcional)"],
-            "Experiência + comida")}
-      {plan("Plano 3 · Completo", "premium", "Tudo incluso", "Tudo dos planos anteriores, e mais",
-            ["Registro fotográfico profissional incluso","Kits personalizados com a marca da Riachuelo","Mesa de boas-vindas + coffee break"],
-            "Experiência + comida + foto + kits", featured=True)}
+    <div class="prows">
+      {prow("Plano 1 · Básico", "basic", "A experiência", None,
+            ["A experiência criativa escolhida","Todos os materiais e estrutura","Condução por profissional","Cada um leva a sua criação pra casa"])}
+      {prow("Plano 2 · Com gastronomia", "basic", "Experiência + comida", "Tudo do Básico, e mais",
+            ["Café &amp; brunch no O Jardim ou bake studio","Gastronomia servida pra todo o time","Opção de registro fotográfico profissional","Cada um leva a sua criação pra casa"])}
+      {prow("Plano 3 · Completo", "premium", "Tudo incluso", "Tudo dos anteriores, e mais",
+            ["Registro fotográfico profissional incluso","Kits personalizados com a marca da Riachuelo","Mesa de boas-vindas + coffee break","O período todo, sem correria"], hl=True)}
     </div>
     {foot("Os planos")}
   </section>'''
@@ -250,7 +241,7 @@ como = f'''
     {foot("Experiência Corporativa · Riachuelo · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu1 + menu2 + planos + personaliza + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + menu + planos + personaliza + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Experiência Corporativa · Elarah × Riachuelo</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de experiência corporativa criativa da Elarah para a Riachuelo — menu de experiências e planos de integração.">', head)
