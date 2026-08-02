@@ -324,7 +324,7 @@
     .cover,.pizza-hero{grid-template-columns:1fr;gap:26px}
     .grid3,.trio,.steps{grid-template-columns:1fr}
     .plans{grid-template-columns:1fr}
-    .menu{grid-template-columns:1fr}
+    .exp{width:100%}
     .menu-cols{grid-template-columns:1fr}
     h1{font-size:38px}h2{font-size:30px}
     .slide__head{flex-direction:column;align-items:flex-start}
@@ -349,8 +349,9 @@
     .grid3,.trio,.steps{grid-template-columns:repeat(3,1fr)}
     .plans{grid-template-columns:1fr 1fr}
     .menu-cols{grid-template-columns:1fr 1fr}
-    .menu{grid-template-columns:repeat(3,1fr);gap:13px}
-    .exp-photo{height:120px}
+    .menu{gap:14px}
+    .exp{width:calc(33.333% - 10px)}
+    .exp-photo{height:118px}
     .exp-body{padding:10px 13px 12px}
     .exp h3{font-size:15.5px}
     .exp p{font-size:10.5px;margin-top:4px;line-height:1.35}
@@ -370,8 +371,8 @@
     @page{size:A4 portrait;margin:0}
   }
 
-  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px}
-  .exp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:10px}
+  .exp{width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
   .exp-photo{height:150px;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:13px 16px 16px}
@@ -515,7 +516,7 @@
     </div>
     <span class="eyebrow orange">◆ Escolham as experiências</span>
     <h2>Um menu <em>curado</em></h2>
-    <p class="lead">Seis experiências que combinam com os dois times — <strong>criativas e de bem-estar</strong>. No rodízio, cada turma vive duas delas; cada um cria (e leva) a sua peça pra casa.</p>
+    <p class="lead">Sete experiências que combinam com os dois times — <strong>criativas e de bem-estar</strong>. No rodízio, cada turma vive duas delas; cada um cria (e leva) a sua peça pra casa.</p>
     <div class="rule"></div>
     <div class="menu">
       <div class="exp"><div class="exp-photo"><img src="assets/perfumariaharbolita.jpg" alt="Essências e frascos de perfumaria" style="object-position:center 45%"></div><div class="exp-body"><span class="n">01</span><h3>Perfumaria Natural</h3><p>Crie a sua fragrância botânica, numa imersão sensorial.</p></div></div>
@@ -524,6 +525,7 @@
       <div class="exp"><div class="exp-photo"><img src="assets/fazendojoia.jpg" alt="Mãos criando uma joia à mão" style="object-position:center 40%"></div><div class="exp-body"><span class="n">04</span><h3>Joalheria</h3><p>Crie a própria joia — anel, colar ou pingente, pra usar.</p></div></div>
       <div class="exp"><div class="exp-photo"><img src="assets/desp-hero4.jpg" alt="Mesa montada para experiência de cerâmica" style="object-position:center 30%"></div><div class="exp-body"><span class="n">05</span><h3>Cerâmica</h3><p>Modelagem ou pintura em cerâmica — leve a sua peça.</p></div></div>
       <div class="exp"><div class="exp-photo"><img src="assets/tufting6.jpg" alt="Time exibindo peças de tufting" style="object-position:center 50%"></div><div class="exp-body"><span class="n">06</span><h3>Tufting</h3><p>Com a pistola de tufting, crie a sua peça decorativa.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/massamolho.jpg" alt="Prato preparado numa aula de gastronomia" style="object-position:center 50%"></div><div class="exp-body"><span class="n">07</span><h3>Gastronomia &amp; Bartenderia</h3><p>Cozinhem juntos ou criem drinks autorais — unissex e social.</p></div></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O menu</span></div>
   </section>
@@ -532,37 +534,29 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Escolham o nível</span>
-    <h2>Do essencial ao <em>tudo incluso</em></h2>
-    <p class="lead">Cada pessoa vive <strong>duas experiências no rodízio</strong>, num espaço exclusivo. Vocês escolhem o quão completo querem o encontro.</p>
+    <span class="eyebrow orange">◆ Como monta o valor</span>
+    <h2>Vocês montam o <em>rodízio</em></h2>
+    <p class="lead">Cada experiência tem o seu valor. Como no rodízio cada pessoa vive <strong>duas</strong>, o valor por pessoa é a <strong>soma das duas escolhidas</strong> — no nível que preferirem.</p>
     <div class="rule"></div>
-    <div class="prows">
-      <div class="prow">
-        <div class="pl">
-          <span class="tag basic">Nível 1 · Básico</span>
-          <h3>As experiências</h3>
-          <div class="pc">sob consulta<small>por pessoa</small></div>
-        </div>
-        <div class="pr"><ul><li>Duas experiências no rodízio</li><li>Espaço exclusivo + todos os materiais</li><li>Condução por profissionais</li><li>Cada um leva as suas criações</li></ul></div>
-      </div>
-      <div class="prow">
-        <div class="pl">
-          <span class="tag basic">Nível 2 · Intermediário</span>
-          <h3>Experiências + registro</h3>
-          <div class="pc">sob consulta<small>por pessoa</small></div>
-        </div>
-        <div class="pr"><div class="mlab">Tudo do Básico, e mais</div><ul><li>Registro fotográfico profissional</li><li>Coffee break entre as rodadas</li><li>Álbum digital pra usar como quiser</li></ul></div>
-      </div>
-      <div class="prow hl">
-        <div class="pl">
-          <span class="tag premium">Nível 3 · Completo</span>
-          <h3>Tudo incluso</h3>
-          <div class="pc">sob consulta<small>por pessoa</small></div>
-        </div>
-        <div class="pr"><div class="mlab">Tudo dos anteriores, e mais</div><ul><li>Personalização com a marca da empresa</li><li>Lembrancinha pra cada convidado</li><li>Mesa de boas-vindas temática</li></ul></div>
-      </div>
-    </div>
-    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, para 50 pessoas em duas turmas. Espaço exclusivo, materiais e condução já inclusos em todos os níveis.</div>
+    <table class="itable">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>Básico<span>espaço + experiência</span></th>
+        <th>Intermediário<span>+ foto profissional & coffee</span></th>
+        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização & lembrancinha</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Coleção Essencial</b><span>Perfumaria · Vela Aromática · Sabonete · Cerâmica</span></td>
+          <td class="val">R$ 289</td><td class="val">R$ 389</td><td class="val hl">R$ 499</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Coleção Premium</b><span>Joalheria · Tufting · Gastronomia & Bartenderia</span></td>
+          <td class="val">R$ 589</td><td class="val">R$ 689</td><td class="val hl">R$ 799</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:18px">◆ <b>No rodízio, some as duas.</b> Ex.: Perfumaria <i>(Essencial · R$ 289)</i> + Tufting <i>(Premium · R$ 589)</i>, no nível Básico = <b>R$ 878 por pessoa</b>. Valores por pessoa, com espaço exclusivo já incluso.</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
@@ -655,7 +649,7 @@
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências criativas e de bem-estar para integração de time, para cerca de 50 participantes, em duas turmas de rodízio, em espaço exclusivo. Cada pessoa vive duas experiências complementares do menu curado (Perfumaria, Vela Aromática, Sabonete, Joalheria, Cerâmica, Tufting). Três níveis: Básico (espaço + experiências), Intermediário (+ registro fotográfico & coffee break) e Completo (+ personalização com a marca & lembrancinha). Valores por pessoa sob consulta. O encontro dura o período, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (07 ou 14 de dezembro) e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiências criativas e de bem-estar para integração de time, para cerca de 50 participantes, em duas turmas de rodízio, em espaço exclusivo. Cada pessoa vive duas experiências complementares do menu curado (Perfumaria, Vela Aromática, Sabonete, Joalheria, Cerâmica, Tufting, Gastronomia & Bartenderia). Valor por pessoa é a soma das duas experiências escolhidas — Coleção Essencial R$ 289/389/499 e Coleção Premium R$ 589/689/799, conforme o nível (Básico / Intermediário + foto & coffee / Completo + personalização & lembrancinha). Espaço exclusivo incluso. O encontro dura o período, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (07 ou 14 de dezembro) e disponibilidade de agenda.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência Corporativa · 2026</span></div>
   </section>
 

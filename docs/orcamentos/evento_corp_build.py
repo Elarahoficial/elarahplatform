@@ -16,8 +16,8 @@ head = head.replace("rgba(242,118,35,.22)", "rgba(192,112,94,.30)")
 head = head.replace("#E6F0E9", "#F5ECE7")  # itable highlight -> blush
 # extra CSS: experience menu grid + 3-plan variant
 extra = '''
-  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px}
-  .exp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:10px}
+  .exp{width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
   .exp-photo{height:150px;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:13px 16px 16px}
@@ -80,10 +80,10 @@ extra = '''
 head = head.replace("</style>", extra, 1)
 # print overrides for grid
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
-                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{grid-template-columns:repeat(3,1fr);gap:13px}\n    .exp-photo{height:120px}\n    .exp-body{padding:10px 13px 12px}\n    .exp h3{font-size:15.5px}\n    .exp p{font-size:10.5px;margin-top:4px;line-height:1.35}")
+                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{gap:14px}\n    .exp{width:calc(33.333% - 10px)}\n    .exp-photo{height:118px}\n    .exp-body{padding:10px 13px 12px}\n    .exp h3{font-size:15.5px}\n    .exp p{font-size:10.5px;margin-top:4px;line-height:1.35}")
 # mobile: menu single col
 head = head.replace(".plans{grid-template-columns:1fr}",
-                    ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}")
+                    ".plans{grid-template-columns:1fr}\n    .exp{width:100%}")
 
 def foot(right):
     return f'<div class="slide__foot"><span>Elarah · Experiências</span><span>{right}</span></div>'
@@ -150,7 +150,7 @@ menu = f'''
     </div>
     <span class="eyebrow orange">◆ Escolham as experiências</span>
     <h2>Um menu <em>curado</em></h2>
-    <p class="lead">Seis experiências que combinam com os dois times — <strong>criativas e de bem-estar</strong>. No rodízio, cada turma vive duas delas; cada um cria (e leva) a sua peça pra casa.</p>
+    <p class="lead">Sete experiências que combinam com os dois times — <strong>criativas e de bem-estar</strong>. No rodízio, cada turma vive duas delas; cada um cria (e leva) a sua peça pra casa.</p>
     <div class="rule"></div>
     <div class="menu">
       {exp("01","perfumariaharbolita.jpg","Perfumaria Natural","Crie a sua fragrância botânica, numa imersão sensorial.","Essências e frascos de perfumaria","center 45%")}
@@ -159,6 +159,7 @@ menu = f'''
       {exp("04","fazendojoia.jpg","Joalheria","Crie a própria joia — anel, colar ou pingente, pra usar.","Mãos criando uma joia à mão","center 40%")}
       {exp("05","desp-hero4.jpg","Cerâmica","Modelagem ou pintura em cerâmica — leve a sua peça.","Mesa montada para experiência de cerâmica","center 30%")}
       {exp("06","tufting6.jpg","Tufting","Com a pistola de tufting, crie a sua peça decorativa.","Time exibindo peças de tufting")}
+      {exp("07","massamolho.jpg","Gastronomia &amp; Bartenderia","Cozinhem juntos ou criem drinks autorais — unissex e social.","Prato preparado numa aula de gastronomia")}
     </div>
     {foot("O menu")}
   </section>'''
@@ -226,19 +227,29 @@ planos = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Escolham o nível</span>
-    <h2>Do essencial ao <em>tudo incluso</em></h2>
-    <p class="lead">Cada pessoa vive <strong>duas experiências no rodízio</strong>, num espaço exclusivo. Vocês escolhem o quão completo querem o encontro.</p>
+    <span class="eyebrow orange">◆ Como monta o valor</span>
+    <h2>Vocês montam o <em>rodízio</em></h2>
+    <p class="lead">Cada experiência tem o seu valor. Como no rodízio cada pessoa vive <strong>duas</strong>, o valor por pessoa é a <strong>soma das duas escolhidas</strong> — no nível que preferirem.</p>
     <div class="rule"></div>
-    <div class="prows">
-      {prow("Nível 1 · Básico", "basic", "As experiências", None,
-            ["Duas experiências no rodízio", "Espaço exclusivo + todos os materiais", "Condução por profissionais", "Cada um leva as suas criações"])}
-      {prow("Nível 2 · Intermediário", "basic", "Experiências + registro", "Tudo do Básico, e mais",
-            ["Registro fotográfico profissional", "Coffee break entre as rodadas", "Álbum digital pra usar como quiser"])}
-      {prow("Nível 3 · Completo", "premium", "Tudo incluso", "Tudo dos anteriores, e mais",
-            ["Personalização com a marca da empresa", "Lembrancinha pra cada convidado", "Mesa de boas-vindas temática"], hl=True)}
-    </div>
-    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, para 50 pessoas em duas turmas. Espaço exclusivo, materiais e condução já inclusos em todos os níveis.</div>
+    <table class="itable">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>Básico<span>espaço + experiência</span></th>
+        <th>Intermediário<span>+ foto profissional & coffee</span></th>
+        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização & lembrancinha</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Coleção Essencial</b><span>Perfumaria · Vela Aromática · Sabonete · Cerâmica</span></td>
+          <td class="val">R$ 289</td><td class="val">R$ 389</td><td class="val hl">R$ 499</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Coleção Premium</b><span>Joalheria · Tufting · Gastronomia & Bartenderia</span></td>
+          <td class="val">R$ 589</td><td class="val">R$ 689</td><td class="val hl">R$ 799</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:18px">◆ <b>No rodízio, some as duas.</b> Ex.: Perfumaria <i>(Essencial · R$ 289)</i> + Tufting <i>(Premium · R$ 589)</i>, no nível Básico = <b>R$ 878 por pessoa</b>. Valores por pessoa, com espaço exclusivo já incluso.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -320,7 +331,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências criativas e de bem-estar para integração de time, para cerca de 50 participantes, em duas turmas de rodízio, em espaço exclusivo. Cada pessoa vive duas experiências complementares do menu curado (Perfumaria, Vela Aromática, Sabonete, Joalheria, Cerâmica, Tufting). Três níveis: Básico (espaço + experiências), Intermediário (+ registro fotográfico & coffee break) e Completo (+ personalização com a marca & lembrancinha). Valores por pessoa sob consulta. O encontro dura o período, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (07 ou 14 de dezembro) e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiências criativas e de bem-estar para integração de time, para cerca de 50 participantes, em duas turmas de rodízio, em espaço exclusivo. Cada pessoa vive duas experiências complementares do menu curado (Perfumaria, Vela Aromática, Sabonete, Joalheria, Cerâmica, Tufting, Gastronomia & Bartenderia). Valor por pessoa é a soma das duas experiências escolhidas — Coleção Essencial R$ 289/389/499 e Coleção Premium R$ 589/689/799, conforme o nível (Básico / Intermediário + foto & coffee / Completo + personalização & lembrancinha). Espaço exclusivo incluso. O encontro dura o período, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (07 ou 14 de dezembro) e disponibilidade de agenda.</p>
     {foot("Experiência Corporativa · 2026")}
   </section>'''
 
