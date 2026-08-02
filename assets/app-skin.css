@@ -241,9 +241,29 @@
 }
 .is-app .card__price { font-size: .9rem; color: var(--sk-ink); }
 .is-app .card__price strong { color: var(--sk-ink); font-weight: 800; }
-/* O botão "reservar" some do card (a pessoa toca no card pra abrir) */
-.is-app .card__reserve-btn,
+/* CTA laranja "Reservar" no card — chama pra ação (o card continua
+   clicável pra abrir a experiência; o botão dispara a reserva). O ícone
+   de compartilhar segue escondido pra não poluir. */
 .is-app .card__share-btn { display: none; }
+.is-app .card__reserve-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--sk-orange);
+  color: #fff;
+  font-family: inherit;
+  font-size: .86rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(242,118,35,.30);
+  transition: background .2s ease, transform .08s ease;
+}
+.is-app .card__reserve-btn:hover { background: var(--sk-orange-dark); }
+.is-app .card__reserve-btn:active { transform: translateY(1px); }
 
 /* "Ver todas as X experiências" — afastado das categorias/cards */
 .is-app .experiences__ver-mais {

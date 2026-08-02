@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v37 — Compras: filtro de origem (site/manual) + botão "marcar manuais avisadas" + venda manual nasce avisada');
+  console.info('[Elarah Admin] admin.js v38 — Compras: "aguardando experiência" sai da lista principal + selo/contador no topo + tipo (mesmo/outra) + fora das pendências de repasse');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -3047,6 +3047,13 @@
     return `<span class="admin__badge admin__badge--${cls}">${escapeHtml(label)}</span>`;
   }
 
+  // Modo de visualização "só aguardando experiência". Quando ligado, a
+  // lista de Compras mostra APENAS as reservas marcadas como aguardando
+  // experiência (as que a cliente desmarcou sem reembolso pra remarcar
+  // depois). Fora desse modo, elas ficam escondidas da lista principal —
+  // só o selo/contador no topo aparece. Alternado pelo clique no selo.
+  var _showAguardandoExpOnly = false;
+
   function wireBookingsControls() {
     const refreshBtn = document.getElementById('btn-refresh-bookings');
     const filterExp = document.getElementById('bookings-filter-exp');
@@ -3055,6 +3062,15 @@
     if (refreshBtn) refreshBtn.addEventListener('click', () => {
       invalidateBookings();
       invalidateGiftCardsCache();
+      renderBookings();
+    });
+
+    // Selo "aguardando experiência" no topo: alterna entre ver só elas e
+    // voltar pra lista normal. O texto/estilo do selo é atualizado em
+    // renderBookings conforme a contagem e o modo atual.
+    const aguardBadge = document.getElementById('aguardando-exp-badge');
+    if (aguardBadge) aguardBadge.addEventListener('click', () => {
+      _showAguardandoExpOnly = !_showAguardandoExpOnly;
       renderBookings();
     });
 
@@ -3505,6 +3521,14 @@
     // Este painel só mostra bookings PAGAS
     const filtered = bookings.filter(b => {
       if (b.status !== 'pago') return false;
+      // Aguardando experiência fica FORA da lista principal (a cliente
+      // desmarcou sem reembolso e vai remarcar depois). Só aparece no modo
+      // dedicado, acionado pelo selo/contador no topo da aba.
+      if (_showAguardandoExpOnly) {
+        if (!b.aguardando_experiencia) return false;
+      } else if (b.aguardando_experiencia) {
+        return false;
+      }
       if (filterExp && !String(b.experiencia_nome || '').toLowerCase().includes(filterExp)) return false;
       if (filterCliente) {
         const emailKey = String(b.email || '').toLowerCase();
@@ -3538,9 +3562,12 @@
     // Gift cards só entram em "Todas" (origem própria, não confunde).
     const filterOrigemEl = document.getElementById('bookings-filter-origem');
     const filterOrigem = filterOrigemEl ? filterOrigemEl.value : '';
-    const showSite = filterOrigem !== 'manual';
-    const showManual = filterOrigem !== 'site';
-    const showGift = filterOrigem === '';
+    // No modo "só aguardando experiência", força apenas reservas do site
+    // (vendas manuais e gift cards não têm esse estado) — assim a lista
+    // dedicada mostra só o que interessa.
+    const showSite = _showAguardandoExpOnly ? true : (filterOrigem !== 'manual');
+    const showManual = _showAguardandoExpOnly ? false : (filterOrigem !== 'site');
+    const showGift = _showAguardandoExpOnly ? false : (filterOrigem === '');
 
     // Stats globais (não-filtradas) vêm da fonte única (RPC financial_summary).
     // qty_*_pagos do RPC já reflete sum(quantidade) — 1 booking com 3
@@ -3642,18 +3669,47 @@
       .sort((a, b) => b.count - a.count);
     renderBars('bookings-by-exp', byExpRows);
 
+    // ===== Selo/contador "aguardando experiência" no topo =====
+    // Conta as reservas pagas marcadas como aguardando experiência (fonte
+    // é a lista completa, não a filtrada — o número é sempre o total real).
+    // O selo some quando não há nenhuma e não está no modo dedicado.
+    const aguardandoCount = bookings.filter(b => b.status === 'pago' && b.aguardando_experiencia).length;
+    const aguardBadgeEl = document.getElementById('aguardando-exp-badge');
+    if (aguardBadgeEl) {
+      if (_showAguardandoExpOnly) {
+        aguardBadgeEl.style.display = '';
+        aguardBadgeEl.style.background = '#b56a15';
+        aguardBadgeEl.style.color = '#fff';
+        aguardBadgeEl.innerHTML = '↩ Voltar pra todas as compras &nbsp;·&nbsp; vendo ' +
+          aguardandoCount + ' aguardando experiência';
+      } else if (aguardandoCount > 0) {
+        aguardBadgeEl.style.display = '';
+        aguardBadgeEl.style.background = '#fff3e0';
+        aguardBadgeEl.style.color = '#b56a15';
+        aguardBadgeEl.innerHTML = '⏳ <b>' + aguardandoCount + '</b> aguardando experiência — clique pra ver';
+      } else {
+        aguardBadgeEl.style.display = 'none';
+      }
+    }
+
     // Tabela
     const tbody = document.getElementById('purchases-body');
     const countEl = document.getElementById('purchases-count');
-    countEl.textContent = showSite
-      ? (filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : ''))
-      : 'só vendas manuais';
+    countEl.textContent = _showAguardandoExpOnly
+      ? (filtered.length + ' aguardando experiência')
+      : (showSite
+        ? (filtered.length + ' reserva' + (filtered.length !== 1 ? 's' : ''))
+        : 'só vendas manuais');
 
     // Vazio de reservas do site (ou origem = só manual) → não renderiza
     // linhas de booking. Ainda assim anexa manuais/gift conforme a origem.
     if (!showSite || filtered.length === 0) {
       tbody.innerHTML = showSite
-        ? '<tr><td colspan="18" class="admin__table-empty">Nenhuma reserva para esses filtros.</td></tr>'
+        ? ('<tr><td colspan="18" class="admin__table-empty">' +
+            (_showAguardandoExpOnly
+              ? 'Nenhuma compra aguardando experiência.'
+              : 'Nenhuma reserva para esses filtros.') +
+            '</td></tr>')
         : '';
       if (showManual) {
         appendManualSalesRowsInPurchases(tbody, document.getElementById('bookings-filter-exp')?.value || '')
@@ -4216,6 +4272,18 @@
         ? '<button type="button" class="admin__resend-confirm-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Reenviar o e-mail de confirmação pro cliente com os dados atuais da reserva (use depois de editar/trocar a experiência)" style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Reenviar confirmação</button>'
         : '';
 
+      // Selo "aguardando experiência" na coluna Status, com o tipo (mesmo
+      // fornecedor / outra experiência) quando registrado no editar. O tipo
+      // é só informativo — serve pra saber se a remarcação será na mesma
+      // experiência ou em outra.
+      const aguardandoTipo = (b.metadata && b.metadata.aguardando_experiencia_tipo) || '';
+      const aguardandoTipoLabel = aguardandoTipo === 'mesmo'
+        ? ' · mesmo fornecedor'
+        : (aguardandoTipo === 'outro' ? ' · outra experiência' : '');
+      const aguardandoBadge = b.aguardando_experiencia
+        ? '<br><span title="Cliente desmarcou sem reembolso e vai remarcar. Nenhuma mensagem automática é enviada e a vaga voltou pro estoque." style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:10px;background:#fff3e0;color:#b56a15;border:1px solid #f0d3a8;font-size:.66rem;font-weight:700;letter-spacing:.03em;white-space:nowrap;">⏳ Aguardando experiência' + aguardandoTipoLabel + '</span>'
+        : '';
+
       return `
         <tr>
           <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Site</span></td>
@@ -4232,7 +4300,7 @@
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorComissao ? escapeHtml(formatCents(valorComissao, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
-          <td>${bookingStatusBadge(b.status)}${b.aguardando_experiencia ? '<br><span title="Cliente desmarcou sem reembolso e vai remarcar. Nenhuma mensagem automática é enviada e a vaga voltou pro estoque." style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:10px;background:#fff3e0;color:#b56a15;border:1px solid #f0d3a8;font-size:.66rem;font-weight:700;letter-spacing:.03em;white-space:nowrap;">⏳ Aguardando experiência</span>' : ''}</td>
+          <td>${bookingStatusBadge(b.status)}${aguardandoBadge}</td>
           ${renderPrazoCell(b)}
           <td>${b.status === 'pago' ? '<select class="admin__sf-select" data-booking-id="' + escapeHtml(b.id) + '" style="padding:4px 8px;border:1px solid #ddd;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;' + ((b.status_fornecedor === 'repasse_feito') ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:#fff8ef;color:#b07b00;') + '"><option value="repasse_pendente"' + ((b.status_fornecedor || 'repasse_pendente') === 'repasse_pendente' ? ' selected' : '') + '>Repasse pendente</option><option value="repasse_feito"' + (b.status_fornecedor === 'repasse_feito' ? ' selected' : '') + '>Repasse feito</option></select>' : ''}</td>
           ${renderWhatsappCell(b, nomeResolved, telefone)}
@@ -4532,6 +4600,9 @@
       var originalQty = Number(booking.quantidade) || 1;
       var originalExp = current;
       var originalUnit = unitCheioCentavos(originalExp, booking);
+      // Tipo da remarcação já registrado (mesmo/outro), pra pré-selecionar
+      // no select de "aguardando experiência".
+      var aguardandoTipoAtual = (booking.metadata && booking.metadata.aguardando_experiencia_tipo) || '';
 
       function horasUntilEvent() {
         var ts = booking._eventTsResolvido;
@@ -4613,6 +4684,18 @@
                   '<span style="display:block;font-size:.74rem;color:#7a6a52;margin-top:3px;line-height:1.45;">Cliente desmarcou e vai escolher outra experiência depois. Enquanto marcado, <b>nenhuma mensagem automática</b> é enviada pro cliente e a <b>vaga volta pro estoque</b>. O valor continua com a Elarah (sem reembolso).</span>' +
                 '</span>' +
               '</label>' +
+              // Tipo da remarcação — só informativo, pra saber se a nova
+              // experiência será com o MESMO fornecedor (provável mesma
+              // experiência) ou OUTRA. Aparece no selo da linha. Só visível
+              // quando "aguardando experiência" está marcado.
+              '<div id="admin-edit-booking-aguardando-tipo-wrap" style="margin-top:12px;padding-left:25px;' + (booking.aguardando_experiencia ? '' : 'display:none;') + '">' +
+                '<label style="display:block;font-size:.72rem;color:#7a6a52;font-weight:700;margin-bottom:5px;">A remarcação vai ser…</label>' +
+                '<select id="admin-edit-booking-aguardando-tipo" style="width:100%;max-width:280px;padding:8px 10px;border:1px solid #e0cba8;border-radius:8px;font-size:.84rem;background:#fff;">' +
+                  '<option value=""' + (!aguardandoTipoAtual ? ' selected' : '') + '>— a definir —</option>' +
+                  '<option value="mesmo"' + (aguardandoTipoAtual === 'mesmo' ? ' selected' : '') + '>Mesmo fornecedor (provável mesma experiência)</option>' +
+                  '<option value="outro"' + (aguardandoTipoAtual === 'outro' ? ' selected' : '') + '>Outra experiência</option>' +
+                '</select>' +
+              '</div>' +
             '</div>' +
           '</div>' +
           '<div style="padding:14px 22px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;">' +
@@ -4629,6 +4712,16 @@
       var qtyInput = modal.querySelector('#admin-edit-booking-qty');
       var dataInput = modal.querySelector('#admin-edit-booking-data');
       var refundBox = modal.querySelector('#admin-edit-booking-refund');
+
+      // Mostra/esconde o select de tipo (mesmo/outra) conforme o checkbox
+      // de "aguardando experiência".
+      var aguardandoChkModal = modal.querySelector('#admin-edit-booking-aguardando');
+      var aguardandoTipoWrap = modal.querySelector('#admin-edit-booking-aguardando-tipo-wrap');
+      if (aguardandoChkModal && aguardandoTipoWrap) {
+        aguardandoChkModal.addEventListener('change', function () {
+          aguardandoTipoWrap.style.display = aguardandoChkModal.checked ? '' : 'none';
+        });
+      }
 
       function refreshHorarios(chosen) {
         var horarios = expHorarios(chosen);
@@ -4845,6 +4938,17 @@
             },
           });
           meta.admin_edit_history = hist;
+          // Tipo da remarcação (mesmo/outra) — só faz sentido quando a
+          // reserva está aguardando experiência. Se o checkbox estiver
+          // desligado, limpa o campo. É informativo: aparece no selo da
+          // linha e não altera repasse nem nada financeiro.
+          var aguardTipoSel = modal.querySelector('#admin-edit-booking-aguardando-tipo');
+          var aguardChkForMeta = modal.querySelector('#admin-edit-booking-aguardando');
+          if (aguardChkForMeta && aguardChkForMeta.checked) {
+            meta.aguardando_experiencia_tipo = (aguardTipoSel && aguardTipoSel.value) || null;
+          } else {
+            meta.aguardando_experiencia_tipo = null;
+          }
           metaToSave = meta;
         } catch (err) {
           console.warn('[Admin] não consegui anexar histórico de edição:', err);
@@ -10334,6 +10438,10 @@
     let countGlobal = 0;
     (allBookings || []).forEach(b => {
       if (!b || b.status !== 'pago') return;
+      // Aguardando experiência: a cliente desmarcou e vai remarcar depois,
+      // então não há repasse a fazer agora — sai das pendências (a admin
+      // controla o repasse por fora quando a nova experiência acontecer).
+      if (b.aguardando_experiencia) return;
       // Default do schema é 'repasse_pendente'; trata null/undefined como pendente.
       const sf = b.status_fornecedor || 'repasse_pendente';
       if (sf !== 'repasse_pendente') return;

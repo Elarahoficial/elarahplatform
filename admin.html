@@ -856,6 +856,17 @@
         </div>
       </div>
 
+      <!-- Selo/contador de compras "aguardando experiência" (cliente
+           desmarcou sem reembolso e vai remarcar depois). Elas saem da
+           lista principal; este selo mostra quantas são e, ao clicar,
+           filtra a lista pra mostrar só elas. Fica escondido quando não
+           há nenhuma. Texto/estilo definidos em admin.js (renderBookings). -->
+      <button type="button" id="aguardando-exp-badge"
+              style="display:none;width:100%;margin-bottom:14px;padding:11px 15px;border:1px solid #f0d3a8;background:#fff3e0;color:#b56a15;border-radius:10px;font-size:.92rem;font-weight:700;cursor:pointer;text-align:left;"
+              title="Compras em que a cliente desmarcou sem reembolso e vai remarcar depois. Clique pra ver só elas.">
+        ⏳ <span id="aguardando-exp-count">0</span> aguardando experiência — clique pra ver
+      </button>
+
       <div class="admin__stats">
         <div class="admin__stat">
           <div class="admin__stat-label">Vagas pagas</div>
