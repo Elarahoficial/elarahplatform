@@ -115,7 +115,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/ceramica.jpg" alt="Amigas sorrindo com as peças que criaram numa oficina" style="object-position:center 30%">
+        <img src="assets/desp-hero2.jpg" alt="Amigas comemorando juntas, taça na mão, numa despedida de solteira" style="object-position:center 28%">
       </div>
     </div>
     {foot("Experiência · Despedida de solteira")}
