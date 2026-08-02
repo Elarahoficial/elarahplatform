@@ -154,8 +154,8 @@ menu = f'''
     <p class="lead">Duas oficinas sensoriais, perfeitas pra despedida — e pelo <strong>mesmo valor</strong>, é só escolher a preferida (ou me conta que a gente pensa junto!).</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("Oficina","velaaromatica.jpg","Vela Aromática","Cada uma cria a sua vela perfumada — escolhendo aroma, cor e rótulo. Delicada, relaxante e super sensorial, do jeitinho que a Michele amou.","Vela aromática artesanal criada numa oficina","center 45%",top="🕯️ Mesmo valor")}
-      {exp("Oficina","ceramicamodelagem.jpg","Cerâmica","Cada uma modela (ou pinta) a sua peça de cerâmica à mão — sensorial e cheia de significado. Cada uma leva a sua criação pra casa.","Mãos modelando uma peça de cerâmica","center 50%",top="🏺 Mesmo valor")}
+      {exp("Oficina","velaaromatica.jpg","Vela Aromática","Cada uma cria a sua vela perfumada — escolhendo aroma, cor e rótulo. Delicada, relaxante e super sensorial, do jeitinho que a Michele amou.","Vela aromática artesanal criada numa oficina","center 45%")}
+      {exp("Oficina","ceramicamodelagem.jpg","Cerâmica","Cada uma modela (ou pinta) a sua peça de cerâmica à mão — sensorial e cheia de significado. Cada uma leva a sua criação pra casa.","Mãos modelando uma peça de cerâmica","center 50%")}
     </div>
     <div class="note" style="margin-top:16px">◆ Nas duas, a Elarah leva <b>todo o material, a condução e a estrutura</b> — vocês só chegam, criam e celebram. A oficina fica <b>100% privativa</b>, só pro grupo de vocês.</div>
     {foot("As oficinas")}
