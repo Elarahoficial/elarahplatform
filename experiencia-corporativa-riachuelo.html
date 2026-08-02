@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Experiência Corporativa · Elarah × Riachuelo</title>
-<meta name="description" content="Proposta de experiência corporativa criativa da Elarah para a Riachuelo — integração de time, na empresa.">
+<meta name="description" content="Proposta de experiência corporativa criativa da Elarah para a Riachuelo — menu de experiências e planos de integração.">
 <meta name="robots" content="noindex, nofollow">
 <style>
 /* latin-ext */
@@ -137,11 +137,11 @@
 </style>
 <style>
   :root{
-    --orange:#F27623;
-    --orange-dark:#D4600E;
-    --navy:#16233C;
-    --navy-soft:#3B4E6B;
-    --blue-accent:#4C6EA3;
+    --orange:#E4002B;
+    --orange-dark:#B0001F;
+    --navy:#1A1A1A;
+    --navy-soft:#575252;
+    --blue-accent:#E4002B;
     --cream:#F6F2EB;
     --card:#FFFFFF;
     --ink:#1D2430;
@@ -220,7 +220,7 @@
   .infocard p{font-size:13px;color:var(--muted);line-height:1.5}
 
   .quote{
-    margin-top:26px;background:#EDF1F7;border-left:5px solid var(--blue-accent);
+    margin-top:26px;background:#FBEEEF;border-left:5px solid var(--blue-accent);
     border-radius:0 14px 14px 0;padding:22px 26px;color:var(--navy-soft);font-size:14.5px
   }
   .quote i{font-style:italic;color:var(--navy)}
@@ -254,7 +254,7 @@
     font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:6px 13px;
     border-radius:999px;box-shadow:0 6px 16px -4px rgba(212,96,14,.6);z-index:3}
   .proof{display:inline-flex;align-items:center;gap:9px;margin:14px 0 2px;
-    background:#EDF1F7;border:1px solid #DCE5F1;border-radius:999px;padding:9px 17px;font-size:13.5px;color:var(--navy-soft)}
+    background:#FBEEEF;border:1px solid #F3D9DD;border-radius:999px;padding:9px 17px;font-size:13.5px;color:var(--navy-soft)}
   .proof .star{color:var(--orange);font-size:13px}
   .proof b{color:var(--navy);font-weight:700}
   .proof--wide{display:flex;width:100%;justify-content:center;white-space:nowrap;margin:6px 0 2px}
@@ -267,7 +267,7 @@
   .addon p{font-size:13px;color:var(--navy-soft)}
   .addon b{color:var(--ink);font-weight:700}
   .allin{align-self:flex-start;margin-top:14px;font-size:11px;font-weight:600;color:var(--navy-soft);
-    background:#EDF1F7;border-radius:999px;padding:6px 13px}
+    background:#FBEEEF;border-radius:999px;padding:6px 13px}
   .allin::before{content:"✓ ";color:#2e7d52;font-weight:800}
 
   /* ---- PIZZADA ---- */
@@ -294,10 +294,10 @@
   .step p{font-size:12.5px;color:var(--muted)}
   .cta{
     margin-top:24px;background:var(--navy);color:#fff;border-radius:18px;padding:30px 34px;
-    background-image:radial-gradient(circle at 88% 20%,rgba(242,118,35,.22),transparent 45%)
+    background-image:radial-gradient(circle at 88% 20%,rgba(228,0,43,.28),transparent 45%)
   }
   .cta h2{color:#fff;font-size:30px}
-  .cta h2 em{color:var(--orange-light,#FF9A4D)}
+  .cta h2 em{color:var(--orange-light,#FF8A9B)}
   .cta p{color:#C8D2E1;font-size:14px;margin-top:10px;max-width:60ch}
   .cta-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;align-items:center}
   .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#0b3d1e;font-weight:700;
@@ -324,6 +324,7 @@
     .cover,.pizza-hero{grid-template-columns:1fr;gap:26px}
     .grid3,.trio,.steps{grid-template-columns:1fr}
     .plans{grid-template-columns:1fr}
+    .menu{grid-template-columns:1fr}
     .menu-cols{grid-template-columns:1fr}
     h1{font-size:38px}h2{font-size:30px}
     .slide__head{flex-direction:column;align-items:flex-start}
@@ -348,6 +349,9 @@
     .grid3,.trio,.steps{grid-template-columns:repeat(3,1fr)}
     .plans{grid-template-columns:1fr 1fr}
     .menu-cols{grid-template-columns:1fr 1fr}
+    .menu{grid-template-columns:repeat(3,1fr)}
+    .plans.three{grid-template-columns:repeat(3,1fr)}
+    .exp-photo{height:118px}
     h1{font-size:44px}h2{font-size:34px}
     /* leve compactação pra tudo caber em 1 página */
     .rule{margin:3mm 0}
@@ -363,6 +367,16 @@
     .pizza-photo{min-height:180px}
     @page{size:A4 portrait;margin:0}
   }
+
+  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:6px}
+  .exp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 28px -22px rgba(0,0,0,.32)}
+  .exp-photo{height:116px;overflow:hidden;background:#eee}
+  .exp-photo img{width:100%;height:100%;object-fit:cover}
+  .exp-body{padding:12px 15px 15px}
+  .exp .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:5px}
+  .exp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:16.5px;color:var(--navy);line-height:1.08}
+  .exp p{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}
+  .plans.three{grid-template-columns:repeat(3,1fr)}
 </style>
 </head>
 <body>
@@ -381,12 +395,12 @@
       <div>
         <span class="eyebrow">✦ Experiência Corporativa · Integração</span>
         <h1>Experiências<br>que <em>integram</em></h1>
-        <p class="lead">Um encontro criativo pra <strong>tirar o time da rotina e integrar de verdade</strong> — leve, divertido e com a mão na massa. A gente leva tudo até vocês, <strong>aí na Riachuelo</strong>.</p>
+        <p class="lead">Um encontro criativo pra <strong>tirar o time da rotina e integrar de verdade</strong> — leve, sofisticado e com a mão na massa. Um leque de experiências pra vocês escolherem; a gente leva tudo até a Riachuelo.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>20 pessoas</b></span>
           <span class="chip"><b>02</b> de setembro</span>
-          <span class="chip">Integração · <b>criativo</b></span>
+          <span class="chip">Integração · <b>criativa</b></span>
         </div>
       </div>
       <div class="cover-photo">
@@ -407,7 +421,7 @@
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico">🤝</div><h3>Conexão de verdade</h3><p>Todo mundo criando junto — a atividade é o pretexto; a integração é o que fica.</p></div>
-      <div class="infocard"><div class="ico">🎨</div><h3>Criativo e leve</h3><p>Mão na massa, acessível pra qualquer área, idade ou nível — e cada um leva a sua criação.</p></div>
+      <div class="infocard"><div class="ico">🎨</div><h3>Criativo e sofisticado</h3><p>Um leque de experiências autorais — cada um cria e leva a sua peça pra casa.</p></div>
       <div class="infocard"><div class="ico">🏢</div><h3>Aí na empresa</h3><p>A gente leva tudo até a Riachuelo — material, condução e estrutura. Vocês só vivem o dia.</p></div>
     </div>
     <div class="quote">
@@ -419,154 +433,114 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Opção 1 · Tufting</span></div>
+      <div class="head-right"><span class="kicker">O menu · parte 1</span></div>
     </div>
-    <span class="eyebrow orange">◆ Opção 1 · Integração criativa</span>
-    <h2>Tufting 🧶</h2>
-    <p class="lead">Com a pistola de tufting, cada pessoa cria a sua peça decorativa — tapete ou quadro. Criativo, relaxante e cheio de personalidade, perfeito pra soltar e integrar o time. <strong>Cada um leva a sua pra casa.</strong></p>
-    <div class="meta">
-      <span>📍 <b>Na Riachuelo</b> · levamos até vocês</span>
-      <span>⏱️ Duração <b>2h30–3h</b></span>
-    </div>
+    <span class="eyebrow orange">◆ Escolham a experiência</span>
+    <h2>Um menu que <em>encanta</em></h2>
+    <p class="lead">Da cozinha à perfumaria, do tufting à cerâmica — experiências autorais pra todo tipo de time. Escolham uma (ou combinem!) e a gente monta tudo.</p>
     <div class="rule"></div>
-    <div class="plans">
-      <div class="plan">
-        <div class="plan-photo sq"><img src="assets/tufting6.jpg" alt="Time criando peças de tufting juntos" style="object-position:center 50%"></div>
-        <div class="plan-body">
-          <span class="tag basic">A experiência</span>
-          <h3>Tufting</h3>
-          <div class="price soft">sob consulta<small>valor por pessoa</small></div>
-          <ul class="feat"><li>Aula de tufting com instrutor(a)</li><li>Todo o material e estrutura</li><li>A sua peça pra levar pra casa</li><li>Turma do time (até 20 pessoas)</li></ul>
-          <span class="allin">Cada um leva a sua arte</span>
-        </div>
-      </div>
-      <div class="plan featured">
-        <span class="ribbon">★ Com a sua marca</span>
-        <div class="plan-photo sq"><img src="assets/pecaadyen.jpg" alt="Dupla exibindo a peça de tufting que criaram" style="object-position:center 35%"></div>
-        <div class="plan-body">
-          <span class="tag premium">Personalização</span>
-          <h3>Com a Riachuelo</h3>
-          <div class="more">Tudo da experiência, e mais</div>
-          <ul class="feat"><li>Peça maior / acabamento premium</li><li>Coffee break completo</li><li><b>Personalização com a marca da Riachuelo</b> (brindes e lembrancinhas)</li></ul>
-          <span class="allin">Experiência + brindes</span>
-        </div>
-      </div>
+    <div class="menu">
+      <div class="exp"><div class="exp-photo"><img src="assets/massamolho.jpg" alt="Prato preparado numa aula de gastronomia" style="object-position:center 50%"></div><div class="exp-body"><span class="n">01</span><h3>Gastronomia</h3><p>Mão na massa com um chef — o time cozinha e senta pra comer junto.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/drinks.jpg" alt="Drink autoral em caneca de cobre" style="object-position:center 40%"></div><div class="exp-body"><span class="n">02</span><h3>Coquetelaria & Drinks</h3><p>Cada um cria o próprio drink autoral com um bartender — com ou sem álcool.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/desp-hero4.jpg" alt="Mesa montada para modelagem em cerâmica" style="object-position:center 30%"></div><div class="exp-body"><span class="n">03</span><h3>Cerâmica</h3><p>Modelagem em cerâmica fria, à mão. Cada um leva a sua peça.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/perfumariaharbolita.jpg" alt="Essências e frascos de perfumaria" style="object-position:center 45%"></div><div class="exp-body"><span class="n">04</span><h3>Perfumaria Natural</h3><p>Crie a sua fragrância botânica do zero, numa imersão sensorial.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/tufting6.jpg" alt="Time exibindo peças de tufting" style="object-position:center 50%"></div><div class="exp-body"><span class="n">05</span><h3>Tufting</h3><p>Com a pistola de tufting, cada um cria a sua peça decorativa.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/pinturatacavinho.jpg" alt="Taça pintada à mão" style="object-position:center 50%"></div><div class="exp-body"><span class="n">06</span><h3>Pintura Criativa</h3><p>Em tela, taça, copo ou xícara — cada um leva a sua arte.</p></div></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Opção 1 · Tufting</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O menu · parte 1</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Opção 2 · Cerâmica</span></div>
+      <div class="head-right"><span class="kicker">O menu · parte 2</span></div>
     </div>
-    <span class="eyebrow orange">◆ Opção 2 · Integração criativa</span>
-    <h2>Cerâmica 🏺</h2>
-    <p class="lead">Cada pessoa modela a sua peça <strong>em cerâmica fria, à mão</strong> — sensorial, relaxante e cheia de significado. Uma experiência que aproxima o time em volta da mesa. Cada um leva a sua criação pra casa.</p>
-    <div class="meta">
-      <span>📍 <b>Na Riachuelo</b> · levamos até vocês</span>
-      <span>⏱️ Duração <b>2h30–3h</b></span>
-    </div>
+    <span class="eyebrow orange">◆ Escolham a experiência</span>
+    <h2>E tem <em>muito mais</em></h2>
+    <p class="lead">Experiências diferentes e cheias de personalidade — as que mais têm a ver com a energia da Riachuelo.</p>
     <div class="rule"></div>
-    <div class="plans">
-      <div class="plan">
-        <div class="plan-photo sq"><img src="assets/desp-hero4.jpg" alt="Mesa montada para a experiência de modelagem em cerâmica fria" style="object-position:center 30%"></div>
-        <div class="plan-body">
-          <span class="tag basic">A experiência</span>
-          <h3>Cerâmica</h3>
-          <div class="price soft">sob consulta<small>valor por pessoa</small></div>
-          <ul class="feat"><li>Modelagem em cerâmica fria, à mão</li><li>Massa e todos os materiais</li><li>Condução por ceramista</li><li>A peça seca naturalmente e vai pra casa</li></ul>
-          <span class="allin">Cada um leva a sua peça</span>
-        </div>
-      </div>
-      <div class="plan featured">
-        <span class="ribbon">★ Com a sua marca</span>
-        <div class="plan-photo sq"><img src="assets/ceramicafamiliamais12.jpg" alt="Time modelando peças de cerâmica juntos" style="object-position:center 40%"></div>
-        <div class="plan-body">
-          <span class="tag premium">Personalização</span>
-          <h3>Com a Riachuelo</h3>
-          <div class="more">Tudo da experiência, e mais</div>
-          <ul class="feat"><li>Mesa temática montada pro time</li><li>Coffee break completo</li><li><b>Personalização com a marca da Riachuelo</b> (brindes e lembrancinhas)</li></ul>
-          <span class="allin">Experiência + brindes</span>
-        </div>
-      </div>
+    <div class="menu">
+      <div class="exp"><div class="exp-photo"><img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal" style="object-position:center 50%"></div><div class="exp-body"><span class="n">07</span><h3>Velas Aromáticas</h3><p>Cada um cria a sua vela perfumada, do aroma ao rótulo.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/buqueflor.jpg" alt="Buquê de flores do campo" style="object-position:center 40%"></div><div class="exp-body"><span class="n">08</span><h3>Buquê de Flores</h3><p>Monte o seu próprio buquê autoral, pra levar pra casa.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/fazendojoia.jpg" alt="Mãos criando uma joia à mão" style="object-position:center 40%"></div><div class="exp-body"><span class="n">09</span><h3>Crie a sua Joia</h3><p>Cada um cria a própria joia — anel, colar ou pingente.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/croche.jpg" alt="Bolsinhas de crochê coloridas" style="object-position:center 50%"></div><div class="exp-body"><span class="n">10</span><h3>Bolsa de Crochê</h3><p>Aprenda crochê e faça a sua bolsinha — a queridinha do momento.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/saboneteroxo.jpg" alt="Sabonetes artesanais de lavanda" style="object-position:center 50%"></div><div class="exp-body"><span class="n">11</span><h3>Sabonete Artesanal</h3><p>Cada um cria os próprios sabonetes botânicos, com aroma e cor.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/aulateatro.jpg" alt="Time numa dinâmica de teatro" style="object-position:center 40%"></div><div class="exp-body"><span class="n">12</span><h3>Teatro & Dinâmicas</h3><p>Jogos de improviso pra soltar o time e dar muita risada.</p></div></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Opção 2 · Cerâmica</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O menu · parte 2</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Opção 3 · Pintura em Tela</span></div>
+      <div class="head-right"><span class="kicker">Os planos</span></div>
     </div>
-    <span class="eyebrow orange">◆ Opção 3 · Integração criativa</span>
-    <h2>Pintura em Tela 🎨</h2>
-    <p class="lead">Cada pessoa pinta a sua tela autoral — do jeito que quiser. Criativo, leve e cheio de estilo, ótimo pra descontrair e integrar. <strong>Cada um leva a sua obra pra casa.</strong></p>
-    <div class="meta">
-      <span>📍 <b>Na Riachuelo</b> · levamos até vocês</span>
-      <span>⏱️ Duração <b>2h30–3h</b></span>
-    </div>
+    <span class="eyebrow orange">◆ Escolham o plano</span>
+    <h2>Do essencial ao <em>tudo incluso</em></h2>
+    <p class="lead">Qualquer experiência do menu pode vir em três formatos — vocês escolhem o quão completo querem o encontro.</p>
     <div class="rule"></div>
-    <div class="plans">
-      <div class="plan">
-        <div class="plan-photo sq"><img src="assets/pintura.jpg" alt="Time pintando telas num ateliê" style="object-position:center 50%"></div>
-        <div class="plan-body">
-          <span class="tag basic">A experiência</span>
-          <h3>Pintura em Tela</h3>
-          <div class="price soft">sob consulta<small>valor por pessoa</small></div>
-          <ul class="feat"><li>Pintura em tela com facilitadora</li><li>Telas, tintas e cavaletes</li><li>A sua obra pra levar pra casa</li><li>Turma do time (até 20 pessoas)</li></ul>
-          <span class="allin">Cada um leva a sua obra</span>
-        </div>
-      </div>
-      <div class="plan featured">
-        <span class="ribbon">★ Com a sua marca</span>
-        <div class="plan-photo sq"><img src="assets/quadropintado.jpg" alt="Pessoas exibindo as telas que pintaram" style="object-position:center 55%"></div>
-        <div class="plan-body">
-          <span class="tag premium">Personalização</span>
-          <h3>Com a Riachuelo</h3>
-          <div class="more">Tudo da experiência, e mais</div>
-          <ul class="feat"><li>Avental personalizado (cada um leva o seu)</li><li>Coffee break completo</li><li><b>Personalização com a marca da Riachuelo</b> (brindes e lembrancinhas)</li></ul>
-          <span class="allin">Experiência + brindes</span>
-        </div>
-      </div>
+    <div class="plans three">
+      <div class="plan"><div class="plan-body">
+        <span class="tag basic">Plano 1 · Básico</span>
+        <h3>A experiência</h3>
+        <div class="price soft">sob consulta<small>por pessoa</small></div>
+        <ul class="feat"><li>A experiência criativa escolhida</li><li>Todos os materiais e estrutura</li><li>Condução por profissional</li><li>Cada um leva a sua criação pra casa</li></ul>
+        <span class="allin">Tudo da experiência</span>
+      </div></div>
+      <div class="plan"><div class="plan-body">
+        <span class="tag basic">Plano 2 · Com gastronomia</span>
+        <h3>Experiência + comida</h3>
+        <div class="price soft">sob consulta<small>por pessoa</small></div>
+        <div class="more">Tudo do Básico, e mais</div><ul class="feat"><li>Gastronomia: brunch, almoço ou coquetelaria</li><li>Opção de drinks / coquetelaria autoral</li><li>Registro fotográfico profissional (opcional)</li></ul>
+        <span class="allin">Experiência + comida</span>
+      </div></div>
+      <div class="plan featured"><div class="plan-body">
+        <span class="tag premium">Plano 3 · Completo</span>
+        <h3>Tudo incluso</h3>
+        <div class="price soft">sob consulta<small>por pessoa</small></div>
+        <div class="more">Tudo dos planos anteriores, e mais</div><ul class="feat"><li>Registro fotográfico profissional incluso</li><li>Kits personalizados com a marca da Riachuelo</li><li>Mesa de boas-vindas + coffee break</li></ul>
+        <span class="allin">Experiência + comida + foto + kits</span>
+      </div></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Opção 3 · Pintura em Tela</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Os planos</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Opção 4 · Perfumaria Natural</span></div>
+      <div class="head-right"><span class="kicker">O toque Riachuelo</span></div>
     </div>
-    <span class="eyebrow orange">◆ Opção 4 · Integração criativa</span>
-    <h2>Perfumaria Natural 🌿</h2>
-    <p class="lead">Cada pessoa cria a sua fragrância botânica, do zero — uma imersão sensorial guiada por perfumista. Diferente, sofisticada e cheia de conexão. <strong>Cada um leva o seu perfume.</strong></p>
-    <div class="meta">
-      <span>📍 <b>Na Riachuelo</b> · levamos até vocês</span>
-      <span>⏱️ Duração <b>2h30–3h</b></span>
-    </div>
+    <span class="eyebrow orange">◆ No plano Completo</span>
+    <h2>Com a cara da <em>sua empresa</em></h2>
+    <p class="lead">O encontro sai com a identidade da Riachuelo — pra virar memória do time e conteúdo lindo pra marca.</p>
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/perfumariaharbolita.jpg" alt="Mesa de essências e frascos da experiência de perfumaria" style="object-position:center 45%"></div>
+        <div class="plan-photo sq"><img src="assets/rockworld1.jpg" alt="Momento do time registrado por um fotógrafo" style="object-position:center 45%"></div>
         <div class="plan-body">
-          <span class="tag basic">A experiência</span>
-          <h3>Perfumaria Natural</h3>
-          <div class="price soft">sob consulta<small>valor por pessoa</small></div>
-          <ul class="feat"><li>Menu de essências naturais</li><li>Materiais, frasco e condução</li><li>Cada um cria e leva o seu perfume</li><li>Turma do time (até 20 pessoas)</li></ul>
-          <span class="allin">Cada um leva o seu perfume</span>
+          <span class="tag basic">Incluso</span>
+          <h3>Registro fotográfico profissional</h3>
+          <ul class="feat">
+            <li>Um fotógrafo cobre o encontro inteiro</li>
+            <li>Cada risada e cada criação registradas</li>
+            <li>Álbum digital lindo pra usar como quiser</li>
+          </ul>
+          <span class="allin">Memória (e conteúdo) pra marca</span>
         </div>
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Com a sua marca</span>
-        <div class="plan-photo sq"><img src="assets/perfumes10.jpg" alt="Pessoas testando notas e criando o próprio perfume" style="object-position:center 40%"></div>
+        <div class="plan-photo sq"><img src="assets/nivergibrinde.jpg" alt="Kit personalizado com o nome de cada convidado" style="object-position:center 35%"></div>
         <div class="plan-body">
           <span class="tag premium">Personalização</span>
-          <h3>Com a Riachuelo</h3>
-          <div class="more">Tudo da experiência, e mais</div>
-          <ul class="feat"><li>Rótulo personalizado do perfume</li><li>Coffee break completo</li><li><b>Personalização com a marca da Riachuelo</b> (brindes e lembrancinhas)</li></ul>
-          <span class="allin">Experiência + brindes</span>
+          <h3>Kits personalizados</h3>
+          <ul class="feat">
+            <li>Cada convidado leva um kit da Riachuelo</li>
+            <li>Do avental ao brinde, com o nome de cada um</li>
+            <li>Mesa de boas-vindas com a identidade da marca</li>
+          </ul>
+          <span class="allin">Cada um leva o seu mimo</span>
         </div>
       </div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Opção 4 · Perfumaria Natural</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O toque Riachuelo</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -578,9 +552,9 @@
     <p class="lead">A Elarah cuida de toda a produção pra o encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Tufting, cerâmica, pintura ou perfumaria.</p></div>
+      <div class="step"><div class="num">1</div><h3>Escolhem experiência + plano</h3><p>Do menu criativo, no formato Básico, Com gastronomia ou Completo.</p></div>
       <div class="step"><div class="num">2</div><h3>A gente leva até vocês</h3><p>Aí na Riachuelo — material, condução e estrutura por nossa conta.</p></div>
-      <div class="step"><div class="num">3</div><h3>O time vive e integra</h3><p>Vocês só chegam, se soltam e se conectam.</p></div>
+      <div class="step"><div class="num">3</div><h3>O time vive e integra</h3><p>Vocês só chegam, criam juntos e se conectam.</p></div>
     </div>
     <div class="addon">
       <span class="plus">➕</span>
@@ -591,7 +565,7 @@
     </div>
     <div class="cta">
       <h2>Bora integrar o time da <em>Riachuelo?</em> ✦</h2>
-      <p>Me conta qual experiência mais chamou, que a gente fecha cada detalhe do encontro de 02 de setembro.</p>
+      <p>Me conta qual experiência e qual plano mais chamaram, que a gente fecha cada detalhe do encontro de 02 de setembro.</p>
       <div class="cta-actions">
         <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Vi%20a%20proposta%20de%20experi%C3%AAncia%20corporativa%20e%20quero%20fechar%20os%20detalhes." target="_blank" rel="noopener">
           💬 Falar no WhatsApp
@@ -603,8 +577,8 @@
         </div>
       </div>
     </div>
-    <p class="fineprint">Experiências criativas para integração de time, para cerca de 20 participantes, realizadas na sua empresa. Cada experiência dura cerca de 2h30–3h, com +1h para o momento da empresa, sem custo adicional. Incluem material, condução e estrutura. Valores por pessoa sob consulta. Proposta válida mediante confirmação de data (02 de setembro), experiência e disponibilidade de agenda.</p>
-    <div class="slide__foot"><span>elarah.com.br · @elarah.oficial</span><span>Experiência Corporativa · Riachuelo · 2026</span></div>
+    <p class="fineprint">Proposta de experiências criativas para integração de time, para cerca de 20 participantes, realizada na Riachuelo. Escolham a experiência e o plano (Básico · Com gastronomia · Completo). Cada experiência dura cerca de 2h30–3h, com +1h para o momento da empresa, sem custo adicional. Valores por pessoa sob consulta. Proposta válida mediante confirmação de data (02 de setembro), experiência e disponibilidade de agenda.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência Corporativa · Riachuelo · 2026</span></div>
   </section>
 
 </div>
