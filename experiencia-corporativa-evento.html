@@ -372,7 +372,8 @@
   }
 
   .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:10px}
-  .exp{width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .exp{position:relative;width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .exp .top{position:absolute;top:11px;left:11px;z-index:3;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(158,83,68,.6)}
   .exp-photo{height:150px;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:13px 16px 16px}
@@ -525,7 +526,7 @@
       <div class="exp"><div class="exp-photo"><img src="assets/fazendojoia.jpg" alt="Mãos criando uma joia à mão" style="object-position:center 40%"></div><div class="exp-body"><span class="n">04</span><h3>Joalheria</h3><p>Crie a própria joia — anel, colar ou pingente, pra usar.</p></div></div>
       <div class="exp"><div class="exp-photo"><img src="assets/desp-hero4.jpg" alt="Mesa montada para experiência de cerâmica" style="object-position:center 30%"></div><div class="exp-body"><span class="n">05</span><h3>Cerâmica</h3><p>Modelagem ou pintura em cerâmica — leve a sua peça.</p></div></div>
       <div class="exp"><div class="exp-photo"><img src="assets/tufting6.jpg" alt="Time exibindo peças de tufting" style="object-position:center 50%"></div><div class="exp-body"><span class="n">06</span><h3>Tufting</h3><p>Com a pistola de tufting, crie a sua peça decorativa.</p></div></div>
-      <div class="exp"><div class="exp-photo"><img src="assets/massamolho.jpg" alt="Prato preparado numa aula de gastronomia" style="object-position:center 50%"></div><div class="exp-body"><span class="n">07</span><h3>Gastronomia &amp; Bartenderia</h3><p>Cozinhem juntos ou criem drinks autorais — unissex e social.</p></div></div>
+      <div class="exp"><span class="top">★ Top 1</span><div class="exp-photo"><img src="assets/massamolho.jpg" alt="Prato preparado numa aula de gastronomia" style="object-position:center 50%"></div><div class="exp-body"><span class="n">07</span><h3>Gastronomia &amp; Bartenderia</h3><p>Cozinhem juntos ou criem drinks autorais — unissex e social.</p></div></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O menu</span></div>
   </section>

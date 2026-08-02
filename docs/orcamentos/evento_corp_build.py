@@ -17,7 +17,8 @@ head = head.replace("#E6F0E9", "#F5ECE7")  # itable highlight -> blush
 # extra CSS: experience menu grid + 3-plan variant
 extra = '''
   .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:10px}
-  .exp{width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .exp{position:relative;width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .exp .top{position:absolute;top:11px;left:11px;z-index:3;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(158,83,68,.6)}
   .exp-photo{height:150px;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:13px 16px 16px}
@@ -88,8 +89,9 @@ head = head.replace(".plans{grid-template-columns:1fr}",
 def foot(right):
     return f'<div class="slide__foot"><span>Elarah · Experiências</span><span>{right}</span></div>'
 
-def exp(n, img, name, desc, alt, pos="center 50%"):
-    return f'<div class="exp"><div class="exp-photo"><img src="assets/{img}" alt="{alt}" style="object-position:{pos}"></div><div class="exp-body"><span class="n">{n}</span><h3>{name}</h3><p>{desc}</p></div></div>'
+def exp(n, img, name, desc, alt, pos="center 50%", top=None):
+    tb = f'<span class="top">{top}</span>' if top else ''
+    return f'<div class="exp">{tb}<div class="exp-photo"><img src="assets/{img}" alt="{alt}" style="object-position:{pos}"></div><div class="exp-body"><span class="n">{n}</span><h3>{name}</h3><p>{desc}</p></div></div>'
 
 cover = f'''
   <section class="slide">
@@ -159,7 +161,7 @@ menu = f'''
       {exp("04","fazendojoia.jpg","Joalheria","Crie a própria joia — anel, colar ou pingente, pra usar.","Mãos criando uma joia à mão","center 40%")}
       {exp("05","desp-hero4.jpg","Cerâmica","Modelagem ou pintura em cerâmica — leve a sua peça.","Mesa montada para experiência de cerâmica","center 30%")}
       {exp("06","tufting6.jpg","Tufting","Com a pistola de tufting, crie a sua peça decorativa.","Time exibindo peças de tufting")}
-      {exp("07","massamolho.jpg","Gastronomia &amp; Bartenderia","Cozinhem juntos ou criem drinks autorais — unissex e social.","Prato preparado numa aula de gastronomia")}
+      {exp("07","massamolho.jpg","Gastronomia &amp; Bartenderia","Cozinhem juntos ou criem drinks autorais — unissex e social.","Prato preparado numa aula de gastronomia", top="★ Top 1")}
     </div>
     {foot("O menu")}
   </section>'''
