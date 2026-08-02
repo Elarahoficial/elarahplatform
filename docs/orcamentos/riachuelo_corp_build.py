@@ -4,15 +4,15 @@ base = open("/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da
 head = base.split('<div class="deck">')[0]
 tail = '<div class="toolbar">' + base.split('<div class="toolbar">')[1]
 
-# ---- recolor CSS to Riachuelo red + near-black ----
-head = head.replace("--orange:#F27623;", "--orange:#E4002B;")
-head = head.replace("--orange-dark:#D4600E;", "--orange-dark:#B0001F;")
-head = head.replace("--navy:#16233C;", "--navy:#1A1A1A;")
-head = head.replace("--navy-soft:#3B4E6B;", "--navy-soft:#575252;")
-head = head.replace("--blue-accent:#4C6EA3;", "--blue-accent:#E4002B;")
-head = head.replace("#EDF1F7", "#FBEEEF").replace("#DCE5F1", "#F3D9DD")
-head = head.replace("#FF9A4D", "#FF8A9B")
-head = head.replace("rgba(242,118,35,.22)", "rgba(228,0,43,.28)")
+# ---- recolor CSS to Riachuelo dark green + cream (matches the brand logo) ----
+head = head.replace("--orange:#F27623;", "--orange:#2E7D5E;")       # accent: mid green
+head = head.replace("--orange-dark:#D4600E;", "--orange-dark:#215B44;")
+head = head.replace("--navy:#16233C;", "--navy:#0E3A30;")           # deep pine green (headings/dark)
+head = head.replace("--navy-soft:#3B4E6B;", "--navy-soft:#52605A;") # muted sage for lead
+head = head.replace("--blue-accent:#4C6EA3;", "--blue-accent:#2E7D5E;")
+head = head.replace("#EDF1F7", "#EAF1EC").replace("#DCE5F1", "#D5E5DA")
+head = head.replace("#FF9A4D", "#86C2A5")
+head = head.replace("rgba(242,118,35,.22)", "rgba(46,125,94,.30)")
 # extra CSS: experience menu grid + 3-plan variant
 extra = '''
   .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:6px}
@@ -45,7 +45,7 @@ cover = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
         <span class="kicker">Proposta de experiência corporativa para</span>
-        <span class="compass">RIACHU<span>E</span>LO<small>integração do time</small></span>
+        <span class="compass">RIACHUELO<small>integração do time</small></span>
       </div>
     </div>
     <div class="cover">
