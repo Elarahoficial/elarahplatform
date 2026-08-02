@@ -81,7 +81,7 @@ extra = '''
 head = head.replace("</style>", extra, 1)
 # print overrides for grid
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
-                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{gap:14px}\n    .exp{width:calc(33.333% - 10px)}\n    .exp-photo{height:118px}\n    .exp-body{padding:10px 13px 12px}\n    .exp h3{font-size:15.5px}\n    .exp p{font-size:10.5px;margin-top:4px;line-height:1.35}")
+                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .menu{gap:13px}\n    .exp{width:calc(33.333% - 9px)}\n    .exp-photo{height:100px}\n    .exp-body{padding:9px 12px 11px}\n    .exp h3{font-size:15px}\n    .exp p{font-size:10px;margin-top:3px;line-height:1.32}")
 # mobile: menu single col
 head = head.replace(".plans{grid-template-columns:1fr}",
                     ".plans{grid-template-columns:1fr}\n    .exp{width:100%}")
@@ -152,7 +152,7 @@ menu = f'''
     </div>
     <span class="eyebrow orange">◆ Escolham as experiências</span>
     <h2>Um menu <em>curado</em></h2>
-    <p class="lead">Sete experiências que combinam com os dois times — <strong>criativas e de bem-estar</strong>. No rodízio, cada turma vive duas delas; cada um cria (e leva) a sua peça pra casa.</p>
+    <p class="lead">Sete experiências que combinam com os dois times — <strong>criativas e de bem-estar</strong>. No rodízio, cada turma vive duas delas.</p>
     <div class="rule"></div>
     <div class="menu">
       {exp("01","perfumariaharbolita.jpg","Perfumaria Natural","Crie a sua fragrância botânica, numa imersão sensorial.","Essências e frascos de perfumaria","center 45%")}
@@ -281,7 +281,7 @@ personaliza = f'''
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Com a sua marca</span>
-        <div class="plan-photo sq"><img src="assets/nivergibrinde.jpg" alt="Kit personalizado com o nome de cada convidado" style="object-position:center 35%"></div>
+        <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Kit corporativo personalizado com a marca da empresa" style="object-position:center"></div>
         <div class="plan-body">
           <span class="tag premium">Personalização</span>
           <h3>Kits &amp; lembrancinhas</h3>
