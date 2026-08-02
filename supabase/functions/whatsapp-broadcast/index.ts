@@ -247,6 +247,57 @@ serve(async (req) => {
     return jsonResponse({ ok: true, to: testPhone });
   }
 
+  // ---- LIST: dispara pra uma lista avulsa (nome + telefone) colada no painel.
+  //      Mesmo PORTÃO (telefone validado, idempotência, kill switch, pausa
+  //      entre envios). Usado pro convite do grupo pros usuários. dedupe_key
+  //      grpinvite:<campaign>:<phone> — com campaign_id FIXO do painel, a
+  //      mesma pessoa nunca recebe 2x, mesmo re-clicando/re-rodando. ----
+  if (mode === "list") {
+    if (whatsappSendingDisabled()) {
+      return jsonResponse({ ok: false, error: "envio_desligado", detail: "WHATSAPP_SENDING_ENABLED=false (kill switch)." }, 423);
+    }
+    if (!whatsappConfigured()) return jsonResponse({ ok: false, error: "nao_configurado" }, 400);
+    if (!message.trim()) return jsonResponse({ ok: false, error: "mensagem_vazia" }, 400);
+    // deno-lint-ignore no-explicit-any
+    const rawRecipients: any[] = Array.isArray(payload.recipients) ? payload.recipients : [];
+    // Normaliza + dedupe por telefone (inválido é descartado, nunca coagido).
+    const seen = new Set<string>();
+    const alvos: { nome: string; phone: string }[] = [];
+    let invalidos = 0;
+    for (const r of rawRecipients) {
+      const phone = normalizePhoneBR(String(r?.telefone ?? ""));
+      if (!phone) { invalidos++; continue; }
+      if (seen.has(phone)) continue;
+      seen.add(phone);
+      alvos.push({ nome: String(r?.nome ?? ""), phone });
+    }
+    if (!alvos.length) return jsonResponse({ ok: false, error: "lista_vazia", invalidos }, 400);
+    const dryL = whatsappDryRun();
+    let enviadosL = 0, falharamL = 0;
+    let abortL: string | null = null;
+    for (let i = 0; i < alvos.length; i++) {
+      const g = alvos[i];
+      const res = await gatedSendWhatsApp(supabase, {
+        kind: "group_invite",
+        dedupeKey: "grpinvite:" + campaignId + ":" + g.phone,
+        identifierOk: true,
+        rawPhone: g.phone,
+        suppressed: false,
+        statusAllowed: true,
+        message: personalize(message, g.nome),
+        createdBy: adminId,
+      });
+      if (res.reason === "sending_disabled" || res.reason === "staging_blocked") { abortL = res.reason; break; }
+      if (res.sent || res.dryRun || res.reason === "duplicate") enviadosL++;
+      else falharamL++;
+      if (i < alvos.length - 1) await sleep(DELAY_MS);
+    }
+    return jsonResponse({
+      ok: true, total: alvos.length, enviados: enviadosL, falharam: falharamL,
+      invalidos, dry_run: dryL, abort_reason: abortL,
+    });
+  }
+
   if (!experiencia) {
     return jsonResponse({ ok: false, error: "experiencia_obrigatoria" }, 400);
   }
