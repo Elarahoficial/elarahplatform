@@ -273,7 +273,7 @@ serve(async (req) => {
     }
     if (!alvos.length) return jsonResponse({ ok: false, error: "lista_vazia", invalidos }, 400);
     const dryL = whatsappDryRun();
-    let enviadosL = 0, falharamL = 0;
+    let enviadosL = 0, falharamL = 0, duplicadosL = 0;
     let abortL: string | null = null;
     for (let i = 0; i < alvos.length; i++) {
       const g = alvos[i];
@@ -288,13 +288,14 @@ serve(async (req) => {
         createdBy: adminId,
       });
       if (res.reason === "sending_disabled" || res.reason === "staging_blocked") { abortL = res.reason; break; }
-      if (res.sent || res.dryRun || res.reason === "duplicate") enviadosL++;
+      if (res.sent || res.dryRun) enviadosL++;
+      else if (res.reason === "duplicate") duplicadosL++; // já tinha recebido antes
       else falharamL++;
-      if (i < alvos.length - 1) await sleep(DELAY_MS);
+      if (i < alvos.length - 1 && !res.dryRun && res.reason !== "duplicate") await sleep(DELAY_MS);
     }
     return jsonResponse({
-      ok: true, total: alvos.length, enviados: enviadosL, falharam: falharamL,
-      invalidos, dry_run: dryL, abort_reason: abortL,
+      ok: true, total: alvos.length, enviados: enviadosL, duplicados: duplicadosL,
+      falharam: falharamL, invalidos, dry_run: dryL, abort_reason: abortL,
     });
   }
 

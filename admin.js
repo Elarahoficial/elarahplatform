@@ -2490,6 +2490,32 @@
     });
     return out;
   }
+  // Só dígitos, sem o 55 do país — pra casar telefone da lista com o do banco.
+  function grpPhoneKey(v) {
+    let d = String(v || '').replace(/\D+/g, '');
+    if (d.length > 11 && d.indexOf('55') === 0) d = d.slice(2);
+    return d;
+  }
+  // Depois do disparo, marca no banco (profiles.whatsapp_contacted_at) quem
+  // recebeu — casando telefone com a lista de usuários já carregada (allUsers).
+  // É o que deixa o botão VERDE, igual ao convite manual. Retorna quantos marcou.
+  async function markGroupInviteContacted(recipients) {
+    const s = window.supabaseClient;
+    if (!s || !Array.isArray(allUsers) || !allUsers.length) return 0;
+    const byPhone = {};
+    allUsers.forEach((u) => { const k = grpPhoneKey(u.telefone); if (k) byPhone[k] = u.id; });
+    const ids = [];
+    recipients.forEach((r) => {
+      const id = byPhone[grpPhoneKey(r.telefone)];
+      if (id && ids.indexOf(id) < 0) ids.push(id);
+    });
+    if (!ids.length) return 0;
+    const { error } = await s.from('profiles')
+      .update({ whatsapp_contacted_at: new Date().toISOString() })
+      .in('id', ids);
+    if (error) throw error;
+    return ids.length;
+  }
   function wireGroupInviteTool() {
     const listEl = document.getElementById('grp-list');
     const msgEl = document.getElementById('grp-msg');
@@ -2535,11 +2561,19 @@
       statusEl.textContent = 'Disparando pra ' + recipients.length + ' pessoa(s)... (~' + Math.ceil(recipients.length * 0.9) + 's, aguarde)';
       try {
         const d = await callWhatsappBroadcast({ mode: 'list', recipients: recipients, message: message, campaign_id: GRP_CAMPAIGN_ID });
+        let extra = '';
+        if (!d.dry_run) {
+          try {
+            const marcados = await markGroupInviteContacted(recipients);
+            if (marcados) { extra = ' · ' + marcados + ' marcado(s) como convidado(s) (ficam verdes)'; renderUsers(); }
+          } catch (me) { console.warn('[grp] marcar contatado falhou', me); }
+        }
         statusEl.style.color = '#1a8a4a';
         statusEl.textContent = '✅ ' + (d.enviados || 0) + ' enviado(s)' +
+          (d.duplicados ? ' · ' + d.duplicados + ' já tinham recebido' : '') +
           (d.falharam ? ' · ' + d.falharam + ' falharam' : '') +
           (d.invalidos ? ' · ' + d.invalidos + ' inválido(s) ignorado(s)' : '') +
-          (d.dry_run ? ' (DRY-RUN — nada foi enviado de verdade)' : '') + '.';
+          (d.dry_run ? ' (DRY-RUN — nada foi enviado de verdade)' : '') + extra + '.';
       } catch (e) {
         statusEl.style.color = '#c0392b';
         statusEl.textContent = 'Não disparou: ' + waErrorMessage(e);
