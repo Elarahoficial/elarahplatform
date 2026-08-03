@@ -133,7 +133,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/ceramica.jpg" alt="Amigas sorrindo juntas com as peças que criaram numa experiência Elarah" style="object-position:center 30%">
+        <img src="assets/aniv-adulto.jpg" alt="Amigas reunidas num jantar de aniversário cheio de charme" style="object-position:center 38%">
       </div>
     </div>
     {foot("Experiência · Aniversário")}
