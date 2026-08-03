@@ -22,15 +22,15 @@ head = head.replace(".itable .hl{background:#F7EAEF}", ".itable .hl{background:#
 
 # extra CSS: experience menu grid (2x2) + investment table
 extra = '''
-  .menu{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-top:12px}
-  .exp{position:relative;width:calc(50% - 9px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.34)}
-  .exp .top{position:absolute;top:12px;left:12px;z-index:3;background:var(--orange);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(158,52,83,.55)}
-  .exp-photo{height:184px;overflow:hidden;background:#eee}
+  .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:12px}
+  .exp{position:relative;width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.34)}
+  .exp .top{position:absolute;top:11px;left:11px;z-index:3;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(158,52,83,.55)}
+  .exp-photo{aspect-ratio:1/1;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
-  .exp-body{padding:15px 18px 18px}
-  .exp .n{display:inline-block;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:6px}
-  .exp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);line-height:1.08}
-  .exp p{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .exp-body{padding:12px 15px 15px}
+  .exp .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:5px}
+  .exp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.05}
+  .exp p{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.38}
   /* ícones (svg) no lugar de emoji */
   .infocard .ico svg{width:30px;height:30px;display:block}
   /* tabela de investimento (2 coleções x 3 níveis) */
@@ -151,14 +151,15 @@ menu = f'''
       <div class="head-right"><span class="kicker">As experiências</span></div>
     </div>
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Quatro opções <em>criativas</em></h2>
-    <p class="lead">Selecionei quatro experiências que combinam com um público que respira design — <strong>sensoriais, autorais e cheias de estilo</strong>. Escolham a preferida (ou a gente combina uma estação de cada!).</p>
+    <h2>Cinco opções <em>criativas</em></h2>
+    <p class="lead">Selecionei cinco experiências que combinam com um público que respira design — <strong>sensoriais, autorais e cheias de estilo</strong>. Escolham a preferida (ou a gente combina uma estação de cada!).</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","perfumariaharbolita.jpg","Perfumaria Botânica","Cada um cria a própria fragrância, numa imersão sensorial guiada. Casa lindo com o jardim.","Essências e frascos de uma imersão de perfumaria botânica","center 45%")}
-      {exp("02","velaaromatica.jpg","Vela Aromática","Criam a própria vela perfumada, do aroma ao rótulo — objeto de decoração pra levar pra casa.","Vela aromática artesanal num vidro elegante","center 50%")}
-      {exp("03","bolsasmacrame.jpg","Bolsa em Macramê","Aprendem os nós do macramê e criam a própria bolsinha autoral — artesanal e cheia de charme.","Bolsas de macramê feitas à mão","center 50%")}
-      {exp("04","portaguardanapo.jpg","Porta Guardanapo","Um kit com 6 porta-guardanapos de macramê — peça de mesa delicada, pra levar o jardim pra casa.","Porta-guardanapos de macramê em formato de folha","center 40%")}
+      {exp("01","velaaromatica.jpg","Vela Aromática","Criam a própria vela perfumada, do aroma ao rótulo — objeto de decoração pra levar pra casa.","Vela aromática artesanal num vidro elegante","center 50%")}
+      {exp("02","bolsasmacrame.jpg","Bolsa em Macramê","Aprendem os nós do macramê e criam a própria bolsinha autoral — artesanal e cheia de charme.","Bolsas de macramê feitas à mão","center 50%")}
+      {exp("03","perfumariadecor.jpg","Home Spray","Criam o próprio aromatizador de casa — um home spray autoral pra perfumar os ambientes.","Frascos de aromatizador de ambiente numa estação elegante","center 45%")}
+      {exp("04","perfumariaharbolita.jpg","Perfumaria Botânica","Cada um cria a própria fragrância, numa imersão sensorial guiada. Casa lindo com o jardim.","Essências e frascos de uma imersão de perfumaria botânica","center 45%")}
+      {exp("05","portaguardanapo.jpg","Porta Guardanapo","Um kit com 6 porta-guardanapos de macramê — peça de mesa delicada, pra levar o jardim pra casa.","Porta-guardanapos de macramê em formato de folha","center 40%")}
     </div>
     <div class="note" style="margin-top:16px">◆ Em todas, a Elarah leva <b>material, condução e estrutura</b> — e cada convidado leva a própria criação pra casa. 🌿</div>
     {foot("As experiências")}
@@ -208,12 +209,12 @@ planos = f'''
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Perfumaria Botânica</b><span>Imersão sensorial — casa com o jardim</span></td>
-          <td class="val">R$ 239</td><td class="val">R$ 339</td><td class="val hl">R$ 439</td>
+          <td class="rl"><b>Vela · Bolsa Macramê · Home Spray</b><span>As três pelo mesmo valor — cada um leva a sua peça</span></td>
+          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
         </tr>
         <tr>
-          <td class="rl"><b>Vela ou Bolsa em Macramê</b><span>As duas pelo mesmo valor — cada um leva a sua peça</span></td>
-          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
+          <td class="rl"><b>Perfumaria Botânica</b><span>Imersão sensorial — casa com o jardim</span></td>
+          <td class="val">R$ 239</td><td class="val">R$ 339</td><td class="val hl">R$ 439</td>
         </tr>
         <tr>
           <td class="rl"><b>Porta Guardanapo</b><span>Kit com 6 peças de macramê</span></td>
@@ -251,14 +252,14 @@ personaliza = f'''
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Nível Completo</span>
-        <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Kit corporativo personalizado com a identidade da marca" style="object-position:center"></div>
+        <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Kit de lembrancinha personalizada com escova e piranha" style="object-position:center"></div>
         <div class="plan-body">
           <span class="tag premium">Personalização</span>
           <h3>Kit personalizado da marca</h3>
           <ul class="feat">
-            <li>Cada arquiteto leva um kit com a <b>identidade da marca</b></li>
-            <li>Brinde e experiência com o nome de cada um</li>
-            <li>Ambientação da estação com a cara da marca</li>
+            <li>Kit com <b>escova &amp; piranha</b> pra cada convidado</li>
+            <li>Personalizado com o nome e a identidade da marca</li>
+            <li>Um mimo pra cada um levar do encontro pra casa</li>
           </ul>
           <span class="allin">A lembrança que mantém o vínculo</span>
         </div>
@@ -278,7 +279,7 @@ como = f'''
     <p class="lead">A Elarah cuida de toda a produção pra o encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Perfumaria, Vela, Bolsa em Macramê ou Porta Guardanapo — no nível que preferirem.</p></div>
+      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Vela, Bolsa em Macramê, Home Spray, Perfumaria ou Porta Guardanapo — no nível que preferirem.</p></div>
       <div class="step"><div class="num">2</div><h3>A gente leva até o jardim</h3><p>Material, condução, estrutura e montagem por nossa conta. Vocês só recebem.</p></div>
       <div class="step"><div class="num">3</div><h3>Os parceiros vivem &amp; conectam</h3><p>Todo mundo cria, conversa e leva a própria peça (e a marca) pra casa.</p></div>
     </div>
@@ -303,7 +304,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para relacionamento com arquitetos parceiros da marca, turma de cerca de 15 convidados, na 2ª quinzena de setembro, no jardim da empresa (oficina de cerca de 1h30 a 2h). Experiência à escolha: Perfumaria Botânica (a partir de R$ 239 · níveis R$ 239 / 339 / 439), Vela Aromática (a partir de R$ 199 · níveis R$ 199 / 299 / 399), Bolsa em Macramê (a partir de R$ 199 · níveis R$ 199 / 299 / 399) ou Porta Guardanapo — kit com 6 peças de macramê (a partir de R$ 259 · níveis R$ 259 / 359 / 459). Níveis: Só a experiência (material & condução inclusos) / + coffee break & foto profissional (+R$ 100) / + personalização da marca (+R$ 100). Valores por pessoa. A Elarah leva material, condução, estrutura e montagem até o local. Inclui um momento para fala da marca, sem custo adicional. Proposta válida mediante confirmação de data (2ª quinzena de setembro) e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para relacionamento com arquitetos parceiros da marca, turma de cerca de 15 convidados, na 2ª quinzena de setembro, no jardim da empresa (oficina de cerca de 1h30 a 2h). Experiência à escolha: Vela Aromática, Bolsa em Macramê ou Home Spray (a partir de R$ 199 · níveis R$ 199 / 299 / 399), Perfumaria Botânica (a partir de R$ 239 · níveis R$ 239 / 339 / 439) ou Porta Guardanapo — kit com 6 peças de macramê (a partir de R$ 259 · níveis R$ 259 / 359 / 459). Níveis: Só a experiência (material & condução inclusos) / + coffee break & foto profissional (+R$ 100) / + personalização da marca (+R$ 100). Valores por pessoa. A Elarah leva material, condução, estrutura e montagem até o local. Inclui um momento para fala da marca, sem custo adicional. Proposta válida mediante confirmação de data (2ª quinzena de setembro) e disponibilidade de agenda.</p>
     {foot("Experiência Corporativa · Relacionamento · 2026")}
   </section>'''
 
