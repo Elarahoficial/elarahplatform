@@ -78,6 +78,23 @@ extra = '''
   .vprice{margin-top:13px;font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1}
   .vprice small{font-family:'DM Sans';font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-left:7px;font-weight:600}
   .btag.soft{background:var(--navy-soft)}
+  /* pieces grid — 4 quadrados (peças de crochê) */
+  .pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:14px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 13px 28px -20px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .pcard .sq{aspect-ratio:1/1;overflow:hidden;background:#eee}
+  .pcard .sq img{width:100%;height:100%;object-fit:cover;display:block}
+  .pcard .pb{padding:11px 13px 14px}
+  .pcard .n{display:inline-block;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:4px}
+  .pcard h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy);line-height:1.05}
+  .pcard p{font-size:10px;color:var(--muted);line-height:1.36;margin-top:4px}
+  /* tiers — níveis de preço (uma tabela só) */
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+  .tier{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;box-shadow:0 16px 34px -24px rgba(0,0,0,.3)}
+  .tier.hl{border:2px solid var(--navy);background:#FBEBDF}
+  .tier .pill{display:inline-block;background:var(--navy);color:#fff;font-size:8px;letter-spacing:.08em;padding:4px 11px;border-radius:999px;font-weight:700;text-transform:uppercase}
+  .tier .tn{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange)}
+  .tier .tv{font-family:'DM Serif Display',serif;font-size:40px;color:var(--navy);line-height:1}
+  .tier .td{font-size:12px;color:var(--muted);line-height:1.4}
 </style>'''
 head = head.replace("</style>", extra, 1)
 # print overrides for the wtrio + bartenderia layout
@@ -116,7 +133,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/croche.jpg" alt="Bolsinhas de crochê coloridas feitas à mão" style="object-position:center 50%">
+        <img src="assets/ceramica.jpg" alt="Amigas sorrindo juntas com as peças que criaram numa experiência Elarah" style="object-position:center 30%">
       </div>
     </div>
     {foot("Experiência · Aniversário")}
@@ -172,11 +189,11 @@ espacos = f'''
     <h2>Qual peça vão <em>criar?</em></h2>
     <p class="lead">Na oficina de crochê, cada uma escolhe a peça que quer fazer — <strong>todas pelo mesmo valor</strong>. É só decidir a preferida! 🧶</p>
     <div class="rule"></div>
-    <div class="menu">
-      {exp("Opção","bolsasmacrame.jpg","Bolsinha","Uma bolsinha autoral e cheia de charme, pra sair usando na mesma hora.","Bolsinhas de macramê feitas à mão","center 50%")}
-      {exp("Opção","hangplantmacrame.jpg","Hang plant","Um suporte de plantinha pra deixar a casa mais verde e aconchegante.","Suportes de planta em macramê pendurados","center 45%")}
-      {exp("Opção","colarmacrame.jpg","Colar","Um colar autoral e delicado, pra levar (e usar) como recordação do dia.","Colar de macramê artesanal","center 62%")}
-      {exp("Opção","portaguardanapo.jpg","Porta-guardanapo","Porta-guardanapos charmosos pra deixar a mesa de casa com a sua cara.","Porta-guardanapos de macramê em formato de folha","center 50%")}
+    <div class="pgrid">
+      <div class="pcard"><div class="sq"><img src="assets/bolsasmacrame.jpg" alt="Bolsinhas de macramê feitas à mão" style="object-position:center 50%"></div><div class="pb"><span class="n">Opção</span><h3>Bolsinha</h3><p>Autoral e cheia de charme, pra sair usando na mesma hora.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/hangplantmacrame.jpg" alt="Suportes de planta em macramê pendurados" style="object-position:center 30%"></div><div class="pb"><span class="n">Opção</span><h3>Hang plant</h3><p>Um suporte de plantinha pra deixar a casa mais verde.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/colarmacrame.jpg" alt="Colar de macramê artesanal" style="object-position:center 58%"></div><div class="pb"><span class="n">Opção</span><h3>Colar</h3><p>Delicado e autoral, pra levar (e usar) de recordação.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/portaguardanapo.jpg" alt="Porta-guardanapos de macramê em formato de folha" style="object-position:center 45%"></div><div class="pb"><span class="n">Opção</span><h3>Porta-guardanapo</h3><p>Charmoso, pra deixar a mesa de casa com a sua cara.</p></div></div>
     </div>
     <div class="note" style="margin-top:16px">◆ Todas as peças pelo <b>mesmo valor</b> — é só escolher a preferida que a gente prepara tudo com carinho! 💛</div>
     {foot("As peças de crochê")}
@@ -190,27 +207,27 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Escolha o nível</span>
     <h2>A partir de <em>R$ 219</em></h2>
-    <p class="lead">As <strong>duas experiências pelo mesmo valor</strong> — muda só o nível que escolherem. Todos os valores são por pessoa, com material e condução inclusos. 🧶</p>
+    <p class="lead">O valor é o mesmo pra <strong>Crochê ou Perfumaria</strong> — é só escolher a experiência e o nível. Todos os valores são <strong>por pessoa</strong>, com material e condução inclusos. 🧶</p>
     <div class="rule"></div>
-    <table class="itable">
-      <thead><tr>
-        <th class="corner"></th>
-        <th>Só a experiência<span>material & condução</span></th>
-        <th>Com registro<span>+ foto profissional</span></th>
-        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização & lembrancinha</span></th>
-      </tr></thead>
-      <tbody>
-        <tr>
-          <td class="rl"><b>Crochê</b><span>Bolsinha · Hang plant · Colar · Porta-guardanapo</span></td>
-          <td class="val">R$ 219</td><td class="val">R$ 319</td><td class="val hl">R$ 419</td>
-        </tr>
-        <tr>
-          <td class="rl"><b>Perfumaria Botânica</b><span>Imersão sensorial — cada uma leva o seu perfume</span></td>
-          <td class="val">R$ 219</td><td class="val">R$ 319</td><td class="val hl">R$ 419</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="note" style="margin-top:16px">◆ Valores por pessoa, turma de 10, na data de 03 ou 04 de outubro. No crochê, todas as peças (bolsinha, hang plant, colar ou porta-guardanapo) pelo mesmo valor.</div>
+    <div class="tiers">
+      <div class="tier">
+        <span class="tn">Só a experiência</span>
+        <span class="tv">R$ 219</span>
+        <span class="td">Material &amp; condução inclusos — cada uma leva a sua peça</span>
+      </div>
+      <div class="tier">
+        <span class="tn">Com registro</span>
+        <span class="tv">R$ 319</span>
+        <span class="td">Tudo da experiência<br>+ <b>foto profissional</b> do dia</span>
+      </div>
+      <div class="tier hl">
+        <span class="pill">★ Mais completo</span>
+        <span class="tn">Completo</span>
+        <span class="tv">R$ 419</span>
+        <span class="td">Experiência + foto<br>+ <b>personalização &amp; lembrancinha</b></span>
+      </div>
+    </div>
+    <div class="note" style="margin-top:18px">◆ Vale pra <b>Crochê</b> (bolsinha, hang plant, colar ou porta-guardanapo) ou <b>Perfumaria Botânica</b> — as duas pelo mesmo valor. Por pessoa, turma de 10, na data de 03 ou 04 de outubro.</div>
     <div class="note" style="margin-top:9px">◆ <b>Níveis:</b> Só a experiência → <b>+ foto profissional</b> (+R$ 100) → <b>+ personalização & lembrancinha</b> (+R$ 100).</div>
     {foot("Investimento")}
   </section>'''
