@@ -26,7 +26,7 @@ extra = '''
   .menu{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-top:12px}
   .exp{position:relative;width:calc(50% - 9px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.34)}
   .exp .top{position:absolute;top:12px;left:12px;z-index:3;background:var(--orange);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(158,52,83,.55)}
-  .exp-photo{height:184px;overflow:hidden;background:#eee}
+  .exp-photo{aspect-ratio:1/1;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:15px 18px 18px}
   .exp .n{display:inline-block;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:6px}
@@ -174,7 +174,7 @@ vibe = f'''
     <p class="lead">Um café charmoso, flores por toda parte e as mulheres criando junto, sem pressa — leve, sensorial e cheio de afeto. É esse o clima de uma experiência Elarah: uma manhã que vira memória afetiva. 🌸</p>
     <div class="rule"></div>
     <div class="pgrid g3">
-      <div class="pcard"><div class="sq"><img src="assets/corp-grupo.jpg" alt="Mulheres criando juntas numa experiência" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Mão na massa</h3><p>Todo mundo criando junto, sem pressa e sem talento nenhum.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/aniv-experiencia.jpg" alt="Mulheres criando juntas, mão na massa" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Mão na massa</h3><p>Vocês juntas, criando com as próprias mãos, entre risadas e sem pressa.</p></div></div>
       <div class="pcard"><div class="sq"><img src="assets/florseca.jpg" alt="Buquês de flores lindos e delicados" style="object-position:center 50%"></div><div class="pb"><span class="n">A vibe</span><h3>Delicadeza</h3><p>Flores, cores e aromas — uma experiência sensorial do começo ao fim.</p></div></div>
       <div class="pcard"><div class="sq"><img src="assets/aniv-adulto.jpg" alt="Mulheres celebrando juntas num encontro elegante" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Memória afetiva</h3><p>Uma celebração diferente, que todo mundo lembra depois.</p></div></div>
     </div>
@@ -260,7 +260,6 @@ planos = f'''
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:16px">◆ Valores por pessoa, turma de 15 a 20, numa manhã de 19 ou 26/09. Níveis subindo +R$ 100: só a experiência → + foto profissional &amp; voucher R$ 50 na cafeteria → + personalização &amp; lembrancinha.</div>
     {foot("Investimento")}
   </section>'''
 
