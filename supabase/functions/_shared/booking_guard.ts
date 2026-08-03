@@ -50,6 +50,7 @@ export interface GuardInput {
 export interface ExperienceSnapshot {
   id: string;
   nome: string;
+  categoria: string | null;
   preco: string | null;
   data: string | null;
   horario: string | null;
@@ -283,6 +284,28 @@ function deriveEventTimestamp(
   return Number.isFinite(ts) ? ts : null;
 }
 
+// Cutoff de venda/exibição efetivo (em horas) de uma experiência.
+// Regra de negócio: GASTRONOMIA encerra 48h antes do evento — some do
+// site e bloqueia reserva com 2 dias de antecedência (insumos perecíveis
+// e turmas fechadas cedo). As demais categorias usam o cutoff configurado
+// (default 24h). Usamos o MAIOR entre o cutoff da experiência e 48h para
+// gastronomia, então um cutoff maior definido no admin ainda prevalece.
+// Espelha a mesma lógica de experiences-data.js (isPubliclyVisible) no
+// front, pra que listagem pública e bloqueio de reserva concordem.
+export const GASTRONOMIA_MIN_CUTOFF_HOURS = 48;
+export function effectiveCutoffHours(
+  categoria: string | null | undefined,
+  cutoffHours: number | null | undefined,
+): number {
+  const base = Number(cutoffHours ?? 24);
+  const safeBase = Number.isFinite(base) ? base : 24;
+  const isGastronomia =
+    String(categoria ?? "").trim().toLowerCase() === "gastronomia";
+  return isGastronomia
+    ? Math.max(safeBase, GASTRONOMIA_MIN_CUTOFF_HOURS)
+    : safeBase;
+}
+
 /**
  * Executa toda a validação + reserva de vaga + hold de cupom para um
  * checkout de experiência. Retorna um contexto rico com tudo que o
@@ -401,7 +424,7 @@ export async function reserveExperienceSlot(
   const { data: expRaw, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
+      "id, nome, categoria, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -513,7 +536,7 @@ export async function reserveExperienceSlot(
   // de event_at virar coluna ou sem event_at preenchido — também
   // respeitem o cutoff. Sem ele, era possível reservar à noite uma
   // experiência que acontece no dia seguinte.
-  const cutoffH = Number(exp.cutoff_hours ?? 24);
+  const cutoffH = effectiveCutoffHours(exp.categoria, exp.cutoff_hours);
   let effectiveEventTs: number | null = null;
   const sourceEventAt = (useSlotVagas && slot?.event_at) ? slot.event_at : exp.event_at;
   if (sourceEventAt) {
