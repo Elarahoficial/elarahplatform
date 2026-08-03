@@ -170,13 +170,15 @@ espacos = f'''
     </div>
     <span class="eyebrow orange">◆ No crochê, você escolhe</span>
     <h2>Qual peça vão <em>criar?</em></h2>
-    <p class="lead">Na oficina de crochê, cada uma escolhe o que fazer — todas pelo <strong>mesmo valor</strong>. Umas peças a gente já tem prontinhas pra mostrar, outras são novidades chegando! 🧶</p>
+    <p class="lead">Na oficina de crochê, cada uma escolhe a peça que quer fazer — <strong>todas pelo mesmo valor</strong>. É só decidir a preferida! 🧶</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("Opção","croche.jpg","Bolsinha de crochê","Uma bolsinha autoral e cheia de charme, pra sair usando na mesma hora.","Bolsinhas de crochê coloridas","center 50%")}
-      {exp("Opção","hangplantmacrame.jpg","Hang plant","Um suporte de plantinha em crochê/macramê pra deixar a casa mais aconchegante.","Suportes de planta em macramê pendurados","center 45%")}
+      {exp("Opção","bolsasmacrame.jpg","Bolsinha","Uma bolsinha autoral e cheia de charme, pra sair usando na mesma hora.","Bolsinhas de macramê feitas à mão","center 50%")}
+      {exp("Opção","hangplantmacrame.jpg","Hang plant","Um suporte de plantinha pra deixar a casa mais verde e aconchegante.","Suportes de planta em macramê pendurados","center 45%")}
+      {exp("Opção","colarmacrame.jpg","Colar","Um colar autoral e delicado, pra levar (e usar) como recordação do dia.","Colar de macramê artesanal","center 62%")}
+      {exp("Opção","portaguardanapo.jpg","Porta-guardanapo","Porta-guardanapos charmosos pra deixar a mesa de casa com a sua cara.","Porta-guardanapos de macramê em formato de folha","center 50%")}
     </div>
-    <div class="note" style="margin-top:16px">◆ E ainda dá pra escolher fazer um <b>colar</b> ou um <b>porta-guardanapo</b> de crochê — todas as peças pelo mesmo valor. Me conta a preferida que a gente prepara tudo! 💛</div>
+    <div class="note" style="margin-top:16px">◆ Todas as peças pelo <b>mesmo valor</b> — é só escolher a preferida que a gente prepara tudo com carinho! 💛</div>
     {foot("As peças de crochê")}
   </section>'''
 
@@ -188,7 +190,7 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Escolha o nível</span>
     <h2>A partir de <em>R$ 219</em></h2>
-    <p class="lead">Cada experiência tem o seu valor por pessoa, com material e condução inclusos. É só escolher a experiência e o nível — e no crochê, a peça é por sua conta! 🧶</p>
+    <p class="lead">As <strong>duas experiências pelo mesmo valor</strong> — muda só o nível que escolherem. Todos os valores são por pessoa, com material e condução inclusos. 🧶</p>
     <div class="rule"></div>
     <table class="itable">
       <thead><tr>
@@ -204,7 +206,7 @@ planos = f'''
         </tr>
         <tr>
           <td class="rl"><b>Perfumaria Botânica</b><span>Imersão sensorial — cada uma leva o seu perfume</span></td>
-          <td class="val">R$ 289</td><td class="val">R$ 389</td><td class="val hl">R$ 489</td>
+          <td class="val">R$ 219</td><td class="val">R$ 319</td><td class="val hl">R$ 419</td>
         </tr>
       </tbody>
     </table>
@@ -291,7 +293,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência de aniversário da Elarah, turma privada de cerca de 10 pessoas, na data de 03 ou 04 de outubro. Experiência à escolha: Crochê — com escolha da peça (bolsinha, hang plant, colar ou porta-guardanapo), todas pelo mesmo valor, a partir de R$ 219 por pessoa (níveis R$ 219 / 319 / 419) — ou Perfumaria Botânica, a partir de R$ 289 por pessoa (níveis R$ 289 / 389 / 489). Níveis: Só a experiência (material & condução inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha). Valores por pessoa. Realizada em espaço parceiro ou no local do grupo. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência de aniversário da Elarah, turma privada de cerca de 10 pessoas, na data de 03 ou 04 de outubro. Experiência à escolha: Crochê — com escolha da peça (bolsinha, hang plant, colar ou porta-guardanapo), todas pelo mesmo valor — ou Perfumaria Botânica, ambas a partir de R$ 219 por pessoa (níveis R$ 219 / 319 / 419). Níveis: Só a experiência (material & condução inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha). Valores por pessoa. Realizada em espaço parceiro ou no local do grupo. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Experiência · Aniversário · 2026")}
   </section>'''
 
