@@ -196,7 +196,15 @@ menu = f'''
       {exp("Experiência","ceramicamodelagem.jpg","Cerâmica","Cada um modela (ou pinta) a própria peça de cerâmica à mão — sensorial, relaxante e cheia de significado. Cada um leva a sua criação pra casa.","Mãos modelando uma peça de cerâmica","center 50%")}
       {exp("Experiência","buqueflor.jpg","Arranjos Florais","Cada um monta o próprio arranjo, escolhendo flores, cores e aromas — delicado, sensorial e lindo. Cada um leva o seu buquê pra casa.","Buquê de flores do campo montado à mão","center 50%")}
     </div>
-    <div class="note" style="margin-top:16px">◆ Nas duas, a Elarah leva <b>todo o material, a condução e a estrutura</b> até a sua casa — vocês só chegam e criam. A turma fica <b>100% privativa</b>, só de vocês. 🌸</div>
+    <div class="bfeat" style="margin-top:16px">
+      <div class="bphoto"><img src="assets/pinturavasoearranjo.jpg" alt="Vasos de vidro pintados à mão com arranjos de flores" style="object-position:center 45%"></div>
+      <div class="bbody">
+        <span class="btag">✨ Extra especial · combo 2 em 1</span>
+        <h3>Pintura em Vidro <span class="sub">+ Arranjo Floral</span></h3>
+        <p>O melhor dos dois mundos: cada um <b>pinta o próprio vaso de vidro</b> e ainda <b>monta o arranjo de flores</b> pra levar pra casa. Uma lembrança dupla e cheia de charme. 🌸</p>
+        <div class="vprice">a partir de R$ 289<small>por pessoa</small></div>
+      </div>
+    </div>
     {foot("As experiências")}
   </section>'''
 
@@ -227,27 +235,27 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Escolham o nível</span>
     <h2>A partir de <em>R$ 199</em></h2>
-    <p class="lead">O valor é o mesmo pra <strong>Cerâmica ou Arranjos Florais</strong> — é só escolher a experiência e o nível. Todos os valores são <strong>por pessoa</strong>, com material, condução e a estrutura levada até a sua casa inclusos. 🌸</p>
+    <p class="lead">É só escolher a experiência e o nível. Todos os valores são <strong>por pessoa</strong>, com material, condução e a estrutura levada até a sua casa inclusos. 🌸</p>
     <div class="rule"></div>
-    <div class="tiers">
-      <div class="tier">
-        <span class="tn">Só a experiência</span>
-        <span class="tv">R$ 199</span>
-        <span class="td">Material &amp; condução inclusos — cada um leva a sua peça</span>
-      </div>
-      <div class="tier">
-        <span class="tn">Com registro</span>
-        <span class="tv">R$ 299</span>
-        <span class="td">Tudo da experiência<br>+ <b>foto profissional</b> do dia</span>
-      </div>
-      <div class="tier hl">
-        <span class="pill">★ Mais completo</span>
-        <span class="tn">Completo</span>
-        <span class="tv">R$ 399</span>
-        <span class="td">Experiência + foto<br>+ <b>personalização &amp; lembrancinha</b></span>
-      </div>
-    </div>
-    <div class="note" style="margin-top:18px">◆ Vale pra <b>Cerâmica</b> ou <b>Arranjos Florais</b> — as duas pelo mesmo valor. Por pessoa, turma de 10, na sua casa em Alphaville (16 ou 17/09).</div>
+    <table class="itable">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>Só a experiência<span>material & condução</span></th>
+        <th>Com registro<span>+ foto profissional</span></th>
+        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização & lembrancinha</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Cerâmica ou Arranjos Florais</b><span>As duas pelo mesmo valor — é só escolher</span></td>
+          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Pintura em Vidro + Arranjo Floral</b><span>✨ Combo 2 em 1 — vaso pintado &amp; arranjo</span></td>
+          <td class="val">R$ 289</td><td class="val">R$ 389</td><td class="val hl">R$ 489</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:16px">◆ Valores por pessoa, turma de 10, na sua casa em Alphaville (16 ou 17/09). Níveis subindo +R$ 100: só a experiência → + foto profissional → + personalização &amp; lembrancinha.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -329,7 +337,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência em casa da Elarah, turma privada de cerca de 10 pessoas, na casa da cliente em Alphaville, na data de 16 ou 17 de setembro. Experiência à escolha: Cerâmica ou Arranjos Florais — ambas pelo mesmo valor, a partir de R$ 199 por pessoa (níveis R$ 199 / 299 / 399). Níveis: Só a experiência (material & condução inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha), subindo R$ 100 por nível. A Elarah leva profissional, material e estrutura até o local. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência em casa da Elarah, turma privada de cerca de 10 pessoas, na casa da cliente em Alphaville, na data de 16 ou 17 de setembro. Experiência à escolha: Cerâmica ou Arranjos Florais — ambas pelo mesmo valor, a partir de R$ 199 por pessoa (níveis R$ 199 / 299 / 399) — ou o combo Pintura em Vidro + Arranjo Floral, a partir de R$ 289 por pessoa (níveis R$ 289 / 389 / 489). Níveis: Só a experiência (material & condução inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha), subindo R$ 100 por nível. A Elarah leva profissional, material e estrutura até o local. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Experiência · Na sua casa · 2026")}
   </section>'''
 
