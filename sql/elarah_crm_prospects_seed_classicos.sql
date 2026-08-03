@@ -1,6 +1,6 @@
 -- =============================================================
 -- ELARAH — Seed: Prospects "clássicos" (crochê, perfumaria, cerâmica,
---                floral, gastronomia, bordado, vela) — SP
+--                floral, gastronomia, bordado, vela, doceria) — SP
 -- -------------------------------------------------------------
 -- Insere prospects novos direto na tabela prospects (sem CSV), pra
 -- não recriar o que o admin já excluiu nem sobrescrever edições.
@@ -54,7 +54,7 @@ select 'Entrelinhas Espaço Criativo', 'croche', 'costuraentrelinhas', '11989777
 where not exists (select 1 from public.prospects where lower(nome) = lower('Entrelinhas Espaço Criativo'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Juliana Maia Ateliê Têxtil', 'croche', 'jumaia18', null, null, 'https://juliana-maia.com/', 'Vila Anglo Brasileira', 'São Paulo', 'Autoral e premium. Artesã têxtil que ministra cursos de tecelagem manual em tear de pente liço (iniciante a avançado), produzindo tapeçarias de parede a partir de projetos próprios. Forte apelo artístico. WhatsApp a pegar no site/Instagram.'
+select 'Juliana Maia Ateliê Têxtil', 'croche', 'jumaia18', '11966924302', null, 'https://juliana-maia.com/', 'Vila Anglo Brasileira', 'São Paulo', 'Autoral e premium. Artesã têxtil que ministra cursos de tecelagem manual em tear de pente liço (iniciante a avançado), produzindo tapeçarias de parede a partir de projetos próprios. Forte apelo artístico. WhatsApp a pegar no site/Instagram.'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Juliana Maia Ateliê Têxtil'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
@@ -66,7 +66,7 @@ where not exists (select 1 from public.prospects where lower(nome) = lower('Curs
 -- PERFUMARIA / AROMATERAPIA
 -- =============================================================
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Perfumaris Escola de Perfumaria', 'perfumaria', 'perfumarisoficial', null, null, 'https://perfumaris.com/', 'Alto da Lapa', 'São Paulo', 'Casa técnica e séria. Escola brasileira de perfumaria (ensino e pesquisa) na Rua Sales Júnior 334; além das formações longas, roda oficinas de 2h em que o participante cria seu perfume guiado por perfumista, com acervo de matérias-primas finas. WhatsApp a confirmar (inscrições pelo site).'
+select 'Perfumaris Escola de Perfumaria', 'perfumaria', 'perfumarisoficial', '11910369563', null, 'https://perfumaris.com/', 'Alto da Lapa', 'São Paulo', 'Casa técnica e séria. Escola brasileira de perfumaria (ensino e pesquisa) na Rua Sales Júnior 334; além das formações longas, roda oficinas de 2h em que o participante cria seu perfume guiado por perfumista, com acervo de matérias-primas finas. WhatsApp a confirmar (inscrições pelo site).'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Perfumaris Escola de Perfumaria'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
@@ -138,7 +138,7 @@ select 'ICI Flores', 'floral', 'iciflores', '11976111010', null, 'https://iciflo
 where not exists (select 1 from public.prospects where lower(nome) = lower('ICI Flores'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Escola Técnica de Arte Floral (ETAF)', 'floral', 'escolatecnicadeartefloral', null, null, 'https://escolatecnicadeartefloral.com.br/', 'Tatuapé', 'São Paulo', 'Técnica e autoral de alto nível. Fundada pelo artista Val du Arte (Rua Nova Jerusalém 1150); apontada como 1ª escola do Brasil a emitir o certificado europeu Floral Designer (FlorCert/Itália), turmas até 12, até 70% práticas com material incluso. WhatsApp a confirmar (fixo (11) 2092-2439).'
+select 'Escola Técnica de Arte Floral (ETAF)', 'floral', 'escolatecnicadeartefloral', '11982350510', null, 'https://escolatecnicadeartefloral.com.br/', 'Tatuapé', 'São Paulo', 'Técnica e autoral de alto nível. Fundada pelo artista Val du Arte (Rua Nova Jerusalém 1150); apontada como 1ª escola do Brasil a emitir o certificado europeu Floral Designer (FlorCert/Itália), turmas até 12, até 70% práticas com material incluso. WhatsApp a confirmar (fixo (11) 2092-2439).'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Escola Técnica de Arte Floral (ETAF)'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
@@ -154,7 +154,7 @@ select 'Kosu', 'gastronomia', 'kosusushi', '11987660030', null, 'https://kosu.co
 where not exists (select 1 from public.prospects where lower(nome) = lower('Kosu'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Mission Chocolate', 'gastronomia', 'missionchocolate', null, 'arcelia@missionchocolate.com', 'https://missionchocolate.com.br/', 'Brooklin', 'São Paulo', 'Premium e premiado. Marca de Arcelia Gallardo (chocolate mais premiado do Brasil, 50+ prêmios); degustações e aulas bean-to-bar do cacau à barra (fábrica na Rua Nova York 498; café na Rua Califórnia 808). Contato de cursos por e-mail.'
+select 'Mission Chocolate', 'gastronomia', 'missionchocolate', '11998956031', 'arcelia@missionchocolate.com', 'https://missionchocolate.com.br/', 'Brooklin', 'São Paulo', 'Premium e premiado. Marca de Arcelia Gallardo (chocolate mais premiado do Brasil, 50+ prêmios); degustações e aulas bean-to-bar do cacau à barra (fábrica na Rua Nova York 498; café na Rua Califórnia 808). Contato de cursos por e-mail.'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Mission Chocolate'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
@@ -174,7 +174,7 @@ select 'Receitaria Escola Gourmet', 'gastronomia', 'receitaria', '11968095409', 
 where not exists (select 1 from public.prospects where lower(nome) = lower('Receitaria Escola Gourmet'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Flakes Academy', 'gastronomia', 'flakesacademy', null, null, 'https://escolaflakes.com.br/', 'Moema', 'São Paulo', 'Confeitaria com apelo pop e viral (1M+ seguidores da marca). Escola de confeitaria 100% prática com cursos curtos e longos (Alameda Jauaperi 1241; unidades Itaim e Brooklin) — ótima pra atrair público jovem pra workshops de curta duração. WhatsApp a confirmar.'
+select 'Flakes Academy', 'gastronomia', 'flakesacademy', '11988514838', null, 'https://escolaflakes.com.br/', 'Moema', 'São Paulo', 'Confeitaria com apelo pop e viral (1M+ seguidores da marca). Escola de confeitaria 100% prática com cursos curtos e longos (Alameda Jauaperi 1241; unidades Itaim e Brooklin) — ótima pra atrair público jovem pra workshops de curta duração. WhatsApp a confirmar.'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Flakes Academy'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
@@ -210,7 +210,7 @@ select 'Empório das Velas', 'vela', 'emporiodasvelas', '11967670305', null, 'ht
 where not exists (select 1 from public.prospects where lower(nome) = lower('Empório das Velas'));
 
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Vê.la Velas Aromáticas', 'vela', 've.la_natural', null, null, 'https://velanatural.com.br/', 'Pinheiros', 'São Paulo', 'Autoral, vegana e sensorial. Marca de velas aromáticas veganas (ceras vegetais) com oficina criativa de 2h+ conduzida pela aromaterapeuta Tatiana Lobo (R. Artur de Azevedo 675; edições também no Jardim Pamplona Shopping). Muito alinhada ao posicionamento Elarah. Reservas pelo site.'
+select 'Vê.la Velas Aromáticas', 'vela', 've.la_natural', '11950302021', null, 'https://velanatural.com.br/', 'Pinheiros', 'São Paulo', 'Autoral, vegana e sensorial. Marca de velas aromáticas veganas (ceras vegetais) com oficina criativa de 2h+ conduzida pela aromaterapeuta Tatiana Lobo (R. Artur de Azevedo 675; edições também no Jardim Pamplona Shopping). Muito alinhada ao posicionamento Elarah. Reservas pelo site.'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Vê.la Velas Aromáticas'));
 
 
@@ -222,6 +222,22 @@ where not exists (select 1 from public.prospects where lower(nome) = lower('Vê.
 update public.prospects set categoria = 'gastronomia'
  where lower(nome) in (lower('Flakes Academy'), lower('Les Chefs Academia'), lower('Escola Fran Tonello'), lower('Tammy Montagna'))
    and coalesce(categoria,'') <> 'gastronomia';
+
+-- =============================================================
+-- BACKFILL DE WHATSAPP — preenche só onde está vazio
+-- =============================================================
+update public.prospects set whatsapp = '11966924302'
+ where lower(nome) = lower('Juliana Maia Ateliê Têxtil') and coalesce(nullif(trim(whatsapp),''), '') = '';
+update public.prospects set whatsapp = '11910369563'
+ where lower(nome) = lower('Perfumaris Escola de Perfumaria') and coalesce(nullif(trim(whatsapp),''), '') = '';
+update public.prospects set whatsapp = '11998956031'
+ where lower(nome) = lower('Mission Chocolate') and coalesce(nullif(trim(whatsapp),''), '') = '';
+update public.prospects set whatsapp = '11988514838'
+ where lower(nome) = lower('Flakes Academy') and coalesce(nullif(trim(whatsapp),''), '') = '';
+update public.prospects set whatsapp = '11982350510'
+ where lower(nome) = lower('Escola Técnica de Arte Floral (ETAF)') and coalesce(nullif(trim(whatsapp),''), '') = '';
+update public.prospects set whatsapp = '11950302021'
+ where lower(nome) = lower('Vê.la Velas Aromáticas') and coalesce(nullif(trim(whatsapp),''), '') = '';
 
 -- =============================================================
 -- TEMPLATES DE MENSAGEM por categoria (primeiro contato)
