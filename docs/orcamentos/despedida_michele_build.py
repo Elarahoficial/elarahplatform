@@ -209,7 +209,7 @@ planos = f'''
       <thead><tr>
         <th class="corner"></th>
         <th>Só a experiência<span>material & condução</span></th>
-        <th>Com registro<span>+ foto profissional</span></th>
+        <th>Com registro<span>+ foto profissional + voucher R$ 50 na cafeteria</span></th>
         <th class="hl"><span class="pill">★ Mais completo</span><br>Com lembrança<span>+ lembrancinha personalizada</span></th>
       </tr></thead>
       <tbody>
