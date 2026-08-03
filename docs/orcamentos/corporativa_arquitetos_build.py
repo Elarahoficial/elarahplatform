@@ -160,6 +160,7 @@ menu = f'''
       <div class="wcard"><div class="sq"><img src="assets/tufting6.jpg" alt="Grupo exibindo peças autorais de tufting" style="object-position:center 30%"></div><div class="wcard-body"><span class="n">03</span><h3>Tufting</h3><p>Com a pistola de tufting, criam um objeto de design autoral — tapete ou quadro. Muito visual.</p></div></div>
     </div>
     <div class="note" style="margin-top:16px">◆ Em todas, a Elarah leva <b>material, condução e estrutura</b> — e cada convidado leva a própria criação pra casa. 🌿</div>
+    <div class="note" style="margin-top:9px">◆ Essas três são as que mais têm a ver com o momento — mas a Elarah tem <b>várias outras categorias</b> de experiência. Se quiserem explorar, é só dar uma olhadinha no site que a gente monta sob medida. 😊</div>
     {foot("As experiências")}
   </section>'''
 
@@ -236,7 +237,7 @@ personaliza = f'''
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/eventocorporativo.jpg" alt="Encontro corporativo registrado por um fotógrafo, com coffee break" style="object-position:center 40%"></div>
+        <div class="plan-photo sq"><img src="assets/rockworld1.jpg" alt="Convidados se conectando num encontro registrado por um fotógrafo" style="object-position:center 30%"></div>
         <div class="plan-body">
           <span class="tag basic">Nível 2</span>
           <h3>Coffee break &amp; foto profissional</h3>
