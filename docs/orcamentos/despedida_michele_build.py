@@ -311,7 +311,7 @@ como = f'''
     {foot("Experiência · Despedida de solteira · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + planos + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + planos + personaliza + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Despedida de Solteira · Elarah</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de experiência da Elarah para despedida de solteira — oficina de Velas ou Cerâmica, turma privativa.">', head)
