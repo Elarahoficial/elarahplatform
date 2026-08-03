@@ -781,7 +781,13 @@
   function isPubliclyVisible(exp, nowMs) {
     if (!exp || exp.isActive === false) return false;
     if (nowMs == null) nowMs = Date.now();
-    const cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    // Gastronomia encerra 48h antes: some do site com 2 dias de
+    // antecedência (insumos perecíveis / turmas fechadas cedo). As demais
+    // categorias mantêm o cutoff configurado (default 24h). O Math.max
+    // garante que um cutoff MAIOR definido no admin ainda prevaleça.
+    const baseCutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    const isGastronomia = String(exp.categoria || '').trim().toLowerCase() === 'gastronomia';
+    const cutoffH = isGastronomia ? Math.max(baseCutoffH, 48) : baseCutoffH;
     let eventTs = null;
     if (exp.eventAt) {
       const t = new Date(exp.eventAt).getTime();

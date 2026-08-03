@@ -53,6 +53,7 @@ import { buildAcompanhantes } from "../_shared/acompanhantes.ts";
 import {
   computeChargeAmount,
   assertExpectedTotal,
+  effectiveCutoffHours,
 } from "../_shared/booking_guard.ts";
 import {
   computeFinancialBreakdown,
@@ -423,7 +424,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const { data: exp, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
+      "id, nome, categoria, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -538,7 +539,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // ===== Cutoff =====
   const effectiveEventAt = (useSlotVagas && slotRow?.event_at) ? slotRow.event_at : exp.event_at;
   if (effectiveEventAt) {
-    const cutoffH = Number(exp.cutoff_hours ?? 24);
+    const cutoffH = effectiveCutoffHours(exp.categoria, exp.cutoff_hours);
     const eventTs = new Date(effectiveEventAt).getTime();
     const limit = Date.now() + cutoffH * 60 * 60 * 1000;
     if (limit > eventTs) {
