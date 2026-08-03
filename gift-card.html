@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elarah · Gift Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#F27623;
+    --orange-light:#FF9A4D;
+    --orange-dark:#D4600E;
+    --cream:#FFF8F2;
+    --cream-dark:#FFF0E3;
+    --ink:#3A2C22;
+    --ink-soft:#7A6656;
+    --line:#EAD8C6;
+    --gold:#C89A5B;
+    --serif:'DM Serif Display', Georgia, 'Times New Roman', serif;
+    --sans:'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+
+  body{
+    font-family:var(--sans);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #FFE9D6 0%, transparent 60%),
+      #F6ECE1;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:56px 24px;
+  }
+
+  /* ===== CARD ===== */
+  .card{
+    width:760px;
+    background:var(--cream);
+    border-radius:28px;
+    overflow:hidden;
+    position:relative;
+    box-shadow:
+      0 2px 0 rgba(255,255,255,.6) inset,
+      0 40px 80px -30px rgba(120,70,20,.45),
+      0 12px 30px -12px rgba(120,70,20,.25);
+    border:1px solid #F0DEC9;
+  }
+  /* thin inner frame */
+  .card::after{
+    content:"";
+    position:absolute;
+    inset:16px;
+    border:1px solid rgba(200,154,91,.35);
+    border-radius:16px;
+    pointer-events:none;
+    z-index:5;
+  }
+
+  /* ===== HEADER ===== */
+  .head{
+    position:relative;
+    padding:52px 48px 42px;
+    text-align:center;
+    color:#fff;
+    background:
+      radial-gradient(120% 120% at 50% 0%, #FFB169 0%, #F5842E 45%, #E56E1B 100%);
+    overflow:hidden;
+  }
+  .head::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(60% 40% at 15% 15%, rgba(255,255,255,.28), transparent 60%),
+      radial-gradient(50% 40% at 90% 90%, rgba(0,0,0,.10), transparent 60%);
+  }
+  .head__inner{position:relative;z-index:2;}
+  .brand{
+    font-family:var(--serif);
+    font-size:64px;
+    line-height:1;
+    letter-spacing:.5px;
+    text-shadow:0 2px 10px rgba(120,50,0,.25);
+  }
+  .brand-sub{
+    margin-top:12px;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:4.5px;
+    text-transform:uppercase;
+    opacity:.95;
+  }
+  .head__rule{
+    display:flex; align-items:center; justify-content:center;
+    gap:12px; margin-top:20px;
+  }
+  .head__rule span{height:1px;width:56px;background:rgba(255,255,255,.6);}
+  .head__rule i{
+    width:7px;height:7px;transform:rotate(45deg);
+    background:#fff;opacity:.9;border-radius:1px;
+  }
+
+  /* ===== GIFT PILL ===== */
+  .pill{
+    position:relative;z-index:6;
+    margin:-18px auto 0;
+    width:max-content;
+    padding:11px 26px;
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:999px;
+    box-shadow:0 10px 24px -12px rgba(120,70,20,.4);
+    font-size:12px; font-weight:700; letter-spacing:2.5px;
+    text-transform:uppercase; color:var(--orange-dark);
+    display:flex; align-items:center; gap:9px;
+  }
+  .pill svg{width:15px;height:15px;}
+
+  /* ===== BODY ===== */
+  .body{padding:30px 56px 12px;text-align:center;}
+
+  .greet{
+    font-family:var(--serif);
+    font-size:44px;
+    line-height:1.1;
+    color:var(--ink);
+    margin-top:6px;
+  }
+  .greet em{color:var(--orange);font-style:italic;}
+  .lead{
+    margin-top:14px;
+    font-size:17px;
+    color:var(--ink-soft);
+    line-height:1.55;
+  }
+  .lead b{color:var(--ink);font-weight:600;}
+
+  /* ===== HERO IMAGE ===== */
+  .hero{
+    margin:28px auto 0;
+    width:100%;
+    border-radius:18px;
+    padding:8px;
+    background:linear-gradient(135deg,#FFF 0%,#FDEBDB 100%);
+    border:1px solid #F1DCC6;
+    box-shadow:0 20px 40px -22px rgba(120,70,20,.5);
+  }
+  .hero img{
+    width:100%; display:block;
+    aspect-ratio:16/10; object-fit:cover;
+    border-radius:12px;
+  }
+
+  /* ===== EXPERIENCE CARD ===== */
+  .exp{
+    margin:26px 0 4px;
+    padding:30px 30px 28px;
+    background:linear-gradient(180deg,#FFFDFB 0%, #FFF4E9 100%);
+    border:1px solid var(--line);
+    border-radius:18px;
+    position:relative;
+  }
+  .exp__eyebrow{
+    font-size:11.5px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+    color:var(--gold);
+  }
+  .exp__title{
+    font-family:var(--serif);
+    font-size:30px;line-height:1.18;color:var(--ink);
+    margin-top:10px;
+  }
+  .exp__desc{
+    margin-top:8px;font-size:15px;font-style:italic;color:var(--ink-soft);
+  }
+  .exp__div{
+    width:44px;height:2px;background:var(--orange-light);
+    margin:20px auto;border-radius:2px;
+  }
+  .meta{
+    display:flex;justify-content:center;flex-wrap:wrap;
+    gap:14px 30px;
+  }
+  .meta__item{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:96px;}
+  .meta__ic{
+    width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:#FFEAD6;color:var(--orange-dark);
+  }
+  .meta__ic svg{width:19px;height:19px;}
+  .meta__k{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);font-weight:600;}
+  .meta__v{font-size:15px;font-weight:600;color:var(--ink);}
+
+  .includes{
+    margin-top:24px;padding-top:20px;border-top:1px dashed var(--line);
+    display:flex;justify-content:center;flex-wrap:wrap;gap:10px 12px;
+  }
+  .tag{
+    font-size:12.5px;font-weight:500;color:var(--ink-soft);
+    background:#FFF;border:1px solid var(--line);
+    padding:6px 13px;border-radius:999px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .tag b{color:var(--orange);font-size:13px;line-height:1;}
+
+  /* ===== MESSAGE ===== */
+  .msg{
+    margin:34px 8px 4px;
+    padding-top:46px;
+    position:relative;
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:20px;line-height:1.55;color:var(--ink);
+  }
+  .msg::before{
+    content:"\201C";
+    font-family:var(--serif);
+    font-size:58px;line-height:1;color:var(--orange-light);opacity:.4;
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+  }
+
+  .note{
+    margin:24px auto 0;
+    max-width:440px;
+    font-size:13.5px;line-height:1.5;color:var(--ink-soft);
+  }
+
+  /* ===== FOOTER ===== */
+  .foot{
+    margin-top:30px;
+    padding:28px 48px 40px;
+    text-align:center;
+    background:linear-gradient(180deg, transparent, #FFF1E3);
+    border-top:1px solid var(--line);
+  }
+  .foot__tag{
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:24px;
+    color:var(--orange);
+  }
+  .foot__links{
+    margin-top:12px;
+    font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center;gap:14px;
+  }
+  .foot__links i{width:4px;height:4px;border-radius:50%;background:var(--orange-light);display:inline-block;}
+</style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- HEADER -->
+    <div class="head">
+      <div class="head__inner">
+        <div class="brand">Elarah</div>
+        <div class="brand-sub">Curadoria de Experiências</div>
+        <div class="head__rule"><span></span><i></i><span></span></div>
+      </div>
+    </div>
+
+    <!-- GIFT PILL -->
+    <div class="pill">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+        <path d="M12 8v13M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path>
+        <path d="M12 8S10.5 3 7.5 3 4 6 5 8h7zM12 8s1.5-5 4.5-5S20 6 19 8h-7z"></path>
+      </svg>
+      Um presente para você
+    </div>
+
+    <!-- BODY -->
+    <div class="body">
+      <h1 class="greet">Olá, <em>Marise</em></h1>
+      <p class="lead">Você recebeu uma <b>experiência especial</b> da Elarah —<br>escolhida a dedo para ser vivida, sentida e lembrada.</p>
+
+      <!-- HERO -->
+      <div class="hero">
+        <img src="saboneteartesanalmaes.jpg" alt="Sabonetes artesanais">
+      </div>
+
+      <!-- EXPERIENCE -->
+      <div class="exp">
+        <div class="exp__eyebrow">Experiência presenteada</div>
+        <h2 class="exp__title">Oficina de Sabonetes Artesanais</h2>
+        <p class="exp__desc">Aromas, ervas e botânica moldados pelas suas mãos</p>
+
+        <div class="exp__div"></div>
+
+        <div class="meta">
+          <div class="meta__item">
+            <div class="meta__ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+            </div>
+            <div class="meta__k">Data</div>
+            <div class="meta__v">A combinar</div>
+          </div>
+          <div class="meta__item">
+            <div class="meta__ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            </div>
+            <div class="meta__k">Duração</div>
+            <div class="meta__v">≈ 3 horas</div>
+          </div>
+          <div class="meta__item">
+            <div class="meta__ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+            </div>
+            <div class="meta__k">Local</div>
+            <div class="meta__v">São Paulo</div>
+          </div>
+        </div>
+
+        <div class="includes">
+          <span class="tag"><b>✿</b> Todo material incluso</span>
+          <span class="tag"><b>✿</b> Ateliê guiado</span>
+          <span class="tag"><b>✿</b> Você leva suas criações</span>
+        </div>
+      </div>
+
+      <!-- MESSAGE -->
+      <p class="msg">Uma tarde só sua para desacelerar e criar algo único, do começo ao fim. É só escolher o melhor dia — o resto a gente cuida por você.</p>
+
+      <p class="note">Os detalhes de confirmação e o agendamento chegam pra você em breve. Enquanto isso, é só imaginar o aroma. 🌿</p>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="foot">
+      <div class="foot__tag">Offline is a feeling.</div>
+      <div class="foot__links">
+        <span>elarah.com.br</span><i></i><span>@elarah.oficial</span>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
