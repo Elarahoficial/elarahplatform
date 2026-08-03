@@ -84,8 +84,8 @@ cover = f'''
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
-        <span class="kicker">Proposta de experiência corporativa para o</span>
-        <span class="cbbrand">Time de Design · Samsung</span><span class="cbsub">workshop trimestral</span>
+        <span class="kicker">Proposta de experiência corporativa para</span>
+        <img class="cllogo" src="assets/samsunglogo.png" alt="Samsung"><span class="cbsub">time de Design · workshop trimestral</span>
       </div>
     </div>
     <div class="cover">
@@ -142,7 +142,7 @@ menu = f'''
     <div class="rule"></div>
     <div class="menu">
       {exp("01","pinturapratoceramica.jpg","Pintura em Cerâmica","Pinte a sua peça de cerâmica e leve a sua arte pra casa.","Peça de cerâmica sendo pintada à mão","center 50%")}
-      {exp("02","tufting6.jpg","Tufting","Com a pistola de tufting, crie a sua peça decorativa autoral.","Time exibindo peças de tufting")}
+      {exp("02","saboneteroxo.jpg","Sabonete Artesanal","Crie os próprios sabonetes botânicos, com aroma e cor.","Sabonetes artesanais de lavanda")}
       {exp("03","perfumariaharbolita.jpg","Perfumaria","Crie a sua fragrância autoral, numa imersão sensorial.","Essências e frascos de perfumaria","center 45%")}
       {exp("04","pinturatacavinho.jpg","Pintura em Vidro","Em copo, xícara, vaso ou taça — leve a sua arte.","Taça de vidro pintada à mão")}
       {exp("05","velaaromatica.jpg","Vela Aromática","Crie a sua vela perfumada, do aroma ao rótulo.","Vela aromática artesanal")}
@@ -166,6 +166,23 @@ espaco = f'''
       <figure class="space"><div class="sq"><img src="assets/espa%C3%A7o2.jpg" alt="Cozinha equipada do Bake Studio"></div><figcaption>Cozinha equipada · coffee break</figcaption></figure>
     </div>
     {foot("O Bake Studio · exclusivo")}
+  </section>'''
+
+cafes = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">As cafeterias · aberto</span></div>
+    </div>
+    <span class="eyebrow orange">◆ A opção de R$ 199</span>
+    <h2>Ou numa <em>cafeteria</em></h2>
+    <p class="lead">Se preferirem um clima mais descontraído, a experiência também rola numa <strong>cafeteria charmosa em São Paulo</strong> — espaço aberto e compartilhado, por R$ 199 por pessoa. Duas opções queridinhas:</p>
+    <div class="rule"></div>
+    <div class="spaces">
+      <figure class="space"><div class="sq"><img src="assets/sowcafe.jpg" alt="Ambiente da Sow Cake Lounge, na Vila Mariana" style="object-position:center 50%"></div><figcaption>Sow Cake Lounge · Vila Mariana</figcaption></figure>
+      <figure class="space"><div class="sq"><img src="assets/julescampobelo.jpg" alt="Ambiente da Jules l'Art du Pain, no Campo Belo" style="object-position:center 50%"></div><figcaption>Jules l'Art du Pain · Campo Belo</figcaption></figure>
+    </div>
+    {foot("As cafeterias · aberto")}
   </section>'''
 
 planos = f'''
@@ -243,7 +260,7 @@ personaliza = f'''
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Opcional</span>
-        <div class="plan-photo sq"><img src="assets/nivergibrinde.jpg" alt="Kit personalizado com o nome de cada convidado" style="object-position:center 35%"></div>
+        <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Kit corporativo personalizado com a marca" style="object-position:center 50%"></div>
         <div class="plan-body">
           <span class="tag premium">Personalização</span>
           <h3>Kits &amp; lembrancinhas</h3>
@@ -270,7 +287,7 @@ como = f'''
     <p class="lead">A Elarah cuida de toda a produção pra o encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Do menu criativo — Cerâmica, Tufting, Perfumaria e mais.</p></div>
+      <div class="step"><div class="num">1</div><h3>Escolhem a experiência</h3><p>Do menu criativo — Cerâmica, Perfumaria, Sabonete e mais.</p></div>
       <div class="step"><div class="num">2</div><h3>E onde acontece</h3><p>No Bake Studio (exclusivo, com coffee break e foto) ou numa cafeteria charmosa.</p></div>
       <div class="step"><div class="num">3</div><h3>O time vive e integra</h3><p>Vocês só chegam, criam juntos e se conectam — a gente cuida de tudo.</p></div>
     </div>
@@ -295,11 +312,11 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências criativas para workshop de integração do time de Design da Samsung, para 10 participantes, no dia 28 de agosto (período da tarde). Experiências à escolha, pelo mesmo valor: Pintura em Cerâmica, Tufting, Perfumaria, Pintura em Vidro, Vela Aromática e Bolsa de Crochê. Dois formatos: nas cafeterias parceiras (Sow ou Jules, espaço aberto) a R$ 199 por pessoa; ou no Bake Studio (espaço exclusivo, com coffee break e foto profissional inclusos) a R$ 279 por pessoa. Valores por pessoa, com material e condução inclusos. Cada experiência dura cerca de 2h30–3h, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (28 de agosto) e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiências criativas para workshop de integração do time de Design da Samsung, para 10 participantes, no dia 28 de agosto (período da tarde). Experiências à escolha, pelo mesmo valor: Pintura em Cerâmica, Sabonete Artesanal, Perfumaria, Pintura em Vidro, Vela Aromática e Bolsa de Crochê. Dois formatos: nas cafeterias parceiras (Sow ou Jules, espaço aberto) a R$ 199 por pessoa; ou no Bake Studio (espaço exclusivo, com coffee break e foto profissional inclusos) a R$ 279 por pessoa. Valores por pessoa, com material e condução inclusos. Cada experiência dura cerca de 2h30–3h, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (28 de agosto) e disponibilidade de agenda.</p>
     {foot("Experiência Corporativa · Samsung · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + espaco + menu + planos + personaliza + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + espaco + cafes + menu + planos + personaliza + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Experiência Corporativa · Elarah × Samsung</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de experiência corporativa criativa da Elarah para o time de Design da Samsung — menu de experiências e formatos.">', head)
