@@ -219,8 +219,41 @@
     position:absolute;top:0;left:50%;transform:translateX(-50%);
   }
 
+  /* ===== REDEEM CODE ===== */
+  .code{
+    margin:30px auto 0;
+    max-width:430px;
+    padding:22px 24px 20px;
+    background:
+      repeating-linear-gradient(90deg,#FFF 0 14px,transparent 14px 20px) top/100% 2px no-repeat,
+      linear-gradient(180deg,#FFFDFB,#FFF3E6);
+    border:1.6px dashed var(--orange-light);
+    border-radius:16px;
+    position:relative;
+  }
+  .code::before,.code::after{
+    content:"";position:absolute;top:50%;width:22px;height:22px;
+    background:#F6ECE1;border-radius:50%;transform:translateY(-50%);
+  }
+  .code::before{left:-13px;}
+  .code::after{right:-13px;}
+  .code__k{
+    font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+    color:var(--orange-dark);
+  }
+  .code__v{
+    margin-top:10px;
+    font-family:var(--serif);
+    font-size:32px;letter-spacing:5px;color:var(--ink);
+    white-space:nowrap;
+  }
+  .code__hint{
+    margin-top:10px;font-size:12.5px;line-height:1.45;color:var(--ink-soft);
+  }
+  .code__hint b{color:var(--orange-dark);font-weight:600;}
+
   .note{
-    margin:24px auto 0;
+    margin:22px auto 0;
     max-width:440px;
     font-size:13.5px;line-height:1.5;color:var(--ink-soft);
   }
@@ -320,6 +353,13 @@
 
       <!-- MESSAGE -->
       <p class="msg">Uma tarde só sua para desacelerar e criar algo único, do começo ao fim. É só escolher o melhor dia — o resto a gente cuida por você.</p>
+
+      <!-- REDEEM CODE -->
+      <div class="code">
+        <div class="code__k">Seu código de resgate</div>
+        <div class="code__v">RB4C-JUAA-AQ86</div>
+        <div class="code__hint">Resgate em <b>elarah.com.br</b> e escolha o melhor dia pra viver sua experiência.</div>
+      </div>
 
       <p class="note">Os detalhes de confirmação e o agendamento chegam pra você em breve. Enquanto isso, é só imaginar o aroma. 🌿</p>
     </div>
