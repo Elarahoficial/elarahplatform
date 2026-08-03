@@ -189,29 +189,28 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Escolham o nível</span>
     <h2>A partir de <em>R$ 199</em></h2>
-    <p class="lead">O valor é o mesmo pra <strong>Vela ou Cerâmica</strong> — muda só o espaço e o nível que escolherem. Todos os valores são <strong>por pessoa</strong>, com material e condução inclusos.</p>
+    <p class="lead">Cada oficina tem o seu valor <strong>por criança</strong>, com material, aventalzinho e condução inclusos. É só escolher o nível que preferirem.</p>
     <div class="rule"></div>
     <table class="itable">
       <thead><tr>
         <th class="corner"></th>
-        <th>Só a experiência<span>material & condução</span></th>
-        <th>Com registro<span>+ foto profissional + voucher R$ 50 na cafeteria</span></th>
-        <th class="hl"><span class="pill">★ Mais completo</span><br>Com lembrança<span>+ lembrancinha personalizada</span></th>
+        <th>Só a oficina<span>material & condução</span></th>
+        <th>Com registro<span>+ foto profissional</span></th>
+        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ lembrancinha (escova & piranha)</span></th>
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>No nosso Studio</b><span>Espaço exclusivo &amp; fechado só de vocês</span></td>
-          <td class="val">R$ 269</td><td class="val">R$ 369</td><td class="val hl">R$ 469</td>
+          <td class="rl"><b>Oficinas criativas</b><span>Pintura de bolsinha · Pintura & desenho · Cerâmica</span></td>
+          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
         </tr>
         <tr>
-          <td class="rl"><b>Na cafeteria Jules</b><span>Só a experiência, num ambiente charmoso</span></td>
-          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
+          <td class="rl"><b>Gastronomia</b><span>A estrela da festa — chef por um dia</span></td>
+          <td class="val">R$ 399</td><td class="val" style="color:var(--muted);font-family:'DM Sans';font-size:15px">—</td><td class="val hl">R$ 499</td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:16px">◆ <b>Vela ou Cerâmica pelo mesmo valor</b> — é só escolher a preferida. Turma privada de 13, sábado 12/09 à tarde (2h30–3h).</div>
-    <div class="note" style="margin-top:9px">◆ <b>Coffee break incluso</b> no nosso Studio (que tem cozinha equipada) — e podem levar bolo, doces e espumante. 🥂</div>
-    <div class="note" style="margin-top:9px">◆ Na <b>cafeteria Jules</b>, o nível <i>Com registro</i> inclui <b>R$ 50 de voucher</b> pra gastar na cafeteria + o registro fotográfico.</div>
+    <div class="note" style="margin-top:16px">◆ Na <b>Gastronomia</b>, o completo (<b>R$ 499</b>) já vem com <b>foto profissional + lembrancinha</b> inclusas. Valores por criança.</div>
+    <div class="note" style="margin-top:9px">◆ Cada festa é montada <b>sob medida</b> — dá pra combinar mais de uma oficina e a gente ajusta pelo número de crianças. 💖</div>
     {foot("Investimento")}
   </section>'''
 
@@ -219,42 +218,42 @@ personaliza = f'''
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Os mimos da despedida</span></div>
+      <div class="head-right"><span class="kicker">Os mimos da festa</span></div>
     </div>
     <span class="eyebrow orange">◆ Nos níveis Com registro & Completo</span>
     <h2>Pra levar de <em>lembrança</em></h2>
-    <p class="lead">Além da peça que cada uma cria, dá pra somar dois mimos que deixam o dia inesquecível — a foto profissional e a lembrancinha personalizada.</p>
+    <p class="lead">Além da obra que cada criança cria, dá pra somar dois mimos que deixam a festa inesquecível — a foto profissional e a lembrancinha personalizada.</p>
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/desp-hero3.jpg" alt="Grupo de amigas comemorando a despedida, registrado por um fotógrafo" style="object-position:center 25%"></div>
+        <div class="plan-photo sq"><img src="assets/aniv-kids.jpg" alt="Crianças se divertindo numa oficina, registradas por um fotógrafo" style="object-position:center 25%"></div>
         <div class="plan-body">
           <span class="tag basic">Nível Com registro</span>
           <h3>Registro fotográfico profissional</h3>
           <ul class="feat">
-            <li>Um fotógrafo cobre a despedida inteira</li>
-            <li>Cada brinde e cada risada registrados</li>
+            <li>Um fotógrafo cobre a festa inteira</li>
+            <li>Cada sorriso e cada bagunça registrados</li>
             <li>Álbum digital lindo pra guardar (e postar)</li>
           </ul>
-          <span class="allin">A memória do dia, pra sempre</span>
+          <span class="allin">A memória da festa, pra sempre</span>
         </div>
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Nível Completo</span>
         <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Lembrancinha personalizada: escova e piranha de cabelo" style="object-position:center"></div>
         <div class="plan-body">
-          <span class="tag premium">Personalização</span>
+          <span class="tag premium">Lembrancinha</span>
           <h3>Lembrancinha personalizada</h3>
           <ul class="feat">
             <li>Kit com <b>escova &amp; piranha</b> pra cada convidada</li>
-            <li>Personalizado com o nome de cada uma</li>
-            <li>Um mimo pra elas levarem da despedida</li>
+            <li>Personalizado com o nome de cada criança</li>
+            <li>Um mimo pra levarem da festa</li>
           </ul>
           <span class="allin">Cada uma leva o seu mimo</span>
         </div>
       </div>
     </div>
-    {foot("Os mimos da despedida")}
+    {foot("Os mimos da festa")}
   </section>'''
 
 como = f'''
@@ -297,7 +296,7 @@ como = f'''
     {foot("Elarah Kids · Aniversário")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu + gastronomia + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + menu + gastronomia + planos + personaliza + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Festa Infantil · Elarah Kids</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de festa de aniversário infantil da Elarah Kids — oficinas de gastronomia, pintura, cerâmica e mais, com a mão na massa.">', head)
