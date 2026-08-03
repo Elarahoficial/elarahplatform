@@ -146,7 +146,7 @@ menu = f'''
     <div class="rule"></div>
     <div class="menu">
       {exp("01","velaaromatica.jpg","Vela &amp; Vinho","Cada uma cria a própria vela aromática, do aroma ao rótulo — enquanto brinda com uma taça de vinho na mão.","Vela aromática artesanal num vidro elegante","center 50%",top="🍷 Vinho à vontade")}
-      {exp("02","quadropintado.jpg","Tinta &amp; Vinho","Pintura em tela: cada uma pinta o próprio quadro num cavalete, com taça de vinho e muita risada. Leve a sua arte pra casa.","Telas pintadas à mão numa oficina de pintura","center 60%",top="🍷 Vinho à vontade")}
+      {exp("02","tintaevinhocool.jpg","Tinta &amp; Vinho","Pintura em tela: cada uma pinta o próprio quadro num cavalete, com taça de vinho e muita risada. Leve a sua arte pra casa.","Mulher pintando numa tela com taça de vinho na mão","center 40%",top="🍷 Vinho à vontade")}
     </div>
     {foot("O menu")}
   </section>'''
@@ -186,25 +186,25 @@ planos = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Um valor, tudo incluso</span>
-    <h2>Tudo à vontade por <em>R$ 269</em></h2>
-    <p class="lead">Um valor único <strong>por pessoa</strong>, igual pras duas experiências. É só escolher entre Vela &amp; Vinho ou Tinta &amp; Vinho — o resto é por nossa conta. 🍷</p>
+    <span class="eyebrow orange">◆ Escolham o nível</span>
+    <h2>A partir de <em>R$ 269</em></h2>
+    <p class="lead">O valor é o mesmo pras duas experiências — muda só o nível que escolherem. Todos <strong>por pessoa</strong>, com espaço, material, condução e <strong>vinho à vontade</strong> já inclusos. 🍷</p>
     <div class="rule"></div>
-    <div style="display:flex;gap:34px;align-items:center;margin-top:26px;flex-wrap:wrap;justify-content:center">
-      <div style="text-align:center;min-width:210px">
-        <div style="font-family:'DM Serif Display',serif;font-size:74px;color:var(--navy);line-height:.95">R$ 269</div>
-        <div style="font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:8px">por pessoa · tudo à vontade</div>
-        <div style="margin-top:12px;display:inline-block;background:var(--orange);color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:999px">Vela &amp; Vinho · Tinta &amp; Vinho</div>
-      </div>
-      <ul class="feat" style="flex:1;min-width:280px;font-size:14.5px;line-height:1.5">
-        <li>Espaço exclusivo na <b>Casa Aquário</b> (Pinheiros)</li>
-        <li>A <b>experiência à escolha</b> — Vela ou Tinta</li>
-        <li><b>Vinho à vontade</b> a noite toda 🍷</li>
-        <li>Todo o <b>material, condução e estrutura</b></li>
-        <li>Cada uma leva a <b>própria criação</b> pra casa</li>
-      </ul>
-    </div>
-    <div class="note" style="margin-top:24px">◆ Valor <b>por pessoa</b>, turma de ~30 mulheres, numa segunda de setembro às 19h30. Espaço, experiência e vinho — <b>tudo à vontade e já incluso</b>.</div>
+    <table class="itable">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>A experiência<span>espaço + vinho à vontade</span></th>
+        <th>Com foto &amp; coffee<span>+ foto profissional &amp; coffee break</span></th>
+        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização &amp; lembrancinha</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Vela &amp; Vinho · Tinta &amp; Vinho</b><span>As duas pelo mesmo valor — cada uma leva a sua peça</span></td>
+          <td class="val">R$ 269</td><td class="val">R$ 369</td><td class="val hl">R$ 469</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:20px">◆ <b>Níveis:</b> A experiência (espaço, material, condução &amp; vinho à vontade) → <b>+ foto profissional &amp; coffee break</b> (+R$ 100) → <b>+ personalização &amp; lembrancinha</b> (+R$ 100). Valores por pessoa, turma de ~30, na Casa Aquário (Pinheiros).</div>
     {foot("Investimento")}
   </section>'''
 
@@ -214,33 +214,33 @@ personaliza = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Extras opcionais</span></div>
     </div>
-    <span class="eyebrow orange">◆ Se quiserem deixar ainda mais completo</span>
-    <h2>Dois <em>extras</em> pra somar</h2>
-    <p class="lead">Além da peça que cada uma cria, dá pra somar dois mimos que deixam a noite inesquecível — a foto profissional e a lembrancinha personalizada com a marca da empresa.</p>
+    <span class="eyebrow orange">◆ O que soma nos níveis</span>
+    <h2>Pra deixar mais <em>completo</em></h2>
+    <p class="lead">Cada nível acima soma um mimo que deixa a noite inesquecível — o coffee break com registro profissional e, no Completo, a lembrancinha personalizada.</p>
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
         <div class="plan-photo sq"><img src="assets/aniv-adulto.jpg" alt="Grupo de mulheres reunidas, registradas por um fotógrafo" style="object-position:center 30%"></div>
         <div class="plan-body">
-          <span class="tag basic">Extra opcional</span>
-          <h3>Registro fotográfico profissional</h3>
+          <span class="tag basic">Nível 2 · +R$ 100</span>
+          <h3>Coffee break &amp; foto profissional</h3>
           <ul class="feat">
-            <li>Um fotógrafo cobre a noite inteira</li>
-            <li>Cada brinde e cada criação registrados</li>
+            <li>Coffee break pra acompanhar a noite</li>
+            <li>Um fotógrafo cobre o encontro inteiro</li>
             <li>Álbum digital lindo pra empresa usar e postar</li>
           </ul>
           <span class="allin">A memória da noite, pra sempre</span>
         </div>
       </div>
       <div class="plan featured">
-        <span class="ribbon">★ Com a marca</span>
-        <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Kit personalizado com a identidade da empresa" style="object-position:center 50%"></div>
+        <span class="ribbon">★ Completo</span>
+        <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Kit de lembrancinha personalizada com escova e piranha" style="object-position:center"></div>
         <div class="plan-body">
-          <span class="tag premium">Personalização</span>
+          <span class="tag premium">Nível Completo · +R$ 100</span>
           <h3>Lembrancinha personalizada</h3>
           <ul class="feat">
-            <li>Um kit personalizado pra cada convidada</li>
-            <li>Com o nome e a identidade da empresa</li>
+            <li>Kit com <b>escova &amp; piranha</b> pra cada convidada</li>
+            <li>Personalizado com o nome de cada uma</li>
             <li>Um mimo pra levarem da noite pra casa</li>
           </ul>
           <span class="allin">Cada uma leva o seu mimo</span>
@@ -286,7 +286,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para uma noite de integração do time, turma de cerca de 30 mulheres, numa segunda-feira de setembro às 19h30, na Casa Aquário (R. Filipe de Alcaçova, 38 · Pinheiros · São Paulo). Experiência à escolha, pelo mesmo valor: Vela &amp; Vinho (criação de vela aromática) ou Tinta &amp; Vinho (pintura em tela). Valor único de R$ 269 por pessoa, com espaço exclusivo, experiência, vinho à vontade, material, condução e estrutura inclusos — cada participante leva a própria criação. Extras opcionais: registro fotográfico profissional e lembrancinha personalizada com a marca da empresa. Inclui um momento para fala/brinde do time, sem custo adicional. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para uma noite de integração do time, turma de cerca de 30 mulheres, numa segunda-feira de setembro às 19h30, na Casa Aquário (R. Filipe de Alcaçova, 38 · Pinheiros · São Paulo). Experiência à escolha, pelo mesmo valor: Vela &amp; Vinho (criação de vela aromática) ou Tinta &amp; Vinho (pintura em tela). A partir de R$ 269 por pessoa (níveis R$ 269 / 369 / 469), com espaço exclusivo, experiência, vinho à vontade, material, condução e estrutura inclusos — cada participante leva a própria criação. Níveis: A experiência (espaço, material, condução e vinho à vontade) / + coffee break e foto profissional (+R$ 100) / Completo com personalização e lembrancinha (+R$ 100). Inclui um momento para fala/brinde do time, sem custo adicional. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Experiência · Vela &amp; Vinho · Tinta &amp; Vinho · 2026")}
   </section>'''
 
