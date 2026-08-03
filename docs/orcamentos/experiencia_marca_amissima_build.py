@@ -136,7 +136,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/perfumariamaes.jpg" alt="Mesa elegante com essências, lavanda e flores mediterrâneas" style="object-position:center 45%">
+        <img src="assets/perfumariaapresenta%C3%A7%C3%A3o.jpg" alt="Três clientes vivendo a experiência juntas, num momento elegante" style="object-position:center 40%">
       </div>
     </div>
     {foot("Experiência de marca · Amissima")}
@@ -171,16 +171,16 @@ vibe = f'''
       <div class="head-right"><span class="kicker">A vibe da experiência</span></div>
     </div>
     <span class="eyebrow orange">◆ Imagina o clima</span>
-    <h2>A vibe da <em>experiência</em></h2>
-    <p class="lead">Uma estação elegante, frascos âmbar, essências e as clientes descobrindo aromas — sofisticado, sensorial e cheio de charme. É esse o clima que a Elarah leva pra loja da Amissima. 🌊</p>
+    <h2>A <em>experiência</em> &amp; a sensação</h2>
+    <p class="lead">Muito além do produto: um momento pra <strong>sentir, criar e se conectar</strong>. É esse o clima que a Elarah leva pra loja — sofisticado, sensorial e cheio de charme, com as clientes vivendo a marca de perto. 🌊</p>
     <div class="rule"></div>
     <div class="pgrid g3">
-      <div class="pcard"><div class="sq"><img src="assets/perfumariaharbolita.jpg" alt="Mãos testando essências numa fita olfativa" style="object-position:center 45%"></div><div class="pb"><span class="n">A vibe</span><h3>Sensorial</h3><p>Cada cliente testa notas e monta a própria fragrância, com calma.</p></div></div>
-      <div class="pcard"><div class="sq"><img src="assets/perfumariaapresenta%C3%A7%C3%A3o.jpg" alt="Clientes descobrindo aromas numa estação de perfumaria" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Encontro</h3><p>As clientes vivem juntas, trocam e se encantam — momento da marca.</p></div></div>
-      <div class="pcard"><div class="sq"><img src="assets/perfumariaapresenta%C3%A7%C3%A3o2.jpg" alt="Cliente sentindo um aroma numa fita olfativa" style="object-position:center 35%"></div><div class="pb"><span class="n">A vibe</span><h3>Elegância</h3><p>Uma experiência fina e instagramável, com a estética da coleção.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/perfumariaapresenta%C3%A7%C3%A3o2.jpg" alt="Cliente sentindo um aroma, num momento sensorial" style="object-position:center 25%"></div><div class="pb"><span class="n">A sensação</span><h3>Sentir</h3><p>Um momento sensorial e sofisticado — a cliente vive a coleção de perto.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/aniv-adulto.jpg" alt="Clientes celebrando juntas num encontro elegante" style="object-position:center 40%"></div><div class="pb"><span class="n">A experiência</span><h3>Celebrar</h3><p>Um encontro elegante que reúne as clientes em volta da marca.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/rockworld1.jpg" alt="Clientes se conectando num encontro" style="object-position:center 30%"></div><div class="pb"><span class="n">O relacionamento</span><h3>Conectar</h3><p>Conversas, risadas e memória afetiva — a marca mais perto da cliente.</p></div></div>
     </div>
-    <div class="note" style="margin-top:16px">◆ E o melhor: cada cliente sai com o <b>próprio perfume</b> — a lembrança perfeita do lançamento e da marca. ✨</div>
-    {foot("A vibe da experiência")}
+    <div class="note" style="margin-top:16px">◆ E o melhor: cada cliente sai com a <b>própria criação</b> — a lembrança perfeita do lançamento e da marca. ✨</div>
+    {foot("A experiência &amp; a sensação")}
   </section>'''
 
 menu = f'''
@@ -216,7 +216,7 @@ espacos = f'''
     <p class="lead">A gente tematiza a experiência inteira pra traduzir a coleção — dos <strong>aromas</strong> às <strong>cores e à ambientação</strong>. Um passeio da Riviera Francesa às ilhas gregas, do começo ao fim.</p>
     <div class="rule"></div>
     <div class="bfeat">
-      <div class="bphoto"><img src="assets/perfumariaapresenta%C3%A7%C3%A3o.jpg" alt="Cliente descobrindo aromas numa estação de perfumaria" style="object-position:center 40%"></div>
+      <div class="bphoto"><img src="assets/perfumariamaes.jpg" alt="Essências, lavanda e flores mediterrâneas dispostas numa mesa" style="object-position:center 45%"></div>
       <div class="bbody">
         <span class="btag">Riviera Francesa &amp; Grécia</span>
         <h3>Os aromas <span class="sub">do Mediterrâneo</span></h3>
@@ -236,38 +236,14 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Valor único</span>
     <h2>R$ 239 <em>por cliente</em></h2>
-    <p class="lead">Qualquer opção do menu pelo mesmo valor, com <strong>tudo incluso</strong> — do profissional à ambientação temática. E cada cliente leva a criação de recordação, com a cara da marca. 🌊</p>
+    <p class="lead">Qualquer opção do menu pelo mesmo valor, com <strong>tudo incluso</strong> — e cada cliente leva a criação de recordação, com a cara da marca. Você não precisa se preocupar com nada. 🌊</p>
     <div class="rule"></div>
-    <div class="plans">
-      <div class="plan">
-        <div class="plan-photo sq"><img src="assets/perfumes10.jpg" alt="Frascos de essências e materiais dispostos numa estação elegante" style="object-position:center 45%"></div>
-        <div class="plan-body">
-          <span class="tag basic">Tudo incluso</span>
-          <h3>A estação completa</h3>
-          <ul class="feat">
-            <li>Profissional pra conduzir a experiência</li>
-            <li>Todo o material da experiência escolhida</li>
-            <li>Ambientação temática <b>Entre Mares</b></li>
-          </ul>
-          <span class="allin">Você só recebe as clientes</span>
-        </div>
-      </div>
-      <div class="plan featured">
-        <span class="ribbon">★ Com a marca</span>
-        <div class="plan-photo sq"><img src="assets/perfumariaharbolita.jpg" alt="Peça criada pela cliente com a identidade da marca" style="object-position:center 45%"></div>
-        <div class="plan-body">
-          <span class="tag premium">Personalização</span>
-          <h3>A Amissima na peça</h3>
-          <ul class="feat">
-            <li>Embalagem &amp; rótulo com a identidade da marca</li>
-            <li>Cada cliente leva a criação de recordação</li>
-            <li>Conteúdo lindo e espontâneo pra marca</li>
-          </ul>
-          <span class="allin">A coleção no bolso da cliente</span>
-        </div>
-      </div>
+    <div class="grid3">
+      <div class="infocard"><div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="#C0954E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10 h16 M6 10 l1.5-4 h13 L22 10 M8 10 v11 h12 v-11 M12 14 h4"/></svg></div><h3>Profissional &amp; material</h3><p>A Elarah leva o profissional que conduz e todo o material da experiência escolhida.</p></div>
+      <div class="infocard"><div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="#C0954E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5 L16 12 L24.5 14 L16 16 L14 24.5 L12 16 L3.5 14 L12 12 Z"/></svg></div><h3>Ambientação Entre Mares</h3><p>A estação montada com a estética da coleção — cores, aromas e detalhes mediterrâneos.</p></div>
+      <div class="infocard"><div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="#C0954E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4 L5 8 v6 c0 5 4 8 8 10 4-2 8-5 8-10 V8 Z M10.5 13.5 l2 2 4-4.5"/></svg></div><h3>A marca na peça</h3><p>Cada cliente leva a criação com a identidade da Amissima — e rende conteúdo lindo pra marca.</p></div>
     </div>
-    <div class="note" style="margin-top:15px">◆ <b>R$ 239 por cliente</b> — vale pra qualquer opção do menu, com tudo incluso. Turma de 20 a 30 clientes, no dia 19/08 no JK. 💛</div>
+    <div class="note" style="margin-top:18px">◆ <b>R$ 239 por cliente</b> — vale pra qualquer opção do menu, com tudo incluso. Turma de 20 a 30 clientes, no dia 19/08 no JK. 💛</div>
     {foot("Investimento")}
   </section>'''
 
@@ -353,7 +329,7 @@ como = f'''
     {foot("Experiência de marca · Amissima · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + planos + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + vibe + planos + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Bar de Perfumaria · Amissima · Elarah</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta da Elarah para a Amissima — Bar de Perfumaria temático Entre Mares para o lançamento da coleção.">', head)
