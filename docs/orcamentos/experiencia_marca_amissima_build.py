@@ -126,8 +126,8 @@ cover = f'''
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Experiência de marca · Evento em loja</span>
-        <h1>Um <em>Bar de Perfumaria</em><br>Entre Mares</h1>
-        <p class="lead">Uma experiência sensorial e sofisticada pra encantar as clientes no lançamento de <strong>Entre Mares</strong> — cada uma cria a própria fragrância inspirada na <strong>Riviera Francesa &amp; na Grécia</strong>, e leva o perfume de recordação. 🌊</p>
+        <h1>Experiências <br><em>Entre Mares</em></h1>
+        <p class="lead">Um menu de experiências <strong>finas, elegantes e diferentes</strong> pra encantar as clientes no lançamento de <strong>Entre Mares</strong> — cada uma vive um momento sensorial e leva a criação de recordação. Tudo com a cara da <strong>Riviera Francesa &amp; da Grécia</strong>. 🌊</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>20 a 30</b> clientes</span>
@@ -136,7 +136,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/perfumariadecor.jpg" alt="Bar de perfumaria montado, com frascos de essências e flores" style="object-position:center 45%">
+        <img src="assets/perfumariamaes.jpg" alt="Mesa elegante com essências, lavanda e flores mediterrâneas" style="object-position:center 45%">
       </div>
     </div>
     {foot("Experiência de marca · Amissima")}
@@ -187,23 +187,22 @@ menu = f'''
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">A experiência</span></div>
+      <div class="head-right"><span class="kicker">O menu de opções</span></div>
     </div>
-    <span class="eyebrow orange">◆ A experiência</span>
-    <h2>Bar de <em>Perfumaria</em></h2>
-    <p class="lead">Uma estação de perfumaria montada na loja, guiada por perfumista. As clientes passam, descobrem as notas e <strong>criam a própria fragrância</strong> — e saem com o perfume, num frasco elegante com a cara da Amissima. 🌊</p>
+    <span class="eyebrow orange">◆ Opções finas &amp; diferentes</span>
+    <h2>Um menu <em>elegante</em></h2>
+    <p class="lead">Experiências sofisticadas em <strong>formato de estação</strong> — as clientes passam, criam em ~10-15 min e levam a peça de recordação. Escolham uma ou combinem em estações. Tudo tematizável pra <strong>Entre Mares</strong>. 🌊</p>
     <div class="rule"></div>
-    <div class="bfeat">
-      <div class="bphoto"><img src="assets/perfumariaharbolita.jpg" alt="Estação de perfumaria com essências e fitas olfativas" style="object-position:center 45%"></div>
-      <div class="bbody">
-        <span class="btag">Formato de estação · fluido</span>
-        <h3>Como funciona <span class="sub">no seu evento</span></h3>
-        <p>Perfeito pra evento de loja: as clientes vão passando na estação e criam em <b>~10-15 min</b>, sem parar a circulação. A gente leva <b>perfumista, todas as essências, os frascos e a ambientação</b> — vocês só recebem.</p>
-        <div class="dchips"><span>Perfumista</span><span>Essências &amp; frascos</span><span>Ambientação</span><span>Perfume personalizado</span></div>
-      </div>
+    <div class="pgrid g3">
+      <div class="pcard"><div class="sq"><img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal num vidro elegante" style="object-position:center 50%"></div><div class="pb"><span class="n">Opção</span><h3>Vela Aromática</h3><p>Cada cliente cria a própria vela, com aromas do Mediterrâneo.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/perfumariadecor.jpg" alt="Frascos de aromatizador de ambiente numa estação elegante" style="object-position:center 45%"></div><div class="pb"><span class="n">Opção</span><h3>Aromatizador de Ambiente</h3><p>Um difusor autoral pra perfumar a casa, com a assinatura da coleção.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/charmbar.jpg" alt="Peça personalizada com charms delicados" style="object-position:center 45%"></div><div class="pb"><span class="n">Opção</span><h3>Charm Bag</h3><p>Cada cliente personaliza a sua peça com charms — conchas, sol, iniciais.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/croche.jpg" alt="Bolsinhas de crochê coloridas feitas à mão" style="object-position:center 50%"></div><div class="pb"><span class="n">Opção</span><h3>Bolsa de Crochê</h3><p>Uma bolsinha autoral com a cara do verão mediterrâneo.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/saboneteroxo.jpg" alt="Sabonetes artesanais de lavanda" style="object-position:center 50%"></div><div class="pb"><span class="n">Sugestão Elarah</span><h3>Sabonete Artesanal</h3><p>Sabonetes botânicos de lavanda &amp; ervas — puro Mediterrâneo.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/pinturataca2.jpg" alt="Fileira de taças de vidro pintadas à mão" style="object-position:center 55%"></div><div class="pb"><span class="n">Sugestão Elarah</span><h3>Pintura em Taça</h3><p>Cada cliente pinta a própria taça e usa na bebida do evento.</p></div></div>
     </div>
-    <div class="note" style="margin-top:15px">◆ Ideal pra <b>20 a 30 clientes</b> ao longo do evento — elegante, sensorial e sem tirar ninguém do clima do lançamento. ✨</div>
-    {foot("A experiência")}
+    <div class="note" style="margin-top:15px">◆ Em todas, a Elarah leva <b>profissional, material e ambientação</b> — e a cliente sai com a criação de recordação. Ideal pra 20 a 30 clientes. ✨</div>
+    {foot("O menu de opções")}
   </section>'''
 
 espacos = f'''
@@ -213,17 +212,19 @@ espacos = f'''
       <div class="head-right"><span class="kicker">O tema · Entre Mares</span></div>
     </div>
     <span class="eyebrow orange">◆ Amarrado à coleção</span>
-    <h2>As notas de <em>Entre Mares</em></h2>
-    <p class="lead">O menu de essências é curado pra traduzir a coleção em aroma — um passeio da <strong>Riviera Francesa à Grécia</strong>. Cada cliente monta a sua composição a partir dessas notas mediterrâneas:</p>
+    <h2>Tudo com a cara de <em>Entre Mares</em></h2>
+    <p class="lead">A gente tematiza a experiência inteira pra traduzir a coleção — dos <strong>aromas</strong> às <strong>cores e à ambientação</strong>. Um passeio da Riviera Francesa às ilhas gregas, do começo ao fim.</p>
     <div class="rule"></div>
-    <div class="dchips" style="margin-top:6px">
-      <span>Neroli &amp; Flor de laranjeira</span><span>Cítricos &amp; Bergamota</span><span>Figo</span><span>Sal marinho</span><span>Lavanda</span><span>Jasmim</span><span>Alecrim &amp; Ervas</span><span>Âmbar solar</span>
+    <div class="bfeat">
+      <div class="bphoto"><img src="assets/perfumariaapresenta%C3%A7%C3%A3o.jpg" alt="Cliente descobrindo aromas numa estação de perfumaria" style="object-position:center 40%"></div>
+      <div class="bbody">
+        <span class="btag">Riviera Francesa &amp; Grécia</span>
+        <h3>Os aromas <span class="sub">do Mediterrâneo</span></h3>
+        <p>Um menu de essências curado pra coleção, pra vela, o aromatizador ou o perfume:</p>
+        <div class="dchips"><span>Neroli</span><span>Cítricos &amp; Bergamota</span><span>Figo</span><span>Sal marinho</span><span>Lavanda</span><span>Alecrim</span><span>Âmbar solar</span></div>
+      </div>
     </div>
-    <div class="pgrid g3" style="margin-top:18px">
-      <div class="pcard"><div class="sq"><img src="assets/perfumariadecor.jpg" alt="Frascos de essências dispostos numa estação de perfumaria" style="object-position:center 45%"></div><div class="pb"><span class="n">Riviera</span><h3>Sol &amp; cítricos</h3><p>Neroli, bergamota e âmbar — a luz dourada da Riviera Francesa.</p></div></div>
-      <div class="pcard"><div class="sq"><img src="assets/perfumariaapresenta%C3%A7%C3%A3o1.jpg" alt="Essências e flores numa mesa de perfumaria" style="object-position:center 45%"></div><div class="pb"><span class="n">Grécia</span><h3>Mar &amp; ervas</h3><p>Sal marinho, alecrim e figo — a brisa fresca das ilhas gregas.</p></div></div>
-      <div class="pcard"><div class="sq"><img src="assets/perfumariaharbolita.jpg" alt="Cliente testando uma composição olfativa" style="object-position:center 45%"></div><div class="pb"><span class="n">A cliente</span><h3>A sua fragrância</h3><p>Cada uma combina as notas e cria a própria assinatura da coleção.</p></div></div>
-    </div>
+    <div class="note" style="margin-top:15px">◆ <b>A estética também:</b> paleta azul &amp; branco grego, dourado e oliveira, palha e linho — a ambientação da estação com a assinatura visual da Amissima. 🌊</div>
     {foot("O tema · Entre Mares")}
   </section>'''
 
@@ -239,7 +240,7 @@ planos = f'''
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/perfumariadecor.jpg" alt="Estação de perfumaria montada com essências e flores" style="object-position:center 45%"></div>
+        <div class="plan-photo sq"><img src="assets/perfumes11.jpg" alt="Clientes vivendo a experiência numa estação montada na loja" style="object-position:center 40%"></div>
         <div class="plan-body">
           <span class="tag basic">Tudo incluso</span>
           <h3>A estação completa</h3>
@@ -352,7 +353,7 @@ como = f'''
     {foot("Experiência de marca · Amissima · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + vibe + planos + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + planos + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Bar de Perfumaria · Amissima · Elarah</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta da Elarah para a Amissima — Bar de Perfumaria temático Entre Mares para o lançamento da coleção.">', head)
