@@ -189,7 +189,7 @@ rodizio = f'''
         <div class="rpair"><span class="turma">Turma B</span><span class="rarrow">→</span><span class="rexp">Experiência 1</span></div>
       </div>
     </div>
-    <div class="note" style="margin-top:22px">◆ <b>Experiências complementares</b> — combinamos duas que conversam entre si (ex.: perfumaria &amp; vela, ou cerâmica &amp; tufting). Coffee break entre as rodadas pra todo mundo respirar e trocar ideia.</div>
+    <div class="note" style="margin-top:22px">◆ <b>Experiências complementares</b> — combinamos duas que conversam entre si (ex.: perfumaria &amp; vela, ou cerâmica &amp; tufting). Uma pausa entre as rodadas pra todo mundo respirar e trocar ideia.</div>
     {foot("O formato · rodízio")}
   </section>'''
 
@@ -236,22 +236,26 @@ planos = f'''
     <table class="itable">
       <thead><tr>
         <th class="corner"></th>
-        <th>Básico<span>espaço + experiência</span></th>
-        <th>Intermediário<span>+ foto profissional & coffee</span></th>
+        <th>A experiência<span>material & condução</span></th>
+        <th>+ coffee & foto<span>+ foto profissional & coffee break</span></th>
         <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização & lembrancinha</span></th>
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Coleção Essencial</b><span>Perfumaria · Vela Aromática · Sabonete · Cerâmica</span></td>
-          <td class="val">R$ 289</td><td class="val">R$ 389</td><td class="val hl">R$ 499</td>
+          <td class="rl"><b>Perfumaria · Vela · Cerâmica · Sabonete</b><span>As quatro pelo mesmo valor</span></td>
+          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
         </tr>
         <tr>
-          <td class="rl"><b>Coleção Premium</b><span>Joalheria · Tufting · Gastronomia & Bartenderia</span></td>
-          <td class="val">R$ 589</td><td class="val">R$ 689</td><td class="val hl">R$ 799</td>
+          <td class="rl"><b>Gastronomia & Bartenderia</b><span>Aula de gastronomia ou bartenderia</span></td>
+          <td class="val">R$ 459</td><td class="val">R$ 559</td><td class="val hl">R$ 659</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Joalheria & Tufting</b><span>As mais especiais, com equipamento</span></td>
+          <td class="val">R$ 579</td><td class="val">R$ 679</td><td class="val hl">R$ 779</td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:18px">◆ <b>No rodízio, some as duas.</b> Ex.: Perfumaria <i>(Essencial · R$ 289)</i> + Tufting <i>(Premium · R$ 589)</i>, no nível Básico = <b>R$ 878 por pessoa</b>. Valores por pessoa, com espaço exclusivo já incluso.</div>
+    <div class="note" style="margin-top:18px">◆ <b>No rodízio, some as duas.</b> Ex.: Perfumaria <i>(R$ 199)</i> + Joalheria <i>(R$ 579)</i>, no nível inicial = <b>R$ 778 por pessoa</b>. Valores por pessoa — a experiência acontece <b>no espaço de vocês</b>, com material e condução inclusos.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -309,7 +313,7 @@ como = f'''
     <div class="rule"></div>
     <div class="steps">
       <div class="step"><div class="num">1</div><h3>Escolhem 2 experiências + nível</h3><p>Do menu curado, pro rodízio das duas turmas, no nível que preferirem.</p></div>
-      <div class="step"><div class="num">2</div><h3>Num espaço exclusivo</h3><p>Só de vocês — a gente cuida do espaço, do material, da condução e da estrutura.</p></div>
+      <div class="step"><div class="num">2</div><h3>No espaço de vocês</h3><p>A gente leva material, condução e estrutura até o local de vocês — é só receber o time.</p></div>
       <div class="step"><div class="num">3</div><h3>As turmas vivem e trocam</h3><p>Metade vive uma experiência, a outra vive outra — e no meio, trocam.</p></div>
     </div>
     <div class="addon">
@@ -333,11 +337,11 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências criativas e de bem-estar para integração de time, para cerca de 50 participantes, em duas turmas de rodízio, em espaço exclusivo. Cada pessoa vive duas experiências complementares do menu curado (Perfumaria, Vela Aromática, Sabonete, Joalheria, Cerâmica, Tufting, Gastronomia & Bartenderia). Valor por pessoa é a soma das duas experiências escolhidas — Coleção Essencial R$ 289/389/499 e Coleção Premium R$ 589/689/799, conforme o nível (Básico / Intermediário + foto & coffee / Completo + personalização & lembrancinha). Espaço exclusivo incluso. O encontro dura o período, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (07 ou 14 de dezembro) e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiências criativas e de bem-estar para integração de time, para cerca de 50 participantes, em duas turmas de rodízio, no espaço da empresa. Cada pessoa vive duas experiências complementares do menu curado (Perfumaria, Vela Aromática, Sabonete, Cerâmica, Joalheria, Tufting, Gastronomia & Bartenderia). Valor por pessoa é a soma das duas experiências escolhidas: Perfumaria, Vela, Cerâmica e Sabonete a partir de R$ 199 (níveis R$ 199/299/399); Gastronomia & Bartenderia a partir de R$ 459 (R$ 459/559/659); Joalheria & Tufting a partir de R$ 579 (R$ 579/679/779), conforme o nível (A experiência / + foto profissional & coffee break / Completo + personalização & lembrancinha), subindo R$ 100 por nível. A Elarah leva material, condução e estrutura até o local. O encontro dura o período, com +1h para o momento da empresa, sem custo adicional. Proposta válida mediante confirmação de data (07 ou 14 de dezembro) e disponibilidade de agenda.</p>
     {foot("Experiência Corporativa · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + rodizio + menu + planos + espaco + personaliza + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + rodizio + menu + planos + personaliza + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Experiência Corporativa · Elarah</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de experiência corporativa da Elarah — menu de experiências criativas e de bem-estar, em duas turmas de rodízio.">', head)
