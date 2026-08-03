@@ -174,7 +174,7 @@ vibe = f'''
     <div class="rule"></div>
     <div class="pgrid g3">
       <div class="pcard"><div class="sq"><img src="assets/corp-grupo.jpg" alt="Grupo criando junto numa experiência, mão na massa" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Mão na massa</h3><p>Todo mundo criando junto, sem pressa e sem talento nenhum.</p></div></div>
-      <div class="pcard"><div class="sq"><img src="assets/drinksclassicos.jpg" alt="Drink autoral servido, clima de brinde" style="object-position:center 50%"></div><div class="pb"><span class="n">A vibe</span><h3>Taça na mão</h3><p>Brinde, música boa e muita risada do começo ao fim.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/drinksclassicos.jpg" alt="Drink autoral servido, clima de brinde" style="object-position:center 50%"></div><div class="pb"><span class="n">A vibe</span><h3>Drinks na mão</h3><p>Brinde, música boa e muita risada do começo ao fim.</p></div></div>
       <div class="pcard"><div class="sq"><img src="assets/aniv-adulto.jpg" alt="Amigas celebrando juntas num jantar de aniversário" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Memória afetiva</h3><p>Uma celebração diferente, que todo mundo lembra depois.</p></div></div>
     </div>
     <div class="note" style="margin-top:16px">◆ E o melhor: cada um sai com a <b>própria criação</b> na mão — a lembrança perfeita de um dia inesquecível. 💛</div>
