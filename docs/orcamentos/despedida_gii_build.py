@@ -24,7 +24,7 @@ extra = '''
   .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:12px}
   .exp{position:relative;width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.34)}
   .exp .top{position:absolute;top:11px;left:11px;z-index:3;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(158,52,83,.55)}
-  .exp-photo{aspect-ratio:4/3;overflow:hidden;background:#eee}
+  .exp-photo{aspect-ratio:3/2;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:11px 14px 13px}
   .exp .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:4px}
@@ -142,7 +142,7 @@ menu = f'''
     </div>
     <span class="eyebrow orange">◆ Escolham a experiência</span>
     <h2>Um menu <em>pra escolher</em></h2>
-    <p class="lead">Um menu cheio de experiências criativas — cada uma cria (e leva) a sua peça pra casa. É só escolher a favorita do grupo. E, pra quem ama um bom brinde, a <strong>Bartenderia</strong> pra fechar com chave de ouro.</p>
+    <p class="lead">Um menu cheio de opções criativas — cada uma cria (e leva) a sua peça pra casa. É só escolher a favorita do grupo. E, pra quem ama um brinde, a <strong>Bartenderia</strong>. 🥂</p>
     <div class="rule"></div>
     <div class="menu">
       {exp("01","desp-hero4.jpg","Cerâmica","Modele a sua peça à mão, à mesa posta. Leve a sua criação pra casa.","Mesa posta para experiência de cerâmica","center 35%")}
@@ -168,7 +168,7 @@ espacos = f'''
     <h2>Num espaço <em>charmoso</em></h2>
     <p class="lead">A gente reserva uma <strong>cafeteria linda só de vocês</strong> pra viver a experiência. Duas opções queridinhas em São Paulo — escolham a que fica melhor pro grupo.</p>
     <div class="rule"></div>
-    <div class="bfeat">
+    <div class="bfeat" style="height:200px">
       <div class="bphoto"><img src="assets/sowcafe.jpg" alt="Ambiente aconchegante da Sow Cake Lounge" style="object-position:center 50%"></div>
       <div class="bbody">
         <span class="btag">Opção 1 · Vila Mariana</span>
@@ -176,7 +176,7 @@ espacos = f'''
         <p>Um lounge charmoso e acolhedor, perfeito pra reunir o grupo, criar com calma e brindar à noiva num cantinho só de vocês.</p>
       </div>
     </div>
-    <div class="bfeat" style="margin-top:16px">
+    <div class="bfeat" style="margin-top:18px;height:200px">
       <div class="bphoto"><img src="assets/julescampobelo.jpg" alt="Ambiente da Jules l'Art du Pain no Campo Belo" style="object-position:center 50%"></div>
       <div class="bbody">
         <span class="btag">Opção 2 · Campo Belo</span>
@@ -194,7 +194,7 @@ planos = f'''
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
     <span class="eyebrow orange">◆ Escolham o nível</span>
-    <h2>Três níveis, do <em>seu jeito</em></h2>
+    <h2>A partir de <em>R$ 199</em></h2>
     <p class="lead">Escolham a experiência e o nível que quiserem. Todos os valores são <strong>por pessoa</strong>, com material, condução e espaço já inclusos.</p>
     <div class="rule"></div>
     <table class="itable">
@@ -206,12 +206,12 @@ planos = f'''
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Experiências criativas</b><span>Cerâmica · Perfumaria · Pintura · Vela · Crochê · Sabonete · Joalheria · Arranjo Floral</span></td>
-          <td class="val">R$ —</td><td class="val">R$ —</td><td class="val hl">R$ —</td>
+          <td class="rl"><b>Experiências criativas</b><span>Cerâmica · Perfumaria · Pintura · Vela · Crochê · Sabonete · Arranjo Floral</span></td>
+          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
         </tr>
         <tr>
-          <td class="rl"><b>Bartenderia · Drinks</b><span>Drinks autorais com bartender — pra brindar em grande</span></td>
-          <td class="val">R$ —</td><td class="val">R$ —</td><td class="val hl">R$ —</td>
+          <td class="rl"><b>Joalheria & Bartenderia</b><span>Joalheria autoral ou drinks com bartender — as mais especiais</span></td>
+          <td class="val">R$ 459</td><td class="val">R$ 559</td><td class="val hl">R$ 659</td>
         </tr>
       </tbody>
     </table>
@@ -297,7 +297,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência para despedida de solteira, turma privada, numa cafeteria parceira em São Paulo (Sow Cake Lounge · Vila Mariana ou Jules l'Art du Pain · Campo Belo). Menu à escolha: Cerâmica, Perfumaria, Pintura em Taça, Vela Aromática, Bolsa de Crochê, Sabonete Artesanal, Joalheria, Arranjo Floral — ou Bartenderia (drinks autorais). Níveis: A experiência (material, condução e espaço inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha). Valores por pessoa, a confirmar conforme a experiência escolhida e o número de convidadas. Proposta válida mediante confirmação de data (fim de semana de dezembro) e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência para despedida de solteira, turma privada, numa cafeteria parceira em São Paulo (Sow Cake Lounge · Vila Mariana ou Jules l'Art du Pain · Campo Belo). Menu à escolha: Cerâmica, Perfumaria, Pintura em Taça, Vela Aromática, Bolsa de Crochê, Sabonete Artesanal, Joalheria, Arranjo Floral — ou Bartenderia (drinks autorais). Experiências criativas a partir de R$ 199 por pessoa (níveis R$ 199 / 299 / 399); Joalheria e Bartenderia a partir de R$ 459 por pessoa (níveis R$ 459 / 559 / 659). Níveis: A experiência (material, condução e espaço inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha). Valores por pessoa. Proposta válida mediante confirmação de data (fim de semana de dezembro), número de convidadas e disponibilidade de agenda.</p>
     {foot("Experiência · Despedida de solteira · 2026")}
   </section>'''
 
