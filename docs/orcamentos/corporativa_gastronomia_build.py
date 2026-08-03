@@ -146,7 +146,7 @@ menu = f'''
     <p class="lead">Duas experiências deliciosas — as duas pelo <strong>mesmo valor</strong>, é só escolher a favorita do time (ou combinar as duas turmas!). Tudo guiado por um profissional, num estúdio só de vocês.</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","massarecheada.jpg","Aula Gastronômica","Grupos cozinhando juntos, guiados por um chef — um menu completo com entrada, prato principal e sobremesa. E no fim, todo mundo senta pra saborear.","Prato de massa recheada preparado numa aula de gastronomia","center 50%",top="🍳 Entrada · Prato · Sobremesa")}
+      {exp("01","risoto.jpg","Aula Gastronômica","Grupos cozinhando juntos, guiados por um chef — um menu completo com entrada, prato principal e sobremesa. E no fim, todo mundo senta pra saborear.","Risoto cremoso preparado numa aula de gastronomia","center 50%",top="🍳 Entrada · Prato · Sobremesa")}
       {exp("02","drinks.jpg","Aula de Drinks","Um bartender ensina o time a preparar os próprios drinks autorais — Negroni, drinks com café e outros clássicos. Puro brinde e descontração.","Drink autoral servido numa aula de bartenderia","center 50%",top="🍸 Bartenderia")}
     </div>
     {foot("As experiências")}
@@ -187,24 +187,25 @@ planos = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Um valor, tudo incluso</span>
-    <h2>Tudo incluso por <em>R$ 599</em></h2>
-    <p class="lead">Um valor único <strong>por pessoa</strong>, igual pras duas experiências. É só escolher entre a Aula Gastronômica ou a Aula de Drinks — o resto é por nossa conta. 🍳</p>
+    <span class="eyebrow orange">◆ Escolham o nível</span>
+    <h2>A partir de <em>R$ 599</em></h2>
+    <p class="lead">O valor é o mesmo pras duas experiências — muda só o nível. Todos <strong>por pessoa</strong>, já com espaço exclusivo, entradinha de boas-vindas, a experiência completa, material e condução inclusos. 🍳</p>
     <div class="rule"></div>
-    <div style="display:flex;gap:34px;align-items:center;margin-top:26px;flex-wrap:wrap;justify-content:center">
-      <div style="text-align:center;min-width:210px">
-        <div style="font-family:'DM Serif Display',serif;font-size:74px;color:var(--navy);line-height:.95">R$ 599</div>
-        <div style="font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:8px">por pessoa · tudo incluso</div>
-        <div style="margin-top:12px;display:inline-block;background:var(--orange);color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:999px">Gastronômica ou Drinks</div>
-      </div>
-      <ul class="feat" style="flex:1;min-width:280px;font-size:14.5px;line-height:1.5">
-        <li><b>Espaço exclusivo</b> no Baker Studio, só de vocês</li>
-        <li>Uma <b>entradinha de boas-vindas</b> quando o time chega</li>
-        <li>A aula completa — <b>entrada, prato principal e sobremesa</b> (ou a aula de drinks)</li>
-        <li>Todo o <b>material, condução e estrutura</b></li>
-      </ul>
-    </div>
-    <div class="note" style="margin-top:24px">◆ Valor <b>por pessoa</b>, turma de ~30 pessoas, em setembro (data a definir), no Baker Studio. Espaço exclusivo, entradinha de boas-vindas e a experiência completa — <b>tudo já incluso</b>.</div>
+    <table class="itable">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>A experiência<span>espaço + entradinha + aula</span></th>
+        <th>Com foto<span>+ foto profissional do evento</span></th>
+        <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ brinde personalizado &amp; foto</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Aula Gastronômica ou Drinks</b><span>As duas pelo mesmo valor — é só escolher</span></td>
+          <td class="val">R$ 599</td><td class="val">R$ 699</td><td class="val hl">R$ 759</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:20px">◆ Todos os níveis já incluem <b>espaço exclusivo no Baker Studio, entradinha de boas-vindas, a experiência completa, material e condução</b>. O nível Com foto soma a <b>foto profissional do evento</b>; o Completo soma também o <b>brinde personalizado</b> com a marca. Valores por pessoa, turma de ~30.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -222,7 +223,7 @@ personaliza = f'''
       <div class="plan">
         <div class="plan-photo sq"><img src="assets/rockworld1.jpg" alt="Momento do time registrado por um fotógrafo" style="object-position:center 45%"></div>
         <div class="plan-body">
-          <span class="tag basic">Extra opcional</span>
+          <span class="tag basic">Nível Com foto · R$ 699</span>
           <h3>Registro fotográfico profissional</h3>
           <ul class="feat">
             <li>Um fotógrafo cobre o encontro inteiro</li>
@@ -233,10 +234,10 @@ personaliza = f'''
         </div>
       </div>
       <div class="plan featured">
-        <span class="ribbon">★ Com a marca</span>
+        <span class="ribbon">★ Nível Completo · R$ 759</span>
         <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Kit corporativo personalizado com a identidade da empresa" style="object-position:center 50%"></div>
         <div class="plan-body">
-          <span class="tag premium">Personalização</span>
+          <span class="tag premium">Brinde personalizado</span>
           <h3>Kits &amp; lembrancinhas</h3>
           <ul class="feat">
             <li>Cada um leva uma lembrancinha da empresa</li>
@@ -286,7 +287,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência corporativa gastronômica da Elarah para integração de time, turma de cerca de 30 participantes, em setembro (data a definir), no Baker Studio (espaço parceiro com cozinha equipada, em São Paulo). Experiência à escolha, pelo mesmo valor: Aula Gastronômica (menu de três tempos — entrada, prato principal e sobremesa) ou Aula de Drinks (bartenderia — Negroni, drinks com café e clássicos). Valor de R$ 599 por pessoa, com espaço exclusivo, entradinha de boas-vindas, a experiência completa, material, condução e estrutura inclusos. O cardápio é um exemplo e pode ser ajustado conforme a preferência do time. Extras opcionais: registro fotográfico profissional e kit personalizado com a marca da empresa. Inclui um momento para fala/brinde do time, sem custo adicional. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência corporativa gastronômica da Elarah para integração de time, turma de cerca de 30 participantes, em setembro (data a definir), no Baker Studio (espaço parceiro com cozinha equipada, em São Paulo). Experiência à escolha, pelo mesmo valor: Aula Gastronômica (menu de três tempos — entrada, prato principal e sobremesa) ou Aula de Drinks (bartenderia — Negroni, drinks com café e clássicos). A partir de R$ 599 por pessoa (níveis R$ 599 / 699 / 759), com espaço exclusivo, entradinha de boas-vindas, a experiência completa, material, condução e estrutura inclusos em todos os níveis. Níveis: A experiência (R$ 599) / + foto profissional do evento (R$ 699) / Completo com brinde personalizado e foto profissional (R$ 759). O cardápio é um exemplo e pode ser ajustado conforme a preferência do time. Inclui um momento para fala/brinde do time, sem custo adicional. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Experiência Corporativa · Gastronômica · 2026")}
   </section>'''
 
@@ -302,7 +303,7 @@ cardapio = f'''
     <div class="rule"></div>
     <div class="wtrio">
       <div class="wcard"><span class="top">1º tempo</span><div class="sq"><img src="assets/paorestaurante.jpg" alt="Couvert artesanal de entrada" style="object-position:center 50%"></div><div class="wcard-body"><span class="n">Entrada</span><h3>Entrada</h3><p>Uma abertura caprichada pra começar bem — quentinha e cheia de sabor.</p></div></div>
-      <div class="wcard"><span class="top">2º tempo</span><div class="sq"><img src="assets/massarecheada.jpg" alt="Prato principal de massa recheada" style="object-position:center 50%"></div><div class="wcard-body"><span class="n">Prato principal</span><h3>Prato principal</h3><p>O prato-estrela, feito a várias mãos — o momento mais mão na massa da noite.</p></div></div>
+      <div class="wcard"><span class="top">2º tempo</span><div class="sq"><img src="assets/risotomar.jpg" alt="Risoto de frutos do mar como prato principal" style="object-position:center 50%"></div><div class="wcard-body"><span class="n">Prato principal</span><h3>Prato principal</h3><p>O prato-estrela, feito a várias mãos — o momento mais mão na massa da noite.</p></div></div>
       <div class="wcard"><span class="top">3º tempo</span><div class="sq"><img src="assets/brownie.jpg" alt="Sobremesa artesanal" style="object-position:center 50%"></div><div class="wcard-body"><span class="n">Sobremesa</span><h3>Sobremesa</h3><p>Pra fechar com chave de ouro — o docinho que coroa o encontro.</p></div></div>
     </div>
     <div class="note" style="margin-top:16px">◆ Este é um <b>exemplo de menu</b> — o cardápio final é definido junto com vocês e pode variar conforme a preferência do time. 🍽️</div>
