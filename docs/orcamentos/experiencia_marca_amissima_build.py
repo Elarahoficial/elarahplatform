@@ -201,7 +201,7 @@ menu = f'''
       <div class="pcard"><div class="sq"><img src="assets/saboneteroxo.jpg" alt="Sabonetes artesanais de lavanda" style="object-position:center 50%"></div><div class="pb"><span class="n">Sugestão Elarah</span><h3>Sabonete Artesanal</h3><p>Sabonetes botânicos de lavanda &amp; ervas — puro Mediterrâneo.</p></div></div>
       <div class="pcard"><div class="sq"><img src="assets/pinturataca2.jpg" alt="Fileira de taças de vidro pintadas à mão" style="object-position:center 55%"></div><div class="pb"><span class="n">Sugestão Elarah</span><h3>Pintura em Taça</h3><p>Cada cliente pinta a própria taça e usa na bebida do evento.</p></div></div>
     </div>
-    <div class="note" style="margin-top:15px">◆ Em todas, a Elarah leva <b>profissional, material e ambientação</b> — e a cliente sai com a criação de recordação. Ideal pra 20 a 30 clientes. ✨</div>
+    <div class="note" style="margin-top:15px">◆ <b>Todas por R$ 239 por cliente</b>, com profissional, material e ambientação inclusos — e a cliente sai com a criação de recordação. ✨</div>
     {foot("O menu de opções")}
   </section>'''
 
@@ -234,9 +234,9 @@ planos = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Sob medida pra Amissima</span>
-    <h2>O que está <em>incluso</em></h2>
-    <p class="lead">Um pacote completo pra você só receber as clientes — do perfumista à ambientação temática. E cada cliente sai com o perfume, com a cara da marca. 🌊</p>
+    <span class="eyebrow orange">◆ Valor único</span>
+    <h2>R$ 239 <em>por cliente</em></h2>
+    <p class="lead">Qualquer opção do menu pelo mesmo valor, com <strong>tudo incluso</strong> — do profissional à ambientação temática. E cada cliente leva a criação de recordação, com a cara da marca. 🌊</p>
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
@@ -245,8 +245,8 @@ planos = f'''
           <span class="tag basic">Tudo incluso</span>
           <h3>A estação completa</h3>
           <ul class="feat">
-            <li>Perfumista pra conduzir a experiência</li>
-            <li>Menu de essências, frascos e materiais</li>
+            <li>Profissional pra conduzir a experiência</li>
+            <li>Todo o material da experiência escolhida</li>
             <li>Ambientação temática <b>Entre Mares</b></li>
           </ul>
           <span class="allin">Você só recebe as clientes</span>
@@ -254,20 +254,20 @@ planos = f'''
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Com a marca</span>
-        <div class="plan-photo sq"><img src="assets/perfumariaharbolita.jpg" alt="Frasco de perfume criado pela cliente" style="object-position:center 45%"></div>
+        <div class="plan-photo sq"><img src="assets/perfumariaharbolita.jpg" alt="Peça criada pela cliente com a identidade da marca" style="object-position:center 45%"></div>
         <div class="plan-body">
           <span class="tag premium">Personalização</span>
-          <h3>A Amissima no perfume</h3>
+          <h3>A Amissima na peça</h3>
           <ul class="feat">
-            <li>Frasco &amp; rótulo com a identidade da marca</li>
-            <li>Cada cliente leva a coleção de recordação</li>
+            <li>Embalagem &amp; rótulo com a identidade da marca</li>
+            <li>Cada cliente leva a criação de recordação</li>
             <li>Conteúdo lindo e espontâneo pra marca</li>
           </ul>
           <span class="allin">A coleção no bolso da cliente</span>
         </div>
       </div>
     </div>
-    <div class="note" style="margin-top:15px">◆ <b>Investimento sob medida</b> conforme o número de clientes (20 a 30) — fechamos o pacote certinho pra você. 💛</div>
+    <div class="note" style="margin-top:15px">◆ <b>R$ 239 por cliente</b> — vale pra qualquer opção do menu, com tudo incluso. Turma de 20 a 30 clientes, no dia 19/08 no JK. 💛</div>
     {foot("Investimento")}
   </section>'''
 
@@ -349,7 +349,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência de marca da Elarah para a Amissima — Bar de Perfumaria temático, no lançamento da coleção Entre Mares (Riviera Francesa &amp; Grécia), em evento de loja no Shopping JK (São Paulo), no dia 19 de agosto, para cerca de 20 a 30 clientes. Formato de estação: cada cliente cria a própria fragrância a partir de um menu de essências curado para a coleção e leva o perfume em frasco personalizado com a identidade da marca. A Elarah cuida da curadoria e produção de ponta a ponta — perfumista, essências, frascos, materiais e ambientação temática. Investimento sob medida conforme o número de clientes. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência de marca da Elarah para a Amissima — Bar de Perfumaria temático, no lançamento da coleção Entre Mares (Riviera Francesa &amp; Grécia), em evento de loja no Shopping JK (São Paulo), no dia 19 de agosto, para cerca de 20 a 30 clientes. Formato de estação: cada cliente cria a própria fragrância a partir de um menu de essências curado para a coleção e leva o perfume em frasco personalizado com a identidade da marca. A Elarah cuida da curadoria e produção de ponta a ponta — perfumista, essências, frascos, materiais e ambientação temática. Todas as opções pelo mesmo valor: R$ 239 por cliente, com tudo incluso. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Experiência de marca · Amissima · 2026")}
   </section>'''
 
