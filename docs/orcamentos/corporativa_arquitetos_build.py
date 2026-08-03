@@ -186,7 +186,7 @@ espacos = f'''
         </div>
       </div>
     </div>
-    <div class="note" style="margin-top:15px">◆ Duração de cerca de <b>2h30 a 3h</b>, com um momento pra fala da marca e agradecimento aos parceiros no meio do encontro — sem custo adicional.</div>
+    <div class="note" style="margin-top:15px">◆ Duração de cerca de <b>1h</b>, com um momento pra fala da marca e agradecimento aos parceiros no meio do encontro — sem custo adicional.</div>
     {foot("Onde acontece · no jardim")}
   </section>'''
 
@@ -222,7 +222,7 @@ planos = f'''
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:15px">◆ <b>Níveis:</b> Só a experiência → <b>+ coffee break & foto profissional</b> (+R$ 100) → <b>+ personalização da marca</b> (+R$ 100). Valores por pessoa, turma de 15, no jardim de vocês. Oficina de <b>cerca de 1h30 a 2h</b>.</div>
+    <div class="note" style="margin-top:15px">◆ <b>Níveis:</b> Só a experiência → <b>+ coffee break & foto profissional</b> (+R$ 100) → <b>+ personalização da marca</b> (+R$ 100). Valores por pessoa, turma de 15, no jardim de vocês. Oficina de <b>cerca de 1h</b>.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -304,7 +304,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para relacionamento com arquitetos parceiros da marca, turma de cerca de 15 convidados, na 2ª quinzena de setembro, no jardim da empresa (oficina de cerca de 1h30 a 2h). Experiência à escolha: Vela Aromática, Bolsa em Macramê ou Home Spray (a partir de R$ 199 · níveis R$ 199 / 299 / 399), Perfumaria Botânica (a partir de R$ 239 · níveis R$ 239 / 339 / 439) ou Porta Guardanapo — kit com 6 peças de macramê (a partir de R$ 259 · níveis R$ 259 / 359 / 459). Níveis: Só a experiência (material & condução inclusos) / + coffee break & foto profissional (+R$ 100) / + personalização da marca (+R$ 100). Valores por pessoa. A Elarah leva material, condução, estrutura e montagem até o local. Inclui um momento para fala da marca, sem custo adicional. Proposta válida mediante confirmação de data (2ª quinzena de setembro) e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para relacionamento com arquitetos parceiros da marca, turma de cerca de 15 convidados, na 2ª quinzena de setembro, no jardim da empresa (oficina de cerca de 1h). Experiência à escolha: Vela Aromática, Bolsa em Macramê ou Home Spray (a partir de R$ 199 · níveis R$ 199 / 299 / 399), Perfumaria Botânica (a partir de R$ 239 · níveis R$ 239 / 339 / 439) ou Porta Guardanapo — kit com 6 peças de macramê (a partir de R$ 259 · níveis R$ 259 / 359 / 459). Níveis: Só a experiência (material & condução inclusos) / + coffee break & foto profissional (+R$ 100) / + personalização da marca (+R$ 100). Valores por pessoa. A Elarah leva material, condução, estrutura e montagem até o local. Inclui um momento para fala da marca, sem custo adicional. Proposta válida mediante confirmação de data (2ª quinzena de setembro) e disponibilidade de agenda.</p>
     {foot("Experiência Corporativa · Relacionamento · 2026")}
   </section>'''
 
