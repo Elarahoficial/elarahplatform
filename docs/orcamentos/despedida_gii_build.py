@@ -201,7 +201,7 @@ planos = f'''
       <thead><tr>
         <th class="corner"></th>
         <th>A experiência<span>tudo pra viver o dia</span></th>
-        <th>Com registro<span>+ foto profissional</span></th>
+        <th>Com registro<span>+ foto profissional + voucher R$ 50 na cafeteria</span></th>
         <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ personalização & lembrancinha</span></th>
       </tr></thead>
       <tbody>
