@@ -60,7 +60,7 @@ where not exists (select 1 from public.prospects where lower(nome) = lower('Roll
 
 -- ===== 3. Tammy Montagna (doceria / confeitaria) =====
 insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Tammy Montagna', 'doceria', 'tammymontagna', null, null, 'https://www.tammymontagna.com/', 'Pinheiros', 'São Paulo',
+select 'Tammy Montagna', 'gastronomia', 'tammymontagna', null, null, 'https://www.tammymontagna.com/', 'Pinheiros', 'São Paulo',
   'Premium e autoral. Patisserie e café da confeiteira Tammy Montagna (passou pelo MasterChef Confeitaria), na Rua Lisboa, Pinheiros — doces autorais como assinatura e cardápio natural. Hoje é confeitaria/café (não oficina): encaixe como experiência gastronômica/doceria; confirmar se topam abrir workshop/degustação. WhatsApp a confirmar na bio.'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Tammy Montagna'));
 

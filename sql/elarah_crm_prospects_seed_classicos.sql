@@ -1,6 +1,6 @@
 -- =============================================================
 -- ELARAH — Seed: Prospects "clássicos" (crochê, perfumaria, cerâmica,
---                floral, gastronomia, bordado, vela, doceria) — SP
+--                floral, gastronomia, bordado, vela) — SP
 -- -------------------------------------------------------------
 -- Insere prospects novos direto na tabela prospects (sem CSV), pra
 -- não recriar o que o admin já excluiu nem sobrescrever edições.
@@ -173,6 +173,18 @@ insert into public.prospects (nome, categoria, instagram, whatsapp, email, site,
 select 'Receitaria Escola Gourmet', 'gastronomia', 'receitaria', '11968095409', null, 'https://receitaria.com/', 'Pinheiros', 'São Paulo', 'Recreativa e de alta rotatividade. Escola que usa utensílios domésticos pra qualquer nível reproduzir pratos de chefs (Rua Fradique Coutinho 600; 2ª unidade no Jardim das Bandeiras); aulas rápidas de culinária, confeitaria, panificação e cozinhas do mundo. WhatsApp visto em post do perfil — confirmar (fixo (11) 2892-0031).'
 where not exists (select 1 from public.prospects where lower(nome) = lower('Receitaria Escola Gourmet'));
 
+insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
+select 'Flakes Academy', 'gastronomia', 'flakesacademy', null, null, 'https://escolaflakes.com.br/', 'Moema', 'São Paulo', 'Confeitaria com apelo pop e viral (1M+ seguidores da marca). Escola de confeitaria 100% prática com cursos curtos e longos (Alameda Jauaperi 1241; unidades Itaim e Brooklin) — ótima pra atrair público jovem pra workshops de curta duração. WhatsApp a confirmar.'
+where not exists (select 1 from public.prospects where lower(nome) = lower('Flakes Academy'));
+
+insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
+select 'Les Chefs Academia', 'gastronomia', null, '11934116688', null, 'https://leschefsacademia.com.br/', 'Tatuapé', 'São Paulo', 'Base francesa acessível. Academia de culinária com foco em confeitaria francesa (Rua Henrique Vasconcelos 10); cursos de chef confeiteiro, brigadeiro gourmet e patisserie, inclusive módulos curtos. Confirmar Instagram e WhatsApp (também fixo (11) 2097-0806).'
+where not exists (select 1 from public.prospects where lower(nome) = lower('Les Chefs Academia'));
+
+insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
+select 'Escola Fran Tonello', 'gastronomia', null, null, null, 'https://escolafrantonello.com.br/', 'Vila Olímpia', 'São Paulo', 'Confeitaria funcional/holística (R. Gomes de Carvalho 621, sala 1202): workshop presencial de trufas e bombons saudáveis (sem açúcar e sem lactose) e temperagem de chocolate — ângulo curatorial distinto. Confirmar Instagram e WhatsApp (fixo (11) 2307-6772).'
+where not exists (select 1 from public.prospects where lower(nome) = lower('Escola Fran Tonello'));
+
 
 -- =============================================================
 -- BORDADO
@@ -203,20 +215,13 @@ where not exists (select 1 from public.prospects where lower(nome) = lower('Vê.
 
 
 -- =============================================================
--- DOCERIA / CONFEITARIA
+-- RECLASSIFICAÇÃO — escolas de comida = 'gastronomia'
+-- Corrige linhas que já possam existir como 'doceria' (regra do admin:
+-- confeitaria/doces/chocolate entram como gastronomia).
 -- =============================================================
-insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Flakes Academy', 'doceria', 'flakesacademy', null, null, 'https://escolaflakes.com.br/', 'Moema', 'São Paulo', 'Apelo pop e viral (1M+ seguidores da marca). Escola de confeitaria 100% prática com cursos curtos e longos (Alameda Jauaperi 1241; unidades Itaim e Brooklin) — ótima pra atrair público jovem pra workshops de curta duração. WhatsApp a confirmar.'
-where not exists (select 1 from public.prospects where lower(nome) = lower('Flakes Academy'));
-
-insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Les Chefs Academia', 'doceria', null, '11934116688', null, 'https://leschefsacademia.com.br/', 'Tatuapé', 'São Paulo', 'Base francesa acessível. Academia de culinária com foco em confeitaria francesa (Rua Henrique Vasconcelos 10); cursos de chef confeiteiro, brigadeiro gourmet e patisserie, inclusive módulos curtos. Confirmar Instagram e WhatsApp (também fixo (11) 2097-0806).'
-where not exists (select 1 from public.prospects where lower(nome) = lower('Les Chefs Academia'));
-
-insert into public.prospects (nome, categoria, instagram, whatsapp, email, site, bairro, cidade, observacoes)
-select 'Escola Fran Tonello', 'doceria', null, null, null, 'https://escolafrantonello.com.br/', 'Vila Olímpia', 'São Paulo', 'Nicho saudável/funcional. Escola de gastronomia funcional (R. Gomes de Carvalho 621, sala 1202) com workshop presencial de trufas e bombons saudáveis (sem açúcar e sem lactose) e temperagem de chocolate — ângulo curatorial distinto. Confirmar Instagram e WhatsApp (fixo (11) 2307-6772).'
-where not exists (select 1 from public.prospects where lower(nome) = lower('Escola Fran Tonello'));
-
+update public.prospects set categoria = 'gastronomia'
+ where lower(nome) in (lower('Flakes Academy'), lower('Les Chefs Academia'), lower('Escola Fran Tonello'), lower('Tammy Montagna'))
+   and coalesce(categoria,'') <> 'gastronomia';
 
 -- =============================================================
 -- TEMPLATES DE MENSAGEM por categoria (primeiro contato)
