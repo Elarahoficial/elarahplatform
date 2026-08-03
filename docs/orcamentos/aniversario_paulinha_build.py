@@ -162,6 +162,25 @@ buscamos = f'''
     {foot("Pensado pra você")}
   </section>'''
 
+vibe = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe da experiência</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Imagina o clima</span>
+    <h2>A vibe da <em>experiência</em></h2>
+    <p class="lead">Música boa, taça na mão e todo mundo criando junto — leve, animado e cheio de conexão. É esse o clima de uma experiência Elarah: a festa vira memória afetiva. 🎉</p>
+    <div class="rule"></div>
+    <div class="pgrid g3">
+      <div class="pcard"><div class="sq"><img src="assets/corp-grupo.jpg" alt="Grupo criando junto numa experiência, mão na massa" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Mão na massa</h3><p>Todo mundo criando junto, sem pressa e sem talento nenhum.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/drinksclassicos.jpg" alt="Drink autoral servido, clima de brinde" style="object-position:center 50%"></div><div class="pb"><span class="n">A vibe</span><h3>Taça na mão</h3><p>Brinde, música boa e muita risada do começo ao fim.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/aniv-adulto.jpg" alt="Amigas celebrando juntas num jantar de aniversário" style="object-position:center 40%"></div><div class="pb"><span class="n">A vibe</span><h3>Memória afetiva</h3><p>Uma celebração diferente, que todo mundo lembra depois.</p></div></div>
+    </div>
+    <div class="note" style="margin-top:16px">◆ E o melhor: cada um sai com a <b>própria criação</b> na mão — a lembrança perfeita de um dia inesquecível. 💛</div>
+    {foot("A vibe da experiência")}
+  </section>'''
+
 menu = f'''
   <section class="slide">
     <div class="slide__head">
@@ -173,7 +192,7 @@ menu = f'''
     <p class="lead">Escolham a que mais tem a cara da galera — dá pra combinar mais de uma também, montando estações! Em todas, cada um cria (ou brinda) e leva a experiência pra casa.</p>
     <div class="rule"></div>
     <div class="wtrio">
-      <div class="wcard"><div class="sq"><img src="assets/pinturataca.jpg" alt="Pintura em taça de vidro numa oficina" style="object-position:center 40%"></div><div class="wcard-body"><span class="n">01</span><h3>Pintura</h3><p>Cada um pinta a sua peça autoral — em cerâmica, tela, vidro ou marca-página.</p></div></div>
+      <div class="wcard"><div class="sq"><img src="assets/pinturataca2.jpg" alt="Fileira de taças de vidro pintadas à mão com flores" style="object-position:center 55%"></div><div class="wcard-body"><span class="n">01</span><h3>Pintura</h3><p>Cada um pinta a sua peça autoral — em cerâmica, tela, vidro ou marca-página.</p></div></div>
       <div class="wcard"><div class="sq"><img src="assets/perfumariaharbolita.jpg" alt="Essências e frascos de uma imersão de perfumaria" style="object-position:center 45%"></div><div class="wcard-body"><span class="n">02</span><h3>Perfumaria Botânica</h3><p>Uma imersão sensorial — cada um cria a própria fragrância e leva o seu perfume.</p></div></div>
       <div class="wcard"><div class="sq"><img src="assets/drinks.jpg" alt="Drink autoral servido numa aula de bartenderia" style="object-position:center 50%"></div><div class="wcard-body"><span class="n">03</span><h3>Drinks</h3><p>Uma aula de bartenderia — todo mundo aprende a preparar (e brindar) drinks autorais.</p></div></div>
     </div>
@@ -194,7 +213,7 @@ espacos = f'''
     <div class="pgrid g3">
       <div class="pcard"><div class="sq"><img src="assets/pinturapratoceramica.jpg" alt="Prato de cerâmica pintado à mão" style="object-position:center 50%"></div><div class="pb"><span class="n">Categoria</span><h3>Em Cerâmica</h3><p>Pratos, canecas e peças pintadas à mão, pra usar em casa.</p></div></div>
       <div class="pcard"><div class="sq"><img src="assets/pintura.jpg" alt="Pessoas pintando telas num ateliê" style="object-position:center 40%"></div><div class="pb"><span class="n">Categoria</span><h3>Em Tela</h3><p>Uma obra autoral pra pendurar e chamar de sua.</p></div></div>
-      <div class="pcard"><div class="sq"><img src="assets/pinturataca.jpg" alt="Taça de vidro pintada à mão" style="object-position:center 40%"></div><div class="pb"><span class="n">Categoria</span><h3>Em Vidro</h3><p>Taças e copos autorais, pra brindar com estilo.</p></div></div>
+      <div class="pcard"><div class="sq"><img src="assets/pinturatacaaaa.jpg" alt="Taça de vidro pintada à mão com flores" style="object-position:center 45%"></div><div class="pb"><span class="n">Categoria</span><h3>Em Vidro</h3><p>Taças e copos autorais, pra brindar com estilo.</p></div></div>
     </div>
     <div class="note" style="margin-top:16px">◆ E ainda dá pra pintar um <b>marca-página</b> — todas as categorias pelo mesmo valor. É só escolher a preferida! 🎨</div>
     {foot("As categorias de pintura")}
@@ -224,7 +243,7 @@ planos = f'''
         </tr>
         <tr>
           <td class="rl"><b>Perfumaria Botânica</b><span>Imersão sensorial — cada um leva o seu perfume</span></td>
-          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
+          <td class="val">R$ 239</td><td class="val">R$ 339</td><td class="val hl">R$ 439</td>
         </tr>
         <tr>
           <td class="rl"><b>Drinks</b><span>Aula de bartenderia — drinks autorais</span></td>
@@ -240,20 +259,20 @@ personaliza = f'''
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Os mimos da despedida</span></div>
+      <div class="head-right"><span class="kicker">Os extras da festa</span></div>
     </div>
     <span class="eyebrow orange">◆ Nos níveis Com registro & Completo</span>
-    <h2>Pra levar de <em>lembrança</em></h2>
-    <p class="lead">Além da peça que cada uma cria, dá pra somar dois mimos que deixam o dia inesquecível — a foto profissional e a lembrancinha personalizada.</p>
+    <h2>Foto &amp; <em>lembrancinha</em></h2>
+    <p class="lead">Além da peça que cada um cria, dá pra somar dois mimos que deixam o dia inesquecível — a foto profissional e a lembrancinha personalizada.</p>
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/desp-hero3.jpg" alt="Grupo de amigas comemorando a despedida, registrado por um fotógrafo" style="object-position:center 25%"></div>
+        <div class="plan-photo sq"><img src="assets/rockworld1.jpg" alt="Convidados se divertindo na festa, registrados por um fotógrafo" style="object-position:center 30%"></div>
         <div class="plan-body">
           <span class="tag basic">Nível Com registro</span>
           <h3>Registro fotográfico profissional</h3>
           <ul class="feat">
-            <li>Um fotógrafo cobre a despedida inteira</li>
+            <li>Um fotógrafo cobre a festa inteira</li>
             <li>Cada brinde e cada risada registrados</li>
             <li>Álbum digital lindo pra guardar (e postar)</li>
           </ul>
@@ -262,20 +281,20 @@ personaliza = f'''
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Nível Completo</span>
-        <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Lembrancinha personalizada: escova e piranha de cabelo" style="object-position:center"></div>
+        <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Lembrancinha personalizada num box com o nome de cada convidado" style="object-position:center"></div>
         <div class="plan-body">
           <span class="tag premium">Personalização</span>
           <h3>Lembrancinha personalizada</h3>
           <ul class="feat">
-            <li>Kit com <b>escova &amp; piranha</b> pra cada convidada</li>
-            <li>Personalizado com o nome de cada uma</li>
-            <li>Um mimo pra elas levarem da despedida</li>
+            <li>Cada convidado leva uma lembrancinha da festa</li>
+            <li>Personalizada com o nome de cada um</li>
+            <li>Um mimo pra levarem de recordação</li>
           </ul>
-          <span class="allin">Cada uma leva o seu mimo</span>
+          <span class="allin">Cada um leva o seu mimo</span>
         </div>
       </div>
     </div>
-    {foot("Os mimos da despedida")}
+    {foot("Os extras da festa")}
   </section>'''
 
 como = f'''
@@ -314,11 +333,11 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência de aniversário da Elarah, turma privada de cerca de 20 pessoas, na data de 19 de setembro. Experiências à escolha (uma ou combinando): Pintura (categorias cerâmica, tela, vidro ou marca-página) e Perfumaria Botânica, a partir de R$ 199 por pessoa (níveis R$ 199 / 299 / 399); Drinks (aula de bartenderia) a partir de R$ 399 por pessoa (níveis R$ 399 / 499 / 599). Níveis: Só a experiência (material & condução inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha), subindo R$ 100 por nível. Valores por pessoa, válidos no espaço do grupo ou na cafeteria parceira Jules (sem custo de espaço); no Bake Studio (espaço fechado e exclusivo), Pintura e Perfumaria a partir de R$ 249 e Drinks a partir de R$ 459. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência de aniversário da Elarah, turma privada de cerca de 20 pessoas, na data de 19 de setembro. Experiências à escolha (uma ou combinando): Pintura (categorias cerâmica, tela, vidro ou marca-página) a partir de R$ 199 por pessoa (níveis R$ 199 / 299 / 399); Perfumaria Botânica a partir de R$ 239 por pessoa (níveis R$ 239 / 339 / 439); Drinks (aula de bartenderia) a partir de R$ 399 por pessoa (níveis R$ 399 / 499 / 599). Níveis: Só a experiência (material & condução inclusos) / Com registro (+ foto profissional) / Completo (+ personalização & lembrancinha), subindo R$ 100 por nível. Valores por pessoa, válidos no espaço do grupo ou na cafeteria parceira Jules (sem custo de espaço); no Bake Studio (espaço fechado e exclusivo), Pintura e Perfumaria a partir de R$ 249 e Drinks a partir de R$ 459. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Experiência · Aniversário · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + planos + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + buscamos + vibe + menu + espacos + planos + personaliza + como + '\n\n</div>\n\n'
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Aniversário · Elarah</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de experiência de aniversário da Elarah — Pintura, Perfumaria ou Drinks, turma privativa.">', head)
