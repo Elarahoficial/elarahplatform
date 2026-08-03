@@ -157,7 +157,7 @@ menu = f'''
     <div class="menu">
       {exp("01","velaaromatica.jpg","Vela Aromática","Criam a própria vela perfumada, do aroma ao rótulo — objeto de decoração pra levar pra casa.","Vela aromática artesanal num vidro elegante","center 50%")}
       {exp("02","bolsasmacrame.jpg","Bolsa em Macramê","Aprendem os nós do macramê e criam a própria bolsinha autoral — artesanal e cheia de charme.","Bolsas de macramê feitas à mão","center 50%")}
-      {exp("03","perfumariadecor.jpg","Home Spray","Criam o próprio aromatizador de casa — um home spray autoral pra perfumar os ambientes.","Frascos de aromatizador de ambiente numa estação elegante","center 45%")}
+      {exp("03","homespray.jpg","Home Spray","Criam o próprio aromatizador de casa — um home spray autoral pra perfumar os ambientes.","Home spray artesanal num frasco elegante","center 42%")}
       {exp("04","perfumariaharbolita.jpg","Perfumaria Botânica","Cada um cria a própria fragrância, numa imersão sensorial guiada. Casa lindo com o jardim.","Essências e frascos de uma imersão de perfumaria botânica","center 45%")}
       {exp("05","portaguardanapo.jpg","Porta Guardanapo","Um kit com 6 porta-guardanapos de macramê — peça de mesa delicada, pra levar o jardim pra casa.","Porta-guardanapos de macramê em formato de folha","center 40%")}
     </div>
