@@ -239,13 +239,13 @@ personaliza = f'''
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Nível Completo · R$ 399</span>
-        <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Kit de lembrancinha personalizada com escova e piranha" style="object-position:center"></div>
+        <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Kit corporativo personalizado com a marca da empresa" style="object-position:center"></div>
         <div class="plan-body">
           <span class="tag premium">Brinde personalizado</span>
-          <h3>Lembrancinha personalizada</h3>
+          <h3>Kit corporativo personalizado</h3>
           <ul class="feat">
-            <li>Kit com <b>escova &amp; piranha</b> pra cada pessoa</li>
-            <li>Personalizado com o nome de cada uma</li>
+            <li>Kit com a <b>marca da empresa</b> pra cada pessoa</li>
+            <li>Itens úteis pro dia a dia do time</li>
             <li>Um mimo pra levarem do encontro pra casa</li>
           </ul>
           <span class="allin">Cada um leva o seu mimo</span>
