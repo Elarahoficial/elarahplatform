@@ -106,7 +106,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/aniv-adulto.jpg" alt="Grupo reunido numa mesa linda e decorada, num encontro da Elarah" style="object-position:center 35%">
+        <img src="assets/kidsgabi.jpg" alt="Crianças numa oficina criativa e divertida da Elarah" style="object-position:center 78%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para marcas como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
