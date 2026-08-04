@@ -90,8 +90,9 @@ cover = f'''
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
-        <span class="kicker">Proposta de experiência</span>
-        <span class="compass">Oficina de <span>Cerâmica</span><small>São Paulo · 18 de agosto</small></span>
+        <span class="kicker">Proposta de experiência para</span>
+        <img src="assets/naturalogo.png" alt="Natura" style="height:52px;width:auto;display:block;margin:5px 0 3px;margin-left:auto">
+        <span class="cbsub" style="font-size:8.5px;letter-spacing:.24em;color:var(--navy-soft);font-weight:600;text-transform:uppercase">Oficina de Cerâmica · 18 de agosto</span>
       </div>
     </div>
     <div class="cover">
