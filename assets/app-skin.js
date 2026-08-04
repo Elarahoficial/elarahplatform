@@ -65,7 +65,7 @@
     'jardinagem': '🌿', 'plantas': '🌿', 'bem-estar': '🌿', 'yoga': '🧘', 'meditação': '🧘',
     'vinho': '🍷', 'vinhos': '🍷', 'café': '☕', 'cafe': '☕',
     'perfumaria': '🌷', 'perfume': '🌷',
-    'perfumaria de ambiente': '🏠', 'aromatizador': '🏠', 'aromatizadores': '🏠', 'ambiente': '🏠', 'home': '🏠',
+    'perfumaria de ambiente': '🏠', 'home spray': '🏠', 'aromatizador': '🏠', 'aromatizadores': '🏠', 'ambiente': '🏠', 'home': '🏠',
     'ourivesaria': '💍', 'joalheria': '💍', 'joias': '💍',
     'moda': '👗', 'maquiagem': '💄', 'beleza': '💄',
     'acessório': '👛', 'acessorio': '👛', 'acessórios': '👛', 'acessorios': '👛',

@@ -463,6 +463,22 @@
   // real, ao contrário de "&", "/" e "," que já aparecem em nomes tipo
   // "Cerveja & Caipirinha" ou "Vinho, Queijo e Pão".
 
+  // Apelidos de exibição: renomeia uma categoria SÓ na hora de mostrar,
+  // sem precisar migrar o banco. A chave é o nome salvo (normalizado, sem
+  // acento/caixa) e o valor é como o cliente vê. Como TUDO (faixa de abas,
+  // selo do card, link ?cat= e o filtro matchesCategoria) passa por
+  // categoriasOf, o apelido fica consistente de ponta a ponta.
+  var CATEGORIA_APELIDO = {
+    'perfumaria de ambiente': 'Home Spray'
+  };
+
+  function apelidoCategoria(c) {
+    var n = String(c)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().trim();
+    return CATEGORIA_APELIDO[n] || c;
+  }
+
   // Lista as categorias de uma experiência (1 ou mais). Faz trim, remove
   // vazias e duplicadas (case-insensitive), preservando a ordem digitada.
   function categoriasOf(exp) {
@@ -470,7 +486,7 @@
     var seen = {};
     var out = [];
     String(exp.categoria).split('|').forEach(function (part) {
-      var c = String(part).trim();
+      var c = apelidoCategoria(String(part).trim());
       if (!c) return;
       var k = c.toLowerCase();
       if (seen[k]) return;
@@ -496,7 +512,9 @@
   // A experiência pertence à categoria/aba `cat`? Case-insensitive.
   // Sem `cat` (Todas) → sempre true.
   function matchesCategoria(exp, cat) {
-    var target = String(cat == null ? '' : cat).trim().toLowerCase();
+    // Resolve o apelido também no alvo, pra links antigos (?cat=Perfumaria
+    // de Ambiente) continuarem casando com a categoria renomeada.
+    var target = apelidoCategoria(String(cat == null ? '' : cat).trim()).toLowerCase();
     if (!target) return true;
     return categoriasOf(exp).some(function (c) {
       return c.toLowerCase() === target;
