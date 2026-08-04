@@ -108,7 +108,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/ceramicamodelagem.jpg" alt="Mãos modelando uma peça de cerâmica numa oficina" style="object-position:center 50%">
+        <img src="assets/aniv-experiencia.jpg" alt="Grupo interagindo numa mesa criativa da Elarah" style="object-position:center 35%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para marcas como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
