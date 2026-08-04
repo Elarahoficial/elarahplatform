@@ -40,7 +40,8 @@ extra = '''
   .itable td.rl{text-align:left;width:38%}
   .itable td.rl b{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy)}
   .itable td.rl span{display:block;font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.45}
-  .itable .val{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);line-height:1}
+  .itable .val{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);line-height:1;white-space:nowrap}
+  .itable th,.itable td{padding-left:8px;padding-right:8px}
   .itable .val small{display:block;font-family:'DM Sans';font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px}
   .itable .hl{background:#F5E9DC}
   .itable thead th.hl{color:var(--orange-dark)}
