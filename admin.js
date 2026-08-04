@@ -98,6 +98,21 @@
     return div.innerHTML;
   }
 
+  // Selo do método de pagamento pra aba Compras: Cartão x Pix. O booking
+  // grava payment_method ('card' / 'pix'); vendas manuais podem trazer
+  // outros valores livres. Sem método, mostra traço.
+  function paymentMethodBadge(method) {
+    const m = String(method || '').trim().toLowerCase();
+    if (!m) return '<span style="color:#bbb;">—</span>';
+    if (m.indexOf('card') !== -1 || m.indexOf('cart') !== -1 || m.indexOf('cred') !== -1 || m.indexOf('deb') !== -1) {
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;white-space:nowrap;">💳 Cartão</span>';
+    }
+    if (m.indexOf('pix') !== -1) {
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f7f1;color:#128a6e;font-size:.7rem;font-weight:700;white-space:nowrap;">⚡ Pix</span>';
+    }
+    return '<span style="font-size:.72rem;color:#666;white-space:nowrap;">' + escapeHtml(method) + '</span>';
+  }
+
   // Formata telefone BR pra exibição: (xx) xxxxx-xxxx (celular) ou
   // (xx) xxxx-xxxx (fixo). Aceita qualquer formato de entrada (raw,
   // com/sem máscara, com/sem +55, com/sem espaços) — extrai dígitos
@@ -3739,7 +3754,7 @@
     // linhas de booking. Ainda assim anexa manuais/gift conforme a origem.
     if (!showSite || filtered.length === 0) {
       tbody.innerHTML = showSite
-        ? ('<tr><td colspan="18" class="admin__table-empty">' +
+        ? ('<tr><td colspan="19" class="admin__table-empty">' +
             (_showAguardandoExpOnly
               ? 'Nenhuma compra aguardando experiência.'
               : 'Nenhuma reserva para esses filtros.') +
@@ -4330,6 +4345,7 @@
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b._valorElarahResolvido != null ? b._valorElarahResolvido : b.amount_total, b.currency))}${mismatchBadge(b)}</td>
+          <td>${paymentMethodBadge(b.payment_method)}</td>
           <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
@@ -4348,7 +4364,7 @@
     function renderGroupHeader(label, count) {
       return `
         <tr class="admin__table-group-header">
-          <td colspan="18" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
+          <td colspan="19" style="background:#faf6f0;color:#1a1a1a;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;border-top:2px solid #f0a05e;">
             ${escapeHtml(label)} <span style="color:#999;font-weight:500;margin-left:6px;">(${count})</span>
           </td>
         </tr>
@@ -4374,7 +4390,7 @@
     const sorted = sortByCreatedDesc(filtered);
     tbody.innerHTML = sorted.length
       ? sorted.map(renderBookingRow).join('')
-      : '<tr><td colspan="18" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
+      : '<tr><td colspan="19" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
 
     // Append vendas manuais pagas no mesmo tbody (badge "Venda manual").
     // Respeita o filtro de origem. Não bloqueia o render principal — se a
@@ -16118,7 +16134,7 @@
     const filterSf = (document.getElementById('bookings-filter-status-fornecedor')?.value || '').trim();
     if (filterForn || filterSf) return;
     const { data, error } = await sb.from('gift_cards')
-      .select('id, code, valor_inicial_centavos, status, comprador_nome, comprador_email, destinatario_nome, created_at')
+      .select('id, code, valor_inicial_centavos, status, comprador_nome, comprador_email, destinatario_nome, payment_method, created_at')
       .in('status', ['active', 'used', 'expired'])
       .order('created_at', { ascending: false })
       .limit(500);
@@ -16152,6 +16168,7 @@
         '<td>—</td>' +
         '<td>1</td>' +
         '<td>' + _finFmtBRL(g.valor_inicial_centavos) + '</td>' +
+        '<td>' + paymentMethodBadge(g.payment_method) + '</td>' +
         '<td><span style="color:#bbb;">—</span></td>' +
         '<td>—</td>' +
         '<td>—</td>' +
@@ -16317,6 +16334,7 @@
         '<td>' + (r.slot_time ? _finEsc(r.slot_time) : '—') + '</td>' +
         '<td>' + (r.quantity || 1) + '</td>' +
         '<td>' + _finFmtBRL(r.total_amount_centavos) + '</td>' +
+        '<td>' + paymentMethodBadge(r.payment_method) + '</td>' +
         '<td style="font-size:.82rem;">' + _finEsc(supplierDisplay || '—') + '</td>' +
         '<td>—</td>' +
         '<td>' + repasseCell + '</td>' +
