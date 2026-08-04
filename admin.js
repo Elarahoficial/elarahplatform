@@ -19808,9 +19808,17 @@
         continue;
       }
       if ((count || 0) > 0) {
-        // Tem booking — desliga rule_id (vira manual, preserva reserva)
+        // Tem booking — desvincula da regra (vira manual, preserva a
+        // reserva) E DESATIVA o slot. Sem is_active=false o horário
+        // antigo continuava aparecendo/vendendo no site (experiencia.html
+        // filtra `isActive !== false`): outro cliente podia comprar um
+        // horário que a regra já não oferece — exatamente o caso do slot
+        // "10h00" numa terça em que a regra só tem "19h30". Desativar
+        // tira do site e trava novas vendas; a reserva existente é
+        // intocada (bookings guarda seu próprio snapshot de data/horário
+        // e o slot_id continua válido).
         const { error: errUpd } = await sb.from('experience_slots')
-          .update({ recurrence_rule_id: null })
+          .update({ recurrence_rule_id: null, is_active: false })
           .eq('id', slot.id);
         if (errUpd) console.warn('[Elarah Recurrence] cleanup detach error:', errUpd.message);
       } else {
