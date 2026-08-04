@@ -316,6 +316,13 @@ deck = '<div class="deck">\n' + cover + buscamos + menu + espacos + planos + per
 # fix title/meta
 head = head.replace("<title>Experiência Corporativa · Elarah × Compass</title>", "<title>Experiência Corporativa · Integração · Elarah</title>")
 head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Proposta de experiência corporativa da Elarah — cerâmica, charme de bolsa, perfume ou crochê no Bake Studio.">', head)
+# mobile-PDF-safe: some phone PDF viewers render box-shadows as solid gray boxes.
+# Kill all shadows and lean on hairline borders instead (clean on every viewer).
+head = head.replace("</head>",
+    "<style>*{box-shadow:none!important;-webkit-box-shadow:none!important}"
+    ".cover-photo{border:1px solid var(--line)}"
+    ".plan-photo,.bfeat .bphoto{border:1px solid var(--line)}"
+    "</style>\n</head>")
 html = head + deck + tail
 out = "/home/user/elarahplatform/experiencia-corporativa-criativa.html"
 open(out, "w", encoding="utf-8").write(html)
