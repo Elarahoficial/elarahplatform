@@ -4336,6 +4336,7 @@
       return `
         <tr>
           <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Site</span></td>
+          <td>${paymentMethodBadge(b.payment_method)}</td>
           <td>${escapeHtml(when)}</td>
           <td>${escapeHtml(nomeResolved || '—')}${renderAcompanhantes()}</td>
           <td>${escapeHtml(b.email || '—')}</td>
@@ -4345,7 +4346,6 @@
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b._valorElarahResolvido != null ? b._valorElarahResolvido : b.amount_total, b.currency))}${mismatchBadge(b)}</td>
-          <td>${paymentMethodBadge(b.payment_method)}</td>
           <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
@@ -16159,6 +16159,7 @@
       const destLabel = g.destinatario_nome ? '<br><span style="font-size:.7rem;color:#888;">→ ' + _finEsc(g.destinatario_nome) + '</span>' : '';
       return '<tr style="background:#fbf7ff;">' +
         '<td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#f0e6fa;color:#6b3aa0;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Gift Card</span></td>' +
+        '<td>' + paymentMethodBadge(g.payment_method) + '</td>' +
         '<td>' + _finEsc(when) + '</td>' +
         '<td>' + _finEsc(g.comprador_nome || '—') + destLabel + '</td>' +
         '<td>' + _finEsc(g.comprador_email || '—') + '</td>' +
@@ -16168,7 +16169,6 @@
         '<td>—</td>' +
         '<td>1</td>' +
         '<td>' + _finFmtBRL(g.valor_inicial_centavos) + '</td>' +
-        '<td>' + paymentMethodBadge(g.payment_method) + '</td>' +
         '<td><span style="color:#bbb;">—</span></td>' +
         '<td>—</td>' +
         '<td>—</td>' +
@@ -16325,6 +16325,7 @@
             : '<span style="color:#bbb;">—</span>');
       return '<tr style="background:#fffaf2;">' +
         '<td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff4e6;color:#a05a00;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Venda manual</span></td>' +
+        '<td>' + paymentMethodBadge(r.payment_method) + '</td>' +
         '<td>' + _finEsc(when) + '</td>' +
         '<td>' + _finEsc(r.customer_name || '—') + '</td>' +
         '<td>' + _finEsc(r.customer_email || '—') + '</td>' +
@@ -16334,7 +16335,6 @@
         '<td>' + (r.slot_time ? _finEsc(r.slot_time) : '—') + '</td>' +
         '<td>' + (r.quantity || 1) + '</td>' +
         '<td>' + _finFmtBRL(r.total_amount_centavos) + '</td>' +
-        '<td>' + paymentMethodBadge(r.payment_method) + '</td>' +
         '<td style="font-size:.82rem;">' + _finEsc(supplierDisplay || '—') + '</td>' +
         '<td>—</td>' +
         '<td>' + repasseCell + '</td>' +
