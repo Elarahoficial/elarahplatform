@@ -150,17 +150,17 @@ espaco = f'''
     </div>
     <span class="eyebrow orange">◆ Espaço parceiro · a sugestão</span>
     <h2>No <em>Betc Havas Café</em></h2>
-    <p class="lead">A sugestão perfeita pro clube: uma cafeteria <strong>cheia de livros</strong>, mas ao mesmo tempo <strong>moderna e bem aconchegante</strong> — cheia de charme e daquele clima gostoso de sentar e ficar. O cenário ideal pra criar, trocar ideia e comemorar em <strong>agosto</strong>. ☕📚</p>
+    <p class="lead">A sugestão perfeita pro clube: um café <strong>moderno e cheio de charme</strong>, com madeira, arte autoral nas paredes e cantinhos <strong>bem aconchegantes</strong> pra sentar e ficar. O cenário ideal pra criar, trocar ideia e comemorar em <strong>agosto</strong>. ☕</p>
     <div class="rule"></div>
     <div class="bfeat" style="height:250px">
-      <div class="bphoto"><img src="assets/sowcafe.jpg" alt="Cafeteria aconchegante e moderna, com madeira, plantas e livros" style="object-position:center 45%"></div>
+      <div class="bphoto"><img src="assets/betchavas2.jpg" alt="Interior moderno e aconchegante do Betc Havas Café, com madeira, bar e arte nas paredes" style="object-position:center 55%"></div>
       <div class="bbody">
         <span class="btag">★ Espaço parceiro</span>
-        <h3>Betc Havas Café <span class="sub">livraria &amp; café</span></h3>
-        <p>Madeira, plantas, cantinhos de leitura e um café gostoso — um espaço que já respira afeto e criatividade. A gente reserva e leva toda a estrutura da experiência; vocês só chegam e curtem. 🌿</p>
+        <h3>Betc Havas Café <span class="sub">café &amp; lounge criativo</span></h3>
+        <p>Madeira, iluminação quente, arte autoral e um café gostoso — um espaço que já respira criatividade. A gente reserva e leva toda a estrutura da experiência; vocês só chegam e curtem. 🌿</p>
         <div class="dchips">
-          <span>Clima de livraria</span>
-          <span>Moderno &amp; aconchegante</span>
+          <span>Moderno &amp; criativo</span>
+          <span>Charme &amp; aconchego</span>
           <span>Super dá em agosto</span>
         </div>
       </div>
@@ -210,8 +210,8 @@ personaliza = f'''
       <div class="plan">
         <div class="plan-photo sq"><img src="assets/colagem.jpg" alt="Momento de colagem do clube registrado por um fotógrafo" style="object-position:center 55%"></div>
         <div class="plan-body">
-          <span class="tag basic">Nível Com foto &amp; voucher · R$ 299</span>
           <h3>Foto profissional &amp; voucher</h3>
+          <span class="tag basic">Nível Com foto &amp; voucher · R$ 299</span>
           <ul class="feat">
             <li>Um fotógrafo cobre o encontro inteiro</li>
             <li>Cada obra, cada risada e cada detalhe registrados</li>
@@ -221,11 +221,10 @@ personaliza = f'''
         </div>
       </div>
       <div class="plan featured">
-        <span class="ribbon">★ Nível Completo · R$ 399</span>
         <div class="plan-photo sq"><img src="assets/marcapaginaflores.jpg" alt="Marca-páginas artesanais de flores prensadas com tassel" style="object-position:center 30%"></div>
         <div class="plan-body">
-          <span class="tag premium">Brinde personalizado</span>
           <h3>Marca-página de flores prensadas</h3>
+          <span class="tag premium">★ Nível Completo · R$ 399</span>
           <ul class="feat">
             <li>Um marca-página artesanal de <b>flores prensadas</b> pra cada convidada</li>
             <li>Com tassel e um toque só dela</li>
