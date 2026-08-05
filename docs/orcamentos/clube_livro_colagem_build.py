@@ -94,7 +94,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/aniv-experiencia.jpg" alt="Grupo reunido criando junto numa experiência da Elarah" style="object-position:center 35%">
+        <img src="assets/rockworld1.jpg" alt="Grupo se abraçando e comemorando junto numa experiência da Elarah" style="object-position:center 30%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
@@ -149,14 +149,14 @@ espaco = f'''
       <div class="head-right"><span class="kicker">Onde acontece</span></div>
     </div>
     <span class="eyebrow orange">◆ Espaço parceiro · a sugestão</span>
-    <h2>Numa cafeteria <em>cheia de livros</em></h2>
+    <h2>No <em>Betc Havas Café</em></h2>
     <p class="lead">A sugestão perfeita pro clube: uma cafeteria <strong>cheia de livros</strong>, mas ao mesmo tempo <strong>moderna e bem aconchegante</strong> — cheia de charme e daquele clima gostoso de sentar e ficar. O cenário ideal pra criar, trocar ideia e comemorar em <strong>agosto</strong>. ☕📚</p>
     <div class="rule"></div>
     <div class="bfeat" style="height:250px">
       <div class="bphoto"><img src="assets/sowcafe.jpg" alt="Cafeteria aconchegante e moderna, com madeira, plantas e livros" style="object-position:center 45%"></div>
       <div class="bbody">
         <span class="btag">★ Espaço parceiro</span>
-        <h3>Aconchego <span class="sub">de livraria &amp; café</span></h3>
+        <h3>Betc Havas Café <span class="sub">livraria &amp; café</span></h3>
         <p>Madeira, plantas, cantinhos de leitura e um café gostoso — um espaço que já respira afeto e criatividade. A gente reserva e leva toda a estrutura da experiência; vocês só chegam e curtem. 🌿</p>
         <div class="dchips">
           <span>Clima de livraria</span>
@@ -192,7 +192,7 @@ planos = f'''
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:18px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. O nível <b>Com foto &amp; voucher</b> soma a <b>foto profissional</b> do encontro e um <b>voucher de R$ 30</b> de consumo na cafeteria por pessoa; o <b>Completo</b> soma também a <b>lembrancinha personalizada</b>. Realizado em cafeteria parceira, em agosto (data a combinar).</div>
+    <div class="note" style="margin-top:18px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. O nível <b>Com foto &amp; voucher</b> soma a <b>foto profissional</b> do encontro e um <b>voucher de R$ 30</b> de consumo na cafeteria por pessoa; o <b>Completo</b> soma também a <b>lembrancinha personalizada</b>. Realizado no Betc Havas Café, em agosto (data a combinar).</div>
     {foot("Investimento")}
   </section>'''
 
@@ -208,7 +208,7 @@ personaliza = f'''
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/rockworld1.jpg" alt="Encontro do clube registrado por um fotógrafo" style="object-position:center 45%"></div>
+        <div class="plan-photo sq"><img src="assets/colagem.jpg" alt="Momento de colagem do clube registrado por um fotógrafo" style="object-position:center 55%"></div>
         <div class="plan-body">
           <span class="tag basic">Nível Com foto &amp; voucher · R$ 299</span>
           <h3>Foto profissional &amp; voucher</h3>
@@ -274,7 +274,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência de Colagem &amp; Bordado com Fotografia da Elarah para a comemoração de 2 anos do clube do livro, para cerca de 13 pessoas, em agosto (data a combinar), em cafeteria parceira. Cada convidada cria e leva a própria obra. A partir de R$ 199 por pessoa (níveis R$ 199 / 299 / 399): A experiência (material e condução) / + foto profissional e R$ 30 de voucher de consumo por pessoa (+R$ 100) / Completo com lembrancinha personalizada (+R$ 100). Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência de Colagem &amp; Bordado com Fotografia da Elarah para a comemoração de 2 anos do clube do livro, para cerca de 13 pessoas, em agosto (data a combinar), no Betc Havas Café. Cada convidada cria e leva a própria obra. A partir de R$ 199 por pessoa (níveis R$ 199 / 299 / 399): A experiência (material e condução) / + foto profissional e R$ 30 de voucher de consumo por pessoa (+R$ 100) / Completo com lembrancinha personalizada (+R$ 100). Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Clube do livro · Colagem & Bordado com Fotografia · 2026")}
   </section>'''
 
