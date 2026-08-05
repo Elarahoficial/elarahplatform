@@ -19317,7 +19317,11 @@
         .eq('experience_id', experienceId)
         .gte('event_at', new Date().toISOString())
         .order('event_at', { ascending: true })
-        .limit(40),
+        // Limite alto: com várias regras (ex.: 3 horários × 9 semanas) as
+        // datas de regra sozinhas já passavam de 40 e empurravam pra fora
+        // as datas manuais/sem-regra (ordenadas por event_at), escondendo
+        // justamente os slots à venda que o admin precisa enxergar.
+        .limit(300),
       sb.from('experiences').select('id, nome').eq('id', experienceId).maybeSingle(),
     ]);
 
@@ -19885,14 +19889,29 @@
   function _recurrenceCardOk(el, txt)  { if (el) { el.style.color = '#1a8a4a'; el.textContent = txt; } }
 
   // Render da lista de slots futuros (próximas datas geradas).
+  //
+  // MOSTRA DOIS GRUPOS:
+  //   1. Datas de regra (recurrence_rule_id != null) — as "geradas".
+  //   2. Datas à venda SEM regra (recurrence_rule_id == null) — slots
+  //      manuais, de importação legada, ou órfãos de uma regra apagada
+  //      (a FK é ON DELETE SET NULL). CRÍTICO: o site vende QUALQUER slot
+  //      ativo/futuro/com-vaga, tenha regra ou não (experiencia.html só
+  //      filtra is_active + data + vaga, ignora recurrence_rule_id). Sem
+  //      este 2º bloco esses slots ficavam INVISÍVEIS neste painel e o
+  //      admin nunca via que estavam à venda — foi exatamente o caso do
+  //      "17/08 10h00–12h00 seg à sexta" que ninguém tinha cadastrado na
+  //      recorrência mas mesmo assim foi comprado.
   function _recurrenceRenderSlots(rules, slots) {
     const wrap = document.getElementById('exp-recurrence-slots-wrap');
     const listEl = document.getElementById('exp-recurrence-slots-list');
     if (!wrap || !listEl) return;
 
-    // Mostra só slots vinculados a regras (recurrence_rule_id != null)
-    const recSlots = (slots || []).filter(s => s.recurrence_rule_id);
-    if (!recSlots.length) {
+    const all = slots || [];
+    const recSlots = all.filter(s => s.recurrence_rule_id);
+    const manualSlots = all.filter(s => !s.recurrence_rule_id);
+    const manualAtivos = manualSlots.filter(s => s.is_active !== false);
+
+    if (!recSlots.length && !manualSlots.length) {
       wrap.style.display = 'none';
       return;
     }
@@ -19902,9 +19921,34 @@
     const ruleById = new Map();
     (rules || []).forEach(r => ruleById.set(r.id, r));
 
-    listEl.innerHTML = recSlots.map(s => _recurrenceSlotRow(s, ruleById.get(s.recurrence_rule_id))).join('');
+    let html = '';
 
-    // Wire toggle/active de cada slot
+    if (recSlots.length) {
+      html += recSlots.map(s => _recurrenceSlotRow(s, ruleById.get(s.recurrence_rule_id))).join('');
+    }
+
+    if (manualSlots.length) {
+      const alerta = manualAtivos.length > 0;
+      html +=
+        '<div style="margin-top:16px;padding:12px 14px;background:' + (alerta ? '#fdf3e7' : '#f6f6f6') +
+          ';border:1px solid ' + (alerta ? '#e0a561' : '#ddd') + ';border-radius:10px;">' +
+          '<div style="font-size:.82rem;font-weight:700;color:' + (alerta ? '#a4663b' : '#666') + ';margin-bottom:4px;">' +
+            (alerta ? '⚠️ ' : '') + 'Datas à venda SEM regra de recorrência (' + manualAtivos.length + ' ativa' + (manualAtivos.length === 1 ? '' : 's') + ')' +
+          '</div>' +
+          '<p style="margin:0 0 10px;font-size:.74rem;color:#777;line-height:1.45;">' +
+            'Estas datas <strong>estão à venda no site</strong> mas não vêm de nenhuma regra acima — são slots manuais, de importação antiga, ou que sobraram de uma regra apagada. ' +
+            'Se uma data não deveria estar à venda, clique em <strong>Cancelar data</strong> (isso a tira do site; reservas já pagas continuam válidas no banco e precisam ser tratadas com o cliente). ' +
+            (alerta ? '' : 'No momento todas estão canceladas — nenhuma aparece no site.') +
+          '</p>' +
+          '<div style="display:flex;flex-direction:column;gap:8px;">' +
+            manualSlots.map(s => _recurrenceSlotRow(s, null)).join('') +
+          '</div>' +
+        '</div>';
+    }
+
+    listEl.innerHTML = html;
+
+    // Wire toggle/active de cada slot (datas de regra + manuais)
     listEl.querySelectorAll('[data-slot-toggle]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const slotId = btn.dataset.slotToggle;
@@ -19925,7 +19969,11 @@
     const reservadas = (isFinite(vagasRest) && isFinite(vagasTot)) ? Math.max(0, vagasTot - vagasRest) : null;
     const isActive = slot.is_active !== false;
 
-    const ruleHint = rule ? ('Regra: ' + _recurrenceWeekdayLabel(rule.weekday) + ' ' + (rule.horario_label || '')) : '';
+    // rule.weekday (singular) foi removido na migração multi-weekdays;
+    // usar weekdays (array) senão o rótulo saía sempre como "—".
+    const ruleHint = rule
+      ? ('Regra: ' + _recurrenceWeekdaysShortList(rule.weekdays) + ' ' + (rule.horario_label || ''))
+      : '';
 
     const statusBadge = isActive
       ? '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">ATIVA</span>'
