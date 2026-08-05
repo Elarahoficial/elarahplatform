@@ -22,7 +22,9 @@ extra = '''
   .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:12px}
   .exp{position:relative;width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.34)}
   .exp .top{position:absolute;top:11px;left:11px;z-index:3;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(30,107,99,.4)}
-  .exp-photo{aspect-ratio:4/5;overflow:hidden;background:#eee}
+  .hero-row{width:100%;height:196px;border-radius:16px;overflow:hidden;margin-top:8px;border:1px solid var(--line)}
+  .hero-row img{width:100%;height:100%;object-fit:cover;display:block}
+  .exp-photo{aspect-ratio:1/1;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:12px 15px 15px}
   .exp .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:5px}
@@ -104,6 +106,7 @@ workshop = f'''
     <h2>Cada taça, <em>uma arte</em></h2>
     <p class="lead">Com tintas próprias pra vidro, cada convidado cria a própria taça — de flores delicadas a corações, do jeitinho de cada um. A gente leva o profissional, o material e toda a estrutura; vocês só chegam e pintam. 🎨</p>
     <div class="rule"></div>
+    <div class="hero-row"><img src="assets/pinturataca2.jpg" alt="Fileira de taças de vidro pintadas à mão com flores variadas" style="object-position:center 55%"></div>
     <div class="menu">
       {exp("01","pinturatacavinho.jpg","Mão na massa","Um momento leve e relaxante — tinta, taça e boa companhia. Ninguém precisa saber pintar.","Convidada pintando a própria taça de vidro","center 45%")}
       {exp("02","pinturatacanova.jpg","Florzinhas","Buquês de flores do campo que deixam a taça delicada e cheia de charme.","Taça de vidro pintada com flores do campo","center 50%")}
