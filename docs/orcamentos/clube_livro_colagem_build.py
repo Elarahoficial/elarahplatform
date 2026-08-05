@@ -134,7 +134,7 @@ galeria = f'''
     <p class="lead">Um gostinho do que dá pra montar — colagens, pontos de bordado e fotos que viram uma obra única, do jeito de cada convidada. Nenhuma fica igual à outra. 🧡</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","colagem.jpg","Colagem à mão","Recortes, flores e papéis que se transformam numa composição cheia de significado.","Mãos montando uma colagem de flores e recortes","center 55%")}
+      {exp("01","colagemreal.jpg","Colagem à mão","Recortar flores, fotos e papéis com calma — o momento mais gostoso e afetivo da experiência.","Mãos recortando flores para uma colagem","center 40%")}
       {exp("02","colagemamor4.jpg","Diário afetivo","Páginas de colagem com selos, fotos e frases — um caderno-obra pra guardar memórias.","Diário de colagem aberto com recortes e fotos","center 50%")}
       {exp("03","colagemamor3.jpg","Bordado &amp; detalhes","Patches, pontos e texturas que dão delicadeza e um toque manual único à peça.","Bordado e detalhes de colagem sobre linho","center 50%")}
     </div>
@@ -222,16 +222,16 @@ personaliza = f'''
       </div>
       <div class="plan featured">
         <span class="ribbon">★ Nível Completo · R$ 399</span>
-        <div class="plan-photo sq ph"><span>✎ foto da lembrancinha<br>em breve</span></div>
+        <div class="plan-photo sq"><img src="assets/marcapaginaflores.jpg" alt="Marca-páginas artesanais de flores prensadas com tassel" style="object-position:center 30%"></div>
         <div class="plan-body">
           <span class="tag premium">Brinde personalizado</span>
-          <h3>Lembrancinha personalizada</h3>
+          <h3>Marca-página de flores prensadas</h3>
           <ul class="feat">
-            <li>Kit com <b>escova &amp; piranha</b> pra cada convidada</li>
-            <li>Personalizado com o nome de cada uma</li>
-            <li>Um mimo pra levarem da comemoração pra casa</li>
+            <li>Um marca-página artesanal de <b>flores prensadas</b> pra cada convidada</li>
+            <li>Com tassel e um toque só dela</li>
+            <li>O mimo perfeito pra quem ama ler 🧡</li>
           </ul>
-          <span class="allin">Cada uma leva o seu mimo</span>
+          <span class="allin">Cada uma leva o seu marca-página</span>
         </div>
       </div>
     </div>
