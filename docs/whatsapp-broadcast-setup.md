@@ -1,47 +1,81 @@
-# WhatsApp automático pra interessados (Z-API)
+# WhatsApp automático pra interessados (Meta Cloud API — oficial)
 
 Dispara automaticamente o follow-up de WhatsApp pra **todos os interessados de
 uma experiência** (a lista de "Respostas do formulário" no admin), em vez de
-abrir o WhatsApp pessoa por pessoa. Feito pra quando uma experiência tem 90, 19,
-100+ respostas e precisa avisar todo mundo rápido ("acabou de abrir, só 5 vagas").
+abrir o WhatsApp pessoa por pessoa. Feito pra listas grandes (90, 170+).
 
-## Como funciona (visão geral)
+> **Por que a API oficial?** A integração antiga (Z-API, número comum) foi
+> restringida pela Meta ao passar do volume. A Cloud API oficial é feita pra
+> escala e não corre risco de ban.
 
-1. No admin, na lista **Respostas do formulário**, cada experiência agora tem um
-   botão verde **📱 WhatsApp automático** no cabeçalho. (O mesmo botão também
-   está na aba de itens By Elarah, como "📱 Follow-up WhatsApp".)
-2. Abre o modal de follow-up com a mensagem pronta (template da campanha, com
-   link e cupom já resolvidos).
-3. Botão **🚀 Enviar automático pra todos**: conta os destinatários, pede
-   confirmação e dispara sozinho via Z-API — uma mensagem a cada ~1 segundo,
-   com barra de progresso. Quem já foi contatado é pulado (respeitando o filtro
-   "Esconder já contatados"). Quem preencheu duas vezes recebe só uma mensagem.
-4. Botão **Testar no meu WhatsApp**: manda a mensagem só pra um número que você
-   digitar, pra conferir antes.
+## ⚠️ O ponto que muda tudo: template aprovado
 
-Peças no código:
+Pra quem **não te mandou mensagem nas últimas 24h** (o caso da lista do
+formulário), a Meta **só deixa enviar um TEMPLATE de mensagem pré-aprovado**.
+Não dá pra mandar texto livre. Então:
 
-- `supabase/functions/whatsapp-broadcast/index.ts` — Edge Function (auth de admin,
-  carrega os interessados, dispara em lotes, marca quem recebeu).
-- `supabase/functions/_shared/whatsapp.ts` — adaptador Z-API (`send-text`).
-- `sql/elarah_byelarah_followup_tracking.sql` — colunas de "quem já recebeu"
-  (já existia; reaproveitado).
-- `sql/elarah_whatsapp_broadcasts.sql` — log agregado por campanha (histórico).
+- Você registra o texto **uma vez** na Meta, ele é aprovado, e aí pode disparar
+  pra milhares sem ban.
+- O texto tem **variáveis posicionais**. O contrato que o código usa é:
+  - `{{1}}` = primeiro nome da pessoa
+  - `{{2}}` = nome da experiência
+  - `{{3}}` = link
+- Editar o corpo depois exige reaprovar na Meta.
+
+O campo de mensagem no painel continua valendo pro **envio manual** (botões
+individuais, que abrem o WhatsApp). O **disparo automático** usa o template.
+
+## Template sugerido pra registrar (categoria: MARKETING, idioma: Português (BR))
+
+**Nome:** `elarah_followup_experiencia`
+
+**Corpo:**
+
+```
+Oi {{1}}! 💫 Acabou de abrir uma experiência nova aqui na Elarah: {{2}}. As vagas são bem limitadas e costumam voar. Garante a sua por aqui 👉 {{3}} — te espero!
+```
+
+Exemplos de valores (a Meta pede na hora de enviar pra aprovação):
+`{{1}}` = Maria · `{{2}}` = Workshop de Ourivesaria: Crie sua Joia ·
+`{{3}}` = https://elarah.com.br/joias.html
+
+> Dica: a Meta não deixa o corpo **terminar** numa variável nem ter duas
+> variáveis coladas — por isso o texto termina em "te espero!".
+
+Depois dá pra ter templates dedicados por campanha (joia, perfumaria…) — basta
+aprová-los com o **mesmo contrato de 3 variáveis** e adicionar em
+`TEMPLATE_CAMPAIGNS` no `whatsapp-broadcast/index.ts`.
+
+## Peças no código
+
+- `supabase/functions/whatsapp-broadcast/index.ts` — Edge Function (auth de
+  admin, carrega interessados, dispara em lotes, marca quem recebeu).
+- `supabase/functions/_shared/whatsapp.ts` — adaptador Meta Cloud API
+  (`type: template`) + normalização de telefone BR.
+- `sql/elarah_byelarah_followup_tracking.sql` — colunas de "quem já recebeu".
+- `sql/elarah_whatsapp_broadcasts.sql` — log agregado por campanha.
 - `admin.html` / `admin.js` — botões e a lógica do modal.
 
 ## Passo a passo pra ligar
 
-### 1. Criar a conta na Z-API e conectar o WhatsApp
+### 1. Criar a conta e o número na Meta
 
-1. Crie uma conta em <https://z-api.io> e uma **instância**.
-2. Conecte a instância ao número de WhatsApp escaneando o **QR code** no painel
-   da Z-API (igual WhatsApp Web). Use um número da Elarah, **não** o pessoal.
-3. Anote do painel:
-   - **ID da instância** (`ZAPI_INSTANCE_ID`)
-   - **Token da instância** (`ZAPI_TOKEN`)
-   - **Account Security Token** (menu Segurança) → `ZAPI_CLIENT_TOKEN`
+1. **Meta Business** (business.facebook.com) → crie/tenha um Business.
+2. **WhatsApp Business Account (WABA)** dentro do Business.
+3. Um app no **developers.facebook.com** com o produto **WhatsApp** adicionado.
+4. **Número dedicado** pra API — ⚠️ ele **não pode ser usado no app normal do
+   WhatsApp ao mesmo tempo**. Use um número **novo/separado** pra não perder seu
+   WhatsApp de conversar manualmente.
+5. Em **WhatsApp Manager → API Setup**, anote o **Phone Number ID**.
+6. Crie um **System User** no Business com acesso ao WABA e gere um
+   **token PERMANENTE** (não use o token temporário de 24h da tela de teste).
 
-### 2. Rodar o SQL (uma vez, no SQL Editor do Supabase)
+### 2. Registrar o template
+
+Em **WhatsApp Manager → Modelos de mensagem**, crie o template do bloco acima e
+aguarde a aprovação (de minutos a ~1 dia).
+
+### 3. Rodar o SQL (uma vez, no SQL Editor do Supabase)
 
 ```sql
 -- se ainda não rodou:
@@ -50,49 +84,36 @@ Peças no código:
 \i sql/elarah_whatsapp_broadcasts.sql
 ```
 
-(Ou cole o conteúdo dos arquivos direto no SQL Editor.)
-
-### 3. Cadastrar os secrets no Supabase
+### 4. Cadastrar os secrets no Supabase
 
 Project Settings → Edge Functions → **Secrets**:
 
-| Secret              | Valor                              |
-| ------------------- | ---------------------------------- |
-| `ZAPI_INSTANCE_ID`  | ID da instância Z-API              |
-| `ZAPI_TOKEN`        | Token da instância Z-API           |
-| `ZAPI_CLIENT_TOKEN` | Account Security Token (Segurança) |
+| Secret                    | Valor                                            |
+| ------------------------- | ------------------------------------------------ |
+| `WHATSAPP_PHONE_NUMBER_ID`| Phone Number ID (API Setup)                      |
+| `WHATSAPP_ACCESS_TOKEN`   | Token permanente do System User                  |
+| `WHATSAPP_TEMPLATE_NAME`  | `elarah_followup_experiencia` (ou o que aprovar) |
+| `WHATSAPP_TEMPLATE_LANG`  | `pt_BR`                                           |
 
-`SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` já existem no
-projeto (a função usa pra validar o admin e ler o banco).
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` já existem.
 
-### 4. Fazer o deploy da função
+### 5. Deploy da função
 
 ```bash
 supabase functions deploy whatsapp-broadcast
 ```
 
-A função exige JWT de admin (`verify_jwt` no padrão `true` + checagem de
-`public.is_admin()`), então só a dona/admin logada consegue disparar.
+A função exige JWT de admin (`is_admin()`), então só a dona/admin logada dispara.
 
-## ⚠️ Sobre risco de banimento
+## Limites de volume (número novo)
 
-A Z-API automatiza um número de WhatsApp comum — **não é a API oficial da Meta**.
-Disparo em massa "frio" pode fazer a Meta **banir o número**. Boas práticas:
+Número novo começa limitado a **250 destinatários diferentes por 24h**, e sobe
+(1.000 → 10.000 → 100.000) conforme o uso com boa qualidade + a verificação do
+negócio. Pras listas de até ~172 dá tranquilo; pra volumes maiores no mesmo dia,
+espace em dias. O envio já vai pausado (~0,35s entre cada) e em lotes.
 
-- Aquecer o número antes (uso normal por alguns dias).
-- Mensagens personalizadas (o `{NOME_PRIMEIRO}` ajuda) e sem parecer spam.
-- Não exagerar no volume de uma vez; o envio já vai pausado (~1s entre cada).
-- Idealmente usar um número dedicado a isso (se banir, não derruba o principal).
+## Trocar/ampliar de provedor
 
-Se um dia quiser risco zero, dá pra trocar o adaptador `_shared/whatsapp.ts` pela
-API oficial (Meta Cloud / 360dialog) — só muda a função de envio; o resto do
-sistema (lista, tracking, botão, lotes) continua igual.
-
-## Placeholders da mensagem
-
-Resolvidos na hora do disparo:
-
-- `{NOME_PRIMEIRO}` — primeiro nome da pessoa (preenchido pelo servidor).
-- `{EXPERIENCIA_NOME}`, `{LINK}` — nome e link da experiência/landing.
-- `{CUPOM}`, `{DESCONTO_PERCENT}`, `{PRECO_CHEIO}`, `{PRECO_DESCONTO}` — do cupom
-  ativo vinculado à experiência (se houver).
+Todo o sistema (lista, lotes, tracking, botão, progresso) é agnóstico ao
+provedor. Pra trocar (ex.: um BSP como 360dialog) ou ampliar, mexe só em
+`_shared/whatsapp.ts`.

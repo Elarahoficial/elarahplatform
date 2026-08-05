@@ -1,42 +1,43 @@
 // =============================================================
-// ELARAH — whatsapp-broadcast Edge Function
+// ELARAH — whatsapp-broadcast Edge Function (Meta Cloud API oficial)
 // -------------------------------------------------------------
 // POST /functions/v1/whatsapp-broadcast
 //
-// Dispara AUTOMATICAMENTE (via Z-API) um follow-up de WhatsApp pra
-// TODOS os interessados de uma experiência By Elarah — a lista que
-// aparece no painel "Respostas do formulário". Resolve o problema de
-// ter que clicar pessoa por pessoa (90+ respostas numa experiência só).
+// Dispara AUTOMATICAMENTE (via API OFICIAL da Meta) um follow-up de
+// WhatsApp pra TODOS os interessados de uma experiência By Elarah — a
+// lista de "Respostas do formulário". Resolve o problema de clicar
+// pessoa por pessoa (90+ respostas numa experiência só).
 //
-// Auth: exige JWT de ADMIN (public.is_admin()). Só a dona/admin logada
-// no painel consegue disparar.
+// Migrou de Z-API (número comum, restringido pela Meta) pra Cloud API
+// oficial. Como esses contatos são "frios" (não mandaram mensagem nas
+// últimas 24h), a Meta exige um TEMPLATE aprovado — ver _shared/whatsapp.ts.
+//
+// Contrato de variáveis do template (nesta ordem):
+//   {{1}} = primeiro nome · {{2}} = nome da experiência · {{3}} = link
+//
+// Auth: exige JWT de ADMIN (public.is_admin()).
 //
 // Body JSON:
 //   {
 //     "mode": "count" | "test" | "send",
-//     "experiencia": "Workshop de Ourivesaria: Crie sua Joia",  // nome
-//     "item_slug": "ourivesaria-crie-sua-joia",                 // opcional
-//     "message": "Oi {NOME_PRIMEIRO}! ...",  // já com LINK/CUPOM resolvidos;
-//                                            // só {NOME_PRIMEIRO} é preenchido aqui
-//     "only_new": true,       // pula quem já recebeu (send/count)
+//     "experiencia": "Workshop de Ourivesaria: Crie sua Joia",
+//     "item_slug": "ourivesaria-crie-sua-joia",   // opcional
+//     "link": "https://elarah.com.br/joias.html",  // {{3}} do template
+//     "only_new": true,        // pula quem já recebeu (send/count)
 //     "test_phone": "5511999999999",  // só no mode test
-//     "batch": 50             // máx. de envios por chamada (send)
+//     "batch": 50,             // máx. de envios por chamada (send)
+//     "message": "..."         // opcional: só pro log/auditoria
 //   }
 //
 // Respostas:
 //   count → { ok, unicos, novos, ja_contatados, sem_telefone }
-//   test  → { ok, to }
-//   send  → { ok, alvo, enviados, falharam, restantes, sem_telefone_ignorados }
+//   test  → { ok, to, template }
+//   send  → { ok, alvo, enviados, falharam, restantes, sem_telefone_ignorados, template }
 //
-// O painel chama `send` em loop até `restantes` chegar a 0 (ou parar de
-// progredir), mostrando barra de progresso. O corte por chamada (batch)
-// evita estourar o timeout da Edge Function em listas grandes.
-//
-// Tracking "quem já recebeu": grava whatsapp_followup_sent_at /
+// Tracking "quem já recebeu": whatsapp_followup_sent_at /
 // whatsapp_followup_count em byelarah_submissions (mesma coluna do
 // disparo manual). Requer sql/elarah_byelarah_followup_tracking.sql.
-// Log agregado por campanha: whatsapp_broadcasts (opcional — best-effort,
-// não quebra se a tabela não existir; ver sql/elarah_whatsapp_broadcasts.sql).
+// Log agregado: whatsapp_broadcasts (best-effort).
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -45,7 +46,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin } from "../_shared/social_db.ts";
 import {
   normalizePhoneBR,
-  sendWhatsAppText,
+  sendWhatsAppTemplate,
   whatsappConfigured,
 } from "../_shared/whatsapp.ts";
 
@@ -56,11 +57,34 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-// Corte por chamada e intervalo entre envios. O intervalo dá uma
-// "respirada" pra reduzir risco de bloqueio da Z-API/Meta e ficar
-// abaixo do timeout da Edge Function. 50 × ~900ms ≈ 45s.
+// Corte por chamada e intervalo entre envios. A Cloud API aguenta um
+// ritmo bem maior que a Z-API, mas número novo tem limite de qualidade —
+// mantemos um respiro curto. 50 × ~350ms ≈ 18s (abaixo do timeout).
 const MAX_BATCH = 50;
-const DELAY_MS = 900;
+const DELAY_MS = 350;
+
+// ----- Template registry -----
+// Default vem dos secrets; opcionalmente dá pra ter um template por
+// campanha (mesma ordem de variáveis: nome, experiência, link). Todos
+// os templates precisam estar APROVADOS na Meta com esse mesmo contrato.
+const DEFAULT_TEMPLATE = {
+  name: Deno.env.get("WHATSAPP_TEMPLATE_NAME") ?? "elarah_followup_experiencia",
+  language: Deno.env.get("WHATSAPP_TEMPLATE_LANG") ?? "pt_BR",
+};
+const TEMPLATE_CAMPAIGNS: Array<{ keywords: string[]; name: string; language?: string }> = [
+  // Ex.: quando tiver um template dedicado aprovado pra joia:
+  // { keywords: ["joia"], name: "elarah_followup_joia" },
+];
+function resolveTemplate(experienceName: string): { name: string; language: string } {
+  const norm = String(experienceName ?? "")
+    .toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "");
+  for (const c of TEMPLATE_CAMPAIGNS) {
+    if (c.keywords.every((k) => norm.includes(k))) {
+      return { name: c.name, language: c.language ?? DEFAULT_TEMPLATE.language };
+    }
+  }
+  return { name: DEFAULT_TEMPLATE.name, language: DEFAULT_TEMPLATE.language };
+}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -71,24 +95,12 @@ function jsonResponse(body: unknown, status = 200) {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// "Maria Silva" → "Maria". Sem nome → "" (a mensagem cai no texto puro).
+// "Maria Silva" → "Maria". Sem nome → "tudo bem" (evita variável vazia,
+// que a Meta rejeita; casa com o tom do envio manual).
 function firstName(full: string | null | undefined): string {
   const t = String(full ?? "").trim();
-  if (!t) return "";
+  if (!t) return "tudo bem";
   return t.split(/\s+/)[0];
-}
-
-// Substitui {NOME_PRIMEIRO} (case-sensitive) no template. Os demais
-// placeholders (LINK, CUPOM, PRECO_*) já vêm resolvidos do painel.
-function personalize(template: string, nome: string): string {
-  const primeiro = firstName(nome);
-  // Se não há nome, evita "Oi ," / "Oi {NOME_PRIMEIRO}" — troca por
-  // "" e limpa vírgula/espaço solto logo após uma saudação simples.
-  let out = String(template ?? "").replace(/\{NOME_PRIMEIRO\}/g, primeiro);
-  if (!primeiro) {
-    out = out.replace(/\b([Oo]i|[Oo]l[áa]|[Ee]i)\s*,/g, "$1");
-  }
-  return out;
 }
 
 interface SubRow {
@@ -99,8 +111,6 @@ interface SubRow {
   whatsapp_followup_count: number | null;
 }
 
-// Carrega os interessados de uma experiência. Mesmo filtro do modal do
-// painel: por item_slug OU por nome (ILIKE).
 async function loadSubmissions(
   experiencia: string,
   itemSlug: string | null,
@@ -122,9 +132,6 @@ async function loadSubmissions(
   return (data ?? []) as SubRow[];
 }
 
-// Agrupa por telefone normalizado (dedupe): quem preencheu 2x pra a
-// mesma experiência recebe UMA mensagem só. Guarda todos os ids do
-// telefone pra marcar todos como contatados de uma vez.
 interface PhoneGroup {
   phone: string;
   nome: string;
@@ -133,10 +140,7 @@ interface PhoneGroup {
   maxCount: number;
 }
 
-function groupByPhone(rows: SubRow[]): {
-  groups: PhoneGroup[];
-  semTelefone: number;
-} {
+function groupByPhone(rows: SubRow[]): { groups: PhoneGroup[]; semTelefone: number } {
   const map = new Map<string, PhoneGroup>();
   let semTelefone = 0;
   for (const r of rows) {
@@ -151,7 +155,6 @@ function groupByPhone(rows: SubRow[]): {
       map.set(phone, g);
     }
     g.ids.push(r.id);
-    // Guarda um nome não-vazio, se houver, pra personalizar.
     if (!g.nome && r.nome) g.nome = r.nome;
     if (r.whatsapp_followup_sent_at) g.anyContacted = true;
     g.maxCount = Math.max(g.maxCount, Number(r.whatsapp_followup_count) || 0);
@@ -167,7 +170,6 @@ serve(async (req) => {
     return jsonResponse({ ok: false, error: "method_not_allowed" }, 405);
   }
 
-  // ---- Autorização: só admin ----
   const adminId = await authorizeAdmin(req.headers.get("Authorization"));
   if (!adminId) {
     return jsonResponse({ ok: false, error: "nao_autorizado" }, 401);
@@ -183,10 +185,11 @@ serve(async (req) => {
   const mode = String(payload.mode ?? "").trim();
   const experiencia = String(payload.experiencia ?? "").trim();
   const itemSlug = payload.item_slug ? String(payload.item_slug).trim() : null;
-  const message = String(payload.message ?? "");
+  const link = String(payload.link ?? "").trim() || "https://elarah.com.br";
+  const previewMsg = String(payload.message ?? "");
   const onlyNew = payload.only_new !== false; // default true
 
-  // ---- TEST: manda pro número informado (o WhatsApp da própria admin) ----
+  // ---- TEST: manda o template pro número informado ----
   if (mode === "test") {
     if (!whatsappConfigured()) {
       return jsonResponse({ ok: false, error: "nao_configurado" }, 400);
@@ -195,30 +198,30 @@ serve(async (req) => {
     if (!testPhone) {
       return jsonResponse({ ok: false, error: "telefone_teste_invalido" }, 400);
     }
-    if (!message.trim()) {
-      return jsonResponse({ ok: false, error: "mensagem_vazia" }, 400);
-    }
-    const r = await sendWhatsAppText(testPhone, personalize(message, "Você"));
+    const tpl = resolveTemplate(experiencia);
+    const r = await sendWhatsAppTemplate(testPhone, tpl.name, tpl.language, [
+      "Você",
+      experiencia || "nossa nova experiência",
+      link,
+    ]);
     if (!r.ok) {
       return jsonResponse(
         { ok: false, error: r.error ?? "falha_envio", status: r.status ?? null },
         502,
       );
     }
-    return jsonResponse({ ok: true, to: testPhone });
+    return jsonResponse({ ok: true, to: testPhone, template: tpl.name });
   }
 
   if (!experiencia) {
     return jsonResponse({ ok: false, error: "experiencia_obrigatoria" }, 400);
   }
 
-  // Carrega interessados (compartilhado entre count e send).
   let rows: SubRow[];
   try {
     rows = await loadSubmissions(experiencia, itemSlug);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    // Coluna de tracking ausente → dica clara.
     if (/whatsapp_followup/i.test(msg)) {
       return jsonResponse(
         {
@@ -237,7 +240,7 @@ serve(async (req) => {
   const jaContatados = groups.filter((g) => g.anyContacted).length;
   const novos = unicos - jaContatados;
 
-  // ---- COUNT: só informa números pra o painel montar o confirm ----
+  // ---- COUNT ----
   if (mode === "count") {
     return jsonResponse({
       ok: true,
@@ -255,11 +258,9 @@ serve(async (req) => {
   if (!whatsappConfigured()) {
     return jsonResponse({ ok: false, error: "nao_configurado" }, 400);
   }
-  if (!message.trim()) {
-    return jsonResponse({ ok: false, error: "mensagem_vazia" }, 400);
-  }
 
-  // Alvo = telefones pendentes (novos, se only_new; senão todos).
+  const tpl = resolveTemplate(experiencia);
+
   const pendentes = onlyNew ? groups.filter((g) => !g.anyContacted) : groups;
   const alvo = pendentes.length;
 
@@ -275,10 +276,13 @@ serve(async (req) => {
 
   for (let i = 0; i < lote.length; i++) {
     const g = lote[i];
-    const r = await sendWhatsAppText(g.phone, personalize(message, g.nome));
+    const r = await sendWhatsAppTemplate(g.phone, tpl.name, tpl.language, [
+      firstName(g.nome),
+      experiencia,
+      link,
+    ]);
     if (r.ok) {
       enviados++;
-      // Marca TODAS as respostas desse telefone como contatadas.
       try {
         await supabase
           .from("byelarah_submissions")
@@ -303,13 +307,11 @@ serve(async (req) => {
         "error=" + (r.error ?? "?"),
       );
     }
-    // Intervalo entre envios (menos no último).
     if (i < lote.length - 1) await sleep(DELAY_MS);
   }
 
   const restantes = Math.max(0, alvo - enviados);
 
-  // Log agregado por chamada (best-effort — não derruba o retorno).
   try {
     const status = falharam === 0
       ? (restantes === 0 ? "concluido" : "enviando")
@@ -317,7 +319,7 @@ serve(async (req) => {
     await supabase.from("whatsapp_broadcasts").insert({
       experiencia,
       item_slug: itemSlug,
-      mensagem: message,
+      mensagem: previewMsg || ("[template: " + tpl.name + "]"),
       total_alvo: alvo,
       enviados,
       falharam,
@@ -339,5 +341,6 @@ serve(async (req) => {
     falharam,
     restantes,
     sem_telefone_ignorados: semTelefone,
+    template: tpl.name,
   });
 });

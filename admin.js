@@ -1848,7 +1848,7 @@
       case 'nao_autorizado':
         return 'Você precisa estar logada como admin pra disparar.';
       case 'nao_configurado':
-        return 'Z-API ainda não configurada. Cadastre ZAPI_INSTANCE_ID, ZAPI_TOKEN e ZAPI_CLIENT_TOKEN nos Secrets do Supabase e faça o deploy da função whatsapp-broadcast.';
+        return 'WhatsApp oficial ainda não configurado. Cadastre WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN e WHATSAPP_TEMPLATE_NAME nos Secrets do Supabase e faça o deploy da função whatsapp-broadcast.';
       case 'tracking_ausente':
         return 'Falta rodar sql/elarah_byelarah_followup_tracking.sql no Supabase.';
       case 'telefone_teste_invalido':
@@ -1904,12 +1904,14 @@
       return;
     }
 
-    // Mensagem com tudo resolvido MENOS {NOME_PRIMEIRO} (o servidor
-    // preenche o nome de cada pessoa).
-    const message = fillTemplate(template, followupConstantVars());
+    // Texto só pro log/preview. O envio de verdade usa o TEMPLATE
+    // aprovado na Meta (variáveis: nome, experiência, link).
+    const consts = followupConstantVars();
+    const message = fillTemplate(template, consts);
     const base = {
       experiencia: followupCtx.experienceName,
       item_slug: followupCtx.byelarahSlug || null,
+      link: consts.LINK,
       message: message,
       only_new: onlyNew,
     };
@@ -1947,7 +1949,8 @@
     const ok = window.confirm(
       'Enviar a mensagem por WhatsApp AUTOMATICAMENTE pra ' + alvo + ' pessoa(s) ' +
       'interessadas em "' + followupCtx.experienceName + '"?\n\n' +
-      'Isso dispara de verdade pela Z-API, uma mensagem a cada ~1 segundo.' + semTel
+      'Isso dispara de verdade pela API oficial da Meta, usando o modelo ' +
+      'aprovado (nome + experiência + link).' + semTel
     );
     if (!ok) {
       statusEl.textContent = '';
@@ -2035,6 +2038,7 @@
         mode: 'test',
         experiencia: followupCtx.experienceName,
         item_slug: followupCtx.byelarahSlug || null,
+        link: followupConstantVars().LINK,
         message: message,
         test_phone: phone,
       });
