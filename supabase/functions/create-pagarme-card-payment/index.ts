@@ -175,8 +175,17 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       if (dupe.status === "pago") {
         return jsonResponse({ direct: true, booking_id: dupe.id, deduped: true });
       }
-      // pending/em captura: devolve pro front continuar o polling.
-      return jsonResponse({ booking_id: dupe.id, status: "processing", deduped: true });
+      if (dupe.status === "pending") {
+        // Em captura: devolve pro front continuar o polling.
+        return jsonResponse({ booking_id: dupe.id, status: "processing", deduped: true });
+      }
+      // Terminal (cancelado/expirado/reembolsado): a 1ª tentativa foi recusada.
+      // Sinaliza rejected pro front reabilitar e o cliente tentar de novo (novo
+      // purchase_id) — sem cair num polling infinito de reserva morta.
+      return jsonResponse({
+        rejected: true, booking_id: dupe.id, deduped: true,
+        message: "O pagamento anterior não foi concluído. Tente novamente ou pague no PIX.",
+      });
     }
   }
 
@@ -349,11 +358,16 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
         .from("bookings").select("id, status").eq("purchase_id", purchaseId)
         .order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (dupe && dupe.id) {
-        return jsonResponse(
-          dupe.status === "pago"
-            ? { direct: true, booking_id: dupe.id, deduped: true }
-            : { booking_id: dupe.id, status: "processing", deduped: true },
-        );
+        if (dupe.status === "pago") {
+          return jsonResponse({ direct: true, booking_id: dupe.id, deduped: true });
+        }
+        if (dupe.status === "pending") {
+          return jsonResponse({ booking_id: dupe.id, status: "processing", deduped: true });
+        }
+        return jsonResponse({
+          rejected: true, booking_id: dupe.id, deduped: true,
+          message: "O pagamento anterior não foi concluído. Tente novamente ou pague no PIX.",
+        });
       }
     }
     console.error("[Elarah Payment/Pagarme card] pre-insert booking falhou", insertErr);
@@ -394,7 +408,10 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       "status=" + cardResult.errorStatus,
       "body=" + JSON.stringify(cardResult.errorBody),
     );
-    await supabase.from("bookings").update({ status: "cancelled" }).eq("id", bookingId);
+    // 'cancelado' (pt) — a constraint da tabela só aceita esse valor. Gravar
+    // 'cancelled' (en) FALHAVA no check → a reserva recusada ficava presa em
+    // 'pending' e SEGURAVA a vaga (e o reconcile a re-travava). Ver bookings.status.
+    await supabase.from("bookings").update({ status: "cancelado" }).eq("id", bookingId);
     await rollback();
     return jsonResponse(
       {
@@ -422,7 +439,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       "declinedByIssuer=" + declinedByIssuer,
       "acq=" + (cardResult.acquirerMessage || "?"),
     );
-    await supabase.from("bookings").update({ status: "cancelled" }).eq("id", bookingId);
+    await supabase.from("bookings").update({ status: "cancelado" }).eq("id", bookingId);
     await rollback();
     return jsonResponse({
       rejected: true,
