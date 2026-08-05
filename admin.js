@@ -14044,6 +14044,10 @@
 
   let _finCategoriesCache = null;
   let _finWired = false;
+  // Trava anti-duplo-clique do "Salvar venda". Enquanto uma venda está
+  // sendo gravada, novos submits são ignorados — senão um duplo clique
+  // (ou Enter + clique) insere a MESMA venda duas vezes no banco.
+  let _finSavingManualSale = false;
   let _finExpById = new Map();          // experience_id → exp object (preenche em populate)
   let _finMsExpOptionById = new Map();  // valor exibido no datalist da venda manual → experience_id
   let _finByElarahById = new Map();     // byelarah_item_id → item object
@@ -15667,6 +15671,9 @@
     ]);
     const $ = (id) => document.getElementById(id);
     const msgEl = $('ms-msg'); if (msgEl) msgEl.textContent = '';
+    // Garante que o botão comece habilitado e a trava zerada a cada abertura.
+    _finSavingManualSale = false;
+    const _msBtn = $('ms-save'); if (_msBtn) _msBtn.disabled = false;
 
     // Resolve a fonte dos dados:
     //   - saleId → fetch do DB (modo Editar)
@@ -15788,6 +15795,11 @@
 
   function _finCloseManualSaleModal() {
     document.getElementById('manual-sale-modal')?.classList.remove('open');
+    // Libera a trava anti-duplo-clique e reabilita o botão. Fechar o modal
+    // (após salvar, cancelar ou clicar fora) sempre reseta esse estado.
+    _finSavingManualSale = false;
+    const b = document.getElementById('ms-save');
+    if (b) b.disabled = false;
   }
 
   async function _finSaveManualSale(ev) {
@@ -15899,6 +15911,17 @@
     if (payload.unit_price_centavos < 0) {
       msgEl.textContent = 'Valor unitário inválido.'; msgEl.style.color = '#c0392b'; return;
     }
+    // ===== Trava anti-duplo-clique =====
+    // Passou nas validações síncronas: a partir daqui há awaits (checagem
+    // de lotação, insert). Se um segundo submit chegar enquanto o primeiro
+    // ainda está em voo, ignora — evita gravar a venda duas vezes. O botão
+    // fica desabilitado como reforço visual. A trava é liberada quando o
+    // modal fecha (sucesso/cancelar), no erro do insert e no cancelar da
+    // checagem de lotação — cobrindo todos os caminhos de saída.
+    if (_finSavingManualSale) return;
+    _finSavingManualSale = true;
+    const _msSaveBtn = $('ms-save');
+    if (_msSaveBtn) _msSaveBtn.disabled = true;
     // ===== Aviso de lotação =====
     // A venda manual passa a descontar vaga do estoque (gatilho no banco,
     // sql/elarah_manual_sales_inventory.sql). Se a venda OCUPA vaga
@@ -15930,7 +15953,12 @@
               'registrando ' + qty + '. Isso vai passar da lotação (overbooking).\n\n' +
               'Deseja registrar mesmo assim?'
             );
-            if (!ok) { msgEl.textContent = ''; return; }
+            if (!ok) {
+              msgEl.textContent = '';
+              _finSavingManualSale = false;
+              if (_msSaveBtn) _msSaveBtn.disabled = false;
+              return;
+            }
           }
         }
       } catch (e) { /* checagem best-effort — não impede salvar */ }
@@ -16003,6 +16031,11 @@
         : '';
       msgEl.textContent = 'Erro: ' + em + hint;
       msgEl.style.color = '#c0392b';
+      // Deu erro (a venda NÃO gravou): libera a trava e reabilita o botão
+      // pra admin poder corrigir e tentar de novo. No sucesso, a trava é
+      // liberada quando o modal fecha (_finCloseManualSaleModal).
+      _finSavingManualSale = false;
+      if (_msSaveBtn) _msSaveBtn.disabled = false;
     }
   }
 
