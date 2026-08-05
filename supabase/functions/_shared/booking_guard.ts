@@ -902,12 +902,14 @@ export async function reserveExperienceSlot(
     // CRÍTICO (bug de vaga fantasma): `modern.error` set NÃO significa que o
     // UPDATE não commitou — um erro de transporte pós-commit deixava a
     // camada legada decrementar DE NOVO (qty=2 virava -4 → "esgotou" falso).
-    // Antes de retentar, relê e confirma se o decremento já valeu.
+    const errStr = JSON.stringify(modern.error || "");
+    // "Função/parâmetro ausente" (schema antigo sem p_qty) → fallback legado
+    // é o certo. Qualquer OUTRO erro é de transporte → NÃO pode re-decrementar.
+    const missingFn = /PGRST202|42883|does not exist|could not find|function|p_qty/i.test(errStr);
     const restAfter = await readVagasRestantes();
-    if (
-      restBefore != null && restAfter != null &&
-      (restBefore - restAfter) >= quantidade
-    ) {
+    const committed = restBefore != null && restAfter != null &&
+      (restBefore - restAfter) >= quantidade;
+    if (committed) {
       vagasDecrementadas = quantidade;
       resolvedDecrement = true;
       console.warn(
@@ -915,11 +917,23 @@ export async function reserveExperienceSlot(
           "(restBefore=" + restBefore + " restAfter=" + restAfter + ") — NÃO retenta pra não duplicar",
         "rpc=" + decrementRpc,
       );
+    } else if (!missingFn) {
+      // Erro de TRANSPORTE (não é "função ausente"): o UPDATE pode ter
+      // commitado mesmo assim. NÃO cai no loop legado (que re-decrementaria e
+      // recriaria a vaga fantasma). Assume aplicado; o reconcile (cron a cada
+      // 10min) recomputa o absoluto e corrige qualquer desvio transitório.
+      vagasDecrementadas = quantidade;
+      resolvedDecrement = true;
+      console.warn(
+        "[Elarah Guard] decrement p_qty com erro de transporte (inconclusivo) — assume aplicado; " +
+          "reconcile corrige. NÃO usa o loop legado pra não duplicar.",
+        "rpc=" + decrementRpc, "error=" + errStr,
+      );
     } else {
       console.warn(
-        "[Elarah Guard] decrement com p_qty falhou (sem efeito no estoque) — tentando legado",
+        "[Elarah Guard] decrement p_qty ausente no schema — tentando legado",
         "rpc=" + decrementRpc,
-        "error=" + JSON.stringify(modern.error),
+        "error=" + errStr,
         "hint=rode sql/elarah_bookings_quantidade.sql no Supabase",
       );
     }
