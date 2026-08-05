@@ -74,6 +74,10 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
 
   // ===== Parse =====
   const experienciaId = String(payload.experiencia_id ?? "").trim();
+  // purchase_id: chave ESTÁVEL gerada UMA vez pelo front por tentativa de
+  // compra e reenviada em toda retentativa. É o antídoto da COBRANÇA DUPLA:
+  // (1) dedupe server-side antes de cobrar; (2) X-Idempotency-Key no Pagar.me.
+  const purchaseId = payload.purchase_id ? String(payload.purchase_id).trim().slice(0, 64) : null;
   const horario = payload.horario ? String(payload.horario).trim() : null;
   const dataFromPayload = payload.data ? String(payload.data).trim() : null;
   const slotIdFromPayload = payload.slot_id ? String(payload.slot_id).trim() : null;
@@ -146,6 +150,36 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     );
   }
 
+  // ===== DEDUPE por purchase_id (anti cobrança dupla) =====
+  // Se a MESMA compra já foi processada (retry do front, timeout de rede
+  // pós-captura), NÃO reserva vaga nem cobra de novo: devolve a booking que
+  // já existe. A cobrança em si também é blindada pelo X-Idempotency-Key no
+  // Pagar.me — esta checagem evita até o trabalho (e o 2º decremento de vaga).
+  if (purchaseId) {
+    const { data: dupe, error: dupeErr } = await supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("purchase_id", purchaseId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (dupeErr) {
+      // Coluna ausente (migração não rodou) → segue sem dedupe (a
+      // idempotência do gateway ainda protege). Não derruba o checkout.
+      console.warn("[Elarah Payment/Pagarme card] dedupe purchase_id indisponível", dupeErr.message);
+    } else if (dupe && dupe.id) {
+      console.info(
+        "[Elarah Payment/Pagarme card] DEDUPE — compra já processada, não recobra",
+        "purchase_id=" + purchaseId, "booking=" + dupe.id, "status=" + dupe.status,
+      );
+      if (dupe.status === "pago") {
+        return jsonResponse({ direct: true, booking_id: dupe.id, deduped: true });
+      }
+      // pending/em captura: devolve pro front continuar o polling.
+      return jsonResponse({ booking_id: dupe.id, status: "processing", deduped: true });
+    }
+  }
+
   // ===== Reserva slot =====
   const guard = await reserveExperienceSlot(supabase, {
     experienciaId, horario, data: dataFromPayload, slotId: slotIdFromPayload,
@@ -199,7 +233,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   if (amountToChargeCents === 0) {
     const directBookingId = crypto.randomUUID();
     const { error: directErr } = await supabase.from("bookings").insert({
-      id: directBookingId, user_id: userId, email, nome: resolvedNome,
+      id: directBookingId, purchase_id: purchaseId, user_id: userId, email, nome: resolvedNome,
       telefone: telefoneToSave, experiencia_id: exp.id, experiencia_nome: exp.nome,
       data: slotData ?? dataFromPayload ?? exp.data ?? null, horario,
       preco_label: exp.preco, amount_total: 0, currency: "brl", status: "pago",
@@ -275,7 +309,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   // a reserva (booking_not_found → 200 sem retry) e ela ficaria presa em
   // pending. Pré-inserir garante que a linha existe quando o webhook chega.
   const { error: insertErr } = await supabase.from("bookings").insert({
-    id: bookingId, user_id: userId, email, nome: resolvedNome,
+    id: bookingId, purchase_id: purchaseId, user_id: userId, email, nome: resolvedNome,
     telefone: telefoneToSave, experiencia_id: exp.id, experiencia_nome: exp.nome,
     data: slotData ?? dataFromPayload ?? exp.data ?? null, horario,
     preco_label: exp.preco, amount_total: chargeCents, currency: "brl",
@@ -303,6 +337,25 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     },
   });
   if (insertErr) {
+    // Conflito de purchase_id (índice único) = requisição CONCORRENTE da MESMA
+    // compra venceu a corrida. Não cobra: devolve minha vaga e retorna a
+    // booking que já existe (anti cobrança dupla no double-clique em ms).
+    const isDupe = String(insertErr.code || "") === "23505" ||
+      /duplicate key|purchase_id/i.test(String(insertErr.message || ""));
+    if (isDupe && purchaseId) {
+      console.warn("[Elarah Payment/Pagarme card] pre-insert conflitou em purchase_id — dedupe concorrente", purchaseId);
+      await rollback();
+      const { data: dupe } = await supabase
+        .from("bookings").select("id, status").eq("purchase_id", purchaseId)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (dupe && dupe.id) {
+        return jsonResponse(
+          dupe.status === "pago"
+            ? { direct: true, booking_id: dupe.id, deduped: true }
+            : { booking_id: dupe.id, status: "processing", deduped: true },
+        );
+      }
+    }
     console.error("[Elarah Payment/Pagarme card] pre-insert booking falhou", insertErr);
     await rollback();
     return jsonResponse({ error: "booking_save_failed", detail: insertErr.message }, 500);
@@ -330,6 +383,8 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     },
     statementDescriptor: "ELARAH",
     itemCode: exp.id,
+    // Idempotência no gateway: MESMA compra reenviada = MESMA captura.
+    idempotencyKey: purchaseId,
   });
 
   // ----- Erro de comunicação/validação com o Pagar.me: cancela + rollback -----

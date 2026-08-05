@@ -75,6 +75,21 @@ function paymentLabelFromEvent(data: Record<string, unknown>): string {
   return "Pagar.me";
 }
 
+// Código normalizado do método ('card' | 'pix' | null) pra persistir em
+// metadata.payment_method. O checkout redirect grava 'card_or_pix' no
+// pre-insert (não sabe qual ainda); aqui o webhook resolve pelo charge real.
+function paymentMethodCodeFromEvent(data: Record<string, unknown>): string | null {
+  const charges = (data.charges ?? (data.order as Record<string, unknown>)?.charges) as
+    | Array<Record<string, unknown>>
+    | undefined;
+  const charge = (charges && charges[0]) ??
+    (data.payment_method ? data : undefined);
+  const pm = charge?.payment_method as string | undefined;
+  if (pm === "credit_card" || pm === "debit_card") return "card";
+  if (pm === "pix") return "pix";
+  return null;
+}
+
 // ===== Confirmação por e-mail (idêntica ao MP/Stripe) =====
 async function sendBookingConfirmation(booking: BookingRow) {
   if (!booking.email) {
@@ -144,16 +159,33 @@ async function notifyAdminOfSale(booking: BookingRow, paymentMethod: string) {
 }
 
 // ===== Marca a reserva como paga (compare-and-set idempotente) =====
-async function markBookingAsPaid(booking: BookingRow, paymentLabel: string) {
+async function markBookingAsPaid(
+  booking: BookingRow,
+  paymentLabel: string,
+  resolvedMethod?: string | null,
+) {
   // O amount_total do Pagar.me é o do pre-insert (create-pagarme-checkout
   // grava o valor final). O webhook não re-cobra do gateway.
   const paidAmountCents = Number(booking.amount_total) || 0;
+
+  // Resolve metadata.payment_method quando o pre-insert deixou 'card_or_pix'
+  // (checkout redirect) ou vazio — pra a coluna Pagamento do admin mostrar
+  // Cartão x Pix corretamente. Só toca no metadata se realmente precisar.
+  const meta = (booking.metadata ?? {}) as Record<string, unknown>;
+  const currentPm = String(meta.payment_method ?? "");
+  const needPmFix = !!resolvedMethod &&
+    (currentPm === "" || currentPm === "card_or_pix" ||
+      currentPm === "cartao_ou_pix" || currentPm === "card_pix");
+  const paidUpdate: Record<string, unknown> = { status: "pago", currency: "brl" };
+  if (needPmFix) {
+    paidUpdate.metadata = { ...meta, payment_method: resolvedMethod };
+  }
 
   // Compare-and-set: só um webhook transiciona pending→pago. Os efeitos
   // (e-mails, re-ocupação, cupom) rodam SÓ pra quem venceu essa corrida.
   const { data: won, error: updErr } = await supabase
     .from("bookings")
-    .update({ status: "pago", currency: "brl" })
+    .update(paidUpdate)
     .eq("id", booking.id)
     .neq("status", "pago")
     .select("id")
@@ -331,7 +363,8 @@ serve(async (req) => {
 
   if (isPaid) {
     const label = paymentLabelFromEvent(data);
-    const r = await markBookingAsPaid(booking as BookingRow, label);
+    const resolvedMethod = paymentMethodCodeFromEvent(data);
+    const r = await markBookingAsPaid(booking as BookingRow, label, resolvedMethod);
     return ok({ received: true, paid: r.processed === true, idempotent: r.idempotent === true });
   }
   if (isRefunded) {

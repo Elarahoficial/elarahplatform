@@ -3035,6 +3035,13 @@ if (groupForm) {
           payBtn.textContent = 'Processando...';
           pgCardError('');
 
+          // purchase_id ESTÁVEL desta tentativa de compra. Reenviado em toda
+          // retentativa de rede (idempotência) → o backend/Pagar.me colapsam
+          // na MESMA cobrança em vez de cobrar duas vezes.
+          var purchaseId = (window.crypto && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : ('pg-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+
           // 1) Tokeniza direto no Pagar.me.
           let tok;
           try {
@@ -3059,6 +3066,7 @@ if (groupForm) {
           // 2) Cria a Order no backend (amount = total grossed-up da parcela).
           const body = {
             experiencia_id: ctx.experienceId,
+            purchase_id: purchaseId,
             horario: ctx.horario,
             data: ctx.data || null,
             slot_id: ctx.slotId || null,
@@ -3090,25 +3098,49 @@ if (groupForm) {
           if (stEl) stEl.style.display = 'block';
           if (stText) stText.textContent = 'Confirmando pagamento...';
 
-          let data;
-          try {
-            const res = await fetch(PAGARME_CARD_FN_URL, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-              },
-              body: JSON.stringify(body),
-            });
-            data = await res.json().catch(function () { return null; });
-            if (!res.ok || !data) {
-              console.error('[Elarah Payment/Pagarme] card create falhou', 'http=' + res.status, JSON.stringify(data));
-              return pgCardError((data && data.message) || 'Não foi possível processar o cartão. Tente novamente ou pague no PIX.');
+          // Envio COM RETRY IDEMPOTENTE. Um erro de REDE não significa que a
+          // cobrança não caiu — a resposta pode ter se perdido DEPOIS da
+          // captura. Antes, o catch reabilitava o botão e um novo clique
+          // gerava uma SEGUNDA cobrança. Agora reenviamos a MESMA compra
+          // (mesmo purchase_id) — o backend faz dedupe e o Pagar.me usa
+          // X-Idempotency-Key, então nunca cobra duas vezes. Só reabilitamos
+          // o botão em erro DEFINITIVO do servidor (HTTP 4xx/5xx com corpo),
+          // nunca em incerteza de rede.
+          let data = null;
+          let networkFailed = false;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const res = await fetch(PAGARME_CARD_FN_URL, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': SUPABASE_ANON_KEY,
+                  'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify(body),
+              });
+              data = await res.json().catch(function () { return null; });
+              if (!res.ok || !data) {
+                console.error('[Elarah Payment/Pagarme] card create falhou', 'http=' + res.status, JSON.stringify(data));
+                return pgCardError((data && data.message) || 'Não foi possível processar o cartão. Tente novamente ou pague no PIX.');
+              }
+              networkFailed = false;
+              break; // resposta HTTP recebida (aprovado / recusado / dedupe)
+            } catch (e) {
+              networkFailed = true;
+              console.warn('[Elarah Payment/Pagarme] tentativa ' + (attempt + 1) + ' falhou (rede) — reenviando MESMA compra (idempotente)', e);
+              if (stText) stText.textContent = 'Confirmando pagamento... (reconectando)';
+              await new Promise(function (r) { setTimeout(r, 1200 * (attempt + 1)); });
             }
-          } catch (e) {
-            console.error('[Elarah Payment/Pagarme] card create erro', e);
-            return pgCardError('Falha de conexão. Tente novamente ou pague no PIX.');
+          }
+          if (networkFailed) {
+            // Todas as tentativas falharam na rede. A cobrança é idempotente
+            // (purchase_id) → no MÁXIMO uma cobrança existe. NÃO reabilita o
+            // botão pra não arriscar nova cobrança; orienta o cliente.
+            if (stText) {
+              stText.textContent = 'Instabilidade na conexão. Se o pagamento foi aprovado, você receberá o e-mail de confirmação em instantes. Para evitar cobrança duplicada, não recarregue nem tente de novo agora.';
+            }
+            return;
           }
 
           if (data.direct === true) {
@@ -5666,20 +5698,37 @@ if (groupForm) {
           return;
         }
 
-        // Agrupa por data (YYYY-MM-DD)
+        // Agrupa por data (YYYY-MM-DD). Componentes de dia/dia-da-semana no
+        // FUSO DE SÃO PAULO (não no do visitante) — senão turmas noturnas
+        // (event_at cruza a meia-noite UTC) mostram o dia errado fora do -03.
+        var _spParts = function (date) {
+          try {
+            var p = new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+            }).formatToParts(date).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
+            var wd = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short' })
+              .format(date).replace('.', '');
+            return { key: p.year + '-' + p.month + '-' + p.day, wd: wd, dm: p.day + '/' + p.month };
+          } catch (e) {
+            return {
+              key: date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'),
+              wd: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+              dm: String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0'),
+            };
+          }
+        };
         var byDate = {};
         var dateOrder = [];
         futureSlots.forEach(function (s) {
           var d = new Date(s.eventAt);
-          var key = d.getFullYear() + '-' +
-                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(d.getDate()).padStart(2, '0');
+          var parts = _spParts(d);
+          var key = parts.key;
           if (!byDate[key]) {
             byDate[key] = {
               key: key,
               dt: d,
-              wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
-              dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+              wd: parts.wd,
+              dm: parts.dm,
               slots: [],
             };
             dateOrder.push(key);
