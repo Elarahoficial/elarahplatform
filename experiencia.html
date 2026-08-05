@@ -674,20 +674,39 @@
           '</p>' +
         '</div>';
     } else if (useScheduleNew) {
-      // Agrupa por data (chave: YYYY-MM-DD do event_at).
+      // Agrupa por data (chave: YYYY-MM-DD do event_at). IMPORTANTE: os
+      // componentes de dia/mês/dia-da-semana são derivados NO FUSO DE SÃO
+      // PAULO, não no fuso do visitante — senão uma turma de 21h (event_at
+      // 00:00Z do dia seguinte) aparece com o dia da semana errado pra quem
+      // acessa de outro fuso (ex.: presenteando alguém no exterior).
+      var _spParts = function (date) {
+        try {
+          var p = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+          }).formatToParts(date).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
+          var wd = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short' })
+            .format(date).replace('.', '');
+          return { key: p.year + '-' + p.month + '-' + p.day, wd: wd, dm: p.day + '/' + p.month };
+        } catch (e) {
+          return {
+            key: date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'),
+            wd: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+            dm: String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0'),
+          };
+        }
+      };
       var byDate = {};
       var dateOrder = [];
       futureSlots.forEach(function (s) {
         var d = new Date(s.eventAt);
-        var key = d.getFullYear() + '-' +
-                  String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                  String(d.getDate()).padStart(2, '0');
+        var parts = _spParts(d);
+        var key = parts.key;
         if (!byDate[key]) {
           byDate[key] = {
             key: key,
             dt: d,
-            wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
-            dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+            wd: parts.wd,
+            dm: parts.dm,
             slots: [],
           };
           dateOrder.push(key);

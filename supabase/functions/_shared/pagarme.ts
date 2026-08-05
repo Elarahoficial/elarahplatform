@@ -364,6 +364,9 @@ export interface PagarmeCardOrderInput {
   customer: PagarmeOrderCustomer;
   statementDescriptor?: string;
   itemCode?: string;
+  // Chave de idempotência ESTÁVEL por compra (purchase_id do front). Evita
+  // segunda captura no cartão quando a MESMA compra é reenviada (retry/timeout).
+  idempotencyKey?: string | null;
 }
 
 export interface PagarmePixOrderInput {
@@ -427,6 +430,7 @@ async function postOrder(
   secretKey: string,
   body: Record<string, unknown>,
   label: string,
+  idempotencyKey?: string | null,
 ): Promise<PagarmeOrderResult> {
   if (!secretKey) return { ok: false, errorStatus: 0, errorBody: "no_secret_key" };
 
@@ -437,15 +441,23 @@ async function postOrder(
     const u = new URL(url);
     console.info("[Elarah Payment/Pagarme] " + label + " → POST", u.hostname, u.pathname);
   } catch (_) { /* noop */ }
+  // X-Idempotency-Key (Pagar.me V5): garante que uma REQUISIÇÃO REPETIDA
+  // (retry do front, timeout de rede pós-captura) NÃO gere uma segunda Order
+  // / segunda captura no cartão. A chave é estável por compra (purchase_id),
+  // então toda retentativa da MESMA compra colapsa na primeira cobrança.
+  const headers: Record<string, string> = {
+    "Authorization": buildAuthHeader(secretKey),
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
+  if (idempotencyKey && String(idempotencyKey).trim()) {
+    headers["X-Idempotency-Key"] = String(idempotencyKey).trim().slice(0, 128);
+  }
   let res: Response;
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Authorization": buildAuthHeader(secretKey),
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
+      headers,
       body: JSON.stringify(body),
     });
   } catch (e) {
@@ -549,7 +561,9 @@ export async function createCardOrder(
     "installments=" + n,
     "booking=" + input.bookingId,
   );
-  return await postOrder(secretKey, body, "order card");
+  // Fallback pra bookingId só por robustez — o ideal é sempre receber a
+  // purchase_id estável do front (o bookingId muda a cada tentativa).
+  return await postOrder(secretKey, body, "order card", input.idempotencyKey || input.bookingId);
 }
 
 // ===== API: criar Order de PIX (transparente, QR inline) =====

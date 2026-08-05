@@ -104,13 +104,43 @@
   function paymentMethodBadge(method) {
     const m = String(method || '').trim().toLowerCase();
     if (!m) return '<span style="color:#bbb;">—</span>';
-    if (m.indexOf('card') !== -1 || m.indexOf('cart') !== -1 || m.indexOf('cred') !== -1 || m.indexOf('deb') !== -1) {
-      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;white-space:nowrap;">💳 Cartão</span>';
+    // Método ainda não resolvido: checkout redirect do Pagar.me aceita os
+    // dois e só sabe qual foi no webhook (order.paid). Enquanto não reconcilia,
+    // mostra rótulo neutro em vez de rotular como "Cartão" por engano.
+    if (m === 'card_or_pix' || m === 'cartao_ou_pix' || m === 'card_pix') {
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#f3f0ea;color:#8a7d5f;font-size:.7rem;font-weight:700;white-space:nowrap;">Cartão/Pix</span>';
     }
+    // Gift card (contém "card" — precisa vir ANTES do teste de cartão).
+    if (m.indexOf('gift') !== -1 || m.indexOf('vale') !== -1) {
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#f0e6fa;color:#6b3aa0;font-size:.7rem;font-weight:700;white-space:nowrap;">🎁 Gift Card</span>';
+    }
+    // Pix antes de cartão (evita falso-positivo em strings compostas).
     if (m.indexOf('pix') !== -1) {
       return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f7f1;color:#128a6e;font-size:.7rem;font-weight:700;white-space:nowrap;">⚡ Pix</span>';
     }
+    if (m.indexOf('card') !== -1 || m.indexOf('cart') !== -1 || m.indexOf('cred') !== -1 || m.indexOf('deb') !== -1 || m.indexOf('infinity') !== -1) {
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;white-space:nowrap;">💳 Cartão</span>';
+    }
+    if (m.indexOf('dinheiro') !== -1 || m.indexOf('especie') !== -1) {
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef7e6;color:#4a7a2a;font-size:.7rem;font-weight:700;white-space:nowrap;">💵 Dinheiro</span>';
+    }
+    if (m.indexOf('transfer') !== -1 || m.indexOf('ted') !== -1 || m.indexOf('doc') !== -1) {
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eef4fb;color:#3068a8;font-size:.7rem;font-weight:700;white-space:nowrap;">🏦 Transferência</span>';
+    }
     return '<span style="font-size:.72rem;color:#666;white-space:nowrap;">' + escapeHtml(method) + '</span>';
+  }
+
+  // Resolve o método de pagamento de uma reserva. Historicamente o valor foi
+  // gravado DENTRO de metadata (metadata.payment_method), não como coluna
+  // top-level — por isso a coluna "Pagamento" só puxava vendas manuais (que
+  // têm coluna real). Lê a coluna se existir, senão cai pro metadata.
+  function resolveBookingPaymentMethod(b) {
+    if (!b) return '';
+    if (b.payment_method) return b.payment_method;
+    if (b.metadata && b.metadata.payment_method) return b.metadata.payment_method;
+    // Sem método explícito: usa o provedor só pra distinguir gift card 100%.
+    if (b.payment_provider === 'gift_card') return 'gift_card';
+    return '';
   }
 
   // Formata telefone BR pra exibição: (xx) xxxxx-xxxx (celular) ou
@@ -4345,7 +4375,7 @@
           <td>${escapeHtml(b.horario || '—')}</td>
           <td>${b.quantidade && b.quantidade > 1 ? '<span style="font-weight:600;color:var(--orange,#f0a05e);">' + b.quantidade + '</span>' : '1'}</td>
           <td>${escapeHtml(formatCents(b._valorElarahResolvido != null ? b._valorElarahResolvido : b.amount_total, b.currency))}${mismatchBadge(b)}</td>
-          <td>${paymentMethodBadge(b.payment_method)}</td>
+          <td>${paymentMethodBadge(resolveBookingPaymentMethod(b))}</td>
           <td style="font-size:.82rem;">${b.status === 'pago' ? escapeHtml(fornecedorDisplay || '—') : ''}</td>
           <td>${b.status === 'pago' && valorCheio ? escapeHtml(formatCents(valorCheio, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
           <td>${b.status === 'pago' && valorRepasse ? escapeHtml(formatCents(valorRepasse, b.currency)) : (b.status === 'pago' ? '—' : '')}</td>
@@ -16134,7 +16164,7 @@
     const filterSf = (document.getElementById('bookings-filter-status-fornecedor')?.value || '').trim();
     if (filterForn || filterSf) return;
     const { data, error } = await sb.from('gift_cards')
-      .select('id, code, valor_inicial_centavos, status, comprador_nome, comprador_email, destinatario_nome, payment_method, created_at')
+      .select('id, code, valor_inicial_centavos, status, comprador_nome, comprador_email, destinatario_nome, metadata, created_at')
       .in('status', ['active', 'used', 'expired'])
       .order('created_at', { ascending: false })
       .limit(500);
@@ -16168,7 +16198,7 @@
         '<td>—</td>' +
         '<td>1</td>' +
         '<td>' + _finFmtBRL(g.valor_inicial_centavos) + '</td>' +
-        '<td>' + paymentMethodBadge(g.payment_method) + '</td>' +
+        '<td>' + paymentMethodBadge(g.metadata && g.metadata.payment_method) + '</td>' +
         '<td><span style="color:#bbb;">—</span></td>' +
         '<td>—</td>' +
         '<td>—</td>' +

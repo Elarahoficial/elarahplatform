@@ -505,8 +505,18 @@ export async function reserveExperienceSlot(
     } else if (Array.isArray(slotRows) && slotRows.length > 0) {
       // Múltiplos slots no mesmo horario (recorrência sem data filtrada):
       // pega o mais próximo no futuro. Cliente novo manda `data` → 1 match.
+      // IMPORTANTE: filtra ocorrências PASSADAS antes de ordenar — senão o
+      // caminho legado (só horario, sem slot_id/data) fixava no slot MAIS
+      // ANTIGO da recorrência e o cutoff rejeitava com "reservas encerraram"
+      // mesmo havendo datas futuras válidas.
+      const nowTs = Date.now();
       const sorted = slotRows
         .filter((r) => r.is_active !== false)
+        .filter((r) => {
+          if (!r.event_at) return true; // sem event_at: não dá pra saber → mantém
+          const t = new Date(r.event_at).getTime();
+          return !Number.isFinite(t) || t >= nowTs;
+        })
         .sort((a, b) => {
           const ea = a.event_at ? new Date(a.event_at).getTime() : Infinity;
           const eb = b.event_at ? new Date(b.event_at).getTime() : Infinity;
@@ -842,6 +852,25 @@ export async function reserveExperienceSlot(
   let vagasDecrementadas = 0;
   let inventorySkipped = false;
 
+  // Tabela/id do alvo do decremento — usado pra re-leitura anti-duplicação.
+  const invTable = useSlotVagas ? "experience_slots" : "experiences";
+  const invId = useSlotVagas ? slotId : exp.id;
+  const readVagasRestantes = async (): Promise<number | null> => {
+    if (!invId) return null;
+    const { data: r } = await supabase
+      .from(invTable)
+      .select("vagas_restantes")
+      .eq("id", invId)
+      .maybeSingle();
+    if (!r) return null;
+    const n = Number((r as { vagas_restantes?: unknown }).vagas_restantes);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  // Leitura ANTES do decremento — pra detectar se um erro de TRANSPORTE
+  // (timeout/reset) escondeu um UPDATE que na verdade COMMITOU no banco.
+  const restBefore = await readVagasRestantes();
+
   // Camada 1: moderno
   const modern = await supabase.rpc(decrementRpc, {
     ...baseArg,
@@ -870,12 +899,30 @@ export async function reserveExperienceSlot(
       "qty=" + quantidade,
     );
   } else {
-    console.warn(
-      "[Elarah Guard] decrement com p_qty falhou — tentando legado",
-      "rpc=" + decrementRpc,
-      "error=" + JSON.stringify(modern.error),
-      "hint=rode sql/elarah_bookings_quantidade.sql no Supabase",
-    );
+    // CRÍTICO (bug de vaga fantasma): `modern.error` set NÃO significa que o
+    // UPDATE não commitou — um erro de transporte pós-commit deixava a
+    // camada legada decrementar DE NOVO (qty=2 virava -4 → "esgotou" falso).
+    // Antes de retentar, relê e confirma se o decremento já valeu.
+    const restAfter = await readVagasRestantes();
+    if (
+      restBefore != null && restAfter != null &&
+      (restBefore - restAfter) >= quantidade
+    ) {
+      vagasDecrementadas = quantidade;
+      resolvedDecrement = true;
+      console.warn(
+        "[Elarah Guard] decrement p_qty deu erro de transporte MAS já havia commitado " +
+          "(restBefore=" + restBefore + " restAfter=" + restAfter + ") — NÃO retenta pra não duplicar",
+        "rpc=" + decrementRpc,
+      );
+    } else {
+      console.warn(
+        "[Elarah Guard] decrement com p_qty falhou (sem efeito no estoque) — tentando legado",
+        "rpc=" + decrementRpc,
+        "error=" + JSON.stringify(modern.error),
+        "hint=rode sql/elarah_bookings_quantidade.sql no Supabase",
+      );
+    }
   }
 
   // Camada 2: legado em loop
