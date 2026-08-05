@@ -148,6 +148,20 @@ async function createSessionWithInstallmentFallback(params: any) {
   }
 }
 
+// supabase.rpc(...) devolve um thenable SEM .catch() (supabase-js v2).
+// Chamar `.catch()` nele lança "catch is not a function" e derrubava o
+// rollback inteiro — e, quando o Stripe recusava por qualquer motivo, esse
+// TypeError virava o "Erro inesperado no checkout" (mascarava a causa real).
+// Este helper faz o await seguro: nunca lança e devolve { data, error }.
+// deno-lint-ignore no-explicit-any
+async function safeRpc(q: PromiseLike<any>): Promise<{ data: any; error: any }> {
+  try {
+    return await q;
+  } catch (e) {
+    return { data: null, error: e };
+  }
+}
+
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -757,14 +771,15 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // Usado em todos os pontos onde a função aborta após ter feito o hold.
   const refundCupomAplicado = async () => {
     if (giftCardId) {
-      await supabase.rpc("refund_gift_card", {
+      const { error } = await safeRpc(supabase.rpc("refund_gift_card", {
         p_gift_card_id: giftCardId,
         p_amount_centavos: giftCardCentavos,
-      }).catch((e) => console.warn("[create-checkout-session] refund_gift_card falhou", e));
+      }));
+      if (error) console.warn("[create-checkout-session] refund_gift_card falhou", error);
     }
     if (couponId) {
-      await supabase.rpc("refund_coupon", { p_coupon_id: couponId })
-        .catch((e) => console.warn("[create-checkout-session] refund_coupon falhou", e));
+      const { error } = await safeRpc(supabase.rpc("refund_coupon", { p_coupon_id: couponId }));
+      if (error) console.warn("[create-checkout-session] refund_coupon falhou", error);
     }
   };
 
@@ -872,7 +887,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       if (legacy.error) {
         // Compensa parcial best-effort
         for (let j = 0; j < decrementedSoFar; j++) {
-          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+          await safeRpc(supabase.rpc(incrementRpc, baseArg));
         }
         console.error(
           "[create-checkout-session] decrement legacy TAMBÉM falhou — pulando controle de estoque pra não derrubar pagamento",
@@ -887,7 +902,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       const row = Array.isArray(legacy.data) ? legacy.data[0] : legacy.data;
       if (row && row.ok === false) {
         for (let j = 0; j < decrementedSoFar; j++) {
-          await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+          await safeRpc(supabase.rpc(incrementRpc, baseArg));
         }
         return { kind: "sold_out" };
       }
@@ -934,9 +949,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // não faz nada — manter consistente com o que efetivamente mudou.
   const incrementVaga = async () => {
     if (vagasDecrementadas <= 0) return;
-    const modern = await supabase
-      .rpc(incrementRpc, { ...baseArg, p_qty: vagasDecrementadas })
-      .catch((e) => ({ error: e }));
+    const modern = await safeRpc(
+      supabase.rpc(incrementRpc, { ...baseArg, p_qty: vagasDecrementadas }),
+    );
     if (!modern.error) return;
     console.warn(
       "[create-checkout-session] increment com p_qty falhou — tentando legacy em loop",
@@ -944,7 +959,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       "error=" + JSON.stringify(modern.error),
     );
     for (let i = 0; i < vagasDecrementadas; i++) {
-      await supabase.rpc(incrementRpc, baseArg).catch(() => {});
+      await safeRpc(supabase.rpc(incrementRpc, baseArg));
     }
   };
 
@@ -1135,10 +1150,14 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         product_data: {
           name: productName +
             (quantidade > 1 ? " (x" + quantidade + ")" : ""),
-          description: [
-            quantidade > 1 ? quantidade + " vagas" : null,
-            descricaoLinha,
-          ].filter(Boolean).join(" · ").slice(0, 380),
+          // Omite description quando vazia (Stripe recusa string vazia).
+          ...(() => {
+            const d = [
+              quantidade > 1 ? quantidade + " vagas" : null,
+              descricaoLinha,
+            ].filter(Boolean).join(" · ").slice(0, 380);
+            return d ? { description: d } : {};
+          })(),
         },
       },
     });
@@ -1150,7 +1169,10 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         unit_amount: cents,
         product_data: {
           name: exp.nome + (variantSelected ? " — " + variantSelected : ""),
-          description: descricaoLinha,
+          // Stripe REJEITA description="" (parameter_invalid_empty). Kits
+          // (Elarah em Casa) não têm data/horário/bairro → descricaoLinha fica
+          // vazia. Omite o campo quando vazio em vez de mandar string vazia.
+          ...(descricaoLinha ? { description: descricaoLinha } : {}),
         },
       },
     });
