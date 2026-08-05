@@ -176,9 +176,11 @@ begin
       from public.experience_recurrence_rules
      where is_active
   loop
-    select desativados, protegidos_com_reserva
+    -- Alias `t` qualifica as colunas retornadas — sem isso, `desativados`
+    -- colide com a coluna de saída homônima desta função (ambíguo).
+    select t.desativados, t.protegidos_com_reserva
       into v_d, v_p
-      from public.reconcile_experience_slots(v_exp);
+      from public.reconcile_experience_slots(v_exp) as t;
     v_exps      := v_exps + 1;
     v_desat_tot := v_desat_tot + coalesce(v_d, 0);
     v_prot_tot  := v_prot_tot + coalesce(v_p, 0);
