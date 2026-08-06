@@ -108,7 +108,7 @@ workshops = f'''
     <div class="rule"></div>
     <div class="menu">
       {exp("01","velaaromatica.jpg","Vela aromática","Um ritual sensorial — cada um escolhe o aroma que ama e cria a própria vela. Puro relax e aconchego.","Vela aromática artesanal","center 50%")}
-      {exp("02","pinturatacavinho.jpg","Pintura","Em taça, xícara, caneca, prato... cada um pinta a peça que quiser, do jeitinho dele.","Peça de vidro pintada à mão","center 45%")}
+      {exp("02","pinturataca2.jpg","Pintura","Em taça, xícara, caneca, prato... cada um pinta a peça que quiser, do jeitinho dele.","Fileira de taças de vidro pintadas à mão com flores","center 55%")}
     </div>
     <div class="note" style="margin-top:14px">◆ Na <b>Pintura</b>, a peça é livre: <b>taça, xícara, caneca, prato</b> e mais. Os dois workshops têm o <b>mesmo valor por pessoa</b> — a escolha é da turma. 🎨</div>
     {foot("Os workshops")}
