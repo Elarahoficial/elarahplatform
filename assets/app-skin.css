@@ -479,6 +479,16 @@
   position: relative;
   z-index: 205;
 }
+
+/* No desktop (nav horizontal, >1280px) NÃO existe painel de menu mobile,
+   então o z-index 205 da busca não é necessário — e ele fazia a barra de
+   busca cobrir o topo do dropdown "Explorar" (o item "Todas" sumia atrás
+   dela). O dropdown vive DENTRO do header (contexto z-index 100), então
+   elevamos o header acima da busca só nessa faixa pra ele aparecer inteiro.
+   Abaixo de 1280px nada muda: a busca segue acima do menu hambúrguer. */
+@media (min-width: 1281px) {
+  .is-app .header { z-index: 210; }
+}
 .is-app .header__mobile-toggle.sk-menu-moved {
   order: 0;
   flex: 0 0 auto;
