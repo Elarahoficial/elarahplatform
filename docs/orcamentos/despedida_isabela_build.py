@@ -107,9 +107,9 @@ experiencias = f'''
     <p class="lead">Três experiências lindas pra escolher — todas <strong>pelo mesmo valor por pessoa</strong>. É só decidir a que mais combina com a galera (ou combinar em estações). Cada uma cria e leva a própria peça pra casa. 🎨</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","pinturatacanova.jpg","Pintura","Personalizar a própria taça, xícara ou peça — linda pra brindar e levar de recordação.","Taça de vidro pintada à mão com flores","center 50%")}
-      {exp("02","ceramicamodelagem.jpg","Cerâmica","Modelar a argila à mão e criar uma peça única — relaxante, sensorial e cheio de charme.","Mãos modelando uma peça de cerâmica","center 50%")}
-      {exp("03","perfumariaharbolita.jpg","Perfumaria","Uma imersão sensorial guiada — cada uma cria a própria fragrância, do jeitinho dela.","Essências e frascos de uma imersão de perfumaria","center 45%")}
+      {exp("01","pinturatacamaes.jpg","Pintura","Personalizar a própria taça, xícara ou peça — linda pra brindar e levar de recordação.","Convidada pintando a própria taça de vidro","center 50%")}
+      {exp("02","casalmodelagemceramica.jpg","Cerâmica","Modelar a argila à mão e criar uma peça única — relaxante, sensorial e cheio de charme.","Mãos modelando uma peça de cerâmica juntas","center 50%")}
+      {exp("03","perfumariaapresentação.jpg","Perfumaria","Uma imersão sensorial guiada — cada uma cria a própria fragrância, do jeitinho dela.","Amigas criando as próprias fragrâncias numa imersão de perfumaria","center 40%")}
     </div>
     <div class="note" style="margin-top:14px">◆ As três têm o <b>mesmo valor por pessoa</b> — a escolha é da galera. Cada uma leva a própria criação de recordação. 🌿</div>
     {foot("As experiências")}
@@ -157,7 +157,7 @@ planos = f'''
         <th class="corner"></th>
         <th>A experiência<span>material &amp; condução</span></th>
         <th>Com foto &amp; coffee<span>+ foto profissional &amp; coffee break</span></th>
-        <th class="hl"><span class="pill">★ Completo</span><br>Completo<span>+ lembrancinha</span></th>
+        <th class="hl"><span class="pill">★ Completo</span><br>Completo<span>+ personalização da noiva &amp; decoração</span></th>
       </tr></thead>
       <tbody><tr>
         <td class="rl"><b>Pintura · Cerâmica · Perfumaria</b><span>Todas pelo mesmo valor · levadas até vocês</span></td>
@@ -206,16 +206,16 @@ personaliza = f'''
         </div>
       </div>
       <div class="plan featured">
-        <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Kit de lembrancinha personalizada com escova e piranha" style="object-position:center"></div>
+        <div class="plan-photo sq"><img src="assets/noiva.jpg" alt="Mesa decorada de despedida com a noiva de véu" style="object-position:center 45%"></div>
         <div class="plan-body">
-          <h3>Lembrancinha personalizada</h3>
+          <h3>Personalização da noiva &amp; decoração</h3>
           <span class="tag premium">★ Nível Completo</span>
           <ul class="feat">
-            <li>Kit com <b>escova &amp; piranha</b> pra cada convidada</li>
-            <li>Personalizado com o nome de cada uma</li>
-            <li>Um mimo pra levarem da despedida pra casa</li>
+            <li><b>Decoração</b> temática pra deixar o ambiente lindo</li>
+            <li>Faixa e kit personalizados <b>pra noiva</b></li>
+            <li>Detalhes com o nome dela e clima de despedida</li>
           </ul>
-          <span class="allin">Cada uma leva o seu mimo</span>
+          <span class="allin">A despedida dos sonhos dela</span>
         </div>
       </div>
     </div>
@@ -258,7 +258,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de despedida de solteira da Elarah — experiência criativa à escolha (Pintura, Cerâmica ou Perfumaria, pelo mesmo valor) ou Bartenderia, para cerca de 15 pessoas, em novembro (data a combinar), levada até Jundiaí ou Itatiba. Cada participante cria e leva a própria peça. Experiências criativas: a partir de R$ 229 por pessoa (R$ 229 / 329 / 429), subindo de R$ 100 em R$ 100 a cada extra (foto profissional, coffee break, lembrancinha). Bartenderia: R$ 399 por pessoa, com tudo incluso. Valores por pessoa, já com deslocamento incluso. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de despedida de solteira da Elarah — experiência criativa à escolha (Pintura, Cerâmica ou Perfumaria, pelo mesmo valor) ou Bartenderia, para cerca de 15 pessoas, em novembro (data a combinar), levada até Jundiaí ou Itatiba. Cada participante cria e leva a própria peça. Experiências criativas: a partir de R$ 229 por pessoa (R$ 229 / 329 / 429), subindo de R$ 100 em R$ 100 a cada extra (foto profissional, coffee break, personalização da noiva &amp; decoração). Bartenderia: R$ 399 por pessoa, com tudo incluso. Valores por pessoa, já com deslocamento incluso. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Despedida de solteira · 2026")}
   </section>'''
 
