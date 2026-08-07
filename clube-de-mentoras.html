@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="description" content="O primeiro encontro do Clube de Mentoras, em parceria com a Elarah: uma manhã exclusiva para mulheres criarem sua vela aromática no BTEC Café, com café, presença e conexão. 20 de agosto, das 9h às 11h30.">
+<meta name="description" content="O primeiro encontro do Clube de Mentoras, em parceria com a Elarah: uma manhã exclusiva para mulheres criarem sua vela aromática no BETC Havas Café, com café, presença e conexão. 20 de agosto, das 9h às 11h30.">
 <title>Clube de Mentoras × Elarah — O primeiro encontro</title>
 <link rel="icon" href="assets/logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,6 +66,11 @@
     font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
     color:var(--orange-dark);background:var(--cream-dark);padding:5px 11px;border-radius:999px;
   }
+  .cobrand{display:flex;align-items:center;gap:11px}
+  .cobrand__x{color:var(--orange);font-size:1.15rem;font-family:'DM Serif Display',serif}
+  .cobrand__mark{display:flex;flex-direction:column;line-height:.98}
+  .cobrand__mark small{font-size:.58rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .cobrand__mark em{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.2rem;color:var(--ink);letter-spacing:.01em}
   .topbar__nav{display:flex;gap:26px;align-items:center}
   .topbar__nav a{font-size:.9rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
   .topbar__nav a:hover{color:var(--orange-dark)}
@@ -186,7 +191,7 @@
     section{padding:56px 0}
     .hero{padding:60px 0 54px}
     .wrap{padding:0 20px}
-    .topbar__tag{display:none}
+    .topbar__tag,.cobrand{display:none}
     .topbar__nav .btn{padding:9px 16px;font-size:.85rem}
     .cta{padding:46px 26px}
   }
@@ -200,7 +205,10 @@
   <div class="wrap topbar__inner">
     <a href="#topo" class="topbar__logo">
       <img src="assets/logo.png" alt="Elarah">
-      <span class="topbar__tag">Clube de Mentoras</span>
+      <span class="cobrand">
+        <span class="cobrand__x">×</span>
+        <span class="cobrand__mark"><small>Clube de</small><em>Mentoras</em></span>
+      </span>
     </a>
     <nav class="topbar__nav">
       <a href="#experiencia">A experiência</a>
@@ -220,7 +228,7 @@
       <h1>Uma manhã para <em>desacelerar e se reconectar</em>.</h1>
       <p class="hero__lead">
         O <strong>primeiro encontro do Clube de Mentoras</strong> é um convite só para as mulheres do clube:
-        uma manhã leve no <strong>BTEC Café</strong> para criar a sua própria <strong>vela aromática</strong>,
+        uma manhã leve no <strong>BETC Havas Café</strong> para criar a sua própria <strong>vela aromática</strong>,
         tomar um bom café e viver um momento raro de presença e conexão — longe da correria, pertinho de quem
         também busca desacelerar.
       </p>
@@ -232,13 +240,13 @@
       <div class="hero__chips">
         <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 20 de agosto</span>
         <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 9h às 11h30</span>
-        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> BTEC Café · SP</span>
+        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> BETC Havas Café · SP</span>
         <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> R$249 por pessoa</span>
       </div>
     </div>
     <div class="hero__visual">
       <img class="v1" src="assets/aniv-adulto.jpg" alt="Mulheres em conexão em volta de uma mesa posta com velas e flores" loading="lazy">
-      <img class="v2" src="assets/betchavas3.jpg" alt="Salão do BTEC Café com mesas de madeira e vista para o verde" loading="lazy">
+      <img class="v2" src="assets/betchavas3.jpg" alt="Salão do BETC Havas Café com mesas de madeira e vista para o verde" loading="lazy">
       <img class="v3" src="assets/velaaromatica.jpg" alt="Vela aromática artesanal que você vai criar" loading="lazy">
     </div>
   </div>
@@ -261,7 +269,7 @@
       <div class="info__card">
         <div class="info__ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
         <div class="info__k">Local</div>
-        <div class="info__v">BTEC Café<small>São Paulo</small></div>
+        <div class="info__v">BETC Havas Café<small>São Paulo</small></div>
       </div>
       <div class="info__card">
         <div class="info__ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
@@ -276,7 +284,7 @@
 <section id="experiencia">
   <div class="wrap define">
     <div class="define__media">
-      <img src="assets/betchavas2.jpg" alt="Bar e ambiente do BTEC Café" loading="lazy">
+      <img src="assets/betchavas2.jpg" alt="Bar e ambiente do BETC Havas Café" loading="lazy">
       <div class="define__badge">
         <strong>Todo material incluso</strong>
         <span>é só chegar — a gente cuida do resto</span>
@@ -344,8 +352,8 @@
     <div class="steps">
       <div class="step">
         <div class="step__n">1</div>
-        <h3>Chegada &amp; café</h3>
-        <p>A gente começa devagar, com um café gostoso e um ambiente pensado pra te acolher.</p>
+        <h3>Chegada &amp; boas-vindas</h3>
+        <p>Você chega, se acomoda no aconchego do BETC Havas Café e começa a manhã sem pressa (com seu voucher de consumação).</p>
       </div>
       <div class="step">
         <div class="step__n">2</div>
@@ -375,11 +383,11 @@
       <p>Você chega, respira e aproveita. Todo o resto a Elarah cuida.</p>
     </div>
     <ul class="incl">
-      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Café &amp; coffee break de boas-vindas</li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Voucher de R$50 em consumação no BETC Havas Café</li>
       <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Todo o material da vela aromática</li>
       <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> A sua vela aromática para levar pra casa</li>
       <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Condução por especialista da Elarah</li>
-      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Ambiente aconchegante no BTEC Café</li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Ambiente aconchegante no BETC Havas Café</li>
       <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Grupo intimista, só do Clube de Mentoras</li>
     </ul>
   </div>
