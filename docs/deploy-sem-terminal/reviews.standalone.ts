@@ -1,12 +1,15 @@
 // =============================================================
 // ELARAH — reviews (VERSÃO ARQUIVO ÚNICO)
 // -------------------------------------------------------------
-// Sistema de avaliações reais. Duas funções num arquivo só:
+// Sistema de avaliações reais. Três modos num arquivo só:
 //   • POST mode "submit"  (público, validado por token) → cliente
 //       que viveu a experiência manda nota (1-5) + comentário.
 //   • POST mode "request" (cron) → acha quem viveu a experiência
 //       nos últimos dias e ainda não foi convidado, e manda o
 //       e-mail "como foi? deixe sua avaliação" com link único.
+//   • POST mode "link"    (admin) → devolve pra admin o link único
+//       (avaliar.html?b=&t=) de UMA reserva, pra enviar manualmente
+//       (WhatsApp etc.) e o cliente avaliar no site.
 //
 // DESLIGUE "Verify JWT" nas Settings (submit é público com token).
 // Pré-requisitos (SQL): elarah_reviews.sql.
@@ -116,6 +119,32 @@ serve(async (req) => {
   let body: { mode?: string; booking_id?: string; token?: string; nota?: number; comentario?: string } = {};
   try { body = await req.json(); } catch { /* vazio */ }
   const sb = sbc();
+
+  // ---------- LINK: admin pega o link de avaliação de uma reserva ----------
+  // Devolve pra admin o MESMO link único (avaliar.html?b=&t=) que o cron
+  // manda por e-mail, pra ela poder enviar manualmente (WhatsApp etc.) e o
+  // cliente avaliar no site. Só ADMIN: valida o access token do caller e
+  // confere profiles.role === 'admin' (a função roda com Verify JWT OFF, por
+  // isso a checagem é feita aqui dentro).
+  if (body.mode === "link") {
+    const auth = req.headers.get("Authorization") || "";
+    const callerToken = /^Bearer\s+(.+)$/i.exec(auth)?.[1]?.trim() || "";
+    if (!callerToken) return new Response(JSON.stringify({ ok: false, error: "Faça login como admin." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: userData, error: userErr } = await sb.auth.getUser(callerToken);
+    const caller = userData?.user;
+    if (userErr || !caller?.id) return new Response(JSON.stringify({ ok: false, error: "Sessão expirada. Faça login de novo." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: prof } = await sb.from("profiles").select("role").eq("id", caller.id).maybeSingle();
+    if (!prof || prof.role !== "admin") return new Response(JSON.stringify({ ok: false, error: "Só admin pode gerar o link." }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const bookingId = String(body.booking_id || "").trim();
+    if (!bookingId) return new Response(JSON.stringify({ ok: false, error: "booking_id obrigatório." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: bk } = await sb.from("bookings").select("id, experiencia_nome, nome, data").eq("id", bookingId).maybeSingle();
+    if (!bk) return new Response(JSON.stringify({ ok: false, error: "Reserva não encontrada." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const linkToken = await tokenFor(bookingId);
+    const link = `${SITE}/avaliar.html?b=${encodeURIComponent(bookingId)}&t=${linkToken}`;
+    return new Response(JSON.stringify({ ok: true, link, booking: { experiencia_nome: bk.experiencia_nome, nome: bk.nome, data: bk.data } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   // ---------- SUBMIT: cliente envia avaliação (público, token) ----------
   if (body.mode !== "request") {

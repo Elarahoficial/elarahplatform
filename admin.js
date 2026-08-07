@@ -5891,7 +5891,11 @@
       return n;
     }
 
-    function buildFeedbackWhatsappLink(b, nome, tel) {
+    // reviewLink (opcional): link único avaliar.html?b=&t= pra o cliente
+    // avaliar NO SITE (a avaliação aparece como prova social na página da
+    // experiência). Quando presente, a mensagem convida a tocar no link;
+    // sem ele, cai no pedido "nota de 0 a 10 no chat" de sempre.
+    function buildFeedbackWhatsappLink(b, nome, tel, reviewLink) {
       if (!tel) return null;
       const digits = String(tel).replace(/\D+/g, '');
       if (digits.length < 10) return null;
@@ -5901,11 +5905,14 @@
       const expNome = b.experiencia_nome || '(experiência)';
       const data = b.data || '';
       const dataLine = data ? ' no dia *' + data + '*' : '';
+      const pedido = reviewLink
+        ? ('Adoraríamos saber como foi pra você! É rapidinho, leva 20 segundos — é só tocar aqui, dar sua nota e deixar um comentário:\n' + reviewLink + '\n\n')
+        : ('Adoraríamos saber como foi pra você:\n' +
+           '• Uma nota de 0 a 10 ⭐\n' +
+           '• Um comentário curtinho sobre o que mais te marcou\n\n');
       const msg = oi + ' ✨\n\n' +
         'Aqui é da Elarah! Esperamos que você tenha vivido uma experiência incrível na *' + expNome + '*' + dataLine + ' 💛\n\n' +
-        'Adoraríamos saber como foi pra você:\n' +
-        '• Uma nota de 0 a 10 ⭐\n' +
-        '• Um comentário curtinho sobre o que mais te marcou\n\n' +
+        pedido +
         'Sua opinião ajuda demais — tanto pra gente melhorar quanto pra outras pessoas descobrirem essa experiência.\n\n' +
         'Obrigada por escolher a Elarah! 🌸';
       // api.whatsapp.com/send em vez de wa.me — wa.me corrompe emojis
@@ -5914,6 +5921,36 @@
       return 'https://api.whatsapp.com/send/?phone=' + waDigits +
         '&text=' + encodeURIComponent(msg);
     }
+
+    // Busca no servidor o link único de avaliação (avaliar.html?b=&t=) de uma
+    // reserva. Só admin (a Edge Function valida o JWT do caller). Usado tanto
+    // pra embutir o link na mensagem de WhatsApp quanto pro botão "Copiar link".
+    async function getReviewLink(bookingId) {
+      const s = window.supabaseClient;
+      if (!s || !s.functions || !s.functions.invoke) throw new Error('Supabase indisponível. Recarregue a página.');
+      const { data, error } = await s.functions.invoke('reviews', { body: { mode: 'link', booking_id: bookingId } });
+      if (error) throw new Error(error.message || 'Falha ao gerar o link.');
+      if (!data || !data.ok || !data.link) throw new Error((data && data.error) || 'Falha ao gerar o link.');
+      return data.link;
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); return true; }
+      } catch (e) { /* fallback abaixo */ }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) { return false; }
+    }
+
+    // Guarda por booking o que a mensagem de WhatsApp precisa (a lista some do
+    // escopo dos handlers de clique, então persistimos aqui).
+    const waInfoById = {};
 
     tbody.innerHTML = lista.map(function (b) {
       const tel = resolveTelefone(b);
@@ -5930,22 +5967,28 @@
         : '<span style="color:#bbb;">—</span>';
 
       const link = buildFeedbackWhatsappLink(b, nome, tel);
+      waInfoById[b.id] = { b: b, nome: nome, tel: tel };
       const sentAt = b.feedback_solicitado_at ? new Date(b.feedback_solicitado_at) : null;
       const isSent = sentAt && !isNaN(sentAt.getTime());
+
+      // Botão sempre disponível: copia o link único pra o cliente avaliar no
+      // site (funciona mesmo sem WhatsApp cadastrado — a admin manda por onde
+      // quiser).
+      const reviewLinkBtn = '<button type="button" data-review-link="' + escapeHtml(b.id) + '" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#fff;color:#b06a1f;border:1px solid #e0a86a;border-radius:6px;font-size:.74rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Copiar o link pro cliente avaliar no site">🔗 Link de avaliação</button>';
 
       let statusCell, actionCell;
       if (isSent) {
         const sentWhen = sentAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         statusCell = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#1a8a4a;font-size:11px;font-weight:600;">Solicitado ' + escapeHtml(sentWhen) + '</span>';
-        actionCell = link
-          ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#e6f4ea;color:#1a8a4a;border:1px solid #1a8a4a;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;" title="Reabrir conversa (não registra de novo)">↻ Reabrir</a>' +
-            '<button type="button" data-feedback-undo="' + escapeHtml(b.id) + '" style="margin-left:4px;padding:4px 7px;background:transparent;border:1px solid #ddd;border-radius:6px;color:#666;font-size:.72rem;cursor:pointer;" title="Marcar como não solicitado">↺</button>'
-          : '<span style="color:#bbb;font-size:.72rem;">sem WhatsApp</span>';
+        actionCell = (link
+          ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" data-feedback-booking="' + escapeHtml(b.id) + '" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#e6f4ea;color:#1a8a4a;border:1px solid #1a8a4a;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;" title="Reabrir conversa (não registra de novo)">↻ Reabrir</a>' +
+            '<button type="button" data-feedback-undo="' + escapeHtml(b.id) + '" style="padding:4px 7px;background:transparent;border:1px solid #ddd;border-radius:6px;color:#666;font-size:.72rem;cursor:pointer;" title="Marcar como não solicitado">↺</button>'
+          : '') + reviewLinkBtn;
       } else {
         statusCell = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8ef;color:#b07b00;font-size:11px;font-weight:600;">Pendente</span>';
-        actionCell = link
+        actionCell = (link
           ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" data-feedback-booking="' + escapeHtml(b.id) + '" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#1a8a4a;color:#fff;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;white-space:nowrap;">💬 Pedir feedback</a>'
-          : '<span style="color:#bbb;font-size:.72rem;" title="Cliente sem WhatsApp cadastrado">— sem WhatsApp</span>';
+          : '<span style="color:#bbb;font-size:.72rem;" title="Cliente sem WhatsApp cadastrado">— sem WhatsApp</span>') + reviewLinkBtn;
       }
 
       return '<tr>' +
@@ -5955,15 +5998,37 @@
         '<td>' + escapeHtml(b.experiencia_nome || '—') + '</td>' +
         '<td>' + escapeHtml(fornecedor) + '</td>' +
         '<td>' + statusCell + '</td>' +
-        '<td>' + actionCell + '</td>' +
+        '<td><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' + actionCell + '</div></td>' +
         '</tr>';
     }).join('');
 
-    // Pedir feedback: grava timestamp + abre WhatsApp (não preventDefault).
+    // Pedir feedback: busca o link único de avaliação, embute na mensagem de
+    // WhatsApp (pra o cliente avaliar NO SITE) e grava o timestamp.
     tbody.querySelectorAll('[data-feedback-booking]').forEach(function (a) {
-      a.addEventListener('click', async function () {
+      a.addEventListener('click', async function (ev) {
         const bookingId = a.dataset.feedbackBooking;
         if (!bookingId) return;
+        ev.preventDefault();
+        // Abre a janela JÁ no clique (síncrono) pra não ser bloqueada como
+        // popup depois do await; navegamos ela quando o link estiver pronto.
+        let win = null;
+        try { win = window.open('about:blank', '_blank'); } catch (e) { win = null; }
+
+        const info = waInfoById[bookingId] || {};
+        let reviewLink = null;
+        try { reviewLink = await getReviewLink(bookingId); }
+        catch (e) { console.warn('[Admin] getReviewLink falhou, mando WhatsApp sem link do site:', e && e.message); }
+
+        // Com link → mensagem convida a avaliar no site; sem link → cai no
+        // href original do botão (pedido de nota no chat).
+        const waUrl = (info.b ? buildFeedbackWhatsappLink(info.b, info.nome, info.tel, reviewLink) : null) || a.getAttribute('href');
+        if (waUrl) {
+          if (win) { try { win.location.href = waUrl; } catch (e) { window.location.href = waUrl; } }
+          else { window.location.href = waUrl; }
+        } else if (win) {
+          try { win.close(); } catch (e) { /* noop */ }
+        }
+
         try {
           const s = window.supabaseClient;
           if (!s) return;
@@ -5979,6 +6044,35 @@
           renderPostEvent();
         } catch (e) {
           console.warn('[Admin] feedback_solicitado exception:', e && e.message);
+        }
+      });
+    });
+
+    // Copiar link de avaliação: pega o link único no servidor e copia pra
+    // área de transferência (fallback: prompt pra copiar na mão).
+    tbody.querySelectorAll('[data-review-link]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        const bookingId = btn.dataset.reviewLink;
+        if (!bookingId || btn.disabled) return;
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Gerando…';
+        try {
+          const link = await getReviewLink(bookingId);
+          const copied = await copyToClipboard(link);
+          if (copied) {
+            btn.innerHTML = '✅ Link copiado!';
+          } else {
+            btn.innerHTML = original;
+            window.prompt('Copie o link de avaliação e mande pro cliente:', link);
+          }
+        } catch (e) {
+          console.warn('[Admin] getReviewLink (copiar):', e && e.message);
+          btn.innerHTML = '⚠️ Erro';
+          alert('Não consegui gerar o link: ' + (e && e.message ? e.message : 'erro desconhecido') +
+            '\n\nSe a função "reviews" foi atualizada, confirme que ela foi re-deployada no Supabase.');
+        } finally {
+          setTimeout(function () { btn.disabled = false; btn.innerHTML = original; }, 2500);
         }
       });
     });
