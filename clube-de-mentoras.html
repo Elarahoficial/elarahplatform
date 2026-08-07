@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="O primeiro encontro do Clube de Mentoras, em parceria com a Elarah: uma manhã exclusiva para mulheres criarem sua vela aromática no BETC Havas Café, com café, presença e conexão. 20 de agosto, das 9h às 11h30.">
+<title>Clube de Mentoras × Elarah — O primeiro encontro</title>
+<link rel="icon" href="assets/logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#BC6E38;          /* caramelo/mel — acento do clube */
+    --orange-light:#DDA062;
+    --orange-dark:#8F5324;
+    --cream:#FFF9F3;
+    --cream-dark:#FBEEDF;
+    --ink:#33261b;
+    --ink-soft:#6f6153;
+    --line:#eee0cf;
+    --white:#fff;
+    --shadow:0 18px 50px -28px rgba(108,70,20,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink);
+    background:var(--cream);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'DM Serif Display',Georgia,serif;font-weight:400;line-height:1.12;letter-spacing:-.01em}
+  .serif-i{font-style:italic}
+  a{color:inherit}
+  img{max-width:100%;display:block}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .eyebrow{
+    display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--orange-dark);margin-bottom:18px;
+  }
+  .eyebrow--light{color:#f3d3ad}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    padding:15px 30px;border-radius:999px;font-weight:600;font-size:.95rem;
+    text-decoration:none;transition:transform .18s ease,box-shadow .18s ease;cursor:pointer;border:0;
+  }
+  .btn--primary{background:var(--orange);color:#fff;box-shadow:0 12px 30px -12px rgba(188,110,56,.7)}
+  .btn--primary:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(188,110,56,.85)}
+  .btn--ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn--ghost:hover{border-color:var(--orange);color:var(--orange-dark)}
+  .btn--light{background:#fff;color:var(--orange-dark)}
+  .btn--light:hover{transform:translateY(-2px)}
+  .topbar__nav .btn{color:#fff}
+
+  /* ===== top bar ===== */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(255,249,243,.84);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  }
+  .topbar__inner{display:flex;align-items:center;justify-content:space-between;height:78px}
+  .topbar__logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  .topbar__logo img{height:44px;width:auto}
+  .topbar__tag{
+    font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--orange-dark);background:var(--cream-dark);padding:5px 11px;border-radius:999px;
+  }
+  .cobrand{display:flex;align-items:center;gap:11px}
+  .cobrand__x{color:var(--orange);font-size:1.15rem;font-family:'DM Serif Display',serif}
+  .cobrand__mark{display:flex;flex-direction:column;line-height:.98}
+  .cobrand__mark small{font-size:.58rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .cobrand__mark em{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.2rem;color:var(--ink);letter-spacing:.01em}
+  .topbar__nav{display:flex;gap:26px;align-items:center}
+  .topbar__nav a{font-size:.9rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
+  .topbar__nav a:hover{color:var(--orange-dark)}
+  .topbar__nav .btn{padding:10px 20px}
+  @media(max-width:860px){.topbar__nav a:not(.btn){display:none}}
+
+  /* ===== hero ===== */
+  .hero{position:relative;overflow:hidden;padding:84px 0 74px;
+    background:
+      radial-gradient(900px 480px at 88% -8%,rgba(221,160,98,.32),transparent 60%),
+      radial-gradient(700px 420px at -5% 110%,rgba(188,110,56,.16),transparent 55%),
+      var(--cream);
+  }
+  .hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:54px;align-items:center}
+  .hero h1{font-size:clamp(2.5rem,5.2vw,4rem);margin-bottom:22px}
+  .hero h1 em{color:var(--orange-dark)}
+  .hero__lead{font-size:1.16rem;color:var(--ink-soft);max-width:540px;margin-bottom:30px}
+  .hero__actions{display:flex;gap:14px;flex-wrap:wrap}
+  .hero__chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+  .hero__chips span{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);
+    border-radius:999px;padding:8px 15px;font-size:.86rem;font-weight:600;color:var(--ink);box-shadow:0 8px 22px -18px rgba(108,70,20,.7)}
+  .hero__chips svg{color:var(--orange)}
+  .hero__visual{position:relative;height:440px}
+  .hero__visual img{position:absolute;border-radius:22px;box-shadow:var(--shadow);object-fit:cover}
+  .hero__visual .v1{width:54%;height:80%;top:0;right:0;z-index:1}
+  .hero__visual .v2{width:48%;height:58%;bottom:0;left:0;z-index:3;border:6px solid var(--cream)}
+  .hero__visual .v3{width:43%;height:45%;top:0;left:2%;z-index:2;border:6px solid var(--cream)}
+  @media(max-width:860px){
+    .hero__grid{grid-template-columns:1fr;gap:40px}
+    .hero__visual{height:340px;order:-1}
+  }
+
+  /* ===== generic section ===== */
+  section{padding:82px 0}
+  .section-head{max-width:720px;margin-bottom:46px}
+  .section-head--center{margin-left:auto;margin-right:auto;text-align:center}
+  .section-head h2{font-size:clamp(2rem,3.6vw,2.9rem);margin-bottom:16px}
+  .section-head p{font-size:1.1rem;color:var(--ink-soft)}
+  .lead-narrow{max-width:760px}
+
+  .soft{background:var(--cream-dark)}
+  .ink-bg{background:linear-gradient(150deg,#3a2a1c,#241810);color:#f6ece2}
+  .ink-bg h2{color:#fff}
+  .ink-bg .section-head p{color:#e0cdb8}
+
+  /* ===== info bar (detalhes do encontro) ===== */
+  .info{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .info__card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 24px;text-align:center;box-shadow:0 10px 30px -24px rgba(108,70,20,.5)}
+  .info__ic{width:46px;height:46px;border-radius:13px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--orange-dark)}
+  .info__k{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}
+  .info__v{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);line-height:1.15}
+  .info__v small{display:block;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--ink-soft);font-weight:500;margin-top:3px}
+  @media(max-width:760px){.info{grid-template-columns:1fr 1fr}}
+  @media(max-width:440px){.info{grid-template-columns:1fr}}
+
+  /* ===== define (a experiência) ===== */
+  .define{display:grid;grid-template-columns:.95fr 1.05fr;gap:54px;align-items:center}
+  .define--rev{grid-template-columns:1.05fr .95fr}
+  .define--rev .define__media{order:2}
+  .define__media{position:relative}
+  .define__media img{border-radius:22px;box-shadow:var(--shadow);height:460px;width:100%;object-fit:cover}
+  .define__badge{
+    position:absolute;left:-40px;bottom:20px;background:#fff;border-radius:16px;
+    padding:16px 20px;box-shadow:var(--shadow);max-width:230px;border:1px solid var(--line);z-index:4;
+  }
+  @media(max-width:1180px){.define__badge{left:10px;bottom:16px}}
+  .define__badge strong{display:block;font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--orange-dark)}
+  .define__badge span{font-size:.84rem;color:var(--ink-soft)}
+  .define h2{font-size:clamp(2rem,3.6vw,2.9rem);margin-bottom:18px}
+  .prose p{font-size:1.1rem;color:var(--ink-soft);margin-bottom:16px;max-width:760px}
+  .prose strong{color:var(--ink)}
+  @media(max-width:860px){
+    .define,.define--rev{grid-template-columns:1fr;gap:36px}
+    .define__media img{height:340px}
+    .define--rev .define__media{order:-1}
+  }
+
+  /* ===== pillars ===== */
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:14px}
+  .pillar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px 26px;box-shadow:0 10px 30px -24px rgba(108,70,20,.5)}
+  .pillar__ic{width:46px;height:46px;border-radius:13px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:var(--orange-dark)}
+  .pillar h3{font-size:1.3rem;margin-bottom:9px}
+  .pillar p{color:var(--ink-soft);font-size:.98rem}
+  @media(max-width:860px){.pillars{grid-template-columns:1fr}}
+
+  /* ===== steps ===== */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  .step{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px 24px;position:relative}
+  .step__n{font-family:'DM Serif Display',serif;font-size:1.5rem;width:46px;height:46px;border-radius:50%;
+    background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .step h3{font-size:1.18rem;margin-bottom:8px}
+  .step p{font-size:.94rem;color:var(--ink-soft)}
+  @media(max-width:860px){.steps{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.steps{grid-template-columns:1fr}}
+
+  /* ===== includes checklist ===== */
+  .incl{display:grid;grid-template-columns:1fr 1fr;gap:14px 34px;margin-top:8px}
+  .incl li{list-style:none;position:relative;padding-left:38px;font-size:1.04rem;color:#f6ece2}
+  .incl li svg{position:absolute;left:0;top:2px;color:var(--orange-light);flex:none}
+  @media(max-width:640px){.incl{grid-template-columns:1fr}}
+
+  /* ===== cta ===== */
+  .cta{background:linear-gradient(135deg,var(--orange),var(--orange-dark));color:#fff;border-radius:28px;padding:64px 48px;text-align:center}
+  .cta h2{color:#fff;font-size:clamp(2rem,4vw,3rem);margin-bottom:16px}
+  .cta p{font-size:1.15rem;color:#fff;opacity:.95;max-width:560px;margin:0 auto 30px}
+  .cta__actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .cta__note{margin-top:20px;font-size:.9rem;color:#fff;opacity:.9}
+
+  /* ===== footer ===== */
+  footer{padding:46px 0;border-top:1px solid var(--line)}
+  .footer__inner{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .footer__inner img{height:26px}
+  .footer__inner p{font-size:.86rem;color:var(--ink-soft)}
+  .footer__inner a{color:var(--orange-dark);text-decoration:none;font-weight:600}
+
+  /* ===== mobile polish ===== */
+  @media(max-width:600px){
+    section{padding:56px 0}
+    .hero{padding:60px 0 54px}
+    .wrap{padding:0 20px}
+    .topbar__tag,.cobrand{display:none}
+    .topbar__nav .btn{padding:9px 16px;font-size:.85rem}
+    .cta{padding:46px 26px}
+  }
+</style>
+  <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="#topo" class="topbar__logo">
+      <img src="assets/logo.png" alt="Elarah">
+      <span class="cobrand">
+        <span class="cobrand__x">×</span>
+        <span class="cobrand__mark"><small>Clube de</small><em>Mentoras</em></span>
+      </span>
+    </a>
+    <nav class="topbar__nav">
+      <a href="#experiencia">A experiência</a>
+      <a href="#manha">A manhã</a>
+      <a href="#inclui">O que inclui</a>
+      <!-- CHECKOUT: produto "Vela Aromática · Clube de Mentoras" (Supabase experiences.id) -->
+      <a href="experiencia.html?id=13540f79-4f88-4ffc-99cd-70f59c597c6f" class="btn btn--primary">Garantir minha vaga</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="topo">
+  <div class="wrap hero__grid">
+    <div>
+      <span class="eyebrow">Clube de Mentoras × Elarah · O primeiro encontro</span>
+      <h1>Uma manhã para <em>desacelerar e se reconectar</em>.</h1>
+      <p class="hero__lead">
+        O <strong>primeiro encontro do Clube de Mentoras</strong> é um convite só para as mulheres do clube:
+        uma manhã leve no <strong>BETC Havas Café</strong> para criar a sua própria <strong>vela aromática</strong>,
+        tomar um bom café e viver um momento raro de presença e conexão — longe da correria, pertinho de quem
+        também busca desacelerar.
+      </p>
+      <div class="hero__actions">
+        <!-- CHECKOUT: produto "Vela Aromática · Clube de Mentoras" (Supabase experiences.id) -->
+        <a href="experiencia.html?id=13540f79-4f88-4ffc-99cd-70f59c597c6f" class="btn btn--primary">Garantir minha vaga</a>
+        <a href="#experiencia" class="btn btn--ghost">Ver como é</a>
+      </div>
+      <div class="hero__chips">
+        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 20 de agosto</span>
+        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 9h às 11h30</span>
+        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> BETC Havas Café · SP</span>
+        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> R$249 por pessoa</span>
+      </div>
+    </div>
+    <div class="hero__visual">
+      <img class="v1" src="assets/aniv-adulto.jpg" alt="Mulheres em conexão em volta de uma mesa posta com velas e flores" loading="lazy">
+      <img class="v2" src="assets/betchavas3.jpg" alt="Salão do BETC Havas Café com mesas de madeira e vista para o verde" loading="lazy">
+      <img class="v3" src="assets/velaaromatica.jpg" alt="Vela aromática artesanal que você vai criar" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- ===== DETALHES DO ENCONTRO ===== -->
+<section class="soft" id="detalhes" style="padding-top:56px;padding-bottom:56px">
+  <div class="wrap">
+    <div class="info">
+      <div class="info__card">
+        <div class="info__ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+        <div class="info__k">Data</div>
+        <div class="info__v">20 de agosto<small>quinta-feira</small></div>
+      </div>
+      <div class="info__card">
+        <div class="info__ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="info__k">Horário</div>
+        <div class="info__v">9h – 11h30<small>2h30 de encontro</small></div>
+      </div>
+      <div class="info__card">
+        <div class="info__ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+        <div class="info__k">Local</div>
+        <div class="info__v">BETC Havas Café<small>R. Oscar Freire, 1128 · Cerqueira César</small></div>
+      </div>
+      <div class="info__card">
+        <div class="info__ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="info__k">Investimento</div>
+        <div class="info__v">R$249<small>por pessoa</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== A EXPERIÊNCIA ===== -->
+<section id="experiencia">
+  <div class="wrap define">
+    <div class="define__media">
+      <img src="assets/betchavas2.jpg" alt="Bar e ambiente do BETC Havas Café" loading="lazy">
+      <div class="define__badge">
+        <strong>Todo material incluso</strong>
+        <span>é só chegar — a gente cuida do resto</span>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">A experiência</span>
+      <h2>No seu tempo, <span class="serif-i">no seu aroma</span>.</h2>
+      <div class="prose">
+        <p>
+          Guiada por uma especialista da Elarah, você vai <strong>escolher essências, misturar, perfumar
+          e finalizar a sua própria vela aromática</strong> — do começo ao fim, com as próprias mãos.
+        </p>
+        <p>
+          Sem pressa, sem certo ou errado. Só o prazer de criar algo único e levar pra casa
+          um pedacinho dessa manhã — um aroma que vai te lembrar desse momento sempre que acender.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== POR QUE ESSE ENCONTRO ===== -->
+<section class="soft" id="porque">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Por que esse encontro</span>
+      <h2>Um tempo raro — só seu e das suas.</h2>
+      <p>Mais que uma oficina: uma pausa de verdade no meio da rotina, entre mulheres que também buscam presença.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 5.5 6.8 5.5 10.5a5.5 5.5 0 0 1-11 0C6.5 9.8 9 7 12 3z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/></svg>
+        </div>
+        <h3>Um respiro só seu</h3>
+        <p>Duas horas e meia longe das telas e das obrigações — um tempo de qualidade dedicado inteiramente a você.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Conexão de verdade</h3>
+        <p>Um grupo intimista de mulheres que, como você, buscam desacelerar. Trocas que ficam muito além da manhã.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__ic">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.9H21l-5.3 4 2 6.9L12 15.8 6.3 19.8l2-6.9L3 8.9h6.6z"/></svg>
+        </div>
+        <h3>Uma lembrança que fica</h3>
+        <p>Você vai embora com a sua vela aromática — e com a memória de um encontro que perfuma os próximos dias.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMO VAI SER A MANHÃ ===== -->
+<section id="manha">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Como vai ser</span>
+      <h2>A manhã, do começo ao fim.</h2>
+      <p>Um roteiro leve, pensado para você relaxar, criar e se conectar — no ritmo certo.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step__n">1</div>
+        <h3>Chegada &amp; boas-vindas</h3>
+        <p>Você chega, se acomoda no aconchego do BETC Havas Café e começa a manhã sem pressa (com seu voucher de consumação).</p>
+      </div>
+      <div class="step">
+        <div class="step__n">2</div>
+        <h3>Mãos à obra</h3>
+        <p>Conheça o universo das velas aromáticas e comece a criar a sua, com todo material e orientação.</p>
+      </div>
+      <div class="step">
+        <div class="step__n">3</div>
+        <h3>O seu aroma</h3>
+        <p>Escolha e combine essências até chegar no perfume que é a sua cara. Finalize a sua vela.</p>
+      </div>
+      <div class="step">
+        <div class="step__n">4</div>
+        <h3>Roda de conexão</h3>
+        <p>Entre aromas e conversa, um momento de troca real entre mulheres — o coração do encontro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== O QUE INCLUI ===== -->
+<section class="ink-bg" id="inclui">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow eyebrow--light">O que está incluso</span>
+      <h2>Tudo pensado — é só viver a manhã.</h2>
+      <p>Você chega, respira e aproveita. Todo o resto a Elarah cuida.</p>
+    </div>
+    <ul class="incl">
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Voucher de R$50 em consumação no BETC Havas Café</li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Todo o material da vela aromática</li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> A sua vela aromática para levar pra casa</li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Condução por especialista da Elarah</li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Ambiente aconchegante no BETC Havas Café</li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Grupo intimista, só do Clube de Mentoras</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section id="reservar">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Garanta a sua vaga.</h2>
+      <p>As vagas são limitadas para manter o encontro intimista e especial. Reserve a sua e viva essa manhã com a gente.</p>
+      <div class="cta__actions">
+        <!-- CHECKOUT: produto "Vela Aromática · Clube de Mentoras" (Supabase experiences.id) -->
+        <a class="btn btn--light" href="experiencia.html?id=13540f79-4f88-4ffc-99cd-70f59c597c6f">Garantir minha vaga · R$249</a>
+        <a class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.6)" href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20a%20manh%C3%A3%20de%20vela%20arom%C3%A1tica%20do%20Clube%20de%20Mentoras%20(20%2F08)." target="_blank" rel="noopener">Tirar uma dúvida no WhatsApp</a>
+      </div>
+      <p class="cta__note">Um encontro Clube de Mentoras × Elarah · Menos rotina, mais presença.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap footer__inner">
+    <img src="assets/logo.png" alt="Elarah">
+    <p>Offline is a feeling. — © 2026 Elarah · <a href="https://wa.me/5511914455930" target="_blank" rel="noopener">+55 11 91445-5930</a> · <a href="mailto:contato.elarah@gmail.com">contato.elarah@gmail.com</a></p>
+  </div>
+</footer>
+</body>
+</html>
