@@ -89,7 +89,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/aniv-experiencia.jpg" alt="Grupo criando junto numa experiência da Elarah" style="object-position:center 30%">
+        <img src="assets/hidrateimeninas.jpg" alt="Amigas felizes criando juntas numa experiência da Elarah" style="object-position:center 22%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
