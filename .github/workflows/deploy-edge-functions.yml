@@ -8,6 +8,7 @@ on:
       - claude/peaceful-wright-oh8k98
       - claude/mercado-pago-audit-update-n4r6l8
       - claude/account-access-password-recovery-k1o8t4
+      - claude/automatic-notification-system-dncs7r
     paths:
       - 'supabase/functions/**'
   workflow_dispatch:

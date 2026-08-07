@@ -30,3 +30,9 @@ verify_jwt = false
 # (validado na tabela melhor_envio_tokens com TTL).
 [functions.melhor-envio-callback]
 verify_jwt = false
+
+# whatsapp-welcome — chamado por um TRIGGER do banco (public.profiles
+# insert) via pg_net, sem JWT de usuário. Autentica com o segredo
+# compartilhado ELARAH_WEBHOOK_SECRET (header Authorization: Bearer).
+[functions.whatsapp-welcome]
+verify_jwt = false
