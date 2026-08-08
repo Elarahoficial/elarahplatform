@@ -67,6 +67,10 @@ export interface ExperienceSnapshot {
   valor_cheio_centavos: number | null;
   percentual_repasse: number | null;
   valor_repasse_fixo_centavos: number | null;
+  // Preenchido só em experiências de agendamento livre (voucher). Quando
+  // presente, o cliente escolhe dia/hora livremente e NÃO validamos o
+  // horário contra slots materializados.
+  horario_funcionamento: string | null;
 }
 
 export interface GuardSuccess {
@@ -424,7 +428,7 @@ export async function reserveExperienceSlot(
   const { data: expRaw, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, categoria, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
+      "id, nome, categoria, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos, horario_funcionamento",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -531,6 +535,43 @@ export async function reserveExperienceSlot(
           ok: false,
           errorCode: "slot_unavailable",
           errorMessage: "Este horário não está mais disponível.",
+          errorStatus: 409,
+        };
+      }
+    }
+  }
+
+  // ===== 2b. Guarda anti-slot-fantasma =====
+  // Se o cliente mandou um horário/slot que NÃO resolveu pra um slot ATIVO
+  // e materializado (useSlotVagas continua false) E a experiência é
+  // gerenciada por slots (tem ao menos 1 slot ativo), recusa. Sem isso, o
+  // horário LEGADO da experiência (ex.: "13h00 – 15h00" defasado em
+  // exp.horario/horarios) era comprado mesmo sem existir em nenhuma regra
+  // ativa — o cliente reservava um horário inexistente. Experiências de
+  // agendamento livre (voucher, horario_funcionamento) e legadas puras
+  // (sem slot algum) seguem intactas.
+  if ((slotIdInput || horarioInput) && !useSlotVagas) {
+    const isFreePick = !!(exp.horario_funcionamento &&
+      String(exp.horario_funcionamento).trim());
+    if (!isFreePick) {
+      const { count: activeSlotCount } = await supabase
+        .from("experience_slots")
+        .select("id", { count: "exact", head: true })
+        .eq("experience_id", experienciaId)
+        .eq("is_active", true);
+      if ((activeSlotCount ?? 0) > 0) {
+        console.warn(
+          "[Elarah Guard] slot fantasma recusado",
+          "exp=" + experienciaId,
+          "horario=" + (horarioInput ?? ""),
+          "data=" + (dataInput ?? ""),
+          "slot_id=" + (slotIdInput ?? ""),
+        );
+        return {
+          ok: false,
+          errorCode: "slot_unavailable",
+          errorMessage:
+            "Este horário não está mais disponível. Escolha uma das datas e horários disponíveis na página da experiência.",
           errorStatus: 409,
         };
       }

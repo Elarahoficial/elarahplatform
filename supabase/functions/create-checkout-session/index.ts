@@ -438,7 +438,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const { data: exp, error: expErr } = await supabase
     .from("experiences")
     .select(
-      "id, nome, categoria, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos",
+      "id, nome, categoria, preco, data, horario, horarios, endereco, bairro, vagas_total, vagas_restantes, event_at, cutoff_hours, is_active, created_by, fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos, horario_funcionamento",
     )
     .eq("id", experienciaId)
     .maybeSingle();
@@ -544,6 +544,44 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       } else if (rows.length > 0) {
         return jsonResponse(
           { error: "slot_unavailable", message: "Este horário não está mais disponível." },
+          409,
+        );
+      }
+    }
+  }
+
+  // ===== Guarda anti-slot-fantasma =====
+  // Se o cliente mandou um horário/slot que NÃO resolveu pra um slot ATIVO
+  // (useSlotVagas continua false) E a experiência é gerenciada por slots
+  // (tem ao menos 1 slot ativo), recusa. Sem isso, o horário LEGADO da
+  // experiência (ex.: "13h00 – 15h00" defasado em exp.horario/horarios) era
+  // comprado mesmo sem existir em nenhuma regra ativa — cliente reservava um
+  // horário inexistente. Agendamento livre (voucher, horario_funcionamento)
+  // e experiências legadas puras (sem slot algum) seguem intactos.
+  if ((slotIdFromPayload || horario) && !useSlotVagas) {
+    const isFreePick = !!((exp as { horario_funcionamento?: string | null })
+      .horario_funcionamento &&
+      String((exp as { horario_funcionamento?: string | null }).horario_funcionamento).trim());
+    if (!isFreePick) {
+      const { count: activeSlotCount } = await supabase
+        .from("experience_slots")
+        .select("id", { count: "exact", head: true })
+        .eq("experience_id", exp.id)
+        .eq("is_active", true);
+      if ((activeSlotCount ?? 0) > 0) {
+        console.warn(
+          "[create-checkout-session] slot fantasma recusado",
+          "exp=" + exp.id,
+          "horario=" + (horario ?? ""),
+          "data=" + (dataFromPayload ?? ""),
+          "slot_id=" + (slotIdFromPayload ?? ""),
+        );
+        return jsonResponse(
+          {
+            error: "slot_unavailable",
+            message:
+              "Este horário não está mais disponível. Escolha uma das datas e horários disponíveis na página da experiência.",
+          },
           409,
         );
       }
