@@ -6,29 +6,36 @@
 --   cópia denormalizada usada nos CARDS e no modal de reserva rápida. Quando
 --   a experiência passa a ser gerenciada por slots (recorrência/manual) e o
 --   horário muda, esse campo legado NÃO é atualizado sozinho — fica defasado
---   (ex.: cerâmica com "13h00 – 15h00" salvo, mas os slots reais são
---   11h00–13h00 e 15h30–17h30). Era daí que saía o "horário fantasma".
+--   (ex.: "13h00 – 15h00" salvo, mas os slots reais são 11h00–13h00 e
+--   15h30–17h30). Era daí que saía o "horário fantasma".
 --
---   A trava do servidor (booking_guard / create-checkout-session) já RECUSA
---   comprar um horário que não bate com slot ativo. Esta limpeza ataca a
---   CAUSA na origem: deixa o campo legado IGUAL aos rótulos dos slots ativos.
---   Depois disso, card e modal só oferecem horários que existem de verdade.
+--   IMPORTANTE (por que isto não é só cosmético): a trava do servidor casa o
+--   horário por texto EXATO (.eq("horario", ...)). Os slots usam travessão
+--   "–" e o legado costuma usar hífen "-"; sem normalizar, uma reserva feita
+--   pelo CARD (que manda o texto legado) não bateria com o slot e seria
+--   recusada. Esta limpeza normaliza o legado pros MESMOS rótulos dos slots
+--   ativos, então card + modal só oferecem horários que existem de verdade.
+--
+--   REGRA DE SEGURANÇA sobre o horário PRINCIPAL (experiences.horario):
+--     • Se o horário principal atual AINDA existe como slot ativo (ignorando
+--       traço/espaços), ele é PRESERVADO (só troca o traço) — não mudamos o
+--       horário "de vitrine" do card à toa.
+--     • Se o principal atual é fantasma (não existe em slot ativo), aí sim
+--       vira o slot ativo mais próximo.
+--   O array `horarios` recebe TODOS os rótulos de slots ativos distintos,
+--   com o principal em primeiro.
 --
 --   Seguro: só toca experiências ATIVAS, gerenciadas por slots (>=1 slot
---   ativo) e que NÃO são agendamento livre (voucher). Experiências legadas
---   puras (sem slot) e vouchers ficam intactas. Idempotente: só atualiza
---   linhas realmente defasadas; rodar de novo não muda nada.
+--   ativo) e que NÃO são agendamento livre (voucher). Idempotente: só
+--   atualiza o que está defasado; rodar de novo não muda nada.
 --
--- COMO RODAR: Supabase → SQL Editor. Rode a Q0 (preview) primeiro pra ver
---   o antes/depois; se estiver ok, rode o bloco UPDATE.
+-- COMO RODAR: Supabase → SQL Editor. Rode a Q0 (preview) primeiro; se estiver
+--   ok, rode o bloco UPDATE. Recomendado rodar ANTES/junto do deploy.
 -- =============================================================
 
 
 -- =============================================================
 -- Q0 — PREVIEW (só leitura): o que MUDARIA. Rode isto primeiro.
--- -------------------------------------------------------------
--- Mostra o valor legado atual x o valor novo (rótulos dos slots ativos,
--- ordenados pela data mais próxima). Só lista o que está defasado.
 -- =============================================================
 with slot_labels as (
   select s.experience_id, s.horario, min(s.event_at) as first_event
@@ -36,26 +43,46 @@ with slot_labels as (
    where s.is_active is true
    group by s.experience_id, s.horario
 ),
+prim as (
+  -- Escolhe o horário principal: preserva o atual se ainda existe como slot
+  -- ativo (comparando sem traço/espaço); senão, o slot ativo mais próximo.
+  select
+    sl.experience_id,
+    coalesce(
+      max(case
+            when regexp_replace(lower(sl.horario),        '[-–[:space:]]', '', 'g')
+               = regexp_replace(lower(coalesce(e.horario,'')), '[-–[:space:]]', '', 'g')
+            then sl.horario end),
+      (array_agg(sl.horario order by sl.first_event nulls last))[1]
+    ) as primary_horario
+  from slot_labels sl
+  join public.experiences e on e.id = sl.experience_id
+  group by sl.experience_id
+),
 agg as (
-  select experience_id,
-         array_agg(horario order by first_event nulls last) as labels
-    from slot_labels
-   group by experience_id
+  select
+    sl.experience_id,
+    p.primary_horario,
+    array_agg(sl.horario order by (sl.horario = p.primary_horario) desc,
+                                  sl.first_event nulls last) as labels
+  from slot_labels sl
+  join prim p on p.experience_id = sl.experience_id
+  group by sl.experience_id, p.primary_horario
 )
 select
   e.id,
   e.nome,
-  e.horario               as horario_legado_atual,
-  a.labels[1]             as horario_legado_novo,
-  e.horarios              as horarios_legado_atual,
-  a.labels                as horarios_legado_novo
+  e.horario   as horario_atual,
+  a.primary_horario as horario_novo,
+  e.horarios  as horarios_atual,
+  a.labels    as horarios_novo
 from public.experiences e
 join agg a on a.experience_id = e.id
 where e.is_active is true
   and coalesce(nullif(trim(e.horario_funcionamento), ''), null) is null
   and (
         e.horarios is distinct from a.labels
-     or e.horario  is distinct from a.labels[1]
+     or e.horario  is distinct from a.primary_horario
       )
 order by e.nome;
 
@@ -69,15 +96,33 @@ with slot_labels as (
    where s.is_active is true
    group by s.experience_id, s.horario
 ),
+prim as (
+  select
+    sl.experience_id,
+    coalesce(
+      max(case
+            when regexp_replace(lower(sl.horario),        '[-–[:space:]]', '', 'g')
+               = regexp_replace(lower(coalesce(e.horario,'')), '[-–[:space:]]', '', 'g')
+            then sl.horario end),
+      (array_agg(sl.horario order by sl.first_event nulls last))[1]
+    ) as primary_horario
+  from slot_labels sl
+  join public.experiences e on e.id = sl.experience_id
+  group by sl.experience_id
+),
 agg as (
-  select experience_id,
-         array_agg(horario order by first_event nulls last) as labels
-    from slot_labels
-   group by experience_id
+  select
+    sl.experience_id,
+    p.primary_horario,
+    array_agg(sl.horario order by (sl.horario = p.primary_horario) desc,
+                                  sl.first_event nulls last) as labels
+  from slot_labels sl
+  join prim p on p.experience_id = sl.experience_id
+  group by sl.experience_id, p.primary_horario
 )
 update public.experiences e
    set horarios   = a.labels,
-       horario    = a.labels[1],
+       horario    = a.primary_horario,
        updated_at = now()
   from agg a
  where a.experience_id = e.id
@@ -85,7 +130,7 @@ update public.experiences e
    and coalesce(nullif(trim(e.horario_funcionamento), ''), null) is null
    and (
          e.horarios is distinct from a.labels
-      or e.horario  is distinct from a.labels[1]
+      or e.horario  is distinct from a.primary_horario
        );
 
 -- Recarrega o schema cache do PostgREST (boa prática após update em massa).
@@ -93,6 +138,5 @@ notify pgrst, 'reload schema';
 
 
 -- =============================================================
--- Q1 — CONFERÊNCIA pós-update (só leitura): não deve sobrar defasagem.
---      Rode de novo a Q0 acima — o resultado deve vir VAZIO.
+-- Q1 — CONFERÊNCIA pós-update: rode a Q0 de novo; deve vir VAZIO.
 -- =============================================================
