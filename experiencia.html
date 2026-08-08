@@ -648,6 +648,13 @@
     // funcionamento" preenchido, o cliente escolhe o dia e a hora que quiser.
     var useFreePick = !!(exp.horarioFuncionamento && String(exp.horarioFuncionamento).trim());
     var useScheduleNew = !useFreePick && futureSlots.length > 0;
+    // Experiência é gerenciada por slots (recorrência/manual) quando tem
+    // QUALQUER slot cadastrado — mesmo que nenhum esteja disponível agora.
+    // Nesse caso NUNCA caímos no horário legado exp.horarios: ele pode estar
+    // defasado (ex.: "13h00 – 15h00") e não corresponder a nenhum slot real,
+    // levando o cliente a comprar um horário que não existe. Só o fluxo
+    // legado puro (experiência sem slot algum) usa exp.horarios.
+    var slotManaged = !useFreePick && allSlots.length > 0;
 
     if (useFreePick) {
       var _now = new Date();
@@ -802,6 +809,17 @@
         renderHorariosFor: renderHorariosFor,
         initialKey: initialKey,
       };
+    } else if (slotManaged) {
+      // Gerenciada por slots, porém SEM data disponível agora (todas
+      // passadas/esgotadas/dentro do cutoff). NÃO oferecemos o horário
+      // legado da experiência — ele não corresponde a nenhum slot real e
+      // gerava compra de horário inexistente. Mostra aviso; a reserva fica
+      // desabilitada no wire-up abaixo.
+      horariosHtml =
+        '<div class="exp-detail__no-dates" style="border:1px solid #e7d9c6;background:#fbf6ee;border-radius:12px;padding:16px 18px;color:#6b5d4f;font-size:.9rem;line-height:1.5;">' +
+          '<strong style="display:block;color:#a4663b;margin-bottom:4px;">Sem datas disponíveis no momento</strong>' +
+          'As próximas turmas ainda não foram abertas. Toque em <strong>Copiar link</strong> pra salvar a experiência ou nos chame no Instagram <strong>@elarahoficial</strong> — avisamos assim que abrir. 🤍' +
+        '</div>';
     } else if (horarios.length > 0) {
       // Fallback legado: experiência sem slots configurados.
       horariosHtml = '<div class="exp-detail__horarios">';
@@ -1092,6 +1110,18 @@
       var firstHorario = container.querySelector('.exp-detail__horario-btn--active') ||
                         container.querySelector('.exp-detail__horario-btn:not([disabled])');
       syncReserveButton(firstHorario);
+    } else if (slotManaged) {
+      // Sem datas disponíveis → nada pra comprar. Desabilita a reserva e
+      // limpa qualquer horário herdado, pra não enviar horário fantasma.
+      var reserveBtnND = document.getElementById('exp-reserve-btn');
+      if (reserveBtnND) {
+        reserveBtnND.disabled = true;
+        reserveBtnND.textContent = 'Sem datas disponíveis';
+        reserveBtnND.dataset.horario = '';
+        reserveBtnND.dataset.data = '';
+        reserveBtnND.dataset.dataLabel = '';
+        reserveBtnND.dataset.slotId = '';
+      }
     } else {
       // Fluxo legado (sem slots configurados)
       wireHorarioButtons();
@@ -1187,6 +1217,14 @@
       }
     });
     stickyBtn.dataset.analyticsLabel = hostBtn.dataset.experienceNome || '';
+    // Espelha o estado desabilitado (ex.: "Sem datas disponíveis") pra que
+    // o sticky não permita disparar checkout de horário inexistente.
+    stickyBtn.disabled = !!hostBtn.disabled;
+    if (hostBtn.disabled) {
+      stickyBtn.textContent = hostBtn.textContent || 'Indisponível';
+    } else if (stickyBtn.textContent !== 'Reservar') {
+      stickyBtn.textContent = 'Reservar';
+    }
     var priceEl = document.querySelector('.exp-detail__price');
     if (priceEl && stickyPriceEl) {
       var t = (priceEl.textContent || '').trim();
