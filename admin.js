@@ -4737,7 +4737,12 @@
             '<div id="admin-edit-booking-fornecedor" style="font-size:.76rem;color:#666;margin-bottom:14px;"></div>' +
 
             '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Horário</label>' +
-            '<select id="admin-edit-booking-horario" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;margin-bottom:14px;"></select>' +
+            // Campo livre com sugestões (datalist): o admin pode DIGITAR
+            // qualquer horário — não fica preso aos já cadastrados na
+            // experiência. As opções cadastradas aparecem como sugestão.
+            '<input id="admin-edit-booking-horario" list="admin-edit-booking-horario-list" type="text" value="' + escapeHtml(booking.horario || '') + '" placeholder="ex.: 10h00 – 12h00" autocomplete="off" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;margin-bottom:4px;">' +
+            '<datalist id="admin-edit-booking-horario-list"></datalist>' +
+            '<div style="font-size:.72rem;color:#999;margin-bottom:14px;">Digite livremente ou escolha uma sugestão.</div>' +
 
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
               '<div>' +
@@ -4805,17 +4810,21 @@
 
       function refreshHorarios(chosen) {
         var horarios = expHorarios(chosen);
-        if (!horarios.length) {
-          horarioSel.innerHTML = '<option value="">— sem horários cadastrados —</option>';
-          return;
+        // Popula as sugestões do datalist com os horários cadastrados da
+        // experiência escolhida. O campo em si continua sendo texto livre.
+        var listEl = modal.querySelector('#admin-edit-booking-horario-list');
+        if (listEl) {
+          listEl.innerHTML = horarios.map(function (h) {
+            return '<option value="' + escapeHtml(h) + '"></option>';
+          }).join('');
         }
-        // Preserva o horário atual do cliente se a nova experiência tiver
-        // o mesmo (caso comum quando troca de fornecedor mas mantém hora).
-        var atual = (booking.horario || '').trim();
-        horarioSel.innerHTML = horarios.map(function (h) {
-          var sel = (h === atual) ? ' selected' : '';
-          return '<option value="' + escapeHtml(h) + '"' + sel + '>' + escapeHtml(h) + '</option>';
-        }).join('');
+        // Só sugere um valor quando o campo está vazio — nunca sobrescreve
+        // o que o admin já digitou. Prioriza o horário atual do cliente;
+        // se não houver e a experiência tiver um único horário, usa esse.
+        if (!(horarioSel.value || '').trim()) {
+          var atual = (booking.horario || '').trim();
+          horarioSel.value = atual || (horarios.length === 1 ? horarios[0] : '');
+        }
       }
 
       // Recalcula valor cheio + repasse + comissão da nova experiência.
@@ -4908,7 +4917,8 @@
         var chosen = experiencesList.find(function (e) { return e && e.id === expSel.value; });
         if (!chosen) {
           fornecedorInfo.textContent = '';
-          horarioSel.innerHTML = '';
+          var listEmpty = modal.querySelector('#admin-edit-booking-horario-list');
+          if (listEmpty) listEmpty.innerHTML = '';
           refundBox.innerHTML = '';
           return;
         }
