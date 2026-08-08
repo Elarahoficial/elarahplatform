@@ -131,9 +131,9 @@ espacos = f'''
     <div class="bfeat" style="margin-top:15px;height:206px">
       <div class="bphoto"><img src="assets/ojardim1.jpg" alt="Jardim arborizado com árvores, guarda-sóis e mesas" style="object-position:center 55%"></div>
       <div class="bbody">
-        <span class="btag">★ Opção 2 · a partir de R$ 299</span>
-        <h3>O Jardim <span class="sub">arborizado &amp; charmoso</span></h3>
-        <p>Um jardim lindo e arborizado, com aquele clima de tarde ao ar livre. Aqui o valor já vem com <b>coffee break, espaço e experiência inclusos</b> — só chegar e curtir. 🌳</p>
+        <span class="btag">★ Opção 2 · a partir de R$ 399</span>
+        <h3>O Jardim <span class="sub">café brunch &amp; arborizado</span></h3>
+        <p>Um jardim lindo e arborizado, com aquele clima de tarde ao ar livre. Aqui o valor já vem com <b>café brunch, espaço e experiência inclusos</b> — só chegar e curtir. 🌳</p>
       </div>
     </div>
     {foot("Onde acontece")}
@@ -162,12 +162,12 @@ planos = f'''
           <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
         </tr>
         <tr>
-          <td class="rl"><b>O Jardim</b><span>coffee break, espaço &amp; experiência inclusos</span></td>
-          <td class="val">R$ 299</td><td class="val" style="color:var(--muted);font-size:18px">—</td><td class="val hl">R$ 499</td>
+          <td class="rl"><b>O Jardim · café brunch</b><span>café brunch, espaço &amp; experiência inclusos</span></td>
+          <td class="val">R$ 399</td><td class="val" style="color:var(--muted);font-size:18px">—</td><td class="val hl">R$ 599</td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:18px">◆ Valor <b>por pessoa</b>, com material e condução inclusos. No <b>Betc Havas Café</b> o consumo é à parte; o nível Com foto soma a foto profissional e R$ 30 de voucher de consumo, e o Completo soma a lembrancinha. No <b>Jardim</b> o valor já inclui <b>coffee break, espaço e experiência</b>, e o Completo (R$ 499) soma foto profissional &amp; lembrancinha.</div>
+    <div class="note" style="margin-top:18px">◆ Valor <b>por pessoa</b>, com material e condução inclusos. No <b>Betc Havas Café</b> o consumo é à parte; o nível Com foto soma a foto profissional e R$ 30 de voucher de consumo, e o Completo soma a lembrancinha. No <b>Jardim · café brunch</b> o valor já inclui <b>café brunch, espaço e experiência</b>, e o Completo (R$ 599) soma foto profissional &amp; lembrancinha.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -248,7 +248,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de aniversário da Elarah — experiência à escolha (Aromaterapia ou Pintura em taça, pelo mesmo valor), para cerca de 6 pessoas, em 27/08 (a confirmar), em espaço parceiro. Cada convidada cria e leva a própria peça. Opção 1 · Betc Havas Café (consumo à parte): a partir de R$ 199 por pessoa (R$ 199 / 299 / 399 — A experiência / + foto profissional e R$ 30 de voucher / Completo com lembrancinha). Opção 2 · O Jardim, com coffee break, espaço e experiência inclusos: a partir de R$ 299 por pessoa (Completo por R$ 499 com foto e lembrancinha). Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de aniversário da Elarah — experiência à escolha (Aromaterapia ou Pintura em taça, pelo mesmo valor), para cerca de 6 pessoas, em 27/08 (a confirmar), em espaço parceiro. Cada convidada cria e leva a própria peça. Opção 1 · Betc Havas Café (consumo à parte): a partir de R$ 199 por pessoa (R$ 199 / 299 / 399 — A experiência / + foto profissional e R$ 30 de voucher / Completo com lembrancinha). Opção 2 · O Jardim (café brunch), com café brunch, espaço e experiência inclusos: a partir de R$ 399 por pessoa (Completo por R$ 599 com foto e lembrancinha). Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Aniversário de 46 anos · 2026")}
   </section>'''
 
