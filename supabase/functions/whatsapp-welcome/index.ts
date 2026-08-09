@@ -23,6 +23,7 @@
 //   {{1}} = primeiro nome · {{2}} = link do grupo
 // =============================================================
 
+// deploy: garante publicação desta função (lista de deploy atualizada).
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
