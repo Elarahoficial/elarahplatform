@@ -113,4 +113,7 @@ jobs:
           # whatsapp-broadcast: só admin autenticada dispara (valida
           # is_admin por dentro) → mantém verify_jwt (sem flag).
           deploy whatsapp-broadcast
+          # whatsapp-group-blast: convida a base já cadastrada pro grupo.
+          # Autentica por dentro (segredo compartilhado OU admin) → sem JWT.
+          deploy whatsapp-group-blast --no-verify-jwt
           echo "✓ Deploy completo"

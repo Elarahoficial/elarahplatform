@@ -36,3 +36,8 @@ verify_jwt = false
 # compartilhado ELARAH_WEBHOOK_SECRET (header Authorization: Bearer).
 [functions.whatsapp-welcome]
 verify_jwt = false
+
+# whatsapp-group-blast — convida a base já cadastrada pro grupo.
+# Disparável por SQL/pg_net (segredo) ou admin; autentica por dentro.
+[functions.whatsapp-group-blast]
+verify_jwt = false
