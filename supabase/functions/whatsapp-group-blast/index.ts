@@ -3,24 +3,24 @@
 // -------------------------------------------------------------
 // POST /functions/v1/whatsapp-group-blast
 //
-// Convida os usuários JÁ CADASTRADOS (que ainda não receberam) pra
-// entrar no grupo da Elarah, disparando o template oficial aprovado
-// `elarah_boas_vindas_grupo`. Complementa a whatsapp-welcome (que só
-// pega cadastros novos daqui pra frente): esta faz o "backfill" da
-// base existente, em lotes, respeitando o limite diário da Meta.
+// Convida pro grupo da Elarah, por WhatsApp oficial (template aprovado
+// `elarah_boas_vindas_grupo`), TODO MUNDO que a Elarah já tem contato e
+// que ainda não recebeu — juntando DUAS fontes, deduplicadas por
+// telefone:
+//   • profiles           (usuários cadastrados)
+//   • byelarah_submissions (interessados do formulário)
 //
-// Auth: aceita DOIS jeitos —
-//   1) Bearer ELARAH_WEBHOOK_SECRET  → dá pra disparar por SQL/pg_net.
-//   2) JWT de admin (public.is_admin) → pra um botão no painel no futuro.
+// Complementa a whatsapp-welcome (só cadastros novos). O controle de
+// "quem já recebeu" é POR TELEFONE, na tabela whatsapp_group_invites —
+// então não depende do "verde" do envio manual (que marca ao abrir, não
+// ao entregar) e nunca manda 2x pro mesmo número.
 //
-// Tracking "quem já recebeu": coluna profiles.group_invite_sent_at
-// (migração sql/elarah_profiles_group_invite.sql). Quem já tem a data
-// não é reenviado.
+// Auth: Bearer ELARAH_WEBHOOK_SECRET (SQL/pg_net) OU JWT de admin.
 //
-// Body JSON (tudo opcional):
-//   { "batch": 200 }   // máx. de envios nesta chamada (teto 250/dia da Meta)
+// Body JSON (opcional): { "batch": 200 }   // teto 250/dia da Meta
+// Resposta: { ok, enviados, falharam, sem_telefone, limite_atingido, restantes }
 //
-// Resposta: { ok, enviados, falharam, sem_telefone, limite_atingido, restantes_aprox }
+// Pré-requisito: sql/elarah_whatsapp_group_invites.sql
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -44,9 +44,6 @@ const TEMPLATE = {
   language: Deno.env.get("WHATSAPP_TEMPLATE_LANG") ?? "pt_BR",
 };
 
-// Teto por chamada. Nunca mais que 250 (limite diário de número novo na
-// Meta). Intervalo curto entre envios — a API oficial aguenta ritmo alto,
-// mas mantemos um respiro pra qualidade.
 const MAX_BATCH = 200;
 const DELAY_MS = 120;
 
@@ -76,139 +73,126 @@ function isLimitError(status: number | undefined, err: string | undefined): bool
     e.includes("131049") || e.includes("130472") || e.includes("80007");
 }
 
+interface Contact { phone: string; nome: string; }
+
+// Junta profiles + byelarah_submissions, normaliza e deduplica por
+// telefone. Guarda um nome não-vazio quando houver.
+async function gatherContacts(): Promise<Contact[]> {
+  const map = new Map<string, string>(); // phone -> nome
+
+  const add = (nome: string | null, telefone: string | null) => {
+    const phone = normalizePhoneBR(telefone);
+    if (!phone) return;
+    const existing = map.get(phone);
+    if (existing === undefined) map.set(phone, (nome ?? "").trim());
+    else if (!existing && nome) map.set(phone, nome.trim());
+  };
+
+  const [profs, subs] = await Promise.all([
+    supabase.from("profiles").select("nome, telefone")
+      .not("telefone", "is", null).neq("telefone", "").limit(5000),
+    supabase.from("byelarah_submissions").select("nome, telefone")
+      .not("telefone", "is", null).neq("telefone", "").limit(5000),
+  ]);
+  for (const r of (profs.data ?? [])) add(r.nome, r.telefone);
+  for (const r of (subs.data ?? [])) add(r.nome, r.telefone);
+
+  return [...map.entries()].map(([phone, nome]) => ({ phone, nome }));
+}
+
+// Telefones que já receberam (log).
+async function loadSentPhones(): Promise<Set<string>> {
+  const set = new Set<string>();
+  const { data } = await supabase
+    .from("whatsapp_group_invites").select("phone").limit(20000);
+  for (const r of (data ?? [])) set.add(r.phone as string);
+  return set;
+}
+
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
     return jsonResponse({ ok: false, error: "method_not_allowed" }, 405);
   }
 
-  // ---- Auth: segredo compartilhado OU admin ----
+  // Auth: segredo compartilhado OU admin.
   const authHeader = req.headers.get("Authorization") ?? "";
   const bearer = (/^Bearer\s+(.+)$/i.exec(authHeader) || [])[1] || "";
-  let authorized = false;
-  if (WEBHOOK_SECRET && bearer === WEBHOOK_SECRET) {
-    authorized = true;
-  } else {
-    const adminId = await authorizeAdmin(authHeader);
-    if (adminId) authorized = true;
-  }
-  if (!authorized) {
-    return jsonResponse({ ok: false, error: "nao_autorizado" }, 401);
-  }
+  let authorized = WEBHOOK_SECRET !== "" && bearer === WEBHOOK_SECRET;
+  if (!authorized) authorized = !!(await authorizeAdmin(authHeader));
+  if (!authorized) return jsonResponse({ ok: false, error: "nao_autorizado" }, 401);
 
   if (!whatsappConfigured()) {
     return jsonResponse({ ok: false, error: "whatsapp_nao_configurado" }, 500);
   }
 
   let payload: Record<string, unknown> = {};
-  try {
-    payload = await req.json();
-  } catch { /* corpo vazio é ok */ }
+  try { payload = await req.json(); } catch { /* corpo vazio ok */ }
   const batch = Math.min(MAX_BATCH, Math.max(1, Number(payload.batch) || MAX_BATCH));
 
-  // Carrega quem ainda não recebeu e tem telefone.
-  let rows: Array<{ id: string; nome: string | null; telefone: string | null }>;
+  let contacts: Contact[];
+  let sentSet: Set<string>;
   try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, nome, telefone")
-      .not("telefone", "is", null)
-      .neq("telefone", "")
-      .is("group_invite_sent_at", null)
-      .order("created_at", { ascending: true })
-      .limit(batch);
-    if (error) throw error;
-    rows = (data ?? []) as typeof rows;
+    [contacts, sentSet] = await Promise.all([gatherContacts(), loadSentPhones()]);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (/group_invite_sent_at/i.test(msg)) {
+    if (/whatsapp_group_invites/i.test(msg)) {
       return jsonResponse({
         ok: false,
-        error: "coluna_ausente",
-        detail: "Rode sql/elarah_profiles_group_invite.sql no Supabase.",
+        error: "tabela_ausente",
+        detail: "Rode sql/elarah_whatsapp_group_invites.sql no Supabase.",
       }, 500);
     }
     return jsonResponse({ ok: false, error: "db_error", detail: msg }, 500);
   }
 
+  const pendentes = contacts.filter((c) => !sentSet.has(c.phone));
+  const lote = pendentes.slice(0, batch);
+
   let enviados = 0;
   let falharam = 0;
-  let semTelefone = 0;
   let limiteAtingido = false;
 
-  for (let i = 0; i < rows.length; i++) {
-    const p = rows[i];
-    const phone = normalizePhoneBR(p.telefone);
-    if (!phone) {
-      semTelefone++;
-      // Marca pra não reprocessar toda vez (telefone inválido).
-      try {
-        await supabase.from("profiles")
-          .update({ group_invite_sent_at: new Date().toISOString() })
-          .eq("id", p.id);
-      } catch { /* best-effort */ }
-      continue;
-    }
-
-    const r = await sendWhatsAppTemplate(phone, TEMPLATE.name, TEMPLATE.language, [
-      firstName(p.nome),
+  for (let i = 0; i < lote.length; i++) {
+    const c = lote[i];
+    const r = await sendWhatsAppTemplate(c.phone, TEMPLATE.name, TEMPLATE.language, [
+      firstName(c.nome),
       GROUP_LINK,
     ]);
-
     if (r.ok) {
       enviados++;
       try {
-        await supabase.from("profiles")
-          .update({ group_invite_sent_at: new Date().toISOString() })
-          .eq("id", p.id);
+        await supabase.from("whatsapp_group_invites")
+          .upsert({ phone: c.phone, nome: c.nome || null }, { onConflict: "phone" });
       } catch (e) {
-        console.warn("[whatsapp-group-blast] envio ok, update falhou —", "id=" + p.id, String(e));
+        console.warn("[whatsapp-group-blast] envio ok, log falhou —", c.phone, String(e));
       }
     } else {
       falharam++;
       console.error(
         "[whatsapp-group-blast] falha —",
-        "phone=" + phone,
-        "status=" + (r.status ?? "?"),
-        "error=" + (r.error ?? "?"),
+        "phone=" + c.phone, "status=" + (r.status ?? "?"), "error=" + (r.error ?? "?"),
       );
-      // Se bateu o limite diário da Meta, para o lote (o resto tenta amanhã).
-      if (isLimitError(r.status, r.error)) {
-        limiteAtingido = true;
-        break;
-      }
+      if (isLimitError(r.status, r.error)) { limiteAtingido = true; break; }
     }
-    if (i < rows.length - 1) await sleep(DELAY_MS);
+    if (i < lote.length - 1) await sleep(DELAY_MS);
   }
 
-  // Quantos ainda faltam (aprox — não valida telefone no SQL).
-  let restantes = 0;
-  try {
-    const { count } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .not("telefone", "is", null)
-      .neq("telefone", "")
-      .is("group_invite_sent_at", null);
-    restantes = count ?? 0;
-  } catch { /* ok */ }
+  const restantes = Math.max(0, pendentes.length - enviados);
 
   console.info(
-    "[whatsapp-group-blast] lote concluído —",
+    "[whatsapp-group-blast] lote —",
     "enviados=" + enviados, "falharam=" + falharam,
-    "sem_telefone=" + semTelefone, "restantes=" + restantes,
-    "limite=" + limiteAtingido,
+    "restantes=" + restantes, "limite=" + limiteAtingido,
   );
 
   return jsonResponse({
     ok: true,
     enviados,
     falharam,
-    sem_telefone: semTelefone,
     limite_atingido: limiteAtingido,
-    restantes_aprox: restantes,
+    restantes,
+    total_contatos: contacts.length,
     template: TEMPLATE.name,
   });
 });
