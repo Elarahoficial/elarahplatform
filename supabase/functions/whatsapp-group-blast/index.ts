@@ -152,6 +152,7 @@ serve(async (req) => {
   let enviados = 0;
   let falharam = 0;
   let limiteAtingido = false;
+  const sentThisRun: string[] = [];
 
   for (let i = 0; i < lote.length; i++) {
     const c = lote[i];
@@ -161,6 +162,7 @@ serve(async (req) => {
     ]);
     if (r.ok) {
       enviados++;
+      sentThisRun.push(c.phone);
       try {
         await supabase.from("whatsapp_group_invites")
           .upsert({ phone: c.phone, nome: c.nome || null }, { onConflict: "phone" });
@@ -180,6 +182,39 @@ serve(async (req) => {
 
   const restantes = Math.max(0, pendentes.length - enviados);
 
+  // ----- Reconcilia o "verde" do painel -----
+  // Marca whatsapp_followup_sent_at nas respostas do formulário cujo
+  // telefone JÁ recebeu o convite (log completo — inclui rodadas
+  // anteriores, então retroage pros que já foram). Best-effort.
+  let marcadosVerde = 0;
+  try {
+    const sentAll = new Set<string>([...sentSet, ...sentThisRun]);
+    const { data: subs } = await supabase
+      .from("byelarah_submissions")
+      .select("id, telefone, whatsapp_followup_sent_at")
+      .is("whatsapp_followup_sent_at", null)
+      .limit(5000);
+    const ids: string[] = [];
+    for (const s of (subs ?? [])) {
+      const ph = normalizePhoneBR(s.telefone as string | null);
+      if (ph && sentAll.has(ph)) ids.push(s.id as string);
+    }
+    for (let j = 0; j < ids.length; j += 200) {
+      const chunk = ids.slice(j, j + 200);
+      const { error } = await supabase
+        .from("byelarah_submissions")
+        .update({ whatsapp_followup_sent_at: new Date().toISOString() })
+        .in("id", chunk);
+      if (!error) marcadosVerde += chunk.length;
+    }
+  } catch (e) {
+    console.warn("[whatsapp-group-blast] reconcile verde falhou (ok):", String(e));
+  }
+
+  console.info(
+    "[whatsapp-group-blast] verde marcado no painel:", marcadosVerde,
+  );
+
   console.info(
     "[whatsapp-group-blast] lote —",
     "enviados=" + enviados, "falharam=" + falharam,
@@ -192,6 +227,7 @@ serve(async (req) => {
     falharam,
     limite_atingido: limiteAtingido,
     restantes,
+    marcados_verde: marcadosVerde,
     total_contatos: contacts.length,
     template: TEMPLATE.name,
   });
