@@ -107,4 +107,10 @@ jobs:
           deploy calculate-shipping --no-verify-jwt
           deploy melhor-envio-callback --no-verify-jwt
           deploy melhor-envio-connect
+          # whatsapp-welcome: chamada pelo trigger do banco (pg_net) com
+          # segredo compartilhado → sem JWT de usuário.
+          deploy whatsapp-welcome --no-verify-jwt
+          # whatsapp-broadcast: só admin autenticada dispara (valida
+          # is_admin por dentro) → mantém verify_jwt (sem flag).
+          deploy whatsapp-broadcast
           echo "✓ Deploy completo"
