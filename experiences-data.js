@@ -545,6 +545,26 @@
     return { ok: true, updated: updated };
   }
 
+  // Grava SOMENTE a coluna `ordem` de uma experience específica, sem
+  // reordenar a lista global (usado pelos botões ▲▼ de Originals no
+  // admin, pra ordenar experiences marcadas como Elarah Original sem
+  // uma passada completa de reorderExperiences). Update de coluna
+  // única — não toca em nenhum outro campo.
+  async function setExperienceOrdem(id, ordem) {
+    const s = sb();
+    if (!s || id == null || id === '') return false;
+    const val = Number.isFinite(+ordem) ? +ordem : 0;
+    const { error } = await s.from(TABLE).update({ ordem: val }).eq('id', id);
+    if (error) {
+      const missing = extractMissingColumn(error);
+      if (missing === 'ordem') markColumnMissing('ordem');
+      console.error('[Elarah] setExperienceOrdem erro:', error);
+      return false;
+    }
+    invalidateCache();
+    return true;
+  }
+
   // Se o erro for "column X não existe no schema cache", devolve
   // o nome da coluna. Caso contrário, null. Cobre os dois formatos
   // mais comuns que o PostgREST / Postgres usam.
@@ -1584,6 +1604,7 @@
     duplicateExperience,
     setExperienceActive,
     reorderExperiences,
+    setExperienceOrdem,
     ordemKey,
     isHomeKit,
     categoriasOf,

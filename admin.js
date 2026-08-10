@@ -7869,6 +7869,63 @@
   let byForm, bySubmitBtn, byAddBtn;
   let byHorariosList, byHorariosAddBtn;
 
+  // Estado da reordenação de Originals (botões ▲▼ no cabeçalho de cada
+  // grupo da aba By Elarah). Guarda os grupos exibidos na ordem atual
+  // pra o handler saber quem subir/descer. Preenchido em renderByElarah.
+  let _byReorderGroups = { current: [], past: [] };
+  let _bySavingOrder = false;
+
+  // Move um grupo (idx na lista `current`) uma posição pra cima/baixo,
+  // persiste a nova ordem e re-renderiza.
+  async function _byReorderMove(idx, dir) {
+    const cur = (_byReorderGroups.current || []).slice();
+    const swap = dir === 'up' ? idx - 1 : idx + 1;
+    if (idx < 0 || idx >= cur.length || swap < 0 || swap >= cur.length) return;
+    const tmp = cur[idx]; cur[idx] = cur[swap]; cur[swap] = tmp;
+    await _byPersistOrder(cur, _byReorderGroups.past);
+    await renderByElarah();
+  }
+
+  // Persiste a ordem: grupos atuais (na ordem nova) primeiro, depois os
+  // passados/ocultos. Cada grupo recebe `ordem` = sua posição; todos os
+  // itens/sessões do grupo herdam essa ordem. Só grava quem mudou.
+  //   - item real (byelarah_items) → ElarahByElarah.setItemOrdem
+  //   - item vindo de experience    → ElarahData.setExperienceOrdem
+  async function _byPersistOrder(currentGroups, pastGroups) {
+    if (_bySavingOrder) return;
+    _bySavingOrder = true;
+    try {
+      const ordered = (currentGroups || []).concat(pastGroups || []);
+      const writes = [];
+      ordered.forEach((group, gi) => {
+        (group && group.rows ? group.rows : []).forEach((it) => {
+          if (!it) return;
+          if ((Number(it.ordem) || 0) === gi) return; // já na posição certa
+          if (it._fromExperience && it.experienceId) {
+            if (window.ElarahData && typeof ElarahData.setExperienceOrdem === 'function') {
+              writes.push(ElarahData.setExperienceOrdem(it.experienceId, gi));
+            }
+          } else {
+            const isDbItem = typeof it.id === 'string' && it.id &&
+              !it.id.startsWith('fallback-') && !it.id.startsWith('exp-');
+            if (isDbItem && window.ElarahByElarah && typeof ElarahByElarah.setItemOrdem === 'function') {
+              writes.push(ElarahByElarah.setItemOrdem(it.id, gi));
+            }
+          }
+        });
+      });
+      if (writes.length) {
+        await Promise.all(writes);
+        showAdminToast('✓ Nova ordem dos Originals salva');
+      }
+    } catch (e) {
+      console.error('[Admin/byelarah] erro ao salvar ordem', e);
+      showAdminToast('Erro ao salvar a ordem dos Originals.', false);
+    } finally {
+      _bySavingOrder = false;
+    }
+  }
+
   // Adiciona uma linha de horário no form. slotObj é opcional e
   // permite carregar valores existentes:
   //   { id?, horario, vagasTotal, vagasRestantes }
@@ -8929,6 +8986,15 @@
         }
         return;
       }
+      // Botões ▲▼ de reordenar Originals — move o grupo e persiste.
+      const moveBtn = target.closest('[data-by-move]');
+      if (moveBtn) {
+        if (moveBtn.disabled) return;
+        const dir = moveBtn.dataset.byMove;
+        const mvIdx = parseInt(moveBtn.dataset.byMoveIdx, 10);
+        if (!Number.isNaN(mvIdx)) await _byReorderMove(mvIdx, dir);
+        return;
+      }
       // data-by-edit-exp tem precedencia sobre data-by-edit (o ultimo
       // tambem pega o primeiro via substring se nao filtrarmos).
       const editExpBtn = target.closest('[data-by-edit-exp]');
@@ -9099,6 +9165,8 @@
       const outItems   = sortedItems.filter(_byItemOutOfFocus);
       const currentGroups = groupByExperienceName(focusItems, it => it.nome);
       const pastGroups    = groupByExperienceName(outItems, it => it.nome);
+      // Guarda os grupos exibidos pro handler dos botões ▲▼ (reordenar).
+      _byReorderGroups = { current: currentGroups, past: pastGroups };
       const nGroups = currentGroups.length;
       itemsCount.textContent =
         nGroups + ' experiência' + (nGroups !== 1 ? 's' : '') + ' em foco' +
@@ -9108,7 +9176,7 @@
 
       console.info('[Admin/byelarah] rendering', currentGroups.length, 'current +', pastGroups.length, 'past item groups');
       const html = [];
-      const renderItemGroup = (group, past) => {
+      const renderItemGroup = (group, past, idx, total) => {
         const pastAttr = past ? ' data-by-past="1" style="display:none;"' : '';
         const nSessions = group.rows.length;
         const sessoesLabel = nSessions + ' sess' + (nSessions === 1 ? 'ão' : 'ões');
@@ -9137,6 +9205,26 @@
             '📱 Follow-up WhatsApp' +
           '</button>';
 
+        // Botões ▲▼ pra reordenar os Originals (posição na home). Só nos
+        // grupos "em foco" (não nas passadas/ocultas). Funciona no
+        // celular — diferente de arrastar, que não dispara em touch.
+        var reorderHtml = '';
+        if (!past) {
+          var mvBase = 'width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #e0c79f;border-radius:8px;background:#fff;color:#a4663b;font-size:.95rem;line-height:1;cursor:pointer;';
+          var mvDisabled = 'opacity:.35;cursor:not-allowed;';
+          var upDis = idx <= 0;
+          var downDis = idx >= (total - 1);
+          reorderHtml =
+            '<span class="admin__by-reorder" style="display:inline-flex;gap:6px;margin-left:auto;" title="Reordenar — muda a posição na home">' +
+              '<button type="button" class="admin__by-move" data-by-move="up" data-by-move-idx="' + idx + '"' +
+                (upDis ? ' disabled' : '') + ' aria-label="Subir" title="Subir" ' +
+                'style="' + mvBase + (upDis ? mvDisabled : '') + '">▲</button>' +
+              '<button type="button" class="admin__by-move" data-by-move="down" data-by-move-idx="' + idx + '"' +
+                (downDis ? ' disabled' : '') + ' aria-label="Descer" title="Descer" ' +
+                'style="' + mvBase + (downDis ? mvDisabled : '') + '">▼</button>' +
+            '</span>';
+        }
+
         html.push(
           '<tr class="admin__group-header"' + pastAttr + '>' +
             '<td colspan="8" style="' + headerStyle + '">' +
@@ -9144,6 +9232,7 @@
                 '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
                 '<span class="admin__group-header-pill" style="' + pillStyle + '">' + escapeHtml(sessoesLabel) + '</span>' +
                 followupBtnHtml +
+                reorderHtml +
               '</div>' +
             '</td>' +
           '</tr>'
@@ -9198,7 +9287,7 @@
           `);
         });
       };
-      currentGroups.forEach(g => renderItemGroup(g, false));
+      currentGroups.forEach((g, i) => renderItemGroup(g, false, i, currentGroups.length));
       if (pastGroups.length) {
         // Divisor + botão pra revelar as passadas/ocultas (escondidas via
         // display:none; o toggle é puro DOM, não refaz requisição).
@@ -9211,7 +9300,7 @@
             '</button>' +
           '</td></tr>'
         );
-        pastGroups.forEach(g => renderItemGroup(g, true));
+        pastGroups.forEach((g, i) => renderItemGroup(g, true, i, pastGroups.length));
       }
       itemsBody.innerHTML = html.join('');
       // Listeners são registrados uma única vez via delegação em

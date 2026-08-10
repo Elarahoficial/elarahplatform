@@ -237,6 +237,25 @@
     return rowToItem(data);
   }
 
+  // Atualiza SOMENTE a coluna `ordem` de um item (usado pelos botões
+  // ▲▼ de reordenar Originals no admin). Update de coluna única —
+  // não toca em nenhum outro campo do item.
+  async function setItemOrdem(id, ordem) {
+    const client = sb();
+    if (!client) return false;
+    const val = Number.isFinite(+ordem) ? +ordem : 0;
+    const { error } = await client
+      .from(ITEMS_TABLE)
+      .update({ ordem: val })
+      .eq('id', id);
+    if (error) {
+      console.error('[ElarahByElarah] setItemOrdem error', error);
+      return false;
+    }
+    invalidate();
+    return true;
+  }
+
   async function deleteItem(id) {
     const client = sb();
     if (!client) return false;
@@ -345,6 +364,7 @@
     getItemById,
     addItem,
     updateItem,
+    setItemOrdem,
     deleteItem,
     submitInterest,
     getAllSubmissions,
