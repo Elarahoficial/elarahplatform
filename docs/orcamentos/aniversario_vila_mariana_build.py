@@ -141,7 +141,7 @@ espacos = f'''
       </div>
       <div class="vgc">
         <div class="p"><img src="assets/betchavas2.jpg" alt="Interior moderno do Betc Havas Café" style="object-position:center 55%"></div>
-        <div class="b"><span class="t">A partir de R$ 299</span><h3>Betc Havas Café <span class="sub">com voucher</span></h3><p>Moderno e cheio de charme — já vem com <b>R$ 50 de voucher</b> de consumo.</p></div>
+        <div class="b"><span class="t">A partir de R$ 249</span><h3>Betc Havas Café <span class="sub">com voucher</span></h3><p>Moderno e cheio de charme — já vem com <b>R$ 50 de voucher</b> de consumo.</p></div>
       </div>
       <div class="vgc hl">
         <div class="p"><img src="assets/espaco1.jpg" alt="Lounge acolhedor do Bake Studio" style="object-position:center 55%"></div>
@@ -178,9 +178,9 @@ planos = f'''
         </tr>
         <tr>
           <td class="rl"><b>Betc Havas Café</b><span>com R$ 50 de voucher de consumo</span></td>
-          <td class="val">R$ 299</td>
-          <td class="val">R$ 399<small>+ foto profissional</small></td>
-          <td class="val hl">R$ 499<small>+ lembrancinha</small></td>
+          <td class="val">R$ 249</td>
+          <td class="val">R$ 349<small>+ foto profissional</small></td>
+          <td class="val hl">R$ 449<small>+ lembrancinha</small></td>
         </tr>
         <tr>
           <td class="rl"><b>Bake Studio</b><span>espaço exclusivo · só de vocês</span></td>
@@ -190,7 +190,7 @@ planos = f'''
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. Cafeterias: <b>Jules</b> (a partir de R$ 199) e <b>Betc Havas Café</b> (a partir de R$ 299, já com <b>R$ 50 de voucher</b> de consumo) — o Com foto soma a foto profissional e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só de vocês), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. Dia 3 ou 12 de setembro a combinar.</div>
+    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. Cafeterias: <b>Jules</b> (a partir de R$ 199) e <b>Betc Havas Café</b> (a partir de R$ 249, já com <b>R$ 50 de voucher</b> de consumo) — o Com foto soma a foto profissional e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só de vocês), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. Dia 3 ou 12 de setembro a combinar.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -271,7 +271,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de aniversário da Elarah — experiência à escolha (vela aromática ou cerâmica, pelo mesmo valor), para cerca de 10 a 15 pessoas, no dia 3 ou 12 de setembro (a combinar), em espaço parceiro em SP (Vila Mariana e região). Cada participante cria e leva a própria peça. Valores por pessoa. No Jules · Campo Belo: A experiência R$ 199 / Com foto R$ 299 / Completo R$ 399 com lembrancinha. No Betc Havas Café (já com R$ 50 de voucher de consumo): A experiência R$ 299 / Com foto R$ 399 / Completo R$ 499 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 289 / Com foto R$ 389 (com foto profissional e coffee break) / Completo R$ 539 com decoração e lembrancinha. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de aniversário da Elarah — experiência à escolha (vela aromática ou cerâmica, pelo mesmo valor), para cerca de 10 a 15 pessoas, no dia 3 ou 12 de setembro (a combinar), em espaço parceiro em SP (Vila Mariana e região). Cada participante cria e leva a própria peça. Valores por pessoa. No Jules · Campo Belo: A experiência R$ 199 / Com foto R$ 299 / Completo R$ 399 com lembrancinha. No Betc Havas Café (já com R$ 50 de voucher de consumo): A experiência R$ 249 / Com foto R$ 349 / Completo R$ 449 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 289 / Com foto R$ 389 (com foto profissional e coffee break) / Completo R$ 539 com decoração e lembrancinha. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Aniversário · 2026")}
   </section>'''
 
