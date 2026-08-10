@@ -41,6 +41,12 @@ extra = '''
   .itable thead th.hl{color:var(--orange-dark)}
   .itable tbody tr:last-child td{border-bottom:none}
   .itable .pill{display:inline-block;background:var(--navy);color:#fff;font-size:8px;letter-spacing:.08em;padding:3px 9px;border-radius:999px;margin-bottom:7px;font-weight:700;text-transform:uppercase}
+  /* catálogo (carrossel de opções) */
+  .cat{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+  .catc{width:calc(25% - 9px);background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 12px 26px -20px rgba(0,0,0,.3)}
+  .catc .p{aspect-ratio:1/1;overflow:hidden;background:#eee}
+  .catc .p img{width:100%;height:100%;object-fit:cover}
+  .catc h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:13px;color:var(--navy);padding:8px 8px 10px;line-height:1.08;text-align:center}
 </style>'''
 head = head.replace("</style>", extra, 1)
 
@@ -50,6 +56,9 @@ def foot(right):
 def exp(n, img, name, desc, alt, pos="center 50%", top=None):
     tb = f'<span class="top">{top}</span>' if top else ''
     return f'<div class="exp">{tb}<div class="exp-photo"><img src="assets/{img}" alt="{alt}" style="object-position:{pos}"></div><div class="exp-body"><span class="n">{n}</span><h3>{name}</h3><p>{desc}</p></div></div>'
+
+def catc(img, name, pos="center 50%"):
+    return f'<div class="catc"><div class="p"><img src="assets/{img}" alt="{name}" style="object-position:{pos}"></div><h4>{name}</h4></div>'
 
 cover = f'''
   <section class="slide">
@@ -99,6 +108,34 @@ menu = f'''
     </div>
     <div class="note" style="margin-top:14px">◆ Todas <b>pelo mesmo valor por pessoa</b> — a escolha é da aniversariante. A aula de drinks tem versão <b>sem álcool</b>. 🍹</div>
     {foot("As experiências")}
+  </section>'''
+
+catalogo = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Todas as opções</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O catálogo completo</span>
+    <h2>Ainda <em>mais opções</em></h2>
+    <p class="lead">Além das cinco favoritas, temos um monte de experiência pra escolher — <strong>todas pelo mesmo valor por pessoa</strong>. É só apontar a que a galera curtir! ✨</p>
+    <div class="rule"></div>
+    <div class="cat">
+      {catc("pinturatacanova.jpg","Pintura em taça")}
+      {catc("pinturapratoceramica.jpg","Pintura em cerâmica")}
+      {catc("ceramicamodelagem.jpg","Modelagem em cerâmica")}
+      {catc("velaaromatica.jpg","Vela aromática")}
+      {catc("perfumariaapresenta%C3%A7%C3%A3o.jpg","Perfumaria","center 40%")}
+      {catc("sabonete.jpg","Sabonete artesanal")}
+      {catc("bedazzling-dolce-verao-kit-1781973976526.jpg","Bedazzled")}
+      {catc("tufting12.jpg","Tufting","center 55%")}
+      {catc("croche.jpg","Bolsa em crochê")}
+      {catc("charmbar.jpg","Charm de bolsa")}
+      {catc("bolsasmacrame.jpg","Bolsa de macramê")}
+      {catc("drinksclassicos.jpg","Aula de drinks")}
+    </div>
+    <div class="note" style="margin-top:12px">◆ Todas <b>pelo mesmo valor por pessoa</b> — dá pra escolher uma ou combinar estações. Quer alguma que não está aqui? É só pedir! 🎉</div>
+    {foot("Todas as opções")}
   </section>'''
 
 planos = f'''
@@ -208,7 +245,7 @@ como = f'''
     {foot("Aniversário de 18 anos · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + menu + planos + personaliza + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + menu + catalogo + planos + personaliza + como + '\n\n</div>\n\n'
 head = head.replace("<title>Setembro Amarelo · Elarah</title>", "<title>Aniversário de 18 anos · Elarah</title>")
 head = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="Proposta de aniversário de 18 anos da Elarah — pintura, bedazzled, tufting, perfumaria ou drinks, no espaço de vocês.">', head)
 head = head.replace("</head>",
