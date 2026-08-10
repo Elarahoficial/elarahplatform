@@ -103,8 +103,8 @@ experiencias = f'''
     <p class="lead">Duas experiências sensoriais lindas pra escolher — <strong>pelo mesmo valor por pessoa</strong>. É só decidir a que mais combina com a turma. Cada uma cria e leva a própria peça pra casa. 🌿</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","velaaromatica.jpg","Aromaterapia","Uma imersão de aromas — cada uma cria a própria vela aromática, com o cheirinho que ama.","Vela aromática artesanal","center 50%")}
-      {exp("02","pinturatacamaes.jpg","Pintura em taça","Personalizar a própria taça — linda pra brindar e levar de recordação.","Convidada pintando a própria taça de vidro","center 50%")}
+      {exp("01","aromaterapiameninas.jpg","Aromaterapia","Uma imersão de aromas — cada uma cria a própria fragrância, do jeitinho dela.","Amigas criando as próprias fragrâncias numa imersão de aromaterapia","center 40%")}
+      {exp("02","pinturatacameninas.jpg","Pintura em taça","Personalizar a própria taça — linda pra brindar e levar de recordação.","Amigas pintando as próprias taças de vidro","center 40%")}
     </div>
     <div class="note" style="margin-top:14px">◆ As duas têm o <b>mesmo valor por pessoa</b> — a escolha é da turma. Cada uma leva a própria criação de recordação. 🌿</div>
     {foot("As experiências")}
@@ -163,11 +163,11 @@ planos = f'''
         </tr>
         <tr>
           <td class="rl"><b>O Jardim · café brunch</b><span>café brunch, espaço &amp; experiência inclusos</span></td>
-          <td class="val">R$ 399</td><td class="val" style="color:var(--muted);font-size:18px">—</td><td class="val hl">R$ 599</td>
+          <td class="val">R$ 399</td><td class="val" style="color:var(--muted);font-size:18px">—</td><td class="val hl">R$ 499</td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:18px">◆ Valor <b>por pessoa</b>, com material e condução inclusos. No <b>Betc Havas Café</b> o consumo é à parte; o nível Com foto soma a foto profissional e R$ 30 de voucher de consumo, e o Completo soma a lembrancinha. No <b>Jardim · café brunch</b> o valor já inclui <b>café brunch, espaço e experiência</b>, e o Completo (R$ 599) soma foto profissional &amp; lembrancinha.</div>
+    <div class="note" style="margin-top:18px">◆ Valor <b>por pessoa</b>, com material e condução inclusos. No <b>Betc Havas Café</b> o consumo é à parte; o nível Com foto soma a foto profissional e R$ 30 de voucher de consumo, e o Completo soma a lembrancinha. No <b>Jardim · café brunch</b> o valor já inclui <b>café brunch, espaço e experiência</b>, e o Completo (R$ 499) soma foto profissional &amp; lembrancinha.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -183,7 +183,7 @@ personaliza = f'''
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/rockworld3.jpg" alt="Aniversário registrado por um fotógrafo" style="object-position:center 40%"></div>
+        <div class="plan-photo sq"><img src="assets/perfumariaapresenta%C3%A7%C3%A3o.jpg" alt="Amigas na mesa numa experiência da Elarah, registradas por um fotógrafo" style="object-position:center 40%"></div>
         <div class="plan-body">
           <h3>Foto profissional &amp; voucher</h3>
           <span class="tag basic">Nível Com foto · R$ 299</span>
@@ -248,7 +248,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de aniversário da Elarah — experiência à escolha (Aromaterapia ou Pintura em taça, pelo mesmo valor), para cerca de 6 pessoas, em 27/08 (a confirmar), em espaço parceiro. Cada convidada cria e leva a própria peça. Opção 1 · Betc Havas Café (consumo à parte): a partir de R$ 199 por pessoa (R$ 199 / 299 / 399 — A experiência / + foto profissional e R$ 30 de voucher / Completo com lembrancinha). Opção 2 · O Jardim (café brunch), com café brunch, espaço e experiência inclusos: a partir de R$ 399 por pessoa (Completo por R$ 599 com foto e lembrancinha). Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de aniversário da Elarah — experiência à escolha (Aromaterapia ou Pintura em taça, pelo mesmo valor), para cerca de 6 pessoas, em 27/08 (a confirmar), em espaço parceiro. Cada convidada cria e leva a própria peça. Opção 1 · Betc Havas Café (consumo à parte): a partir de R$ 199 por pessoa (R$ 199 / 299 / 399 — A experiência / + foto profissional e R$ 30 de voucher / Completo com lembrancinha). Opção 2 · O Jardim (café brunch), com café brunch, espaço e experiência inclusos: a partir de R$ 399 por pessoa (Completo por R$ 499 com foto e lembrancinha). Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Aniversário de 46 anos · 2026")}
   </section>'''
 
