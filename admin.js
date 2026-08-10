@@ -2266,15 +2266,26 @@
   async function getProfiles() {
     const s = window.supabaseClient;
     if (!s) return [];
-    const { data, error } = await s
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('[Admin] getProfiles error', error);
-      return [];
+    // Pagina de 1000 em 1000: o Supabase/PostgREST corta em 1000 linhas
+    // por consulta, então sem paginar o painel nunca mostrava mais que
+    // 1000 usuários (mesmo tendo mais no banco).
+    const all = [];
+    const page = 1000;
+    for (let from = 0; from < 100000; from += page) {
+      const { data, error } = await s
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + page - 1);
+      if (error) {
+        console.error('[Admin] getProfiles error', error);
+        break;
+      }
+      if (!data || data.length === 0) break;
+      all.push.apply(all, data);
+      if (data.length < page) break;
     }
-    return data || [];
+    return all;
   }
 
   async function getExperiences() {
