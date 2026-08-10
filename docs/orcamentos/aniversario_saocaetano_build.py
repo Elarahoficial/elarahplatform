@@ -151,22 +151,22 @@ planos = f'''
     <table class="itable">
       <thead><tr>
         <th class="corner"></th>
-        <th>A experiência<span>material & condução</span></th>
-        <th>Com foto<span>+ foto profissional</span></th>
-        <th class="hl"><span class="pill">★ Completo</span><br>Completo<span>+ lembrancinha</span></th>
+        <th>A experiência<span>só a experiência</span></th>
+        <th>Com foto &amp; lembrancinha<span>+ foto profissional &amp; lembrancinha</span></th>
+        <th class="hl"><span class="pill">★ 100%</span><br>Completo 100%<span>com tudo · decoração &amp; comida</span></th>
       </tr></thead>
       <tbody>
         <tr>
           <td class="rl"><b>Experiências criativas</b><span>Colagem &amp; bordado · Vela · Pintura em vidro</span></td>
-          <td class="val">R$ 199</td><td class="val">R$ 249</td><td class="val hl">R$ 349</td>
+          <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
         </tr>
         <tr>
           <td class="rl"><b>Coquetelaria &amp; drinks</b><span>Bar completo · drinks à escolha</span></td>
-          <td class="val">R$ 399</td><td class="val">R$ 449</td><td class="val hl">R$ 549</td>
+          <td class="val">R$ 399</td><td class="val">R$ 499</td><td class="val hl">R$ 599</td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:16px">◆ Valores <b>por pessoa</b>, do pacote <b>só experiência</b> — o nível Com foto soma a foto profissional do evento e o Completo soma a lembrancinha personalizada. Dá pra montar também o <b>pacote completo com decoração &amp; comida</b> — me conta o que você imaginou que eu faço sob medida. Realizado no salão do seu prédio (São Caetano), em 17/10.</div>
+    <div class="note" style="margin-top:16px">◆ Valores <b>por pessoa</b>, com material, condução e o deslocamento até o salão inclusos. O nível <b>Com foto &amp; lembrancinha</b> soma a foto profissional do evento e a lembrancinha personalizada; o <b>Completo 100%</b> vem com <b>tudo incluso</b> — foto, lembrancinha e a <b>decoração &amp; comida</b>, pra festa já pronta. Realizado no salão do seu prédio (São Caetano), em 17/10.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -185,7 +185,7 @@ personaliza = f'''
         <div class="plan-photo sq"><img src="assets/aniv-adulto.jpg" alt="Amigas felizes numa mesa decorada, registradas por um fotógrafo" style="object-position:center 40%"></div>
         <div class="plan-body">
           <h3>Foto profissional</h3>
-          <span class="tag basic">Nível Com foto · + R$ 50</span>
+          <span class="tag basic">Registro do evento</span>
           <ul class="feat">
             <li>Um fotógrafo cobre a festa inteira</li>
             <li>Cada risada e cada criação registradas</li>
@@ -198,7 +198,7 @@ personaliza = f'''
         <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Kit de lembrancinha personalizada com escova e piranha" style="object-position:center"></div>
         <div class="plan-body">
           <h3>Lembrancinha personalizada</h3>
-          <span class="tag premium">★ Nível Completo · + R$ 100</span>
+          <span class="tag premium">★ Um mimo a mais</span>
           <ul class="feat">
             <li>Kit com <b>escova &amp; piranha</b> pra cada convidada</li>
             <li>Personalizado com o nome de cada uma</li>
@@ -229,8 +229,8 @@ como = f'''
     <div class="addon">
       <span class="plus">+</span>
       <div>
-        <h4>Pacote completo, se quiser</h4>
-        <p>Além da experiência, dá pra somar <b>decoração e comida</b> pra deixar tudo redondo. Me conta o que você imaginou que eu monto o orçamento sob medida. 🥂</p>
+        <h4>Completo 100%: festa pronta</h4>
+        <p>No nível <b>Completo 100%</b> já vem com tudo — foto, lembrancinha, <b>decoração e comida</b> — pra festa 100% pronta. É só chegar e comemorar. 🥂</p>
       </div>
     </div>
     <div class="cta">
@@ -247,7 +247,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de aniversário da Elarah — experiência criativa à escolha (Colagem &amp; bordado com fotografia, Vela aromática ou Pintura em vidro, pelo mesmo valor) ou Coquetelaria &amp; drinks, para cerca de 15 pessoas, no sábado 17/10, no salão de festas do prédio em São Caetano do Sul. Cada participante cria e leva a própria peça. Pacote só experiência: Experiências criativas a partir de R$ 199 por pessoa (R$ 199 / 249 / 349); Coquetelaria &amp; drinks a partir de R$ 399 por pessoa (R$ 399 / 449 / 549) — em ambos, Com foto soma a foto profissional (+R$ 50) e o Completo soma a lembrancinha (+R$ 100). Pacote completo com decoração e comida sob consulta. Valores por pessoa, já com deslocamento incluso. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de aniversário da Elarah — experiência criativa à escolha (Colagem &amp; bordado com fotografia, Vela aromática ou Pintura em vidro, pelo mesmo valor) ou Coquetelaria &amp; drinks, para cerca de 15 pessoas, no sábado 17/10, no salão de festas do prédio em São Caetano do Sul. Cada participante cria e leva a própria peça. Experiências criativas a partir de R$ 199 por pessoa (R$ 199 / 299 / 399); Coquetelaria &amp; drinks a partir de R$ 399 por pessoa (R$ 399 / 499 / 599). O nível Com foto &amp; lembrancinha soma a foto profissional e a lembrancinha; o Completo 100% vem com tudo incluso, incluindo decoração e comida. Valores por pessoa, já com deslocamento incluso. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Aniversário · São Caetano · 2026")}
   </section>'''
 
