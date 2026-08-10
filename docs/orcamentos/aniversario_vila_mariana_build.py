@@ -124,6 +124,24 @@ experiencias = f'''
     {foot("As experiências")}
   </section>'''
 
+vibe = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O clima da experiência</span>
+    <h2>Uma mesa que é <em>só charme</em></h2>
+    <p class="lead">Mais do que a experiência: a gente monta um cenário lindo pra comemoração — velas, flores, uma mesa cheia de charme e aquele clima gostoso de criar junto e comemorar. 🕯️🌸</p>
+    <div class="rule"></div>
+    <div class="menu">
+      {exp("01","aniv-decor.jpg","A mesa decorada","Velas, flores e cada detalhe pensado — o cenário perfeito pra criar e comemorar.","Mesa de pintura decorada com velas e flores","center 30%")}
+      {exp("02","desp-hero4.jpg","Cada detalhe","Comidinhas, lembrancinhas e uma mesa montada só pra vocês, do começo ao fim.","Mesa de aniversário com comidinhas e lembrancinhas","center 45%")}
+    </div>
+    <div class="note" style="margin-top:14px">◆ A <b>decoração</b> completa entra no nível <b>Premium</b> do Bake Studio — pra festa 100% pronta, é só chegar e comemorar. 🌸</div>
+    {foot("A vibe da experiência")}
+  </section>'''
+
 espacos = f'''
   <section class="slide">
     <div class="slide__head">
@@ -275,7 +293,7 @@ como = f'''
     {foot("Aniversário · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + experiencias + espacos + planos + personaliza + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + experiencias + vibe + espacos + planos + personaliza + como + '\n\n</div>\n\n'
 head = head.replace("<title>Setembro Amarelo · Elarah</title>", "<title>Aniversário · Vela ou Cerâmica · Elarah</title>")
 head = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="Proposta de aniversário da Elarah — vela ou cerâmica, no café (Jules/Betc) ou no Bake Studio.">', head)
 head = head.replace("</head>",
