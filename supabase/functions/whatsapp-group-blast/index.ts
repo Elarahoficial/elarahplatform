@@ -88,24 +88,42 @@ async function gatherContacts(): Promise<Contact[]> {
     else if (!existing && nome) map.set(phone, nome.trim());
   };
 
-  const [profs, subs] = await Promise.all([
-    supabase.from("profiles").select("nome, telefone")
-      .not("telefone", "is", null).neq("telefone", "").limit(5000),
-    supabase.from("byelarah_submissions").select("nome, telefone")
-      .not("telefone", "is", null).neq("telefone", "").limit(5000),
-  ]);
-  for (const r of (profs.data ?? [])) add(r.nome, r.telefone);
-  for (const r of (subs.data ?? [])) add(r.nome, r.telefone);
+  // Pagina TUDO (o PostgREST/Supabase corta em 1000 por página — sem
+  // paginar, contas além de 1000 nunca entravam no disparo).
+  const profs = await fetchAll("profiles", "nome, telefone", true);
+  const subs = await fetchAll("byelarah_submissions", "nome, telefone", true);
+  for (const r of profs) add(r.nome as string | null, r.telefone as string | null);
+  for (const r of subs) add(r.nome as string | null, r.telefone as string | null);
 
   return [...map.entries()].map(([phone, nome]) => ({ phone, nome }));
 }
 
-// Telefones que já receberam (log).
+// Busca TODAS as linhas de uma tabela, paginando de 1000 em 1000.
+// comTelefone=true filtra só quem tem telefone preenchido.
+async function fetchAll(
+  table: string,
+  columns: string,
+  comTelefone: boolean,
+): Promise<Array<Record<string, unknown>>> {
+  const out: Array<Record<string, unknown>> = [];
+  const page = 1000;
+  for (let from = 0; from < 100000; from += page) {
+    let q = supabase.from(table).select(columns).range(from, from + page - 1);
+    if (comTelefone) q = q.not("telefone", "is", null).neq("telefone", "");
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    out.push(...(data as Array<Record<string, unknown>>));
+    if (data.length < page) break;
+  }
+  return out;
+}
+
+// Telefones que já receberam (log) — paginado.
 async function loadSentPhones(): Promise<Set<string>> {
   const set = new Set<string>();
-  const { data } = await supabase
-    .from("whatsapp_group_invites").select("phone").limit(20000);
-  for (const r of (data ?? [])) set.add(r.phone as string);
+  const rows = await fetchAll("whatsapp_group_invites", "phone", false);
+  for (const r of rows) set.add(r.phone as string);
   return set;
 }
 
