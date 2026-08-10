@@ -116,9 +116,9 @@ catalogo = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Todas as opções</span></div>
     </div>
-    <span class="eyebrow orange">◆ O catálogo completo</span>
-    <h2>Ainda <em>mais opções</em></h2>
-    <p class="lead">Além das cinco favoritas, temos um monte de experiência pra escolher — <strong>todas pelo mesmo valor por pessoa</strong>. É só apontar a que a galera curtir! ✨</p>
+    <span class="eyebrow orange">◆ Escolham a favorita</span>
+    <h2>Um <em>menu de ideias</em></h2>
+    <p class="lead">Um monte de experiência criativa e instagramável pra escolher — <strong>todas pelo mesmo valor por pessoa</strong>. É só apontar a que a galera curtir (ou combinar estações)! ✨</p>
     <div class="rule"></div>
     <div class="cat">
       {catc("pinturatacanova.jpg","Pintura em taça")}
@@ -128,11 +128,9 @@ catalogo = f'''
       {catc("perfumariaapresenta%C3%A7%C3%A3o.jpg","Perfumaria","center 40%")}
       {catc("sabonete.jpg","Sabonete artesanal")}
       {catc("bedazzling-dolce-verao-kit-1781973976526.jpg","Bedazzled")}
-      {catc("tufting12.jpg","Tufting","center 55%")}
       {catc("croche.jpg","Bolsa em crochê")}
       {catc("charmbar.jpg","Charm de bolsa")}
       {catc("bolsasmacrame.jpg","Bolsa de macramê")}
-      {catc("drinksclassicos.jpg","Aula de drinks")}
     </div>
     <div class="note" style="margin-top:12px">◆ Todas <b>pelo mesmo valor por pessoa</b> — dá pra escolher uma ou combinar estações. Quer alguma que não está aqui? É só pedir! 🎉</div>
     {foot("Todas as opções")}
@@ -156,7 +154,7 @@ planos = f'''
         <th class="hl"><span class="pill">★ Completo</span><br>Completo<span>+ lembrancinha personalizada</span></th>
       </tr></thead>
       <tbody><tr>
-        <td class="rl"><b>Pintura · Bedazzled · Tufting · Perfumaria · Drinks</b><span>Todas pelo mesmo valor — cada uma leva o que criou</span></td>
+        <td class="rl"><b>Pintura · Bedazzled · Perfumaria · Crochê · Charm · Macramê</b><span>Todas pelo mesmo valor — cada uma leva o que criou</span></td>
         <td class="val">R$ 199</td><td class="val">R$ 249</td><td class="val hl">R$ 349</td>
       </tr></tbody>
     </table>
@@ -241,7 +239,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de aniversário de 18 anos da Elarah — experiência à escolha (Pintura em taça, Bedazzled, Tufting, Perfumaria ou Aula de drinks, pelo mesmo valor), para cerca de 25 pessoas, em data a combinar, no espaço de vocês (Ipiranga) — a gente leva tudo até lá. Cada participante cria e leva a própria peça. A partir de R$ 199 por pessoa (níveis R$ 199 / 249 / 349): A experiência (material e condução) / + foto profissional / Completo com lembrancinha personalizada. A aula de drinks tem versão sem álcool. Valores por pessoa. Proposta válida mediante confirmação de data, número de participantes e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de aniversário de 18 anos da Elarah — experiência à escolha (pintura, bedazzled, perfumaria, cerâmica, sabonete, bolsa em crochê, charm de bolsa, macramê e mais, pelo mesmo valor), para cerca de 25 pessoas, em data a combinar, no espaço de vocês (Ipiranga) — a gente leva tudo até lá. Cada participante cria e leva a própria peça. A partir de R$ 199 por pessoa (níveis R$ 199 / 249 / 349): A experiência (material e condução) / + foto profissional / Completo com lembrancinha personalizada. Valores por pessoa. Proposta válida mediante confirmação de data, número de participantes e disponibilidade de agenda.</p>
     {foot("Aniversário de 18 anos · 2026")}
   </section>'''
 
