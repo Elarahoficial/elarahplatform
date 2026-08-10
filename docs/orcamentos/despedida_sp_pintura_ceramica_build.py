@@ -104,7 +104,7 @@ experiencias = f'''
     <p class="lead">Duas oficinas criativas e descomplicadas pra escolher — <strong>pelo mesmo valor por pessoa</strong>. A gente guia tudo do começo ao fim, e cada uma leva a própria peça de recordação. 🍷</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","pinturatacameninas.jpg","Pintura em taça","Cada uma personaliza a própria taça — linda pra brindar e levar de recordação.","Amigas pintando as próprias taças de vidro","center 40%")}
+      {exp("01","pinturataca2.jpg","Pintura em taça","Cada uma personaliza a própria taça — linda pra brindar e levar de recordação.","Fileira de taças de vidro pintadas à mão com flores","center 55%")}
       {exp("02","ceramicamodelagem.jpg","Cerâmica","Modelar a argila à mão e criar uma peça única — relaxante e cheio de charme.","Mãos modelando uma peça de cerâmica","center 50%")}
     </div>
     <div class="note" style="margin-top:14px">◆ As duas têm o <b>mesmo valor por pessoa</b> — a escolha é da galera. Cada uma leva a própria criação de recordação. 🎨</div>
