@@ -239,6 +239,31 @@ serve(async (req) => {
     "restantes=" + restantes, "limite=" + limiteAtingido,
   );
 
+  // Auto-continua: se ainda falta, HOUVE progresso e não bateu o limite
+  // diário da Meta, a função reinvoca a si mesma (encadeia lotes até
+  // acabar ou bater o limite). Assim o admin roda 1 comando só.
+  // O guard `enviados > 0` evita loop infinito se tudo estiver falhando.
+  try {
+    const er = (globalThis as {
+      EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void };
+    }).EdgeRuntime;
+    if (er && restantes > 0 && enviados > 0 && !limiteAtingido && WEBHOOK_SECRET) {
+      er.waitUntil(
+        fetch(`${SUPABASE_URL}/functions/v1/whatsapp-group-blast`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${WEBHOOK_SECRET}`,
+          },
+          body: JSON.stringify({ batch }),
+        }).then(() => undefined).catch(() => undefined),
+      );
+      console.info("[whatsapp-group-blast] auto-continua: reinvocando (restantes=" + restantes + ")");
+    }
+  } catch (e) {
+    console.warn("[whatsapp-group-blast] auto-continua falhou (ok):", String(e));
+  }
+
   return jsonResponse({
     ok: true,
     enviados,
