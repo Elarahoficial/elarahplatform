@@ -112,7 +112,7 @@ experiencias = f'''
     <p class="lead">Duas oficinas de pintura descomplicadas pra escolher — <strong>pelo mesmo valor por pessoa</strong>. Ninguém precisa ser artista: a gente guia do começo ao fim, com tinta, taça de vinho na mão e muita risada. Cada uma leva a própria peça. 🍷</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","pinturatacameninas.jpg","Pintura em taça","Cada uma personaliza a própria taça — linda pra brindar e levar de recordação.","Amigas pintando as próprias taças de vidro","center 40%")}
+      {exp("01","pinturatacamaes.jpg","Pintura em taça","Cada uma personaliza a própria taça — linda pra brindar e levar de recordação.","Convidada pintando a própria taça de vidro","center 45%")}
       {exp("02","pinturapratoceramica.jpg","Pintura em cerâmica","Pintar pratos e peças de cerâmica com cores e traços só seus — fácil e cheio de charme.","Prato de cerâmica pintado à mão","center 50%")}
     </div>
     <div class="note" style="margin-top:14px">◆ As duas têm o <b>mesmo valor por pessoa</b> — a escolha é da galera. Descomplicadas e cheias de charme, com a gente guiando tudo. 🎨</div>
@@ -157,6 +157,76 @@ niveis = f'''
       <div class="lvl hl"><div class="b">★</div><div><h3>Completo 100%</h3><p>Com tudo incluso — soma a <b>decoração temática</b>, pra festa 100% pronta.</p><span class="pr">a partir de R$ 529</span></div></div>
     </div>
     {foot("Os níveis")}
+  </section>'''
+
+espacos = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Onde acontece</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Duas opções de espaço</span>
+    <h2>No seu espaço <em>ou</em> no estúdio</h2>
+    <p class="lead">Dá pra fazer no conforto do seu espaço — a gente leva tudo até vocês — ou reservar o Bake Studio, um estúdio charmoso e exclusivo só da turma. É só escolher qual combina mais com a despedida. 🍷</p>
+    <div class="rule"></div>
+    <div class="bfeat" style="height:206px">
+      <div class="bphoto"><img src="assets/noiva.jpg" alt="Despedida decorada com a noiva de véu numa mesa linda" style="object-position:center 45%"></div>
+      <div class="bbody">
+        <span class="btag">Opção 1 · a partir de R$ 199</span>
+        <h3>No seu espaço <span class="sub">a gente leva até vocês</span></h3>
+        <p>A gente monta tudo no espaço de vocês — casa, salão ou onde a despedida vai rolar. Sem preocupação: é só reunir as amigas e curtir. 🥂</p>
+      </div>
+    </div>
+    <div class="bfeat" style="margin-top:15px;height:206px">
+      <div class="bphoto"><img src="assets/espaco1.jpg" alt="Lounge acolhedor do Bake Studio na Bela Vista" style="object-position:center 55%"></div>
+      <div class="bbody">
+        <span class="btag">★ Opção 2 · a partir de R$ 329</span>
+        <h3>Bake Studio <span class="sub">Bela Vista · exclusivo</span></h3>
+        <p>Um estúdio charmoso com <b>cozinha e sala</b>, só de vocês — com liberdade pra decorar do jeito que quiserem. Espaço reservado do começo ao fim. 🌿</p>
+      </div>
+    </div>
+    {foot("Onde acontece")}
+  </section>'''
+
+personaliza = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Nos níveis completos</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Os mimos que já vêm inclusos</span>
+    <h2>Foto <em>&amp;</em> lembrancinha</h2>
+    <p class="lead">A partir do nível com foto, a despedida ganha o registro profissional e a lembrancinha personalizada pra cada convidada — dois mimos pra deixar tudo ainda mais especial.</p>
+    <div class="rule"></div>
+    <div class="plans">
+      <div class="plan">
+        <div class="plan-photo sq"><img src="assets/eventocorporativo.jpg" alt="Amigas felizes e animadas brindando, registradas por um fotógrafo" style="object-position:center 45%"></div>
+        <div class="plan-body">
+          <h3>Foto profissional</h3>
+          <span class="tag basic">Registro do evento</span>
+          <ul class="feat">
+            <li>Um fotógrafo cobre a despedida inteira</li>
+            <li>Cada risada e cada criação registradas</li>
+            <li>Álbum digital lindo pra guardar de recordação</li>
+          </ul>
+          <span class="allin">Memória linda pra sempre</span>
+        </div>
+      </div>
+      <div class="plan featured">
+        <div class="plan-photo sq"><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Kit de lembrancinha personalizada com escova e piranha" style="object-position:center"></div>
+        <div class="plan-body">
+          <h3>Lembrancinha personalizada</h3>
+          <span class="tag premium">★ Um mimo a mais</span>
+          <ul class="feat">
+            <li>Kit com <b>escova &amp; piranha</b> pra cada convidada</li>
+            <li>Personalizado com o nome de cada uma</li>
+            <li>Um mimo pra levarem da despedida pra casa</li>
+          </ul>
+          <span class="allin">Cada uma leva o seu mimo</span>
+        </div>
+      </div>
+    </div>
+    {foot("Os mimos inclusos")}
   </section>'''
 
 planos = f'''
@@ -232,7 +302,7 @@ como = f'''
     {foot("Despedida de solteira · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + experiencias + vinho + niveis + planos + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + experiencias + espacos + vinho + planos + personaliza + como + '\n\n</div>\n\n'
 head = head.replace("<title>Setembro Amarelo · Elarah</title>", "<title>Despedida de Solteira · Pintura &amp; Vinho · Elarah</title>")
 head = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="Proposta de despedida da Elarah — pintura em taça ou cerâmica com vinho e comidinhas, no seu espaço ou no Bake Studio.">', head)
 head = head.replace("</head>",
