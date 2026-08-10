@@ -52,7 +52,7 @@ extra = '''
 </style>'''
 head = head.replace("</style>", extra, 1)
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
-                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .exp{width:calc(33.333% - 11px)}\n    .bfeat{flex-direction:column}\n    .bfeat .bphoto{width:100%;height:200px}\n    .pcard{flex-direction:column}\n    .pcard .pl .big{font-size:46px}")
+                    ".menu-cols{grid-template-columns:1fr 1fr}\n    .exp{width:calc(33.333% - 11px)}\n    .bfeat{flex-direction:column}\n    .bfeat .bphoto{width:100%;height:auto;aspect-ratio:4/3}\n    .pcard{flex-direction:column}\n    .pcard .pl .big{font-size:46px}")
 
 def foot(right):
     return f'<div class="slide__foot"><span>Elarah · Experiências</span><span>{right}</span></div>'
@@ -121,7 +121,7 @@ como = f'''
     <p class="lead">Você só reúne a galera — a Elarah cuida de todo o resto, do começo ao fim. É só escolher a experiência e a data. 🌸</p>
     <div class="rule"></div>
     <div class="bfeat">
-      <div class="bphoto"><img src="assets/florseca.jpg" alt="Estrutura de workshop floral montada, com flores e materiais" style="object-position:center 50%"></div>
+      <div class="bphoto"><img src="assets/desp-hero4.jpg" alt="Mesa de workshop montada e arrumada, com os kits em cada lugar" style="object-position:center 30%"></div>
       <div class="bbody">
         <span class="btag">Workshop no local</span>
         <h3>Levamos tudo até você</h3>
