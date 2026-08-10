@@ -168,7 +168,7 @@ personaliza = f'''
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/eventocorporativo.jpg" alt="Amigas felizes e animadas brindando na mesa, registradas por um fotógrafo" style="object-position:center 45%"></div>
+        <div class="plan-photo sq"><img src="assets/aniv-adulto.jpg" alt="Amigas felizes numa mesa decorada, registradas por um fotógrafo" style="object-position:center 40%"></div>
         <div class="plan-body">
           <h3>Foto profissional</h3>
           <span class="tag basic">Nível Com foto · + R$ 50</span>
