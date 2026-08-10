@@ -103,7 +103,7 @@ experiencias = f'''
       {exp("01","florseca.jpg","Arranjos florais","Cada um monta o próprio arranjo com flores da estação — delicado e cheio de vida.","Arranjos florais de primavera em papel kraft","center 45%")}
       {exp("02","buqueflor.jpg","Buquê &amp; home spray","Um buquê lindo pra montar e um home spray floral pra perfumar a casa.","Buquê de flores silvestres colorido","center 40%")}
       {exp("03","perfumariadecor.jpg","Perfumaria floral","Criar o próprio perfume com notas florais — uma fragrância única pra levar.","Mesa de perfumaria com essências e flores","center 45%")}
-      {exp("04","pinturavasoearranjo.jpg","Pintura floral","Pintar à mão um vasinho com tema de flores — arte pra decorar e guardar.","Vasos pintados à mão com flores","center 35%")}
+      {exp("04","aquarela1.jpg","Pintura floral","Pintar flores à mão em aquarela — delicado, artístico e cheio de charme.","Pintura de flores em aquarela sobre a mesa","center 50%")}
       {exp("05","velaflor.jpg","Vela &amp; flores secas","Uma vela aromática decorada com flores secas — cheirosa e cheia de charme.","Vela aromática com flores secas","center 50%")}
     </div>
     <div class="note" style="margin-top:14px">◆ Todas com o <b>mesmo valor por pessoa</b> — a escolha é da turma. Cada convidado leva pra casa a própria criação. 🌷</div>
