@@ -152,8 +152,8 @@ planos = f'''
       <thead><tr>
         <th class="corner"></th>
         <th>A experiência<span>material & condução</span></th>
-        <th>Com foto<span>+ foto profissional · +R$ 50</span></th>
-        <th class="hl"><span class="pill">★ Completo</span><br>Completo<span>+ lembrancinha · +R$ 100</span></th>
+        <th>Com foto<span>+ foto profissional</span></th>
+        <th class="hl"><span class="pill">★ Completo</span><br>Completo<span>+ lembrancinha</span></th>
       </tr></thead>
       <tbody>
         <tr>
@@ -166,7 +166,7 @@ planos = f'''
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:16px">◆ Valores <b>por pessoa</b>, do pacote <b>só experiência</b> — o nível Com foto soma a foto profissional (+R$ 50) e o Completo soma a lembrancinha (+R$ 100). Dá pra montar também o <b>pacote completo com decoração &amp; comida</b> — me conta o que você imaginou que eu faço sob medida. Realizado no salão do seu prédio (São Caetano), em 17/10.</div>
+    <div class="note" style="margin-top:16px">◆ Valores <b>por pessoa</b>, do pacote <b>só experiência</b> — o nível Com foto soma a foto profissional do evento e o Completo soma a lembrancinha personalizada. Dá pra montar também o <b>pacote completo com decoração &amp; comida</b> — me conta o que você imaginou que eu faço sob medida. Realizado no salão do seu prédio (São Caetano), em 17/10.</div>
     {foot("Investimento")}
   </section>'''
 
