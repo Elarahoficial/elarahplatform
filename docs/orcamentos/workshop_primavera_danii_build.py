@@ -100,7 +100,7 @@ experiencias = f'''
     <p class="lead">Todas com a cara da primavera, delicadas e cheias de charme — e <strong>todas pelo mesmo valor por pessoa</strong>. A gente guia tudo do começo ao fim, e cada convidado leva a própria criação de recordação. 🌸</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","florseca.jpg","Arranjos florais","Cada um monta o próprio arranjo com flores da estação — delicado e cheio de vida.","Arranjos florais de primavera em papel kraft","center 45%")}
+      {exp("01","croche.jpg","Bolsa de crochê","Cada um tece a própria bolsinha de crochê — colorida, charmosa e pra usar o ano todo.","Bolsas de crochê coloridas feitas à mão","center 50%")}
       {exp("02","buqueflor.jpg","Buquê &amp; home spray","Um buquê lindo pra montar e um home spray floral pra perfumar a casa.","Buquê de flores silvestres colorido","center 40%")}
       {exp("03","perfumariadecor.jpg","Perfumaria floral","Criar o próprio perfume com notas florais — uma fragrância única pra levar.","Mesa de perfumaria com essências e flores","center 45%")}
       {exp("04","aquarela1.jpg","Pintura floral","Pintar flores à mão em aquarela — delicado, artístico e cheio de charme.","Pintura de flores em aquarela sobre a mesa","center 50%")}
@@ -152,7 +152,7 @@ investimento = f'''
       <div class="pr">
         <h3>O que já vem incluso</h3>
         <ul>
-          <li>A <b>experiência à escolha</b> — arranjos, buquê &amp; home spray, perfumaria, pintura ou vela com flores secas</li>
+          <li>A <b>experiência à escolha</b> — bolsa de crochê, buquê &amp; home spray, perfumaria, pintura floral ou vela com flores secas</li>
           <li><b>Profissional</b> da Elarah conduzindo tudo do começo ao fim</li>
           <li>Todo o <b>material</b> e a <b>estrutura</b> montada no seu espaço</li>
           <li>Cada convidado <b>leva pra casa</b> a própria criação de recordação</li>
@@ -199,7 +199,7 @@ contato = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de workshop de primavera da Elarah — experiência à escolha (arranjos florais, buquê &amp; home spray, perfumaria floral, pintura floral ou vela aromática com flores secas, todas pelo mesmo valor), para cerca de 15 pessoas, na 2ª ou 3ª semana de setembro (a combinar), no espaço da cliente em Jundiaí. Workshop no local: a Elarah leva profissional, material e estrutura. Cada participante cria e leva a própria criação. Valor de R$ 239 por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de workshop de primavera da Elarah — experiência à escolha (bolsa de crochê, buquê &amp; home spray, perfumaria floral, pintura floral ou vela aromática com flores secas, todas pelo mesmo valor), para cerca de 15 pessoas, na 2ª ou 3ª semana de setembro (a combinar), no espaço da cliente em Jundiaí. Workshop no local: a Elarah leva profissional, material e estrutura. Cada participante cria e leva a própria criação. Valor de R$ 239 por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Workshop de primavera · 2026")}
   </section>'''
 
