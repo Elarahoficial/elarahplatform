@@ -124,9 +124,9 @@ espacos = f'''
     <div class="bfeat plain" style="height:206px">
       <div class="bphoto"><img src="assets/julescampobelo.jpg" alt="Cafeteria parceira charmosa e arejada" style="object-position:center 60%"></div>
       <div class="bbody">
-        <span class="btag soft">Opção 1 · a partir de R$ 199</span>
-        <h3>Jules ou Betc Havas <span class="sub">cafeterias parceiras</span></h3>
-        <p>Cafeterias modernas e cheias de charme. No <b>Betc Havas</b> o nível com foto já vem com <b>R$ 50 de voucher</b> de consumo. ☕</p>
+        <span class="btag soft">Opção 1 · cafeterias parceiras</span>
+        <h3>Jules ou Betc Havas <span class="sub">Campo Belo &amp; mais</span></h3>
+        <p>Cafeterias modernas e cheias de charme. <b>Jules</b> a partir de R$ 199; <b>Betc Havas Café</b> a partir de R$ 299, já com <b>R$ 50 de voucher</b> de consumo. ☕</p>
       </div>
     </div>
     <div class="bfeat" style="margin-top:15px;height:206px">
@@ -159,8 +159,12 @@ planos = f'''
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Café · Jules ou Betc Havas</b><span>R$ 50 de voucher no Betc</span></td>
+          <td class="rl"><b>Jules · Campo Belo</b><span>cafeteria parceira</span></td>
           <td class="val">R$ 199</td><td class="val">R$ 299</td><td class="val hl">R$ 399</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Betc Havas Café</b><span>com R$ 50 de voucher de consumo</span></td>
+          <td class="val">R$ 299</td><td class="val">R$ 399</td><td class="val hl">R$ 499</td>
         </tr>
         <tr>
           <td class="rl"><b>Bake Studio</b><span>espaço exclusivo · experiência + espaço só de vocês</span></td>
@@ -168,7 +172,7 @@ planos = f'''
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. No <b>café</b>, o nível Com foto soma a foto profissional (e R$ 50 de voucher de consumo no Betc Havas) e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só de vocês), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. Domingo de outubro ou novembro a combinar.</div>
+    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. Cafeterias: <b>Jules</b> (a partir de R$ 199) e <b>Betc Havas Café</b> (a partir de R$ 299, já com <b>R$ 50 de voucher</b> de consumo) — o Com foto soma a foto profissional e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só de vocês), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. Domingo de outubro ou novembro a combinar.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -249,7 +253,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de despedida de solteira da Elarah — oficina à escolha (pintura ou cerâmica, pelo mesmo valor), para cerca de 15 pessoas, num domingo de outubro ou novembro (a combinar), em SP. Cada participante cria e leva a própria peça. Valores por pessoa. No café (Jules ou Betc Havas): A experiência R$ 199 / Com foto R$ 299 (com foto profissional e R$ 50 de voucher de consumo no Betc) / Completo R$ 399 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 289 / Com foto R$ 389 (com foto profissional e coffee break) / Completo R$ 539 com decoração e lembrancinha. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de despedida de solteira da Elarah — oficina à escolha (pintura ou cerâmica, pelo mesmo valor), para cerca de 15 pessoas, num domingo de outubro ou novembro (a combinar), em SP. Cada participante cria e leva a própria peça. Valores por pessoa. No Jules · Campo Belo: A experiência R$ 199 / Com foto R$ 299 / Completo R$ 399 com lembrancinha. No Betc Havas Café (já com R$ 50 de voucher de consumo): A experiência R$ 299 / Com foto R$ 399 / Completo R$ 499 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 289 / Com foto R$ 389 (com foto profissional e coffee break) / Completo R$ 539 com decoração e lembrancinha. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Despedida de solteira · 2026")}
   </section>'''
 
