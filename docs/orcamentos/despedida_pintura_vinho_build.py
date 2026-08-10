@@ -94,7 +94,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/aniv-adulto.jpg" alt="Amigas numa mesa decorada com vinho, comemorando" style="object-position:center 40%">
+        <img src="assets/desp-hero3.jpg" alt="Grupo de amigas comemorando animadas numa despedida" style="object-position:center 30%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
@@ -130,7 +130,7 @@ vinho = f'''
     <p class="lead">Porque despedida boa pede um brinde: a experiência pode vir com um <strong>coffee break e vinho inclusos</strong> — comidinhas gostosas e taças cheias pra acompanhar a pintura e as boas conversas. 🍷🧀</p>
     <div class="rule"></div>
     <div class="bfeat" style="height:238px">
-      <div class="bphoto"><img src="assets/harmonizacaoqueijos.jpg" alt="Tábua de queijos e comidinhas para acompanhar" style="object-position:center 60%"></div>
+      <div class="bphoto"><img src="assets/desp-hero4.jpg" alt="Mesa de despedida com comidinhas e lembrancinhas" style="object-position:center 50%"></div>
       <div class="bbody">
         <span class="btag">★ Opcional · a partir do nível 2</span>
         <h3>Coffee break &amp; vinho <span class="sub">comidinhas &amp; taças</span></h3>
@@ -170,7 +170,7 @@ espacos = f'''
     <p class="lead">Dá pra fazer no conforto do seu espaço — a gente leva tudo até vocês — ou reservar o Bake Studio, um estúdio charmoso e exclusivo só da turma. É só escolher qual combina mais com a despedida. 🍷</p>
     <div class="rule"></div>
     <div class="bfeat" style="height:206px">
-      <div class="bphoto"><img src="assets/noiva.jpg" alt="Despedida decorada com a noiva de véu numa mesa linda" style="object-position:center 45%"></div>
+      <div class="bphoto"><img src="assets/desp-hero1.jpg" alt="Espaço decorado de despedida com balões BRIDE e bar" style="object-position:center 50%"></div>
       <div class="bbody">
         <span class="btag">Opção 1 · a partir de R$ 199</span>
         <h3>No seu espaço <span class="sub">a gente leva até vocês</span></h3>
@@ -200,7 +200,7 @@ personaliza = f'''
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/eventocorporativo.jpg" alt="Amigas felizes e animadas brindando, registradas por um fotógrafo" style="object-position:center 45%"></div>
+        <div class="plan-photo sq"><img src="assets/desp-hero2.jpg" alt="Amigas se abraçando e brindando numa despedida, registradas por um fotógrafo" style="object-position:center 30%"></div>
         <div class="plan-body">
           <h3>Foto profissional</h3>
           <span class="tag basic">Registro do evento</span>
