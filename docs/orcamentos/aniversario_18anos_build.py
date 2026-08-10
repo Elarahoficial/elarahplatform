@@ -131,6 +131,8 @@ catalogo = f'''
       {catc("croche.jpg","Bolsa em crochê")}
       {catc("charmbar.jpg","Charm de bolsa")}
       {catc("bolsasmacrame.jpg","Bolsa de macramê")}
+      {catc("buque.jpg","Buquê floral","center 40%")}
+      {catc("colagemreal.jpg","Colagem &amp; bordado","center 40%")}
     </div>
     <div class="note" style="margin-top:12px">◆ Todas <b>pelo mesmo valor por pessoa</b> — dá pra escolher uma ou combinar estações. Quer alguma que não está aqui? É só pedir! 🎉</div>
     {foot("Todas as opções")}
