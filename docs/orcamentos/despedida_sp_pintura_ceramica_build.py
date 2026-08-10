@@ -50,6 +50,18 @@ extra = '''
   .bfeat h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);line-height:1.02}
   .bfeat .sub{display:inline-block;font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-top:5px}
   .bfeat p{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.45}
+  /* grid de espaços (3 opções) */
+  .vg{display:flex;gap:14px;margin-top:16px}
+  .vgc{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 30px -22px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .vgc.hl{border:1.6px solid var(--orange)}
+  .vgc .p{aspect-ratio:4/3;overflow:hidden;background:#eee}
+  .vgc .p img{width:100%;height:100%;object-fit:cover}
+  .vgc .b{padding:13px 15px 16px}
+  .vgc .t{display:inline-block;background:var(--navy);color:#fff;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:999px;margin-bottom:8px}
+  .vgc.hl .t{background:var(--orange)}
+  .vgc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.05}
+  .vgc .sub{display:inline-block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-top:4px}
+  .vgc p{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.4}
 </style>'''
 head = head.replace("</style>", extra, 1)
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
@@ -117,26 +129,25 @@ espacos = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Onde acontece</span></div>
     </div>
-    <span class="eyebrow orange">◆ Duas opções de espaço</span>
-    <h2>Numa cafeteria <em>ou</em> no estúdio</h2>
-    <p class="lead">Dá pra fazer numa cafeteria parceira charmosa (Jules ou Betc Havas) ou reservar o Bake Studio, um estúdio exclusivo só da turma. É só escolher qual combina mais com a despedida. 🍷</p>
+    <span class="eyebrow orange">◆ Três opções de espaço</span>
+    <h2>Escolha o <em>cenário</em></h2>
+    <p class="lead">Duas cafeterias parceiras charmosas ou o Bake Studio, um estúdio exclusivo só da turma. É só escolher qual combina mais com a despedida. 🍷</p>
     <div class="rule"></div>
-    <div class="bfeat plain" style="height:206px">
-      <div class="bphoto"><img src="assets/julescampobelo.jpg" alt="Cafeteria parceira charmosa e arejada" style="object-position:center 60%"></div>
-      <div class="bbody">
-        <span class="btag soft">Opção 1 · cafeterias parceiras</span>
-        <h3>Jules ou Betc Havas <span class="sub">Campo Belo &amp; mais</span></h3>
-        <p>Cafeterias modernas e cheias de charme. <b>Jules</b> a partir de R$ 199; <b>Betc Havas Café</b> a partir de R$ 299, já com <b>R$ 50 de voucher</b> de consumo. ☕</p>
+    <div class="vg">
+      <div class="vgc">
+        <div class="p"><img src="assets/julescampobelo.jpg" alt="Cafeteria Jules em Campo Belo, arejada e charmosa" style="object-position:center 60%"></div>
+        <div class="b"><span class="t">A partir de R$ 199</span><h3>Jules <span class="sub">Campo Belo</span></h3><p>Cafeteria charmosa e arejada, com mesas de madeira e guarda-sóis.</p></div>
+      </div>
+      <div class="vgc">
+        <div class="p"><img src="assets/betchavas2.jpg" alt="Interior moderno do Betc Havas Café" style="object-position:center 55%"></div>
+        <div class="b"><span class="t">A partir de R$ 299</span><h3>Betc Havas Café <span class="sub">com voucher</span></h3><p>Moderno e cheio de charme — já vem com <b>R$ 50 de voucher</b> de consumo.</p></div>
+      </div>
+      <div class="vgc hl">
+        <div class="p"><img src="assets/espaco1.jpg" alt="Lounge acolhedor do Bake Studio" style="object-position:center 55%"></div>
+        <div class="b"><span class="t">★ A partir de R$ 289</span><h3>Bake Studio <span class="sub">exclusivo</span></h3><p>Estúdio <b>só de vocês</b> — experiência + espaço reservado, com coffee break.</p></div>
       </div>
     </div>
-    <div class="bfeat" style="margin-top:15px;height:206px">
-      <div class="bphoto"><img src="assets/espaco1.jpg" alt="Lounge acolhedor do Bake Studio na Bela Vista" style="object-position:center 55%"></div>
-      <div class="bbody">
-        <span class="btag">★ Opção 2 · a partir de R$ 289</span>
-        <h3>Bake Studio <span class="sub">Bela Vista · exclusivo</span></h3>
-        <p>Um estúdio charmoso <b>só de vocês</b> — experiência + espaço reservado, com liberdade pra decorar. Já vem com coffee break nos níveis completos. 🌿</p>
-      </div>
-    </div>
+    <div class="note" style="margin-top:14px">◆ Cada espaço com o seu valor por pessoa. No <b>Betc Havas</b> já entra R$ 50 de voucher de consumo; o <b>Bake Studio</b> é reservado só pra turma, com coffee break e decoração nos níveis completos. 🍷</div>
     {foot("Onde acontece")}
   </section>'''
 
