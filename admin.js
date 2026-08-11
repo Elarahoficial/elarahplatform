@@ -4871,6 +4871,15 @@
           '</div>' +
           '<div style="padding:18px 22px;">' +
             avisoPrazo +
+            // Trocar a experiência da reserva colando o link público
+            // (experiencia.html?id=…) ou o ID — sem precisar caçar no
+            // dropdown. Ao aplicar, seleciona a experiência no <select>
+            // abaixo e recalcula fornecedor/preço/horários/repasse.
+            '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Trocar pela experiência do link</label>' +
+            '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+              '<input id="admin-edit-booking-link" type="text" placeholder="Cole o link (experiencia.html?id=…) ou o ID" autocomplete="off" style="flex:1;min-width:0;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;">' +
+              '<button type="button" id="admin-edit-booking-link-btn" style="padding:9px 14px;border:none;background:#1a1a1a;color:#fff;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;">Buscar</button>' +
+            '</div>' +
             '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Experiência</label>' +
             '<select id="admin-edit-booking-exp" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;margin-bottom:6px;">' + expOptions + '</select>' +
             '<div id="admin-edit-booking-fornecedor" style="font-size:.76rem;color:#666;margin-bottom:14px;"></div>' +
@@ -4881,7 +4890,11 @@
             // experiência. As opções cadastradas aparecem como sugestão.
             '<input id="admin-edit-booking-horario" list="admin-edit-booking-horario-list" type="text" value="' + escapeHtml(booking.horario || '') + '" placeholder="ex.: 10h00 – 12h00" autocomplete="off" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;margin-bottom:4px;">' +
             '<datalist id="admin-edit-booking-horario-list"></datalist>' +
-            '<div style="font-size:.72rem;color:#999;margin-bottom:14px;">Digite livremente ou escolha uma sugestão.</div>' +
+            // Botões dos horários cadastrados na experiência escolhida —
+            // se tiver 2+ opções, é só clicar. O campo acima segue livre
+            // pra digitar qualquer outro horário.
+            '<div id="admin-edit-booking-horario-chips" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>' +
+            '<div style="font-size:.72rem;color:#999;margin-bottom:14px;">Clique numa opção acima ou digite livremente.</div>' +
 
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
               '<div>' +
@@ -4947,6 +4960,33 @@
         });
       }
 
+      // Renderiza os horários cadastrados como botões clicáveis. Destaca
+      // o que estiver selecionado no input. Clicar preenche o campo.
+      function renderHorarioChips(horarios) {
+        var chipsEl = modal.querySelector('#admin-edit-booking-horario-chips');
+        if (!chipsEl) return;
+        if (!horarios || !horarios.length) {
+          chipsEl.style.display = 'none';
+          chipsEl.innerHTML = '';
+          return;
+        }
+        var atualVal = (horarioSel.value || '').trim();
+        chipsEl.style.display = 'flex';
+        chipsEl.innerHTML = horarios.map(function (h) {
+          var active = atualVal === h;
+          return '<button type="button" class="aeb-horario-chip" data-horario="' + escapeHtml(h) + '" ' +
+            'style="padding:7px 12px;border:1.5px solid ' + (active ? '#f0a05e' : '#ddd') + ';' +
+            'background:' + (active ? '#f0a05e' : '#fff') + ';color:' + (active ? '#fff' : '#555') + ';' +
+            'border-radius:9px;font-size:.82rem;font-weight:600;cursor:pointer;">' + escapeHtml(h) + '</button>';
+        }).join('');
+        chipsEl.querySelectorAll('.aeb-horario-chip').forEach(function (b) {
+          b.addEventListener('click', function () {
+            horarioSel.value = b.getAttribute('data-horario') || '';
+            renderHorarioChips(horarios);
+          });
+        });
+      }
+
       function refreshHorarios(chosen) {
         var horarios = expHorarios(chosen);
         // Popula as sugestões do datalist com os horários cadastrados da
@@ -4964,6 +5004,8 @@
           var atual = (booking.horario || '').trim();
           horarioSel.value = atual || (horarios.length === 1 ? horarios[0] : '');
         }
+        // Botões clicáveis das opções cadastradas (2+ = é só selecionar).
+        renderHorarioChips(horarios);
       }
 
       // Recalcula valor cheio + repasse + comissão da nova experiência.
@@ -5076,6 +5118,61 @@
       expSel.addEventListener('change', refreshAll);
       qtyInput.addEventListener('input', refreshRefund);
       dataInput.addEventListener('input', function () { dataInput.dataset.touched = '1'; });
+      // Ao digitar o horário à mão, mantém o destaque dos botões em sincronia.
+      horarioSel.addEventListener('input', function () {
+        var chosen = experiencesList.find(function (e) { return e && e.id === expSel.value; });
+        renderHorarioChips(expHorarios(chosen));
+      });
+
+      // ===== Trocar experiência pelo link colado =====
+      var linkInput = modal.querySelector('#admin-edit-booking-link');
+      var linkBtn = modal.querySelector('#admin-edit-booking-link-btn');
+      async function applyBookingLink() {
+        var raw = linkInput ? linkInput.value : '';
+        var id = _extractExperienceIdFromLink(raw);
+        if (!id) {
+          _adminToast('Não reconheci o link/ID. Cole o link completo (experiencia.html?id=…) ou o ID.', false);
+          return;
+        }
+        // Já está na lista do dropdown?
+        var exp = experiencesList.find(function (e) { return e && e.id === id; });
+        if (!exp) {
+          // Não está na lista (ex.: experiência oculta/inativa): busca no
+          // banco e injeta na lista + como <option> pra poder selecionar.
+          try {
+            if (ElarahData && ElarahData.getExperienceById) {
+              exp = await ElarahData.getExperienceById(id);
+            }
+          } catch (e) { /* trata como não encontrada abaixo */ }
+          if (!exp) {
+            _adminToast('Experiência não encontrada para esse link/ID: ' + id, false);
+            return;
+          }
+          experiencesList.push(exp);
+          var price = (exp.preco ? ' — ' + normalizePrecoInput(exp.preco) : '');
+          var data = (exp.data ? ' · ' + exp.data : '');
+          var fornec = (exp.fornecedorNome ? ' · ' + exp.fornecedorNome : '');
+          var opt = document.createElement('option');
+          opt.value = exp.id;
+          opt.textContent = (exp.nome || 'sem nome') + price + data + fornec;
+          expSel.appendChild(opt);
+        }
+        expSel.value = id;
+        // Limpa o horário pra pegar a sugestão/opções da nova experiência
+        // (o horário antigo pode não existir na nova).
+        horarioSel.value = '';
+        // Se a nova experiência tem data fixa, sugere ela.
+        if (exp.data) { dataInput.value = exp.data; delete dataInput.dataset.touched; }
+        refreshAll();
+        if (linkInput) linkInput.value = '';
+        _adminToast('✓ Experiência trocada para: ' + (exp.nome || id));
+      }
+      if (linkBtn) linkBtn.addEventListener('click', applyBookingLink);
+      if (linkInput) {
+        linkInput.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter') { ev.preventDefault(); applyBookingLink(); }
+        });
+      }
 
       function close() {
         modal.remove();
