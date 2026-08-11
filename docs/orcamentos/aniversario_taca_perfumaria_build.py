@@ -293,7 +293,7 @@ como = f'''
     {foot("Aniversário · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + experiencias + espacos + planos + personaliza + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + experiencias + vibe + espacos + planos + personaliza + como + '\n\n</div>\n\n'
 head = head.replace("<title>Setembro Amarelo · Elarah</title>", "<title>Aniversário · Pintura em Taça ou Perfumaria · Elarah</title>")
 head = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="Proposta de aniversário da Elarah — pintura em taça ou perfumaria, no café (Jules/Betc) ou no Bake Studio.">', head)
 head = head.replace("</head>",
