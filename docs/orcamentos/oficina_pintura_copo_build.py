@@ -155,18 +155,18 @@ espacos = f'''
     <div class="vg">
       <div class="vgc hl">
         <div class="p"><img src="assets/julescampobelo.jpg" alt="Cafeteria Jules em Campo Belo, arejada e charmosa" style="object-position:center 60%"></div>
-        <div class="b"><span class="t">R$ 199 por pessoa</span><h3>Jules <span class="sub">Campo Belo</span></h3><p>Cafeteria charmosa e arejada, com mesas de madeira e guarda-sóis.</p></div>
+        <div class="b"><span class="t">A partir de R$ 199</span><h3>Jules <span class="sub">Campo Belo</span></h3><p>Cafeteria charmosa e arejada, com mesas de madeira e guarda-sóis.</p></div>
       </div>
       <div class="vgc">
         <div class="p"><img src="assets/betchavas2.jpg" alt="Interior moderno do Betc Havas Café" style="object-position:center 55%"></div>
-        <div class="b"><span class="t">R$ 249 por pessoa</span><h3>Betc Havas Café <span class="sub">com voucher</span></h3><p>Moderno e cheio de charme — já vem com <b>R$ 50 de voucher</b> de consumo.</p></div>
+        <div class="b"><span class="t">A partir de R$ 249</span><h3>Betc Havas Café <span class="sub">com voucher</span></h3><p>Moderno e cheio de charme — já vem com <b>R$ 50 de voucher</b> de consumo.</p></div>
       </div>
       <div class="vgc">
         <div class="p"><img src="assets/hidrateimeninas.jpg" alt="Amigas criando juntas numa oficina da Elarah" style="object-position:center 40%"></div>
-        <div class="b"><span class="t">R$ 199 por pessoa</span><h3>No seu espaço <span class="sub">a gente vai até você</span></h3><p>A comodidade de fazer <b>em casa</b> ou no seu espaço — levamos tudo até vocês.</p></div>
+        <div class="b"><span class="t">A partir de R$ 199</span><h3>No seu espaço <span class="sub">a gente vai até você</span></h3><p>A comodidade de fazer <b>em casa</b> ou no seu espaço — levamos tudo até vocês.</p></div>
       </div>
     </div>
-    <div class="note" style="margin-top:14px">◆ Valor <b>por pessoa</b>, com material e condução inclusos. No <b>Jules · Campo Belo</b> e <b>no seu espaço</b> (a gente leva tudo até você): R$ 199. No <b>Betc Havas Café</b>: R$ 249, já com <b>R$ 50 de voucher</b> de consumo pra usar no café. 🎨</div>
+    <div class="note" style="margin-top:14px">◆ Cada espaço com o seu valor por pessoa — os detalhes de cada nível (Basic, Plus e Premium) estão na próxima página. No <b>Betc Havas Café</b> já entra <b>R$ 50 de voucher</b> de consumo. 🎨</div>
     {foot("Onde acontece &amp; investimento")}
   </section>'''
 
@@ -178,7 +178,7 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Escolha o <em>combo</em></h2>
-    <p class="lead">Valores por pessoa, com material e condução inclusos — e cada uma sempre leva a própria criação. É só escolher o espaço e o nível que mais combinam com a comemoração. 🥂</p>
+    <p class="lead">Valores por pessoa, com material e condução inclusos — e cada um sempre leva o próprio copo. É só escolher o espaço e o nível que mais combinam com a oficina. 🎨</p>
     <div class="rule"></div>
     <table class="itable">
       <thead><tr>
@@ -201,14 +201,14 @@ planos = f'''
           <td class="val hl">R$ 449<small>+ lembrancinha</small></td>
         </tr>
         <tr>
-          <td class="rl"><b>Bake Studio</b><span>espaço exclusivo · só de vocês</span></td>
-          <td class="val">R$ 289</td>
-          <td class="val">R$ 389<small>+ foto &amp; coffee break</small></td>
-          <td class="val hl">R$ 539<small>+ decoração &amp; lembrancinha</small></td>
+          <td class="rl"><b>No seu espaço</b><span>a gente leva tudo até você</span></td>
+          <td class="val">R$ 199</td>
+          <td class="val">R$ 299<small>+ foto profissional</small></td>
+          <td class="val hl">R$ 399<small>+ lembrancinha</small></td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. Cafeterias: <b>Jules</b> (a partir de R$ 199) e <b>Betc Havas Café</b> (a partir de R$ 249, já com <b>R$ 50 de voucher</b> de consumo) — o Com foto soma a foto profissional e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só de vocês), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. Início de setembro, a combinar.</div>
+    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. No <b>Jules · Campo Belo</b> e <b>no seu espaço</b> (a gente leva tudo até você): a partir de R$ 199. No <b>Betc Havas Café</b>: a partir de R$ 249, já com <b>R$ 50 de voucher</b> de consumo. Em todos, o <b>Plus</b> soma a foto profissional e o <b>Premium</b> soma a lembrancinha personalizada. Em setembro, a combinar.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -289,11 +289,11 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta da Elarah — oficina de pintura em copo, para turma privada de cerca de 10 pessoas, no mês de setembro (a combinar). Cada convidado pinta e leva o próprio copo. Valores por pessoa, com material e condução inclusos. No Jules · Campo Belo: R$ 199 por pessoa. No Betc Havas Café: R$ 249 por pessoa, já com R$ 50 de voucher de consumo para usar no café. No seu próprio espaço (a Elarah leva tudo até você): R$ 199 por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta da Elarah — oficina de pintura em copo, para turma privada de cerca de 10 pessoas, no mês de setembro (a combinar). Cada convidado pinta e leva o próprio copo. Valores por pessoa, com material e condução inclusos, em três níveis (Basic / Plus / Premium). No Jules · Campo Belo: Basic R$ 199 / Plus R$ 299 (com foto profissional) / Premium R$ 399 (com lembrancinha). No Betc Havas Café (já com R$ 50 de voucher de consumo): Basic R$ 249 / Plus R$ 349 (com foto profissional) / Premium R$ 449 (com lembrancinha). No seu próprio espaço (a Elarah leva tudo até você): Basic R$ 199 / Plus R$ 299 (com foto profissional) / Premium R$ 399 (com lembrancinha). Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Oficina de pintura em copo · 2026")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + experiencias + vibe + espacos + como + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + experiencias + vibe + espacos + planos + personaliza + como + '\n\n</div>\n\n'
 head = head.replace("<title>Setembro Amarelo · Elarah</title>", "<title>Oficina de Pintura em Copo · Elarah</title>")
 head = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="Proposta da Elarah — oficina de pintura em copo, no Jules, no Betc Havas Café ou no seu espaço.">', head)
 head = head.replace("</head>",
