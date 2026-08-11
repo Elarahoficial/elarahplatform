@@ -7333,6 +7333,92 @@
         renderExperiences();
       });
     }
+
+    // Wire do "Editar por link" (idempotente): cola o link público
+    // (experiencia.html?id=…) ou o ID e abre o editor completo — o mesmo
+    // modal do botão Editar, com preço, horários/turmas e tudo mais.
+    const editLinkInput = document.getElementById('exp-edit-link');
+    const editLinkBtn = document.getElementById('btn-edit-by-link');
+    if (editLinkBtn && !editLinkBtn._wired) {
+      editLinkBtn._wired = true;
+      editLinkBtn.addEventListener('click', function () {
+        _openExpEditFromLink(editLinkInput ? editLinkInput.value : '');
+      });
+    }
+    if (editLinkInput && !editLinkInput._wired) {
+      editLinkInput._wired = true;
+      editLinkInput.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          _openExpEditFromLink(editLinkInput.value);
+        }
+      });
+    }
+
+    // Bônus: se colar um link/ID direto na busca, abre o editor em vez de
+    // só filtrar (a busca por texto nunca casaria com um link inteiro).
+    if (searchInput && !searchInput._pasteWired) {
+      searchInput._pasteWired = true;
+      searchInput.addEventListener('paste', function (ev) {
+        try {
+          var txt = ((ev.clipboardData || window.clipboardData).getData('text') || '');
+          if (/experiencia\.html|[?&]id=/i.test(txt)) {
+            ev.preventDefault();
+            _openExpEditFromLink(txt);
+          }
+        } catch (e) { /* segue como busca normal */ }
+      });
+    }
+  }
+
+  // Extrai o ID de uma experiência a partir de um link público colado
+  // (ex.: "https://elarah.com.br/experiencia.html?id=UUID&campaign=x"),
+  // de qualquer texto que contenha "id=", ou de um ID cru (UUID ou o
+  // formato legado exp_...). Retorna '' quando não reconhece nada.
+  function _extractExperienceIdFromLink(raw) {
+    if (!raw) return '';
+    var s = String(raw).trim();
+    if (!s) return '';
+    // 1) parâmetro de query id=... (aceita link completo ou parcial)
+    var m = s.match(/[?&]id=([^&#\s]+)/i);
+    if (m && m[1]) {
+      try { return decodeURIComponent(m[1]).trim(); } catch (e) { return m[1].trim(); }
+    }
+    // 2) UUID cru em qualquer lugar do texto
+    var uuid = s.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    if (uuid) return uuid[0];
+    // 3) ID legado (exp_<timestamp>_<sufixo>)
+    var legacy = s.match(/exp_[0-9]+_[0-9a-z]+/i);
+    if (legacy) return legacy[0];
+    // 4) Texto único sem espaço/barra: trata como ID cru (fallback)
+    if (!/[\s/]/.test(s) && s.length >= 6) return s;
+    return '';
+  }
+
+  // Abre o editor completo da experiência a partir de um link/ID colado.
+  // Reaproveita o mesmo modal do botão "Editar" (openExpModal) — que já
+  // tem preço, horários/turmas, variações e todas as informações — e
+  // salva no registro canônico (tabela `experiences`), então a alteração
+  // reflete na página pública e em qualquer conta que mostre a experiência.
+  async function _openExpEditFromLink(raw) {
+    var id = _extractExperienceIdFromLink(raw);
+    if (!id) {
+      _adminToast('Não reconheci um link ou ID. Cole o link completo (experiencia.html?id=…) ou o ID da experiência.', false);
+      return;
+    }
+    var exp = null;
+    try {
+      if (ElarahData && ElarahData.getExperienceById) {
+        exp = await ElarahData.getExperienceById(id);
+      }
+    } catch (e) { /* trata como não encontrada abaixo */ }
+    if (!exp) {
+      _adminToast('Experiência não encontrada para esse link/ID: ' + id, false);
+      return;
+    }
+    openExpModal(id);
+    var linkInput = document.getElementById('exp-edit-link');
+    if (linkInput) linkInput.value = '';
   }
 
   function buildExpFilterBar(experiences) {
