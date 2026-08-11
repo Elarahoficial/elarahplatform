@@ -118,7 +118,7 @@ experiencias = f'''
     <div class="rule"></div>
     <div class="menu">
       {exp("01","pinturataca2.jpg","Cada copo, único","Flores, cores e padrões — cada um pinta o próprio copo, do jeitinho dele.","Copos pintados à mão com flores coloridas","center 55%")}
-      {exp("02","pinturatacaaaa2.jpg","Do seu jeito","Da paleta delicada à mais vibrante, cada copo fica com a cara de quem pintou.","Copos pintados à mão com tulipas coloridas","center 50%")}
+      {exp("02","aniv-experiencia.jpg","Juntas, criando","Uma mesa cheia de risada, tintas e boas conversas — cada copo com a cara de quem pintou.","Amigas rindo e pintando juntas numa experiência da Elarah","center 40%")}
     </div>
     <div class="note" style="margin-top:14px">◆ Estas são <b>inspirações</b> — na hora, cada convidado pinta o próprio copo, livre e do jeitinho dele, e leva pra casa de lembrança. 🎨</div>
     {foot("A oficina")}
@@ -162,7 +162,7 @@ espacos = f'''
         <div class="b"><span class="t">R$ 249 por pessoa</span><h3>Betc Havas Café <span class="sub">com voucher</span></h3><p>Moderno e cheio de charme — já vem com <b>R$ 50 de voucher</b> de consumo.</p></div>
       </div>
       <div class="vgc">
-        <div class="p"><img src="assets/em-casa-hero-1.jpg" alt="Oficina criativa acontecendo no espaço da cliente" style="object-position:center 45%"></div>
+        <div class="p"><img src="assets/hidrateimeninas.jpg" alt="Amigas criando juntas numa oficina da Elarah" style="object-position:center 40%"></div>
         <div class="b"><span class="t">R$ 199 por pessoa</span><h3>No seu espaço <span class="sub">a gente vai até você</span></h3><p>A comodidade de fazer <b>em casa</b> ou no seu espaço — levamos tudo até vocês.</p></div>
       </div>
     </div>
@@ -264,7 +264,7 @@ como = f'''
     <p class="lead">A Elarah cuida de toda a produção pra a oficina ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolham o espaço</h3><p>Jules · Campo Belo, Betc Havas Café ou no seu próprio espaço — a gente reserva pra melhor data de setembro pra vocês.</p>
+      <div class="step"><div class="num">1</div><h3>Escolham o espaço</h3><p>Jules · Campo Belo, Betc Havas Café ou no seu próprio espaço — a gente reserva pra melhor data de setembro pra vocês.</p></div>
       <div class="step"><div class="num">2</div><h3>A gente leva tudo</h3><p>Profissional, tintas, copos e toda a estrutura da oficina. Vocês só chegam e pintam.</p></div>
       <div class="step"><div class="num">3</div><h3>Cada um leva o copo</h3><p>No fim, todo mundo leva pra casa o próprio copo pintado — uma lembrança linda do dia. 🎨</p></div>
     </div>
