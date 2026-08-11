@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v38 — Compras: "aguardando experiência" sai da lista principal + selo/contador no topo + tipo (mesmo/outra) + fora das pendências de repasse');
+  console.info('[Elarah Admin] admin.js v39 — Compras: filtros de faceta por Data da experiência e Bairro (populados a partir do subconjunto filtrado)');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -3273,6 +3273,10 @@
     if (filterSfInit) filterSfInit.addEventListener('change', () => renderBookings());
     var filterOrigemInit = document.getElementById('bookings-filter-origem');
     if (filterOrigemInit) filterOrigemInit.addEventListener('change', () => renderBookings());
+    var filterDataInit = document.getElementById('bookings-filter-data');
+    if (filterDataInit) filterDataInit.addEventListener('change', () => renderBookings());
+    var filterBairroInit = document.getElementById('bookings-filter-bairro');
+    if (filterBairroInit) filterBairroInit.addEventListener('change', () => renderBookings());
     var markManuaisBtn = document.getElementById('btn-mark-manuais-avisadas');
     if (markManuaisBtn && !markManuaisBtn.dataset.wired) {
       markManuaisBtn.dataset.wired = '1';
@@ -3316,6 +3320,62 @@
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = original; }
     }
+  }
+
+  // ===== Helpers dos filtros de faceta (Data / Bairro) da aba Compras =====
+  // Ordena rótulos de data "DD/MM" ou "DD/MM/AAAA" cronologicamente.
+  // O que não é data reconhecível (ex.: "Semanal", "A combinar") vai pro
+  // fim, em ordem alfabética.
+  function _parseDataOrder(s) {
+    const m = String(s || '').trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if (!m) return null;
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    if (!(day >= 1 && day <= 31) || !(month >= 1 && month <= 12)) return null;
+    let year = m[3] ? Number(m[3]) : new Date().getFullYear();
+    if (year < 100) year += 2000;
+    return year * 10000 + month * 100 + day;
+  }
+  function _compareDataLabels(a, b) {
+    const pa = _parseDataOrder(a);
+    const pb = _parseDataOrder(b);
+    if (pa == null && pb == null) return a.localeCompare(b, 'pt-BR');
+    if (pa == null) return 1;
+    if (pb == null) return -1;
+    return pa - pb;
+  }
+  // Repopula um <select> de faceta com os valores distintos presentes em
+  // `values`, preservando a primeira opção (placeholder) e a seleção atual
+  // quando ela ainda existe no conjunto. Quando a seleção sai do conjunto
+  // (ex.: mudou o filtro de experiência), volta pro placeholder ('').
+  function _populateBookingFacet(selectEl, values, opts) {
+    if (!selectEl) return;
+    opts = opts || {};
+    const prev = selectEl.value;
+    const uniq = new Map();   // chave minúscula → valor original
+    (values || []).forEach(v => {
+      const s = String(v == null ? '' : v).trim();
+      if (!s) return;
+      const k = s.toLowerCase();
+      if (!uniq.has(k)) uniq.set(k, s);
+    });
+    const list = Array.from(uniq.values());
+    list.sort(opts.sortDates ? _compareDataLabels : (a, b) => a.localeCompare(b, 'pt-BR'));
+    const placeholderText = (selectEl.options[0] && selectEl.options[0].value === '')
+      ? selectEl.options[0].textContent
+      : 'Todos';
+    selectEl.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholderText;
+    selectEl.appendChild(ph);
+    list.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      selectEl.appendChild(opt);
+    });
+    selectEl.value = (prev && uniq.has(prev.toLowerCase())) ? prev : '';
   }
 
   async function renderBookings() {
@@ -3572,6 +3632,14 @@
       b._horasParaEventoResolvido = eventTs != null
         ? (eventTs - Date.now()) / (60 * 60 * 1000)
         : null;
+
+      // ===== Bairro resolvido (pro filtro de Bairro na aba Compras) =====
+      // Mesma prioridade do link de WhatsApp do fornecedor: bairro da
+      // experiência ATUAL (fonte da verdade, reflete troca de experiência
+      // sem re-salvar a reserva) → snapshot gravado na reserva
+      // (metadata.bairro) → '' (vazio).
+      const _metaBairro = (b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
+      b._bairroResolvido = String((exp && exp.bairro) || _metaBairro.bairro || '').trim();
     });
 
     // Popula filtro de fornecedores
@@ -3608,8 +3676,11 @@
     const filterSfEl = document.getElementById('bookings-filter-status-fornecedor');
     const filterSf = filterSfEl ? filterSfEl.value : '';
 
-    // Este painel só mostra bookings PAGAS
-    const filtered = bookings.filter(b => {
+    // Este painel só mostra bookings PAGAS. Primeiro aplica os filtros
+    // "base" (experiência, cliente, fornecedor, status fornecedor); os
+    // filtros de faceta (Data / Bairro) entram depois, pra que os selects
+    // dessas facetas mostrem só os valores relevantes ao subconjunto atual.
+    const baseFiltered = bookings.filter(b => {
       if (b.status !== 'pago') return false;
       // Aguardando experiência fica FORA da lista principal (a cliente
       // desmarcou sem reembolso e vai remarcar depois). Só aparece no modo
@@ -3645,6 +3716,27 @@
       return true;
     });
 
+    // ===== Facetas Data / Bairro =====
+    // Popula os selects com os valores presentes no subconjunto já
+    // filtrado (baseFiltered) — assim, depois de escolher "Vela Aromática",
+    // o dropdown de Data mostra só os dias dessa experiência e o de Bairro
+    // só os bairros dela. A seleção atual é preservada quando ainda existe.
+    const filterDataEl = document.getElementById('bookings-filter-data');
+    const filterBairroEl = document.getElementById('bookings-filter-bairro');
+    _populateBookingFacet(filterDataEl, baseFiltered.map(b => b.data), { sortDates: true });
+    _populateBookingFacet(filterBairroEl, baseFiltered.map(b => b._bairroResolvido));
+    // Lê a seleção DEPOIS de repopular (se saiu do conjunto, virou '').
+    const filterData = filterDataEl ? filterDataEl.value : '';
+    const filterBairro = filterBairroEl ? filterBairroEl.value : '';
+    const facetActive = !!(filterData || filterBairro);
+
+    // Aplica as facetas sobre o subconjunto base.
+    const filtered = baseFiltered.filter(b => {
+      if (filterData && String(b.data || '') !== filterData) return false;
+      if (filterBairro && (b._bairroResolvido || '') !== filterBairro) return false;
+      return true;
+    });
+
     // Filtro de ORIGEM (Todas / Site / Manual). Evita ter que descer a
     // lista inteira de reservas do site pra achar as vendas manuais.
     //   showSite   → renderiza as reservas do site (bookings)
@@ -3655,9 +3747,13 @@
     // No modo "só aguardando experiência", força apenas reservas do site
     // (vendas manuais e gift cards não têm esse estado) — assim a lista
     // dedicada mostra só o que interessa.
+    // Com faceta de Data/Bairro ativa, some com vendas manuais e gift cards:
+    // elas não carregam a data/bairro da experiência nessa estrutura, então
+    // apareceriam ignorando o filtro (confuso). O filtro é sobre reservas
+    // do site.
     const showSite = _showAguardandoExpOnly ? true : (filterOrigem !== 'manual');
-    const showManual = _showAguardandoExpOnly ? false : (filterOrigem !== 'site');
-    const showGift = _showAguardandoExpOnly ? false : (filterOrigem === '');
+    const showManual = _showAguardandoExpOnly ? false : ((filterOrigem !== 'site') && !facetActive);
+    const showGift = _showAguardandoExpOnly ? false : ((filterOrigem === '') && !facetActive);
 
     // Stats globais (não-filtradas) vêm da fonte única (RPC financial_summary).
     // qty_*_pagos do RPC já reflete sum(quantidade) — 1 booking com 3

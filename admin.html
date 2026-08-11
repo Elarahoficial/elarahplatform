@@ -830,6 +830,17 @@
                  list="bookings-filter-exp-list" placeholder="Buscar experiência…"
                  autocomplete="off" aria-label="Filtrar por experiência">
           <datalist id="bookings-filter-exp-list"></datalist>
+          <!-- Data da experiência comprada (b.data) e bairro. Populados
+               dinamicamente em renderBookings a partir das compras que já
+               passam pelos outros filtros (facetas): ex.: depois de filtrar
+               "Vela Aromática", a Data mostra só os dias dessa experiência
+               e o Bairro só os bairros dela. -->
+          <select id="bookings-filter-data" class="admin__analytics-select" aria-label="Filtrar por data da experiência">
+            <option value="">Todas as datas</option>
+          </select>
+          <select id="bookings-filter-bairro" class="admin__analytics-select" aria-label="Filtrar por bairro">
+            <option value="">Todos os bairros</option>
+          </select>
           <select id="bookings-filter-fornecedor" class="admin__analytics-select">
             <option value="">Todos os fornecedores</option>
           </select>
