@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v39 — Compras: filtros de faceta por Data da experiência e Bairro (populados a partir do subconjunto filtrado)');
+  console.info('[Elarah Admin] admin.js v40 — Compras: filtro de Data da experiência é campo digitável (casa por trecho) com sugestões + filtro de Bairro');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -3274,7 +3274,16 @@
     var filterOrigemInit = document.getElementById('bookings-filter-origem');
     if (filterOrigemInit) filterOrigemInit.addEventListener('change', () => renderBookings());
     var filterDataInit = document.getElementById('bookings-filter-data');
-    if (filterDataInit) filterDataInit.addEventListener('change', () => renderBookings());
+    if (filterDataInit) {
+      // 'input' (não 'change') pra filtrar conforme digita, igual ao filtro
+      // de experiência. Debounce leve de 80ms. Cobre também a escolha de uma
+      // sugestão do datalist (dispara 'input').
+      let _dataFilterTimer = null;
+      filterDataInit.addEventListener('input', () => {
+        clearTimeout(_dataFilterTimer);
+        _dataFilterTimer = setTimeout(() => renderBookings(), 80);
+      });
+    }
     var filterBairroInit = document.getElementById('bookings-filter-bairro');
     if (filterBairroInit) filterBairroInit.addEventListener('change', () => renderBookings());
     var markManuaisBtn = document.getElementById('btn-mark-manuais-avisadas');
@@ -3376,6 +3385,26 @@
       selectEl.appendChild(opt);
     });
     selectEl.value = (prev && uniq.has(prev.toLowerCase())) ? prev : '';
+  }
+  // Repopula um <datalist> (sugestões de um input livre) com os valores
+  // distintos de `values`. Não mexe no valor digitado — só nas sugestões.
+  function _populateDatalist(listEl, values, sortDates) {
+    if (!listEl) return;
+    const uniq = new Map();
+    (values || []).forEach(v => {
+      const s = String(v == null ? '' : v).trim();
+      if (!s) return;
+      const k = s.toLowerCase();
+      if (!uniq.has(k)) uniq.set(k, s);
+    });
+    const list = Array.from(uniq.values());
+    list.sort(sortDates ? _compareDataLabels : (a, b) => a.localeCompare(b, 'pt-BR'));
+    listEl.innerHTML = '';
+    list.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      listEl.appendChild(opt);
+    });
   }
 
   async function renderBookings() {
@@ -3716,23 +3745,26 @@
       return true;
     });
 
-    // ===== Facetas Data / Bairro =====
-    // Popula os selects com os valores presentes no subconjunto já
-    // filtrado (baseFiltered) — assim, depois de escolher "Vela Aromática",
-    // o dropdown de Data mostra só os dias dessa experiência e o de Bairro
-    // só os bairros dela. A seleção atual é preservada quando ainda existe.
+    // ===== Filtros Data / Bairro =====
+    // Data: input LIVRE (digitável) com sugestões via datalist — casa por
+    // trecho case-insensitive (digitar "15" acha todo dia 15; "15/08"
+    // afunila no dia exato). Bairro: select de faceta (match exato).
+    // As sugestões de Data e as opções de Bairro saem do subconjunto já
+    // filtrado (baseFiltered): depois de filtrar "Vela Aromática", só
+    // aparecem os dias e bairros dessa experiência.
     const filterDataEl = document.getElementById('bookings-filter-data');
+    const filterDataListEl = document.getElementById('bookings-filter-data-list');
     const filterBairroEl = document.getElementById('bookings-filter-bairro');
-    _populateBookingFacet(filterDataEl, baseFiltered.map(b => b.data), { sortDates: true });
+    _populateDatalist(filterDataListEl, baseFiltered.map(b => b.data), true);
     _populateBookingFacet(filterBairroEl, baseFiltered.map(b => b._bairroResolvido));
-    // Lê a seleção DEPOIS de repopular (se saiu do conjunto, virou '').
-    const filterData = filterDataEl ? filterDataEl.value : '';
+    // Data é substring (não reseta o que a pessoa digitou); Bairro é exato.
+    const filterData = filterDataEl ? String(filterDataEl.value || '').trim().toLowerCase() : '';
     const filterBairro = filterBairroEl ? filterBairroEl.value : '';
     const facetActive = !!(filterData || filterBairro);
 
-    // Aplica as facetas sobre o subconjunto base.
+    // Aplica os filtros sobre o subconjunto base.
     const filtered = baseFiltered.filter(b => {
-      if (filterData && String(b.data || '') !== filterData) return false;
+      if (filterData && !String(b.data || '').toLowerCase().includes(filterData)) return false;
       if (filterBairro && (b._bairroResolvido || '') !== filterBairro) return false;
       return true;
     });
