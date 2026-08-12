@@ -179,6 +179,13 @@
   .vgc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.05}
   .vgc .sub{display:inline-block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-top:4px}
   .vgc p{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.4}
+  .itbl-label{margin-top:16px;margin-bottom:2px;font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);display:flex;align-items:baseline;gap:9px}
+  .itbl-label b{font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--orange);font-family:'DM Sans'}
+  .itable.cx{margin-top:7px}
+  .itable.cx th,.itable.cx td{padding:9px 11px}
+  .itable.cx .val{font-size:20px}
+  .itable.cx thead th{font-size:11px}
+  .itable.cx .val small{margin-top:4px}
 </style>
 
 <style>
@@ -535,18 +542,19 @@
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Escolha o <em>combo</em></h2>
-    <p class="lead">Valores por pessoa da <strong>pintura em cerâmica</strong>, com material e condução inclusos. A experiência de <strong>folding book</strong> soma R$ 50 por pessoa em cada nível. É só escolher o espaço e o nível. 🌿</p>
+    <p class="lead">Valores por pessoa, com material e condução inclusos — uma tabela pra cada experiência. É só escolher o espaço e o nível que mais combinam com o encontro. 🌿</p>
     <div class="rule"></div>
-    <table class="itable">
+    <div class="itbl-label">Pintura em cerâmica <b>◆ tabela 1</b></div>
+    <table class="itable cx">
       <thead><tr>
         <th class="corner"></th>
         <th>Basic<span>a experiência</span></th>
         <th>Plus<span>+ foto do evento</span></th>
-        <th class="hl"><span class="pill">★ Premium</span><br>Premium<span>com tudo incluso</span></th>
+        <th class="hl">Premium<span>com tudo incluso</span></th>
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Jules · Campo Belo ou Sterna · Café Faria Lima</b><span>cafeteria parceira ou opção externa · mesmo valor</span></td>
+          <td class="rl"><b>Jules · Campo Belo ou Sterna · Café Faria Lima</b><span>cafeteria parceira ou externa · mesmo valor</span></td>
           <td class="val">R$ 199</td>
           <td class="val">R$ 299<small>+ foto profissional</small></td>
           <td class="val hl">R$ 399<small>+ lembrancinha</small></td>
@@ -558,14 +566,43 @@
           <td class="val hl">R$ 449<small>+ lembrancinha</small></td>
         </tr>
         <tr>
-          <td class="rl"><b>Bake Studio</b><span>espaço exclusivo · só de vocês</span></td>
+          <td class="rl"><b>Bake Studio</b><span>espaço exclusivo · só do grupo</span></td>
           <td class="val">R$ 289</td>
           <td class="val">R$ 389<small>+ foto &amp; coffee break</small></td>
           <td class="val hl">R$ 539<small>+ decoração &amp; lembrancinha</small></td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. Cafeterias: <b>Jules · Campo Belo</b> e <b>Sterna · Café Faria Lima</b> (externo, mesmo valor) a partir de R$ 199, e <b>Betc Havas Café</b> a partir de R$ 249 (já com <b>R$ 50 de voucher</b> de consumo) — o Com foto soma a foto profissional e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só do grupo), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. A experiência de <b>folding book</b> soma <b>R$ 50 por pessoa</b> em cada nível (a partir de R$ 249). Dia 26/09, a combinar.</div>
+    <div class="itbl-label">Folding book <b>◆ tabela 2</b></div>
+    <table class="itable cx">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>Basic<span>a experiência</span></th>
+        <th>Plus<span>+ foto do evento</span></th>
+        <th class="hl">Premium<span>com tudo incluso</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Jules · Campo Belo ou Sterna · Café Faria Lima</b><span>cafeteria parceira ou externa · mesmo valor</span></td>
+          <td class="val">R$ 249</td>
+          <td class="val">R$ 349<small>+ foto profissional</small></td>
+          <td class="val hl">R$ 449<small>+ lembrancinha</small></td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Betc Havas Café</b><span>com R$ 50 de voucher de consumo</span></td>
+          <td class="val">R$ 299</td>
+          <td class="val">R$ 399<small>+ foto profissional</small></td>
+          <td class="val hl">R$ 499<small>+ lembrancinha</small></td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Bake Studio</b><span>espaço exclusivo · só do grupo</span></td>
+          <td class="val">R$ 339</td>
+          <td class="val">R$ 439<small>+ foto &amp; coffee break</small></td>
+          <td class="val hl">R$ 589<small>+ decoração &amp; lembrancinha</small></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:12px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. No <b>Betc Havas</b> já entra R$ 50 de voucher de consumo; o <b>Bake Studio</b> é só do grupo, com coffee break e decoração nos níveis completos. Dia 26/09, a combinar. 🌿</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
