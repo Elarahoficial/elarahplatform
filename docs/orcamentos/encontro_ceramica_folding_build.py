@@ -114,13 +114,13 @@ experiencias = f'''
     </div>
     <span class="eyebrow orange">◆ Duas experiências criativas</span>
     <h2>Cerâmica <em>&amp;</em> folding book</h2>
-    <p class="lead">Duas vivências delicadas e cheias de significado pra elas criarem juntas — <strong>pelo mesmo valor por pessoa</strong>. A gente guia tudo do começo ao fim, e cada uma leva pra casa o que criou. 🌿</p>
+    <p class="lead">Duas vivências delicadas e cheias de significado pra elas criarem juntas. A gente guia tudo do começo ao fim, e cada uma leva pra casa o que criou. 🌿</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","ceramica1.jpg","Pintura em cerâmica","Cada uma pinta a própria peça de cerâmica com cores e desenhos — delicada e única.","Mãos pintando uma peça de cerâmica com pincel","center 50%")}
-      {exp("02","foldingbook.jpg","Folding book","Dobrar as páginas de um livro em formas lindas — uma peça artística pra decorar e guardar.","Livros dobrados em formato de origami, arte em folding book","center 50%")}
+      {exp("01","ceramica1.jpg","Pintura em cerâmica","Cada uma pinta a própria peça de cerâmica com cores e desenhos — delicada e única.","Mãos pintando uma peça de cerâmica com pincel","center 50%","A partir de R$ 199")}
+      {exp("02","foldingbook.jpg","Folding book","Dobrar as páginas de um livro em formas lindas — uma peça artística pra decorar e guardar.","Livros dobrados em formato de origami, arte em folding book","center 50%","A partir de R$ 249")}
     </div>
-    <div class="note" style="margin-top:14px">◆ As duas têm o <b>mesmo valor por pessoa</b> — a escolha é do grupo. Cada uma leva pra casa a própria criação. 🎨</div>
+    <div class="note" style="margin-top:14px">◆ A <b>pintura em cerâmica</b> começa a partir de R$ 199 e o <b>folding book</b> a partir de R$ 249 por pessoa — a escolha é do grupo. Cada uma leva pra casa a própria criação. 🎨</div>
     {foot("As experiências")}
   </section>'''
 
@@ -198,7 +198,7 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Escolha o <em>combo</em></h2>
-    <p class="lead">Valores por pessoa, com material e condução inclusos — e cada uma sempre leva a própria criação. É só escolher o espaço e o nível que mais combinam com o encontro. 🌿</p>
+    <p class="lead">Valores por pessoa da <strong>pintura em cerâmica</strong>, com material e condução inclusos. A experiência de <strong>folding book</strong> soma R$ 50 por pessoa em cada nível. É só escolher o espaço e o nível. 🌿</p>
     <div class="rule"></div>
     <table class="itable">
       <thead><tr>
@@ -228,7 +228,7 @@ planos = f'''
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. Cafeterias: <b>Jules · Campo Belo</b> e <b>Sterna · Café Faria Lima</b> (externo, mesmo valor) a partir de R$ 199, e <b>Betc Havas Café</b> a partir de R$ 249 (já com <b>R$ 50 de voucher</b> de consumo) — o Com foto soma a foto profissional e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só do grupo), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. Dia 26/09, a combinar.</div>
+    <div class="note" style="margin-top:14px">◆ Valores <b>por pessoa</b>, com material e condução inclusos. Cafeterias: <b>Jules · Campo Belo</b> e <b>Sterna · Café Faria Lima</b> (externo, mesmo valor) a partir de R$ 199, e <b>Betc Havas Café</b> a partir de R$ 249 (já com <b>R$ 50 de voucher</b> de consumo) — o Com foto soma a foto profissional e o Completo soma a lembrancinha. No <b>Bake Studio</b> (espaço só do grupo), o Com foto soma a foto profissional e um <b>coffee break</b>, e o Completo vem com <b>decoração &amp; lembrancinha</b>. A experiência de <b>folding book</b> soma <b>R$ 50 por pessoa</b> em cada nível (a partir de R$ 249). Dia 26/09, a combinar.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -309,7 +309,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de encontro criativo da Elarah — experiência à escolha (pintura em cerâmica ou folding book, pelo mesmo valor), para cerca de 30 mulheres, no dia 26/09 (a combinar), em espaço parceiro em SP. Cada participante cria e leva a própria recordação. Valores por pessoa. No Jules · Campo Belo e no Sterna · Café Faria Lima (opção externa, mesmo valor): A experiência R$ 199 / Com foto R$ 299 / Completo R$ 399 com lembrancinha. No Betc Havas Café (já com R$ 50 de voucher de consumo): A experiência R$ 249 / Com foto R$ 349 / Completo R$ 449 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 289 / Com foto R$ 389 (com foto profissional e coffee break) / Completo R$ 539 com decoração e lembrancinha. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de encontro criativo da Elarah — experiência à escolha (pintura em cerâmica ou folding book), para cerca de 30 mulheres, no dia 26/09 (a combinar), em espaço parceiro em SP. Cada participante cria e leva a própria recordação. Valores por pessoa da pintura em cerâmica; a experiência de folding book soma R$ 50 por pessoa em cada nível (a partir de R$ 249). No Jules · Campo Belo e no Sterna · Café Faria Lima (opção externa, mesmo valor): A experiência R$ 199 / Com foto R$ 299 / Completo R$ 399 com lembrancinha. No Betc Havas Café (já com R$ 50 de voucher de consumo): A experiência R$ 249 / Com foto R$ 349 / Completo R$ 449 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 289 / Com foto R$ 389 (com foto profissional e coffee break) / Completo R$ 539 com decoração e lembrancinha. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Encontro criativo · 2026")}
   </section>'''
 
