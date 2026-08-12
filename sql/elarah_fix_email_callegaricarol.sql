@@ -65,6 +65,16 @@ update public.profiles
    set email = 'callegaricarol@outlook.com'
  where lower(email) = 'callegaricarol@outlook.con';
 
+-- 2d) public.bookings — a COMPRA guarda o e-mail digitado no checkout
+--     numa coluna própria. É por isso que a compra não aparece quando
+--     você busca por @outlook.com na aba Compras: ela ficou com o
+--     ".con". Corrigimos pelo user_id (mais confiável) e, como rede de
+--     segurança, também por qualquer booking com o e-mail errado.
+update public.bookings
+   set email = 'callegaricarol@outlook.com'
+ where user_id = '0fcada61-f047-4ee7-bef9-88fd3be95fc8'
+    or lower(email) = 'callegaricarol@outlook.con';
+
 commit;
 
 -- ---------- 3) Diagnóstico DEPOIS ----------
@@ -78,6 +88,14 @@ select u.id,
   left join public.profiles p   on p.id = u.id
   left join auth.identities i   on i.user_id = u.id and i.provider = 'email'
  where lower(u.email) = 'callegaricarol@outlook.com';
+
+-- Confere as compras dessa pessoa (agora devem sair com @outlook.com).
+-- Se aqui aparecer alguma linha, ela vai aparecer na aba Compras.
+select id, created_at, experiencia_nome, status, email
+  from public.bookings
+ where user_id = '0fcada61-f047-4ee7-bef9-88fd3be95fc8'
+    or lower(email) = 'callegaricarol@outlook.com'
+ order by created_at desc;
 
 -- =============================================================
 -- 4) REENVIAR A CONFIRMAÇÃO (depois de rodar o de cima)
