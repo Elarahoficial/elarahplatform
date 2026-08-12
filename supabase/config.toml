@@ -47,3 +47,13 @@ verify_jwt = false
 # com o segredo compartilhado ELARAH_WEBHOOK_SECRET (Authorization: Bearer).
 [functions.whatsapp-confirmacao]
 verify_jwt = false
+
+# whatsapp-pendente — cron de recuperação de venda (reservas pendentes).
+# Disparável por SQL/pg_net (segredo) ou admin; autentica por dentro.
+[functions.whatsapp-pendente]
+verify_jwt = false
+
+# whatsapp-lembrete — cron diário (lembrete 2 dias antes da experiência).
+# Disparável por SQL/pg_net (segredo) ou admin; autentica por dentro.
+[functions.whatsapp-lembrete]
+verify_jwt = false

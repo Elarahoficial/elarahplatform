@@ -119,4 +119,8 @@ jobs:
           # whatsapp-confirmacao: chamada pelo trigger do banco (pg_net,
           # bookings → 'pago') com segredo compartilhado → sem JWT.
           deploy whatsapp-confirmacao --no-verify-jwt
+          # whatsapp-pendente: cron de recuperação (reservas pendentes).
+          deploy whatsapp-pendente --no-verify-jwt
+          # whatsapp-lembrete: cron diário (lembrete 2 dias antes).
+          deploy whatsapp-lembrete --no-verify-jwt
           echo "✓ Deploy completo"
