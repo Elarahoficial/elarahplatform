@@ -131,12 +131,32 @@ vibe = f'''
       <div class="head-right"><span class="kicker">A vibe</span></div>
     </div>
     <span class="eyebrow orange">◆ O clima da experiência</span>
-    <h2>Uma mesa que é <em>só charme</em></h2>
-    <p class="lead">Mais do que a experiência: a gente monta um cenário lindo pra comemoração — velas, flores, uma mesa cheia de charme e aquele clima gostoso de criar junto e comemorar. 🕯️🌸</p>
+    <h2>Mais que uma festa, <em>uma sensação</em></h2>
+    <p class="lead">A gente monta um cenário lindo — velas, flores e uma mesa cheia de charme — mas o que fica mesmo é o sentimento: colocar a mão na massa, rir junto e viver um momento só de vocês. 🕯️🌸</p>
     <div class="rule"></div>
-    <div class="menu">
-      {exp("01","aniv-decor.jpg","A mesa decorada","Velas, flores e cada detalhe pensado — o cenário perfeito pra criar e comemorar.","Mesa de pintura decorada com velas e flores","center 30%")}
-      {exp("02","desp-hero4.jpg","Cada detalhe","Comidinhas, lembrancinhas e uma mesa montada só pra vocês, do começo ao fim.","Mesa de aniversário com comidinhas e lembrancinhas","center 45%")}
+    <div class="bfeat">
+      <div class="bphoto"><img src="assets/aniv-decor.jpg" alt="Mesa de comemoração decorada com velas, flores e materiais" style="object-position:center 30%"></div>
+      <div class="bbody">
+        <span class="btag soft">Feito com carinho</span>
+        <h3>Uma mesa cheia de charme</h3>
+        <span class="sub">Cenário acolhedor &amp; delicado</span>
+        <p>Velas, flores e cada detalhe pensado — a gente cuida do cenário pra tudo ficar leve e bonito. É só a galera chegar, criar e se sentir em casa. 🌸</p>
+      </div>
+    </div>
+    <span class="eyebrow orange" style="margin-top:20px;display:inline-block">◆ A vibe da experiência</span>
+    <div class="vg">
+      <div class="vgc">
+        <div class="p"><img src="assets/aniv-experiencia.jpg" alt="Amigas pintando e criando juntas numa mesa cheia de cores" style="object-position:center 45%"></div>
+        <div class="b"><span class="t">Juntas</span><h3>Criar lado a lado</h3><p>Mãos na massa, taças na mesa e aquele clima gostoso de criar junto.</p></div>
+      </div>
+      <div class="vgc">
+        <div class="p"><img src="assets/aromaterapiameninas.jpg" alt="Mãos criando perfumaria com flores e essências" style="object-position:center 45%"></div>
+        <div class="b"><span class="t">Sentir</span><h3>No próprio ritmo</h3><p>Aromas, cores e pincel livre — cada uma cria o que sente, sem pressa.</p></div>
+      </div>
+      <div class="vgc">
+        <div class="p"><img src="assets/aniv-experienciaa.jpg" alt="Amigas rindo e brindando juntas" style="object-position:center 55%"></div>
+        <div class="b"><span class="t">Afeto</span><h3>Rir e brindar</h3><p>A alegria de mostrar o que criou — e levar de recordação pra sempre.</p></div>
+      </div>
     </div>
     <div class="note" style="margin-top:14px">◆ A <b>decoração</b> completa entra no nível <b>Premium</b> do Bake Studio — pra festa 100% pronta, é só chegar e comemorar. 🌸</div>
     {foot("A vibe da experiência")}
