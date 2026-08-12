@@ -59,7 +59,7 @@
     'sabonete': '🧼', 'sabonetes': '🧼',
     'tufting': '🧵', 'bordado': '🪡', 'costura': '🧵', 'crochê': '🧶', 'croche': '🧶', 'tricô': '🧶', 'trico': '🧶',
     'vela': '🕯️', 'velas': '🕯️',
-    'cultura': '🎭', 'teatro': '🎭', 'música': '🎵', 'musica': '🎵', 'dança': '💃', 'danca': '💃',
+    'cultura': '🇧🇷', 'cultural': '🇧🇷', 'teatro': '🇧🇷', 'música': '🎵', 'musica': '🎵', 'dança': '💃', 'danca': '💃',
     'fotografia': '📷', 'foto': '📷',
     'marcenaria': '🪵', 'madeira': '🪵',
     'jardinagem': '🌿', 'plantas': '🌿', 'bem-estar': '🌿', 'yoga': '🧘', 'meditação': '🧘',
