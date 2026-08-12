@@ -44,7 +44,7 @@ const SITE_BASE = (Deno.env.get("ELARAH_SITE_BASE") ?? "https://elarah.com.br")
 // Foto "reserva": usada quando a experiência não tem imagem cadastrada,
 // pra Meta nunca recusar por falta de imagem no cabeçalho.
 const FALLBACK_IMG = Deno.env.get("WHATSAPP_CONFIRMACAO_FALLBACK_IMG") ??
-  `${SITE_BASE}/assets/logo.png`;
+  `${SITE_BASE}/assets/logoelarah.png`;
 
 // Chave de segurança pra transição: SÓ manda imagem no cabeçalho quando
 // WHATSAPP_CONFIRMACAO_FOTO=1 nos secrets. Enquanto o template na Meta
