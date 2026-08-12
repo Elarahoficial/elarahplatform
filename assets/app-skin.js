@@ -52,7 +52,7 @@
     'floral': '🌸', 'flores': '🌸',
     'gastronomia': '🍽️', 'culinária': '👩‍🍳', 'culinaria': '👩‍🍳', 'confeitaria': '🧁', 'panificação': '🥐',
     'macramê': '🧶', 'macrame': '🧶',
-    'pintura': '🖌️', 'desenho': '✏️', 'arte': '🎨',
+    'pintura': '🖌️', 'desenho': '✏️', 'arte': '🖌️', 'arte & ilustração': '🖌️', 'ilustração': '🖌️', 'ilustracao': '🖌️',
     'barismo': '☕', 'barista': '☕',
     'wellness': '🏋️', 'academia': '🏋️', 'fitness': '🏋️', 'pilates': '🤸',
     'mandala': '🪷', 'mandalas': '🪷', 'lótus': '🪷',
