@@ -41,3 +41,9 @@ verify_jwt = false
 # Disparável por SQL/pg_net (segredo) ou admin; autentica por dentro.
 [functions.whatsapp-group-blast]
 verify_jwt = false
+
+# whatsapp-confirmacao — chamado por um TRIGGER do banco (public.bookings
+# quando o status vira 'pago') via pg_net, sem JWT de usuário. Autentica
+# com o segredo compartilhado ELARAH_WEBHOOK_SECRET (Authorization: Bearer).
+[functions.whatsapp-confirmacao]
+verify_jwt = false

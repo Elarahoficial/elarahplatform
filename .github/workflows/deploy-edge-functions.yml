@@ -116,4 +116,7 @@ jobs:
           # whatsapp-group-blast: convida a base já cadastrada pro grupo.
           # Autentica por dentro (segredo compartilhado OU admin) → sem JWT.
           deploy whatsapp-group-blast --no-verify-jwt
+          # whatsapp-confirmacao: chamada pelo trigger do banco (pg_net,
+          # bookings → 'pago') com segredo compartilhado → sem JWT.
+          deploy whatsapp-confirmacao --no-verify-jwt
           echo "✓ Deploy completo"
