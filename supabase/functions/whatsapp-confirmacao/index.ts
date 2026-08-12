@@ -38,6 +38,43 @@ const TEMPLATE = {
   language: Deno.env.get("WHATSAPP_TEMPLATE_LANG") ?? "pt_BR",
 };
 
+// Base pública do site (onde ficam as fotos em /assets/...).
+const SITE_BASE = (Deno.env.get("ELARAH_SITE_BASE") ?? "https://elarah.com.br")
+  .replace(/\/+$/, "");
+// Foto "reserva": usada quando a experiência não tem imagem cadastrada,
+// pra Meta nunca recusar por falta de imagem no cabeçalho.
+const FALLBACK_IMG = Deno.env.get("WHATSAPP_CONFIRMACAO_FALLBACK_IMG") ??
+  `${SITE_BASE}/assets/logo.png`;
+
+// Chave de segurança pra transição: SÓ manda imagem no cabeçalho quando
+// WHATSAPP_CONFIRMACAO_FOTO=1 nos secrets. Enquanto o template na Meta
+// ainda for SÓ TEXTO, deixe desligado (default) — assim publicar este
+// código não quebra o envio atual. Ligue a chave DEPOIS que o template
+// for reaprovado COM header de imagem.
+const HEADER_IMG_ON = (Deno.env.get("WHATSAPP_CONFIRMACAO_FOTO") ?? "") === "1";
+
+// Transforma o valor de experiences.imagem numa URL pública https completa,
+// replicando a normalização do site (script.js):
+//   - http(s):// → usa como está
+//   - /caminho   → SITE_BASE + caminho
+//   - "arquivo.jpg" ou "assets/arquivo.jpg" → SITE_BASE + assets/arquivo.jpg
+// Sem acento e minúsculo no nome do arquivo (convenção do /assets).
+// Vazio/invalid → foto reserva (logo).
+function experienceImageUrl(raw: unknown): string {
+  let s = String(raw ?? "").trim();
+  if (!s) return FALLBACK_IMG;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("/")) return SITE_BASE + s;
+  s = s.normalize("NFKD").replace(/[̀-ͯ]/g, "");
+  const slash = s.lastIndexOf("/");
+  const dir = slash >= 0 ? s.slice(0, slash + 1) : "";
+  const file = (slash >= 0 ? s.slice(slash + 1) : s).toLowerCase();
+  const path = /^(assets|images|img)\//i.test(s)
+    ? dir.toLowerCase() + file
+    : "assets/" + file;
+  return `${SITE_BASE}/${path}`;
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -93,6 +130,8 @@ serve(async (req) => {
   const experiencia = orDash(rec.experiencia_nome, "sua experiência");
   const data = orDash(rec.data, "a combinar");
   const horario = orDash(rec.horario, "a combinar");
+  // Foto da experiência pro cabeçalho (real quando cadastrada; senão logo).
+  const fotoUrl = experienceImageUrl(rec.foto);
 
   if (!phone) {
     console.info(
@@ -111,7 +150,7 @@ serve(async (req) => {
     experiencia,
     data,
     horario,
-  ]);
+  ], HEADER_IMG_ON ? fotoUrl : undefined);
 
   if (!r.ok) {
     console.error(

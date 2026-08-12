@@ -100,15 +100,19 @@ function friendlyMetaError(status: number, text: string): string {
 }
 
 // Envia uma mensagem de TEMPLATE aprovado pela Cloud API.
-//   phone       → normalizado (55DDNXXXXXXXX)
-//   templateName→ nome do template aprovado na Meta
-//   languageCode→ ex.: "pt_BR"
-//   bodyParams  → valores das variáveis do corpo, em ordem ({{1}}, {{2}}…)
+//   phone         → normalizado (55DDNXXXXXXXX)
+//   templateName  → nome do template aprovado na Meta
+//   languageCode  → ex.: "pt_BR"
+//   bodyParams    → valores das variáveis do corpo, em ordem ({{1}}, {{2}}…)
+//   headerImageUrl→ opcional: URL pública https de uma imagem pro cabeçalho
+//                   (só use se o template foi aprovado com HEADER de imagem —
+//                   senão a Meta recusa por incompatibilidade de formato).
 export async function sendWhatsAppTemplate(
   phone: string,
   templateName: string,
   languageCode: string,
   bodyParams: string[],
+  headerImageUrl?: string | null,
 ): Promise<WaResult> {
   if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) {
     return {
@@ -121,12 +125,19 @@ export async function sendWhatsAppTemplate(
   }
 
   const url = `${GRAPH_BASE}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`;
-  const components = bodyParams.length
-    ? [{
+  const components: Array<Record<string, unknown>> = [];
+  if (headerImageUrl) {
+    components.push({
+      type: "header",
+      parameters: [{ type: "image", image: { link: headerImageUrl } }],
+    });
+  }
+  if (bodyParams.length) {
+    components.push({
       type: "body",
       parameters: bodyParams.map((t) => ({ type: "text", text: String(t ?? "") })),
-    }]
-    : [];
+    });
+  }
 
   const payload = {
     messaging_product: "whatsapp",
