@@ -118,7 +118,7 @@ experiencias = f'''
     <div class="rule"></div>
     <div class="menu">
       {exp("01","ceramica1.jpg","Pintura em cerâmica","Cada uma pinta a própria peça de cerâmica com cores e desenhos — delicada e única.","Mãos pintando uma peça de cerâmica com pincel","center 50%")}
-      {exp("02","colagem.jpg","Folding book","Montar um livrinho artesanal com papéis, recortes e memórias — pra guardar de recordação.","Mãos criando um livro artesanal com papéis e recortes","center 50%")}
+      {exp("02","foldingbook.jpg","Folding book","Dobrar as páginas de um livro em formas lindas — uma peça artística pra decorar e guardar.","Livros dobrados em formato de origami, arte em folding book","center 50%")}
     </div>
     <div class="note" style="margin-top:14px">◆ As duas têm o <b>mesmo valor por pessoa</b> — a escolha é do grupo. Cada uma leva pra casa a própria criação. 🎨</div>
     {foot("As experiências")}
