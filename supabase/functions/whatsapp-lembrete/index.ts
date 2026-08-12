@@ -82,6 +82,23 @@ serve(async (req) => {
     return jsonResponse({ ok: false, error: "whatsapp_nao_configurado" }, 500);
   }
 
+  // MODO TESTE: se vier { test_to: "55..." } no corpo, manda UMA mensagem
+  // só pra esse número (com dados de exemplo) e sai — não toca em nenhuma
+  // reserva real.
+  let body: Record<string, unknown> = {};
+  try { body = await req.json(); } catch { /* corpo vazio ok */ }
+  if (body.test_to) {
+    const tp = normalizePhoneBR(String(body.test_to));
+    if (!tp) return jsonResponse({ ok: false, error: "test_to_invalido" }, 400);
+    const r = await sendWhatsAppTemplate(tp, TEMPLATE.name, TEMPLATE.language, [
+      String(body.test_nome ?? "Maria"),
+      String(body.test_experiencia ?? "Oficina de Perfumaria"),
+      String(body.test_data ?? "14/08"),
+      String(body.test_horario ?? "15h"),
+    ]);
+    return jsonResponse({ ok: r.ok, teste: true, to: tp, error: r.error });
+  }
+
   // Quem tem experiência daqui a 2 dias (conta feita no banco).
   let candidatos: Array<Record<string, unknown>>;
   try {
