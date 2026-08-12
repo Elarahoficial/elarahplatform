@@ -144,6 +144,12 @@ vibe = f'''
         <p>A gente cuida do cenário pra tudo ficar leve e bonito: mesa montada com carinho, materiais organizados e um clima sensível de expressão e conexão. É só as meninas chegarem, criarem e se sentirem em casa. 🌸</p>
       </div>
     </div>
+    <span class="eyebrow orange" style="margin-top:20px;display:inline-block">◆ A vibe da experiência</span>
+    <div class="menu">
+      {exp("Juntas","aniv-experiencia.jpg","Criar lado a lado","Mãos na massa, risadas e aquele clima gostoso de criar junto.","Meninas pintando e criando juntas numa mesa cheia de cores","center 45%")}
+      {exp("Presença","hidrateimeninas.jpg","No próprio ritmo","Cada uma no seu tempo, concentrada, leve e à vontade.","Meninas concentradas criando lado a lado","center 40%")}
+      {exp("Afeto","aniv-experienciaa.jpg","Levar de recordação","A alegria de mostrar o que criou — e guardar de lembrança pra sempre.","Amigas rindo e mostrando o que criaram","center 30%")}
+    </div>
     <div class="note" style="margin-top:14px">◆ No <b>Bake Studio</b>, a <b>decoração</b> completa entra no nível <b>Premium</b> — pra festa 100% pronta, é só chegar e comemorar. 🌸</div>
     {foot("A vibe da vivência")}
   </section>'''
