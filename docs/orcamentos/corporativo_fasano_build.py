@@ -110,7 +110,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/cover-corp.jpg" alt="Convidadas rindo e conversando num evento corporativo elegante" style="object-position:center 30%">
+        <img src="assets/eventocorporativo.jpg" alt="Evento corporativo elegante com pessoas reunidas, brindando e conversando" style="object-position:center 40%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
@@ -155,8 +155,8 @@ vibe = f'''
         <div class="b"><span class="t">Sensorial</span><h3>A mesa montada</h3><p>Essências, frascos e detalhes selecionados — um cenário elegante de imersão.</p></div>
       </div>
       <div class="vgc">
-        <div class="p"><img src="assets/aniv-decor.jpg" alt="Mesa decorada com velas, flores e peças de cerâmica" style="object-position:center 30%"></div>
-        <div class="b"><span class="t">Detalhes</span><h3>Cada detalhe pensado</h3><p>Velas, flores e cerâmica — a gente cuida do ambiente pra tudo ficar à altura.</p></div>
+        <div class="p"><img src="assets/desp-hero4.jpg" alt="Mesa montada com peças de cerâmica, materiais e flores" style="object-position:center 45%"></div>
+        <div class="b"><span class="t">Detalhes</span><h3>Cada detalhe pensado</h3><p>Peças de cerâmica, materiais e flores — a gente cuida do ambiente pra tudo ficar à altura.</p></div>
       </div>
     </div>
     <span class="eyebrow orange" style="margin-top:18px;display:inline-block">◆ A vibe da experiência</span>
