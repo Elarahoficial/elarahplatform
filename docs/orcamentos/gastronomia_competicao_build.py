@@ -100,9 +100,9 @@ experiencias = f'''
     <p class="lead">A turma coloca a mão na massa e prepara, do zero, um menu de três tempos — com um chef guiando cada etapa. No fim, é hora do júri provar e eleger o melhor prato! 👨‍🍳</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("Entrada","entradachef.jpg","Quiche Lorraine","O clássico francês de massa amanteigada com bacon e queijo — pra abrir a disputa com charme.","Quiche Lorraine dourada e apetitosa","center 50%")}
-      {exp("Principal","comidalamen.jpg","Risoto bianco com ragu","Um risoto cremoso e sofisticado, coroado com um ragu encorpado — o prato principal da competição.","Prato principal cremoso e encorpado","center 50%")}
-      {exp("Sobremesa","gastronomiamolecular.jpg","Bavaroise de café","Uma bavaroise de café com coulis de frutas amarelas — o toque doce e elegante do menu.","Bavaroise de café com coulis de frutas amarelas","center 50%")}
+      {exp("Entrada","prato-quiche.jpg","Quiche Lorraine","O clássico francês de massa amanteigada com bacon e queijo — pra abrir a disputa com charme.","Quiche Lorraine dourada e apetitosa","center 50%")}
+      {exp("Principal","prato-risoto.jpg","Risoto bianco com ragu","Um risoto cremoso e sofisticado, coroado com um ragu encorpado — o prato principal da competição.","Risoto cremoso servido no prato","center 50%")}
+      {exp("Sobremesa","prato-bavaroise.jpg","Bavaroise de café","Uma bavaroise de café com coulis de frutas amarelas — o toque doce e elegante do menu.","Bavaroise de café decorada com grãos","center 50%")}
     </div>
     <div class="note" style="margin-top:14px">◆ Menu completo — <b>entrada, principal e sobremesa</b> — preparado pela turma, com um chef conduzindo tudo. No fim, o júri prova e elege o time campeão! 🏆</div>
     {foot("O menu")}
@@ -118,13 +118,14 @@ como = f'''
     <h2>No <em>Bake Studio</em></h2>
     <p class="lead">Um estúdio completo com cozinha equipada e sala, reservado só pra vocês — o cenário perfeito pra colocar o avental e entrar no clima da competição. 🔪</p>
     <div class="rule"></div>
-    <div class="bfeat">
-      <div class="bphoto"><img src="assets/espaco1.jpg" alt="Bake Studio, estúdio com cozinha equipada e sala, acolhedor" style="object-position:center 50%"></div>
-      <div class="bbody">
-        <span class="btag">Espaço exclusivo</span>
-        <h3>Cozinha &amp; sala só de vocês</h3>
-        <span class="sub">Estúdio privado · completo</span>
-        <p>O Bake Studio é reservado 100% pra turma: cozinha equipada pra colocar a mão na massa e uma sala aconchegante pra relaxar, disputar e saborear. Um chef conduz tudo do começo ao fim — vocês só chegam e cozinham. 👨‍🍳</p>
+    <div style="display:flex;gap:14px;margin-top:16px">
+      <div style="flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 30px -22px rgba(0,0,0,.3)">
+        <div style="aspect-ratio:4/3;overflow:hidden;background:#eee"><img src="assets/espa%C3%A7o2.jpg" alt="Cozinha equipada do Bake Studio" style="width:100%;height:100%;object-fit:cover;object-position:center 45%"></div>
+        <div style="padding:14px 17px 16px"><span style="display:inline-block;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 11px;border-radius:999px;margin-bottom:8px">A cozinha</span><h3 style="font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);line-height:1.05">Cozinha equipada</h3><p style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45">Bancada, forno e tudo o que a turma precisa pra colocar a mão na massa e preparar o menu completo.</p></div>
+      </div>
+      <div style="flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 30px -22px rgba(0,0,0,.3)">
+        <div style="aspect-ratio:4/3;overflow:hidden;background:#eee"><img src="assets/espaco1.jpg" alt="Sala aconchegante do Bake Studio" style="width:100%;height:100%;object-fit:cover;object-position:center 50%"></div>
+        <div style="padding:14px 17px 16px"><span style="display:inline-block;background:var(--navy);color:#fff;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 11px;border-radius:999px;margin-bottom:8px">A sala</span><h3 style="font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);line-height:1.05">Sala aconchegante</h3><p style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45">Um espaço lindo pra relaxar, disputar e saborear o resultado — tudo só de vocês.</p></div>
       </div>
     </div>
     <div class="note" style="margin-top:14px">◆ Espaço <b>privado e completo</b> só de vocês, com cozinha e sala — o cenário ideal pra aula-competição. 🏆</div>
