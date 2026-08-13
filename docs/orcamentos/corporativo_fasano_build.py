@@ -110,7 +110,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/perfumariamaes.jpg" alt="Mesa sensorial de perfumaria autoral com essências, flores e pétalas" style="object-position:center 45%">
+        <img src="assets/cover-corp.jpg" alt="Convidadas rindo e conversando num evento corporativo elegante" style="object-position:center 30%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
@@ -162,16 +162,16 @@ vibe = f'''
     <span class="eyebrow orange" style="margin-top:18px;display:inline-block">◆ A vibe da experiência</span>
     <div class="vg">
       <div class="vgc">
-        <div class="p"><img src="assets/aniv-experiencia.jpg" alt="Time criando lado a lado numa experiência sensorial" style="object-position:center 45%"></div>
-        <div class="b"><span class="t">Presença</span><h3>Criar lado a lado</h3><p>Longe das telas — mãos na massa e aquele clima de criar junto.</p></div>
+        <div class="p"><img src="assets/vibe-mesa-corp.jpg" alt="Mesa montada com cuidado, materiais e flores secas" style="object-position:center 50%"></div>
+        <div class="b"><span class="t">Cuidado</span><h3>Um cenário montado</h3><p>Cada lugar preparado com esmero — mesa, materiais e detalhes à altura.</p></div>
       </div>
       <div class="vgc">
-        <div class="p"><img src="assets/aromaterapiameninas.jpg" alt="Mãos criando perfumaria autoral com essências e flores" style="object-position:center 45%"></div>
-        <div class="b"><span class="t">Sensorial</span><h3>No próprio ritmo</h3><p>Aromas, texturas e detalhes — cada um cria a própria peça autoral.</p></div>
+        <div class="p"><img src="assets/vibe-criar-corp.jpg" alt="Mãos criando lado a lado numa experiência sensorial" style="object-position:center 50%"></div>
+        <div class="b"><span class="t">Presença</span><h3>Mãos na massa</h3><p>Longe das telas — cada um cria a própria peça, no seu ritmo.</p></div>
       </div>
       <div class="vgc">
-        <div class="p"><img src="assets/ceramica.jpg" alt="Grupo mostrando o que criou, sorrindo" style="object-position:center 40%"></div>
-        <div class="b"><span class="t">Conexão</span><h3>Levar de recordação</h3><p>Cada peça com a assinatura de quem fez — e um time mais unido.</p></div>
+        <div class="p"><img src="assets/ceramica.jpg" alt="Grupo sorrindo e mostrando o que criou" style="object-position:center 40%"></div>
+        <div class="b"><span class="t">Conexão</span><h3>Rir e se conectar</h3><p>Um brinde, boas conversas e um time mais unido — pra levar pra sempre.</p></div>
       </div>
     </div>
     <div class="note" style="margin-top:14px">◆ Tudo montado com cuidado em Sorocaba, com um profissional conduzindo a experiência do começo ao fim — pro time só chegar e viver o momento. ✨</div>
