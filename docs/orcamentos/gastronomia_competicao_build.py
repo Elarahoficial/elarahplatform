@@ -145,7 +145,7 @@ investimento = f'''
     <div class="pcard">
       <div class="pl">
         <span class="lab">Por pessoa</span>
-        <span class="big">R$ 489</span>
+        <span class="big">R$ 529</span>
         <span class="per">com o espaço privado do Bake Studio incluso</span>
       </div>
       <div class="pr">
@@ -198,7 +198,7 @@ contato = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência gastronômica da Elarah — aula-competição estilo MasterChef, no Bake Studio (espaço privado com cozinha equipada e sala, exclusivo para o grupo). A turma prepara um menu completo de três tempos: entrada (Quiche Lorraine), prato principal (risoto bianco com ragu) e sobremesa (bavaroise de café com coulis de frutas amarelas), com um chef conduzindo tudo, e um júri final elegendo o time campeão. Valor de R$ 489 por pessoa, incluindo os três pratos, a competição e o espaço privado do Bake Studio. Número de convidados e data a combinar. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência gastronômica da Elarah — aula-competição estilo MasterChef, no Bake Studio (espaço privado com cozinha equipada e sala, exclusivo para o grupo). A turma prepara um menu completo de três tempos: entrada (Quiche Lorraine), prato principal (risoto bianco com ragu) e sobremesa (bavaroise de café com coulis de frutas amarelas), com um chef conduzindo tudo, e um júri final elegendo o time campeão. Valor de R$ 529 por pessoa, incluindo os três pratos, a competição e o espaço privado do Bake Studio. Número de convidados e data a combinar. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Aula gastronômica &amp; competição · 2026")}
   </section>'''
 
