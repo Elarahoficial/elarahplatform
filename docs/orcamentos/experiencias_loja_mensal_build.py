@@ -125,7 +125,7 @@ experiencias = f'''
     <div class="rule"></div>
     <div class="menu">
       {exp("01","florseca.jpg","Arranjos florais","Cada um monta o próprio arranjo com flores da estação — delicado e cheio de vida.","Arranjos florais montados à mão","center 45%","★ 1º tema")}
-      {exp("02","homespray.jpg","Buquê &amp; home spray","Um buquê lindo pra montar e um home spray floral pra perfumar a casa.","Home spray floral artesanal em frasco elegante","center 50%")}
+      {exp("02","HOMESPRAY.jpg","Buquê &amp; home spray","Um buquê lindo pra montar e um home spray floral pra perfumar a casa.","Home spray floral artesanal em frasco elegante","center 45%")}
       {exp("03","perfumariamaes.jpg","Perfumaria","Criar o próprio perfume com notas exclusivas — uma fragrância única.","Mesa de perfumaria com essências e flores","center 45%")}
       {exp("04","velaaromatica.jpg","Vela aromática","Escolher o aroma e criar a própria vela — relaxante e cheia de charme.","Vela aromática artesanal acesa","center 50%")}
       {exp("05","pinturatacaa.jpg","Pintura em taça","Pintar à mão a própria taça com desenhos autorais — elegante e única.","Taças pintadas à mão","center 50%")}
