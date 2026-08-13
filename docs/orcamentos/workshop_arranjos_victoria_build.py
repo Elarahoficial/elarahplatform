@@ -183,7 +183,7 @@ espacos = f'''
       </div>
       <div class="vgc hl">
         <div class="p"><img src="assets/espaco1.jpg" alt="Lounge acolhedor do Bake Studio" style="object-position:center 55%"></div>
-        <div class="b"><span class="t">★ A partir de R$ 289</span><h3>Bake Studio <span class="sub">exclusivo</span></h3><p>Estúdio <b>só de vocês</b> — experiência + espaço reservado, com coffee break.</p></div>
+        <div class="b"><span class="t">★ A partir de R$ 299</span><h3>Bake Studio <span class="sub">exclusivo</span></h3><p>Estúdio <b>só de vocês</b> — experiência + espaço reservado, com coffee break.</p></div>
       </div>
     </div>
     <div class="note" style="margin-top:14px">◆ Cada espaço com o seu valor por pessoa. O <b>Jules · Campo Belo</b> e o <b>Sterna · Café Faria Lima</b> (externo) têm o mesmo valor; no <b>Betc Havas</b> já entra R$ 50 de voucher de consumo; o <b>Bake Studio</b> é reservado só pra turma, com coffee break e decoração nos níveis completos. 🌸</div>
@@ -222,9 +222,9 @@ planos = f'''
         </tr>
         <tr>
           <td class="rl"><b>Bake Studio</b><span>espaço exclusivo · só de vocês</span></td>
-          <td class="val">R$ 289</td>
-          <td class="val">R$ 389<small>+ foto &amp; coffee break</small></td>
-          <td class="val hl">R$ 539<small>+ decoração &amp; lembrancinha</small></td>
+          <td class="val">R$ 299</td>
+          <td class="val">R$ 399<small>+ foto &amp; coffee break</small></td>
+          <td class="val hl">R$ 499<small>+ decoração &amp; lembrancinha</small></td>
         </tr>
       </tbody>
     </table>
@@ -309,7 +309,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de arranjos florais, para cerca de 10 pessoas, num sábado ou domingo (a combinar), em espaço parceiro em São Paulo. Cada convidada monta e leva o próprio arranjo. Valores por pessoa. No Jules · Campo Belo e no Sterna · Café Faria Lima (opção externa, mesmo valor): A experiência R$ 199 / Com foto R$ 299 / Completo R$ 399 com lembrancinha. No Betc Havas Café (já com R$ 50 de voucher de consumo): A experiência R$ 249 / Com foto R$ 349 / Completo R$ 449 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 289 / Com foto R$ 389 (com foto profissional e coffee break) / Completo R$ 539 com decoração e lembrancinha. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de arranjos florais, para cerca de 10 pessoas, num sábado ou domingo (a combinar), em espaço parceiro em São Paulo. Cada convidada monta e leva o próprio arranjo. Valores por pessoa. No Jules · Campo Belo e no Sterna · Café Faria Lima (opção externa, mesmo valor): A experiência R$ 199 / Com foto R$ 299 / Completo R$ 399 com lembrancinha. No Betc Havas Café (já com R$ 50 de voucher de consumo): A experiência R$ 249 / Com foto R$ 349 / Completo R$ 449 com lembrancinha. No Bake Studio (espaço exclusivo, experiência + espaço só de vocês): A experiência R$ 299 / Com foto R$ 399 (com foto profissional e coffee break) / Completo R$ 499 com decoração e lembrancinha. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Workshop de arranjos florais · 2026")}
   </section>'''
 
