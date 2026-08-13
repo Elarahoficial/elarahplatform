@@ -151,8 +151,8 @@ vibe = f'''
     <span class="eyebrow orange" style="display:inline-block">◆ Um cenário à altura</span>
     <div class="vg">
       <div class="vgc">
-        <div class="p"><img src="assets/perfumaria-corp.jpg" alt="Mesa sensorial montada com essências, frascos e flores secas" style="object-position:center 50%"></div>
-        <div class="b"><span class="t">Sensorial</span><h3>A mesa montada</h3><p>Essências, frascos e detalhes selecionados — um cenário elegante de imersão.</p></div>
+        <div class="p"><img src="assets/mesa-montada-corp.jpg" alt="Mesa montada decorada com flores, cerâmica e cada lugar preparado" style="object-position:center 50%"></div>
+        <div class="b"><span class="t">Sensorial</span><h3>A mesa montada</h3><p>Flores, cerâmica e cada lugar preparado com esmero — um cenário elegante de imersão.</p></div>
       </div>
       <div class="vgc">
         <div class="p"><img src="assets/desp-hero4.jpg" alt="Mesa montada com peças de cerâmica, materiais e flores" style="object-position:center 45%"></div>
@@ -189,7 +189,7 @@ espacos = f'''
     <p class="lead">Vocês só reúnem o time — a Elarah cuida de todo o resto, direto no espaço do encontro em Sorocaba. É só escolher a experiência e o momento. ✨</p>
     <div class="rule"></div>
     <div class="bfeat">
-      <div class="bphoto"><img src="assets/perfumariamaes.jpg" alt="Estrutura sensorial montada, com essências, materiais e flores" style="object-position:center 45%"></div>
+      <div class="bphoto"><img src="assets/levamos-corp.jpg" alt="Time reunido e conversando num encontro criativo" style="object-position:center 35%"></div>
       <div class="bbody">
         <span class="btag">No local · Sorocaba</span>
         <h3>Levamos até você</h3>
@@ -209,25 +209,43 @@ planos = f'''
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Escolha o <em>combo</em></h2>
-    <p class="lead">Valores por pessoa, com material, condução e a estrutura montada em Sorocaba inclusos. Escolham o nível que mais combina com o encontro — a experiência é à escolha do grupo. ✨</p>
+    <p class="lead">Valores por pessoa, com material, condução e estrutura inclusos — e todas podendo ser <strong>personalizadas com o logo da empresa</strong>. Escolham a experiência e o nível. ✨</p>
     <div class="rule"></div>
-    <table class="itable">
+    <div class="itbl-label">Vela aromática · Aromatizador · Pintura em taça <b>◆ tabela 1</b></div>
+    <table class="itable cx">
       <thead><tr>
         <th class="corner"></th>
         <th>Basic<span>a experiência</span></th>
-        <th>Plus<span>+ registro do evento</span></th>
-        <th class="hl"><span class="pill">★ Premium</span><br>Premium<span>com tudo incluso</span></th>
+        <th>Plus<span>+ foto, coffee break &amp; mesa montada</span></th>
+        <th class="hl">Premium<span>+ lembrancinha</span></th>
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Experiência à escolha</b><span>perfumaria, aromatizador, vela, pintura em taça ou folding book</span></td>
-          <td class="val">R$ 199</td>
-          <td class="val">R$ 299<small>+ foto profissional</small></td>
-          <td class="val hl">R$ 399<small>+ lembrancinha personalizada</small></td>
+          <td class="rl"><b>Vela · Aromatizador · Pintura em taça</b><span>experiência à escolha</span></td>
+          <td class="val">R$ 239</td>
+          <td class="val">R$ 429<small>+ foto, coffee break &amp; mesa montada</small></td>
+          <td class="val hl">R$ 559<small>+ lembrancinha personalizada</small></td>
         </tr>
       </tbody>
     </table>
-    <div class="note" style="margin-top:16px">◆ Valores <b>por pessoa</b>, para as 5 experiências. O <b>Basic</b> é a experiência completa (profissional, material e estrutura em Sorocaba); o <b>Plus</b> soma o registro fotográfico profissional do encontro; e o <b>Premium</b> vem com tudo incluso, com a lembrancinha personalizada pra cada participante. Dias 25 ou 26/11, a combinar.</div>
+    <div class="itbl-label">Perfumaria · Folding book <b>◆ tabela 2</b></div>
+    <table class="itable cx">
+      <thead><tr>
+        <th class="corner"></th>
+        <th>Basic<span>a experiência</span></th>
+        <th>Plus<span>+ foto, coffee break &amp; mesa montada</span></th>
+        <th class="hl">Premium<span>+ lembrancinha</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="rl"><b>Perfumaria · Folding book</b><span>experiência à escolha</span></td>
+          <td class="val">R$ 299</td>
+          <td class="val">R$ 489<small>+ foto, coffee break &amp; mesa montada</small></td>
+          <td class="val hl">R$ 619<small>+ lembrancinha personalizada</small></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:13px">◆ Valores <b>por pessoa</b>. O <b>Plus</b> soma R$ 190 (foto profissional, coffee break &amp; mesa montada) e o <b>Premium</b> soma mais R$ 130 (lembrancinha personalizada). Todas as experiências podem ser <b>personalizadas com o logo da empresa</b>. Dias 25 ou 26/11, a combinar.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -235,41 +253,42 @@ personaliza = f'''
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Nos níveis completos</span></div>
+      <div class="head-right"><span class="kicker">A personalização</span></div>
     </div>
-    <span class="eyebrow orange">◆ Os mimos que já vêm inclusos</span>
-    <h2>Foto <em>&amp;</em> lembrancinha</h2>
-    <p class="lead">A partir do nível Plus, o encontro ganha o registro profissional e a lembrancinha personalizada pra cada participante — dois mimos pra deixar a experiência ainda mais marcante.</p>
+    <span class="eyebrow orange">◆ No nível Premium · com a marca da empresa</span>
+    <h2>Escolha a <em>personalização</em></h2>
+    <p class="lead">No nível Premium, cada participante leva uma lembrancinha personalizada com a marca da empresa. É só escolher qual combina mais com o time — dois mimos elegantes pra levar de recordação. ✨</p>
     <div class="rule"></div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-photo sq"><img src="assets/hidrateimeninas.jpg" alt="Encontro corporativo registrado por um fotógrafo" style="object-position:center 35%"></div>
+        <div class="plan-photo sq"><img src="assets/garrafa-fasano.jpg" alt="Garrafa térmica personalizada com o logo da empresa" style="object-position:center"></div>
         <div class="plan-body">
-          <h3>Registro fotográfico</h3>
-          <span class="tag basic">Nível Plus</span>
+          <h3>Garrafa térmica</h3>
+          <span class="tag basic">Opção 1</span>
           <ul class="feat">
-            <li>Um fotógrafo cobre o encontro inteiro</li>
-            <li>Cada criação e cada conexão registradas</li>
-            <li>Álbum digital pro time e pra empresa</li>
+            <li>Personalizada com o <b>logo da empresa</b></li>
+            <li>Elegante, sofisticada e resistente</li>
+            <li>Pra acompanhar o time todo dia</li>
           </ul>
-          <span class="allin">Memória do encontro pra sempre</span>
+          <span class="allin">Um mimo pra levar</span>
         </div>
       </div>
       <div class="plan featured">
-        <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Kit corporativo personalizado, elegante" style="object-position:center"></div>
+        <div class="plan-photo sq"><img src="assets/kitempresa.jpg" alt="Bolsa corporativa personalizada com a marca da empresa" style="object-position:center"></div>
         <div class="plan-body">
-          <h3>Lembrancinha personalizada</h3>
-          <span class="tag premium">★ Nível Premium</span>
+          <h3>Bolsa personalizada</h3>
+          <span class="tag premium">Opção 2</span>
           <ul class="feat">
-            <li>Brinde exclusivo, personalizável com a <b>identidade do encontro</b></li>
-            <li>A própria criação autoral embalada com cuidado</li>
-            <li>Um mimo elegante pra cada participante levar</li>
+            <li>Exclusiva com a <b>identidade da empresa</b></li>
+            <li>Prática, elegante e do dia a dia</li>
+            <li>Pra levar pra todo lugar</li>
           </ul>
-          <span class="allin">Cada um leva o seu mimo</span>
+          <span class="allin">Cada um escolhe o seu</span>
         </div>
       </div>
     </div>
-    {foot("Os mimos inclusos")}
+    <div class="note" style="margin-top:14px">◆ A escolha da lembrancinha é do grupo — <b>garrafa</b> ou <b>bolsa</b>, ambas personalizáveis com o logo da empresa. A partir do <b>Plus</b>, o encontro também ganha foto profissional, coffee break e a mesa montada. ✨</div>
+    {foot("A personalização")}
   </section>'''
 
 como = f'''
@@ -308,7 +327,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de encontro corporativo da Elarah — experiência sensorial à escolha (perfumaria autoral, aromatizador, vela aromática, pintura em taça ou folding book), para cerca de 13 participantes, nos dias 25 ou 26/11 (a combinar), no espaço do encontro em Sorocaba (a Elarah leva profissional, material e estrutura). Cada participante cria e leva a própria criação autoral. Valores por pessoa: Basic R$ 199 (a experiência) / Plus R$ 299 (com registro fotográfico profissional) / Premium R$ 399 (com tudo incluso e lembrancinha personalizada). Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de encontro corporativo da Elarah — experiência sensorial à escolha (perfumaria autoral, aromatizador, vela aromática, pintura em taça ou folding book), para cerca de 13 participantes, nos dias 25 ou 26/11 (a combinar), no espaço do encontro em Sorocaba (a Elarah leva profissional, material e estrutura). Cada participante cria e leva a própria criação autoral, podendo ser personalizada com o logo da empresa. Valores por pessoa em três níveis (Basic / Plus / Premium). Vela aromática, aromatizador e pintura em taça: Basic R$ 239 / Plus R$ 429 / Premium R$ 559. Perfumaria e folding book: Basic R$ 299 / Plus R$ 489 / Premium R$ 619. O Plus soma R$ 190 (foto profissional, coffee break e mesa montada) e o Premium soma mais R$ 130 (lembrancinha personalizada à escolha — garrafa ou bolsa, com a marca da empresa). Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Encontro corporativo · 2026")}
   </section>'''
 
