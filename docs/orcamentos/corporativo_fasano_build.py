@@ -131,7 +131,7 @@ experiencias = f'''
       {exp("01","perfumaria-corp.jpg","Perfumaria autoral","Cada um cria o próprio perfume com notas exclusivas — uma fragrância única e pessoal.","Mesa de perfumaria autoral com essências e flores","center 50%")}
       {exp("02","aromatizador-corp.jpg","Aromatizador","Criar o próprio aromatizador de ambiente — assinatura olfativa pra levar pra casa ou o escritório.","Kit de aromatizador de ambiente artesanal e elegante","center 50%")}
       {exp("03","vela-corp.jpg","Vela aromática","Escolher o aroma e criar a própria vela — sofisticada, relaxante e cheia de charme.","Vela aromática artesanal acesa","center 50%")}
-      {exp("04","pinturataca2.jpg","Pintura em taça","Pintar à mão a própria taça com desenhos autorais — elegante e cheia de personalidade.","Taças pintadas à mão com desenhos delicados","center 50%")}
+      {exp("04","pinturatacaa.jpg","Pintura em taça","Pintar à mão a própria taça com desenhos autorais — elegante e cheia de personalidade.","Taças pintadas à mão com desenhos dourados e delicados","center 50%")}
       {exp("05","foldingbook.jpg","Folding book","Dobrar as páginas de um livro em formas esculturais — uma peça de design pra decorar.","Livros dobrados em formas esculturais","center 50%")}
     </div>
     <div class="note" style="margin-top:14px">◆ É só o grupo escolher a experiência favorita — a gente leva tudo até Sorocaba e cada um leva pra casa a própria criação autoral. ✨</div>
