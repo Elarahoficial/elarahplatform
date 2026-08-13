@@ -170,7 +170,7 @@ vibe = f'''
         <div class="b"><span class="t">Presença</span><h3>Mãos na massa</h3><p>Longe das telas — cada um cria a própria peça, no seu ritmo.</p></div>
       </div>
       <div class="vgc">
-        <div class="p"><img src="assets/ceramica.jpg" alt="Grupo sorrindo e mostrando o que criou" style="object-position:center 40%"></div>
+        <div class="p"><img src="assets/vibe-conexao-corp.jpg" alt="Convidadas conversando e sorrindo num ambiente elegante" style="object-position:center 40%"></div>
         <div class="b"><span class="t">Conexão</span><h3>Rir e se conectar</h3><p>Um brinde, boas conversas e um time mais unido — pra levar pra sempre.</p></div>
       </div>
     </div>
