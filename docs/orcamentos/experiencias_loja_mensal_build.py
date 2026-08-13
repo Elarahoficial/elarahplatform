@@ -125,7 +125,7 @@ experiencias = f'''
     <div class="rule"></div>
     <div class="menu">
       {exp("01","florseca.jpg","Arranjos florais","Cada um monta o próprio arranjo com flores da estação — delicado e cheio de vida.","Arranjos florais montados à mão","center 45%","★ 1º tema")}
-      {exp("02","buque.jpg","Buquê &amp; home spray","Um buquê lindo pra montar e um home spray floral pra perfumar a casa.","Buquê de flores montado à mão","center 40%")}
+      {exp("02","homespray.jpg","Buquê &amp; home spray","Um buquê lindo pra montar e um home spray floral pra perfumar a casa.","Home spray floral artesanal em frasco elegante","center 50%")}
       {exp("03","perfumariamaes.jpg","Perfumaria","Criar o próprio perfume com notas exclusivas — uma fragrância única.","Mesa de perfumaria com essências e flores","center 45%")}
       {exp("04","velaaromatica.jpg","Vela aromática","Escolher o aroma e criar a própria vela — relaxante e cheia de charme.","Vela aromática artesanal acesa","center 50%")}
       {exp("05","pinturatacaa.jpg","Pintura em taça","Pintar à mão a própria taça com desenhos autorais — elegante e única.","Taças pintadas à mão","center 50%")}
@@ -218,9 +218,9 @@ planos = f'''
       <tbody>
         <tr>
           <td class="rl"><b>Experiência do mês</b><span>arranjos florais &amp; próximos temas</span></td>
-          <td class="val">R$ 199</td>
-          <td class="val">R$ 299<small>+ foto profissional</small></td>
-          <td class="val hl">R$ 399<small>+ lembrancinha personalizada</small></td>
+          <td class="val">R$ 299</td>
+          <td class="val">R$ 399<small>+ foto profissional</small></td>
+          <td class="val hl">R$ 499<small>+ lembrancinha personalizada</small></td>
         </tr>
       </tbody>
     </table>
@@ -306,7 +306,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta da Elarah para experiências criativas recorrentes na loja da cliente (Praia Grande) — encontros mensais ou a cada 45 dias, com um tema novo a cada edição, começando pelos arranjos florais e seguindo com buquê, perfumaria, vela aromática, pintura em taça, cerâmica e outros. Para cerca de 15 pessoas por edição. A Elarah leva profissional, material e estrutura até a loja; cada convidado cria e leva a própria peça. Valores por pessoa: Basic R$ 199 (a experiência) / Plus R$ 299 (com foto profissional) / Premium R$ 399 (com lembrancinha personalizada). Deslocamento de São Paulo até a Praia Grande (cerca de 80 km) a combinar à parte. Proposta válida mediante confirmação de datas e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta da Elarah para experiências criativas recorrentes na loja da cliente (Praia Grande) — encontros mensais ou a cada 45 dias, com um tema novo a cada edição, começando pelos arranjos florais e seguindo com buquê, perfumaria, vela aromática, pintura em taça, cerâmica e outros. Para cerca de 15 pessoas por edição. A Elarah leva profissional, material e estrutura até a loja; cada convidado cria e leva a própria peça. Valores por pessoa: Basic R$ 299 (a experiência) / Plus R$ 399 (com foto profissional) / Premium R$ 499 (com lembrancinha personalizada). Deslocamento de São Paulo até a Praia Grande (cerca de 80 km) a combinar à parte. Proposta válida mediante confirmação de datas e disponibilidade de agenda.</p>
     {foot("Experiências mensais na loja · 2026")}
   </section>'''
 
