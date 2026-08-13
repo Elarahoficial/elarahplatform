@@ -128,9 +128,9 @@ experiencias = f'''
     <p class="lead">Cinco vivências elegantes e sensoriais pra escolher — todas conduzidas por um profissional, com material e estrutura inclusos. Cada participante cria e leva pra casa a própria peça autoral. ✨</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","perfumariamaes.jpg","Perfumaria autoral","Cada um cria o próprio perfume com notas exclusivas — uma fragrância única e pessoal.","Mesa de perfumaria autoral com essências e flores","center 45%")}
-      {exp("02","homespray.jpg","Aromatizador","Criar o próprio aromatizador de ambiente — assinatura olfativa pra levar pra casa ou o escritório.","Aromatizador de ambiente artesanal em frasco elegante","center 50%")}
-      {exp("03","velaaromatica.jpg","Vela aromática","Escolher o aroma e criar a própria vela — sofisticada, relaxante e cheia de charme.","Vela aromática artesanal acesa","center 50%")}
+      {exp("01","perfumaria-corp.jpg","Perfumaria autoral","Cada um cria o próprio perfume com notas exclusivas — uma fragrância única e pessoal.","Mesa de perfumaria autoral com essências e flores","center 50%")}
+      {exp("02","aromatizador-corp.jpg","Aromatizador","Criar o próprio aromatizador de ambiente — assinatura olfativa pra levar pra casa ou o escritório.","Kit de aromatizador de ambiente artesanal e elegante","center 50%")}
+      {exp("03","vela-corp.jpg","Vela aromática","Escolher o aroma e criar a própria vela — sofisticada, relaxante e cheia de charme.","Vela aromática artesanal acesa","center 50%")}
       {exp("04","pinturataca2.jpg","Pintura em taça","Pintar à mão a própria taça com desenhos autorais — elegante e cheia de personalidade.","Taças pintadas à mão com desenhos delicados","center 50%")}
       {exp("05","foldingbook.jpg","Folding book","Dobrar as páginas de um livro em formas esculturais — uma peça de design pra decorar.","Livros dobrados em formas esculturais","center 50%")}
     </div>
@@ -148,23 +148,25 @@ vibe = f'''
     <h2>Mais que uma dinâmica, <em>uma sensação</em></h2>
     <p class="lead">A gente monta um cenário sofisticado e sensorial — mas o que fica mesmo é a experiência: sair do piloto automático, colocar a mão na massa e viver um momento de presença e conexão do time. ✨</p>
     <div class="rule"></div>
-    <div class="bfeat">
-      <div class="bphoto"><img src="assets/aniv-decor.jpg" alt="Mesa sensorial montada com velas, flores e materiais elegantes" style="object-position:center 30%"></div>
-      <div class="bbody">
-        <span class="btag soft">Feito com cuidado</span>
-        <h3>Um cenário à altura</h3>
-        <span class="sub">Ambiente sofisticado &amp; sensorial</span>
-        <p>A gente leva e monta tudo em Sorocaba: mesa cuidada, materiais selecionados e um clima elegante de imersão. É só o time chegar, criar e se desconectar da rotina. ✨</p>
+    <span class="eyebrow orange" style="display:inline-block">◆ Um cenário à altura</span>
+    <div class="vg">
+      <div class="vgc">
+        <div class="p"><img src="assets/perfumaria-corp.jpg" alt="Mesa sensorial montada com essências, frascos e flores secas" style="object-position:center 50%"></div>
+        <div class="b"><span class="t">Sensorial</span><h3>A mesa montada</h3><p>Essências, frascos e detalhes selecionados — um cenário elegante de imersão.</p></div>
+      </div>
+      <div class="vgc">
+        <div class="p"><img src="assets/aniv-decor.jpg" alt="Mesa decorada com velas, flores e peças de cerâmica" style="object-position:center 30%"></div>
+        <div class="b"><span class="t">Detalhes</span><h3>Cada detalhe pensado</h3><p>Velas, flores e cerâmica — a gente cuida do ambiente pra tudo ficar à altura.</p></div>
       </div>
     </div>
-    <span class="eyebrow orange" style="margin-top:20px;display:inline-block">◆ A vibe da experiência</span>
+    <span class="eyebrow orange" style="margin-top:18px;display:inline-block">◆ A vibe da experiência</span>
     <div class="vg">
       <div class="vgc">
         <div class="p"><img src="assets/aniv-experiencia.jpg" alt="Time criando lado a lado numa experiência sensorial" style="object-position:center 45%"></div>
         <div class="b"><span class="t">Presença</span><h3>Criar lado a lado</h3><p>Longe das telas — mãos na massa e aquele clima de criar junto.</p></div>
       </div>
       <div class="vgc">
-        <div class="p"><img src="assets/perfumaria.jpg" alt="Momento sensorial de criação autoral" style="object-position:center 45%"></div>
+        <div class="p"><img src="assets/aromaterapiameninas.jpg" alt="Mãos criando perfumaria autoral com essências e flores" style="object-position:center 45%"></div>
         <div class="b"><span class="t">Sensorial</span><h3>No próprio ritmo</h3><p>Aromas, texturas e detalhes — cada um cria a própria peça autoral.</p></div>
       </div>
       <div class="vgc">
