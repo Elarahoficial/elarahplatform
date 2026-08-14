@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pintura em Vidro · Elarah × Samsung · Confirmação</title>
+<meta name="description" content="Apresentação final da experiência de pintura em vidro da Elarah para o time de Design da Samsung, no Bake Studio.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#2F6FCB;
+    --orange-dark:#244F97;
+    --navy:#101B39;
+    --navy-soft:#4A5670;
+    --blue-accent:#2F6FCB;
+    --cream:#F6F2EB;
+    --card:#FFFFFF;
+    --ink:#1D2430;
+    --muted:#6A7180;
+    --line:#E7E0D4;
+    --shadow:0 18px 50px -24px rgba(22,35,60,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#E9E3D8;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding:32px 16px 64px;
+    line-height:1.55;
+  }
+  .deck{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+
+  /* ---- SLIDE ---- */
+  .slide{
+    background:var(--cream);
+    border-radius:22px;
+    padding:56px 60px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+    min-height:640px;
+    display:flex;
+    flex-direction:column;
+  }
+  .slide__head{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:16px;padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:34px;
+  }
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand img{height:26px;width:auto;display:block}
+  .head-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
+  .kicker{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .compass{font-weight:700;font-size:18px;letter-spacing:.02em;color:var(--navy);line-height:1}
+  .compass span{color:var(--orange)}
+  .compass small{display:block;font-size:8.5px;letter-spacing:.28em;color:var(--navy-soft);font-weight:500;margin-top:2px}
+
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
+    color:var(--blue-accent);margin-bottom:16px;
+  }
+  .eyebrow.orange{color:var(--orange-dark)}
+  h1{font-family:'DM Serif Display',serif;font-weight:400;font-size:52px;line-height:1.04;color:var(--navy);letter-spacing:-.01em}
+  h2{font-family:'DM Serif Display',serif;font-weight:400;font-size:40px;line-height:1.06;color:var(--navy);letter-spacing:-.01em}
+  h1 em,h2 em{font-style:italic;color:var(--blue-accent)}
+  .lead{font-size:15.5px;color:var(--navy-soft);max-width:52ch;margin-top:16px}
+  .lead strong{color:var(--ink);font-weight:600}
+  .rule{width:56px;height:3px;background:var(--orange);border-radius:2px;margin:24px 0}
+
+  /* ---- COVER ---- */
+  .cover{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:start;flex:1}
+  .cover-photo{
+    border-radius:18px;overflow:hidden;aspect-ratio:4/4.6;box-shadow:0 24px 48px -20px rgba(22,35,60,.45);
+    position:relative;
+  }
+  .cover-photo img{width:100%;height:100%;object-fit:cover;object-position:center 40%}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+  .chip{
+    background:#fff;border:1px solid var(--line);border-radius:999px;
+    padding:9px 16px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:0 4px 14px -8px rgba(22,35,60,.25)
+  }
+  .chip b{font-weight:700;color:var(--navy)}
+
+  /* ---- CARDS (o que buscamos) ---- */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px}
+  .infocard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px}
+  .infocard .ico{font-size:22px;margin-bottom:12px}
+  .infocard h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin-bottom:8px}
+  .infocard p{font-size:13px;color:var(--muted);line-height:1.5}
+
+  .quote{
+    margin-top:26px;background:#EAF0FA;border-left:5px solid var(--blue-accent);
+    border-radius:0 14px 14px 0;padding:22px 26px;color:var(--navy-soft);font-size:14.5px
+  }
+  .quote i{font-style:italic;color:var(--navy)}
+  .quote strong{color:var(--ink);font-weight:700}
+
+  /* ---- PRICING ---- */
+  .plans{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:8px;flex:1;align-content:start}
+  .plan{
+    background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(22,35,60,.3);position:relative
+  }
+  .plan.featured{border:2px solid var(--navy);box-shadow:0 22px 44px -24px rgba(22,35,60,.5)}
+  .plan-photo{height:190px;overflow:hidden;position:relative;background:#ddd}
+  .plan-photo.sq{height:auto;aspect-ratio:1/1}
+  .plan-photo img{width:100%;height:100%;object-fit:cover}
+  .plan-body{padding:22px 24px 26px;display:flex;flex-direction:column;gap:4px;flex:1}
+  .tag{align-self:flex-start;font-size:10px;letter-spacing:.14em;font-weight:700;text-transform:uppercase;
+    padding:5px 11px;border-radius:999px;margin-bottom:8px}
+  .tag.basic{background:#F0ECE2;color:var(--navy-soft)}
+  .tag.premium{background:var(--navy);color:#fff}
+  .plan h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:24px;color:var(--navy)}
+  .price{font-family:'DM Serif Display',serif;font-size:40px;color:var(--ink);line-height:1.05;margin-top:2px}
+  .price small{display:block;font-family:'DM Sans';font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;font-weight:600;margin-top:4px}
+  .price.soft{font-size:30px;color:var(--navy-soft)}
+  .more{font-size:11px;letter-spacing:.1em;font-weight:700;text-transform:uppercase;color:var(--orange-dark);margin:14px 0 6px}
+  ul.feat{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:12px}
+  ul.feat li{position:relative;padding-left:22px;font-size:13.5px;color:var(--ink)}
+  ul.feat li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:12px}
+  ul.feat li b{font-weight:700}
+  .ribbon{position:absolute;top:14px;right:14px;background:var(--orange);color:#fff;
+    font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:6px 13px;
+    border-radius:999px;box-shadow:0 6px 16px -4px rgba(212,96,14,.6);z-index:3}
+  .proof{display:inline-flex;align-items:center;gap:9px;margin:14px 0 2px;
+    background:#EAF0FA;border:1px solid #D6E2F4;border-radius:999px;padding:9px 17px;font-size:13.5px;color:var(--navy-soft)}
+  .proof .star{color:var(--orange);font-size:13px}
+  .proof b{color:var(--navy);font-weight:700}
+  .proof--wide{display:flex;width:100%;justify-content:center;white-space:nowrap;margin:6px 0 2px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin:2px 0 4px;font-size:13.5px;color:var(--navy-soft);font-weight:500}
+  .meta span{display:inline-flex;align-items:center;gap:7px}
+  .meta b{color:var(--navy);font-weight:600}
+  .addon{display:flex;gap:14px;align-items:flex-start;margin-top:18px;background:#F0ECE2;border-radius:14px;padding:16px 20px}
+  .addon .plus{font-size:20px;line-height:1.2;color:var(--orange-dark)}
+  .addon h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);margin-bottom:3px}
+  .addon p{font-size:13px;color:var(--navy-soft)}
+  .addon b{color:var(--ink);font-weight:700}
+  .allin{align-self:flex-start;margin-top:14px;font-size:11px;font-weight:600;color:var(--navy-soft);
+    background:#EAF0FA;border-radius:999px;padding:6px 13px}
+  .allin::before{content:"✓ ";color:#2e7d52;font-weight:800}
+
+  /* ---- PIZZADA ---- */
+  .pizza-hero{display:grid;grid-template-columns:1fr 1.15fr;gap:30px;align-items:stretch;margin-top:4px;flex:1}
+  .pizza-photo{border-radius:16px;overflow:hidden;box-shadow:var(--shadow);min-height:230px}
+  .pizza-photo img{width:100%;height:100%;object-fit:cover}
+  .menu-box{background:var(--navy);color:#fff;border-radius:16px;padding:24px 26px}
+  .menu-box h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;margin-bottom:2px}
+  .menu-box .sub{font-size:11px;letter-spacing:.06em;color:#A9B6CC;margin-bottom:16px}
+  .menu-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 22px}
+  .menu-cols li{list-style:none;position:relative;padding-left:18px;font-size:13px;color:#E7ECF4;line-height:1.5}
+  .menu-cols li::before{content:"◆";position:absolute;left:0;color:var(--orange);font-size:9px;top:3px}
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+  .trio .infocard h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:15px;color:var(--navy);margin-bottom:5px}
+  .trio .infocard p{font-size:12px}
+  .note{margin-top:16px;background:#F0ECE2;border-radius:12px;padding:14px 18px;font-size:13px;color:var(--navy-soft)}
+  .note b{color:var(--ink)}
+
+  /* ---- HOW / CTA ---- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:6px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px}
+  .step .num{font-family:'DM Serif Display',serif;font-size:34px;color:var(--orange);line-height:1}
+  .step h3{font-size:15px;font-weight:700;color:var(--navy);margin:8px 0 6px}
+  .step p{font-size:12.5px;color:var(--muted)}
+  .cta{
+    margin-top:24px;background:var(--navy);color:#fff;border-radius:18px;padding:30px 34px;
+    background-image:radial-gradient(circle at 88% 20%,rgba(47,111,203,.28),transparent 45%)
+  }
+  .cta h2{color:#fff;font-size:30px}
+  .cta h2 em{color:var(--orange-light,#7FA4DC)}
+  .cta p{color:#C8D2E1;font-size:14px;margin-top:10px;max-width:60ch}
+  .cta-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;align-items:center}
+  .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#0b3d1e;font-weight:700;
+    text-decoration:none;padding:13px 22px;border-radius:999px;font-size:14.5px;box-shadow:0 10px 24px -12px rgba(37,211,102,.7)}
+  .contact-links{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#C8D2E1}
+  .contact-links a{color:#fff;text-decoration:none;font-weight:600}
+  .fineprint{margin-top:20px;font-size:11px;color:var(--muted);line-height:1.6;max-width:78ch}
+
+  .slide__foot{
+    display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);
+    letter-spacing:.04em;padding-top:22px;margin-top:auto;border-top:1px solid var(--line)
+  }
+
+  /* ---- print / toolbar ---- */
+  .toolbar{position:fixed;bottom:22px;right:22px;z-index:50;display:flex;gap:10px}
+  .toolbar button{
+    font-family:inherit;border:none;cursor:pointer;background:var(--navy);color:#fff;font-weight:600;
+    padding:12px 20px;border-radius:999px;font-size:13.5px;box-shadow:0 12px 30px -12px rgba(22,35,60,.6)
+  }
+  .toolbar button.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
+
+  @media (max-width:820px){
+    .slide{padding:34px 24px;min-height:auto}
+    .cover,.pizza-hero{grid-template-columns:1fr;gap:26px}
+    .grid3,.trio,.steps{grid-template-columns:1fr}
+    .plans{grid-template-columns:1fr}
+    .menu{grid-template-columns:1fr}
+    .menu-cols{grid-template-columns:1fr}
+    h1{font-size:38px}h2{font-size:30px}
+    .slide__head{flex-direction:column;align-items:flex-start}
+    .head-right{align-items:flex-start;text-align:left}
+  }
+
+  @media print{
+    body{background:#fff;padding:0}
+    .toolbar{display:none}
+    .deck{gap:0;max-width:none}
+    .slide{
+      box-shadow:none;border-radius:0;
+      width:210mm;height:297mm;min-height:0;overflow:hidden;
+      padding:12mm 15mm;
+      page-break-after:always;break-after:page;page-break-inside:avoid
+    }
+    .slide:last-child{page-break-after:auto}
+    /* força layout desktop (A4 ≈ 794px cairia no breakpoint mobile) */
+    .slide__head{flex-direction:row;align-items:center;margin-bottom:6mm;padding-bottom:4mm}
+    .head-right{align-items:flex-end;text-align:right}
+    .cover,.pizza-hero{grid-template-columns:1fr 1fr}
+    .grid3,.trio,.steps{grid-template-columns:repeat(3,1fr)}
+    .plans{grid-template-columns:1fr 1fr}
+    .menu-cols{grid-template-columns:1fr 1fr}
+    .menu{grid-template-columns:repeat(3,1fr);gap:13px}
+    .exp-photo{height:120px}
+    .exp-body{padding:10px 13px 12px}
+    .exp h3{font-size:15.5px}
+    .exp p{font-size:10.5px;margin-top:4px;line-height:1.35}
+    .opts{grid-template-columns:repeat(4,1fr)}
+    .confbox{grid-template-columns:1.05fr 1fr}
+    h1{font-size:44px}h2{font-size:34px}
+    /* leve compactação pra tudo caber em 1 página */
+    .rule{margin:3mm 0}
+    .lead{margin-top:3mm}
+    .plans,.grid3,.steps,.trio,.pizza-hero{margin-top:2mm}
+    .cover-photo{aspect-ratio:4/4}
+    .plan-photo{height:150px}
+    /* fotos quadradas: cap leve de altura pra caber com rodapé no A4 */
+    .plan-photo.sq{aspect-ratio:auto;height:285px}
+    .plan-body{padding:16px 22px 18px}
+    ul.feat{gap:7px;margin-top:9px}
+    .chips{margin:10px 0 !important}
+    .pizza-photo{min-height:180px}
+    @page{size:A4 portrait;margin:0}
+  }
+
+  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px}
+  .exp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
+  .exp-photo{height:150px;overflow:hidden;background:#eee}
+  .exp-photo img{width:100%;height:100%;object-fit:cover}
+  .exp-body{padding:13px 16px 16px}
+  .exp .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:5px}
+  .exp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.08}
+  .exp p{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.42}
+  /* plano rows (horizontais, legíveis) */
+  .prows{margin-top:12px;display:flex;flex-direction:column;gap:14px}
+  .prow{display:flex;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 30px -24px rgba(0,0,0,.3)}
+  .prow.hl{border:2px solid var(--navy)}
+  .prow .pl{width:33%;padding:20px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:7px}
+  .prow.hl .pl{background:#EDF3FC}
+  .prow .pr{flex:1;padding:20px 26px;display:flex;flex-direction:column;justify-content:center}
+  .prow h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:23px;color:var(--navy);line-height:1}
+  .prow .pc{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy-soft)}
+  .prow .pc small{font-family:'DM Sans';font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-left:6px}
+  .prow .mlab{font-size:10px;letter-spacing:.1em;font-weight:700;text-transform:uppercase;color:var(--orange-dark);margin-bottom:9px}
+  .prow ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:9px 22px}
+  .prow ul li{position:relative;padding-left:20px;font-size:13px;color:var(--ink);line-height:1.3}
+  .prow ul li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:11px}
+  .prow ul li b{font-weight:700}
+  /* ícones (svg) no lugar de emoji */
+  .infocard .ico svg{width:30px;height:30px;display:block}
+  /* tabela de investimento (2 coleções x 3 níveis) */
+  .itable{width:100%;border-collapse:collapse;margin-top:16px;font-family:'DM Sans'}
+  .itable th,.itable td{padding:15px 12px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+  .itable thead th{font-size:12px;color:var(--navy);font-weight:700;border-bottom:2px solid var(--navy);text-transform:uppercase;letter-spacing:.04em}
+  .itable thead th span{display:block;font-size:9.5px;font-weight:500;color:var(--muted);letter-spacing:.01em;margin-top:4px;text-transform:none}
+  .itable td.rl{text-align:left;width:36%}
+  .itable td.rl b{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy)}
+  .itable td.rl span{display:block;font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  .itable .val{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy);line-height:1}
+  .itable .hl{background:#E8EFFB}
+  .itable thead th.hl{color:var(--orange-dark)}
+  .itable tbody tr:last-child td{border-bottom:none}
+  .itable thead th.hl{position:relative}
+  .itable .pill{display:inline-block;background:var(--navy);color:#fff;font-size:8px;letter-spacing:.08em;padding:3px 9px;border-radius:999px;margin-bottom:7px;font-weight:700;text-transform:uppercase}
+  /* espaço exclusivo — fotos quadradas */
+  .spaces{display:flex;gap:26px;justify-content:center;margin-top:20px}
+  .space{width:330px;max-width:42%;margin:0}
+  .space .sq{aspect-ratio:1/1;border-radius:16px;overflow:hidden;box-shadow:0 22px 46px -26px rgba(0,0,0,.42)}
+  .space .sq img{width:100%;height:100%;object-fit:cover;display:block}
+  .space figcaption{margin-top:13px;text-align:center;font-family:'DM Serif Display',serif;font-size:15.5px;color:var(--navy)}
+  /* logo co-brand na capa */
+  .cllogo{height:29px;width:auto;display:block;margin:3px 0 1px}
+  .cbbrand{display:block;font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);line-height:1;margin:3px 0 2px}
+  .cbsub{font-size:8.5px;letter-spacing:.28em;color:var(--navy-soft);font-weight:500;text-transform:uppercase}
+  /* opções de objeto (7) */
+  .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:16px}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px;box-shadow:0 12px 26px -22px rgba(0,0,0,.3)}
+  .opt svg{width:34px;height:34px;stroke:var(--orange);fill:none;stroke-width:1.5}
+  .opt h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:15.5px;color:var(--navy);line-height:1.05}
+  /* pacote confirmado */
+  .confbox{margin-top:16px;display:grid;grid-template-columns:1.05fr 1fr;gap:16px}
+  .confbox .big{background:var(--navy);color:#fff;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;justify-content:center}
+  .confbox .big .lab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#7FA4DC;margin-bottom:8px}
+  .confbox .big .val{font-family:'DM Serif Display',serif;font-size:52px;line-height:.95}
+  .confbox .big .per{font-size:12.5px;color:#C7D4EC;margin-top:8px}
+  .confbox .inc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px}
+  .confbox .inc h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin-bottom:12px}
+  .confbox .inc ul{list-style:none;padding:0;margin:0}
+  .confbox .inc li{position:relative;padding-left:23px;font-size:12.5px;color:var(--navy);line-height:1.4;margin-bottom:10px}
+  .confbox .inc li:before{content:"✓";position:absolute;left:0;top:0;color:var(--orange);font-weight:700}
+  .confbox .inc li b{font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right">
+        <span class="kicker">Experiência corporativa confirmada para</span>
+        <img class="cllogo" src="assets/samsunglogo.png" alt="Samsung"><span class="cbsub">time de Design · pintura em vidro</span>
+      </div>
+    </div>
+    <div class="cover">
+      <div>
+        <span class="eyebrow">✦ Confirmação da experiência · Pintura em Vidro</span>
+        <h1>Está tudo<br><em>pronto</em></h1>
+        <p class="lead">O encontro do time de Design da Samsung está fechado: uma <strong>experiência de pintura em vidro</strong> no Bake Studio, com espaço exclusivo, coffee break e foto profissional. Cada um pinta o próprio objeto e leva pra casa. 🎨</p>
+        <div class="rule"></div>
+        <div class="chips">
+          <span class="chip"><b>10 pessoas</b></span>
+          <span class="chip"><b>28</b> de agosto · tarde</span>
+          <span class="chip"><b>Bake Studio</b> · exclusivo</span>
+        </div>
+      </div>
+      <div class="cover-photo">
+        <img src="assets/pinturatacaa.jpg" alt="Taças de vidro pintadas à mão com desenhos delicados" style="object-position:center 45%">
+      </div>
+    </div>
+    <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência confirmada · Samsung</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">O menu</span></div>
+    </div>
+    <span class="eyebrow orange">◆ A experiência confirmada</span>
+    <h2>Pintura em <em>Vidro</em></h2>
+    <p class="lead">Com tintas próprias pra vidro, cada pessoa pinta à mão o próprio objeto — do desenho livre ao mais delicado — e leva pra casa uma peça única. Um chef da arte conduz tudo, sem precisar de talento nenhum. 🎨</p>
+    <div class="rule"></div>
+    <div class="menu">
+      <div class="exp"><div class="exp-photo"><img src="assets/pinturatacaa.jpg" alt="Taças pintadas à mão com folhas douradas" style="object-position:center 50%"></div><div class="exp-body"><span class="n">Inspiração</span><h3>Traços &amp; folhas</h3><p>Desenhos delicados em dourado e cor — cada peça com a assinatura de quem pintou.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/pinturatacavinho.jpg" alt="Taça pintada à mão com tulipas coloridas" style="object-position:center 45%"></div><div class="exp-body"><span class="n">Inspiração</span><h3>Flores &amp; cores</h3><p>De tulipas a padrões livres — a arte fica com a cara de cada um.</p></div></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/xicarapintada.jpg" alt="Xícaras pintadas à mão com listras coloridas" style="object-position:center 50%"></div><div class="exp-body"><span class="n">Inspiração</span><h3>Listras &amp; padrões</h3><p>Cores vibrantes e traços soltos — não tem certo nem errado.</p></div></div>
+    </div>
+    <div class="note" style="margin-top:14px">◆ Estas são <b>inspirações</b> — na hora, cada um pinta o próprio objeto, do jeitinho dele, e leva pra casa de recordação. 🎨</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Escolham o objeto</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Sete objetos pra pintar</span>
+    <h2>Cada um escolhe o <em>seu</em></h2>
+    <p class="lead">No dia, cada pessoa do time escolhe qual objeto de vidro quer pintar e levar pra casa. São sete opções — do brinde do dia a dia à peça de decoração:</p>
+    <div class="opts">
+      <div class="opt"><svg viewBox="0 0 24 24"><path d="M7 3h10l-1 7a4 4 0 0 1-8 0z"/><path d="M12 17v4"/><path d="M8 21h8"/></svg><h4>Taça</h4></div>
+      <div class="opt"><svg viewBox="0 0 24 24"><path d="M5 8h12v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 5h-2"/></svg><h4>Xícara</h4></div>
+      <div class="opt"><svg viewBox="0 0 24 24"><path d="M7 4h10l-1 15a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg><h4>Copo</h4></div>
+      <div class="opt"><svg viewBox="0 0 24 24"><path d="M8 3h8l-.6 16a2 2 0 0 1-2 2h-2.8a2 2 0 0 1-2-2z"/><path d="M8.4 8h7.2"/></svg><h4>Copo de cerveja</h4></div>
+      <div class="opt"><svg viewBox="0 0 24 24"><path d="M9 3h6l-1 4c3 2 4 5 4 8a6 6 0 0 1-12 0c0-3 1-6 4-8z"/></svg><h4>Vaso</h4></div>
+      <div class="opt"><svg viewBox="0 0 24 24"><path d="M8 3h6v3l3 3v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9l2-2z"/><path d="M14 6h3"/></svg><h4>Jarra</h4></div>
+      <div class="opt"><svg viewBox="0 0 24 24"><path d="M9 3h6v2l-1 2c3 1 5 4 5 8a7 7 0 0 1-14 0c0-4 2-7 5-8L9 5z"/></svg><h4>Moringa</h4></div>
+      <div class="opt" style="background:#EDF3FC;border-color:var(--orange)"><svg viewBox="0 0 24 24" style="stroke:var(--orange)"><path d="M12 3l2.2 5.6L20 9.2l-4 3.9 1 5.9-5-2.9-5 2.9 1-5.9-4-3.9 5.8-.6z"/></svg><h4>É só escolher!</h4></div>
+    </div>
+    <div class="note" style="margin-top:14px">◆ Cada convidado escolhe o objeto favorito na hora e pinta do jeitinho dele — todos inclusos no valor, sem custo extra por tipo. 🎨</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Escolham o objeto</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">O Bake Studio · exclusivo</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Fora do escritório, só de vocês</span>
+    <h2>O <em>Bake Studio</em></h2>
+    <p class="lead">Um estúdio lindo e <strong>totalmente reservado pro time</strong> — lounge acolhedor e cozinha equipada. O cenário perfeito pra sair da rotina, criar e relaxar juntos, com espaço pra um <strong>coffee break</strong> só de vocês.</p>
+    <div class="rule"></div>
+    <div class="spaces">
+      <figure class="space"><div class="sq"><img src="assets/espaco1.jpg" alt="Lounge do Bake Studio, espaço exclusivo" style="object-position:center 55%"></div><figcaption>Lounge acolhedor</figcaption></figure>
+      <figure class="space"><div class="sq"><img src="assets/espa%C3%A7o2.jpg" alt="Cozinha equipada do Bake Studio"></div><figcaption>Cozinha equipada · coffee break</figcaption></figure>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O Bake Studio · exclusivo</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Investimento</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O pacote fechado</span>
+    <h2>O que está <em>incluso</em></h2>
+    <p class="lead">O time escolheu o formato <strong>Bake Studio</strong> — o pacote completo, com espaço exclusivo, coffee break e foto profissional. Tudo por um valor por pessoa. 🎨</p>
+    <div class="rule"></div>
+    <div class="confbox">
+      <div class="big">
+        <span class="lab">Por pessoa</span>
+        <span class="val">R$ 279</span>
+        <span class="per">para 10 pessoas · total R$ 2.790</span>
+      </div>
+      <div class="inc">
+        <h4>Tudo já incluso</h4>
+        <ul>
+          <li>A experiência de <b>pintura em vidro</b> (objeto à escolha)</li>
+          <li><b>Bake Studio</b> exclusivo — cozinha &amp; sala só de vocês</li>
+          <li><b>Coffee break</b> incluso</li>
+          <li><b>Foto profissional</b> do encontro</li>
+          <li>Todo o <b>material, condução e estrutura</b></li>
+        </ul>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px">◆ Valor <b>por pessoa</b>, com tudo incluso. Para 10 pessoas, o pacote fecha em <b>R$ 2.790</b> — no Bake Studio, espaço exclusivo, com coffee break e foto profissional. 🎨</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O pacote confirmado</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Como funciona &amp; contato</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Está tudo alinhado</span>
+    <h2>Próximos <em>passos</em></h2>
+    <p class="lead">O que ficou definido pro encontro do time de Design da Samsung — é só chegar e criar. A Elarah cuida de todo o resto:</p>
+    <div class="rule"></div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3>A experiência</h3><p>Pintura em vidro — cada um escolhe o objeto (taça, xícara, copo, vaso e mais) e leva pra casa.</p></div>
+      <div class="step"><div class="num">2</div><h3>O espaço</h3><p>No Bake Studio, exclusivo pro time — com coffee break e foto profissional inclusos.</p></div>
+      <div class="step"><div class="num">3</div><h3>É só chegar</h3><p>Um profissional conduz tudo, com material e estrutura prontos. Vocês só criam e se conectam. 🎨</p></div>
+    </div>
+    <div class="addon">
+      <span class="plus">+</span>
+      <div>
+        <h4>Momento da empresa</h4>
+        <p>Reservem <b>+1h no mesmo encontro</b> pra fala, brinde e agradecimento do time — a tarde toda, sem correria. <b>Sem custo adicional: é por nossa conta.</b></p>
+      </div>
+    </div>
+    <div class="cta">
+      <h2>Bora deixar tudo <em>redondo?</em> ✦</h2>
+      <p>Me confirma a data (28 de agosto) e o número final de convidados, que a gente reserva o Bake Studio e fecha cada detalhe.</p>
+      <div class="cta-actions">
+        <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Sobre%20a%20experi%C3%AAncia%20de%20pintura%20em%20vidro%20da%20Samsung%2C%20quero%20fechar%20os%20detalhes." target="_blank" rel="noopener">
+          💬 Falar no WhatsApp
+        </a>
+        <div class="contact-links">
+          <span>+55 (11) 91445-5930</span>
+          <a href="https://instagram.com/elarah.oficial" target="_blank" rel="noopener">@elarah.oficial</a>
+          <a href="https://elarah.com.br" target="_blank" rel="noopener">elarah.com.br</a>
+        </div>
+      </div>
+    </div>
+    <p class="fineprint">Apresentação final da experiência corporativa da Elarah para o time de Design da Samsung, para 10 participantes, no dia 28 de agosto (período da tarde). Experiência confirmada: pintura em vidro, com cada convidado escolhendo o objeto a pintar (taça, xícara, copo, copo de cerveja, vaso, jarra ou moringa) e levando a peça pra casa. Formato Bake Studio: espaço exclusivo (cozinha e sala) só do time, com coffee break e foto profissional inclusos, a R$ 279 por pessoa — total de R$ 2.790 para 10 pessoas. Valor por pessoa, com material, condução e estrutura inclusos. Inclui +1h para o momento da empresa, sem custo adicional. Sujeito à confirmação da data (28 de agosto) e disponibilidade de agenda.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência confirmada · Samsung · 2026</span></div>
+  </section>
+
+</div>
+
+<div class="toolbar">
+  <button class="ghost" onclick="window.print()">⬇ Salvar / Imprimir PDF</button>
+</div>
+
+</body>
+</html>
