@@ -243,6 +243,10 @@
     ul.feat{gap:7px;margin-top:9px}
     .chips{margin:10px 0 !important}
     .pizza-photo{min-height:180px}
+    /* PDF: sombras borradas viram bloco cinza em alguns leitores (iOS Preview) —
+       neutraliza a sombra e usa borda sutil pra manter a definição dos cards/fotos */
+    .slide *{box-shadow:none !important}
+    .cover-photo,.plan-photo,.pizza-photo,.space .sq,.exp-photo,.bfeat-photo{border:1px solid rgba(22,35,60,.12)}
     @page{size:A4 portrait;margin:0}
   }
 
