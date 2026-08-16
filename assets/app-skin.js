@@ -59,11 +59,12 @@
     'sabonete': '🧼', 'sabonetes': '🧼',
     'tufting': '🧵', 'bordado': '🪡', 'costura': '🧵', 'crochê': '🧶', 'croche': '🧶', 'tricô': '🧶', 'trico': '🧶',
     'vela': '🕯️', 'velas': '🕯️',
-    // "Cultural" é a vitrine de cultura brasileira -> bandeira do Brasil.
+    // "Cultural" usa o globo das Américas em vez da bandeira: bandeira é par
+    // de indicadores regionais e o Windows não desenha — vira a sigla "BR".
     // A máscara de teatro passou pra categoria "Teatral".
-    'cultural': '🇧🇷',
+    'cultural': '🌎',
     'teatral': '🎭', 'teatro': '🎭',
-    'cultura': '🇧🇷', 'música': '🎵', 'musica': '🎵', 'dança': '💃', 'danca': '💃',
+    'cultura': '🌎', 'música': '🎵', 'musica': '🎵', 'dança': '💃', 'danca': '💃',
     // Emojis base, SEM modificador de tom de pele e sem sequência ZWJ:
     // as compostas (ex.: 🧑🏻‍🩰) desmontam em Android/iOS antigos.
     'aromaterapia': '👃', 'aromaterapêutico': '👃', 'aromaterapeutico': '👃',
