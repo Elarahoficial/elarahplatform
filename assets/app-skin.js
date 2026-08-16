@@ -64,7 +64,9 @@
     'cultural': '🇧🇷',
     'teatral': '🎭', 'teatro': '🎭',
     'cultura': '🇧🇷', 'música': '🎵', 'musica': '🎵', 'dança': '💃', 'danca': '💃',
-    'aromaterapia': '💧', 'aromaterapêutico': '💧', 'aromaterapeutico': '💧',
+    // Emojis base, SEM modificador de tom de pele e sem sequência ZWJ:
+    // as compostas (ex.: 🧑🏻‍🩰) desmontam em Android/iOS antigos.
+    'aromaterapia': '👃', 'aromaterapêutico': '👃', 'aromaterapeutico': '👃',
     // 'corporativo' vem ANTES de 'corpo' porque o fallback por trecho do nome
     // pega a primeira chave contida — sem isso, "Corporativo" viraria 🧖.
     'corporativo': '💼',
