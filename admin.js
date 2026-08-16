@@ -8199,14 +8199,17 @@
     }
   }
 
-  // Diálogo de Duplicar: pergunta o nome da cópia e o que vem junto
-  // (variações, turmas/horários manuais, aulas regulares). Resolve com
-  // as opções escolhidas ou null se a admin cancelar.
+  // Diálogo de Duplicar: pergunta o nome da cópia e uma coisa só —
+  // copiar TUDO ou copiar SEM as aulas regulares (recorrência).
+  // Resolve com as opções escolhidas ou null se a admin cancelar.
   //
   // Existe porque o caso real é "duplicar uma turma igualzinha — mesmo
   // dia, mesmo horário, mesmas variações — só mudando o nome". Antes,
   // Duplicar copiava só a linha da experiência: horários e recorrência
   // ficavam pra trás e tinham que ser recadastrados na mão.
+  //
+  // Variações e turmas fixas vão SEMPRE junto: os dois caminhos só
+  // diferem na recorrência.
   function _expDuplicatePrompt(exp, stats) {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
@@ -8214,41 +8217,40 @@
         'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;' +
         'display:flex;align-items:center;justify-content:center;padding:16px;';
 
-      const linha = (id, label, hint, checked, disabled) =>
-        '<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid ' +
-        (disabled ? '#eee' : '#e6d8c8') + ';border-radius:8px;background:' +
-        (disabled ? '#fafafa' : '#fffaf2') + ';cursor:' + (disabled ? 'default' : 'pointer') + ';opacity:' +
-        (disabled ? '.55' : '1') + ';">' +
-        '<input type="checkbox" id="' + id + '"' + (checked ? ' checked' : '') +
-        (disabled ? ' disabled' : '') + ' style="margin-top:3px;cursor:inherit;">' +
-        '<span><strong style="font-size:.9rem;color:#1a1a1a;">' + label + '</strong>' +
-        '<br><span style="font-size:.78rem;color:#777;">' + hint + '</span></span></label>';
+      // Resumo do que vem junto nos dois caminhos.
+      const juntos = [];
+      if (stats.variacoes) juntos.push(stats.variacoes + ' variação(ões)');
+      if (stats.slotsManuais) juntos.push(stats.slotsManuais + ' turma(s) com data/horário');
+      const resumo = juntos.length
+        ? 'Vem junto nos dois casos: ' + juntos.join(' e ') + '.'
+        : 'Todos os dados da experiência vêm junto nos dois casos.';
+
+      const opcao = (id, cor, titulo, hint) =>
+        '<button type="button" id="' + id + '" style="display:block;width:100%;text-align:left;padding:14px 16px;' +
+        'background:#fff;border:2px solid ' + cor + ';border-radius:10px;cursor:pointer;font-family:inherit;">' +
+        '<strong style="font-size:.95rem;color:' + cor + ';">' + titulo + '</strong>' +
+        '<br><span style="font-size:.8rem;color:#777;">' + hint + '</span></button>';
 
       overlay.innerHTML =
         '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);">' +
           '<h3 style="margin:0 0 4px;font-size:1.15rem;color:#1a1a1a;">Duplicar experiência</h3>' +
-          '<p style="margin:0 0 16px;font-size:.85rem;color:#777;">Cópia de <strong>' + escapeHtml(exp.nome || '(sem nome)') + '</strong>. Tudo que vier junto continua 100% editável na cópia.</p>' +
-          '<label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:16px;">Nome da cópia' +
+          '<p style="margin:0 0 16px;font-size:.85rem;color:#777;">Cópia de <strong>' + escapeHtml(exp.nome || '(sem nome)') + '</strong>. Tudo continua 100% editável na cópia.</p>' +
+          '<label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:18px;">Nome da cópia' +
             // valor setado por JS (nome pode ter aspas e quebraria o atributo)
             '<input type="text" id="dup-nome" style="display:block;margin-top:5px;width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-family:inherit;font-size:.95rem;">' +
           '</label>' +
-          '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">' +
-            linha('dup-variacoes', 'Variações',
-              stats.variacoes ? stats.variacoes + ' variação(ões) — nome, preço e foto de cada uma' : 'Esta experiência não tem variações',
-              stats.variacoes > 0, stats.variacoes === 0) +
-            linha('dup-horarios', 'Datas e horários fixos',
-              stats.slotsManuais ? stats.slotsManuais + ' turma(s) manual(is) — mesma data, mesmo horário e mesmas vagas' : 'Esta experiência não tem turmas manuais',
-              stats.slotsManuais > 0, stats.slotsManuais === 0) +
-            linha('dup-recorrencia', 'Aulas regulares (recorrência semanal)',
-              stats.regrasRecorrencia ? stats.regrasRecorrencia + ' regra(s) — as próximas semanas são geradas automaticamente na cópia' : 'Esta experiência não tem aulas regulares',
-              stats.regrasRecorrencia > 0, stats.regrasRecorrencia === 0) +
-            linha('dup-visivel', 'Já visível no site',
-              'Desmarque pra criar a cópia oculta e revisar antes de publicar',
-              exp.isActive !== false, false) +
+          '<p style="margin:0 0 10px;font-size:.85rem;font-weight:600;color:#444;">Copiar as aulas regulares (recorrência semanal)?</p>' +
+          '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">' +
+            opcao('dup-tudo', '#f0a05e', 'Copiar tudo',
+              stats.regrasRecorrencia
+                ? 'Inclui ' + stats.regrasRecorrencia + ' regra(s) de aula regular — as próximas semanas são geradas automaticamente na cópia.'
+                : 'Esta experiência não tem aulas regulares cadastradas.') +
+            opcao('dup-sem-rec', '#888', 'Copiar sem a recorrência',
+              'A cópia nasce sem aulas regulares — você cadastra a recorrência do jeito que quiser depois.') +
           '</div>' +
-          '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">' +
+          '<p style="margin:0 0 16px;font-size:.78rem;color:#999;">' + resumo + '</p>' +
+          '<div style="display:flex;justify-content:flex-end;">' +
             '<button type="button" id="dup-cancel" style="padding:10px 18px;background:#fff;border:1px solid #ddd;color:#666;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;">Cancelar</button>' +
-            '<button type="button" id="dup-ok" style="padding:10px 18px;background:#f0a05e;border:none;color:#fff;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">Duplicar</button>' +
           '</div>' +
         '</div>';
 
@@ -8265,27 +8267,26 @@
         document.removeEventListener('keydown', onKey);
         resolve(value);
       };
-      const confirmar = () => {
-        const chk = (id) => {
-          const el = overlay.querySelector('#' + id);
-          return !!(el && el.checked && !el.disabled);
-        };
+      // comRecorrencia = false → cópia sem as regras de aula regular.
+      // Variações, turmas fixas e visibilidade seguem iguais à original.
+      const confirmar = (comRecorrencia) => {
         finish({
           nome: (nomeEl && nomeEl.value.trim()) || '',
-          variacoes: chk('dup-variacoes'),
-          horarios: chk('dup-horarios'),
-          recorrencia: chk('dup-recorrencia'),
-          isActive: chk('dup-visivel'),
+          variacoes: true,
+          horarios: true,
+          recorrencia: !!comRecorrencia,
         });
       };
       function onKey(e) {
         if (e.key === 'Escape') finish(null);
-        else if (e.key === 'Enter' && e.target === nomeEl) { e.preventDefault(); confirmar(); }
+        // Enter no nome = caminho principal (copiar tudo).
+        else if (e.key === 'Enter' && e.target === nomeEl) { e.preventDefault(); confirmar(true); }
       }
       document.addEventListener('keydown', onKey);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(null); });
       overlay.querySelector('#dup-cancel').addEventListener('click', () => finish(null));
-      overlay.querySelector('#dup-ok').addEventListener('click', confirmar);
+      overlay.querySelector('#dup-tudo').addEventListener('click', () => confirmar(true));
+      overlay.querySelector('#dup-sem-rec').addEventListener('click', () => confirmar(false));
     });
   }
 
