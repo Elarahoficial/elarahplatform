@@ -59,7 +59,16 @@
     'sabonete': '🧼', 'sabonetes': '🧼',
     'tufting': '🧵', 'bordado': '🪡', 'costura': '🧵', 'crochê': '🧶', 'croche': '🧶', 'tricô': '🧶', 'trico': '🧶',
     'vela': '🕯️', 'velas': '🕯️',
-    'cultura': '🎭', 'teatro': '🎭', 'música': '🎵', 'musica': '🎵', 'dança': '💃', 'danca': '💃',
+    // "Cultural" é a vitrine de cultura brasileira -> bandeira do Brasil.
+    // A máscara de teatro passou pra categoria "Teatral".
+    'cultural': '🇧🇷',
+    'teatral': '🎭', 'teatro': '🎭',
+    'cultura': '🇧🇷', 'música': '🎵', 'musica': '🎵', 'dança': '💃', 'danca': '💃',
+    'aromaterapia': '💧', 'aromaterapêutico': '💧', 'aromaterapeutico': '💧',
+    // 'corporativo' vem ANTES de 'corpo' porque o fallback por trecho do nome
+    // pega a primeira chave contida — sem isso, "Corporativo" viraria 🧖.
+    'corporativo': '💼',
+    'corpo': '🧖', 'corporal': '🧖',
     'fotografia': '📷', 'foto': '📷',
     'marcenaria': '🪵', 'madeira': '🪵',
     'jardinagem': '🌿', 'plantas': '🌿', 'bem-estar': '🌿', 'yoga': '🧘', 'meditação': '🧘',
