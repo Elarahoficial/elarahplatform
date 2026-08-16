@@ -1099,14 +1099,183 @@
     return true;
   }
 
-  async function duplicateExperience(id) {
+  // Conta o que existe "pendurado" numa experiência (fora da linha da
+  // tabela experiences): turmas manuais e regras de recorrência. O
+  // admin usa isso pra montar o diálogo de Duplicar mostrando quantos
+  // itens vêm junto em cada opção.
+  async function getExperienceCopyStats(id) {
+    const out = { slotsManuais: 0, regrasRecorrencia: 0, variacoes: 0 };
+    const s = sb();
+    if (!s || !id) return out;
+    try {
+      const exp = await getExperienceById(id);
+      if (exp) {
+        out.variacoes = Array.isArray(exp.variantItems) && exp.variantItems.length
+          ? exp.variantItems.length
+          : (Array.isArray(exp.variantOptions) ? exp.variantOptions.length : 0);
+      }
+    } catch (e) { /* segue com 0 */ }
+    try {
+      const { count } = await s
+        .from(SLOTS_TABLE)
+        .select('id', { count: 'exact', head: true })
+        .eq('experience_id', id)
+        .is('recurrence_rule_id', null);
+      out.slotsManuais = count || 0;
+    } catch (e) { /* tabela ausente → 0 */ }
+    try {
+      const { count } = await s
+        .from(RECURRENCE_TABLE)
+        .select('id', { count: 'exact', head: true })
+        .eq('experience_id', id);
+      out.regrasRecorrencia = count || 0;
+    } catch (e) { /* tabela ausente → 0 */ }
+    return out;
+  }
+
+  // Copia as turmas MANUAIS (recurrence_rule_id IS NULL) de uma
+  // experiência pra outra. Slots de recorrência não são copiados aqui:
+  // eles nascem da regra copiada (a trigger SQL materializa sozinha) —
+  // copiar os dois lados duplicaria as datas.
+  // As vagas restantes da cópia voltam pro total (a cópia é uma turma
+  // nova, sem as reservas da original).
+  async function copyManualSlots(fromId, toId) {
+    const s = sb();
+    if (!s || !fromId || !toId) return 0;
+    const { data, error } = await s
+      .from(SLOTS_TABLE)
+      .select('*')
+      .eq('experience_id', fromId)
+      .is('recurrence_rule_id', null);
+    if (error) {
+      console.warn('[Elarah] copyManualSlots: leitura falhou —', error.message);
+      return 0;
+    }
+    const rows = (data || []).map(function (r) {
+      const total = r.vagas_total != null ? Number(r.vagas_total) : null;
+      return {
+        experience_id: toId,
+        data: r.data || null,
+        horario: r.horario || '',
+        vagas_total: total,
+        vagas_restantes: total,
+        event_at: r.event_at || null,
+        is_active: r.is_active !== false,
+      };
+    });
+    if (!rows.length) return 0;
+    const { error: insErr } = await s.from(SLOTS_TABLE).insert(rows);
+    if (insErr) {
+      console.warn('[Elarah] copyManualSlots: insert falhou —', insErr.message);
+      return 0;
+    }
+    invalidateSlotsCache();
+    return rows.length;
+  }
+
+  // Copia as regras de recorrência (aulas regulares) de uma experiência
+  // pra outra. A trigger SQL materialize_recurrence_after_change gera os
+  // slots das próximas semanas automaticamente depois do INSERT.
+  // Tolera o schema antigo (coluna `weekday` singular) — ver
+  // sql/elarah_experience_recurrence_multi_weekdays.sql.
+  async function copyRecurrenceRules(fromId, toId) {
+    const s = sb();
+    if (!s || !fromId || !toId) return 0;
+    const { data, error } = await s
+      .from(RECURRENCE_TABLE)
+      .select('*')
+      .eq('experience_id', fromId);
+    if (error) {
+      console.warn('[Elarah] copyRecurrenceRules: leitura falhou —', error.message);
+      return 0;
+    }
+    const rules = data || [];
+    if (!rules.length) return 0;
+
+    let created = 0;
+    for (const r of rules) {
+      const payload = {
+        experience_id: toId,
+        hora_inicio: r.hora_inicio,
+        hora_fim: r.hora_fim || null,
+        horario_label: r.horario_label,
+        vagas_total: r.vagas_total,
+        horizon_weeks: r.horizon_weeks,
+        is_active: r.is_active !== false,
+      };
+      if (Array.isArray(r.weekdays)) payload.weekdays = r.weekdays;
+      if (r.weekday != null) payload.weekday = r.weekday;
+      // Insere uma a uma: se uma regra falhar, as outras ainda entram.
+      const { error: insErr } = await s.from(RECURRENCE_TABLE).insert(payload);
+      if (insErr) {
+        console.warn('[Elarah] copyRecurrenceRules: regra não copiada —', insErr.message);
+        continue;
+      }
+      created += 1;
+    }
+    if (created) invalidateSlotsCache();
+    return created;
+  }
+
+  // Duplica uma experiência INTEIRA. Por padrão copia tudo — dados da
+  // experiência, variações, turmas manuais e regras de recorrência —
+  // e a cópia é 100% editável (é uma experiência nova, com id próprio).
+  //
+  // options (todas opcionais):
+  //   nome        → nome da cópia (default: "<nome> (cópia)")
+  //   variacoes   → false pra criar sem as variações
+  //   horarios    → false pra criar sem as turmas/horários manuais
+  //   recorrencia → false pra criar sem as regras de aula regular
+  //   isActive    → false pra criar oculta do site
+  //
+  // Retorna a experiência criada com um relatório em `_copyReport`
+  // ({ slots, regras }) pra UI mostrar o que veio junto.
+  async function duplicateExperience(id, options) {
+    const opts = options || {};
     const src = await getExperienceById(id);
     if (!src) return null;
+
     const copy = { ...src };
     delete copy.id;
     delete copy.createdAt;
     delete copy.updatedAt;
-    return addExperience(copy);
+
+    const nome = typeof opts.nome === 'string' ? opts.nome.trim() : '';
+    if (nome) copy.nome = nome;
+    if (opts.variacoes === false) {
+      copy.variantItems = [];
+      copy.variantOptions = [];
+      copy.variantLabel = '';
+    }
+    if (opts.horarios === false) {
+      copy.horarios = [];
+      copy.horario = '';
+    }
+    if (opts.isActive === false) copy.isActive = false;
+
+    const created = await addExperience(copy);
+    if (!created) return null;
+
+    const report = { slots: 0, regras: 0 };
+    if (opts.horarios !== false) {
+      try {
+        report.slots = await copyManualSlots(id, created.id);
+      } catch (e) {
+        console.warn('[Elarah] duplicateExperience: cópia de turmas falhou —', e && e.message);
+      }
+    }
+    if (opts.recorrencia !== false) {
+      try {
+        report.regras = await copyRecurrenceRules(id, created.id);
+      } catch (e) {
+        console.warn('[Elarah] duplicateExperience: cópia de recorrência falhou —', e && e.message);
+      }
+    }
+
+    invalidateCache();
+    invalidateSlotsCache();
+    created._copyReport = report;
+    return created;
   }
 
   // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
@@ -1191,6 +1360,9 @@
   // Se a tabela não existir (migration não rodou), retorna vazio sem erro.
 
   const SLOTS_TABLE = 'experience_slots';
+  // Regras de aula regular (recorrência semanal) — ver
+  // sql/elarah_experience_recurrence_rules.sql.
+  const RECURRENCE_TABLE = 'experience_recurrence_rules';
   let slotsCache = null;    // Map<experienceId, slotObj[]>
   let slotsCachePromise = null;
 
@@ -1582,6 +1754,7 @@
     updateExperience,
     deleteExperience,
     duplicateExperience,
+    getExperienceCopyStats,
     setExperienceActive,
     reorderExperiences,
     ordemKey,
