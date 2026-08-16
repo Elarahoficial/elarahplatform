@@ -57,3 +57,8 @@ verify_jwt = false
 # Disparável por SQL/pg_net (segredo) ou admin; autentica por dentro.
 [functions.whatsapp-lembrete]
 verify_jwt = false
+
+# whatsapp-feedback — cron diário (pedido de avaliação D+1, complementa
+# o e-mail). Disparável por SQL/pg_net (segredo) ou admin; autentica dentro.
+[functions.whatsapp-feedback]
+verify_jwt = false

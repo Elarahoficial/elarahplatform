@@ -123,4 +123,6 @@ jobs:
           deploy whatsapp-pendente --no-verify-jwt
           # whatsapp-lembrete: cron diário (lembrete 2 dias antes).
           deploy whatsapp-lembrete --no-verify-jwt
+          # whatsapp-feedback: cron diário (pedido de avaliação D+1).
+          deploy whatsapp-feedback --no-verify-jwt
           echo "✓ Deploy completo"
