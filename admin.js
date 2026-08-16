@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v40 — Compras: filtro de Data da experiência é campo digitável (casa por trecho) com sugestões + filtro de Bairro');
+  console.info('[Elarah Admin] admin.js v41 — Recorrência (aulas regulares) já no cadastro de nova experiência + Duplicar copia variações, turmas e regras de recorrência');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -6498,6 +6498,9 @@
     // na validação do submit pra NÃO exigir horário fixo quando os
     // horários vêm da recorrência semanal (ver form submit abaixo).
     window._expHasRecurrence = false;
+    // Zera os rascunhos de recorrência (aulas regulares cadastradas
+    // ANTES de a experiência existir). Ver _recurrenceEnterDraftMode.
+    _recurrenceResetDrafts();
 
     if (editId) {
       const exp = await ElarahData.getExperienceById(editId);
@@ -6714,10 +6717,13 @@
       if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
       document.getElementById('exp-edit-id').value = '';
 
-      // Esconde a seção de recorrência em "nova experiência" — só
-      // dá pra cadastrar regras depois que a experiência tem id.
-      var recSec = document.getElementById('exp-recurrence-section');
-      if (recSec) recSec.style.display = 'none';
+      // Recorrência em "nova experiência": a seção aparece normalmente
+      // e as regras ficam como RASCUNHO na memória. Assim que a
+      // experiência é criada (submit do form), os rascunhos viram
+      // regras de verdade no banco — ver _recurrenceFlushDrafts.
+      // Antes a seção sumia no cadastro e a admin só conseguia criar
+      // as aulas regulares reabrindo a experiência pra editar.
+      _recurrenceEnterDraftMode();
     }
 
     // Wire toggle do radio repasse (uma vez por abertura — dataset.wired
@@ -7150,7 +7156,9 @@
       // menos um horário", e o save nunca acontecia — a mudança não
       // aparecia no site. O flag é ligado por _recurrenceLoadAndRender.
       const horarios = collectHorarios();
-      let hasRecurrence = !!window._expHasRecurrence;
+      // Em "nova experiência" as regras ficam em rascunho até o INSERT
+      // — elas também contam como recorrência pra validação.
+      let hasRecurrence = !!window._expHasRecurrence || _recurrenceDraftCount() > 0;
       // Fallback à prova de corrida: se essa experiência não tem horário
       // fixo e o flag ainda não foi marcado (carregamento assíncrono da
       // recorrência não terminou, OU o cache global de slots está
@@ -7387,6 +7395,33 @@
           );
         }
         ElarahData.invalidateSlotsCache && ElarahData.invalidateSlotsCache();
+      }
+
+      // Aulas regulares cadastradas no modo "nova experiência": agora
+      // que a experiência tem id, as regras rascunhadas viram regras de
+      // verdade (a trigger SQL materializa as próximas semanas).
+      if (!editId && saved && saved.id && _recurrenceDraftCount() > 0) {
+        try {
+          const flush = await _recurrenceFlushDrafts(saved.id);
+          if (flush.erros.length) {
+            alert(
+              'A experiência foi criada, mas ' + flush.erros.length +
+              ' regra(s) de aula regular NÃO foram salvas:\n\n' +
+              flush.erros.join('\n') +
+              '\n\nAbra a experiência em "Editar" e cadastre a recorrência por lá.'
+            );
+          } else if (flush.criadas) {
+            showAdminToast('Experiência criada com ' + flush.criadas +
+              ' regra(s) de aula regular. Datas geradas automaticamente.', true);
+          }
+        } catch (recErr) {
+          console.error('[Admin] flush de recorrência falhou:', recErr);
+          alert(
+            'A experiência foi criada, mas as aulas regulares não foram ' +
+            'salvas: ' + (recErr.message || recErr) +
+            '\n\nAbra a experiência em "Editar" pra cadastrar a recorrência.'
+          );
+        }
       }
 
       closeExpModal();
@@ -8164,13 +8199,127 @@
     }
   }
 
+  // Diálogo de Duplicar: pergunta o nome da cópia e o que vem junto
+  // (variações, turmas/horários manuais, aulas regulares). Resolve com
+  // as opções escolhidas ou null se a admin cancelar.
+  //
+  // Existe porque o caso real é "duplicar uma turma igualzinha — mesmo
+  // dia, mesmo horário, mesmas variações — só mudando o nome". Antes,
+  // Duplicar copiava só a linha da experiência: horários e recorrência
+  // ficavam pra trás e tinham que ser recadastrados na mão.
+  function _expDuplicatePrompt(exp, stats) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText =
+        'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;' +
+        'display:flex;align-items:center;justify-content:center;padding:16px;';
+
+      const linha = (id, label, hint, checked, disabled) =>
+        '<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid ' +
+        (disabled ? '#eee' : '#e6d8c8') + ';border-radius:8px;background:' +
+        (disabled ? '#fafafa' : '#fffaf2') + ';cursor:' + (disabled ? 'default' : 'pointer') + ';opacity:' +
+        (disabled ? '.55' : '1') + ';">' +
+        '<input type="checkbox" id="' + id + '"' + (checked ? ' checked' : '') +
+        (disabled ? ' disabled' : '') + ' style="margin-top:3px;cursor:inherit;">' +
+        '<span><strong style="font-size:.9rem;color:#1a1a1a;">' + label + '</strong>' +
+        '<br><span style="font-size:.78rem;color:#777;">' + hint + '</span></span></label>';
+
+      overlay.innerHTML =
+        '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);">' +
+          '<h3 style="margin:0 0 4px;font-size:1.15rem;color:#1a1a1a;">Duplicar experiência</h3>' +
+          '<p style="margin:0 0 16px;font-size:.85rem;color:#777;">Cópia de <strong>' + escapeHtml(exp.nome || '(sem nome)') + '</strong>. Tudo que vier junto continua 100% editável na cópia.</p>' +
+          '<label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:16px;">Nome da cópia' +
+            // valor setado por JS (nome pode ter aspas e quebraria o atributo)
+            '<input type="text" id="dup-nome" style="display:block;margin-top:5px;width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-family:inherit;font-size:.95rem;">' +
+          '</label>' +
+          '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">' +
+            linha('dup-variacoes', 'Variações',
+              stats.variacoes ? stats.variacoes + ' variação(ões) — nome, preço e foto de cada uma' : 'Esta experiência não tem variações',
+              stats.variacoes > 0, stats.variacoes === 0) +
+            linha('dup-horarios', 'Datas e horários fixos',
+              stats.slotsManuais ? stats.slotsManuais + ' turma(s) manual(is) — mesma data, mesmo horário e mesmas vagas' : 'Esta experiência não tem turmas manuais',
+              stats.slotsManuais > 0, stats.slotsManuais === 0) +
+            linha('dup-recorrencia', 'Aulas regulares (recorrência semanal)',
+              stats.regrasRecorrencia ? stats.regrasRecorrencia + ' regra(s) — as próximas semanas são geradas automaticamente na cópia' : 'Esta experiência não tem aulas regulares',
+              stats.regrasRecorrencia > 0, stats.regrasRecorrencia === 0) +
+            linha('dup-visivel', 'Já visível no site',
+              'Desmarque pra criar a cópia oculta e revisar antes de publicar',
+              exp.isActive !== false, false) +
+          '</div>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">' +
+            '<button type="button" id="dup-cancel" style="padding:10px 18px;background:#fff;border:1px solid #ddd;color:#666;border-radius:8px;font-family:inherit;font-size:.88rem;cursor:pointer;">Cancelar</button>' +
+            '<button type="button" id="dup-ok" style="padding:10px 18px;background:#f0a05e;border:none;color:#fff;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;">Duplicar</button>' +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(overlay);
+      const nomeEl = overlay.querySelector('#dup-nome');
+      if (nomeEl) {
+        nomeEl.value = (exp.nome || '') + ' (cópia)';
+        nomeEl.focus();
+        nomeEl.select();
+      }
+
+      const finish = (value) => {
+        overlay.remove();
+        document.removeEventListener('keydown', onKey);
+        resolve(value);
+      };
+      const confirmar = () => {
+        const chk = (id) => {
+          const el = overlay.querySelector('#' + id);
+          return !!(el && el.checked && !el.disabled);
+        };
+        finish({
+          nome: (nomeEl && nomeEl.value.trim()) || '',
+          variacoes: chk('dup-variacoes'),
+          horarios: chk('dup-horarios'),
+          recorrencia: chk('dup-recorrencia'),
+          isActive: chk('dup-visivel'),
+        });
+      };
+      function onKey(e) {
+        if (e.key === 'Escape') finish(null);
+        else if (e.key === 'Enter' && e.target === nomeEl) { e.preventDefault(); confirmar(); }
+      }
+      document.addEventListener('keydown', onKey);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(null); });
+      overlay.querySelector('#dup-cancel').addEventListener('click', () => finish(null));
+      overlay.querySelector('#dup-ok').addEventListener('click', confirmar);
+    });
+  }
+
   async function duplicateExperienceAndEdit(expId) {
-    const copy = await ElarahData.duplicateExperience(expId);
+    const exp = await ElarahData.getExperienceById(expId);
+    if (!exp) {
+      showAdminToast('Experiência não encontrada.', false);
+      return;
+    }
+    const stats = ElarahData.getExperienceCopyStats
+      ? await ElarahData.getExperienceCopyStats(expId)
+      : { slotsManuais: 0, regrasRecorrencia: 0, variacoes: 0 };
+
+    const opts = await _expDuplicatePrompt(exp, stats);
+    if (!opts) return;
+
+    const copy = await ElarahData.duplicateExperience(expId, opts);
+    if (!copy) {
+      alert(
+        'Não foi possível duplicar a experiência. Abra o console ' +
+        '(F12 → Console) pra ver o erro exato.'
+      );
+      return;
+    }
     await renderExperiences();
     await renderOverview();
-    if (copy) {
-      await openExpModal(copy.id);
-    }
+
+    const rel = copy._copyReport || { slots: 0, regras: 0 };
+    const partes = [];
+    if (rel.slots) partes.push(rel.slots + ' turma(s)');
+    if (rel.regras) partes.push(rel.regras + ' regra(s) de aula regular');
+    showAdminToast('Cópia criada' + (partes.length ? ' com ' + partes.join(' e ') : '') + '.', true);
+
+    await openExpModal(copy.id);
   }
 
   // =================================================
@@ -19604,6 +19753,38 @@
     return d.innerHTML;
   }
 
+  // ----- RASCUNHOS (modo "nova experiência") -------------------------
+  // Numa experiência que ainda não existe no banco não dá pra inserir
+  // regras (experience_id é obrigatório). Em vez de esconder a seção
+  // — o que obrigava a admin a salvar, reabrir e só então cadastrar as
+  // aulas regulares —, guardamos as regras aqui na memória e gravamos
+  // todas de uma vez logo depois do INSERT da experiência.
+  var _recurrenceDrafts = [];
+  var _recurrenceDraftSeq = 0;
+
+  function _recurrenceResetDrafts() {
+    _recurrenceDrafts = [];
+  }
+
+  function _recurrenceDraftCount() {
+    return _recurrenceDrafts.length;
+  }
+
+  function _recurrenceNewDraft() {
+    _recurrenceDraftSeq += 1;
+    return {
+      id: 'draft-' + _recurrenceDraftSeq,
+      _draft: true,
+      weekdays: [4],
+      hora_inicio: '19:00',
+      hora_fim: '',
+      horario_label: '19h00 – 22h00',
+      vagas_total: 12,
+      horizon_weeks: 8,
+      is_active: true,
+    };
+  }
+
   function _recurrenceWeekdayLabel(v) {
     const item = RECURRENCE_WEEKDAYS.find(w => w.v === v);
     return item ? item.label : '—';
@@ -19714,7 +19895,10 @@
   // (laranja) vs inativa (cinza). Edit/Salvar/Desativar inline.
   // Suporta múltiplos dias da semana — admin marca checkboxes pra
   // criar 1 regra "terça + quinta + sexta às 19h, 12 vagas".
-  function _recurrenceRuleCard(r) {
+  // isDraft = regra ainda não gravada (modo "nova experiência"):
+  // os botões viram "Guardar" / "Remover" e a materialização manual
+  // some (não existe regra no banco pra materializar ainda).
+  function _recurrenceRuleCard(r, isDraft) {
     const isActive = r.is_active !== false;
     const bg = isActive ? '#fffaf2' : '#f4f4f4';
     const border = isActive ? '#f0a05e' : '#ccc';
@@ -19766,12 +19950,16 @@
         '</label>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
-        '<button type="button" data-rec-action="save" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Salvar regra</button>' +
-        (isActive
-          ? '<button type="button" data-rec-action="deactivate" style="padding:7px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Desativar</button>'
-          : '<button type="button" data-rec-action="reactivate" style="padding:7px 14px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Reativar</button>'
+        (isDraft
+          ? '<button type="button" data-rec-action="draft-save" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Guardar regra</button>' +
+            '<button type="button" data-rec-action="draft-remove" style="padding:7px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Remover</button>'
+          : '<button type="button" data-rec-action="save" style="padding:7px 14px;background:#f0a05e;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;">Salvar regra</button>' +
+            (isActive
+              ? '<button type="button" data-rec-action="deactivate" style="padding:7px 14px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Desativar</button>'
+              : '<button type="button" data-rec-action="reactivate" style="padding:7px 14px;background:#fff;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">Reativar</button>'
+            ) +
+            '<button type="button" data-rec-action="materialize" title="Gerar slots manualmente (já roda auto ao salvar; use só pra recriar horizon)" style="padding:7px 14px;background:#fff;border:1px solid #ddd;color:#666;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">↻ Materializar</button>'
         ) +
-        '<button type="button" data-rec-action="materialize" title="Gerar slots manualmente (já roda auto ao salvar; use só pra recriar horizon)" style="padding:7px 14px;background:#fff;border:1px solid #ddd;color:#666;border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer;">↻ Materializar</button>' +
       '</div>' +
       '<div data-rec-rule-msg style="margin-top:6px;font-size:.78rem;min-height:1em;"></div>' +
     '</div>';
@@ -19784,7 +19972,11 @@
     // (acumula). Antes, abrir modal A wirava experienceId=A; abrir B em
     // seguida não re-wirava (dataset.wired travava) — clicar "+" em B
     // criava regra na experiência A. Vazamento cross-experience visual.
-    addBtn.onclick = () => _recurrenceCreateNew(experienceId);
+    // Sem experienceId = modo rascunho ("nova experiência"): a regra
+    // fica na memória até a experiência ser criada.
+    addBtn.onclick = experienceId
+      ? () => _recurrenceCreateNew(experienceId)
+      : () => _recurrenceDraftAdd();
   }
 
   function _recurrenceWireRuleCards(experienceId, rules) {
@@ -19848,6 +20040,184 @@
     }
   }
 
+  // Insere uma regra tolerando o schema antigo (coluna `weekday`
+  // singular, antes de sql/elarah_experience_recurrence_multi_weekdays.sql).
+  // Nesse caso cai pra uma regra por dia da semana.
+  async function _recurrenceInsertRule(payload) {
+    const sb = window.supabaseClient;
+    if (!sb) return { error: { message: 'Supabase indisponível' } };
+    const first = await sb.from('experience_recurrence_rules').insert(payload);
+    if (!first.error) return { error: null };
+
+    const msg = String(first.error.message || '').toLowerCase();
+    const weekdayIssue = msg.includes('weekday');
+    const dias = Array.isArray(payload.weekdays) ? payload.weekdays : [];
+    if (!weekdayIssue || !dias.length) return { error: first.error };
+
+    for (const d of dias) {
+      const legacy = Object.assign({}, payload);
+      delete legacy.weekdays;
+      legacy.weekday = d;
+      const retry = await sb.from('experience_recurrence_rules').insert(legacy);
+      if (retry.error) return { error: retry.error };
+    }
+    return { error: null };
+  }
+
+  // ----- Modo rascunho: seção de recorrência em "nova experiência" ----
+
+  function _recurrenceEnterDraftMode() {
+    const section = document.getElementById('exp-recurrence-section');
+    if (!section) return;
+    section.style.display = '';
+    const msgEl = document.getElementById('exp-recurrence-msg');
+    if (msgEl) msgEl.textContent = '';
+    const slotsWrap = document.getElementById('exp-recurrence-slots-wrap');
+    if (slotsWrap) slotsWrap.style.display = 'none';
+    const headerEl = document.getElementById('exp-recurrence-header');
+    if (headerEl) {
+      headerEl.innerHTML =
+        '<div style="background:#fff8ef;border:2px dashed #f0a05e;border-radius:8px;padding:10px 14px;margin-bottom:14px;">' +
+        '<span style="font-size:.78rem;color:#a4663b;text-transform:uppercase;letter-spacing:.5px;font-weight:600;">Aulas regulares desta nova experiência</span><br>' +
+        '<span style="font-size:.85rem;color:#a4663b;">Cadastre aqui as aulas que se repetem toda semana. Elas são criadas automaticamente assim que você clicar em <strong>Salvar experiência</strong> — e as datas das próximas semanas são geradas na hora.</span>' +
+        '</div>';
+    }
+    _recurrenceRenderDrafts();
+  }
+
+  function _recurrenceRenderDrafts() {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+    if (!_recurrenceDrafts.length) {
+      listEl.innerHTML = '<p style="margin:0;color:#888;font-size:.85rem;font-style:italic;">Nenhuma aula regular ainda. Clique em "+ Adicionar regra de recorrência" pra criar a primeira (ex.: toda quinta às 19h, 12 vagas).</p>';
+    } else {
+      listEl.innerHTML = _recurrenceDrafts.map(r => _recurrenceRuleCard(r, true)).join('');
+      _recurrenceWireDraftCards();
+    }
+    _recurrenceWireAddBtn(null);
+  }
+
+  function _recurrenceWireDraftCards() {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+    listEl.querySelectorAll('.rec-rule-card').forEach(card => {
+      if (card.dataset.wired) return;
+      card.dataset.wired = '1';
+      const draftId = card.dataset.recRuleId;
+
+      card.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest('button[data-rec-action]');
+        if (!btn) return;
+        const action = btn.dataset.recAction;
+        if (action === 'draft-save') {
+          _recurrenceSyncDraftsFromDom();
+          const cardMsg = card.querySelector('[data-rec-rule-msg]');
+          const draft = _recurrenceDrafts.find(d => d.id === draftId);
+          const err = draft ? _recurrenceValidateDraft(draft) : 'Regra não encontrada.';
+          if (err) _recurrenceCardErr(cardMsg, err);
+          else _recurrenceCardOk(cardMsg, '✓ Guardada — será criada ao salvar a experiência.');
+        } else if (action === 'draft-remove') {
+          _recurrenceSyncDraftsFromDom();
+          _recurrenceDrafts = _recurrenceDrafts.filter(d => d.id !== draftId);
+          _recurrenceRenderDrafts();
+        }
+      });
+
+      // Mesmo feedback visual das checkboxes do modo edição.
+      card.addEventListener('change', (e) => {
+        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"]') ? e.target : null;
+        if (!cb) return;
+        const lbl = cb.closest('label');
+        if (!lbl) return;
+        if (cb.checked) {
+          lbl.style.background = '#fff8ef';
+          lbl.style.borderColor = '#f0a05e';
+          lbl.style.color = '#a4663b';
+        } else {
+          lbl.style.background = '#fff';
+          lbl.style.borderColor = '#ddd';
+          lbl.style.color = '#666';
+        }
+      });
+    });
+  }
+
+  // Lê o que está digitado nos cards e grava nos rascunhos. Chamado
+  // antes de qualquer re-render/salvamento pra não perder edições que
+  // a admin fez sem clicar em "Guardar regra".
+  function _recurrenceSyncDraftsFromDom() {
+    const listEl = document.getElementById('exp-recurrence-rules-list');
+    if (!listEl) return;
+    listEl.querySelectorAll('.rec-rule-card').forEach(card => {
+      const draft = _recurrenceDrafts.find(d => d.id === card.dataset.recRuleId);
+      if (!draft) return;
+      const val = (field) => {
+        const el = card.querySelector('[data-rec-field="' + field + '"]');
+        return el ? el.value : '';
+      };
+      draft.weekdays = Array.from(card.querySelectorAll('[data-rec-field="weekday-check"]:checked'))
+        .map(cb => Number(cb.value))
+        .filter(v => v >= 0 && v <= 6)
+        .sort((a, b) => a - b);
+      draft.hora_inicio = val('hora_inicio');
+      draft.hora_fim = val('hora_fim');
+      draft.horario_label = (val('horario_label') || '').trim();
+      draft.vagas_total = Number(val('vagas_total'));
+      draft.horizon_weeks = Number(val('horizon_weeks'));
+    });
+  }
+
+  function _recurrenceValidateDraft(d) {
+    if (!Array.isArray(d.weekdays) || !d.weekdays.length) return 'Marque pelo menos 1 dia da semana.';
+    if (!d.hora_inicio) return 'Hora início obrigatória.';
+    if (!d.horario_label) return 'Rótulo do horário obrigatório.';
+    if (!isFinite(d.vagas_total) || d.vagas_total < 1) return 'Vagas deve ser inteiro >= 1.';
+    if (!isFinite(d.horizon_weeks) || d.horizon_weeks < 1 || d.horizon_weeks > 52) return 'Horizon entre 1 e 52 semanas.';
+    return '';
+  }
+
+  function _recurrenceDraftAdd() {
+    _recurrenceSyncDraftsFromDom();
+    _recurrenceDrafts.push(_recurrenceNewDraft());
+    _recurrenceRenderDrafts();
+  }
+
+  // Grava no banco todas as regras rascunhadas, agora que a
+  // experiência existe. Retorna { criadas, erros: [] }.
+  async function _recurrenceFlushDrafts(experienceId) {
+    _recurrenceSyncDraftsFromDom();
+    const out = { criadas: 0, erros: [] };
+    if (!experienceId || !_recurrenceDrafts.length) return out;
+
+    for (const d of _recurrenceDrafts) {
+      const invalid = _recurrenceValidateDraft(d);
+      if (invalid) {
+        out.erros.push('Regra ' + _recurrenceWeekdaysShortList(d.weekdays) + ': ' + invalid);
+        continue;
+      }
+      const payload = {
+        experience_id: experienceId,
+        weekdays: d.weekdays,
+        hora_inicio: d.hora_inicio,
+        hora_fim: d.hora_fim || null,
+        horario_label: d.horario_label,
+        vagas_total: d.vagas_total,
+        horizon_weeks: d.horizon_weeks,
+        is_active: true,
+      };
+      const { error } = await _recurrenceInsertRule(payload);
+      if (error) {
+        console.error('[Elarah Recurrence] flush draft error:', error);
+        out.erros.push('Regra ' + _recurrenceWeekdaysShortList(d.weekdays) + ': ' + (error.message || error.code));
+        continue;
+      }
+      out.criadas += 1;
+    }
+    if (out.criadas) _recurrenceInvalidateCaches();
+    _recurrenceResetDrafts();
+    return out;
+  }
+
   // Cria uma regra nova com defaults sensatos. Trigger SQL gera os
   // slots automaticamente após o INSERT.
   async function _recurrenceCreateNew(experienceId) {
@@ -19885,7 +20255,7 @@
       horizon_weeks: 8,
       is_active: true,
     };
-    const { error } = await sb.from('experience_recurrence_rules').insert(payload);
+    const { error } = await _recurrenceInsertRule(payload);
     if (error) {
       if (msgEl) {
         msgEl.style.color = '#c0392b';

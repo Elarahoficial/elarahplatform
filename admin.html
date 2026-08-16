@@ -4096,7 +4096,9 @@
         </div>
 
         <!-- ===== RECORRÊNCIA SEMANAL ===== -->
-        <!-- Aparece só quando editando uma experiência (não em "nova").
+        <!-- Aparece nas duas situações: editando (regras salvas direto no
+             banco) e em "nova experiência" (regras ficam em rascunho e
+             são criadas junto quando a experiência é salva).
              Cada experiência pode ter N regras (terça + quinta etc).
              A trigger SQL materializa os slots automaticamente quando
              a regra é criada/editada. Lista mostra próximas 8 datas
@@ -4708,7 +4710,7 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=34"></script>
+<script src="experiences-data.js?v=35"></script>
 <script src="byelarah-data.js?v=7"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-social.js?v=11"></script>
@@ -4721,7 +4723,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=218"></script>
+<script src="admin.js?v=219"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
