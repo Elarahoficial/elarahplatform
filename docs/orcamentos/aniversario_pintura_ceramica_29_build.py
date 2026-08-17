@@ -1,4 +1,4 @@
-# Aniversário · Pintura em Cerâmica · 15 pessoas · 29/08. 2 espaços (Jules/Sterna/seu espaço 239, Betc 289). Sage-grey palette.
+# Aniversário · Pintura em Cerâmica · 5 pessoas · 29/08. 2 espaços (Jules/Sterna/seu espaço 239, Betc 289). Sage-grey palette.
 import re
 base = open("/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad/compass_latest.html", encoding="utf-8").read()
 head = base.split('<div class="deck">')[0]
@@ -87,7 +87,7 @@ cover = f'''
         <p class="lead">Uma tarde de comemoração cheia de cor e afeto: um <strong>workshop de pintura em cerâmica</strong>, onde cada convidado pinta à mão a própria peça e leva pra casa de lembrança. Entre risadas, brindes e muita arte. 🎨</p>
         <div class="rule"></div>
         <div class="chips">
-          <span class="chip"><b>15</b> pessoas</span>
+          <span class="chip"><b>5</b> pessoas</span>
           <span class="chip"><b>29/08</b></span>
           <span class="chip">No seu <b>espaço ou parceiro</b></span>
         </div>
@@ -250,7 +250,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para aniversário — workshop de pintura em cerâmica, para 15 pessoas, em 29/08 (a confirmar), em espaço parceiro ou no seu espaço. Cada convidado pinta e leva a própria peça, com material e condução do profissional inclusos. Duas opções de espaço, por pessoa: Jules, Sterna Café ou o seu próprio espaço (consumo à parte) a partir de R$ 239; Betc Havas Café (R$ 50 de consumação inclusos) R$ 289. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para aniversário — workshop de pintura em cerâmica, para 5 pessoas, em 29/08 (a confirmar), em espaço parceiro ou no seu espaço. Cada convidado pinta e leva a própria peça, com material e condução do profissional inclusos. Duas opções de espaço, por pessoa: Jules, Sterna Café ou o seu próprio espaço (consumo à parte) a partir de R$ 239; Betc Havas Café (R$ 50 de consumação inclusos) R$ 289. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Aniversário · Pintura em cerâmica · 2026")}
   </section>'''
 
