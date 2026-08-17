@@ -42,8 +42,13 @@ extra = '''
   .itable .val small{font-family:'DM Sans';display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
   .itable tbody tr.hl td{background:#F6F0E8}
   .itable tbody tr:last-child td{border-bottom:none}
-  .itable .pill{display:block;width:-moz-fit-content;width:fit-content;margin:8px auto 5px;background:var(--navy);color:#fff;font-size:8.5px;letter-spacing:.09em;padding:4px 13px;border-radius:999px;font-weight:700;text-transform:uppercase;text-align:center}
+  .itable .pill{display:block;width:-moz-fit-content;width:fit-content;margin:8px 0 5px;background:var(--navy);color:#fff;font-size:8.5px;letter-spacing:.09em;padding:4px 13px;border-radius:999px;font-weight:700;text-transform:uppercase;text-align:center}
   .fineprint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:16px}
+  /* galeria vibe */
+  .vibe{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+  .vibe figure{margin:0;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:3/4;box-shadow:0 16px 36px -24px rgba(0,0,0,.34)}
+  .vibe img{width:100%;height:100%;object-fit:cover;display:block}
+  .vibe figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 13px;color:#fff;font-size:12.5px;font-weight:600;background:linear-gradient(to top,rgba(30,14,20,.82),transparent)}
 </style>'''
 head = head.replace("</style>", extra, 1)
 
@@ -51,11 +56,12 @@ head = head.replace("</style>", extra, 1)
 head = head.replace(
     "    @page{size:A4 portrait;margin:0}",
     "    .slide *{box-shadow:none !important}\n"
-    "    .cover-photo,.exp-photo{border:1px solid rgba(59,31,43,.14)}\n"
+    "    .cover-photo,.exp-photo,.vibe figure{border:1px solid rgba(59,31,43,.14)}\n"
     "    .menu{grid-template-columns:repeat(2,1fr)}\n"
+    "    .vibe{grid-template-columns:repeat(3,1fr)}\n"
     "    @page{size:A4 portrait;margin:0}", 1)
 head = head.replace(".plans{grid-template-columns:1fr}",
-                    ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}")
+                    ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}\n    .vibe{grid-template-columns:1fr 1fr}")
 
 
 def foot(right):
@@ -83,7 +89,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/drinksclassicos.jpg" alt="Bebida autoral elegante numa experiência alto luxo" style="object-position:center 50%">
+        <img src="assets/cover-corp.jpg" alt="Convidadas num encontro Elarah elegante e sensorial" style="object-position:center 40%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
@@ -163,7 +169,7 @@ invest = f'''
           <td><span class="val">R$ 609<small>/pessoa</small></span></td>
         </tr>
         <tr>
-          <td class="rl"><b>Completo</b><span>Tudo do Registro + decoração temática do encontro.</span></td>
+          <td class="rl"><b>Completo</b><span>Tudo do Registro + lembrancinha especial pra cada convidada.</span></td>
           <td><span class="val">R$ 489<small>/pessoa</small></span></td>
           <td><span class="val">R$ 709<small>/pessoa</small></span></td>
         </tr>
@@ -195,7 +201,24 @@ como = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + buscamos + menu + invest + como + '\n\n</div>\n\n'
+vibe = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O que vocês vão sentir</span>
+    <h2>Encontros que viram <em>memória</em></h2>
+    <p class="lead">Momentos reais dos nossos encontros: gente junto, taça na mão e mão na massa — leve, elegante e cheio de fotos boas.</p>
+    <div class="vibe">
+      <figure><img src="assets/vibe-conexao-corp.jpg" alt="Convidadas rindo juntas num encontro Elarah" style="object-position:center 30%"><figcaption>Conexão de verdade</figcaption></figure>
+      <figure><img src="assets/corp-criativo.jpg" alt="Convidadas criando lado a lado" style="object-position:center 35%"><figcaption>Mão na massa, junto</figcaption></figure>
+      <figure><img src="assets/eventocorporativo.jpg" alt="Mesa de um encontro Elarah, do início ao brinde" style="object-position:center 45%"><figcaption>Do início ao brinde</figcaption></figure>
+    </div>
+    {foot("A vibe da experiência")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + buscamos + menu + vibe + invest + como + '\n\n</div>\n\n'
 html = head + deck + tail
 out = "/home/user/elarahplatform/experiencia-alto-luxo-ca.html"
 open(out, "w", encoding="utf-8").write(html)
