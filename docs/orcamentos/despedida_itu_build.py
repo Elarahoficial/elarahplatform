@@ -20,7 +20,7 @@ extra = '''
   /* menu de experiências */
   .menu{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:12px}
   .exp{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.28)}
-  .exp-photo{height:158px;overflow:hidden;background:#eee}
+  .exp-photo{height:210px;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
   .exp-body{padding:15px 18px 17px}
   .exp .n{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-bottom:5px}
@@ -142,10 +142,10 @@ menu = f'''
     <p class="lead">Dá pra escolher uma só ou combinar várias no mesmo dia — e aí entra o preço especial de pacote (na próxima página). O valor avulso de cada uma:</p>
     <div class="rule"></div>
     <div class="menu">
-      {exp("01","pinturatacaa.jpg","Pintura em Taça","Cada uma pinta à mão a própria taça e brinda com a sua arte.","219","center 45%")}
-      {exp("02","ceramicamodelagem.jpg","Cerâmica na Roda","Mão na argila: modelem a própria peça e levem pra casa.","259","center 50%")}
+      {exp("01","pinturatacaa.jpg","Pintura em Taça","Cada uma pinta à mão a própria taça e brinda com a sua arte.","239","center 45%")}
+      {exp("02","ceramicamodelagem.jpg","Cerâmica na Roda","Mão na argila: modelem a própria peça e levem pra casa.","239","center 50%")}
       {exp("03","drinksclassicos.jpg","Coquetelaria Autoral","Um bartender conduz — vocês criam (e provam) os próprios drinks.","239","center 50%")}
-      {exp("04","velaflor.jpg","Vela Aromática","Criem a vela perfumada da despedida, do aroma ao rótulo.","199","center 50%")}
+      {exp("04","velaflor.jpg","Vela Aromática","Criem a vela perfumada da despedida, do aroma ao rótulo.","239","center 50%")}
     </div>
     {foot("O menu de experiências")}
   </section>'''
@@ -160,7 +160,7 @@ vibe = f'''
     <h2>Risada, taça na mão e <em>mão na massa</em></h2>
     <p class="lead">Mais que uma atividade: um encontro leve, afetivo e cheio de fotos boas — do tipo que a noiva e as amigas vão lembrar pra sempre.</p>
     <div class="vibe">
-      <figure><img src="assets/ceramica.jpg" alt="Amigas rindo juntas" style="object-position:center 30%"><figcaption>Juntas, do início ao fim</figcaption></figure>
+      <figure><img src="assets/aromaterapiameninas.jpg" alt="Amigas juntas numa experiência Elarah" style="object-position:center 40%"><figcaption>Juntas, do início ao fim</figcaption></figure>
       <figure><img src="assets/corp-grupo.jpg" alt="Amigas criando e rindo" style="object-position:center 40%"><figcaption>Criando lado a lado</figcaption></figure>
       <figure><img src="assets/encontro-1.jpg" alt="Amigas se divertindo" style="object-position:center 30%"><figcaption>Pura descontração</figcaption></figure>
     </div>
@@ -180,17 +180,16 @@ invest = f'''
     <div class="invest">
       <div class="iblock">
         <h4>Escolhendo uma (avulsa)</h4>
-        <div class="arow"><div class="an">Vela Aromática</div><div class="av">R$ 199<small>/pessoa</small></div></div>
-        <div class="arow"><div class="an">Pintura em Taça</div><div class="av">R$ 219<small>/pessoa</small></div></div>
+        <div class="arow"><div class="an">Vela Aromática</div><div class="av">R$ 239<small>/pessoa</small></div></div>
+        <div class="arow"><div class="an">Pintura em Taça</div><div class="av">R$ 239<small>/pessoa</small></div></div>
         <div class="arow"><div class="an">Coquetelaria Autoral</div><div class="av">R$ 239<small>/pessoa</small></div></div>
-        <div class="arow"><div class="an">Cerâmica na Roda</div><div class="av">R$ 259<small>/pessoa</small></div></div>
+        <div class="arow"><div class="an">Cerâmica na Roda</div><div class="av">R$ 239<small>/pessoa</small></div></div>
       </div>
       <div class="iblock">
         <h4>Combinando experiências (pacote)</h4>
         <div class="pcards">
-          <div class="pc"><div class="pl"><h5>2 experiências</h5><p>Vocês escolhem quais duas.</p></div><div class="pr"><span class="old">R$ 458</span><span class="big">R$ 379</span><span class="u">/pessoa</span></div></div>
-          <div class="pc"><div class="pl"><h5>3 experiências</h5><p>O trio favorito da despedida.</p></div><div class="pr"><span class="old">R$ 697</span><span class="big">R$ 529</span><span class="u">/pessoa</span></div></div>
-          <div class="pc hl"><span class="ptag">Mais escolhido</span><div class="pl"><h5>As 4 experiências</h5><p>O dia completo de festa.</p></div><div class="pr"><span class="old">R$ 916</span><span class="big">R$ 649</span><span class="u">/pessoa</span></div></div>
+          <div class="pc"><div class="pl"><h5>2 experiências</h5><p>Vocês escolhem quais duas.</p></div><div class="pr"><span class="old">R$ 478</span><span class="big">R$ 439</span><span class="u">/pessoa</span></div></div>
+          <div class="pc hl"><span class="ptag">Mais escolhido</span><div class="pl"><h5>3 experiências</h5><p>O trio favorito da despedida.</p></div><div class="pr"><span class="old">R$ 717</span><span class="big">R$ 649</span><span class="u">/pessoa</span></div></div>
         </div>
       </div>
     </div>
