@@ -47,10 +47,22 @@ extra = '''
   .pcard .pl .lbl{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);font-weight:700}
   .pcard .pl h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:30px;line-height:1.08;margin-top:8px}
   .pcard .pl p{font-size:12px;color:rgba(255,255,255,.72);margin-top:8px;max-width:340px;line-height:1.5}
-  .pcard .pr{text-align:right}
-  .pcard .pr .big{font-family:'DM Serif Display',serif;font-size:52px;line-height:1}
-  .pcard .pr .u{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:600;margin-top:6px}
-  .pcard .pr .pp{display:block;font-size:12.5px;color:var(--orange);font-weight:700;margin-top:8px}
+  .pcard .pl{flex:1;min-width:300px}
+  .pcard .pincl{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:14px;max-width:410px}
+  .pcard .pincl li{position:relative;padding-left:22px;font-size:12.5px;color:rgba(255,255,255,.9);line-height:1.4}
+  .pcard .pincl li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:12px}
+  .pcard .pincl li b{color:#fff;font-weight:700}
+  .pcard .pr{text-align:right;flex-shrink:0}
+  .pcard .pr .big{font-family:'DM Serif Display',serif;font-size:58px;line-height:.95}
+  .pcard .pr .u{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:700;margin-top:4px}
+  .pcard .pr .pp{display:block;font-size:11.5px;color:rgba(255,255,255,.72);font-weight:500;margin-top:12px;max-width:230px;margin-left:auto;line-height:1.45}
+  /* personalização (com a marca) */
+  .plogo{margin-top:16px;background:var(--card);border:1.6px solid var(--orange);border-radius:18px;padding:22px 26px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .plogo .lslot{width:150px;height:74px;border:2px dashed var(--orange);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;flex-shrink:0;background:rgba(176,122,70,.06)}
+  .plogo .lslot .pi{font-size:18px}
+  .plogo .lslot .pl{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--orange-dark)}
+  .plogo .lt h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;color:var(--navy);line-height:1.1}
+  .plogo .lt p{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5;max-width:430px}
   .fineprint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:16px}
   .cllogo{height:26px;width:auto;display:block}
 </style>'''
@@ -87,7 +99,7 @@ cover = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
         <span class="kicker">Proposta de experiência gastronômica para</span>
-        <span class="cbbrand" style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1;display:block;margin-top:3px">AWS · Amazon</span>
+        <img class="cllogo" src="assets/aws-logo.png" alt="AWS" style="height:46px;width:auto;display:block;margin:5px 0 3px">
         <span class="cbsub" style="font-size:8.5px;letter-spacing:.26em;color:var(--navy-soft);font-weight:600;text-transform:uppercase">Experiência anual · time</span>
       </div>
     </div>
@@ -232,14 +244,18 @@ invest = f'''
     <p class="lead">Valor total da experiência no Farol Santander (Cozinha do 31), para 20 participantes, com tudo o que foi descrito incluso — atividade, degustação, visitação e estrutura.</p>
     <div class="pcard">
       <div class="pl">
-        <span class="lbl">Experiência gastronômica · Farol Santander</span>
-        <h3>Evento completo · 3h<br>20 participantes</h3>
-        <p>Aula com chef, degustação, visitação ao Farol, drink no Bar do Cofre e todos os mimos inclusos.</p>
+        <span class="lbl">Tudo isso já está incluso</span>
+        <ul class="pincl">
+          <li><b>Aula com Chef</b> + degustação (entrada, principal e sobremesa)</li>
+          <li><b>Visitação ao Farol Santander</b> + drink no Bar do Cofre</li>
+          <li>Espaço exclusivo, <b>aventais personalizados</b> e receitas digitais</li>
+          <li>Aperitivo, bebidas e todos os mimos — <b>sem surpresas</b></li>
+        </ul>
       </div>
       <div class="pr">
-        <span class="big">R$ 19.440</span>
-        <span class="u">valor total do evento</span>
-        <span class="pp">R$ 972 por pessoa</span>
+        <span class="big">R$ 972</span>
+        <span class="u">por pessoa</span>
+        <span class="pp"><b style="color:#fff">R$ 19.440</b> · evento completo · 20 pessoas · 3h no Farol Santander</span>
       </div>
     </div>
     <p class="fineprint">Valor total para 20 participantes, evento de 3h no Farol Santander. Inclui atividade gastronômica com chef, degustação, aperitivo, bebidas não alcoólicas, uso do espaço, utensílios, aventais personalizados, receitas digitais, brinde de limoncello, visitação ao Farol Santander e voucher do primeiro drink no Bar do Cofre. Participantes extras, horas adicionais e bebidas alcoólicas não previstas são cobrados à parte. Data e horário sujeitos à disponibilidade no ato da confirmação. Proposta válida mediante confirmação e disponibilidade de agenda.</p>
@@ -268,7 +284,29 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + roteiro + farol + gastro + cardapio + incluso + invest + proximos + '\n\n</div>\n\n'
+personaliza = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Com a cara da AWS</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Personalização</span>
+    <h2>Com a cara da <em>AWS</em></h2>
+    <p class="lead">A experiência vira uma extensão da marca: dá pra levar a identidade da AWS pra dentro de cada detalhe — e o time sente que foi tudo pensado pra ele.</p>
+    <div class="rule"></div>
+    <div class="grid3">
+      <div class="infocard"><div class="ico">🅰️</div><h3>Marca em cada detalhe</h3><p>Aventais e lembranças com o logo da AWS pra cada participante levar pra casa.</p></div>
+      <div class="infocard"><div class="ico">🍽️</div><h3>Cardápio sob medida</h3><p>O menu pode ser adaptado ao gosto do time — e ganhar uma assinatura da marca.</p></div>
+      <div class="infocard"><div class="ico">✨</div><h3>Ambientação & boas-vindas</h3><p>Recepção e mesa com a identidade da AWS, do primeiro brinde ao registro das fotos.</p></div>
+    </div>
+    <div class="plogo">
+      <div class="lslot" style="border-style:solid;background:#fff"><img src="assets/aws-logo.png" alt="AWS" style="max-width:120px;max-height:56px;object-fit:contain"></div>
+      <div class="lt"><h3>Sua marca no centro da experiência</h3><p>Do avental ao brinde final, a AWS presente em cada momento — uma ativação que o time associa direto à empresa. Sem custo de produção surpresa.</p></div>
+    </div>
+    {foot("Com a cara da AWS")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + roteiro + farol + gastro + cardapio + incluso + personaliza + invest + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = "/home/user/elarahplatform/experiencia-aws-farol-gastronomia.html"
 open(out, "w", encoding="utf-8").write(html)
