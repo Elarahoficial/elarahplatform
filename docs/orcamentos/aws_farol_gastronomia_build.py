@@ -23,7 +23,11 @@ extra = '''
   .pslot .pl{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
   .pslot .ps{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.03em;text-transform:uppercase}
   .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}
-  .pgrid .cell{min-height:290px}
+  .pgrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+  .pgrid .cell,.pgrid3 .cell{min-height:290px}
+  .pfig{margin:0;border-radius:16px;overflow:hidden;position:relative;height:100%;box-shadow:0 16px 36px -24px rgba(0,0,0,.4)}
+  .pfig img{width:100%;height:100%;object-fit:cover;display:block}
+  .pfig figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;color:#fff;font-size:12px;font-weight:600;background:linear-gradient(to top,rgba(20,15,10,.85),transparent)}
   /* cardápio (3 cozinhas) */
   .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px}
   .cz{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 20px;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.28)}
@@ -57,12 +61,17 @@ head = head.replace(
     "    @page{size:A4 portrait;margin:0}",
     "    .slide *{box-shadow:none !important}\n"
     "    .cz{border:1px solid var(--line)}\n"
+    "    .cover-photo,.pfig{border:1px solid rgba(42,35,32,.16)}\n"
     "    .pgrid{grid-template-columns:1fr 1fr}\n"
+    "    .pgrid3{grid-template-columns:repeat(3,1fr)}\n"
     "    .menu{grid-template-columns:repeat(3,1fr)}\n"
     "    .incl{grid-template-columns:1fr 1fr}\n"
     "    @page{size:A4 portrait;margin:0}", 1)
 head = head.replace(".plans{grid-template-columns:1fr}",
-                    ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}\n    .pgrid{grid-template-columns:1fr}\n    .incl{grid-template-columns:1fr}")
+                    ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}\n    .pgrid{grid-template-columns:1fr}\n    .pgrid3{grid-template-columns:1fr}\n    .incl{grid-template-columns:1fr}")
+
+def pfig(img, cap, pos="center 50%"):
+    return f'<figure class="pfig"><img src="assets/{img}" alt="{cap}" style="object-position:{pos}"><figcaption>{cap}</figcaption></figure>'
 
 
 def foot(right):
@@ -94,7 +103,7 @@ cover = f'''
           <span class="chip"><b>Farol Santander</b> · SP</span>
         </div>
       </div>
-      <div class="cover-photo">{pslot("Farol Santander", "Foto do prédio / vista")}</div>
+      <div class="cover-photo"><img src="assets/farol-predio.jpg" alt="Farol Santander iluminado à noite no centro de São Paulo" style="object-position:center 40%"></div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para times como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
     {foot("Experiência Gastronômica · AWS")}
@@ -130,9 +139,10 @@ farol = f'''
     <span class="eyebrow orange">◆ O cenário</span>
     <h2>O icônico <em>Farol Santander</em></h2>
     <p class="lead">Um dos endereços mais lindos de São Paulo: o time explora o Farol Santander e ainda brinda no lendário Bar do Cofre — cenário perfeito pra uma experiência que vira foto e história.</p>
-    <div class="pgrid">
-      <div class="cell">{pslot("Farol Santander", "Foto do prédio / mirante")}</div>
-      <div class="cell">{pslot("Bar do Cofre", "Foto do bar / drink")}</div>
+    <div class="pgrid3">
+      <div class="cell">{pfig("farol-interior.jpg","O Farol por dentro","center 50%")}</div>
+      <div class="cell">{pfig("bar-do-cofre.jpg","Bar do Cofre","center 50%")}</div>
+      <div class="cell">{pfig("jantar-vista.jpg","Jantar com vista de SP","center 40%")}</div>
     </div>
     {foot("Etapa · Farol Santander")}
   </section>'''
@@ -145,10 +155,11 @@ gastro = f'''
     </div>
     <span class="eyebrow orange">◆ Mão na massa</span>
     <h2>Uma aula com <em>Chef</em></h2>
-    <p class="lead">Na Cozinha do 31, o time coloca a mão na massa numa atividade gastronômica divertida, guiada por um Chef e com assistente e copeira cuidando de tudo. No fim, todos degustam o que prepararam. 👩‍🍳</p>
-    <div class="pgrid">
-      <div class="cell">{pslot("A comida", "Foto dos pratos / degustação")}</div>
-      <div class="cell">{pslot("Mão na massa", "Foto da equipe cozinhando")}</div>
+    <p class="lead">Na Cozinha do 31, o time coloca a mão na massa numa atividade gastronômica divertida, guiada por um Chef e com assistente e copeira cuidando de tudo. No fim, todos degustam o que prepararam. 🍽️</p>
+    <div class="pgrid3">
+      <div class="cell">{pfig("aula-grupo.jpg","Mão na massa, junto","center 40%")}</div>
+      <div class="cell">{pfig("cozinha31-prato.jpg","O prato, à mão","center 55%")}</div>
+      <div class="cell">{pfig("aula-risada.jpg","Risada garantida","center 30%")}</div>
     </div>
     {foot("Etapa · A aula gastronômica")}
   </section>'''

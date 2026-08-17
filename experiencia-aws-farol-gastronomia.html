@@ -141,7 +141,11 @@
   .pslot .pl{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
   .pslot .ps{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.03em;text-transform:uppercase}
   .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}
-  .pgrid .cell{min-height:290px}
+  .pgrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+  .pgrid .cell,.pgrid3 .cell{min-height:290px}
+  .pfig{margin:0;border-radius:16px;overflow:hidden;position:relative;height:100%;box-shadow:0 16px 36px -24px rgba(0,0,0,.4)}
+  .pfig img{width:100%;height:100%;object-fit:cover;display:block}
+  .pfig figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;color:#fff;font-size:12px;font-weight:600;background:linear-gradient(to top,rgba(20,15,10,.85),transparent)}
   /* cardápio (3 cozinhas) */
   .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px}
   .cz{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 20px;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.28)}
@@ -359,6 +363,7 @@
     .plans{grid-template-columns:1fr}
     .menu{grid-template-columns:1fr}
     .pgrid{grid-template-columns:1fr}
+    .pgrid3{grid-template-columns:1fr}
     .incl{grid-template-columns:1fr}
     .menu-cols{grid-template-columns:1fr}
     h1{font-size:38px}h2{font-size:30px}
@@ -399,7 +404,9 @@
     .pizza-photo{min-height:180px}
     .slide *{box-shadow:none !important}
     .cz{border:1px solid var(--line)}
+    .cover-photo,.pfig{border:1px solid rgba(42,35,32,.16)}
     .pgrid{grid-template-columns:1fr 1fr}
+    .pgrid3{grid-template-columns:repeat(3,1fr)}
     .menu{grid-template-columns:repeat(3,1fr)}
     .incl{grid-template-columns:1fr 1fr}
     @page{size:A4 portrait;margin:0}
@@ -431,7 +438,7 @@
           <span class="chip"><b>Farol Santander</b> · SP</span>
         </div>
       </div>
-      <div class="cover-photo"><div class="pslot"><span class="pi">＋ 📷</span><span class="pl">Farol Santander</span><span class="ps">Foto do prédio / vista</span></div></div>
+      <div class="cover-photo"><img src="assets/farol-predio.jpg" alt="Farol Santander iluminado à noite no centro de São Paulo" style="object-position:center 40%"></div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para times como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência Gastronômica · AWS</span></div>
@@ -463,9 +470,10 @@
     <span class="eyebrow orange">◆ O cenário</span>
     <h2>O icônico <em>Farol Santander</em></h2>
     <p class="lead">Um dos endereços mais lindos de São Paulo: o time explora o Farol Santander e ainda brinda no lendário Bar do Cofre — cenário perfeito pra uma experiência que vira foto e história.</p>
-    <div class="pgrid">
-      <div class="cell"><div class="pslot"><span class="pi">＋ 📷</span><span class="pl">Farol Santander</span><span class="ps">Foto do prédio / mirante</span></div></div>
-      <div class="cell"><div class="pslot"><span class="pi">＋ 📷</span><span class="pl">Bar do Cofre</span><span class="ps">Foto do bar / drink</span></div></div>
+    <div class="pgrid3">
+      <div class="cell"><figure class="pfig"><img src="assets/farol-interior.jpg" alt="O Farol por dentro" style="object-position:center 50%"><figcaption>O Farol por dentro</figcaption></figure></div>
+      <div class="cell"><figure class="pfig"><img src="assets/bar-do-cofre.jpg" alt="Bar do Cofre" style="object-position:center 50%"><figcaption>Bar do Cofre</figcaption></figure></div>
+      <div class="cell"><figure class="pfig"><img src="assets/jantar-vista.jpg" alt="Jantar com vista de SP" style="object-position:center 40%"><figcaption>Jantar com vista de SP</figcaption></figure></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Etapa · Farol Santander</span></div>
   </section>
@@ -476,10 +484,11 @@
     </div>
     <span class="eyebrow orange">◆ Mão na massa</span>
     <h2>Uma aula com <em>Chef</em></h2>
-    <p class="lead">Na Cozinha do 31, o time coloca a mão na massa numa atividade gastronômica divertida, guiada por um Chef e com assistente e copeira cuidando de tudo. No fim, todos degustam o que prepararam. 👩‍🍳</p>
-    <div class="pgrid">
-      <div class="cell"><div class="pslot"><span class="pi">＋ 📷</span><span class="pl">A comida</span><span class="ps">Foto dos pratos / degustação</span></div></div>
-      <div class="cell"><div class="pslot"><span class="pi">＋ 📷</span><span class="pl">Mão na massa</span><span class="ps">Foto da equipe cozinhando</span></div></div>
+    <p class="lead">Na Cozinha do 31, o time coloca a mão na massa numa atividade gastronômica divertida, guiada por um Chef e com assistente e copeira cuidando de tudo. No fim, todos degustam o que prepararam. 🍽️</p>
+    <div class="pgrid3">
+      <div class="cell"><figure class="pfig"><img src="assets/aula-grupo.jpg" alt="Mão na massa, junto" style="object-position:center 40%"><figcaption>Mão na massa, junto</figcaption></figure></div>
+      <div class="cell"><figure class="pfig"><img src="assets/cozinha31-prato.jpg" alt="O prato, à mão" style="object-position:center 55%"><figcaption>O prato, à mão</figcaption></figure></div>
+      <div class="cell"><figure class="pfig"><img src="assets/aula-risada.jpg" alt="Risada garantida" style="object-position:center 30%"><figcaption>Risada garantida</figcaption></figure></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Etapa · A aula gastronômica</span></div>
   </section>
