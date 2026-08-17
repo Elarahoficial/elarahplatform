@@ -21,6 +21,9 @@ head = head.replace("rgba(242,118,35,.22)", "rgba(124,145,136,.28)")
 extra = '''
   .menu{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:12px}
   .exp{position:relative;width:calc(33.333% - 11px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.34)}
+  .menu.two{gap:24px}
+  .menu.two .exp{width:calc(50% - 12px);max-width:340px}
+  .menu.two .exp-photo{aspect-ratio:4/3}
   .exp .top{position:absolute;top:11px;left:11px;z-index:3;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;box-shadow:0 6px 14px -4px rgba(90,113,106,.4)}
   .exp-photo{aspect-ratio:1/1;overflow:hidden;background:#eee}
   .exp-photo img{width:100%;height:100%;object-fit:cover}
@@ -85,7 +88,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/ceramica.jpg" alt="Amigas rindo juntas com suas peças de cerâmica numa experiência da Elarah" style="object-position:center 30%">
+        <img src="assets/casalmodelagemceramica.jpg" alt="Mãos modelando uma peça de cerâmica juntas numa experiência da Elarah" style="object-position:center 45%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
@@ -117,16 +120,15 @@ espacos = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Onde acontece</span></div>
     </div>
-    <span class="eyebrow orange">◆ Três opções de espaço</span>
+    <span class="eyebrow orange">◆ Duas opções de espaço</span>
     <h2>Escolha o <em>cenário</em></h2>
-    <p class="lead">Três opções de espaço lindas, cada uma com seu charme e seu valor por pessoa. É só escolher qual combina mais com a turma — do ateliê charmoso ao estúdio exclusivo. 🌿</p>
+    <p class="lead">Duas opções de espaço lindas, cada uma com seu charme e seu valor por pessoa. É só escolher qual combina mais com a turma — do café arejado ao ateliê charmoso. 🌿</p>
     <div class="rule"></div>
-    <div class="menu">
-      {exp("Opção 1","atelieleroy-2.jpg","Ateliê · Jules · Sterna","Ateliê de cerâmica charmoso (Praça da Árvore ou Brooklin) — ou, se preferirem, Jules ou Sterna Café. Consumo à parte.","Ateliê de cerâmica com mesa de trabalho","center 50%",top="R$ 239")}
+    <div class="menu two">
+      {exp("Opção 1","julescampobelo.jpg","Ateliê · Jules · Sterna","Café charmoso e arejado (Jules · Campo Belo) — ou, se preferirem, o ateliê na Praça da Árvore/Brooklin ou o Sterna Café. Consumo à parte.","Café Jules em Campo Belo com mesas de madeira e guarda-sóis","center 60%",top="R$ 239")}
       {exp("Opção 2","betchavas2.jpg","Betc Havas Café","Moderno e cheio de charme — já vem com <b>R$ 50 de consumação</b> inclusos.","Interior moderno do Betc Havas Café","center 55%",top="R$ 289")}
-      {exp("Opção 3","espaco1.jpg","Bake Studio","Estúdio exclusivo com <b>cozinha e sala</b>, só de vocês, com liberdade pra decorar.","Lounge acolhedor do Bake Studio","center 55%",top="R$ 339")}
     </div>
-    <div class="note" style="margin-top:14px">◆ Valor <b>por pessoa</b>, com material e condução do profissional inclusos — cada um leva a própria peça. No <b>Ateliê/Jules/Sterna</b> o consumo é à parte; o <b>Betc</b> já vem com R$ 50 de consumação; o <b>Bake Studio</b> é exclusivo só de vocês. Data 29/08 a confirmar. 🌿</div>
+    <div class="note" style="margin-top:14px">◆ Valor <b>por pessoa</b>, com material e condução do profissional inclusos — cada um leva a própria peça. No <b>Ateliê/Jules/Sterna</b> o consumo é à parte; o <b>Betc</b> já vem com R$ 50 de consumação inclusos. Data 29/08 a confirmar. 🌿</div>
     {foot("Onde acontece")}
   </section>'''
 
@@ -218,7 +220,7 @@ como = f'''
     <p class="lead">A Elarah cuida de toda a produção pra o encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolham o espaço</h3><p>Ateliê (Praça da Árvore/Brooklin), Jules, Sterna, Betc Havas Café ou o Bake Studio exclusivo — a gente reserva pra sua turma no dia 29/08.</p></div>
+      <div class="step"><div class="num">1</div><h3>Escolham o espaço</h3><p>Ateliê (Praça da Árvore/Brooklin), Jules, Sterna ou o Betc Havas Café — a gente reserva pra sua turma no dia 29/08.</p></div>
       <div class="step"><div class="num">2</div><h3>A gente leva tudo</h3><p>Profissional, argila e toda a estrutura do workshop. Vocês só chegam e colocam a mão na massa.</p></div>
       <div class="step"><div class="num">3</div><h3>Cada um leva a peça</h3><p>Depois de assada e finalizada, todo mundo leva pra casa a própria peça — uma lembrança linda do dia. 🌿</p></div>
     </div>
@@ -243,7 +245,7 @@ como = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de modelagem em cerâmica, para 6 a 7 pessoas, em 29/08 (a confirmar), em espaço parceiro. Cada convidado molda e leva a própria peça, com material e condução do profissional inclusos. Três opções de espaço, por pessoa: Ateliê (Praça da Árvore ou Brooklin), Jules ou Sterna Café (consumo à parte) a partir de R$ 239; Betc Havas Café (R$ 50 de consumação inclusos) R$ 289; Bake Studio, espaço exclusivo (cozinha e sala), R$ 339. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de modelagem em cerâmica, para 6 a 7 pessoas, em 29/08 (a confirmar), em espaço parceiro. Cada convidado molda e leva a própria peça, com material e condução do profissional inclusos. Duas opções de espaço, por pessoa: Ateliê (Praça da Árvore ou Brooklin), Jules ou Sterna Café (consumo à parte) a partir de R$ 239; Betc Havas Café (R$ 50 de consumação inclusos) R$ 289. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Turma privada · Modelagem em cerâmica · 2026")}
   </section>'''
 
