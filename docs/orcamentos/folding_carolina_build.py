@@ -152,7 +152,7 @@ invest = f'''
       <div class="tier">
         <span class="tt">Plano 1 · Essencial</span>
         <h3>A Experiência</h3>
-        <div class="tp">R$ 249</div><div class="tu">por pessoa</div>
+        <div class="tp">R$ 229</div><div class="tu">por pessoa</div>
         <ul>
           <li>O workshop de Folding Book</li>
           <li>Todo o <b>material</b> e a condução do profissional</li>
@@ -163,7 +163,7 @@ invest = f'''
         <span class="ttag">Mais escolhido</span>
         <span class="tt">Plano 2 · Registro</span>
         <h3>+ Foto &amp; Coffee</h3>
-        <div class="tp">R$ 399</div><div class="tu">por pessoa</div>
+        <div class="tp">R$ 379</div><div class="tu">por pessoa</div>
         <ul>
           <li>Tudo do <b>Plano 1</b></li>
           <li><b>Foto profissional</b> do encontro</li>
@@ -173,7 +173,7 @@ invest = f'''
       <div class="tier">
         <span class="tt">Plano 3 · Completo</span>
         <h3>+ Personalização</h3>
-        <div class="tp">R$ 499</div><div class="tu">por pessoa</div>
+        <div class="tp">R$ 479</div><div class="tu">por pessoa</div>
         <ul>
           <li>Tudo do <b>Plano 2</b></li>
           <li><b>Lembrancinha personalizada</b></li>
@@ -181,7 +181,7 @@ invest = f'''
         </ul>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de Folding Book, para cerca de 30 mulheres, em 13 ou 20/09 (a confirmar), no salão de festas de vocês no Alto da Lapa (levamos até você). Cada participante cria e leva a própria peça, com material e condução do profissional inclusos. Três planos, por pessoa: A Experiência a partir de R$ 249; + Foto &amp; Coffee (foto profissional + coffee break) R$ 399; + Personalização (lembrancinha personalizada) R$ 499. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de Folding Book, para cerca de 30 mulheres, em 13 ou 20/09 (a confirmar), no salão de festas de vocês no Alto da Lapa (levamos até você). Cada participante cria e leva a própria peça, com material e condução do profissional inclusos. Três planos, por pessoa: A Experiência a partir de R$ 229; + Foto &amp; Coffee (foto profissional + coffee break) R$ 379; + Personalização (lembrancinha personalizada) R$ 479. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Investimento")}
   </section>'''
 
