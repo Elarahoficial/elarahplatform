@@ -55,6 +55,21 @@ extra = '''
   .ptag{position:absolute;top:-11px;right:18px;background:var(--orange);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
   .fineprint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:16px}
   .cllogo{height:29px;width:auto;display:block}
+  /* planos (3 tiers) */
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px;align-items:stretch}
+  .tier{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 22px;display:flex;flex-direction:column;position:relative}
+  .tier.hl{border:2px solid var(--navy);background:#FBF2F6}
+  .tier .tt{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:9px}
+  .tier h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);line-height:1.06}
+  .tier .tp{font-family:'DM Serif Display',serif;font-size:36px;color:var(--ink);line-height:1;margin:12px 0 1px}
+  .tier .tu{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .tier ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:9px;flex:1}
+  .tier ul li{position:relative;padding-left:20px;font-size:12.5px;color:var(--ink);line-height:1.36}
+  .tier ul li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:11px}
+  .tier ul li b{font-weight:700}
+  .ttag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 13px;border-radius:999px;white-space:nowrap}
+  .pkgnote{margin-top:18px;background:#F8EEF3;border-radius:14px;padding:14px 22px;font-size:12.5px;color:var(--navy-soft);text-align:center;line-height:1.5}
+  .pkgnote b{color:var(--navy);font-weight:700}
 </style>'''
 head = head.replace("</style>", extra, 1)
 
@@ -62,14 +77,14 @@ head = head.replace("</style>", extra, 1)
 head = head.replace(
     "    @page{size:A4 portrait;margin:0}",
     "    .slide *{box-shadow:none !important}\n"
-    "    .cover-photo,.exp-photo,.vibe figure,.pc{border:1px solid rgba(74,33,56,.14)}\n"
-    "    .invest{grid-template-columns:.92fr 1.08fr}\n"
+    "    .cover-photo,.exp-photo,.vibe figure,.tier{border:1px solid rgba(74,33,56,.14)}\n"
+    "    .tiers{grid-template-columns:repeat(3,1fr)}\n"
     "    .menu{grid-template-columns:repeat(2,1fr)}\n"
     "    .vibe{grid-template-columns:repeat(3,1fr)}\n"
     "    @page{size:A4 portrait;margin:0}", 1)
 # mobile: colapsa grids
 head = head.replace(".plans{grid-template-columns:1fr}",
-                    ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}\n    .invest{grid-template-columns:1fr}\n    .vibe{grid-template-columns:1fr 1fr}")
+                    ".plans{grid-template-columns:1fr}\n    .menu{grid-template-columns:1fr}\n    .tiers{grid-template-columns:1fr}\n    .vibe{grid-template-columns:1fr 1fr}")
 
 
 def foot(right):
@@ -102,7 +117,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/pinturatacameninas.jpg" alt="Amigas juntas criando numa experiência Elarah" style="object-position:center 35%">
+        <img src="assets/noiva.jpg" alt="Amigas celebrando juntas numa mesa linda de despedida" style="object-position:center 50%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
@@ -173,27 +188,44 @@ invest = f'''
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Valores</span>
-    <h2>Uma experiência — ou o <em>pacote</em></h2>
-    <p class="lead">Escolhendo uma só, o valor é o avulso. Combinando mais de uma no mesmo dia, entra o <strong>preço especial de pacote</strong> — quanto mais experiências, maior o desconto por pessoa.</p>
+    <span class="eyebrow orange">◆ Escolham o plano</span>
+    <h2>Três formas de <em>viver</em> o dia</h2>
+    <p class="lead">Todo plano já inclui a experiência escolhida (R$ 239/pessoa avulsa), com material, condução e deslocamento até Itu. A partir daí, é só escolher o quão completo vocês querem:</p>
     <div class="rule"></div>
-    <div class="invest">
-      <div class="iblock">
-        <h4>Escolhendo uma (avulsa)</h4>
-        <div class="arow"><div class="an">Vela Aromática</div><div class="av">R$ 239<small>/pessoa</small></div></div>
-        <div class="arow"><div class="an">Pintura em Taça</div><div class="av">R$ 239<small>/pessoa</small></div></div>
-        <div class="arow"><div class="an">Coquetelaria Autoral</div><div class="av">R$ 239<small>/pessoa</small></div></div>
-        <div class="arow"><div class="an">Cerâmica na Roda</div><div class="av">R$ 239<small>/pessoa</small></div></div>
+    <div class="tiers">
+      <div class="tier">
+        <span class="tt">Plano 1 · Essencial</span>
+        <h3>A Experiência</h3>
+        <div class="tp">R$ 239</div><div class="tu">por pessoa</div>
+        <ul>
+          <li>A experiência escolhida — taça, cerâmica, drinks ou vela</li>
+          <li>Todo o <b>material</b> e a condução do profissional</li>
+          <li><b>Deslocamento até Itu</b> incluso</li>
+        </ul>
       </div>
-      <div class="iblock">
-        <h4>Combinando experiências (pacote)</h4>
-        <div class="pcards">
-          <div class="pc"><div class="pl"><h5>2 experiências</h5><p>Vocês escolhem quais duas.</p></div><div class="pr"><span class="old">R$ 478</span><span class="big">R$ 439</span><span class="u">/pessoa</span></div></div>
-          <div class="pc hl"><span class="ptag">Mais escolhido</span><div class="pl"><h5>3 experiências</h5><p>O trio favorito da despedida.</p></div><div class="pr"><span class="old">R$ 717</span><span class="big">R$ 649</span><span class="u">/pessoa</span></div></div>
-        </div>
+      <div class="tier hl">
+        <span class="ttag">Mais escolhido</span>
+        <span class="tt">Plano 2 · Registro</span>
+        <h3>Experiência + Foto & Coffee</h3>
+        <div class="tp">R$ 389</div><div class="tu">por pessoa</div>
+        <ul>
+          <li>Tudo do <b>Plano 1</b></li>
+          <li><b>Foto profissional</b> da despedida</li>
+          <li><b>Coffee break</b> pra galera</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <span class="tt">Plano 3 · Completo</span>
+        <h3>Experiência + Decoração</h3>
+        <div class="tp">R$ 489</div><div class="tu">por pessoa</div>
+        <ul>
+          <li>Tudo do <b>Plano 2</b></li>
+          <li><b>Decoração temática</b> da despedida</li>
+          <li>Ambiente prontinho pras fotos</li>
+        </ul>
       </div>
     </div>
-    <p class="fineprint">Valores por pessoa, para turma privada de 7 convidadas, com material, condução do profissional e toda a estrutura inclusos. Deslocamento da equipe até Itu já incluso. As experiências de pacote acontecem no mesmo dia, no endereço escolhido por vocês. Valores válidos para o feriado de 20 de novembro, sujeitos à confirmação de data e disponibilidade de agenda.</p>
+    <div class="pkgnote">Quer mais de uma experiência no mesmo dia? <b>2 experiências por R$ 439</b> · <b>3 por R$ 649</b> (por pessoa) — e foto, coffee break e decoração podem ser somados a qualquer opção.</div>
     {foot("Investimento")}
   </section>'''
 
