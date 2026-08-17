@@ -168,6 +168,11 @@
   .bfeat h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:23px;color:var(--navy);line-height:1.02}
   .bfeat .sub{display:inline-block;font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange);margin-top:5px}
   .bfeat p{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.45}
+  /* galeria vibe */
+  .vibe{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+  .vibe figure{margin:0;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:3/4;box-shadow:0 16px 36px -24px rgba(0,0,0,.34)}
+  .vibe img{width:100%;height:100%;object-fit:cover;display:block}
+  .vibe figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 13px;color:#fff;font-size:12.5px;font-weight:600;background:linear-gradient(to top,rgba(30,34,30,.82),transparent)}
 </style>
 <style>
   :root{
@@ -405,7 +410,7 @@
     @page{size:A4 portrait;margin:0}
   }
 </style>
-<style>*{box-shadow:none!important;-webkit-box-shadow:none!important}.cover-photo{border:1px solid var(--line)}.plan-photo,.bfeat .bphoto{border:1px solid var(--line)}</style>
+<style>*{box-shadow:none!important;-webkit-box-shadow:none!important}.cover-photo{border:1px solid var(--line)}.plan-photo,.bfeat .bphoto{border:1px solid var(--line)}.vibe figure{border:1px solid var(--line)}</style>
 </head>
 <body>
 
@@ -454,6 +459,21 @@
     </div>
     <div class="note" style="margin-top:14px">◆ Sem precisar de talento nenhum — é só chegar e pintar. Cada um leva a própria peça. 🎨</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O workshop</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O que vocês vão sentir</span>
+    <h2>Cor, risada e <em>lembrança</em></h2>
+    <p class="lead">Mais que uma atividade: uma tarde leve e afetiva, cheia de fotos boas — e cada convidado ainda leva pra casa a peça que pintou e uma lembrancinha personalizada. 🎨</p>
+    <div class="vibe">
+      <figure><img src="assets/desp-hero2.jpg" alt="Amigas se abraçando e rindo numa experiência Elarah" style="object-position:center 22%"><figcaption>Juntas, do início ao fim</figcaption></figure>
+      <figure><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Lembrancinha personalizada com o nome de cada convidada" style="object-position:center 50%"><figcaption>Lembrancinha personalizada</figcaption></figure>
+      <figure><img src="assets/corp-criativo.jpg" alt="Convidadas pintando e criando lado a lado" style="object-position:center 35%"><figcaption>Mão na massa, junto</figcaption></figure>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vibe da experiência</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
