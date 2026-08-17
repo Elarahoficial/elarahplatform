@@ -89,7 +89,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/foldingbook.jpg" alt="Livros dobrados em esculturas de folding book numa experiência da Elarah" style="object-position:center 50%">
+        <img src="assets/foldingbook2.jpg" alt="Escultura de folding book com detalhe dourado numa decoração zen" style="object-position:center 42%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
@@ -106,7 +106,7 @@ exper = f'''
     <h2>Um livro que vira <em>arte</em></h2>
     <p class="lead">Sem precisar de talento nenhum: guiadas por um profissional, cada uma dobra as páginas de um livro criando formas e relevos lindos — uma peça artística pra decorar e guardar. Meditativo e cheio de significado. 🌿</p>
     <div class="bfeat">
-      <div class="bphoto"><img src="assets/foldingbook.jpg" alt="Esculturas de folding book feitas à mão" style="object-position:center 50%"></div>
+      <div class="bphoto"><img src="assets/foldingbook3.jpg" alt="Escultura de folding book em suporte dourado" style="object-position:center 42%"></div>
       <div class="bbody">
         <span class="btag">Folding Book</span>
         <h3>Mão na massa, no ritmo de vocês</h3>
@@ -132,7 +132,7 @@ vibe = f'''
     <p class="lead">Mais que uma atividade: uma tarde leve, afetiva e cheia de fotos boas — do tipo que o grupo vai lembrar pra sempre.</p>
     <div class="vibe">
       <figure><img src="assets/corp-criativo.jpg" alt="Convidadas criando lado a lado" style="object-position:center 35%"><figcaption>Mão na massa, junto</figcaption></figure>
-      <figure><img src="assets/desp-hero2.jpg" alt="Amigas se abraçando e rindo durante a experiência" style="object-position:center 22%"><figcaption>Conexão de verdade</figcaption></figure>
+      <figure><img src="assets/abraco-elegante.jpg" alt="Amigas se abraçando e rindo durante a experiência" style="object-position:center 25%"><figcaption>Conexão de verdade</figcaption></figure>
       <figure><img src="assets/cover-corp.jpg" alt="Grupo de mulheres num encontro elegante da Elarah" style="object-position:center 40%"><figcaption>Do início ao brinde</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
