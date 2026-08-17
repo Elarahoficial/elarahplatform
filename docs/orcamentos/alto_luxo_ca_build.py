@@ -42,7 +42,7 @@ extra = '''
   .itable .val small{font-family:'DM Sans';display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
   .itable tbody tr.hl td{background:#F6F0E8}
   .itable tbody tr:last-child td{border-bottom:none}
-  .itable .pill{display:inline-block;background:var(--navy);color:#fff;font-size:8px;letter-spacing:.08em;padding:3px 10px;border-radius:999px;margin-left:8px;font-weight:700;text-transform:uppercase;vertical-align:middle}
+  .itable .pill{display:block;width:-moz-fit-content;width:fit-content;margin:8px auto 5px;background:var(--navy);color:#fff;font-size:8.5px;letter-spacing:.09em;padding:4px 13px;border-radius:999px;font-weight:700;text-transform:uppercase;text-align:center}
   .fineprint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:16px}
 </style>'''
 head = head.replace("</style>", extra, 1)
@@ -83,7 +83,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/drinkspetisco.jpg" alt="Experiência gastronômica sofisticada, taça de vinho e petiscos" style="object-position:center 50%">
+        <img src="assets/drinksclassicos.jpg" alt="Bebida autoral elegante numa experiência alto luxo" style="object-position:center 50%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
@@ -127,7 +127,7 @@ menu = f'''
         <div class="exp-body"><span class="who">6 amigas</span><span class="n">01 · Cerâmica</span><h3>Cerâmica Autoral</h3>
         <p>Mão na argila: cada convidada modela a própria peça, com acompanhamento de uma ceramista — e leva a arte pra casa.</p>
         <span class="from">a partir de <b>R$ 239</b> /pessoa</span></div></div>
-      <div class="exp"><div class="exp-photo"><img src="assets/harmonizacaoqueijos.jpg" alt="Degustação de vinhos tintos com harmonização" style="object-position:center 55%"></div>
+      <div class="exp"><div class="exp-photo"><img src="assets/drinkspetisco.jpg" alt="Degustação de vinhos tintos com harmonização" style="object-position:center 50%"></div>
         <div class="exp-body"><span class="who">8 lojistas</span><span class="n">02 · Degustação</span><h3>Grandes Tintos Italianos</h3>
         <p>Uma degustação guiada por sommelier pelos grandes tintos da Itália, com harmonização — sensorial, elegante e envolvente.</p>
         <span class="from">a partir de <b>R$ 459</b> /pessoa</span></div></div>
