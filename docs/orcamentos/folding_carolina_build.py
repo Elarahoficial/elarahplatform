@@ -132,7 +132,7 @@ vibe = f'''
     <p class="lead">Mais que uma atividade: uma tarde leve, afetiva e cheia de fotos boas — do tipo que o grupo vai lembrar pra sempre.</p>
     <div class="vibe">
       <figure><img src="assets/corp-criativo.jpg" alt="Convidadas criando lado a lado" style="object-position:center 35%"><figcaption>Mão na massa, junto</figcaption></figure>
-      <figure><img src="assets/vibe-conexao-corp.jpg" alt="Convidada rindo durante a experiência" style="object-position:center 30%"><figcaption>Conexão de verdade</figcaption></figure>
+      <figure><img src="assets/desp-hero2.jpg" alt="Amigas se abraçando e rindo durante a experiência" style="object-position:center 22%"><figcaption>Conexão de verdade</figcaption></figure>
       <figure><img src="assets/cover-corp.jpg" alt="Grupo de mulheres num encontro elegante da Elarah" style="object-position:center 40%"><figcaption>Do início ao brinde</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
