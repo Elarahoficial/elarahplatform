@@ -85,7 +85,7 @@ cover = f'''
         <div class="chips">
           <span class="chip"><b>~10</b> pessoas</span>
           <span class="chip">Nov ou Dez · <b>19:30</b></span>
-          <span class="chip">Em <b>espaço parceiro</b> · Pinheiros</span>
+          <span class="chip"><b>Casa Aquário</b> · Pinheiros</span>
         </div>
       </div>
       <div class="cover-photo">
@@ -146,24 +146,24 @@ invest = f'''
     </div>
     <span class="eyebrow orange">◆ Valores por pessoa</span>
     <h2>Escolham o <em>plano</em></h2>
-    <p class="lead">A experiência acontece num espaço parceiro na região de Pinheiros, Itaim ou Vila Olímpia — com profissional, material e estrutura inclusos. É só escolher o quão completo querem o encontro:</p>
+    <p class="lead">A experiência acontece na <strong>Casa Aquário</strong>, em Pinheiros — ou em outro espaço parceiro na região (Itaim, Vila Olímpia) — com profissional, material e estrutura inclusos. É só escolher o quão completo querem o encontro:</p>
     <div class="rule"></div>
     <div class="tiers">
       <div class="tier">
         <span class="tt">Plano 1 · Essencial</span>
         <h3>A Experiência</h3>
-        <div class="tp">R$ 229</div><div class="tu">por pessoa</div>
+        <div class="tp">R$ 259</div><div class="tu">por pessoa</div>
         <ul>
           <li>O workshop de Folding Book</li>
           <li>Todo o <b>material</b> e a condução do profissional</li>
-          <li>Em <b>espaço parceiro</b> (Pinheiros/Itaim/VO)</li>
+          <li>Na <b>Casa Aquário</b> (Pinheiros) ou espaço parceiro</li>
         </ul>
       </div>
       <div class="tier hl">
         <span class="ttag">Mais escolhido</span>
         <span class="tt">Plano 2 · Registro</span>
         <h3>+ Foto &amp; Coffee</h3>
-        <div class="tp">R$ 379</div><div class="tu">por pessoa</div>
+        <div class="tp">R$ 409</div><div class="tu">por pessoa</div>
         <ul>
           <li>Tudo do <b>Plano 1</b></li>
           <li><b>Foto profissional</b> do encontro</li>
@@ -173,7 +173,7 @@ invest = f'''
       <div class="tier">
         <span class="tt">Plano 3 · Completo</span>
         <h3>+ Personalização</h3>
-        <div class="tp">R$ 479</div><div class="tu">por pessoa</div>
+        <div class="tp">R$ 509</div><div class="tu">por pessoa</div>
         <ul>
           <li>Tudo do <b>Plano 2</b></li>
           <li><b>Lembrancinha personalizada</b></li>
@@ -181,7 +181,7 @@ invest = f'''
         </ul>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de Folding Book, para cerca de 10 pessoas, em novembro ou dezembro (2ª quinta-feira do mês, 19:30, a confirmar), em espaço parceiro na região de Pinheiros, Itaim ou Vila Olímpia. Cada participante cria e leva a própria peça, com material e condução do profissional inclusos. Três planos, por pessoa: A Experiência a partir de R$ 229; + Foto &amp; Coffee (foto profissional + coffee break) R$ 379; + Personalização (lembrancinha personalizada) R$ 479. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para turma privada — workshop de Folding Book, para cerca de 10 pessoas, em novembro ou dezembro (2ª quinta-feira do mês, 19:30, a confirmar), na Casa Aquário (Pinheiros) ou em espaço parceiro na região (Itaim, Vila Olímpia). Cada participante cria e leva a própria peça, com material e condução do profissional inclusos. Três planos, por pessoa: A Experiência a partir de R$ 259; + Foto &amp; Coffee (foto profissional + coffee break) R$ 409; + Personalização (lembrancinha personalizada) R$ 509. Valores por pessoa. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Investimento")}
   </section>'''
 
