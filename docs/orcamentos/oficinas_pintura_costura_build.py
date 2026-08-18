@@ -86,7 +86,7 @@ cover = f'''
         </div>
       </div>
       <div class="cover-photo">
-        <img src="assets/aquarela1.jpg" alt="Mulher pintando flores em tela numa experiência da Elarah" style="object-position:center 35%">
+        <img src="assets/pintura-dupla.jpg" alt="Convidadas pintando flores numa experiência da Elarah" style="object-position:center 35%">
       </div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
@@ -104,8 +104,8 @@ workshop = f'''
     <p class="lead">Duas oficinas queridinhas pra turma — dá pra escolher só uma ou combinar as duas no mesmo encontro. Cada convidado leva pra casa a própria criação. Os valores de cada uma estão nas páginas a seguir. 🌸🧵</p>
     <div class="rule"></div>
     <div class="menu two">
-      {exp("Oficina 01","aquarela1.jpg","Pintando Flores na Telinha","Pra quem nunca pintou — cada um pinta o próprio quadro de flores e leva pra casa. A partir de R$ 199.","Pintura de flores em tela","center 40%")}
-      <div class="exp"><div class="exp-photo"><div class="pslot"><span class="pi">＋ 📷</span><span class="pl">Foto da costura</span><span class="ps">adicione aqui</span></div></div><div class="exp-body"><span class="n">Oficina 02</span><h3>Oficina de Costura Criativa</h3><p>Pra iniciantes — cada um costura o próprio projeto do zero e leva pra casa. A partir de R$ 139.</p></div></div>
+      {exp("Oficina 01","pintura-grupo.jpg","Pintando Flores na Telinha","Pra quem nunca pintou — cada um pinta o próprio quadro de flores e leva pra casa. A partir de R$ 199.","Grupo pintando ao ar livre","center 45%")}
+      {exp("Oficina 02","costura-costurando.jpg","Oficina de Costura Criativa","Pra iniciantes — cada um costura o próprio projeto do zero e leva pra casa. A partir de R$ 139.","Convidadas costurando à mão","center 40%")}
     </div>
     <div class="note" style="margin-top:14px">◆ As duas são feitas pra quem nunca fez — é só chegar e criar. Cada um leva a própria criação. 🌸🧵</div>
     {foot("As oficinas")}
@@ -293,9 +293,9 @@ vibe = f'''
     <h2>Mão na massa e <em>lembrança</em></h2>
     <p class="lead">Mais que uma atividade: uma tarde leve, afetiva e cheia de fotos boas — e cada convidado ainda leva pra casa a própria criação e uma lembrancinha personalizada. 🌸🧵</p>
     <div class="vibe">
-      <figure><img src="assets/ecobagpintura.jpg" alt="Convidada pintando flores à mão" style="object-position:center 40%"><figcaption>Mão na massa, junto</figcaption></figure>
+      <figure><img src="assets/vibe-risada.jpg" alt="Convidadas rindo com suas criações" style="object-position:center 28%"><figcaption>Risada garantida</figcaption></figure>
       <figure><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Lembrancinha personalizada com o nome de cada convidado" style="object-position:center 50%"><figcaption>Lembrancinha personalizada</figcaption></figure>
-      <figure><img src="assets/quadropintado.jpg" alt="Cada um leva a própria arte pra casa" style="object-position:center 35%"><figcaption>A sua arte pra levar</figcaption></figure>
+      <figure><img src="assets/vibe-mesa.jpg" alt="Mesa montada da experiência, com flores e mimos" style="object-position:center 45%"><figcaption>Cada detalhe cuidado</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
   </section>'''
