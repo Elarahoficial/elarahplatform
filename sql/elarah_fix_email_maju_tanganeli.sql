@@ -14,6 +14,12 @@
 -- gift cards, vendas manuais, cupons, newsletter, waitlist,
 -- submissões byElarah e opt-outs.
 --
+-- ⚠️  SE ESTE SCRIPT ABORTAR com "já existe outra conta":
+--     são DUAS contas separadas e este script não serve.
+--     Use, nesta ordem:
+--       1) sql/elarah_diag_contas_duplicadas_maju.sql   (só lê)
+--       2) sql/elarah_merge_contas_maju_tanganeli.sql   (unifica)
+--
 -- Rode UMA vez no SQL Editor do Supabase (role postgres).
 -- É idempotente: rodar de novo não quebra nada, só informa
 -- que não achou mais nada com o e-mail antigo.
