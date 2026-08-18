@@ -207,7 +207,24 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + exper + vibe + invest + proximos + '\n\n</div>\n\n'
+espaco = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">O espaço</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Onde acontece</span>
+    <h2>Casa Aquário · <em>Pinheiros</em></h2>
+    <p class="lead">Um casarão cheio de charme e arte em Pinheiros — ateliê iluminado por vitrais, lounge aconchegante e jardim interno. O cenário perfeito pra uma noite criativa e memorável.</p>
+    <div class="vibe">
+      <figure><img src="assets/casa-aquario-atelie.jpg" alt="Ateliê da Casa Aquário com vitrais coloridos" style="object-position:center 55%"><figcaption>Ateliê cheio de arte</figcaption></figure>
+      <figure><img src="assets/casa-aquario-lounge.jpg" alt="Lounge aconchegante da Casa Aquário" style="object-position:center 50%"><figcaption>Lounge aconchegante</figcaption></figure>
+      <figure><img src="assets/casa-aquario-jardim.jpg" alt="Jardim interno da Casa Aquário" style="object-position:center 45%"><figcaption>Jardim &amp; charme</figcaption></figure>
+    </div>
+    {foot("O espaço · Casa Aquário")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + exper + vibe + espaco + invest + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = "/home/user/elarahplatform/experiencia-folding-book-dri.html"
 open(out, "w", encoding="utf-8").write(html)
