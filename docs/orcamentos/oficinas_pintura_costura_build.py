@@ -51,7 +51,7 @@ extra = '''
   .bfeat p{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.45}
 </style>'''
 head = head.replace("</style>", extra, 1)
-head = head.replace("</head>", "<style>.menu.two{gap:22px}.menu.two .exp{width:calc(50% - 12px);max-width:360px}.pslot{border:2px dashed var(--orange);border-radius:0;background:rgba(199,126,134,.09);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;width:100%;height:100%;box-sizing:border-box;padding:14px}.pslot .pi{font-size:22px}.pslot .pl{font-family:'DM Serif Display',serif;font-size:15px;color:var(--navy)}.pslot .ps{font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}</style>\n</head>", 1)
+head = head.replace("</head>", "<style>.menu.two{gap:22px}.menu.two .exp{width:calc(50% - 12px);max-width:360px}.pslot{border:2px dashed var(--orange);border-radius:0;background:rgba(199,126,134,.09);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;width:100%;height:100%;box-sizing:border-box;padding:14px}.pslot .pi{font-size:22px}.pslot .pl{font-family:'DM Serif Display',serif;font-size:15px;color:var(--navy)}.pslot .ps{font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}.vibe{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}.vibe figure{margin:0;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:3/4;box-shadow:0 16px 36px -24px rgba(0,0,0,.34)}.vibe img{width:100%;height:100%;object-fit:cover;display:block}.vibe figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 13px;color:#fff;font-size:12.5px;font-weight:600;background:linear-gradient(to top,rgba(40,25,32,.82),transparent)}</style>\n</head>", 1)
 head = head.replace(".menu-cols{grid-template-columns:1fr 1fr}",
                     ".menu-cols{grid-template-columns:1fr 1fr}\n    .bfeat{flex-direction:row}\n    .bfeat .bphoto{width:40%;height:auto}\n    .bfeat .bbody{padding:16px 22px 17px}\n    .bfeat h3{font-size:20px}\n    .bfeat p{font-size:11px;margin-top:7px}")
 head = head.replace(".plans{grid-template-columns:1fr}",
@@ -283,13 +283,30 @@ planos_costura = f'''
     {foot("Investimento · Costura")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + workshop + espacos + planos + planos_costura + como + '\n\n</div>\n\n'
+vibe = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O que vocês vão sentir</span>
+    <h2>Mão na massa e <em>lembrança</em></h2>
+    <p class="lead">Mais que uma atividade: uma tarde leve, afetiva e cheia de fotos boas — e cada convidado ainda leva pra casa a própria criação e uma lembrancinha personalizada. 🌸🧵</p>
+    <div class="vibe">
+      <figure><img src="assets/ecobagpintura.jpg" alt="Convidada pintando flores à mão" style="object-position:center 40%"><figcaption>Mão na massa, junto</figcaption></figure>
+      <figure><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Lembrancinha personalizada com o nome de cada convidado" style="object-position:center 50%"><figcaption>Lembrancinha personalizada</figcaption></figure>
+      <figure><img src="assets/quadropintado.jpg" alt="Cada um leva a própria arte pra casa" style="object-position:center 35%"><figcaption>A sua arte pra levar</figcaption></figure>
+    </div>
+    {foot("A vibe da experiência")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + workshop + espacos + vibe + planos + planos_costura + como + '\n\n</div>\n\n'
 head = head.replace("<title>Setembro Amarelo · Elarah</title>", "<title>Duas Oficinas Criativas · Turma privada · Elarah</title>")
 head = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="Proposta da Elarah — duas oficinas (Pintura Flores na Telinha e Costura Criativa) para turma privada no Jules, Betc ou Bake Studio.">', head)
 head = head.replace("</head>",
     "<style>*{box-shadow:none!important;-webkit-box-shadow:none!important}"
     ".cover-photo{border:1px solid var(--line)}"
-    ".plan-photo,.bfeat .bphoto{border:1px solid var(--line)}"
+    ".plan-photo,.bfeat .bphoto,.vibe figure{border:1px solid var(--line)}"
     "</style>\n</head>")
 html = head + deck + tail
 out = "/home/user/elarahplatform/experiencia-duas-oficinas.html"
