@@ -12488,7 +12488,11 @@
   // fique visível em vez de a experiência sumir da cotação.
   const COTACAO_SEM_FORNECEDOR = '— sem fornecedor cadastrado —';
 
+  // Quantas experiências ficam à mostra no card antes do "ver mais".
+  const COTACAO_EXPS_VISIVEIS = 1;
+
   let _cotacaoData = null;      // cache do cruzamento (invalidado no ↻)
+  let _cotacaoExpandidos = new Set();  // fornecedores com a lista aberta
   let _cotacaoState = { categoria: '', catTerm: '', term: '', soAtivas: false };
   let _cotacaoWired = false;
 
@@ -12812,10 +12816,30 @@
         // "escolha uma categoria").
         _cotacaoState.categoria = (_cotacaoState.categoria === chip.dataset.cat)
           ? '' : chip.dataset.cat;
+        // Cada categoria começa com os cards fechados.
+        _cotacaoExpandidos = new Set();
         renderCotacaoCategorias();
         renderCotacaoResultados();
       });
     });
+  }
+
+  // Uma linha de experiência dentro do card do fornecedor.
+  function cotacaoExpItemHtml(e) {
+    const detalhes = [
+      cotacaoPreco(e),
+      e.duracao,
+      e.bairro,
+      e.data,
+      (e.vagasTotal != null ? e.vagasTotal + ' vagas' : ''),
+    ].filter(Boolean).join(' · ');
+    const oculta = e.isActive === false
+      ? ' <span style="color:#c0392b;font-weight:600;">(oculta)</span>'
+      : '';
+    return '<div style="font-size:.8rem;margin-bottom:6px;line-height:1.35;">' +
+      '<span style="font-weight:600;">' + escapeHtml(e.nome || '—') + '</span>' + oculta +
+      (detalhes ? '<br><span style="color:#666;">' + escapeHtml(detalhes) + '</span>' : '') +
+    '</div>';
   }
 
   // ===== Cards de fornecedor =====
@@ -12934,28 +12958,33 @@
             : cotacaoFormatReais(min) + ' – ' + cotacaoFormatReais(max)) + '</div>';
       }
 
-      // Experiências da categoria.
+      // Experiências da categoria. Fornecedor com dezenas/centenas de
+      // experiências transformaria o card numa parede de texto — então
+      // só a primeira fica visível e o resto abre no "ver mais".
+      // O estado aberto/fechado fica em _cotacaoExpandidos, pra sobreviver
+      // a uma re-render (busca, toggle de ativas).
+      const expandido = _cotacaoExpandidos.has(entry.key);
+      const resto = exps.slice(COTACAO_EXPS_VISIVEIS);
       const expsHtml = semExp
         ? '<div style="margin-top:10px;padding:8px 10px;background:#fff8ef;border-radius:8px;font-size:.78rem;color:#8a6d00;">' +
             'Cadastrado em ' + escapeHtml(catNome) + ', mas ainda sem experiência dessa categoria no site. Dá pra cotar mesmo assim.' +
           '</div>'
-        : '<div style="margin-top:10px;border-top:1px solid #f0f0f0;padding-top:8px;">' +
-            exps.map(e => {
-              const detalhes = [
-                cotacaoPreco(e),
-                e.duracao,
-                e.bairro,
-                e.data,
-                (e.vagasTotal != null ? e.vagasTotal + ' vagas' : ''),
-              ].filter(Boolean).join(' · ');
-              const oculta = e.isActive === false
-                ? ' <span style="color:#c0392b;font-weight:600;">(oculta)</span>'
-                : '';
-              return '<div style="font-size:.8rem;margin-bottom:6px;line-height:1.35;">' +
-                '<span style="font-weight:600;">' + escapeHtml(e.nome || '—') + '</span>' + oculta +
-                (detalhes ? '<br><span style="color:#666;">' + escapeHtml(detalhes) + '</span>' : '') +
-              '</div>';
-            }).join('') +
+        : '<div class="cotacao-exps" style="margin-top:10px;border-top:1px solid #f0f0f0;padding-top:8px;">' +
+            exps.slice(0, COTACAO_EXPS_VISIVEIS).map(cotacaoExpItemHtml).join('') +
+            (resto.length
+              ? '<div class="cotacao-exps-resto"' +
+                  (expandido ? '' : ' style="display:none;"') + '>' +
+                  resto.map(cotacaoExpItemHtml).join('') +
+                '</div>' +
+                '<button type="button" class="cotacao-ver-mais" data-forn-key="' + escapeHtml(entry.key) + '" ' +
+                  'data-resto="' + resto.length + '" ' +
+                  'style="margin-top:2px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;' +
+                  'font-size:.78rem;font-weight:600;color:var(--orange,#f0a05e);">' +
+                  (expandido
+                    ? '▲ ver menos'
+                    : '▼ ver mais (' + resto.length + ')') +
+                '</button>'
+              : '') +
           '</div>';
 
       // Ações: cotar no WhatsApp, copiar só esse fornecedor, abrir cadastro.
@@ -12984,6 +13013,23 @@
         head + linhas.join('') + faixa + expsHtml + acoes +
       '</div>';
     }).join('');
+
+    // "ver mais / ver menos" das experiências. Só mostra/esconde o bloco
+    // que já está no DOM — não re-renderiza o card (não perde a rolagem).
+    grid.querySelectorAll('.cotacao-ver-mais').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const wrap = btn.closest('.cotacao-exps');
+        const restoEl = wrap && wrap.querySelector('.cotacao-exps-resto');
+        if (!restoEl) return;
+        const abrindo = restoEl.style.display === 'none';
+        restoEl.style.display = abrindo ? '' : 'none';
+        btn.textContent = abrindo
+          ? '▲ ver menos'
+          : '▼ ver mais (' + (btn.dataset.resto || '') + ')';
+        if (abrindo) _cotacaoExpandidos.add(btn.dataset.fornKey);
+        else _cotacaoExpandidos.delete(btn.dataset.fornKey);
+      });
+    });
 
     // Copiar 1 fornecedor.
     grid.querySelectorAll('.cotacao-copy-one').forEach(btn => {
