@@ -458,6 +458,7 @@
       case 'purchases':   invalidateBookings(); await renderBookings(); break;
       case 'eventos':     await renderEventos(); break;
       case 'fornecedores': await renderFornecedores(); break;
+      case 'cotacao':    await renderCotacao(); break;
       case 'locais':      await renderLocais(); break;
       case 'prospects':   await renderProspects(); break;
       case 'b2b-prospects': await renderB2BProspects(); break;
@@ -12459,6 +12460,665 @@
       recalcBtn.dataset.wired = '1';
       recalcBtn.addEventListener('click', () => { openRecalcRepasseModal(); });
     }
+  }
+
+
+  // ===================================================================
+  // ============== COTAÇÃO POR CATEGORIA ==============================
+  // ===================================================================
+  // Problema que resolve: pra montar orçamento ("quero todas as opções
+  // de professor de cerâmica") a admin tinha que abrir fornecedor por
+  // fornecedor. Aqui é o caminho inverso: escolhe a CATEGORIA e a tela
+  // devolve todos os fornecedores que já têm experiência cadastrada
+  // nela, com valor, duração, bairro e WhatsApp pronto pra cotar.
+  //
+  // Sem tabela nova — cruza o que já existe:
+  //   experiences.categoria           (aceita multi-categoria "A | B")
+  //   experiences.fornecedor_nome     (modelo legado, 1 fornecedor)
+  //   experience_suppliers            (modelo novo, N fornecedores)
+  //   fornecedores_metadata           (status, WhatsApp, bairro, categoria)
+  //
+  // Fornecedor cadastrado com a categoria em fornecedores_metadata mas
+  // ainda SEM experiência aparece numa seção à parte — é justamente
+  // quem dá pra chamar pra cotar mesmo sem experiência no site.
+  // ===================================================================
+
+  // Nome usado quando a experiência não tem nenhum fornecedor vinculado.
+  // Aparece como um "fornecedor" à parte pra que o buraco de cadastro
+  // fique visível em vez de a experiência sumir da cotação.
+  const COTACAO_SEM_FORNECEDOR = '— sem fornecedor cadastrado —';
+
+  let _cotacaoData = null;      // cache do cruzamento (invalidado no ↻)
+  let _cotacaoState = { categoria: '', catTerm: '', term: '', soAtivas: false };
+  let _cotacaoWired = false;
+
+  // Categorias de uma experiência. Usa a fonte única do ElarahData
+  // (que já trata o separador "|"); só cai no split local se o
+  // experiences-data.js for antigo e não expuser categoriasOf.
+  function cotacaoCategoriasOf(exp) {
+    if (window.ElarahData && typeof ElarahData.categoriasOf === 'function') {
+      return ElarahData.categoriasOf(exp);
+    }
+    return String((exp && exp.categoria) || '')
+      .split('|').map(c => c.trim()).filter(Boolean);
+  }
+
+  // Chave de comparação de categoria: sem caixa, sem acento e sem
+  // espaço duplicado — "Cerâmica", "ceramica" e "CERÂMICA " são a mesma.
+  function cotacaoCatKey(nome) {
+    return String(nome || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().trim().replace(/\s+/g, ' ');
+  }
+
+  // Lê todas as linhas de experience_suppliers (modelo multi-fornecedor).
+  // Leitura é pública nessa tabela, então não depende de RLS de admin.
+  // Falha silenciosa: sem isso a cotação ainda funciona pelo campo
+  // legado experiences.fornecedor_nome.
+  async function cotacaoLoadExperienceSuppliers() {
+    const s = window.supabaseClient;
+    if (!s) return [];
+    try {
+      const { data, error } = await s
+        .from('experience_suppliers')
+        .select('experience_id, fornecedor_nome')
+        .limit(5000);
+      if (error) {
+        console.warn('[Admin/cotacao] experience_suppliers indisponível:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e) {
+      console.warn('[Admin/cotacao] experience_suppliers exception:', e);
+      return [];
+    }
+  }
+
+  // Monta o índice categoria → fornecedores → experiências.
+  async function cotacaoBuildData() {
+    const [allExperiences, metadata, expSuppliers] = await Promise.all([
+      (window.ElarahData && ElarahData.getAllExperiences)
+        ? ElarahData.getAllExperiences().catch(() => [])
+        : Promise.resolve([]),
+      getFornecedoresMetadata(),
+      cotacaoLoadExperienceSuppliers(),
+    ]);
+
+    const metaByKey = new Map();
+    (metadata || []).forEach(m => {
+      if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m);
+    });
+
+    // experience_id → nomes de fornecedor (modelo novo).
+    const supsByExpId = new Map();
+    (expSuppliers || []).forEach(r => {
+      if (!r || !r.experience_id) return;
+      const nome = String(r.fornecedor_nome || '').trim();
+      if (!nome) return;
+      let arr = supsByExpId.get(r.experience_id);
+      if (!arr) { arr = []; supsByExpId.set(r.experience_id, arr); }
+      if (!arr.some(n => fornecedorKey(n) === fornecedorKey(nome))) arr.push(nome);
+    });
+
+    // catKey → { nome, fornecedores: Map(fornKey → entry) }
+    const cats = new Map();
+    function catBucket(catNome) {
+      const k = cotacaoCatKey(catNome);
+      let bucket = cats.get(k);
+      if (!bucket) {
+        bucket = { key: k, nome: String(catNome).trim(), grafias: new Map(), fornecedores: new Map() };
+        cats.set(k, bucket);
+      }
+      // "Cerâmica" e "ceramica" são a mesma categoria (a chave ignora
+      // acento e caixa), mas o chip mostra só uma grafia — fica com a
+      // mais usada no cadastro, empate resolve pela primeira vista.
+      const grafia = String(catNome).trim();
+      bucket.grafias.set(grafia, (bucket.grafias.get(grafia) || 0) + 1);
+      return bucket;
+    }
+    function fornEntry(bucket, nome) {
+      const fk = fornecedorKey(nome);
+      let entry = bucket.fornecedores.get(fk);
+      if (!entry) {
+        entry = {
+          key: fk,
+          nome: nome,
+          meta: metaByKey.get(fk) || null,
+          exps: [],
+          semFornecedor: nome === COTACAO_SEM_FORNECEDOR,
+        };
+        bucket.fornecedores.set(fk, entry);
+      }
+      return entry;
+    }
+
+    (allExperiences || []).forEach(exp => {
+      if (!exp) return;
+      const categorias = cotacaoCategoriasOf(exp);
+      if (!categorias.length) return;
+
+      // União dos dois modelos de fornecedor. Sem nenhum, cai no
+      // pseudo-fornecedor pra denunciar o cadastro incompleto.
+      const nomes = [];
+      const push = (n) => {
+        const t = String(n || '').trim();
+        if (!t) return;
+        if (!nomes.some(x => fornecedorKey(x) === fornecedorKey(t))) nomes.push(t);
+      };
+      (supsByExpId.get(exp.id) || []).forEach(push);
+      push(exp.fornecedorNome);
+      if (!nomes.length) nomes.push(COTACAO_SEM_FORNECEDOR);
+
+      categorias.forEach(cat => {
+        const bucket = catBucket(cat);
+        nomes.forEach(nome => { fornEntry(bucket, nome).exps.push(exp); });
+      });
+    });
+
+    // Fornecedor cadastrado na categoria (fornecedores_metadata.categoria,
+    // separada por vírgula) mas ainda sem experiência nela. Entra numa
+    // lista à parte — dá pra cotar mesmo assim.
+    (metadata || []).forEach(m => {
+      if (!m || !m.categoria) return;
+      String(m.categoria).split(',').forEach(raw => {
+        const cat = raw.trim();
+        if (!cat) return;
+        const bucket = catBucket(cat);
+        const fk = m.fornecedor_key || fornecedorKey(m.fornecedor_nome);
+        if (!fk || bucket.fornecedores.has(fk)) return;
+        bucket.fornecedores.set(fk, {
+          key: fk,
+          nome: m.fornecedor_nome || fk,
+          meta: m,
+          exps: [],
+          semFornecedor: false,
+        });
+      });
+    });
+
+    // Fixa a grafia de exibição de cada categoria (a mais frequente).
+    cats.forEach(bucket => {
+      let melhor = bucket.nome;
+      let maior = 0;
+      bucket.grafias.forEach((n, grafia) => {
+        if (n > maior) { maior = n; melhor = grafia; }
+      });
+      bucket.nome = melhor;
+    });
+
+    // Lista ordenada de categorias: mais experiências primeiro (é o que
+    // a admin cota com mais frequência), desempate alfabético.
+    const lista = Array.from(cats.values()).map(b => {
+      let expCount = 0;
+      b.fornecedores.forEach(f => { expCount += f.exps.length; });
+      return {
+        key: b.key,
+        nome: b.nome,
+        fornecedores: b.fornecedores.size,
+        experiencias: expCount,
+      };
+    });
+    lista.sort((a, b) => {
+      if (b.experiencias !== a.experiencias) return b.experiencias - a.experiencias;
+      return a.nome.localeCompare(b.nome, 'pt-BR');
+    });
+
+    _cotacaoData = { cats, lista };
+    return _cotacaoData;
+  }
+
+  // Preço de exibição da experiência, no formato padrão do site.
+  function cotacaoPreco(exp) {
+    const p = exp && exp.preco;
+    if (!p) return '';
+    return (window.ElarahData && typeof ElarahData.formatPrecoBR === 'function')
+      ? ElarahData.formatPrecoBR(p)
+      : String(p);
+  }
+
+  // Valor numérico do preço (em reais) pra calcular a faixa. Aceita
+  // "R$ 1.380,00", "383", "162,90". null quando não dá pra ler.
+  function cotacaoPrecoNum(exp) {
+    const raw = String((exp && exp.preco) || '').replace(/[^\d,.]/g, '');
+    if (!raw) return null;
+    // Remove separador de milhar e troca a vírgula decimal por ponto.
+    const norm = raw.indexOf(',') !== -1
+      ? raw.replace(/\./g, '').replace(',', '.')
+      : raw;
+    const n = Number(norm);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  function cotacaoFormatReais(n) {
+    return 'R$ ' + Number(n).toLocaleString('pt-BR', {
+      minimumFractionDigits: n % 1 ? 2 : 0,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  // Mensagem pronta de cotação no WhatsApp — já cita a categoria e pede
+  // de uma vez tudo que falta pra fechar o orçamento.
+  function cotacaoWhatsappUrl(entry, categoriaNome) {
+    const meta = entry && entry.meta;
+    const phone = fornWaPhone(meta && meta.whatsapp);
+    if (!phone) return null;
+    const saud = (meta && meta.nome_contato && meta.nome_contato.trim())
+      ? meta.nome_contato.trim()
+      : String(entry.nome || '').trim();
+    const msg = 'Oi' + (saud ? ' ' + saud : '') + '! Aqui é da Elarah.\n\n' +
+      'Estou montando um orçamento de uma experiência de ' + categoriaNome + ' ' +
+      'e queria cotar com você.\n\n' +
+      'Me confirma, por favor:\n' +
+      '• Datas e horários disponíveis\n' +
+      '• Valor por pessoa\n' +
+      '• Mínimo e máximo de participantes\n' +
+      '• O que está incluso (material, comidinha, etc.)\n' +
+      '• Local (ou se você vai até o espaço do cliente)\n\n' +
+      'Obrigada!';
+    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  }
+
+  // Experiências do fornecedor já filtradas pelo toggle "só ativas".
+  function cotacaoExpsVisiveis(entry) {
+    return _cotacaoState.soAtivas
+      ? entry.exps.filter(e => e.isActive !== false)
+      : entry.exps.slice();
+  }
+
+  // Fornecedores da categoria selecionada, já filtrados pela busca e
+  // pelo toggle, ordenados por quem tem mais experiência na categoria.
+  function cotacaoFornecedoresFiltrados() {
+    if (!_cotacaoData || !_cotacaoState.categoria) return [];
+    const bucket = _cotacaoData.cats.get(_cotacaoState.categoria);
+    if (!bucket) return [];
+    const termo = _cotacaoState.term.trim().toLowerCase();
+    const list = Array.from(bucket.fornecedores.values()).map(entry => {
+      const exps = cotacaoExpsVisiveis(entry);
+      return Object.assign({}, entry, { expsVisiveis: exps });
+    }).filter(entry => {
+      // Com "só ativas" ligado, some quem ficou sem nenhuma experiência
+      // visível — mas mantém quem nunca teve (cadastro só na metadata).
+      if (_cotacaoState.soAtivas && entry.exps.length && !entry.expsVisiveis.length) return false;
+      if (!termo) return true;
+      const meta = entry.meta;
+      const hay = [
+        entry.nome,
+        meta && meta.bairro, meta && meta.cidade,
+        meta && meta.whatsapp, meta && meta.instagram,
+        meta && meta.nome_contato,
+        entry.expsVisiveis.map(e => [e.nome, e.bairro, e.duracao].filter(Boolean).join(' ')).join(' '),
+      ].filter(Boolean).join(' ').toLowerCase();
+      return hay.indexOf(termo) !== -1;
+    });
+    list.sort((a, b) => {
+      // Quem tem experiência na categoria vem primeiro; o pseudo
+      // "sem fornecedor cadastrado" vai pro fim de tudo.
+      if (a.semFornecedor !== b.semFornecedor) return a.semFornecedor ? 1 : -1;
+      const ea = a.expsVisiveis.length;
+      const eb = b.expsVisiveis.length;
+      if ((ea > 0) !== (eb > 0)) return eb - ea;
+      if (ea !== eb) return eb - ea;
+      return String(a.nome).localeCompare(String(b.nome), 'pt-BR');
+    });
+    return list;
+  }
+
+  // ===== Chips de categoria =====
+  function renderCotacaoCategorias() {
+    const wrap = document.getElementById('cotacao-cats');
+    const countEl = document.getElementById('cotacao-cats-count');
+    if (!wrap || !_cotacaoData) return;
+
+    const termo = _cotacaoState.catTerm.trim().toLowerCase();
+    const lista = termo
+      ? _cotacaoData.lista.filter(c => cotacaoCatKey(c.nome).indexOf(cotacaoCatKey(termo)) !== -1)
+      : _cotacaoData.lista;
+
+    const totalCats = _cotacaoData.lista.length;
+    const statCats = document.getElementById('stat-cotacao-categorias');
+    if (statCats) statCats.textContent = totalCats;
+    if (countEl) {
+      countEl.textContent = termo
+        ? lista.length + ' de ' + totalCats
+        : totalCats + ' categoria' + (totalCats === 1 ? '' : 's');
+    }
+
+    if (!lista.length) {
+      wrap.innerHTML = '<div class="admin__table-empty" style="width:100%;">' +
+        (totalCats
+          ? 'Nenhuma categoria com "' + escapeHtml(_cotacaoState.catTerm.trim()) + '".'
+          : 'Nenhuma categoria ainda — cadastre experiências com o campo Categoria preenchido.') +
+        '</div>';
+      return;
+    }
+
+    wrap.innerHTML = lista.map(c => {
+      const ativa = c.key === _cotacaoState.categoria;
+      return '<button type="button" class="cotacao-cat-chip" data-cat="' + escapeHtml(c.key) + '" ' +
+        'style="padding:7px 13px;border-radius:20px;cursor:pointer;font-family:inherit;font-size:.82rem;' +
+        'font-weight:600;white-space:nowrap;' +
+        (ativa
+          ? 'border:1px solid var(--orange,#f0a05e);background:var(--orange,#f0a05e);color:#fff;'
+          : 'border:1px solid #e2e2e2;background:#fff;color:#444;') + '" ' +
+        'title="' + escapeHtml(c.fornecedores + ' fornecedor(es) · ' + c.experiencias + ' experiência(s)') + '">' +
+        escapeHtml(c.nome) +
+        '<span style="margin-left:7px;font-weight:700;opacity:.75;">' + c.fornecedores + '</span>' +
+      '</button>';
+    }).join('');
+
+    wrap.querySelectorAll('.cotacao-cat-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        // Clicar de novo na categoria ativa desmarca (volta pro estado
+        // "escolha uma categoria").
+        _cotacaoState.categoria = (_cotacaoState.categoria === chip.dataset.cat)
+          ? '' : chip.dataset.cat;
+        renderCotacaoCategorias();
+        renderCotacaoResultados();
+      });
+    });
+  }
+
+  // ===== Cards de fornecedor =====
+  function renderCotacaoResultados() {
+    const grid = document.getElementById('cotacao-results');
+    const countEl = document.getElementById('cotacao-count');
+    const titleEl = document.getElementById('cotacao-result-title');
+    if (!grid) return;
+
+    const statForn = document.getElementById('stat-cotacao-fornecedores');
+    const statExp = document.getElementById('stat-cotacao-experiencias');
+    const statFaixa = document.getElementById('stat-cotacao-faixa');
+
+    if (!_cotacaoState.categoria) {
+      if (titleEl) titleEl.textContent = 'Fornecedores';
+      if (countEl) countEl.textContent = '';
+      if (statForn) statForn.textContent = '—';
+      if (statExp) statExp.textContent = '—';
+      if (statFaixa) statFaixa.textContent = '—';
+      grid.innerHTML = '<div class="admin__table-empty" style="grid-column:1/-1;">' +
+        'Escolha uma categoria acima pra ver os fornecedores.</div>';
+      return;
+    }
+
+    const bucket = _cotacaoData && _cotacaoData.cats.get(_cotacaoState.categoria);
+    const catNome = bucket ? bucket.nome : _cotacaoState.categoria;
+    const lista = cotacaoFornecedoresFiltrados();
+
+    if (titleEl) titleEl.textContent = 'Fornecedores de ' + catNome;
+
+    // Stats da categoria (sem o filtro de busca — retratam a categoria
+    // inteira; o contador ao lado do título é quem reflete a busca).
+    const todos = bucket ? Array.from(bucket.fornecedores.values()) : [];
+    const expsCategoria = [];
+    todos.forEach(f => { cotacaoExpsVisiveis(f).forEach(e => expsCategoria.push(e)); });
+    const expsUnicas = new Set(expsCategoria.map(e => e.id));
+    // Cotáveis = todo fornecedor real da categoria que ainda aparece na
+    // lista: com experiência visível, ou cadastrado na categoria sem
+    // experiência nenhuma (esse dá pra cotar direto no WhatsApp).
+    const cotaveis = todos.filter(f =>
+      !f.semFornecedor && (!f.exps.length || cotacaoExpsVisiveis(f).length)
+    ).length;
+    if (statForn) statForn.textContent = cotaveis;
+    if (statExp) statExp.textContent = expsUnicas.size;
+    if (statFaixa) {
+      const precos = expsCategoria.map(cotacaoPrecoNum).filter(n => n != null);
+      if (!precos.length) statFaixa.textContent = '—';
+      else {
+        const min = Math.min.apply(null, precos);
+        const max = Math.max.apply(null, precos);
+        statFaixa.textContent = min === max
+          ? cotacaoFormatReais(min)
+          : cotacaoFormatReais(min) + ' – ' + cotacaoFormatReais(max);
+      }
+    }
+
+    if (countEl) {
+      countEl.textContent = lista.length + ' fornecedor' + (lista.length === 1 ? '' : 'es') +
+        (_cotacaoState.term.trim() ? ' (filtrado)' : '');
+    }
+
+    if (!lista.length) {
+      grid.innerHTML = '<div class="admin__table-empty" style="grid-column:1/-1;">' +
+        (_cotacaoState.term.trim()
+          ? 'Nenhum fornecedor de ' + escapeHtml(catNome) + ' pra "' + escapeHtml(_cotacaoState.term.trim()) + '".'
+          : 'Nenhum fornecedor em ' + escapeHtml(catNome) + ' ainda.') +
+        '</div>';
+      return;
+    }
+
+    grid.innerHTML = lista.map(entry => {
+      const meta = entry.meta;
+      const exps = entry.expsVisiveis;
+      const semExp = !exps.length;
+
+      // Cabeçalho: nome + status + tipo de parceria.
+      const tipoLabel = formatTipoParceriaLabel(meta && meta.tipo_parceria);
+      const head =
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+          '<div style="min-width:0;">' +
+            '<div style="font-weight:700;font-size:.98rem;' +
+              (entry.semFornecedor ? 'color:#c0392b;' : '') + '">' +
+              escapeHtml(entry.nome) + '</div>' +
+            (tipoLabel
+              ? '<div style="font-size:.72rem;color:#f0a05e;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:2px;">' +
+                escapeHtml(tipoLabel) + '</div>'
+              : '') +
+          '</div>' +
+          (entry.semFornecedor ? '' : fornStatusBadge(meta && meta.status)) +
+        '</div>';
+
+      // Contato / localização.
+      const linhas = [];
+      const local = [meta && meta.bairro, meta && meta.cidade].filter(Boolean).join(' · ');
+      if (local) {
+        linhas.push('<div style="font-size:.8rem;color:#555;margin-top:6px;">📍 ' + escapeHtml(local) + '</div>');
+      }
+      if (meta && meta.whatsapp) {
+        linhas.push('<div style="font-size:.8rem;color:#555;margin-top:4px;">📞 ' + escapeHtml(meta.whatsapp) + '</div>');
+      }
+      if (meta && meta.instagram) {
+        const handle = String(meta.instagram).replace(/^@/, '').trim();
+        linhas.push('<div style="font-size:.8rem;color:#555;margin-top:4px;">📷 ' +
+          '<a href="https://instagram.com/' + encodeURIComponent(handle) + '" target="_blank" rel="noopener" ' +
+          'style="color:#25908a;text-decoration:none;">@' + escapeHtml(handle) + '</a></div>');
+      }
+
+      // Faixa de preço do fornecedor dentro da categoria.
+      const precos = exps.map(cotacaoPrecoNum).filter(n => n != null);
+      let faixa = '';
+      if (precos.length) {
+        const min = Math.min.apply(null, precos);
+        const max = Math.max.apply(null, precos);
+        faixa = '<div style="font-size:.8rem;margin-top:6px;font-weight:600;">💰 ' +
+          escapeHtml(min === max ? cotacaoFormatReais(min)
+            : cotacaoFormatReais(min) + ' – ' + cotacaoFormatReais(max)) + '</div>';
+      }
+
+      // Experiências da categoria.
+      const expsHtml = semExp
+        ? '<div style="margin-top:10px;padding:8px 10px;background:#fff8ef;border-radius:8px;font-size:.78rem;color:#8a6d00;">' +
+            'Cadastrado em ' + escapeHtml(catNome) + ', mas ainda sem experiência dessa categoria no site. Dá pra cotar mesmo assim.' +
+          '</div>'
+        : '<div style="margin-top:10px;border-top:1px solid #f0f0f0;padding-top:8px;">' +
+            exps.map(e => {
+              const detalhes = [
+                cotacaoPreco(e),
+                e.duracao,
+                e.bairro,
+                e.data,
+                (e.vagasTotal != null ? e.vagasTotal + ' vagas' : ''),
+              ].filter(Boolean).join(' · ');
+              const oculta = e.isActive === false
+                ? ' <span style="color:#c0392b;font-weight:600;">(oculta)</span>'
+                : '';
+              return '<div style="font-size:.8rem;margin-bottom:6px;line-height:1.35;">' +
+                '<span style="font-weight:600;">' + escapeHtml(e.nome || '—') + '</span>' + oculta +
+                (detalhes ? '<br><span style="color:#666;">' + escapeHtml(detalhes) + '</span>' : '') +
+              '</div>';
+            }).join('') +
+          '</div>';
+
+      // Ações: cotar no WhatsApp, copiar só esse fornecedor, abrir cadastro.
+      const waUrl = entry.semFornecedor ? null : cotacaoWhatsappUrl(entry, catNome);
+      const acoes = entry.semFornecedor
+        ? '<div style="margin-top:10px;font-size:.76rem;color:#c0392b;">' +
+            'Preencha o campo Fornecedor nessa(s) experiência(s) pra ela entrar na cotação certa.' +
+          '</div>'
+        : '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;">' +
+            (waUrl
+              ? '<a href="' + waUrl + '" target="_blank" rel="noopener" ' +
+                'style="padding:6px 11px;border:1px solid #1a8a4a;color:#1a8a4a;border-radius:6px;' +
+                'font-size:.76rem;text-decoration:none;font-weight:600;">💬 Cotar no WhatsApp</a>'
+              : '<span style="font-size:.72rem;color:#bbb;align-self:center;" title="Cadastre o WhatsApp na aba Fornecedores">sem WhatsApp</span>') +
+            '<button type="button" class="cotacao-copy-one" data-forn-key="' + escapeHtml(entry.key) + '" ' +
+              'style="padding:6px 11px;border:1px solid #ddd;background:#fff;border-radius:6px;' +
+              'cursor:pointer;font-size:.76rem;font-family:inherit;">📋 Copiar</button>' +
+            '<button type="button" class="cotacao-open-forn" data-forn-key="' + escapeHtml(entry.key) + '" ' +
+              'data-forn-nome="' + escapeHtml(entry.nome) + '" ' +
+              'style="padding:6px 11px;border:1px solid #ddd;background:#fff;border-radius:6px;' +
+              'cursor:pointer;font-size:.76rem;font-family:inherit;">Cadastro</button>' +
+          '</div>';
+
+      return '<div style="border:1px solid #eee;border-radius:10px;padding:14px 16px;background:#fff;' +
+        'box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;">' +
+        head + linhas.join('') + faixa + expsHtml + acoes +
+      '</div>';
+    }).join('');
+
+    // Copiar 1 fornecedor.
+    grid.querySelectorAll('.cotacao-copy-one').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = lista.find(f => f.key === btn.dataset.fornKey);
+        if (!entry) return;
+        unlockCopy(cotacaoTextoFornecedor(entry, catNome, 0), btn);
+      });
+    });
+
+    // Abrir o cadastro do fornecedor (mesmo modal da aba Fornecedores).
+    grid.querySelectorAll('.cotacao-open-forn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = lista.find(f => f.key === btn.dataset.fornKey);
+        const meta = entry && entry.meta;
+        openFornecedorModal(
+          meta || { fornecedor_nome: btn.dataset.fornNome || '' },
+          !meta
+        );
+      });
+    });
+  }
+
+  // ===== Texto pra colar no orçamento / WhatsApp =====
+  function cotacaoTextoFornecedor(entry, catNome, indice) {
+    const meta = entry.meta;
+    const cab = [
+      (indice ? indice + ') ' : '') + entry.nome,
+      [meta && meta.bairro, meta && meta.cidade].filter(Boolean).join(' · '),
+      meta && meta.whatsapp ? 'WhatsApp: ' + meta.whatsapp : '',
+    ].filter(Boolean).join(' — ');
+    const exps = (entry.expsVisiveis || cotacaoExpsVisiveis(entry));
+    if (!exps.length) {
+      return cab + '\n   • sem experiência de ' + catNome + ' cadastrada (cotar direto)';
+    }
+    const linhas = exps.map(e => {
+      const detalhes = [cotacaoPreco(e), e.duracao, e.bairro, e.data]
+        .filter(Boolean).join(' · ');
+      return '   • ' + (e.nome || '—') + (detalhes ? ' — ' + detalhes : '') +
+        (e.isActive === false ? ' (oculta no site)' : '');
+    });
+    return cab + '\n' + linhas.join('\n');
+  }
+
+  function cotacaoTextoLista() {
+    const bucket = _cotacaoData && _cotacaoData.cats.get(_cotacaoState.categoria);
+    const catNome = bucket ? bucket.nome : '';
+    const lista = cotacaoFornecedoresFiltrados().filter(f => !f.semFornecedor);
+    if (!lista.length) return '';
+    const head = 'COTAÇÃO — ' + catNome.toUpperCase() +
+      ' (' + lista.length + ' fornecedor' + (lista.length === 1 ? '' : 'es') + ')';
+    return head + '\n\n' +
+      lista.map((entry, i) => cotacaoTextoFornecedor(entry, catNome, i + 1)).join('\n\n');
+  }
+
+  // ===== Wire dos controles (uma vez só) =====
+  function wireCotacao() {
+    if (_cotacaoWired) return;
+    _cotacaoWired = true;
+
+    const catSearch = document.getElementById('cotacao-cats-search');
+    if (catSearch) {
+      catSearch.addEventListener('input', () => {
+        _cotacaoState.catTerm = catSearch.value || '';
+        renderCotacaoCategorias();
+      });
+    }
+
+    const search = document.getElementById('cotacao-search');
+    if (search) {
+      search.addEventListener('input', () => {
+        _cotacaoState.term = search.value || '';
+        renderCotacaoResultados();
+      });
+    }
+
+    const soAtivas = document.getElementById('cotacao-so-ativas');
+    if (soAtivas) {
+      soAtivas.addEventListener('change', () => {
+        _cotacaoState.soAtivas = !!soAtivas.checked;
+        renderCotacaoCategorias();
+        renderCotacaoResultados();
+      });
+    }
+
+    const copiar = document.getElementById('cotacao-copiar-btn');
+    if (copiar) {
+      copiar.addEventListener('click', () => {
+        const txt = cotacaoTextoLista();
+        if (!txt) {
+          alert('Escolha uma categoria com fornecedores pra copiar a lista.');
+          return;
+        }
+        unlockCopy(txt, copiar);
+      });
+    }
+
+    const reload = document.getElementById('cotacao-reload-btn');
+    if (reload) {
+      reload.addEventListener('click', async () => {
+        reload.disabled = true;
+        const orig = reload.textContent;
+        reload.textContent = 'Atualizando…';
+        try {
+          if (window.ElarahData && ElarahData.invalidateCache) ElarahData.invalidateCache();
+          fornecedoresMetaCache = null;
+          _cotacaoData = null;
+          await renderCotacao();
+        } finally {
+          reload.disabled = false;
+          reload.textContent = orig;
+        }
+      });
+    }
+  }
+
+  async function renderCotacao() {
+    const grid = document.getElementById('cotacao-results');
+    if (!grid) return;
+    wireCotacao();
+
+    if (!_cotacaoData) {
+      const catsWrap = document.getElementById('cotacao-cats');
+      if (catsWrap) {
+        catsWrap.innerHTML = '<div class="admin__table-empty" style="width:100%;">Carregando categorias…</div>';
+      }
+      await cotacaoBuildData();
+    }
+
+    // Categoria escolhida antes pode ter sumido (experiência apagada).
+    if (_cotacaoState.categoria && !_cotacaoData.cats.has(_cotacaoState.categoria)) {
+      _cotacaoState.categoria = '';
+    }
+    renderCotacaoCategorias();
+    renderCotacaoResultados();
   }
 
   // =================================================

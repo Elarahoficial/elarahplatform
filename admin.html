@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 122;
+      var EXPECTED = 123;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -151,6 +151,16 @@
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
         <span>Fornecedores</span>
+      </button>
+      <!-- Cotação por categoria: escolhe "Cerâmica" e vê de uma vez
+           todos os fornecedores que já têm experiência nessa categoria.
+           Evita caçar fornecedor por fornecedor pra montar orçamento. -->
+      <button class="admin__nav-item" data-panel="cotacao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 3H5a2 2 0 0 0-2 2v5l9 9a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8z"/>
+          <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/>
+        </svg>
+        <span>Cotação</span>
       </button>
 
       <button class="admin__nav-item" data-panel="locais">
@@ -329,7 +339,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.69 · 2026-04-29 (cupom no template)
+        Admin v.70 · 2026-08-19 (cotação por categoria)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1163,6 +1173,65 @@
             <tr><td colspan="14" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ===== COTAÇÃO POR CATEGORIA PANEL ===== -->
+    <!-- Fluxo: clica na categoria (ex.: Cerâmica) → lista todos os
+         fornecedores que já têm experiência cadastrada nela, com preço,
+         bairro, duração e WhatsApp pronto pra pedir orçamento. Tudo é
+         calculado no navegador a partir das experiências + fornecedores
+         que já estão no banco — nenhuma tabela nova. -->
+    <div class="admin__panel" id="panel-cotacao">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Cotação por categoria</h1>
+        <p class="admin__page-subtitle">Escolha a categoria e veja de uma vez só todos os fornecedores que já têm experiência cadastrada nela — com valor, bairro, duração e WhatsApp pronto pra pedir orçamento.</p>
+      </div>
+
+      <div class="admin__stats">
+        <div class="admin__stat">
+          <div class="admin__stat-label">Fornecedores na categoria</div>
+          <div class="admin__stat-value" id="stat-cotacao-fornecedores">—</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Experiências na categoria</div>
+          <div class="admin__stat-value" id="stat-cotacao-experiencias">—</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Faixa de preço</div>
+          <div class="admin__stat-value admin__stat-value--orange" id="stat-cotacao-faixa">—</div>
+        </div>
+        <div class="admin__stat">
+          <div class="admin__stat-label">Categorias cadastradas</div>
+          <div class="admin__stat-value" id="stat-cotacao-categorias">—</div>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap">
+        <div class="admin__table-header">
+          <span class="admin__table-title">Categorias</span>
+          <span class="admin__table-count" id="cotacao-cats-count" style="margin-left:8px;"></span>
+          <input type="search" id="cotacao-cats-search" placeholder="🔍 Achar categoria (ex.: cerâmica)" autocomplete="off" style="margin-left:16px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:.82rem;font-family:inherit;min-width:200px;flex:0 1 260px;">
+          <button type="button" id="cotacao-reload-btn" style="margin-left:auto;padding:7px 14px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;" title="Recarrega experiências e fornecedores do banco">↻ Atualizar</button>
+        </div>
+        <div id="cotacao-cats" style="display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;">
+          <div class="admin__table-empty" style="width:100%;">Carregando categorias…</div>
+        </div>
+      </div>
+
+      <div class="admin__table-wrap" style="margin-top:18px;">
+        <div class="admin__table-header">
+          <span class="admin__table-title" id="cotacao-result-title">Fornecedores</span>
+          <span class="admin__table-count" id="cotacao-count" style="margin-left:8px;"></span>
+          <input type="search" id="cotacao-search" placeholder="🔍 Filtrar (fornecedor, bairro, experiência…)" autocomplete="off" style="margin-left:16px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:.82rem;font-family:inherit;min-width:220px;flex:0 1 300px;">
+          <label style="margin-left:12px;font-size:.78rem;color:#666;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;" title="Esconde as experiências que estão ocultas no site">
+            <input type="checkbox" id="cotacao-so-ativas"> só experiências ativas
+          </label>
+          <button type="button" id="cotacao-copiar-btn" style="margin-left:auto;padding:7px 14px;border:none;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;" title="Copia a lista em texto pra colar no orçamento ou no WhatsApp">📋 Copiar lista</button>
+        </div>
+        <div id="cotacao-results" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;padding:16px;">
+          <div class="admin__table-empty" style="grid-column:1/-1;">Escolha uma categoria acima pra ver os fornecedores.</div>
+        </div>
       </div>
     </div>
 
@@ -4723,7 +4792,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=219"></script>
+<script src="admin.js?v=220"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
