@@ -107,7 +107,7 @@ experiencia = f'''
     <h2>Pintar <em>à mão</em></h2>
     <p class="lead">Conduzida por uma profissional, cada convidada escolhe a própria peça de cerâmica e pinta à mão — do desenho às cores, cheia de personalidade — e leva pra casa de lembrança. Sem precisar de talento nenhum. 🤍</p>
     <div class="bfeat">
-      <div class="bphoto"><img src="assets/pinturapratoceramica.jpg" alt="Peça de cerâmica sendo pintada à mão" style="object-position:center 50%"></div>
+      <div class="bphoto"><img src="assets/ceramicafamiliamais12.jpg" alt="Convidadas pintando cerâmica à mão numa experiência da Elarah" style="object-position:center 40%"></div>
       <div class="bbody">
         <span class="btag">Como acontece</span>
         <h3>Uma tarde, do começo ao fim</h3>
