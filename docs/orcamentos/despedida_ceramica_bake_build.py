@@ -45,6 +45,10 @@ extra = '''
   .tier ul li b{font-weight:700}
   .ttag{position:absolute;top:-11px;left:18px;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border-radius:999px;white-space:nowrap}
   .fineprint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:16px}
+  .vibe{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+  .vibe figure{margin:0;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:3/4;box-shadow:0 16px 36px -24px rgba(0,0,0,.34)}
+  .vibe img{width:100%;height:100%;object-fit:cover;display:block}
+  .vibe figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 13px;color:#fff;font-size:12.5px;font-weight:600;background:linear-gradient(to top,rgba(40,25,32,.82),transparent)}
 </style>'''
 head = head.replace("</style>", extra, 1)
 
@@ -52,7 +56,7 @@ head = head.replace("</style>", extra, 1)
 head = head.replace(
     "    @page{size:A4 portrait;margin:0}",
     "    .slide *{box-shadow:none !important}\n"
-    "    .cover-photo,.tier,.bfeat .bphoto{border:1px solid rgba(46,38,32,.14)}\n"
+    "    .cover-photo,.tier,.bfeat .bphoto,.vibe figure{border:1px solid rgba(46,38,32,.14)}\n"
     "    .tiers{grid-template-columns:repeat(3,1fr)}\n"
     "    .bfeat{grid-template-columns:48% 1fr}\n"
     "    @page{size:A4 portrait;margin:0}", 1)
@@ -209,7 +213,24 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + experiencia + espaco + planos + proximos + '\n\n</div>\n\n'
+vibe = f'''
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O que vocês vão sentir</span>
+    <h2>Risada, arte e <em>lembrança</em></h2>
+    <p class="lead">Mais que uma atividade: uma tarde leve, afetiva e cheia de fotos boas — do tipo que a noiva e as amigas vão lembrar pra sempre. E cada uma ainda leva a própria peça e uma lembrancinha. 🤍</p>
+    <div class="vibe">
+      <figure><img src="assets/desp-hero2.jpg" alt="Amigas se abraçando e rindo" style="object-position:center 22%"><figcaption>Juntas, do início ao fim</figcaption></figure>
+      <figure><img src="assets/corp-criativo.jpg" alt="Convidadas criando lado a lado" style="object-position:center 35%"><figcaption>Mão na massa, junto</figcaption></figure>
+      <figure><img src="assets/personaliza%C3%A7aobrindeescovapiranha.jpg" alt="Lembrancinha personalizada" style="object-position:center 50%"><figcaption>Lembrancinha personalizada</figcaption></figure>
+    </div>
+    {foot("A vibe da experiência")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + experiencia + espaco + vibe + planos + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = "/home/user/elarahplatform/experiencia-despedida-ceramica-bake.html"
 open(out, "w", encoding="utf-8").write(html)
