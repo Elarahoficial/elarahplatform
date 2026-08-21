@@ -38,6 +38,7 @@ import {
   wasInventoryReleased,
 } from "../_shared/booking_guard.ts";
 import { verifyWebhookBasicAuth } from "../_shared/pagarme.ts";
+import { computeBackfillValues } from "../_shared/financial.ts";
 
 const WEBHOOK_USER = Deno.env.get("PAGARME_WEBHOOK_USER") ?? "";
 const WEBHOOK_PASS = Deno.env.get("PAGARME_WEBHOOK_PASSWORD") ?? "";
@@ -229,17 +230,22 @@ async function markBookingAsPaid(
     !booking.fornecedor_nome || !booking.status_fornecedor;
   if (needsBackfill && booking.experiencia_id) {
     const { data: exp } = await supabase.from("experiences")
-      .select("fornecedor_nome, valor_cheio_centavos, created_by")
+      .select(
+        "fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos, comissao_type, comissao_value, created_by",
+      )
       .eq("id", booking.experiencia_id).maybeSingle();
     if (exp) {
-      const qty = Number(booking.quantidade) || 1;
-      const cheio = exp.valor_cheio_centavos ? exp.valor_cheio_centavos * qty : null;
+      // Mesma regra do admin e da trigger: repasse = % (ou valor fixo)
+      // em cima do VALOR CHEIO — nunca do valor pago, que no cartão sai
+      // com o gross-up da taxa.
+      const { valorCheioTotal: cheio, valorRepasse, valorComissao } =
+        computeBackfillValues(exp, booking.quantidade);
       const patch: Record<string, unknown> = {};
       if (!booking.fornecedor_nome && exp.fornecedor_nome) patch.fornecedor_nome = exp.fornecedor_nome;
       if (!booking.fornecedor_id && exp.created_by) patch.fornecedor_id = exp.created_by;
       if (!booking.valor_cheio_centavos && cheio) patch.valor_cheio_centavos = cheio;
-      if (!booking.valor_repasse_centavos && cheio) patch.valor_repasse_centavos = Math.round(cheio * 0.70);
-      if (!booking.valor_comissao_centavos && cheio) patch.valor_comissao_centavos = Math.round(cheio * 0.20);
+      if (!booking.valor_repasse_centavos && valorRepasse) patch.valor_repasse_centavos = valorRepasse;
+      if (!booking.valor_comissao_centavos && valorComissao) patch.valor_comissao_centavos = valorComissao;
       if (!booking.status_fornecedor) patch.status_fornecedor = "repasse_pendente";
       if (Object.keys(patch).length) {
         await supabase.from("bookings").update(patch).eq("id", booking.id);

@@ -1366,11 +1366,92 @@
     });
   }
 
+  // Reserva com VARIAÇÃO de preço (Individual/Dupla/Trio): a experiência
+  // guarda só o preço-BASE, então o cheio da opção comprada só existe no
+  // snapshot da reserva.
+  function bookingTemVariante(b) {
+    if (!b || !b.metadata) return false;
+    const m = b.metadata;
+    if (m.variant_selected && String(m.variant_selected).trim()) return true;
+    return Array.isArray(m.participantes) && m.participantes.some(function (p) {
+      return p && p.variant_selected && String(p.variant_selected).trim();
+    });
+  }
+
+  // ===== Base de cálculo INDEPENDENTE do meio de pagamento =====
+  // O valor que a pessoa paga muda com o meio: no cartão o total sai com
+  // gross-up da taxa da adquirente (e ainda varia por nº de parcelas), no
+  // Pix sai o valor-base; cupom e gift card também mexem no amount_total.
+  // O repasse NÃO pode mudar por causa disso — ele é sempre a porcentagem
+  // em cima do VALOR CHEIO. Esta função devolve o preço do ingresso por
+  // trás do amount_total (tira a taxa/gross-up do cartão e devolve os
+  // descontos), pra servir de último recurso quando não há valor cheio em
+  // lugar nenhum. Duas compras iguais dão a MESMA base, tenha sido Pix ou
+  // cartão.
+  function bookingTicketCentavos(b) {
+    if (!b) return null;
+    const meta = (b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
+    let base = null;
+    // Auditoria gravada no checkout: Pagar.me cartão grava o valor ANTES do
+    // gross-up; Mercado Pago cartão grava o valor antes da taxa. Qualquer
+    // um dos dois já é o valor sem interferência do meio de pagamento.
+    const semTaxa = [meta.amount_before_grossup_centavos, meta.amount_before_fee_centavos];
+    for (let i = 0; i < semTaxa.length; i++) {
+      const v = Number(semTaxa[i]);
+      if (Number.isFinite(v) && v > 0) { base = Math.round(v); break; }
+    }
+    if (base == null && b.amount_total != null) {
+      base = Number(b.amount_total) || 0;
+      // Sem o campo de auditoria: desconta o que foi somado de taxa.
+      const taxa = Number(meta.card_fee_total_centavos) || Number(meta.grossup_centavos) || 0;
+      if (taxa > 0 && taxa < base) base -= taxa;
+    }
+    if (base == null) return null;
+    // Cupom e gift card abatem o amount_total mas não mudam o preço do
+    // ingresso — devolve, pra base ficar igual à de uma compra sem desconto.
+    base += Number(b.coupon_discount_centavos) || 0;
+    base += Number(b.gift_card_centavos) || 0;
+    return base > 0 ? base : null;
+  }
+
+  // Valor do repasse de UMA entrada de repasses[] recomputado sobre o valor
+  // cheio informado. O snapshot guarda a REGRA (share_type + share_value),
+  // não só o valor fotografado — então dá pra reaplicar a regra sobre o
+  // cheio atual em vez de arrastar um valor velho.
+  function repasseEntryCentavos(entry, cheio) {
+    if (!entry) return 0;
+    const sv = Number(entry.share_value);
+    if (cheio && entry.share_type === 'percent' && Number.isFinite(sv)) {
+      return Math.round(cheio * (sv / 100));
+    }
+    if (entry.share_type === 'fixed' && Number.isFinite(sv)) return Math.round(sv);
+    return Number(entry.valor_centavos) || 0;
+  }
+
+  // Soma dos repasses de repasses[] reaplicando as regras sobre o cheio
+  // atual. Devolve null quando não dá pra reaplicar (sem cheio ou snapshot
+  // sem share_type/share_value) — aí o caller cai no valor gravado.
+  function repasseFromSnapshotShares(b, cheio) {
+    if (!b || !Array.isArray(b.repasses) || !b.repasses.length) return null;
+    if (!cheio) return null;
+    let total = 0;
+    for (let i = 0; i < b.repasses.length; i++) {
+      const r = b.repasses[i];
+      if (!r) return null;
+      const sv = Number(r.share_value);
+      const temRegra = (r.share_type === 'percent' || r.share_type === 'fixed')
+        && Number.isFinite(sv);
+      if (!temRegra) return null;
+      total += repasseEntryCentavos(r, cheio);
+    }
+    return total;
+  }
+
   // ===== Rateio "legado" (1 fornecedor) resolvido sobre o Valor Cheio =====
   // Recalcula valor cheio / repasse / comissão a partir da config ATUAL da
   // experiência (× qty), pra que editar a experiência "puxe" os valores em
   // TODAS as reservas dela. Multi-fornecedor NÃO passa por aqui — o rateio
-  // entre vários fornecedores só é fiel no snapshot do booking (b.repasses).
+  // entre vários fornecedores é reaplicado a partir de b.repasses.
   // Fonte única compartilhada entre a lista de reservas, o card de repasses
   // pendentes e o extrato/PDF, pra nunca divergirem.
   // Comissão padrão da Elarah quando a experiência não tem comissão
@@ -1378,14 +1459,31 @@
   // parceiro; a comissão da Elarah é essa regra fixa.)
   const COMISSAO_PADRAO_PCT = 20;
 
-  function resolveRateioLegado(b, exp) {
+  // cheioOverrideCentavos: usado por reservas com variação (Individual/
+  // Dupla), cujo cheio da opção só existe no snapshot da reserva.
+  function resolveRateioLegado(b, exp, cheioOverrideCentavos) {
     const qty = Math.max(1, Number(b && b.quantidade) || 1);
     let valorCheio = null;
-    if (exp && exp.valorCheioCentavos) valorCheio = Number(exp.valorCheioCentavos) * qty;
+    const override = Number(cheioOverrideCentavos);
+    if (Number.isFinite(override) && override > 0) {
+      valorCheio = Math.round(override);
+    }
+    if (valorCheio == null && exp && exp.valorCheioCentavos) {
+      valorCheio = Number(exp.valorCheioCentavos) * qty;
+    }
     if (valorCheio == null && b && b.valor_cheio_centavos != null) {
       valorCheio = Number(b.valor_cheio_centavos);
     }
-    const base = valorCheio || (b && b.amount_total != null ? Number(b.amount_total) : null);
+    // Base do rateio: NUNCA o valor pago — ele muda com o meio de pagamento
+    // (taxa do cartão) e com cupom/gift card, e o repasse não pode mudar por
+    // isso. Sem valor cheio, usa o preço ATUAL da experiência × qty e, só
+    // então, o ingresso da própria reserva já sem taxa/desconto.
+    let base = valorCheio;
+    if (!base && exp && exp.preco) {
+      const precoCents = precoLabelToCents(exp.preco);
+      if (precoCents) base = precoCents * qty;
+    }
+    if (!base) base = bookingTicketCentavos(b);
     let valorRepasse = null;
     if (base) {
       // Valor fixo por pessoa (× qty) sobrescreve o percentual.
@@ -3532,16 +3630,10 @@
 
       // Reserva com VARIAÇÃO de preço (Individual/Dupla/Trio): a experiência
       // guarda só o preço-BASE, então recalcular a partir dela mostra o valor
-      // do Individual mesmo quando a pessoa comprou a Dupla. Igual ao caso
-      // multi-fornecedor abaixo, o valor real da opção só existe no snapshot
-      // da reserva — então, quando há variação, respeitamos os valores
-      // gravados na própria reserva em vez de recomputar do preço-base.
-      const temVariante = !!(b.metadata && (
-        (b.metadata.variant_selected && String(b.metadata.variant_selected).trim()) ||
-        (Array.isArray(b.metadata.participantes) && b.metadata.participantes.some(function (p) {
-          return p && p.variant_selected && String(p.variant_selected).trim();
-        }))
-      ));
+      // do Individual mesmo quando a pessoa comprou a Dupla. O valor cheio da
+      // opção só existe no snapshot da reserva — então, quando há variação, o
+      // cheio vem de lá; o repasse continua sendo a porcentagem em cima dele.
+      const temVariante = bookingTemVariante(b);
 
       // Valor Elarah: preço ATUAL da experiência × qty (o que a Elarah
       // cobra hoje). Antes a coluna mostrava só amount_total — o valor
@@ -3571,43 +3663,41 @@
       // (pra "puxar" edições), cai no snapshot do booking e, por fim, null.
       // EXCEÇÃO: reserva com variação prefere o valor_cheio_centavos gravado
       // na reserva (o cheio da opção), quando existir.
-      const rateio = resolveRateioLegado(b, exp);
-      let valorCheioResolvido = rateio.valorCheio;
+      const rateioBase = resolveRateioLegado(b, exp);
+      let valorCheioResolvido = rateioBase.valorCheio;
       if (temVariante && b.valor_cheio_centavos != null) {
         valorCheioResolvido = Number(b.valor_cheio_centavos);
       }
       b._valorCheioResolvido = valorCheioResolvido;
+      // Com variação, o rateio tem que sair do cheio DA OPÇÃO (Dupla/Trio),
+      // não do cheio-base da experiência — recomputa com o override.
+      const rateio = (valorCheioResolvido != null && valorCheioResolvido !== rateioBase.valorCheio)
+        ? resolveRateioLegado(b, exp, valorCheioResolvido)
+        : rateioBase;
 
-      // Multi-fornecedor: quando o booking tem repasses[] com +1 entrada,
-      // o rateio entre vários fornecedores só existe no snapshot — é a
-      // única fonte fiel, então respeitamos os valores gravados.
-      //   - 1 fornecedor (legado) → usa o recomputo off Valor Cheio atual,
-      //     refletindo edições de preço/percentual. Antes o snapshot tinha
-      //     prioridade, então uma reserva antiga podia mostrar repasse sobre
-      //     outro valor (ex: 70% de 243 = R$170,10 em vez de 70% de 270 =
-      //     R$189).
-      // Reserva com variação entra no mesmo caminho: o repasse/comissão da
-      // opção (Dupla) só está no snapshot; recomputar daria o valor do base.
+      // ===== Repasse: SEMPRE a porcentagem em cima do valor cheio =====
+      // Nunca o valor gravado na compra e nunca o valor pago. O que a
+      // pessoa pagou muda com o meio de pagamento (taxa/gross-up do cartão)
+      // e com cupom/gift card — o repasse não pode mudar por isso. Duas
+      // compras iguais da mesma experiência têm que mostrar o MESMO repasse,
+      // tenha sido Pix ou cartão.
+      //   - 1 fornecedor (legado) → repasse = % (ou valor fixo) do cheio.
+      //   - Multi-fornecedor → reaplica a REGRA de cada um (share_type +
+      //     share_value, gravados em repasses[]) sobre o cheio atual. Só
+      //     cai no valor fotografado quando o snapshot é antigo e não traz
+      //     a regra.
       const isMultiFornecedor = Array.isArray(b.repasses) && b.repasses.length > 1;
-      const usaSnapshot = isMultiFornecedor || temVariante;
-      let valorRepasse;
-      let valorComissao;
-      if (usaSnapshot) {
-        valorRepasse = b.valor_repasse_centavos != null
-          ? Number(b.valor_repasse_centavos)
-          : (temVariante ? rateio.valorRepasse : null);
-        valorComissao = b.valor_comissao_centavos != null
-          ? Number(b.valor_comissao_centavos)
-          : null;
-        if (valorComissao == null && valorCheioResolvido && valorRepasse != null) {
-          valorComissao = Math.max(0, valorCheioResolvido - valorRepasse);
+      let valorRepasse = null;
+      if (isMultiFornecedor) {
+        valorRepasse = repasseFromSnapshotShares(b, valorCheioResolvido);
+        if (valorRepasse == null && b.valor_repasse_centavos != null) {
+          valorRepasse = Number(b.valor_repasse_centavos);
         }
-        if (valorComissao == null && temVariante) {
-          valorComissao = rateio.valorComissao;
-        }
-      } else {
-        valorRepasse = rateio.valorRepasse;
-        valorComissao = rateio.valorComissao;
+      }
+      if (valorRepasse == null) valorRepasse = rateio.valorRepasse;
+      let valorComissao = rateio.valorComissao;
+      if (valorComissao == null && b.valor_comissao_centavos != null) {
+        valorComissao = Number(b.valor_comissao_centavos);
       }
       b._valorRepasseResolvido = valorRepasse;
       b._valorComissaoResolvido = valorComissao;
@@ -5010,29 +5100,26 @@
       }
 
       // Recalcula valor cheio + repasse + comissão da nova experiência.
-      // Usa a mesma fórmula do bloco de normalização do renderBookings:
+      // Delega pra resolveRateioLegado — a MESMA conta da lista de reservas,
+      // do card de pendentes e do extrato. Antes esta função tinha fórmula
+      // própria (comissão = cheio − repasse = 30%), então salvar a edição
+      // gravava um snapshot diferente do que a tabela mostrava.
       //   cheio = unit × qty
-      //   repasse = cheio × (percentualRepasse / 100), default 70%
-      //   comissao = cheio − repasse
+      //   repasse = % do cheio (ou valor fixo por pessoa × qty)
+      //   comissao = comissão cadastrada, ou o padrão Elarah de 20% do cheio
       function computeFinancials(exp, qty) {
         if (!exp || exp.valorCheioCentavos == null) return null;
-        var cheio = (Number(exp.valorCheioCentavos) || 0) * qty;
-        // Repasse fixo por pessoa sobrescreve % quando preenchido.
+        var r = resolveRateioLegado({ quantidade: qty }, exp);
+        if (r.valorCheio == null || r.valorRepasse == null) return null;
         var pct = (exp.percentualRepasse != null && Number.isFinite(Number(exp.percentualRepasse)))
           ? Number(exp.percentualRepasse)
           : 70;
-        var repasse;
-        var modo;
-        if (exp.valorRepasseFixoCentavos != null
-            && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) {
-          repasse = Number(exp.valorRepasseFixoCentavos) * qty;
-          modo = 'fixo';
-        } else {
-          repasse = Math.round(cheio * (pct / 100));
-          modo = 'percent';
-        }
-        var comissao = Math.max(0, cheio - repasse);
-        return { cheio: cheio, repasse: repasse, comissao: comissao, pct: pct, modo: modo, unidadeFixa: Number(exp.valorRepasseFixoCentavos) || 0 };
+        var modo = (exp.valorRepasseFixoCentavos != null
+          && Number.isFinite(Number(exp.valorRepasseFixoCentavos))) ? 'fixo' : 'percent';
+        var comissao = r.valorComissao != null
+          ? r.valorComissao
+          : Math.max(0, r.valorCheio - r.valorRepasse);
+        return { cheio: r.valorCheio, repasse: r.valorRepasse, comissao: comissao, pct: pct, modo: modo, unidadeFixa: Number(exp.valorRepasseFixoCentavos) || 0 };
       }
 
       function refreshRefund() {
@@ -10550,23 +10637,28 @@
     return out;
   }
   // Valor do repasse de uma booking pra ESTE fornecedor (trata multi-fornecedor).
-  // Multi-fornecedor (repasses[] com +1 item) → soma o snapshot deste
-  // fornecedor. 1 fornecedor (legado) → recomputa sobre o Valor Cheio ATUAL
-  // (mesma conta da lista de reservas e do card de pendentes), pra que o
-  // extrato reflita edições de preço/percentual em vez do valor fotografado
-  // na compra.
+  // Sempre recomputado sobre o Valor Cheio ATUAL — mesma conta da lista de
+  // reservas e do card de pendentes — pra que o extrato reflita edições de
+  // preço/percentual e nunca dependa do meio de pagamento (o valor pago
+  // muda com a taxa do cartão; o repasse é % do valor cheio).
+  // Multi-fornecedor (repasses[] com +1 item) → reaplica a regra gravada
+  // (share_type + share_value) DESTE fornecedor sobre o cheio atual; só cai
+  // no valor fotografado quando o snapshot não traz a regra.
   function _extratoBookingRepasse(b, supplierKey, expById) {
+    const exp = expById ? expById.get(b.experiencia_id) : null;
+    const r = resolveRateioLegado(b, exp);
     const isMulti = b.repasses && Array.isArray(b.repasses) && b.repasses.length > 1;
     if (isMulti) {
       let sum = 0, found = false;
       b.repasses.forEach(e => {
-        if (e && fornecedorKey(e.fornecedor_nome) === supplierKey) { sum += Number(e.valor_centavos) || 0; found = true; }
+        if (e && fornecedorKey(e.fornecedor_nome) === supplierKey) {
+          sum += repasseEntryCentavos(e, r.valorCheio);
+          found = true;
+        }
       });
       if (found) return sum;
       return Number(b.valor_repasse_centavos) || 0;
     }
-    const exp = expById ? expById.get(b.experiencia_id) : null;
-    const r = resolveRateioLegado(b, exp);
     if (r.valorRepasse != null) return r.valorRepasse;
     return Number(b.valor_repasse_centavos) || 0;
   }
@@ -11807,26 +11899,50 @@
     const diffs = [];
     (data || []).forEach(b => {
       if (!b) return;
-      // Multi-fornecedor: rateio só é fiel no snapshot — não mexe.
-      if (Array.isArray(b.repasses) && b.repasses.length > 1) return;
+      // Reserva com variação (Individual/Dupla/Trio): o cheio da OPÇÃO só
+      // existe no snapshot da reserva — recomputar da experiência gravaria
+      // o preço-base por cima. Fica de fora.
+      if (bookingTemVariante(b)) return;
       // Pula reservas de teste.
       const nomeExpLower = String(b.experiencia_nome || '').trim().toLowerCase();
       if (nomeExpLower === 'teste' || nomeExpLower === 'teste 1') return;
       const exp = expById.get(b.experiencia_id);
       if (!exp || exp.valorCheioCentavos == null) return; // sem valor cheio → não recomputa
       const r = resolveRateioLegado(b, exp);
-      if (r.valorCheio == null || r.valorRepasse == null) return;
+      if (r.valorCheio == null) return;
+
+      // Multi-fornecedor: reaplica a REGRA de cada fornecedor (share_type +
+      // share_value) sobre o cheio atual, mantendo o rateio da compra. Sem
+      // regra gravada (snapshot antigo), não mexe.
+      const isMulti = Array.isArray(b.repasses) && b.repasses.length > 1;
+      let newRepasse;
+      let newRepassesArr = null;
+      if (isMulti) {
+        newRepasse = repasseFromSnapshotShares(b, r.valorCheio);
+        if (newRepasse == null) return;
+        newRepassesArr = b.repasses.map(e => Object.assign({}, e, {
+          valor_centavos: repasseEntryCentavos(e, r.valorCheio),
+        }));
+      } else {
+        newRepasse = r.valorRepasse;
+        if (newRepasse == null) return;
+        if (Array.isArray(b.repasses) && b.repasses.length === 1) {
+          newRepassesArr = [Object.assign({}, b.repasses[0], { valor_centavos: newRepasse })];
+        }
+      }
 
       const oldCheio = b.valor_cheio_centavos != null ? Number(b.valor_cheio_centavos) : null;
       const oldRepasse = b.valor_repasse_centavos != null ? Number(b.valor_repasse_centavos) : null;
       const oldComissao = b.valor_comissao_centavos != null ? Number(b.valor_comissao_centavos) : null;
-      const hasArr = Array.isArray(b.repasses) && b.repasses.length === 1;
-      const oldArrRepasse = hasArr ? Number(b.repasses[0] && b.repasses[0].valor_centavos) : null;
+      const arrChanged = !!newRepassesArr && newRepassesArr.some((e, i) => {
+        const antes = b.repasses[i] ? Number(b.repasses[i].valor_centavos) : null;
+        return antes !== e.valor_centavos;
+      });
 
       const changed = oldCheio !== r.valorCheio
-        || oldRepasse !== r.valorRepasse
+        || oldRepasse !== newRepasse
         || oldComissao !== r.valorComissao
-        || (hasArr && oldArrRepasse !== r.valorRepasse);
+        || arrChanged;
       if (!changed) return;
 
       diffs.push({
@@ -11837,9 +11953,8 @@
         horario: b.horario || '',
         fornecedor: b.fornecedor_nome || (exp && exp.fornecedorNome) || '—',
         oldCheio: oldCheio, oldRepasse: oldRepasse, oldComissao: oldComissao,
-        newCheio: r.valorCheio, newRepasse: r.valorRepasse, newComissao: r.valorComissao,
-        hasArr: hasArr,
-        repassesArr: b.repasses,
+        newCheio: r.valorCheio, newRepasse: newRepasse, newComissao: r.valorComissao,
+        repassesArr: newRepassesArr,
         metadata: b.metadata,
       });
     });
@@ -11858,10 +11973,11 @@
         valor_repasse_centavos: d.newRepasse,
         valor_comissao_centavos: d.newComissao,
       };
-      // Atualiza o único item de repasses[] — a RPC do servidor lê
-      // valor_centavos desse array quando ele existe.
-      if (d.hasArr && Array.isArray(d.repassesArr) && d.repassesArr.length === 1) {
-        patch.repasses = [Object.assign({}, d.repassesArr[0], { valor_centavos: d.newRepasse })];
+      // Atualiza os itens de repasses[] — o painel do fornecedor e o
+      // financial_by_supplier leem valor_centavos desse array quando ele
+      // existe, então ele tem que acompanhar o repasse recomputado.
+      if (Array.isArray(d.repassesArr) && d.repassesArr.length) {
+        patch.repasses = d.repassesArr;
       }
       // Auditoria (não-bloqueante).
       try {
@@ -11931,7 +12047,7 @@
       '<div style="background:#fff;border-radius:16px;max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.22);">' +
       '<div style="padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">' +
         '<div><h3 style="margin:0;font-size:1.2rem;color:#1a1a1a;">Corrigir repasses das reservas</h3>' +
-        '<p style="margin:4px 0 0;color:#666;font-size:.85rem;line-height:1.5;">Recalcula <b>valor cheio · repasse · comissão</b> das reservas de <b>1 fornecedor</b> sobre o Valor Cheio atual da experiência. Multi-fornecedor não é tocado. Confira a prévia antes de aplicar.</p></div>' +
+        '<p style="margin:4px 0 0;color:#666;font-size:.85rem;line-height:1.5;">Recalcula <b>valor cheio · repasse · comissão</b> das reservas sobre o Valor Cheio atual da experiência — o repasse é sempre a <b>porcentagem em cima do valor cheio</b>, nunca o valor pago (que muda com a taxa do cartão). Multi-fornecedor reaplica a regra de cada parceiro. Reservas com variação (Dupla/Trio) ficam de fora. Confira a prévia antes de aplicar.</p></div>' +
         '<button type="button" id="recalc-close" aria-label="Fechar" style="background:none;border:none;font-size:26px;line-height:1;color:#999;cursor:pointer;">&times;</button>' +
       '</div>' +
       '<div id="recalc-body" style="padding:18px 24px;overflow-y:auto;flex:1;">' +

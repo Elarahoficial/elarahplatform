@@ -41,6 +41,7 @@ import {
   reoccupyVagaOnReapproval,
   wasInventoryReleased,
 } from "../_shared/booking_guard.ts";
+import { computeBackfillValues } from "../_shared/financial.ts";
 
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -490,17 +491,16 @@ serve(async (req) => {
     if (needsFinancialBackfill && booking.experiencia_id) {
       const { data: exp } = await supabase
         .from("experiences")
-        .select("fornecedor_nome, valor_cheio_centavos, created_by")
+        .select(
+          "fornecedor_nome, valor_cheio_centavos, percentual_repasse, valor_repasse_fixo_centavos, comissao_type, comissao_value, created_by",
+        )
         .eq("id", booking.experiencia_id)
         .maybeSingle();
       if (exp) {
-        const qty = Number(booking.quantidade) || 1;
-        const valorCheioTotal = exp.valor_cheio_centavos
-          ? exp.valor_cheio_centavos * qty : null;
-        const valorRepasse = valorCheioTotal
-          ? Math.round(valorCheioTotal * 0.70) : null;
-        const valorComissao = valorCheioTotal
-          ? Math.round(valorCheioTotal * 0.20) : null;
+        // Mesma regra do admin e da trigger: repasse = % (ou valor fixo)
+        // em cima do VALOR CHEIO — nunca do valor pago.
+        const { valorCheioTotal, valorRepasse, valorComissao } =
+          computeBackfillValues(exp, booking.quantidade);
         if (!booking.fornecedor_nome && exp.fornecedor_nome) {
           patch.fornecedor_nome = exp.fornecedor_nome;
         }

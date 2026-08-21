@@ -143,3 +143,68 @@ export function computeFinancialBreakdown(
     usedLegacyFallback,
   };
 }
+
+// =============================================================
+// Backfill financeiro (rede de segurança dos webhooks)
+// -------------------------------------------------------------
+// Quando o pre-insert do checkout não gravou os campos financeiros,
+// o webhook recalcula a partir da experiência. A regra é a MESMA do
+// admin e da trigger do banco:
+//   base    = valor cheio × qtd  (NUNCA o valor pago: ele muda com a
+//             taxa/gross-up do cartão, com cupom e com gift card — e o
+//             repasse não pode mudar por causa do meio de pagamento)
+//   repasse = valor_repasse_fixo_centavos × qtd
+//             OU base × percentual_repasse/100  (default 70%)
+//   comissão= comissao_type/comissao_value cadastrados
+//             OU 20% da base (padrão Elarah)
+// Antes cada webhook usava 70/20 fixo, ignorando o percentual da
+// parceira — duas reservas da mesma experiência podiam sair com
+// repasses diferentes dependendo de qual caminho preencheu o campo.
+// =============================================================
+
+export interface BackfillExperience {
+  valor_cheio_centavos?: number | null;
+  percentual_repasse?: number | string | null;
+  valor_repasse_fixo_centavos?: number | null;
+  comissao_type?: string | null;
+  comissao_value?: number | string | null;
+}
+
+export interface BackfillValues {
+  valorCheioTotal: number | null;
+  valorRepasse: number | null;
+  valorComissao: number | null;
+}
+
+export function computeBackfillValues(
+  exp: BackfillExperience | null | undefined,
+  quantidade: number | null | undefined,
+): BackfillValues {
+  const qty = Math.max(1, Math.floor(Number(quantidade) || 1));
+  const cheioUnit = Number(exp?.valor_cheio_centavos);
+  const base = Number.isFinite(cheioUnit) && cheioUnit > 0 ? cheioUnit * qty : null;
+  if (base == null) {
+    return { valorCheioTotal: null, valorRepasse: null, valorComissao: null };
+  }
+
+  const fixo = Number(exp?.valor_repasse_fixo_centavos);
+  let valorRepasse: number;
+  if (exp?.valor_repasse_fixo_centavos != null && Number.isFinite(fixo) && fixo >= 0) {
+    valorRepasse = Math.round(fixo) * qty;
+  } else {
+    const pct = Number(exp?.percentual_repasse);
+    valorRepasse = Math.round(base * ((Number.isFinite(pct) ? pct : 70) / 100));
+  }
+
+  const cValue = Number(exp?.comissao_value);
+  let valorComissao: number;
+  if (exp?.comissao_type === "percent" && Number.isFinite(cValue)) {
+    valorComissao = Math.round(base * (cValue / 100));
+  } else if (exp?.comissao_type === "fixed" && Number.isFinite(cValue)) {
+    valorComissao = Math.round(cValue);
+  } else {
+    valorComissao = Math.round(base * 0.20);
+  }
+
+  return { valorCheioTotal: base, valorRepasse, valorComissao };
+}
