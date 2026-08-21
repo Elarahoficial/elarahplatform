@@ -100,13 +100,19 @@ serve(async (req) => {
   }
 
   // Candidatos de nome do fornecedor: o que o painel exibia (body) +
-  // fornecedor_nome da reserva + qualquer nome no snapshot repasses[].
+  // fornecedor_nome da reserva + os nomes do snapshot repasses[].
   // Basta um casar com BaresSp / Lado B.
+  //
+  // repasses[] é o snapshot gravado no CHECKOUT e fica velho quando a
+  // admin troca o fornecedor da reserva no painel. Por isso ele só entra
+  // como candidato quando é de fato multi-fornecedor (2+ itens); com 1
+  // fornecedor manda o fornecedor_nome atual, senão o fluxo da parceira
+  // ANTIGA podia ser escolhido pra uma reserva já trocada.
   const candidatos: string[] = [];
   const bodyForn = String(payload.fornecedor_nome ?? "").trim();
   if (bodyForn) candidatos.push(bodyForn);
   if (booking.fornecedor_nome) candidatos.push(String(booking.fornecedor_nome));
-  if (Array.isArray(booking.repasses)) {
+  if (Array.isArray(booking.repasses) && booking.repasses.length > 1) {
     for (const r of booking.repasses) {
       if (r && (r as { fornecedor_nome?: string }).fornecedor_nome) {
         candidatos.push(String((r as { fornecedor_nome?: string }).fornecedor_nome));

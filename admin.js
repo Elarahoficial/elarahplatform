@@ -4187,8 +4187,13 @@
       // fornecedor no snapshot de repasses[] (modelo multi-fornecedor).
       // Cobre tanto a experiência de 1 fornecedor quanto a que lista
       // vários — basta um bater com BaresSp/Lado B.
+      // Mesma regra do extrato: repasses[] é o snapshot do CHECKOUT e fica
+      // velho quando a admin troca o fornecedor da reserva. Só consulta o
+      // snapshot quando ele é de fato multi-fornecedor (2+); com 1, o
+      // fornecedor resolvido manda — senão o template da parceira ANTIGA
+      // podia ser escolhido pra reserva já trocada.
       const candidatos = [b._fornecedorResolvido || ''];
-      if (Array.isArray(b.repasses)) {
+      if (Array.isArray(b.repasses) && b.repasses.length > 1) {
         b.repasses.forEach(function (r) {
           if (r && r.fornecedor_nome) candidatos.push(r.fornecedor_nome);
         });
