@@ -381,29 +381,40 @@ update public.bookings b
 -- valor cheio já corrigido na PARTE 3 — o rateio entre os parceiros
 -- continua igual, só o valor sai certo.
 --
+-- ATENÇÃO: pra array de 1 item NÃO dá pra reaplicar o share_value gravado —
+-- ele pode estar velho e brigar com o cadastro atual (ex.: snapshot com 70%
+-- numa experiência que hoje está com 80%). Nesse caso o valor vem direto do
+-- valor_repasse_centavos que a PARTE 3 acabou de gravar, e os dois campos
+-- ficam sempre iguais. Só multi-fornecedor reaplica a regra de cada parceiro.
+--
 -- 4a PRÉVIA:
 with novo as (
-  select b.id,
-         b.experiencia_nome,
-         b.valor_cheio_centavos,
+  select b.id, b.experiencia_nome, b.fornecedor_nome,
+         b.valor_cheio_centavos, b.valor_repasse_centavos,
          b.repasses as repasses_atual,
-         jsonb_agg(
-           case
-             when t.elem->>'share_type' = 'percent' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
-               then t.elem || jsonb_build_object('valor_centavos',
-                      round(b.valor_cheio_centavos * ((t.elem->>'share_value')::numeric / 100.0)))
-             when t.elem->>'share_type' = 'fixed' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
-               then t.elem || jsonb_build_object('valor_centavos', round((t.elem->>'share_value')::numeric))
-             else t.elem
-           end order by t.ord) as repasses_novo
+         case
+           when jsonb_array_length(b.repasses) = 1 then
+             jsonb_build_array(
+               (b.repasses->0) || jsonb_build_object('valor_centavos', b.valor_repasse_centavos))
+           else (
+             select jsonb_agg(
+               case
+                 when t.elem->>'share_type' = 'percent' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
+                   then t.elem || jsonb_build_object('valor_centavos',
+                          round(b.valor_cheio_centavos * ((t.elem->>'share_value')::numeric / 100.0)))
+                 when t.elem->>'share_type' = 'fixed' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
+                   then t.elem || jsonb_build_object('valor_centavos', round((t.elem->>'share_value')::numeric))
+                 else t.elem
+               end order by t.ord)
+               from jsonb_array_elements(b.repasses) with ordinality as t(elem, ord))
+         end as repasses_novo
     from public.bookings b
-    cross join lateral jsonb_array_elements(b.repasses) with ordinality as t(elem, ord)
    where b.status = 'pago'
      and b.valor_cheio_centavos is not null
+     and b.valor_repasse_centavos is not null
      and jsonb_typeof(b.repasses) = 'array'
      and jsonb_array_length(b.repasses) > 0
      and coalesce(b.metadata->>'variant_selected', '') = ''
-   group by b.id, b.experiencia_nome, b.valor_cheio_centavos, b.repasses
 )
 select * from novo
  where repasses_novo is distinct from repasses_atual
@@ -412,23 +423,29 @@ select * from novo
 -- 4b APLICA (rode após conferir o 4a):
 with novo as (
   select b.id,
-         jsonb_agg(
-           case
-             when t.elem->>'share_type' = 'percent' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
-               then t.elem || jsonb_build_object('valor_centavos',
-                      round(b.valor_cheio_centavos * ((t.elem->>'share_value')::numeric / 100.0)))
-             when t.elem->>'share_type' = 'fixed' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
-               then t.elem || jsonb_build_object('valor_centavos', round((t.elem->>'share_value')::numeric))
-             else t.elem
-           end order by t.ord) as arr
+         case
+           when jsonb_array_length(b.repasses) = 1 then
+             jsonb_build_array(
+               (b.repasses->0) || jsonb_build_object('valor_centavos', b.valor_repasse_centavos))
+           else (
+             select jsonb_agg(
+               case
+                 when t.elem->>'share_type' = 'percent' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
+                   then t.elem || jsonb_build_object('valor_centavos',
+                          round(b.valor_cheio_centavos * ((t.elem->>'share_value')::numeric / 100.0)))
+                 when t.elem->>'share_type' = 'fixed' and (t.elem->>'share_value') ~ '^[0-9]+(\.[0-9]+)?$'
+                   then t.elem || jsonb_build_object('valor_centavos', round((t.elem->>'share_value')::numeric))
+                 else t.elem
+               end order by t.ord)
+               from jsonb_array_elements(b.repasses) with ordinality as t(elem, ord))
+         end as arr
     from public.bookings b
-    cross join lateral jsonb_array_elements(b.repasses) with ordinality as t(elem, ord)
    where b.status = 'pago'
      and b.valor_cheio_centavos is not null
+     and b.valor_repasse_centavos is not null
      and jsonb_typeof(b.repasses) = 'array'
      and jsonb_array_length(b.repasses) > 0
      and coalesce(b.metadata->>'variant_selected', '') = ''
-   group by b.id, b.valor_cheio_centavos
 )
 update public.bookings b
    set repasses = n.arr
@@ -436,6 +453,41 @@ update public.bookings b
  where b.id = n.id
    and n.arr is not null
    and n.arr is distinct from b.repasses;
+
+-- 4c CONFERE — soma do array tem que bater com valor_repasse_centavos:
+select id, experiencia_nome, valor_repasse_centavos,
+       (select sum((e->>'valor_centavos')::bigint)
+          from jsonb_array_elements(repasses) e) as soma_do_array
+  from public.bookings
+ where status = 'pago'
+   and jsonb_typeof(repasses) = 'array' and jsonb_array_length(repasses) > 0
+   and valor_repasse_centavos is distinct from
+       (select sum((e->>'valor_centavos')::bigint) from jsonb_array_elements(repasses) e)
+ order by experiencia_nome;
+
+-- 4d SNAPSHOT COM FORNECEDOR ERRADO — reservas cujo repasses[] aponta pra
+-- outra parceira (sobra de edição de reserva). O painel de fornecedores
+-- credita o repasse pelo nome do array, então isso paga a pessoa errada.
+select id, experiencia_nome,
+       fornecedor_nome                     as fornecedor_da_reserva,
+       repasses->0->>'fornecedor_nome'     as fornecedor_no_snapshot,
+       valor_repasse_centavos
+  from public.bookings
+ where status = 'pago'
+   and jsonb_typeof(repasses) = 'array' and jsonb_array_length(repasses) = 1
+   and lower(regexp_replace(coalesce(repasses->0->>'fornecedor_nome', ''), '\s+', ' ', 'g'))
+       is distinct from lower(regexp_replace(coalesce(fornecedor_nome, ''), '\s+', ' ', 'g'))
+ order by experiencia_nome;
+
+-- 4e CORRIGE o nome no snapshot (só rode depois de conferir o 4d):
+-- update public.bookings b
+--    set repasses = jsonb_build_array(
+--          (b.repasses->0) || jsonb_build_object('fornecedor_nome', b.fornecedor_nome))
+--  where b.status = 'pago'
+--    and jsonb_typeof(b.repasses) = 'array' and jsonb_array_length(b.repasses) = 1
+--    and coalesce(b.fornecedor_nome, '') <> ''
+--    and lower(regexp_replace(coalesce(b.repasses->0->>'fornecedor_nome', ''), '\s+', ' ', 'g'))
+--        is distinct from lower(regexp_replace(coalesce(b.fornecedor_nome, ''), '\s+', ' ', 'g'));
 
 
 -- =====================================================================
@@ -452,4 +504,19 @@ select experiencia_nome,
  where status = 'pago'
    and coalesce(metadata->>'variant_selected', '') = ''
  group by 1, 2, 3
+ order by experiencia_nome, qtd, meio_pagamento;
+
+-- Mesma conferência agrupando por EXPERIÊNCIA (id), pra separar experiências
+-- diferentes que têm o mesmo nome (duplicadas com preços diferentes).
+select b.experiencia_id,
+       max(b.experiencia_nome)                         as experiencia_nome,
+       greatest(coalesce(b.quantidade, 1), 1)          as qtd,
+       coalesce(b.metadata->>'payment_method', '—')    as meio_pagamento,
+       count(*)                                        as reservas,
+       min(b.valor_repasse_centavos)                   as repasse_min,
+       max(b.valor_repasse_centavos)                   as repasse_max
+  from public.bookings b
+ where b.status = 'pago'
+   and coalesce(b.metadata->>'variant_selected', '') = ''
+ group by b.experiencia_id, 3, 4
  order by experiencia_nome, qtd, meio_pagamento;
