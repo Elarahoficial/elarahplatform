@@ -10571,16 +10571,40 @@
     return Number(b.valor_repasse_centavos) || 0;
   }
 
+  // Parse tolerante a fuso. Data pura ('2026-09-01') o JS lê como meia-noite
+  // UTC — num fuso negativo (BRT = UTC-3) isso vira 31/08 às 21h e a linha
+  // cai no mês ANTERIOR. Aqui data pura vira meia-noite LOCAL; timestamp
+  // completo (com hora/offset) segue pelo parse nativo.
+  function _extratoParseDate(val) {
+    if (!val) return null;
+    const s = String(val).trim();
+    if (!s) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
   // Busca as linhas do extrato (bookings + vendas manuais) de um fornecedor
   // num mês (ym = 'YYYY-MM'), só repasses marcados como feitos/pagos.
+  //
+  // O mês é decidido APENAS pela data real do repasse (bookings.repasse_feito_at,
+  // manual_sales.payout_paid_at, extra_payouts[].paid_at). Nada de cair pra
+  // created_at / updated_at / sale_date quando ela falta: essas datas não têm
+  // relação com QUANDO o repasse foi feito, e eram justamente elas que
+  // arrastavam repasses de outros meses pro extrato (updated_at, por exemplo,
+  // muda a cada edição da venda). Repasse sem data registrada fica de fora e é
+  // contado em semData, pra avisar na tela em vez de sumir calado.
+  //
+  // Retorna { rows, semData }.
   async function _fornFetchExtratoRows(supplierKey, supplierName, ym) {
     const sb = window.supabaseClient;
-    if (!sb) return [];
+    if (!sb) return { rows: [], semData: 0 };
     const parts = String(ym || '').split('-');
     const yy = Number(parts[0]), mm = Number(parts[1]);
     const start = new Date(yy, mm - 1, 1), end = new Date(yy, mm, 1);
-    const inMonth = (val) => { if (!val) return false; const d = new Date(val); return !isNaN(d) && d >= start && d < end; };
+    const inMonth = (val) => { const d = _extratoParseDate(val); return !!d && d >= start && d < end; };
     const rows = [];
+    let semData = 0;
 
     // Mapa de experiências pra recomputar o repasse legado sobre o Valor
     // Cheio ATUAL (idêntico à lista de reservas / card de pendentes).
@@ -10600,7 +10624,8 @@
           b.repasses.some(e => e && fornecedorKey(e.fornecedor_nome) === supplierKey);
         if (!matchPrincipal && !matchRepasse) return;
         if ((b.status_fornecedor || '') !== 'repasse_feito') return;
-        const rdate = b.repasse_feito_at || b.created_at;
+        const rdate = b.repasse_feito_at || null;
+        if (!rdate) { semData++; return; }
         if (!inMonth(rdate)) return;
         rows.push({
           participantes: _extratoNames(b),
@@ -10623,17 +10648,20 @@
         // Fornecedor principal — só se pago e for este fornecedor.
         if (m.payout_status === 'pago') {
           const k = (m.supplier_key && m.supplier_key.trim()) || (m.supplier_name ? fornecedorKey(m.supplier_name) : '');
-          const rdate = m.payout_paid_at || m.updated_at || m.sale_date;
-          if ((k === supplierKey || fornecedorKey(m.supplier_name || '') === supplierKey) && inMonth(rdate)) {
-            rows.push({
-              participantes: [m.customer_name].filter(Boolean),
-              experiencia: m.experience_name || '—',
-              dataCompra: m.sale_date || m.created_at,
-              dataExp: m.slot_date || '',
-              horario: m.slot_time || '',
-              repasse: Number(m.payout_amount_centavos) || 0,
-              dataRepasse: rdate,
-            });
+          const rdate = m.payout_paid_at || null;
+          if (k === supplierKey || fornecedorKey(m.supplier_name || '') === supplierKey) {
+            if (!rdate) semData++;
+            else if (inMonth(rdate)) {
+              rows.push({
+                participantes: [m.customer_name].filter(Boolean),
+                experiencia: m.experience_name || '—',
+                dataCompra: m.sale_date || m.created_at,
+                dataExp: m.slot_date || '',
+                horario: m.slot_time || '',
+                repasse: Number(m.payout_amount_centavos) || 0,
+                dataRepasse: rdate,
+              });
+            }
           }
         }
         // Fornecedores extras — cada um pago separadamente.
@@ -10642,7 +10670,8 @@
             if (!p || p.status !== 'pago') return;
             const pk = (p.supplier_key && String(p.supplier_key).trim()) || fornecedorKey(p.supplier_name || '');
             if (pk !== supplierKey) return;
-            const rdate = p.paid_at || m.updated_at || m.sale_date;
+            const rdate = p.paid_at || null;
+            if (!rdate) { semData++; return; }
             if (!inMonth(rdate)) return;
             rows.push({
               participantes: [m.customer_name].filter(Boolean),
@@ -10658,17 +10687,20 @@
       });
     } catch (e) { console.error('[Extrato] manual_sales', e); }
 
-    rows.sort((a, b) => String(a.dataRepasse || '').localeCompare(String(b.dataRepasse || '')));
-    return rows;
+    rows.sort((a, b) => {
+      const da = _extratoParseDate(a.dataRepasse), db = _extratoParseDate(b.dataRepasse);
+      return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+    });
+    return { rows, semData };
   }
 
   // Monta o HTML printável do extrato.
-  function _fornExtratoHtml(supplierName, ym, rows) {
+  function _fornExtratoHtml(supplierName, ym, rows, semData) {
     const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     const parts = String(ym || '').split('-');
     const mesNome = (meses[Number(parts[1]) - 1] || '') + ' de ' + parts[0];
     const esc = (s) => escapeHtml(String(s == null ? '' : s));
-    const fmtTs = (v) => { if (!v) return '—'; const d = new Date(v); return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR'); };
+    const fmtTs = (v) => { const d = _extratoParseDate(v); return d ? d.toLocaleDateString('pt-BR') : '—'; };
     const fmtDataExp = (t) => { if (!t) return '—'; const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(t)); return m ? (m[3] + '/' + m[2] + '/' + m[1]) : String(t); };
     let total = 0; rows.forEach(r => total += (Number(r.repasse) || 0));
     const hoje = new Date().toLocaleDateString('pt-BR');
@@ -10686,7 +10718,15 @@
             '<td>' + fmtTs(r.dataRepasse) + '</td>' +
           '</tr>';
         }).join('')
-      : '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px;">Nenhum repasse marcado como feito neste mês.</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px;">Nenhum repasse feito em ' + esc(mesNome) + '.</td></tr>';
+
+    // Aviso só pra admin (no-print): repasses marcados como feitos mas sem
+    // data carimbada não entram em mês nenhum. Some do PDF enviado.
+    const n = Number(semData) || 0;
+    const aviso = n > 0
+      ? '<div class="aviso no-print">⚠️ ' + n + ' repasse(s) marcado(s) como feito para este fornecedor ficaram fora do extrato por não terem a data do repasse registrada — ' +
+        'sem ela não dá pra saber a que mês pertencem. Pra incluir: no painel, volte o repasse para "pendente" e marque "feito" de novo (isso carimba a data).</div>'
+      : '';
 
     return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
       '<title>Repasses ' + esc(supplierName) + ' — ' + esc(mesNome) + '</title>' +
@@ -10700,13 +10740,15 @@
       'td.r,th.r{text-align:right;white-space:nowrap;}' +
       '.total{margin-top:16px;text-align:right;font-size:1rem;font-weight:700;}' +
       '.foot{margin-top:28px;color:#999;font-size:.78rem;}' +
+      '.aviso{margin:0 0 18px;padding:11px 13px;border:1px solid #f0c98a;background:#fff8ec;border-radius:8px;color:#8a5a12;font-size:.82rem;line-height:1.45;}' +
       '.actions{margin-bottom:20px;} .actions button{padding:9px 16px;border:0;background:#f0a05e;color:#fff;border-radius:8px;font-size:.9rem;cursor:pointer;}' +
       '@media print{.no-print{display:none;}}' +
       '</style></head><body>' +
       '<div class="actions no-print"><button onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button></div>' +
+      aviso +
       '<h1>Comprovante de repasses — Elarah</h1>' +
       '<div class="meta"><b>Fornecedor:</b> ' + esc(supplierName) + '<br>' +
-      '<b>Mês de referência:</b> ' + esc(mesNome) + '<br>' +
+      '<b>Mês de referência:</b> ' + esc(mesNome) + ' (repasses efetuados neste mês)<br>' +
       '<b>Gerado em:</b> ' + hoje + '</div>' +
       '<table><thead><tr>' +
       '<th>Participante(s)</th><th>Experiência</th><th>Data da compra</th><th>Data / horário</th><th class="r">Repasse</th><th>Repasse feito em</th>' +
@@ -10728,7 +10770,7 @@
     ov.style.cssText = 'position:fixed;inset:0;z-index:10060;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;';
     ov.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:430px;width:100%;padding:22px;font-family:inherit;box-shadow:0 18px 50px rgba(0,0,0,.25);">' +
       '<h3 style="margin:0 0 6px;font-size:1.05rem;">Extrato de repasses</h3>' +
-      '<p style="margin:0 0 14px;color:#666;font-size:.85rem;"><b>' + escapeHtml(supplierName) + '</b> — gera um PDF com os repasses marcados como feitos no mês escolhido.</p>' +
+      '<p style="margin:0 0 14px;color:#666;font-size:.85rem;"><b>' + escapeHtml(supplierName) + '</b> — gera um PDF só com os repasses efetuados no mês escolhido.</p>' +
       '<label style="font-size:.78rem;font-weight:600;color:#555;">Mês de referência</label>' +
       '<input type="month" id="forn-extrato-mes" value="' + ym + '" style="display:block;width:100%;margin:4px 0 18px;padding:8px 10px;border:1px solid #ddd;border-radius:7px;font-family:inherit;">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
@@ -10745,8 +10787,8 @@
       const w = window.open('', '_blank');
       if (w) w.document.write('<p style="font-family:sans-serif;padding:24px;color:#555;">Gerando extrato…</p>');
       close();
-      const rows = await _fornFetchExtratoRows(supplierKey, supplierName, ym2);
-      const html = _fornExtratoHtml(supplierName, ym2, rows);
+      const res = await _fornFetchExtratoRows(supplierKey, supplierName, ym2);
+      const html = _fornExtratoHtml(supplierName, ym2, res.rows, res.semData);
       if (w) { w.document.open(); w.document.write(html); w.document.close(); }
       else { alert('Seu navegador bloqueou a janela do PDF. Permita pop-ups pra este site e tente de novo.'); }
     });
