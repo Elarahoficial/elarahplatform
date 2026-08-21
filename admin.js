@@ -11061,6 +11061,136 @@
     return { getValue: getValue, setValue: setValue, refresh: refresh, destroy: destroy };
   }
 
+  // Um repasse é URGENTE quando a experiência já aconteceu ou acontece em
+  // até 48h — é o que precisa ser pago hoje. Mesma regra do filtro
+  // "repasse_urgente" da tabela de Compras, pra card e tabela nunca
+  // divergirem. Sem data calculável não dá pra julgar: não é urgente.
+  const REPASSE_URGENTE_HORAS = 48;
+  function _repasseUrgente(horas) {
+    return horas != null && horas <= REPASSE_URGENTE_HORAS;
+  }
+
+  // "17/08 · 10h00" a partir de data ('2026-08-17' ou '17/08/2026') e horário.
+  function _repasseQuandoLabel(data, horario) {
+    const raw = String(data || '').trim();
+    let dia = raw;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+    if (iso) dia = iso[3] + '/' + iso[2];
+    else {
+      const br = /^(\d{2})\/(\d{2})/.exec(raw);
+      if (br) dia = br[1] + '/' + br[2];
+    }
+    const h = String(horario || '').trim();
+    if (!dia && !h) return '—';
+    return dia + (h ? ' · ' + h : '');
+  }
+
+  // Horas até a experiência de uma venda manual (slot_date + slot_time).
+  function _msHorasParaEvento(slotDate, slotTime) {
+    if (!slotDate) return null;
+    let ts = null;
+    if (window.ElarahData && window.ElarahData.deriveEventTimestamp) {
+      ts = window.ElarahData.deriveEventTimestamp(slotDate, slotTime || null, Date.now());
+    }
+    if (ts == null) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(slotDate).trim());
+      if (!m) return null;
+      const hm = /^(\d{1,2})[:h](\d{2})/.exec(String(slotTime || '').trim());
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]),
+                         hm ? Number(hm[1]) : 12, hm ? Number(hm[2]) : 0);
+      if (isNaN(d.getTime())) return null;
+      ts = d.getTime();
+    }
+    return (ts - Date.now()) / (60 * 60 * 1000);
+  }
+
+  // Grava "repasse feito" + a data de HOJE num lote de pendências.
+  // Carimbar a data é obrigatório: é ela que decide o mês no extrato/PDF.
+  // Três origens, cada uma com sua forma de gravar:
+  //   booking   → bookings.status_fornecedor + repasse_feito_at
+  //   ms        → manual_sales.payout_status + payout_paid_at
+  //   ms_extra  → item dentro do array jsonb manual_sales.extra_payouts
+  // Devolve a lista de erros legíveis (vazia = tudo certo).
+  async function _marcarRepassesFeitos(itens) {
+    const sb = window.supabaseClient;
+    if (!sb) return ['Sem conexão com o banco.'];
+    const agora = new Date().toISOString();
+    const erros = [];
+    const rotulo = (it) => (it.pessoas && it.pessoas[0]) || it.experiencia || it.id;
+
+    // ---- 1) Reservas: um único update pra todos os ids ----
+    const bookingIds = itens.filter(it => it.tipo === 'booking').map(it => it.id);
+    if (bookingIds.length) {
+      let { error } = await sb.from('bookings')
+        .update({ status_fornecedor: 'repasse_feito', repasse_feito_at: agora })
+        .in('id', bookingIds);
+      // Mesmo fallback do dropdown da tabela: se a coluna repasse_feito_at
+      // ainda não existe (migração pendente), grava só o status pra não
+      // travar o repasse. Sem data, essas ficam de fora do extrato do mês
+      // e entram no aviso do PDF — por isso o alerta explícito.
+      if (error && String(error.message || '').includes('repasse_feito_at')) {
+        ({ error } = await sb.from('bookings')
+          .update({ status_fornecedor: 'repasse_feito' })
+          .in('id', bookingIds));
+        if (!error) {
+          erros.push('(as reservas foram marcadas, mas SEM data: rode sql/elarah_bookings_repasse_feito_at.sql no Supabase)');
+        }
+      }
+      if (error) erros.push('Reservas: ' + (error.message || 'erro desconhecido'));
+    }
+
+    // ---- 2) Vendas manuais, fornecedor principal ----
+    const msIds = itens.filter(it => it.tipo === 'ms').map(it => it.id);
+    if (msIds.length) {
+      const { error } = await sb.from('manual_sales')
+        .update({ payout_status: 'pago', payout_paid_at: agora })
+        .in('id', msIds);
+      if (error) erros.push('Vendas manuais: ' + (error.message || 'erro desconhecido'));
+    }
+
+    // ---- 3) Fornecedores extras: reescreve o item dentro do jsonb ----
+    // Uma venda pode ter mais de um extra; só o deste fornecedor muda.
+    // Agrupa por venda pra não sobrescrever um extra com o outro quando
+    // dois itens do lote apontam pra mesma venda.
+    const extrasPorVenda = new Map();
+    itens.filter(it => it.tipo === 'ms_extra').forEach(it => {
+      if (!extrasPorVenda.has(it.id)) extrasPorVenda.set(it.id, []);
+      extrasPorVenda.get(it.id).push(it);
+    });
+    for (const [vendaId, lote] of extrasPorVenda) {
+      try {
+        const { data, error: readErr } = await sb.from('manual_sales')
+          .select('extra_payouts').eq('id', vendaId).single();
+        if (readErr) throw readErr;
+        const atual = Array.isArray(data && data.extra_payouts) ? data.extra_payouts : [];
+        const alvos = new Set(lote.map(it => it.extraKey));
+        const novo = atual.map(p => {
+          if (!p) return p;
+          const k = (p.supplier_key && String(p.supplier_key).trim()) || fornecedorKey(p.supplier_name || '');
+          if (!alvos.has(k) || p.status === 'pago') return p;
+          return Object.assign({}, p, { status: 'pago', paid_at: agora });
+        });
+        const { error: upErr } = await sb.from('manual_sales')
+          .update({ extra_payouts: novo }).eq('id', vendaId);
+        if (upErr) throw upErr;
+      } catch (e) {
+        erros.push('Extra de ' + lote.map(rotulo).join(', ') + ': ' + ((e && e.message) || 'erro desconhecido'));
+      }
+    }
+    return erros;
+  }
+
+  function _novoAgg(nome, isUnknown) {
+    return { nome, count: 0, total: 0, isUnknown: !!isUnknown,
+             itens: [], urgCount: 0, urgTotal: 0 };
+  }
+  function _addItem(agg, item) {
+    agg.itens.push(item);
+    agg.count += 1;
+    agg.total += item.valor;
+    if (_repasseUrgente(item.horas)) { agg.urgCount += 1; agg.urgTotal += item.valor; }
+  }
+
   // Card "Repasses pendentes por fornecedor" no topo da tela Compras.
   // Agrupa bookings pagas com status_fornecedor='repasse_pendente'
   // (ou null = pendente por default) por fornecedor resolvido. Click
@@ -11088,10 +11218,18 @@
       const nomeRaw = (b._fornecedorResolvido || '').trim();
       const nome = nomeRaw || '— sem fornecedor —';
       const valor = Number(b._valorRepasseResolvido) || 0;
-      if (!byForn.has(nome)) byForn.set(nome, { nome, count: 0, total: 0, isUnknown: !nomeRaw });
+      if (!byForn.has(nome)) byForn.set(nome, _novoAgg(nome, !nomeRaw));
       const agg = byForn.get(nome);
-      agg.count += 1;
-      agg.total += valor;
+      const horas = b._horasParaEventoResolvido;
+      _addItem(agg, {
+        tipo: 'booking',
+        id: b.id,
+        pessoas: _extratoNames(b),
+        experiencia: b.experiencia_nome || '—',
+        quando: _repasseQuandoLabel(b.data, b.horario),
+        horas: horas,
+        valor: valor,
+      });
       totalGlobal += valor;
       countGlobal += 1;
     });
@@ -11105,7 +11243,7 @@
         // venda pode ter o fornecedor principal já pago mas um fornecedor
         // EXTRA ainda pendente — o filtro no banco perderia esse caso.
         const { data: msRows, error: msErr } = await sb.from('manual_sales')
-          .select('id, supplier_name, payout_amount_centavos, payout_status, experience_id, extra_payouts')
+          .select('id, customer_name, experience_name, slot_date, slot_time, supplier_name, payout_amount_centavos, payout_status, experience_id, extra_payouts')
           .eq('payment_status', 'pago');
         if (!msErr && Array.isArray(msRows)) {
           // Mapa exp → fornecedor (usa o cache _finExpById se disponível,
@@ -11114,30 +11252,41 @@
           const expById = (typeof _finExpById !== 'undefined' && _finExpById && _finExpById.size)
             ? _finExpById
             : new Map();
-          const addPendente = (nomeRaw, valor) => {
+          const addPendente = (nomeRaw, valor, item) => {
             if (!(valor > 0)) return;
             const nome = nomeRaw || '— sem fornecedor —';
-            if (!byForn.has(nome)) byForn.set(nome, { nome, count: 0, total: 0, isUnknown: !nomeRaw });
-            const agg = byForn.get(nome);
-            agg.count += 1;
-            agg.total += valor;
+            if (!byForn.has(nome)) byForn.set(nome, _novoAgg(nome, !nomeRaw));
+            _addItem(byForn.get(nome), item);
             totalGlobal += valor;
             countGlobal += 1;
           };
           msRows.forEach(r => {
             const expObj = r.experience_id && expById.has(r.experience_id) ? expById.get(r.experience_id) : null;
+            const horas = _msHorasParaEvento(r.slot_date, r.slot_time);
+            const quando = _repasseQuandoLabel(r.slot_date, r.slot_time);
+            const pessoas = [r.customer_name].filter(Boolean);
+            const experiencia = r.experience_name ||
+              (expObj && (expObj.nome || expObj.titulo)) || '—';
             // Fornecedor principal — só se ainda pendente.
             if (r.payout_status === 'pendente') {
               const nomeRaw = (r.supplier_name && r.supplier_name.trim()) ||
                 (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
-              addPendente(nomeRaw, Number(r.payout_amount_centavos) || 0);
+              const valor = Number(r.payout_amount_centavos) || 0;
+              addPendente(nomeRaw, valor, {
+                tipo: 'ms', id: r.id, pessoas, experiencia, quando, horas, valor,
+              });
             }
             // Fornecedores extras — cada um com seu próprio status.
             if (Array.isArray(r.extra_payouts)) {
               r.extra_payouts.forEach(p => {
                 if (!p || p.status === 'pago') return;
                 const nomeRaw = (p.supplier_name && String(p.supplier_name).trim()) || '';
-                addPendente(nomeRaw, Number(p.amount_centavos) || 0);
+                const valor = Number(p.amount_centavos) || 0;
+                addPendente(nomeRaw, valor, {
+                  tipo: 'ms_extra', id: r.id,
+                  extraKey: (p.supplier_key && String(p.supplier_key).trim()) || fornecedorKey(nomeRaw),
+                  pessoas, experiencia, quando, horas, valor,
+                });
               });
             }
           });
@@ -11171,7 +11320,11 @@
       });
     } catch (_) { /* sem metadata — segue sem pix */ }
 
-    const list = Array.from(byForn.values()).sort((a, b) => b.total - a.total);
+    // Urgente primeiro (o que precisa sair hoje), depois por valor.
+    const list = Array.from(byForn.values()).sort((a, b) =>
+      (b.urgTotal - a.urgTotal) || (b.total - a.total));
+    list.forEach((f, i) => { f._idx = String(i); });
+    const byIdx = new Map(list.map(f => [f._idx, f]));
     listEl.innerHTML = list.map(f => {
       const pix = f.isUnknown ? '' : (pixByKey.get(fornecedorKey(f.nome)) || '');
       // Bloco do Pix: chave + botão copiar quando cadastrada; aviso
@@ -11187,18 +11340,33 @@
                   'style="padding:3px 8px;border:1px solid #1a8a4a;color:#1a8a4a;background:#fff;border-radius:5px;cursor:pointer;font-size:.72rem;font-family:inherit;white-space:nowrap;">copiar</button>' +
               '</span>'
             : '<span style="font-size:.72rem;color:#bbb;white-space:nowrap;" title="Cadastre a chave Pix deste fornecedor na aba Fornecedores">sem Pix</span>');
+      // Selo do que vence hoje: quantas e quanto em ≤48h (ou já passou).
+      const urgBadge = f.urgCount
+        ? '<span style="display:inline-block;padding:3px 8px;border-radius:8px;background:#fce8e6;color:#c0392b;font-size:.72rem;font-weight:700;white-space:nowrap;" ' +
+            'title="Repasses que precisam sair hoje: experiência em até 48h ou já realizada">⚠ ' +
+            f.urgCount + ' em 48h · ' + escapeHtml(formatCents(f.urgTotal, 'BRL')) + '</span>'
+        : '';
       return (
+        '<div class="admin__repasse-group" style="border:1px solid #f0d9a8;background:#fff;border-radius:6px;overflow:hidden;">' +
         '<div class="admin__repasse-row" data-fornecedor="' +
         escapeHtml(f.isUnknown ? '' : f.nome) + '" role="button" tabindex="0" ' +
-        'style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #f0d9a8;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;text-align:left;width:100%;box-sizing:border-box;flex-wrap:wrap;" ' +
+        'style="display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer;font-family:inherit;text-align:left;width:100%;box-sizing:border-box;flex-wrap:wrap;" ' +
         'title="Clique pra filtrar a tabela por este fornecedor">' +
         '<span style="flex:1;min-width:120px;font-weight:600;color:' + (f.isUnknown ? '#a55' : '#1a1a1a') + ';">' +
         escapeHtml(f.nome) + '</span>' +
+        urgBadge +
         '<span style="font-size:.78rem;color:#7a6440;min-width:90px;text-align:right;">' +
         f.count + ' reserva' + (f.count !== 1 ? 's' : '') + '</span>' +
         '<span style="font-weight:700;color:#b07b00;min-width:120px;text-align:right;">' +
         escapeHtml(formatCents(f.total, 'BRL')) + '</span>' +
         pixBlock +
+        '<button type="button" class="admin__repasse-more" data-forn-idx="' + f._idx + '" ' +
+          'aria-expanded="false" ' +
+          'style="padding:4px 10px;border:1px solid #c9a227;color:#8a6d1a;background:#fffdf5;border-radius:6px;cursor:pointer;font-size:.74rem;font-family:inherit;white-space:nowrap;" ' +
+          'title="Ver quem está pendente e marcar os repasses">saiba mais ▾</button>' +
+        '</div>' +
+        '<div class="admin__repasse-detail" data-forn-idx="' + f._idx + '" hidden ' +
+          'style="border-top:1px dashed #f0d9a8;padding:10px 12px;background:#fffdf7;"></div>' +
         '</div>'
       );
     }).join('');
@@ -11230,6 +11398,121 @@
         }
       });
     });
+
+    // ===== Painel "saiba mais": quem está pendente + repasse em lote =====
+    // Monta o HTML do painel de um fornecedor. Urgentes (≤48h ou já
+    // realizadas) primeiro, com o total do que precisa sair hoje em
+    // destaque e o botão que marca todas de uma vez.
+    function _detalheHtml(f) {
+      const itens = f.itens.slice().sort((a, b) => {
+        const ua = _repasseUrgente(a.horas) ? 0 : 1;
+        const ub = _repasseUrgente(b.horas) ? 0 : 1;
+        if (ua !== ub) return ua - ub;
+        const ha = a.horas == null ? Infinity : a.horas;
+        const hb = b.horas == null ? Infinity : b.horas;
+        return ha - hb;
+      });
+      const prazoBadge = (h) => {
+        if (h == null) return '<span style="font-size:.72rem;color:#888;" title="Sem data fixa pra calcular o prazo">sem data</span>';
+        if (h < 0) return '<span style="display:inline-block;padding:2px 7px;border-radius:8px;background:#fce8e6;color:#c0392b;font-size:.7rem;font-weight:700;" title="A experiência já aconteceu — repasse atrasado">já passou</span>';
+        if (h <= REPASSE_URGENTE_HORAS) return '<span style="display:inline-block;padding:2px 7px;border-radius:8px;background:#fce8e6;color:#c0392b;font-size:.7rem;font-weight:700;" title="Janela de repasse aberta">' + Math.max(0, Math.round(h)) + 'h</span>';
+        const d = Math.floor(h / 24);
+        return '<span style="display:inline-block;padding:2px 7px;border-radius:8px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:600;" title="Mais de 48h — ainda não é prioridade">' +
+          (d > 0 ? d + (d === 1 ? ' dia' : ' dias') : Math.round(h) + 'h') + '</span>';
+      };
+      const linhas = itens.map(it => {
+        const pessoas = (it.pessoas && it.pessoas.length)
+          ? it.pessoas.map(escapeHtml).join(', ') : '—';
+        const urg = _repasseUrgente(it.horas);
+        return '<tr style="' + (urg ? 'background:#fff6f5;' : '') + '">' +
+          '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;">' + pessoas + '</td>' +
+          '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;color:#555;">' + escapeHtml(it.experiencia) + '</td>' +
+          '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;color:#555;white-space:nowrap;">' + escapeHtml(it.quando) + '</td>' +
+          '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;white-space:nowrap;">' + prazoBadge(it.horas) + '</td>' +
+          '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;text-align:right;font-weight:600;white-space:nowrap;">' +
+            escapeHtml(formatCents(it.valor, 'BRL')) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      const acao = f.urgCount
+        ? '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding:9px 11px;border:1px solid #f4c7c1;background:#fdecea;border-radius:6px;">' +
+            '<span style="font-size:.82rem;color:#c0392b;">' +
+              '<b>A pagar hoje:</b> ' + f.urgCount + ' repasse' + (f.urgCount !== 1 ? 's' : '') +
+              ' &nbsp;·&nbsp; <b>' + escapeHtml(formatCents(f.urgTotal, 'BRL')) + '</b>' +
+            '</span>' +
+            '<button type="button" class="admin__repasse-bulk" data-forn-idx="' + f._idx + '" ' +
+              'style="margin-left:auto;padding:7px 14px;border:0;background:#1a8a4a;color:#fff;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600;font-family:inherit;" ' +
+              'title="Marca como repasse feito todas as pendências em até 48h deste fornecedor">' +
+              '✓ Marcar as ' + f.urgCount + ' como repasse feito</button>' +
+          '</div>'
+        : '<div style="margin-bottom:10px;padding:9px 11px;border:1px solid #cfe6d6;background:#f2faf5;border-radius:6px;font-size:.82rem;color:#1a8a4a;">' +
+            'Nada vencendo nas próximas 48h para este fornecedor.</div>';
+
+      return acao +
+        '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.78rem;">' +
+        '<thead><tr style="text-align:left;color:#7a6440;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;">' +
+        '<th style="padding:4px 7px;">Quem</th><th style="padding:4px 7px;">Experiência</th>' +
+        '<th style="padding:4px 7px;">Quando</th><th style="padding:4px 7px;">Prazo</th>' +
+        '<th style="padding:4px 7px;text-align:right;">Repasse</th>' +
+        '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
+    }
+
+    listEl.querySelectorAll('.admin__repasse-more').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();   // não dispara o filtro da linha
+        const idx = btn.getAttribute('data-forn-idx');
+        const painel = listEl.querySelector('.admin__repasse-detail[data-forn-idx="' + idx + '"]');
+        const f = byIdx.get(idx);
+        if (!painel || !f) return;
+        const abrindo = painel.hasAttribute('hidden');
+        if (abrindo) {
+          painel.innerHTML = _detalheHtml(f);
+          painel.removeAttribute('hidden');
+          btn.textContent = 'fechar ▴';
+          btn.setAttribute('aria-expanded', 'true');
+          _wireBulk(painel);
+        } else {
+          painel.setAttribute('hidden', '');
+          painel.innerHTML = '';
+          btn.textContent = 'saiba mais ▾';
+          btn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+
+    // Marca em lote todos os repasses urgentes (≤48h) de um fornecedor.
+    // Três origens, cada uma com sua forma de gravar. Erro numa origem não
+    // impede as outras — o resumo no fim diz o que entrou e o que falhou.
+    function _wireBulk(painel) {
+      const btn = painel.querySelector('.admin__repasse-bulk');
+      if (!btn) return;
+      btn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const f = byIdx.get(btn.getAttribute('data-forn-idx'));
+        if (!f) return;
+        const urgentes = f.itens.filter(it => _repasseUrgente(it.horas));
+        if (!urgentes.length) return;
+        const ok = confirm(
+          'Marcar ' + urgentes.length + ' repasse' + (urgentes.length !== 1 ? 's' : '') +
+          ' de ' + f.nome + ' como FEITO?\n\n' +
+          'Total: ' + formatCents(f.urgTotal, 'BRL') + '\n\n' +
+          'A data de hoje fica registrada em cada um (é ela que monta o extrato do mês).'
+        );
+        if (!ok) return;
+        btn.disabled = true;
+        const textoOriginal = btn.textContent;
+        btn.textContent = 'marcando…';
+        const erros = await _marcarRepassesFeitos(urgentes);
+        if (erros.length) {
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+          alert('Marquei ' + (urgentes.length - erros.length) + ' de ' + urgentes.length + '.\n\n' +
+                'Falharam:\n' + erros.join('\n'));
+        }
+        invalidateBookings();
+        renderBookings();
+      });
+    }
 
     listEl.querySelectorAll('.admin__repasse-row').forEach(btn => {
       btn.addEventListener('click', () => {
