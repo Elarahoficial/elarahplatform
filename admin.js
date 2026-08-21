@@ -5222,6 +5222,29 @@
           console.warn('[Admin] exp', chosenExp.id, 'sem valorCheioCentavos — repasse não foi recalculado');
         }
 
+        // Sincroniza o snapshot repasses[] com o fornecedor novo.
+        // repasses[] é gravado no checkout e NÃO era atualizado aqui: ao
+        // trocar o fornecedor, fornecedor_nome virava o novo e o snapshot
+        // seguia com o ANTIGO. Como o extrato, o aviso à parceira e os
+        // relatórios também casam por repasses[], a reserva continuava
+        // saindo pro fornecedor antigo.
+        // Só reescreve quando o snapshot é de UM fornecedor — com 2+ há
+        // rateio entre parceiras que esta modal não sabe recalcular, e
+        // sobrescrever perderia a divisão.
+        var repAtual = Array.isArray(booking.repasses) ? booking.repasses : [];
+        if (repAtual.length <= 1) {
+          if (!update.fornecedor_nome) {
+            update.repasses = null;
+          } else if (fin) {
+            update.repasses = [{
+              fornecedor_nome: update.fornecedor_nome,
+              share_type: fin.modo === 'fixo' ? 'fixed' : 'percent',
+              share_value: fin.modo === 'fixo' ? fin.unidadeFixa : fin.pct,
+              valor_centavos: fin.repasse,
+            }];
+          }
+        }
+
         // Trocou de experiência → o local muda e a PARCEIRA NOVA ainda
         // não foi avisada. Zera o "avisado" pra a célula do WhatsApp
         // voltar a vermelho e cobrar o aviso da nova parceira — senão
@@ -10619,8 +10642,15 @@
     try {
       const { data } = await sb.from('bookings').select('*').eq('status', 'pago');
       (data || []).forEach(b => {
+        // repasses[] é um snapshot tirado no CHECKOUT. Numa reserva de UM
+        // fornecedor ele fica velho quando a admin troca o fornecedor no
+        // painel — a edição grava fornecedor_nome mas o snapshot seguia
+        // com o antigo — e casar por ele fazia a reserva sair no extrato
+        // do fornecedor ANTIGO. O snapshot só vale pra casar quando é de
+        // fato multi-fornecedor; com 1 fornecedor, fornecedor_nome manda.
+        const isMultiForn = Array.isArray(b.repasses) && b.repasses.length > 1;
         const matchPrincipal = fornecedorKey(b.fornecedor_nome) === supplierKey;
-        const matchRepasse = b.repasses && Array.isArray(b.repasses) &&
+        const matchRepasse = isMultiForn &&
           b.repasses.some(e => e && fornecedorKey(e.fornecedor_nome) === supplierKey);
         if (!matchPrincipal && !matchRepasse) return;
         if ((b.status_fornecedor || '') !== 'repasse_feito') return;
