@@ -356,8 +356,8 @@ table.fl td:first-child{white-space:nowrap}
   <!-- ═══════════ 12 · TRAÇÃO ═══════════ -->
   <section class="s" style="padding:46px 76px 40px">
     <div class="head">
-      <div class="eyebrow">O que já existe</div>
-      <h2 class="tit" style="font-size:34px">Construído e no ar, sem gastar em anúncio.</h2>
+      <div class="eyebrow">Como a Elarah está indo</div>
+      <h2 class="tit" style="font-size:34px;max-width:30ch">O que aconteceu em <span class="fill">[PREENCHER: Nº]</span> meses de plataforma no ar.</h2>
     </div>
     <div class="row" style="gap:20px 34px;margin-top:20px;flex-wrap:wrap;font-size:12.5px">
       <div><div class="kicker num" style="font-size:19px"><span class="fill">[PREENCHER: Nº DE PARCEIROS]</span></div><div class="mini">parceiros</div></div>
@@ -789,9 +789,10 @@ const SCRIPT = [
   fala:"Só a economia criativa de São Paulo reúne cento e cinquenta mil empresas e organizações. É uma base enorme de gente que já sabe fazer. (pausa) Do outro lado, quarenta por cento dos brasileiros dizem que querem gastar mais com experiência, e o consumo ligado a cultura e gastronomia vem crescendo ano após ano. (pausa) Ou seja: esse mercado não precisa ser criado. Ele já existe, já movimenta dinheiro e está crescendo. O que falta é infraestrutura — alguém que organize a descoberta, a reserva e a operação disso tudo.",
   tr:"Há alguns meses a gente começou a organizar.", t:34,
   obs:"Nunca diga que a Elarah está criando um mercado — a frase é sempre organizando e digitalizando um mercado que já existe. Se perguntarem o escopo dos dados, responda de frente: os 150 mil são a economia criativa do estado inteiro, não uma contagem de estúdios de experiência; e os 8,9 pontos são de viagens de lazer motivadas por cultura e gastronomia. Os três mostram direção de mercado, não o seu tamanho endereçável — esse é o cálculo do anexo A2."},
- {n:9,nome:"O que já existe",tela:"Quatro números da operação e a parede com todos os parceiros reais.",
-  fala:"Hoje são [PREENCHER] parceiros, [PREENCHER] experiências no ar e [PREENCHER] reservas pagas. (pausa) Cada um desses logos é um estúdio que a gente foi buscar, um por um. (pausa) A plataforma inteira está no ar — busca, pagamento, área do parceiro, repasse automático, aplicativo. E sem gastar um real em anúncio. (pausa) É pequeno, eu sei. Mas é real, e cresce toda semana.",
-  tr:"E o jeito da gente ganhar dinheiro é simples.", t:30},
+ {n:9,nome:"O que já existe",tela:"O tempo de operação no título, quatro números da operação e a parede com todos os parceiros.",
+  fala:"A plataforma está no ar há [PREENCHER] meses. (pausa) Nesse tempo: [PREENCHER] parceiros, [PREENCHER] experiências e [PREENCHER] reservas pagas. Cada um desses logos é um estúdio que a gente foi buscar, um por um. (pausa) E sem gastar um real em anúncio. (pausa) É pequeno, eu sei. Mas é real, e cresce toda semana.",
+  tr:"E o jeito da gente ganhar dinheiro é simples.", t:32,
+  obs:"O tempo é o que faz esses números crescerem aos olhos de quem ouve. Diga “há [X] meses” antes de qualquer número — sozinho, o número parece pequeno; dentro do prazo, parece rápido. E fale “um por um” devagar, com a parede na tela: é o segundo em que a sala entende que isso foi trabalho de rua, não cadastro automático."},
  {n:10,nome:"Modelo de negócio",tela:"Duas linhas de receita: marketplace e Elarah Originals.",
   fala:"A gente cobra uma comissão sobre cada reserva. O parceiro só paga quando vende — e é isso que faz ele topar entrar. (pausa) Além disso, a gente cria experiências próprias, as Elarah Originals, quando o catálogo ainda não cobre o que as pessoas estão procurando. Aí a margem é maior.",
   tr:"Mas o que pode fazer isso virar grande não é a tecnologia.", t:26},
@@ -824,6 +825,7 @@ const APX = [
 
 const FILL = [
  {g:"1 · Aparece na tela durante os 5 minutos",items:[
+  ["[PREENCHER: Nº DE MESES NO AR]","Há quanto tempo a plataforma está operando. É o que transforma números pequenos em ritmo","Você sabe"],
   ["[PREENCHER: Nº DE PARCEIROS]","Parceiros com contrato e experiência publicada","Sua base"],
   ["[PREENCHER: Nº DE EXPERIÊNCIAS]","Experiências ativas e reserváveis hoje","Sua base"],
   ["[PREENCHER: Nº DE RESERVAS PAGAS]","Reservas com pagamento confirmado","Extraível da plataforma"],
