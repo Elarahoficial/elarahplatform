@@ -205,15 +205,18 @@ table.fl td:first-child{white-space:nowrap}
           <div style="display:grid;place-items:center;width:32px;color:var(--orange);font-size:18px">›</div>
           <div style="flex:1"><div class="card" style="padding:16px 12px;text-align:center;border-color:var(--magenta)"><div style="font-size:14px;font-weight:600">Pix</div><div class="mini" style="margin-top:4px">manda o comprovante</div></div></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:44px;margin-top:48px;align-items:center">
-          <div>
-            <div style="font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.25"><span class="fill cf">[PREENCHER: % QUE DESISTE ANTES DA 1ª MENSAGEM]</span></div>
-            <div class="statlbl" style="max-width:30ch;margin-top:12px">param antes mesmo de falar com alguém</div>
+        <div style="display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;margin-top:46px;align-items:center">
+          <div class="row" style="gap:20px;align-items:baseline">
+            <div class="stat mg" style="font-size:80px">75%</div>
+            <p class="statlbl" style="max-width:20ch;font-size:14px">dos consumidores passam por <strong>5 ou mais pontos de contato</strong> antes de decidir</p>
           </div>
-          <div><p class="sub" style="font-size:20px;max-width:100%;color:var(--ink)"><strong>Nada disso é falta de vontade. É o caminho que cansa.</strong></p></div>
+          <div>
+            <p class="sub" style="font-size:21px;max-width:100%;color:var(--ink)">Se a jornada é fragmentada, a <strong>oportunidade de compra</strong> se perde pelo caminho.</p>
+          </div>
         </div>
       </div>
     </div>
+    <div class="foot">Fonte: <span class="fill">[PREENCHER: NOME DO ESTUDO, INSTITUIÇÃO E ANO]</span></div>
   </section>
 
   <!-- ═══════════ 4 · A HISTÓRIA ═══════════ -->
@@ -710,9 +713,10 @@ const SCRIPT = [
  {n:2,nome:"O problema humano",tela:"Foto real de uma aula de culinária, em tela cheia à esquerda. À direita: “A vontade quase sempre existe.”",
   fala:"A vontade está lá. A gente fala isso o tempo todo: preciso fazer alguma coisa diferente, queria aprender a fazer alguma coisa. (pausa) Só que entre querer e fazer tem um caminho. E é no caminho que quase todo mundo desiste.",
   tr:"Porque hoje o caminho é esse aqui.", t:22},
- {n:3,nome:"A fricção",tela:"A cadeia Google → Instagram → TikTok → WhatsApp → Pix. Ao lado, o número de desistência.",
-  fala:"Você procura no Google e não acha nada organizado. Vai pro Instagram, encontra um ateliê lindo, mas sem preço e sem horário. Manda uma mensagem. Ninguém responde. (pausa) Alguém te passa um WhatsApp. E no fim pedem um Pix e o comprovante. (pausa) Cinco lugares diferentes pra fazer uma coisa só. [PREENCHER]% param antes de mandar a primeira mensagem.",
-  tr:"Eu sei disso de cor, porque foi exatamente o que aconteceu comigo.", t:34},
+ {n:3,nome:"A fricção",tela:"A cadeia Google → Instagram → TikTok → WhatsApp → Pix. Embaixo: 75% passam por 5 ou mais pontos de contato.",
+  fala:"Você procura no Google e não acha nada organizado. Vai pro Instagram, encontra um ateliê lindo, mas sem preço e sem horário. Manda uma mensagem. Ninguém responde. (pausa) Alguém te passa um WhatsApp. E no fim pedem um Pix e o comprovante. (pausa) Setenta e cinco por cento das pessoas passam por cinco ou mais pontos de contato antes de decidir uma compra. Cada ponto desses é uma chance de desistir. (pausa) Não é falta de vontade. É o caminho que cansa.",
+  tr:"Eu sei disso de cor, porque foi exatamente o que aconteceu comigo.", t:36,
+  obs:"Diga “setenta e cinco por cento” por extenso, é mais fácil de ouvir do que ler. E tenha a fonte na ponta da língua: se alguém perguntar de onde vem esse número e você não souber responder, ele passa a jogar contra você."},
  {n:4,nome:"A história",tela:"Foto real das fundadoras na aula de velas. “A gente só queria fazer uma aula de velas.”",
   fala:"Eu e a Mafe queríamos fazer uma aula de velas. Uma coisa simples, numa terça à noite. (pausa) A gente passou por todas as cinco etapas. Levou [PREENCHER] até conseguir marcar. (pausa) E aí a aula aconteceu, e foi ótima. Valeu cada minuto. Foi quando a gente se olhou e pensou: se a gente, tão a fim assim, quase desistiu — quanta gente desiste no meio do caminho?",
   tr:"Foi dessa pergunta que nasceu a Elarah.", t:38,
@@ -769,7 +773,7 @@ const FILL = [
   ["[PREENCHER: Nº DE RESERVAS PAGAS]","Reservas com pagamento confirmado","Extraível da plataforma"],
   ["[PREENCHER: GMV EM R$]","Soma dos valores pagos nas reservas","Extraível da plataforma"],
   ["[PREENCHER: % DE OCUPAÇÃO MÉDIA DAS TURMAS]","Vagas vendidas sobre vagas abertas. É o argumento inteiro do lado do parceiro","Pesquisa de 5 perguntas com os parceiros atuais"],
-  ["[PREENCHER: % QUE DESISTE ANTES DA 1ª MENSAGEM]","A perda no caminho da descoberta","Analytics do site ou pesquisa própria, com N declarado"],
+  ["[PREENCHER: NOME DO ESTUDO, INSTITUIÇÃO E ANO]","A fonte dos 75% do slide 3. Sem fonte no rodapé, o número vira o ponto mais fraco do pitch em vez do mais forte","Ache o estudo original — não um blog citando outro blog"],
   ["[PREENCHER: TEMPO MÉDIO DA VISITA ATÉ A RESERVA]","Prova que a fricção caiu","Analytics da plataforma"],
   ["[PREENCHER: % DAS RESERVAS SEM INTERVENÇÃO HUMANA]","Quantas vão do clique ao repasse sem ninguém tocar. É o que mostra que a operação escala","Conte quantas reservas exigiram mensagem manual sua no último mês"],
   ["[PREENCHER: QUANTO TEMPO ATÉ CONSEGUIR MARCAR]","Na história da aula de velas. Dias, semanas — o número real","Você lembra"],
