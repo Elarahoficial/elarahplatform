@@ -1511,7 +1511,9 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // CTA: respeita cta_mode da experiência (default 'buy').
       tipo: exp.ctaMode === 'waitlist' ? 'espera' : 'participar',
       ctaMode: exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy',
-      ordem: 0,
+      // Ordem manual definida no admin (aba By Elarah, botões ▲▼).
+      // null = sem ordem → cai no fim da seção Originals na home.
+      ordem: (exp.ordem != null && exp.ordem !== '' && isFinite(+exp.ordem)) ? +exp.ordem : null,
       ativo: exp.isActive !== false,
       // "O que está incluso" — mesmo campo `inclui` do cadastro da
       // experiência. Exibido como lista com check no card.
@@ -1714,15 +1716,23 @@ if (categoriaURL) activeCategoria = categoriaURL;
       if (k && !seen.has(k)) { seen.add(k); combined.push(card); }
     });
 
+    // Ordena os Originals pela `ordem` definida no admin (menor =
+    // aparece primeiro). Itens sem ordem caem no fim, preservando a
+    // ordem de inserção (byelarah_items antes das experiences puras).
+    // Empate → ordem de inserção estável.
+    combined.forEach(function (c, i) { if (c) c._ordemIdx = i; });
+    combined.sort(function (a, b) {
+      var oa = (a && a.ordem != null && a.ordem !== '' && isFinite(+a.ordem)) ? +a.ordem : Infinity;
+      var ob = (b && b.ordem != null && b.ordem !== '' && isFinite(+b.ordem)) ? +b.ordem : Infinity;
+      if (oa !== ob) return oa - ob;
+      return (a._ordemIdx || 0) - (b._ordemIdx || 0);
+    });
+
     if (combined.length) {
-      // Home: só os 3 primeiros + botão "Ver mais" → byelarah.html.
-      // Página dedicada (body[data-originals="all"]): mostra todas.
-      var showAllOriginals = document.body &&
-        document.body.getAttribute('data-originals') === 'all';
-      renderOriginalsGrid(
-        combined,
-        showAllOriginals ? {} : { limit: 3, verMaisHref: 'byelarah.html' }
-      );
+      // A home agora mostra TODAS as experiências Originals (sem limite),
+      // na ordem definida no admin. A pessoa rola até o fim e clica na
+      // que quiser. (A página dedicada byelarah.html continua igual.)
+      renderOriginalsGrid(combined, {});
     } else {
       // Nada cadastrado em byelarah_items + nenhuma experience marcada
       // como Original. O HTML estático da home (cards hardcoded) ainda
