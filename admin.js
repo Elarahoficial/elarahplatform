@@ -17,6 +17,41 @@
 
   const PURCHASES_KEY = 'elarah_purchases';
 
+  // ===== Motivo real de um erro de Edge Function =====
+  // Quando a function responde non-2xx, o supabase-js NÃO coloca o corpo
+  // no err.message — ele vira o inútil "Edge Function returned a non-2xx
+  // status code" e a admin fica sem saber o que aconteceu. O corpo real
+  // (com { error, message }) fica na Response guardada em err.context.
+  // Este helper lê esse corpo e devolve a frase de verdade.
+  //
+  // Uso:
+  //   const motivo = await edgeErrorMessage(err, data);
+  window.elarahEdgeErrorMessage = async function edgeErrorMessage(err, data) {
+    // 1) Corpo já veio parseado (function respondeu 2xx com ok:false).
+    if (data && (data.message || data.error)) return data.message || data.error;
+    // 2) Non-2xx: o corpo está na Response de err.context.
+    if (err && err.context) {
+      try {
+        if (typeof err.context.json === 'function') {
+          const body = await err.context.clone().json();
+          if (body && (body.message || body.error)) return body.message || body.error;
+        }
+      } catch (_e) { /* corpo não era JSON — tenta texto abaixo */ }
+      try {
+        if (typeof err.context.text === 'function') {
+          const txt = await err.context.text();
+          if (txt) return txt.slice(0, 400);
+        }
+      } catch (_e) { /* ignora */ }
+      if (err.context.status === 401 || err.context.status === 403) {
+        return 'Sem permissão (' + err.context.status + '). Faça login como admin de novo.';
+      }
+    }
+    return (err && err.message) || 'erro desconhecido';
+  };
+  const edgeErrorMessage = window.elarahEdgeErrorMessage;
+
+
   // ===== EXPERIÊNCIAS DE TESTE (escondidas do admin) =====
   // Bookings cuja experiencia_nome bate com qualquer destes nomes
   // (case-insensitive, trim) NÃO entram em listas, dropdowns, gráficos
@@ -1898,15 +1933,7 @@
       var res = await sb.functions.invoke('admin-send-whatsapp-test', { body: { telefone: tel, tipo: tipo } });
       var data = res && res.data; var err = res && res.error;
       if (err || !data || !data.ok) {
-        var motivo = (data && (data.message || data.error)) || 'erro desconhecido';
-        // Em erro non-2xx o supabase-js guarda a Response em err.context —
-        // lê o corpo real pra mostrar o motivo exato (kill switch, z-api, etc).
-        try {
-          if (err && err.context && typeof err.context.json === 'function') {
-            var body = await err.context.json();
-            if (body && (body.message || body.error)) motivo = body.message || body.error;
-          }
-        } catch (_e) { if (err && err.message) motivo = err.message; }
+        var motivo = await edgeErrorMessage(err, data);
         setStatus('Não enviou: ' + motivo, '#c0392b');
       } else {
         setStatus('✅ Enviado pro ' + (data.to || tel) + '. Confira seu WhatsApp!', '#1a8a4a');
@@ -1915,6 +1942,121 @@
       setStatus('Erro: ' + ((e && e.message) || String(e)), '#c0392b');
     } finally {
       document.querySelectorAll('.wa-test-btn').forEach(function (b) { b.disabled = false; });
+    }
+  });
+
+  // ===== Diagnóstico de e-mail (painel Pós-evento) =====
+  // Responde "por que o e-mail não chega?" — inclusive o de confirmação
+  // de compra. Chama a edge function admin-email-health, que checa a
+  // configuração do Resend (chave presente/válida, domínio verificado,
+  // remetente batendo com o domínio) e, opcionalmente, faz um envio
+  // REAL pro e-mail informado e devolve o erro cru traduzido.
+  //
+  // Por que existe: quando o envio falha, o pagamento passa igual e a
+  // reserva é criada normal — o erro só aparece no log da Edge Function.
+  // Sem isto, "não chegou e-mail" é indistinguível de "caiu no spam".
+  document.addEventListener('click', async function (ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest('#btn-email-health, #btn-email-test') : null;
+    if (!t) return;
+    var comTeste = t.id === 'btn-email-test';
+    var statusEl = document.getElementById('email-health-status');
+    var detailEl = document.getElementById('email-health-detail');
+    var toEl = document.getElementById('email-test-to');
+    function setStatus(msg, color) {
+      if (!statusEl) return;
+      statusEl.style.color = color || '#666';
+      statusEl.textContent = msg;
+    }
+    function setDetail(text) {
+      if (!detailEl) return;
+      if (!text) { detailEl.hidden = true; detailEl.textContent = ''; return; }
+      detailEl.hidden = false;
+      detailEl.textContent = text;
+    }
+
+    var destino = (toEl && toEl.value || '').trim();
+    if (comTeste && !destino) {
+      setStatus('Digite um e-mail pra receber o teste.', '#c0392b');
+      return;
+    }
+
+    var sb = window.supabaseClient;
+    if (!sb || !sb.functions || !sb.functions.invoke) {
+      setStatus('Supabase indisponível. Recarregue a página.', '#c0392b');
+      return;
+    }
+
+    var botoes = [document.getElementById('btn-email-health'), document.getElementById('btn-email-test')];
+    botoes.forEach(function (b) { if (b) b.disabled = true; });
+    setStatus(comTeste ? 'Enviando e-mail de teste…' : 'Checando a configuração do Resend…', '#666');
+    setDetail('');
+
+    try {
+      var res = await sb.functions.invoke('admin-email-health', {
+        body: comTeste ? { to: destino } : {},
+      });
+      var data = res && res.data;
+      var err = res && res.error;
+      if (err || !data || !data.ok) {
+        var motivo = await edgeErrorMessage(err, data);
+        setStatus('Não consegui rodar o diagnóstico: ' + motivo, '#c0392b');
+        setDetail('Se a mensagem falar em 404 / "Function not found", a edge ' +
+          'function admin-email-health ainda não foi deployada:\n\n' +
+          '  supabase functions deploy admin-email-health');
+        return;
+      }
+
+      var cfg = data.config || {};
+      var linhas = [];
+      linhas.push('RESEND_API_KEY: ' + (cfg.has_api_key ? 'cadastrada (' + (cfg.api_key_prefix || '') + ')' : 'AUSENTE'));
+      if (cfg.key_valid !== null && cfg.key_valid !== undefined) {
+        linhas.push('Chave aceita pelo Resend: ' + (cfg.key_valid ? 'sim' : 'NÃO'));
+      }
+      linhas.push('Remetente (ELARAH_FROM_EMAIL): ' + (cfg.from || '—') +
+        (cfg.using_default_from ? '  [usando o padrão do código]' : ''));
+      linhas.push('Domínio do remetente: ' + (cfg.from_domain || '—') +
+        ' → ' + (cfg.from_domain_status || 'não checado'));
+      var doms = Array.isArray(cfg.domains) ? cfg.domains : [];
+      linhas.push('Domínios no Resend: ' + (doms.length
+        ? doms.map(function (d) { return d.name + ' (' + d.status + ')'; }).join(', ')
+        : 'nenhum cadastrado'));
+      if (Array.isArray(cfg.admin_notify) && cfg.admin_notify.length) {
+        linhas.push('Avisos de venda vão para: ' + cfg.admin_notify.join(', '));
+      }
+      if (cfg.error) linhas.push('Erro ao consultar o Resend: ' + cfg.error);
+
+      var teste = data.test;
+      if (teste) {
+        linhas.push('');
+        linhas.push('— Envio de teste para ' + teste.to + ' —');
+        linhas.push('Resultado: ' + (teste.sent ? 'ENVIADO ✓' : 'FALHOU') +
+          (teste.status ? ' (HTTP ' + teste.status + ')' : ''));
+        if (teste.used_fallback_from) {
+          linhas.push('Atenção: saiu pelo remetente sandbox onboarding@resend.dev, ' +
+            'não pelo domínio da Elarah.');
+        }
+        linhas.push('Motivo: ' + (teste.message || '—'));
+        if (teste.raw_error) linhas.push('Resposta crua do Resend: ' + teste.raw_error);
+      }
+      setDetail(linhas.join('\n'));
+
+      // Frase principal: se houve teste, o resultado dele manda; senão, o
+      // diagnóstico da configuração.
+      if (teste) {
+        if (teste.sent) {
+          setStatus('✅ E-mail de teste enviado para ' + teste.to +
+            '. Confira a caixa de entrada e o spam.', '#1a8a4a');
+        } else {
+          setStatus('❌ ' + (teste.message || 'O envio falhou.'), '#c0392b');
+        }
+      } else {
+        var diag = data.diagnosis || '';
+        setStatus(diag, diag.indexOf('✅') === 0 ? '#1a8a4a' : '#c0392b');
+      }
+    } catch (e) {
+      setStatus('Erro: ' + ((e && e.message) || String(e)), '#c0392b');
+    } finally {
+      botoes.forEach(function (b) { if (b) b.disabled = false; });
     }
   });
 
@@ -5503,9 +5645,11 @@
           var data = res && res.data;
           var err = res && res.error;
           if (err || !data || !data.ok) {
-            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+            var motivo = await edgeErrorMessage(err, data);
             console.error('[Admin] reenviar confirmação falhou:', err || data);
-            alert('Não consegui reenviar a confirmação.\nMotivo: ' + motivo);
+            alert('Não consegui reenviar a confirmação.\n\nMotivo: ' + motivo +
+              '\n\nSe o problema for de configuração do e-mail, use ' +
+              '"Diagnóstico de e-mail" na aba Pós-evento.');
             btn.disabled = false;
             btn.textContent = original;
             return;
@@ -5558,9 +5702,9 @@
           var data = res && res.data;
           var err = res && res.error;
           if (err || !data || !data.ok) {
-            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+            var motivo = await edgeErrorMessage(err, data);
             console.error('[Admin] enviar mensagem fornecedor falhou:', err || data);
-            alert('Não consegui enviar o e-mail.\nMotivo: ' + motivo);
+            alert('Não consegui enviar o e-mail.\n\nMotivo: ' + motivo);
             btn.disabled = false;
             btn.textContent = original;
             return;
@@ -17651,7 +17795,7 @@
       const data = r && r.data;
       const err = r && r.error;
       if (err || (data && data.ok === false)) {
-        const msg = (err && (err.message || err)) || (data && data.error) || 'falha';
+        const msg = await edgeErrorMessage(err, data);
         console.warn('[Contabilidade] confirmação venda manual não enviada:', msg);
         if (!opts.silent) {
           // skipped (sem e-mail / não paga) é aviso, não erro grave.

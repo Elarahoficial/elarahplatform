@@ -29,6 +29,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
+  explainEmailFailure,
   isCustomerMessagingSuppressed,
   sendEmail,
   supplierCustomerMessage,
@@ -146,7 +147,13 @@ serve(async (req) => {
       "error=" + (result.error ?? "?"),
     );
     return jsonResponse(
-      { ok: false, error: "email_failed", detail: result.error ?? null },
+      {
+        ok: false,
+        error: "email_failed",
+        message: explainEmailFailure(result),
+        sandbox_restricted: !!result.sandboxRestricted,
+        detail: result.error ?? null,
+      },
       502,
     );
   }

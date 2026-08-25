@@ -26,6 +26,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
   bookingConfirmationEmailHtml,
+  explainEmailFailure,
   isCustomerMessagingSuppressed,
   sendEmail,
 } from "../_shared/email.ts";
@@ -79,10 +80,10 @@ serve(async (req) => {
     return jsonResponse({ ok: false, error: "db_error", detail: error.message }, 500);
   }
   if (!booking) {
-    return jsonResponse({ ok: false, error: "booking_not_found" }, 404);
+    return jsonResponse({ ok: false, error: "booking_not_found", message: "Reserva não encontrada." }, 404);
   }
   if (!booking.email) {
-    return jsonResponse({ ok: false, error: "booking_sem_email" }, 422);
+    return jsonResponse({ ok: false, error: "booking_sem_email", message: "Esta reserva não tem e-mail do cliente cadastrado." }, 422);
   }
   // Reserva "aguardando experiência" (cliente desmarcou sem reembolso) não
   // pode receber confirmação — mesmo que a admin clique sem querer. Guarda
@@ -92,7 +93,7 @@ serve(async (req) => {
       "[Elarah resend-confirmation] envio bloqueado (aguardando_experiencia)",
       "booking_id=" + booking.id,
     );
-    return jsonResponse({ ok: false, error: "aguardando_experiencia" }, 409);
+    return jsonResponse({ ok: false, error: "aguardando_experiencia", message: "Reserva marcada como \"aguardando experiência\" — mensagens automáticas ficam bloqueadas." }, 409);
   }
 
   // Mesma montagem do mp-webhook/sendBookingConfirmation — os dados
@@ -124,15 +125,26 @@ serve(async (req) => {
   });
 
   if (!result.ok) {
+    // `message` é a explicação em português (chave ausente, domínio não
+    // verificado, conta em modo teste...). O painel mostra ela no lugar
+    // do genérico "Edge Function returned a non-2xx status code".
+    const message = explainEmailFailure(result);
     console.error(
       "[Elarah resend-confirmation] envio de e-mail falhou",
       "booking_id=" + booking.id,
       "to=" + booking.email,
       "status=" + (result.status ?? "?"),
       "error=" + (result.error ?? "?"),
+      "motivo=" + message,
     );
     return jsonResponse(
-      { ok: false, error: "email_failed", detail: result.error ?? null },
+      {
+        ok: false,
+        error: "email_failed",
+        message,
+        sandbox_restricted: !!result.sandboxRestricted,
+        detail: result.error ?? null,
+      },
       502,
     );
   }

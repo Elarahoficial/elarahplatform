@@ -71,6 +71,8 @@ export interface EmailResult {
   error?: string;
   id?: string;
   usedFallbackFrom?: boolean;
+  /** true = conta Resend em modo teste (só entrega pro dono da conta). */
+  sandboxRestricted?: boolean;
 }
 
 // Detecta erros do Resend que indicam domínio/FROM inválido. Usado
@@ -90,6 +92,170 @@ function isFromAddressError(status: number, body: string): boolean {
     b.includes("from address") ||
     b.includes("verify your domain") ||
     b.includes("invalid `from`");
+}
+
+// Detecta a trava de MODO TESTE do Resend: enquanto NENHUM domínio está
+// verificado, a API só aceita enviar pro e-mail do dono da conta e responde
+// 403 com "You can only send testing emails to your own email address".
+// Isso NÃO é problema de FROM — é do DESTINATÁRIO —, então repetir o envio
+// com onboarding@resend.dev falha exatamente igual. É a causa mais comum de
+// "o e-mail de compra não chega": o cliente nunca recebe, o pagamento passa
+// normal e o erro só aparece nos logs da Edge Function.
+export function isSandboxRecipientRestriction(status: number, body: string): boolean {
+  if (status !== 403) return false;
+  const b = (body || "").toLowerCase();
+  return b.includes("testing emails") ||
+    (b.includes("your own email address") && b.includes("only"));
+}
+
+// Traduz o erro cru do Resend numa frase acionável em português, pra
+// aparecer no painel admin em vez do genérico "non-2xx status code".
+export function explainEmailFailure(result: EmailResult): string {
+  if (result.ok) return "E-mail enviado.";
+  if (result.skipped) {
+    return "RESEND_API_KEY não está cadastrada nos Secrets do Supabase — " +
+      "nenhum e-mail sai enquanto isso. Cadastre em Project Settings → " +
+      "Edge Functions → Secrets e faça redeploy das functions.";
+  }
+  const status = result.status ?? 0;
+  const body = result.error ?? "";
+  if (isSandboxRecipientRestriction(status, body)) {
+    return "A conta do Resend está em MODO TESTE: sem domínio verificado ela " +
+      "só entrega no e-mail do dono da conta. Por isso nenhum cliente recebe. " +
+      "Verifique elarah.com.br em Resend → Domains (DNS) e confirme que " +
+      "ELARAH_FROM_EMAIL usa esse domínio.";
+  }
+  if (status === 401 || body.toLowerCase().includes("api key is invalid")) {
+    return "O Resend recusou a RESEND_API_KEY (inválida ou revogada). " +
+      "Gere uma chave nova em Resend → API Keys e atualize o Secret.";
+  }
+  if (isFromAddressError(status, body)) {
+    return "O Resend recusou o remetente (" + FROM + "). O domínio não está " +
+      "verificado. Verifique em Resend → Domains ou ajuste ELARAH_FROM_EMAIL.";
+  }
+  if (status === 422) {
+    return "O Resend recusou o conteúdo/destinatário (422): " + body.slice(0, 200);
+  }
+  if (status === 429) {
+    return "Limite de envio do Resend atingido (429). Tente de novo em alguns minutos.";
+  }
+  if (!status) {
+    return "Falha de rede ao falar com o Resend: " + body.slice(0, 200);
+  }
+  return "Resend respondeu " + status + ": " + body.slice(0, 300);
+}
+
+export interface ResendDomainInfo {
+  name: string;
+  status: string;
+  region?: string | null;
+}
+
+export interface ResendDiagnostics {
+  has_api_key: boolean;
+  api_key_prefix: string | null;
+  from: string;
+  from_domain: string | null;
+  using_default_from: boolean;
+  admin_notify: string[];
+  key_valid: boolean | null;
+  domains: ResendDomainInfo[];
+  from_domain_status: string | null;
+  error: string | null;
+}
+
+// Extrai só o domínio de "Elarah <contato@elarah.com.br>".
+export function fromEmailDomain(fromValue: string): string | null {
+  const m = /<([^>]+)>/.exec(fromValue);
+  const addr = (m ? m[1] : fromValue).trim();
+  const at = addr.lastIndexOf("@");
+  return at > 0 ? addr.slice(at + 1).toLowerCase() : null;
+}
+
+// Consulta a conta do Resend (GET /domains) pra dizer, SEM enviar nada,
+// se a chave é válida e se o domínio do FROM está verificado. É a
+// resposta pra "por que o e-mail não chega?" sem depender de log.
+export async function resendDiagnostics(): Promise<ResendDiagnostics> {
+  const fromDomain = fromEmailDomain(FROM);
+  const out: ResendDiagnostics = {
+    has_api_key: !!RESEND_API_KEY,
+    api_key_prefix: RESEND_API_KEY ? RESEND_API_KEY.slice(0, 6) + "…" : null,
+    from: FROM,
+    from_domain: fromDomain,
+    using_default_from: !Deno.env.get("ELARAH_FROM_EMAIL"),
+    admin_notify: adminNotifyRecipients(),
+    key_valid: null,
+    domains: [],
+    from_domain_status: null,
+    error: null,
+  };
+  if (!RESEND_API_KEY) {
+    out.error = "RESEND_API_KEY ausente nos Secrets do Supabase.";
+    return out;
+  }
+  try {
+    const res = await fetch("https://api.resend.com/domains", {
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
+    });
+    if (!res.ok) {
+      out.key_valid = res.status !== 401;
+      out.error = "Resend GET /domains respondeu " + res.status + ": " +
+        (await res.text().catch(() => "")).slice(0, 300);
+      return out;
+    }
+    out.key_valid = true;
+    const json = await res.json().catch(() => ({} as Record<string, unknown>));
+    const list = Array.isArray((json as { data?: unknown }).data)
+      ? ((json as { data: Array<Record<string, unknown>> }).data)
+      : [];
+    out.domains = list.map((d) => ({
+      name: String(d.name ?? ""),
+      status: String(d.status ?? "?"),
+      region: (d.region as string | undefined) ?? null,
+    }));
+    if (fromDomain) {
+      const match = out.domains.find((d) => d.name.toLowerCase() === fromDomain);
+      out.from_domain_status = match ? match.status : "nao_cadastrado";
+    }
+  } catch (e) {
+    out.error = "Falha de rede ao consultar o Resend: " + String(e);
+  }
+  return out;
+}
+
+// Junta config + estado da conta numa frase única pro painel admin.
+export function explainResendDiagnostics(d: ResendDiagnostics): string {
+  if (!d.has_api_key) {
+    return "❌ RESEND_API_KEY não está cadastrada. NENHUM e-mail sai (nem o de " +
+      "compra). Cadastre em Supabase → Project Settings → Edge Functions → " +
+      "Secrets e redeploy as functions.";
+  }
+  if (d.key_valid === false) {
+    return "❌ A RESEND_API_KEY é inválida ou foi revogada. Gere outra em " +
+      "Resend → API Keys e atualize o Secret.";
+  }
+  if (d.error) return "⚠️ Não consegui checar a conta do Resend: " + d.error;
+  const verified = d.domains.filter((x) => x.status === "verified");
+  if (verified.length === 0) {
+    return "❌ Nenhum domínio VERIFICADO no Resend. Nesse estado a conta fica " +
+      "em modo teste e só entrega no e-mail do dono da conta — por isso os " +
+      "clientes não recebem nada. Verifique " + (d.from_domain ?? "seu domínio") +
+      " em Resend → Domains (adicionar os registros DNS).";
+  }
+  if (d.from_domain_status === "nao_cadastrado") {
+    return "❌ O remetente configurado (" + d.from + ") usa o domínio " +
+      d.from_domain + ", que NÃO está cadastrado no Resend. Domínios " +
+      "verificados: " + verified.map((x) => x.name).join(", ") +
+      ". Ajuste ELARAH_FROM_EMAIL pra um deles.";
+  }
+  if (d.from_domain_status && d.from_domain_status !== "verified") {
+    return "❌ O domínio " + d.from_domain + " está como \"" +
+      d.from_domain_status + "\" no Resend (não verificado). Termine a " +
+      "verificação DNS em Resend → Domains.";
+  }
+  return "✅ Configuração do e-mail OK: chave válida e " + d.from_domain +
+    " verificado. Se ainda assim não chega, faça o envio de teste abaixo e " +
+    "confira a caixa de spam.";
 }
 
 // Chama a API do Resend uma vez com o FROM informado.
@@ -174,6 +340,24 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
     // Só ativa se o FROM principal é diferente do fallback E o erro
     // parece ser por domínio/FROM não-verificado. Emails ainda saem,
     // só que do endereço sandbox do Resend.
+    // Trava de modo-teste (403 "only ... testing emails") é sobre o
+    // DESTINATÁRIO: trocar o FROM pelo sandbox não resolve nada, só gasta
+    // uma chamada e esconde a causa. Sai com o erro explicado.
+    if (isSandboxRecipientRestriction(attempt.res.status, attempt.text)) {
+      console.error(
+        "[elarah/email] CONTA RESEND EM MODO TESTE — só entrega no e-mail do " +
+          "dono da conta. Verifique um domínio em Resend → Domains pra " +
+          "liberar envio pros clientes.",
+        "to=" + JSON.stringify(to),
+      );
+      return {
+        ok: false,
+        status: attempt.res.status,
+        error: attempt.text,
+        sandboxRestricted: true,
+      };
+    }
+
     const mainIsSandbox = FROM.toLowerCase().includes("onboarding@resend.dev");
     if (!mainIsSandbox && isFromAddressError(attempt.res.status, attempt.text)) {
       console.warn(

@@ -1874,6 +1874,23 @@
         <div id="wa-test-status" style="margin-top:9px;font-size:.82rem;color:#666;"></div>
       </div>
 
+      <!-- Diagnóstico de e-mail — por que o e-mail não chega (inclusive o de compra) -->
+      <div id="email-health-panel" style="margin:0 0 16px;padding:14px 16px;background:#fff6ea;border:1px solid #f2dcc0;border-radius:10px;">
+        <div style="font-weight:700;color:#1a1a1a;margin-bottom:2px;">📧 Diagnóstico de e-mail</div>
+        <div style="font-size:.8rem;color:#7a6a5a;margin-bottom:10px;">
+          Todo e-mail da plataforma (confirmação de compra, gift card, recuperação de senha,
+          mensagem do fornecedor) sai pelo mesmo caminho. Se nada chega, o problema quase sempre
+          está aqui — e o pagamento continua passando normal, então não dá pra perceber sozinho.
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <button type="button" class="admin__add-btn" id="btn-email-health" style="background:#f0a05e;border-color:#f0a05e;font-weight:700;">🔎 Checar configuração</button>
+          <input type="email" id="email-test-to" placeholder="Seu e-mail pra receber o teste" style="flex:1;min-width:220px;padding:9px 11px;border:1px solid #e0cdb4;border-radius:8px;font-size:.9rem;">
+          <button type="button" class="admin__add-btn" id="btn-email-test" style="background:#1a8a4a;border-color:#1a8a4a;font-weight:700;">✉️ Enviar e-mail de teste</button>
+        </div>
+        <div id="email-health-status" style="margin-top:9px;font-size:.85rem;line-height:1.5;color:#666;"></div>
+        <pre id="email-health-detail" hidden style="margin:8px 0 0;padding:10px 12px;background:#fffdfa;border:1px solid #eeded0;border-radius:8px;font-size:.75rem;line-height:1.5;color:#5a4a3a;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow:auto;"></pre>
+      </div>
+
       <div class="admin__table-wrap">
         <div class="admin__table-header">
           <span class="admin__table-title">Pós-evento</span>
@@ -4792,7 +4809,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=225"></script>
+<script src="admin.js?v=226"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
