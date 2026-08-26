@@ -530,7 +530,7 @@
 
     const { data, error } = await sb
       .from('gift_cards')
-      .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, stripe_session_id, created_at, email_sent_at, expires_at')
+      .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, stripe_session_id, created_at, email_sent_at, expires_at, metadata')
       .order('created_at', { ascending: false })
       .limit(500);
 
@@ -576,6 +576,36 @@
     return '<span style="color:' + c + ';font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;">' + l + '</span>';
   };
 
+  // Célula "E-mail" do gift card. `email_sent_at` só é gravado quando o
+  // envio dá certo (webhooks + resend-gift-card), então NULL = o
+  // destinatário nunca recebeu o código. Gift card criado à mão no painel
+  // (source=manual_admin) nunca teve e-mail automático — mostra "manual"
+  // em vez de acusar pendência que não existe.
+  function giftCardEmailCell(g) {
+    var manual = g.metadata && g.metadata.source === 'manual_admin';
+    if (g.email_sent_at) {
+      var quando = new Date(g.email_sent_at).toLocaleDateString('pt-BR');
+      return '<span style="color:#1a8a4a;font-size:.82rem;" title="Enviado em ' +
+        escapeHtml(quando) + '">✓ enviado</span>';
+    }
+    if (manual) {
+      return '<span style="color:#888;font-size:.82rem;" ' +
+        'title="Criado à mão no painel — nunca teve e-mail automático.">manual</span>' +
+        gcResendBtn(g, 'Enviar', true);
+    }
+    if (!g.destinatario_email) {
+      return '<span style="color:#b07b00;font-size:.82rem;">sem e-mail</span>';
+    }
+    return '<span style="color:#c0392b;font-size:.82rem;">não enviado</span>' +
+      gcResendBtn(g, 'Enviar', false);
+  }
+  function gcResendBtn(g, label, force) {
+    return ' <button type="button" class="gc-resend-btn" data-gc-id="' +
+      escapeHtml(g.id) + '" data-gc-force="' + (force ? '1' : '0') +
+      '" style="margin-left:6px;padding:2px 8px;font-size:.75rem;border:1px solid #1a8a4a;' +
+      'background:#fff;color:#1a8a4a;border-radius:6px;cursor:pointer;">📧 ' + label + '</button>';
+  }
+
   function giftCardRowsHtml(rows, colspan, emptyMsg) {
     if (!rows.length) {
       return '<tr><td colspan="' + colspan + '" class="admin__table-empty">' +
@@ -593,6 +623,7 @@
         '<td>' + escapeHtml(giftCardBrl(g.valor_inicial_centavos)) + '</td>' +
         '<td>' + escapeHtml(giftCardBrl(g.saldo_centavos)) + '</td>' +
         '<td>' + giftCardStatusBadge(g.status) + '</td>' +
+        '<td>' + giftCardEmailCell(g) + '</td>' +
         '<td>' + escapeHtml(dt) + '</td>' +
         '</tr>';
     }).join('');
@@ -616,6 +647,16 @@
       gcAddBtn.addEventListener('click', openManualGiftCardModal);
     }
 
+    // "📧 Reenviar pendentes" — manda de uma vez todos os gift cards cujo
+    // e-mail nunca chegou (email_sent_at null). A edge function pula
+    // sozinha os criados à mão no painel, que nunca tiveram envio
+    // automático — então o botão nunca surpreende ninguém.
+    const gcResendAllBtn = document.getElementById('gc-resend-pending-btn');
+    if (gcResendAllBtn && !gcResendAllBtn.dataset.wired) {
+      gcResendAllBtn.dataset.wired = '1';
+      gcResendAllBtn.addEventListener('click', reenviarGiftCardsPendentes);
+    }
+
     const setCount = (id, txt) => {
       const el = document.getElementById(id);
       if (el) el.textContent = txt;
@@ -626,7 +667,7 @@
     if (error) {
       const hint = giftCardErrorHint(error);
       const errHtml =
-        '<tr><td colspan="7" class="admin__table-empty" style="color:#c0392b;">' +
+        '<tr><td colspan="8" class="admin__table-empty" style="color:#c0392b;">' +
         'Erro ao carregar gift cards: ' + escapeHtml(hint) +
         '</td></tr>';
       [activeBody, usedBody, pendingBody].forEach(b => { if (b) b.innerHTML = errHtml; });
@@ -645,14 +686,107 @@
     setCount('giftcards-used-count', countLabel(used.length));
     setCount('giftcards-pending-count', countLabel(pending.length));
 
-    activeBody.innerHTML = giftCardRowsHtml(active, 7, 'Nenhum gift card ativo no momento.');
+    activeBody.innerHTML = giftCardRowsHtml(active, 8, 'Nenhum gift card ativo no momento.');
     if (usedBody) {
-      usedBody.innerHTML = giftCardRowsHtml(used, 7, 'Nenhum gift card usado ou expirado.');
+      usedBody.innerHTML = giftCardRowsHtml(used, 8, 'Nenhum gift card usado ou expirado.');
     }
     if (pendingBody) {
-      pendingBody.innerHTML = giftCardRowsHtml(pending, 7, 'Nenhum gift card pendente — tudo concluído.');
+      pendingBody.innerHTML = giftCardRowsHtml(pending, 8, 'Nenhum gift card pendente — tudo concluído.');
     }
   }
+
+  // Reenvia TODOS os gift cards pendentes de uma vez. Faz um dry-run
+  // antes pra mostrar quantos e quais são — a admin confirma sabendo
+  // exatamente quem vai receber.
+  async function reenviarGiftCardsPendentes() {
+    const btn = document.getElementById('gc-resend-pending-btn');
+    const statusEl = document.getElementById('gc-resend-status');
+    const setStatus = (msg, cor) => {
+      if (statusEl) { statusEl.style.color = cor || '#666'; statusEl.textContent = msg; }
+    };
+    const sb = window.supabaseClient;
+    if (!sb || !sb.functions) { setStatus('Supabase indisponível. Recarregue.', '#c0392b'); return; }
+
+    btn.disabled = true;
+    setStatus('Verificando pendentes…');
+    try {
+      const prev = await sb.functions.invoke('resend-gift-card', { body: { all: true, dry_run: true } });
+      if (prev.error || !prev.data || !prev.data.ok) {
+        setStatus('Erro: ' + await edgeErrorMessage(prev.error, prev.data), '#c0392b');
+        return;
+      }
+      const lista = prev.data.gift_cards || [];
+      if (!lista.length) {
+        setStatus('✅ Nenhum pendente — todos os gift cards já foram entregues.', '#1a8a4a');
+        return;
+      }
+      const resumo = lista.slice(0, 10)
+        .map(g => '• ' + (g.nome || '?') + ' — ' + g.to + ' (R$ ' + g.valor_reais + ')')
+        .join('\n') + (lista.length > 10 ? '\n… e mais ' + (lista.length - 10) : '');
+      if (!confirm('Reenviar ' + lista.length + ' gift card(s)?\n\n' + resumo)) {
+        setStatus('Cancelado.');
+        return;
+      }
+      setStatus('Enviando ' + lista.length + '…');
+      const res = await sb.functions.invoke('resend-gift-card', { body: { all: true } });
+      if (res.error || !res.data || !res.data.ok) {
+        setStatus('Erro: ' + await edgeErrorMessage(res.error, res.data), '#c0392b');
+        return;
+      }
+      const d = res.data;
+      setStatus('✅ ' + d.enviados + ' enviado(s)' + (d.falhas ? ', ' + d.falhas + ' falha(s)' : ''),
+        d.falhas ? '#b07b00' : '#1a8a4a');
+      if (d.falhas) {
+        const erros = (d.resultados || []).filter(r => !r.sent && !r.skipped);
+        console.error('[Admin] gift cards que falharam:', erros);
+        alert('Algumas falharam:\n\n' +
+          erros.map(r => '• ' + (r.nome || r.to) + ': ' + r.message).join('\n'));
+      }
+      invalidateGiftCardsCache();
+      await renderGiftCards();
+    } catch (e) {
+      setStatus('Erro: ' + ((e && e.message) || String(e)), '#c0392b');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // "📧 Enviar" de uma linha só. force=1 nos criados à mão (que a trava
+  // do servidor recusaria por padrão) — aí a confirmação avisa disso.
+  document.addEventListener('click', async function (ev) {
+    const btn = ev.target && ev.target.closest ? ev.target.closest('.gc-resend-btn') : null;
+    if (!btn) return;
+    const id = btn.dataset.gcId;
+    const force = btn.dataset.gcForce === '1';
+    if (!confirm(force
+      ? 'Este gift card foi criado à mão no painel e nunca teve e-mail automático.\n\n' +
+        'Enviar o e-mail com o código pro destinatário agora?'
+      : 'Enviar o e-mail deste gift card pro destinatário?')) return;
+
+    const sb = window.supabaseClient;
+    if (!sb || !sb.functions) { alert('Supabase indisponível. Recarregue a página.'); return; }
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+    try {
+      const res = await sb.functions.invoke('resend-gift-card', {
+        body: { gift_card_id: id, force: force },
+      });
+      if (res.error || !res.data || !res.data.ok) {
+        alert('Não consegui enviar.\n\nMotivo: ' + await edgeErrorMessage(res.error, res.data));
+        btn.disabled = false;
+        btn.textContent = original;
+        return;
+      }
+      alert('Gift card enviado para ' + (res.data.to || '') + ' ✨');
+      invalidateGiftCardsCache();
+      await renderGiftCards();
+    } catch (e) {
+      alert('Erro: ' + ((e && e.message) || String(e)));
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
 
   // =====================================================
   //  GIFT CARD MANUAL (admin)

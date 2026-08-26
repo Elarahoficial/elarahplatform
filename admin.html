@@ -3174,6 +3174,8 @@
 
       <div style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;">
         <button type="button" id="gc-manual-add-btn" class="admin__add-btn">+ Adicionar gift card manual</button>
+        <button type="button" id="gc-resend-pending-btn" class="admin__add-btn" style="background:#1a8a4a;border-color:#1a8a4a;font-weight:700;">📧 Reenviar pendentes</button>
+        <span id="gc-resend-status" style="align-self:center;font-size:.85rem;color:#666;"></span>
       </div>
 
       <!-- 1º ATIVOS — foco principal da operação -->
@@ -3191,11 +3193,12 @@
               <th>Valor</th>
               <th>Saldo</th>
               <th>Status</th>
+              <th>E-mail</th>
               <th>Criado</th>
             </tr>
           </thead>
           <tbody id="giftcards-active-body">
-            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card ativo no momento.</td></tr>
+            <tr><td colspan="8" class="admin__table-empty">Nenhum gift card ativo no momento.</td></tr>
           </tbody>
         </table>
       </div>
@@ -3215,11 +3218,12 @@
               <th>Valor</th>
               <th>Saldo</th>
               <th>Status</th>
+              <th>E-mail</th>
               <th>Criado</th>
             </tr>
           </thead>
           <tbody id="giftcards-used-body">
-            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card usado ou expirado.</td></tr>
+            <tr><td colspan="8" class="admin__table-empty">Nenhum gift card usado ou expirado.</td></tr>
           </tbody>
         </table>
       </div>
@@ -3239,11 +3243,12 @@
               <th>Valor</th>
               <th>Saldo</th>
               <th>Status</th>
+              <th>E-mail</th>
               <th>Criado</th>
             </tr>
           </thead>
           <tbody id="giftcards-pending-body">
-            <tr><td colspan="7" class="admin__table-empty">Nenhum gift card pendente — tudo concluído.</td></tr>
+            <tr><td colspan="8" class="admin__table-empty">Nenhum gift card pendente — tudo concluído.</td></tr>
           </tbody>
         </table>
       </div>
@@ -4809,7 +4814,7 @@
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=226"></script>
+<script src="admin.js?v=227"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
