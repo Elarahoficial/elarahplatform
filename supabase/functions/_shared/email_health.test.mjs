@@ -123,6 +123,44 @@ d = await m.resendDiagnostics();
 check("401 → chave inválida", d.key_valid === false);
 check("diagnóstico acusa chave inválida", /inválida ou foi revogada/.test(m.explainResendDiagnostics(d)));
 
+// ===== 8) Reserva paga com gift card manda confirmação =====
+// Regressão do bug: gift card cobre 100%, o checkout grava `pago` sem
+// criar cobrança, o webhook nunca dispara — e o cliente ficava sem
+// e-mail nenhum. Tem que sair confirmação PRO CLIENTE + aviso pra Elarah.
+console.log("8) sendDirectBookingConfirmation (reserva por gift card)");
+const ROW = {
+  id: "b1", email: "cliente@gmail.com", nome: "Ana",
+  experiencia_nome: "Aula de Cerâmica", data: "12/04", horario: "15h",
+  preco_label: "R$ 200", quantidade: 2, amount_total: 0,
+  coupon_code: "GIFT123", fornecedor_nome: "Ateliê X",
+  metadata: { bairro: "Pinheiros", endereco: "Rua X, 1", participantes: [{ nome: "Ana" }] },
+};
+reset([{ status: 200, body: { id: "e1" } }, { status: 200, body: { id: "e2" } }]);
+await m.sendDirectBookingConfirmation(ROW);
+check("mandou 2 e-mails (cliente + admin)", calls.length === 2, "chamadas=" + calls.length);
+check("1º vai pro cliente", calls[0]?.body.to[0] === "cliente@gmail.com");
+check("assunto é o de confirmação",
+  calls[0]?.body.subject === "Sua reserva na Elarah está confirmada ✨", calls[0]?.body.subject);
+check("2º é o aviso de venda pra Elarah", /Nova venda/.test(calls[1]?.body.subject || ""));
+
+// Reserva "aguardando experiência" continua bloqueada.
+reset([]);
+await m.sendDirectBookingConfirmation({ ...ROW, aguardando_experiencia: true });
+check("aguardando_experiencia não recebe nada", calls.length === 0);
+
+// Sem e-mail do cliente: loga e sai, NÃO derruba o checkout.
+reset([]);
+let threw = false;
+try { await m.sendDirectBookingConfirmation({ ...ROW, email: "" }); } catch { threw = true; }
+check("reserva sem e-mail não lança exceção", threw === false && calls.length === 0);
+
+// Resend fora do ar: não pode lançar (checkout já gravou a reserva).
+reset([{ status: 500, body: "boom" }, { status: 500, body: "boom" }]);
+threw = false;
+try { await m.sendDirectBookingConfirmation(ROW); } catch { threw = true; }
+check("falha do Resend não derruba o checkout", threw === false);
+
+
 console.log("\n==== E-MAIL: " + pass + " passaram, " + fail + " falharam ====");
 console.log("Chamadas reais ao Resend (rede): 0 — fronteira mockada, nenhum e-mail saiu.");
 if (fail > 0) process.exit(1);

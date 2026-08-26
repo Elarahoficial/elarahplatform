@@ -401,6 +401,93 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
   }
 }
 
+// ===== Confirmação de reserva paga SEM passar por webhook =====
+// Quando um gift card / cupom cobre 100% do valor, o checkout grava a
+// reserva direto como `pago` e NÃO cria cobrança no provedor — então o
+// webhook (que é quem manda a confirmação) nunca dispara. Sem esta
+// função, o cliente paga com gift card, a reserva aparece paga no
+// painel e ele NUNCA recebe e-mail nenhum.
+//
+// Recebe a MESMA linha que foi inserida em `bookings`, pra não haver
+// divergência entre o que foi gravado e o que o e-mail diz.
+//
+// NUNCA lança: a reserva já está gravada e o cliente já "pagou". Se o
+// e-mail falhar, loga e segue — quebrar o checkout aqui seria pior.
+export async function sendDirectBookingConfirmation(
+  row: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const email = String(row.email ?? "").trim();
+    if (!email) {
+      console.error(
+        "[elarah/email] reserva direta sem e-mail — confirmação não enviada",
+        "booking_id=" + String(row.id ?? "?"),
+      );
+      return;
+    }
+    if (isCustomerMessagingSuppressed(row)) return;
+
+    const meta = (row.metadata ?? {}) as Record<string, unknown>;
+    const html = bookingConfirmationEmailHtml({
+      nome: (row.nome as string | null) ?? null,
+      experienciaNome: (row.experiencia_nome as string | null) ?? "Sua experiência",
+      data: (row.data as string | null) ?? null,
+      horario: (row.horario as string | null) ?? null,
+      endereco: (meta.endereco as string | null) ?? null,
+      bairro: (meta.bairro as string | null) ?? null,
+      precoLabel: (row.preco_label as string | null) ?? null,
+      quantidade: (row.quantidade as number | null) ?? null,
+      amountTotalCentavos: (row.amount_total as number | null) ?? null,
+      participantes: Array.isArray(meta.participantes)
+        ? (meta.participantes as Array<{ nome?: string | null }>)
+        : null,
+      bookingId: String(row.id ?? ""),
+      variantLabel: (meta.variant_label as string | undefined) ?? null,
+      variantSelected: (meta.variant_selected as string | undefined) ?? null,
+    });
+
+    const result = await sendEmail({
+      to: email,
+      subject: "Sua reserva na Elarah está confirmada ✨",
+      html,
+    });
+    if (result.ok) {
+      console.info(
+        "[elarah/email] confirmação de reserva direta (gift card) ENVIADA",
+        "booking_id=" + String(row.id ?? "?"), "to=" + email,
+      );
+    } else {
+      console.error(
+        "[elarah/email] confirmação de reserva direta FALHOU",
+        "booking_id=" + String(row.id ?? "?"), "to=" + email,
+        "motivo=" + explainEmailFailure(result),
+      );
+    }
+
+    // Aviso de venda pra Elarah — o webhook manda nas compras normais,
+    // então sem isto a venda por gift card não aparecia pra ninguém.
+    await sendAdminSaleNotification({
+      experienciaNome: (row.experiencia_nome as string | null) ?? "Experiência",
+      clienteNome: (row.nome as string | null) ?? null,
+      clienteEmail: email,
+      data: (row.data as string | null) ?? null,
+      horario: (row.horario as string | null) ?? null,
+      quantidade: (row.quantidade as number | null) ?? null,
+      amountTotalCentavos: (row.amount_total as number | null) ?? null,
+      precoLabel: (row.preco_label as string | null) ?? null,
+      bookingId: String(row.id ?? ""),
+      paymentMethod: "Gift card / cupom (100%)",
+      couponCode: (row.coupon_code as string | null) ?? null,
+      couponDiscountCentavos: (row.coupon_discount_centavos as number | null) ?? null,
+      fornecedorNome: (row.fornecedor_nome as string | null) ?? null,
+      bairro: (meta.bairro as string | null) ?? null,
+      endereco: (meta.endereco as string | null) ?? null,
+    });
+  } catch (e) {
+    console.error("[elarah/email] exceção na confirmação de reserva direta", e);
+  }
+}
+
 // ---------------- TEMPLATES ----------------
 
 function htmlShell(inner: string): string {

@@ -49,6 +49,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { sendDirectBookingConfirmation } from "../_shared/email.ts";
 import { buildAcompanhantes } from "../_shared/acompanhantes.ts";
 import {
   computeChargeAmount,
@@ -1073,7 +1074,10 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // ===== CASO 1: gift card cobre 100% — pula Stripe =====
   if (amountToCharge === 0) {
     const directBookingId = crypto.randomUUID();
-    const { error: directErr } = await supabase.from("bookings").insert({
+    // A reserva vira `pago` aqui mesmo (gift card cobre 100%), então o
+    // webhook do provedor NUNCA dispara — e era ele que mandava a
+    // confirmação. Guardamos a linha pra mandar o e-mail logo abaixo.
+    const directRow = {
       id: directBookingId,
       user_id: userId,
       email: email ?? "",
@@ -1111,7 +1115,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         telefone_digits: telefoneDigits || null,
         participantes: participantes,
       },
-    });
+    };
+    const { error: directErr } = await supabase.from("bookings").insert(directRow);
 
     if (directErr) {
       console.error(
@@ -1124,6 +1129,9 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       return jsonResponse({ error: "booking_failed" }, 500);
     }
 
+    // Confirmação pro cliente + aviso de venda pra Elarah. Não lança:
+    // a reserva já está gravada, e-mail que falha não pode derrubar o checkout.
+    await sendDirectBookingConfirmation(directRow);
     return jsonResponse({
       direct: true,
       booking_id: directBookingId,

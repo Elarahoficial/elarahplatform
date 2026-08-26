@@ -32,6 +32,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { sendDirectBookingConfirmation } from "../_shared/email.ts";
 import { buildAcompanhantes } from "../_shared/acompanhantes.ts";
 import { createPaymentLink } from "../_shared/pagarme.ts";
 import { isValidCpf } from "../_shared/mercadopago.ts";
@@ -205,7 +206,10 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   // ===== Cupom cobre 100% — grava direto como pago (pula Pagar.me) =====
   if (amountToChargeCents === 0) {
     const directBookingId = crypto.randomUUID();
-    const { error: directErr } = await supabase.from("bookings").insert({
+    // A reserva vira `pago` aqui mesmo (gift card cobre 100%), então o
+    // webhook do provedor NUNCA dispara — e era ele que mandava a
+    // confirmação. Guardamos a linha pra mandar o e-mail logo abaixo.
+    const directRow = {
       id: directBookingId, user_id: userId, email, nome: resolvedNome,
       telefone: telefoneToSave, experiencia_id: exp.id, experiencia_nome: exp.nome,
       data: slotData ?? dataFromPayload ?? exp.data ?? null, horario,
@@ -227,12 +231,16 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
         telefone_digits: telefoneDigits || null, payment_method: "gift_card",
         cpf: cpfRaw, variant_label: variantLabel, variant_selected: variantSelected,
       },
-    });
+    };
+    const { error: directErr } = await supabase.from("bookings").insert(directRow);
     if (directErr) {
       console.error("[Elarah Payment/Pagarme] direct booking insert falhou", directErr);
       await rollback();
       return jsonResponse({ error: "booking_failed" }, 500);
     }
+    // Confirmação pro cliente + aviso de venda pra Elarah. Não lança:
+    // a reserva já está gravada, e-mail que falha não pode derrubar o checkout.
+    await sendDirectBookingConfirmation(directRow);
     return jsonResponse({
       direct: true, booking_id: directBookingId, paid_with_gift_card: true,
       gift_card_centavos: giftCardCentavos,
