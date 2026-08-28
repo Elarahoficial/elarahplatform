@@ -154,7 +154,7 @@ vibe2 = f'''
     <div class="vibe">
       <figure><img src="assets/aula-risada.jpg" alt="Grupo rindo durante a experiência" style="object-position:center 40%"><figcaption>Risada garantida</figcaption></figure>
       <figure><img src="assets/aula-grupo.jpg" alt="Amigos preparando os próprios drinks juntos" style="object-position:center 45%"><figcaption>Mão na coqueteleira, juntos</figcaption></figure>
-      <figure><img src="assets/encontro-1.jpg" alt="Amigas reunidas e felizes" style="object-position:center 30%"><figcaption>A turma animada</figcaption></figure>
+      <figure><img src="assets/jantar-vista.jpg" alt="Turma reunida à noite com drinks e boa vista" style="object-position:center 50%"><figcaption>A turma animada</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
   </section>'''
