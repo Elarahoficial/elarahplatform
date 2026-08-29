@@ -2210,6 +2210,140 @@ if (groupForm) {
       return null;
     }
 
+    // Partes da data no FUSO DE SÃO PAULO (não no do visitante): uma
+    // turma de 21h tem event_at no dia seguinte em UTC, e agrupar pelo
+    // fuso local mostraria o dia errado pra quem acessa de fora do -03.
+    function spDayParts(dateLike) {
+      var date = (dateLike instanceof Date) ? dateLike : new Date(dateLike);
+      try {
+        var p = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+        }).formatToParts(date).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
+        var wd = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short' })
+          .format(date).replace('.', '');
+        return { key: p.year + '-' + p.month + '-' + p.day, wd: wd, dm: p.day + '/' + p.month };
+      } catch (e) {
+        return {
+          key: date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'),
+          wd: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+          dm: String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0'),
+        };
+      }
+    }
+
+    // Horários REAIS da data escolhida — um por slot, cada um com o seu
+    // próprio id.
+    //
+    // BUG que isso corrige: o seletor de horário do checkout era montado
+    // com exp.horarios, que é a união dos horários de TODAS as datas da
+    // experiência. Numa data que só tem turma às 15h, o modal oferecia
+    // também 09h e 14h — horários inexistentes naquele dia. E trocar de
+    // horário lá dentro mexia só no rótulo: o slot_id continuava o da
+    // escolha anterior, então a vaga baixava numa turma e a pessoa era
+    // registrada em outra.
+    //
+    // Retorna { slotManaged, options }. slotManaged = a experiência tem
+    // slots de verdade; nesse caso a lista daqui é a única válida.
+    async function loadHorarioSlotsForDate(experienceId, sel, cutoffHours) {
+      var empty = { slotManaged: false, options: [] };
+      if (!experienceId) return empty;
+      var all = [];
+      try {
+        if (window.ElarahData && ElarahData.getSlotsForExperience) {
+          all = await ElarahData.getSlotsForExperience(experienceId) || [];
+        }
+      } catch (e) { return empty; }
+      all = all.filter(function (s) { return s && s.isActive !== false && s.eventAt; });
+      if (!all.length) return empty;
+
+      // Qual data? O slot clicado é a fonte confiável; o rótulo "DD/MM"
+      // que veio da UI é o fallback.
+      var dayKey = null;
+      if (sel && sel.slotId) {
+        var picked = all.filter(function (s) { return String(s.id) === String(sel.slotId); })[0];
+        if (picked) dayKey = spDayParts(picked.eventAt).key;
+      }
+      if (!dayKey && sel && sel.data) {
+        var alvo = String(sel.data).trim();
+        var hit = all.filter(function (s) {
+          return spDayParts(s.eventAt).dm === alvo || String(s.data || '').trim() === alvo;
+        })[0];
+        if (hit) dayKey = spDayParts(hit.eventAt).key;
+      }
+      // Sem data resolvida, qualquer lista que montássemos misturaria
+      // dias. Melhor não oferecer troca nenhuma do que oferecer horário
+      // de outro dia — quem chamou mantém o horário já escolhido fora.
+      if (!dayKey) return { slotManaged: true, options: [] };
+
+      // Os MESMOS filtros da página de detalhe, senão o modal volta a
+      // oferecer horário que a página esconde — só que agora do dia certo:
+      //   • esgotado sai da lista;
+      //   • dentro da janela de antecedência (cutoff, default 24h) sai —
+      //     o backend recusaria a compra com "falta menos de 24h".
+      // O slot que a pessoa já escolheu fora nunca é removido: sumir com
+      // ele trocaria a escolha dela sem avisar.
+      var cutH = Number.isFinite(Number(cutoffHours)) ? Number(cutoffHours) : 24;
+      var cutoffMs = Date.now() + cutH * 60 * 60 * 1000;
+      var selId = sel && sel.slotId ? String(sel.slotId) : null;
+
+      var options = all
+        .filter(function (s) { return spDayParts(s.eventAt).key === dayKey; })
+        .filter(function (s) {
+          if (selId && String(s.id) === selId) return true;
+          if (new Date(s.eventAt).getTime() < cutoffMs) return false;
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? Number(s.vagasRestantes) : Number(s.vagasTotal);
+          return rest > 0;
+        })
+        .sort(function (a, b) { return new Date(a.eventAt) - new Date(b.eventAt); })
+        .map(function (s) {
+          var parts = spDayParts(s.eventAt);
+          var cap = s.vagasTotal == null ? null : Number(s.vagasTotal);
+          var rest = cap == null ? null : (s.vagasRestantes != null ? Number(s.vagasRestantes) : cap);
+          return {
+            horario: s.horario,
+            slotId: s.id,
+            data: s.data || parts.dm,
+            dataLabel: parts.wd + ', ' + parts.dm,
+            soldOut: rest !== null && rest <= 0,
+          };
+        });
+
+      // Dedup por rótulo: se o mesmo dia tiver dois slots com o texto
+      // idêntico (resquício de recorrência duplicada), o seletor mostraria
+      // dois botões iguais e a escolha viraria sorteio. Mantém um só —
+      // preferindo o slot que a pessoa já tinha escolhido.
+      var vistos = Object.create(null);
+      options = options.filter(function (o) {
+        var k = String(o.horario || '').trim();
+        if (vistos[k] === undefined) { vistos[k] = o.slotId; return true; }
+        return false;
+      });
+      if (selId) {
+        var jaTem = options.some(function (o) { return String(o.slotId) === selId; });
+        if (!jaTem) {
+          // O escolhido perdeu o dedup pra um gêmeo: devolve o dele.
+          var selOpt = null;
+          all.forEach(function (sl) {
+            if (String(sl.id) !== selId) return;
+            var parts = spDayParts(sl.eventAt);
+            selOpt = {
+              horario: sl.horario, slotId: sl.id,
+              data: sl.data || parts.dm,
+              dataLabel: parts.wd + ', ' + parts.dm,
+              soldOut: false,
+            };
+          });
+          if (selOpt) {
+            options = options.map(function (o) {
+              return String(o.horario || '').trim() === String(selOpt.horario || '').trim() ? selOpt : o;
+            });
+          }
+        }
+      }
+      return { slotManaged: true, options: options };
+    }
+
     // Lê seleção completa de schedule (data + horario + slot_id) do
     // botão de reserva ou do horário ativo na página de detalhe.
     // Retorna { horario, data, dataLabel, slotId } — qualquer campo
@@ -3739,6 +3873,29 @@ if (groupForm) {
       return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
     }
 
+    // Linha de contexto do checkout: data · horário · preço. A data
+    // entrou aqui de propósito — o cliente precisa reconferir o dia que
+    // escolheu antes de pagar, não só o horário.
+    function renderErmMeta(root, c) {
+      var el = root && root.querySelector('#erm-meta');
+      if (!el || !c) return;
+      var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR)
+        ? ElarahData.formatPrecoBR(c.precoLabel) : c.precoLabel;
+      el.textContent = [c.dataLabel, c.horario, precoFmt].filter(Boolean).join(' · ');
+    }
+
+    // Estilo dos botões de horário do checkout (pill). Fica fora do laço
+    // pra o estado ativo/esgotado ser sempre redesenhado igual.
+    function ermHorarioBtnCss(active, soldOut) {
+      return 'padding:9px 16px;border:1.5px solid ' +
+        (active ? '#f0a05e' : '#ddd') + ';background:' +
+        (active ? '#fff8ef' : '#fff') + ';color:' +
+        (active ? '#1a1a1a' : (soldOut ? '#aaa' : '#444')) +
+        ';border-radius:999px;font-size:.86rem;font-weight:600;cursor:' +
+        (soldOut ? 'not-allowed' : 'pointer') + ';opacity:' +
+        (soldOut ? '.5' : '1') + ';transition:all .15s;';
+    }
+
     function openReservationModal(ctx) {
       // Esconde o spinner do clique de Reservar IMEDIATAMENTE quando o
       // modal abre — antes era escondido com 80ms de atraso no finally
@@ -3752,9 +3909,7 @@ if (groupForm) {
       const root = buildReservationModal();
       currentReservationCtx = ctx;
       root.querySelector('#erm-exp').textContent = ctx.experienceNome || 'Experiência';
-      var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(ctx.precoLabel) : ctx.precoLabel;
-      root.querySelector('#erm-meta').textContent = [ctx.horario, precoFmt]
-        .filter(Boolean).join(' · ');
+      renderErmMeta(root, ctx);
 
       // Info completa numa tela só (voucher): descrição, inclui, onde
       // acontece, horário de funcionamento e aviso — pra não ter uma tela
@@ -3866,49 +4021,57 @@ if (groupForm) {
       ctx.totalCentavos = ctx.precoCentavos;
 
       // ===== Seletor de horário =====
-      // Quando a experiência tem múltiplos horários, renderiza botões
-      // pill pra usuário trocar dentro do modal. ctx.horario começa
-      // com o que foi clicado fora (ou o primeiro) e atualiza on-click.
+      // As opções são os SLOTS DA DATA ESCOLHIDA (ctx.horarioSlots), cada
+      // um com o seu id. Antes vinham de ctx.horarios — a união dos
+      // horários de todas as datas da experiência —, então numa data com
+      // uma única turma o modal oferecia horários de outros dias e a
+      // pessoa comprava um horário que não existia ali.
+      //
+      // ctx.horarios continua sendo o fallback só pra experiência SEM
+      // slots (agenda legada por rótulo de texto).
       var horarioSection = root.querySelector('#erm-horario-section');
       var horarioOptsEl = root.querySelector('#erm-horario-options');
-      var horariosList = Array.isArray(ctx.horarios) ? ctx.horarios : [];
+      var horarioLabelEl = horarioSection ? horarioSection.querySelector('label') : null;
+      var slotOpts = Array.isArray(ctx.horarioSlots) ? ctx.horarioSlots : [];
+      var horariosList = slotOpts.length
+        ? slotOpts
+        : (Array.isArray(ctx.horarios) ? ctx.horarios : []).map(function (h) {
+            return { horario: h, slotId: null, data: null, dataLabel: null, soldOut: false };
+          });
+      // Deixa explícito de que dia são esses horários.
+      if (horarioLabelEl) {
+        horarioLabelEl.textContent = ctx.dataLabel
+          ? ('Horário — ' + ctx.dataLabel + ' *')
+          : 'Horário *';
+      }
       if (horarioSection && horarioOptsEl && horariosList.length > 1) {
         horarioSection.style.display = 'block';
         horarioOptsEl.innerHTML = '';
-        horariosList.forEach(function (h) {
+        horariosList.forEach(function (opt) {
+          var h = opt.horario;
           var b = document.createElement('button');
           b.type = 'button';
           b.className = 'erm-horario-btn';
           b.dataset.value = h;
-          b.textContent = h;
-          var isActive = h === ctx.horario;
-          b.style.cssText = 'padding:9px 16px;border:1.5px solid ' +
-            (isActive ? '#f0a05e' : '#ddd') + ';background:' +
-            (isActive ? '#fff8ef' : '#fff') + ';color:' +
-            (isActive ? '#1a1a1a' : '#444') +
-            ';border-radius:999px;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s;';
+          b.textContent = opt.soldOut ? (h + ' (esgotado)') : h;
+          b.disabled = !!opt.soldOut;
+          b.style.cssText = ermHorarioBtnCss(!opt.soldOut && h === ctx.horario, opt.soldOut);
           b.addEventListener('click', function () {
-            if (!currentReservationCtx) return;
+            if (opt.soldOut || !currentReservationCtx) return;
             currentReservationCtx.horario = h;
-            // Atualiza linha de meta com o novo horário.
-            var metaEl = root.querySelector('#erm-meta');
-            if (metaEl) {
-              var preco2 = (window.ElarahData && ElarahData.formatPrecoBR)
-                ? ElarahData.formatPrecoBR(currentReservationCtx.precoLabel)
-                : currentReservationCtx.precoLabel;
-              metaEl.textContent = [h, preco2].filter(Boolean).join(' · ');
+            // CRÍTICO: trocar de horário é trocar de SLOT. Sem atualizar o
+            // slot_id aqui, a reserva ia com o rótulo novo e o id do
+            // horário anterior — a vaga baixava numa turma e a pessoa
+            // aparecia em outra.
+            if (opt.slotId) {
+              currentReservationCtx.slotId = opt.slotId;
+              currentReservationCtx.data = opt.data || currentReservationCtx.data;
+              currentReservationCtx.dataLabel = opt.dataLabel || currentReservationCtx.dataLabel;
             }
+            renderErmMeta(root, currentReservationCtx);
             // Reset visual e marca o escolhido.
             horarioOptsEl.querySelectorAll('.erm-horario-btn').forEach(function (other) {
-              if (other.dataset.value === h) {
-                other.style.background = '#fff8ef';
-                other.style.borderColor = '#f0a05e';
-                other.style.color = '#1a1a1a';
-              } else {
-                other.style.background = '#fff';
-                other.style.borderColor = '#ddd';
-                other.style.color = '#444';
-              }
+              other.style.cssText = ermHorarioBtnCss(other.dataset.value === h && !other.disabled, other.disabled);
             });
           });
           horarioOptsEl.appendChild(b);
@@ -4012,10 +4175,7 @@ if (groupForm) {
               cr.precoCentavos = pc || cr.baseCentavos || cr.precoCentavos || 0;
               if (pc && it && it.preco) cr.precoLabel = it.preco;
               try {
-                var precoFmt2 = (window.ElarahData && ElarahData.formatPrecoBR)
-                  ? ElarahData.formatPrecoBR(cr.precoLabel) : cr.precoLabel;
-                var metaEl = root.querySelector('#erm-meta');
-                if (metaEl) metaEl.textContent = [cr.horario, precoFmt2].filter(Boolean).join(' · ');
+                renderErmMeta(root, cr);
               } catch (_e) {}
               try { refreshPriceBreakdown(); } catch (_e) {}
             })();
@@ -6416,6 +6576,7 @@ if (groupForm) {
       let variantOptions = [];
       let variantItemsArr = [];
       let horariosArr = [];
+      let expCutoffHours = null;
       let expDescricao = '', expInclui = '', expEndereco = '', expHorarioFunc = '';
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
@@ -6426,6 +6587,7 @@ if (groupForm) {
             expInclui = exp.inclui || '';
             expEndereco = [exp.endereco, exp.bairro].filter(Boolean).join(' — ');
             expHorarioFunc = (exp.horarioFuncionamento || '').trim();
+            expCutoffHours = exp.cutoffHours;
             if (!precoLabel || !precoCentavos) {
               precoLabel = exp.preco || precoLabel;
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
@@ -6468,6 +6630,31 @@ if (groupForm) {
         } catch (e) {}
       }
 
+      // ===== Horários da DATA escolhida =====
+      // Para experiência gerenciada por slots, a lista abaixo substitui
+      // exp.horarios no modal: só os horários que existem NAQUELE dia,
+      // cada um com o seu slot_id.
+      let horarioSlots = [];
+      try {
+        const horarioInfo = await loadHorarioSlotsForDate(experienceId, scheduleSel, expCutoffHours);
+        if (horarioInfo.slotManaged) {
+          horarioSlots = horarioInfo.options;
+          horariosArr = horarioSlots.map(function (o) { return o.horario; });
+          // Se o horário que veio de fora não é um dos da data (ou não
+          // veio nenhum), assume a primeira turma aberta do dia — e leva
+          // junto o slot dela, pra rótulo e slot_id nunca discordarem.
+          if (horarioSlots.length && (!horario || horariosArr.indexOf(horario) === -1)) {
+            var firstOpen = horarioSlots.filter(function (o) { return !o.soldOut; })[0] || horarioSlots[0];
+            horario = firstOpen.horario;
+            scheduleSel.slotId = firstOpen.slotId;
+            scheduleSel.data = firstOpen.data;
+            scheduleSel.dataLabel = firstOpen.dataLabel;
+          }
+          // Data não resolvida (options vazio): não oferecemos troca.
+          // O horário escolhido fora do modal é o único confiável.
+        }
+      } catch (e) {}
+
       if (!precoCentavos) {
         // Fallback: deixa o backend dizer. Sem cupom faz sentido nesse caso.
         precoCentavos = 0;
@@ -6508,9 +6695,12 @@ if (groupForm) {
         inclui: expInclui,
         endereco: expEndereco,
         horarioFuncionamento: expHorarioFunc,
-        // Lista completa de horários — se > 1, modal renderiza seletor
-        // pra usuário trocar antes de confirmar.
+        // Lista de horários — se > 1, modal renderiza seletor pra usuário
+        // trocar antes de confirmar.
         horarios: horariosArr,
+        // Horários da data escolhida, com slot_id em cada um. É essa lista
+        // que o modal usa quando a experiência é gerenciada por slots.
+        horarioSlots: horarioSlots,
         // Data + slot vindo da nova UI de chips de data (experiencia.html).
         // Em página de card (home/categoria) virão null — backend faz
         // fallback pra busca por (exp_id, horario) como antes.
