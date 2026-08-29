@@ -106,6 +106,63 @@ select
 
 
 -- =============================================================
+-- 2B) TRIAGEM — divergência REAL ou só jeito de escrever?
+-- -------------------------------------------------------------
+-- Nem toda divergência é horário errado. "19h00 – 21h00" e
+-- "19h às 21h" são a MESMA turma escrita de dois jeitos: contam como
+-- divergentes na consulta 1, mas ninguém comprou errado. Isso acontece
+-- quando o rótulo do slot foi reescrito depois da venda.
+--
+-- O discriminador é a HORA DE INÍCIO: o primeiro número de cada rótulo.
+-- Se bate, é cosmético. Se não bate (comprou 09h, turma é 15h), é
+-- gente na turma errada.
+--
+-- Agrupa por par de rótulos pra você ver o padrão de uma vez, em vez
+-- de ler 112 linhas. Comece por aqui, não pela consulta 1.
+--
+--   divergencia = REAL       → hora de início diferente. É problema.
+--   divergencia = so_escrita → mesma hora, rótulo reescrito. Ignorar.
+-- =============================================================
+with norm as (
+  select
+    b.horario  as horario_comprado,
+    s.horario  as horario_real,
+    s.event_at,
+    b.experiencia_nome,
+    lower(regexp_replace(translate(coalesce(b.horario, ''), '–—', '--'), '[\s-]', '', 'g')) as k_comprado,
+    lower(regexp_replace(translate(coalesce(s.horario, ''), '–—', '--'), '[\s-]', '', 'g')) as k_real,
+    -- hora de início = primeiro número do rótulo
+    (regexp_match(coalesce(b.horario, ''), '(\d{1,2})'))[1]::int as ini_comprado,
+    (regexp_match(coalesce(s.horario, ''), '(\d{1,2})'))[1]::int as ini_real
+  from public.bookings b
+  join public.experience_slots s on s.id = b.slot_id
+  where b.slot_id is not null
+    and b.status in ('pago', 'pending')
+)
+select
+  case
+    when ini_comprado is null or ini_real is null then 'conferir_na_mao'
+    when ini_comprado = ini_real then 'so_escrita'
+    else 'REAL'
+  end                                              as divergencia,
+  horario_comprado,
+  horario_real,
+  count(*)                                         as quantas,
+  count(*) filter (where event_at >= now())        as ainda_vao_acontecer,
+  count(distinct experiencia_nome)                 as experiencias
+from norm
+where k_comprado <> '' and k_real <> '' and k_comprado <> k_real
+group by 1, 2, 3
+order by
+  case
+    when ini_comprado is null or ini_real is null then 1
+    when ini_comprado = ini_real then 2
+    else 0
+  end,
+  count(*) desc;
+
+
+-- =============================================================
 -- 3) DATA divergente (o caso mais grave, se existir)
 -- -------------------------------------------------------------
 -- Pior que horário trocado é DIA trocado. Compara o rótulo de data da
