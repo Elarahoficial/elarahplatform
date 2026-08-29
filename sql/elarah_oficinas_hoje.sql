@@ -11,6 +11,11 @@
 --
 -- Dependências: experiences, experience_slots, bookings,
 --               manual_sales, fornecedores_metadata.
+--
+-- Obs.: o WhatsApp do fornecedor NÃO fica em experiences — a
+-- migração elarah_fornecedores_whatsapp.sql centralizou tudo em
+-- fornecedores_metadata.whatsapp, ligado por fornecedor_key
+-- (nome em minúsculas, espaços colapsados). Por isso o join.
 -- =============================================================
 
 
@@ -68,7 +73,7 @@ select
   e.endereco,
   e.duracao,
   coalesce(e.fornecedor_nome, '—')          as fornecedor,
-  coalesce(e.fornecedor_whatsapp, '—')      as whatsapp_fornecedor,
+  coalesce(fm.whatsapp, '—')                as whatsapp_fornecedor,
   -- Ocupação
   coalesce(r.pessoas_pagas, 0) + coalesce(vm.pessoas_manuais, 0) as pessoas_confirmadas,
   coalesce(r.reservas_pendentes, 0)         as reservas_pendentes,
@@ -85,6 +90,8 @@ from slots_hoje sh
 join public.experiences e on e.id = sh.experience_id
 left join reservas r        on r.slot_id = sh.slot_id
 left join vendas_manuais vm on vm.slot_id = sh.slot_id
+left join public.fornecedores_metadata fm
+       on fm.fornecedor_key = lower(trim(regexp_replace(e.fornecedor_nome, '\s+', ' ', 'g')))
 where coalesce(e.is_active, true)
 order by sh.event_at asc, e.nome asc;
 
@@ -160,11 +167,14 @@ select
   e.categoria,
   e.bairro,
   coalesce(e.fornecedor_nome, '—') as fornecedor,
+  coalesce(fm.whatsapp, '—')       as whatsapp_fornecedor,
   s.vagas_total,
   s.vagas_restantes,
   s.id             as slot_id
 from public.experience_slots s
 join public.experiences e on e.id = s.experience_id
+left join public.fornecedores_metadata fm
+       on fm.fornecedor_key = lower(trim(regexp_replace(e.fornecedor_nome, '\s+', ' ', 'g')))
 cross join lateral (select (now() at time zone 'America/Sao_Paulo')::date as d) h
 where s.is_active
   and s.event_at is null
