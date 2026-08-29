@@ -138,28 +138,40 @@ with norm as (
   join public.experience_slots s on s.id = b.slot_id
   where b.slot_id is not null
     and b.status in ('pago', 'pending')
+),
+classificado as (
+  -- Classifica ANTES de agrupar: a chave de ordenação precisa existir
+  -- como coluna pra poder entrar no group by junto.
+  select
+    case
+      when ini_comprado is null or ini_real is null then 'conferir_na_mao'
+      when ini_comprado = ini_real then 'so_escrita'
+      else 'REAL'
+    end as divergencia,
+    case
+      when ini_comprado is null or ini_real is null then 1
+      when ini_comprado = ini_real then 2
+      else 0
+    end as ordem,
+    horario_comprado,
+    horario_real,
+    event_at,
+    experiencia_nome
+  from norm
+  where k_comprado <> ''
+    and k_real <> ''
+    and k_comprado <> k_real
 )
 select
-  case
-    when ini_comprado is null or ini_real is null then 'conferir_na_mao'
-    when ini_comprado = ini_real then 'so_escrita'
-    else 'REAL'
-  end                                              as divergencia,
+  divergencia,
   horario_comprado,
   horario_real,
-  count(*)                                         as quantas,
-  count(*) filter (where event_at >= now())        as ainda_vao_acontecer,
-  count(distinct experiencia_nome)                 as experiencias
-from norm
-where k_comprado <> '' and k_real <> '' and k_comprado <> k_real
-group by 1, 2, 3
-order by
-  case
-    when ini_comprado is null or ini_real is null then 1
-    when ini_comprado = ini_real then 2
-    else 0
-  end,
-  count(*) desc;
+  count(*)                                    as quantas,
+  count(*) filter (where event_at >= now())   as ainda_vao_acontecer,
+  count(distinct experiencia_nome)            as experiencias
+from classificado
+group by divergencia, ordem, horario_comprado, horario_real
+order by ordem, quantas desc;
 
 
 -- =============================================================
