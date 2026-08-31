@@ -1012,6 +1012,19 @@ select {
   color: var(--gray-900);
 }
 
+/* Preço cheio riscado — o "de" que vem de experiences.valor_cheio_centavos.
+   Só aparece quando existe desconto real; nas experiências By Elarah o
+   valor cheio é igual ao praticado e o span nem chega a ser renderizado.
+   Discreto de propósito: a Elarah vende curadoria, não cupom — o riscado
+   ancora o preço sem dar cara de site de promoção. */
+.card__price-de {
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--gray-500, #9a8d7e);
+  text-decoration: line-through;
+  margin-right: 5px;
+}
+
 .card__reserve-btn {
   appearance: none;
   border: none;

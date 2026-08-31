@@ -1789,8 +1789,7 @@
     // recebem a EXPERIÊNCIA (não o rótulo de preço) porque a fonte do
     // "de" é o campo valor_cheio_centavos, não o preço praticado.
     precoCheioBR: precoCheioBR,
-    precoEconomiaBR: precoEconomiaBR,
-    descontoPercent: descontoPercent,
+    precoDeHTML: precoDeHTML,
   };
 
   // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
@@ -1890,21 +1889,21 @@
     return formatPrecoBR(String(cheio / 100).replace('.', ','));
   }
 
-  // Quanto a pessoa economiza. Ex.: R$ 610 → R$ 549 devolve "R$ 61".
-  function precoEconomiaBR(exp) {
-    var cheio = valorCheioDe(exp);
-    var praticado = precoPraticadoDe(exp);
-    if (!cheio || !praticado || cheio <= praticado) return '';
-    return formatPrecoBR(String((cheio - praticado) / 100).replace('.', ','));
-  }
-
-  // Percentual de desconto arredondado, pra selo ("17% OFF"). Devolve
-  // 0 quando não há desconto — a UI usa isso pra decidir se renderiza.
-  function descontoPercent(exp) {
-    var cheio = valorCheioDe(exp);
-    var praticado = precoPraticadoDe(exp);
-    if (!cheio || !praticado || cheio <= praticado) return 0;
-    return Math.round(((cheio - praticado) / cheio) * 100);
+  // Markup do "de" riscado, pra ser colado ANTES do preço dentro do
+  // <p class="card__price">. Fonte única dos três catálogos (home,
+  // categoria e presentear) — sem isso o mesmo trecho viveria copiado
+  // em três arquivos e sairia do ar em um deles na primeira mudança.
+  //
+  // Devolve '' quando não há desconto (By Elarah, sem valor cheio,
+  // preço textual) e a UI simplesmente renderiza o preço sozinho.
+  //
+  // Seguro pra innerHTML: o texto vem de formatPrecoBR sobre um Number,
+  // nunca de string digitada pelo admin.
+  function precoDeHTML(exp, className) {
+    var de = precoCheioBR(exp);
+    if (!de) return '';
+    var cls = className || 'card__price-de';
+    return '<span class="' + cls + '">' + de + '</span> ';
   }
 
 })(window);
