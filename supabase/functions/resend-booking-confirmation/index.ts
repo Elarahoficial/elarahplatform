@@ -16,9 +16,17 @@
 // do mp-webhook/sendBookingConfirmation pra ficar idêntico ao original.
 //
 // Body JSON:
-//   { "booking_id": "uuid" }
+//   { "booking_id": "uuid" }                      -> manda pro e-mail da reserva
+//   { "booking_id": "uuid", "to": "outro@x.com" } -> manda uma CÓPIA pro
+//                                                    endereço informado
 //
-// Resposta: { ok: true, to: "cliente@email" } ou { ok: false, error }.
+// O campo "to" é opcional e só muda o destinatário — o conteúdo é sempre
+// montado a partir da reserva (nada vem do cliente). Serve pro caso de a
+// admin precisar mandar a confirmação pra um segundo e-mail (presenteado,
+// e-mail corporativo, conferência interna) sem alterar a reserva.
+//
+// Resposta: { ok: true, to: "destino@email", copy: false } ou
+//           { ok: false, error }.
 // =============================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -64,6 +72,13 @@ serve(async (req) => {
     return jsonResponse({ ok: false, error: "missing_booking_id" }, 400);
   }
 
+  // Destinatário alternativo (cópia). Validado aqui porque o painel pode
+  // ser burlado — só aceita um endereço simples e bem formado.
+  const overrideTo = String(payload.to ?? "").trim().toLowerCase();
+  if (overrideTo && !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(overrideTo)) {
+    return jsonResponse({ ok: false, error: "invalid_email" }, 400);
+  }
+
   const { data: booking, error } = await supabase
     .from("bookings")
     .select("*")
@@ -81,9 +96,14 @@ serve(async (req) => {
   if (!booking) {
     return jsonResponse({ ok: false, error: "booking_not_found" }, 404);
   }
-  if (!booking.email) {
+  if (!booking.email && !overrideTo) {
     return jsonResponse({ ok: false, error: "booking_sem_email" }, 422);
   }
+
+  // Destino final: o "to" informado (cópia) ou o e-mail da própria reserva.
+  const destino = overrideTo || String(booking.email).trim();
+  const isCopy = !!overrideTo &&
+    overrideTo !== String(booking.email ?? "").trim().toLowerCase();
   // Reserva "aguardando experiência" (cliente desmarcou sem reembolso) não
   // pode receber confirmação — mesmo que a admin clique sem querer. Guarda
   // no servidor porque o botão do painel pode ser burlado.
@@ -118,8 +138,12 @@ serve(async (req) => {
   });
 
   const result = await sendEmail({
-    to: booking.email,
-    subject: "Sua reserva na Elarah está confirmada ✨",
+    to: destino,
+    // Cópia leva o prefixo no assunto pra quem recebe entender na hora que
+    // é um reenvio pra outro endereço, não uma segunda reserva.
+    subject: isCopy
+      ? "Cópia — Sua reserva na Elarah está confirmada ✨"
+      : "Sua reserva na Elarah está confirmada ✨",
     html,
   });
 
@@ -127,7 +151,8 @@ serve(async (req) => {
     console.error(
       "[Elarah resend-confirmation] envio de e-mail falhou",
       "booking_id=" + booking.id,
-      "to=" + booking.email,
+      "to=" + destino,
+      "copy=" + isCopy,
       "status=" + (result.status ?? "?"),
       "error=" + (result.error ?? "?"),
     );
@@ -140,7 +165,8 @@ serve(async (req) => {
   console.info(
     "[Elarah resend-confirmation] confirmação reenviada",
     "booking_id=" + booking.id,
-    "to=" + booking.email,
+    "to=" + destino,
+    "copy=" + isCopy,
   );
-  return jsonResponse({ ok: true, to: booking.email });
+  return jsonResponse({ ok: true, to: destino, copy: isCopy });
 });
