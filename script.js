@@ -610,7 +610,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
           </p>
         </div>
         <div class="card__footer">
-          <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
+          <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
           ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
           <button type="button" class="card__reserve-btn"
             data-reserve
@@ -2542,6 +2542,11 @@ if (groupForm) {
         +   '</div>'
         +   '<div style="background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
         +     '<div style="display:flex;justify-content:space-between;font-size:.88rem;color:#666;"><span>Subtotal</span><span id="erm-subtotal"></span></div>'
+        +     // Desconto Elarah — a diferença entre o valor cheio cadastrado
+              // na experiência e o preço praticado. Fica escondido quando não
+              // há desconto (By Elarah, valor cheio em branco) ou quando a
+              // pessoa escolheu uma variação com preço próprio.
+              '<div id="erm-elarah-off-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span id="erm-elarah-off-label">Desconto Elarah</span><span id="erm-elarah-off"></span></div>'
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
         +     '<div id="erm-fee-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#666;margin-top:6px;"><span>Taxa do cartão</span><span id="erm-fee"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
@@ -3771,9 +3776,48 @@ if (groupForm) {
       ctx.totalCentavos = total;
       ctx.feeCents = feeCents;
 
+      // ===== Desconto Elarah — o "de" que a cliente nunca viu =====
+      // ctx.valorCheioCentavos é o preço original cadastrado na experiência
+      // (campo "Valor cheio" do admin). Ele descreve o preço BASE: se a
+      // pessoa escolheu uma variação com preço próprio, esse cheio não
+      // corresponde mais àquela opção e o riscado some — melhor não mostrar
+      // "de" nenhum do que mostrar um que não confere.
+      //
+      // Nas experiências By Elarah o cheio é igual ao praticado, então
+      // cheioUnit > unitPrice é falso e nada aparece. Sem flag, sem
+      // configuração: o próprio dado decide.
+      const usaPrecoBase = !ctx.baseCentavos || unitPrice === ctx.baseCentavos;
+      const cheioUnit = Number(ctx.valorCheioCentavos) || 0;
+      const temOffElarah = usaPrecoBase && cheioUnit > unitPrice;
+      const cheioSubtotal = cheioUnit * qty;
+
+      // Quando há desconto Elarah, o SUBTOTAL exibido é o preço CHEIO e a
+      // linha de desconto logo abaixo faz o abatimento — assim o resumo
+      // fecha de cima pra baixo (1.220 − 122 = 1.098). Mostrar o subtotal
+      // já descontado E uma linha de desconto embaixo daria a impressão de
+      // que o total ainda ia cair mais, e a conta não bateria na tela.
+      //
+      // Só a EXIBIÇÃO muda: subtotalCents (usado no cupom, na taxa e no
+      // total) continua sendo o preço praticado × quantidade.
+      const subtotalExibido = temOffElarah ? cheioSubtotal : subtotalCents;
+      const unitExibido = temOffElarah ? cheioUnit : unitPrice;
       root.querySelector('#erm-subtotal').textContent = qty > 1
-        ? qty + 'x ' + brl(unitPrice) + ' = ' + brl(subtotalCents)
-        : brl(unitPrice);
+        ? qty + 'x ' + brl(unitExibido) + ' = ' + brl(subtotalExibido)
+        : brl(unitExibido);
+
+      const offRow = root.querySelector('#erm-elarah-off-row');
+      if (offRow) {
+        if (temOffElarah) {
+          offRow.style.display = 'flex';
+          const offCents = cheioSubtotal - subtotalCents;
+          const offPct = Math.round((offCents / cheioSubtotal) * 100);
+          root.querySelector('#erm-elarah-off-label').textContent = 'Desconto Elarah (' + offPct + '%)';
+          root.querySelector('#erm-elarah-off').textContent = '− ' + brl(offCents);
+        } else {
+          offRow.style.display = 'none';
+        }
+      }
+
       root.querySelector('#erm-total').textContent = brl(total);
 
       const feeRow = root.querySelector('#erm-fee-row');
@@ -3948,6 +3992,8 @@ if (groupForm) {
       root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-total').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-discount-row').style.display = 'none';
+      var _offRowReset = root.querySelector('#erm-elarah-off-row');
+      if (_offRowReset) _offRowReset.style.display = 'none';
       root.querySelector('#erm-cupom').value = '';
       root.querySelector('#erm-cupom-msg').textContent = '';
       root.querySelector('#erm-cupom-msg').style.color = '#666';
@@ -6578,6 +6624,9 @@ if (groupForm) {
       let horariosArr = [];
       let expCutoffHours = null;
       let expDescricao = '', expInclui = '', expEndereco = '', expHorarioFunc = '';
+      // Preço original antes do desconto Elarah. Alimenta o "de" riscado
+      // no resumo do checkout. Null nas By Elarah (cheio == praticado).
+      let expValorCheioCentavos = null;
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
@@ -6588,6 +6637,9 @@ if (groupForm) {
             expEndereco = [exp.endereco, exp.bairro].filter(Boolean).join(' — ');
             expHorarioFunc = (exp.horarioFuncionamento || '').trim();
             expCutoffHours = exp.cutoffHours;
+            expValorCheioCentavos = exp.valorCheioCentavos != null
+              ? Number(exp.valorCheioCentavos)
+              : null;
             if (!precoLabel || !precoCentavos) {
               precoLabel = exp.preco || precoLabel;
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
@@ -6709,6 +6761,7 @@ if (groupForm) {
         slotId: scheduleSel.slotId || null,
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
+        valorCheioCentavos: expValorCheioCentavos,
         // [PR F] modo guest — modal mostra campo email e cria conta no submit
         isGuest: isGuestMode,
         email: auth.email,

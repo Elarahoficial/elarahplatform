@@ -6,7 +6,7 @@
   <meta name="description" id="meta-desc" content="Experiência na Elarah — descubra, reserve e viva.">
   <title id="page-title">Experiência — Elarah</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=21">
   <link rel="stylesheet" href="auth.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +23,9 @@
     .exp-detail__meta-item { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: #555; }
     .exp-detail__meta-item svg { width: 16px; height: 16px; flex-shrink: 0; }
     .exp-detail__price { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 20px; }
+    /* Preço cheio riscado (valor_cheio_centavos). Ausente nas By Elarah,
+       onde o valor cheio é igual ao praticado. */
+    .exp-detail__price-de { font-size: .95rem; font-weight: 500; color: #9a8d7e; text-decoration: line-through; margin-right: 7px; }
     .exp-detail__horarios { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
     .exp-detail__horario-btn { padding: 8px 16px; font-size: .88rem; font-weight: 600; border: 1.5px solid #ddd; border-radius: 10px; background: #fff; color: #555; cursor: pointer; transition: all .15s; }
     .exp-detail__horario-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
@@ -347,10 +350,10 @@
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=2" defer></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=34"></script>
+<script src="experiences-data.js?v=35"></script>
 <script src="analytics.js?v=3"></script>
 <script src="kit-checkout.js?v=3"></script>
-<script src="script.js?v=84"></script><script>(function () {
+<script src="script.js?v=85"></script><script>(function () {
   'use strict';
 
   function esc(s) {
@@ -956,7 +959,10 @@
       '</div>' +
       '</div>' +
       '<aside class="exp-detail__booking">' +
-      '<div class="exp-detail__price" id="exp-detail-price">' + esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) + '</div>' +
+      '<div class="exp-detail__price" id="exp-detail-price">' +
+        ((window.ElarahData && ElarahData.precoDeHTML) ? ElarahData.precoDeHTML(exp, 'exp-detail__price-de') : '') +
+        esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) +
+      '</div>' +
       '<div class="exp-detail__installments" style="font-size:.85rem;color:#6b5d4f;margin-top:2px;">ou em até <strong>12x</strong> no cartão</div>' +
       variantSelectorHtml +
       horariosHtml +
@@ -1009,7 +1015,18 @@
           b.style.fontWeight = on ? '700' : '400';
         });
         if (it.imagem && heroImg) heroImg.src = it.imagem;
-        if (priceEl) priceEl.textContent = fmtPreco(it.preco ? it.preco : exp.preco);
+        // O "de" vem de valor_cheio_centavos, que é o cheio do preço BASE
+        // da experiência. Quando a opção escolhida tem preço PRÓPRIO, esse
+        // cheio não vale mais pra ela — então mostra só o preço da opção,
+        // sem riscado. Inventar um "de" pra variação seria anunciar um
+        // desconto que ninguém calculou.
+        if (priceEl) {
+          var usaPrecoDaVariante = !!(it.preco && String(it.preco).trim());
+          var deHtml = (!usaPrecoDaVariante && window.ElarahData && ElarahData.precoDeHTML)
+            ? ElarahData.precoDeHTML(exp, 'exp-detail__price-de')
+            : '';
+          priceEl.innerHTML = deHtml + esc(fmtPreco(usaPrecoDaVariante ? it.preco : exp.preco));
+        }
         window.__elarahKitVariant = {
           expId: exp.id,
           label: exp.variantLabel || 'Escolha a sua opção',

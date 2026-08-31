@@ -1785,6 +1785,11 @@
     // renderize "R$ 383", "R$ 1.380,00" etc. — independente de como o
     // admin digitou ("383", "R$383", "R$ 383", "1.380,00", etc.).
     formatPrecoBR: formatPrecoBR,
+    // Desconto Elarah — ver bloco DESCONTO ELARAH mais abaixo. Todos
+    // recebem a EXPERIÊNCIA (não o rótulo de preço) porque a fonte do
+    // "de" é o campo valor_cheio_centavos, não o preço praticado.
+    precoCheioBR: precoCheioBR,
+    precoDeHTML: precoDeHTML,
   };
 
   // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
@@ -1824,4 +1829,81 @@
       maximumFractionDigits: 2,
     });
   }
+
+  // =============================================================
+  // DESCONTO ELARAH — o "de" que nunca apareceu na tela
+  // -------------------------------------------------------------
+  // Todo preço do catálogo já entra com desconto aplicado. O preço
+  // ORIGINAL, antes do desconto, é o que a admin digita no campo
+  // "Valor cheio (R$)" da experiência — `valor_cheio_centavos`. Ele
+  // sempre existiu no banco; só nunca chegou na tela da cliente, que
+  // via "R$ 549" achando ser o preço normal, sem saber que o cheio
+  // era R$ 610.
+  //
+  // FONTE DA VERDADE: valor_cheio_centavos, digitado pela admin. Não
+  // derivamos, não inventamos. Se o campo estiver vazio, não mostra
+  // nada — melhor não ter o "de" do que ter um "de" chutado.
+  //
+  // BY ELARAH: nas experiências próprias o valor cheio é IGUAL ao
+  // preço praticado (não há desconto a anunciar). Nesse caso as duas
+  // funções devolvem '' e a UI não renderiza o "de" — é exatamente o
+  // que diferencia uma experiência de parceira de uma nossa.
+  // =============================================================
+
+  // "R$ 549" → 54900. Mesmos formatos aceitos por formatPrecoBR.
+  function precoParaCentavos(raw) {
+    if (raw == null) return null;
+    var s = String(raw).trim();
+    if (!s) return null;
+    var match = s.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*$/);
+    if (!match) return null;
+    var clean = match[1].replace(/\./g, '').replace(/\s+/g, '').replace(',', '.');
+    var n = parseFloat(clean);
+    if (!isFinite(n) || n <= 0) return null;
+    return Math.round(n * 100);
+  }
+
+  // Lê o valor cheio da experiência (aceita o objeto normalizado do
+  // ElarahData ou a row crua do Supabase).
+  function valorCheioDe(exp) {
+    if (!exp || typeof exp !== 'object') return null;
+    var raw = exp.valorCheioCentavos != null ? exp.valorCheioCentavos : exp.valor_cheio_centavos;
+    if (raw == null) return null;
+    var n = Number(raw);
+    return (isFinite(n) && n > 0) ? Math.round(n) : null;
+  }
+
+  // Preço praticado da experiência, em centavos.
+  function precoPraticadoDe(exp) {
+    if (!exp || typeof exp !== 'object') return null;
+    return precoParaCentavos(exp.preco);
+  }
+
+  // Rótulo do "de" pra exibir riscado. Ex.: "R$ 610".
+  // Devolve '' quando não há desconto real a mostrar: sem valor cheio
+  // cadastrado, ou valor cheio <= preço praticado (caso By Elarah).
+  function precoCheioBR(exp) {
+    var cheio = valorCheioDe(exp);
+    var praticado = precoPraticadoDe(exp);
+    if (!cheio || !praticado || cheio <= praticado) return '';
+    return formatPrecoBR(String(cheio / 100).replace('.', ','));
+  }
+
+  // Markup do "de" riscado, pra ser colado ANTES do preço dentro do
+  // <p class="card__price">. Fonte única dos três catálogos (home,
+  // categoria e presentear) — sem isso o mesmo trecho viveria copiado
+  // em três arquivos e sairia do ar em um deles na primeira mudança.
+  //
+  // Devolve '' quando não há desconto (By Elarah, sem valor cheio,
+  // preço textual) e a UI simplesmente renderiza o preço sozinho.
+  //
+  // Seguro pra innerHTML: o texto vem de formatPrecoBR sobre um Number,
+  // nunca de string digitada pelo admin.
+  function precoDeHTML(exp, className) {
+    var de = precoCheioBR(exp);
+    if (!de) return '';
+    var cls = className || 'card__price-de';
+    return '<span class="' + cls + '">' + de + '</span> ';
+  }
+
 })(window);
