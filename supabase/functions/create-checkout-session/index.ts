@@ -374,6 +374,22 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // pra exibir no e-mail e admin. Não afetam preço nem estoque.
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+
+  // ===== Aceite da regra de 48h =====
+  // Timestamp do momento em que a cliente marcou o checkbox no checkout.
+  // Gravado no metadata da reserva pra ela carregar a prova de que a regra
+  // de remarcação/cancelamento foi informada ANTES do pagamento — sem isso
+  // todo pedido de última hora vira discussão sem lastro.
+  //
+  // Só aceita ISO plausível: string vazia, lixo ou data fora de faixa vira
+  // null. Nunca bloqueia o pagamento — a trava é no front; aqui é registro.
+  const politica48hAceitaEm = (function () {
+    const raw = payload.politica_48h_aceita_em;
+    if (!raw || typeof raw !== "string") return null;
+    const t = Date.parse(raw);
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toISOString();
+  })();
   // Preço unitário da variação exibido no front (centavos). Só dica de
   // segurança — o banco continua autoritativo (ver bloco de preço abaixo).
   const variantExpectedCents = (function () {
@@ -1420,6 +1436,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     // pra reaparecer no e-mail e no admin. Não afetam o preço.
     variant_label: variantLabel || undefined,
     variant_selected: variantSelected || undefined,
+    politica_48h_aceita_em: politica48hAceitaEm,
     // Frete + endereço de entrega (kits). Vive no metadata (jsonb) pra
     // o admin ver e despachar — sem depender de migração de colunas.
     shipping: shippingResolved

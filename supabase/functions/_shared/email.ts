@@ -345,6 +345,27 @@ export function bookingConfirmationEmailHtml(opts: {
     : "";
   // Referência da reserva — últimos 8 chars do UUID, útil se a pessoa
   // precisar citar no suporte. Não exibe se não tiver ID.
+  // ===== Regra de 48h =====
+  // A mesma que a cliente aceitou no checkout e que está publicada em
+  // /cancelamento.html. Fica em bloco destacado, não como bullet solto:
+  // é a informação que evita pedido de remarcação em cima da hora, e o
+  // fornecedor já se preparou pra receber. Repetir aqui garante que a
+  // regra fique no e-mail que a pessoa guarda, não só na tela de compra.
+  const politicaHtml = `
+    <div style="margin:20px 0 0;padding:16px 18px;background:#fdf6ee;border:1px solid #f0e0cb;border-radius:12px;">
+      <div style="font-size:14px;color:#1a1a1a;font-weight:bold;margin-bottom:6px;">Precisa remarcar ou cancelar?</div>
+      <p style="margin:0 0 8px;font-size:14px;color:#3a3a3a;line-height:1.6;">
+        Pedidos precisam chegar pra gente com no mínimo <strong>48 horas de antecedência</strong> da experiência.
+        Dentro desse prazo, a gente resolve — remarcação depende da agenda do parceiro.
+      </p>
+      <p style="margin:0;font-size:13px;color:#7a6a58;line-height:1.6;">
+        Com menos de 48h não há reembolso, porque o fornecedor já reservou vaga e material pra você.
+        É só responder este e-mail ou escrever pra
+        <a href="mailto:contato.elarah@gmail.com" style="color:#b9764f;">contato.elarah@gmail.com</a>.
+        <a href="https://elarah.com.br/cancelamento.html" style="color:#b9764f;">Política completa</a>.
+      </p>
+    </div>`;
+
   const refHtml = opts.bookingId
     ? `<p style="margin:18px 0 0;font-size:12px;color:#999;text-align:center;letter-spacing:.5px;">
          Ref. da reserva: <span style="font-family:Menlo,Consolas,monospace;color:#666;">${escapeHtml(
@@ -373,9 +394,9 @@ export function bookingConfirmationEmailHtml(opts: {
     <h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:24px 0 10px;font-size:16px;">O que esperar</h3>
     <ul style="padding-left:20px;margin:0 0 8px;color:#3a3a3a;line-height:1.7;font-size:14px;">
       <li>Chegue <strong>10 minutos antes</strong> do horário pra aproveitar tudo com calma.</li>
-      <li>Qualquer imprevisto ou mudança, responde este email que a gente resolve junto.</li>
       <li>Se for em grupo, avisa se algum acompanhante não conseguir ir.</li>
     </ul>
+    ${politicaHtml}
     <p style="margin:22px 0 0;color:#555;">A gente te espera ✨</p>
     ${refHtml}
   `;

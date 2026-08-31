@@ -83,6 +83,22 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   const acompanhantes = buildAcompanhantes(payload, participantes);
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+
+  // ===== Aceite da regra de 48h =====
+  // Timestamp do momento em que a cliente marcou o checkbox no checkout.
+  // Gravado no metadata da reserva pra ela carregar a prova de que a regra
+  // de remarcação/cancelamento foi informada ANTES do pagamento — sem isso
+  // todo pedido de última hora vira discussão sem lastro.
+  //
+  // Só aceita ISO plausível: string vazia, lixo ou data fora de faixa vira
+  // null. Nunca bloqueia o pagamento — a trava é no front; aqui é registro.
+  const politica48hAceitaEm = (function () {
+    const raw = payload.politica_48h_aceita_em;
+    if (!raw || typeof raw !== "string") return null;
+    const t = Date.parse(raw);
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toISOString();
+  })();
   const variantExpectedCents = (function () {
     const n = Number(payload.variant_price_expected_centavos);
     return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
@@ -181,6 +197,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
         paid_with_gift_card_only: true, participantes,
         telefone_digits: telefoneDigits || null, payment_method: "pix",
         cpf: cpfRaw, variant_label: variantLabel, variant_selected: variantSelected,
+        politica_48h_aceita_em: politica48hAceitaEm,
       },
     });
     if (directErr) {
@@ -281,6 +298,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       participantes, telefone_digits: telefoneDigits || null,
       payment_method: "pix", cpf: cpfRaw,
       variant_label: variantLabel, variant_selected: variantSelected,
+      politica_48h_aceita_em: politica48hAceitaEm,
       pagarme_order_id: pixResult.orderId ?? null,
       inventory_skipped: inventorySkipped || undefined,
     },

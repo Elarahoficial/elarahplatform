@@ -196,6 +196,22 @@ async function handleCardRequest(
   const acompanhantes = buildAcompanhantes(payload, participantes);
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+
+  // ===== Aceite da regra de 48h =====
+  // Timestamp do momento em que a cliente marcou o checkbox no checkout.
+  // Gravado no metadata da reserva pra ela carregar a prova de que a regra
+  // de remarcação/cancelamento foi informada ANTES do pagamento — sem isso
+  // todo pedido de última hora vira discussão sem lastro.
+  //
+  // Só aceita ISO plausível: string vazia, lixo ou data fora de faixa vira
+  // null. Nunca bloqueia o pagamento — a trava é no front; aqui é registro.
+  const politica48hAceitaEm = (function () {
+    const raw = payload.politica_48h_aceita_em;
+    if (!raw || typeof raw !== "string") return null;
+    const t = Date.parse(raw);
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toISOString();
+  })();
   // Preço unitário da variação exibido no front (centavos). Só dica —
   // o banco continua autoritativo. Ver booking_guard §5b.
   const variantExpectedCents = (function () {
@@ -379,6 +395,7 @@ async function handleCardRequest(
         telefone_digits: telefoneDigits || null,
         payment_method: "card",
         cpf: cpfRaw || null,
+        politica_48h_aceita_em: politica48hAceitaEm,
       },
     });
 
@@ -457,6 +474,7 @@ async function handleCardRequest(
     amount_before_fee_centavos: amountToChargeCents,
     payment_method: "card",
     payment_provider: "mercado_pago",
+    politica_48h_aceita_em: politica48hAceitaEm,
     cpf: cpfRaw || null,
     inventory_skipped: inventorySkipped || undefined,
     variant_label: variantLabel || undefined,
