@@ -1785,10 +1785,12 @@
     // renderize "R$ 383", "R$ 1.380,00" etc. — independente de como o
     // admin digitou ("383", "R$383", "R$ 383", "1.380,00", etc.).
     formatPrecoBR: formatPrecoBR,
-    // Desconto Elarah — ver bloco DESCONTO ELARAH mais abaixo.
-    DESCONTO_PCT: DESCONTO_PCT,
+    // Desconto Elarah — ver bloco DESCONTO ELARAH mais abaixo. Todos
+    // recebem a EXPERIÊNCIA (não o rótulo de preço) porque a fonte do
+    // "de" é o campo valor_cheio_centavos, não o preço praticado.
     precoCheioBR: precoCheioBR,
     precoEconomiaBR: precoEconomiaBR,
+    descontoPercent: descontoPercent,
   };
 
   // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
@@ -1832,35 +1834,24 @@
   // =============================================================
   // DESCONTO ELARAH — o "de" que nunca apareceu na tela
   // -------------------------------------------------------------
-  // Todo preço do catálogo JÁ ENTRA com 10% de desconto aplicado: o
-  // que está em `experiences.preco` é o valor final, e o preço cheio
-  // (o "de") não é armazenado em lugar nenhum. Resultado: a cliente
-  // via "R$ 162" achando que era o preço normal, sem saber que tinha
-  // ganhado desconto — a Elarah dava os 10% e não levava o crédito.
+  // Todo preço do catálogo já entra com desconto aplicado. O preço
+  // ORIGINAL, antes do desconto, é o que a admin digita no campo
+  // "Valor cheio (R$)" da experiência — `valor_cheio_centavos`. Ele
+  // sempre existiu no banco; só nunca chegou na tela da cliente, que
+  // via "R$ 549" achando ser o preço normal, sem saber que o cheio
+  // era R$ 610.
   //
-  // Estas funções reconstroem o "de" a partir do preço praticado.
+  // FONTE DA VERDADE: valor_cheio_centavos, digitado pela admin. Não
+  // derivamos, não inventamos. Se o campo estiver vazio, não mostra
+  // nada — melhor não ter o "de" do que ter um "de" chutado.
   //
-  // POR QUE NÃO USAR `valor_cheio_centavos`: apesar do nome, aquele
-  // campo é a BASE DO RATEIO com o fornecedor (computeFinancials em
-  // admin.js: repasse = valor_cheio × percentual). Escrever o preço
-  // pré-desconto ali inflaria todo repasse em ~11% e a plataforma
-  // passaria a pagar a mais pras parceiras. São coisas diferentes.
-  //
-  // A DERIVAÇÃO: procura o valor cheio F tal que aplicar o desconto e
-  // arredondar devolve EXATAMENTE o preço praticado. Como a faixa de
-  // F tem largura ~1,11, quase sempre só um inteiro serve; quando dois
-  // servem, escolhe o mais redondo (múltiplo de 5). Conferido contra
-  // os 41 preços distintos já vendidos: todos os 41 são exatamente
-  // 90% de um inteiro, e 24 vêm de um múltiplo de 5 (R$ 162 → R$ 180,
-  // R$ 315 → R$ 350, R$ 1.944 → R$ 2.160).
-  //
-  // Devolve '' quando não dá pra derivar com segurança (preço textual
-  // tipo "Sob consulta", vazio, ou zero) — a UI simplesmente não
-  // mostra o "de" nesses casos, em vez de inventar um número.
+  // BY ELARAH: nas experiências próprias o valor cheio é IGUAL ao
+  // preço praticado (não há desconto a anunciar). Nesse caso as duas
+  // funções devolvem '' e a UI não renderiza o "de" — é exatamente o
+  // que diferencia uma experiência de parceira de uma nossa.
   // =============================================================
-  var DESCONTO_PCT = 10;
 
-  // "R$ 162" → 16200. Aceita os mesmos formatos que formatPrecoBR.
+  // "R$ 549" → 54900. Mesmos formatos aceitos por formatPrecoBR.
   function precoParaCentavos(raw) {
     if (raw == null) return null;
     var s = String(raw).trim();
@@ -1873,51 +1864,47 @@
     return Math.round(n * 100);
   }
 
-  // Preço praticado (centavos) → preço cheio (centavos), ou null.
-  //
-  // O arredondamento é feito em REAIS, não em centavos: o preço do
-  // catálogo nasce de "valor cheio redondo × 0,9" arredondado pro real
-  // mais próximo. R$ 425 × 0,9 = R$ 382,50, que virou R$ 383. Procurar
-  // o cheio em centavos erraria esse caso (daria R$ 425,56).
-  function precoCheioCentavos(descontoCentavos) {
-    if (!descontoCentavos || descontoCentavos <= 0) return null;
-    var fator = (100 - DESCONTO_PCT) / 100;          // 0.9
-
-    // Caso comum: preço em reais cheios (R$ 162, R$ 383...).
-    if (descontoCentavos % 100 === 0) {
-      var descReais = descontoCentavos / 100;
-      var alvoReais = descReais / fator;
-      var candidatos = [];
-      for (var r = Math.floor(alvoReais) - 1; r <= Math.ceil(alvoReais) + 1; r++) {
-        if (r > descReais && Math.round(r * fator) === descReais) candidatos.push(r);
-      }
-      if (candidatos.length) {
-        // Empate (acontece em 2 dos 41 preços) → o mais redondo ganha.
-        for (var i = 0; i < candidatos.length; i++) {
-          if (candidatos[i] % 5 === 0) return candidatos[i] * 100;
-        }
-        return candidatos[0] * 100;
-      }
-    }
-
-    // Preço com centavos (ex.: R$ 162,90) — devolve o valor exato.
-    var bruto = Math.round(descontoCentavos / fator);
-    return bruto > descontoCentavos ? bruto : null;
+  // Lê o valor cheio da experiência (aceita o objeto normalizado do
+  // ElarahData ou a row crua do Supabase).
+  function valorCheioDe(exp) {
+    if (!exp || typeof exp !== 'object') return null;
+    var raw = exp.valorCheioCentavos != null ? exp.valorCheioCentavos : exp.valor_cheio_centavos;
+    if (raw == null) return null;
+    var n = Number(raw);
+    return (isFinite(n) && n > 0) ? Math.round(n) : null;
   }
 
-  // Rótulo do "de" pra exibir riscado. Ex.: "R$ 162" → "R$ 180".
-  function precoCheioBR(rawPrecoComDesconto) {
-    var cents = precoParaCentavos(rawPrecoComDesconto);
-    var cheio = precoCheioCentavos(cents);
-    if (!cheio) return '';
+  // Preço praticado da experiência, em centavos.
+  function precoPraticadoDe(exp) {
+    if (!exp || typeof exp !== 'object') return null;
+    return precoParaCentavos(exp.preco);
+  }
+
+  // Rótulo do "de" pra exibir riscado. Ex.: "R$ 610".
+  // Devolve '' quando não há desconto real a mostrar: sem valor cheio
+  // cadastrado, ou valor cheio <= preço praticado (caso By Elarah).
+  function precoCheioBR(exp) {
+    var cheio = valorCheioDe(exp);
+    var praticado = precoPraticadoDe(exp);
+    if (!cheio || !praticado || cheio <= praticado) return '';
     return formatPrecoBR(String(cheio / 100).replace('.', ','));
   }
 
-  // Quanto a pessoa economiza. Ex.: "R$ 162" → "R$ 18".
-  function precoEconomiaBR(rawPrecoComDesconto) {
-    var cents = precoParaCentavos(rawPrecoComDesconto);
-    var cheio = precoCheioCentavos(cents);
-    if (!cheio || !cents) return '';
-    return formatPrecoBR(String((cheio - cents) / 100).replace('.', ','));
+  // Quanto a pessoa economiza. Ex.: R$ 610 → R$ 549 devolve "R$ 61".
+  function precoEconomiaBR(exp) {
+    var cheio = valorCheioDe(exp);
+    var praticado = precoPraticadoDe(exp);
+    if (!cheio || !praticado || cheio <= praticado) return '';
+    return formatPrecoBR(String((cheio - praticado) / 100).replace('.', ','));
   }
+
+  // Percentual de desconto arredondado, pra selo ("17% OFF"). Devolve
+  // 0 quando não há desconto — a UI usa isso pra decidir se renderiza.
+  function descontoPercent(exp) {
+    var cheio = valorCheioDe(exp);
+    var praticado = precoPraticadoDe(exp);
+    if (!cheio || !praticado || cheio <= praticado) return 0;
+    return Math.round(((cheio - praticado) / cheio) * 100);
+  }
+
 })(window);
