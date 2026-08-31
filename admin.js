@@ -4493,7 +4493,7 @@
       // oferece o botão de reenviar confirmação (o servidor também barra).
       const canResendConfirm = b.status === 'pago' && b.email && !b._isManualSale && !b._isGiftCard && !b.aguardando_experiencia;
       const resendConfirmBtn = canResendConfirm
-        ? '<button type="button" class="admin__resend-confirm-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Reenviar o e-mail de confirmação pro cliente com os dados atuais da reserva (use depois de editar/trocar a experiência)" style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Reenviar confirmação</button>'
+        ? '<button type="button" class="admin__resend-confirm-btn" data-booking-id="' + escapeHtml(b.id) + '" title="Reenviar o e-mail de confirmação com os dados atuais da reserva — pro mesmo e-mail do cliente ou uma cópia pra outro endereço" style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;line-height:1.4;">📧 Reenviar confirmação</button>'
         : '';
 
       // Selo "aguardando experiência" na coluna Status, com o tipo (mesmo
@@ -4778,6 +4778,187 @@
           alert('Erro inesperado ao salvar. Veja o console.');
           saveBtn.disabled = false;
           saveBtn.textContent = 'Salvar';
+        }
+      });
+    }
+
+    // Modal do "📧 Reenviar confirmação" — a admin escolhe entre reenviar
+    // pro MESMO e-mail da reserva (uso normal: cliente não achou / a
+    // reserva foi editada) ou mandar uma CÓPIA pra outro endereço (uso:
+    // cliente pediu pra mandar pro e-mail do presenteado/da empresa, ou a
+    // admin quer conferir o e-mail antes). Nos dois casos o e-mail sai com
+    // os dados ATUAIS da reserva — quem monta é a edge function
+    // resend-booking-confirmation, que reusa o template do webhook.
+    function openResendConfirmModal(booking, btn) {
+      var existing = document.getElementById('admin-resend-confirm');
+      if (existing) existing.remove();
+
+      var destinoOriginal = String(booking.email || '').trim();
+      var resumo = escapeHtml(booking.experiencia_nome || '—') +
+        (booking.data ? ' · ' + escapeHtml(booking.data) : '') +
+        (booking.horario ? ' · ' + escapeHtml(booking.horario) : '');
+
+      var modal = document.createElement('div');
+      modal.id = 'admin-resend-confirm';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+      modal.innerHTML =
+        '<div style="background:#fff;border-radius:14px;max-width:460px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.2);">' +
+          '<div style="padding:18px 22px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">' +
+            '<div>' +
+              '<div style="font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Reenviar confirmação</div>' +
+              '<div style="font-size:1rem;color:#1a1a1a;font-weight:700;margin-top:2px;">' + escapeHtml(booking.nome || destinoOriginal || booking.id) + '</div>' +
+              '<div style="font-size:.78rem;color:#666;margin-top:2px;">' + resumo + '</div>' +
+            '</div>' +
+            '<button type="button" id="admin-resend-confirm-close" style="border:none;background:transparent;font-size:1.6rem;line-height:1;color:#888;cursor:pointer;padding:0 4px;">×</button>' +
+          '</div>' +
+          '<div style="padding:18px 22px;">' +
+            '<p style="margin:0 0 14px;font-size:.8rem;color:#666;line-height:1.5;">O e-mail sai com os dados <strong>atuais</strong> da reserva. Escolha pra onde mandar:</p>' +
+            '<label for="admin-resend-mode-mesmo" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid #ddd;border-radius:10px;cursor:pointer;margin-bottom:10px;" data-resend-option="mesmo">' +
+              '<input type="radio" id="admin-resend-mode-mesmo" name="admin-resend-mode" value="mesmo" checked style="margin-top:3px;cursor:pointer;">' +
+              '<span>' +
+                '<span style="display:block;font-size:.86rem;font-weight:700;color:#1a1a1a;">Reenviar confirmação para o mesmo e-mail</span>' +
+                '<span style="display:block;font-size:.78rem;color:#666;margin-top:2px;">' + (destinoOriginal ? escapeHtml(destinoOriginal) : 'Esta reserva não tem e-mail do cliente') + '</span>' +
+              '</span>' +
+            '</label>' +
+            '<label for="admin-resend-mode-outro" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid #ddd;border-radius:10px;cursor:pointer;" data-resend-option="outro">' +
+              '<input type="radio" id="admin-resend-mode-outro" name="admin-resend-mode" value="outro" style="margin-top:3px;cursor:pointer;">' +
+              '<span style="flex:1;">' +
+                '<span style="display:block;font-size:.86rem;font-weight:700;color:#1a1a1a;">Reenviar confirmação (cópia) para outro e-mail</span>' +
+                '<span style="display:block;font-size:.78rem;color:#666;margin-top:2px;">A reserva continua a mesma — só manda uma cópia pro endereço abaixo.</span>' +
+              '</span>' +
+            '</label>' +
+            '<input type="email" id="admin-resend-other-email" placeholder="outro@email.com" autocomplete="off" disabled style="width:100%;margin-top:10px;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:.86rem;background:#f6f6f6;color:#999;">' +
+            '<div id="admin-resend-error" style="display:none;margin-top:10px;background:#fdecea;border:1px solid #f4c7c1;color:#c0392b;border-radius:8px;padding:9px 12px;font-size:.78rem;"></div>' +
+          '</div>' +
+          '<div style="padding:14px 22px 20px;display:flex;justify-content:flex-end;gap:10px;">' +
+            '<button type="button" id="admin-resend-confirm-cancel" style="padding:9px 16px;border:1px solid #ddd;background:#fff;color:#555;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;">Cancelar</button>' +
+            '<button type="button" id="admin-resend-confirm-send" style="padding:9px 18px;border:1px solid #bfe0c8;background:#eef8f1;color:#1a8a4a;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;">📧 Enviar</button>' +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(modal);
+
+      var radioMesmo = modal.querySelector('#admin-resend-mode-mesmo');
+      var radioOutro = modal.querySelector('#admin-resend-mode-outro');
+      var otherInput = modal.querySelector('#admin-resend-other-email');
+      var errorBox = modal.querySelector('#admin-resend-error');
+      var sendBtn = modal.querySelector('#admin-resend-confirm-send');
+      var cancelBtn = modal.querySelector('#admin-resend-confirm-cancel');
+      var closeBtn = modal.querySelector('#admin-resend-confirm-close');
+      var enviando = false;
+
+      // Sem e-mail na reserva (venda manual antiga, importação) o "mesmo
+      // e-mail" não existe — já abre com a cópia selecionada.
+      if (!destinoOriginal) {
+        radioMesmo.disabled = true;
+        radioOutro.checked = true;
+      }
+
+      function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
+      }
+      function clearError() {
+        errorBox.style.display = 'none';
+        errorBox.textContent = '';
+      }
+      function syncMode() {
+        var outro = radioOutro.checked;
+        otherInput.disabled = !outro;
+        otherInput.style.background = outro ? '#fff' : '#f6f6f6';
+        otherInput.style.color = outro ? '#1a1a1a' : '#999';
+        modal.querySelectorAll('[data-resend-option]').forEach(function (label) {
+          var ativo = label.getAttribute('data-resend-option') === (outro ? 'outro' : 'mesmo');
+          label.style.borderColor = ativo ? '#bfe0c8' : '#ddd';
+          label.style.background = ativo ? '#f6fbf7' : '#fff';
+        });
+        if (outro) otherInput.focus();
+        clearError();
+      }
+      radioMesmo.addEventListener('change', syncMode);
+      radioOutro.addEventListener('change', syncMode);
+      otherInput.addEventListener('input', clearError);
+      syncMode();
+
+      function close() {
+        if (enviando) return;
+        document.removeEventListener('keydown', onKey);
+        modal.remove();
+      }
+      function onKey(ev) {
+        if (ev.key === 'Escape') close();
+      }
+      document.addEventListener('keydown', onKey);
+      closeBtn.addEventListener('click', close);
+      cancelBtn.addEventListener('click', close);
+      modal.addEventListener('click', function (ev) {
+        if (ev.target === modal) close();
+      });
+
+      sendBtn.addEventListener('click', async function () {
+        if (enviando) return;
+        var isCopia = radioOutro.checked;
+        var destino = isCopia ? String(otherInput.value || '').trim() : destinoOriginal;
+        if (!destino) {
+          showError(isCopia ? 'Digite o e-mail que vai receber a cópia.' : 'Esta reserva não tem e-mail do cliente.');
+          return;
+        }
+        if (isCopia && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino)) {
+          showError('E-mail inválido. Confira o endereço e tente de novo.');
+          return;
+        }
+        clearError();
+
+        var sb = window.supabaseClient;
+        if (!sb || !sb.functions || !sb.functions.invoke) {
+          showError('Supabase indisponível. Recarregue a página e tente de novo.');
+          return;
+        }
+
+        enviando = true;
+        var btnTextoOriginal = btn ? btn.textContent : '';
+        sendBtn.disabled = true;
+        cancelBtn.disabled = true;
+        sendBtn.textContent = 'Enviando…';
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+        try {
+          var body = { booking_id: booking.id };
+          // Só manda "to" na cópia: sem esse campo a edge function usa o
+          // e-mail da própria reserva (comportamento antigo, intacto).
+          if (isCopia) body.to = destino;
+          var res = await sb.functions.invoke('resend-booking-confirmation', { body: body });
+          var data = res && res.data;
+          var err = res && res.error;
+          if (err || !data || !data.ok) {
+            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
+            console.error('[Admin] reenviar confirmação falhou:', err || data);
+            enviando = false;
+            sendBtn.disabled = false;
+            cancelBtn.disabled = false;
+            sendBtn.textContent = '📧 Enviar';
+            if (btn) { btn.disabled = false; btn.textContent = btnTextoOriginal; }
+            showError('Não consegui reenviar a confirmação. Motivo: ' + motivo);
+            return;
+          }
+          enviando = false;
+          close();
+          if (isCopia) {
+            // Cópia não substitui o envio pro cliente — deixa o botão
+            // disponível pra admin ainda reenviar pro e-mail da reserva.
+            if (btn) { btn.disabled = false; btn.textContent = btnTextoOriginal; }
+            alert('Cópia da confirmação enviada para ' + (data.to || destino) + ' ✨');
+          } else {
+            if (btn) btn.textContent = '✓ Enviado';
+            alert('Confirmação reenviada para ' + (data.to || destino) + ' ✨');
+          }
+        } catch (e) {
+          console.error('[Admin] exceção ao reenviar confirmação:', e);
+          enviando = false;
+          sendBtn.disabled = false;
+          cancelBtn.disabled = false;
+          sendBtn.textContent = '📧 Enviar';
+          if (btn) { btn.disabled = false; btn.textContent = btnTextoOriginal; }
+          showError('Erro ao reenviar a confirmação: ' + ((e && e.message) || String(e)));
         }
       });
     }
@@ -5469,55 +5650,19 @@
       });
     });
 
-    // Wire "📧 Reenviar confirmação" — dispara de novo o e-mail de
-    // confirmação pro cliente com os dados ATUAIS da reserva (via edge
-    // function resend-booking-confirmation, que reusa o mesmo template
-    // do webhook). Uso: depois de editar/trocar a experiência.
+    // Wire "📧 Reenviar confirmação" — abre o modal de escolha: reenviar
+    // pro mesmo e-mail da reserva ou mandar uma cópia pra outro endereço.
+    // O envio em si é a edge function resend-booking-confirmation, que
+    // reusa o mesmo template do webhook com os dados ATUAIS da reserva.
     tbody.querySelectorAll('.admin__resend-confirm-btn').forEach(function (btn) {
-      btn.addEventListener('click', async function () {
+      btn.addEventListener('click', function () {
         var bookingId = btn.dataset.bookingId;
         var booking = bookings.find(function (b) { return b && b.id === bookingId; });
         if (!booking) {
           console.warn('[Admin] booking não encontrada pra reenviar confirmação:', bookingId);
           return;
         }
-        var destino = booking.email || '';
-        if (!confirm('Reenviar o e-mail de confirmação para ' + destino + '?\n\n' +
-          'Experiência: ' + (booking.experiencia_nome || '—') + '\n' +
-          'Data: ' + (booking.data || '—') + ' · ' + (booking.horario || '—') + '\n\n' +
-          'O e-mail usa os dados ATUAIS da reserva.')) {
-          return;
-        }
-        var sb = window.supabaseClient;
-        if (!sb || !sb.functions || !sb.functions.invoke) {
-          alert('Supabase indisponível. Recarregue a página e tente de novo.');
-          return;
-        }
-        var original = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = 'Enviando…';
-        try {
-          var res = await sb.functions.invoke('resend-booking-confirmation', {
-            body: { booking_id: bookingId },
-          });
-          var data = res && res.data;
-          var err = res && res.error;
-          if (err || !data || !data.ok) {
-            var motivo = (data && data.error) || (err && err.message) || 'erro desconhecido';
-            console.error('[Admin] reenviar confirmação falhou:', err || data);
-            alert('Não consegui reenviar a confirmação.\nMotivo: ' + motivo);
-            btn.disabled = false;
-            btn.textContent = original;
-            return;
-          }
-          btn.textContent = '✓ Enviado';
-          alert('Confirmação reenviada para ' + (data.to || destino) + ' ✨');
-        } catch (e) {
-          console.error('[Admin] exceção ao reenviar confirmação:', e);
-          alert('Erro ao reenviar a confirmação:\n' + ((e && e.message) || String(e)));
-          btn.disabled = false;
-          btn.textContent = original;
-        }
+        openResendConfirmModal(booking, btn);
       });
     });
 
