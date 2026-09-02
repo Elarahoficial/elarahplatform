@@ -468,6 +468,101 @@ renderFavoritos();
     return map[status] || (status || '');
   }
 
+  // =====================================================
+  //  PRAZO DE REMARCAÇÃO NO CARD DA COMPRA
+  // -----------------------------------------------------
+  // Remarcar sem custo tem prazo por categoria (bartenderia 5 dias,
+  // gastronomia 72h, demais 48h) — ver /cancelamento.html. O prazo foi
+  // CONGELADO em metadata.politica_remarcacao_horas no momento da
+  // compra; reserva antiga, sem o campo, cai no padrão de 48h.
+  //
+  // Mostrar a contagem aqui é o ponto: a regra estava só no checkout e
+  // no e-mail de confirmação, dois lugares que a pessoa vê uma vez. Na
+  // hora em que ela lembra que precisa remarcar, ela abre "Minhas
+  // compras" — e é aqui que o prazo tem que estar.
+  // =====================================================
+
+  // Momento de início da experiência, em ms. Combina a data (já
+  // resolvida por parseDataDMYtoDate, que trata a virada de ano) com a
+  // hora inicial do rótulo ("19h00 – 22h30" → 19:00). Sem hora
+  // reconhecível, assume 00:00 do dia — sempre a favor da cliente, já
+  // que antecipa o fim do prazo em vez de atrasá-lo.
+  //
+  // Usa o fuso do navegador de propósito: a cliente está no Brasil e é
+  // o relógio dela que importa pra decidir se "ainda dá tempo".
+  function bookingStartAt(booking) {
+    const d = parseDataDMYtoDate(booking && booking.data);
+    if (!d) return null;
+    const head = String((booking && booking.horario) || '').split(/[–—-]/)[0].trim();
+    const hm = head.match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})/i);
+    if (hm) {
+      const hh = Number(hm[1]);
+      const mm = hm[2] ? Number(hm[2]) : 0;
+      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) d.setHours(hh, mm, 0, 0);
+    }
+    const t = d.getTime();
+    return isNaN(t) ? null : t;
+  }
+
+  // "faltam 5 dias" / "faltam 7 horas" / "falta menos de 1 hora".
+  function tempoRestanteLabel(ms) {
+    const horas = ms / 3600000;
+    if (horas >= 48) return 'faltam ' + Math.floor(horas / 24) + ' dias';
+    if (horas >= 2) return 'faltam ' + Math.floor(horas) + ' horas';
+    if (horas >= 1) return 'falta 1 hora';
+    return 'falta menos de 1 hora';
+  }
+
+  function doisDigitos(n) { return (n < 10 ? '0' : '') + n; }
+
+  // Linha de prazo do card. Devolve '' quando não há o que dizer com
+  // segurança: compra passada, não paga, sem data reconhecível ou
+  // experiência que já aconteceu. Preferimos não mostrar nada a
+  // mostrar "prazo encerrado" numa reserva cuja data não entendemos.
+  function renderPrazoRemarcacao(booking, group) {
+    if (group === 'past') return '';
+    if ((booking.status || 'pending') !== 'pago') return '';
+    const inicio = bookingStartAt(booking);
+    if (inicio == null) return '';
+    const agora = Date.now();
+    if (inicio <= agora) return '';
+
+    const meta = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+    const horasRaw = Number(meta.politica_remarcacao_horas);
+    const prazoHoras = (isFinite(horasRaw) && horasRaw > 0) ? horasRaw : 48;
+    const limite = inicio - prazoHoras * 3600000;
+    const restante = limite - agora;
+
+    const assunto = 'Remarcacao - ' + (booking.experiencia_nome || 'reserva');
+    const corpo = 'Ola! Gostaria de remarcar esta reserva.\n\n' +
+      'Experiencia: ' + (booking.experiencia_nome || '-') + '\n' +
+      'Data: ' + (booking.data || '-') + ' ' + (booking.horario || '') + '\n' +
+      'Ref.: ' + String(booking.id || '').slice(-8).toUpperCase() + '\n\n' +
+      'Nova data de preferencia: ';
+    const mailto = 'mailto:contato.elarah@gmail.com?subject=' +
+      encodeURIComponent(assunto) + '&body=' + encodeURIComponent(corpo);
+
+    if (restante > 0) {
+      const dl = new Date(limite);
+      const quando = doisDigitos(dl.getDate()) + '/' + doisDigitos(dl.getMonth() + 1) +
+        ' às ' + doisDigitos(dl.getHours()) + 'h' + doisDigitos(dl.getMinutes());
+      return '<p class="purchase-card__prazo">' +
+        '<span aria-hidden="true">🔄</span> ' +
+        'Remarcação sem custo até <strong>' + escapeHtmlLocal(quando) + '</strong> · ' +
+        escapeHtmlLocal(tempoRestanteLabel(restante)) +
+        ' <a class="purchase-card__prazo-link" href="' + mailto + '">Pedir remarcação</a>' +
+        '</p>';
+    }
+    // Passou do prazo de remarcação sem custo. Não trava nada — só
+    // deixa claro antes de a pessoa pedir, pra a conversa começar do
+    // lugar certo em vez de virar negociação.
+    return '<p class="purchase-card__prazo purchase-card__prazo--encerrado">' +
+      '<span aria-hidden="true">⏳</span> ' +
+      'Prazo de remarcação sem custo encerrado ' +
+      '<a class="purchase-card__prazo-link" href="' + mailto + '">Falar com a gente</a>' +
+      '</p>';
+  }
+
   function renderBookingCard(booking, group) {
     const nome = booking.experiencia_nome || 'Experiência';
     const data = booking.data || '';
@@ -520,6 +615,7 @@ renderFavoritos();
           '<h3 class="purchase-card__title">' + escapeHtmlLocal(nome) + '</h3>' +
           '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
           localHtml +
+          renderPrazoRemarcacao(booking, group) +
         '</div>' +
       '</article>'
     );

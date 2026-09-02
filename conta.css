@@ -596,6 +596,39 @@
   line-height: 1.35;
 }
 
+/* Prazo de remarcação — linha que aparece no card das compras futuras
+   já pagas. O prazo vem congelado na reserva (varia por categoria:
+   bartenderia 5 dias, gastronomia 72h, demais 48h). */
+.purchase-card__prazo {
+  margin: 7px 0 0;
+  font-size: 0.78rem;
+  color: #1a7a4a;
+  background: #f2faf5;
+  border: 1px solid #d8ecdf;
+  border-radius: 8px;
+  padding: 6px 9px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  line-height: 1.4;
+}
+
+/* Fora do prazo: âmbar, não vermelho. Não é erro da cliente nem
+   bloqueio — é um aviso pra conversa começar do lugar certo. */
+.purchase-card__prazo--encerrado {
+  color: #8a6a2a;
+  background: #fdf8ee;
+  border-color: #efe2c8;
+}
+
+.purchase-card__prazo-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 .purchase-card__location-icon {
   flex: 0 0 auto;
   font-size: 0.85rem;
