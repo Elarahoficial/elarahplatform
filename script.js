@@ -2581,16 +2581,19 @@ if (groupForm) {
         +     '<button type="button" id="erm-validate" style="padding:11px 14px;border:1px solid #f0a05e;background:#fff;color:#f0a05e;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;white-space:nowrap;">Aplicar</button>'
         +   '</div>'
         +   '<p id="erm-cupom-msg" style="margin:6px 0 0;font-size:.82rem;min-height:1.1em;"></p>'
-        +   // ===== Aceite da política de 48h =====
-            // Remarcação e cancelamento exigem 48h de antecedência (a regra
-            // já publicada em /cancelamento.html). Sem um aceite explícito no
-            // checkout, todo pedido de última hora vira negociação caso a
-            // caso. O aceite é gravado em metadata.politica_48h, com o
-            // horário, pra a reserva carregar a prova de que foi informado.
+        +   // ===== Aceite dos prazos de remarcação / cancelamento =====
+            // Sem um aceite explícito no checkout, todo pedido de última hora
+            // vira negociação caso a caso. O aceite vai pro metadata da
+            // reserva com o prazo que estava na tela, pra ela carregar a prova
+            // de que a regra foi informada antes do pagamento.
+            //
+            // O texto abaixo é só o FALLBACK (regra geral). O texto real é
+            // escrito na abertura da modal, porque o prazo de remarcação
+            // depende da categoria — ver ElarahData.prazoRemarcacaoDe.
             '<label id="erm-policy-wrap" style="display:flex;gap:9px;align-items:flex-start;margin-top:18px;cursor:pointer;">'
         +     '<input type="checkbox" id="erm-policy" style="margin-top:2px;width:17px;height:17px;flex-shrink:0;accent-color:#f0a05e;cursor:pointer;">'
         +     '<span id="erm-policy-text" style="font-size:.82rem;color:#555;line-height:1.45;">'
-        +       'Confirmo que remarcações e cancelamentos precisam ser pedidos com no mínimo <strong>48 horas de antecedência</strong> da experiência. '
+        +       'Confirmo que posso remarcar sem custo até <strong>48 horas antes</strong> desta experiência, e cancelar com reembolso até <strong>48 horas antes</strong>. '
         +       '<a href="/cancelamento.html" target="_blank" rel="noopener" style="color:#b9764f;text-decoration:underline;">Ver política</a>'
         +     '</span>'
         +   '</label>'
@@ -3234,9 +3237,10 @@ if (groupForm) {
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
             variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
-            // Aceite da regra de 48h, marcado no checkout. Vai pro metadata da
-            // reserva pra ela carregar a prova de que a regra foi informada.
-            politica_48h_aceita_em: ctx.politica48hAceitaEm || null,
+            // Aceite dos prazos, marcado no checkout, com o prazo de
+            // remarcação que estava na tela. Congelado no metadata da reserva.
+            politica_aceita_em: ctx.politicaAceitaEm || null,
+            politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
             card_token: cardToken,
             installments: installments,
             // Endereço de cobrança pro antifraude (customer.address no pedido).
@@ -3627,9 +3631,10 @@ if (groupForm) {
         // pro backend não sair com o valor individual se o banco não
         // resolver o preço da variação. Backend só aceita pra cima.
         variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
-        // Aceite da regra de 48h, marcado no checkout. Vai pro metadata da
-        // reserva pra ela carregar a prova de que a regra foi informada.
-        politica_48h_aceita_em: ctx.politica48hAceitaEm || null,
+        // Aceite dos prazos, marcado no checkout, com o prazo de
+        // remarcação que estava na tela. Congelado no metadata da reserva.
+        politica_aceita_em: ctx.politicaAceitaEm || null,
+        politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
         cpf: String(cardData.identificationNumber || '').replace(/\D+/g, ''),
       };
 
@@ -4014,9 +4019,33 @@ if (groupForm) {
       // por compra, não um estado que sobra da reserva anterior.
       var _policyReset = root.querySelector('#erm-policy');
       if (_policyReset) _policyReset.checked = false;
+      ctx.politicaAceitaEm = null;
+
+      // Prazo de remarcação SEM CUSTO varia por categoria (bartenderia
+      // 5 dias, gastronomia 72h, resto 48h). Cancelar com reembolso é
+      // sempre 48h. O texto é montado aqui, com o prazo desta
+      // experiência, e o número vai junto no payload pra ser congelado
+      // na reserva — o e-mail de confirmação exibe o mesmo número.
+      var _prazo = (window.ElarahData && ElarahData.prazoRemarcacaoDe)
+        ? ElarahData.prazoRemarcacaoDe({ categoria: ctx.categoria })
+        : { horas: 48, rotulo: '48 horas' };
+      ctx.politicaRemarcacaoHoras = _prazo.horas;
       var _policyTextReset = root.querySelector('#erm-policy-text');
-      if (_policyTextReset) _policyTextReset.style.color = '#555';
-      ctx.politica48hAceitaEm = null;
+      if (_policyTextReset) {
+        _policyTextReset.style.color = '#555';
+        // Na maioria das categorias os dois prazos são 48h; separar em duas
+        // frases idênticas soaria burocrático e ninguém leria. Só quando a
+        // categoria tem prazo de remarcação MAIOR é que vale distinguir.
+        var _msg = _prazo.horas === 48
+          ? 'Confirmo que remarcações e cancelamentos precisam ser pedidos com no mínimo ' +
+            '<strong>48 horas de antecedência</strong> desta experiência. '
+          : 'Confirmo que posso remarcar sem custo até <strong>' + _prazo.rotulo +
+            ' antes</strong> desta experiência, e cancelar com reembolso até ' +
+            '<strong>48 horas antes</strong>. ';
+        _policyTextReset.innerHTML = _msg +
+          '<a href="/cancelamento.html" target="_blank" rel="noopener" ' +
+          'style="color:#b9764f;text-decoration:underline;">Ver política</a>';
+      }
       root.querySelector('#erm-discount-row').style.display = 'none';
       var _offRowReset = root.querySelector('#erm-elarah-off-row');
       if (_offRowReset) _offRowReset.style.display = 'none';
@@ -4691,7 +4720,7 @@ if (groupForm) {
       const errEl = root.querySelector('#erm-error');
       errEl.textContent = '';
 
-      // ===== ACEITE DA POLÍTICA DE 48H =====
+      // ===== ACEITE DOS PRAZOS DE REMARCAÇÃO / CANCELAMENTO =====
       // Primeira checagem do submit, antes de criar conta ou falar com
       // qualquer gateway: se a pessoa não marcou, nada acontece e ela não
       // fica com uma conta órfã nem com um pagamento pela metade.
@@ -4699,17 +4728,18 @@ if (groupForm) {
       const policyText = root.querySelector('#erm-policy-text');
       if (policyEl && !policyEl.checked) {
         if (policyText) policyText.style.color = '#c0392b';
-        errEl.textContent = 'Confirme que você leu a regra de 48h pra continuar.';
+        errEl.textContent = 'Confirme que você leu os prazos de remarcação e cancelamento pra continuar.';
         try { policyEl.focus({ preventScroll: true }); } catch (e) {}
         try {
           root.querySelector('#erm-policy-wrap').scrollIntoView({ block: 'center', behavior: 'smooth' });
         } catch (e) {}
-        console.warn('[Elarah checkout] política de 48h não aceita — submit bloqueado');
+        console.warn('[Elarah checkout] prazos não aceitos — submit bloqueado');
         return;
       }
       if (policyText) policyText.style.color = '#555';
-      // Momento do aceite, gravado na reserva junto com o texto vigente.
-      ctx.politica48hAceitaEm = new Date().toISOString();
+      // Momento do aceite. Vai pra reserva junto com ctx.politicaRemarcacaoHoras,
+      // o prazo que estava escrito na tela neste instante.
+      ctx.politicaAceitaEm = new Date().toISOString();
 
       // ===== VALIDAÇÃO NOME =====
       const nomeInput = root.querySelector('#erm-nome');
@@ -5103,9 +5133,10 @@ if (groupForm) {
             // pro backend: se o banco não resolver o preço da variação, ele usa
             // isto (só quando maior que o base) em vez do valor individual.
             variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
-            // Aceite da regra de 48h, marcado no checkout. Vai pro metadata da
-            // reserva pra ela carregar a prova de que a regra foi informada.
-            politica_48h_aceita_em: ctx.politica48hAceitaEm || null,
+            // Aceite dos prazos, marcado no checkout, com o prazo de
+            // remarcação que estava na tela. Congelado no metadata da reserva.
+            politica_aceita_em: ctx.politicaAceitaEm || null,
+            politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
           };
           console.log('[Elarah CHECKOUT FINAL] PIX payload:', JSON.stringify({
             selectedQuantity: ctx.quantidade,
@@ -5246,9 +5277,10 @@ if (groupForm) {
             // Dica de segurança do preço da variação (centavos) — backend
             // só usa se maior que o base. Ver create-checkout-session/guard.
             variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
-            // Aceite da regra de 48h, marcado no checkout. Vai pro metadata da
-            // reserva pra ela carregar a prova de que a regra foi informada.
-            politica_48h_aceita_em: ctx.politica48hAceitaEm || null,
+            // Aceite dos prazos, marcado no checkout, com o prazo de
+            // remarcação que estava na tela. Congelado no metadata da reserva.
+            politica_aceita_em: ctx.politicaAceitaEm || null,
+            politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
           };
           console.log('[Elarah Payment/MP card] iniciando Checkout Pro', {
             base: ctx.precoCentavos,
@@ -5340,9 +5372,10 @@ if (groupForm) {
           // Dica de segurança do preço da variação (centavos) — backend só
           // usa se maior que o base. Ver create-checkout-session.
           variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
-          // Aceite da regra de 48h, marcado no checkout. Vai pro metadata da
-          // reserva pra ela carregar a prova de que a regra foi informada.
-          politica_48h_aceita_em: ctx.politica48hAceitaEm || null,
+          // Aceite dos prazos, marcado no checkout, com o prazo de
+          // remarcação que estava na tela. Congelado no metadata da reserva.
+          politica_aceita_em: ctx.politicaAceitaEm || null,
+          politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
         };
         console.log('[Elarah CHECKOUT FINAL] Stripe payload:', JSON.stringify({
           selectedQuantity: ctx.quantidade,
@@ -6682,6 +6715,9 @@ if (groupForm) {
       // Preço original antes do desconto Elarah. Alimenta o "de" riscado
       // no resumo do checkout. Null nas By Elarah (cheio == praticado).
       let expValorCheioCentavos = null;
+      // Categoria(s) da experiência — define o prazo de remarcação sem
+      // custo exibido no checkout (bartenderia 5 dias, gastronomia 72h).
+      let expCategoria = null;
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
@@ -6695,6 +6731,7 @@ if (groupForm) {
             expValorCheioCentavos = exp.valorCheioCentavos != null
               ? Number(exp.valorCheioCentavos)
               : null;
+            expCategoria = exp.categoria || null;
             if (!precoLabel || !precoCentavos) {
               precoLabel = exp.preco || precoLabel;
               precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
@@ -6817,6 +6854,7 @@ if (groupForm) {
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
         valorCheioCentavos: expValorCheioCentavos,
+        categoria: expCategoria,
         // [PR F] modo guest — modal mostra campo email e cria conta no submit
         isGuest: isGuestMode,
         email: auth.email,

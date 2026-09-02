@@ -375,20 +375,31 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
 
-  // ===== Aceite da regra de 48h =====
-  // Timestamp do momento em que a cliente marcou o checkbox no checkout.
-  // Gravado no metadata da reserva pra ela carregar a prova de que a regra
-  // de remarcação/cancelamento foi informada ANTES do pagamento — sem isso
-  // todo pedido de última hora vira discussão sem lastro.
+  // ===== Aceite dos prazos de remarcação/cancelamento =====
+  // Momento em que a cliente marcou o checkbox no checkout, mais o prazo
+  // de remarcação que estava na tela naquele instante. Os dois vão pro
+  // metadata da reserva: sem eles o checkbox seria enfeite, e a reserva
+  // precisa carregar a prova de que a regra foi informada ANTES do
+  // pagamento — senão todo pedido de última hora vira discussão sem lastro.
   //
-  // Só aceita ISO plausível: string vazia, lixo ou data fora de faixa vira
-  // null. Nunca bloqueia o pagamento — a trava é no front; aqui é registro.
-  const politica48hAceitaEm = (function () {
-    const raw = payload.politica_48h_aceita_em;
+  // O prazo é CONGELADO aqui de propósito. Mudar a regra de uma categoria
+  // amanhã não pode reescrever o que esta cliente aceitou hoje, e é esse
+  // número que o e-mail de confirmação exibe.
+  //
+  // Nada disso bloqueia a cobrança: a trava é no front, aqui é registro.
+  // Valor implausível vira null e o e-mail cai no padrão de 48h.
+  const politicaAceitaEm = (function () {
+    const raw = payload.politica_aceita_em;
     if (!raw || typeof raw !== "string") return null;
     const t = Date.parse(raw);
     if (!Number.isFinite(t)) return null;
     return new Date(t).toISOString();
+  })();
+  const politicaRemarcacaoHoras = (function () {
+    const n = Number(payload.politica_remarcacao_horas);
+    // Teto de 30 dias: acima disso é payload adulterado, não regra nova.
+    if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
+    return Math.round(n);
   })();
   // Preço unitário da variação exibido no front (centavos). Só dica de
   // segurança — o banco continua autoritativo (ver bloco de preço abaixo).
@@ -1436,7 +1447,8 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     // pra reaparecer no e-mail e no admin. Não afetam o preço.
     variant_label: variantLabel || undefined,
     variant_selected: variantSelected || undefined,
-    politica_48h_aceita_em: politica48hAceitaEm,
+    politica_aceita_em: politicaAceitaEm,
+    politica_remarcacao_horas: politicaRemarcacaoHoras,
     // Frete + endereço de entrega (kits). Vive no metadata (jsonb) pra
     // o admin ver e despachar — sem depender de migração de colunas.
     shipping: shippingResolved

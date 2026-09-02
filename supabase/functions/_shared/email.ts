@@ -219,6 +219,8 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
 
 // ---------------- TEMPLATES ----------------
 
+import { PRAZO_CANCELAMENTO, rotuloDoPrazo } from "./booking_policy.ts";
+
 function htmlShell(inner: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
@@ -302,6 +304,11 @@ export function bookingConfirmationEmailHtml(opts: {
   bookingId?: string | null;
   variantLabel?: string | null;
   variantSelected?: string | null;
+  // Prazo de remarcação sem custo, em horas, CONGELADO na reserva no
+  // momento da compra (metadata.politica_remarcacao_horas). Vem daí e
+  // não da tabela viva, pra que mudar a regra amanhã não reescreva o
+  // que esta cliente aceitou. Ausente (reserva antiga) → 48h.
+  prazoRemarcacaoHoras?: number | null;
 }): string {
   const firstName = (opts.nome || "").trim().split(/\s+/)[0] || "";
   const greeting = firstName ? `Olá, ${firstName}!` : "Reserva confirmada!";
@@ -345,21 +352,41 @@ export function bookingConfirmationEmailHtml(opts: {
     : "";
   // Referência da reserva — últimos 8 chars do UUID, útil se a pessoa
   // precisar citar no suporte. Não exibe se não tiver ID.
-  // ===== Regra de 48h =====
-  // A mesma que a cliente aceitou no checkout e que está publicada em
-  // /cancelamento.html. Fica em bloco destacado, não como bullet solto:
-  // é a informação que evita pedido de remarcação em cima da hora, e o
-  // fornecedor já se preparou pra receber. Repetir aqui garante que a
-  // regra fique no e-mail que a pessoa guarda, não só na tela de compra.
+  // ===== Prazos de remarcação e cancelamento =====
+  // Os mesmos que a cliente aceitou no checkout e que estão publicados
+  // em /cancelamento.html. Bloco destacado, não bullet solto: é a
+  // informação que evita pedido em cima da hora depois de o fornecedor
+  // já ter se preparado. Repetir aqui coloca a regra no e-mail que a
+  // pessoa guarda, não só na tela de compra.
+  //
+  // São DOIS prazos diferentes e o texto separa os dois de propósito:
+  // remarcar varia por categoria (bartenderia 5 dias, gastronomia 72h,
+  // resto 48h) e cancelar com reembolso é sempre 48h. Juntar os dois
+  // numa frase só já causou confusão nos dois sentidos.
+  const prazoRemarcarRotulo = rotuloDoPrazo(opts.prazoRemarcacaoHoras);
+  // Na maioria das categorias os dois prazos são 48h; listar duas linhas
+  // idênticas soaria burocrático e ninguém leria. Só quando a categoria
+  // tem prazo de remarcação MAIOR é que vale separar as duas regras.
+  const prazosIguais = prazoRemarcarRotulo === PRAZO_CANCELAMENTO.rotulo;
+  const prazosHtml = prazosIguais
+    ? `<p style="margin:0 0 9px;font-size:14px;color:#3a3a3a;line-height:1.6;">
+         Remarcações e cancelamentos precisam chegar pra gente com no mínimo
+         <strong>${PRAZO_CANCELAMENTO.rotulo} de antecedência</strong> desta experiência.
+         Remarcar depende da agenda do parceiro, então quanto antes você avisar, melhor.
+       </p>`
+    : `<p style="margin:0 0 7px;font-size:14px;color:#3a3a3a;line-height:1.6;">
+         <strong>Remarcar sem custo:</strong> até <strong>${prazoRemarcarRotulo} antes</strong> desta experiência.
+         Depende da agenda do parceiro, então quanto antes você avisar, melhor.
+       </p>
+       <p style="margin:0 0 9px;font-size:14px;color:#3a3a3a;line-height:1.6;">
+         <strong>Cancelar com reembolso:</strong> até <strong>${PRAZO_CANCELAMENTO.rotulo} antes</strong>.
+       </p>`;
   const politicaHtml = `
     <div style="margin:20px 0 0;padding:16px 18px;background:#fdf6ee;border:1px solid #f0e0cb;border-radius:12px;">
-      <div style="font-size:14px;color:#1a1a1a;font-weight:bold;margin-bottom:6px;">Precisa remarcar ou cancelar?</div>
-      <p style="margin:0 0 8px;font-size:14px;color:#3a3a3a;line-height:1.6;">
-        Pedidos precisam chegar pra gente com no mínimo <strong>48 horas de antecedência</strong> da experiência.
-        Dentro desse prazo, a gente resolve — remarcação depende da agenda do parceiro.
-      </p>
+      <div style="font-size:14px;color:#1a1a1a;font-weight:bold;margin-bottom:8px;">Precisa remarcar ou cancelar?</div>
+      ${prazosHtml}
       <p style="margin:0;font-size:13px;color:#7a6a58;line-height:1.6;">
-        Com menos de 48h não há reembolso, porque o fornecedor já reservou vaga e material pra você.
+        Fora desses prazos não conseguimos reembolsar, porque o fornecedor já reservou vaga e material pra você.
         É só responder este e-mail ou escrever pra
         <a href="mailto:contato.elarah@gmail.com" style="color:#b9764f;">contato.elarah@gmail.com</a>.
         <a href="https://elarah.com.br/cancelamento.html" style="color:#b9764f;">Política completa</a>.
