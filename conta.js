@@ -533,14 +533,17 @@ renderFavoritos();
     const limite = inicio - prazoHoras * 3600000;
     const restante = limite - agora;
 
-    const assunto = 'Remarcacao - ' + (booking.experiencia_nome || 'reserva');
-    const corpo = 'Ola! Gostaria de remarcar esta reserva.\n\n' +
-      'Experiencia: ' + (booking.experiencia_nome || '-') + '\n' +
-      'Data: ' + (booking.data || '-') + ' ' + (booking.horario || '') + '\n' +
-      'Ref.: ' + String(booking.id || '').slice(-8).toUpperCase() + '\n\n' +
-      'Nova data de preferencia: ';
-    const mailto = 'mailto:contato.elarah@gmail.com?subject=' +
-      encodeURIComponent(assunto) + '&body=' + encodeURIComponent(corpo);
+    // WhatsApp, não e-mail: a pessoa está no celular olhando a reserva.
+    // É o mesmo canal do rodapé e do header do site inteiro, e é onde ela
+    // responde. A mensagem já vai preenchida com experiência, data e a
+    // referência da reserva — assim a conversa começa com o que a Elarah
+    // precisa pra localizar a compra, sem o vaivém de "qual reserva?".
+    const refCurta = String(booking.id || '').slice(-8).toUpperCase();
+    const msgWpp = 'Olá! Gostaria de remarcar minha reserva.\n\n' +
+      '*' + (booking.experiencia_nome || 'Experiência') + '*\n' +
+      (booking.data ? booking.data + ' ' : '') + (booking.horario || '') + '\n' +
+      (refCurta ? 'Ref. ' + refCurta : '');
+    const contatoUrl = 'https://wa.me/5511914455930?text=' + encodeURIComponent(msgWpp);
 
     if (restante > 0) {
       const dl = new Date(limite);
@@ -550,7 +553,7 @@ renderFavoritos();
         '<span aria-hidden="true">🔄</span> ' +
         'Remarcação sem custo até <strong>' + escapeHtmlLocal(quando) + '</strong> · ' +
         escapeHtmlLocal(tempoRestanteLabel(restante)) +
-        ' <a class="purchase-card__prazo-link" href="' + mailto + '">Pedir remarcação</a>' +
+        ' <a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Pedir no WhatsApp</a>' +
         '</p>';
     }
     // Passou do prazo de remarcação sem custo. Não trava nada — só
@@ -559,7 +562,7 @@ renderFavoritos();
     return '<p class="purchase-card__prazo purchase-card__prazo--encerrado">' +
       '<span aria-hidden="true">⏳</span> ' +
       'Prazo de remarcação sem custo encerrado ' +
-      '<a class="purchase-card__prazo-link" href="' + mailto + '">Falar com a gente</a>' +
+      '<a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Falar no WhatsApp</a>' +
       '</p>';
   }
 

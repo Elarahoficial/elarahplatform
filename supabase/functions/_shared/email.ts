@@ -363,6 +363,20 @@ export function bookingConfirmationEmailHtml(opts: {
   // remarcar varia por categoria (bartenderia 5 dias, gastronomia 72h,
   // resto 48h) e cancelar com reembolso é sempre 48h. Juntar os dois
   // numa frase só já causou confusão nos dois sentidos.
+  // WhatsApp da Elarah — mesmo número do rodapé do site. É o canal em que
+  // a cliente de fato responde; o e-mail continua valendo como alternativa.
+  // A mensagem já vai preenchida com a experiência e a referência da
+  // reserva, pra a conversa não começar com "qual reserva?".
+  const refCurta = opts.bookingId
+    ? String(opts.bookingId).slice(-8).toUpperCase()
+    : "";
+  const whatsappUrl = "https://wa.me/5511914455930?text=" + encodeURIComponent(
+    "Olá! Preciso falar sobre minha reserva.\n\n" +
+      "*" + opts.experienciaNome + "*\n" +
+      [opts.data, opts.horario].filter(Boolean).join(" ") +
+      (refCurta ? "\nRef. " + refCurta : ""),
+  );
+
   const prazoRemarcarRotulo = rotuloDoPrazo(opts.prazoRemarcacaoHoras);
   // Na maioria das categorias os dois prazos são 48h; listar duas linhas
   // idênticas soaria burocrático e ninguém leria. Só quando a categoria
@@ -385,11 +399,13 @@ export function bookingConfirmationEmailHtml(opts: {
     <div style="margin:20px 0 0;padding:16px 18px;background:#fdf6ee;border:1px solid #f0e0cb;border-radius:12px;">
       <div style="font-size:14px;color:#1a1a1a;font-weight:bold;margin-bottom:8px;">Precisa remarcar ou cancelar?</div>
       ${prazosHtml}
-      <p style="margin:0;font-size:13px;color:#7a6a58;line-height:1.6;">
+      <p style="margin:0 0 10px;font-size:13px;color:#7a6a58;line-height:1.6;">
         Fora desses prazos não conseguimos reembolsar, porque o fornecedor já reservou vaga e material pra você.
-        É só responder este e-mail ou escrever pra
-        <a href="mailto:contato.elarah@gmail.com" style="color:#b9764f;">contato.elarah@gmail.com</a>.
-        <a href="https://elarah.com.br/cancelamento.html" style="color:#b9764f;">Política completa</a>.
+        <a href="https://elarah.com.br/cancelamento.html" style="color:#b9764f;">Ver política completa</a>.
+      </p>
+      <p style="margin:0;font-size:13px;line-height:1.6;">
+        <a href="${whatsappUrl}" style="display:inline-block;padding:9px 16px;background:#25d366;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Falar no WhatsApp</a>
+        <span style="color:#7a6a58;margin-left:8px;">ou é só responder este e-mail.</span>
       </p>
     </div>`;
 
