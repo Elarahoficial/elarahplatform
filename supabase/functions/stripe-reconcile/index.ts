@@ -201,6 +201,9 @@ async function fulfillBooking(
       horario: booking.horario,
       endereco: (meta.endereco as string | null) ?? null,
       bairro: (meta.bairro as string | null) ?? null,
+      // Prazo de remarcação congelado na compra. Reserva antiga (sem o
+      // campo) cai no padrão de 48h dentro do template.
+      prazoRemarcacaoHoras: (meta.politica_remarcacao_horas as number | null) ?? null,
       precoLabel: booking.preco_label,
       quantidade: booking.quantidade ?? null,
       amountTotalCentavos: booking.amount_total ?? session.amount_total ?? null,

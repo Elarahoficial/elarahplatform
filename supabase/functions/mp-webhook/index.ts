@@ -320,6 +320,9 @@ async function notifyAdminOfSale(booking: BookingRow, paymentMethod: string) {
       (booking as { coupon_discount_centavos?: number | null }).coupon_discount_centavos ?? null,
     fornecedorNome: (booking as { fornecedor_nome?: string | null }).fornecedor_nome ?? null,
     bairro: (meta.bairro as string | null) ?? null,
+    // Prazo de remarcação congelado na compra. Reserva antiga (sem o
+    // campo) cai no padrão de 48h dentro do template.
+    prazoRemarcacaoHoras: (meta.politica_remarcacao_horas as number | null) ?? null,
     endereco: (meta.endereco as string | null) ?? null,
   });
 }

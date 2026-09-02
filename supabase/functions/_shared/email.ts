@@ -219,6 +219,8 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
 
 // ---------------- TEMPLATES ----------------
 
+import { PRAZO_CANCELAMENTO, rotuloDoPrazo } from "./booking_policy.ts";
+
 function htmlShell(inner: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
@@ -302,6 +304,11 @@ export function bookingConfirmationEmailHtml(opts: {
   bookingId?: string | null;
   variantLabel?: string | null;
   variantSelected?: string | null;
+  // Prazo de remarcação sem custo, em horas, CONGELADO na reserva no
+  // momento da compra (metadata.politica_remarcacao_horas). Vem daí e
+  // não da tabela viva, pra que mudar a regra amanhã não reescreva o
+  // que esta cliente aceitou. Ausente (reserva antiga) → 48h.
+  prazoRemarcacaoHoras?: number | null;
 }): string {
   const firstName = (opts.nome || "").trim().split(/\s+/)[0] || "";
   const greeting = firstName ? `Olá, ${firstName}!` : "Reserva confirmada!";
@@ -345,6 +352,63 @@ export function bookingConfirmationEmailHtml(opts: {
     : "";
   // Referência da reserva — últimos 8 chars do UUID, útil se a pessoa
   // precisar citar no suporte. Não exibe se não tiver ID.
+  // ===== Prazos de remarcação e cancelamento =====
+  // Os mesmos que a cliente aceitou no checkout e que estão publicados
+  // em /cancelamento.html. Bloco destacado, não bullet solto: é a
+  // informação que evita pedido em cima da hora depois de o fornecedor
+  // já ter se preparado. Repetir aqui coloca a regra no e-mail que a
+  // pessoa guarda, não só na tela de compra.
+  //
+  // São DOIS prazos diferentes e o texto separa os dois de propósito:
+  // remarcar varia por categoria (bartenderia 5 dias, gastronomia 72h,
+  // resto 48h) e cancelar com reembolso é sempre 48h. Juntar os dois
+  // numa frase só já causou confusão nos dois sentidos.
+  // WhatsApp da Elarah — mesmo número do rodapé do site. É o canal em que
+  // a cliente de fato responde; o e-mail continua valendo como alternativa.
+  // A mensagem já vai preenchida com a experiência e a referência da
+  // reserva, pra a conversa não começar com "qual reserva?".
+  const refCurta = opts.bookingId
+    ? String(opts.bookingId).slice(-8).toUpperCase()
+    : "";
+  const whatsappUrl = "https://wa.me/5511914455930?text=" + encodeURIComponent(
+    "Olá! Preciso falar sobre minha reserva.\n\n" +
+      "*" + opts.experienciaNome + "*\n" +
+      [opts.data, opts.horario].filter(Boolean).join(" ") +
+      (refCurta ? "\nRef. " + refCurta : ""),
+  );
+
+  const prazoRemarcarRotulo = rotuloDoPrazo(opts.prazoRemarcacaoHoras);
+  // Na maioria das categorias os dois prazos são 48h; listar duas linhas
+  // idênticas soaria burocrático e ninguém leria. Só quando a categoria
+  // tem prazo de remarcação MAIOR é que vale separar as duas regras.
+  const prazosIguais = prazoRemarcarRotulo === PRAZO_CANCELAMENTO.rotulo;
+  const prazosHtml = prazosIguais
+    ? `<p style="margin:0 0 9px;font-size:14px;color:#3a3a3a;line-height:1.6;">
+         Remarcações e cancelamentos precisam chegar pra gente com no mínimo
+         <strong>${PRAZO_CANCELAMENTO.rotulo} de antecedência</strong> desta experiência.
+         Remarcar depende da agenda do parceiro, então quanto antes você avisar, melhor.
+       </p>`
+    : `<p style="margin:0 0 7px;font-size:14px;color:#3a3a3a;line-height:1.6;">
+         <strong>Remarcar sem custo:</strong> até <strong>${prazoRemarcarRotulo} antes</strong> desta experiência.
+         Depende da agenda do parceiro, então quanto antes você avisar, melhor.
+       </p>
+       <p style="margin:0 0 9px;font-size:14px;color:#3a3a3a;line-height:1.6;">
+         <strong>Cancelar com reembolso:</strong> até <strong>${PRAZO_CANCELAMENTO.rotulo} antes</strong>.
+       </p>`;
+  const politicaHtml = `
+    <div style="margin:20px 0 0;padding:16px 18px;background:#fdf6ee;border:1px solid #f0e0cb;border-radius:12px;">
+      <div style="font-size:14px;color:#1a1a1a;font-weight:bold;margin-bottom:8px;">Precisa remarcar ou cancelar?</div>
+      ${prazosHtml}
+      <p style="margin:0 0 10px;font-size:13px;color:#7a6a58;line-height:1.6;">
+        Fora desses prazos não conseguimos reembolsar, porque o fornecedor já reservou vaga e material pra você.
+        <a href="https://elarah.com.br/cancelamento.html" style="color:#b9764f;">Ver política completa</a>.
+      </p>
+      <p style="margin:0;font-size:13px;line-height:1.6;">
+        <a href="${whatsappUrl}" style="display:inline-block;padding:9px 16px;background:#25d366;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Falar no WhatsApp</a>
+        <span style="color:#7a6a58;margin-left:8px;">ou é só responder este e-mail.</span>
+      </p>
+    </div>`;
+
   const refHtml = opts.bookingId
     ? `<p style="margin:18px 0 0;font-size:12px;color:#999;text-align:center;letter-spacing:.5px;">
          Ref. da reserva: <span style="font-family:Menlo,Consolas,monospace;color:#666;">${escapeHtml(
@@ -373,9 +437,9 @@ export function bookingConfirmationEmailHtml(opts: {
     <h3 style="font-family:Georgia,serif;color:#1a1a1a;margin:24px 0 10px;font-size:16px;">O que esperar</h3>
     <ul style="padding-left:20px;margin:0 0 8px;color:#3a3a3a;line-height:1.7;font-size:14px;">
       <li>Chegue <strong>10 minutos antes</strong> do horário pra aproveitar tudo com calma.</li>
-      <li>Qualquer imprevisto ou mudança, responde este email que a gente resolve junto.</li>
       <li>Se for em grupo, avisa se algum acompanhante não conseguir ir.</li>
     </ul>
+    ${politicaHtml}
     <p style="margin:22px 0 0;color:#555;">A gente te espera ✨</p>
     ${refHtml}
   `;

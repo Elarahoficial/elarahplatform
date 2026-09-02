@@ -92,6 +92,33 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
   const acompanhantes = buildAcompanhantes(payload, participantes);
   const variantLabel = payload.variant_label ? String(payload.variant_label).trim() : null;
   const variantSelected = payload.variant_selected ? String(payload.variant_selected).trim() : null;
+
+  // ===== Aceite dos prazos de remarcação/cancelamento =====
+  // Momento em que a cliente marcou o checkbox no checkout, mais o prazo
+  // de remarcação que estava na tela naquele instante. Os dois vão pro
+  // metadata da reserva: sem eles o checkbox seria enfeite, e a reserva
+  // precisa carregar a prova de que a regra foi informada ANTES do
+  // pagamento — senão todo pedido de última hora vira discussão sem lastro.
+  //
+  // O prazo é CONGELADO aqui de propósito. Mudar a regra de uma categoria
+  // amanhã não pode reescrever o que esta cliente aceitou hoje, e é esse
+  // número que o e-mail de confirmação exibe.
+  //
+  // Nada disso bloqueia a cobrança: a trava é no front, aqui é registro.
+  // Valor implausível vira null e o e-mail cai no padrão de 48h.
+  const politicaAceitaEm = (function () {
+    const raw = payload.politica_aceita_em;
+    if (!raw || typeof raw !== "string") return null;
+    const t = Date.parse(raw);
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toISOString();
+  })();
+  const politicaRemarcacaoHoras = (function () {
+    const n = Number(payload.politica_remarcacao_horas);
+    // Teto de 30 dias: acima disso é payload adulterado, não regra nova.
+    if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
+    return Math.round(n);
+  })();
   const variantExpectedCents = (function () {
     const n = Number(payload.variant_price_expected_centavos);
     return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
@@ -262,6 +289,8 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
         paid_with_gift_card_only: true, participantes,
         telefone_digits: telefoneDigits || null, payment_method: "card",
         cpf: cpfRaw, variant_label: variantLabel, variant_selected: variantSelected,
+        politica_aceita_em: politicaAceitaEm,
+        politica_remarcacao_horas: politicaRemarcacaoHoras,
       },
     });
     if (directErr) {
@@ -338,6 +367,8 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       participantes, telefone_digits: telefoneDigits || null,
       payment_method: "card", cpf: cpfRaw,
       variant_label: variantLabel, variant_selected: variantSelected,
+      politica_aceita_em: politicaAceitaEm,
+      politica_remarcacao_horas: politicaRemarcacaoHoras,
       // Auditoria do gross-up: base × total cobrado × parcela.
       amount_before_grossup_centavos: amountToChargeCents,
       grossup_centavos: chargeCents - amountToChargeCents,
@@ -461,6 +492,8 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       participantes, telefone_digits: telefoneDigits || null,
       payment_method: "card", cpf: cpfRaw,
       variant_label: variantLabel, variant_selected: variantSelected,
+      politica_aceita_em: politicaAceitaEm,
+      politica_remarcacao_horas: politicaRemarcacaoHoras,
       pagarme_order_id: cardResult.orderId ?? null,
       amount_before_grossup_centavos: amountToChargeCents,
       grossup_centavos: chargeCents - amountToChargeCents,

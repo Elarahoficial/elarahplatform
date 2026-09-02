@@ -1790,6 +1790,9 @@
     // "de" é o campo valor_cheio_centavos, não o preço praticado.
     precoCheioBR: precoCheioBR,
     precoDeHTML: precoDeHTML,
+    // Prazo de remarcação sem custo (por categoria) — ver bloco
+    // PRAZO DE REMARCAÇÃO. Devolve { horas, rotulo }.
+    prazoRemarcacaoDe: prazoRemarcacaoDe,
   };
 
   // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
@@ -1887,6 +1890,49 @@
     var praticado = precoPraticadoDe(exp);
     if (!cheio || !praticado || cheio <= praticado) return '';
     return formatPrecoBR(String(cheio / 100).replace('.', ','));
+  }
+
+  // =============================================================
+  // PRAZO DE REMARCAÇÃO SEM CUSTO — por categoria
+  // -------------------------------------------------------------
+  // Remarcar sem custo tem prazo DIFERENTE por categoria, porque o
+  // preparo do fornecedor é diferente: bartenderia compra insumo
+  // perecível com antecedência, gastronomia idem em menor escala.
+  //
+  //   Bartenderia .......... 5 dias
+  //   Gastronomia .......... 72 horas
+  //   Todas as demais ...... 48 horas
+  //
+  // CANCELAMENTO COM REEMBOLSO é outra coisa e continua 48h pra todas
+  // — ver /cancelamento.html. Não misture os dois prazos.
+  //
+  // ATENÇÃO — esta tabela existe DUAS vezes: aqui (navegador) e em
+  // supabase/functions/_shared/booking_policy.ts (Deno, pro e-mail).
+  // Deno não importa este arquivo, então não dá pra ter fonte única.
+  // Mudou aqui, muda lá. As duas trazem este mesmo aviso.
+  //
+  // O prazo é congelado no metadata da reserva no momento da compra:
+  // se a regra mudar depois, a reserva antiga continua exibindo o que
+  // a cliente aceitou.
+  // =============================================================
+  var PRAZO_REMARCACAO = {
+    bartenderia: { horas: 120, rotulo: '5 dias' },
+    gastronomia: { horas: 72, rotulo: '72 horas' },
+  };
+  var PRAZO_REMARCACAO_PADRAO = { horas: 48, rotulo: '48 horas' };
+
+  // Uma experiência pode estar em mais de uma categoria ("Barismo |
+  // Bartenderia"). Nesse caso vale o prazo MAIS LONGO: se uma das
+  // parceiras precisa de 5 dias, avisar 48h deixaria a cliente achar
+  // que dá tempo quando não dá.
+  function prazoRemarcacaoDe(exp) {
+    var cats = categoriasOf(exp);
+    var escolhido = PRAZO_REMARCACAO_PADRAO;
+    for (var i = 0; i < cats.length; i++) {
+      var p = PRAZO_REMARCACAO[cats[i].toLowerCase()];
+      if (p && p.horas > escolhido.horas) escolhido = p;
+    }
+    return escolhido;
   }
 
   // Markup do "de" riscado, pra ser colado ANTES do preço dentro do
