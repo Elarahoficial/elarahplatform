@@ -629,6 +629,37 @@
   white-space: nowrap;
 }
 
+/* Local trocado depois da compra. Sai do cinza discreto e vira aviso:
+   a cliente já decorou (ou salvou no e-mail) o endereço antigo, então
+   a mudança precisa saltar aos olhos no dia em que ela abre a tela pra
+   conferir onde ir. Âmbar, não vermelho — é uma mudança, não um erro. */
+.purchase-card__location--novo {
+  color: #8a6a2a;
+  background: #fdf8ee;
+  border: 1px solid #efe2c8;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 0.8rem;
+}
+
+.purchase-card__location-flag {
+  font-weight: 700;
+}
+
+/* Endereço antigo, pra pessoa reconhecer o que mudou (e perceber que
+   é a reserva dela). Menor e riscado: informação de contexto, nunca o
+   endereço pra onde ir. */
+.purchase-card__location-antigo {
+  margin: 4px 0 0;
+  padding-left: 9px;
+  font-size: 0.72rem;
+  color: var(--gray-500, #999);
+}
+
+.purchase-card__location-antigo s {
+  text-decoration-color: rgba(150, 150, 150, 0.6);
+}
+
 .purchase-card__location-icon {
   flex: 0 0 auto;
   font-size: 0.85rem;

@@ -335,6 +335,17 @@ renderFavoritos();
   let purchasesLoading = false;
   let activePurchasesTab = 'upcoming';
 
+  // Local ATUAL de cada experiência (id -> { endereco, bairro }),
+  // carregado junto com as compras. O endereço gravado na reserva
+  // (metadata.endereco/bairro) é um snapshot do momento do checkout:
+  // se a experiência troca de local depois da venda — o que acontece
+  // de verdade, às vezes na semana do evento — quem já comprou
+  // continuaria vendo o endereço velho aqui e no e-mail antigo.
+  // Mesma precedência que o admin já usa pra avisar o fornecedor
+  // (admin.js, buildSupplierWhatsappLink): experiência atual primeiro,
+  // snapshot só como reserva pra bookings sem experiencia_id.
+  let expLocalById = new Map();
+
   function parseDataDMYtoDate(text) {
     // Aceita "26/04", "26/04/2025", "26 de abril", "Semanal".
     // Retorna Date ou null quando não conseguir parsear.
@@ -574,14 +585,16 @@ renderFavoritos();
       (booking.amount_total ? formatBrlCents(booking.amount_total) : '');
     const status = booking.status || 'pending';
     const statusLabel = bookingStatusLabel(status);
-    // Endereço da experiência — salvo em metadata pelas edge functions
-    // de checkout (create-checkout-session / create-mp-pix-payment).
-    // Usuário acessa essa tela como referência rápida antes do evento;
-    // sem isso, precisa caçar no e-mail de confirmação. Exibido como
-    // linha separada com pin pra destacar visualmente do meta padrão.
+    // Endereço da experiência. O snapshot fica em metadata (gravado
+    // pelas edge functions de checkout — create-checkout-session /
+    // create-mp-pix-payment), mas a fonte da verdade é a experiência:
+    // se o local mudou depois da compra, é o novo endereço que a
+    // cliente precisa ver aqui — ela abre essa tela justamente pra
+    // conferir onde ir antes de sair de casa.
     const meta = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
-    const endereco = String(meta.endereco || '').trim();
-    const bairro = String(meta.bairro || '').trim();
+    const expLocal = expLocalById.get(booking.experiencia_id) || null;
+    const endereco = String((expLocal && expLocal.endereco) || meta.endereco || '').trim();
+    const bairro = String((expLocal && expLocal.bairro) || meta.bairro || '').trim();
     // Combina endereco + bairro com separador " — " quando os dois
     // existem. Se só um, usa só ele. Mesma lógica do email de
     // confirmação (_shared/email.ts), pra manter consistência entre
@@ -589,6 +602,28 @@ renderFavoritos();
     const localFull = endereco && bairro
       ? endereco + ' — ' + bairro
       : (endereco || bairro || '');
+    // Endereço mudou depois da compra: não basta trocar o texto em
+    // silêncio. Quem comprou guardou o endereço antigo na cabeça (e no
+    // e-mail de confirmação) — sem um aviso explícito, ela vai pro
+    // lugar errado no dia. Só em compras futuras: em experiência que já
+    // aconteceu o aviso não serve pra nada.
+    //
+    // Duas fontes pro endereço antigo, nessa ordem:
+    //   1. metadata.endereco_anterior — gravado quando o snapshot da
+    //      reserva é reescrito (sql/elarah_atualiza_endereco_evento.sql).
+    //      Precisa vir primeiro: depois do backfill o snapshot já é o
+    //      endereço novo e a comparação com ele não acusaria nada.
+    //   2. o próprio snapshot da reserva, quando só a experiência foi
+    //      atualizada e o backfill ainda não rodou.
+    function combinaLocal(e, b) {
+      const ee = String(e || '').trim();
+      const bb = String(b || '').trim();
+      return ee && bb ? ee + ' — ' + bb : (ee || bb || '');
+    }
+    const anteriorFull = combinaLocal(meta.endereco_anterior, meta.bairro_anterior) ||
+      combinaLocal(meta.endereco, meta.bairro);
+    const localMudou = group !== 'past' && !!anteriorFull && !!localFull &&
+      anteriorFull.toLowerCase() !== localFull.toLowerCase();
     const metaParts = [];
     if (data) metaParts.push('<span class="purchase-card__meta-item">📅 ' + escapeHtmlLocal(data) + '</span>');
     if (horario) metaParts.push('<span class="purchase-card__meta-item">⏱ ' + escapeHtmlLocal(horario) + '</span>');
@@ -597,10 +632,18 @@ renderFavoritos();
     // Bookings antigas ou de gift card direto podem não ter — nesse
     // caso o card mantém o layout enxuto sem espaço vazio.
     const localHtml = localFull
-      ? '<p class="purchase-card__location" title="' + escapeHtmlLocal(localFull) + '">' +
+      ? '<p class="purchase-card__location' + (localMudou ? ' purchase-card__location--novo' : '') +
+          '" title="' + escapeHtmlLocal(localFull) + '">' +
           '<span class="purchase-card__location-icon" aria-hidden="true">📍</span>' +
-          '<span class="purchase-card__location-text">' + escapeHtmlLocal(localFull) + '</span>' +
-        '</p>'
+          '<span class="purchase-card__location-text">' +
+            (localMudou ? '<strong class="purchase-card__location-flag">Novo local:</strong> ' : '') +
+            escapeHtmlLocal(localFull) +
+          '</span>' +
+        '</p>' +
+        (localMudou
+          ? '<p class="purchase-card__location-antigo">O endereço mudou depois da sua compra. Antes: ' +
+              '<s>' + escapeHtmlLocal(anteriorFull) + '</s></p>'
+          : '')
       : '';
 
     return (
@@ -730,6 +773,40 @@ renderFavoritos();
     );
   }
 
+  // Preenche expLocalById com o endereço/bairro atual das experiências
+  // que aparecem nas compras do usuário. Best-effort: qualquer erro
+  // (rede, RLS, coluna ausente) só significa cair no snapshot gravado
+  // na reserva, nunca quebrar a listagem.
+  async function loadExperienceLocations(sb, bookings) {
+    expLocalById = new Map();
+    const ids = [];
+    const seen = new Set();
+    (bookings || []).forEach(b => {
+      const id = b && b.experiencia_id;
+      if (id && !seen.has(id)) { seen.add(id); ids.push(id); }
+    });
+    if (!ids.length) return;
+    try {
+      const res = await sb
+        .from('experiences')
+        .select('id, endereco, bairro')
+        .in('id', ids);
+      if (res.error) {
+        console.warn('[Elarah conta] endereço atual indisponível, usando snapshot da reserva', res.error);
+        return;
+      }
+      (res.data || []).forEach(exp => {
+        if (!exp || !exp.id) return;
+        expLocalById.set(exp.id, {
+          endereco: exp.endereco || '',
+          bairro: exp.bairro || '',
+        });
+      });
+    } catch (err) {
+      console.warn('[Elarah conta] endereço atual indisponível, usando snapshot da reserva', err);
+    }
+  }
+
   async function loadPurchases() {
     if (purchasesLoaded || purchasesLoading) return;
     purchasesLoading = true;
@@ -759,7 +836,7 @@ renderFavoritos();
       // (RLS: gift_cards_owner_read cobre ambos via e-mail).
       const [bookingsRes, giftCardsRes, manualSalesRes] = await Promise.all([
         sb.from('bookings')
-          .select('id, experiencia_nome, data, horario, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
+          .select('id, experiencia_id, experiencia_nome, data, horario, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
           .order('created_at', { ascending: false })
           .limit(200),
         sb.from('gift_cards')
@@ -784,6 +861,12 @@ renderFavoritos();
       const bookings = bookingsRes.data || [];
       const giftCards = giftCardsRes.data || [];
       const manualSales = (manualSalesRes && manualSalesRes.data) || [];
+
+      // Local atual das experiências compradas. experiences tem leitura
+      // pública (policy experiences_public_read), então uma query só
+      // resolve todos os cards. Se falhar, o card cai no snapshot da
+      // reserva — a tela nunca deixa de carregar por causa disso.
+      await loadExperienceLocations(sb, bookings);
 
       const upcoming = [];
       const past = [];
