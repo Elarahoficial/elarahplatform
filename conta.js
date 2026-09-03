@@ -592,7 +592,17 @@ renderFavoritos();
     // cliente precisa ver aqui — ela abre essa tela justamente pra
     // conferir onde ir antes de sair de casa.
     const meta = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
-    const expLocal = expLocalById.get(booking.experiencia_id) || null;
+    // Override explícito na reserva (metadata.endereco_alterado_em,
+    // gravado pelos scripts de troca de local) vence a experiência.
+    // Existe pra mudar o local só de quem já comprou, sem mexer na
+    // experiência — o caso de um evento que saiu do ar mas ainda vai
+    // acontecer, onde alterar a experiência mudaria a página pública
+    // por nada. Sem essa precedência, o endereço velho da experiência
+    // sobrescreveria a correção feita na reserva.
+    const overrideNaReserva = !!String(meta.endereco_alterado_em || '').trim();
+    const expLocal = overrideNaReserva
+      ? null
+      : (expLocalById.get(booking.experiencia_id) || null);
     const endereco = String((expLocal && expLocal.endereco) || meta.endereco || '').trim();
     const bairro = String((expLocal && expLocal.bairro) || meta.bairro || '').trim();
     // Combina endereco + bairro com separador " — " quando os dois

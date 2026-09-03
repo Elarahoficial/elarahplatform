@@ -19,6 +19,14 @@
 --
 -- Este script atualiza os dois, na mesma transação.
 --
+-- SÓ PRA QUEM JÁ COMPROU
+--   Quando a experiência não está mais à venda, mudar a página
+--   pública não tem destinatário — nesse caso atualize só as
+--   reservas. conta.js trata metadata.endereco_alterado_em como
+--   override: reserva com essa marca ignora o endereço da
+--   experiência. Veja sql/elarah_endereco_folding_book_0509.sql
+--   como modelo desse formato.
+--
 -- COMO RODAR
 --   1. Preencha o bloco PARÂMETROS abaixo (id da experiência e o
 --      novo endereço/bairro).

@@ -4063,8 +4063,14 @@
       // sem endereço cadastrado. CRÍTICO em troca de experiência/
       // fornecedor: sem isso a nova parceira recebe o endereço da
       // experiência antiga (o snapshot ficava stale).
+      // EXCEÇÃO: reserva com endereco_alterado_em tem local trocado só
+      // pra ela (evento que mudou de lugar depois de vendido, sem mexer
+      // na experiência). Aí o snapshot é que vale — senão a parceira
+      // receberia o endereço antigo da experiência, que é exatamente o
+      // que a troca queria corrigir.
       const meta = (b && b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
-      const expAtual = expById.get(b.experiencia_id) || null;
+      const overrideNaReserva = !!String(meta.endereco_alterado_em || '').trim();
+      const expAtual = overrideNaReserva ? null : (expById.get(b.experiencia_id) || null);
       const endereco = String((expAtual && expAtual.endereco) || meta.endereco || '').trim();
       const bairro = String((expAtual && expAtual.bairro) || meta.bairro || '').trim();
       const localFull = endereco && bairro
@@ -5455,6 +5461,13 @@
             ? String(chosenExp.endereco).trim() : null;
           meta.bairro = (chosenExp.bairro != null && String(chosenExp.bairro).trim())
             ? String(chosenExp.bairro).trim() : null;
+          // Limpa o override de local da reserva (se havia): o endereço
+          // agora vem da experiência nova. Deixar as chaves pra trás
+          // faria "Minhas compras" acusar "Novo local" comparando com o
+          // endereço de uma experiência que nem é mais a dela.
+          delete meta.endereco_alterado_em;
+          delete meta.endereco_anterior;
+          delete meta.bairro_anterior;
           var hist = Array.isArray(meta.admin_edit_history) ? meta.admin_edit_history.slice() : [];
           hist.push({
             at: new Date().toISOString(),
