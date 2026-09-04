@@ -6953,6 +6953,141 @@
       horariosAddBtn.addEventListener('click', () => addHorarioRow({ horario: '' }));
     }
 
+    // ===== Imagem: preparo do arquivo + diagnostico da URL =====
+    // Por que existe: o upload podia terminar em "✓ Enviada!" e a foto
+    // continuar quebrada, e a unica pista era um "nao consegui carregar
+    // essa imagem" generico que culpa Drive/Insta ate quando o arquivo e
+    // nosso. Os dois motivos reais:
+    //   1) o arquivo nao e uma imagem que o navegador abre — HEIC do
+    //      iPhone (o proprio input aceita .heic), arquivo corrompido ou
+    //      baixado pela metade. Sobe pro storage numa boa e nunca aparece.
+    //   2) o objeto subiu mas a URL publica responde erro (bucket sem a
+    //      flag public, policy de SELECT faltando, path errado).
+    // Agora o arquivo e decodificado ANTES de subir (se o navegador nao
+    // abre aqui, nao vai abrir no site) e, quando o preview falha, a URL
+    // e testada de verdade pra mostrar o erro real em vez do palpite.
+
+    var IMG_MAX_DIM = 2000;                 // acima disso, redimensiona
+    var IMG_KEEP_BYTES = 2 * 1024 * 1024;   // acima disso, re-encoda em JPEG
+    var IMG_MAX_UPLOAD = 10 * 1024 * 1024;  // limite do bucket
+    var IMG_SAFE_TYPES = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1, 'image/gif': 1 };
+
+    // Tenta abrir o arquivo como imagem no proprio navegador.
+    // E o mesmo motor que renderiza o card do site: se falhar aqui,
+    // falha la — entao vale mais barrar agora do que "subir com sucesso".
+    function _imgDecode(file) {
+      return new Promise(function (resolve) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () { resolve({ ok: true, img: img, url: url }); };
+        img.onerror = function () { resolve({ ok: false, url: url }); };
+        img.src = url;
+      });
+    }
+    function _imgFree(dec) { try { URL.revokeObjectURL(dec.url); } catch (e) {} }
+
+    function _imgToJpeg(img, maxDim) {
+      var w = img.naturalWidth || img.width;
+      var h = img.naturalHeight || img.height;
+      var scale = Math.min(1, maxDim / Math.max(w, h));
+      var cw = Math.max(1, Math.round(w * scale));
+      var ch = Math.max(1, Math.round(h * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+      var ctx = canvas.getContext('2d');
+      // Fundo branco: PNG com transparencia vira JPEG sem area preta.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.drawImage(img, 0, 0, cw, ch);
+      return new Promise(function (resolve) {
+        try {
+          canvas.toBlob(function (blob) { resolve(blob || null); }, 'image/jpeg', 0.86);
+        } catch (e) { resolve(null); }
+      });
+    }
+
+    // Resolve com { blob, ext, contentType, note } ou { error: 'motivo' }.
+    async function prepareImageForUpload(file) {
+      var nameExt = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [, ''])[1].toLowerCase();
+      var type = (file.type || '').toLowerCase();
+      var dec = await _imgDecode(file);
+      if (!dec.ok) {
+        _imgFree(dec);
+        var isHeic = /heic|heif/.test(type) || nameExt === 'heic' || nameExt === 'heif';
+        return {
+          error: isHeic
+            ? 'Essa foto está em HEIC, o formato padrão do iPhone. Nenhum navegador exibe HEIC — por isso ela some do site mesmo com o upload dando "certo". ' +
+              'Conserto: no iPhone, Ajustes → Câmera → Formatos → "Mais compatível"; ou abra a foto, Compartilhar → Salvar em Arquivos escolhendo JPEG; depois suba de novo.'
+            : 'Esse arquivo não abre como imagem nem aqui no navegador (pode estar corrompido ou ter sido baixado pela metade). ' +
+              'Se ele não abre agora, também não vai abrir no site. Baixe a foto de novo ou exporte como .jpg e tente outra vez.'
+        };
+      }
+      var w = dec.img.naturalWidth || dec.img.width;
+      var h = dec.img.naturalHeight || dec.img.height;
+      var needsReencode = !IMG_SAFE_TYPES[type] || file.size > IMG_KEEP_BYTES || Math.max(w, h) > IMG_MAX_DIM;
+      if (!needsReencode) {
+        _imgFree(dec);
+        return {
+          blob: file,
+          ext: nameExt || (type.split('/')[1] || 'jpg'),
+          // Nunca monta 'image/' + ext: 'image/jpg' nao esta na lista de
+          // mime permitidos do bucket e o upload volta 415.
+          contentType: type || 'image/jpeg',
+          note: ''
+        };
+      }
+      var jpeg = await _imgToJpeg(dec.img, IMG_MAX_DIM);
+      var resized = Math.max(w, h) > IMG_MAX_DIM;
+      _imgFree(dec);
+      if (!jpeg) {
+        // Canvas falhou (raro): sobe o original mesmo, ja que ele abre.
+        return { blob: file, ext: nameExt || 'jpg', contentType: type || 'image/jpeg', note: '' };
+      }
+      return {
+        blob: jpeg,
+        ext: 'jpg',
+        contentType: 'image/jpeg',
+        note: resized ? 'convertida pra JPEG e redimensionada' : 'convertida pra JPEG'
+      };
+    }
+
+    // Chamado quando o <img> do preview falha: busca a URL de verdade e
+    // devolve o motivo em portugues, em vez do palpite generico.
+    async function diagnoseImageUrl(url) {
+      var isOurs = /supabase\.co\/storage\//i.test(url);
+      try {
+        var res = await fetch(url, { method: 'GET', cache: 'no-store' });
+        if (!res.ok) {
+          var raw = '';
+          try { raw = (await res.text()).slice(0, 300); } catch (e) {}
+          var msg = raw;
+          try { var j = JSON.parse(raw); msg = j.message || j.error || raw; } catch (e) {}
+          var extra = '';
+          if (isOurs && res.status === 404) {
+            extra = ' — o arquivo não está no storage; refaça o upload';
+          } else if (isOurs && (res.status === 400 || res.status === 403)) {
+            extra = ' — o bucket experience-images não está público ou perdeu a policy de leitura; rode sql/elarah_experience_images_storage.sql no Supabase';
+          }
+          return { why: 'o servidor respondeu ' + res.status + (msg ? ' (' + msg + ')' : '') + extra };
+        }
+        var ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (/heic|heif/.test(ct)) {
+          return { why: 'o arquivo está em HEIC (formato do iPhone) e nenhum navegador exibe HEIC — suba a foto em .jpg' };
+        }
+        if (ct && !/^image\//.test(ct)) {
+          return { why: 'esse link responde, mas não é uma foto (Content-Type: ' + ct + ') — é uma página de compartilhamento, não a imagem direta. Baixe a foto e use o botão de upload' };
+        }
+        return { why: 'o arquivo existe e é imagem (' + (ct || 'tipo desconhecido') + '), mas o navegador não conseguiu decodificar — provavelmente subiu corrompido; refaça o upload' };
+      } catch (e) {
+        return {
+          why: isOurs
+            ? 'não deu pra alcançar o storage (rede caiu, ou um bloqueador de anúncios/extensão está bloqueando supabase.co)'
+            : 'o site que hospeda essa imagem bloqueia acesso de fora (hotlink/CORS) — baixe a foto e use o botão de upload acima'
+        };
+      }
+    }
+
     // ===== Preview da imagem =====
     // Mostra a imagem (ou erro) ao lado do input quando o admin
     // digita ou cola URL. Pega problemas ANTES de salvar — caso
@@ -6968,6 +7103,10 @@
       previewStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
       previewStatus.textContent = msg;
     }
+    // Sequencia pra descartar diagnostico atrasado: se a admin trocar a
+    // URL enquanto o fetch anterior roda, a resposta velha nao sobrescreve
+    // o status da nova.
+    var previewSeq = 0;
     function refreshImagePreview() {
       if (!imagemEl || !previewWrap || !previewImg) return;
       var raw = (imagemEl.value || '').trim();
@@ -6980,16 +7119,22 @@
       var src = /^(https?:\/\/|\/|assets\/|images\/|img\/)/i.test(raw)
         ? raw
         : 'assets/' + raw;
+      var seq = ++previewSeq;
       setPreviewStatus(true, 'Carregando…');
       previewImg.onload = function () {
+        if (seq !== previewSeq) return;
         setPreviewStatus(true, '✓ Imagem carregou. Esta é a foto que vai aparecer no card.');
       };
       previewImg.onerror = function () {
-        setPreviewStatus(
-          false,
-          '⚠ Não consegui carregar essa imagem. Verifique se a URL é direta (.jpg/.png), pública e sem hotlink protection. ' +
-          'Links de Drive/Insta/sites de compartilhamento geralmente não funcionam — use uma URL terminando em .jpg ou .png.'
-        );
+        if (seq !== previewSeq) return;
+        setPreviewStatus(false, '⚠ Não consegui carregar essa imagem. Descobrindo o motivo…');
+        diagnoseImageUrl(src).then(function (d) {
+          if (seq !== previewSeq) return;
+          setPreviewStatus(false, '⚠ Essa foto não vai aparecer no site: ' + d.why + '.');
+        }).catch(function () {
+          if (seq !== previewSeq) return;
+          setPreviewStatus(false, '⚠ Não consegui carregar essa imagem. Use o botão de upload acima com um arquivo .jpg ou .png.');
+        });
       };
       previewImg.src = src;
     }
@@ -7018,20 +7163,31 @@
       fileInput.addEventListener('change', async function () {
         var file = fileInput.files && fileInput.files[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) {
-          setFileStatus(false, '⚠ Arquivo maior que 10MB. Comprima a imagem antes.');
-          fileInput.value = '';
-          return;
-        }
         var s = window.supabaseClient;
         if (!s || !s.storage) {
           setFileStatus(false, '⚠ Storage indisponível. Tente recarregar a página.');
           return;
         }
+        // Prepara antes de subir: valida que o navegador abre o arquivo
+        // (HEIC/corrompido morre aqui, com explicação) e converte foto
+        // pesada/formato exótico em JPEG. Sem isso o upload dava "certo"
+        // e a foto ficava quebrada no card.
+        setFileStatus(true, 'Preparando a imagem…');
+        var prep = await prepareImageForUpload(file);
+        if (prep.error) {
+          setFileStatus(false, '⚠ ' + prep.error);
+          fileInput.value = '';
+          return;
+        }
+        if (prep.blob.size > IMG_MAX_UPLOAD) {
+          setFileStatus(false, '⚠ Mesmo comprimida a foto passou de 10MB. Reduza o tamanho e tente de novo.');
+          fileInput.value = '';
+          return;
+        }
         setFileStatus(true, 'Enviando…');
-        // Nome do arquivo: timestamp + slug do nome original pra evitar
-        // colisao e manter histórico legivel. Mantem extensão original.
-        var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [,'jpg'])[1].toLowerCase();
+        // Nome do arquivo: timestamp + slug do nome da experiência pra
+        // evitar colisao e manter histórico legivel.
+        var ext = prep.ext;
         var safeBase = (document.getElementById('exp-nome')?.value || 'exp')
           .normalize('NFD').replace(/[̀-ͯ]/g, '')
           .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'exp';
@@ -7039,10 +7195,10 @@
         try {
           var { data: uploadData, error: uploadErr } = await s.storage
             .from('experience-images')
-            .upload(path, file, {
+            .upload(path, prep.blob, {
               cacheControl: '3600',
               upsert: false,
-              contentType: file.type || ('image/' + ext),
+              contentType: prep.contentType,
             });
           if (uploadErr) {
             console.error('[Admin] upload de imagem falhou:', uploadErr);
@@ -7062,7 +7218,8 @@
             imagemEl.value = publicUrl;
             refreshImagePreview();
           }
-          setFileStatus(true, '✓ Enviada! URL preenchida automaticamente.');
+          setFileStatus(true, '✓ Enviada' + (prep.note ? ' (' + prep.note + ')' : '') +
+            '! URL preenchida — confira o preview abaixo antes de salvar.');
         } catch (e) {
           console.error('[Admin] exceção no upload de imagem:', e);
           setFileStatus(false, '⚠ Erro inesperado no upload: ' + (e.message || String(e)));
@@ -7095,16 +7252,29 @@
         pStatus.style.color = ok ? '#1a8a4a' : '#c0392b';
         pStatus.textContent = msg;
       }
+      var campPreviewSeq = 0;
       function refreshPreview() {
         if (!urlEl || !pWrap || !pImg) return;
         var raw = (urlEl.value || '').trim();
         if (!raw) { pWrap.style.display = 'none'; return; }
         pWrap.style.display = 'block';
         var src = /^(https?:\/\/|\/|assets\/|images\/|img\/)/i.test(raw) ? raw : 'assets/' + raw;
+        var seq = ++campPreviewSeq;
         setPStatus(true, 'Carregando…');
-        pImg.onload = function () { setPStatus(true, '✓ Esta foto vai aparecer só na aba da campanha.'); };
+        pImg.onload = function () {
+          if (seq !== campPreviewSeq) return;
+          setPStatus(true, '✓ Esta foto vai aparecer só na aba da campanha.');
+        };
         pImg.onerror = function () {
-          setPStatus(false, '⚠ Não consegui carregar essa imagem. Use uma URL direta (.jpg/.png) ou faça upload.');
+          if (seq !== campPreviewSeq) return;
+          setPStatus(false, '⚠ Não consegui carregar essa imagem. Descobrindo o motivo…');
+          diagnoseImageUrl(src).then(function (d) {
+            if (seq !== campPreviewSeq) return;
+            setPStatus(false, '⚠ Essa foto não vai aparecer: ' + d.why + '.');
+          }).catch(function () {
+            if (seq !== campPreviewSeq) return;
+            setPStatus(false, '⚠ Não consegui carregar essa imagem. Use o upload com um arquivo .jpg ou .png.');
+          });
         };
         pImg.src = src;
       }
@@ -7123,15 +7293,18 @@
         cFileInput.addEventListener('change', async function () {
           var file = cFileInput.files && cFileInput.files[0];
           if (!file) return;
-          if (file.size > 10 * 1024 * 1024) {
-            setFStatus(false, '⚠ Arquivo maior que 10MB. Comprima a imagem antes.');
+          var s = window.supabaseClient;
+          if (!s || !s.storage) { setFStatus(false, '⚠ Storage indisponível. Recarregue a página.'); return; }
+          setFStatus(true, 'Preparando a imagem…');
+          var prep = await prepareImageForUpload(file);
+          if (prep.error) { setFStatus(false, '⚠ ' + prep.error); cFileInput.value = ''; return; }
+          if (prep.blob.size > IMG_MAX_UPLOAD) {
+            setFStatus(false, '⚠ Mesmo comprimida a foto passou de 10MB. Reduza o tamanho e tente de novo.');
             cFileInput.value = '';
             return;
           }
-          var s = window.supabaseClient;
-          if (!s || !s.storage) { setFStatus(false, '⚠ Storage indisponível. Recarregue a página.'); return; }
           setFStatus(true, 'Enviando…');
-          var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [, 'jpg'])[1].toLowerCase();
+          var ext = prep.ext;
           var safeBase = ((document.getElementById('exp-nome')?.value || 'exp') + '-campanha')
             .normalize('NFD').replace(/[̀-ͯ]/g, '')
             .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'campanha';
@@ -7139,7 +7312,7 @@
           try {
             var { data: uploadData, error: uploadErr } = await s.storage
               .from('experience-images')
-              .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || ('image/' + ext) });
+              .upload(path, prep.blob, { cacheControl: '3600', upsert: false, contentType: prep.contentType });
             if (uploadErr) {
               console.error('[Admin] upload da imagem de campanha falhou:', uploadErr);
               setFStatus(false, '⚠ Falha no upload: ' + (uploadErr.message || 'erro desconhecido'));
@@ -7149,7 +7322,7 @@
             var publicUrl = urlData && urlData.publicUrl;
             if (!publicUrl) { setFStatus(false, '⚠ Upload ok mas sem URL pública. Veja o console.'); return; }
             if (urlEl) { urlEl.value = publicUrl; refreshPreview(); }
-            setFStatus(true, '✓ Enviada! URL preenchida automaticamente.');
+            setFStatus(true, '✓ Enviada' + (prep.note ? ' (' + prep.note + ')' : '') + '! Confira o preview.');
           } catch (e) {
             console.error('[Admin] exceção no upload da imagem de campanha:', e);
             setFStatus(false, '⚠ Erro inesperado no upload: ' + (e.message || String(e)));
@@ -7181,28 +7354,45 @@
 
       async function uploadVariantImage(file, statusEl, urlInput, previewImg) {
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) {
-          statusEl.textContent = '⚠ Maior que 10MB'; statusEl.style.color = '#c0392b'; return;
-        }
         var s = window.supabaseClient;
         if (!s || !s.storage) { statusEl.textContent = '⚠ Storage indisponível'; statusEl.style.color = '#c0392b'; return; }
+        statusEl.textContent = 'Preparando…'; statusEl.style.color = '#1a8a4a';
+        var prep = await prepareImageForUpload(file);
+        if (prep.error) {
+          statusEl.textContent = '⚠ ' + prep.error;
+          statusEl.style.color = '#c0392b';
+          return;
+        }
+        if (prep.blob.size > IMG_MAX_UPLOAD) {
+          statusEl.textContent = '⚠ Maior que 10MB mesmo comprimida'; statusEl.style.color = '#c0392b'; return;
+        }
         statusEl.textContent = 'Enviando…'; statusEl.style.color = '#1a8a4a';
-        var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [, 'jpg'])[1].toLowerCase();
+        var ext = prep.ext;
         var base = ((document.getElementById('exp-nome') && document.getElementById('exp-nome').value || 'exp') + '-var')
           .normalize('NFD').replace(/[̀-ͯ]/g, '')
           .replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'var';
         var path = base + '-' + Date.now() + '.' + ext;
         try {
-          var up = await s.storage.from('experience-images').upload(path, file, {
-            cacheControl: '3600', upsert: false, contentType: file.type || ('image/' + ext)
+          var up = await s.storage.from('experience-images').upload(path, prep.blob, {
+            cacheControl: '3600', upsert: false, contentType: prep.contentType
           });
           if (up.error) { statusEl.textContent = '⚠ Falha: ' + (up.error.message || 'erro'); statusEl.style.color = '#c0392b'; return; }
           var pub = s.storage.from('experience-images').getPublicUrl(up.data.path);
           var url = pub && pub.data && pub.data.publicUrl;
           if (!url) { statusEl.textContent = '⚠ Sem URL pública'; statusEl.style.color = '#c0392b'; return; }
           urlInput.value = url;
-          if (previewImg) { previewImg.src = url; previewImg.style.display = 'block'; }
-          statusEl.textContent = '✓ Enviada'; statusEl.style.color = '#1a8a4a';
+          if (previewImg) {
+            previewImg.onerror = function () {
+              diagnoseImageUrl(url).then(function (d) {
+                statusEl.textContent = '⚠ Não aparece: ' + d.why;
+                statusEl.style.color = '#c0392b';
+              });
+            };
+            previewImg.src = url;
+            previewImg.style.display = 'block';
+          }
+          statusEl.textContent = '✓ Enviada' + (prep.note ? ' (' + prep.note + ')' : '');
+          statusEl.style.color = '#1a8a4a';
         } catch (e) {
           statusEl.textContent = '⚠ Erro: ' + (e.message || e); statusEl.style.color = '#c0392b';
         }
