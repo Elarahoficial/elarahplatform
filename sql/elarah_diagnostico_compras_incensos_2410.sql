@@ -170,3 +170,43 @@ order by b.created_at;
 -- Leitura: se `acumulado_de_pessoas` passa de vagas_total numa linha
 -- SEM inventory_skipped, foi o caminho (b) — o decremento se perdeu.
 -- Se todas as 6 são anteriores a slot_alterado_em, foi (c).
+
+-- ===== 5. Três experiências com o mesmo nome (duas ATIVAS) =====
+-- A query 2 devolveu 3 linhas pra "Faça seus Incensos Naturais".
+-- Editar a cópia errada é a explicação mais simples pra uma alteração
+-- de horário que "salva" e não aparece. Isto mostra qual cópia carrega
+-- os slots de 24/10 e qual carrega as reservas — a que tem as duas é
+-- a única que deve ser editada.
+select
+  e.id,
+  e.nome,
+  e.is_active,
+  e.updated_at,
+  (select count(*) from public.experience_slots s
+     where s.experience_id = e.id)                       as slots,
+  (select count(*) from public.experience_slots s
+     where s.experience_id = e.id and s.data like '24/10%') as slots_2410,
+  (select count(*) from public.bookings b
+     where b.experiencia_id = e.id
+       and b.status in ('pago','pending'))               as reservas_ativas
+from public.experiences e
+where e.nome ilike '%incenso%'
+order by e.updated_at desc;
+
+-- ===== 6. Rótulo do slot × rótulo que as clientes compraram =====
+-- As reservas da manhã foram gravadas com "10h00 – 12h00" e o slot
+-- vinculado diz "09h30 – 11h30". Quem manda no que a cliente vê é a
+-- reserva; o rótulo do slot é o que o SITE mostra pra quem for comprar.
+select
+  s.id            as slot_id,
+  s.horario       as rotulo_do_slot,
+  b.horario       as rotulo_comprado,
+  count(*)        as reservas,
+  sum(b.quantidade) as pessoas
+from public.experience_slots s
+join public.bookings b on b.slot_id = s.id and b.status in ('pago','pending')
+join public.experiences e on e.id = s.experience_id
+where e.nome ilike '%incenso%'
+  and s.data like '24/10%'
+group by s.id, s.horario, b.horario
+order by s.horario, b.horario;
