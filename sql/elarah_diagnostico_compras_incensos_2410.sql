@@ -128,3 +128,45 @@ from public.manual_sales ms
 where ms.experience_name ilike '%incenso%'
   and ms.slot_date = date '2026-10-24'
 order by ms.slot_time, ms.created_at;
+
+-- ===== 3d. Por que a tarde vendeu 6 em 4 lugares =====
+-- vagas_restantes = -2 é o reconcile_all_vagas() (cron a cada 10min,
+-- sql/elarah_vagas_sweep_reconcile_cron.sql) recomputando o ABSOLUTO:
+-- vagas_total − pessoas ativas, sem piso. Ele reporta a verdade; o furo
+-- aconteceu antes, no momento da compra. Três caminhos conhecidos:
+--
+--  (a) metadata.inventory_skipped = true — o guard não conseguiu
+--      decrementar em nenhuma camada e DEIXOU a compra passar de
+--      propósito (_shared/booking_guard.ts:1030-1040).
+--  (b) erro de TRANSPORTE no RPC de decremento: o guard "assume
+--      aplicado" e segue (booking_guard.ts:965-975). Se o UPDATE não
+--      commitou, o contador não andou e o próximo cliente ainda viu
+--      vaga livre. Não deixa flag no metadata — identifica-se pela
+--      ordem: reservas 5 e 6 entrando depois das 4 primeiras.
+--  (c) vagas_total reduzido DEPOIS das vendas (slot.updated_at
+--      posterior ao created_at das reservas).
+select
+  b.created_at,
+  b.email,
+  b.status,
+  b.quantidade,
+  sum(b.quantidade) over (
+    partition by b.slot_id order by b.created_at
+    rows between unbounded preceding and current row
+  )                                        as acumulado_de_pessoas,
+  s.vagas_total,
+  b.metadata->>'inventory_skipped'         as inventory_skipped,
+  left(coalesce(b.stripe_session_id,''), 8) as via_pagamento,
+  (b.metadata ? 'admin_edit_history')      as editada_no_admin,
+  s.updated_at                             as slot_alterado_em
+from public.bookings b
+join public.experience_slots s on s.id = b.slot_id
+join public.experiences e on e.id = s.experience_id
+where e.nome ilike '%incenso%'
+  and s.horario = '13h30 – 15h30'
+  and b.status in ('pago','pending')
+order by b.created_at;
+
+-- Leitura: se `acumulado_de_pessoas` passa de vagas_total numa linha
+-- SEM inventory_skipped, foi o caminho (b) — o decremento se perdeu.
+-- Se todas as 6 são anteriores a slot_alterado_em, foi (c).
