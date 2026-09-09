@@ -474,12 +474,11 @@
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
       case 'contabilidade': await renderContabilidade(); break;
+      case 'insights':    await renderDiagnostico(); break;
       case 'analytics':   await renderAnalytics(); break;
-      case 'social':
-        if (window.ElarahSocial && window.ElarahSocial.render) {
-          await window.ElarahSocial.render();
-        }
-        break;
+      // 'social' saiu: a aba Redes Sociais foi removida (painel e
+      // scripts). 'fornecedores' virou a view "Confirmados" dentro
+      // de Parceiros, e 'ceo' virou um bloco de "O que fazer hoje".
     }
   }
 
@@ -2801,6 +2800,74 @@
   // opcionalmente informa no formulário (partner_data.whatsapp). Mostra o
   // número + botão verde que abre o WhatsApp com uma saudação pronta sobre
   // o cadastro de parceiro. Sem número, mostra só o traço.
+  // ============================================================
+  // PARCEIROS — controle de "já falei com essa pessoa?"
+  // ------------------------------------------------------------
+  // A dor: a lista de cadastros novos misturava quem eu já chamei
+  // no WhatsApp com quem ainda nem vi. Agora, clicar no botão de
+  // WhatsApp marca a pessoa como contatada — a linha muda de cor
+  // (laranja = novo, azul = já falei, verde = aprovado).
+  //
+  // Onde fica gravado:
+  //   1) profiles.partner_data.contatadoEm  (ISO) — fonte oficial,
+  //      enxerga de qualquer computador.
+  //   2) localStorage — espelho local, aplicado na hora do clique
+  //      e usado como rede de segurança se a escrita no banco
+  //      falhar (ex.: policy de update ausente). Nunca some a cor.
+  // ============================================================
+  const PARTNER_CONTACT_LS_KEY = 'elarah_admin_partners_contatados';
+
+  function _partnerContactLocalMap() {
+    try {
+      const raw = localStorage.getItem(PARTNER_CONTACT_LS_KEY);
+      const obj = raw ? JSON.parse(raw) : null;
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (_) { return {}; }
+  }
+
+  function _partnerContactLocalSet(userId, iso) {
+    try {
+      const map = _partnerContactLocalMap();
+      if (iso) map[userId] = iso; else delete map[userId];
+      localStorage.setItem(PARTNER_CONTACT_LS_KEY, JSON.stringify(map));
+    } catch (_) { /* storage cheio/bloqueado: segue só com o banco */ }
+  }
+
+  // Momento do contato, olhando banco e espelho local. Retorna ISO ou ''.
+  function partnerContactedAt(u) {
+    const pd = (u && u.partner_data) || {};
+    const remote = pd.contatadoEm || pd.contactedAt || '';
+    if (remote) return remote;
+    const local = _partnerContactLocalMap();
+    return (u && local[u.id]) || '';
+  }
+
+  // 'fechado' (aprovado) > 'contatado' (cliquei no WhatsApp) > 'novo'.
+  function partnerContactStage(u) {
+    if (u && u.partner_status === 'approved') return 'fechado';
+    return partnerContactedAt(u) ? 'contatado' : 'novo';
+  }
+
+  // Grava o contato. Local primeiro (feedback imediato e à prova de
+  // falha), banco depois. Erro no banco não desfaz a marcação local —
+  // só loga, porque perder a cor é pior que a linha ficar dessincronizada.
+  async function setPartnerContacted(userId, iso) {
+    _partnerContactLocalSet(userId, iso);
+    const s = window.supabaseClient;
+    if (!s) return;
+    try {
+      const { data, error: readErr } = await s
+        .from('profiles').select('partner_data').eq('id', userId).maybeSingle();
+      if (readErr) throw readErr;
+      const pd = (data && data.partner_data) || {};
+      if (iso) pd.contatadoEm = iso; else delete pd.contatadoEm;
+      const { error } = await s.from('profiles').update({ partner_data: pd }).eq('id', userId);
+      if (error) throw error;
+    } catch (e) {
+      console.warn('[Admin] não consegui gravar o contato do parceiro no banco:', e.message || e);
+    }
+  }
+
   function buildPartnerPhoneCell(u, pd) {
     const raw = ((u.telefone || '') || (pd && pd.whatsapp) || '').trim();
     if (!raw) return '<span style="color:#bbb;">—</span>';
@@ -2810,31 +2877,110 @@
     const saud = nome ? ('Oii, ' + nome + '! ') : 'Oii! ';
     const msg = saud + 'Aqui é da Elarah 🧡 Recebemos o seu cadastro de parceiro e queremos conversar sobre as suas experiências.';
     const href = 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(msg);
-    const numero = '<a href="' + href + '" target="_blank" rel="noopener"' +
+    const id = escapeHtml(u.id);
+    const numero = '<a href="' + href + '" target="_blank" rel="noopener" data-partner-wa="' + id + '"' +
       ' style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;white-space:nowrap;">' +
       escapeHtml(formatPhoneBR(raw)) + '</a>';
-    const botao = '<a href="' + href + '" target="_blank" rel="noopener" title="Falar no WhatsApp"' +
+    const botao = '<a href="' + href + '" target="_blank" rel="noopener" title="Falar no WhatsApp" data-partner-wa="' + id + '"' +
       ' style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:4px 10px;background:#25D366;color:#fff;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;line-height:1;vertical-align:middle;">' +
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.52 3.48A11.78 11.78 0 0 0 12.04 0C5.46 0 .12 5.34.12 11.92c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.65a11.9 11.9 0 0 0 5.77 1.47h.01c6.58 0 11.92-5.34 11.92-11.92 0-3.18-1.24-6.17-3.45-8.42zM12.05 21.8h-.01a9.86 9.86 0 0 1-5.03-1.38l-.36-.21-3.72.98 1-3.62-.23-.37a9.85 9.85 0 0 1-1.51-5.27c0-5.45 4.43-9.88 9.87-9.88 2.64 0 5.12 1.03 6.99 2.9a9.81 9.81 0 0 1 2.89 6.99c-.01 5.45-4.44 9.86-9.89 9.86zm5.42-7.39c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.09 3.2 5.07 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35z"/></svg>' +
       'WhatsApp</a>';
-    return numero + botao;
+
+    // Selo do estágio, ao lado do número: mostra a data do contato ou
+    // avisa que ninguém falou com essa pessoa ainda.
+    const when = partnerContactedAt(u);
+    let selo;
+    if (u.partner_status === 'approved') {
+      selo = '';
+    } else if (when) {
+      selo = '<span class="admin__contact-tag admin__contact-tag--contatado">✓ falei ' + escapeHtml(formatDateShort(when)) + '</span>' +
+             '<button type="button" class="admin__contact-undo" data-partner-uncontact="' + id + '" title="Desmarcar (cliquei sem querer)">desmarcar</button>';
+    } else {
+      selo = '<span class="admin__contact-tag admin__contact-tag--novo">novo</span>';
+    }
+    return numero + botao + selo;
+  }
+
+  // Data curta e tolerante (dd/mm). Se vier lixo, devolve vazio.
+  function formatDateShort(iso) {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    } catch (_) { return ''; }
   }
 
   // ===== PARTNERS =====
+  // A aba agora tem dois balões lado a lado:
+  //   pendentes   → cadastros vindos do site, esperando contato
+  //   confirmados → quem já fechou (antiga aba "Fornecedores")
+  // A escolha fica gravada, então voltar pra aba reabre onde parei.
+  const PARTNERS_VIEW_LS_KEY = 'elarah_admin_partners_view';
+  let _partnersView = (function () {
+    try {
+      const v = localStorage.getItem(PARTNERS_VIEW_LS_KEY);
+      return v === 'confirmados' ? 'confirmados' : 'pendentes';
+    } catch (_) { return 'pendentes'; }
+  })();
+  let _partnersSwitchWired = false;
+
+  function _applyPartnersView() {
+    const pend = document.getElementById('partners-view-pendentes');
+    const conf = document.getElementById('partners-view-confirmados');
+    if (pend) pend.style.display = _partnersView === 'pendentes' ? '' : 'none';
+    if (conf) conf.style.display = _partnersView === 'confirmados' ? '' : 'none';
+    document.querySelectorAll('#partners-switch [data-partners-view]').forEach(btn => {
+      const on = btn.dataset.partnersView === _partnersView;
+      btn.classList.toggle('admin__segmented-btn--active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+
+  function wirePartnersSwitch() {
+    if (_partnersSwitchWired) return;
+    const box = document.getElementById('partners-switch');
+    if (!box) return;
+    _partnersSwitchWired = true;
+    box.querySelectorAll('[data-partners-view]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        _partnersView = btn.dataset.partnersView === 'confirmados' ? 'confirmados' : 'pendentes';
+        try { localStorage.setItem(PARTNERS_VIEW_LS_KEY, _partnersView); } catch (_) {}
+        _applyPartnersView();
+        if (_partnersView === 'confirmados') await renderFornecedores();
+      });
+    });
+  }
+
   async function renderPartners() {
+    wirePartnersSwitch();
+    _applyPartnersView();
+
     const profiles = await getProfiles();
     const partners = profiles.filter(p => p.partner_status && p.partner_status !== 'none');
     const tbody = document.getElementById('partners-body');
     const countEl = document.getElementById('partners-count');
+    if (!tbody) return;
 
     // Ordena pelo momento do cadastro de parceiro (partner_data.requestedAt),
     // caindo pro created_at do perfil quando o cadastro é antigo e não tem
     // requestedAt. Mais recentes primeiro — quem acabou de se cadastrar
     // aparece no topo.
     const submittedAt = (p) => (p.partner_data && p.partner_data.requestedAt) || p.created_at || '';
-    partners.sort((a, b) => String(submittedAt(b)).localeCompare(String(submittedAt(a))));
+    // Dentro disso, quem eu ainda NÃO contatei sobe: é a fila de trabalho.
+    const stageRank = (p) => (partnerContactStage(p) === 'novo' ? 0 : partnerContactStage(p) === 'contatado' ? 1 : 2);
+    partners.sort((a, b) => {
+      const ra = stageRank(a), rb = stageRank(b);
+      if (ra !== rb) return ra - rb;
+      return String(submittedAt(b)).localeCompare(String(submittedAt(a)));
+    });
 
-    countEl.textContent = partners.length + ' parceiro' + (partners.length !== 1 ? 's' : '');
+    const novos = partners.filter(p => partnerContactStage(p) === 'novo').length;
+    if (countEl) {
+      countEl.textContent = partners.length + ' parceiro' + (partners.length !== 1 ? 's' : '') +
+        (novos ? ' · ' + novos + ' sem contato' : '');
+    }
+    const tabPend = document.getElementById('partners-tab-count-pendentes');
+    if (tabPend) tabPend.textContent = String(partners.length);
 
     if (partners.length === 0) {
       tbody.innerHTML = '<tr><td colspan="11" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>';
@@ -2849,6 +2995,7 @@
                           u.partner_status === 'rejected' ? 'Rejeitado' : 'Pendente';
       const desc = pd.descricao || '—';
       const descShort = desc.length > 40 ? desc.slice(0, 40) + '...' : desc;
+      const stage = partnerContactStage(u);
 
       let actions = '';
       if (u.partner_status === 'pending') {
@@ -2869,7 +3016,7 @@
       }
 
       return `
-        <tr>
+        <tr class="admin__row--${stage}">
           <td>${escapeHtml(pd.marca || u.nome || '—')}</td>
           <td>${escapeHtml(pd.tipo || '—')}</td>
           <td>${escapeHtml(pd.bairro || '—')}</td>
@@ -2894,6 +3041,28 @@
     tbody.querySelectorAll('[data-partner-reject]').forEach(btn => {
       btn.addEventListener('click', () => updatePartnerStatus(btn.dataset.partnerReject, 'rejected'));
     });
+
+    // Clicar no WhatsApp = "falei com essa pessoa". Não bloqueia o link
+    // (o WhatsApp abre normal em outra aba); só grava e repinta a linha.
+    tbody.querySelectorAll('[data-partner-wa]').forEach(a => {
+      a.addEventListener('click', async () => {
+        const id = a.dataset.partnerWa;
+        if (!id) return;
+        await setPartnerContacted(id, new Date().toISOString());
+        await renderPartners();
+      });
+    });
+    tbody.querySelectorAll('[data-partner-uncontact]').forEach(btn => {
+      btn.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        await setPartnerContacted(btn.dataset.partnerUncontact, null);
+        await renderPartners();
+      });
+    });
+
+    // Se a view aberta é a de confirmados, garante que ela também
+    // esteja carregada (o usuário pode ter recarregado a página nela).
+    if (_partnersView === 'confirmados') await renderFornecedores();
   }
 
   async function updatePartnerStatus(userId, status) {
@@ -2911,7 +3080,6 @@
     await renderPartners();
     await renderOverview();
   }
-
   // ===== BOOKINGS (Supabase) =====
   let bookingsCache = null;
 
@@ -6765,6 +6933,9 @@
       // Foto exclusiva da campanha (só na aba temática).
       var campImgEl = document.getElementById('exp-campanha-imagem');
       if (campImgEl) campImgEl.value = exp.campanhaImagem || '';
+      // Posição na página da campanha (1 = primeira). Vazio = automática.
+      var campOrdEl = document.getElementById('exp-campanha-ordem');
+      if (campOrdEl) campOrdEl.value = (exp.campanhaOrdem != null ? exp.campanhaOrdem : '');
       // Horário de funcionamento (agendamento livre / voucher).
       var hfEl = document.getElementById('exp-horario-funcionamento');
       if (hfEl) hfEl.value = exp.horarioFuncionamento || '';
@@ -6885,6 +7056,8 @@
       if (campEl2) campEl2.value = '';
       var campImgEl2 = document.getElementById('exp-campanha-imagem');
       if (campImgEl2) campImgEl2.value = '';
+      var campOrdEl2 = document.getElementById('exp-campanha-ordem');
+      if (campOrdEl2) campOrdEl2.value = '';
       var hfEl2 = document.getElementById('exp-horario-funcionamento');
       if (hfEl2) hfEl2.value = '';
       if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
@@ -7085,10 +7258,37 @@
       var cFileInput = document.getElementById('exp-campanha-imagem-file');
       var cFileStatus = document.getElementById('exp-campanha-imagem-file-status');
 
+      // Página pública de cada campanha — o link aparece no formulário
+      // pra abrir a aba e conferir a ordem sem sair caçando a URL.
+      var CAMPANHA_PAGES = {
+        'dia-dos-pais': 'dia-dos-pais.html',
+        'dia-das-maes': 'dia-das-maes.html',
+        'dia-dos-namorados': 'dia-dos-namorados.html',
+        'dia-das-criancas': 'elarah-kids.html',
+        'natal': 'categoria.html?campanha=natal',
+        'ano-novo': 'categoria.html?campanha=ano-novo',
+      };
+
       function toggleField() {
-        if (!fieldEl) return;
-        var has = !!(selEl && (selEl.value || '').trim());
-        fieldEl.style.display = has ? '' : 'none';
+        var slug = (selEl && (selEl.value || '').trim()) || '';
+        var has = !!slug;
+        if (fieldEl) fieldEl.style.display = has ? '' : 'none';
+        // Bloco "ordem na página da campanha" + link direto pra ela.
+        var extraEl = document.getElementById('exp-campanha-extra');
+        if (extraEl) extraEl.style.display = has ? '' : 'none';
+        var linkEl = document.getElementById('exp-campanha-link');
+        if (linkEl) {
+          var page = CAMPANHA_PAGES[slug] || '';
+          if (page) {
+            linkEl.href = page;
+            linkEl.textContent = page;
+            linkEl.style.pointerEvents = '';
+          } else {
+            linkEl.removeAttribute('href');
+            linkEl.textContent = 'esta campanha ainda não tem página própria';
+            linkEl.style.pointerEvents = 'none';
+          }
+        }
       }
       function setPStatus(ok, msg) {
         if (!pStatus) return;
@@ -7496,6 +7696,13 @@
         })(),
         // Foto exclusiva da campanha. Vazio = usa a foto oficial.
         campanhaImagem: (document.getElementById('exp-campanha-imagem')?.value || '').trim(),
+        // Posição na página da campanha. Vazio/0 → null (ordem automática).
+        campanhaOrdem: (function () {
+          var raw = (document.getElementById('exp-campanha-ordem')?.value || '').trim();
+          if (!raw) return null;
+          var n = Number(raw);
+          return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+        })(),
         // Horário de funcionamento (agendamento livre / voucher).
         horarioFuncionamento: (document.getElementById('exp-horario-funcionamento')?.value || '').trim()
       };
@@ -12705,6 +12912,9 @@
     const totalPendente = summary ? Number(summary.repasses_pendentes_centavos) || 0 : 0;
 
     document.getElementById('stat-fornecedores-count').textContent = totalCount;
+    // Contador do balão "Confirmados" na aba Parceiros.
+    const tabConfEl = document.getElementById('partners-tab-count-confirmados');
+    if (tabConfEl) tabConfEl.textContent = String(totalCount);
     document.getElementById('stat-fornecedores-gross').textContent = formatCents(totalGross, 'BRL');
     document.getElementById('stat-fornecedores-comissao').textContent = formatCents(totalComissao, 'BRL');
     document.getElementById('stat-fornecedores-pendente').textContent = formatCents(totalPendente, 'BRL');
@@ -15494,7 +15704,12 @@
       // Se a aba Fornecedores está aberta, re-renderiza pra mostrar
       // o novo parceiro imediatamente (sem esperar o usuário trocar
       // de aba).
-      if (document.getElementById('panel-fornecedores')?.classList.contains('admin__panel--active')) {
+      // "Fornecedores" agora é a view "Confirmados" dentro da aba
+      // Parceiros — re-renderiza só se ela estiver aberta na tela.
+      const partnersPanelEl = document.getElementById('panel-partners');
+      const confViewEl = document.getElementById('partners-view-confirmados');
+      if (partnersPanelEl?.classList.contains('admin__panel--active') &&
+          confViewEl && confViewEl.style.display !== 'none') {
         if (typeof renderFornecedores === 'function') renderFornecedores();
       }
     } else {
@@ -18272,9 +18487,485 @@
     _finRenderManualSalesTable(sales);
     _finRenderByExperienceTable(byExp);
     _finRenderPayoutsTable(ledger);
+
+    // ---- Topo novo: números grandes, pendências e gráficos ----
+    _finRenderBig(summary);
+    _finRenderPendencias(summary);
+    _finRenderCategoryGraph(expenses, summary);
+    // Mês a mês faz 6 chamadas próprias; roda solto pra não segurar
+    // o resto da tela esperando.
+    _finRenderMonthsGraph();
+  }
+
+
+  // ============================================================
+  // CONTABILIDADE — topo "correria"
+  // ------------------------------------------------------------
+  // Três números grandes, um campo onde a admin escreve o gasto em
+  // português e barras mostrando pra onde o dinheiro foi. Tudo se
+  // apoia nas mesmas RPCs que as tabelas de baixo usam — não existe
+  // segunda fonte de verdade, então os números nunca divergem.
+  // ============================================================
+
+  // ============================================================
+  // "O QUE FAZER HOJE" — ranking de experiências mais vendidas
+  // ------------------------------------------------------------
+  // O bloco de texto do diagnóstico (admin-insights.js) responde
+  // "onde estamos pecando". Faltava o outro lado da pergunta da
+  // admin: "o que está vendendo mais, pra eu achar mais parecido".
+  // Isso sai da mesma RPC da Contabilidade — nada de número novo.
+  // ============================================================
+  async function renderDiagnostico() {
+    const box = document.getElementById('insights-top-exp');
+    if (!box) return;
+
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - 30);
+
+    let rows;
+    try {
+      rows = await _finFetchByExperience({ from, to, experience: '', supplier: '' });
+    } catch (e) {
+      console.warn('[Diagnóstico] ranking de experiências falhou:', e.message || e);
+      box.innerHTML = '<p class="diag-box__empty">Não consegui ler as vendas agora.</p>';
+      return;
+    }
+
+    // Ordena por vagas vendidas (site + manual). Quem não vendeu sai.
+    const lista = (rows || []).map(r => ({
+      nome: r.experience_name || '(sem nome)',
+      vagas: (Number(r.qty_site) || 0) + (Number(r.qty_manual) || 0),
+      receita: Number(r.receita_centavos) || 0,
+    })).filter(r => r.vagas > 0)
+      .sort((a, b) => (b.vagas - a.vagas) || (b.receita - a.receita))
+      .slice(0, 8);
+
+    if (!lista.length) {
+      box.innerHTML = '<p class="diag-box__empty">Nenhuma venda nos últimos 30 dias.</p>';
+      return;
+    }
+
+    const maior = lista[0].vagas;
+    box.innerHTML =
+      '<p style="margin:0 0 12px;font-size:.8rem;color:#a9a297;">Últimos 30 dias, por vagas vendidas. É daqui que sai a resposta pra "quais experiências eu devo buscar mais".</p>' +
+      '<div class="diag-rank">' +
+      lista.map((r, i) =>
+        '<div class="diag-rank__row">' +
+          '<span class="diag-rank__pos">' + (i + 1) + '</span>' +
+          '<span class="diag-rank__name">' + escapeHtml(r.nome) + '</span>' +
+          '<span class="diag-rank__bar"><span class="diag-rank__fill" style="width:' +
+            Math.max(4, Math.round((r.vagas / maior) * 100)) + '%"></span></span>' +
+          '<span class="diag-rank__num">' + r.vagas + ' vaga' + (r.vagas !== 1 ? 's' : '') +
+            ' · ' + _finFmtBRL(r.receita) + '</span>' +
+        '</div>'
+      ).join('') +
+      '</div>';
+  }
+
+  // Balões de período. Trocam o <select> escondido em "Ver detalhes"
+  // e disparam o mesmo re-render de sempre.
+  function _finWirePeriodSwitch() {
+    const box = document.getElementById('fin-period-switch');
+    if (!box || box.dataset.wired) return;
+    box.dataset.wired = '1';
+    box.querySelectorAll('[data-fin-period]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const value = btn.dataset.finPeriod;
+        const sel = document.getElementById('fin-filter-period');
+        if (sel) sel.value = value;
+        box.querySelectorAll('[data-fin-period]').forEach(b => {
+          b.classList.toggle('admin__segmented-btn--active', b === btn);
+        });
+        renderContabilidade();
+      });
+    });
+    // Se alguém mexer no select antigo (dentro de "Ver detalhes"),
+    // os balões acompanham pra não mostrarem períodos diferentes.
+    document.getElementById('fin-filter-period')?.addEventListener('change', () => {
+      const cur = document.getElementById('fin-filter-period').value;
+      box.querySelectorAll('[data-fin-period]').forEach(b => {
+        b.classList.toggle('admin__segmented-btn--active', b.dataset.finPeriod === cur);
+      });
+    });
+  }
+
+  function _finRenderBig(s) {
+    const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    if (!s) {
+      set('fin-big-entrou', 'R$ 0'); set('fin-big-saiu', 'R$ 0'); set('fin-big-sobrou', 'R$ 0');
+      return;
+    }
+    const entrou = Number(s.receita_confirmada_centavos) || 0;
+    const gastos = Number(s.gastos_pagos_centavos) || 0;
+    const repasses = Number(s.repasses_pagos_centavos) || 0;
+    const saiu = gastos + repasses;
+    const sobrou = Number(s.lucro_estimado_centavos);
+
+    set('fin-big-entrou', _finFmtBRL(entrou));
+    set('fin-big-saiu', _finFmtBRL(saiu));
+    set('fin-big-sobrou', _finFmtBRL(Number.isFinite(sobrou) ? sobrou : entrou - saiu));
+
+    const vagas = (Number(s.qty_bookings_pagos) || 0) +
+                  (Number(s.qty_manual_sales_pagas) || 0) +
+                  (Number(s.qty_giftcards_pagos) || 0);
+    set('fin-big-entrou-sub', vagas + ' vaga' + (vagas !== 1 ? 's' : '') + ' vendida' + (vagas !== 1 ? 's' : ''));
+    set('fin-big-saiu-sub', _finFmtBRL(gastos) + ' em gastos · ' + _finFmtBRL(repasses) + ' repassado');
+
+    const sobrouEl = document.getElementById('fin-big-sobrou');
+    const liquido = Number.isFinite(sobrou) ? sobrou : entrou - saiu;
+    if (sobrouEl) sobrouEl.style.color = liquido >= 0 ? '#1a8a4a' : '#c0392b';
+    const margem = entrou > 0 ? Math.round((liquido / entrou) * 100) : null;
+    set('fin-big-sobrou-sub', margem == null ? 'entrou − saiu' : 'margem de ' + margem + '%');
+  }
+
+  // Só mostra o que existe: se não tem nada pendente, a faixa some.
+  function _finRenderPendencias(s) {
+    const box = document.getElementById('fin-pendencias');
+    if (!box) return;
+    if (!s) { box.style.display = 'none'; return; }
+    const itens = [];
+    const push = (label, cents) => {
+      if ((Number(cents) || 0) > 0) {
+        itens.push('<span class="fin-pend__item">' + label + ' <b>' + _finFmtBRL(cents) + '</b></span>');
+      }
+    };
+    push('A receber', s.receita_pendente_centavos);
+    push('A pagar (gastos)', s.gastos_pendentes_centavos);
+    push('A repassar pros parceiros', s.repasses_pendentes_centavos);
+    if (!itens.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = '';
+    box.innerHTML = itens.join('');
+  }
+
+  // "Pra onde foi o dinheiro": barras por categoria de gasto + uma
+  // barra separada pros repasses (que não são gasto, mas saem do caixa).
+  function _finRenderCategoryGraph(expenses, summary) {
+    const box = document.getElementById('fin-graph-bars');
+    const totalEl = document.getElementById('fin-graph-total');
+    if (!box) return;
+
+    const porCategoria = new Map();
+    (expenses || []).forEach(e => {
+      if (!e || e.status === 'cancelado' || e.status === 'reembolsado') return;
+      const label = (e.financial_categories && e.financial_categories.label) || 'Sem categoria';
+      porCategoria.set(label, (porCategoria.get(label) || 0) + (Number(e.amount_centavos) || 0));
+    });
+    const repasses = Number(summary && summary.repasses_pagos_centavos) || 0;
+    if (repasses > 0) porCategoria.set('Repasse pros parceiros', repasses);
+
+    const linhas = Array.from(porCategoria.entries())
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1]);
+
+    if (!linhas.length) {
+      box.innerHTML = '<p class="fin-graph__empty">Sem gastos no período.</p>';
+      if (totalEl) totalEl.textContent = '';
+      return;
+    }
+
+    const total = linhas.reduce((acc, [, v]) => acc + v, 0);
+    const maior = linhas[0][1];
+    if (totalEl) totalEl.textContent = _finFmtBRL(total) + ' no total';
+
+    box.innerHTML = linhas.map(([label, cents]) => {
+      const pctTotal = Math.round((cents / total) * 100);
+      const largura = Math.max(2, Math.round((cents / maior) * 100));
+      return '<div class="fin-bar">' +
+        '<div class="fin-bar__top"><span>' + escapeHtml(label) + '</span>' +
+        '<span class="fin-bar__value">' + _finFmtBRL(cents) + ' · ' + pctTotal + '%</span></div>' +
+        '<div class="fin-bar__track"><div class="fin-bar__fill" style="width:' + largura + '%"></div></div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // Mês a mês (6 meses): entrou x saiu, pra enxergar tendência sem
+  // precisar trocar o filtro seis vezes.
+  async function _finRenderMonthsGraph() {
+    const box = document.getElementById('fin-graph-months');
+    if (!box) return;
+    const meses = [];
+    for (let i = 5; i >= 0; i--) {
+      meses.push({ from: _finStartOfMonth(-i), to: _finEndOfMonth(-i) });
+    }
+    let dados;
+    try {
+      dados = await Promise.all(meses.map(m =>
+        _finFetchSummary({ from: m.from, to: m.to, experience: '', supplier: '' })
+      ));
+    } catch (e) {
+      console.warn('[Contabilidade] mês a mês falhou:', e.message || e);
+      return;
+    }
+    const linhas = dados.map((s, i) => {
+      const entrou = Number(s && s.receita_confirmada_centavos) || 0;
+      const saiu = (Number(s && s.gastos_pagos_centavos) || 0) +
+                   (Number(s && s.repasses_pagos_centavos) || 0);
+      return { from: meses[i].from, entrou, saiu };
+    });
+    const teto = Math.max(1, ...linhas.map(l => Math.max(l.entrou, l.saiu)));
+    if (teto <= 1) {
+      box.innerHTML = '<p class="fin-graph__empty">Sem movimento ainda.</p>';
+      return;
+    }
+    const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    box.innerHTML = linhas.map(l => {
+      const hIn = Math.max(3, Math.round((l.entrou / teto) * 110));
+      const hOut = Math.max(3, Math.round((l.saiu / teto) * 110));
+      const net = l.entrou - l.saiu;
+      return '<div class="fin-month" title="Entrou ' + _finFmtBRL(l.entrou) + ' · Saiu ' + _finFmtBRL(l.saiu) + '">' +
+        '<div class="fin-month__cols">' +
+          '<div class="fin-month__col fin-month__col--in" style="height:' + hIn + 'px"></div>' +
+          '<div class="fin-month__col fin-month__col--out" style="height:' + hOut + 'px"></div>' +
+        '</div>' +
+        '<div class="fin-month__net" style="color:' + (net >= 0 ? '#1a8a4a' : '#c0392b') + '">' +
+          (net >= 0 ? '+' : '−') + _finFmtBRL(Math.abs(net)).replace('R$', '').trim() +
+        '</div>' +
+        '<div class="fin-month__label">' + MESES[l.from.getMonth()] + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ============================================================
+  // CHAT DE GASTOS — "gastei 180 em materiais hoje"
+  // ------------------------------------------------------------
+  // Interpretação 100% no navegador (regex + palavras-chave): não
+  // chama IA, não custa nada e funciona offline do resto do sistema.
+  // O que ele entende: valor, data (hoje/ontem/dd/mm), forma de
+  // pagamento, se está pago ou a pagar, e a categoria.
+  // Antes de gravar nada, mostra o que entendeu; e depois de gravar,
+  // deixa um "desfazer" na própria conversa.
+  // ============================================================
+  const _FIN_CHAT_CATEGORIA_PALAVRAS = {
+    'materiais': ['material', 'materiais', 'tinta', 'tintas', 'tecido', 'argila', 'ceramica', 'cerâmica', 'insumo', 'insumos', 'papelaria'],
+    'bebidas': ['bebida', 'bebidas', 'cerveja', 'vinho', 'espumante', 'drink', 'drinks', 'refrigerante', 'aperol', 'gin', 'agua', 'água'],
+    'comidas': ['comida', 'comidas', 'petisco', 'petiscos', 'aperitivo', 'aperitivos', 'coffee', 'lanche', 'buffet', 'salgado', 'salgados', 'doce', 'doces'],
+    'aluguel-espaco': ['aluguel', 'espaco', 'espaço', 'sala', 'estudio', 'estúdio', 'locacao', 'locação', 'ateliê', 'atelie'],
+    'fornecedor': ['fornecedor', 'fornecedora', 'parceiro', 'parceira', 'repasse'],
+    'artista': ['artista', 'instrutor', 'instrutora', 'professor', 'professora', 'chef', 'monitor', 'monitora', 'barman'],
+    'decoracao': ['decoracao', 'decoração', 'flor', 'flores', 'balao', 'balão', 'baloes', 'balões', 'enfeite', 'enfeites'],
+    'marketing': ['anuncio', 'anúncio', 'anuncios', 'anúncios', 'ads', 'trafego', 'tráfego', 'instagram', 'insta', 'facebook', 'meta', 'google', 'impulsionar', 'impulsionamento', 'marketing', 'influencer', 'publi'],
+    'transporte': ['uber', '99', 'taxi', 'táxi', 'transporte', 'combustivel', 'combustível', 'gasolina', 'estacionamento', 'frete', 'correios', 'motoboy'],
+    'plataforma': ['plataforma', 'sistema', 'assinatura', 'software', 'hospedagem', 'dominio', 'domínio', 'supabase', 'vercel', 'canva', 'figma', 'site'],
+    'taxas-pagamento': ['taxa', 'taxas', 'stripe', 'pagarme', 'mercado pago', 'mercadopago', 'infinitypay', 'maquininha'],
+    'impostos': ['imposto', 'impostos', 'das', 'simples nacional', 'nota fiscal'],
+    'brindes': ['brinde', 'brindes', 'lembrancinha', 'lembrancinhas', 'sacola', 'sacolas'],
+    'producao-conteudo': ['conteudo', 'conteúdo', 'edicao', 'edição', 'roteiro', 'reels'],
+    'fotografo': ['fotografo', 'fotógrafo', 'fotografa', 'fotógrafa', 'foto', 'fotos', 'videomaker', 'filmagem', 'video', 'vídeo'],
+  };
+
+  const _FIN_CHAT_PAGAMENTO_PALAVRAS = {
+    'pix': ['pix'],
+    'cartao': ['cartao', 'cartão', 'credito', 'crédito', 'debito', 'débito'],
+    'dinheiro': ['dinheiro', 'especie', 'espécie'],
+    'transferencia': ['transferencia', 'transferência', 'ted', 'doc'],
+    'boleto': ['boleto'],
+  };
+
+  // Palavras que já viraram campo (verbo, preposição, data, status,
+  // forma de pagamento) e portanto não devem sobrar na descrição.
+  // Comparadas já normalizadas (minúsculas, sem acento).
+  const _FIN_CHAT_STOPWORDS = new Set([
+    'gastei', 'paguei', 'pagar', 'gasto', 'gastos', 'custo', 'custou', 'comprei', 'compra',
+    'foi', 'de', 'do', 'da', 'dos', 'das', 'no', 'na', 'nos', 'nas', 'em', 'com',
+    'pra', 'pro', 'para', 'reais', 'real', 'r$', 'rs',
+    'hoje', 'ontem', 'anteontem', 'dia', 'pendente', 'aberto', 'sem', 'ainda', 'nao',
+    'o', 'a', 'os', 'as', 'um', 'uma', 'e',
+    'pix', 'cartao', 'credito', 'debito', 'dinheiro', 'boleto', 'transferencia', 'ted', 'doc',
+  ]);
+
+  function _finChatNormalize(s) {
+    return String(s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  // "1.234,56" → 123456 ; "180" → 18000 ; "180,50" → 18050.
+  function _finChatParseValor(texto) {
+    // Remove datas antes de procurar dinheiro, senão "05/09" vira valor.
+    const semData = texto.replace(/\b\d{1,2}\s*\/\s*\d{1,2}(\s*\/\s*\d{2,4})?\b/g, ' ');
+    const m = semData.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
+    if (!m) return null;
+    let raw = m[1];
+    if (/\.\d{3}/.test(raw)) raw = raw.replace(/\./g, '');   // 1.234,56 → 1234,56
+    raw = raw.replace(',', '.');
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return { centavos: Math.round(n * 100), trecho: m[0] };
+  }
+
+  function _finChatParseData(texto) {
+    const hoje = new Date();
+    const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const norm = _finChatNormalize(texto);
+
+    if (/\banteontem\b/.test(norm)) {
+      const d = new Date(hoje); d.setDate(d.getDate() - 2);
+      return { date: iso(d), trecho: 'anteontem' };
+    }
+    if (/\bontem\b/.test(norm)) {
+      const d = new Date(hoje); d.setDate(d.getDate() - 1);
+      return { date: iso(d), trecho: 'ontem' };
+    }
+    const m = texto.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*\/\s*(\d{2,4}))?\b/);
+    if (m) {
+      const dia = Number(m[1]);
+      const mes = Number(m[2]) - 1;
+      let ano = m[3] ? Number(m[3]) : hoje.getFullYear();
+      if (ano < 100) ano += 2000;
+      const d = new Date(ano, mes, dia);
+      if (!isNaN(d.getTime())) {
+        // Data sem ano que caiu no futuro = mês do ano passado.
+        if (!m[3] && d.getTime() > hoje.getTime() + 86400000) d.setFullYear(ano - 1);
+        return { date: iso(d), trecho: m[0] };
+      }
+    }
+    return { date: iso(hoje), trecho: /\bhoje\b/.test(norm) ? 'hoje' : '' };
+  }
+
+  function _finChatParse(texto, categorias) {
+    const valor = _finChatParseValor(texto);
+    if (!valor) return { erro: 'Não achei o valor. Escreva o número, ex.: "materiais 180 hoje".' };
+
+    const norm = _finChatNormalize(texto);
+    const data = _finChatParseData(texto);
+
+    // Pago x a pagar.
+    const pendente = /\b(a pagar|pendente|vou pagar|ainda nao paguei|nao paguei|falta pagar|em aberto)\b/.test(norm);
+
+    // Forma de pagamento (opcional).
+    let pagamento = null;
+    Object.keys(_FIN_CHAT_PAGAMENTO_PALAVRAS).some(slug => {
+      const achou = _FIN_CHAT_PAGAMENTO_PALAVRAS[slug].some(p => norm.includes(_finChatNormalize(p)));
+      if (achou) { pagamento = slug; return true; }
+      return false;
+    });
+
+    // Categoria: primeira palavra-chave que aparecer no texto.
+    let catSlug = null;
+    Object.keys(_FIN_CHAT_CATEGORIA_PALAVRAS).some(slug => {
+      const achou = _FIN_CHAT_CATEGORIA_PALAVRAS[slug].some(p => {
+        const alvo = _finChatNormalize(p);
+        return new RegExp('(^|[^a-z0-9])' + alvo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)').test(norm);
+      });
+      if (achou) { catSlug = slug; return true; }
+      return false;
+    });
+    const categoria = (categorias || []).find(c => c.slug === (catSlug || 'outros')) ||
+                      (categorias || []).find(c => c.slug === 'outros') || null;
+
+    // Descrição: o texto sem os pedaços que já viraram campo.
+    let desc = texto;
+    [valor.trecho, data.trecho].forEach(t => { if (t) desc = desc.replace(t, ' '); });
+    // Frases de status saem inteiras — senão "a pagar" deixaria um "a" solto.
+    desc = desc.replace(/\b(a pagar|em aberto|falta pagar|vou pagar|ainda n[ãa]o paguei|n[ãa]o paguei)\b/ig, ' ');
+    // Filtro por palavra (e não regex com \b): \b não enxerga acento em
+    // JS, então "espaço" perderia o "o" final por causa do "ç".
+    desc = desc.split(/\s+/)
+      .map(t => t.replace(/^[^0-9A-Za-zÀ-ÿ]+|[^0-9A-Za-zÀ-ÿ%]+$/g, ''))
+      .filter(t => t && !_FIN_CHAT_STOPWORDS.has(_finChatNormalize(t)))
+      .join(' ')
+      .trim();
+    if (!desc) desc = categoria ? categoria.label : 'Gasto';
+    desc = desc.charAt(0).toUpperCase() + desc.slice(1);
+
+    return {
+      description: desc,
+      amount_centavos: valor.centavos,
+      expense_date: data.date,
+      category_id: categoria ? categoria.id : null,
+      category_label: categoria ? categoria.label : 'Sem categoria',
+      payment_method: pagamento,
+      status: pendente ? 'pendente' : 'pago',
+    };
+  }
+
+  function _finChatSay(cls, html) {
+    const log = document.getElementById('fin-chat-log');
+    if (!log) return null;
+    const div = document.createElement('div');
+    div.className = 'fin-chat__msg fin-chat__msg--' + cls;
+    div.innerHTML = html;
+    log.appendChild(div);
+    // Mantém a conversa curta: o histórico completo é a tabela Gastos.
+    while (log.children.length > 8) log.removeChild(log.firstChild);
+    return div;
+  }
+
+  async function _finChatSubmit(texto) {
+    const sb = window.supabaseClient;
+    if (!sb) { _finChatSay('erro', 'Sem conexão com o banco agora. Tenta de novo em instantes.'); return; }
+
+    _finChatSay('me', escapeHtml(texto));
+    const categorias = await _finFetchCategories();
+    const parsed = _finChatParse(texto, categorias);
+    if (parsed.erro) { _finChatSay('erro', escapeHtml(parsed.erro)); return; }
+
+    const payload = {
+      description: parsed.description,
+      amount_centavos: parsed.amount_centavos,
+      expense_date: parsed.expense_date,
+      category_id: parsed.category_id,
+      payment_method: parsed.payment_method,
+      status: parsed.status,
+    };
+    try {
+      const user = sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data.user : null;
+      if (user) payload.created_by = user.id;
+    } catch (_) { /* sem usuário: grava sem autoria */ }
+
+    const { data, error } = await sb.from('financial_expenses').insert(payload).select('id').maybeSingle();
+    if (error) {
+      console.error('[Contabilidade] chat insert error:', error);
+      _finChatSay('erro', 'Não consegui salvar: ' + escapeHtml(error.message || 'erro desconhecido'));
+      return;
+    }
+
+    const quando = parsed.expense_date.split('-').reverse().slice(0, 2).join('/');
+    const msg = _finChatSay('ok',
+      '✓ Anotado: <b>' + escapeHtml(parsed.description) + '</b> — ' +
+      '<b>' + _finFmtBRL(parsed.amount_centavos) + '</b> em ' +
+      escapeHtml(parsed.category_label) + ', dia ' + escapeHtml(quando) +
+      (parsed.status === 'pendente' ? ' <b>(a pagar)</b>' : '') +
+      (parsed.payment_method ? ' · ' + escapeHtml(parsed.payment_method) : '') +
+      (data && data.id ? '<button type="button" class="fin-chat__undo" data-fin-undo="' + escapeHtml(data.id) + '">desfazer</button>' : '')
+    );
+    if (msg) {
+      msg.querySelector('[data-fin-undo]')?.addEventListener('click', async (ev) => {
+        const id = ev.currentTarget.dataset.finUndo;
+        const del = await sb.from('financial_expenses').delete().eq('id', id);
+        if (del.error) { _finChatSay('erro', 'Não consegui desfazer: ' + escapeHtml(del.error.message)); return; }
+        msg.className = 'fin-chat__msg fin-chat__msg--erro';
+        msg.textContent = 'Desfeito — esse gasto foi apagado.';
+        await renderContabilidade({ preserveExpand: true });
+      });
+    }
+    await renderContabilidade({ preserveExpand: true });
+  }
+
+  function _finWireChat() {
+    const form = document.getElementById('fin-chat-form');
+    if (!form || form.dataset.wired) return;
+    form.dataset.wired = '1';
+    const input = document.getElementById('fin-chat-input');
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const texto = (input.value || '').trim();
+      if (!texto) return;
+      input.value = '';
+      input.disabled = true;
+      try { await _finChatSubmit(texto); }
+      finally { input.disabled = false; input.focus(); }
+    });
+    document.querySelectorAll('[data-fin-example]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (input) { input.value = btn.dataset.finExample; input.focus(); }
+      });
+    });
   }
 
   function _finWireControls() {
+    _finWirePeriodSwitch();
+    _finWireChat();
     const onChangeRefresh = () => renderContabilidade();
     document.getElementById('fin-filter-period')?.addEventListener('change', onChangeRefresh);
     document.getElementById('fin-filter-from')?.addEventListener('change', onChangeRefresh);

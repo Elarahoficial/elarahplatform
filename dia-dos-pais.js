@@ -131,7 +131,16 @@
       return n.indexOf('churrasco') !== -1 || n.indexOf('especial') !== -1 || n.indexOf('dia dos pais') !== -1;
     }
     function isTagged(e) { return e && normalize(e.campanha) === CAMPAIGN; }
+    // Ordem manual definida no admin (campo "Ordem nesta página" do
+    // formulário da experiência). Quem tem número vem primeiro, na
+    // ordem escolhida; quem não tem cai depois, no sort por data.
+    function ordemKey(e) {
+      const n = Number(e && e.campanhaOrdem);
+      return Number.isFinite(n) && n > 0 ? n : Infinity;
+    }
     function byDateAsc(a, b) {
+      const oa = ordemKey(a), ob = ordemKey(b);
+      if (oa !== ob) return oa - ob;
       const da = dateKey(a), db = dateKey(b);
       if (da !== db) return da - db;
       return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
