@@ -146,6 +146,17 @@
         <span>Eventos</span>
       </button>
 
+      <!-- Eventos privados: painel de acompanhamento de quem cuida do
+           comercial de eventos fechados (metas, prazos, prospecção de
+           RH e pipeline de orçamento). Diferente da aba Eventos, que
+           olha o que JÁ foi vendido. -->
+      <button class="admin__nav-item" data-panel="eventos-privados">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.4 5.4 5.6.6-4.2 4 1.2 5.8L12 15l-5 2.8L8.2 12 4 8l5.6-.6z"/>
+        </svg>
+        <span>Eventos privados</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="fornecedores">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
@@ -339,7 +350,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.71 · 2026-08-20 (cotação: ver mais)
+        Admin v.72 · 2026-09-09 (eventos privados: comercial)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1113,6 +1124,28 @@
             <tr><td colspan="10" class="admin__table-empty">Nenhum evento ainda. Vendas manuais com mais de 2 pessoas aparecem aqui automaticamente.</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ===== EVENTOS PRIVADOS (COMERCIAL) PANEL ===== -->
+    <!-- Conteúdo inteiro renderizado por admin-eventos-privados.js em
+         #evtpriv-root — o painel é reativo ao banco (metas, SLA, fila
+         do dia), então marcação estática só atrapalharia. -->
+    <div class="admin__panel" id="panel-eventos-privados">
+      <div class="admin__header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Eventos privados — comercial</h1>
+          <p class="admin__page-subtitle">
+            Painel de quem cuida dos eventos fechados: <strong>prospecção de RH</strong>,
+            <strong>orçamentos com prazo</strong> e <strong>metas da semana</strong>.
+            As metas saem do histórico real de eventos — e o placar se preenche
+            com o trabalho registrado, sem relatório na mão.
+          </p>
+        </div>
+        <button id="evtpriv-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+      </div>
+      <div id="evtpriv-root" style="margin-top:8px;">
+        <div style="color:#999;font-size:.9rem;">Carregando…</div>
       </div>
     </div>
 
@@ -4787,12 +4820,13 @@
 <script src="admin-insights.js?v=2"></script>
 <script src="admin-broadcast.js?v=2"></script>
 <script src="admin-eventos.js?v=2"></script>
+<script src="admin-eventos-privados.js?v=1"></script>
 <script src="admin-prospect-finder.js?v=1"></script>
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=4"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=225"></script>
+<script src="admin.js?v=226"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

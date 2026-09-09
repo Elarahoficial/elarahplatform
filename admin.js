@@ -480,6 +480,14 @@
           await window.ElarahSocial.render();
         }
         break;
+      // Aba renderizada por admin-eventos-privados.js. O módulo também
+      // escuta o clique do menu; este case cobre a navegação
+      // programática (navigateToPanel de outro ponto do admin).
+      case 'eventos-privados':
+        if (window.ElarahEventosPrivados && window.ElarahEventosPrivados.run) {
+          await window.ElarahEventosPrivados.run();
+        }
+        break;
     }
   }
 
