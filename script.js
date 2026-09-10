@@ -567,8 +567,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
         }).join('')
       : `<span class="card__badge">${exp.data}</span>`;
 
-    // Selo de escassez no card (mesma regra honesta da página da
-    // experiência) — só aparece quando uma turma futura está enchendo.
+    // Selo de escassez no card (regra honesta de ElarahData) — só aparece
+    // quando TODA data futura da experiência está enchendo, e mostra o nº da
+    // data mais folgada. Um dia com 1 vaga não estampa "última vaga" no card
+    // se houver outro dia com vaga sobrando.
     var _scRest = (window.ElarahData && ElarahData.scarcityForSlots)
       ? ElarahData.scarcityForSlots(exp._slots || [], Date.now()) : null;
     var scarcePill = _scRest != null
