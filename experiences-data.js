@@ -885,6 +885,34 @@
     return temFolga ? null : best;
   }
 
+  // Atividade SEMANAL / recorrente (aula regular). A mesma turma se repete
+  // toda semana, então escassez de um dia não diz nada sobre a experiência:
+  // quem não pegou esta semana pega na próxima. Detecta pelo texto da data
+  // ("Semanal", "Toda quarta"...) e pelos slots gerados pela Recorrência
+  // (recurrenceRuleId), que é como o admin cadastra aula regular.
+  function isAtividadeSemanal(exp, slotsArr) {
+    if (!exp) return false;
+    var d = String(exp.data == null ? '' : exp.data);
+    if (/semanal|quinzenal|mensal|recorrente|aula regular|toda[s]?\s/i.test(d)) return true;
+    var slots = Array.isArray(slotsArr) ? slotsArr : (Array.isArray(exp._slots) ? exp._slots : []);
+    for (var i = 0; i < slots.length; i++) {
+      if (slots[i] && slots[i].recurrenceRuleId) return true;
+    }
+    return false;
+  }
+
+  // Selo de escassez do card, ponta a ponta — é isto que home e categoria
+  // devem chamar (nunca scarcityForSlots direto), pra as duas telas nunca
+  // divergirem. Atividade semanal NÃO leva selo: urgência só faz sentido em
+  // turma pontual, com data marcada. Caso contrário, aplica a regra de
+  // scarcityForSlots (todas as datas futuras apertadas). null = sem selo.
+  function scarcityForCard(exp, slotsArr, nowMs) {
+    if (!exp) return null;
+    var slots = Array.isArray(slotsArr) ? slotsArr : (Array.isArray(exp._slots) ? exp._slots : []);
+    if (isAtividadeSemanal(exp, slots)) return null;
+    return scarcityForSlots(slots, nowMs);
+  }
+
   // Intervalo {startMs, endMs} pros atalhos do filtro de data.
   //   'weekend'    → sábado e domingo desta semana
   //   'next-week'  → segunda a domingo da semana que vem
@@ -1786,6 +1814,8 @@
     scarcityRest,
     scarcityLabel,
     scarcityForSlots,
+    scarcityForCard,
+    isAtividadeSemanal,
     invalidateCache,
     isPubliclyVisible,
     deriveEventTimestamp,
