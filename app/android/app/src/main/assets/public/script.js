@@ -540,12 +540,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         }).join('')
       : `<span class="card__badge">${exp.data}</span>`;
 
-    // Selo de escassez no card (regra honesta de ElarahData) — só aparece
-    // quando TODA data futura da experiência está enchendo, e mostra o nº da
-    // data mais folgada. Um dia com 1 vaga não estampa "última vaga" no card
-    // se houver outro dia com vaga sobrando.
-    var _scRest = (window.ElarahData && ElarahData.scarcityForSlots)
-      ? ElarahData.scarcityForSlots(exp._slots || [], Date.now()) : null;
+    // Selo de escassez no card (regra honesta de ElarahData). Atividade
+    // semanal não leva selo — a turma se repete toda semana. Nas pontuais,
+    // só aparece quando TODA data futura está enchendo, e mostra o nº da
+    // data mais folgada: um dia com 1 vaga não estampa "última vaga" no
+    // card se houver outro dia com vaga sobrando.
+    var _scRest = (window.ElarahData && ElarahData.scarcityForCard)
+      ? ElarahData.scarcityForCard(exp, exp._slots || [], Date.now()) : null;
     var scarcePill = _scRest != null
       ? '<span class="card__scarce" style="position:absolute;left:12px;bottom:12px;background:#c0392b;color:#fff;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:4px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.28);z-index:3;">' +
           (_scRest === 1 ? 'última vaga' : 'últimas ' + _scRest + ' vagas') +
