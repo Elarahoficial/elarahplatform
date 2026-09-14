@@ -824,7 +824,7 @@
         exec:'Série fixa semanal. Roteiro de 3 experiências, 1 delas da Elarah. Vira formato recorrente.',
         cta:'Salva pro fim de semana' },
       { canal:'Instagram', formato:'Carrossel', obj:'Experiências para solteiros', src:null, fixed:'galentine', hor:HOR.ig,
-        hook:t=>`Single's day: rolê com as amigas que vale mais que presente 💛`,
+        hook:t=>`Single's day: rolê com as amigas que vale mais que presente 🧡`,
         exec:'Carrossel de ideias pra solteiras/amigas. Forte em saves (padrão confirmado nos dados).',
         cta:'Salve e chame as amigas' },
       { canal:'Instagram', formato:'Carrossel', obj:'Cerâmica & Criatividade', src:null, fixed:'criatividade', hor:HOR.ig,

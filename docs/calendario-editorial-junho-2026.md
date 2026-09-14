@@ -54,7 +54,7 @@
 - **Stories** · Sequência 5 cards: "Faltam 3 dias pro Dia dos Namorados — você já tem plano?" + caixa de perguntas "qual seu maior dilema pra DDN?" · Engajamento · Caixa + 3 dicas
 - **Feed IG** · Carrossel "5 ideias de date a R$200 ou menos" puxando 5 experiências reais do site · Conversão · CTA: "Link na bio → Dia dos Namorados"
 - **LinkedIn** · Post de Camila: *"Por que romantizamos jantar+cinema e ignoramos a economia das experiências?"* · Posicionamento · CTA: comente sua aposta de date
-- **WhatsApp** · 10h — "Bom dia 💛 Última semana pra reservar pro 12. As 5 vagas mais escondidas estão aqui:" + 3 links · Conversão
+- **WhatsApp** · 10h — "Bom dia 🧡 Última semana pra reservar pro 12. As 5 vagas mais escondidas estão aqui:" + 3 links · Conversão
 
 #### Terça 10/06
 - **TikTok/Reels** · Trend "POV: meu namorado disse que cinema NÃO é date" + curadoria Elarah · Descoberta + identificação · 20s
@@ -79,7 +79,7 @@
 - **TikTok/Reels** · *"Os 3 momentos mais marcantes do DDN da Elarah ontem"* — montagem rápida com cenas reais · Comunidade · 30s
 - **Stories** · Caixa de perguntas: *"Como foi seu Dia dos Namorados?"* — reposta as melhores. Comunidade.
 - **Feed IG** · Post de gratidão + chamada pra Singles Day estendido (final de semana): *"Pra quem ainda não viveu — sábado e domingo tem experiências Single's Day."* · Conversão
-- **WhatsApp** · 18h — *"Obrigada por dividir esse dia com a gente 💛. Agora é Single's Day weekend — chama as amigas:"* + 3 links · Conversão
+- **WhatsApp** · 18h — *"Obrigada por dividir esse dia com a gente 🧡. Agora é Single's Day weekend — chama as amigas:"* + 3 links · Conversão
 
 #### Sábado 14/06
 - **TikTok/Reels** · *"Sábado de amigas — sem desculpa"* — vídeo dinâmico de 3 grupos curtindo experiências Single's Day · Conversão · 20s

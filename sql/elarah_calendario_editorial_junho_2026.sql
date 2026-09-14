@@ -603,7 +603,7 @@ Sticker: caixa de perguntas com placeholder "Conte aqui..."
 
 STORY 3 — Mesmo fundo
 
-Texto: "Vou repostar as melhores aqui. 💛"
+Texto: "Vou repostar as melhores aqui. 🧡"
 Sticker: nenhum
 
 CTA: Esperado UGC. Repostar 4-6 respostas ao longo do dia 13 com stories estilizadas.
@@ -769,7 +769,7 @@ Sticker: enquete com 4 opções (preencher manualmente):
 
 STORY 3 — Engajamento final
 
-Texto: "Vou usar isso pra decidir o que abrir primeiro. Obrigada 💛"
+Texto: "Vou usar isso pra decidir o que abrir primeiro. Obrigada 🧡"
 Sticker: nenhum
 
 CTA: Nenhum link. Funcao eh PURA escuta pra curadoria + relacionamento.
@@ -1603,7 +1603,7 @@ $$Envio: SEGUNDA 10h
 
 LEGENDA (copiar e colar):
 
-"Bom dia 💛
+"Bom dia 🧡
 
 Última semana antes do Dia dos Namorados oficial.
 
@@ -1659,7 +1659,7 @@ $$Envio: SEXTA 18h
 
 LEGENDA:
 
-"Sexta 💛
+"Sexta 🧡
 
 Obrigada por dividir o Dia dos Namorados ontem com a gente.
 
@@ -1685,7 +1685,7 @@ $$Envio: SEGUNDA 10h
 
 LEGENDA:
 
-"Bom dia 💛
+"Bom dia 🧡
 
 Junho começou de verdade. Reset.
 
@@ -1735,7 +1735,7 @@ $$Envio: SEXTA 18h
 
 LEGENDA:
 
-"Sexta 💛 Agenda liberada.
+"Sexta 🧡 Agenda liberada.
 
 3 experiências com vagas pro fim de semana:
 
@@ -1756,7 +1756,7 @@ $$Envio: SEGUNDA 10h
 
 LEGENDA:
 
-"Bom dia 💛
+"Bom dia 🧡
 
 Semana de São João começa hoje.
 
@@ -1806,7 +1806,7 @@ $$Envio: SEXTA 18h
 
 LEGENDA:
 
-"Fim de semana com criança em casa? 💛
+"Fim de semana com criança em casa? 🧡
 
 Olha o que armamos pra famílias:
 
@@ -1830,7 +1830,7 @@ $$Envio: SEGUNDA 10h
 
 LEGENDA:
 
-"Junho fechou 💛
+"Junho fechou 🧡
 
 Vocês viveram:
 [X] experiências DDN
@@ -1842,7 +1842,7 @@ Obrigada por escolher offline com a gente.
 
 Julho chega amanhã. Em breve a primeira newsletter do mes — com agenda completa.
 
-Quem quer ser avisada PRIMEIRO de quinta sexta com a curadoria nova, responde com 💛.
+Quem quer ser avisada PRIMEIRO de quinta sexta com a curadoria nova, responde com 🧡.
 
 — Camila"$$,
 'Balanço fim de mes. Constroi reciprocidade.',

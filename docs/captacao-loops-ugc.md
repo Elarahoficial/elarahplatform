@@ -21,15 +21,15 @@
 
 ### Stories (texto pronto, sem a fundadora aparecer)
 1. 📸 Agora a sua experiência Elarah vale desconto.
-2. Poste e ganhe **10% OFF** na sua próxima experiência 💛
+2. Poste e ganhe **10% OFF** na sua próxima experiência 🧡
 3. Como participar: poste no story ou no feed · aparecendo no workshop · marcando **@elarah.oficial + #fizelarah**
 4. Os detalhes: perfil aberto · post no ar 24h · 1 cupom/mês · vale 60 dias
-5. Já postou? Me manda o print no direct que eu te envio seu cupom. Bora? 💛 #fizelarah
+5. Já postou? Me manda o print no direct que eu te envio seu cupom. Bora? 🧡 #fizelarah
 
-**Capa do destaque:** `#fizelarah 💛`
+**Capa do destaque:** `#fizelarah 🧡`
 
 ### Mensagem de WhatsApp (quando a cliente posta)
-> "Aeee, vi seu post — amei demais! 💛 Tá aqui seu cupom **FIZ10**: 10% OFF na sua próxima experiência Elarah, válido por 60 dias. Já pensou qual vai ser a próxima? 😍"
+> "Aeee, vi seu post — amei demais! 🧡 Tá aqui seu cupom **FIZ10**: 10% OFF na sua próxima experiência Elarah, válido por 60 dias. Já pensou qual vai ser a próxima? 😍"
 
 ### Página (landing do QR)
 `fizelarah.html` → `elarah.com.br/fizelarah.html` (PR #355). Explica oferta, passos, botão seguir @elarah.oficial e CTA WhatsApp. `noindex`.
@@ -54,20 +54,20 @@ Entregue no fim de cada experiência. **Gêmeo do cartão de visita atual** (lar
 > Versão evergreen (fora da campanha), se quiser manter: 10% (sobra ~10%).
 
 ### Stories (lançamento dia 13)
-1. Chegou o mês do **Dia do Amigo** 💛
+1. Chegou o mês do **Dia do Amigo** 🧡
 2. Especial Elarah: **comprou 2 experiências, as duas com 15% OFF** ✨
 3. Bora viver algo offline com aquela amiga? 👯
 4. Corre que vai **só até 20/07** — me chama no direct 👇
 > + contagem regressiva ("faltam 3 dias", "amanhã acaba").
 
 ### Post de feed
-> Dia do Amigo é pra viver algo junto — não pra mandar mais um story de "parabéns, amiga" 😅💛
+> Dia do Amigo é pra viver algo junto — não pra mandar mais um story de "parabéns, amiga" 😅🧡
 > Até **20/07**: comprou 2 experiências, **as duas saem com 15% OFF**.
 > 👉 Marca aqui a amiga que você já ia chamar.
 > #fizelarah #offlineisafeeling
 
 ### WhatsApp (comunidade)
-> "Oi! 💛 Dia do Amigo chegando e a gente preparou um mimo: **comprou 2 experiências, as duas com 15% OFF** — até 20/07. Que tal chamar aquela amiga e viverem algo offline juntas? Me chama que te ajudo a escolher 😍"
+> "Oi! 🧡 Dia do Amigo chegando e a gente preparou um mimo: **comprou 2 experiências, as duas com 15% OFF** — até 20/07. Que tal chamar aquela amiga e viverem algo offline juntas? Me chama que te ajudo a escolher 😍"
 
 ### Regras
 15% OFF na compra de 2 experiências (mesma reserva) · válido 13–20/07/2026 · não acumula · sujeito à disponibilidade.
