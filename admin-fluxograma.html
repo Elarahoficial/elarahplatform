@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
+<meta name="robots" content="noindex, nofollow">
 <meta name="description" content="Fluxograma operacional da Elarah: parceiros, clientes e eventos privados, com responsaveis e status de automacao.">
 <title>Fluxo Elarah</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -531,40 +531,87 @@ function commit(){ renderAll(); save(); }
 function undo(){ if(!hist.length) return; future.push(JSON.stringify(state)); state = normalize(JSON.parse(hist.pop())); if(sel && !nodeById(sel.id)) sel = null; commit(); }
 function redo(){ if(!future.length) return; hist.push(JSON.stringify(state)); state = normalize(JSON.parse(future.pop())); if(sel && !nodeById(sel.id)) sel = null; commit(); }
 
-/* ---------- persistência ---------- */
-var dbDoc = null, clientId = uid("cl"), saveTimer = null, dragging = false;
-function setSave(kind, text){ var el = $("#saveState"); el.setAttribute("data-s", kind); $("#saveText").textContent = text; }
+/* ---------- persistência ----------
+   Três destinos, na ordem: banco do artifact (link do Claude),
+   Supabase (quando a página roda dentro da plataforma) e, sempre,
+   o localStorage como cópia local. */
+var remote = null, clientId = uid("cl"), saveTimer = null, dragging = false;
+function setSave(kind, text){ $("#saveState").setAttribute("data-s", kind); $("#saveText").textContent = text; }
+function payload(){ return Object.assign({}, state, {by:clientId, updatedAt:Date.now()}); }
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
-  if(!dbDoc) return;
+  if(!remote) return;
   setSave("saving","salvando…");
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
-    dbDoc.set(Object.assign({}, state, {by:clientId, updatedAt:Date.now()})).then(function(){
-      setSave("saved","salvo para a equipe");
-    }, function(){ setSave("local","salvo só neste navegador"); });
+    remote.save(payload()).then(function(){ setSave("saved", remote.label); },
+      function(){ setSave("local","salvo só neste navegador"); });
   }, 600);
 }
-(function initDb(){
+function applyRemote(d){
+  if(!d || !Array.isArray(d.nodes) || d.by === clientId || dragging) return;
+  state = normalize(d); if(sel && !nodeById(sel.id)) sel = null; renderAll();
+}
+
+/* banco do artifact */
+(function initArtifactDb(){
   if(!(window.claude && typeof window.claude.use === "function")) return;
   window.claude.use("db").then(function(db){
     if(!db) return;
-    dbDoc = db.doc("fluxo/principal");
-    dbDoc.get().then(function(snap){
+    var ref = db.doc("fluxo/principal");
+    remote = {label:"salvo para a equipe", save:function(data){ return ref.set(data); }};
+    ref.get().then(function(snap){
       if(snap.exists && snap.data() && Array.isArray(snap.data().nodes)){
-        state = normalize(snap.data()); sel = null; renderAll(); fit();
-      } else {
-        dbDoc.set(Object.assign({}, state, {by:clientId, updatedAt:Date.now()}));
-      }
-      setSave("saved","salvo para a equipe");
-      dbDoc.onSnapshot(function(s){
-        if(!s.exists) return;
-        var d = s.data();
-        if(!d || d.by === clientId || dragging) return;
-        state = normalize(d); if(sel && !nodeById(sel.id)) sel = null; renderAll();
-      }, function(){});
+        state = normalize(snap.data()); sel = null; renderAll();
+      } else { ref.set(payload()); }
+      setSave("saved", remote.label);
+      ref.onSnapshot(function(s2){ if(s2.exists) applyRemote(s2.data()); }, function(){});
     }, function(){ setSave("local","salvo só neste navegador"); });
   }, function(){});
+})();
+
+/* Supabase, quando a página está na plataforma */
+(function initSupabase(){
+  if(window.claude && typeof window.claude.use === "function") return;
+  var tries = 0;
+  var timer = setInterval(function(){
+    tries++;
+    var sb = window.supabaseClient;
+    if(!sb){ if(tries > 80) clearInterval(timer); return; }
+    clearInterval(timer);
+    connect(sb);
+  }, 100);
+
+  function connect(sb){
+    setSave("saving","conectando…");
+    sb.auth.getSession().then(function(r){
+      var session = r && r.data ? r.data.session : null;
+      if(!session || !session.user){ setSave("local","entre na conta pra salvar pra equipe"); return; }
+      sb.from("profiles").select("role").eq("id", session.user.id).maybeSingle().then(function(pr){
+        if(!pr || !pr.data || pr.data.role !== "admin"){ setSave("local","sem acesso de admin — salvo só aqui"); return; }
+        remote = {
+          label:"salvo para a equipe",
+          save:function(data){
+            return sb.from("fluxograma").upsert({
+              id:"principal", dados:data, updated_at:new Date().toISOString(), updated_by:session.user.id
+            }).then(function(res){ if(res && res.error) throw res.error; });
+          }
+        };
+        sb.from("fluxograma").select("dados").eq("id","principal").maybeSingle().then(function(res){
+          if(res && res.error){ setSave("local","salvo só neste navegador"); return; }
+          var d = res && res.data ? res.data.dados : null;
+          if(d && Array.isArray(d.nodes)){ state = normalize(d); sel = null; renderAll(); }
+          else { remote.save(payload()); }
+          setSave("saved", remote.label);
+        }, function(){ setSave("local","salvo só neste navegador"); });
+        try {
+          sb.channel("fluxograma-live").on("postgres_changes",
+            {event:"*", schema:"public", table:"fluxograma"},
+            function(ev){ applyRemote(ev && ev.new ? ev.new.dados : null); }).subscribe();
+        } catch(e){}
+      }, function(){ setSave("local","salvo só neste navegador"); });
+    }, function(){ setSave("local","salvo só neste navegador"); });
+  }
 })();
 
 /* ---------- geometria ---------- */
@@ -1298,5 +1345,7 @@ window.addEventListener("resize", function(){ schedule(applyView); });
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ renderNodes(); drawWires(); });
 })();
 </script>
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
 </body>
 </html>
