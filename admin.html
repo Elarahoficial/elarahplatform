@@ -190,7 +190,16 @@
         <span>Prospecção</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="b2b-prospects">
+      <!-- Prospecção B2B saiu do menu: o dia a dia de prospectar agora
+           mora na aba "Eventos privados" (fila enxuta, canal em 1
+           clique). Este painel continua sendo o CRM completo — cadastro,
+           importação de CSV, templates — e é alcançado pelo botão
+           "Abrir CRM de empresas" de lá.
+           display:none em vez de comentário porque navigateToPanel
+           procura o botão pra marcar como ativo: se ele sumir do DOM,
+           a navegação programática para de funcionar. Pra devolver ao
+           menu, basta remover o style. -->
+      <button class="admin__nav-item" data-panel="b2b-prospects" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 21h18"/>
           <path d="M5 21V7l8-4v18"/>
@@ -350,7 +359,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.72 · 2026-09-09 (eventos privados: comercial)
+        Admin v.73 · 2026-09-14 (eventos privados: registro diário)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1137,9 +1146,9 @@
           <h1 class="admin__page-title">Eventos privados — comercial</h1>
           <p class="admin__page-subtitle">
             Painel de quem cuida dos eventos fechados: <strong>prospecção de RH</strong>,
-            <strong>orçamentos com prazo</strong> e <strong>metas da semana</strong>.
-            As metas saem do histórico real de eventos — e o placar se preenche
-            com o trabalho registrado, sem relatório na mão.
+            <strong>registro do dia em contadores</strong> e <strong>metas da semana</strong>.
+            Os pedidos continuam na lista do WhatsApp — aqui vai só o número.
+            Evento fechado e faturamento vêm sozinhos do financeiro.
           </p>
         </div>
         <button id="evtpriv-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
@@ -4820,7 +4829,7 @@
 <script src="admin-insights.js?v=2"></script>
 <script src="admin-broadcast.js?v=2"></script>
 <script src="admin-eventos.js?v=2"></script>
-<script src="admin-eventos-privados.js?v=1"></script>
+<script src="admin-eventos-privados.js?v=2"></script>
 <script src="admin-prospect-finder.js?v=1"></script>
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=4"></script>
