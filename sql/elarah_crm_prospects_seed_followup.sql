@@ -63,7 +63,7 @@ where not exists (
 -- ===== Follow-up 2 — Com convite curto (1-2 semanas) =====
 insert into public.prospect_templates (nome, categoria, conteudo, ordem, is_active)
 select 'Follow-up 2 — 1 a 2 semanas (com convite)', null,
-'Oi, {{nome}}! Volto aqui rapidinho 💛
+'Oi, {{nome}}! Volto aqui rapidinho 🧡
 
 Estou montando a curadoria da Elarah pros próximos meses e o seu trabalho em {{categoria}} continua sendo uma referência que eu quero muito ter na plataforma.
 

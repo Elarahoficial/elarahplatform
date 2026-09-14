@@ -496,56 +496,61 @@
       titulo: 'Primeira abordagem de empresa',
       quando: 'RH / People que ainda não te conhece',
       texto:
-        'Oi {{contato}}, tudo bem?\n\n' +
-        'Aqui é {{responsavel}} da Elarah — a gente organiza experiências fechadas em São Paulo ' +
-        '(cerâmica, coquetelaria, gastronomia, pintura) pra grupos de empresa.\n\n' +
-        'Costumam usar pra confraternização, integração de time novo e datas do calendário interno. ' +
-        'A gente cuida de tudo: local, fornecedor, material e condução.\n\n' +
+        'Oi {{contato}}, tudo bem? 😊\n\n' +
+        'Aqui é {{responsavel}} da Elarah 🧡 — a gente organiza *experiências fechadas em São Paulo* ' +
+        'pra grupos de empresa: cerâmica 🏺, coquetelaria 🍸, gastronomia 🍝 e pintura 🎨.\n\n' +
+        'Os times usam muito pra *confraternização*, integração de gente nova e datas do calendário ' +
+        'interno. E a gente cuida de tudo: local, fornecedor, material e condução — vocês só ' +
+        'aparecem pra aproveitar ✨\n\n' +
         'Tem alguma ação pro time nos próximos meses? Se fizer sentido pra {{empresa}}, te mando um ' +
-        'orçamento com 2 ou 3 formatos por faixa de pessoas — sem compromisso.',
+        'orçamento com *2 ou 3 formatos* por faixa de pessoas, sem compromisso 🧡',
     },
     primeira_resposta: {
       titulo: 'Primeira resposta a quem pede orçamento',
       quando: 'em até 2h — é a mensagem que segura o cliente',
       texto:
-        'Oi {{nome}}, tudo bem? Aqui é da Elarah 💛\n\n' +
-        'Que bom que pensou na gente!\n\n' +
-        'Pra montar o orçamento certinho, me confirma 3 coisas?\n' +
-        '1. Data (ou período) do evento\n' +
-        '2. Quantas pessoas, mais ou menos\n' +
-        '3. Se prefere em um espaço nosso ou em um local de vocês\n\n' +
-        'Com isso eu te mando as opções ainda hoje.',
+        'Oi {{nome}}, tudo bem? Aqui é da Elarah 🧡\n\n' +
+        'Que alegria que você pensou na gente! 🥳\n\n' +
+        'Pra eu montar o seu orçamento certinho, me confirma *3 coisinhas*?\n\n' +
+        '1️⃣ *Data* (ou o período que você tem em mente)\n' +
+        '2️⃣ *Quantas pessoas*, mais ou menos\n' +
+        '3️⃣ Se prefere em um *espaço nosso* ou em um *local de vocês*\n\n' +
+        'Com isso eu já te mando as opções *ainda hoje* ✨',
     },
     orcamento: {
       titulo: 'Enviando o orçamento',
       quando: 'junto com a proposta',
       texto:
-        '{{nome}}, montei as opções 💛\n\n' +
-        'Está tudo aí: o que inclui, o valor por pessoa e o total.\n\n' +
-        'Qualquer ajuste — data, número de pessoas, formato — eu remonto rapidinho, é só falar. ' +
-        'A data só fica reservada depois da confirmação, então me avisa se quiser que eu segure.',
+        '{{nome}}, montei as opções pra você 🧡✨\n\n' +
+        'Está tudo aí: *o que inclui*, o *valor por pessoa* e o *total*.\n\n' +
+        'Qualquer ajuste — data, número de pessoas, formato — eu remonto rapidinho, é só falar 😊\n\n' +
+        'Só um detalhe importante: a data fica reservada *depois da confirmação*. Se quiser que eu ' +
+        'segure a sua, me avisa que eu já deixo guardada 🧡',
     },
     followup_1: {
       titulo: 'Follow-up 1 — D+1',
       quando: 'um dia depois do orçamento',
       texto:
-        'Oi {{nome}}! Só passando pra saber se o orçamento chegou direitinho 😊\n\n' +
-        'Qualquer ajuste (data, número de pessoas, formato) eu remonto rapidinho.',
+        'Oi {{nome}}! 😊 Passando rapidinho pra saber se o orçamento chegou direitinho 🧡\n\n' +
+        'Qualquer ajuste (data, número de pessoas, formato) eu *remonto na hora* — é só me contar ' +
+        'o que você imaginou ✨',
     },
     followup_2: {
       titulo: 'Follow-up 2 — D+3',
       quando: 'três dias depois do orçamento',
       texto:
-        'Oi {{nome}}, tudo bem? Sei que a correria é grande.\n\n' +
-        'Se quiser, eu seguro a data pra você por 48h enquanto decide — me avisa que já deixo reservado.',
+        'Oi {{nome}}, tudo bem? 🧡 Sei que a correria é grande, então vou ser rapidinha:\n\n' +
+        'se quiser, eu *seguro a sua data por 48h* enquanto você decide com calma ⏳\n\n' +
+        'É só me mandar um "pode segurar" que eu já deixo reservado 😊',
     },
     followup_3: {
       titulo: 'Follow-up 3 — D+7',
       quando: 'último toque; depois dele, encerra',
       texto:
-        'Oi {{nome}}! Última mensagem pra não te encher 🙂\n\n' +
-        'Se não for o momento, sem problema nenhum — me diz que eu guardo seu contato e te aviso ' +
-        'quando abrir novas datas.',
+        'Oi {{nome}}! 🧡 Última mensagem pra não te encher, prometo 🙈\n\n' +
+        'Se não for o momento, sem problema *nenhum* — é só me dizer que eu guardo seu contato com ' +
+        'carinho e te aviso quando abrir *novas datas* ✨\n\n' +
+        'E se mudar de ideia, é só chamar aqui que eu te respondo 😊',
     },
   };
   var MSG_ORDEM = ['prospeccao', 'primeira_resposta', 'orcamento', 'followup_1', 'followup_2', 'followup_3'];
@@ -590,10 +595,15 @@
       responsavel: primeiroNome(cfg.responsavel_nome),
     });
   }
+  // *negrito* é sintaxe do WhatsApp. No corpo de e-mail o asterisco
+  // aparece cru, então os marcadores saem — o texto continua igual.
+  function semNegritoWhats(txt) {
+    return String(txt || '').replace(/\*([^*\n]+)\*/g, '$1');
+  }
   function emailProspeccao(p) {
     return {
       assunto: 'Experiências fechadas pro time da ' + (p.nome || 'sua empresa') + ' — Elarah',
-      corpo: msgProspeccao(p) + '\n\nSite: https://elarah.com.br',
+      corpo: semNegritoWhats(msgProspeccao(p)) + '\n\nSite: https://elarah.com.br',
     };
   }
 
@@ -800,7 +810,8 @@
         'O texto fica com as variáveis à mostra pra você editar — elas são trocadas <b>na hora de copiar</b>. ' +
         'Disponíveis: <code>{{nome}}</code> <code>{{empresa}}</code> <code>{{evento}}</code> ' +
         '<code>{{contato}}</code> <code>{{responsavel}}</code>. Campo vazio some da frase sozinho. ' +
-        'Editar aqui salva pra sempre; o “voltar ao padrão” desfaz.' +
+        'Pra <b>negrito no WhatsApp</b>, ponha o trecho entre asteriscos: <code>*assim*</code> ' +
+        '(no e-mail os asteriscos saem sozinhos). Editar aqui salva pra sempre; o “voltar ao padrão” desfaz.' +
       '</div>';
 
     var cards = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">';

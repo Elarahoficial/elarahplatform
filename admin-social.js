@@ -57,7 +57,7 @@
   // -----------------------------------------------------------
   const OCCASIONS = [
     { key: 'namorados',   label: 'Dia dos Namorados',     emoji: '❤️', kw: ['namorado', 'namorada', 'dia dos namorados', 'romance', 'romantico', 'romântico', 'casal', 'amor'] },
-    { key: 'galentine',   label: "Galentine's / Singles", emoji: '💛', kw: ['galentine', 'singles day', 'singles', 'single', 'solteir', 'self love', 'selflove'] },
+    { key: 'galentine',   label: "Galentine's / Singles", emoji: '🧡', kw: ['galentine', 'singles day', 'singles', 'single', 'solteir', 'self love', 'selflove'] },
     { key: 'maes',        label: 'Dia das Mães',          emoji: '🌷', kw: ['mãe', 'mae', 'maes', 'mães', 'dia das mães', 'mamãe', 'mamae', 'materna'] },
     { key: 'pais',        label: 'Dia dos Pais',          emoji: '👔', kw: ['pai', 'pais', 'dia dos pais', 'papai', 'paterno'] },
     { key: 'aniversario', label: 'Aniversário',           emoji: '🎂', kw: ['aniversário', 'aniversario', 'niver', 'birthday', 'parabéns', 'parabens'] },

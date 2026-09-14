@@ -2407,7 +2407,7 @@
     // Mensagem pronta pro WhatsApp. Prioriza a senha temporária (não
     // depende de e-mail nem de link/redirect); o link vai como extra.
     const oi = primeiro ? ('Oi, ' + primeiro + '! ') : 'Oi! ';
-    let msg = oi + 'Já deixei o acesso da sua conta Elarah pronto 💛\n\n' +
+    let msg = oi + 'Já deixei o acesso da sua conta Elarah pronto 🧡\n\n' +
       'É só entrar em elarah.com.br, clicar em "Entrar" e usar:\n\n';
     if (senha) {
       msg += 'E-mail: ' + email + '\n' + 'Senha: ' + senha + '\n\n' +
@@ -4313,8 +4313,8 @@
         return {
           key: 'baressp',
           label: 'BaresSp',
-          subject: 'Sua reserva na Elarah — falta só concluir 💛',
-          body: oi + ' Muito obrigado pela compra 💛\n\n' +
+          subject: 'Sua reserva na Elarah — falta só concluir 🧡',
+          body: oi + ' Muito obrigado pela compra 🧡\n\n' +
             'Para concluirmos a sua reserva, precisamos que você preencha ' +
             'este link:\n' +
             'https://kommo.cc/K/X9OYUQ/X5FUBM\n\n' +
@@ -4326,9 +4326,9 @@
         return {
           key: 'ladob',
           label: 'Lado B',
-          subject: 'Sua aula no Lado B — informações importantes 💛',
+          subject: 'Sua aula no Lado B — informações importantes 🧡',
           body: (primeiroNome ? ('Oi ' + primeiroNome + '!') : 'Oi!') +
-            ' Muito obrigada pela compra 💛\n\n' +
+            ' Muito obrigada pela compra 🧡\n\n' +
             'Vou precisar do seu nome completo, CPF, CEP, e-mail e endereço, ' +
             'por gentileza.\n\n' +
             'Pedimos a gentileza de que todos cheguem no horário de início ' +
@@ -6498,14 +6498,14 @@
       const data = b.data || '';
       const dataLine = data ? ' no dia *' + data + '*' : '';
       const msg = oi + ' ✨\n\n' +
-        'Aqui é da Elarah! Esperamos que você tenha vivido uma experiência incrível na *' + expNome + '*' + dataLine + ' 💛\n\n' +
+        'Aqui é da Elarah! Esperamos que você tenha vivido uma experiência incrível na *' + expNome + '*' + dataLine + ' 🧡\n\n' +
         'Adoraríamos saber como foi pra você:\n' +
         '• Uma nota de 0 a 10 ⭐\n' +
         '• Um comentário curtinho sobre o que mais te marcou\n\n' +
         'Sua opinião ajuda demais — tanto pra gente melhorar quanto pra outras pessoas descobrirem essa experiência.\n\n' +
         'Obrigada por escolher a Elarah! 🌸';
       // api.whatsapp.com/send em vez de wa.me — wa.me corrompe emojis
-      // fora do BMP (💬 💛 🌸 ⭐) virando "��" no chat. Ver comentário
+      // fora do BMP (💬 🧡 🌸 ⭐) virando "��" no chat. Ver comentário
       // em ~line 1469 onde esse fix foi originalmente identificado.
       return 'https://api.whatsapp.com/send/?phone=' + waDigits +
         '&text=' + encodeURIComponent(msg);
@@ -9727,7 +9727,7 @@
     const horariosStr = horariosList.length ? horariosList.join(' ou ') : '';
 
     const lines = [
-      'Oii ' + firstName + ' 💛',
+      'Oii ' + firstName + ' 🧡',
       '',
       'Passando pra te contar que essa experiência é pra sair do automático e viver algo diferente ✨'
     ];
@@ -21341,7 +21341,7 @@
     '📅 {{data}} · {{horario}}\n' +
     '📍 {{bairro}}\n\n' +
     '✨ {{vagas}}\n' +
-    '💛 {{preco}}\n\n' +
+    '🧡 {{preco}}\n\n' +
     '👉 Reserve sua vaga: {{link}}';
 
   function _focoTpl() {

@@ -419,7 +419,7 @@ export function bookingConfirmationEmailHtml(opts: {
 
   const inner = `
     <h2 style="font-family:Georgia,'DM Serif Display',serif;color:#1a1a1a;margin:0 0 12px;font-size:22px;">${greeting}</h2>
-    <p style="margin:0 0 8px;">Recebemos seu pagamento 💛 Sua reserva está <strong>confirmada</strong>.</p>
+    <p style="margin:0 0 8px;">Recebemos seu pagamento 🧡 Sua reserva está <strong>confirmada</strong>.</p>
     <p style="margin:0 0 20px;color:#555;">Já estamos preparando tudo pra te receber — guarde este email, ele tem todas as informações que você vai precisar no dia.</p>
     <div style="margin:16px 0;padding:20px 22px;background:#faf6f0;border-radius:12px;border:1px solid #f0e8de;">
       <div style="font-family:Georgia,serif;font-size:19px;color:#1a1a1a;margin-bottom:14px;line-height:1.3;">${escapeHtml(opts.experienciaNome)}</div>
@@ -755,8 +755,8 @@ export function supplierCustomerMessage(
     return {
       key: "baressp",
       label: "BaresSp",
-      subject: "Sua reserva na Elarah — falta só concluir 💛",
-      text: `${oiM} Muito obrigado pela compra 💛\n\n` +
+      subject: "Sua reserva na Elarah — falta só concluir 🧡",
+      text: `${oiM} Muito obrigado pela compra 🧡\n\n` +
         `Para concluirmos a sua reserva, precisamos que você preencha ` +
         `este link:\n` +
         `https://kommo.cc/K/X9OYUQ/X5FUBM\n\n` +
@@ -769,8 +769,8 @@ export function supplierCustomerMessage(
     return {
       key: "ladob",
       label: "Lado B",
-      subject: "Sua aula no Lado B — informações importantes 💛",
-      text: `${oiM} Muito obrigada pela compra 💛\n\n` +
+      subject: "Sua aula no Lado B — informações importantes 🧡",
+      text: `${oiM} Muito obrigada pela compra 🧡\n\n` +
         `Vou precisar do seu nome completo, CPF, CEP, e-mail e endereço, ` +
         `por gentileza.\n\n` +
         `Pedimos a gentileza de que todos cheguem no horário de início da ` +
