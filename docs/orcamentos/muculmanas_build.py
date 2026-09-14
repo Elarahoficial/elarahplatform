@@ -668,6 +668,65 @@ co_prox = proximos(
      ("É só viver", "No dia, chega tudo pronto. Vocês só aproveitam.")],
     "Próximos passos")
 
-write("colecao-muculmanas", [co_cover, gf, cf, ff, mf, co_inv, co_prox])
+def feature3_page(kicker, eyebrow, title, lead, cards, fr):
+    cc = "\n".join(f'      <div class="infocard"><div class="ico">{ic}</div><h3>{t}</h3><p>{d}</p></div>' for ic, t, d in cards)
+    return f'''
+  <section class="slide">
+{head_simple(kicker)}
+    <span class="eyebrow orange">{eyebrow}</span>
+    <h2>{title}</h2>
+    <p class="lead">{lead}</p>
+    <div class="rule"></div>
+    <div class="grid3">
+{cc}
+    </div>
+    {foot(fr)}
+  </section>'''
+
+
+co_sobre = feature3_page(
+    "Sobre a Elarah",
+    "◆ Sobre a Elarah",
+    "Experiências que viram <em>memória</em>",
+    "A Elarah cria experiências criativas e sensoriais sob medida — do conceito ao último detalhe. A gente reúne pessoas em torno de algo pra fazer com as mãos, provar, sentir e levar pra casa. Cada encontro é pensado pra emocionar. ✨",
+    [("🎯", "Sob medida", "Cada experiência é desenhada pro seu grupo, gosto e ocasião."),
+     ("🤍", "Do início ao fim", "A gente cuida de tudo: espaço, material, profissionais e organização."),
+     ("✨", "Pra emocionar", "Mais que uma atividade — um momento que vira memória afetiva.")],
+    "Sobre a Elarah")
+
+co_como = feature3_page(
+    "Como funciona",
+    "◆ Como funciona",
+    "Simples do <em>começo ao fim</em>",
+    "Da primeira conversa ao dia do evento, tudo leve e sem complicação — a gente cuida de cada detalhe pra vocês só aproveitarem. 🌙",
+    [("1️⃣", "Conta pra gente", "Número de pessoas, data e o que vocês imaginam."),
+     ("2️⃣", "Montamos tudo", "Proposta, espaço, material e profissionais sob medida."),
+     ("3️⃣", "É só viver", "No dia, chega tudo pronto. Vocês só aproveitam.")],
+    "Como funciona")
+
+co_pag = f'''
+  <section class="slide">
+{head_simple("Reserva & pagamento")}
+    <span class="eyebrow orange">◆ Reserva &amp; pagamento</span>
+    <h2>Pra garantir a <em>data</em></h2>
+    <p class="lead">Reservar é fácil: a gente segura a sua data e organiza tudo com tranquilidade até o grande dia. 🤍</p>
+    <div class="rule"></div>
+    <div class="vgrid" style="margin-top:14px">
+      <div class="vcard"><div class="vb">
+        <span class="vt">Etapa 1</span>
+        <h3>50% no fechamento</h3>
+        <p class="vaddr">Garante a sua data e a agenda dos profissionais e espaços.</p>
+      </div></div>
+      <div class="vcard"><div class="vb">
+        <span class="vt">Etapa 2</span>
+        <h3>50% até 24h antes</h3>
+        <p class="vaddr">O restante só na reta final, um dia antes do evento.</p>
+      </div></div>
+    </div>
+    <div class="bnote">◆ Todas as experiências são <b>halal</b> e <b>sem álcool</b>. Número de pessoas e datas a confirmar; proposta válida mediante disponibilidade de agenda. A automaquiagem by Elarah segue o formato de parceria de marca. 🌙</div>
+    {foot("Reserva & pagamento")}
+  </section>'''
+
+write("colecao-muculmanas", [co_cover, co_sobre, co_como, co_menu, gf, cf, ff, mf, co_inv, co_pag, co_prox])
 
 print("== decks gerados (4 individuais + 1 combinado) ==")
