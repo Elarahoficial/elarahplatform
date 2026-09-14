@@ -21,7 +21,7 @@
   --shadow-1:0 1px 2px rgba(66,38,16,.07), 0 4px 12px rgba(66,38,16,.06);
   --shadow-2:0 2px 6px rgba(66,38,16,.10), 0 18px 40px rgba(66,38,16,.13);
   --r-sm:8px; --r-md:12px; --r-lg:18px;
-  --nw:236px;
+  --nw:236px; --railw:212px;
   color-scheme:light;
 }
 :root:not([data-theme="light"]){}
@@ -112,13 +112,24 @@ button,input,select,textarea{font:inherit; color:inherit}
 #saveState[data-s="local"] .pulse{background:var(--muted)}
 
 /* ---------- layout ---------- */
-#main{display:grid; grid-template-columns:212px minmax(0,1fr) 320px; min-height:0; position:relative}
+#main{display:grid; grid-template-columns:var(--railw) minmax(0,1fr) 320px; min-height:0; position:relative}
 
 /* ---------- team rail ---------- */
 #team{
   border-right:1px solid var(--line); background:var(--surface); display:flex; flex-direction:column;
-  min-height:0; z-index:20;
+  min-height:0; z-index:20; position:relative;
 }
+#railgrip{position:absolute; top:0; right:-5px; width:11px; height:100%; cursor:col-resize; z-index:26; touch-action:none}
+#railgrip::before{content:""; position:absolute; left:5px; top:0; bottom:0; width:2px; border-radius:2px; background:transparent; transition:background .15s}
+#railgrip:hover::before, #railgrip[data-on="1"]::before{background:var(--brand)}
+#railToggle{transition:transform .18s}
+body[data-rail="slim"] .rail-foot{display:none}
+body[data-rail="mini"] .rail-foot, body[data-rail="mini"] .rail-hd .u-label,
+body[data-rail="mini"] .person .who, body[data-rail="mini"] .person .cnt{display:none}
+body[data-rail="mini"] .rail-hd{justify-content:center; padding:12px 0 8px}
+body[data-rail="mini"] #peopleList{padding:0 6px 10px; align-items:center}
+body[data-rail="mini"] .person{justify-content:center; padding:6px; width:auto}
+body[data-rail="mini"] #railToggle{transform:rotate(180deg)}
 .rail-hd{display:flex; align-items:center; justify-content:space-between; padding:13px 14px 8px}
 #peopleList{overflow-y:auto; padding:0 10px 10px; display:flex; flex-direction:column; gap:5px; flex:1 1 auto; min-height:0}
 .person{
@@ -258,7 +269,7 @@ button,input,select,textarea{font:inherit; color:inherit}
 .bar{height:7px; border-radius:99px; background:var(--surface-3); overflow:hidden; display:flex}
 .bar i{display:block; height:100%}
 #sheetToggle{display:none}
-body[data-insp="off"] #main{grid-template-columns:212px minmax(0,1fr)}
+body[data-insp="off"] #main{grid-template-columns:var(--railw) minmax(0,1fr)}
 body[data-insp="off"] #insp{display:none}
 body[data-insp="off"] #sheetToggle{
   display:inline-flex; position:fixed; right:16px; bottom:16px; z-index:55; height:40px;
@@ -288,6 +299,9 @@ body[data-insp="off"] #sheetToggle{
   .person .who small{display:none}
   .rail-foot{display:none}
   body[data-insp="off"] #main{grid-template-columns:minmax(0,1fr)}
+  #railgrip, #railToggle{display:none}
+  body[data-rail="mini"] .person .who b{display:block}
+  body[data-rail="mini"] .rail-hd, body[data-rail="mini"] #peopleList{padding:0}
   #insp{
     position:fixed; left:0; right:0; bottom:0; top:auto; max-height:58dvh; border-left:0; border-top:1px solid var(--line-2);
     border-radius:18px 18px 0 0; box-shadow:var(--shadow-2); z-index:60;
@@ -329,13 +343,17 @@ body[data-insp="off"] #sheetToggle{
   <aside id="team">
     <div class="rail-hd">
       <span class="u-label">Equipe</span>
-      <button class="btn icon ghost" id="addPerson" title="Adicionar pessoa" aria-label="Adicionar pessoa">+</button>
+      <span style="display:flex; gap:2px">
+        <button class="btn icon ghost" id="addPerson" title="Adicionar pessoa" aria-label="Adicionar pessoa">+</button>
+        <button class="btn icon ghost" id="railToggle" title="Recolher a coluna" aria-label="Recolher a coluna">‹</button>
+      </span>
     </div>
     <div id="peopleList"></div>
     <div class="rail-foot">
       <p class="hint"><b>Arraste uma pessoa</b> para cima de uma etapa para torná-la responsável. Clique nela para ver só o que é dela.</p>
       <p class="hint">Puxe a bolinha da borda de uma etapa para criar a seta. <kbd>Del</kbd> apaga o que estiver selecionado. O ✕ do painel da direita fecha ele — o botão <b>Detalhes</b> traz de volta.</p>
     </div>
+    <div id="railgrip" title="Arraste para o lado — clique duplo recolhe"></div>
   </aside>
 
   <div id="stagewrap">
@@ -1184,6 +1202,34 @@ stage.addEventListener("pointerdown", function(ev){
     state.edges.push(ne); drag = null; sel = {type:"edge", id:ne.id}; setInsp(true); commit();
   } else { renderInspector(); }
 });
+
+/* ---------- largura da coluna da equipe ---------- */
+var RAILW = 212;
+function setRail(w, remember){
+  RAILW = Math.max(58, Math.min(380, Math.round(w)));
+  document.documentElement.style.setProperty("--railw", RAILW+"px");
+  document.body.setAttribute("data-rail", RAILW < 122 ? "mini" : (RAILW < 205 ? "slim" : "full"));
+  if(remember !== false){ try{ localStorage.setItem(KEY+"-rail", RAILW); }catch(e){} }
+}
+(function(){
+  var saved = 0;
+  try{ saved = parseInt(localStorage.getItem(KEY+"-rail"), 10) || 0; }catch(e){}
+  setRail(saved || 212, false);
+  var grip = $("#railgrip"), gd = null;
+  grip.addEventListener("pointerdown", function(ev){
+    gd = {sx:ev.clientX, w:RAILW}; grip.setAttribute("data-on","1");
+    grip.setPointerCapture(ev.pointerId); ev.preventDefault();
+  });
+  grip.addEventListener("pointermove", function(ev){
+    if(!gd) return;
+    setRail(gd.w + (ev.clientX - gd.sx));
+  });
+  function stop(){ gd = null; grip.removeAttribute("data-on"); }
+  grip.addEventListener("pointerup", stop);
+  grip.addEventListener("pointercancel", stop);
+  grip.addEventListener("dblclick", function(){ setRail(RAILW < 122 ? 212 : 74); });
+  $("#railToggle").addEventListener("click", function(){ setRail(RAILW < 122 ? 212 : 74); });
+})();
 
 /* ---------- barra superior ---------- */
 $("#addNode").addEventListener("click", function(){ addNode(); });
