@@ -476,7 +476,9 @@
     var fonte = t.eventos.length >= 3 ? t.eventos : (t.site.length >= 3 ? t.site : null);
     var nomes = fonte
       ? fonte.slice(0, 3).map(function (x) { return x.curto; })
-      : ['cerâmica em torno', 'vela aromática', 'drinks clássicos'];
+      // Fallback = as campeãs reais de set/26 (Agente de Eventos).
+      // Só aparece num banco sem histórico; com dado, o cálculo manda.
+      : ['criando seu perfume natural', 'modelagem em cerâmica', 'buquê de flores & home spray'];
     // Remove repetição ("vela aromática" e "vela flor" viram um só).
     var vistos = {}, limpos = [];
     nomes.forEach(function (n) {
@@ -590,9 +592,11 @@
         'Oi {{contato}}, tudo bem? 😊\n\n' +
         'Aqui é {{responsavel}} da Elarah 🧡 — a gente organiza *experiências fechadas em São Paulo* ' +
         'pra grupos de empresa. As mais pedidas agora são {{top_experiencias}} ✨\n\n' +
-        'Os times usam muito pra *confraternização*, integração de gente nova e datas do calendário ' +
-        'interno. E a gente cuida de tudo: local, fornecedor, material e condução — vocês só ' +
-        'aparecem pra aproveitar 🎉\n\n' +
+        'O que faz sucesso com time é justamente isso: todo mundo *põe a mão na massa* e sai com uma ' +
+        'peça feita por ele — perfume, cerâmica, buquê. A lembrança dura bem depois da ' +
+        'confraternização acabar 🎁\n\n' +
+        'E a gente cuida de tudo: local, fornecedor, material e condução — vocês só aparecem pra ' +
+        'aproveitar 🎉\n\n' +
         'Tem alguma ação pro time nos próximos meses? Se fizer sentido pra {{empresa}}, te mando um ' +
         'orçamento com *2 ou 3 formatos* por faixa de pessoas, sem compromisso 🧡',
     },
