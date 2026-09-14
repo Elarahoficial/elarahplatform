@@ -519,6 +519,93 @@ co_cover = cover(
     img("arabe.jpg", "Mesa árabe temática, mezze halal", "center 50%"),
     PROOF, "Coleção de experiências")
 
+def priceline(price, note, small=False):
+    fs = "22px" if small else "30px"
+    return f'''    <div style="margin-top:18px;display:flex;align-items:center;gap:16px;background:var(--navy);color:#fff;border-radius:14px;padding:14px 24px">
+      <span style="font-family:'DM Serif Display',serif;font-size:{fs};line-height:1">{price}</span>
+      <span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--orange);font-weight:700">{note}</span>
+    </div>'''
+
+
+def exp_full(kicker, eyebrow, title, lead, photo, btag, h3, steps, pline, fr):
+    li = "\n".join(f'          <li><span class="st">{i+1}</span>{s}</li>' for i, s in enumerate(steps))
+    return f'''
+  <section class="slide">
+{head_simple(kicker)}
+    <span class="eyebrow orange">{eyebrow}</span>
+    <h2>{title}</h2>
+    <p class="lead">{lead}</p>
+    <div class="bfeat">
+      <div class="bphoto">{photo}</div>
+      <div class="bbody">
+        <span class="btag">{btag}</span>
+        <h3>{h3}</h3>
+        <ul class="feat">
+{li}
+        </ul>
+      </div>
+    </div>
+{pline}
+    {foot(fr)}
+  </section>'''
+
+
+gf = exp_full(
+    "Experiência 1 · Gastronômica",
+    "◆ Gastronômica · Halal · Receitaria Escola Gourmet",
+    "Sabores que contam <em>histórias</em>",
+    "Imagina o aroma das especiarias tomando conta da cozinha, as mãos na massa, o barulho gostoso do preparo. Na Receitaria Escola Gourmet, sua turma vira protagonista: guiadas por um chef, cada uma tempera, monta e finaliza pratos temáticos — tudo halal, sem álcool. E quando todas se sentam à mesa pra provar o que criaram, a receita vira memória afetiva. 🌙",
+    img("arabe.jpg", "Mesa árabe temática, mezze halal", "center 50%"),
+    "Como acontece",
+    "Da bancada à mesa",
+    ["<b>Boas-vindas</b> — um chá especial ou mocktail e a bancada montada pra começar.",
+     "<b>Mão na massa</b> — com o chef, a turma prepara pratos temáticos, passo a passo.",
+     "<b>À mesa</b> — todas se reúnem pra degustar o que criaram, com calma e afeto. 🍽️"],
+    priceline("R$ 419", "por pessoa · halal, sem álcool · tudo incluso"),
+    "Gastronômica")
+
+cf = exp_full(
+    "Experiência 2 · Charuto",
+    "◆ Charuto &amp; Café · Lounge privativo",
+    "O ritual de <em>desacelerar</em>",
+    "Luz baixa, poltronas confortáveis e aquele aroma amadeirado que envolve o ambiente. Um mestre charuteiro conduz cada uma pelo ritual — a escolha, o corte, o primeiro toque — enquanto cafés especiais e chás selecionados completam a cena. É pausa, é requinte, é a conversa boa que rende a noite toda. Sem pressa, sem álcool. ☕",
+    pslot("🖼️", "Foto do charuto / lounge", "enviar imagem"),
+    "Como acontece",
+    "Do primeiro aroma ao brinde",
+    ["<b>Boas-vindas</b> — recepção no lounge, café especial ou chá na mão.",
+     "<b>O ritual</b> — o mestre apresenta a seleção, os aromas e como apreciar.",
+     "<b>Harmonização</b> — cada charuto encontra seu café ou chá, e é só relaxar. ☕"],
+    priceline("R$ 799", "por pessoa · lounge privativo · tudo incluso"),
+    "Charuto")
+
+ff = exp_full(
+    "Experiência 3 · Arranjo Floral",
+    "◆ Arranjo Floral · Autoral",
+    "Beleza que nasce das suas <em>mãos</em>",
+    "Uma mesa transbordando flores, perfumes que se misturam, cores por todos os cantos. Guiadas por uma florista, cada uma escolhe, combina e monta o próprio arranjo — no seu tempo, do seu jeito. E leva pra casa não só as flores, mas a sensação boa de ter criado algo lindo com as próprias mãos. 🌸",
+    img("buque.jpg", "Buquê floral autoral", "center 40%"),
+    "Como acontece",
+    "Do buquê ao vaso",
+    ["<b>Boas-vindas</b> — um chá especial e a bancada de flores montada.",
+     "<b>Mão nas flores</b> — a florista ensina a escolher e compor o arranjo.",
+     "<b>Leva pra casa</b> — cada uma finaliza e leva o seu arranjo autoral. 🌷"],
+    priceline("R$ 239", "por pessoa · leva o arranjo pra casa"),
+    "Arranjo Floral")
+
+mf = exp_full(
+    "Experiência 4 · Beleza",
+    "◆ Automaquiagem by Elarah · Parceria de marca",
+    "A beleza que <em>fica com você</em>",
+    "Espelho, luz perfeita e produtos de primeira linha na mão. Uma maquiadora profissional revela, passo a passo, os segredos da automaquiagem — pele, olhar e aquele toque final que transforma. Mais que um curso, é autoestima: é se olhar no espelho e gostar do que vê. E o melhor — uma parceria de marca que pode viabilizar tudo sem custo. ✨",
+    pslot("🖼️", "Foto de beleza / aula", "enviar imagem"),
+    "Como acontece",
+    "Do primeiro pincel ao acabamento",
+    ["<b>Boas-vindas</b> — recepção, kit de produtos e espelho montado.",
+     "<b>Mão na massa</b> — a maquiadora ensina cada etapa, passo a passo.",
+     "<b>Toque final</b> — cada uma finaliza o próprio look e leva as dicas pra vida. 💄"],
+    priceline("Parceria", "valor a combinar · pode ser sem custo", small=True),
+    "Automaquiagem by Elarah")
+
 co_menu = f'''
   <section class="slide">
 {head_simple("As experiências")}
@@ -581,6 +668,6 @@ co_prox = proximos(
      ("É só viver", "No dia, chega tudo pronto. Vocês só aproveitam.")],
     "Próximos passos")
 
-write("colecao-muculmanas", [co_cover, co_menu, co_vibe, co_inv, co_prox])
+write("colecao-muculmanas", [co_cover, gf, cf, ff, mf, co_inv, co_prox])
 
 print("== decks gerados (4 individuais + 1 combinado) ==")
