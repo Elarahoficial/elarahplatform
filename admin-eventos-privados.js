@@ -154,6 +154,7 @@
     cfg: null,
     dias: {},        // 'YYYY-MM-DD' -> linha do registro diário
     eventos: [],     // eventos fechados (manual_sales normalizado)
+    bookings: [],    // vendas pagas do site (12 meses)
     prospects: [],
     b2bFirst: {},    // prospect_id -> ms da PRIMEIRA abordagem
     diaSel: dayKey(),// dia que o formulário está editando
@@ -243,6 +244,17 @@
       })
       .filter(function (s) { return s.occurredMs != null; })
       .sort(function (a, b) { return b.occurredMs - a.occurredMs; });
+
+    // --- Vendas do site (sinal de desejo do público geral) ---
+    // Evento fechado é amostra pequena; bookings é o que a cidade
+    // inteira escolhe quando olha a vitrine. Os dois juntos dizem o
+    // que oferecer: um mostra o que já fechou, o outro o que atrai.
+    S.bookings = [];
+    var since365 = new Date(Date.now() - 365 * DAY).toISOString();
+    var bkRes = await c.from('bookings')
+      .select('experiencia_nome, quantidade, amount_total, status, created_at')
+      .eq('status', 'pago').gte('created_at', since365).limit(20000);
+    if (!bkRes.error) S.bookings = bkRes.data || [];
 
     // --- CRM B2B (fila de prospecção) ---
     var pRes = await c.from('b2b_prospects')
@@ -398,6 +410,85 @@
     };
   }
 
+  // =============================================================
+  // O QUE MAIS VENDE
+  // -------------------------------------------------------------
+  // Duas fontes, duas perguntas diferentes:
+  //   eventos fechados → o que grupo fechado realmente contrata
+  //   vendas do site   → o que a cidade escolhe sozinha (desejo)
+  // A segunda é a maior amostra e serve de dica do que oferecer
+  // quando o cliente diz "não sei o que escolher".
+  //
+  // Nome curto: "Drinks & Petiscos - Gin e Moscow Mule" vira
+  // "drinks & petiscos". Em mensagem, nome comprido cansa.
+  // =============================================================
+  function nomeCurto(nome) {
+    var n = String(nome || '').split(/\s[-–]\s|:\s|\s\(/)[0].trim();
+    return n ? n.toLowerCase() : '';
+  }
+  function rankear(lista, chaveNome, pessoasFn, valorFn) {
+    var mapa = {};
+    lista.forEach(function (r) {
+      var nome = String(r[chaveNome] || '').trim();
+      if (!nome) return;
+      var k = nome.toLowerCase();
+      if (!mapa[k]) mapa[k] = { nome: nome, curto: nomeCurto(nome), n: 0, pessoas: 0, total: 0 };
+      mapa[k].n++;
+      mapa[k].pessoas += num(pessoasFn(r));
+      mapa[k].total += num(valorFn(r));
+    });
+    return Object.keys(mapa).map(function (k) { return mapa[k]; })
+      .sort(function (a, b) { return b.total - a.total || b.n - a.n; });
+  }
+
+  function computeTop() {
+    var since365 = Date.now() - 365 * DAY;
+    var eventos = S.eventos.filter(function (e) { return e.occurredMs >= since365; });
+
+    var porEvento = rankear(eventos, 'experiencia',
+      function (e) { return e.pessoas; }, function (e) { return e.total; });
+
+    var porSite = rankear(S.bookings, 'experiencia_nome',
+      function (b) { return b.quantidade; }, function (b) { return b.amount_total; });
+
+    // Ranking por tipo de evento: despedida e corporativo não
+    // compram a mesma coisa, e a mensagem muda por causa disso.
+    var porTipo = {};
+    eventos.forEach(function (e) {
+      var t = tipoLabel(e.tipo, e.tipoCustom);
+      if (!porTipo[t]) porTipo[t] = [];
+      porTipo[t].push(e);
+    });
+    var tipos = Object.keys(porTipo).map(function (t) {
+      return { tipo: t, n: porTipo[t].length,
+               top: rankear(porTipo[t], 'experiencia',
+                            function (e) { return e.pessoas; },
+                            function (e) { return e.total; }).slice(0, 3) };
+    }).sort(function (a, b) { return b.n - a.n; });
+
+    return { eventos: porEvento, site: porSite, tipos: tipos, amostraEventos: eventos.length };
+  }
+
+  // Lista pra mensagem: as 3 campeãs em evento fechado. Sem histórico
+  // suficiente, cai nas do site; sem nada, num trio do catálogo real.
+  function topExperienciasTexto() {
+    var t = computeTop();
+    var fonte = t.eventos.length >= 3 ? t.eventos : (t.site.length >= 3 ? t.site : null);
+    var nomes = fonte
+      ? fonte.slice(0, 3).map(function (x) { return x.curto; })
+      : ['cerâmica em torno', 'vela aromática', 'drinks clássicos'];
+    // Remove repetição ("vela aromática" e "vela flor" viram um só).
+    var vistos = {}, limpos = [];
+    nomes.forEach(function (n) {
+      var chave = n.split(' ')[0];
+      if (vistos[chave]) return;
+      vistos[chave] = 1;
+      limpos.push(n);
+    });
+    if (limpos.length < 2) limpos = nomes;
+    return limpos.slice(0, 3).join(', ').replace(/,([^,]*)$/, ' e$1');
+  }
+
   // Fila de prospecção: empresas que ainda não receberam a PRIMEIRA
   // abordagem, por potencial e porte (sweet spot 50–500, onde o RH
   // tem verba e time pra ação).
@@ -498,10 +589,10 @@
       texto:
         'Oi {{contato}}, tudo bem? 😊\n\n' +
         'Aqui é {{responsavel}} da Elarah 🧡 — a gente organiza *experiências fechadas em São Paulo* ' +
-        'pra grupos de empresa: cerâmica 🏺, coquetelaria 🍸, gastronomia 🍝 e pintura 🎨.\n\n' +
+        'pra grupos de empresa. As mais pedidas agora são {{top_experiencias}} ✨\n\n' +
         'Os times usam muito pra *confraternização*, integração de gente nova e datas do calendário ' +
         'interno. E a gente cuida de tudo: local, fornecedor, material e condução — vocês só ' +
-        'aparecem pra aproveitar ✨\n\n' +
+        'aparecem pra aproveitar 🎉\n\n' +
         'Tem alguma ação pro time nos próximos meses? Se fizer sentido pra {{empresa}}, te mando um ' +
         'orçamento com *2 ou 3 formatos* por faixa de pessoas, sem compromisso 🧡',
     },
@@ -515,7 +606,9 @@
         '1️⃣ *Data* (ou o período que você tem em mente)\n' +
         '2️⃣ *Quantas pessoas*, mais ou menos\n' +
         '3️⃣ Se prefere em um *espaço nosso* ou em um *local de vocês*\n\n' +
-        'Com isso eu já te mando as opções *ainda hoje* ✨',
+        'Com isso eu já te mando as opções *ainda hoje* ✨\n\n' +
+        'Ah, e as mais pedidas pra grupo agora são {{top_experiencias}} — se quiser, já começo ' +
+        'por elas 😍',
     },
     orcamento: {
       titulo: 'Enviando o orçamento',
@@ -593,6 +686,7 @@
       contato: primeiroNome(p.contato_nome),
       empresa: p.nome || 'vocês',
       responsavel: primeiroNome(cfg.responsavel_nome),
+      top_experiencias: topExperienciasTexto(),
     });
   }
   // *negrito* é sintaxe do WhatsApp. No corpo de e-mail o asterisco
@@ -789,6 +883,7 @@
       empresa: (S.pers.empresa || '').trim() || 'vocês',
       evento: (S.pers.evento || '').trim() || 'seu evento',
       responsavel: primeiroNome(cfg.responsavel_nome),
+      top_experiencias: topExperienciasTexto(),
     };
   }
 
@@ -809,7 +904,9 @@
       '<div style="font-size:.78rem;color:#aaa;margin-bottom:12px;line-height:1.5;">' +
         'O texto fica com as variáveis à mostra pra você editar — elas são trocadas <b>na hora de copiar</b>. ' +
         'Disponíveis: <code>{{nome}}</code> <code>{{empresa}}</code> <code>{{evento}}</code> ' +
-        '<code>{{contato}}</code> <code>{{responsavel}}</code>. Campo vazio some da frase sozinho. ' +
+        '<code>{{contato}}</code> <code>{{responsavel}}</code> e <code>{{top_experiencias}}</code> ' +
+        '— esta última se preenche sozinha com as <b>3 que mais vendem em evento fechado</b>, ' +
+        'então a mensagem acompanha o catálogo sem você reescrever. Campo vazio some da frase sozinho. ' +
         'Pra <b>negrito no WhatsApp</b>, ponha o trecho entre asteriscos: <code>*assim*</code> ' +
         '(no e-mail os asteriscos saem sozinhos). Editar aqui salva pra sempre; o “voltar ao padrão” desfaz.' +
       '</div>';
@@ -850,6 +947,68 @@
 
     return detalhes('💬 Mensagens prontas', 'copiar, colar e enviar', aviso + personalizar + cards,
                     S.det.msg !== false, 'msg');
+  }
+
+  // =============================================================
+  // BLOCO 3.7 — o que mais vende
+  // -------------------------------------------------------------
+  // Existe pra responder, com dado e não com achismo, a pergunta que
+  // o cliente faz em toda conversa: "o que vocês recomendam?".
+  // Também é o que alimenta {{top_experiencias}} nas mensagens, então
+  // o texto que ela manda acompanha o catálogo sozinho.
+  // =============================================================
+  function blocoTop() {
+    var t = computeTop();
+    var linhas = function (arr, unidade) {
+      if (!arr.length) return empty('Sem dado suficiente ainda.');
+      var h = '<div class="admin__table-wrap"><table class="admin__table"><thead><tr>' +
+                '<th>Experiência</th><th>' + unidade + '</th><th>Pessoas</th><th>Faturamento</th><th>Ticket médio</th>' +
+              '</tr></thead><tbody>';
+      arr.slice(0, 10).forEach(function (x, i) {
+        h += '<tr>' +
+          '<td>' + (i < 3 ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + '<b>' + esc(x.nome) + '</b></td>' +
+          '<td>' + x.n + '</td><td>' + x.pessoas + '</td>' +
+          '<td>' + brl(x.total) + '</td>' +
+          '<td>' + brl(x.n ? Math.round(x.total / x.n) : 0) + '</td>' +
+        '</tr>';
+      });
+      return h + '</tbody></table></div>';
+    };
+
+    var conteudo =
+      '<div style="font-size:.82rem;color:#888;margin-bottom:10px;line-height:1.55;">' +
+        'Duas perguntas diferentes: <b>evento fechado</b> mostra o que grupo contrata; ' +
+        '<b>site</b> mostra o que a cidade escolhe sozinha — amostra bem maior, e boa dica ' +
+        'de resposta pro clássico “o que vocês recomendam?”. As 3 primeiras de evento entram ' +
+        'automaticamente na variável <code>{{top_experiencias}}</code> das mensagens.' +
+      '</div>' +
+      '<h4 style="margin:14px 0 6px;font-size:.88rem;color:#444;">Em evento fechado (12 meses · ' +
+        t.amostraEventos + ' evento(s))</h4>' + linhas(t.eventos, 'Eventos') +
+      '<h4 style="margin:18px 0 6px;font-size:.88rem;color:#444;">No site (12 meses · sinal de desejo)</h4>' +
+      linhas(t.site, 'Vendas');
+
+    if (t.tipos.length) {
+      conteudo += '<h4 style="margin:18px 0 6px;font-size:.88rem;color:#444;">Campeã de cada tipo de evento</h4>' +
+        '<div style="' + GRID + '">';
+      t.tipos.forEach(function (g) {
+        conteudo += '<div style="background:#fcfcfc;border:1px solid #eee;border-radius:10px;padding:12px 14px;">' +
+          '<div style="font-size:.85rem;font-weight:700;color:#333;">' + esc(g.tipo) + '</div>' +
+          '<div style="font-size:.73rem;color:#bbb;margin-bottom:6px;">' + g.n + ' evento(s)</div>' +
+          (g.top.length
+            ? g.top.map(function (x, i) {
+                return '<div style="font-size:.8rem;color:#666;line-height:1.6;">' + (i + 1) + '. ' +
+                       esc(x.nome) + ' <span style="color:#bbb;">(' + x.n + ')</span></div>';
+              }).join('')
+            : '<span style="color:#bbb;font-size:.8rem;">—</span>') +
+        '</div>';
+      });
+      conteudo += '</div>';
+    }
+
+    var resumo = t.eventos.length
+      ? 'campeã: ' + t.eventos[0].curto
+      : (t.site.length ? 'campeã no site: ' + t.site[0].curto : 'sem dado ainda');
+    return detalhes('🏆 O que mais vende', resumo, conteudo, S.det.top === true, 'top');
   }
 
   // =============================================================
@@ -1079,6 +1238,7 @@
       blocoRegistro() +
       blocoPlacar(sem, metas, baseline, conv) +
       blocoProspeccao(computeProspeccao(), sem, metas) +
+      blocoTop() +
       blocoMensagens() +
       blocoFechados() +
       blocoSemanas() +
