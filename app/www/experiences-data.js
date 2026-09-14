@@ -754,24 +754,72 @@
     return rest === 1 ? 'última vaga' : 'últimas ' + rest;
   }
 
-  // Menor nº de vagas (= mais urgente) entre os slots FUTUROS e ativos —
-  // pro selo do card. Ignora slots passados (data derivável e < agora)
-  // pra não anunciar escassez de uma turma que já aconteceu. Slot sem
-  // data derivável (agenda aberta) conta, pois é bookável. null = nada.
+  // Selo do CARD = escassez da EXPERIÊNCIA INTEIRA, não de um dia só.
+  //
+  // O card representa todas as datas juntas. Antes ele pegava o MENOR nº
+  // de vagas entre os slots futuros: bastava um único dia com 1 vaga pra
+  // estampar "ÚLTIMA VAGA" mesmo com outros dias cheios de vaga — e quem
+  // queria ir de dupla nem clicava pra descobrir que dava. Agora o selo
+  // só aparece quando TODA data futura bookável está em escassez. Se
+  // qualquer data ainda tem folga (ou é ilimitada, vagasTotal null), o
+  // card fica sem selo.
+  //
+  // O número mostrado é o da data mais FOLGADA entre as que sobraram (o
+  // MAIOR), porque é quanto a pessoa consegue reservar de uma vez — nunca
+  // subestima a disponibilidade. Data esgotada (0 vaga) não conta pros
+  // dois lados: não é folga nem escassez, só não é bookável. Slot passado
+  // (data derivável e < agora) é ignorado; slot sem data derivável
+  // (agenda aberta) conta, pois é bookável. null = sem selo.
   function scarcityForSlots(slotsArr, nowMs) {
     if (nowMs == null) nowMs = Date.now();
     var slots = Array.isArray(slotsArr) ? slotsArr : [];
     var best = null;
+    var temFolga = false; // alguma data futura com vaga sobrando → sem selo
     slots.forEach(function (sl) {
+      if (temFolga) return;
       if (!sl || sl.isActive === false) return;
       var ts = null;
       if (sl.eventAt) { var t = new Date(sl.eventAt).getTime(); if (!isNaN(t)) ts = t; }
       if (ts == null) ts = deriveEventTimestamp(sl.data, sl.horario, nowMs);
       if (ts != null && ts < nowMs) return; // turma já passou
+      var cap = sl.vagasTotal != null ? Number(sl.vagasTotal) : null;
+      if (cap == null || !(cap > 0)) { temFolga = true; return; } // ilimitada
+      var restReal = sl.vagasRestantes != null ? Number(sl.vagasRestantes) : cap;
+      if (!(restReal > 0)) return;                       // esgotada: não conta
+      if (restReal > cap) { temFolga = true; return; }   // dado inconsistente
       var rest = scarcityRest(sl);
-      if (rest != null && (best == null || rest < best)) best = rest;
+      if (rest == null) { temFolga = true; return; }     // essa data tem folga
+      if (best == null || rest > best) best = rest;
     });
-    return best;
+    return temFolga ? null : best;
+  }
+
+  // Atividade SEMANAL / recorrente (aula regular). A mesma turma se repete
+  // toda semana, então escassez de um dia não diz nada sobre a experiência:
+  // quem não pegou esta semana pega na próxima. Detecta pelo texto da data
+  // ("Semanal", "Toda quarta"...) e pelos slots gerados pela Recorrência
+  // (recurrenceRuleId), que é como o admin cadastra aula regular.
+  function isAtividadeSemanal(exp, slotsArr) {
+    if (!exp) return false;
+    var d = String(exp.data == null ? '' : exp.data);
+    if (/semanal|quinzenal|mensal|recorrente|aula regular|toda[s]?\s/i.test(d)) return true;
+    var slots = Array.isArray(slotsArr) ? slotsArr : (Array.isArray(exp._slots) ? exp._slots : []);
+    for (var i = 0; i < slots.length; i++) {
+      if (slots[i] && slots[i].recurrenceRuleId) return true;
+    }
+    return false;
+  }
+
+  // Selo de escassez do card, ponta a ponta — é isto que home e categoria
+  // devem chamar (nunca scarcityForSlots direto), pra as duas telas nunca
+  // divergirem. Atividade semanal NÃO leva selo: urgência só faz sentido em
+  // turma pontual, com data marcada. Caso contrário, aplica a regra de
+  // scarcityForSlots (todas as datas futuras apertadas). null = sem selo.
+  function scarcityForCard(exp, slotsArr, nowMs) {
+    if (!exp) return null;
+    var slots = Array.isArray(slotsArr) ? slotsArr : (Array.isArray(exp._slots) ? exp._slots : []);
+    if (isAtividadeSemanal(exp, slots)) return null;
+    return scarcityForSlots(slots, nowMs);
   }
 
   // Intervalo {startMs, endMs} pros atalhos do filtro de data.
@@ -1498,6 +1546,8 @@
     scarcityRest,
     scarcityLabel,
     scarcityForSlots,
+    scarcityForCard,
+    isAtividadeSemanal,
     invalidateCache,
     isPubliclyVisible,
     deriveEventTimestamp,

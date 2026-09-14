@@ -476,6 +476,14 @@
       case 'contabilidade': await renderContabilidade(); break;
       case 'insights':    await renderDiagnostico(); break;
       case 'analytics':   await renderAnalytics(); break;
+      // Aba renderizada por admin-eventos-privados.js. O módulo também
+      // escuta o clique do menu; este case cobre a navegação
+      // programática (navigateToPanel de outro ponto do admin).
+      case 'eventos-privados':
+        if (window.ElarahEventosPrivados && window.ElarahEventosPrivados.run) {
+          await window.ElarahEventosPrivados.run();
+        }
+        break;
       // 'social' saiu: a aba Redes Sociais foi removida (painel e
       // scripts). 'fornecedores' virou a view "Confirmados" dentro
       // de Parceiros, e 'ceo' virou um bloco de "O que fazer hoje".

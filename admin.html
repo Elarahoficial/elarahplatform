@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 125;
+      var EXPECTED = 126;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -98,6 +98,17 @@
         <span>Eventos</span>
       </button>
 
+      <!-- Eventos privados: painel de acompanhamento de quem cuida do
+           comercial de eventos fechados (metas, prazos, prospecção de
+           RH e pipeline de orçamento). Diferente da aba Eventos, que
+           olha o que JÁ foi vendido. -->
+      <button class="admin__nav-item" data-panel="eventos-privados">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.4 5.4 5.6.6-4.2 4 1.2 5.8L12 15l-5 2.8L8.2 12 4 8l5.6-.6z"/>
+        </svg>
+        <span>Eventos privados</span>
+      </button>
+
       <button class="admin__nav-item" data-panel="giftcards">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 12 20 22 4 22 4 12"/>
@@ -155,6 +166,7 @@
       <div class="admin__nav-group">Pessoas</div>
 
       <button class="admin__nav-item" data-panel="partners">
+
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2H9z"/><path d="M3 7v10a2 2 0 0 0 2 2h4"/>
         </svg>
@@ -185,7 +197,16 @@
         <span>Prospecção</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="b2b-prospects">
+      <!-- Prospecção B2B saiu do menu: o dia a dia de prospectar agora
+           mora na aba "Eventos privados" (fila enxuta, canal em 1
+           clique). Este painel continua sendo o CRM completo — cadastro,
+           importação de CSV, templates — e é alcançado pelo botão
+           "Abrir CRM de empresas" de lá.
+           display:none em vez de comentário porque navigateToPanel
+           procura o botão pra marcar como ativo: se ele sumir do DOM,
+           a navegação programática para de funcionar. Pra devolver ao
+           menu, basta remover o style. -->
+      <button class="admin__nav-item" data-panel="b2b-prospects" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 21h18"/>
           <path d="M5 21V7l8-4v18"/>
@@ -253,7 +274,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.72 · 2026-09-09 (menu enxuto + contabilidade nova)
+        Admin v.74 · 2026-09-14 (menu enxuto + contabilidade nova + eventos privados)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1109,6 +1130,27 @@
       </div>
     </div>
 
+    <!-- ===== EVENTOS PRIVADOS (COMERCIAL) PANEL ===== -->
+    <!-- Conteúdo inteiro renderizado por admin-eventos-privados.js em
+         #evtpriv-root — o painel é reativo ao banco (metas, SLA, fila
+         do dia), então marcação estática só atrapalharia. -->
+    <div class="admin__panel" id="panel-eventos-privados">
+      <div class="admin__header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Eventos privados — comercial</h1>
+          <p class="admin__page-subtitle">
+            Painel de quem cuida dos eventos fechados: <strong>prospecção de RH</strong>,
+            <strong>registro do dia em contadores</strong> e <strong>metas da semana</strong>.
+            Os pedidos continuam na lista do WhatsApp — aqui vai só o número.
+            Evento fechado e faturamento vêm sozinhos do financeiro.
+          </p>
+        </div>
+        <button id="evtpriv-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+      </div>
+      <div id="evtpriv-root" style="margin-top:8px;">
+        <div style="color:#999;font-size:.9rem;">Carregando…</div>
+      </div>
+    </div>
 
     <!-- ===== COTAÇÃO POR CATEGORIA PANEL ===== -->
     <!-- Fluxo: clica na categoria (ex.: Cerâmica) → lista todos os
@@ -4476,12 +4518,13 @@
 <script src="admin-insights.js?v=3"></script>
 <script src="admin-broadcast.js?v=2"></script>
 <script src="admin-eventos.js?v=2"></script>
+<script src="admin-eventos-privados.js?v=2"></script>
 <script src="admin-prospect-finder.js?v=1"></script>
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=226"></script>
+<script src="admin.js?v=227"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
