@@ -73,6 +73,20 @@
 }
 .admin__nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
 
+/* Título de grupo do menu (Hoje / Vendas / Catálogo / Pessoas /
+   Dinheiro / Comunicação). Puramente visual: separa as abas em blocos
+   curtos pra não virar uma lista gigante de 30 itens. */
+.admin__nav-group {
+  padding: 16px 20px 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.32);
+  user-select: none;
+}
+.admin__nav-group:first-child { padding-top: 4px; }
+
 .admin__nav-item {
   display: flex;
   align-items: center;
@@ -695,6 +709,19 @@
   .admin__sidebar .admin__logo span,
   .admin__nav-item span {
     display: none;
+  }
+
+  /* Sidebar colapsada (só ícones): o título do grupo vira um traço
+     fino, senão o texto quebraria em cima dos ícones. */
+  .admin__nav-group {
+    font-size: 0;
+    padding: 10px 14px 4px;
+  }
+  .admin__nav-group::after {
+    content: '';
+    display: block;
+    height: 1px;
+    background: rgba(255,255,255,0.12);
   }
 
   .admin__nav-item {
@@ -2044,3 +2071,530 @@ tr.exp-row--dragging {
   background: #fdf3e7;
   box-shadow: 0 6px 18px rgba(108, 70, 20, 0.18);
 }
+
+/* =============================================================
+   BALÕES LADO A LADO (segmented control)
+   -------------------------------------------------------------
+   Usado na aba Parceiros (Pendentes | Confirmados) e na
+   Contabilidade. Substitui o <select> suspenso: as duas opções
+   ficam sempre visíveis e a ativa fica laranja.
+   ============================================================= */
+.admin__segmented {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.admin__segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border: 1.5px solid #e6ddd0;
+  background: #fff;
+  color: #7a6a58;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin__segmented-btn:hover {
+  border-color: #f0a05e;
+  color: #a4663b;
+}
+
+.admin__segmented-btn--active,
+.admin__segmented-btn--active:hover {
+  background: var(--orange, #f0a05e);
+  border-color: var(--orange, #f0a05e);
+  color: #fff;
+}
+
+.admin__segmented-count {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.06);
+  color: inherit;
+}
+
+.admin__segmented-btn--active .admin__segmented-count {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Sem número ainda (view nunca aberta) = sem bolinha vazia. */
+.admin__segmented-count:empty { display: none; }
+
+/* =============================================================
+   STATUS DE CONTATO DO PARCEIRO
+   -------------------------------------------------------------
+   A linha muda de cor conforme o estágio, pra bater o olho e saber
+   com quem já falei:
+     novo       → ainda não cliquei no WhatsApp dele (laranja)
+     contatado  → já cliquei em "WhatsApp" nesta lista (azul)
+     fechado    → aprovado / virou parceiro confirmado (verde)
+   ============================================================= */
+.admin__contact-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  color: #7a6a58;
+}
+
+.admin__contact-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.admin__dot--novo { background: #f0a05e; }
+.admin__dot--contatado { background: #4a86c7; }
+.admin__dot--fechado { background: #1a8a4a; }
+
+tr.admin__row--novo { background: #fff8f0; }
+tr.admin__row--novo td:first-child { box-shadow: inset 3px 0 0 #f0a05e; }
+
+tr.admin__row--contatado { background: #f4f8fc; }
+tr.admin__row--contatado td:first-child { box-shadow: inset 3px 0 0 #4a86c7; }
+
+tr.admin__row--fechado { background: #f4faf6; }
+tr.admin__row--fechado td:first-child { box-shadow: inset 3px 0 0 #1a8a4a; }
+
+/* Selo textual de contato dentro da célula do telefone. */
+.admin__contact-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.admin__contact-tag--novo { background: #fdf0e2; color: #a4663b; }
+.admin__contact-tag--contatado { background: #e8f0f9; color: #2f5c88; }
+
+/* Botão pequeno pra desmarcar o "já falei" (caso clique sem querer). */
+.admin__contact-undo {
+  margin-left: 6px;
+  border: none;
+  background: none;
+  color: #a9a297;
+  cursor: pointer;
+  font-size: 0.72rem;
+  text-decoration: underline;
+  font-family: inherit;
+  padding: 0;
+}
+
+/* =============================================================
+   CONTABILIDADE — versão "correria"
+   -------------------------------------------------------------
+   Três números grandes, um campo de texto pra anotar gasto
+   falando normal, e barras mostrando pra onde o dinheiro foi.
+   As tabelas antigas continuam, dentro de <details>.
+   ============================================================= */
+.fin-big {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.fin-big__card {
+  background: #fff;
+  border: 1px solid #efe6da;
+  border-radius: 16px;
+  padding: 22px 24px;
+  border-top: 4px solid #ddd;
+}
+
+.fin-big__card--in { border-top-color: #1a8a4a; }
+.fin-big__card--out { border-top-color: #d4693f; }
+.fin-big__card--net { border-top-color: var(--orange, #f0a05e); }
+
+.fin-big__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9a8f80;
+}
+
+.fin-big__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 6px 0 2px;
+  line-height: 1.1;
+}
+
+.fin-big__card--in .fin-big__value { color: #1a8a4a; }
+.fin-big__card--out .fin-big__value { color: #c25a34; }
+
+.fin-big__sub { font-size: 0.76rem; color: #9a8f80; }
+
+/* Pendências (o que ainda não caiu / ainda não paguei). */
+.fin-pend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.fin-pend__item {
+  background: #fff8ee;
+  border: 1px solid #f0d8bf;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  color: #8a6a4a;
+}
+
+.fin-pend__item b { color: #a4663b; }
+
+/* ---- Chat de gastos ---- */
+.fin-chat {
+  background: #fff;
+  border: 1px solid #efe6da;
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.fin-chat__title { font-size: 1.05rem; margin: 0 0 4px; color: #1a1a1a; }
+
+.fin-chat__hint {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  color: #8a8175;
+  line-height: 2;
+}
+
+.fin-chat__ex {
+  border: 1px dashed #e0cdb5;
+  background: #fdf8f2;
+  color: #a4663b;
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 0.76rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.fin-chat__ex:hover { background: #f8ecdd; }
+
+.fin-chat__log { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+
+.fin-chat__msg {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.fin-chat__msg--me { background: #f4f1ec; color: #4a443c; align-self: flex-end; max-width: 80%; }
+.fin-chat__msg--ok { background: #eef8f1; border: 1px solid #cfe8d8; color: #1c6b3e; }
+.fin-chat__msg--erro { background: #fdeeea; border: 1px solid #f2cec4; color: #a53b1f; }
+.fin-chat__msg b { font-weight: 700; }
+
+.fin-chat__undo {
+  margin-left: 10px;
+  border: none;
+  background: none;
+  color: #7a8f80;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+.fin-chat__form { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.fin-chat__input {
+  flex: 1 1 260px;
+  padding: 12px 16px;
+  border: 1.5px solid #e6ddd0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.fin-chat__input:focus { outline: none; border-color: var(--orange, #f0a05e); }
+
+.fin-chat__send {
+  padding: 12px 24px;
+  border: none;
+  background: var(--orange, #f0a05e);
+  color: #fff;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fin-chat__foot { margin: 10px 0 0; font-size: 0.75rem; color: #a9a297; }
+
+/* ---- Gráficos em barra (CSS puro, sem biblioteca) ---- */
+.fin-graph {
+  background: #fff;
+  border: 1px solid #efe6da;
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.fin-graph__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.fin-graph__title { font-size: 1.05rem; margin: 0; color: #1a1a1a; }
+.fin-graph__total { font-size: 0.8rem; color: #9a8f80; }
+.fin-graph__empty { margin: 0; font-size: 0.85rem; color: #a9a297; }
+
+.fin-graph__bars { display: flex; flex-direction: column; gap: 10px; }
+
+.fin-bar__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.84rem;
+  color: #4a443c;
+  margin-bottom: 4px;
+}
+
+.fin-bar__value { font-weight: 700; white-space: nowrap; }
+
+.fin-bar__track { background: #f4efe8; border-radius: 999px; height: 10px; overflow: hidden; }
+.fin-bar__fill { background: var(--orange, #f0a05e); height: 100%; border-radius: 999px; }
+
+/* Mês a mês: duas barrinhas por mês (entrou / saiu). */
+.fin-graph__months {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.fin-month { flex: 1 1 0; min-width: 62px; text-align: center; }
+
+.fin-month__cols {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  justify-content: center;
+  height: 110px;
+}
+
+.fin-month__col { width: 16px; border-radius: 5px 5px 0 0; min-height: 3px; }
+.fin-month__col--in { background: #1a8a4a; }
+.fin-month__col--out { background: #d4693f; }
+.fin-month__label { font-size: 0.72rem; color: #9a8f80; margin-top: 6px; }
+.fin-month__net { font-size: 0.74rem; font-weight: 700; color: #4a443c; }
+
+/* ---- Detalhes (tabelas antigas) ---- */
+.fin-details {
+  background: #fff;
+  border: 1px solid #efe6da;
+  border-radius: 16px;
+  padding: 4px 20px 20px;
+}
+
+.fin-details__summary {
+  cursor: pointer;
+  padding: 16px 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #7a6a58;
+  list-style: none;
+}
+
+.fin-details__summary::before { content: '▸ '; color: var(--orange, #f0a05e); }
+.fin-details[open] .fin-details__summary::before { content: '▾ '; }
+.fin-details__summary::-webkit-details-marker { display: none; }
+
+/* =============================================================
+   "O QUE FAZER HOJE" (antigo Diagnóstico IA + Agente CEO)
+   -------------------------------------------------------------
+   Top 5 em cima, tudo o mais dentro de blocos que abrem no clique.
+   ============================================================= */
+.diag-top {
+  background: #fff;
+  border: 1px solid #efe6da;
+  border-left: 4px solid var(--orange, #f0a05e);
+  border-radius: 16px;
+  padding: 22px 26px;
+  margin-bottom: 18px;
+}
+
+.diag-top__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.diag-top__title { font-size: 1.15rem; margin: 0; color: #1a1a1a; }
+.diag-top__stamp { font-size: 0.75rem; color: #a9a297; }
+
+.diag-top__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: diag;
+}
+
+.diag-top__list li {
+  counter-increment: diag;
+  position: relative;
+  padding: 12px 0 12px 42px;
+  border-top: 1px dashed #f0e8de;
+  font-size: 0.95rem;
+  color: #2a2a2a;
+  line-height: 1.5;
+}
+
+.diag-top__list li:first-child { border-top: none; }
+
+.diag-top__list li::before {
+  content: counter(diag);
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fdf0e2;
+  color: #a4663b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diag-top__loading { color: #a9a297; }
+
+.diag-top__why {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: #8a8175;
+}
+
+.diag-top__tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.diag-top__tag--alta { background: #fdeaea; color: #b3261e; }
+.diag-top__tag--media { background: #fff4e0; color: #a4663b; }
+.diag-top__tag--baixa { background: #eef1f5; color: #5a6472; }
+
+/* ---- Blocos que abrem ---- */
+.diag-box {
+  background: #fff;
+  border: 1px solid #efe6da;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  padding: 0 22px;
+}
+
+.diag-box__summary {
+  cursor: pointer;
+  padding: 16px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4a443c;
+  list-style: none;
+}
+
+.diag-box__summary::-webkit-details-marker { display: none; }
+.diag-box__summary::after { content: ' ▾'; color: #c3b8a8; }
+.diag-box[open] .diag-box__summary::after { content: ' ▴'; }
+
+.diag-box__body { padding: 0 0 20px; }
+.diag-box__empty { margin: 0; font-size: 0.86rem; color: #a9a297; }
+
+/* Lista de experiências mais vendidas. */
+.diag-rank { display: flex; flex-direction: column; gap: 10px; }
+
+.diag-rank__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: #2a2a2a;
+}
+
+.diag-rank__pos {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f4efe8;
+  color: #7a6a58;
+  font-size: 0.74rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.diag-rank__name { flex: 1 1 auto; min-width: 0; }
+
+.diag-rank__bar {
+  flex: 0 0 120px;
+  height: 8px;
+  background: #f4efe8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.diag-rank__fill { height: 100%; background: var(--orange, #f0a05e); border-radius: 999px; }
+
+.diag-rank__num {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #4a443c;
+  white-space: nowrap;
+}
+
+.diag-item { padding: 10px 0; border-top: 1px dashed #f0e8de; font-size: 0.88rem; color: #444; line-height: 1.55; }
+.diag-item:first-child { border-top: none; }
+.diag-item b { color: #1a1a1a; }

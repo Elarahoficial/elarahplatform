@@ -367,10 +367,18 @@
   function init() {
     var btn = el('ceo-refresh');
     if (btn && !btn.dataset.wired) { btn.dataset.wired = '1'; btn.addEventListener('click', run); }
-    var nav = document.querySelector('[data-panel="ceo"]');
-    if (nav && !nav.dataset.ceoWired) { nav.dataset.ceoWired = '1'; nav.addEventListener('click', function () { setTimeout(run, 150); }); }
-    var p = document.getElementById('panel-ceo');
-    if (p && p.classList.contains('admin__panel--active')) run();
+    // O Agente CEO deixou de ser uma aba própria: virou um bloco
+    // dentro de "O que fazer hoje". Carrega só quando alguém abre o
+    // bloco — assim a aba abre rápido e ninguém paga por consultas
+    // que não vai ler.
+    var box = document.getElementById('diag-box-ceo');
+    if (box && !box.dataset.ceoWired) {
+      box.dataset.ceoWired = '1';
+      box.addEventListener('toggle', function () {
+        if (box.open && !box.dataset.ceoLoaded) { box.dataset.ceoLoaded = '1'; run(); }
+      });
+      if (box.open) { box.dataset.ceoLoaded = '1'; run(); }
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

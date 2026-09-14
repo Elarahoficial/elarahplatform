@@ -17,14 +17,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=21">
-  <link rel="stylesheet" href="admin.css?v=13">
+  <link rel="stylesheet" href="admin.css?v=14">
   <!-- Auto-bust de cache: se a versão local divergir da esperada,
        força reload limpo via location.replace com query string única.
        Resolve quando admin.html é cacheado pelo CDN/navegador apontando
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 124;
+      var EXPECTED = 126;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -51,6 +51,22 @@
     </div>
 
     <nav class="admin__nav">
+      <!-- =========================================================
+           MENU REORGANIZADO (pedido da admin — set/2026).
+           Antes eram ~30 abas soltas numa lista só; virou 6 grupos
+           curtos com nome em cima. Abas removidas do menu (os painéis
+           continuam no DOM pra não quebrar nada, só não têm entrada):
+             painel-semanal, rotina, conteudo, calendario-editorial,
+             experiencias-foco, purchases-pending, postevent, social,
+             campanhas, marketing-ai.
+           Abas fundidas:
+             fornecedores  → dentro de "Parceiros" (Confirmados)
+             ceo           → dentro de "Diagnóstico IA"
+             campanhas     → dentro do formulário de Experiências
+           ========================================================= -->
+
+      <div class="admin__nav-group">Hoje</div>
+
       <button class="admin__nav-item admin__nav-item--active" data-panel="overview">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
@@ -58,79 +74,15 @@
         <span>Visão geral</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="painel-semanal">
+      <button class="admin__nav-item" data-panel="insights">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12h4l3-9 4 18 3-9h4"/>
+          <path d="M9 18h6"/><path d="M10 22h4"/>
+          <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
         </svg>
-        <span>Painel semanal</span>
+        <span>O que fazer hoje</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="rotina">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-          <path d="M9 14l2 2 4-4"/>
-        </svg>
-        <span>Rotina</span>
-      </button>
-
-      <!-- Abas escondidas (pedido da admin pra reduzir poluição visual).
-           Painéis #panel-conteudo e #panel-marketing-ai continuam no DOM
-           mas sem entrada no menu. Pra reativar, basta descomentar.
-      <button class="admin__nav-item" data-panel="conteudo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-          <polygon points="10 8 16 11 10 14 10 8" fill="currentColor"/>
-        </svg>
-        <span>Conteúdo</span>
-      </button>
-      -->
-
-      <button class="admin__nav-item" data-panel="calendario-editorial">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-          <circle cx="8" cy="14" r="1" fill="currentColor"/>
-          <circle cx="12" cy="14" r="1" fill="currentColor"/>
-          <circle cx="16" cy="14" r="1" fill="currentColor"/>
-        </svg>
-        <span>Calendário Editorial</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="captacao">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <circle cx="12" cy="12" r="6"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
-        </svg>
-        <span>Captação</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="users">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        <span>Usuários</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="interesses">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-        <span>Interesses</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="partners">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2H9z"/><path d="M3 7v10a2 2 0 0 0 2 2h4"/>
-        </svg>
-        <span>Parceiros</span>
-      </button>
+      <div class="admin__nav-group">Vendas</div>
 
       <button class="admin__nav-item" data-panel="purchases">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -157,15 +109,45 @@
         <span>Eventos privados</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="fornecedores">
+      <button class="admin__nav-item" data-panel="giftcards">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          <polyline points="20 12 20 22 4 22 4 12"/>
+          <rect x="2" y="7" width="20" height="5"/>
+          <line x1="12" y1="22" x2="12" y2="7"/>
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
         </svg>
-        <span>Fornecedores</span>
+        <span>Gift Cards</span>
       </button>
+
+      <button class="admin__nav-item" data-panel="coupons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 12V8H6a2 2 0 1 1 0-4h12v4"/>
+          <path d="M20 12v4H6a2 2 0 1 0 0 4h12v-4"/>
+          <circle cx="9" cy="9" r="1"/>
+          <circle cx="9" cy="15" r="1"/>
+        </svg>
+        <span>Cupons</span>
+      </button>
+
+      <div class="admin__nav-group">Catálogo</div>
+
+      <button class="admin__nav-item" data-panel="experiences">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Experiências</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="byelarah">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.39 6.97H21l-5.3 3.85 2.02 6.21L12 15.1l-5.72 3.93 2.02-6.21L3 8.97h6.61z"/>
+        </svg>
+        <span>By Elarah</span>
+      </button>
+
       <!-- Cotação por categoria: escolhe "Cerâmica" e vê de uma vez
-           todos os fornecedores que já têm experiência nessa categoria.
-           Evita caçar fornecedor por fornecedor pra montar orçamento. -->
+           todos os fornecedores que já têm experiência nessa categoria. -->
       <button class="admin__nav-item" data-panel="cotacao">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10 3H5a2 2 0 0 0-2 2v5l9 9a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8z"/>
@@ -179,6 +161,31 @@
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
         </svg>
         <span>Locais p/ eventos</span>
+      </button>
+
+      <div class="admin__nav-group">Pessoas</div>
+
+      <button class="admin__nav-item" data-panel="partners">
+
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2H9z"/><path d="M3 7v10a2 2 0 0 0 2 2h4"/>
+        </svg>
+        <span>Parceiros</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Usuários</span>
+      </button>
+
+      <button class="admin__nav-item" data-panel="interesses">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span>Interesses</span>
       </button>
 
       <button class="admin__nav-item" data-panel="prospects">
@@ -209,85 +216,16 @@
         <span>Prospecção B2B</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="purchases-pending">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-        </svg>
-        <span>Pendentes</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="postevent">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          <path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/>
-        </svg>
-        <span>Pós-compra</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="experiences">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-        <span>Experiências</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="experiencias-foco">
+      <button class="admin__nav-item" data-panel="captacao">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <circle cx="12" cy="12" r="6"/>
-          <circle cx="12" cy="12" r="2"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
         </svg>
-        <span>Experiências foco</span>
+        <span>Captação</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="byelarah">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2l2.39 6.97H21l-5.3 3.85 2.02 6.21L12 15.1l-5.72 3.93 2.02-6.21L3 8.97h6.61z"/>
-        </svg>
-        <span>By Elarah</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="campanhas">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/>
-          <line x1="10" y1="12" x2="14" y2="12"/>
-        </svg>
-        <span>Campanhas</span>
-      </button>
-
-      <!-- Marketing AI escondido — admin pediu pra reduzir abas. Painel
-           #panel-marketing-ai mantido no DOM. Reativar removendo este
-           wrapper de comentário.
-      <button class="admin__nav-item" data-panel="marketing-ai">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="10" rx="2"/>
-          <circle cx="12" cy="5" r="2"/>
-          <path d="M12 7v4M8 16h.01M16 16h.01"/>
-        </svg>
-        <span>Marketing AI</span>
-      </button>
-      -->
-
-      <button class="admin__nav-item" data-panel="giftcards">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 12 20 22 4 22 4 12"/>
-          <rect x="2" y="7" width="20" height="5"/>
-          <line x1="12" y1="22" x2="12" y2="7"/>
-          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-        </svg>
-        <span>Gift Cards</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="coupons">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 12V8H6a2 2 0 1 1 0-4h12v4"/>
-          <path d="M20 12v4H6a2 2 0 1 0 0 4h12v-4"/>
-          <circle cx="9" cy="9" r="1"/>
-          <circle cx="9" cy="15" r="1"/>
-        </svg>
-        <span>Cupons</span>
-      </button>
+      <div class="admin__nav-group">Dinheiro</div>
 
       <button class="admin__nav-item" data-panel="contabilidade">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -300,15 +238,6 @@
         <span>Contabilidade</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="social">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 11a9 9 0 0 1 9 9"/>
-          <path d="M4 4a16 16 0 0 1 16 16"/>
-          <circle cx="5" cy="19" r="1.5"/>
-        </svg>
-        <span>Redes Sociais</span>
-      </button>
-
       <button class="admin__nav-item" data-panel="analytics">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
@@ -316,27 +245,13 @@
         <span>Analytics</span>
       </button>
 
-      <button class="admin__nav-item" data-panel="insights">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 18h6"/><path d="M10 22h4"/>
-          <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
-        </svg>
-        <span>Diagnóstico IA</span>
-      </button>
+      <div class="admin__nav-group">Comunicação</div>
 
       <button class="admin__nav-item" data-panel="broadcast">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/>
         </svg>
         <span>Novidades</span>
-      </button>
-
-      <button class="admin__nav-item" data-panel="ceo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a5 5 0 0 0-5 5c0 1.5.7 2.8 1.7 3.7C7 11.8 6 13.5 6 15.5V18h12v-2.5c0-2-1-3.7-2.7-4.8A5 5 0 0 0 17 7a5 5 0 0 0-5-5z"/>
-          <path d="M9 22h6"/>
-        </svg>
-        <span>CEO</span>
       </button>
     </nav>
 
@@ -359,7 +274,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.74 · 2026-09-14 (eventos privados: mensagens prontas)
+        Admin v.75 · 2026-09-14 (menu enxuto + contabilidade nova + eventos privados)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -810,38 +725,117 @@
       </div>
     </div>
 
-    <!-- ===== PARTNERS PANEL ===== -->
+    <!-- ===== PARCEIROS (Pendentes + Confirmados) =====
+         Antes eram duas abas: "Parceiros" (quem se cadastrou pelo site e
+         ainda espera contato) e "Fornecedores" (quem já fechou e tem
+         experiência no ar). Viraram UMA aba só, com dois balões lado a
+         lado — o ativo fica laranja. Vocabulário unificado: tudo é
+         "parceiro"; o que muda é o estágio (pendente / confirmado). -->
     <div class="admin__panel" id="panel-partners">
       <div class="admin__header">
         <h1 class="admin__page-title">Parceiros</h1>
-        <p class="admin__page-subtitle">Solicitações e parceiros aprovados</p>
+        <p class="admin__page-subtitle">Pendentes = quem se cadastrou e ainda espera contato. Confirmados = quem já fechou parceria e tem experiência rodando.</p>
       </div>
 
-      <div class="admin__table-wrap">
-        <div class="admin__table-header">
-          <span class="admin__table-title">Empresas / Parceiros</span>
-          <span class="admin__table-count" id="partners-count"></span>
+      <div class="admin__segmented" id="partners-switch" role="tablist" aria-label="Ver parceiros">
+        <button type="button" class="admin__segmented-btn admin__segmented-btn--active" data-partners-view="pendentes" role="tab" aria-selected="true">
+          Pendentes <span class="admin__segmented-count" id="partners-tab-count-pendentes"></span>
+        </button>
+        <button type="button" class="admin__segmented-btn" data-partners-view="confirmados" role="tab" aria-selected="false">
+          Confirmados <span class="admin__segmented-count" id="partners-tab-count-confirmados"></span>
+        </button>
+      </div>
+
+      <!-- ===== VIEW: PENDENTES (cadastros vindos do site) ===== -->
+      <div id="partners-view-pendentes">
+        <div class="admin__contact-legend">
+          <span><i class="admin__dot admin__dot--novo"></i> Novo — ainda não falei</span>
+          <span><i class="admin__dot admin__dot--contatado"></i> Já chamei no WhatsApp</span>
+          <span><i class="admin__dot admin__dot--fechado"></i> Aprovado</span>
         </div>
-        <table class="admin__table">
-          <thead>
-            <tr>
-              <th>Marca</th>
-              <th>Tipo</th>
-              <th>Bairro</th>
-              <th>Cidade</th>
-              <th>Social</th>
-              <th>Telefone</th>
-              <th>E-mail</th>
-              <th>Descrição</th>
-              <th>Enviado em</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="partners-body">
-            <tr><td colspan="11" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>
-          </tbody>
-        </table>
+
+        <div class="admin__table-wrap">
+          <div class="admin__table-header">
+            <span class="admin__table-title">Parceiros pendentes</span>
+            <span class="admin__table-count" id="partners-count"></span>
+          </div>
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Marca</th>
+                <th>Tipo</th>
+                <th>Bairro</th>
+                <th>Cidade</th>
+                <th>Social</th>
+                <th>Telefone</th>
+                <th>E-mail</th>
+                <th>Descrição</th>
+                <th>Enviado em</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="partners-body">
+              <tr><td colspan="11" class="admin__table-empty">Nenhum parceiro encontrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== VIEW: CONFIRMADOS (antiga aba Fornecedores) ===== -->
+      <div id="partners-view-confirmados" style="display:none;">
+
+        <div class="admin__stats">
+          <div class="admin__stat">
+            <div class="admin__stat-label">Parceiros confirmados</div>
+            <div class="admin__stat-value" id="stat-fornecedores-count">0</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Faturamento bruto total</div>
+            <div class="admin__stat-value" id="stat-fornecedores-gross">R$ 0</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Receita Elarah total</div>
+            <div class="admin__stat-value admin__stat-value--orange" id="stat-fornecedores-comissao">R$ 0</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Repasses pendentes</div>
+            <div class="admin__stat-value" id="stat-fornecedores-pendente">R$ 0</div>
+          </div>
+        </div>
+
+        <div class="admin__table-wrap">
+          <div class="admin__table-header">
+            <span class="admin__table-title">Parceiros confirmados</span>
+            <span class="admin__table-count" id="fornecedores-count"></span>
+            <input type="search" id="fornecedores-search" placeholder="🔍 Buscar parceiro (nome, WhatsApp, categoria…)" autocomplete="off" style="margin-left:16px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:.82rem;font-family:inherit;min-width:240px;flex:0 1 320px;">
+            <button type="button" id="forn-recalc-repasse-btn" style="margin-left:auto;padding:7px 14px;border:1px solid #f0a05e;background:#fff;color:#b0651e;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;" title="Recalcula repasse/comissão das reservas de 1 fornecedor sobre o Valor Cheio atual da experiência. Mostra uma prévia do que mudaria antes de aplicar.">↻ Corrigir repasses</button>
+            <button type="button" id="forn-novo-btn" style="margin-left:8px;padding:7px 14px;border:none;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;">+ Novo parceiro</button>
+          </div>
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Parceiro</th>
+                <th>Status</th>
+                <th>Tipo</th>
+                <th>WhatsApp</th>
+                <th>Data de entrada</th>
+                <th>Parceiro há</th>
+                <th>Experiências</th>
+                <th>Vagas</th>
+                <th>Faturamento</th>
+                <th>Desconto</th>
+                <th>Repasse</th>
+                <th>Receita Elarah</th>
+                <th>Última reserva</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="fornecedores-body">
+              <tr><td colspan="14" class="admin__table-empty">Nenhum parceiro confirmado ainda.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -1155,66 +1149,6 @@
       </div>
       <div id="evtpriv-root" style="margin-top:8px;">
         <div style="color:#999;font-size:.9rem;">Carregando…</div>
-      </div>
-    </div>
-
-    <!-- ===== FORNECEDORES PANEL ===== -->
-    <div class="admin__panel" id="panel-fornecedores">
-      <div class="admin__header">
-        <h1 class="admin__page-title">Fornecedores</h1>
-        <p class="admin__page-subtitle">Relacionamento, captação e análise financeira — cadastre parceiros, acompanhe o status e solicite novas experiências</p>
-      </div>
-
-      <div class="admin__stats">
-        <div class="admin__stat">
-          <div class="admin__stat-label">Fornecedores ativos</div>
-          <div class="admin__stat-value" id="stat-fornecedores-count">0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Faturamento bruto total</div>
-          <div class="admin__stat-value" id="stat-fornecedores-gross">R$ 0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Receita Elarah total</div>
-          <div class="admin__stat-value admin__stat-value--orange" id="stat-fornecedores-comissao">R$ 0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Repasses pendentes</div>
-          <div class="admin__stat-value" id="stat-fornecedores-pendente">R$ 0</div>
-        </div>
-      </div>
-
-      <div class="admin__table-wrap">
-        <div class="admin__table-header">
-          <span class="admin__table-title">Todos os fornecedores</span>
-          <span class="admin__table-count" id="fornecedores-count"></span>
-          <input type="search" id="fornecedores-search" placeholder="🔍 Buscar fornecedor (nome, WhatsApp, categoria…)" autocomplete="off" style="margin-left:16px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:.82rem;font-family:inherit;min-width:240px;flex:0 1 320px;">
-          <button type="button" id="forn-recalc-repasse-btn" style="margin-left:auto;padding:7px 14px;border:1px solid #f0a05e;background:#fff;color:#b0651e;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;" title="Recalcula repasse/comissão das reservas de 1 fornecedor sobre o Valor Cheio atual da experiência. Mostra uma prévia do que mudaria antes de aplicar.">↻ Corrigir repasses</button>
-          <button type="button" id="forn-novo-btn" style="margin-left:8px;padding:7px 14px;border:none;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;">+ Novo fornecedor</button>
-        </div>
-        <table class="admin__table">
-          <thead>
-            <tr>
-              <th>Fornecedor</th>
-              <th>Status</th>
-              <th>Tipo</th>
-              <th>WhatsApp</th>
-              <th>Data de entrada</th>
-              <th>Parceiro há</th>
-              <th>Experiências</th>
-              <th>Vagas</th>
-              <th>Faturamento</th>
-              <th>Desconto</th>
-              <th>Repasse</th>
-              <th>Receita Elarah</th>
-              <th>Última reserva</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="fornecedores-body">
-            <tr><td colspan="14" class="admin__table-empty">Nenhum fornecedor cadastrado ainda.</td></tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -2032,392 +1966,10 @@
       </div>
     </div>
 
-    <!-- ===== REDES SOCIAIS PANEL =====
-         Painel de inteligência de redes sociais. Substituiu o antigo
-         "Calendário de conteúdo" (roteiros prontos), que não estava
-         gerando decisão. Agora a aba é um dashboard analítico de posts
-         já publicados (Instagram, TikTok, LinkedIn) com detecção de
-         padrão, comparativos semanais e geração de ideias baseada em
-         dados, não em achismo.
-         Dados ficam em localStorage (chave elarah.social.posts.v1) até
-         a integração direta com APIs das plataformas (roadmap). Suporta
-         input manual + import/export CSV pra evolução incremental. -->
-    <div class="admin__panel" id="panel-social">
-      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h1 class="admin__page-title">Redes Sociais</h1>
-          <p class="admin__page-subtitle">
-            Inteligência de conteúdo: o que está performando, o que não está,
-            e o que escalar agora — baseado nos dados reais dos seus posts.
-          </p>
-        </div>
-        <div class="admin__analytics-controls">
-          <label for="social-platform" class="admin__form-hint" style="margin:0;">Plataforma:</label>
-          <select id="social-platform" class="admin__analytics-select">
-            <option value="all" selected>Todas</option>
-            <option value="instagram">Instagram</option>
-            <option value="tiktok">TikTok</option>
-            <option value="linkedin">LinkedIn</option>
-          </select>
-          <label for="social-range" class="admin__form-hint" style="margin:0;">Período:</label>
-          <select id="social-range" class="admin__analytics-select">
-            <option value="7">Últimos 7 dias</option>
-            <option value="30" selected>Últimos 30 dias</option>
-            <option value="90">Últimos 90 dias</option>
-            <option value="all">Todos</option>
-          </select>
-          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-import-ig" type="button" title="Importar CSV exportado do Windsor (Instagram)">↑ CSV Instagram</button>
-          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-import-tk" type="button" title="Importar CSV exportado do Windsor (TikTok)">↑ CSV TikTok</button>
-          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-export" type="button" title="Exportar todos os posts">↓ Exportar</button>
-          <button class="admin__add-btn admin__add-btn--ghost" id="btn-social-windsor" type="button" title="Conectar/sincronizar com o Windsor AI (puxa os dados automaticamente)">🔗 Windsor AI</button>
-          <button class="admin__add-btn" id="btn-social-analysis" type="button" title="Gerar análise estratégica completa do perfil">🎯 Análise estratégica</button>
-          <button class="admin__add-btn" id="btn-social-add" type="button">+ Novo post</button>
-          <input type="file" id="social-csv-input" accept=".csv,text/csv" style="display:none;">
-        </div>
-      </div>
-
-      <!-- Estado vazio: aparece se não há nenhum post cadastrado.
-           Substituído automaticamente pelo dashboard quando entra dado. -->
-      <div id="social-empty" class="social-empty" style="display:none;">
-        <div class="social-empty__icon">📊</div>
-        <h2 class="social-empty__title">Comece registrando seus posts</h2>
-        <p class="social-empty__text">
-          Adicione manualmente ou importe um CSV com posts do Instagram, TikTok e LinkedIn.
-          Quanto mais dados, mais preciso o painel fica em apontar padrões e gerar ideias acionáveis.
-        </p>
-        <div class="social-empty__actions">
-          <button class="admin__add-btn" type="button" data-social-action="windsor">🔗 Conectar Windsor AI</button>
-          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="add">+ Adicionar post manual</button>
-          <button class="admin__add-btn admin__add-btn--ghost" type="button" data-social-action="sample">Dados de exemplo</button>
-        </div>
-        <p class="social-empty__hint">
-          ✅ <strong>Importação direta do Windsor AI:</strong> exporte o CSV do Windsor e importe aqui — reconhecemos
-          automaticamente as colunas (Vistas, Tipo de mídia, Interações totais, Compartilhamentos, Site vinculado, etc.).<br>
-          Formato nativo também aceito: <code>platform,type,date,link,views,reach,likes,comments,saves,shares,followers,linkClicks,conversions,tags</code><br>
-          <span style="color:#999;">tags = palavras-chave separadas por vírgula entre aspas, ex: <code>"comida, vila madalena"</code></span>
-        </p>
-      </div>
-
-      <!-- Wrapper do dashboard (escondido se não há dados) -->
-      <div id="social-dashboard" style="display:none;">
-
-        <!-- Painel de status das conexões (Instagram/TikTok/LinkedIn).
-             Aparece só se há ao menos uma conta plugada via API. -->
-        <div id="social-connections" class="social-connections" style="display:none;"></div>
-
-        <!-- Banner temporário pós-OAuth (sucesso ou erro). Limpado
-             após alguns segundos pelo JS. -->
-        <div id="social-toast" class="social-toast" style="display:none;"></div>
-
-        <!-- KPIs principais: visão geral instantânea da saúde de conteúdo -->
-        <div class="social-kpi-grid">
-          <div class="social-kpi">
-            <div class="social-kpi__label">Posts no período</div>
-            <div class="social-kpi__value" id="social-kpi-posts">—</div>
-            <div class="social-kpi__delta" id="social-kpi-posts-delta">vs período anterior</div>
-          </div>
-          <div class="social-kpi">
-            <div class="social-kpi__label">Alcance total</div>
-            <div class="social-kpi__value" id="social-kpi-reach">—</div>
-            <div class="social-kpi__delta" id="social-kpi-reach-delta">vs período anterior</div>
-          </div>
-          <div class="social-kpi">
-            <div class="social-kpi__label">Engajamento médio</div>
-            <div class="social-kpi__value" id="social-kpi-eng">—</div>
-            <div class="social-kpi__delta" id="social-kpi-eng-delta">por post</div>
-          </div>
-          <div class="social-kpi">
-            <div class="social-kpi__label">Taxa de engajamento</div>
-            <div class="social-kpi__value" id="social-kpi-rate">—</div>
-            <div class="social-kpi__delta" id="social-kpi-rate-delta">eng/visualizações</div>
-          </div>
-        </div>
-
-        <!-- Insights: o coração do painel. Não são números, são frases.
-             O que dizer pra alguém olhando o painel pela primeira vez. -->
-        <section class="social-section">
-          <div class="social-section__header">
-            <h2 class="social-section__title">Insights</h2>
-            <p class="social-section__hint">Padrões detectados nos dados — leia isso primeiro.</p>
-          </div>
-          <div id="social-insights" class="social-insights">
-            <p class="social-insights__empty">Sem padrões claros ainda — adicione mais posts pra o sistema cruzar dados.</p>
-          </div>
-        </section>
-
-        <!-- Ideias da semana: 3 ideias acionáveis, com formato + gancho + execução,
-             tiradas das combinações de tags/tipos/plataformas com melhor performance. -->
-        <section class="social-section">
-          <div class="social-section__header">
-            <h2 class="social-section__title">Top 3 ideias da semana</h2>
-            <p class="social-section__hint">Baseado nos padrões que estão funcionando agora — não em achismo.</p>
-          </div>
-          <div id="social-ideas" class="social-ideas">
-            <p class="social-ideas__empty">Adicione mais posts (com tags) pra o sistema sugerir ideias.</p>
-          </div>
-        </section>
-
-        <!-- Performance por plataforma: qual rede está crescendo, qual está caindo. -->
-        <section class="social-section">
-          <div class="social-section__header">
-            <h2 class="social-section__title">Performance por plataforma</h2>
-            <p class="social-section__hint">Comparado ao período anterior. Verde sobe, vermelho cai.</p>
-          </div>
-          <div id="social-platforms" class="social-platforms">
-            <p class="social-section__empty">Sem dados.</p>
-          </div>
-        </section>
-
-        <!-- Performance por tipo de conteúdo (Reel vs Story vs Carrossel etc) -->
-        <section class="social-section">
-          <div class="social-section__header">
-            <h2 class="social-section__title">Performance por tipo de conteúdo</h2>
-            <p class="social-section__hint">Onde cada formato é forte e onde é fraco.</p>
-          </div>
-          <div class="admin__table-wrap admin__table-wrap--flush">
-            <table class="admin__table social-table">
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th class="social-num">Posts</th>
-                  <th class="social-num">Alcance médio</th>
-                  <th class="social-num">Eng. médio</th>
-                  <th class="social-num">Taxa eng.</th>
-                  <th class="social-num">Saves médios</th>
-                  <th class="social-num">Shares médios</th>
-                </tr>
-              </thead>
-              <tbody id="social-types-body">
-                <tr><td colspan="7" class="admin__table-empty">Sem dados.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Evolução: linha simples de engajamento ao longo do tempo -->
-        <section class="social-section">
-          <div class="social-section__header">
-            <h2 class="social-section__title">Evolução</h2>
-            <p class="social-section__hint">Engajamento ao longo do período selecionado.</p>
-          </div>
-          <div class="social-chart-wrap">
-            <canvas id="social-chart-evolution" height="240"></canvas>
-          </div>
-        </section>
-
-        <!-- Top posts e piores posts lado a lado -->
-        <div class="social-rank-grid">
-          <section class="social-section social-section--flush">
-            <div class="social-section__header">
-              <h2 class="social-section__title">Top posts</h2>
-              <p class="social-section__hint">Maior engajamento total — replicar padrão.</p>
-            </div>
-            <div id="social-top-posts" class="social-rank">
-              <p class="social-section__empty">Sem dados.</p>
-            </div>
-          </section>
-          <section class="social-section social-section--flush">
-            <div class="social-section__header">
-              <h2 class="social-section__title">Piores posts</h2>
-              <p class="social-section__hint">Menor engajamento — diagnosticar e parar de fazer.</p>
-            </div>
-            <div id="social-worst-posts" class="social-rank">
-              <p class="social-section__empty">Sem dados.</p>
-            </div>
-          </section>
-        </div>
-
-        <!-- Comparação semana a semana -->
-        <section class="social-section">
-          <div class="social-section__header">
-            <h2 class="social-section__title">Semana atual vs anterior</h2>
-            <p class="social-section__hint">Movimento das últimas duas semanas — independente do filtro acima.</p>
-          </div>
-          <div id="social-wow" class="social-wow">
-            <p class="social-section__empty">Sem dados.</p>
-          </div>
-        </section>
-
-        <!-- Tabela com todos os posts: dá controle e edição. -->
-        <section class="social-section">
-          <div class="social-section__header">
-            <h2 class="social-section__title">Todos os posts</h2>
-            <p class="social-section__hint">Clica em editar pra atualizar números, ou remove o que não faz mais sentido.</p>
-          </div>
-          <div class="admin__table-wrap admin__table-wrap--flush">
-            <table class="admin__table social-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Plataforma</th>
-                  <th>Tipo</th>
-                  <th>Tags</th>
-                  <th class="social-num">Views</th>
-                  <th class="social-num">Likes</th>
-                  <th class="social-num">Coment.</th>
-                  <th class="social-num">Saves</th>
-                  <th class="social-num">Shares</th>
-                  <th class="social-num">Eng.</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="social-posts-body">
-                <tr><td colspan="11" class="admin__table-empty">Sem posts.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-      </div>
-
-      <!-- ===== ANÁLISE ESTRATÉGICA =====
-           Overlay com o relatório de 10 seções (posicionamento, bio,
-           conteúdo, engajamento, funil, concorrência, oportunidades,
-           plano de ação, calendário e resumo). Renderizado por
-           admin-social-analysis.js. Escondido por padrão. -->
-      <div id="social-analysis" class="social-analysis" style="display:none;"></div>
-
-      <!-- Modal: conectar Windsor AI (uma URL por rede) -->
-      <div class="social-modal" id="windsor-modal" style="display:none;">
-        <div class="social-modal__backdrop" data-windsor-close></div>
-        <div class="social-modal__card">
-          <div class="social-modal__head">
-            <h3 class="social-modal__title">Conectar Windsor AI</h3>
-            <button type="button" class="social-modal__close" data-windsor-close aria-label="Fechar">×</button>
-          </div>
-          <div class="social-form">
-            <p class="admin__form-hint" style="margin:0 0 4px;">
-              Cole a URL de cada conector do Windsor no campo certo. A plataforma é
-              detectada automaticamente. Pode preencher só um, ou os dois.
-            </p>
-            <label class="social-form__field">
-              <span>📸 URL do Instagram <small style="color:#999;font-weight:400;">(conector /instagram)</small></span>
-              <textarea id="windsor-url-ig" rows="3" placeholder="https://connectors.windsor.ai/instagram?api_key=...&fields=date,media_type,media_caption,media_like_count,media_reach,media_comments_count,media_saved,media_shares,story_permalink"></textarea>
-            </label>
-            <label class="social-form__field">
-              <span>🎵 URL do TikTok <small style="color:#999;font-weight:400;">(conector /tiktok_organic)</small></span>
-              <textarea id="windsor-url-tk" rows="3" placeholder="https://connectors.windsor.ai/tiktok_organic?api_key=...&fields=date,datasource,video_caption,video_views,total_likes,video_favorites,bio_link_clicks,video_website_clicks"></textarea>
-            </label>
-            <p class="admin__form-hint" id="windsor-modal-status" style="margin:0;color:#999;"></p>
-            <div class="social-form__actions">
-              <button type="button" class="admin__add-btn admin__add-btn--ghost" data-windsor-close>Cancelar</button>
-              <button type="button" class="admin__add-btn" id="windsor-save">Salvar e sincronizar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Modal: novo / editar post -->
-      <div class="social-modal" id="social-modal" style="display:none;">
-        <div class="social-modal__backdrop" data-social-close></div>
-        <div class="social-modal__card">
-          <div class="social-modal__head">
-            <h3 class="social-modal__title" id="social-modal-title">Novo post</h3>
-            <button type="button" class="social-modal__close" data-social-close aria-label="Fechar">×</button>
-          </div>
-          <form class="social-form" id="social-form" autocomplete="off">
-            <input type="hidden" id="social-form-id" value="">
-            <div class="social-form__row">
-              <label class="social-form__field">
-                <span>Plataforma</span>
-                <select id="social-form-platform" required>
-                  <option value="instagram">Instagram</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="linkedin">LinkedIn</option>
-                </select>
-              </label>
-              <label class="social-form__field">
-                <span>Tipo</span>
-                <select id="social-form-type" required>
-                  <option value="reel">Reel</option>
-                  <option value="story">Story</option>
-                  <option value="feed">Feed</option>
-                  <option value="carrossel">Carrossel</option>
-                  <option value="video">Vídeo</option>
-                </select>
-              </label>
-              <label class="social-form__field">
-                <span>Data</span>
-                <input type="date" id="social-form-date" required>
-              </label>
-            </div>
-            <label class="social-form__field">
-              <span>Link do post (opcional)</span>
-              <input type="url" id="social-form-link" placeholder="https://...">
-            </label>
-            <label class="social-form__field">
-              <span>Tags (separadas por vírgula — ex: comida, vila madalena, presente)</span>
-              <input type="text" id="social-form-tags" placeholder="comida, bairro, depoimento">
-            </label>
-            <!-- Dimensões de análise da Elarah -->
-            <div class="social-form__row">
-              <label class="social-form__field">
-                <span>Ocasião / Tema</span>
-                <select id="social-form-theme"><option value="">—</option></select>
-              </label>
-              <label class="social-form__field">
-                <span>Experiência (opcional)</span>
-                <input type="text" id="social-form-experience" placeholder="Ex: Jantar harmonizado">
-              </label>
-              <label class="social-form__field">
-                <span>Campanha (opcional)</span>
-                <input type="text" id="social-form-campaign" placeholder="Ex: namorados-2026">
-              </label>
-            </div>
-            <div class="social-form__row social-form__row--metrics">
-              <label class="social-form__field">
-                <span>Visualizações</span>
-                <input type="number" id="social-form-views" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Alcance</span>
-                <input type="number" id="social-form-reach" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Curtidas</span>
-                <input type="number" id="social-form-likes" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Comentários</span>
-                <input type="number" id="social-form-comments" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Saves</span>
-                <input type="number" id="social-form-saves" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Shares</span>
-                <input type="number" id="social-form-shares" min="0" value="0">
-              </label>
-            </div>
-            <div class="social-form__row social-form__row--metrics">
-              <label class="social-form__field">
-                <span>Novos seguidores</span>
-                <input type="number" id="social-form-followers" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Visitas ao perfil</span>
-                <input type="number" id="social-form-profileVisits" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Cliques no link</span>
-                <input type="number" id="social-form-linkClicks" min="0" value="0">
-              </label>
-              <label class="social-form__field">
-                <span>Conversões / Reservas</span>
-                <input type="number" id="social-form-conversions" min="0" value="0">
-              </label>
-            </div>
-            <div class="social-form__actions">
-              <button type="button" class="admin__add-btn admin__add-btn--ghost" data-social-close>Cancelar</button>
-              <button type="button" class="admin__add-btn admin__add-btn--danger" id="social-form-delete" style="display:none;">Excluir</button>
-              <button type="submit" class="admin__add-btn">Salvar post</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-    </div>
+    <!-- A aba "Redes Sociais" foi removida (pedido da admin, set/2026):
+         o painel inteiro e os scripts admin-social.js /
+         admin-social-analysis.js saíram daqui. Isso tira ~170KB de
+         JS de todo carregamento do admin. Histórico no git. -->
 
     <!-- ===== ANALYTICS PANEL ===== -->
     <div class="admin__panel" id="panel-analytics">
@@ -3312,13 +2864,105 @@
     </div>
 
     <!-- ===== CONTABILIDADE PANEL ===== -->
+    <!-- =========================================================
+         CONTABILIDADE — versão "correria"
+         ---------------------------------------------------------
+         Reescrita a pedido da admin: a versão antiga abria com 7
+         cards, 5 tabelas gigantes e 6 filtros — ninguém conseguia
+         ler. Agora a aba abre com três números grandes (entrou /
+         saiu / sobrou), um campo onde você escreve o gasto em
+         português ("gastei 120 no uber ontem") e um gráfico de pra
+         onde o dinheiro foi. As tabelas continuam todas aqui, mas
+         fechadas dentro de "Ver detalhes" — quem precisa, abre.
+         ========================================================= -->
     <div class="admin__panel" id="panel-contabilidade">
-      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h1 class="admin__page-title">Contabilidade</h1>
-          <p class="admin__page-subtitle">Visão financeira completa: receitas, gastos, repasses e resultado por experiência</p>
+      <div class="admin__header">
+        <h1 class="admin__page-title">Contabilidade</h1>
+        <p class="admin__page-subtitle">Quanto entrou, quanto saiu e quanto sobrou. Pra anotar um gasto, é só escrever embaixo.</p>
+      </div>
+
+      <!-- ===== PERÍODO (balões lado a lado) ===== -->
+      <div class="admin__segmented" id="fin-period-switch" role="tablist" aria-label="Período">
+        <button type="button" class="admin__segmented-btn" data-fin-period="today" role="tab">Hoje</button>
+        <button type="button" class="admin__segmented-btn" data-fin-period="this-week" role="tab">Semana</button>
+        <button type="button" class="admin__segmented-btn admin__segmented-btn--active" data-fin-period="this-month" role="tab">Este mês</button>
+        <button type="button" class="admin__segmented-btn" data-fin-period="last-month" role="tab">Mês passado</button>
+        <button type="button" class="admin__segmented-btn" data-fin-period="all" role="tab">Tudo</button>
+      </div>
+
+      <!-- ===== TRÊS NÚMEROS QUE IMPORTAM ===== -->
+      <div class="fin-big">
+        <div class="fin-big__card fin-big__card--in">
+          <div class="fin-big__label">Entrou</div>
+          <div class="fin-big__value" id="fin-big-entrou">R$ 0</div>
+          <div class="fin-big__sub" id="fin-big-entrou-sub">vendas confirmadas</div>
         </div>
-        <div class="admin__analytics-controls">
+        <div class="fin-big__card fin-big__card--out">
+          <div class="fin-big__label">Saiu</div>
+          <div class="fin-big__value" id="fin-big-saiu">R$ 0</div>
+          <div class="fin-big__sub" id="fin-big-saiu-sub">gastos + repasses pagos</div>
+        </div>
+        <div class="fin-big__card fin-big__card--net">
+          <div class="fin-big__label">Sobrou</div>
+          <div class="fin-big__value" id="fin-big-sobrou">R$ 0</div>
+          <div class="fin-big__sub" id="fin-big-sobrou-sub">entrou − saiu</div>
+        </div>
+      </div>
+
+      <!-- Pendências: só aparecem se existirem, pra não poluir. -->
+      <div class="fin-pend" id="fin-pendencias" style="display:none;"></div>
+
+      <!-- ===== CHAT: ANOTAR GASTO ESCREVENDO ===== -->
+      <!-- Lê o texto no navegador (sem IA, sem custo) e grava direto em
+           financial_expenses. Antes de salvar mostra o que entendeu, pra
+           você conferir e corrigir a categoria num clique. -->
+      <section class="fin-chat" id="fin-chat">
+        <h2 class="fin-chat__title">Anota aqui 💬</h2>
+        <p class="fin-chat__hint">
+          Escreva do jeito que você fala e dá Enter. Ex.:
+          <button type="button" class="fin-chat__ex" data-fin-example="gastei 180 em materiais hoje">gastei 180 em materiais hoje</button>
+          <button type="button" class="fin-chat__ex" data-fin-example="anúncio no instagram 250 ontem">anúncio no instagram 250 ontem</button>
+          <button type="button" class="fin-chat__ex" data-fin-example="aluguel do espaço 900 dia 05/09 a pagar">aluguel do espaço 900 dia 05/09 a pagar</button>
+        </p>
+        <div class="fin-chat__log" id="fin-chat-log" aria-live="polite"></div>
+        <form class="fin-chat__form" id="fin-chat-form" autocomplete="off">
+          <input type="text" id="fin-chat-input" class="fin-chat__input"
+                 placeholder="Ex.: gastei 120 no uber ontem" aria-label="Descreva o gasto">
+          <button type="submit" class="fin-chat__send">Anotar</button>
+        </form>
+        <p class="fin-chat__foot">
+          Salva na hora em Gastos. Se errar a categoria ou o valor, dá pra corrigir em
+          <b>Ver detalhes → Gastos</b>, ou clicar em <b>desfazer</b> logo depois de anotar.
+        </p>
+      </section>
+
+      <!-- ===== PRA ONDE FOI O DINHEIRO ===== -->
+      <section class="fin-graph">
+        <div class="fin-graph__head">
+          <h2 class="fin-graph__title">Pra onde foi o dinheiro</h2>
+          <span class="fin-graph__total" id="fin-graph-total"></span>
+        </div>
+        <div id="fin-graph-bars" class="fin-graph__bars">
+          <p class="fin-graph__empty">Sem gastos no período.</p>
+        </div>
+      </section>
+
+      <!-- ===== ENTRADAS x SAÍDAS MÊS A MÊS ===== -->
+      <section class="fin-graph">
+        <div class="fin-graph__head">
+          <h2 class="fin-graph__title">Mês a mês</h2>
+          <span class="fin-graph__total">últimos 6 meses</span>
+        </div>
+        <div id="fin-graph-months" class="fin-graph__months">
+          <p class="fin-graph__empty">Sem movimento ainda.</p>
+        </div>
+      </section>
+
+      <!-- ===== TUDO O QUE ERA A ABA ANTIGA, AGORA FECHADO ===== -->
+      <details class="fin-details" id="fin-details">
+        <summary class="fin-details__summary">Ver detalhes (tabelas, filtros e exportação)</summary>
+
+        <div class="admin__analytics-controls" style="margin:16px 0;">
           <select id="fin-filter-period" class="admin__analytics-select">
             <option value="today">Hoje</option>
             <option value="this-week">Esta semana</option>
@@ -3333,193 +2977,190 @@
             <option value="">Todas as experiências</option>
           </select>
           <select id="fin-filter-supplier" class="admin__analytics-select">
-            <option value="">Todos os fornecedores</option>
+            <option value="">Todos os parceiros</option>
           </select>
           <button class="admin__add-btn" id="btn-fin-refresh" type="button">Atualizar</button>
+          <button type="button" id="btn-fin-new-expense" class="admin__add-btn"
+                  style="background:#1a8a4a;color:#fff;border:0;">+ Novo gasto</button>
+          <button type="button" id="btn-fin-new-manual-sale" class="admin__add-btn"
+                  style="background:#1a8a4a;color:#fff;border:0;">+ Nova venda manual</button>
+          <button type="button" id="btn-fin-export" class="admin__add-btn">Exportar (CSV)</button>
         </div>
-      </div>
 
-      <!-- ===== CARDS DE RESUMO ===== -->
-      <div class="admin__stats" id="fin-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
-        <div class="admin__stat">
-          <div class="admin__stat-label">Receita confirmada</div>
-          <div class="admin__stat-value admin__stat-value--orange" id="fin-card-receita-confirmada">R$ 0</div>
-          <div class="admin__stat-sub" id="fin-card-receita-confirmada-sub" style="font-size:.72rem;color:#888;margin-top:4px;">— vendas</div>
+        <!-- Cards antigos: continuam existindo (o código financeiro
+             preenche por id), mas em letra menor e fora do caminho. -->
+        <div class="admin__stats" id="fin-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+          <div class="admin__stat">
+            <div class="admin__stat-label">Receita confirmada</div>
+            <div class="admin__stat-value admin__stat-value--orange" id="fin-card-receita-confirmada">R$ 0</div>
+            <div class="admin__stat-sub" id="fin-card-receita-confirmada-sub" style="font-size:.72rem;color:#888;margin-top:4px;">— vendas</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Receita pendente</div>
+            <div class="admin__stat-value" id="fin-card-receita-pendente">R$ 0</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Gastos pagos</div>
+            <div class="admin__stat-value" id="fin-card-gastos-pagos">R$ 0</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Gastos pendentes</div>
+            <div class="admin__stat-value" id="fin-card-gastos-pendentes">R$ 0</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Lucro estimado</div>
+            <div class="admin__stat-value" id="fin-card-lucro" style="color:#1a8a4a;">R$ 0</div>
+            <div class="admin__stat-sub" id="fin-card-lucro-sub" style="font-size:.72rem;color:#888;margin-top:4px;">receita − gastos − repasses</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Repasses pendentes</div>
+            <div class="admin__stat-value" id="fin-card-repasses-pendentes" style="color:#b07b00;">R$ 0</div>
+          </div>
+          <div class="admin__stat">
+            <div class="admin__stat-label">Resultado do mês</div>
+            <div class="admin__stat-value" id="fin-card-mes">R$ 0</div>
+            <div class="admin__stat-sub" id="fin-card-mes-sub" style="font-size:.72rem;color:#888;margin-top:4px;">(mês corrente)</div>
+          </div>
         </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Receita pendente</div>
-          <div class="admin__stat-value" id="fin-card-receita-pendente">R$ 0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Gastos pagos</div>
-          <div class="admin__stat-value" id="fin-card-gastos-pagos">R$ 0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Gastos pendentes</div>
-          <div class="admin__stat-value" id="fin-card-gastos-pendentes">R$ 0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Lucro estimado</div>
-          <div class="admin__stat-value" id="fin-card-lucro" style="color:#1a8a4a;">R$ 0</div>
-          <div class="admin__stat-sub" id="fin-card-lucro-sub" style="font-size:.72rem;color:#888;margin-top:4px;">receita − gastos − repasses</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Repasses pendentes</div>
-          <div class="admin__stat-value" id="fin-card-repasses-pendentes" style="color:#b07b00;">R$ 0</div>
-        </div>
-        <div class="admin__stat">
-          <div class="admin__stat-label">Resultado do mês</div>
-          <div class="admin__stat-value" id="fin-card-mes">R$ 0</div>
-          <div class="admin__stat-sub" id="fin-card-mes-sub" style="font-size:.72rem;color:#888;margin-top:4px;">(mês corrente)</div>
-        </div>
-      </div>
 
-      <!-- ===== AÇÕES ===== -->
-      <div style="margin:18px 0 8px;display:flex;gap:10px;flex-wrap:wrap;">
-        <button type="button" id="btn-fin-new-expense" class="admin__add-btn"
-                style="background:#1a8a4a;color:#fff;border:0;">+ Novo gasto</button>
-        <button type="button" id="btn-fin-new-manual-sale" class="admin__add-btn"
-                style="background:#1a8a4a;color:#fff;border:0;">+ Nova venda manual</button>
-        <button type="button" id="btn-fin-export" class="admin__add-btn">Exportar lançamentos (CSV)</button>
-      </div>
-
-      <!-- ===== TABELA: LANÇAMENTOS UNIFICADOS ===== -->
-      <div class="admin__table-wrap">
-        <div class="admin__table-header">
-          <span class="admin__table-title">Lançamentos financeiros</span>
-          <span class="admin__table-count" id="fin-ledger-count"></span>
+        <!-- ===== TABELA: LANÇAMENTOS UNIFICADOS ===== -->
+        <div class="admin__table-wrap" style="margin-top:20px;">
+          <div class="admin__table-header">
+            <span class="admin__table-title">Lançamentos financeiros</span>
+            <span class="admin__table-count" id="fin-ledger-count"></span>
+          </div>
+          <input type="search" id="fin-ledger-search" placeholder="Buscar (nome, experiência, descrição...)"
+                 style="margin:8px 12px;padding:8px 10px;width:calc(100% - 24px);box-sizing:border-box;border:1px solid #ddd;border-radius:6px;font-size:.9rem;">
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Origem</th>
+                <th>Tipo</th>
+                <th>Descrição / Cliente</th>
+                <th>Experiência</th>
+                <th>Parceiro</th>
+                <th style="text-align:right;">Valor</th>
+                <th style="text-align:right;">Repasse</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="fin-ledger-body">
+              <tr><td colspan="9" class="admin__table-empty">Carregando...</td></tr>
+            </tbody>
+          </table>
         </div>
-        <input type="search" id="fin-ledger-search" placeholder="Buscar (nome, experiência, descrição...)"
-               style="margin:8px 12px;padding:8px 10px;width:calc(100% - 24px);box-sizing:border-box;border:1px solid #ddd;border-radius:6px;font-size:.9rem;">
-        <table class="admin__table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Origem</th>
-              <th>Tipo</th>
-              <th>Descrição / Cliente</th>
-              <th>Experiência</th>
-              <th>Fornecedor</th>
-              <th style="text-align:right;">Valor</th>
-              <th style="text-align:right;">Repasse</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="fin-ledger-body">
-            <tr><td colspan="9" class="admin__table-empty">Carregando...</td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- ===== TABELA: GASTOS ===== -->
-      <div class="admin__table-wrap" style="margin-top:24px;">
-        <div class="admin__table-header">
-          <span class="admin__table-title">Gastos</span>
-          <span class="admin__table-count" id="fin-expenses-count"></span>
+        <!-- ===== TABELA: GASTOS ===== -->
+        <div class="admin__table-wrap" style="margin-top:24px;">
+          <div class="admin__table-header">
+            <span class="admin__table-title">Gastos</span>
+            <span class="admin__table-count" id="fin-expenses-count"></span>
+          </div>
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Experiência</th>
+                <th>Parceiro</th>
+                <th>Pagamento</th>
+                <th style="text-align:right;">Valor</th>
+                <th>Status</th>
+                <th>Comprovante</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="fin-expenses-body">
+              <tr><td colspan="10" class="admin__table-empty">Nenhum gasto registrado.</td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="admin__table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Experiência</th>
-              <th>Fornecedor</th>
-              <th>Pagamento</th>
-              <th style="text-align:right;">Valor</th>
-              <th>Status</th>
-              <th>Comprovante</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="fin-expenses-body">
-            <tr><td colspan="10" class="admin__table-empty">Nenhum gasto registrado.</td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- ===== TABELA: VENDAS MANUAIS ===== -->
-      <div class="admin__table-wrap" style="margin-top:24px;">
-        <div class="admin__table-header">
-          <span class="admin__table-title">Vendas manuais (fora do site)</span>
-          <span class="admin__table-count" id="fin-sales-count"></span>
+        <!-- ===== TABELA: VENDAS MANUAIS ===== -->
+        <div class="admin__table-wrap" style="margin-top:24px;">
+          <div class="admin__table-header">
+            <span class="admin__table-title">Vendas manuais (fora do site)</span>
+            <span class="admin__table-count" id="fin-sales-count"></span>
+          </div>
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Quando</th>
+                <th>Cliente</th>
+                <th>Experiência</th>
+                <th>Slot</th>
+                <th>Qtd</th>
+                <th style="text-align:right;">Valor</th>
+                <th>Pagamento</th>
+                <th>Fonte</th>
+                <th>Status</th>
+                <th>Repasse</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="fin-sales-body">
+              <tr><td colspan="11" class="admin__table-empty">Nenhuma venda manual registrada.</td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="admin__table">
-          <thead>
-            <tr>
-              <th>Quando</th>
-              <th>Cliente</th>
-              <th>Experiência</th>
-              <th>Slot</th>
-              <th>Qtd</th>
-              <th style="text-align:right;">Valor</th>
-              <th>Pagamento</th>
-              <th>Fonte</th>
-              <th>Status</th>
-              <th>Repasse</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="fin-sales-body">
-            <tr><td colspan="11" class="admin__table-empty">Nenhuma venda manual registrada.</td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- ===== TABELA: RESULTADO POR EXPERIÊNCIA ===== -->
-      <div class="admin__table-wrap" style="margin-top:24px;">
-        <div class="admin__table-header">
-          <span class="admin__table-title">Resultado por experiência</span>
-          <span class="admin__table-count" id="fin-byexp-count"></span>
+        <!-- ===== TABELA: RESULTADO POR EXPERIÊNCIA ===== -->
+        <div class="admin__table-wrap" style="margin-top:24px;">
+          <div class="admin__table-header">
+            <span class="admin__table-title">Resultado por experiência</span>
+            <span class="admin__table-count" id="fin-byexp-count"></span>
+          </div>
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Experiência</th>
+                <th style="text-align:right;">Site</th>
+                <th style="text-align:right;">Manual</th>
+                <th style="text-align:right;">Receita</th>
+                <th style="text-align:right;">Repasse</th>
+                <th style="text-align:right;">Gastos</th>
+                <th style="text-align:right;">Lucro Elarah</th>
+                <th style="text-align:right;">Margem</th>
+              </tr>
+            </thead>
+            <tbody id="fin-byexp-body">
+              <tr><td colspan="8" class="admin__table-empty">Sem dados no período.</td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="admin__table">
-          <thead>
-            <tr>
-              <th>Experiência</th>
-              <th style="text-align:right;">Site</th>
-              <th style="text-align:right;">Manual</th>
-              <th style="text-align:right;">Receita</th>
-              <th style="text-align:right;">Repasse</th>
-              <th style="text-align:right;">Gastos</th>
-              <th style="text-align:right;">Lucro Elarah</th>
-              <th style="text-align:right;">Margem</th>
-            </tr>
-          </thead>
-          <tbody id="fin-byexp-body">
-            <tr><td colspan="8" class="admin__table-empty">Sem dados no período.</td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- ===== TABELA: REPASSES ===== -->
-      <div class="admin__table-wrap" style="margin-top:24px;">
-        <div class="admin__table-header">
-          <span class="admin__table-title">Repasses (bookings + vendas manuais)</span>
-          <span class="admin__table-count" id="fin-payouts-count"></span>
+        <!-- ===== TABELA: REPASSES ===== -->
+        <div class="admin__table-wrap" style="margin-top:24px;">
+          <div class="admin__table-header">
+            <span class="admin__table-title">Repasses (bookings + vendas manuais)</span>
+            <span class="admin__table-count" id="fin-payouts-count"></span>
+          </div>
+          <table class="admin__table">
+            <thead>
+              <tr>
+                <th>Data origem</th>
+                <th>Origem</th>
+                <th>Cliente</th>
+                <th>Experiência</th>
+                <th>Parceiro</th>
+                <th style="text-align:right;">Valor repasse</th>
+                <th>Status</th>
+                <th>Prazo (48h)</th>
+              </tr>
+            </thead>
+            <tbody id="fin-payouts-body">
+              <tr><td colspan="8" class="admin__table-empty">Sem repasses no período.</td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="admin__table">
-          <thead>
-            <tr>
-              <th>Data origem</th>
-              <th>Origem</th>
-              <th>Cliente</th>
-              <th>Experiência</th>
-              <th>Fornecedor</th>
-              <th style="text-align:right;">Valor repasse</th>
-              <th>Status</th>
-              <th>Prazo (48h)</th>
-            </tr>
-          </thead>
-          <tbody id="fin-payouts-body">
-            <tr><td colspan="8" class="admin__table-empty">Sem repasses no período.</td></tr>
-          </tbody>
-        </table>
-      </div>
 
-      <p style="margin-top:24px;color:#888;font-size:.78rem;">
-        Dados confirmados consideram <strong>bookings.status = 'pago'</strong> + <strong>manual_sales.payment_status = 'pago'</strong>.
-        Pendentes/cancelados/reembolsados aparecem nas tabelas com seus respectivos status, mas não somam ao card "Receita confirmada".
-      </p>
+        <p style="margin-top:24px;color:#888;font-size:.78rem;">
+          Confirmado = <strong>bookings.status = 'pago'</strong> + <strong>manual_sales.payment_status = 'pago'</strong>.
+          Pendente, cancelado e reembolsado aparecem nas tabelas, mas não somam em "Entrou".
+        </p>
+      </details>
     </div>
 
     <!-- ===== INTERESSES PANEL ===== -->
@@ -3642,41 +3283,91 @@
     </div>
 
     <!-- ===== DIAGNÓSTICO IA PANEL ("Onde estamos pecando") ===== -->
+    <!-- =========================================================
+         O QUE FAZER HOJE (antigo "Diagnóstico IA" + "Agente CEO")
+         ---------------------------------------------------------
+         Reescrita a pedido da admin: a versão antiga despejava
+         blocos de texto corridos e ninguém lia. Agora a aba abre
+         com no máximo 5 tarefas — uma linha cada — e todo o resto
+         (o que vendeu mais, o que está indo bem, funil, visão de
+         CEO e o texto completo) fica dentro de blocos que só abrem
+         quando você clica.
+         ========================================================= -->
     <div class="admin__panel" id="panel-insights">
       <div class="admin__header">
-        <div>
-          <h1 class="admin__title">Diagnóstico IA — Onde estamos pecando</h1>
-          <p class="admin__subtitle">
-            Roda <strong>sozinho todo dia</strong> e <strong>sem custo</strong>:
-            lê os dados reais do site e das vendas, diz onde o funil perde gente
-            e o que está dando certo, e te manda o resumo por e-mail. Aqui embaixo
-            aparece sempre o último — atualizado automaticamente, sem clicar em
-            nada. (Dá pra ligar uma versão com IA mais esperta depois, se quiser.)
-          </p>
-        </div>
+        <h1 class="admin__page-title">O que fazer hoje</h1>
+        <p class="admin__page-subtitle">As cinco coisas mais importantes agora. O resto está guardado nos blocos abaixo — clique pra abrir.</p>
       </div>
 
-      <section class="admin__analytics-card">
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-          <span style="font-size:.85rem;color:#666;">Quer um diagnóstico agora, fora do horário do automático?</span>
-          <label style="font-size:.85rem;color:#666;">Período</label>
-          <select id="insights-period" class="admin__analytics-select">
-            <option value="7">Últimos 7 dias</option>
-            <option value="30" selected>Últimos 30 dias</option>
-            <option value="90">Últimos 90 dias</option>
-          </select>
-          <button id="insights-generate" class="admin__btn admin__btn--primary" type="button">
-            Atualizar agora
-          </button>
-          <span id="insights-status" style="font-size:.85rem;color:#888;"></span>
+      <!-- ===== TOP 5 ===== -->
+      <section class="diag-top">
+        <div class="diag-top__head">
+          <h2 class="diag-top__title">Top 5 da semana</h2>
+          <span class="diag-top__stamp" id="insights-stamp"></span>
         </div>
-        <p style="margin:10px 0 0;font-size:.78rem;color:#aaa;">
-          O automático já roda todo dia de manhã e manda no e-mail. Este botão é
-          só pra antecipar — leva de 10 a 40 segundos.
-        </p>
+        <ol class="diag-top__list" id="insights-acoes">
+          <li class="diag-top__loading">Lendo os números…</li>
+        </ol>
       </section>
 
-      <div id="insights-result" style="display:none;margin-top:18px;"></div>
+      <!-- ===== BLOCOS QUE ABREM ===== -->
+      <details class="diag-box" id="diag-box-vendidas" open>
+        <summary class="diag-box__summary">🔥 Experiências que mais venderam</summary>
+        <div class="diag-box__body" id="insights-top-exp">
+          <p class="diag-box__empty">Carregando…</p>
+        </div>
+      </details>
+
+      <details class="diag-box">
+        <summary class="diag-box__summary">✅ O que está indo bem</summary>
+        <div class="diag-box__body" id="insights-fortes">
+          <p class="diag-box__empty">Sem diagnóstico ainda.</p>
+        </div>
+      </details>
+
+      <details class="diag-box">
+        <summary class="diag-box__summary">🔎 Onde o funil perde gente</summary>
+        <div class="diag-box__body" id="insights-funil">
+          <p class="diag-box__empty">Sem diagnóstico ainda.</p>
+        </div>
+      </details>
+
+      <!-- Agente CEO: era uma aba separada. Virou um bloco daqui —
+           é a mesma pergunta ("o que eu faria se fosse a dona"), só
+           que com horizonte de duas semanas em vez de hoje. O JS
+           (admin-ceo.js) só carrega quando este bloco abre. -->
+      <details class="diag-box" id="diag-box-ceo">
+        <summary class="diag-box__summary">🧠 Visão de CEO — as próximas 2 semanas</summary>
+        <div class="diag-box__body">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+            <button id="ceo-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+          </div>
+          <div id="ceo-root">
+            <div style="color:#999;font-size:.9rem;">Abra este bloco pra ler os números da semana.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="diag-box">
+        <summary class="diag-box__summary">📄 Diagnóstico completo (texto longo)</summary>
+        <div class="diag-box__body">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+            <label style="font-size:.85rem;color:#666;">Período</label>
+            <select id="insights-period" class="admin__analytics-select">
+              <option value="7">Últimos 7 dias</option>
+              <option value="30" selected>Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+            </select>
+            <button id="insights-generate" class="admin__btn admin__btn--primary" type="button">Atualizar agora</button>
+            <span id="insights-status" style="font-size:.85rem;color:#888;"></span>
+          </div>
+          <p style="margin:0 0 14px;font-size:.78rem;color:#aaa;">
+            O diagnóstico roda sozinho todo dia de manhã e chega no seu e-mail. Este botão
+            é só pra antecipar — leva de 10 a 40 segundos.
+          </p>
+          <div id="insights-result" style="display:none;"></div>
+        </div>
+      </details>
     </div>
 
     <div class="admin__panel" id="panel-broadcast">
@@ -3739,23 +3430,6 @@
       </section>
     </div>
 
-    <div class="admin__panel" id="panel-ceo">
-      <div class="admin__header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h1 class="admin__title">🧠 Agente CEO</h1>
-          <p class="admin__subtitle">
-            Seu copiloto de dono. Ele junta <strong>faturamento, vendas, tráfego, lotação e
-            parceiros</strong> da semana e responde, em linguagem de gestão:
-            <strong>"se eu fosse o CEO, nas próximas 2 semanas eu faria…"</strong>.
-            Atualiza sozinho toda vez que você abre.
-          </p>
-        </div>
-        <button id="ceo-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
-      </div>
-      <div id="ceo-root" style="margin-top:8px;">
-        <div style="color:#999;font-size:.9rem;">Lendo os números da semana…</div>
-      </div>
-    </div>
 
   </main>
 </div>
@@ -4165,7 +3839,24 @@
             <option value="natal">Natal</option>
             <option value="ano-novo">Ano Novo</option>
           </select>
-          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Marque uma campanha pra esta experiência aparecer na aba temática (ex.: <code>dia-dos-pais.html</code>). "Nenhuma" = não entra em nenhuma aba de campanha.</p>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Marque uma campanha pra esta experiência aparecer na aba temática. "Nenhuma" = não entra em nenhuma campanha.</p>
+
+          <!-- Link direto pra página da campanha + posição na página.
+               Substitui a antiga aba "Campanhas": a curadoria agora é
+               feita aqui, na própria experiência. -->
+          <div id="exp-campanha-extra" style="display:none;margin-top:12px;background:#fbf3ea;border:1px solid #f0d8bf;border-radius:8px;padding:12px 14px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+              <span style="font-size:12px;color:#8a6a4a;font-weight:600;">Página da campanha:</span>
+              <a id="exp-campanha-link" href="#" target="_blank" rel="noopener"
+                 style="font-size:12px;color:#a4663b;font-weight:600;word-break:break-all;">—</a>
+            </div>
+            <label style="display:block;font-size:12px;color:#8a6a4a;font-weight:600;margin-bottom:4px;">Ordem nesta página</label>
+            <input type="number" id="exp-campanha-ordem" min="1" step="1" placeholder="1 = primeira da página"
+                   style="width:180px;padding:9px 10px;border:1px solid #e0cdb5;border-radius:8px;font-size:.95rem;font-family:inherit;">
+            <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#8a6a4a;">
+              1 = aparece em primeiro, 2 = segundo, e assim por diante. Deixe em branco pra usar a ordem automática (por data).
+            </p>
+          </div>
         </div>
 
         <!-- ===== FOTO EXCLUSIVA DA CAMPANHA ===== -->
@@ -4821,21 +4512,19 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=36"></script>
+<script src="experiences-data.js?v=37"></script>
 <script src="byelarah-data.js?v=7"></script>
 <script src="analytics.js?v=3"></script>
-<script src="admin-social.js?v=11"></script>
-<script src="admin-social-analysis.js?v=5"></script>
-<script src="admin-insights.js?v=2"></script>
+<script src="admin-insights.js?v=3"></script>
 <script src="admin-broadcast.js?v=2"></script>
 <script src="admin-eventos.js?v=2"></script>
 <script src="admin-eventos-privados.js?v=3"></script>
 <script src="admin-prospect-finder.js?v=1"></script>
 <script src="admin-prospect-analise.js?v=1"></script>
-<script src="admin-ceo.js?v=4"></script>
+<script src="admin-ceo.js?v=5"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=226"></script>
+<script src="admin.js?v=227"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

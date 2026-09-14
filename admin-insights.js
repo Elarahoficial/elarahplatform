@@ -92,19 +92,83 @@
     };
   }
 
+  // ---------------------------------------------------------------
+  // TOP 5 — as cinco coisas que a admin tem que fazer.
+  // Vem dos "problemas" do diagnóstico, ordenados por gravidade:
+  // o título é a ação (a recomendação, que é o que dá pra executar)
+  // e o "porquê" fica numa linha menor embaixo. Máximo cinco: se o
+  // agente achou dez, os cinco de menor gravidade ficam guardados no
+  // bloco "Diagnóstico completo".
+  // ---------------------------------------------------------------
+  const GRAV_PESO = { alta: 0, media: 1, baixa: 2 };
+
+  function renderTopCinco(ins) {
+    const box = el('insights-acoes');
+    if (!box) return;
+    const problemas = (ins && ins.problemas) || [];
+    if (!problemas.length) {
+      box.innerHTML = '<li class="diag-top__loading">Nenhum problema aberto — o diagnóstico não achou nada urgente. Boa!</li>';
+      return;
+    }
+    const ordenados = problemas.slice().sort((a, b) => {
+      const pa = GRAV_PESO[a && a.gravidade] != null ? GRAV_PESO[a.gravidade] : 1;
+      const pb = GRAV_PESO[b && b.gravidade] != null ? GRAV_PESO[b.gravidade] : 1;
+      return pa - pb;
+    }).slice(0, 5);
+
+    box.innerHTML = ordenados.map(p => {
+      const acao = p.recomendacao || p.titulo || '';
+      const porque = p.recomendacao ? (p.titulo || '') : (p.detalhe || '');
+      const grav = ['alta', 'media', 'baixa'].indexOf(p.gravidade) >= 0 ? p.gravidade : 'media';
+      return '<li>' + esc(acao) +
+        '<span class="diag-top__tag diag-top__tag--' + grav + '">' + esc(grav) + '</span>' +
+        (porque ? '<span class="diag-top__why">Por quê: ' + esc(porque) + '</span>' : '') +
+        '</li>';
+    }).join('');
+  }
+
+  function renderFortes(ins) {
+    const box = el('insights-fortes');
+    if (!box) return;
+    const fortes = (ins && ins.pontos_fortes) || [];
+    if (!fortes.length) { box.innerHTML = '<p class="diag-box__empty">Sem destaques no último diagnóstico.</p>'; return; }
+    box.innerHTML = fortes.map(p =>
+      '<div class="diag-item"><b>' + esc(p.titulo) + '</b><br>' + esc(p.detalhe) + '</div>'
+    ).join('');
+  }
+
+  function renderFunil(ins, m) {
+    const box = el('insights-funil');
+    if (!box) return;
+    const obs = (ins && ins.funil_observacoes) || [];
+    const kpis = renderKpis(m);
+    if (!obs.length && !kpis) { box.innerHTML = '<p class="diag-box__empty">Sem leitura de funil ainda.</p>'; return; }
+    box.innerHTML = kpis +
+      obs.map(f => '<div class="diag-item">' + esc(f) + '</div>').join('');
+  }
+
   function render(payload) {
-    const root = el('insights-result');
-    if (!root) return;
     const d = normalize(payload);
     const ins = d.insights;
     const m = d.metrics;
 
+    // Topo da aba: as 5 ações + carimbo de quando foi lido.
+    renderTopCinco(ins);
+    renderFortes(ins);
+    renderFunil(ins, m);
+
+    const when = d.when ? new Date(d.when).toLocaleString('pt-BR') : '';
+    const origem = d.trigger === 'cron' ? 'automático' : 'manual';
+    const stamp = el('insights-stamp');
+    if (stamp) stamp.textContent = when ? ('lido ' + when + ' · ' + origem) : '';
+
+    // Bloco "Diagnóstico completo": o texto longo de antes, intacto,
+    // só que fechado por padrão.
+    const root = el('insights-result');
+    if (!root) return;
+
     const badgeClass = 'ins-badge--' + (ins.saude_geral || 'atencao');
     const badgeLabel = ({ boa: 'Saúde boa', atencao: 'Requer atenção', critica: 'Crítico' })[ins.saude_geral] || 'Diagnóstico';
-
-    const fortes = (ins.pontos_fortes || []).map(p =>
-      `<div class="ins-item"><div class="ins-item__title">✅ ${esc(p.titulo)}</div><p class="ins-detalhe">${esc(p.detalhe)}</p></div>`
-    ).join('') || '<p class="ins-detalhe">—</p>';
 
     const problemas = (ins.problemas || []).map(p =>
       `<div class="ins-item">
@@ -115,32 +179,30 @@
       </div>`
     ).join('') || '<p class="ins-detalhe">Nenhum problema crítico identificado.</p>';
 
-    const funil = (ins.funil_observacoes || []).map(f => `<li>${esc(f)}</li>`).join('');
-    const when = d.when ? new Date(d.when).toLocaleString('pt-BR') : '';
-    const origem = d.trigger === 'cron' ? 'atualização automática' : 'atualização manual';
-
     root.innerHTML = `
       <div class="ins-grid">
         <div class="ins-card">
           <span class="ins-badge ${badgeClass}">${esc(badgeLabel)}</span>
-          ${renderKpis(m)}
           <p class="ins-resumo" style="margin-top:14px;">${esc(ins.resumo)}</p>
         </div>
         <div class="ins-card">
-          <h3 class="ins-h">Onde estamos pecando</h3>
+          <h3 class="ins-h">Todos os problemas encontrados</h3>
           ${problemas}
         </div>
-        <div class="ins-card">
-          <h3 class="ins-h">O que está funcionando</h3>
-          ${fortes}
-        </div>
-        ${funil ? `<div class="ins-card"><h3 class="ins-h">Leitura do funil</h3><ul class="ins-funil">${funil}</ul></div>` : ''}
-        <p class="ins-meta">Última ${esc(origem)}: ${esc(when)} · período de ${esc(d.period_days)} dias · modelo ${esc(d.model)} · só leitura (nenhuma alteração foi feita).</p>
+        <p class="ins-meta">Última atualização ${esc(origem)}: ${esc(when)} · período de ${esc(d.period_days)} dias · modelo ${esc(d.model)} · só leitura (nenhuma alteração foi feita).</p>
       </div>`;
     root.style.display = 'block';
   }
 
   function showEmpty() {
+    // Sem diagnóstico gravado ainda: o topo explica o que fazer em
+    // vez de ficar num "carregando…" eterno.
+    const acoes = el('insights-acoes');
+    if (acoes) {
+      acoes.innerHTML = '<li>Abra <b>Diagnóstico completo</b> e clique em <b>Atualizar agora</b> — ' +
+        'o agente ainda não rodou nenhuma vez.<span class="diag-top__why">' +
+        'Depois disso ele passa a rodar sozinho toda manhã e esta lista se preenche.</span></li>';
+    }
     const root = el('insights-result');
     if (!root) return;
     root.innerHTML = `

@@ -55,6 +55,10 @@
     // Foto exclusiva da campanha. Quando preenchida, é usada SÓ na aba
     // da campanha (a imagem oficial continua no resto do site).
     'campanha_imagem',
+    // Posição manual dentro da página da campanha (1 = primeira).
+    // null = sem ordem definida → cai no fim, mantendo o sort padrão
+    // da página. sql/elarah_experiences_campanha_ordem.sql.
+    'campanha_ordem',
     // Horário de funcionamento (agendamento livre / voucher). Quando
     // preenchido, a página da experiência mostra esse horário e deixa o
     // cliente escolher o dia e a hora que quiser. sql/elarah_experiences_horario_funcionamento.sql.
@@ -179,6 +183,11 @@
       campanha: (row.campanha == null || row.campanha === '') ? null : String(row.campanha).trim().toLowerCase(),
       // Foto exclusiva da campanha ('' = usa a imagem oficial).
       campanhaImagem: row.campanha_imagem || '',
+      // Posição na página da campanha (1 = primeira). null = sem ordem.
+      campanhaOrdem: (function () {
+        var n = Number(row.campanha_ordem);
+        return Number.isFinite(n) && n > 0 ? n : null;
+      })(),
       // Horário de funcionamento (agendamento livre). '' = agenda normal.
       horarioFuncionamento: row.horario_funcionamento || '',
       // --- Variantes (escolha extra do cliente) ---
@@ -335,6 +344,13 @@
         if (raw == null) return null;
         var s = String(raw).trim().toLowerCase();
         return s ? s : null;
+      })(),
+      // Posição na página da campanha. Vazio/0 → null (ordem automática).
+      campanha_ordem: (function () {
+        var raw = exp.campanhaOrdem != null ? exp.campanhaOrdem : exp.campanha_ordem;
+        if (raw == null || raw === '') return null;
+        var n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
       })(),
       // Foto exclusiva da campanha. Vazio → null (usa a imagem oficial).
       campanha_imagem: (function () {
