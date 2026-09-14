@@ -490,4 +490,97 @@ m_prox = proximos(
 
 write("automaquiagem-parceria", [m_cover, m_exp, m_vibe, m_inv, m_prox])
 
-print("== todos os 4 decks gerados ==")
+
+# =========================================================================
+# COMBINADO · as 4 experiências num orçamento só (enxuto)
+# =========================================================================
+def card(photo, price, price_lbl, vt, h3, addr, bullets):
+    li = "\n".join(f'            <li>{b}</li>' for b in bullets)
+    badge = f'<div class="vpr"><b>{price}</b><small>{price_lbl}</small></div>'
+    return f'''      <div class="vcard">
+        <div class="vph">{photo}{badge}</div>
+        <div class="vb">
+          <span class="vt">{vt}</span>
+          <h3>{h3}</h3>
+          <p class="vaddr">{addr}</p>
+          <ul>
+{li}
+          </ul>
+        </div>
+      </div>'''
+
+
+co_cover = cover(
+    "Proposta de experiências · Turma privada", "Coleção", "Experiências", "Halal & sem álcool",
+    "✦ Quatro experiências · Uma celebração só de vocês",
+    "Experiências que <em>encantam</em>",
+    "Uma coleção pensada com carinho pra sua turma: gastronomia temática, o ritual do charuto, arranjo floral autoral e um curso de automaquiagem em parceria. Tudo <strong>halal</strong> e <strong>sem álcool</strong>, do começo ao fim. Escolham a que mais combina — ou vivam todas. 🌙",
+    '<span class="chip"><b>4</b> experiências</span><span class="chip"><b>Halal</b> &amp; sem álcool</span><span class="chip">Turma <b>privada</b></span>',
+    img("arabe.jpg", "Mesa árabe temática, mezze halal", "center 50%"),
+    PROOF, "Coleção de experiências")
+
+co_menu = f'''
+  <section class="slide">
+{head_simple("As experiências")}
+    <span class="eyebrow orange">◆ Escolham a sua (ou vivam todas)</span>
+    <h2>Quatro formas de <em>celebrar</em></h2>
+    <div class="vgrid" style="margin-top:14px">
+{card(img("arabe.jpg","Gastronomia árabe temática halal","center 50%"), "R$ 419","por pessoa","Gastronômica · Halal","Sabores que viajam","Na Receitaria Escola Gourmet",["Chef conduzindo a experiência","Receitas temáticas halal","Mão na massa &amp; à mesa"])}
+{card(pslot("🖼️","Foto do charuto","enviar imagem"), "R$ 799","por pessoa","Charuto &amp; Café","A arte do charuto","Lounge privativo",["Mestre charuteiro","Café e chás (sem álcool)","Ritual sensorial e elegante"])}
+{card(img("buque.jpg","Arranjo floral autoral","center 40%"), "R$ 239","por pessoa","Arranjo Floral","Flores que encantam","Arranjo autoral pra levar",["Florista conduzindo","Flores selecionadas","Cada uma leva o seu"])}
+{card(pslot("🖼️","Foto de beleza","enviar imagem"), "Parceria","a combinar","Beleza · by Elarah","Automaquiagem","Parceria de marca",["Maquiadora profissional","Patrocínio Sephora (Laura Mercier)","Pode ser sem custo"])}
+    </div>
+    {foot("As experiências")}
+  </section>'''
+
+co_vibe = vibe_page(
+    "A vibe",
+    "◆ O que vocês vão sentir",
+    "Elegância em cada <em>detalhe</em>",
+    "Encontros calorosos, aromas que abraçam e muita foto boa — sabores halal, a pausa do café, flores autorais e beleza que fica. Momentos só de vocês. 🌿",
+    [(img("gastronomiamolecular.jpg", "Prato autoral com toque de chef", "center 50%"), "Sabores autorais"),
+     (img("sowcafe.jpg", "Pausa com café especial", "center 50%"), "Pausa & café"),
+     (img("buqueflor.jpg", "Flores do campo selecionadas", "center 50%"), "Flores autorais")],
+    "A vibe da experiência")
+
+co_inv = f'''
+  <section class="slide">
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>Os <em>valores</em></h2>
+    <p class="lead">Todas as experiências são <strong>halal</strong> e <strong>sem álcool</strong>, com profissional guiando, material e estrutura inclusos. Valores por pessoa:</p>
+    <div class="rule"></div>
+    <div class="invbox">
+      <div class="incl">
+        <span class="vt">O que já está incluso em todas</span>
+        <ul>
+          <li><span>✦</span>Profissional conduzindo (chef, mestre, florista ou maquiadora)</li>
+          <li><span>✦</span>Ingredientes e materiais <b>halal</b>, sem álcool</li>
+          <li><span>✦</span>Bebidas sem álcool (chás e mocktails)</li>
+          <li><span>✦</span>Toda a estrutura, avental/kit e organização</li>
+        </ul>
+      </div>
+      <div class="pricebox" style="text-align:left;gap:12px;justify-content:center">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:1px solid rgba(255,255,255,.16);padding-bottom:9px"><span style="font-size:12px;color:rgba(255,255,255,.9)">Gastronômica</span><b style="font-family:'DM Serif Display',serif;font-size:24px">R$ 419</b></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:1px solid rgba(255,255,255,.16);padding-bottom:9px"><span style="font-size:12px;color:rgba(255,255,255,.9)">Charuto</span><b style="font-family:'DM Serif Display',serif;font-size:24px">R$ 799</b></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:1px solid rgba(255,255,255,.16);padding-bottom:9px"><span style="font-size:12px;color:rgba(255,255,255,.9)">Arranjo floral</span><b style="font-family:'DM Serif Display',serif;font-size:24px">R$ 239</b></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px"><span style="font-size:12px;color:rgba(255,255,255,.9)">Automaquiagem</span><b style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--orange)">Parceria</b></div>
+      </div>
+    </div>
+    <div class="bnote">◆ A <b>automaquiagem by Elarah</b> funciona como parceria de marca: com patrocínio da <b>Sephora</b> para lançamento de produtos (ex.: <b>Laura Mercier</b>), o valor é combinado juntos — podendo ser <b>sem custo</b>. ✨</div>
+    <p class="fineprint">Valores por pessoa, para turma privada, halal e sem álcool. Incluem profissional guiando, material e estrutura. Gastronômica na Receitaria Escola Gourmet. Automaquiagem sujeita a confirmação de patrocínio e formato de parceria. Número de pessoas e datas a confirmar. Proposta válida mediante disponibilidade de agenda.</p>
+    {foot("Investimento")}
+  </section>'''
+
+co_prox = proximos(
+    "◆ Bora começar? 🌙",
+    "É só <em>escolher</em>",
+    "Me conta quais experiências, o número de pessoas e as datas que vocês pensam, que a gente reserva tudo e organiza cada detalhe. Qualquer dúvida, é só chamar. ✨",
+    [("Escolham", "As experiências, o número de pessoas e as datas."),
+     ("Reservamos", "A gente segura a agenda e os espaços pra sua turma."),
+     ("É só viver", "No dia, chega tudo pronto. Vocês só aproveitam.")],
+    "Próximos passos")
+
+write("colecao-muculmanas", [co_cover, co_menu, co_vibe, co_inv, co_prox])
+
+print("== decks gerados (4 individuais + 1 combinado) ==")
