@@ -258,6 +258,12 @@ button,input,select,textarea{font:inherit; color:inherit}
 .bar{height:7px; border-radius:99px; background:var(--surface-3); overflow:hidden; display:flex}
 .bar i{display:block; height:100%}
 #sheetToggle{display:none}
+body[data-insp="off"] #main{grid-template-columns:212px minmax(0,1fr)}
+body[data-insp="off"] #insp{display:none}
+body[data-insp="off"] #sheetToggle{
+  display:inline-flex; position:fixed; right:16px; bottom:16px; z-index:55; height:40px;
+  border-radius:999px; padding:0 17px; box-shadow:var(--shadow-2);
+}
 
 /* ---------- modal ---------- */
 #modal{position:fixed; inset:0; z-index:80; display:none; place-items:center; padding:18px; background:rgba(36,26,20,.42); backdrop-filter:blur(3px)}
@@ -281,15 +287,12 @@ button,input,select,textarea{font:inherit; color:inherit}
   .person{width:auto; flex:0 0 auto; padding:5px 10px 5px 5px; border:1px solid var(--line); border-radius:999px}
   .person .who small{display:none}
   .rail-foot{display:none}
+  body[data-insp="off"] #main{grid-template-columns:minmax(0,1fr)}
   #insp{
     position:fixed; left:0; right:0; bottom:0; top:auto; max-height:58dvh; border-left:0; border-top:1px solid var(--line-2);
-    border-radius:18px 18px 0 0; box-shadow:var(--shadow-2); transform:translateY(102%); transition:transform .22s ease; z-index:60;
+    border-radius:18px 18px 0 0; box-shadow:var(--shadow-2); z-index:60;
   }
-  #insp[data-open="1"]{transform:translateY(0)}
-  #sheetToggle{
-    display:inline-flex; position:fixed; right:14px; bottom:14px; z-index:55; height:44px; border-radius:999px;
-    padding:0 16px; box-shadow:var(--shadow-2);
-  }
+  body[data-insp="off"] #sheetToggle{height:44px; bottom:14px; right:14px}
   #legend{left:10px; bottom:auto; top:10px; padding:6px 9px; gap:7px}
   #legend .lg{font-size:11px}
   .brandmark{border-right:0; padding-right:0}
@@ -331,7 +334,7 @@ button,input,select,textarea{font:inherit; color:inherit}
     <div id="peopleList"></div>
     <div class="rail-foot">
       <p class="hint"><b>Arraste uma pessoa</b> para cima de uma etapa para torná-la responsável. Clique nela para ver só o que é dela.</p>
-      <p class="hint">Puxe a bolinha da borda de uma etapa para criar a seta. <kbd>Del</kbd> apaga o que estiver selecionado.</p>
+      <p class="hint">Puxe a bolinha da borda de uma etapa para criar a seta. <kbd>Del</kbd> apaga o que estiver selecionado. O ✕ do painel da direita fecha ele — o botão <b>Detalhes</b> traz de volta.</p>
     </div>
   </aside>
 
@@ -357,7 +360,7 @@ button,input,select,textarea{font:inherit; color:inherit}
   <aside id="insp" aria-live="polite">
     <div class="insp-hd">
       <h2 id="inspTitle">Visão geral</h2>
-      <button class="btn icon ghost" id="inspClose" aria-label="Fechar painel">✕</button>
+      <button class="btn icon ghost" id="inspClose" aria-label="Fechar painel" title="Fechar painel">✕</button>
     </div>
     <div class="insp-body" id="inspBody"></div>
   </aside>
@@ -803,9 +806,15 @@ function fit(){
 
 /* ---------- seleção ---------- */
 var isNarrow = function(){ return window.matchMedia("(max-width:900px)").matches; };
-function select(s, openSheet){
+var inspOpen = true;
+function setInsp(open){
+  inspOpen = !!open;
+  document.body.setAttribute("data-insp", inspOpen ? "on" : "off");
+  $("#sheetToggle").textContent = "Detalhes";
+}
+function select(s, open){
   sel = s; renderNodes(); drawWires(); renderInspector();
-  if(isNarrow() && openSheet !== false && s) $("#insp").setAttribute("data-open","1");
+  if(open) setInsp(true);
 }
 
 /* ---------- arrastar, ligar, navegar ---------- */
@@ -897,11 +906,10 @@ function endDrag(ev){
   var dr = $(".node.droptarget"); if(dr) dr.classList.remove("droptarget");
   var lk = $(".node.linking"); if(lk) lk.classList.remove("linking");
   if(!drag) return;
-  if(drag.mode === "pan" && !drag.moved){ select(null, false); if(isNarrow()) $("#insp").removeAttribute("data-open"); }
+  if(drag.mode === "pan" && !drag.moved){ select(null); }
   if(drag.mode === "node"){
     var el = $('.node[data-id="'+drag.id+'"]'); if(el) el.classList.remove("drag");
     if(drag.moved){ dragging = false; save(); }
-    else if(isNarrow()) $("#insp").setAttribute("data-open","1");
   }
   if(drag.mode === "link"){
     tempWire = "";
@@ -910,7 +918,7 @@ function endDrag(ev){
       if(!exists){
         pushHist();
         var ne = {id:uid("w"), a:drag.from, b:drag.to, l:""};
-        state.edges.push(ne); drag = null; sel = {type:"edge", id:ne.id}; commit(); return;
+        state.edges.push(ne); drag = null; sel = {type:"edge", id:ne.id}; setInsp(true); commit(); return;
       }
     }
     drag = null; drawWires(); return;
@@ -927,7 +935,8 @@ stage.addEventListener("wheel", function(ev){
 }, {passive:false});
 stage.addEventListener("dblclick", function(ev){
   var nodeEl = ev.target.closest ? ev.target.closest(".node") : null;
-  if(!nodeEl){ addNode(); }
+  if(nodeEl) select({type:"node", id:nodeEl.getAttribute("data-id")}, true);
+  else addNode();
 });
 
 /* ---------- criar / editar etapas ---------- */
@@ -937,8 +946,7 @@ function addNode(track){
   pushHist();
   var n = {id:uid("n"), x:Math.round((w.x-118)/10)*10, y:Math.round((w.y-40)/10)*10,
            t:"Nova etapa", d:"", s:"manual", k:track || (sel && sel.type==="node" ? nodeById(sel.id).k : "geral"), p:""};
-  state.nodes.push(n); sel = {type:"node", id:n.id}; commit();
-  if(isNarrow()) $("#insp").setAttribute("data-open","1");
+  state.nodes.push(n); sel = {type:"node", id:n.id}; setInsp(true); commit();
   var f = $("#fTitle"); if(f){ f.focus(); f.select(); }
 }
 function removeNode(id){
@@ -993,7 +1001,7 @@ insp.addEventListener("click", function(ev){
       if(!n) break;
       pushHist();
       var c = {id:uid("n"), x:n.x+26, y:n.y+26, t:n.t, d:n.d, s:n.s, k:n.k, p:n.p};
-      state.nodes.push(c); sel = {type:"node", id:c.id}; commit(); break;
+      state.nodes.push(c); sel = {type:"node", id:c.id}; setInsp(true); commit(); break;
     case "linkFrom":
       if(!n) break;
       armLink = n.id; b.textContent = "clique no destino…"; b.classList.add("primary"); break;
@@ -1173,7 +1181,7 @@ stage.addEventListener("pointerdown", function(ev){
   if(to && to !== from && !state.edges.some(function(e){ return e.a===from && e.b===to; })){
     pushHist();
     var ne = {id:uid("w"), a:from, b:to, l:""};
-    state.edges.push(ne); drag = null; sel = {type:"edge", id:ne.id}; commit();
+    state.edges.push(ne); drag = null; sel = {type:"edge", id:ne.id}; setInsp(true); commit();
   } else { renderInspector(); }
 });
 
@@ -1193,14 +1201,8 @@ $("#stats").addEventListener("click", function(ev){
   focusStatus = focusStatus === k ? "" : k;
   renderAll();
 });
-$("#sheetToggle").addEventListener("click", function(){
-  var el = $("#insp");
-  if(el.getAttribute("data-open") === "1") el.removeAttribute("data-open"); else el.setAttribute("data-open","1");
-});
-$("#inspClose").addEventListener("click", function(){
-  if(isNarrow()) $("#insp").removeAttribute("data-open");
-  select(null, false);
-});
+$("#sheetToggle").addEventListener("click", function(){ setInsp(true); });
+$("#inspClose").addEventListener("click", function(){ setInsp(false); });
 
 /* ---------- teclado ---------- */
 window.addEventListener("keydown", function(ev){
@@ -1221,7 +1223,9 @@ window.addEventListener("keydown", function(ev){
   }
   if(ev.key === "Escape"){
     if(modal.getAttribute("data-open") === "1"){ closeModal(); return; }
-    armLink = ""; select(null, false); return;
+    armLink = "";
+    if(sel) select(null); else setInsp(false);
+    return;
   }
   if(ev.key.toLowerCase() === "n"){ ev.preventDefault(); addNode(); return; }
   if(ev.key.toLowerCase() === "f"){ ev.preventDefault(); fit(); return; }
@@ -1241,6 +1245,7 @@ function startView(){
   }
   applyView();
 }
+setInsp(!isNarrow());
 renderAll();
 startView();
 window.addEventListener("resize", function(){ schedule(applyView); });
