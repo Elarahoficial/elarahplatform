@@ -116,6 +116,7 @@
     expediente_dias: [1, 2, 3, 4, 5, 6],
     followup_dias: [1, 3, 7], followups_max: 3,
     responsavel_nome: null, observacoes: null,
+    mensagens: {},
   };
 
   var TIPOS = [
@@ -156,7 +157,9 @@
     prospects: [],
     b2bFirst: {},    // prospect_id -> ms da PRIMEIRA abordagem
     diaSel: dayKey(),// dia que o formulário está editando
-    det: { prosp: true }, // blocos recolhíveis: só a prospecção abre por padrão
+    det: { prosp: true, msg: true }, // blocos recolhíveis abertos por padrão
+    pers: { nome: '', evento: '', empresa: '' }, // personalização das mensagens
+    missingMsg: false,
     salvoEm: null,
     missingCfg: false,
     missingDia: false,
@@ -189,6 +192,7 @@
     if (!c) throw new Error('Supabase não carregou.');
     S.missingCfg = false;
     S.missingDia = false;
+    S.missingMsg = false;
 
     // --- Config (metas + regras) ---
     var cfgRes = await c.from('evento_privado_metas').select('*').eq('id', 1).maybeSingle();
@@ -197,6 +201,10 @@
       else throw new Error('metas: ' + cfgRes.error.message);
     } else {
       S.cfg = cfgRes.data || CFG_FALLBACK;
+      // Coluna ausente na linha = migration das mensagens não rodou.
+      // Dá pra copiar mesmo assim; só a edição não persiste.
+      if (cfgRes.data && cfgRes.data.mensagens === undefined) S.missingMsg = true;
+      if (!S.cfg.mensagens) S.cfg.mensagens = {};
     }
 
     // --- Registro diário (120 dias: cobre a baseline de 90) ---
@@ -470,18 +478,117 @@
            '</details>';
   }
 
-  // ----- Mensagem de prospecção -----
-  // Focada em EVENTO (não em benefício genérico): a pergunta é sobre
-  // a próxima data do calendário da empresa, que é o gatilho de compra.
+  // =============================================================
+  // MENSAGENS PRONTAS
+  // -------------------------------------------------------------
+  // Seis textos que cobrem o ciclo inteiro. Ficam no banco (coluna
+  // mensagens da config) pra ela ajustar o tom sem depender de
+  // deploy; o que está aqui é só o padrão de partida, usado quando
+  // a chave não foi editada.
+  //
+  // Variáveis: {{nome}} {{contato}} {{empresa}} {{evento}}
+  //            {{responsavel}}
+  // Escritas de propósito em frases que continuam certas quando a
+  // variável vem vazia — "Oi , tudo bem?" espanta cliente.
+  // =============================================================
+  var MSG_PADRAO = {
+    prospeccao: {
+      titulo: 'Primeira abordagem de empresa',
+      quando: 'RH / People que ainda não te conhece',
+      texto:
+        'Oi {{contato}}, tudo bem?\n\n' +
+        'Aqui é {{responsavel}} da Elarah — a gente organiza experiências fechadas em São Paulo ' +
+        '(cerâmica, coquetelaria, gastronomia, pintura) pra grupos de empresa.\n\n' +
+        'Costumam usar pra confraternização, integração de time novo e datas do calendário interno. ' +
+        'A gente cuida de tudo: local, fornecedor, material e condução.\n\n' +
+        'Tem alguma ação pro time nos próximos meses? Se fizer sentido pra {{empresa}}, te mando um ' +
+        'orçamento com 2 ou 3 formatos por faixa de pessoas — sem compromisso.',
+    },
+    primeira_resposta: {
+      titulo: 'Primeira resposta a quem pede orçamento',
+      quando: 'em até 2h — é a mensagem que segura o cliente',
+      texto:
+        'Oi {{nome}}, tudo bem? Aqui é da Elarah 💛\n\n' +
+        'Que bom que pensou na gente!\n\n' +
+        'Pra montar o orçamento certinho, me confirma 3 coisas?\n' +
+        '1. Data (ou período) do evento\n' +
+        '2. Quantas pessoas, mais ou menos\n' +
+        '3. Se prefere em um espaço nosso ou em um local de vocês\n\n' +
+        'Com isso eu te mando as opções ainda hoje.',
+    },
+    orcamento: {
+      titulo: 'Enviando o orçamento',
+      quando: 'junto com a proposta',
+      texto:
+        '{{nome}}, montei as opções 💛\n\n' +
+        'Está tudo aí: o que inclui, o valor por pessoa e o total.\n\n' +
+        'Qualquer ajuste — data, número de pessoas, formato — eu remonto rapidinho, é só falar. ' +
+        'A data só fica reservada depois da confirmação, então me avisa se quiser que eu segure.',
+    },
+    followup_1: {
+      titulo: 'Follow-up 1 — D+1',
+      quando: 'um dia depois do orçamento',
+      texto:
+        'Oi {{nome}}! Só passando pra saber se o orçamento chegou direitinho 😊\n\n' +
+        'Qualquer ajuste (data, número de pessoas, formato) eu remonto rapidinho.',
+    },
+    followup_2: {
+      titulo: 'Follow-up 2 — D+3',
+      quando: 'três dias depois do orçamento',
+      texto:
+        'Oi {{nome}}, tudo bem? Sei que a correria é grande.\n\n' +
+        'Se quiser, eu seguro a data pra você por 48h enquanto decide — me avisa que já deixo reservado.',
+    },
+    followup_3: {
+      titulo: 'Follow-up 3 — D+7',
+      quando: 'último toque; depois dele, encerra',
+      texto:
+        'Oi {{nome}}! Última mensagem pra não te encher 🙂\n\n' +
+        'Se não for o momento, sem problema nenhum — me diz que eu guardo seu contato e te aviso ' +
+        'quando abrir novas datas.',
+    },
+  };
+  var MSG_ORDEM = ['prospeccao', 'primeira_resposta', 'orcamento', 'followup_1', 'followup_2', 'followup_3'];
+  // Quais contam como follow-up: copiar um destes soma +1 no dia.
+  var MSG_FOLLOWUP = { followup_1: 1, followup_2: 1, followup_3: 1 };
+
+  // Texto vigente de uma mensagem: o editado, senão o padrão.
+  function msgTexto(chave) {
+    var cfg = S.cfg || CFG_FALLBACK;
+    var salvo = cfg.mensagens && cfg.mensagens[chave];
+    if (salvo && String(salvo).trim()) return String(salvo);
+    return (MSG_PADRAO[chave] || {}).texto || '';
+  }
+  function msgEditada(chave) {
+    var cfg = S.cfg || CFG_FALLBACK;
+    var salvo = cfg.mensagens && cfg.mensagens[chave];
+    return !!(salvo && String(salvo).trim() && String(salvo) !== (MSG_PADRAO[chave] || {}).texto);
+  }
+  // Troca as variáveis e limpa o rastro das que vieram vazias:
+  // " ," vira ",", espaço duplo vira simples. Sem isso, mensagem sem
+  // nome sai como "Oi , tudo bem?".
+  function preencher(texto, vars) {
+    var out = String(texto || '').replace(/\{\{(\w+)\}\}/g, function (_, k) {
+      var v = vars && vars[k];
+      return v == null ? '' : String(v);
+    });
+    return out.replace(/[ \t]+([,.!?])/g, '$1').replace(/[ \t]{2,}/g, ' ').trim();
+  }
+  // Primeiro nome — em mensagem, "Oi Maria" é melhor que "Oi Maria Aparecida da Silva".
+  function primeiroNome(v) {
+    var s = String(v || '').trim();
+    return s ? s.split(/\s+/)[0] : '';
+  }
+
+  // ----- Mensagem de prospecção (usada pelos botões da fila) -----
+  // Mesmo texto do bloco de mensagens: editar lá muda os botões aqui.
   function msgProspeccao(p) {
     var cfg = S.cfg || CFG_FALLBACK;
-    var quem = (cfg.responsavel_nome && String(cfg.responsavel_nome).trim()) || '';
-    var contato = (p.contato_nome && String(p.contato_nome).split(' ')[0]) || '';
-    return 'Oi' + (contato ? ' ' + contato : '') + ', tudo bem?\n\n' +
-      (quem ? 'Sou ' + quem + ', da Elarah' : 'Aqui é da Elarah') +
-      ' — a gente organiza experiências fechadas em São Paulo (cerâmica, coquetelaria, gastronomia, pintura) pra grupos de empresa.\n\n' +
-      'Costumam usar pra confraternização, integração de time novo e datas do calendário interno. A gente cuida de tudo: local, fornecedor, material e condução.\n\n' +
-      'A ' + (p.nome || 'vocês') + ' tem alguma ação pro time nos próximos meses? Se fizer sentido, te mando um orçamento com 2 ou 3 formatos por faixa de pessoas — sem compromisso.';
+    return preencher(msgTexto('prospeccao'), {
+      contato: primeiroNome(p.contato_nome),
+      empresa: p.nome || 'vocês',
+      responsavel: primeiroNome(cfg.responsavel_nome),
+    });
   }
   function emailProspeccao(p) {
     return {
@@ -652,6 +759,86 @@
       btn('Abrir CRM de empresas (cadastrar / importar CSV)', 'data-ep-goto="b2b-prospects"') + '</div>';
 
     return detalhes('🏢 Prospectar agora', resumo, conteudo, S.det.prosp !== false, 'prosp');
+  }
+
+  // =============================================================
+  // BLOCO 3.5 — mensagens prontas
+  // -------------------------------------------------------------
+  // Copiar, colar e enviar. Os campos de personalizar trocam as
+  // variáveis na hora da cópia, então ela não precisa caçar
+  // "{{nome}}" dentro do texto colado no WhatsApp.
+  //
+  // Copiar um follow-up soma +1 no contador do dia: a ação que ela
+  // já ia fazer vira o registro, em vez de virar mais uma tarefa.
+  // =============================================================
+  function varsAtuais() {
+    var cfg = S.cfg || CFG_FALLBACK;
+    return {
+      nome: primeiroNome(S.pers.nome),
+      contato: primeiroNome(S.pers.nome),
+      empresa: (S.pers.empresa || '').trim() || 'vocês',
+      evento: (S.pers.evento || '').trim() || 'seu evento',
+      responsavel: primeiroNome(cfg.responsavel_nome),
+    };
+  }
+
+  function blocoMensagens() {
+    var vars = varsAtuais();
+    var personalizar =
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">' +
+        '<span style="font-size:.78rem;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Personalizar:</span>' +
+        '<input type="text" data-ep-pers="nome" value="' + esc(S.pers.nome) + '" placeholder="Nome do cliente" ' +
+          'style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.84rem;width:170px;">' +
+        '<input type="text" data-ep-pers="evento" value="' + esc(S.pers.evento) + '" placeholder="Tipo de evento ({{evento}})" ' +
+          'style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.84rem;width:170px;">' +
+        '<input type="text" data-ep-pers="empresa" value="' + esc(S.pers.empresa) + '" placeholder="Empresa (se for B2B)" ' +
+          'style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.84rem;width:170px;">' +
+        (S.pers.nome || S.pers.evento || S.pers.empresa
+          ? btn('limpar', 'data-ep-pers-clear="1"', 'color:#999;') : '') +
+      '</div>' +
+      '<div style="font-size:.78rem;color:#aaa;margin-bottom:12px;line-height:1.5;">' +
+        'O texto fica com as variáveis à mostra pra você editar — elas são trocadas <b>na hora de copiar</b>. ' +
+        'Disponíveis: <code>{{nome}}</code> <code>{{empresa}}</code> <code>{{evento}}</code> ' +
+        '<code>{{contato}}</code> <code>{{responsavel}}</code>. Campo vazio some da frase sozinho. ' +
+        'Editar aqui salva pra sempre; o “voltar ao padrão” desfaz.' +
+      '</div>';
+
+    var cards = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">';
+    MSG_ORDEM.forEach(function (chave) {
+      var meta = MSG_PADRAO[chave] || {};
+      var texto = msgTexto(chave);
+      var preenchido = preencher(texto, vars);
+      var previa = preenchido.split('\n')[0];
+      if (previa.length > 70) previa = previa.slice(0, 70) + '…';
+      var ehFollowup = !!MSG_FOLLOWUP[chave];
+
+      cards +=
+        '<div style="background:#fcfcfc;border:1px solid #eee;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;">' +
+          '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+            '<span style="font-size:.88rem;font-weight:700;color:#333;">' + esc(meta.titulo || chave) + '</span>' +
+            (msgEditada(chave) ? pill('editada', '#a4663b', '#fff8ef') : '') +
+          '</div>' +
+          '<div style="font-size:.74rem;color:#aaa;margin-top:2px;">' + esc(meta.quando || '') + '</div>' +
+          '<textarea data-ep-msg="' + chave + '" rows="6" spellcheck="true" ' +
+            'style="margin-top:8px;width:100%;padding:9px;border:1px solid #e2e2e2;border-radius:8px;font-family:inherit;' +
+            'font-size:.83rem;line-height:1.5;resize:vertical;box-sizing:border-box;background:#fff;">' + esc(texto) + '</textarea>' +
+          '<div style="font-size:.73rem;color:#bbb;margin-top:6px;line-height:1.4;">Vai copiar: “' + esc(previa) + '”</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">' +
+            btn(ehFollowup ? 'Copiar e contar +1' : 'Copiar', 'data-ep-copy="' + chave + '"', BTN_PRI) +
+            (msgEditada(chave) ? btn('voltar ao padrão', 'data-ep-msg-reset="' + chave + '"', 'color:#999;') : '') +
+          '</div>' +
+        '</div>';
+    });
+    cards += '</div>';
+
+    var aviso = S.missingMsg
+      ? '<div style="margin-bottom:12px;padding:10px 12px;background:#fff8ef;border:1px solid #f0c97a;border-radius:8px;' +
+        'font-size:.82rem;color:#7a4f00;">Dá pra copiar normalmente, mas <b>a edição não salva</b> enquanto a migration ' +
+        '<code>sql/elarah_eventos_privados_mensagens.sql</code> não rodar.</div>'
+      : '';
+
+    return detalhes('💬 Mensagens prontas', 'copiar, colar e enviar', aviso + personalizar + cards,
+                    S.det.msg !== false, 'msg');
   }
 
   // =============================================================
@@ -881,6 +1068,7 @@
       blocoRegistro() +
       blocoPlacar(sem, metas, baseline, conv) +
       blocoProspeccao(computeProspeccao(), sem, metas) +
+      blocoMensagens() +
       blocoFechados() +
       blocoSemanas() +
       blocoRegras(metas, conv) +
@@ -949,6 +1137,93 @@
   }
 
   // =============================================================
+  // MENSAGENS — copiar, editar, restaurar
+  // =============================================================
+  // Aviso flutuante, fora do #evtpriv-root: o painel se redesenha a
+  // cada clique, então um feedback dentro dele sumiria na hora.
+  function toast(texto, acaoLabel, acaoFn) {
+    var antigo = el('evtpriv-toast');
+    if (antigo) antigo.remove();
+    var t = document.createElement('div');
+    t.id = 'evtpriv-toast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:10000;' +
+      'background:#333;color:#fff;padding:11px 16px;border-radius:10px;font-family:inherit;font-size:.86rem;' +
+      'box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;align-items:center;gap:12px;max-width:92vw;';
+    t.appendChild(document.createTextNode(texto));
+    if (acaoLabel && acaoFn) {
+      var a = document.createElement('button');
+      a.type = 'button';
+      a.textContent = acaoLabel;
+      a.style.cssText = 'background:none;border:0;color:#ffd39a;font-family:inherit;font-size:.86rem;font-weight:700;cursor:pointer;padding:0;';
+      a.addEventListener('click', function () { t.remove(); acaoFn(); });
+      t.appendChild(a);
+    }
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.remove(); }, acaoLabel ? 6000 : 2200);
+  }
+
+  async function copiarTexto(txt) {
+    // navigator.clipboard exige contexto seguro e permissão; quando
+    // não rola, o textarea invisível + execCommand ainda funciona.
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(txt);
+        return true;
+      }
+    } catch (e) { /* cai no fallback */ }
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = txt;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) { return false; }
+  }
+
+  async function copiarMensagem(chave) {
+    var txt = preencher(msgTexto(chave), varsAtuais());
+    var ok = await copiarTexto(txt);
+    if (!ok) {
+      // Último recurso: mostra o texto pra copiar na mão em vez de
+      // deixar a pessoa achando que copiou.
+      prompt('Não consegui copiar sozinho. Selecione e copie:', txt);
+      return;
+    }
+    if (MSG_FOLLOWUP[chave]) {
+      alterar('followups', 1);
+      toast('Copiado ✓ · +1 follow-up hoje', 'desfazer', function () { alterar('followups', -1); });
+    } else {
+      toast('Copiado ✓');
+    }
+  }
+
+  async function salvarMensagem(chave, texto) {
+    var cfg = S.cfg || CFG_FALLBACK;
+    var mens = Object.assign({}, cfg.mensagens || {});
+    var limpo = String(texto == null ? '' : texto);
+    // Igual ao padrão (ou vazio) não vira registro: some do JSON e a
+    // mensagem volta a seguir o padrão do painel sozinha.
+    if (!limpo.trim() || limpo === (MSG_PADRAO[chave] || {}).texto) delete mens[chave];
+    else mens[chave] = limpo;
+    cfg.mensagens = mens;
+    S.cfg = cfg;
+    render();
+
+    if (S.missingCfg || S.missingMsg) return;
+    var c = sb();
+    if (!c) return;
+    var res = await c.from('evento_privado_metas').update({ mensagens: mens }).eq('id', 1);
+    if (res.error) {
+      console.error('[EventosPrivados] salvar mensagem', res.error);
+      toast('Não consegui salvar a mensagem: ' + res.error.message);
+    }
+  }
+
+  // =============================================================
   // PROSPECÇÃO — ações
   // =============================================================
   async function logProspect(id) {
@@ -1003,7 +1278,8 @@
 
     root.addEventListener('click', function (ev) {
       var t = ev.target.closest('[data-ep-inc],[data-ep-dia],[data-ep-cfg],[data-ep-goto],' +
-                                '[data-ep-prospect],[data-ep-prospect-log],[data-ep-prospect-contato]');
+                                '[data-ep-prospect],[data-ep-prospect-log],[data-ep-prospect-contato],' +
+                                '[data-ep-copy],[data-ep-msg-reset],[data-ep-pers-clear]');
       if (!t) return;
       // Links (WhatsApp/e-mail) precisam abrir normalmente: o registro
       // roda em paralelo, sem preventDefault.
@@ -1019,6 +1295,9 @@
       if (t.hasAttribute('data-ep-prospect')) return void logProspect(t.getAttribute('data-ep-prospect'));
       if (t.hasAttribute('data-ep-prospect-log')) return void logProspect(t.getAttribute('data-ep-prospect-log'));
       if (t.hasAttribute('data-ep-prospect-contato')) return void quickContato(t.getAttribute('data-ep-prospect-contato'));
+      if (t.hasAttribute('data-ep-copy')) return void copiarMensagem(t.getAttribute('data-ep-copy'));
+      if (t.hasAttribute('data-ep-msg-reset')) return void salvarMensagem(t.getAttribute('data-ep-msg-reset'), '');
+      if (t.hasAttribute('data-ep-pers-clear')) { S.pers = { nome: '', evento: '', empresa: '' }; return render(); }
     });
 
     // Campos: 'change' (e não 'input') pra não re-renderizar a cada
@@ -1027,6 +1306,11 @@
       var t = ev.target;
       if (t.id === 'ep-dia-sel') { S.diaSel = t.value || dayKey(); return render(); }
       if (t.hasAttribute && t.hasAttribute('data-ep-num')) return definir(t.getAttribute('data-ep-num'), t.value);
+      if (t.hasAttribute && t.hasAttribute('data-ep-msg')) return void salvarMensagem(t.getAttribute('data-ep-msg'), t.value);
+      if (t.hasAttribute && t.hasAttribute('data-ep-pers')) {
+        S.pers[t.getAttribute('data-ep-pers')] = t.value;
+        return render();
+      }
       if (t.hasAttribute && t.hasAttribute('data-ep-obs')) {
         var r = linhaDia(S.diaSel);
         r.observacoes = t.value;
