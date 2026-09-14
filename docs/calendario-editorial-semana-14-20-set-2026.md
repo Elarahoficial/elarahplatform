@@ -4,6 +4,8 @@
 > **Base:** dados reais do Agente de Eventos (vendas, temas, lotação das turmas), não catálogo de exemplo.
 > **Gancho:** **primavera entra dia 22/09.** É o único gancho de calendário da semana — e por sorte ele aponta exatamente pros temas que mais dão dinheiro.
 > **Formato-carro-chefe:** carrossel (melhor performance na análise) — 3 na semana.
+>
+> **Este documento é a versão interna** — contém receita, ticket e margem. A versão que vai pro marketing é a página publicada, sem nenhum valor.
 
 ---
 
@@ -82,7 +84,8 @@ Essas pessoas **não** buscaram algo que você não tem. Elas buscaram algo que 
 ## 4. Os 3 carrosséis
 
 ### 🟠 Carrossel 1 — Terça 15/09, 19h · **Primavera**
-**Título:** *"A primavera começa dia 22. Essas experiências já estão cheirando a ela."*
+**Capa:** *"O seu perfume não é seu."* / sub: *"É de todo mundo que comprou o mesmo frasco."*
+**Alternativas:** *"Ninguém mais no mundo vai ter esse cheiro."* · *"Eu parei de comprar perfume."*
 **Por que esse:** Floral (ticket R$ 246,75) e Perfumaria (R$ 226,51) estão **acima do ticket médio da casa**, e a estação entrando dá o motivo pra falar delas agora sem parecer anúncio.
 
 | Card | Conteúdo |
@@ -108,7 +111,8 @@ Essas pessoas **não** buscaram algo que você não tem. Elas buscaram algo que 
 ---
 
 ### 🟠 Carrossel 2 — Quinta 17/09, 19h · **Com a amiga**
-**Título:** *"5 coisas pra fazer com a sua amiga em SP que não são bar"*
+**Capa:** *"Vocês já remarcaram quatro vezes esse mês."* / sub: *"E vai virar 'bora tomar alguma coisa' de novo."*
+**Alternativas:** *"'A gente tem que marcar' — vocês, há seis meses."* · *"5 programas com a sua amiga que não terminam na conta do bar."*
 **Por que esse:** é o formato mais compartilhável da casa — e aqui ele serve de propósito duplo: **todos os cards são turmas que precisam encher.**
 
 | Card | Conteúdo |
@@ -135,7 +139,8 @@ Essas pessoas **não** buscaram algo que você não tem. Elas buscaram algo que 
 ---
 
 ### 🟠 Carrossel 3 — Sexta 18/09, 12h · **Fim de semana**
-**Título:** *"O que fazer neste fim de semana em SP · 19 e 20/09"*
+**Capa:** *"Sexta, meio-dia. Você ainda não tem plano pro sábado."* — só funciona publicando às 12h em ponto.
+**Alternativas:** *"Último fim de semana de inverno. Sério."* · *"O que ainda dá pra fazer esse fim de semana — com vaga agora."*
 **Regra de montagem:** só experiências com **vaga real** confirmada no admin. Se uma encheu entre quinta e sexta, tira do carrossel.
 
 | Card | Conteúdo |
@@ -154,7 +159,8 @@ Essas pessoas **não** buscaram algo que você não tem. Elas buscaram algo que 
 **Por que esse e não outro:** Gastronomia tem o **maior ticket da casa (R$ 339)**, o conceito é sensorial — vídeo é o único formato que explica — e a turma está em **20%**. É o maior descompasso entre potencial e ocupação no painel inteiro.
 
 **Roteiro · 25-30s**
-- **0-2s:** *"Você janta no escuro total. Sem ver nada. Em São Paulo."*
+- **0-2s:** *"Eles vendam os seus olhos antes de você sentar à mesa."*
+  - alternativas: *"Você não vai ver o que está comendo. E esse é o ponto."* · *"Tem um jantar em SP onde você tem que adivinhar o que está no prato."*
 - **3-10s:** como funciona — venda nos olhos, não sabe o que vai comer, tem que adivinhar pelo gosto
 - **11-20s:** *"O paladar muda quando você tira a visão. É por isso que existe — não é gimmick."*
 - **21-28s:** *"Marca quem toparia. E quem definitivamente não."*
@@ -167,7 +173,8 @@ O último CTA é de propósito: **"quem NÃO toparia"** gera mais marcação que
 **Por que esse:** é o carro-chefe (47 vendas) e é o mais bonito de filmar da casa — pipeta, notas, frasco, a pessoa cheirando a própria fórmula.
 
 **Roteiro · 15-20s**
-- **0-2s:** *"Sábado, 15h. Essas pessoas estão formulando o próprio perfume."*
+- **0-2s:** *"Esse cheiro não existe. Ela acabou de inventar."*
+  - alternativas: *"Sábado, 15h. Ninguém aqui vai sair com um perfume que dá pra comprar."* · *"Três horas atrás isso era um monte de frasco sem nome."*
 - **3-15s:** cenas cruas — pipeta, gota, o cheirar, o frasco fechando, o rótulo escrito à mão
 - **16-20s:** *"Você sai com ele pronto. Semana que vem tem de novo."*
 
