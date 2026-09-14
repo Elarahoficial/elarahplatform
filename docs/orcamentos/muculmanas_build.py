@@ -2,12 +2,12 @@
 # Identidade coesa: verde esmeralda + dourado. Halal, sem álcool, elegante e temática.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
-base = open(S + "/compass_latest.html", encoding="utf-8").read()
-head0 = base.split('<div class="deck">')[0]
-tail = '<div class="toolbar">' + base.split('<div class="toolbar">')[1]
+base_head = open(S + "/head.html", encoding="utf-8").read()
+tail = open(S + "/tail.html", encoding="utf-8").read()
 
 
 def make_head():
+    return base_head
     head = head0
     # ---- paleta: esmeralda + dourado ----
     head = head.replace("--orange:#F27623;", "--orange:#B08D4C;")
@@ -550,59 +550,102 @@ def exp_full(kicker, eyebrow, title, lead, photo, btag, h3, steps, pline, fr):
   </section>'''
 
 
-gf = exp_full(
+def gfig(photo, cap):
+    return f'      <figure>{photo}<figcaption>{cap}</figcaption></figure>'
+
+
+def exp_showcase(kicker, eyebrow, title, lead, hero, btag, h3, steps, strip, pline, fr):
+    li = "\n".join(f'          <li><span class="st">{i+1}</span>{s}</li>' for i, s in enumerate(steps))
+    gg = "\n".join(gfig(p, c) for p, c in strip)
+    return f'''
+  <section class="slide">
+{head_simple(kicker)}
+    <span class="eyebrow orange">{eyebrow}</span>
+    <h2>{title}</h2>
+    <p class="lead">{lead}</p>
+    <div class="bfeat">
+      <div class="bphoto">{hero}</div>
+      <div class="bbody">
+        <span class="btag">{btag}</span>
+        <h3>{h3}</h3>
+        <ul class="feat">
+{li}
+        </ul>
+      </div>
+    </div>
+    <div class="gstrip">
+{gg}
+    </div>
+{pline}
+    {foot(fr)}
+  </section>'''
+
+
+gf = exp_showcase(
     "Experiência 1 · Gastronômica",
     "◆ Gastronômica · Halal · Receitaria Escola Gourmet",
     "Sabores que contam <em>histórias</em>",
-    "Imagina o aroma das especiarias tomando conta da cozinha, as mãos na massa, o barulho gostoso do preparo. Na Receitaria Escola Gourmet, sua turma vira protagonista: guiadas por um chef, cada uma tempera, monta e finaliza pratos temáticos — tudo halal, sem álcool. E quando todas se sentam à mesa pra provar o que criaram, a receita vira memória afetiva. 🌙",
+    "Imagina o aroma das especiarias na cozinha, as mãos na massa e todas se sentando à mesa pra provar o que criaram. Guiadas por um chef, sua turma vira protagonista — tudo halal, sem álcool. A receita vira memória afetiva. 🌙",
     img("arabe.jpg", "Mesa árabe temática, mezze halal", "center 50%"),
     "Como acontece",
     "Da bancada à mesa",
-    ["<b>Boas-vindas</b> — um chá especial ou mocktail e a bancada montada pra começar.",
-     "<b>Mão na massa</b> — com o chef, a turma prepara pratos temáticos, passo a passo.",
-     "<b>À mesa</b> — todas se reúnem pra degustar o que criaram, com calma e afeto. 🍽️"],
+    ["<b>Boas-vindas</b> — um chá especial ou mocktail e a bancada montada.",
+     "<b>Mão na massa</b> — com o chef, a turma prepara pratos temáticos.",
+     "<b>À mesa</b> — todas se reúnem pra degustar, com calma e afeto. 🍽️"],
+    [(img("macaron-risada.jpg", "Amigas cozinhando e rindo juntas", "center 30%"), "Mão na massa, juntas"),
+     (img("gastronomiamolecular.jpg", "Prato autoral com toque de chef", "center 50%"), "Toque de chef"),
+     (img("petitgateau.jpg", "Doce especial ao final", "center 50%"), "Doce final")],
     priceline("R$ 419", "por pessoa · halal, sem álcool · tudo incluso"),
     "Gastronômica")
 
-cf = exp_full(
+cf = exp_showcase(
     "Experiência 2 · Charuto",
     "◆ Charuto &amp; Café · Lounge privativo",
     "O ritual de <em>desacelerar</em>",
-    "Luz baixa, poltronas confortáveis e aquele aroma amadeirado que envolve o ambiente. Um mestre charuteiro conduz cada uma pelo ritual — a escolha, o corte, o primeiro toque — enquanto cafés especiais e chás selecionados completam a cena. É pausa, é requinte, é a conversa boa que rende a noite toda. Sem pressa, sem álcool. ☕",
-    pslot("🖼️", "Foto do charuto / lounge", "enviar imagem"),
+    "Luz baixa, aroma amadeirado no ar e um mestre charuteiro conduzindo cada uma pelo ritual — a escolha, o corte, o primeiro toque — com cafés especiais e chás. É pausa, requinte e boa conversa. Sem pressa, sem álcool. ☕",
+    pslot("🖼️", "Foto do charuto", "sua foto aqui"),
     "Como acontece",
     "Do primeiro aroma ao brinde",
     ["<b>Boas-vindas</b> — recepção no lounge, café especial ou chá na mão.",
      "<b>O ritual</b> — o mestre apresenta a seleção, os aromas e como apreciar.",
-     "<b>Harmonização</b> — cada charuto encontra seu café ou chá, e é só relaxar. ☕"],
+     "<b>Harmonização</b> — cada charuto encontra seu café ou chá. ☕"],
+    [(img("sowcafe.jpg", "Café especial para harmonização", "center 50%"), "Café &amp; chás especiais"),
+     (img("casa-aquario-lounge.jpg", "Lounge acolhedor e reservado", "center 50%"), "Lounge acolhedor"),
+     (pslot("🖼️", "Charuto", "sua foto"), "O ritual")],
     priceline("R$ 799", "por pessoa · lounge privativo · tudo incluso"),
     "Charuto")
 
-ff = exp_full(
+ff = exp_showcase(
     "Experiência 3 · Arranjo Floral",
     "◆ Arranjo Floral · Autoral",
     "Beleza que nasce das suas <em>mãos</em>",
-    "Uma mesa transbordando flores, perfumes que se misturam, cores por todos os cantos. Guiadas por uma florista, cada uma escolhe, combina e monta o próprio arranjo — no seu tempo, do seu jeito. E leva pra casa não só as flores, mas a sensação boa de ter criado algo lindo com as próprias mãos. 🌸",
+    "Uma mesa transbordando flores, perfumes que se misturam, cores por todos os cantos. Guiadas por uma florista, cada uma escolhe, combina e monta o próprio arranjo — e leva pra casa a sensação boa de ter criado algo lindo com as próprias mãos. 🌸",
     img("buque.jpg", "Buquê floral autoral", "center 40%"),
     "Como acontece",
     "Do buquê ao vaso",
     ["<b>Boas-vindas</b> — um chá especial e a bancada de flores montada.",
-     "<b>Mão nas flores</b> — a florista ensina a escolher e compor o arranjo.",
-     "<b>Leva pra casa</b> — cada uma finaliza e leva o seu arranjo autoral. 🌷"],
+     "<b>Mão nas flores</b> — a florista ensina a escolher e compor.",
+     "<b>Leva pra casa</b> — cada uma finaliza e leva o seu arranjo. 🌷"],
+    [(img("buqueflor.jpg", "Flores do campo selecionadas", "center 50%"), "Flores do campo"),
+     (img("florseca.jpg", "Composições autorais de flores", "center 50%"), "Composições autorais"),
+     (img("pinturavasoearranjo.jpg", "Vaso pintado com arranjo", "center 50%"), "Leva pra casa")],
     priceline("R$ 239", "por pessoa · leva o arranjo pra casa"),
     "Arranjo Floral")
 
-mf = exp_full(
+mf = exp_showcase(
     "Experiência 4 · Beleza",
     "◆ Automaquiagem by Elarah · Parceria de marca",
     "A beleza que <em>fica com você</em>",
-    "Espelho, luz perfeita e produtos de primeira linha na mão. Uma maquiadora profissional revela, passo a passo, os segredos da automaquiagem — pele, olhar e aquele toque final que transforma. Mais que um curso, é autoestima: é se olhar no espelho e gostar do que vê. E o melhor — uma parceria de marca que pode viabilizar tudo sem custo. ✨",
-    pslot("🖼️", "Foto de beleza / aula", "enviar imagem"),
+    "Espelho, luz perfeita e produtos de primeira linha na mão. Uma maquiadora profissional revela, passo a passo, os segredos da automaquiagem. Mais que um curso, é autoestima — e uma parceria de marca que pode viabilizar tudo sem custo. ✨",
+    pslot("🖼️", "Foto da aula de beleza", "sua foto aqui"),
     "Como acontece",
     "Do primeiro pincel ao acabamento",
     ["<b>Boas-vindas</b> — recepção, kit de produtos e espelho montado.",
      "<b>Mão na massa</b> — a maquiadora ensina cada etapa, passo a passo.",
-     "<b>Toque final</b> — cada uma finaliza o próprio look e leva as dicas pra vida. 💄"],
+     "<b>Toque final</b> — cada uma finaliza o próprio look e leva as dicas. 💄"],
+    [(img("lipbalm1.jpg", "Produtos de beleza selecionados", "center 50%"), "Produtos incríveis"),
+     (pslot("🖼️", "Ativação de marca", "sua foto"), "Ativação de marca"),
+     (img("lipbalm.jpg", "Detalhe de produto de beleza", "center 50%"), "Toque final")],
     priceline("Parceria", "valor a combinar · pode ser sem custo", small=True),
     "Automaquiagem by Elarah")
 

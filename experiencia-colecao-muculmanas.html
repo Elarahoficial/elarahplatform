@@ -184,6 +184,13 @@
   .bnote{margin-top:16px;background:#EFF3EE;border-left:4px solid var(--orange);border-radius:0 12px 12px 0;padding:12px 18px;font-size:12px;color:var(--navy-soft);line-height:1.5}
   .bnote b{color:var(--navy)}
   .fineprint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:16px}
+
+  /* galeria compacta (várias fotos por experiência) */
+  .gstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+  .gstrip figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:158px;box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
+  .gstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(10,28,22,.86),transparent)}
+  .gstrip .pslot{min-height:158px}
 </style>
 <style>
   :root{
@@ -551,18 +558,23 @@
     </div>
     <span class="eyebrow orange">◆ Gastronômica · Halal · Receitaria Escola Gourmet</span>
     <h2>Sabores que contam <em>histórias</em></h2>
-    <p class="lead">Imagina o aroma das especiarias tomando conta da cozinha, as mãos na massa, o barulho gostoso do preparo. Na Receitaria Escola Gourmet, sua turma vira protagonista: guiadas por um chef, cada uma tempera, monta e finaliza pratos temáticos — tudo halal, sem álcool. E quando todas se sentam à mesa pra provar o que criaram, a receita vira memória afetiva. 🌙</p>
+    <p class="lead">Imagina o aroma das especiarias na cozinha, as mãos na massa e todas se sentando à mesa pra provar o que criaram. Guiadas por um chef, sua turma vira protagonista — tudo halal, sem álcool. A receita vira memória afetiva. 🌙</p>
     <div class="bfeat">
       <div class="bphoto"><img src="assets/arabe.jpg" alt="Mesa árabe temática, mezze halal" style="object-position:center 50%"></div>
       <div class="bbody">
         <span class="btag">Como acontece</span>
         <h3>Da bancada à mesa</h3>
         <ul class="feat">
-          <li><span class="st">1</span><b>Boas-vindas</b> — um chá especial ou mocktail e a bancada montada pra começar.</li>
-          <li><span class="st">2</span><b>Mão na massa</b> — com o chef, a turma prepara pratos temáticos, passo a passo.</li>
-          <li><span class="st">3</span><b>À mesa</b> — todas se reúnem pra degustar o que criaram, com calma e afeto. 🍽️</li>
+          <li><span class="st">1</span><b>Boas-vindas</b> — um chá especial ou mocktail e a bancada montada.</li>
+          <li><span class="st">2</span><b>Mão na massa</b> — com o chef, a turma prepara pratos temáticos.</li>
+          <li><span class="st">3</span><b>À mesa</b> — todas se reúnem pra degustar, com calma e afeto. 🍽️</li>
         </ul>
       </div>
+    </div>
+    <div class="gstrip">
+      <figure><img src="assets/macaron-risada.jpg" alt="Amigas cozinhando e rindo juntas" style="object-position:center 30%"><figcaption>Mão na massa, juntas</figcaption></figure>
+      <figure><img src="assets/gastronomiamolecular.jpg" alt="Prato autoral com toque de chef" style="object-position:center 50%"><figcaption>Toque de chef</figcaption></figure>
+      <figure><img src="assets/petitgateau.jpg" alt="Doce especial ao final" style="object-position:center 50%"><figcaption>Doce final</figcaption></figure>
     </div>
     <div style="margin-top:18px;display:flex;align-items:center;gap:16px;background:var(--navy);color:#fff;border-radius:14px;padding:14px 24px">
       <span style="font-family:'DM Serif Display',serif;font-size:30px;line-height:1">R$ 419</span>
@@ -577,18 +589,23 @@
     </div>
     <span class="eyebrow orange">◆ Charuto &amp; Café · Lounge privativo</span>
     <h2>O ritual de <em>desacelerar</em></h2>
-    <p class="lead">Luz baixa, poltronas confortáveis e aquele aroma amadeirado que envolve o ambiente. Um mestre charuteiro conduz cada uma pelo ritual — a escolha, o corte, o primeiro toque — enquanto cafés especiais e chás selecionados completam a cena. É pausa, é requinte, é a conversa boa que rende a noite toda. Sem pressa, sem álcool. ☕</p>
+    <p class="lead">Luz baixa, aroma amadeirado no ar e um mestre charuteiro conduzindo cada uma pelo ritual — a escolha, o corte, o primeiro toque — com cafés especiais e chás. É pausa, requinte e boa conversa. Sem pressa, sem álcool. ☕</p>
     <div class="bfeat">
-      <div class="bphoto"><div class="pslot"><span class="pi">🖼️</span><span class="pl">Foto do charuto / lounge</span><span class="ps">enviar imagem</span></div></div>
+      <div class="bphoto"><div class="pslot"><span class="pi">🖼️</span><span class="pl">Foto do charuto</span><span class="ps">sua foto aqui</span></div></div>
       <div class="bbody">
         <span class="btag">Como acontece</span>
         <h3>Do primeiro aroma ao brinde</h3>
         <ul class="feat">
           <li><span class="st">1</span><b>Boas-vindas</b> — recepção no lounge, café especial ou chá na mão.</li>
           <li><span class="st">2</span><b>O ritual</b> — o mestre apresenta a seleção, os aromas e como apreciar.</li>
-          <li><span class="st">3</span><b>Harmonização</b> — cada charuto encontra seu café ou chá, e é só relaxar. ☕</li>
+          <li><span class="st">3</span><b>Harmonização</b> — cada charuto encontra seu café ou chá. ☕</li>
         </ul>
       </div>
+    </div>
+    <div class="gstrip">
+      <figure><img src="assets/sowcafe.jpg" alt="Café especial para harmonização" style="object-position:center 50%"><figcaption>Café &amp; chás especiais</figcaption></figure>
+      <figure><img src="assets/casa-aquario-lounge.jpg" alt="Lounge acolhedor e reservado" style="object-position:center 50%"><figcaption>Lounge acolhedor</figcaption></figure>
+      <figure><div class="pslot"><span class="pi">🖼️</span><span class="pl">Charuto</span><span class="ps">sua foto</span></div><figcaption>O ritual</figcaption></figure>
     </div>
     <div style="margin-top:18px;display:flex;align-items:center;gap:16px;background:var(--navy);color:#fff;border-radius:14px;padding:14px 24px">
       <span style="font-family:'DM Serif Display',serif;font-size:30px;line-height:1">R$ 799</span>
@@ -603,7 +620,7 @@
     </div>
     <span class="eyebrow orange">◆ Arranjo Floral · Autoral</span>
     <h2>Beleza que nasce das suas <em>mãos</em></h2>
-    <p class="lead">Uma mesa transbordando flores, perfumes que se misturam, cores por todos os cantos. Guiadas por uma florista, cada uma escolhe, combina e monta o próprio arranjo — no seu tempo, do seu jeito. E leva pra casa não só as flores, mas a sensação boa de ter criado algo lindo com as próprias mãos. 🌸</p>
+    <p class="lead">Uma mesa transbordando flores, perfumes que se misturam, cores por todos os cantos. Guiadas por uma florista, cada uma escolhe, combina e monta o próprio arranjo — e leva pra casa a sensação boa de ter criado algo lindo com as próprias mãos. 🌸</p>
     <div class="bfeat">
       <div class="bphoto"><img src="assets/buque.jpg" alt="Buquê floral autoral" style="object-position:center 40%"></div>
       <div class="bbody">
@@ -611,10 +628,15 @@
         <h3>Do buquê ao vaso</h3>
         <ul class="feat">
           <li><span class="st">1</span><b>Boas-vindas</b> — um chá especial e a bancada de flores montada.</li>
-          <li><span class="st">2</span><b>Mão nas flores</b> — a florista ensina a escolher e compor o arranjo.</li>
-          <li><span class="st">3</span><b>Leva pra casa</b> — cada uma finaliza e leva o seu arranjo autoral. 🌷</li>
+          <li><span class="st">2</span><b>Mão nas flores</b> — a florista ensina a escolher e compor.</li>
+          <li><span class="st">3</span><b>Leva pra casa</b> — cada uma finaliza e leva o seu arranjo. 🌷</li>
         </ul>
       </div>
+    </div>
+    <div class="gstrip">
+      <figure><img src="assets/buqueflor.jpg" alt="Flores do campo selecionadas" style="object-position:center 50%"><figcaption>Flores do campo</figcaption></figure>
+      <figure><img src="assets/florseca.jpg" alt="Composições autorais de flores" style="object-position:center 50%"><figcaption>Composições autorais</figcaption></figure>
+      <figure><img src="assets/pinturavasoearranjo.jpg" alt="Vaso pintado com arranjo" style="object-position:center 50%"><figcaption>Leva pra casa</figcaption></figure>
     </div>
     <div style="margin-top:18px;display:flex;align-items:center;gap:16px;background:var(--navy);color:#fff;border-radius:14px;padding:14px 24px">
       <span style="font-family:'DM Serif Display',serif;font-size:30px;line-height:1">R$ 239</span>
@@ -629,18 +651,23 @@
     </div>
     <span class="eyebrow orange">◆ Automaquiagem by Elarah · Parceria de marca</span>
     <h2>A beleza que <em>fica com você</em></h2>
-    <p class="lead">Espelho, luz perfeita e produtos de primeira linha na mão. Uma maquiadora profissional revela, passo a passo, os segredos da automaquiagem — pele, olhar e aquele toque final que transforma. Mais que um curso, é autoestima: é se olhar no espelho e gostar do que vê. E o melhor — uma parceria de marca que pode viabilizar tudo sem custo. ✨</p>
+    <p class="lead">Espelho, luz perfeita e produtos de primeira linha na mão. Uma maquiadora profissional revela, passo a passo, os segredos da automaquiagem. Mais que um curso, é autoestima — e uma parceria de marca que pode viabilizar tudo sem custo. ✨</p>
     <div class="bfeat">
-      <div class="bphoto"><div class="pslot"><span class="pi">🖼️</span><span class="pl">Foto de beleza / aula</span><span class="ps">enviar imagem</span></div></div>
+      <div class="bphoto"><div class="pslot"><span class="pi">🖼️</span><span class="pl">Foto da aula de beleza</span><span class="ps">sua foto aqui</span></div></div>
       <div class="bbody">
         <span class="btag">Como acontece</span>
         <h3>Do primeiro pincel ao acabamento</h3>
         <ul class="feat">
           <li><span class="st">1</span><b>Boas-vindas</b> — recepção, kit de produtos e espelho montado.</li>
           <li><span class="st">2</span><b>Mão na massa</b> — a maquiadora ensina cada etapa, passo a passo.</li>
-          <li><span class="st">3</span><b>Toque final</b> — cada uma finaliza o próprio look e leva as dicas pra vida. 💄</li>
+          <li><span class="st">3</span><b>Toque final</b> — cada uma finaliza o próprio look e leva as dicas. 💄</li>
         </ul>
       </div>
+    </div>
+    <div class="gstrip">
+      <figure><img src="assets/lipbalm1.jpg" alt="Produtos de beleza selecionados" style="object-position:center 50%"><figcaption>Produtos incríveis</figcaption></figure>
+      <figure><div class="pslot"><span class="pi">🖼️</span><span class="pl">Ativação de marca</span><span class="ps">sua foto</span></div><figcaption>Ativação de marca</figcaption></figure>
+      <figure><img src="assets/lipbalm.jpg" alt="Detalhe de produto de beleza" style="object-position:center 50%"><figcaption>Toque final</figcaption></figure>
     </div>
     <div style="margin-top:18px;display:flex;align-items:center;gap:16px;background:var(--navy);color:#fff;border-radius:14px;padding:14px 24px">
       <span style="font-family:'DM Serif Display',serif;font-size:22px;line-height:1">Parceria</span>
