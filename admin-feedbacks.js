@@ -94,6 +94,8 @@
     reviews: [],               // normalizadas
     pedidos: [],               // bookings que já receberam pedido
     bookingsById: new Map(),
+    colunasPedido: [],
+    colunasPedidoFaltando: [],
     atualizadoEm: null,
   };
 
@@ -242,60 +244,75 @@
     state.reviews = (r.data || []).map(normalizarReview).filter(Boolean);
   }
 
-  // bookings: só as colunas necessárias. review_request_sent_at e
-  // feedback_solicitado_at vêm de migrações separadas — se alguma não
-  // rodou, cai pro conjunto menor em vez de quebrar a aba inteira.
+  // bookings: só as colunas necessárias.
   var BOOKING_BASE = 'id, experiencia_id, experiencia_nome, fornecedor_nome, nome, email, data, status';
+
+  // Os três canais que pedem avaliação, cada um carimbando a sua coluna.
+  // O de cima é o principal hoje: a Edge Function automated-notifications
+  // manda o link do avaliar.html no WhatsApp ~2 dias depois do evento.
+  // Cada coluna vem de uma migração diferente — se alguma não rodou, a
+  // aba segue com as outras e avisa qual SQL falta.
+  var COLUNAS_PEDIDO = [
+    { col: 'feedback_whatsapp_sent_at', canal: 'WhatsApp automático', sql: 'sql/elarah_bookings_automation_tracking.sql' },
+    { col: 'feedback_solicitado_at', canal: 'WhatsApp manual', sql: 'sql/elarah_bookings_feedback.sql' },
+    { col: 'review_request_sent_at', canal: 'E-mail', sql: 'sql/elarah_reviews.sql' },
+  ];
 
   async function carregarPedidos() {
     state.pedidos = [];
     state.bookingsById = new Map();
     state.semColunasPedido = false;
+    state.colunasPedido = [];
+    state.colunasPedidoFaltando = [];
     var s = sb();
     if (!s) return;
 
-    var tentativas = [
-      BOOKING_BASE + ', feedback_solicitado_at, review_request_sent_at',
-      BOOKING_BASE + ', feedback_solicitado_at',
-      BOOKING_BASE + ', review_request_sent_at',
-    ];
+    // O PostgREST reclama de uma coluna por vez: a cada erro, tira a que
+    // faltou e tenta de novo, até sobrar só o que existe de verdade.
+    var disponiveis = COLUNAS_PEDIDO.map(function (c) { return c.col; });
     var rows = null;
     var ultimoErro = null;
-    for (var i = 0; i < tentativas.length; i++) {
-      var r = await s.from('bookings').select(tentativas[i]).limit(50000);
+    for (var i = 0; i <= COLUNAS_PEDIDO.length; i++) {
+      var sel = BOOKING_BASE + (disponiveis.length ? ', ' + disponiveis.join(', ') : '');
+      var r = await s.from('bookings').select(sel).limit(50000);
       if (!r.error) { rows = r.data || []; break; }
       ultimoErro = r.error;
-      // Só vale tentar o conjunto menor de colunas se o que faltou foi
-      // justamente uma das colunas de migração. Qualquer outro erro
-      // (permissão, rede) daria o mesmo nas tentativas seguintes.
-      if (!colunaAusente(r.error, 'feedback_solicitado_at') &&
-          !colunaAusente(r.error, 'review_request_sent_at')) break;
+      var faltando = disponiveis.filter(function (c) { return colunaAusente(r.error, c); });
+      // Erro que não é coluna faltando (permissão, rede) se repetiria igual.
+      if (!faltando.length) break;
+      disponiveis = disponiveis.filter(function (c) { return faltando.indexOf(c) === -1; });
     }
     if (!rows) {
       console.warn('[Feedbacks] bookings:', ultimoErro && ultimoErro.message);
-      if (ultimoErro && (colunaAusente(ultimoErro, 'feedback_solicitado_at') ||
-          colunaAusente(ultimoErro, 'review_request_sent_at'))) {
-        state.semColunasPedido = true;
-        return;
-      }
       throw new Error('Não consegui ler as reservas: ' +
         ((ultimoErro && ultimoErro.message) || 'erro desconhecido'));
     }
 
+    state.colunasPedido = disponiveis;
+    state.colunasPedidoFaltando = COLUNAS_PEDIDO.filter(function (c) {
+      return disponiveis.indexOf(c.col) === -1;
+    });
+    state.semColunasPedido = !disponiveis.length;
+
     rows.forEach(function (b) { if (b && b.id) state.bookingsById.set(b.id, b); });
 
     state.pedidos = rows.map(function (b) {
-      var wa = b.feedback_solicitado_at || null;
-      var mail = b.review_request_sent_at || null;
-      if (!wa && !mail) return null;
-      var ts = Date.parse(wa || mail);
-      var tsMail = mail ? Date.parse(mail) : NaN;
-      // Quando os dois canais foram usados, vale o pedido mais antigo.
-      if (Number.isFinite(tsMail) && (!Number.isFinite(ts) || tsMail < ts)) ts = tsMail;
+      var ts = null;
+      var canais = [];
+      COLUNAS_PEDIDO.forEach(function (c) {
+        if (disponiveis.indexOf(c.col) === -1) return;
+        var v = b[c.col];
+        if (!v) return;
+        canais.push(c.canal);
+        var t = Date.parse(v);
+        // Quando mais de um canal pediu, vale o pedido mais antigo.
+        if (Number.isFinite(t) && (ts == null || t < ts)) ts = t;
+      });
+      if (!canais.length) return null;
       return {
         bookingId: b.id,
-        ts: Number.isFinite(ts) ? ts : null,
-        canal: wa && mail ? 'ambos' : (wa ? 'whatsapp' : 'email'),
+        ts: ts,
+        canais: canais,
         experienciaId: b.experiencia_id || null,
         experienciaNome: b.experiencia_nome || '',
         categorias: categoriasDe(b.experiencia_id, b.experiencia_nome),
@@ -598,10 +615,15 @@
         'Rode uma vez o arquivo <code>sql/elarah_reviews.sql</code> no SQL Editor do Supabase. ' +
         'Até lá, esta aba mostra só os pedidos de feedback enviados.</div>';
     }
-    if (state.semColunasPedido) {
-      html += '<div class="fb-aviso"><strong>Não achei o registro de pedidos de feedback.</strong><br>' +
-        'Rode <code>sql/elarah_bookings_feedback.sql</code> e <code>sql/elarah_reviews.sql</code> ' +
-        'pra que a aba consiga contar quantas mensagens saíram.</div>';
+    if (state.colunasPedidoFaltando && state.colunasPedidoFaltando.length) {
+      var faltam = state.colunasPedidoFaltando.map(function (c) {
+        return '<li>' + esc(c.canal) + ' — falta rodar <code>' + esc(c.sql) + '</code></li>';
+      }).join('');
+      html += '<div class="fb-aviso"><strong>' +
+        (state.semColunasPedido
+          ? 'Não achei nenhum registro de pedido de feedback.'
+          : 'Um canal de pedido não está sendo contado.') +
+        '</strong><ul style="margin:8px 0 0;padding-left:20px">' + faltam + '</ul></div>';
     }
 
     html += renderFiltros();
@@ -716,10 +738,20 @@
     }
 
     var taxa = peds.length ? pct(respondidos, peds.length) : '—';
+
+    // Quebra por canal: ajuda a ver se a automação do WhatsApp está
+    // realmente disparando ou se tudo veio do pedido manual.
+    var porCanal = new Map();
+    peds.forEach(function (p) {
+      (p.canais || []).forEach(function (c) { porCanal.set(c, (porCanal.get(c) || 0) + 1); });
+    });
+    var canaisTxt = [];
+    porCanal.forEach(function (qtd, canal) { canaisTxt.push(esc(canal) + ': <strong>' + num(qtd) + '</strong>'); });
     var mediaTxt = r.media == null ? '—' : num(r.media, 2);
 
     return '<div class="admin__stats">' +
-      card('Pedidos enviados', num(peds.length), 'Mensagens pedindo avaliação (WhatsApp + e-mail)') +
+      card('Pedidos enviados', num(peds.length),
+        canaisTxt.length ? canaisTxt.join(' · ') : 'Mensagens pedindo avaliação da experiência') +
       card('Respondidas', num(r.total), peds.length
         ? ('Taxa de resposta: <strong>' + taxa + '</strong> — ' + num(respondidos) + ' de ' +
            num(peds.length) + (peds.length !== 1 ? ' pedidos voltaram' : ' pedido voltou') + ' com nota')
