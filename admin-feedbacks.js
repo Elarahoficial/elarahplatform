@@ -108,6 +108,7 @@
     parceiro: '',
     experiencia: '',    // chave do nome da experiência
     comentario: '',     // '', 'com', 'sem'
+    visibilidade: '',   // '', 'visivel', 'oculta'
     busca: '',
     ordem: 'recentes',  // recentes | antigos | nota-asc | nota-desc
     rank: 'pior',       // pior | melhor | volume
@@ -168,6 +169,18 @@
       '.fb-com__meta{display:flex;flex-wrap:wrap;gap:6px}',
       '.fb-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#f7f2eb;color:#6d655d;font-size:.72rem}',
       '.fb-tag b{color:#3a352f;font-weight:700}',
+      '.fb-com--oculta{opacity:.72;background:#fbfafa}',
+      '.fb-com--oculta .fb-com__resumo{text-decoration:line-through;text-decoration-color:#c9c2bb}',
+      '.fb-selo-oculta{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:#ebe6e0;color:#6d655d;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}',
+      '.fb-com__acoes{margin-top:12px;padding-top:12px;border-top:1px dashed #f0e8de;display:flex;flex-wrap:wrap;gap:8px;align-items:center}',
+      '.fb-btn-ocultar{padding:6px 12px;border-radius:8px;border:1px solid #e0d6ca;background:#fff;color:#6d655d;font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer}',
+      '.fb-btn-ocultar:hover{background:#faf6f0;border-color:#c9bdae}',
+      '.fb-btn-ocultar[disabled]{opacity:.55;cursor:default}',
+      '.fb-btn-ocultar--mostrar{border-color:#9cc9ac;color:#1a8a4a}',
+      '.fb-btn-ocultar--mostrar:hover{background:#f0f8f3;border-color:#1a8a4a}',
+      '.fb-acao-msg{font-size:.76rem;color:#8a8279}',
+      '.fb-media-dupla{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin-top:10px;font-size:.8rem;color:#8a8279}',
+      '.fb-media-dupla b{color:#3a352f}',
       '.fb-vazio{padding:26px 14px;text-align:center;color:#9a918a;font-size:.88rem}',
       '.fb-aviso{background:#fff8ef;border:1px solid #f0d8b4;border-radius:12px;padding:16px 18px;color:#7a5a20;font-size:.88rem;line-height:1.6;margin-bottom:18px}',
       '.fb-aviso code{background:#fff;border:1px solid #f0d8b4;border-radius:5px;padding:1px 6px;font-size:.85em}',
@@ -369,7 +382,8 @@
       comentario: String(row.comentario || '').trim(),
       nome: String(row.nome || (booking && booking.nome) || '').trim(),
       email: (booking && booking.email) || '',
-      aprovado: row.aprovado !== false,
+      visivel: row.aprovado !== false,
+      ocultoAt: row.oculto_at || null,
       ts: Number.isFinite(ts) ? ts : null,
       experienciaId: expId,
       experienciaNome: expNome,
@@ -479,6 +493,8 @@
     if (!casaNota(r.nota)) return false;
     if (filtros.comentario === 'com' && !r.comentario) return false;
     if (filtros.comentario === 'sem' && r.comentario) return false;
+    if (filtros.visibilidade === 'visivel' && !r.visivel) return false;
+    if (filtros.visibilidade === 'oculta' && r.visivel) return false;
     if (filtros.busca) {
       var q = chave(filtros.busca);
       var alvo = chave([r.comentario, r.nome, r.experienciaNome, r.parceiro,
@@ -684,6 +700,14 @@
       return '<option value="' + esc(o.v) + '"' + (filtros.comentario === o.v ? ' selected' : '') + '>' + esc(o.label) + '</option>';
     }).join('');
 
+    var visibilidadeOptions = [
+      { v: '', label: 'Visíveis e ocultas' },
+      { v: 'visivel', label: 'Só as que o site mostra' },
+      { v: 'oculta', label: 'Só as ocultas' },
+    ].map(function (o) {
+      return '<option value="' + esc(o.v) + '"' + (filtros.visibilidade === o.v ? ' selected' : '') + '>' + esc(o.label) + '</option>';
+    }).join('');
+
     var ordemOptions = [
       { v: 'recentes', label: 'Mais recentes' },
       { v: 'antigos', label: 'Mais antigos' },
@@ -707,6 +731,7 @@
           optionsHtml(parceiros, filtros.parceiro, [{ v: '__sem__', label: '— sem parceiro —' }], 'Todos') + '</select>') +
         sel('fb-f-experiencia', 'Experiência', '<select id="fb-f-experiencia">' + expOptions + '</select>') +
         sel('fb-f-comentario', 'Comentário', '<select id="fb-f-comentario">' + comentarioOptions + '</select>') +
+        sel('fb-f-visibilidade', 'No site', '<select id="fb-f-visibilidade">' + visibilidadeOptions + '</select>') +
         sel('fb-f-ordem', 'Ordenar', '<select id="fb-f-ordem">' + ordemOptions + '</select>') +
         sel('fb-f-busca', 'Buscar no texto', '<input type="search" id="fb-f-busca" placeholder="palavra, cliente, parceiro…" value="' + esc(filtros.busca) + '">') +
       '</div>' +
@@ -739,6 +764,12 @@
 
     var taxa = peds.length ? pct(respondidos, peds.length) : '—';
 
+    // Média que o site exibe = só as visíveis. Quando difere da real, a
+    // aba mostra as duas lado a lado em vez de deixar passar batido.
+    var visiveis = revs.filter(function (x) { return x.visivel; });
+    var ocultas = revs.length - visiveis.length;
+    var mediaSite = visiveis.length ? resumo(visiveis).media : null;
+
     // Quebra por canal: ajuda a ver se a automação do WhatsApp está
     // realmente disparando ou se tudo veio do pedido manual.
     var porCanal = new Map();
@@ -756,10 +787,23 @@
         ? ('Taxa de resposta: <strong>' + taxa + '</strong> — ' + num(respondidos) + ' de ' +
            num(peds.length) + (peds.length !== 1 ? ' pedidos voltaram' : ' pedido voltou') + ' com nota')
         : 'Nenhum pedido registrado ainda') +
-      card('Avaliação média', r.media == null ? '—' : (mediaTxt + ' <span style="font-size:.5em;color:#f0a05e;letter-spacing:2px;">' + estrelas(r.media) + '</span>'), r.total ? ('Sobre ' + plural(r.total, 'avaliação', 'avaliações')) : '') +
+      card('Avaliação média', r.media == null ? '—' : (mediaTxt + ' <span style="font-size:.5em;color:#f0a05e;letter-spacing:2px;">' + estrelas(r.media) + '</span>'),
+        r.total ? ('Sobre ' + plural(r.total, 'avaliação', 'avaliações') + ' — ocultas incluídas') : '') +
       card('Promotoras (4-5 ★)', r.total ? pct(r.promotoras, r.total) : '—', num(r.promotoras) + ' de ' + num(r.total), '#1a8a4a') +
       card('Críticas (até 3 ★)', r.total ? pct(r.criticas, r.total) : '—', num(r.criticas) + ' de ' + num(r.total) + ' — é onde tem o que melhorar', '#c0392b') +
     '</div>' +
+    (ocultas
+      ? '<div class="fb-card"><h2 class="fb-card__title">Média real x média que o site mostra</h2>' +
+        '<p class="fb-card__sub">' + plural(ocultas, 'avaliação está oculta', 'avaliações estão ocultas') +
+          ' do site neste recorte. Os números desta aba usam sempre a média real.</p>' +
+        '<div class="fb-media-dupla">' +
+          '<span>Média real (tudo): <b>' + num(r.media, 2) + ' ' + estrelas(r.media) + '</b></span>' +
+          '<span>Média que o site exibe: <b>' + (mediaSite == null ? '—' : (num(mediaSite, 2) + ' ' + estrelas(mediaSite))) + '</b></span>' +
+          (mediaSite != null && r.media != null
+            ? '<span>Diferença: <b>' + (mediaSite - r.media >= 0 ? '+' : '') + num(mediaSite - r.media, 2) + '</b></span>'
+            : '') +
+        '</div></div>'
+      : '') +
     '<p class="fb-hint">Os cinco números acima seguem período, categoria, parceiro e experiência. ' +
       'Nota, comentário e busca valem para a lista de comentários lá embaixo.<br>' +
       '“Respondidas” conta toda avaliação recebida; a taxa olha só os pedidos registrados — ' +
@@ -844,11 +888,14 @@
   function renderComentarios() {
     var lista = reviewsFiltradas();
     var comTexto = lista.filter(function (r) { return !!r.comentario; }).length;
+    var ocultasAqui = lista.filter(function (r) { return !r.visivel; }).length;
 
     var cabecalho = '<div class="fb-card">' +
       '<h2 class="fb-card__title">Comentários</h2>' +
       '<p class="fb-card__sub">' + plural(lista.length, 'avaliação', 'avaliações') +
-        ' no filtro atual · ' + num(comTexto) + ' com texto. Clique pra abrir cada uma.</p>' +
+        ' no filtro atual · ' + num(comTexto) + ' com texto' +
+        (ocultasAqui ? ' · ' + num(ocultasAqui) + ' oculta' + (ocultasAqui !== 1 ? 's' : '') + ' do site' : '') +
+        '. Clique pra abrir cada uma.</p>' +
       '<div class="fb-filtros-acoes" style="margin:0 0 14px">' +
         '<button type="button" class="admin__add-btn admin__add-btn--ghost" id="fb-abrir-todos">Abrir todos</button>' +
         '<button type="button" class="admin__add-btn admin__add-btn--ghost" id="fb-fechar-todos">Fechar todos</button>' +
@@ -870,12 +917,27 @@
       if (r.dataEvento) tags.push('<span class="fb-tag">Evento: <b>' + esc(r.dataEvento) + '</b></span>');
       if (r.email) tags.push('<span class="fb-tag">E-mail: <b>' + esc(r.email) + '</b></span>');
       tags.push('<span class="fb-tag">Respondida em: <b>' + esc(dataLonga(r.ts)) + '</b></span>');
-      if (!r.aprovado) tags.push('<span class="fb-tag" style="background:#fdecea;color:#a03026">Não aprovada</span>');
+      if (!r.visivel && r.ocultoAt) {
+        tags.push('<span class="fb-tag">Ocultada em: <b>' + esc(dataLonga(r.ocultoAt)) + '</b></span>');
+      }
 
-      return '<details class="fb-com' + (ruim ? ' fb-com--ruim' : '') + '">' +
+      // Ocultar tira do site (aprovado=false); aqui na aba ela continua
+      // contando na média e no ranking — o painel não pode mentir pra
+      // quem usa ele pra decidir o que melhorar.
+      var acao = r.visivel
+        ? '<button type="button" class="fb-btn-ocultar" data-ocultar="' + esc(r.id) + '" data-para="ocultar">' +
+            '🚫 Ocultar do site</button>' +
+          '<span class="fb-acao-msg">Some da página da experiência. Continua contando aqui.</span>'
+        : '<button type="button" class="fb-btn-ocultar fb-btn-ocultar--mostrar" data-ocultar="' + esc(r.id) + '" data-para="mostrar">' +
+            '👁 Voltar a mostrar</button>' +
+          '<span class="fb-acao-msg">Hoje esta avaliação não aparece pra ninguém no site.</span>';
+
+      return '<details class="fb-com' + (ruim ? ' fb-com--ruim' : '') +
+          (r.visivel ? '' : ' fb-com--oculta') + '" data-review="' + esc(r.id) + '">' +
         '<summary>' +
           '<span class="fb-com__nota' + (ruim ? ' fb-com__nota--ruim' : '') + '">' + estrelas(r.nota) + '</span>' +
           '<span class="fb-com__quem">' + esc(r.nome || 'Cliente') + '</span>' +
+          (r.visivel ? '' : '<span class="fb-selo-oculta">Oculta</span>') +
           '<span class="fb-com__resumo">' + esc(resumoTxt) + '</span>' +
           '<span class="fb-com__data">' + esc(dataCurta(r.ts)) + '</span>' +
         '</summary>' +
@@ -883,6 +945,7 @@
           '<p class="fb-com__texto' + (r.comentario ? '' : ' fb-com__texto--vazio') + '">' +
             esc(r.comentario || 'A cliente deu a nota mas não escreveu nada.') + '</p>' +
           '<div class="fb-com__meta">' + tags.join('') + '</div>' +
+          '<div class="fb-com__acoes">' + acao + '</div>' +
         '</div>' +
       '</details>';
     }).join('');
@@ -912,6 +975,7 @@
     onChange('fb-f-parceiro', 'parceiro');
     onChange('fb-f-experiencia', 'experiencia');
     onChange('fb-f-comentario', 'comentario');
+    onChange('fb-f-visibilidade', 'visibilidade');
     onChange('fb-f-ordem', 'ordem');
     onChange('fb-f-rank', 'rank');
 
@@ -949,6 +1013,10 @@
       });
     });
 
+    root.querySelectorAll('[data-ocultar]').forEach(function (b) {
+      b.addEventListener('click', function () { alternarVisibilidade(b); });
+    });
+
     var abrir = el('fb-abrir-todos');
     var fechar = el('fb-fechar-todos');
     if (abrir) abrir.addEventListener('click', function () {
@@ -959,12 +1027,84 @@
     });
   }
 
+  // Ocultar = aprovado:false. As duas telas públicas (experiencia.html
+  // e o detalhe do script.js) já filtram aprovado=true, então não há
+  // nada a mudar no site: virar a chave aqui basta.
+  //
+  // Requer sql/elarah_reviews_moderacao.sql (policy de update + colunas
+  // de auditoria). Sem ela o RLS recusa em silêncio — o PostgREST
+  // devolve 0 linhas sem erro, e é isso que o retorno vazio detecta.
+  async function alternarVisibilidade(btn) {
+    var id = btn.dataset.ocultar;
+    var ocultar = btn.dataset.para === 'ocultar';
+    if (!id) return;
+
+    var alvo = null;
+    for (var i = 0; i < state.reviews.length; i++) {
+      if (state.reviews[i].id === id) { alvo = state.reviews[i]; break; }
+    }
+    var quem = (alvo && alvo.nome) ? ' de ' + alvo.nome : '';
+    var pergunta = ocultar
+      ? 'Ocultar esta avaliação' + quem + ' do site?\n\nEla some da página da experiência e deixa de contar na nota que o site mostra. Aqui na aba ela continua aparecendo e contando na média real.'
+      : 'Voltar a mostrar esta avaliação' + quem + ' no site?';
+    if (!confirm(pergunta)) return;
+
+    var textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Salvando…';
+
+    try {
+      var s = sb();
+      if (!s) throw new Error('Supabase indisponível');
+      var user = null;
+      try { user = (await s.auth.getUser()).data.user; } catch (_) {}
+
+      var payload = { aprovado: !ocultar };
+      if (ocultar) {
+        payload.oculto_at = new Date().toISOString();
+        if (user) payload.oculto_by = user.id;
+      }
+
+      var r = await s.from('reviews').update(payload).eq('id', id).select('id, aprovado, oculto_at');
+      // Coluna de auditoria ausente: grava só o aprovado, que é o que
+      // o site lê. A migração continua pendente, mas a ação funciona.
+      if (r.error && (colunaAusente(r.error, 'oculto_at') || colunaAusente(r.error, 'oculto_by'))) {
+        r = await s.from('reviews').update({ aprovado: !ocultar }).eq('id', id).select('id, aprovado');
+      }
+      if (r.error) throw new Error(r.error.message);
+      if (!r.data || !r.data.length) {
+        throw new Error('o banco não aceitou a mudança. Rode sql/elarah_reviews_moderacao.sql no Supabase — ' +
+          'sem ela o admin não tem permissão de editar avaliações.');
+      }
+
+      // Atualiza em memória e redesenha, sem repuxar o banco inteiro.
+      if (alvo) {
+        alvo.visivel = !ocultar;
+        alvo.ocultoAt = ocultar ? (r.data[0].oculto_at || new Date().toISOString()) : alvo.ocultoAt;
+      }
+      var aberto = {};
+      document.querySelectorAll('details.fb-com[open]').forEach(function (d) {
+        if (d.dataset.review) aberto[d.dataset.review] = true;
+      });
+      render();
+      // Redesenhar fecha os accordions: reabre os que estavam abertos.
+      Object.keys(aberto).forEach(function (rid) {
+        var d = document.querySelector('details.fb-com[data-review="' + rid + '"]');
+        if (d) d.open = true;
+      });
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+      alert('Não consegui ' + (ocultar ? 'ocultar' : 'mostrar') + ': ' + ((e && e.message) || e));
+    }
+  }
+
   // CSV com ; e BOM — é o que o Excel em pt-BR abre sem bagunçar
   // acento nem jogar a linha toda numa coluna só.
   function exportarCsv() {
     var lista = reviewsFiltradas();
     if (!lista.length) { alert('Nenhuma avaliação no filtro atual pra exportar.'); return; }
-    var cab = ['Data', 'Nota', 'Cliente', 'Experiência', 'Parceiro', 'Categoria', 'Data do evento', 'E-mail', 'Comentário'];
+    var cab = ['Data', 'Nota', 'Cliente', 'Experiência', 'Parceiro', 'Categoria', 'Data do evento', 'E-mail', 'No site', 'Comentário'];
     function celula(v) {
       var s = String(v == null ? '' : v).replace(/"/g, '""').replace(/\r?\n/g, ' ');
       return '"' + s + '"';
@@ -972,7 +1112,8 @@
     var linhas = lista.map(function (r) {
       return [
         dataLonga(r.ts), r.nota, r.nome, r.experienciaNome, r.parceiro,
-        (r.categorias || []).join(' | '), r.dataEvento, r.email, r.comentario,
+        (r.categorias || []).join(' | '), r.dataEvento, r.email,
+        r.visivel ? 'Visível' : 'Oculta', r.comentario,
       ].map(celula).join(';');
     });
     var csv = '﻿' + cab.map(celula).join(';') + '\r\n' + linhas.join('\r\n');
