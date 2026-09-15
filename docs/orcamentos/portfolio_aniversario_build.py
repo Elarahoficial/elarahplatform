@@ -43,6 +43,16 @@ xcss = '''
   .xpr{position:absolute;top:9px;right:9px;background:var(--navy);color:#fff;border-radius:12px;padding:5px 11px 6px;text-align:center;line-height:1}
   .xpr small{font-size:7px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;display:block;margin-bottom:1px}
   .xpr b{font-family:'DM Serif Display',serif;font-size:16px;font-weight:400;display:block}
+  .ptable{width:100%;border-collapse:collapse;margin-top:16px;font-size:12.5px;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px -22px rgba(0,0,0,.3)}
+  .ptable th{background:var(--navy);color:#fff;text-align:left;padding:11px 16px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .ptable th.r{text-align:right}
+  .ptable td{padding:9px 16px;border-bottom:1px solid var(--line);color:var(--ink)}
+  .ptable tr:last-child td{border-bottom:none}
+  .ptable tr:nth-child(even) td{background:#FBF0F3}
+  .ptable td.exp{font-weight:600;color:var(--navy)}
+  .ptable td.ess{text-align:right;color:var(--muted);font-weight:600}
+  .ptable td.prem{text-align:right;font-family:'DM Serif Display',serif;font-size:16px;color:var(--orange-dark)}
+  .plusbadge{display:inline-block;background:var(--orange);color:#fff;border-radius:999px;padding:8px 18px;font-weight:700;font-size:13px;margin-top:14px}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -129,7 +139,7 @@ vitrine_a = f'''
     <h2>As <em>experiências</em></h2>
     <div class="xgrid">
 {xcard("01", "Charm Bar · bolsa", "Berloque de bolsa", "Cada uma cria o próprio charm e personaliza a bolsa — puro estilo.", img("charm-bolsa.jpg", "Charm bar de bolsa personalizado", "center 50%"), "R$ 259")}
-{xcard("02", "Charm Bar · joia", "Criar a própria joia", "Escolhem pedrinhas e pingentes e saem com uma joia autoral.", img("joia-atelie.jpg", "Criando a própria joia no ateliê", "center 50%"), "R$ 599", prefix=True)}
+{xcard("02", "Charm Bar · joia", "Criar a própria joia", "Escolhem pedrinhas e pingentes e saem com uma joia autoral.", img("joia-atelie.jpg", "Criando a própria joia no ateliê", "center 50%"), "R$ 599")}
 {xcard("03", "Papelaria", "Cartonagem &amp; encadernação", "Montam o próprio caderninho artesanal — capa, costura e tudo.", img("cartonagem-cereja.jpg", "Cadernos de cartonagem e encadernação", "center 50%"), "R$ 499")}
 {xcard("04", "Cerâmica", "Modelagem de cerâmica", "Mão na argila: cada uma modela a própria peça do zero.", img("ceramica-meninas.jpg", "Meninas rindo modelando cerâmica no torno", "center 30%"), "R$ 259")}
 {xcard("05", "Crochê", "Bolsa de crochê", "Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.", img("croche-bolsa.jpg", "Bolsa de crochê com alça de corrente", "center 50%"), "R$ 259")}
@@ -145,9 +155,9 @@ vitrine_b = f'''
     <span class="eyebrow orange">◆ E tem mais ✨</span>
     <h2>Aromas &amp; <em>arte</em></h2>
     <div class="xgrid">
-{xcard("07", "Perfumaria", "Perfume autoral", "Montam a própria fragrância, do jeitinho delas — e levam pra casa.", img("perfumaria-oficina.jpg", "Oficina de perfume autoral", "center 40%"), "R$ 259")}
+{xcard("07", "Perfumaria", "Perfume autoral", "Montam a própria fragrância, do jeitinho delas — e levam pra casa.", img("perfumaria-oficina.jpg", "Oficina de perfume autoral", "center 60%"), "R$ 259")}
 {xcard("08", "Aromas", "Vela aromática", "Escolhem aroma e fazem a própria vela — com ou sem tema.", img("vela-aromatica-real.jpg", "Oficina de vela aromática com flores secas", "center 40%"), "R$ 259")}
-{xcard("09", "Arte têxtil", "Tufting &amp; punch", "Tapetinho ou quadrinho à mão — 4h com todos os materiais inclusos.", img("tufting-cereja.jpg", "Tapete de tufting com cerejas", "center 50%"), "R$ 599")}
+{xcard("09", "Arte têxtil", "Tufting &amp; punch", "Tapetinho ou quadrinho à mão — 4h com todos os materiais inclusos.", img("tufting-cereja.jpg", "Tapete de tufting com cerejas", "center 42%"), "R$ 599")}
     </div>
     <div class="bnote">◆ Essas são só algumas ideias — dá pra combinar mais de uma experiência ou criar algo temático especial pra festa. É só me contar o que a aniversariante ama. 💛</div>
     <p class="fineprint">✦ Valores por pessoa · condução por profissional, material e estrutura inclusos. Número final conforme o grupo e a data.</p>
@@ -207,7 +217,48 @@ prova = f'''
     {foot("Festas de verdade")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + intro + emo + prova + vitrine_a + vitrine_b + proximos + '\n\n</div>\n\n'
+_prem = [
+    ("Berloque de bolsa", 259), ("Criar a própria joia", 599), ("Cartonagem &amp; encadernação", 499),
+    ("Modelagem de cerâmica", 259), ("Bolsa de crochê", 259), ("Acessório em cerâmica", 259),
+    ("Perfume autoral", 259), ("Vela aromática", 259), ("Tufting &amp; punch", 599),
+]
+_rows = "\n".join(
+    f'        <tr><td class="exp">{n}</td><td class="ess">R$ {p}</td><td class="prem">R$ {p+120}</td></tr>'
+    for n, p in _prem)
+
+premium = f'''
+  <section class="slide">
+{head_simple("Plano Premium")}
+    <span class="eyebrow orange">◆ Quer deixar completo?</span>
+    <h2>O plano <em>Premium</em></h2>
+    <p class="lead">Qualquer experiência pode virar Premium: além da atividade, entram um <strong>coffee break</strong> lindo pra turma e uma <strong>lembrancinha personalizada</strong> pra cada uma levar pra casa. É só somar <strong>R$ 120 por pessoa</strong>. ☕🎁</p>
+    <div class="invbox">
+      <div style="flex:0 0 36%;min-width:210px;border-radius:18px;overflow:hidden;position:relative;min-height:206px;border:1px solid var(--line)">
+        <img src="assets/lembrancinha-escova.jpg" alt="Lembrancinha personalizada — escova e piranha" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      </div>
+      <div class="incl" style="flex:1;min-width:260px">
+        <span class="vt">O que vem no Premium</span>
+        <ul>
+          <li><span>✦</span>Tudo da experiência escolhida</li>
+          <li><span>✦</span><b>Coffee break</b> completo pra turma</li>
+          <li><span>✦</span><b>Lembrancinha personalizada</b> pra cada uma</li>
+        </ul>
+        <span class="plusbadge">+ R$ 120 por pessoa</span>
+      </div>
+    </div>
+    <table class="ptable">
+      <thead>
+        <tr><th>Experiência</th><th class="r">Essencial</th><th class="r">Premium</th></tr>
+      </thead>
+      <tbody>
+{_rows}
+      </tbody>
+    </table>
+    <p class="fineprint">✦ Valores por pessoa. Premium = experiência + coffee break + lembrancinha personalizada (+R$ 120/pessoa). Criar a própria joia a partir de R$ 599. Número final conforme o grupo e a data.</p>
+    {foot("Plano Premium")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + intro + emo + prova + vitrine_a + vitrine_b + premium + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-portfolio-aniversario.html"
 open(out, "w", encoding="utf-8").write(html)

@@ -208,6 +208,16 @@
   .xpr{position:absolute;top:9px;right:9px;background:var(--navy);color:#fff;border-radius:12px;padding:5px 11px 6px;text-align:center;line-height:1}
   .xpr small{font-size:7px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;display:block;margin-bottom:1px}
   .xpr b{font-family:'DM Serif Display',serif;font-size:16px;font-weight:400;display:block}
+  .ptable{width:100%;border-collapse:collapse;margin-top:16px;font-size:12.5px;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px -22px rgba(0,0,0,.3)}
+  .ptable th{background:var(--navy);color:#fff;text-align:left;padding:11px 16px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .ptable th.r{text-align:right}
+  .ptable td{padding:9px 16px;border-bottom:1px solid var(--line);color:var(--ink)}
+  .ptable tr:last-child td{border-bottom:none}
+  .ptable tr:nth-child(even) td{background:#FBF0F3}
+  .ptable td.exp{font-weight:600;color:var(--navy)}
+  .ptable td.ess{text-align:right;color:var(--muted);font-weight:600}
+  .ptable td.prem{text-align:right;font-family:'DM Serif Display',serif;font-size:16px;color:var(--orange-dark)}
+  .plusbadge{display:inline-block;background:var(--orange);color:#fff;border-radius:999px;padding:8px 18px;font-weight:700;font-size:13px;margin-top:14px}
 </style>
 <style>
   :root{
@@ -546,7 +556,7 @@
         </div>
       </div>
       <div class="xcard">
-        <div class="xph"><span class="xnum">02</span><div class="xpr"><small>a partir de</small><b>R$ 599</b></div><img src="assets/joia-atelie.jpg" alt="Criando a própria joia no ateliê" style="object-position:center 50%"></div>
+        <div class="xph"><span class="xnum">02</span><div class="xpr"><b>R$ 599</b></div><img src="assets/joia-atelie.jpg" alt="Criando a própria joia no ateliê" style="object-position:center 50%"></div>
         <div class="xb">
           <span class="xcat">Charm Bar · joia</span>
           <h4>Criar a própria joia</h4>
@@ -598,7 +608,7 @@
     <h2>Aromas &amp; <em>arte</em></h2>
     <div class="xgrid">
       <div class="xcard">
-        <div class="xph"><span class="xnum">07</span><div class="xpr"><b>R$ 259</b></div><img src="assets/perfumaria-oficina.jpg" alt="Oficina de perfume autoral" style="object-position:center 40%"></div>
+        <div class="xph"><span class="xnum">07</span><div class="xpr"><b>R$ 259</b></div><img src="assets/perfumaria-oficina.jpg" alt="Oficina de perfume autoral" style="object-position:center 60%"></div>
         <div class="xb">
           <span class="xcat">Perfumaria</span>
           <h4>Perfume autoral</h4>
@@ -614,7 +624,7 @@
         </div>
       </div>
       <div class="xcard">
-        <div class="xph"><span class="xnum">09</span><div class="xpr"><b>R$ 599</b></div><img src="assets/tufting-cereja.jpg" alt="Tapete de tufting com cerejas" style="object-position:center 50%"></div>
+        <div class="xph"><span class="xnum">09</span><div class="xpr"><b>R$ 599</b></div><img src="assets/tufting-cereja.jpg" alt="Tapete de tufting com cerejas" style="object-position:center 42%"></div>
         <div class="xb">
           <span class="xcat">Arte têxtil</span>
           <h4>Tufting &amp; punch</h4>
@@ -625,6 +635,47 @@
     <div class="bnote">◆ Essas são só algumas ideias — dá pra combinar mais de uma experiência ou criar algo temático especial pra festa. É só me contar o que a aniversariante ama. 💛</div>
     <p class="fineprint">✦ Valores por pessoa · condução por profissional, material e estrutura inclusos. Número final conforme o grupo e a data.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A vitrine</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Plano Premium</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Quer deixar completo?</span>
+    <h2>O plano <em>Premium</em></h2>
+    <p class="lead">Qualquer experiência pode virar Premium: além da atividade, entram um <strong>coffee break</strong> lindo pra turma e uma <strong>lembrancinha personalizada</strong> pra cada uma levar pra casa. É só somar <strong>R$ 120 por pessoa</strong>. ☕🎁</p>
+    <div class="invbox">
+      <div style="flex:0 0 36%;min-width:210px;border-radius:18px;overflow:hidden;position:relative;min-height:206px;border:1px solid var(--line)">
+        <img src="assets/lembrancinha-escova.jpg" alt="Lembrancinha personalizada — escova e piranha" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      </div>
+      <div class="incl" style="flex:1;min-width:260px">
+        <span class="vt">O que vem no Premium</span>
+        <ul>
+          <li><span>✦</span>Tudo da experiência escolhida</li>
+          <li><span>✦</span><b>Coffee break</b> completo pra turma</li>
+          <li><span>✦</span><b>Lembrancinha personalizada</b> pra cada uma</li>
+        </ul>
+        <span class="plusbadge">+ R$ 120 por pessoa</span>
+      </div>
+    </div>
+    <table class="ptable">
+      <thead>
+        <tr><th>Experiência</th><th class="r">Essencial</th><th class="r">Premium</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="exp">Berloque de bolsa</td><td class="ess">R$ 259</td><td class="prem">R$ 379</td></tr>
+        <tr><td class="exp">Criar a própria joia</td><td class="ess">R$ 599</td><td class="prem">R$ 719</td></tr>
+        <tr><td class="exp">Cartonagem &amp; encadernação</td><td class="ess">R$ 499</td><td class="prem">R$ 619</td></tr>
+        <tr><td class="exp">Modelagem de cerâmica</td><td class="ess">R$ 259</td><td class="prem">R$ 379</td></tr>
+        <tr><td class="exp">Bolsa de crochê</td><td class="ess">R$ 259</td><td class="prem">R$ 379</td></tr>
+        <tr><td class="exp">Acessório em cerâmica</td><td class="ess">R$ 259</td><td class="prem">R$ 379</td></tr>
+        <tr><td class="exp">Perfume autoral</td><td class="ess">R$ 259</td><td class="prem">R$ 379</td></tr>
+        <tr><td class="exp">Vela aromática</td><td class="ess">R$ 259</td><td class="prem">R$ 379</td></tr>
+        <tr><td class="exp">Tufting &amp; punch</td><td class="ess">R$ 599</td><td class="prem">R$ 719</td></tr>
+      </tbody>
+    </table>
+    <p class="fineprint">✦ Valores por pessoa. Premium = experiência + coffee break + lembrancinha personalizada (+R$ 120/pessoa). Criar a própria joia a partir de R$ 599. Número final conforme o grupo e a data.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Plano Premium</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
