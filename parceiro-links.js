@@ -15,8 +15,12 @@
    (os dois modelos que convivem no banco):
      1. experiences.fornecedor_nome        (legado, 1 fornecedor)
      2. experience_suppliers.fornecedor_nome (atual, N por experiência)
-   Basta bater em um deles. Como o nome é digitado à mão no admin,
-   a comparação é frouxa: sem acento, sem maiúscula, por "contém".
+   Basta bater em um deles. A comparação é por NOME EXATO — ignora
+   acento, maiúscula e espaço sobrando, mas não casa por pedaço. É de
+   propósito: com "contém", um parceiro futuro de nome parecido
+   ("Ateliê Flor de Lis") apareceria na página de outro. Fornecedor
+   escrito diferente do configurado não entra; o ?debug=1 mostra
+   exatamente qual nome está gravado em cada experiência.
 
    Uso (no HTML da página do parceiro):
      ElarahParceiroLinks.init({ nome, match, logo, instagram, ... })
@@ -109,13 +113,13 @@
   }
 
   // ===== Vínculo com o parceiro =====
-  function matchNome(nomeFornecedor, termos) {
+  // Nome EXATO (já normalizado dos dois lados). "Ateliê Flor de Arte",
+  // "ATELIE FLOR DE ARTE" e "  atelie  flor de arte " são o mesmo nome;
+  // "Ateliê Flor de Lis" e "Ateliê Flor de Artes" não são.
+  function matchNome(nomeFornecedor, nomesAceitos) {
     var n = norm(nomeFornecedor);
     if (!n) return false;
-    for (var i = 0; i < termos.length; i++) {
-      if (n.indexOf(termos[i]) !== -1) return true;
-    }
-    return false;
+    return nomesAceitos.indexOf(n) !== -1;
   }
 
   // IDs de experiências ligadas ao parceiro pela tabela nova (1:N).
@@ -234,6 +238,7 @@
   // ===== Fluxo principal =====
   async function init(cfg) {
     cfg = cfg || {};
+    // cfg.match = lista de nomes de fornecedor aceitos (comparação exata).
     var termos = (cfg.match || []).map(norm).filter(Boolean);
     var idsExtra = new Set(cfg.idsExtra || []);
 
@@ -308,7 +313,7 @@
 
     if (DEBUG) {
       log('visíveis no site:', experiencias.length, '| do parceiro:', minhas.length);
-      log('termos de match:', termos);
+      log('nomes aceitos (exatos):', termos);
       console.table(experiencias.map(function (e) {
         return {
           nome: e.nome,
