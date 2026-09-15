@@ -111,7 +111,7 @@ cover = f'''
           <span class="chip">São Paulo</span>
         </div>
       </div>
-      <div class="cover-photo">{img("croche.jpg", "Bolsinhas de crochê autorais coloridas", "center 50%")}</div>
+      <div class="cover-photo">{img("capa-croche-cafe.jpg", "Amigas rindo numa oficina criativa com café", "center 28%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Portfólio de experiências")}
