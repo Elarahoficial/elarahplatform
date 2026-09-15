@@ -36,6 +36,10 @@ xcss = '''
   .xcat{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:3px}
   .xb h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:16.5px;color:var(--navy);line-height:1.08}
   .xb p{font-size:10.5px;color:var(--muted);line-height:1.42;margin-top:6px}
+  .egrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .egrid figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:214px;border:1px solid rgba(46,31,42,.12);box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
+  .egrid img{width:100%;height:100%;object-fit:cover;display:block}
+  .egrid figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 13px 11px;color:#fff;font-size:12px;font-weight:600;background:linear-gradient(to top,rgba(30,20,28,.86),transparent)}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -169,12 +173,10 @@ emo = f'''
     <span class="eyebrow orange">◆ O que elas vão levar no coração</span>
     <h2>Amigas, risada e <em>memória</em></h2>
     <p class="lead">No fim, o que fica não é só a lembrancinha — é a tarde inteira de risada, mão na massa e foto boa. É a festa que elas vão lembrar por muito tempo. 💛</p>
-    <div class="vibe">
+    <div class="egrid">
       <figure>{img("encontro-1.jpg", "Amigas rindo juntas", "center 30%")}<figcaption>Risada garantida</figcaption></figure>
       <figure>{img("hidrateimeninas.jpg", "Meninas curtindo a experiência juntas", "center 30%")}<figcaption>Juntas, do começo ao fim</figcaption></figure>
-      <figure>{img("vibe-risada.jpg", "Amigas se divertindo na oficina", "center 30%")}<figcaption>Momento só delas</figcaption></figure>
-    </div>
-    <div class="gstrip">
+      <figure>{img("aniversariogi.jpg", "Meninas pintando cerâmica no aniversário", "center 50%")}<figcaption>Momento só delas</figcaption></figure>
       <figure>{img("pinturatacameninas.jpg", "Meninas pintando juntas", "center 30%")}<figcaption>Mão na massa</figcaption></figure>
       <figure>{img("macaron-risada.jpg", "Amigas rindo na experiência", "center 30%")}<figcaption>Muita risada</figcaption></figure>
       <figure>{img("pintura-grupo.jpg", "Turma reunida criando", "center 40%")}<figcaption>Turma reunida</figcaption></figure>
@@ -182,7 +184,26 @@ emo = f'''
     {foot("A vibe da experiência")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + intro + emo + vitrine_a + vitrine_b + proximos + '\n\n</div>\n\n'
+prova = f'''
+  <section class="slide">
+{head_simple("Festas de verdade")}
+    <span class="eyebrow orange">◆ Como fica na prática</span>
+    <h2>A mesa posta, do <em>jeito Elarah</em></h2>
+    <p class="lead">Não é só a atividade: é a mesa montada com carinho, a decoração no clima e cada estação pronta esperando a turma. A gente chega antes, deixa tudo lindo e desmonta no fim — vocês só curtem. 🎀</p>
+    <div class="vibe">
+      <figure>{img("aniversariogi2.jpg", "Mesa de aniversário montada pela Elarah", "center 50%")}<figcaption>Mesa de aniversário</figcaption></figure>
+      <figure>{img("aniv-decor.jpg", "Decoração e clima de festa", "center 50%")}<figcaption>Decoração &amp; clima</figcaption></figure>
+      <figure>{img("mesa-montada-corp.jpg", "Mesa posta para a turma", "center 50%")}<figcaption>Mesa posta pra turma</figcaption></figure>
+    </div>
+    <div class="gstrip">
+      <figure>{img("velaniversario.jpg", "Vela lembrancinha make a wish", "center 50%")}<figcaption>Lembrancinha que fica</figcaption></figure>
+      <figure>{img("vibe-mesa-corp.jpg", "Estações prontas com material", "center 50%")}<figcaption>Estações prontas</figcaption></figure>
+      <figure>{img("ceramicacool.jpg", "Peças de cerâmica prontas pra levar", "center 50%")}<figcaption>Peças que elas levam</figcaption></figure>
+    </div>
+    {foot("Festas de verdade")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + intro + emo + prova + vitrine_a + vitrine_b + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-portfolio-aniversario.html"
 open(out, "w", encoding="utf-8").write(html)
