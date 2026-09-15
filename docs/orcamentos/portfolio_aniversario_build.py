@@ -163,7 +163,26 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + intro + vitrine_a + vitrine_b + proximos + '\n\n</div>\n\n'
+emo = f'''
+  <section class="slide">
+{head_simple("A vibe")}
+    <span class="eyebrow orange">◆ O que elas vão levar no coração</span>
+    <h2>Amigas, risada e <em>memória</em></h2>
+    <p class="lead">No fim, o que fica não é só a lembrancinha — é a tarde inteira de risada, mão na massa e foto boa. É a festa que elas vão lembrar por muito tempo. 💛</p>
+    <div class="vibe">
+      <figure>{img("encontro-1.jpg", "Amigas rindo juntas", "center 30%")}<figcaption>Risada garantida</figcaption></figure>
+      <figure>{img("hidrateimeninas.jpg", "Meninas curtindo a experiência juntas", "center 30%")}<figcaption>Juntas, do começo ao fim</figcaption></figure>
+      <figure>{img("vibe-risada.jpg", "Amigas se divertindo na oficina", "center 30%")}<figcaption>Momento só delas</figcaption></figure>
+    </div>
+    <div class="gstrip">
+      <figure>{img("pinturatacameninas.jpg", "Meninas pintando juntas", "center 30%")}<figcaption>Mão na massa</figcaption></figure>
+      <figure>{img("macaron-risada.jpg", "Amigas rindo na experiência", "center 30%")}<figcaption>Muita risada</figcaption></figure>
+      <figure>{img("pintura-grupo.jpg", "Turma reunida criando", "center 40%")}<figcaption>Turma reunida</figcaption></figure>
+    </div>
+    {foot("A vibe da experiência")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + intro + emo + vitrine_a + vitrine_b + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-portfolio-aniversario.html"
 open(out, "w", encoding="utf-8").write(html)
