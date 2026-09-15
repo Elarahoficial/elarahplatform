@@ -22525,6 +22525,57 @@
         await _recurrenceToggleSlot(slotId, targetActive);
       });
     });
+
+    // Wire edição de vagas por data (turma fechada por fora, cortesia,
+    // grupo maior num dia específico etc.). O botão "Salvar" só aparece
+    // depois que o admin mexe em algum dos dois campos.
+    listEl.querySelectorAll('[data-slot-vagas-row]').forEach(row => {
+      const slotId = row.dataset.slotVagasRow;
+      const inpRest = row.querySelector('[data-slot-vagas-rest]');
+      const inpTotal = row.querySelector('[data-slot-vagas-total]');
+      const saveBtn = row.querySelector('[data-slot-vagas-save]');
+      const msgEl = row.querySelector('[data-slot-vagas-msg]');
+      if (!saveBtn) return;
+
+      const markDirty = () => {
+        const dirty = (inpRest && inpRest.value !== inpRest.dataset.orig) ||
+                      (inpTotal && inpTotal.value !== inpTotal.dataset.orig);
+        saveBtn.style.display = dirty ? '' : 'none';
+        if (msgEl) msgEl.textContent = '';
+      };
+
+      const doSave = async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando…';
+        const res = await _recurrenceSaveSlotVagas(
+          slotId,
+          inpRest ? inpRest.value : '',
+          inpTotal ? inpTotal.value : ''
+        );
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Salvar';
+        if (msgEl) {
+          msgEl.style.color = res.ok ? '#1a8a4a' : '#c0392b';
+          msgEl.textContent = res.msg;
+        }
+        if (!res.ok) return;
+        saveBtn.style.display = 'none';
+        // Recarrega pra mostrar o estado real do banco (o trigger
+        // sync_slot_vagas_restantes pode ajustar os números).
+        _recurrenceInvalidateCaches();
+        const expId = document.getElementById('exp-edit-id') && document.getElementById('exp-edit-id').value;
+        if (expId) setTimeout(() => _recurrenceLoadAndRender(expId), 700);
+      };
+
+      [inpRest, inpTotal].forEach(inp => {
+        if (!inp) return;
+        inp.addEventListener('input', markDirty);
+        inp.addEventListener('keydown', ev => {
+          if (ev.key === 'Enter') { ev.preventDefault(); doSave(); }
+        });
+      });
+      saveBtn.addEventListener('click', doSave);
+    });
   }
 
   function _recurrenceSlotRow(slot, rule) {
@@ -22533,9 +22584,13 @@
       ? evt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', weekday: 'short' })
       : (slot.data || '—');
     const horarioLabel = slot.horario || '—';
-    const vagasRest = Number(slot.vagas_restantes);
-    const vagasTot = Number(slot.vagas_total);
-    const reservadas = (isFinite(vagasRest) && isFinite(vagasTot)) ? Math.max(0, vagasTot - vagasRest) : null;
+    // null = vagas ilimitadas. Number(null) é 0, então o check tem que
+    // ser explícito — senão slot sem limite aparece como "0 vagas".
+    const vagasRest = slot.vagas_restantes == null ? null : Number(slot.vagas_restantes);
+    const vagasTot = slot.vagas_total == null ? null : Number(slot.vagas_total);
+    const hasRest = vagasRest !== null && isFinite(vagasRest);
+    const hasTot = vagasTot !== null && isFinite(vagasTot);
+    const reservadas = (hasRest && hasTot) ? Math.max(0, vagasTot - vagasRest) : null;
     const isActive = slot.is_active !== false;
 
     const ruleHint = rule ? ('Regra: ' + _recurrenceWeekdayLabel(rule.weekday) + ' ' + (rule.horario_label || '')) : '';
@@ -22544,11 +22599,27 @@
       ? '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#e6f4ea;color:#1a8a4a;font-size:.7rem;font-weight:700;">ATIVA</span>'
       : '<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#fdecea;color:#9c2f22;font-size:.7rem;font-weight:700;">CANCELADA</span>';
 
-    const vagasInfo = (reservadas !== null)
-      ? (reservadas > 0
-          ? '<span style="color:#a4663b;font-weight:600;">' + reservadas + ' reserva' + (reservadas === 1 ? '' : 's') + '</span> · ' + vagasRest + '/' + vagasTot + ' vagas'
-          : vagasRest + '/' + vagasTot + ' vagas livres')
-      : (isFinite(vagasRest) ? vagasRest + ' vagas' : 'vagas indef.');
+    // Editor inline de vagas: o admin ajusta as vagas livres dessa data
+    // específica (ex.: fechou 3 lugares por fora do site) sem mexer na
+    // regra nem nas outras datas. "de X" edita o total daquela data.
+    // Total vazio = ilimitado.
+    const restAttr = hasRest ? String(vagasRest) : '';
+    const totAttr = hasTot ? String(vagasTot) : '';
+    const inpStyle = 'width:52px;padding:3px 5px;border:1px solid #ddd;border-radius:5px;font-size:.76rem;font-family:inherit;color:#1a1a1a;text-align:center;';
+    const reservadasInfo = (reservadas !== null && reservadas > 0)
+      ? '<span style="color:#a4663b;font-weight:600;">' + reservadas + ' reserva' + (reservadas === 1 ? '' : 's') + '</span>'
+      : '';
+
+    const vagasEditor =
+      '<div data-slot-vagas-row="' + _recurrenceEsc(slot.id) + '" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:.74rem;color:#888;">' +
+        '<span>Vagas livres</span>' +
+        '<input type="number" min="0" step="1" data-slot-vagas-rest data-orig="' + _recurrenceEsc(restAttr) + '" value="' + _recurrenceEsc(restAttr) + '" title="Vagas ainda disponíveis nessa data" style="' + inpStyle + '">' +
+        '<span>de</span>' +
+        '<input type="number" min="0" step="1" data-slot-vagas-total data-orig="' + _recurrenceEsc(totAttr) + '" value="' + _recurrenceEsc(totAttr) + '" placeholder="∞" title="Total de vagas dessa data (vazio = ilimitado)" style="' + inpStyle + '">' +
+        '<button type="button" data-slot-vagas-save style="display:none;padding:3px 9px;background:#a4663b;border:1px solid #a4663b;color:#fff;border-radius:5px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;">Salvar</button>' +
+        '<span data-slot-vagas-msg style="font-size:.72rem;"></span>' +
+        (reservadasInfo ? '<span style="color:#ccc;">·</span>' + reservadasInfo : '') +
+      '</div>';
 
     const toggleBtn = isActive
       ? '<button type="button" data-slot-toggle="' + _recurrenceEsc(slot.id) + '" data-slot-target-active="0" title="Cancelar essa data específica (mantém regra ativa). Não volta depois." style="padding:5px 10px;background:#fff;border:1px solid #c0392b;color:#c0392b;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancelar data</button>'
@@ -22557,10 +22628,67 @@
     return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #eee;border-radius:8px;flex-wrap:wrap;">' +
       '<div style="display:flex;flex-direction:column;gap:2px;">' +
         '<div style="font-size:.88rem;color:#1a1a1a;font-weight:600;">' + _recurrenceEsc(dataLabel) + ' · ' + _recurrenceEsc(horarioLabel) + ' ' + statusBadge + '</div>' +
-        '<div style="font-size:.74rem;color:#888;">' + _recurrenceEsc(vagasInfo) + (ruleHint ? ' · <em>' + _recurrenceEsc(ruleHint) + '</em>' : '') + '</div>' +
+        vagasEditor +
+        (ruleHint ? '<div style="font-size:.72rem;color:#aaa;"><em>' + _recurrenceEsc(ruleHint) + '</em></div>' : '') +
       '</div>' +
       toggleBtn +
     '</div>';
+  }
+
+  // Salva vagas de 1 data específica (slot). Usado quando a turma
+  // daquele dia foge do padrão da regra — alguém fechou lugares por
+  // fora do site, cortesia, grupo maior etc.
+  //
+  // ATENÇÃO ao trigger sync_slot_vagas_restantes: quando vagas_total
+  // muda no UPDATE, ele reescreve vagas_restantes pelo delta. Por isso
+  // salvamos em 2 passos — primeiro o total, depois as vagas livres —
+  // senão o número digitado pelo admin seria sobrescrito.
+  async function _recurrenceSaveSlotVagas(slotId, restStr, totalStr) {
+    const sb = window.supabaseClient;
+    if (!sb) return { ok: false, msg: 'Supabase indisponível' };
+
+    const restRaw = String(restStr == null ? '' : restStr).trim();
+    const totalRaw = String(totalStr == null ? '' : totalStr).trim();
+    const restNum = restRaw === '' ? null : Math.floor(Number(restRaw));
+    const totalNum = totalRaw === '' ? null : Math.floor(Number(totalRaw));
+
+    if (totalNum !== null && (!isFinite(totalNum) || totalNum < 0)) {
+      return { ok: false, msg: 'Total inválido' };
+    }
+    if (restNum !== null && (!isFinite(restNum) || restNum < 0)) {
+      return { ok: false, msg: 'Vagas livres inválidas' };
+    }
+    if (totalNum !== null && restNum !== null && restNum > totalNum) {
+      return { ok: false, msg: 'Livres não pode passar do total' };
+    }
+
+    // Estado atual do banco (pode ter mudado desde o render)
+    const { data: cur, error: errCur } = await sb.from('experience_slots')
+      .select('vagas_total, vagas_restantes')
+      .eq('id', slotId)
+      .maybeSingle();
+    if (errCur) return { ok: false, msg: 'Erro: ' + (errCur.message || errCur.code) };
+    const curTotal = (cur && cur.vagas_total != null) ? Number(cur.vagas_total) : null;
+
+    // Passo 1 — total (só se mudou)
+    if (totalNum !== curTotal) {
+      const { error } = await sb.from('experience_slots')
+        .update({ vagas_total: totalNum })
+        .eq('id', slotId);
+      if (error) return { ok: false, msg: 'Erro: ' + (error.message || error.code) };
+    }
+
+    // Passo 2 — vagas livres. Total null = ilimitado: o trigger já
+    // zerou restantes, nada mais a fazer.
+    if (totalNum !== null) {
+      const finalRest = restNum === null ? totalNum : restNum;
+      const { error } = await sb.from('experience_slots')
+        .update({ vagas_restantes: finalRest })
+        .eq('id', slotId);
+      if (error) return { ok: false, msg: 'Erro: ' + (error.message || error.code) };
+    }
+
+    return { ok: true, msg: '✓ salvo' };
   }
 
   // Cancelar/reativar 1 slot específico (exceção).
