@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 126;
+      var EXPECTED = 127;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -80,6 +80,17 @@
           <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
         </svg>
         <span>O que fazer hoje</span>
+      </button>
+
+      <!-- Feedbacks: o que as clientes responderam no link de avaliação
+           enviado depois de cada experiência (nota + comentário). Mora
+           em "Hoje" porque é a leitura diária de onde melhorar. -->
+      <button class="admin__nav-item" data-panel="feedbacks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 20.5l1.5-4.2A8.4 8.4 0 0 1 3.6 12a8.4 8.4 0 0 1 8.4-8.4h.5a8.4 8.4 0 0 1 8.5 7.9z"/>
+          <path d="m12 8 1.1 2.3 2.4.3-1.8 1.7.5 2.4-2.2-1.2-2.2 1.2.5-2.4-1.8-1.7 2.4-.3z"/>
+        </svg>
+        <span>Feedbacks</span>
       </button>
 
       <div class="admin__nav-group">Vendas</div>
@@ -291,7 +302,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.79 · 2026-09-14 (cronograma de volta + calendário set-out)
+        Admin v.80 · 2026-09-15 (nova aba Feedbacks)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1834,6 +1845,26 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ===== FEEDBACKS (avaliações pós-experiência) ===== -->
+    <!-- Conteúdo inteiro renderizado por admin-feedbacks.js em
+         #feedbacks-root: números, rankings e comentários mudam com os
+         filtros, então marcação estática aqui só atrapalharia. -->
+    <div class="admin__panel" id="panel-feedbacks">
+      <div class="admin__header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Feedbacks</h1>
+          <p class="admin__page-subtitle">
+            Tudo que voltou do link de avaliação enviado depois de cada experiência:
+            quantos pedidos saíram, quantos viraram resposta, a nota média e
+            <strong>todos os comentários</strong> — filtráveis por nota, categoria,
+            parceiro, experiência e período.
+          </p>
+        </div>
+        <button id="fb-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+      </div>
+      <div id="feedbacks-root"></div>
     </div>
 
     <!-- ===== PÓS-COMPRA (follow-up pós-evento) ===== -->
@@ -4539,9 +4570,10 @@
 <script src="admin-prospect-finder.js?v=1"></script>
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=5"></script>
+<script src="admin-feedbacks.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=227"></script>
+<script src="admin.js?v=228"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
