@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 127;
+      var EXPECTED = 128;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -302,7 +302,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.80 · 2026-09-15 (nova aba Feedbacks)
+        Admin v.81 · 2026-09-15 (Feedbacks: ocultar avaliação do site)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4570,7 +4570,7 @@
 <script src="admin-prospect-finder.js?v=1"></script>
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=5"></script>
-<script src="admin-feedbacks.js?v=1"></script>
+<script src="admin-feedbacks.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=228"></script>
