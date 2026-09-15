@@ -185,8 +185,23 @@
     }
     .afa__all:hover { border-color: var(--elarah-orange); color: var(--elarah-orange-d); }
 
-    .afa__foot { text-align: center; margin-top: 30px; font-size: .78rem; color: var(--afa-muted); line-height: 1.7; }
+    .afa__foot { text-align: center; margin-top: 26px; font-size: .78rem; color: var(--afa-muted); line-height: 1.7; }
     .afa__foot a { color: var(--afa-muted); }
+
+    /* Canal de atendimento da Elarah (reserva, pagamento, remarcação).
+       Fica no rodapé pra não disputar com o contato do parceiro lá em
+       cima nem com o botão de reservar. */
+    .afa__help {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 26px; padding: 13px 16px; border-radius: 14px;
+      background: #fff; border: 1px solid var(--afa-line);
+      text-decoration: none; color: var(--afa-muted); font-size: .84rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: .2s ease;
+    }
+    .afa__help:hover { border-color: var(--elarah-orange); color: var(--elarah-orange-d); }
+    .afa__help svg { width: 16px; height: 16px; flex: none; color: var(--elarah-orange); }
+    .afa__help strong { color: var(--afa-ink); font-weight: 700; white-space: nowrap; }
+    .afa__help:hover strong { color: var(--elarah-orange-d); }
 
     /* No celular o botao vira barra de largura total embaixo do card:
        sobra largura pro nome e o preco para de quebrar no meio. */
@@ -228,6 +243,15 @@
     <p class="afa__msg" id="afa-empty" hidden></p>
 
     <a class="afa__all" href="index.html">Ver todas as experiências da Elarah →</a>
+
+    <a class="afa__help"
+       href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Vim%20pela%20p%C3%A1gina%20do%20Ateli%C3%AA%20Flor%20de%20Arte%20e%20queria%20ajuda%20com%20uma%20reserva."
+       target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.2-5.2A8.5 8.5 0 1 1 21 11.5z"></path>
+      </svg>
+      Fale com a Elarah · <strong>(11)&nbsp;91445-5930</strong>
+    </a>
 
     <footer class="afa__foot">
       Reservas, pagamento e confirmação pela <a href="index.html">Elarah</a>.<br>
