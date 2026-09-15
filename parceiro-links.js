@@ -219,13 +219,29 @@
   // ícone de imagem quebrada.
   function carregarLogo(cfg) {
     var box = document.getElementById('afa-logo');
-    if (!box || !cfg.logo) return;
-    var probe = new Image();
-    probe.onload = function () {
-      box.innerHTML = '<img src="' + esc(cfg.logo) + '" alt="' + esc(cfg.nome) + '">';
-    };
-    probe.onerror = function () { log('logo não encontrada em', cfg.logo); };
-    probe.src = cfg.logo;
+    if (!box) return;
+
+    // cfg.logo aceita um caminho ou uma lista. Testa um por um e para
+    // no primeiro que carregar — assim o arquivo pode ser subido com
+    // qualquer uma das grafias/pastas previstas sem precisar editar
+    // código. Nenhum carregou: fica o selo tipográfico do HTML.
+    var candidatos = Array.isArray(cfg.logo) ? cfg.logo.slice() : (cfg.logo ? [cfg.logo] : []);
+    if (!candidatos.length) return;
+
+    (function tentar(i) {
+      if (i >= candidatos.length) {
+        log('logo não encontrada em nenhum caminho:', candidatos);
+        return;
+      }
+      var caminho = candidatos[i];
+      var probe = new Image();
+      probe.onload = function () {
+        box.innerHTML = '<img src="' + esc(caminho) + '" alt="' + esc(cfg.nome) + '">';
+        log('logo carregada de', caminho);
+      };
+      probe.onerror = function () { tentar(i + 1); };
+      probe.src = caminho;
+    })(0);
   }
 
   function mostrarMensagem(texto) {

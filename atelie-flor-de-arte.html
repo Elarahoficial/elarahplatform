@@ -278,7 +278,19 @@
       // Escape hatch: IDs de experiências que devem entrar mesmo se o
       // campo "Fornecedor" estiver vazio/diferente no admin.
       idsExtra: [],
-      logo: 'assets/parceiros/atelie-flor-de-arte.png',
+      // Caminhos onde o logo pode estar. A página testa na ordem e usa
+      // o primeiro que existir — então dá pra subir o arquivo em
+      // assets/ ou em assets/parceiros/, em png ou jpg, sem mexer aqui.
+      // Enquanto nenhum existir, fica o selo com o nome em serifa.
+      logo: [
+        'assets/parceiros/atelie-flor-de-arte.png',
+        'assets/parceiros/atelie-flor-de-arte.jpg',
+        'assets/atelie-flor-de-arte.png',
+        'assets/atelie-flor-de-arte.jpg',
+        'assets/atelie-flor-de-arte.jpeg',
+        'assets/atelieflordearte.png',
+        'assets/atelieflordearte.jpg'
+      ],
       instagram: 'atelieflordearte',
       whatsapp: '5511970420935',
       whatsappLabel: '(11) 97042-0935',
