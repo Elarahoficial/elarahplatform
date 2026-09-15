@@ -464,6 +464,14 @@
       case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': invalidateBookings(); await renderPendingBookings(); break;
       case 'postevent':   invalidateBookings(); await renderPostEvent(); break;
+      // Aba renderizada por admin-feedbacks.js. O módulo tem cache
+      // próprio (TTL de 5min) + botão "Atualizar", então aqui é só
+      // abrir — sem force pra não repuxar o banco a cada clique.
+      case 'feedbacks':
+        if (window.ElarahFeedbacks && window.ElarahFeedbacks.run) {
+          await window.ElarahFeedbacks.run(false);
+        }
+        break;
       case 'experiences': await renderExperiences(); break;
       case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;
