@@ -128,8 +128,8 @@ vitrine_a = f'''
 {xcard("02", "Charm Bar · joia", "Criar a própria joia", "Escolhem pedrinhas e pingentes e saem com uma joia autoral.", img("joia-atelie.jpg", "Criando a própria joia no ateliê", "center 50%"))}
 {xcard("03", "Papelaria", "Cartonagem &amp; encadernação", "Montam o próprio caderninho artesanal — capa, costura e tudo.", img("cartonagem-cereja.jpg", "Cadernos de cartonagem e encadernação", "center 50%"))}
 {xcard("04", "Cerâmica", "Modelagem de cerâmica", "Mão na argila: cada uma modela a própria peça do zero.", img("ceramica-meninas.jpg", "Meninas rindo modelando cerâmica no torno", "center 30%"))}
-{xcard("05", "Crochê", "Bolsa de crochê", "Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.", img("croche.jpg", "Bolsa de crochê", "center 50%"))}
-{xcard("06", "Cerâmica", "Acessório em cerâmica", "Criam brincos, chaveiros e mimos em cerâmica pra usar e levar.", img("portaretratoceramica.jpg", "Acessório em cerâmica", "center 50%"))}
+{xcard("05", "Crochê", "Bolsa de crochê", "Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.", img("croche-bolsa.jpg", "Bolsa de crochê com alça de corrente", "center 50%"))}
+{xcard("06", "Cerâmica", "Acessório em cerâmica", "Criam colares, brincos e mimos em cerâmica pra usar e levar.", img("ceramica-acessorio.jpg", "Colar de flor em cerâmica", "center 40%"))}
     </div>
     {foot("A vitrine")}
   </section>'''
@@ -140,9 +140,9 @@ vitrine_b = f'''
     <span class="eyebrow orange">◆ E tem mais ✨</span>
     <h2>Aromas &amp; <em>arte</em></h2>
     <div class="xgrid">
-{xcard("07", "Perfumaria", "Perfume autoral", "Montam a própria fragrância, do jeitinho delas — e levam pra casa.", img("perfumes11.jpg", "Oficina de perfume autoral", "center 40%"))}
-{xcard("08", "Aromas", "Vela aromática", "Escolhem aroma e fazem a própria vela — com ou sem tema.", img("velaaromatica.jpg", "Vela aromática autoral", "center 50%"))}
-{xcard("09", "Arte têxtil", "Tufting &amp; punch", "Tapetinho ou quadrinho feito à mão com a técnica do momento.", img("tufting3.jpg", "Tufting e punch needle", "center 50%"))}
+{xcard("07", "Perfumaria", "Perfume autoral", "Montam a própria fragrância, do jeitinho delas — e levam pra casa.", img("perfumaria-oficina.jpg", "Oficina de perfume autoral", "center 40%"))}
+{xcard("08", "Aromas", "Vela aromática", "Escolhem aroma e fazem a própria vela — com ou sem tema.", img("vela-aromatica-real.jpg", "Oficina de vela aromática com flores secas", "center 40%"))}
+{xcard("09", "Arte têxtil", "Tufting &amp; punch", "Tapetinho ou quadrinho feito à mão com a técnica do momento.", img("tufting-cereja.jpg", "Tapete de tufting com cerejas", "center 50%"))}
     </div>
     <div class="bnote">◆ Essas são só algumas ideias — dá pra combinar mais de uma experiência ou criar algo temático especial pra festa. É só me contar o que a aniversariante ama. 💛</div>
     {foot("A vitrine")}
