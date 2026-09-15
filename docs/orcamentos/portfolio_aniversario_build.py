@@ -124,10 +124,10 @@ vitrine_a = f'''
     <span class="eyebrow orange">◆ Escolham a cara da festa</span>
     <h2>As <em>experiências</em></h2>
     <div class="xgrid">
-{xcard("01", "Charm Bar · bolsa", "Berloque de bolsa", "Cada uma cria o próprio charm e personaliza a bolsa — puro estilo.", img("charmbar.jpg", "Charm bar de bolsa", "center 50%"))}
-{xcard("02", "Charm Bar · joia", "Criar a própria joia", "Escolhem pedrinhas e pingentes e saem com uma joia autoral.", img("fazendojoia.jpg", "Criando a própria joia", "center 50%"))}
-{xcard("03", "Papelaria", "Cartonagem &amp; encadernação", "Montam o próprio caderninho artesanal — capa, costura e tudo.", img("foldingbook.jpg", "Cartonagem e encadernação", "center 50%"))}
-{xcard("04", "Cerâmica", "Modelagem de cerâmica", "Mão na argila: cada uma modela a própria peça do zero.", img("ceramicamodelagem.jpg", "Modelagem de cerâmica", "center 40%"))}
+{xcard("01", "Charm Bar · bolsa", "Berloque de bolsa", "Cada uma cria o próprio charm e personaliza a bolsa — puro estilo.", img("charm-bolsa.jpg", "Charm bar de bolsa personalizado", "center 50%"))}
+{xcard("02", "Charm Bar · joia", "Criar a própria joia", "Escolhem pedrinhas e pingentes e saem com uma joia autoral.", img("joia-atelie.jpg", "Criando a própria joia no ateliê", "center 50%"))}
+{xcard("03", "Papelaria", "Cartonagem &amp; encadernação", "Montam o próprio caderninho artesanal — capa, costura e tudo.", img("cartonagem-cereja.jpg", "Cadernos de cartonagem e encadernação", "center 50%"))}
+{xcard("04", "Cerâmica", "Modelagem de cerâmica", "Mão na argila: cada uma modela a própria peça do zero.", img("ceramica-meninas.jpg", "Meninas rindo modelando cerâmica no torno", "center 30%"))}
 {xcard("05", "Crochê", "Bolsa de crochê", "Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.", img("croche.jpg", "Bolsa de crochê", "center 50%"))}
 {xcard("06", "Cerâmica", "Acessório em cerâmica", "Criam brincos, chaveiros e mimos em cerâmica pra usar e levar.", img("portaretratoceramica.jpg", "Acessório em cerâmica", "center 50%"))}
     </div>
@@ -191,7 +191,7 @@ prova = f'''
     <h2>A mesa posta, do <em>jeito Elarah</em></h2>
     <p class="lead">Não é só a atividade: é a mesa montada com carinho, a decoração no clima e cada estação pronta esperando a turma. A gente chega antes, deixa tudo lindo e desmonta no fim — vocês só curtem. 🎀</p>
     <div class="egrid">
-      <figure>{img("aniversariogi2.jpg", "Mesa de aniversário montada pela Elarah", "center 50%")}<figcaption>Mesa de aniversário</figcaption></figure>
+      <figure>{img("aniversario-mesa-real.jpg", "Mesa de aniversário com oficina de cerâmica", "center 50%")}<figcaption>Mesa de aniversário</figcaption></figure>
       <figure>{img("aniv-decor.jpg", "Decoração e clima de festa", "center 50%")}<figcaption>Decoração &amp; clima</figcaption></figure>
       <figure>{img("mesa-montada-corp.jpg", "Mesa posta para a turma", "center 50%")}<figcaption>Mesa posta pra turma</figcaption></figure>
       <figure>{img("velaniversario.jpg", "Vela lembrancinha make a wish", "center 50%")}<figcaption>Lembrancinha que fica</figcaption></figure>
