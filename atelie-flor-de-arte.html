@@ -269,9 +269,12 @@
     // só este bloco (e os textos do cabeçalho acima).
     ElarahParceiroLinks.init({
       nome: 'Ateliê Flor de Arte',
-      // Termos que identificam o fornecedor no cadastro da experiência
-      // (comparação sem acento e sem maiúscula — basta UM bater).
-      match: ['flor de arte', 'flor da arte', 'atelie flor'],
+      // Nome do fornecedor exatamente como está no cadastro da
+      // experiência. A comparação ignora acento, maiúscula e espaço
+      // sobrando, mas exige o nome INTEIRO — assim um parceiro futuro
+      // de nome parecido não cai nesta página. Se o ateliê for
+      // cadastrado com mais de uma grafia, liste cada uma aqui.
+      match: ['Ateliê Flor de Arte'],
       // Escape hatch: IDs de experiências que devem entrar mesmo se o
       // campo "Fornecedor" estiver vazio/diferente no admin.
       idsExtra: [],
