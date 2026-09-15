@@ -40,6 +40,9 @@ xcss = '''
   .egrid figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:214px;border:1px solid rgba(46,31,42,.12);box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
   .egrid img{width:100%;height:100%;object-fit:cover;display:block}
   .egrid figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 13px 11px;color:#fff;font-size:12px;font-weight:600;background:linear-gradient(to top,rgba(30,20,28,.86),transparent)}
+  .xpr{position:absolute;top:9px;right:9px;background:var(--navy);color:#fff;border-radius:12px;padding:5px 11px 6px;text-align:center;line-height:1}
+  .xpr small{font-size:7px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;display:block;margin-bottom:1px}
+  .xpr b{font-family:'DM Serif Display',serif;font-size:16px;font-weight:400;display:block}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -69,9 +72,10 @@ def head_simple(kicker):
     </div>'''
 
 
-def xcard(num, cat, name, desc, photo):
+def xcard(num, cat, name, desc, photo, price, prefix=""):
+    pre = '<small>a partir de</small>' if prefix else ''
     return f'''      <div class="xcard">
-        <div class="xph"><span class="xnum">{num}</span>{photo}</div>
+        <div class="xph"><span class="xnum">{num}</span><div class="xpr">{pre}<b>{price}</b></div>{photo}</div>
         <div class="xb">
           <span class="xcat">{cat}</span>
           <h4>{name}</h4>
@@ -124,13 +128,14 @@ vitrine_a = f'''
     <span class="eyebrow orange">◆ Escolham a cara da festa</span>
     <h2>As <em>experiências</em></h2>
     <div class="xgrid">
-{xcard("01", "Charm Bar · bolsa", "Berloque de bolsa", "Cada uma cria o próprio charm e personaliza a bolsa — puro estilo.", img("charm-bolsa.jpg", "Charm bar de bolsa personalizado", "center 50%"))}
-{xcard("02", "Charm Bar · joia", "Criar a própria joia", "Escolhem pedrinhas e pingentes e saem com uma joia autoral.", img("joia-atelie.jpg", "Criando a própria joia no ateliê", "center 50%"))}
-{xcard("03", "Papelaria", "Cartonagem &amp; encadernação", "Montam o próprio caderninho artesanal — capa, costura e tudo.", img("cartonagem-cereja.jpg", "Cadernos de cartonagem e encadernação", "center 50%"))}
-{xcard("04", "Cerâmica", "Modelagem de cerâmica", "Mão na argila: cada uma modela a própria peça do zero.", img("ceramica-meninas.jpg", "Meninas rindo modelando cerâmica no torno", "center 30%"))}
-{xcard("05", "Crochê", "Bolsa de crochê", "Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.", img("croche-bolsa.jpg", "Bolsa de crochê com alça de corrente", "center 50%"))}
-{xcard("06", "Cerâmica", "Acessório em cerâmica", "Criam colares, brincos e mimos em cerâmica pra usar e levar.", img("ceramica-acessorio.jpg", "Colar de flor em cerâmica", "center 40%"))}
+{xcard("01", "Charm Bar · bolsa", "Berloque de bolsa", "Cada uma cria o próprio charm e personaliza a bolsa — puro estilo.", img("charm-bolsa.jpg", "Charm bar de bolsa personalizado", "center 50%"), "R$ 259")}
+{xcard("02", "Charm Bar · joia", "Criar a própria joia", "Escolhem pedrinhas e pingentes e saem com uma joia autoral.", img("joia-atelie.jpg", "Criando a própria joia no ateliê", "center 50%"), "R$ 599", prefix=True)}
+{xcard("03", "Papelaria", "Cartonagem &amp; encadernação", "Montam o próprio caderninho artesanal — capa, costura e tudo.", img("cartonagem-cereja.jpg", "Cadernos de cartonagem e encadernação", "center 50%"), "R$ 499")}
+{xcard("04", "Cerâmica", "Modelagem de cerâmica", "Mão na argila: cada uma modela a própria peça do zero.", img("ceramica-meninas.jpg", "Meninas rindo modelando cerâmica no torno", "center 30%"), "R$ 259")}
+{xcard("05", "Crochê", "Bolsa de crochê", "Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.", img("croche-bolsa.jpg", "Bolsa de crochê com alça de corrente", "center 50%"), "R$ 259")}
+{xcard("06", "Cerâmica", "Acessório em cerâmica", "Criam colares, brincos e mimos em cerâmica pra usar e levar.", img("ceramica-acessorio.jpg", "Colar de flor em cerâmica", "center 40%"), "R$ 259")}
     </div>
+    <p class="fineprint">✦ Valores por pessoa · condução por profissional, material e estrutura inclusos. Número final conforme o grupo e a data.</p>
     {foot("A vitrine")}
   </section>'''
 
@@ -140,11 +145,12 @@ vitrine_b = f'''
     <span class="eyebrow orange">◆ E tem mais ✨</span>
     <h2>Aromas &amp; <em>arte</em></h2>
     <div class="xgrid">
-{xcard("07", "Perfumaria", "Perfume autoral", "Montam a própria fragrância, do jeitinho delas — e levam pra casa.", img("perfumaria-oficina.jpg", "Oficina de perfume autoral", "center 40%"))}
-{xcard("08", "Aromas", "Vela aromática", "Escolhem aroma e fazem a própria vela — com ou sem tema.", img("vela-aromatica-real.jpg", "Oficina de vela aromática com flores secas", "center 40%"))}
-{xcard("09", "Arte têxtil", "Tufting &amp; punch", "Tapetinho ou quadrinho feito à mão com a técnica do momento.", img("tufting-cereja.jpg", "Tapete de tufting com cerejas", "center 50%"))}
+{xcard("07", "Perfumaria", "Perfume autoral", "Montam a própria fragrância, do jeitinho delas — e levam pra casa.", img("perfumaria-oficina.jpg", "Oficina de perfume autoral", "center 40%"), "R$ 259")}
+{xcard("08", "Aromas", "Vela aromática", "Escolhem aroma e fazem a própria vela — com ou sem tema.", img("vela-aromatica-real.jpg", "Oficina de vela aromática com flores secas", "center 40%"), "R$ 259")}
+{xcard("09", "Arte têxtil", "Tufting &amp; punch", "Tapetinho ou quadrinho à mão — 4h com todos os materiais inclusos.", img("tufting-cereja.jpg", "Tapete de tufting com cerejas", "center 50%"), "R$ 599")}
     </div>
     <div class="bnote">◆ Essas são só algumas ideias — dá pra combinar mais de uma experiência ou criar algo temático especial pra festa. É só me contar o que a aniversariante ama. 💛</div>
+    <p class="fineprint">✦ Valores por pessoa · condução por profissional, material e estrutura inclusos. Número final conforme o grupo e a data.</p>
     {foot("A vitrine")}
   </section>'''
 
