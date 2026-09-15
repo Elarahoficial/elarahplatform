@@ -190,12 +190,10 @@ prova = f'''
     <span class="eyebrow orange">◆ Como fica na prática</span>
     <h2>A mesa posta, do <em>jeito Elarah</em></h2>
     <p class="lead">Não é só a atividade: é a mesa montada com carinho, a decoração no clima e cada estação pronta esperando a turma. A gente chega antes, deixa tudo lindo e desmonta no fim — vocês só curtem. 🎀</p>
-    <div class="vibe">
+    <div class="egrid">
       <figure>{img("aniversariogi2.jpg", "Mesa de aniversário montada pela Elarah", "center 50%")}<figcaption>Mesa de aniversário</figcaption></figure>
       <figure>{img("aniv-decor.jpg", "Decoração e clima de festa", "center 50%")}<figcaption>Decoração &amp; clima</figcaption></figure>
       <figure>{img("mesa-montada-corp.jpg", "Mesa posta para a turma", "center 50%")}<figcaption>Mesa posta pra turma</figcaption></figure>
-    </div>
-    <div class="gstrip">
       <figure>{img("velaniversario.jpg", "Vela lembrancinha make a wish", "center 50%")}<figcaption>Lembrancinha que fica</figcaption></figure>
       <figure>{img("vibe-mesa-corp.jpg", "Estações prontas com material", "center 50%")}<figcaption>Estações prontas</figcaption></figure>
       <figure>{img("ceramicacool.jpg", "Peças de cerâmica prontas pra levar", "center 50%")}<figcaption>Peças que elas levam</figcaption></figure>
