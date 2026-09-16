@@ -211,18 +211,18 @@ planos = f'''
       <tbody>
         <tr><td class="pl">Inicial</td><td class="inc">A experiência escolhida + material + condução</td><td class="pr">R$ 239*</td></tr>
         <tr><td class="pl">Privativo</td><td class="inc">Inicial + espaço privado no Bake Studio, só de vocês</td><td class="pr">+ R$ 190 /pessoa</td></tr>
-        <tr><td class="pl">Completo</td><td class="inc">Privativo + decoração + lembrancinha personalizada</td><td class="pr">+ R$ 370 /pessoa</td></tr>
+        <tr><td class="pl">Completo</td><td class="inc">Privativo + decoração + lembrancinha personalizada</td><td class="pr">+ R$ 190 /pessoa **</td></tr>
       </tbody>
     </table>
     <p class="subh">Opções adicionais (pra somar a qualquer plano)</p>
     <table class="ptable">
       <tbody>
-        <tr><td class="pl" style="font-size:14.5px">Decoração temática</td><td class="pr">R$ 90 /pessoa</td></tr>
-        <tr><td class="pl" style="font-size:14.5px">Lembrancinha personalizada</td><td class="pr">R$ 90 /pessoa</td></tr>
+        <tr><td class="pl" style="font-size:14.5px">Decoração temática</td><td class="pr">R$ 790 (total)</td></tr>
+        <tr><td class="pl" style="font-size:14.5px">Lembrancinha personalizada</td><td class="pr">R$ 120 /pessoa</td></tr>
         <tr><td class="pl" style="font-size:14.5px">Registro fotográfico profissional</td><td class="pr">R$ 450 (total)</td></tr>
       </tbody>
     </table>
-    <p class="fineprint">*Bartenderia R$ 329 no plano Inicial. Valores por pessoa (exceto foto, que é valor total). Plano Completo já inclui decoração e lembrancinha. Grupo de 11 pessoas · data 19/09 e detalhes a confirmar.</p>
+    <p class="fineprint">*Bartenderia R$ 329 no plano Inicial. **Plano Completo = Privativo (+R$ 190/pessoa) + decoração (R$ 790 total) + lembrancinha (R$ 120/pessoa). Valores por pessoa, exceto decoração e foto (valores totais). Grupo de 11 pessoas · data 19/09 e detalhes a confirmar.</p>
     {foot("Os planos")}
   </section>'''
 
