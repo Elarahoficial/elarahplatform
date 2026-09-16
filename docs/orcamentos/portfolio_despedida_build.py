@@ -24,7 +24,7 @@ for a, b in reps.items():
 xcss = '''
   .xgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   .xcard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
-  .xph{height:132px;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid rgba(58,30,42,.10)}
+  .xph{height:198px;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid rgba(58,30,42,.10)}
   .xph img{width:100%;height:100%;object-fit:cover;display:block}
   .xnum{position:absolute;top:9px;left:9px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:14px;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center}
   .xb{padding:13px 15px 16px;flex:1;display:flex;flex-direction:column}
@@ -116,11 +116,11 @@ vitrine_a = f'''
     <span class="eyebrow orange">◆ Escolham a cara da despedida</span>
     <h2>As <em>experiências</em></h2>
     <div class="xgrid">
-{xcard("01", "Cerâmica", "Modelagem em cerâmica", "Mão na argila: cada uma modela a própria peça, rindo do começo ao fim.", img("ceramica-meninas.jpg", "Amigas modelando cerâmica juntas", "center 30%"))}
-{xcard("02", "Aromas", "Vela aromática", "Criam a própria vela — aroma, cor e aquele aconchego pra levar pra casa.", img("vela-aromatica-real.jpg", "Oficina de vela aromática", "center 40%"))}
-{xcard("03", "Pintura", "Pintura em taça", "Cada uma pinta a própria taça pra brindar a noite — pura diversão.", img("pinturatacameninas.jpg", "Meninas pintando taças", "center 30%"))}
+{xcard("01", "Cerâmica", "Modelagem em cerâmica", "Mão na argila: cada uma modela a própria peça, rindo do começo ao fim.", img("ceramica-meninas.jpg", "Amigas modelando cerâmica juntas", "center 50%"))}
+{xcard("02", "Aromas", "Vela aromática", "Criam a própria vela — aroma, cor e aquele aconchego pra levar pra casa.", img("vela-aromatica-real.jpg", "Oficina de vela aromática", "center 50%"))}
+{xcard("03", "Pintura", "Pintura em taça", "Cada uma pinta a própria taça pra brindar a noite — pura diversão.", img("pinturatacameninas.jpg", "Meninas pintando taças", "center 35%"))}
 {xcard("04", "Floral", "Buquê de flores", "Montam o próprio buquê autoral enquanto conversam — leve e lindo.", img("buque.jpg", "Buquê de flores autoral", "center 40%"))}
-{xcard("05", "Drinks", "Bartenderia", "Aprendem a fazer drinks autorais com um bartender — e o brinde é garantido.", img("drinksclassicos.jpg", "Experiência de bartenderia", "center 50%"), price="R$ 329")}
+{xcard("05", "Drinks", "Bartenderia", "Aprendem a fazer drinks autorais com um bartender — e o brinde é garantido.", img("drinksmoleculares.jpg", "Drink autoral rosé numa experiência de bartenderia", "center 50%"), price="R$ 329")}
 {xcard("06", "Cerâmica", "Joia em cerâmica", "Criam uma joia autoral em cerâmica pra usar e lembrar do dia.", img("ceramica-acessorio.jpg", "Joia de cerâmica autoral", "center 40%"))}
     </div>
     {foot("As experiências")}
