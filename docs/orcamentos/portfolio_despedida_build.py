@@ -33,6 +33,16 @@ xcss = '''
   .xb p{font-size:10.5px;color:var(--muted);line-height:1.42;margin-top:6px}
   .xpr{position:absolute;top:9px;right:9px;background:var(--navy);color:#fff;border-radius:12px;padding:6px 12px;text-align:center;line-height:1}
   .xpr b{font-family:'DM Serif Display',serif;font-size:16px;font-weight:400}
+  .ptable{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px -22px rgba(0,0,0,.3)}
+  .ptable th{background:var(--navy);color:#fff;text-align:left;padding:10px 16px;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700}
+  .ptable th.r{text-align:right}
+  .ptable td{padding:11px 16px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:middle}
+  .ptable tr:last-child td{border-bottom:none}
+  .ptable tr:nth-child(even) td{background:#FBF1F2}
+  .ptable td.pl{font-family:'DM Serif Display',serif;font-size:16.5px;color:var(--navy);white-space:nowrap}
+  .ptable td.inc{font-size:11.5px;color:var(--muted);line-height:1.35}
+  .ptable td.pr{text-align:right;font-family:'DM Serif Display',serif;font-size:16px;color:var(--orange-dark);white-space:nowrap}
+  .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:22px 0 0}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -162,7 +172,61 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + emo + vitrine_a + vitrine_b + proximos + '\n\n</div>\n\n'
+bake = f'''
+  <section class="slide">
+{head_simple("O espaço")}
+    <span class="eyebrow orange">◆ O espaço em destaque</span>
+    <h2>Bake <em>Studio</em></h2>
+    <p class="lead">Um estúdio charmoso <strong>só do grupo de vocês</strong>, com sala, cozinha e liberdade total pra decorar, brindar e receber foto profissional. O cenário perfeito pra uma despedida criativa e sem consumação mínima. 🥂</p>
+    <div class="bfeat">
+      <div class="bphoto">{img("espaco1.jpg", "Sala e lounge do Bake Studio", "center 50%")}</div>
+      <div class="bbody">
+        <span class="btag">Bake Studio · exclusivo</span>
+        <h3>Um estúdio só de vocês</h3>
+        <ul class="feat">
+          <li><span class="st">✦</span><b>Espaço privado</b> — sem dividir com ninguém, sem consumação mínima.</li>
+          <li><span class="st">✦</span><b>Sala + cozinha</b> equipadas pra experiência e pro brinde.</li>
+          <li><span class="st">✦</span><b>Liberdade pra decorar</b> e deixar tudo com a cara da despedida.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="gstrip">
+      <figure>{img("espaço2.jpg", "Cozinha equipada do Bake Studio", "center 50%")}<figcaption>Cozinha equipada</figcaption></figure>
+      <figure>{img("espaço.jpg", "Mesa da experiência no Bake Studio", "center 50%")}<figcaption>Mesa pra criar</figcaption></figure>
+      <figure>{img("mesa-montada-corp.jpg", "Mesa posta e decorada", "center 50%")}<figcaption>Tudo montado</figcaption></figure>
+    </div>
+    {foot("O espaço · Bake Studio")}
+  </section>'''
+
+planos = f'''
+  <section class="slide">
+{head_simple("Os planos")}
+    <span class="eyebrow orange">◆ Monte a despedida completa</span>
+    <h2>Escolham o <em>plano</em></h2>
+    <p class="lead">Os valores das experiências são o plano <strong>Inicial</strong>. Dá pra subir pro <strong>espaço privado</strong> no Bake Studio e deixar tudo completo com decoração e lembrancinha. 🥂</p>
+    <table class="ptable">
+      <thead>
+        <tr><th>Plano</th><th>O que inclui</th><th class="r">Valor</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="pl">Inicial</td><td class="inc">A experiência escolhida + material + condução</td><td class="pr">R$ 239*</td></tr>
+        <tr><td class="pl">Privativo</td><td class="inc">Inicial + espaço privado no Bake Studio, só de vocês</td><td class="pr">+ R$ 190 /pessoa</td></tr>
+        <tr><td class="pl">Completo</td><td class="inc">Privativo + decoração + lembrancinha personalizada</td><td class="pr">+ R$ 370 /pessoa</td></tr>
+      </tbody>
+    </table>
+    <p class="subh">Opções adicionais (pra somar a qualquer plano)</p>
+    <table class="ptable">
+      <tbody>
+        <tr><td class="pl" style="font-size:14.5px">Decoração temática</td><td class="pr">R$ 90 /pessoa</td></tr>
+        <tr><td class="pl" style="font-size:14.5px">Lembrancinha personalizada</td><td class="pr">R$ 90 /pessoa</td></tr>
+        <tr><td class="pl" style="font-size:14.5px">Registro fotográfico profissional</td><td class="pr">R$ 450 (total)</td></tr>
+      </tbody>
+    </table>
+    <p class="fineprint">*Bartenderia R$ 329 no plano Inicial. Valores por pessoa (exceto foto, que é valor total). Plano Completo já inclui decoração e lembrancinha. Grupo de 11 pessoas · data 19/09 e detalhes a confirmar.</p>
+    {foot("Os planos")}
+  </section>'''
+
+deck = '<div class="deck">\n' + cover + emo + vitrine_a + vitrine_b + bake + planos + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-portfolio-despedida.html"
 open(out, "w", encoding="utf-8").write(html)
