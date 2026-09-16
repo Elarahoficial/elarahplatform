@@ -92,10 +92,21 @@
     </div>
 
     <a href="/" class="checkout-result__btn">Voltar para a Elarah</a>
-  </div><script src="supabase-loader.js?v=11"></script>
+  </div>
+
+  <!-- ===== PERFIL DE GOSTO =====
+       Esta é a tela de maior boa vontade do funil inteiro: a pessoa
+       acabou de pagar, está feliz e não tem mais nada pra fazer nesta
+       aba. É a única hora em que ela responde algo sem ganhar nada
+       em troca a não ser a promessa de receber coisa boa depois.
+       O widget salva a cada toque e some sozinho se ela já respondeu.
+       Preenchido com e-mail/telefone/nome da reserva — a pessoa não
+       redigita nada. -->
+  <div id="perfil-gosto"></div><script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
   <script src="auth.js?v=12"></script>
   <script src="analytics.js?v=3"></script>
+  <script src="taste-capture.js?v=1"></script>
   <script>
     (async function () {
       const params = new URLSearchParams(window.location.search);
@@ -104,6 +115,35 @@
       const isDirect  = params.get('direct') === '1';
       const directBookingId = params.get('booking_id');
       const detailsEl = document.getElementById('result-details');
+
+      // Sobe o widget de perfil de gosto com o que a reserva já sabe
+      // sobre a pessoa. Chamado nos três caminhos de sucesso (gift
+      // card, PIX/cartão direto e Stripe) — quem compra presente é
+      // prospect tão bom quanto quem compra pra si.
+      // Nunca deixa um erro daqui atrapalhar a confirmação: tudo
+      // dentro de try, e o mount() já é à prova de falha por dentro.
+      function montarPerfilGosto(booking) {
+        try {
+          if (!window.ElarahTaste) return;
+          const b = booking || {};
+          window.ElarahTaste.mount({
+            container: '#perfil-gosto',
+            origem: 'pos_compra',
+            eyebrow: 'Antes de você fechar',
+            email: b.email || null,
+            telefone: b.telefone || null,
+            nome: b.nome || null,
+            bookingId: b.id || null,
+            userId: b.user_id || null,
+            steps: ['tags', 'companhia', 'whatsapp'],
+            metadata: {
+              experiencia: b.experiencia_nome || null,
+              experiencia_id: b.experiencia_id || null,
+              fluxo: isGift ? 'gift_card' : (isDirect ? 'pix_direct' : 'stripe_session'),
+            },
+          });
+        } catch (_) {}
+      }
 
       // Espera o cliente Supabase terminar de carregar (ele é criado de
       // forma assíncrona pelo supabase-loader). Antes a página lia
@@ -140,6 +180,7 @@
         if (titleEl) titleEl.textContent = 'Gift card a caminho!';
         if (subEl) subEl.textContent = 'Recebemos seu pagamento e o código foi enviado por e-mail para o presenteado. Você também recebeu uma cópia.';
         if (detailsEl) detailsEl.innerHTML = '<p>Quem você presenteou já pode usar o código no checkout de qualquer experiência. ✨</p>';
+        montarPerfilGosto(null);
         return;
       }
 
@@ -151,9 +192,11 @@
         const subEl   = document.querySelector('.checkout-result__subtitle');
         if (titleEl) titleEl.textContent = 'Reserva confirmada!';
         if (subEl) subEl.textContent = 'Recebemos seu pagamento. Em instantes você recebe os detalhes por e-mail.';
+        let bookingDireto = null;
         if (detailsEl && directBookingId && supa) {
           const { data } = await supa
             .from('bookings').select('*').eq('id', directBookingId).maybeSingle();
+          bookingDireto = data || null;
           if (data) {
             const meta = (data.metadata || {});
             const isPaid = data.status === 'pago';
@@ -184,6 +227,7 @@
             });
           }
         } catch {}
+        montarPerfilGosto(bookingDireto);
         return;
       }
 
@@ -198,6 +242,7 @@
 
       if (!sessionId || !supa) {
         detailsEl.innerHTML = '<p>Não conseguimos carregar os detalhes agora, mas seu pagamento está em processamento.</p>';
+        montarPerfilGosto(null);
         return;
       }
 
@@ -219,6 +264,9 @@
 
       if (!booking) {
         detailsEl.innerHTML = '<p>Pagamento recebido. Em instantes seu e-mail terá os detalhes da reserva.</p>';
+        // Sem o booking não dá pra pré-preencher, mas o gosto da
+        // pessoa vale igual — ela digita o WhatsApp no último passo.
+        montarPerfilGosto(null);
         return;
       }
 
@@ -232,6 +280,8 @@
         (booking.horario ? '<p><strong>Horário:</strong> ' + booking.horario + '</p>' : '') +
         (booking.email ? '<p><strong>E-mail:</strong> ' + booking.email + '</p>' : '') +
         '<p><strong>Status:</strong> ' + statusLabel + '</p>';
+
+      montarPerfilGosto(booking);
     })();
   </script>
 </body>

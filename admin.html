@@ -93,6 +93,17 @@
         <span>Feedbacks</span>
       </button>
 
+      <!-- Perfil de gosto: responde "pra quem eu mando esta
+           experiência?". Fica em "Hoje" porque é a aba que se abre
+           toda vez que sobe experiência nova, antes de disparar
+           qualquer mensagem. -->
+      <button class="admin__nav-item" data-panel="perfil-gosto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>
+        </svg>
+        <span>Perfil de gosto</span>
+      </button>
+
       <div class="admin__nav-group">Vendas</div>
 
       <button class="admin__nav-item" data-panel="purchases">
@@ -1865,6 +1876,27 @@
         <button id="fb-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
       </div>
       <div id="feedbacks-root"></div>
+    </div>
+
+    <!-- ===== PERFIL DE GOSTO (quem quer o quê) ===== -->
+    <!-- Conteúdo inteiro renderizado por admin-perfil-gosto.js em
+         #perfil-gosto-root. Depende da migração
+         sql/elarah_perfil_gosto.sql — se ela não tiver rodado, o
+         próprio painel avisa qual arquivo rodar. -->
+    <div class="admin__panel" id="panel-perfil-gosto">
+      <div class="admin__header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Perfil de gosto</h1>
+          <p class="admin__page-subtitle">
+            Quem quer o quê — e <strong>pra quem mandar cada experiência</strong>.
+            Junta o que as clientes marcaram na tela pós-compra com o que elas
+            olharam e compraram no site, e devolve a lista ranqueada de quem
+            tem mais chance de comprar, com o WhatsApp já escrito.
+          </p>
+        </div>
+        <button id="pg-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+      </div>
+      <div id="perfil-gosto-root"></div>
     </div>
 
     <!-- ===== PÓS-COMPRA (follow-up pós-evento) ===== -->
@@ -4571,6 +4603,7 @@
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=5"></script>
 <script src="admin-feedbacks.js?v=2"></script>
+<script src="admin-perfil-gosto.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin.js?v=228"></script>

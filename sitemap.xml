@@ -17,6 +17,14 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- ===== Quiz "combina comigo" (captação) ===== -->
+  <url>
+    <loc>https://elarah.com.br/combina-comigo.html</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- ===== Descoberta / catálogo ===== -->
   <url>
     <loc>https://elarah.com.br/categoria.html</loc>

@@ -472,6 +472,13 @@
           await window.ElarahFeedbacks.run(false);
         }
         break;
+      // Idem: admin-perfil-gosto.js tem cache próprio + botão
+      // "Atualizar", então abrir a aba não força recarga.
+      case 'perfil-gosto':
+        if (window.ElarahPerfilGosto && window.ElarahPerfilGosto.run) {
+          await window.ElarahPerfilGosto.run(false);
+        }
+        break;
       case 'experiences': await renderExperiences(); break;
       case 'experiencias-foco': await renderExperienciasFoco(); break;
       case 'byelarah':    await renderByElarah(); break;

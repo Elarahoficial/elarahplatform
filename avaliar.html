@@ -54,8 +54,19 @@
         </div>
       </div>
     </div>
+
+    <!-- ===== PERFIL DE GOSTO =====
+         Só aparece DEPOIS que a avaliação foi enviada, nunca antes.
+         Antes ele competiria com a avaliação e derrubaria as duas
+         taxas. Depois, o pedido já foi atendido, a guarda está baixa
+         e a pergunta muda de natureza: deixa de ser favor
+         ("avalie a gente") e vira serviço ("o que você quer viver
+         agora?"). Quem chega aqui é a cliente mais engajada que
+         existe — é o melhor dado da base. -->
+    <div id="perfil-gosto" class="hide"></div>
   </div>
 
+  <script src="taste-capture.js?v=1"></script>
   <script>
     (function () {
       var FN = 'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/reviews';
@@ -102,6 +113,29 @@
             document.getElementById('done-title').textContent = 'Você já tinha avaliado 🧡';
             document.getElementById('done-sub').textContent = 'Obrigado de novo! A gente se vê na próxima.';
           }
+          // Esta página roda sem sessão, então de propósito NÃO recebe
+          // o e-mail/telefone da cliente — só o booking_id, que já
+          // está na URL. A view taste_profiles faz o join com
+          // bookings e identifica a pessoa do lado do banco. Os
+          // campos abaixo só são usados se a Edge Function um dia
+          // passar a devolvê-los; hoje vêm undefined e não faz falta.
+          try {
+            if (window.ElarahTaste) {
+              var alvo = document.getElementById('perfil-gosto');
+              alvo.classList.remove('hide');
+              window.ElarahTaste.mount({
+                container: '#perfil-gosto',
+                origem: 'avaliacao',
+                eyebrow: 'Já que você está aqui',
+                email: data.email || null,
+                telefone: data.telefone || null,
+                nome: data.nome || null,
+                bookingId: bookingId || null,
+                steps: ['tags', 'companhia', 'whatsapp'],
+                metadata: { nota: nota }
+              });
+            }
+          } catch (e) {}
         } catch (e) {
           msg.textContent = 'Ops: ' + (e.message || e); msg.style.color = '#b3261e'; btn.disabled = false;
         }
