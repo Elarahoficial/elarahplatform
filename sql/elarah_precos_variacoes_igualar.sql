@@ -2,7 +2,10 @@
 -- ELARAH — Passo 1b: variações acompanham o valor cheio
 -- -------------------------------------------------------------
 -- COMPLEMENTO OBRIGATÓRIO de sql/elarah_precos_igualar_valor_cheio.sql.
--- Rode DEPOIS dele. Sozinho, não faz nada (depende do log).
+-- ORDEM: passo 1 (igualar) → passo 1a (arredondar) → este.
+-- Sozinho não faz nada: depende do experiences_preco_cheio_log.
+-- A variação recebe o preço BASE ATUAL, então já herda o
+-- arredondamento pra real cheio feito no passo 1a.
 --
 -- O PROBLEMA QUE ESTE ARQUIVO RESOLVE
 -- O passo 1 subiu experiences.preco para o valor cheio, mas o preço
@@ -79,7 +82,14 @@ with base_log as (
 ),
 alvo as (
   select
-    e.id, e.nome, e.variant_items as antes, l.base_antigo, l.base_novo,
+    e.id, e.nome, e.variant_items as antes,
+    l.base_antigo,
+    -- DESTINO = o preço base ATUAL da experiência, não o cheio bruto do
+    -- log. Assim a variação herda qualquer ajuste posterior ao passo 1 —
+    -- em especial o arredondamento pra real cheio do passo 1a (Duo Maré
+    -- vira R$ 177, não R$ 176,67). Se o arredondamento não tiver rodado,
+    -- o preço atual É o cheio e o resultado é idêntico.
+    public._elarah_preco_para_centavos(e.preco)      as base_novo,
     -- Reconstrói o array preservando ordem e todas as outras chaves
     -- (nome, imagem...). Só o campo "preco" é reescrito, e só quando
     -- o valor parseado bate exatamente com o base antigo.
@@ -87,8 +97,7 @@ alvo as (
       select jsonb_agg(
                case
                  when public._elarah_preco_para_centavos(v->>'preco') = l.base_antigo
-                 then jsonb_set(v, '{preco}',
-                        to_jsonb(public._elarah_centavos_para_preco(l.base_novo)))
+                 then jsonb_set(v, '{preco}', to_jsonb(e.preco))
                  else v
                end
                order by ord
@@ -97,7 +106,8 @@ alvo as (
     ) as depois
   from public.experiences e
   join base_log l on l.experience_id = e.id
-  where e.variant_items is not null
+  where public._elarah_preco_para_centavos(e.preco) is not null
+    and e.variant_items is not null
     and jsonb_typeof(e.variant_items) = 'array'
     and jsonb_array_length(e.variant_items) > 0
     and exists (
