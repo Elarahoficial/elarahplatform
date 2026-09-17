@@ -967,6 +967,17 @@ async function run() {
       JSON.stringify(header));
     check("o corpo continua com os 5 parâmetros", cOn.params.length === 5);
 
+    // (a2) foto em formato que a Meta recusa → cai no logo, mas a mensagem SAI
+    const WAwebp = await loadWA({ ...META_ENV, META_TEMPLATE_INSCRICOES_IMAGEM: "true" });
+    const zWebp = installMetaMock();
+    await runAvisoDeData(WAwebp, makeSupabase([], seed), {
+      ...onda, id: "onda-webp", imagem: "https://elarah.com.br/assets/foto.webp",
+    });
+    const hWebp = (zWebp.calls[0].components || []).find((c) => c.type === "header");
+    check("foto .webp (recusada pela Meta) → mensagem sai mesmo assim", zWebp.calls.length === 1);
+    check("e o cabeçalho cai no logo, nunca numa URL que quebraria o envio",
+      hWebp && /\.png$/.test(hWebp.parameters[0].image.link), JSON.stringify(hWebp));
+
     // (b) secret DESLIGADO → nenhum cabeçalho (senão a Meta recusa tudo)
     const WAoff = await loadWA(META_ENV);
     const zOff = installMetaMock();

@@ -336,6 +336,16 @@ export function metaTemplateUsaImagem(kind: string): boolean {
   );
 }
 
+// A Meta só aceita JPG e PNG no cabeçalho de imagem de um template (webp,
+// jfif, gif e afins são recusados — e a mensagem NÃO sai pra aquela pessoa).
+// Em vez de perder o aviso por causa do formato da foto, cai no logo da
+// Elarah e registra o aviso pra você trocar a imagem no cadastro.
+export function imagemAceitaPelaMeta(url: unknown): boolean {
+  const limpa = String(url ?? "").split("?")[0].split("#")[0].trim().toLowerCase();
+  if (!/^https?:\/\//.test(limpa)) return false;
+  return /\.(jpe?g|png)$/.test(limpa);
+}
+
 export function metaTemplateName(kind: string): string | null {
   const envKey = META_TEMPLATE_ENV[kind];
   const custom = envKey ? (Deno.env.get(envKey) ?? "").trim() : "";
@@ -918,9 +928,21 @@ export async function gatedSendWhatsApp(
         let headerImage: string | undefined = undefined;
         if (metaTemplateUsaImagem(params.kind)) {
           const candidata = params.template.headerImage ?? params.image;
-          headerImage = candidata && /^https?:\/\//i.test(candidata)
-            ? candidata
-            : experienceImageUrl("");
+          if (imagemAceitaPelaMeta(candidata)) {
+            headerImage = candidata;
+          } else {
+            // Formato que a Meta recusa (webp/jfif/etc) ou URL inválida:
+            // manda o logo pra mensagem CHEGAR. Perder a foto é ruim;
+            // perder o aviso inteiro é pior.
+            if (candidata) {
+              console.warn(
+                "[elarah/whatsapp] foto do evento fora do formato aceito pela Meta " +
+                  "(só JPG/PNG) — usando o logo:",
+                candidata,
+              );
+            }
+            headerImage = experienceImageUrl("");
+          }
         }
         return await sendWhatsAppTemplate({
           to: o.phone,
