@@ -192,15 +192,30 @@
   .gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(24,34,26,.86),transparent)}
   .gstrip .pslot{min-height:158px}
 
-  .xgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:16px}
+  .xgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   .xcard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
   .xph{height:150px;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid rgba(44,58,46,.10)}
   .xph img{width:100%;height:100%;object-fit:cover;display:block}
   .xnum{position:absolute;top:9px;left:9px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:14px;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center}
-  .xb{padding:14px 17px 17px;flex:1;display:flex;flex-direction:column}
+  .xpr{position:absolute;top:9px;right:9px;background:var(--navy);color:#fff;border-radius:12px;padding:6px 12px;line-height:1}
+  .xpr b{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400}
+  .xb{padding:13px 15px 16px;flex:1;display:flex;flex-direction:column}
   .xcat{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:3px}
-  .xb h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.08}
-  .xb p{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:6px}
+  .xb h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:16.5px;color:var(--navy);line-height:1.08}
+  .xb p{font-size:10.5px;color:var(--muted);line-height:1.42;margin-top:6px}
+  .menu2{columns:2;column-gap:26px;margin-top:10px}
+  .menu2 li{list-style:none;position:relative;padding-left:18px;font-size:12.5px;color:var(--ink);line-height:1.5;break-inside:avoid}
+  .menu2 li::before{content:"\2726";position:absolute;left:0;top:2px;color:var(--orange);font-size:10px}
+  .sum{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px}
+  .sum .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 20px;text-align:center;min-width:150px}
+  .sum .box .bl{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);display:block}
+  .sum .box .bv{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);line-height:1;margin:5px 0 3px;display:block}
+  .sum .box small{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block}
+  .sum .op{font-family:'DM Serif Display',serif;font-size:24px;color:var(--orange-dark)}
+  .sum .tot{background:var(--navy);border-color:var(--navy)}
+  .sum .tot .bl{color:var(--orange)}
+  .sum .tot .bv{color:#fff}
+  .sum .tot small{color:rgba(255,255,255,.8)}
 </style>
 <style>
   :root{
@@ -457,11 +472,11 @@
       <div>
         <span class="eyebrow">✦ Um presente que desestressa</span>
         <h1>Leve, gostoso e <em>só de vocês</em></h1>
-        <p class="lead">Um presente de fim de ano pro seu time: uma experiência criativa e leve pra fazer <strong>enquanto conversam</strong>, com um espaço só de vocês e <strong>comida inclusa</strong>. Do tipo que desestressa, aproxima e rende foto boa. 🌿</p>
+        <p class="lead">Um presente de fim de ano pro seu time: uma experiência criativa e leve pra fazer <strong>enquanto conversam</strong>, num espaço só de vocês, com um <strong>coffee break</strong> delicioso incluso. Do tipo que desestressa, aproxima e rende foto boa. 🌿</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>8 a 10</b> mulheres</span>
-          <span class="chip">Comida <b>inclusa</b></span>
+          <span class="chip">Coffee break <b>incluso</b></span>
           <span class="chip">Itaim · Moema · Brooklin</span>
         </div>
       </div>
@@ -477,45 +492,49 @@
     </div>
     <span class="eyebrow orange">◆ O que a gente entrega</span>
     <h2>Um respiro no meio da <em>correria</em></h2>
-    <p class="lead">Fim de ano é agradecer e relaxar junto. A gente cuida de tudo — espaço, material, condução e comida — pra vocês só chegarem, colocar a mão na massa e aproveitar. 🌿</p>
+    <p class="lead">Fim de ano é agradecer e relaxar junto. A gente cuida de tudo — espaço privado, material, condução e o coffee break — pra vocês só chegarem, colocar a mão na massa e aproveitar. 🌿</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico">🌿</div><h3>Leve &amp; relaxante</h3><p>Atividades tranquilas, sem técnica pra errar — só pra desacelerar.</p></div>
-      <div class="infocard"><div class="ico">💬</div><h3>Dá pra conversar</h3><p>Feito pra fazer enquanto batem papo — e um tempinho pra comer depois.</p></div>
-      <div class="infocard"><div class="ico">🍽️</div><h3>Comida inclusa</h3><p>Espaço privado e comida no valor. Vocês só curtem, a gente resolve.</p></div>
+      <div class="infocard"><div class="ico">💬</div><h3>Dá pra conversar</h3><p>Feito pra fazer enquanto batem papo — e um momento pra comer depois.</p></div>
+      <div class="infocard"><div class="ico">☕</div><h3>Coffee break incluso</h3><p>Espaço privado no Jardim + coffee break completo. Vocês só curtem.</p></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Pensado pro seu time</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O espaço</span></div>
+      <div class="head-right"><span class="kicker">O espaço + coffee break</span></div>
     </div>
-    <span class="eyebrow orange">◆ O espaço em destaque</span>
-    <h2>O Jardim <em>Café &amp; Brunch</em></h2>
-    <p class="lead">Um café charmoso com jardim, pra vocês relaxarem cercadas de verde. O espaço fica <strong>privativo só pro seu time</strong>, com <strong>comida inclusa</strong> — a experiência criativa acontece ali, com calma e um brunch delicioso. 🌿</p>
+    <span class="eyebrow orange">◆ O Jardim Café &amp; Brunch</span>
+    <h2>Espaço privado + <em>coffee break</em></h2>
+    <p class="lead">Um café charmoso com jardim, <strong>reservado só pro seu time</strong>, com um coffee break completo servido à mesa. O cenário perfeito pra relaxar cercadas de verde. 🌿</p>
     <div class="invbox">
-      <div class="incl" style="flex:1;min-width:280px">
-        <span class="vt">Tudo incluso no valor</span>
-        <ul>
-          <li><span>✦</span>Espaço <b>privativo</b> só pro seu time</li>
-          <li><span>✦</span><b>Comida inclusa</b> (café da manhã / brunch)</li>
-          <li><span>✦</span>Experiência criativa à escolha</li>
-          <li><span>✦</span>Material, condução e montagem completos</li>
+      <div class="incl" style="flex:1;min-width:300px">
+        <span class="vt">No coffee break tem</span>
+        <ul class="menu2">
+          <li>Mini pão de queijo</li>
+          <li>Mini sanduíche</li>
+          <li>Mini toast</li>
+          <li>Bolo da casa</li>
+          <li>Saladinha de frutas</li>
+          <li>Café, chá e leite</li>
+          <li>Água</li>
+          <li>Servido à mesa 🤍</li>
         </ul>
       </div>
       <div class="pricebox">
-        <span class="pl">Espaço privado + comida</span>
+        <span class="pl">Coffee break + espaço privado</span>
         <span class="pv">R$ 229</span>
         <span class="ps">por pessoa</span>
       </div>
     </div>
     <div class="gstrip">
       <figure><img src="assets/ojardim1.jpg" alt="Jardim e deck de O Jardim Café e Brunch" style="object-position:center 50%"><figcaption>Jardim &amp; deck</figcaption></figure>
-      <figure><img src="assets/ojardim4.jpg" alt="Brunch servido em O Jardim" style="object-position:center 50%"><figcaption>Comida inclusa</figcaption></figure>
+      <figure><img src="assets/ojardim4.jpg" alt="Coffee break servido em O Jardim" style="object-position:center 50%"><figcaption>Coffee break</figcaption></figure>
       <figure><img src="assets/ojardim3.jpg" alt="Fachada de O Jardim Café e Brunch" style="object-position:center 50%"><figcaption>O Jardim Café &amp; Brunch</figcaption></figure>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O espaço</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O espaço · O Jardim</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -526,56 +545,85 @@
     <h2>Experiências <em>leves</em> pra fazer juntas</h2>
     <div class="xgrid">
       <div class="xcard">
-        <div class="xph"><span class="xnum">01</span><img src="assets/buqueflor.jpg" alt="Arranjo floral autoral" style="object-position:center 50%"></div>
+        <div class="xph"><span class="xnum">01</span><div class="xpr"><b>R$ 239</b></div><img src="assets/buqueflor.jpg" alt="Arranjo floral autoral" style="object-position:center 50%"></div>
         <div class="xb">
           <span class="xcat">Floral</span>
           <h4>Arranjo floral</h4>
-          <p>Cada uma monta o próprio arranjo enquanto conversa — leve, perfumado e lindo de levar pra casa.</p>
+          <p>Cada uma monta o próprio arranjo enquanto conversa — leve e perfumado.</p>
         </div>
       </div>
       <div class="xcard">
-        <div class="xph"><span class="xnum">02</span><img src="assets/pinturapratoceramica.jpg" alt="Pintura em cerâmica" style="object-position:center 50%"></div>
+        <div class="xph"><span class="xnum">02</span><div class="xpr"><b>R$ 239</b></div><img src="assets/pinturapratoceramica.jpg" alt="Pintura em cerâmica" style="object-position:center 50%"></div>
         <div class="xb">
           <span class="xcat">Cerâmica</span>
           <h4>Pintura em cerâmica</h4>
-          <p>Pintam uma peça no seu ritmo, com o papo rolando solto. Puro relaxamento.</p>
+          <p>Pintam uma peça no seu ritmo, com o papo rolando solto.</p>
         </div>
       </div>
       <div class="xcard">
-        <div class="xph"><span class="xnum">03</span><img src="assets/ojardim4.jpg" alt="Kit café da manhã e brunch" style="object-position:center 50%"></div>
-        <div class="xb">
-          <span class="xcat">Café &amp; Brunch</span>
-          <h4>Kit café da manhã</h4>
-          <p>Um brunch caprichado pra dividir e relaxar juntas — o momento de sentar e conversar.</p>
-        </div>
-      </div>
-      <div class="xcard">
-        <div class="xph"><span class="xnum">04</span><img src="assets/vela-aromatica-real.jpg" alt="Vela aromática autoral" style="object-position:center 40%"></div>
+        <div class="xph"><span class="xnum">03</span><div class="xpr"><b>R$ 239</b></div><img src="assets/vela-aromatica-real.jpg" alt="Vela aromática autoral" style="object-position:center 40%"></div>
         <div class="xb">
           <span class="xcat">Aromas</span>
           <h4>Vela aromática</h4>
-          <p>Criam a própria vela aromática — aconchego que perfuma a casa depois.</p>
+          <p>Criam a própria vela — aroma, cor e aconchego pra levar pra casa.</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xph"><span class="xnum">04</span><div class="xpr"><b>R$ 239</b></div><img src="assets/croche-bolsa.jpg" alt="Bolsa de crochê autoral" style="object-position:center 50%"></div>
+        <div class="xb">
+          <span class="xcat">Crochê</span>
+          <h4>Bolsa de crochê</h4>
+          <p>Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xph"><span class="xnum">05</span><div class="xpr"><b>R$ 239</b></div><img src="assets/charm-bolsa.jpg" alt="Charme de bolsa personalizado" style="object-position:center 50%"></div>
+        <div class="xb">
+          <span class="xcat">Acessório</span>
+          <h4>Charme de bolsa</h4>
+          <p>Criam o próprio charm e personalizam a bolsa — puro estilo.</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xph"><span class="xnum">06</span><div class="xpr"><b>R$ 239</b></div><img src="assets/perfumaria-oficina.jpg" alt="Oficina de perfume autoral" style="object-position:center 60%"></div>
+        <div class="xb">
+          <span class="xcat">Perfumaria</span>
+          <h4>Perfume autoral</h4>
+          <p>Montam a própria fragrância, do jeitinho de cada uma.</p>
         </div>
       </div>
     </div>
-    <div class="bnote">◆ Gostou de mais de uma? Dá pra combinar, ou pensar em algo diferente pro time — é só me contar o clima que vocês querem. 🌿</div>
-    <p class="fineprint">✦ Experiência à escolha inclusa no valor de R$ 229 por pessoa (espaço privativo + comida). Grupo de 8 a 10 pessoas · região Itaim, Moema ou Brooklin. Data e detalhes a confirmar.</p>
+    <div class="bnote">◆ Todas as experiências saem por <b>R$ 239 por pessoa</b>. Gostou de mais de uma? Dá pra combinar — é só me contar. 🌿</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>As experiências</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">A vibe</span></div>
+      <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ O que o time vai sentir</span>
-    <h2>Rir, criar e <em>respirar</em></h2>
-    <p class="lead">Mais que um presente: uma tarde de leveza, papo bom e aquele carinho que só um momento junto proporciona. É disso que o time vai lembrar. 💛</p>
-    <div class="vibe">
-      <figure><img src="assets/capa-croche-cafe.jpg" alt="Mulheres rindo numa experiência com café" style="object-position:center 28%"><figcaption>Risada &amp; café</figcaption></figure>
-      <figure><img src="assets/aniversario-mesa-real.jpg" alt="Time reunido numa experiência criativa" style="object-position:center 50%"><figcaption>Juntas, sem pressa</figcaption></figure>
-      <figure><img src="assets/ojardim2.jpg" alt="Jardim tranquilo de O Jardim" style="object-position:center 50%"><figcaption>Cercadas de verde</figcaption></figure>
+    <span class="eyebrow orange">◆ O plano inicial</span>
+    <h2>Tudo incluso por <em>R$ 469</em></h2>
+    <p class="lead">O plano inicial junta o melhor: o <strong>coffee break</strong> completo e o <strong>espaço privado</strong> no Jardim, mais a <strong>experiência</strong> que o time escolher. Simples assim: 🌿</p>
+    <div class="sum">
+      <div class="box"><span class="bl">Coffee break + espaço</span><span class="bv">R$ 229</span><small>por pessoa</small></div>
+      <span class="op">+</span>
+      <div class="box"><span class="bl">Experiência à escolha</span><span class="bv">R$ 239</span><small>por pessoa</small></div>
+      <span class="op">=</span>
+      <div class="box tot"><span class="bl">Plano inicial</span><span class="bv">R$ 469</span><small>por pessoa</small></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vibe da experiência</span></div>
+    <div class="invbox" style="margin-top:20px">
+      <div class="incl" style="flex:1;min-width:300px">
+        <span class="vt">O que já está incluso</span>
+        <ul>
+          <li><span>✦</span>Espaço <b>privativo</b> só pro time, no Jardim Café &amp; Brunch</li>
+          <li><span>✦</span><b>Coffee break</b> completo, servido à mesa</li>
+          <li><span>✦</span>A <b>experiência</b> escolhida (qualquer uma da vitrine)</li>
+          <li><span>✦</span>Material, condução e montagem completos</li>
+        </ul>
+      </div>
+    </div>
+    <p class="fineprint">Valor por pessoa. Plano inicial = coffee break &amp; espaço privado no Jardim Café &amp; Brunch (R$ 229) + experiência à escolha (R$ 239). Grupo de 8 a 10 pessoas · região Itaim, Moema ou Brooklin. Data e detalhes a confirmar.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -584,11 +632,11 @@
     </div>
     <span class="eyebrow orange">◆ Bora presentear o time? 🌿</span>
     <h2>É só <em>escolher</em></h2>
-    <p class="lead">Me conta a experiência favorita e a data que vocês pensam, que a gente reserva O Jardim (ou outro espaço na região) e organiza tudo — comida, material e o clima perfeito. 💛</p>
+    <p class="lead">Me conta a experiência favorita e a data que vocês pensam, que a gente reserva o Jardim e organiza tudo — coffee break, material e o clima perfeito. 💛</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham</h3><p>A experiência e a data que combinam com o time.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Reservamos</h3><p>Espaço privativo com comida inclusa, tudo organizado.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Reservamos</h3><p>Espaço privado com coffee break, tudo organizado.</p></div>
       <div class="infocard"><div class="ico">3️⃣</div><h3>É só relaxar</h3><p>No dia, chega tudo pronto. Vocês só aproveitam.</p></div>
     </div>
     <div class="quote">

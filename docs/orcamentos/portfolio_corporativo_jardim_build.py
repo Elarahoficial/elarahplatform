@@ -1,5 +1,5 @@
-# Portfolio corporativo · presente de fim de ano · time de 8-10 mulheres · leve/desestressar + comida
-# Destaque: O Jardim Café e Brunch (espaço privado + comida inclusa · R$ 229). Paleta sage + terracota.
+# Portfolio corporativo · presente de fim de ano · O Jardim Cafe e Brunch
+# Coffee break + espaco privado R$229 + experiencia R$239 = Plano inicial R$469. Paleta sage + terracota.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -25,15 +25,30 @@ for a, b in reps.items():
     head = head.replace(a, b)
 
 xcss = '''
-  .xgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:16px}
+  .xgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   .xcard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -22px rgba(0,0,0,.34)}
   .xph{height:150px;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid rgba(44,58,46,.10)}
   .xph img{width:100%;height:100%;object-fit:cover;display:block}
   .xnum{position:absolute;top:9px;left:9px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:14px;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center}
-  .xb{padding:14px 17px 17px;flex:1;display:flex;flex-direction:column}
+  .xpr{position:absolute;top:9px;right:9px;background:var(--navy);color:#fff;border-radius:12px;padding:6px 12px;line-height:1}
+  .xpr b{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400}
+  .xb{padding:13px 15px 16px;flex:1;display:flex;flex-direction:column}
   .xcat{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:3px}
-  .xb h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.08}
-  .xb p{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:6px}
+  .xb h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:16.5px;color:var(--navy);line-height:1.08}
+  .xb p{font-size:10.5px;color:var(--muted);line-height:1.42;margin-top:6px}
+  .menu2{columns:2;column-gap:26px;margin-top:10px}
+  .menu2 li{list-style:none;position:relative;padding-left:18px;font-size:12.5px;color:var(--ink);line-height:1.5;break-inside:avoid}
+  .menu2 li::before{content:"\\2726";position:absolute;left:0;top:2px;color:var(--orange);font-size:10px}
+  .sum{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px}
+  .sum .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 20px;text-align:center;min-width:150px}
+  .sum .box .bl{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);display:block}
+  .sum .box .bv{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);line-height:1;margin:5px 0 3px;display:block}
+  .sum .box small{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block}
+  .sum .op{font-family:'DM Serif Display',serif;font-size:24px;color:var(--orange-dark)}
+  .sum .tot{background:var(--navy);border-color:var(--navy)}
+  .sum .tot .bl{color:var(--orange)}
+  .sum .tot .bv{color:#fff}
+  .sum .tot small{color:rgba(255,255,255,.8)}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -63,9 +78,9 @@ def head_simple(kicker):
     </div>'''
 
 
-def xcard(num, cat, name, desc, photo):
+def xcard(num, cat, name, desc, photo, price="R$ 239"):
     return f'''      <div class="xcard">
-        <div class="xph"><span class="xnum">{num}</span>{photo}</div>
+        <div class="xph"><span class="xnum">{num}</span><div class="xpr"><b>{price}</b></div>{photo}</div>
         <div class="xb">
           <span class="xcat">{cat}</span>
           <h4>{name}</h4>
@@ -83,11 +98,11 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Um presente que desestressa</span>
         <h1>Leve, gostoso e <em>só de vocês</em></h1>
-        <p class="lead">Um presente de fim de ano pro seu time: uma experiência criativa e leve pra fazer <strong>enquanto conversam</strong>, com um espaço só de vocês e <strong>comida inclusa</strong>. Do tipo que desestressa, aproxima e rende foto boa. 🌿</p>
+        <p class="lead">Um presente de fim de ano pro seu time: uma experiência criativa e leve pra fazer <strong>enquanto conversam</strong>, num espaço só de vocês, com um <strong>coffee break</strong> delicioso incluso. Do tipo que desestressa, aproxima e rende foto boa. 🌿</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>8 a 10</b> mulheres</span>
-          <span class="chip">Comida <b>inclusa</b></span>
+          <span class="chip">Coffee break <b>incluso</b></span>
           <span class="chip">Itaim · Moema · Brooklin</span>
         </div>
       </div>
@@ -102,44 +117,48 @@ intro = f'''
 {head_simple("Pensado pro seu time")}
     <span class="eyebrow orange">◆ O que a gente entrega</span>
     <h2>Um respiro no meio da <em>correria</em></h2>
-    <p class="lead">Fim de ano é agradecer e relaxar junto. A gente cuida de tudo — espaço, material, condução e comida — pra vocês só chegarem, colocar a mão na massa e aproveitar. 🌿</p>
+    <p class="lead">Fim de ano é agradecer e relaxar junto. A gente cuida de tudo — espaço privado, material, condução e o coffee break — pra vocês só chegarem, colocar a mão na massa e aproveitar. 🌿</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico">🌿</div><h3>Leve &amp; relaxante</h3><p>Atividades tranquilas, sem técnica pra errar — só pra desacelerar.</p></div>
-      <div class="infocard"><div class="ico">💬</div><h3>Dá pra conversar</h3><p>Feito pra fazer enquanto batem papo — e um tempinho pra comer depois.</p></div>
-      <div class="infocard"><div class="ico">🍽️</div><h3>Comida inclusa</h3><p>Espaço privado e comida no valor. Vocês só curtem, a gente resolve.</p></div>
+      <div class="infocard"><div class="ico">💬</div><h3>Dá pra conversar</h3><p>Feito pra fazer enquanto batem papo — e um momento pra comer depois.</p></div>
+      <div class="infocard"><div class="ico">☕</div><h3>Coffee break incluso</h3><p>Espaço privado no Jardim + coffee break completo. Vocês só curtem.</p></div>
     </div>
     {foot("Pensado pro seu time")}
   </section>'''
 
 espaco = f'''
   <section class="slide">
-{head_simple("O espaço")}
-    <span class="eyebrow orange">◆ O espaço em destaque</span>
-    <h2>O Jardim <em>Café &amp; Brunch</em></h2>
-    <p class="lead">Um café charmoso com jardim, pra vocês relaxarem cercadas de verde. O espaço fica <strong>privativo só pro seu time</strong>, com <strong>comida inclusa</strong> — a experiência criativa acontece ali, com calma e um brunch delicioso. 🌿</p>
+{head_simple("O espaço + coffee break")}
+    <span class="eyebrow orange">◆ O Jardim Café &amp; Brunch</span>
+    <h2>Espaço privado + <em>coffee break</em></h2>
+    <p class="lead">Um café charmoso com jardim, <strong>reservado só pro seu time</strong>, com um coffee break completo servido à mesa. O cenário perfeito pra relaxar cercadas de verde. 🌿</p>
     <div class="invbox">
-      <div class="incl" style="flex:1;min-width:280px">
-        <span class="vt">Tudo incluso no valor</span>
-        <ul>
-          <li><span>✦</span>Espaço <b>privativo</b> só pro seu time</li>
-          <li><span>✦</span><b>Comida inclusa</b> (café da manhã / brunch)</li>
-          <li><span>✦</span>Experiência criativa à escolha</li>
-          <li><span>✦</span>Material, condução e montagem completos</li>
+      <div class="incl" style="flex:1;min-width:300px">
+        <span class="vt">No coffee break tem</span>
+        <ul class="menu2">
+          <li>Mini pão de queijo</li>
+          <li>Mini sanduíche</li>
+          <li>Mini toast</li>
+          <li>Bolo da casa</li>
+          <li>Saladinha de frutas</li>
+          <li>Café, chá e leite</li>
+          <li>Água</li>
+          <li>Servido à mesa 🤍</li>
         </ul>
       </div>
       <div class="pricebox">
-        <span class="pl">Espaço privado + comida</span>
+        <span class="pl">Coffee break + espaço privado</span>
         <span class="pv">R$ 229</span>
         <span class="ps">por pessoa</span>
       </div>
     </div>
     <div class="gstrip">
       <figure>{img("ojardim1.jpg", "Jardim e deck de O Jardim Café e Brunch", "center 50%")}<figcaption>Jardim &amp; deck</figcaption></figure>
-      <figure>{img("ojardim4.jpg", "Brunch servido em O Jardim", "center 50%")}<figcaption>Comida inclusa</figcaption></figure>
+      <figure>{img("ojardim4.jpg", "Coffee break servido em O Jardim", "center 50%")}<figcaption>Coffee break</figcaption></figure>
       <figure>{img("ojardim3.jpg", "Fachada de O Jardim Café e Brunch", "center 50%")}<figcaption>O Jardim Café &amp; Brunch</figcaption></figure>
     </div>
-    {foot("O espaço")}
+    {foot("O espaço · O Jardim")}
   </section>'''
 
 vitrine = f'''
@@ -148,28 +167,43 @@ vitrine = f'''
     <span class="eyebrow orange">◆ Escolham a de vocês</span>
     <h2>Experiências <em>leves</em> pra fazer juntas</h2>
     <div class="xgrid">
-{xcard("01", "Floral", "Arranjo floral", "Cada uma monta o próprio arranjo enquanto conversa — leve, perfumado e lindo de levar pra casa.", img("buqueflor.jpg", "Arranjo floral autoral", "center 50%"))}
-{xcard("02", "Cerâmica", "Pintura em cerâmica", "Pintam uma peça no seu ritmo, com o papo rolando solto. Puro relaxamento.", img("pinturapratoceramica.jpg", "Pintura em cerâmica", "center 50%"))}
-{xcard("03", "Café &amp; Brunch", "Kit café da manhã", "Um brunch caprichado pra dividir e relaxar juntas — o momento de sentar e conversar.", img("ojardim4.jpg", "Kit café da manhã e brunch", "center 50%"))}
-{xcard("04", "Aromas", "Vela aromática", "Criam a própria vela aromática — aconchego que perfuma a casa depois.", img("vela-aromatica-real.jpg", "Vela aromática autoral", "center 40%"))}
+{xcard("01", "Floral", "Arranjo floral", "Cada uma monta o próprio arranjo enquanto conversa — leve e perfumado.", img("buqueflor.jpg", "Arranjo floral autoral", "center 50%"))}
+{xcard("02", "Cerâmica", "Pintura em cerâmica", "Pintam uma peça no seu ritmo, com o papo rolando solto.", img("pinturapratoceramica.jpg", "Pintura em cerâmica", "center 50%"))}
+{xcard("03", "Aromas", "Vela aromática", "Criam a própria vela — aroma, cor e aconchego pra levar pra casa.", img("vela-aromatica-real.jpg", "Vela aromática autoral", "center 40%"))}
+{xcard("04", "Crochê", "Bolsa de crochê", "Aprendem o ponto e fazem uma bolsinha de crochê fofíssima.", img("croche-bolsa.jpg", "Bolsa de crochê autoral", "center 50%"))}
+{xcard("05", "Acessório", "Charme de bolsa", "Criam o próprio charm e personalizam a bolsa — puro estilo.", img("charm-bolsa.jpg", "Charme de bolsa personalizado", "center 50%"))}
+{xcard("06", "Perfumaria", "Perfume autoral", "Montam a própria fragrância, do jeitinho de cada uma.", img("perfumaria-oficina.jpg", "Oficina de perfume autoral", "center 60%"))}
     </div>
-    <div class="bnote">◆ Gostou de mais de uma? Dá pra combinar, ou pensar em algo diferente pro time — é só me contar o clima que vocês querem. 🌿</div>
-    <p class="fineprint">✦ Experiência à escolha inclusa no valor de R$ 229 por pessoa (espaço privativo + comida). Grupo de 8 a 10 pessoas · região Itaim, Moema ou Brooklin. Data e detalhes a confirmar.</p>
+    <div class="bnote">◆ Todas as experiências saem por <b>R$ 239 por pessoa</b>. Gostou de mais de uma? Dá pra combinar — é só me contar. 🌿</div>
     {foot("As experiências")}
   </section>'''
 
-vibe = f'''
+investimento = f'''
   <section class="slide">
-{head_simple("A vibe")}
-    <span class="eyebrow orange">◆ O que o time vai sentir</span>
-    <h2>Rir, criar e <em>respirar</em></h2>
-    <p class="lead">Mais que um presente: uma tarde de leveza, papo bom e aquele carinho que só um momento junto proporciona. É disso que o time vai lembrar. 💛</p>
-    <div class="vibe">
-      <figure>{img("capa-croche-cafe.jpg", "Mulheres rindo numa experiência com café", "center 28%")}<figcaption>Risada &amp; café</figcaption></figure>
-      <figure>{img("aniversario-mesa-real.jpg", "Time reunido numa experiência criativa", "center 50%")}<figcaption>Juntas, sem pressa</figcaption></figure>
-      <figure>{img("ojardim2.jpg", "Jardim tranquilo de O Jardim", "center 50%")}<figcaption>Cercadas de verde</figcaption></figure>
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ O plano inicial</span>
+    <h2>Tudo incluso por <em>R$ 469</em></h2>
+    <p class="lead">O plano inicial junta o melhor: o <strong>coffee break</strong> completo e o <strong>espaço privado</strong> no Jardim, mais a <strong>experiência</strong> que o time escolher. Simples assim: 🌿</p>
+    <div class="sum">
+      <div class="box"><span class="bl">Coffee break + espaço</span><span class="bv">R$ 229</span><small>por pessoa</small></div>
+      <span class="op">+</span>
+      <div class="box"><span class="bl">Experiência à escolha</span><span class="bv">R$ 239</span><small>por pessoa</small></div>
+      <span class="op">=</span>
+      <div class="box tot"><span class="bl">Plano inicial</span><span class="bv">R$ 469</span><small>por pessoa</small></div>
     </div>
-    {foot("A vibe da experiência")}
+    <div class="invbox" style="margin-top:20px">
+      <div class="incl" style="flex:1;min-width:300px">
+        <span class="vt">O que já está incluso</span>
+        <ul>
+          <li><span>✦</span>Espaço <b>privativo</b> só pro time, no Jardim Café &amp; Brunch</li>
+          <li><span>✦</span><b>Coffee break</b> completo, servido à mesa</li>
+          <li><span>✦</span>A <b>experiência</b> escolhida (qualquer uma da vitrine)</li>
+          <li><span>✦</span>Material, condução e montagem completos</li>
+        </ul>
+      </div>
+    </div>
+    <p class="fineprint">Valor por pessoa. Plano inicial = coffee break &amp; espaço privado no Jardim Café &amp; Brunch (R$ 229) + experiência à escolha (R$ 239). Grupo de 8 a 10 pessoas · região Itaim, Moema ou Brooklin. Data e detalhes a confirmar.</p>
+    {foot("Investimento")}
   </section>'''
 
 proximos = f'''
@@ -177,11 +211,11 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Bora presentear o time? 🌿</span>
     <h2>É só <em>escolher</em></h2>
-    <p class="lead">Me conta a experiência favorita e a data que vocês pensam, que a gente reserva O Jardim (ou outro espaço na região) e organiza tudo — comida, material e o clima perfeito. 💛</p>
+    <p class="lead">Me conta a experiência favorita e a data que vocês pensam, que a gente reserva o Jardim e organiza tudo — coffee break, material e o clima perfeito. 💛</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham</h3><p>A experiência e a data que combinam com o time.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Reservamos</h3><p>Espaço privativo com comida inclusa, tudo organizado.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Reservamos</h3><p>Espaço privado com coffee break, tudo organizado.</p></div>
       <div class="infocard"><div class="ico">3️⃣</div><h3>É só relaxar</h3><p>No dia, chega tudo pronto. Vocês só aproveitam.</p></div>
     </div>
     <div class="quote">
@@ -191,7 +225,7 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + intro + espaco + vitrine + vibe + proximos + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + intro + espaco + vitrine + investimento + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-portfolio-corporativo-jardim.html"
 open(out, "w", encoding="utf-8").write(html)
