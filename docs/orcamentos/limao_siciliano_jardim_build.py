@@ -95,7 +95,7 @@ oficina = f'''
     <h2>A arte fica por conta <em>de vocês</em></h2>
     <p class="lead">A oficina é do jeitinho que vocês imaginaram: <strong>vocês trazem a decoração e todo o material</strong> (taças ou aquarela, tinta, tema limão siciliano) e a Elarah entra com o <strong>espaço e o brunch</strong> — deixando tudo lindo e gostoso pra celebrar. 🍋</p>
     <div class="bfeat">
-      <div class="bphoto">{img("pinturatacameninas.jpg", "Amigas pintando taças numa oficina", "center 30%")}</div>
+      <div class="bphoto">{img("atelieleroy-2.jpg", "Amigas criando juntas numa oficina de pintura", "center 50%")}</div>
       <div class="bbody">
         <span class="btag">Como funciona</span>
         <h3>Vocês criam, a gente cuida do resto</h3>
@@ -113,12 +113,12 @@ vibe = f'''
   <section class="slide">
 {head_simple("A vibe")}
     <span class="eyebrow orange">◆ O clima da tarde</span>
-    <h2>Fresquinho como um <em>limão</em></h2>
-    <p class="lead">Cores cítricas, taças (ou aquarelas) autorais e muita risada entre amigas — uma tarde leve, bonita e cheia de fotos boas. Do tipo que fica na memória. 🍋</p>
+    <h2>Risadas e <em>limão siciliano</em></h2>
+    <p class="lead">Amigas reunidas, taças (ou aquarelas) autorais e muita risada — uma tarde leve, cítrica e cheia de abraço e foto boa. Do tipo que fica na memória. 🍋</p>
     <div class="vibe">
-      <figure>{img("tacalimao1.jpg", "Taça pintada com limão siciliano", "center 50%")}<figcaption>Pintura em taça</figcaption></figure>
-      <figure>{img("aquarela1.jpg", "Pintura em aquarela", "center 40%")}<figcaption>Ou em aquarela</figcaption></figure>
-      <figure>{img("pinturapratoceramica.jpg", "Tema limão siciliano", "center 50%")}<figcaption>Tema limão siciliano</figcaption></figure>
+      <figure>{img("capa-croche-cafe.jpg", "Amigas rindo juntas numa experiência", "center 28%")}<figcaption>Risada garantida</figcaption></figure>
+      <figure>{img("aquarela-limao.jpg", "Aquarela de limão siciliano", "center 50%")}<figcaption>Tema limão siciliano</figcaption></figure>
+      <figure>{img("aniversario-mesa-real.jpg", "Amigas reunidas criando juntas", "center 50%")}<figcaption>Entre amigas</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
   </section>'''
