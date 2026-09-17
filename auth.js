@@ -620,6 +620,11 @@ const ElarahAuth = (function () {
       window.ElarahPhone.mount(div.querySelector('#auth-reg-telefone'));
     }
 
+    // Olhinho de mostrar senha — mesmo motivo: o campo nasce agora.
+    if (window.ElarahPasswordToggle) {
+      window.ElarahPasswordToggle.upgradeAll(div);
+    }
+
     // Forgot password link
     div.querySelector('#auth-forgot-link').addEventListener('click', async (e) => {
       e.preventDefault();

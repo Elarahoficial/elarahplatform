@@ -4062,8 +4062,10 @@ if (groupForm) {
     // falta, campo a campo, na validação do submit. Cor é sinalização;
     // travar o clique só esconderia o motivo de não dar pra seguir.
     // =============================================================
-    const CONFIRM_BTN_READY_BG = '#c8742d'; // completo — escuro, "pode ir"
-    const CONFIRM_BTN_IDLE_BG = '#f0a05e';  // incompleto — claro
+    // Mesmo laranja do botão "Reservar" (--orange, #F27623): quem
+    // clicou em Reservar reencontra a mesma cor no "pode pagar".
+    const CONFIRM_BTN_READY_BG = '#F27623'; // completo — laranja da marca
+    const CONFIRM_BTN_IDLE_BG = '#f0a05e';  // incompleto — apagado (com opacity .5)
 
     // Espelha a validação do submit (handleConfirmReservation), porém SEM
     // escrever erro nem mexer em foco/scroll. Devolve o NOME do primeiro
@@ -4161,7 +4163,7 @@ if (groupForm) {
         if (faltando === null) {
           btn.style.background = CONFIRM_BTN_READY_BG;
           btn.style.opacity = '1';
-          btn.style.boxShadow = '0 6px 16px rgba(200,116,45,.32)';
+          btn.style.boxShadow = '0 6px 16px rgba(242,118,35,.32)';
           if (hint) hint.textContent = '';
         } else {
           btn.style.background = CONFIRM_BTN_IDLE_BG;
