@@ -9903,6 +9903,193 @@
     });
   }
 
+  // ===== REORDENAR A FAIXA BY ELARAH =====
+  // A ordem dos GRUPOS nesta tabela é a ordem dos cards na seção
+  // "Elarah Originals" (home + byelarah.html). Cada grupo é um bloco de
+  // <tr>: o cabeçalho com o nome da experiência + as linhas das sessões.
+  // Arrastar move o bloco inteiro; o drop grava a posição (1-based) em
+  // byelarah_items.ordem e em experiences.byelarah_ordem.
+
+  // Faixa de instrução acima da tabela de itens By Elarah.
+  function renderByElarahReorderHint(enabled, itemsBody) {
+    const wrap = itemsBody && itemsBody.closest ? itemsBody.closest('.admin__table-wrap') : null;
+    if (!wrap || !wrap.parentNode) return;
+    let hint = document.getElementById('by-reorder-hint');
+    if (!enabled) {
+      if (hint) hint.remove();
+      return;
+    }
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'by-reorder-hint';
+      hint.style.cssText = 'font-size:.8rem;color:#8a7a66;padding:0 0 10px;display:flex;align-items:center;gap:6px;';
+      wrap.parentNode.insertBefore(hint, wrap);
+    }
+    hint.innerHTML = '<span style="font-size:1rem;">⠿</span> Arraste as experiências pela alça (ou use ▲▼) pra mudar a ordem — quem fica em cima aparece primeiro na faixa By Elarah do site.';
+  }
+
+  // Todos os <tr> de um grupo (cabeçalho + sessões), na ordem do DOM.
+  function byGroupRows(tbody, gid) {
+    return Array.from(tbody.querySelectorAll('tr[data-by-group="' + gid + '"]'));
+  }
+
+  // Ids dos grupos na ordem em que aparecem hoje no DOM.
+  function byGroupIdsInDomOrder(tbody) {
+    const out = [];
+    const seen = new Set();
+    Array.from(tbody.querySelectorAll('tr[data-by-group]')).forEach(function (tr) {
+      const gid = tr.getAttribute('data-by-group');
+      if (!gid || seen.has(gid)) return;
+      seen.add(gid);
+      out.push(gid);
+    });
+    return out;
+  }
+
+  // Move o bloco `gid` pra antes (before=true) ou depois do bloco `refGid`.
+  function moveByGroup(tbody, gid, refGid, before) {
+    const block = byGroupRows(tbody, gid);
+    const ref = byGroupRows(tbody, refGid);
+    if (!block.length || !ref.length) return false;
+    const anchorNode = before ? ref[0] : ref[ref.length - 1].nextSibling;
+    block.forEach(function (tr) { tbody.insertBefore(tr, anchorNode); });
+    return true;
+  }
+
+  // Grupo sendo arrastado no momento. Fica fora de setupByElarahGroupReorder
+  // porque o listener de dragover é registrado no <tbody> UMA vez só (o
+  // elemento sobrevive aos re-renders, que só trocam o innerHTML) enquanto
+  // os listeners de dragstart são re-registrados nas linhas novas.
+  let _byDragGid = null;
+
+  function setupByElarahGroupReorder(tbody) {
+    tbody.querySelectorAll('tr.admin__group-header[data-by-group]').forEach(function (hdr) {
+      hdr.addEventListener('dragstart', function (e) {
+        _byDragGid = hdr.getAttribute('data-by-group');
+        const dragGid = _byDragGid;
+        byGroupRows(tbody, dragGid).forEach(function (tr) { tr.classList.add('exp-row--dragging'); });
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', dragGid || ''); } catch (_) {}
+        }
+      });
+      hdr.addEventListener('dragend', function () {
+        tbody.querySelectorAll('tr.exp-row--dragging').forEach(function (tr) {
+          tr.classList.remove('exp-row--dragging');
+        });
+        if (_byDragGid) { _byDragGid = null; persistByElarahOrder(tbody); }
+      });
+    });
+
+    // dragover no tbody inteiro (e não só nos headers): assim soltar em
+    // cima de qualquer linha de sessão também posiciona o bloco. Uma vez
+    // só por elemento — o tbody persiste entre renders.
+    if (!tbody.dataset.byDragWired) {
+      tbody.dataset.byDragWired = '1';
+      tbody.addEventListener('dragover', function (e) {
+        if (!_byDragGid) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        const tr = e.target && e.target.closest ? e.target.closest('tr[data-by-group]') : null;
+        if (!tr) return;
+        const overGid = tr.getAttribute('data-by-group');
+        if (!overGid || overGid === _byDragGid) return;
+        const block = byGroupRows(tbody, overGid);
+        if (!block.length) return;
+        // Compara com o meio do BLOCO inteiro (não de uma linha só) —
+        // grupos têm alturas bem diferentes conforme o nº de sessões.
+        const top = block[0].getBoundingClientRect().top;
+        const bottom = block[block.length - 1].getBoundingClientRect().bottom;
+        moveByGroup(tbody, _byDragGid, overGid, e.clientY < (top + bottom) / 2);
+      });
+    }
+
+    // ▲▼: mesmo efeito do arrasto, mas funciona no celular.
+    tbody.querySelectorAll('[data-by-move]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const hdr = btn.closest('tr[data-by-group]');
+        if (!hdr) return;
+        const gid = hdr.getAttribute('data-by-group');
+        const order = byGroupIdsInDomOrder(tbody);
+        const idx = order.indexOf(gid);
+        if (idx < 0) return;
+        const up = btn.getAttribute('data-by-move') === 'up';
+        const targetIdx = up ? idx - 1 : idx + 1;
+        if (targetIdx < 0 || targetIdx >= order.length) return;
+        moveByGroup(tbody, gid, order[targetIdx], up);
+        persistByElarahOrder(tbody);
+      });
+    });
+  }
+
+  let _savingByOrder = false;
+  async function persistByElarahOrder(tbody) {
+    if (_savingByOrder) return;
+
+    // Posição 1-based por grupo, aplicada a todos os ids que ele carrega.
+    const itemPairs = [];
+    const expPairs = [];
+    byGroupIdsInDomOrder(tbody).forEach(function (gid, i) {
+      const hdr = tbody.querySelector('tr.admin__group-header[data-by-group="' + gid + '"]');
+      if (!hdr) return;
+      const pos = i + 1;
+      (hdr.getAttribute('data-by-group-items') || '').split(',').filter(Boolean)
+        .forEach(function (id) { itemPairs.push({ id: id, ordem: pos }); });
+      (hdr.getAttribute('data-by-group-exps') || '').split(',').filter(Boolean)
+        .forEach(function (id) { expPairs.push({ id: id, ordem: pos }); });
+    });
+    if (!itemPairs.length && !expPairs.length) return;
+
+    _savingByOrder = true;
+    try {
+      let updated = 0;
+      if (itemPairs.length) {
+        if (!(window.ElarahByElarah && typeof ElarahByElarah.setItemsOrdem === 'function')) {
+          showAdminToast('Função de reordenar indisponível. Recarregue a página.', false);
+          return;
+        }
+        const r = await ElarahByElarah.setItemsOrdem(itemPairs);
+        if (r && r._error) {
+          showAdminToast('Erro ao salvar a ordem: ' + (r._error.message || 'desconhecido'), false);
+          await renderByElarah();
+          return;
+        }
+        updated += (r && r.updated) || 0;
+      }
+      if (expPairs.length) {
+        if (!(window.ElarahData && typeof ElarahData.setByElarahOrdem === 'function')) {
+          showAdminToast('Função de reordenar indisponível. Recarregue a página.', false);
+          return;
+        }
+        const r = await ElarahData.setByElarahOrdem(expPairs);
+        if (r && r._error) {
+          showAdminToast('Erro ao salvar a ordem: ' + (r._error.message || 'desconhecido'), false);
+          await renderByElarah();
+          return;
+        }
+        updated += (r && r.updated) || 0;
+      }
+      // Sincroniza a coluna "Ordem" com a posição nova sem re-renderizar
+      // a tabela (re-render faria a linha "pular" logo depois do drop).
+      byGroupIdsInDomOrder(tbody).forEach(function (gid, i) {
+        byGroupRows(tbody, gid).forEach(function (tr) {
+          if (tr.classList.contains('admin__group-header')) return;
+          const cell = tr.cells && tr.cells[0];
+          if (cell) cell.textContent = String(i + 1);
+        });
+      });
+      if (updated > 0) showAdminToast('✓ Nova ordem da faixa By Elarah salva');
+    } catch (e) {
+      console.error('[Admin/byelarah] persistByElarahOrder', e);
+      showAdminToast('Erro inesperado ao salvar a ordem.', false);
+      await renderByElarah();
+    } finally {
+      _savingByOrder = false;
+    }
+  }
+
   async function renderByElarah() {
     if (!document.getElementById('byelarah-items-body')) return;
     // Invalida cache do ElarahByElarah pra garantir que items recem
@@ -9944,7 +10131,10 @@
           data: e.data || '',
           horarios: Array.isArray(e.horarios) ? e.horarios.slice() : (e.horario ? [e.horario] : []),
           tipo: 'participar',
-          ordem: Number.isFinite(+e.ordem) ? +e.ordem : 0,
+          // Ordem da FAIXA By Elarah (coluna byelarah_ordem) — não a
+          // `ordem` global do site. Sem posição definida ainda, vai pro
+          // fim da faixa (0 = fim, ver _byOrdemKey).
+          ordem: Number.isFinite(+e.byelarahOrdem) ? +e.byelarahOrdem : 0,
           ativo: e.isActive !== false,
           _fromExperience: true,
         };
@@ -9968,11 +10158,14 @@
     } else {
       // Ordena itens por `ordem` antes de agrupar — dentro de cada
       // grupo os itens saem na ordem natural definida no admin.
-      const sortedItems = items.slice().sort((a, b) => {
-        const oa = Number(a.ordem) || 0;
-        const ob = Number(b.ordem) || 0;
-        return oa - ob;
-      });
+      // ordem 1-based: 1 = primeiro card da faixa. 0/null/inválido =
+      // "sem posição definida" → cai no fim, preservando a ordem
+      // natural de quem nunca foi arrastado (sort estável).
+      const _byOrdemKey = (it) => {
+        const n = Number(it && it.ordem);
+        return Number.isFinite(n) && n > 0 ? n : Infinity;
+      };
+      const sortedItems = items.slice().sort((a, b) => _byOrdemKey(a) - _byOrdemKey(b));
       // Particiona no nível da SESSÃO (item), não do grupo: sessões em foco
       // (futuras E ativas) vs passadas/ocultas. Assim uma experiência com
       // sessão ativa e sessão encerrada mostra a ativa no topo e a encerrada
@@ -9991,8 +10184,15 @@
 
       console.info('[Admin/byelarah] rendering', currentGroups.length, 'current +', pastGroups.length, 'past item groups');
       const html = [];
-      const renderItemGroup = (group, past) => {
+      // Reordenar só faz sentido entre os grupos EM FOCO (os passados/
+      // ocultos ficam escondidos e não entram na faixa da home). Com um
+      // grupo só não há o que arrastar.
+      const reorderEnabled = currentGroups.length > 1;
+      const renderItemGroup = (group, past, groupIdx) => {
         const pastAttr = past ? ' data-by-past="1" style="display:none;"' : '';
+        // Atributo que amarra o header + as linhas de sessão num bloco
+        // só, pra que arrastar o header leve o grupo inteiro junto.
+        const groupAttr = (!past && reorderEnabled) ? ' data-by-group="g' + groupIdx + '"' : '';
         const nSessions = group.rows.length;
         const sessoesLabel = nSessions + ' sess' + (nSessions === 1 ? 'ão' : 'ões');
         // Inline styles como fallback — garantem que o header
@@ -10020,13 +10220,39 @@
             '📱 Follow-up WhatsApp' +
           '</button>';
 
+        // Ids que este grupo carrega, pra persistir a ordem no drop:
+        // byelarah_items (coluna `ordem`) e experiences marcadas como
+        // Original (coluna `byelarah_ordem`).
+        const groupItemIds = group.rows
+          .filter(r => r && !r._fromExperience && typeof r.id === 'string' && r.id && !r.id.startsWith('fallback-'))
+          .map(r => r.id);
+        const groupExpIds = group.rows
+          .filter(r => r && r._fromExperience && r.experienceId)
+          .map(r => r.experienceId);
+        const dragHandle = (!past && reorderEnabled)
+          ? '<span class="exp-drag-handle" title="Arraste pra reordenar — quem fica em cima aparece primeiro na faixa By Elarah do site">⠿</span>'
+          : '';
+        // Setinhas: mesma função do arrasto, mas funcionam no celular
+        // (drag-and-drop nativo de HTML não dispara em touch).
+        const moveBtnStyle = 'background:#fff;border:1px solid #e0cba0;color:#a4663b;width:26px;height:26px;border-radius:6px;font-size:.8rem;line-height:1;cursor:pointer;font-family:inherit;padding:0;';
+        const moveBtns = (!past && reorderEnabled)
+          ? '<span style="display:inline-flex;gap:4px;margin-left:auto;">' +
+              '<button type="button" data-by-move="up" style="' + moveBtnStyle + '" title="Subir uma posição">▲</button>' +
+              '<button type="button" data-by-move="down" style="' + moveBtnStyle + '" title="Descer uma posição">▼</button>' +
+            '</span>'
+          : '';
         html.push(
-          '<tr class="admin__group-header"' + pastAttr + '>' +
+          '<tr class="admin__group-header"' + pastAttr + groupAttr +
+            ((!past && reorderEnabled) ? ' draggable="true"' : '') +
+            ' data-by-group-items="' + escapeHtml(groupItemIds.join(',')) + '"' +
+            ' data-by-group-exps="' + escapeHtml(groupExpIds.join(',')) + '">' +
             '<td colspan="8" style="' + headerStyle + '">' +
               '<div class="admin__group-header-inner" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                dragHandle +
                 '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
                 '<span class="admin__group-header-pill" style="' + pillStyle + '">' + escapeHtml(sessoesLabel) + '</span>' +
                 followupBtnHtml +
+                moveBtns +
               '</div>' +
             '</td>' +
           '</tr>'
@@ -10068,7 +10294,7 @@
             actions = '<span class="admin__badge admin__badge--pending">Fallback</span>';
           }
           html.push(`
-            <tr${pastAttr}>
+            <tr${pastAttr}${groupAttr}>
               <td>${it.ordem || 0}</td>
               <td>${imgHtml}</td>
               <td>${escapeHtml(it.nome)}</td>
@@ -10081,7 +10307,7 @@
           `);
         });
       };
-      currentGroups.forEach(g => renderItemGroup(g, false));
+      currentGroups.forEach((g, i) => renderItemGroup(g, false, i));
       if (pastGroups.length) {
         // Divisor + botão pra revelar as passadas/ocultas (escondidas via
         // display:none; o toggle é puro DOM, não refaz requisição).
@@ -10094,11 +10320,13 @@
             '</button>' +
           '</td></tr>'
         );
-        pastGroups.forEach(g => renderItemGroup(g, true));
+        pastGroups.forEach((g, i) => renderItemGroup(g, true, i));
       }
       itemsBody.innerHTML = html.join('');
       // Listeners são registrados uma única vez via delegação em
       // wireByElarahTableListeners() — não re-wirar aqui.
+      renderByElarahReorderHint(reorderEnabled, itemsBody);
+      if (reorderEnabled) setupByElarahGroupReorder(itemsBody);
     }
 
     // ========== Submissions table — GROUPED BY EXPERIENCE ==========

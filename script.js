@@ -892,6 +892,149 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
   }
 
+  // ===== CARROSSEL DA FAIXA BY ELARAH =====
+  // Na home a faixa mostra TODAS as experiências Originals numa
+  // esteira horizontal: dá pra arrastar com o mouse, rolar com o
+  // trackpad, deslizar o dedo no celular ou clicar nas setas.
+  // Em modo desligado (byelarah.html, que já lista tudo em grid) a
+  // função desmonta o carrossel e devolve o grid normal.
+
+  var ORIGINALS_NAV_SVG = {
+    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="9 18 15 12 9 6"/></svg>'
+  };
+
+  function setupOriginalsCarousel(grid, enabled) {
+    if (!grid) return;
+    var wrap = grid.parentNode && grid.parentNode.classList &&
+      grid.parentNode.classList.contains('originals__carousel')
+      ? grid.parentNode : null;
+
+    if (!enabled) {
+      // Desmonta: tira o grid do wrapper e devolve pro lugar original.
+      grid.classList.remove('originals__grid--carousel');
+      if (wrap && wrap.parentNode) {
+        wrap.parentNode.insertBefore(grid, wrap);
+        wrap.parentNode.removeChild(wrap);
+      }
+      return;
+    }
+
+    grid.classList.add('originals__grid--carousel');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'originals__carousel';
+      grid.parentNode.insertBefore(wrap, grid);
+      wrap.appendChild(grid);
+    }
+
+    var prev = wrap.querySelector('.originals__nav--prev');
+    var next = wrap.querySelector('.originals__nav--next');
+    if (!prev) {
+      prev = document.createElement('button');
+      prev.type = 'button';
+      prev.className = 'originals__nav originals__nav--prev';
+      prev.setAttribute('aria-label', 'Ver experiências anteriores');
+      prev.innerHTML = ORIGINALS_NAV_SVG.prev;
+      prev.addEventListener('click', function () { scrollOriginals(grid, -1); });
+      wrap.appendChild(prev);
+    }
+    if (!next) {
+      next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'originals__nav originals__nav--next';
+      next.setAttribute('aria-label', 'Ver mais experiências');
+      next.innerHTML = ORIGINALS_NAV_SVG.next;
+      next.addEventListener('click', function () { scrollOriginals(grid, 1); });
+      wrap.appendChild(next);
+    }
+
+    var sync = function () { syncOriginalsNav(grid, prev, next); };
+    if (!grid.dataset.navWired) {
+      grid.dataset.navWired = '1';
+      grid.addEventListener('scroll', sync, { passive: true });
+      window.addEventListener('resize', sync);
+    }
+    // Espera o layout assentar (larguras dos cards) antes de decidir
+    // se as setas aparecem.
+    if (window.requestAnimationFrame) window.requestAnimationFrame(sync);
+    else sync();
+
+    setupOriginalsDragScroll(grid);
+  }
+
+  // Rola exatamente um card por clique — previsível e sempre
+  // deixando o próximo card alinhado na borda.
+  function scrollOriginals(grid, dir) {
+    var card = grid.querySelector('.originals__card');
+    var step = grid.clientWidth * 0.8;
+    if (card) {
+      var cs = window.getComputedStyle(grid);
+      var gap = parseFloat(cs.columnGap || cs.gap || '24') || 24;
+      step = card.getBoundingClientRect().width + gap;
+    }
+    grid.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
+
+  // Esconde a seta que não leva a lugar nenhum (início / fim da faixa)
+  // e as duas quando tudo já cabe na tela.
+  function syncOriginalsNav(grid, prev, next) {
+    var max = grid.scrollWidth - grid.clientWidth;
+    var overflowing = max > 4;
+    var atStart = grid.scrollLeft <= 4;
+    var atEnd = grid.scrollLeft >= max - 4;
+    if (prev) prev.disabled = !overflowing || atStart;
+    if (next) next.disabled = !overflowing || atEnd;
+  }
+
+  // Arrastar com o mouse (no celular o scroll de toque já é nativo).
+  function setupOriginalsDragScroll(grid) {
+    if (grid.dataset.dragScroll === '1') return;
+    grid.dataset.dragScroll = '1';
+
+    var down = false, moved = false, startX = 0, startScroll = 0;
+
+    function swallowClick(e) { e.stopPropagation(); e.preventDefault(); }
+
+    grid.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') return;      // toque rola sozinho
+      if (e.button !== 0) return;
+      // Não sequestra o clique de botões/links: o arrasto nunca começa
+      // em cima de um CTA, então "Quero participar" continua clicável.
+      if (e.target && e.target.closest &&
+          e.target.closest('button, a, input, select, textarea')) return;
+      down = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = grid.scrollLeft;
+      grid.classList.add('is-grabbing');
+    });
+
+    window.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      var dx = e.clientX - startX;
+      if (!moved && Math.abs(dx) > 4) moved = true;
+      if (!moved) return;
+      grid.scrollLeft = startScroll - dx;
+      e.preventDefault();
+    });
+
+    function endDrag() {
+      if (!down) return;
+      down = false;
+      grid.classList.remove('is-grabbing');
+      if (!moved) return;
+      // Engole o clique que o navegador dispara no fim do arrasto —
+      // sem isso, soltar em cima de um card abriria a experiência.
+      grid.addEventListener('click', swallowClick, true);
+      setTimeout(function () {
+        grid.removeEventListener('click', swallowClick, true);
+      }, 0);
+    }
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+  }
+
   // ===== ELARAH ORIGINALS DYNAMIC RENDER =====
   // Re-renderiza os cards da seção By Elarah a partir do Supabase
   // assim que estiver disponível, mantendo o HTML estático como
@@ -900,10 +1043,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
     var grid = document.querySelector('.originals__grid');
     if (!grid || !Array.isArray(items) || !items.length) return;
 
-    // opts.limit  → mostra só os N primeiros (home). null = todos.
-    // opts.verMaisHref → URL do botão "Ver mais" quando há mais que N.
+    // opts.carousel → renderiza TODOS os cards numa faixa horizontal
+    //                 que arrasta pro lado (+ setas no desktop).
+    // opts.limit    → mostra só os N primeiros. null = todos.
+    //                 Ignorado quando carousel = true.
+    // opts.verMaisHref → URL do botão abaixo da faixa.
     opts = opts || {};
-    var limit = (typeof opts.limit === 'number' && opts.limit > 0) ? opts.limit : null;
+    var carousel = opts.carousel === true;
+    var limit = (!carousel && typeof opts.limit === 'number' && opts.limit > 0) ? opts.limit : null;
     var verMaisHref = opts.verMaisHref || '';
     var totalCount = items.length;
     var renderList = limit ? items.slice(0, limit) : items;
@@ -1098,7 +1245,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // logo no lugar. Se a foto real falhar, some (fica vazio tambem).
       var realImg = normalizeImagePath(it.imagem);
       var imgHtml = realImg
-        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" onerror="this.style.display=&quot;none&quot;;">'
+        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" draggable="false" onerror="this.style.display=&quot;none&quot;;">'
         : '';
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
@@ -1175,6 +1322,11 @@ if (categoriaURL) activeCategoria = categoriaURL;
 
     grid.innerHTML = html;
 
+    // Modo carrossel: transforma o grid numa faixa horizontal e
+    // pendura as setas. Feito antes do bloco do "Ver mais" porque
+    // envolve o grid num wrapper (muda o parentNode).
+    setupOriginalsCarousel(grid, carousel);
+
     // Descrições da lista de espera: clampadas em 3 linhas via CSS. O
     // botão "ver mais" só aparece quando o texto realmente estoura as 3
     // linhas (mede overflow depois do layout) e expande/recolhe no clique.
@@ -1199,19 +1351,29 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // Em páginas que exibem tudo (sem limit), remove qualquer botão
     // remanescente pra não duplicar.
     (function () {
-      var inner = grid.parentNode;
+      // .originals__inner é o container da seção. Não dá pra usar
+      // grid.parentNode aqui: em modo carrossel o grid fica dentro do
+      // wrapper .originals__carousel e o botão iria parar lá dentro.
+      var inner = (grid.closest && grid.closest('.originals__inner')) || grid.parentNode;
       if (!inner) return;
       var existing = inner.querySelector('.originals__ver-mais');
-      if (limit && verMaisHref && totalCount > limit) {
+      var showVerMais = carousel
+        ? !!verMaisHref
+        : !!(limit && verMaisHref && totalCount > limit);
+      if (showVerMais) {
         if (!existing) {
           existing = document.createElement('div');
           existing.className = 'originals__ver-mais';
-          if (grid.nextSibling) inner.insertBefore(existing, grid.nextSibling);
-          else inner.appendChild(existing);
+          inner.appendChild(existing);
         }
+        // No carrossel as N experiências já estão todas ali — o botão
+        // vira um convite pra página dedicada, não um "ver o resto".
+        var verMaisLabel = carousel
+          ? 'Ver as ' + totalCount + ' experiências By Elarah numa página só'
+          : 'Ver todas as ' + totalCount + ' experiências By Elarah';
         existing.innerHTML =
           '<a href="' + esc(verMaisHref) + '" class="originals__ver-mais-btn">' +
-            'Ver todas as ' + totalCount + ' experiências By Elarah' +
+            verMaisLabel +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
           '</a>';
       } else if (existing) {
@@ -1514,7 +1676,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // CTA: respeita cta_mode da experiência (default 'buy').
       tipo: exp.ctaMode === 'waitlist' ? 'espera' : 'participar',
       ctaMode: exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy',
-      ordem: 0,
+      // Posição na faixa By Elarah (1 = primeiro card), definida
+      // arrastando os grupos na aba By Elarah do admin. É a coluna
+      // byelarah_ordem — separada da `ordem` global do site, que
+      // manda no grid da home e nas páginas de categoria.
+      // 0/null = sem posição → vai pro fim da faixa.
+      ordem: (function () {
+        var n = Number(exp.byelarahOrdem);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      })(),
       ativo: exp.isActive !== false,
       // "O que está incluso" — mesmo campo `inclui` do cadastro da
       // experiência. Exibido como lista com check no card.
@@ -1718,13 +1888,25 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
 
     if (combined.length) {
-      // Home: só os 3 primeiros + botão "Ver mais" → byelarah.html.
-      // Página dedicada (body[data-originals="all"]): mostra todas.
+      // Ordem da faixa: 1 = primeiro card. Quem ainda não foi
+      // posicionado no admin (0/null) vai pro fim, preservando a
+      // ordem natural de hoje — o sort do JS é estável.
+      combined.sort(function (a, b) {
+        var na = Number(a && a.ordem);
+        var nb = Number(b && b.ordem);
+        var ka = Number.isFinite(na) && na > 0 ? na : Infinity;
+        var kb = Number.isFinite(nb) && nb > 0 ? nb : Infinity;
+        return ka - kb;
+      });
+
+      // Home: carrossel com TODAS as experiências — arrasta pro lado
+      // ou usa as setas. O botão leva pra página dedicada.
+      // Página dedicada (body[data-originals="all"]): grid com todas.
       var showAllOriginals = document.body &&
         document.body.getAttribute('data-originals') === 'all';
       renderOriginalsGrid(
         combined,
-        showAllOriginals ? {} : { limit: 3, verMaisHref: 'byelarah.html' }
+        showAllOriginals ? {} : { carousel: true, verMaisHref: 'byelarah.html' }
       );
     } else {
       // Nada cadastrado em byelarah_items + nenhuma experience marcada
