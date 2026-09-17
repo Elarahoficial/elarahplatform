@@ -23,7 +23,18 @@ nasce esperando confirmação de email):
 
 Sobre as senhas: são sugestões geradas agora, fáceis de ditar no WhatsApp e
 difíceis de adivinhar. Troque se quiser — o que não vale é repetir a mesma nas
-duas. Peça pra cada uma trocar depois do primeiro login em **Minha conta**.
+duas.
+
+**Como se troca a senha depois.** O site ainda não tem "alterar senha" dentro de
+Minha conta: o caminho é o **Esqueci minha senha** da tela de login, que manda um
+link por email. Só que esse link vai pro endereço da conta — e
+`eventos@elarah.com.br` / `comercial@elarah.com.br` só recebem email se essas
+caixas existirem de verdade no seu provedor.
+
+Se as caixas não existirem, quem troca a senha é você, pelo Supabase:
+**Authentication → Users → clique nos três pontinhos da linha →
+*Reset password* / *Update password*.** Vale marcar isso: no dia em que uma
+delas sair, trocar a senha ali é o que corta o acesso na hora.
 
 **Por que email de função e não o email pessoal delas:** quando uma sair, você
 passa o login pra próxima e não precisa mexer em mais nada. O histórico do que
