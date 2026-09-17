@@ -2709,6 +2709,21 @@ if (groupForm) {
         });
       }
 
+      // ===== Sinalização do botão "Confirmar e pagar" =====
+      // Delegado no modal inteiro (e não campo a campo) de propósito: os
+      // cards de Pessoa 2..N são criados depois, a cada mudança de
+      // quantidade. Listener delegado pega esses campos novos sem precisar
+      // reatar nada em renderParticipantFields().
+      //   input/change → digitação, checkbox dos prazos, selects
+      //   click        → botões de variante, ± da quantidade, cupom, PIX/cartão
+      // No click o repaint vai pro fim da fila (setTimeout 0) pra rodar
+      // DEPOIS do handler que muda o estado — senão leria o valor antigo.
+      modalRoot.addEventListener('input', function () { updateConfirmBtnVisual(); });
+      modalRoot.addEventListener('change', function () { updateConfirmBtnVisual(); });
+      modalRoot.addEventListener('click', function () {
+        setTimeout(updateConfirmBtnVisual, 0);
+      });
+
       return modalRoot;
     }
 
@@ -3011,7 +3026,8 @@ if (groupForm) {
       sec.style.display = 'none';
       sec.innerHTML =
         '<h3 style="margin:0 0 4px;font-size:1.05rem;color:#2a2a2a;">Pagamento no cartão</h3>'
-        + '<p style="margin:0 0 14px;color:#888;font-size:.82rem;">Seus dados vão criptografados direto pro Pagar.me. Não guardamos o cartão.</p>'
+        + '<p style="margin:0 0 10px;color:#888;font-size:.82rem;">Seus dados vão criptografados direto pro Pagar.me. Não guardamos o cartão.</p>'
+        + '<div id="erm-pg-summary" style="background:#faf6f0;border:1px solid #f0e2d0;border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:.85rem;color:#4a4a4a;line-height:1.5;"></div>'
         + '<div style="display:flex;flex-direction:column;gap:10px;">'
         + '  <input id="erm-pg-number" inputmode="numeric" autocomplete="cc-number" placeholder="Número do cartão" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
         + '  <input id="erm-pg-holder" autocomplete="cc-name" placeholder="Nome impresso no cartão" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
@@ -3152,6 +3168,30 @@ if (groupForm) {
       }
       pgCardError('');
 
+      // ===== Resumo do que está sendo pago =====
+      // O painel de cartão não mostrava a quantidade em lugar nenhum: se o
+      // checkout perdesse uma pessoa no caminho, a cobrança saía menor e
+      // ninguém via antes de pagar. Agora "N pessoas" e os nomes ficam na
+      // frente de quem está digitando o cartão.
+      // Montado com textContent (e não string de HTML) porque nome de
+      // participante é texto do usuário.
+      const sumEl = sec.querySelector('#erm-pg-summary');
+      if (sumEl) {
+        const pQty = Math.max(1, ctx.quantidade || 1);
+        const pNomes = (ctx.participantes || [])
+          .map(function (p) { return (p && p.nome) || ''; })
+          .filter(Boolean);
+        sumEl.innerHTML =
+          '<strong id="erm-pg-sum-qty"></strong><span id="erm-pg-sum-who"></span>'
+          + '<br><span id="erm-pg-sum-exp" style="color:#777;"></span>';
+        sec.querySelector('#erm-pg-sum-qty').textContent =
+          pQty + (pQty > 1 ? ' pessoas' : ' pessoa');
+        sec.querySelector('#erm-pg-sum-who').textContent =
+          pNomes.length ? ' · ' + pNomes.join(', ') : '';
+        sec.querySelector('#erm-pg-sum-exp').textContent =
+          (ctx.experienceNome || 'Experiência') + ' — total ' + brl(ctx.totalCentavos || 0);
+      }
+
       const payBtn = sec.querySelector('#erm-pg-pay');
       const backBtn = sec.querySelector('#erm-pg-back');
       if (backBtn) {
@@ -3159,10 +3199,39 @@ if (groupForm) {
           stopPagarmeCardPolling();
           sec.style.display = 'none';
           if (formSec) formSec.style.display = 'block';
+          // O submit deixou "Confirmar e pagar" com disabled = true e texto
+          // "Processando..." porque o painel de cartão assumiu o fluxo. Ao
+          // voltar, o painel DEVOLVE o controle pro formulário. Sem isto o
+          // botão continuava travado pra sempre: a pessoa clicava várias
+          // vezes e não acontecia nada.
+          const cBtn = modalRoot && modalRoot.querySelector('#erm-confirm');
+          if (cBtn) cBtn.disabled = false;
+          refreshPriceBreakdown();  // devolve o texto do botão
+          updateConfirmBtnVisual(); // e a cor
         };
       }
       if (payBtn) {
         payBtn.onclick = async function () {
+          // ===== TRAVA DE QUANTIDADE =====
+          // ctx.participantes é montado no submit como comprador + Pessoas
+          // 2..N, então tem que ter exatamente ctx.quantidade itens. Se
+          // divergir, alguma coisa perdeu uma pessoa no caminho e cobrar
+          // assim geraria reserva com vaga a menos que o combinado — o
+          // prejuízo é do cliente e o acerto é manual. Melhor não cobrar.
+          const expectedQty = Math.max(1, ctx.quantidade || 1);
+          const partCount = (ctx.participantes || []).length;
+          if (partCount !== expectedQty) {
+            console.error('[Elarah Payment/Pagarme] quantidade divergente — cobrança bloqueada', {
+              expectedQty: expectedQty,
+              partCount: partCount,
+            });
+            return pgCardError(
+              'A reserva é de ' + expectedQty + (expectedQty > 1 ? ' pessoas' : ' pessoa')
+              + ', mas só ' + partCount + ' apareceu aqui. Clique em "Voltar", confira os dados '
+              + 'de cada pessoa e tente de novo — assim não corremos o risco de cobrar a menos.'
+            );
+          }
+
           const numRaw = (sec.querySelector('#erm-pg-number').value || '').replace(/\D+/g, '');
           const holder = (sec.querySelector('#erm-pg-holder').value || '').trim();
           const expRaw = (sec.querySelector('#erm-pg-exp').value || '').replace(/\D+/g, '');
@@ -3778,6 +3847,107 @@ if (groupForm) {
       return pct + feeConfig.fixedCents;
     }
 
+    // =============================================================
+    // ESTADO VISUAL DO BOTÃO "CONFIRMAR E PAGAR"
+    // -------------------------------------------------------------
+    // Antes o botão tinha um laranja claro FIXO: preenchido ou não,
+    // sempre a mesma cor apagada. Quem terminava de preencher não
+    // recebia nenhum sinal de que podia seguir e ficava achando que
+    // ainda faltava alguma coisa. Agora ele escurece quando TODOS os
+    // obrigatórios estão ok.
+    //
+    // De propósito o botão NÃO é bloqueado quando falta algo: quem
+    // clica incompleto continua recebendo a mensagem exata do que
+    // falta, campo a campo, na validação do submit. Cor é sinalização;
+    // travar o clique só esconderia o motivo de não dar pra seguir.
+    // =============================================================
+    const CONFIRM_BTN_READY_BG = '#c8742d'; // completo — escuro, "pode ir"
+    const CONFIRM_BTN_IDLE_BG = '#f0a05e';  // incompleto — claro
+
+    // Espelha a validação do submit (handleConfirmReservation), porém
+    // SEM escrever mensagem nem mexer em foco/scroll: só responde
+    // "dá pra enviar?". Se um obrigatório novo entrar no formulário,
+    // ele precisa entrar aqui também.
+    function isCheckoutFormComplete() {
+      if (!currentReservationCtx || !modalRoot) return false;
+      const ctx = currentReservationCtx;
+      const root = modalRoot;
+      const val = function (sel) {
+        const el = root.querySelector(sel);
+        return el ? String(el.value || '').trim() : '';
+      };
+
+      // Aceite dos prazos de remarcação / cancelamento
+      const policyEl = root.querySelector('#erm-policy');
+      if (policyEl && !policyEl.checked) return false;
+
+      // Nome + WhatsApp do comprador
+      const nome = val('#erm-nome').replace(/\s+/g, ' ');
+      if (!nome || nome.length < 3) return false;
+      if (!normalizePhoneBR(val('#erm-telefone'))) return false;
+
+      // E-mail — só no checkout convidado
+      if (ctx.isGuest) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('#erm-email').toLowerCase())) return false;
+      }
+
+      // CPF — PIX sempre exige; no modo Pagar.me o cartão também
+      if (ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST) {
+        if (!isValidCpfFront(val('#erm-cpf').replace(/\D+/g, ''))) return false;
+      }
+
+      // Variante (ex.: Pintura) da Pessoa 1
+      const hasVariants = !!(ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length);
+      if (hasVariants && !ctx.variantSelected) return false;
+
+      // Pessoas 2..N — nome, WhatsApp e variante de cada uma
+      const qty = Math.max(1, ctx.quantidade || 1);
+      if (qty > 1) {
+        const nomes = root.querySelectorAll('.erm-part-nome');
+        const tels = root.querySelectorAll('.erm-part-telefone');
+        // Cards ainda não renderizados = formulário incompleto.
+        if (nomes.length < qty - 1) return false;
+        for (let i = 0; i < nomes.length; i++) {
+          const pn = String(nomes[i].value || '').trim();
+          if (!pn || pn.length < 3) return false;
+          if (!normalizePhoneBR(tels[i] ? tels[i].value : '')) return false;
+          if (hasVariants && !(ctx.variantByParticipant && ctx.variantByParticipant[i + 2])) return false;
+        }
+      }
+      return true;
+    }
+
+    // Pinta o botão conforme o estado do formulário.
+    //
+    // TUDO dentro de try/catch de propósito. Esta função é chamada de
+    // dentro de refreshPriceBreakdown(), que desenha subtotal/desconto/
+    // total. Cor de botão é enfeite; preço na tela não é. Se algum dia
+    // isCheckoutFormComplete() estourar (campo novo, ctx em formato
+    // inesperado), o erro NÃO pode derrubar o preço nem o checkout —
+    // o botão só fica com a cor que já estava e a venda segue.
+    function updateConfirmBtnVisual() {
+      try {
+        if (!modalRoot) return;
+        const btn = modalRoot.querySelector('#erm-confirm');
+        if (!btn) return;
+        // Submit em voo ("Processando..."): quem manda na aparência é o
+        // fluxo de pagamento, não o formulário.
+        if (btn.disabled) return;
+        btn.style.transition = 'background-color .18s ease, opacity .18s ease, box-shadow .18s ease';
+        if (isCheckoutFormComplete()) {
+          btn.style.background = CONFIRM_BTN_READY_BG;
+          btn.style.opacity = '1';
+          btn.style.boxShadow = '0 6px 16px rgba(200,116,45,.32)';
+        } else {
+          btn.style.background = CONFIRM_BTN_IDLE_BG;
+          btn.style.opacity = '.5';
+          btn.style.boxShadow = 'none';
+        }
+      } catch (e) {
+        console.warn('[Elarah checkout] não foi possível repintar o botão:', e);
+      }
+    }
+
     // Re-renderiza subtotal / desconto / taxa / total baseado no
     // estado atual do ctx (cupom aplicado + método escolhido).
     function refreshPriceBreakdown() {
@@ -3864,6 +4034,9 @@ if (groupForm) {
       } else {
         confirmBtn.textContent = 'Confirmar e pagar com cartão';
       }
+      // Quantidade, cupom e troca de método mudam o que é obrigatório
+      // (ex.: PIX passa a exigir CPF) — repinta junto com o preço.
+      updateConfirmBtnVisual();
     }
 
     // Visual toggle dos botões Cartão / PIX. Também mostra/esconde
