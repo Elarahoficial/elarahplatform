@@ -2729,6 +2729,13 @@ if (groupForm) {
       return modalRoot;
     }
 
+    // O modal de reserva está aberto na tela agora?
+    // Aberto = display 'flex' (openReservationModal);
+    // fechado = 'none' (cssText inicial e closeReservationModal).
+    function isReservationModalOpen() {
+      return !!(modalRoot && modalRoot.style.display !== 'none');
+    }
+
     function closeReservationModal() {
       if (!modalRoot) return;
       stopPixPolling();
@@ -4142,7 +4149,45 @@ if (groupForm) {
         (soldOut ? '.5' : '1') + ';transition:all .15s;';
     }
 
+    // =============================================================
+    // ABERTURA DO MODAL — TUDO OU NADA
+    // -------------------------------------------------------------
+    // openReservationModalInner() publica `currentReservationCtx = ctx`
+    // logo na 4ª linha, mas só termina de preparar esse ctx ~340 linhas
+    // depois (quantidade, participantes, handlers do stepper). Se
+    // qualquer coisa estourar nesse meio — e é um trecho que mexe em
+    // horários, slots e variantes —, o resultado era o pior estado
+    // possível: `currentReservationCtx` já apontando pro ctx NOVO e pela
+    // metade, enquanto a tela continuava mostrando o formulário ANTERIOR,
+    // preenchido. Nada avisava. A pessoa clicava em pagar e a cobrança
+    // saía com os dados do ctx capenga (quantidade 1, total = preço
+    // unitário) em vez do que estava na tela.
+    //
+    // Agora: os campos que o fluxo de pagamento lê são normalizados ANTES
+    // de publicar, e uma falha na montagem FECHA o checkout em vez de
+    // deixá-lo pela metade. Modal que não abre é um problema visível;
+    // modal que abre errado cobra errado.
+    // =============================================================
     function openReservationModal(ctx) {
+      // Normaliza antes de publicar — o ctx nunca existe sem estes.
+      ctx.quantidade = Math.max(1, Math.min(10, Number(ctx.quantidade) || 1));
+      ctx.participantes = [];
+      ctx.acompanhantes = [];
+      ctx.variantByParticipant = {};
+      ctx.totalCentavos = ctx.precoCentavos;
+      try {
+        openReservationModalInner(ctx);
+      } catch (e) {
+        console.error('[Elarah checkout] falha ao montar o modal — abortando pra não deixar o checkout pela metade', e);
+        try { closeReservationModal(); } catch (_e) {}
+        currentReservationCtx = null;
+        try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (_e) {}
+        try { document.body.style.overflow = ''; } catch (_e) {}
+        alert('Não foi possível abrir o checkout agora. Recarregue a página e tente de novo.');
+      }
+    }
+
+    function openReservationModalInner(ctx) {
       // Esconde o spinner do clique de Reservar IMEDIATAMENTE quando o
       // modal abre — antes era escondido com 80ms de atraso no finally
       // do startCheckout, o que causava o spinner aparecer sobreposto
@@ -7113,6 +7158,27 @@ if (groupForm) {
     // a intenção salva em sessionStorage e relançamos o startCheckout
     // automaticamente, encontrando o botão correspondente na página.
     function resumePendingCheckout() {
+      // ===== NUNCA REMONTAR POR CIMA DE UM CHECKOUT ABERTO =====
+      // Esta função é disparada por DOIS gatilhos que não têm nada a ver
+      // com a pessoa ter acabado de logar:
+      //   * onAuthStateChange('SIGNED_IN') — o Supabase emite isso também
+      //     em refresh de token e em restauração de sessão, ou seja, no
+      //     meio de um checkout que já está aberto;
+      //   * um timer 600ms depois do load, se já houver sessão.
+      // Sem esta guarda, ela chamava startCheckout() de novo e o
+      // openReservationModal remontava o modal por cima do formulário já
+      // preenchido. Foi assim que uma reserva de 2 pessoas virou 1: o ctx
+      // era substituído, a tela continuava mostrando 2, e a cobrança saía
+      // por 1.
+      //
+      // Se o modal já está aberto, a intenção de compra JÁ está sendo
+      // atendida — a pendência perdeu o sentido e é descartada.
+      if (isReservationModalOpen()) {
+        console.warn('[Elarah checkout] retomada ignorada: o checkout já está aberto na tela');
+        try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+        return;
+      }
+
       let pending = null;
       try {
         const raw = sessionStorage.getItem(PENDING_KEY);
