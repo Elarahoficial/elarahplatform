@@ -25,6 +25,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
+  byelarahDateAnnouncementTemplateParams,
+  byelarahDateAnnouncementWhatsAppText,
   bookingConfirmationTemplateParams,
   bookingConfirmationWhatsAppText,
   feedbackTemplateParams,
@@ -38,6 +40,7 @@ import {
   sendWhatsAppTemplate,
   whatsappAllowlistHas,
   whatsappIsOfficial,
+  whatsappOfficialReady,
 } from "../_shared/whatsapp.ts";
 
 // Foto de exemplo (uma experiência real do site). Em produção, cada mensagem
@@ -55,7 +58,20 @@ const SAMPLE = {
   bairro: "Pinheiros",
   quantidade: 1,
 };
+// Exemplo do aviso By Elarah, com os mesmos dados de um evento real.
+const SAMPLE_BYELARAH = {
+  nome: "Você",
+  experienciaNome: "Crie seu Amuleto em Vitral",
+  data: "24 de abril",
+  horarios: ["10h às 13h", "14h às 17h"],
+  local: "Rua Nova Orleans, 34 — Brooklin",
+  link: "https://elarah.com.br/index.html#by-elarah-vitral",
+};
+
 function sampleMessage(tipo: string): string {
+  if (tipo === "byelarah_date" || tipo === "byelarah") {
+    return byelarahDateAnnouncementWhatsAppText(SAMPLE_BYELARAH);
+  }
   switch (tipo) {
     case "reminder":
       return reminder48hWhatsAppText(SAMPLE);
@@ -73,6 +89,12 @@ function sampleMessage(tipo: string): string {
 // recebe — é o único jeito de o teste ser fiel (e de chegar fora da janela de
 // 24h). Texto livre digitado no painel só vale no provedor legado.
 function sampleTemplate(tipo: string): { kind: string; params: string[] } {
+  if (tipo === "byelarah_date" || tipo === "byelarah") {
+    return {
+      kind: "byelarah_date",
+      params: byelarahDateAnnouncementTemplateParams(SAMPLE_BYELARAH),
+    };
+  }
   switch (tipo) {
     case "reminder":
       return { kind: "reminder48", params: reminder48hTemplateParams(SAMPLE) };
@@ -154,7 +176,9 @@ serve(async (req) => {
     }, 403);
   }
 
-  if (!isWhatsAppConfigured()) {
+  const testeUsaOficial = whatsappIsOfficial() ||
+    ((tipo === "byelarah_date" || tipo === "byelarah") && whatsappOfficialReady());
+  if (!isWhatsAppConfigured() && !testeUsaOficial) {
     return json({
       ok: false,
       error: whatsappIsOfficial() ? "meta_nao_configurada" : "zapi_nao_configurado",
@@ -167,7 +191,11 @@ serve(async (req) => {
   // OFICIAL: manda o template aprovado do tipo escolhido (o mesmo que o
   // cliente recebe). LEGADO: manda a foto + o texto (livre ou de exemplo).
   const tpl = sampleTemplate(tipo);
-  const result = whatsappIsOfficial()
+  // O aviso By Elarah sai pela OFICIAL sempre que ela estiver cadastrada —
+  // igualzinho ao envio real — mesmo que o provedor padrão siga o legado.
+  const ehAviso = tpl.kind === "byelarah_date";
+  const usaOficial = whatsappIsOfficial() || (ehAviso && whatsappOfficialReady());
+  const result = usaOficial
     ? await sendWhatsAppTemplate({ to: telefone, kind: tpl.kind, template: { params: tpl.params } })
     : await sendWhatsAppImage({ to: telefone, image: SAMPLE_IMAGE, caption: mensagem });
   if (!result.ok) {

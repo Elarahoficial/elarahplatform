@@ -13,6 +13,23 @@ pra lista sem risco de o número ser banido:
 
 Trocar de provedor é **só secret** — nenhuma linha de código muda.
 
+## O arranjo padrão: só o disparo frio na oficial
+
+Cadastrar as credenciais da Meta **não migra nada sozinho**. O que acontece é:
+
+| Fluxo | Canal | Por quê |
+|---|---|---|
+| **Aviso "a data saiu" / "inscrições abertas"** | **oficial**, assim que as credenciais existirem | é disparo pra lista fria — o que de fato arrisca banir um número comum |
+| Confirmação, lembrete 48h, feedback, pendente | segue no canal de sempre | já funcionam, e são mensagens pra quem acabou de comprar (baixo risco) |
+
+Ou seja: pra ligar o aviso automático você precisa aprovar **só os dois
+templates do By Elarah**. Os outros quatro só entram em cena se/quando você
+migrar o resto — e aí é uma decisão explícita: `WHATSAPP_PROVIDER=meta`.
+
+⚠️ **Não** cadastre `WHATSAPP_PROVIDER=meta` antes de ter os quatro templates
+transacionais aprovados: as confirmações de reserva passariam a ser recusadas
+pela Meta por falta de template.
+
 ## 1. Criar os templates no WhatsApp Manager
 
 É naquela tela de **Modelos de mensagem** (WhatsApp Manager → Modelos de
@@ -27,7 +44,9 @@ mensagem → Criar modelo). Regras que fazem a Meta recusar se não seguir:
   que falam de uma reserva que já existe. A Meta pode reclassificar; se
   reclassificar, só muda o preço, não o funcionamento.
 
-Crie os seis. Copie e cole o corpo exatamente como está:
+**Pro aviso automático, só os dois primeiros são obrigatórios.** Os outros
+quatro ficam pra quando você migrar os fluxos transacionais. Copie e cole o
+corpo exatamente como está:
 
 ### `elarah_data_saiu` — Marketing (é o do aviso automático de data)
 
@@ -139,12 +158,15 @@ Project Settings → Edge Functions → **Secrets**:
 ```
 META_WHATSAPP_TOKEN            = <token permanente>
 META_WHATSAPP_PHONE_NUMBER_ID  = <id do número>
-WHATSAPP_PROVIDER              = meta      (opcional, ver abaixo)
 ```
 
-Sem `WHATSAPP_PROVIDER`, a simples presença das duas credenciais da Meta já
-manda tudo pela oficial — cadastrar os secrets **é** a decisão de migrar. Pra
-voltar pro legado em caso de emergência: `WHATSAPP_PROVIDER=zapi`.
+Só isso. Com esses dois secrets, o **aviso à lista** passa a sair pela oficial
+e **nada mais muda** — confirmação, lembrete e feedback continuam no canal de
+sempre.
+
+Quando (e se) quiser migrar o resto, aí sim adicione
+`WHATSAPP_PROVIDER=meta` — **depois** de aprovar os quatro templates
+transacionais. `WHATSAPP_PROVIDER=zapi` volta tudo pro legado.
 
 Continuam valendo os controles de sempre: `WHATSAPP_SENDING_ENABLED=true`,
 `WHATSAPP_ENV=production`, `WHATSAPP_ROLLOUT_PERCENT=100`,
@@ -156,9 +178,10 @@ repositório já faz).
 
 ## 4. Testar antes de valer pra cliente
 
-No admin → WhatsApp → **testar no meu número**. Na oficial o teste sai pelo
-**mesmo template aprovado** que o cliente recebe (e não pelo texto de exemplo),
-então o que você vê no seu WhatsApp é exatamente o que vai chegar.
+No admin → WhatsApp → **testar no meu número**. O botão roxo
+**📲 Aviso "a data saiu"** manda o aviso do By Elarah pelo mesmo caminho do
+envio real: template aprovado, pela oficial. Os outros botões seguem o canal
+padrão. Assim o que você vê no seu WhatsApp é exatamente o que a cliente vê.
 
 Se der erro, a mensagem já vem traduzida:
 

@@ -337,6 +337,7 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
       : WA.byelarahDateAnnouncementTemplateParams(dados);
     const r = await WA.gatedSendWhatsApp(supabase, {
       kind,
+      preferOfficial: true,
       dedupeKey: "bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + g.phone,
       identifierOk: true,
       rawPhone: g.phone,
@@ -809,8 +810,9 @@ async function run() {
   {
     const WAm = await loadWA(META_ENV);
     const zm = installMetaMock();
-    check("credenciais da Meta presentes → provedor oficial", WAm.whatsappProviderName() === "meta");
-    check("oficial conta como configurado", WAm.whatsappConfigured() === true);
+    check("credenciais da Meta cadastradas → oficial pronta", WAm.whatsappOfficialReady() === true);
+    check("mas o provedor PADRÃO segue o legado (não migra nada sozinho)",
+      WAm.whatsappProviderName() === "zapi");
 
     const onda = {
       id: "onda-meta", item_slug: "perfumaria-criativa",
@@ -909,6 +911,38 @@ async function run() {
     check("usou o template de inscrições abertas", c.template === "elarah_inscricoes_abertas", String(c.template));
     check("3 parâmetros (nome, experiência, link)", c.params.length === 3, JSON.stringify(c.params));
     check("link de checkout no {{3}}", c.params[2] === onda.link);
+  }
+
+  {
+    // O ARRANJO REAL PEDIDO: confirmação/lembrete/feedback continuam no canal
+    // de sempre (já funcionam, templates não aprovados na oficial), e SÓ o
+    // aviso pra lista de interesse — o disparo frio — sai pela oficial.
+    const MISTO = { ...PROD_ENV, ...META_ENV };   // credenciais dos dois
+    const WAx = await loadWA(MISTO);
+    check("misto: provedor padrão continua legado", WAx.whatsappProviderName() === "zapi");
+    check("misto: oficial disponível pro fluxo que pedir", WAx.whatsappOfficialReady() === true);
+
+    // 1) Confirmação de reserva → Z-API (texto/imagem), como hoje.
+    const zz = installZapiMock();
+    const sbz = makeSupabase([bookingSeed({ id: "bkx-A" })]);
+    const rc = await WAx.sendBookingConfirmationGated(sbz, sbz._bookings.get("bkx-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("misto: confirmação sai pelo canal legado", rc.sent === true && zz.calls.length === 1,
+      JSON.stringify({ sent: rc.sent, calls: zz.calls.length }));
+
+    // 2) Aviso "a data saiu" → Meta, com template aprovado.
+    const zm = installMetaMock();
+    const onda = {
+      id: "onda-misto", item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      data_texto: "24 de abril", horarios: ["10h às 13h"], local: "Brooklin",
+      link: "https://elarah.com.br/x",
+    };
+    const sbm = makeSupabase([], [subSeed({ id: "sub-x", item_slug: "vitral", experiencia: onda.item_nome })]);
+    const rx = await runAvisoDeData(WAx, sbm, onda);
+    check("misto: aviso à lista sai pela OFICIAL", rx.enviados === 1 && zm.calls.length === 1,
+      JSON.stringify(rx));
+    check("misto: e vai como template aprovado", zm.calls[0].template === "elarah_data_saiu");
   }
 
   // ---------- Relatório ----------

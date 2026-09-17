@@ -57,16 +57,24 @@ const META_GRAPH_BASE =
 const META_GRAPH_VERSION = (Deno.env.get("META_GRAPH_VERSION") ?? "").trim() || "v21.0";
 const META_LANG = (Deno.env.get("META_TEMPLATE_LANG") ?? "pt_BR").trim() || "pt_BR";
 
-// Provedor ativo. Explícito por WHATSAPP_PROVIDER; sem ele, a simples
-// presença das credenciais da oficial já manda tudo pela oficial (setar os
-// secrets da Meta É a decisão de migrar). Sem nenhuma das duas → zapi, que
-// então responde "não configurado" — nunca um envio às cegas.
+// Provedor PADRÃO das mensagens transacionais (confirmação, lembrete,
+// feedback, pendente). EXPLÍCITO de propósito: cadastrar as credenciais da
+// Meta NÃO migra esses fluxos sozinho — eles só mudam quando
+// WHATSAPP_PROVIDER=meta, e aí os templates deles têm que estar aprovados.
+// Assim ninguém acorda com a confirmação de reserva parando de chegar.
 const PROVIDER: "meta" | "zapi" = (() => {
   const raw = (Deno.env.get("WHATSAPP_PROVIDER") ?? "").trim().toLowerCase();
   if (raw === "meta" || raw === "oficial" || raw === "cloud") return "meta";
-  if (raw === "zapi" || raw === "z-api") return "zapi";
-  return META_TOKEN && META_PHONE_ID ? "meta" : "zapi";
+  return "zapi";
 })();
+
+// A oficial está pronta pra uso (credenciais presentes)? Independe do
+// provedor padrão: é o que permite UM fluxo específico — o aviso pra lista
+// de interesse, que é disparo frio e não pode arriscar o número — sair pela
+// oficial enquanto o resto continua no canal de sempre.
+export function whatsappOfficialReady(): boolean {
+  return !!(META_TOKEN && META_PHONE_ID);
+}
 
 export function whatsappProviderName(): "meta" | "zapi" {
   return PROVIDER;
@@ -852,6 +860,11 @@ export async function gatedSendWhatsApp(
     // oficial o envio vira texto livre — que a Meta só entrega dentro da
     // janela de 24h. Toda automação (mensagem que a Elarah inicia) manda.
     template?: MetaTemplateSpec;
+    // Este envio PREFERE a oficial, mesmo que o provedor padrão seja o
+    // legado. Usado pelo aviso à lista de interesse: é disparo frio, o que
+    // mais arrisca banimento de número comum. Sem credencial da Meta
+    // cadastrada, cai no canal padrão (o comportamento de hoje).
+    preferOfficial?: boolean;
     bookingId?: string | null;
     experienciaId?: string | null;
     createdBy?: string | null;
@@ -899,7 +912,9 @@ export async function gatedSendWhatsApp(
       // o template aprovado tiver um. Mandar header num template sem header
       // faz a Meta recusar TODOS os envios (132000). Quem aprovou um
       // template com imagem passa headerImage explicitamente.
-      if (PROVIDER === "meta" && params.template) {
+      const viaOficial = (PROVIDER === "meta") ||
+        (params.preferOfficial === true && whatsappOfficialReady());
+      if (viaOficial && params.template) {
         return await sendWhatsAppTemplate({
           to: o.phone,
           kind: params.kind,

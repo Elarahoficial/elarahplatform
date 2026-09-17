@@ -61,8 +61,9 @@ Todo envio passa pelo **portão único de WhatsApp** (`gatedSendWhatsApp`) — o
 mesmo das confirmações e lembretes: idempotência, kill switch, modo observação,
 rollout, allowlist, fail-closed. Ver `docs/whatsapp-seguranca.md`.
 
-**Por qual canal sai:** pela **API oficial da Meta** (Cloud API), usando o
-template aprovado `elarah_data_saiu` (ou `elarah_inscricoes_abertas`, quando
+**Por qual canal sai:** pela **API oficial da Meta** (Cloud API) — só este
+fluxo, assim que as credenciais da Meta existirem; confirmação, lembrete e
+feedback seguem no canal de sempre. Usa o template aprovado `elarah_data_saiu` (ou `elarah_inscricoes_abertas`, quando
 abre sem data) — é o que permite avisar a lista inteira
 sem risco de o número ser banido. O texto acima é o corpo do template; o que
 muda por pessoa são as cinco variáveis (nome, evento, data/horários, local,
@@ -128,7 +129,7 @@ link). Como criar o template e ligar as credenciais:
    cron secret, service role ou JWT de admin).
 3. **Agende o cron**: abra `sql/elarah_byelarah_aviso_data_cron.sql`, troque
    `TROQUE_PELA_SUA_CRON_SECRET` pela sua `CRON_SECRET` e rode.
-4. **Aprove os templates `elarah_data_saiu` e `elarah_inscricoes_abertas`** no WhatsApp Manager e cadastre as
+4. **Aprove SÓ os templates `elarah_data_saiu` e `elarah_inscricoes_abertas`** no WhatsApp Manager e cadastre as
    credenciais da Meta nos secrets — passo a passo em
    `docs/whatsapp-oficial-meta.md`. Sem template aprovado, a Meta recusa o
    envio (a onda fica na fila e o erro aparece em `byelarah_date_announcements.erro`).

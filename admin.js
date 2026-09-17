@@ -1906,7 +1906,10 @@
     if (!tel) { setStatus('Digite o seu número (com DDD) primeiro.', '#c0392b'); return; }
     var sb = window.supabaseClient;
     if (!sb || !sb.functions || !sb.functions.invoke) { setStatus('Supabase indisponível. Recarregue a página.', '#c0392b'); return; }
-    var nomes = { confirmation: 'Confirmação', reminder: 'Lembrete 48h', feedback: 'Pós-compra', pending: 'Pendente' };
+    var nomes = {
+      confirmation: 'Confirmação', reminder: 'Lembrete 48h', feedback: 'Pós-compra',
+      pending: 'Pendente', byelarah_date: 'Aviso "a data saiu"'
+    };
     setStatus('Enviando "' + (nomes[tipo] || tipo) + '" pro seu WhatsApp…', '#666');
     document.querySelectorAll('.wa-test-btn').forEach(function (b) { b.disabled = true; });
     try {

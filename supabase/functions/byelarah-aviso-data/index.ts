@@ -43,6 +43,7 @@ import {
   gatedSendWhatsApp,
   normalizePhoneBR,
   whatsappConfigured,
+  whatsappOfficialReady,
   whatsappSendingDisabled,
 } from "../_shared/whatsapp.ts";
 
@@ -277,7 +278,11 @@ serve(async (req) => {
   if (!vivas.length) return json({ ok: true, ondas: [], expiradas: expiradas.length });
 
   // ---- Travas globais: não mexe na fila, só informa (a onda continua lá) ----
-  if (!whatsappConfigured()) {
+  // Este fluxo sai pela OFICIAL sempre que ela estiver cadastrada, mesmo
+  // que o resto do sistema ainda use o canal legado — é disparo pra lista
+  // fria, o que mais arrisca o número. Sem nenhuma das duas configuradas,
+  // não há como enviar.
+  if (!whatsappConfigured() && !whatsappOfficialReady()) {
     return json({ ok: false, error: "nao_configurado", pendentes: vivas.length }, 400);
   }
   if (whatsappSendingDisabled()) {
@@ -394,6 +399,7 @@ serve(async (req) => {
         caption: mensagem,
         message: mensagem,
         template: { params: templateParams },
+        preferOfficial: true,
         experienciaId: onda.experience_id ?? null,
         createdBy: adminId,
       });
