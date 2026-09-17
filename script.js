@@ -3918,22 +3918,33 @@ if (groupForm) {
     }
 
     // Pinta o botão conforme o estado do formulário.
+    //
+    // TUDO dentro de try/catch de propósito. Esta função é chamada de
+    // dentro de refreshPriceBreakdown(), que desenha subtotal/desconto/
+    // total. Cor de botão é enfeite; preço na tela não é. Se algum dia
+    // isCheckoutFormComplete() estourar (campo novo, ctx em formato
+    // inesperado), o erro NÃO pode derrubar o preço nem o checkout —
+    // o botão só fica com a cor que já estava e a venda segue.
     function updateConfirmBtnVisual() {
-      if (!modalRoot) return;
-      const btn = modalRoot.querySelector('#erm-confirm');
-      if (!btn) return;
-      // Submit em voo ("Processando..."): quem manda na aparência é o
-      // fluxo de pagamento, não o formulário.
-      if (btn.disabled) return;
-      btn.style.transition = 'background-color .18s ease, opacity .18s ease, box-shadow .18s ease';
-      if (isCheckoutFormComplete()) {
-        btn.style.background = CONFIRM_BTN_READY_BG;
-        btn.style.opacity = '1';
-        btn.style.boxShadow = '0 6px 16px rgba(200,116,45,.32)';
-      } else {
-        btn.style.background = CONFIRM_BTN_IDLE_BG;
-        btn.style.opacity = '.5';
-        btn.style.boxShadow = 'none';
+      try {
+        if (!modalRoot) return;
+        const btn = modalRoot.querySelector('#erm-confirm');
+        if (!btn) return;
+        // Submit em voo ("Processando..."): quem manda na aparência é o
+        // fluxo de pagamento, não o formulário.
+        if (btn.disabled) return;
+        btn.style.transition = 'background-color .18s ease, opacity .18s ease, box-shadow .18s ease';
+        if (isCheckoutFormComplete()) {
+          btn.style.background = CONFIRM_BTN_READY_BG;
+          btn.style.opacity = '1';
+          btn.style.boxShadow = '0 6px 16px rgba(200,116,45,.32)';
+        } else {
+          btn.style.background = CONFIRM_BTN_IDLE_BG;
+          btn.style.opacity = '.5';
+          btn.style.boxShadow = 'none';
+        }
+      } catch (e) {
+        console.warn('[Elarah checkout] não foi possível repintar o botão:', e);
       }
     }
 
