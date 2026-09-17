@@ -181,12 +181,12 @@ planos = f'''
       </div>
       <div class="tier">
         <span class="tname">Completo</span>
-        <span class="tprice">R$ 338</span>
+        <span class="tprice">R$ 329</span>
         <span class="tunit">por pessoa + R$ 450 (foto)</span>
         <ul>
           <li>Tudo do plano <b>Com Foto</b></li>
-          <li><b>Lembrancinha</b> personalizada</li>
-          <li>+ R$ 99 por pessoa (lembrancinha)</li>
+          <li><b>Lembrancinha</b> personalizada inclusa</li>
+          <li>Preço especial no pacote 💐</li>
         </ul>
       </div>
     </div>
