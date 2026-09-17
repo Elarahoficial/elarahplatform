@@ -305,7 +305,12 @@ async function runBroadcast(WA, supabase, campaignId, recipients) {
 // dedupeKey "bydate:"+onda+":"+telefone, e carimba quem recebeu.
 async function runAvisoDeData(
   WA, supabase, onda,
-  { agora = Date.now(), cooldownMs = 12 * 3600_000, avisadosRecentes = new Set() } = {},
+  {
+    agora = Date.now(),
+    cooldownMs = 12 * 3600_000,
+    compradores = new Set(),              // já compraram ESTE evento
+    reenvioDias = 30,                     // janela do MESMO evento
+  } = {},
 ) {
   const { data: rows } = await supabase
     .from("byelarah_submissions")
@@ -321,12 +326,16 @@ async function runAvisoDeData(
     if (!phone) { semTelefone++; continue; }
     let g = byPhone.get(phone);
     if (!g) {
-      g = { phone, nome: r.nome ?? "", ids: [], jaRecebeu: false, maxCount: 0, lastSentAt: null };
+      g = { phone, nome: r.nome ?? "", ids: [], jaRecebeu: false, maxCount: 0, lastSentAt: null, ultimoAvisoEvento: null };
       byPhone.set(phone, g);
     }
     g.ids.push(r.id);
     if (!g.nome && r.nome) g.nome = r.nome;
     if (r.aviso_data_announcement_id === onda.id) g.jaRecebeu = true;
+    if (r.aviso_data_sent_at) {
+      const t = Date.parse(r.aviso_data_sent_at);
+      if (Number.isFinite(t)) g.ultimoAvisoEvento = Math.max(g.ultimoAvisoEvento ?? 0, t);
+    }
     if (r.whatsapp_followup_sent_at) {
       const t = Date.parse(r.whatsapp_followup_sent_at);
       if (Number.isFinite(t)) g.lastSentAt = Math.max(g.lastSentAt ?? 0, t);
@@ -338,8 +347,14 @@ async function runAvisoDeData(
   const fotoDoEvento = onda.imagem || IMG_A;
   for (const g of byPhone.values()) {
     if (g.jaRecebeu) { res.pulados++; continue; }
-    // UM AVISO POR PESSOA NA JANELA (espelha COOLDOWN_AVISO_DIAS).
-    if (avisadosRecentes.has(g.phone)) { res.puladosRegra = (res.puladosRegra ?? 0) + 1; continue; }
+    // JÁ COMPROU ESTE EVENTO → não recebe convite.
+    if (compradores.has(g.phone)) { res.puladosCompra = (res.puladosCompra ?? 0) + 1; continue; }
+    // JÁ FOI AVISADA DESTE MESMO EVENTO na janela (é por evento, não global).
+    if (reenvioDias > 0 && g.ultimoAvisoEvento !== null &&
+        agora - g.ultimoAvisoEvento < reenvioDias * 24 * 3600_000) {
+      res.puladosRegra = (res.puladosRegra ?? 0) + 1;
+      continue;
+    }
     if (g.lastSentAt !== null && agora - g.lastSentAt < cooldownMs) { res.pulados++; continue; }
     const dados = {
       nome: g.nome,
@@ -367,7 +382,6 @@ async function runAvisoDeData(
     });
     if (r.sent || r.reason === "duplicate") {
       res.enviados++;
-      avisadosRecentes.add(g.phone);   // protege as ondas seguintes da rodada
       await supabase.from("byelarah_submissions").update({
         aviso_data_sent_at: new Date(agora).toISOString(),
         aviso_data_announcement_id: onda.id,
@@ -401,6 +415,7 @@ function subSeed(over = {}) {
     whatsapp_followup_sent_at: null,
     whatsapp_followup_count: 0,
     aviso_data_announcement_id: null,
+    aviso_data_sent_at: null,
     ...over,
   };
 }
@@ -1043,37 +1058,73 @@ async function run() {
   }
 
   {
-    // UM AVISO POR PESSOA: a mesma pessoa está na lista de TRÊS eventos que
-    // abrem no mesmo dia. Sem a regra ela receberia 3 mensagens.
+    // INSCREVEU-SE EM VÁRIOS EVENTOS → RECEBE DE TODOS. Ela pediu pra saber
+    // de cada um; a regra de janela é POR EVENTO e não atrapalha isso.
     const WAr = await loadWA(PROD_ENV);
     const zr = installZapiMock();
-    const janela = new Set();
     const eventos = [
       { id: "o-1", nome: "Crie seu Amuleto em Vitral", slug: "vitral" },
       { id: "o-2", nome: "Pintura de Quadro com Cristal & Aperol Spritz", slug: "aperol" },
       { id: "o-3", nome: "Pintura de Abajur & Afetos", slug: "abajur" },
     ];
-    let enviadosTotal = 0;
     for (const ev of eventos) {
       const sb = makeSupabase([], [
-        // A MESMA pessoa (mesmo telefone) inscrita nos três.
         subSeed({ id: "s-" + ev.id, item_slug: ev.slug, experiencia: ev.nome, telefone: CLIENT_A }),
-        // E uma pessoa diferente, só no primeiro evento.
-        ...(ev.id === "o-1"
-          ? [subSeed({ id: "s-outra", item_slug: ev.slug, experiencia: ev.nome, nome: "Joana", telefone: CLIENT_C })]
-          : []),
       ]);
-      const r = await runAvisoDeData(WAr, sb, {
+      await runAvisoDeData(WAr, sb, {
         id: ev.id, item_slug: ev.slug, item_nome: ev.nome, data_texto: "24 de abril",
         horarios: [], local: "", link: "https://elarah.com.br/x",
-      }, { avisadosRecentes: janela });
-      enviadosTotal += r.enviados;
+      });
     }
-    check("3 eventos abertos no mesmo dia → a pessoa recebe 1 mensagem só",
-      zr.to(CLIENT_A).length === 1, "recebeu " + zr.to(CLIENT_A).length);
-    check("quem estava em uma lista só recebe normalmente", zr.to(CLIENT_C).length === 1);
-    check("no total: 2 mensagens (uma por pessoa), não 4", zr.calls.length === 2);
-    check("a contagem reflete isso", enviadosTotal === 2, String(enviadosTotal));
+    check("inscrita em 3 eventos → recebe os 3 avisos", zr.to(CLIENT_A).length === 3,
+      "recebeu " + zr.to(CLIENT_A).length);
+  }
+  {
+    // JÁ COMPROU ESTE EVENTO → não recebe convite pra se inscrever.
+    const WAc = await loadWA(PROD_ENV);
+    const zc = installZapiMock();
+    const onda = {
+      id: "o-compra", item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      data_texto: "24 de abril", horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "s-comprou", item_slug: "vitral", experiencia: onda.item_nome, telefone: CLIENT_A }),
+      subSeed({ id: "s-nao", item_slug: "vitral", experiencia: onda.item_nome, nome: "Joana", telefone: CLIENT_C }),
+    ]);
+    const r = await runAvisoDeData(WAc, sb, onda, { compradores: new Set([CLIENT_A]) });
+    check("quem já comprou o evento NÃO recebe", zc.to(CLIENT_A).length === 0);
+    check("quem não comprou recebe normalmente", zc.to(CLIENT_C).length === 1);
+    check("a contagem separa quem foi pulada por compra", r.puladosCompra === 1, JSON.stringify(r));
+  }
+  {
+    // MESMO EVENTO, DE NOVO em menos de 30 dias (remarcação logo depois) →
+    // a pessoa não recebe duas vezes sobre o mesmo evento.
+    const WAj = await loadWA(PROD_ENV);
+    const zj = installZapiMock();
+    const agora = Date.now();
+    const base = {
+      item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [
+      subSeed({
+        id: "s-javisada", item_slug: "vitral", experiencia: base.item_nome, telefone: CLIENT_A,
+        aviso_data_sent_at: new Date(agora - 5 * 24 * 3600_000).toISOString(),  // avisada há 5 dias
+      }),
+    ]);
+    const r = await runAvisoDeData(WAj, sb, { ...base, id: "o-remarcado", data_texto: "2 de maio" }, { agora });
+    check("mesmo evento de novo em 5 dias → não reenvia", zj.calls.length === 0, JSON.stringify(r));
+
+    // Passados 40 dias, uma data nova volta a avisar.
+    const zj2 = installZapiMock();
+    const sb2 = makeSupabase([], [
+      subSeed({
+        id: "s-antiga", item_slug: "vitral", experiencia: base.item_nome, telefone: CLIENT_A,
+        aviso_data_sent_at: new Date(agora - 40 * 24 * 3600_000).toISOString(),
+      }),
+    ]);
+    await runAvisoDeData(WAj, sb2, { ...base, id: "o-nova-temporada", data_texto: "10 de julho" }, { agora });
+    check("passados 40 dias, nova data do mesmo evento avisa de novo", zj2.calls.length === 1);
   }
 
   // ---------- Relatório ----------

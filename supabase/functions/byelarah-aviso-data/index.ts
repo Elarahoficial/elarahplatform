@@ -67,21 +67,29 @@ const EXPIRA_HORAS = 72;
 // trigger mandou de novo" — o portão sozinho não pega isso (chaves diferentes).
 const COOLDOWN_MS = 12 * 3600_000;
 
-// UMA PESSOA, UM AVISO POR JANELA.
+// UM AVISO POR PESSOA **POR EVENTO**, a cada N dias.
 //
-// As listas se sobrepõem muito (a mesma pessoa se inscreve em vários eventos).
-// Sem esta regra, abrir 10 eventos numa semana mandaria 10 mensagens pra quem
-// está nas 10 listas — e aí vira spam, denúncia, e a Meta derruba a qualidade
-// do número.
-//
-// É janela e não "1x pra sempre" de propósito: quem foi avisada do evento de
-// abril PRECISA poder ser avisada do de agosto — foi pra isso que ela se
-// inscreveu. 7 dias mata a rajada sem cegar o futuro. Ajustável por secret.
-const COOLDOWN_AVISO_DIAS = (() => {
-  const raw = (Deno.env.get("BYELARAH_AVISO_COOLDOWN_DIAS") ?? "").trim();
-  if (raw === "") return 7;
+// A regra é POR EVENTO de propósito: quem se inscreveu no Vitral E no Aperol
+// pediu pra saber dos DOIS — recebe os dois, mesmo que abram no mesmo minuto.
+// O que a janela evita é a MESMA pessoa receber o MESMO evento de novo (uma
+// remarcação de data logo depois, por exemplo).
+const REENVIO_MESMO_EVENTO_DIAS = (() => {
+  const raw = (Deno.env.get("BYELARAH_AVISO_REENVIO_DIAS") ?? "").trim();
+  if (raw === "") return 30;
   const n = Number(raw);
-  return Number.isFinite(n) && n >= 0 ? n : 7;
+  return Number.isFinite(n) && n >= 0 ? n : 30;
+})();
+
+// QUEM JÁ COMPROU O EVENTO NÃO RECEBE.
+// Convidar pra se inscrever quem já garantiu a vaga é ruído — e queima a
+// confiança na mensagem. Default: qualquer compra paga daquela experiência,
+// de qualquer época. Pra considerar só compras recentes (e voltar a convidar
+// quem comprou uma edição antiga), cadastre BYELARAH_AVISO_IGNORA_COMPRA_DIAS
+// com o número de dias.
+const IGNORA_COMPRA_DIAS = (() => {
+  const raw = (Deno.env.get("BYELARAH_AVISO_IGNORA_COMPRA_DIAS") ?? "").trim();
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : 0;   // 0 = qualquer compra, sempre
 })();
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -122,6 +130,7 @@ interface SubRow {
   whatsapp_followup_sent_at: string | null;
   whatsapp_followup_count: number | null;
   aviso_data_announcement_id: string | null;
+  aviso_data_sent_at: string | null;
 }
 
 // Um destinatário = um telefone. Quem preencheu o formulário duas vezes pro
@@ -132,7 +141,8 @@ interface PhoneGroup {
   ids: string[];
   jaRecebeuEstaOnda: boolean;
   maxCount: number;
-  lastSentAt: number | null;
+  lastSentAt: number | null;        // qualquer follow-up (12h)
+  ultimoAvisoEvento: number | null; // aviso DESTE evento (janela de reenvio)
 }
 
 function groupByPhone(rows: SubRow[], announcementId: string): {
@@ -156,12 +166,21 @@ function groupByPhone(rows: SubRow[], announcementId: string): {
         jaRecebeuEstaOnda: false,
         maxCount: 0,
         lastSentAt: null,
+        ultimoAvisoEvento: null,
       };
       map.set(phone, g);
     }
     g.ids.push(r.id);
     if (!g.nome && r.nome) g.nome = r.nome;
     if (r.aviso_data_announcement_id === announcementId) g.jaRecebeuEstaOnda = true;
+    // As linhas aqui são, por construção, só DESTE evento — então este é o
+    // último aviso que a pessoa recebeu SOBRE ELE.
+    if (r.aviso_data_sent_at) {
+      const t = Date.parse(r.aviso_data_sent_at);
+      if (Number.isFinite(t)) {
+        g.ultimoAvisoEvento = Math.max(g.ultimoAvisoEvento ?? 0, t);
+      }
+    }
     if (r.whatsapp_followup_sent_at) {
       const t = Date.parse(r.whatsapp_followup_sent_at);
       if (Number.isFinite(t)) g.lastSentAt = Math.max(g.lastSentAt ?? 0, t);
@@ -213,7 +232,8 @@ interface OndaResult {
   enviados: number;
   observados: number;
   pulados: number;
-  pulados_regra: number;   // já recebeu aviso de outro evento na janela
+  pulados_regra: number;    // já avisada DESTE evento na janela
+  pulados_compra: number;   // já comprou este evento
   cooldown_dias: number;
   restantes: number;
   sem_telefone: number;
@@ -312,26 +332,6 @@ serve(async (req) => {
     }, 423);
   }
 
-  // QUEM JÁ FOI AVISADA NA JANELA (uma consulta por chamada, não por onda).
-  // Telefone normalizado, pra casar a MESMA pessoa entre listas diferentes.
-  const avisadosRecentes = new Set<string>();
-  if (COOLDOWN_AVISO_DIAS > 0) {
-    const corte = new Date(agora - COOLDOWN_AVISO_DIAS * 24 * 3600_000).toISOString();
-    const { data: recentes } = await supabase
-      .from("byelarah_submissions")
-      .select("telefone, aviso_data_sent_at")
-      .not("aviso_data_sent_at", "is", null)
-      .gte("aviso_data_sent_at", corte)
-      .limit(5000);
-    for (const r of (recentes ?? []) as { telefone: string | null; aviso_data_sent_at: string | null }[]) {
-      // Refiltra por data aqui também: não depende só do filtro do servidor.
-      const t = Date.parse(r.aviso_data_sent_at ?? "");
-      if (!Number.isFinite(t) || t < agora - COOLDOWN_AVISO_DIAS * 24 * 3600_000) continue;
-      const phone = normalizePhoneBR(r.telefone);
-      if (phone) avisadosRecentes.add(phone);
-    }
-  }
-
   let orcamento = MAX_ENVIOS_POR_RUN; // envios reais restantes nesta chamada
   const resultados: OndaResult[] = [];
 
@@ -345,7 +345,8 @@ serve(async (req) => {
     // Exato de propósito: "contém o nome" misturaria "Vela" com "Vela
     // Aromática" e mandaria mensagem pra lista errada.
     const SUB_COLS =
-      "id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, aviso_data_announcement_id";
+      "id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, " +
+      "aviso_data_announcement_id, aviso_data_sent_at";
     const porId = new Map<string, SubRow>();
     let subsErr: { message: string } | null = null;
 
@@ -370,6 +371,34 @@ serve(async (req) => {
     }
 
     const { groups, semTelefone } = groupByPhone([...porId.values()], onda.id);
+
+    // QUEM JÁ COMPROU ESTE EVENTO não recebe convite pra se inscrever.
+    // Casa por experiencia_id (exato) e, na falta dele, pelo nome exato da
+    // experiência — o mesmo critério da lista.
+    const compradores = new Set<string>();
+    {
+      const COLS = "telefone, metadata, status, created_at";
+      const compras: { telefone?: string | null; metadata?: Record<string, unknown> | null; created_at?: string }[] = [];
+      if (onda.experience_id) {
+        const { data } = await supabase.from("bookings").select(COLS)
+          .eq("experiencia_id", onda.experience_id).eq("status", "pago").limit(5000);
+        compras.push(...(data ?? []));
+      }
+      if (!compras.length && onda.item_nome) {
+        const { data } = await supabase.from("bookings").select(COLS)
+          .eq("experiencia_nome", onda.item_nome).eq("status", "pago").limit(5000);
+        compras.push(...(data ?? []));
+      }
+      for (const b of compras) {
+        if (IGNORA_COMPRA_DIAS > 0) {
+          const t = Date.parse(b.created_at ?? "");
+          if (Number.isFinite(t) && t < agora - IGNORA_COMPRA_DIAS * 24 * 3600_000) continue;
+        }
+        const bruto = (b.metadata?.telefone_digits as string | undefined) ?? b.telefone;
+        const phone = normalizePhoneBR(bruto);
+        if (phone) compradores.add(phone);
+      }
+    }
     const pendentes = groups.filter((g) => !g.jaRecebeuEstaOnda);
 
     // Marca a onda como "enviando" (e fixa o alvo na primeira passada).
@@ -389,18 +418,32 @@ serve(async (req) => {
     let enviados = 0;
     let observados = 0;
     let pulados = 0;
-    let puladosRegra = 0;
+    let puladosRegra = 0;    // já avisada DESTE evento na janela
+    let puladosCompra = 0;   // já comprou este evento
     let abortReason: string | null = null;
     const lote = pendentes.slice(0, orcamento);
 
     for (let i = 0; i < lote.length; i++) {
       const g = lote[i];
 
-      // UM AVISO POR PESSOA NA JANELA (ver COOLDOWN_AVISO_DIAS). Carimba como
-      // processada nesta onda — sem data de envio, porque ela NÃO recebeu —
-      // pra onda fechar e o painel mostrar o número certo. Ela volta a poder
-      // ser avisada quando a janela passar, no próximo evento.
-      if (avisadosRecentes.has(g.phone)) {
+      // JÁ COMPROU ESTE EVENTO → não recebe convite pra se inscrever.
+      if (compradores.has(g.phone)) {
+        puladosCompra++;
+        await supabase.from("byelarah_submissions")
+          .update({ aviso_data_announcement_id: onda.id })
+          .in("id", g.ids);
+        continue;
+      }
+
+      // JÁ FOI AVISADA DESTE MESMO EVENTO há menos de N dias (remarcação
+      // logo depois, por exemplo). Carimba como processada nesta onda — sem
+      // data de envio, porque não recebeu — pra onda fechar certinho.
+      // Isto é POR EVENTO: não atrapalha o aviso de OUTRO evento em que ela
+      // também se inscreveu, nem que seja no mesmo minuto.
+      if (
+        REENVIO_MESMO_EVENTO_DIAS > 0 && g.ultimoAvisoEvento !== null &&
+        agora - g.ultimoAvisoEvento < REENVIO_MESMO_EVENTO_DIAS * 24 * 3600_000
+      ) {
         puladosRegra++;
         await supabase.from("byelarah_submissions")
           .update({ aviso_data_announcement_id: onda.id })
@@ -476,9 +519,7 @@ serve(async (req) => {
           abortReason = "tracking_failed";
           break;
         }
-        // Entra na janela AGORA: se a próxima onda desta mesma rodada tiver a
-        // mesma pessoa, ela não recebe duas mensagens seguidas.
-        avisadosRecentes.add(g.phone);
+
         if (res.sent) orcamento--;
       } else if (res.reason === "observed" || res.reason === "dry_run") {
         // Modo observação / dry-run: registrou quem receberia, não enviou e
@@ -499,7 +540,7 @@ serve(async (req) => {
 
     // Quem ainda falta receber DE VERDADE nesta onda. Pulada pela regra de
     // "um aviso por pessoa" conta como resolvida: não vai receber depois.
-    const restantes = Math.max(0, pendentes.length - enviados - puladosRegra);
+    const restantes = Math.max(0, pendentes.length - enviados - puladosRegra - puladosCompra);
     const concluida = restantes === 0 && !abortReason;
 
     // Contadores ABSOLUTOS, não acumulados: a lista inteira é relida a cada
@@ -512,7 +553,7 @@ serve(async (req) => {
       total_alvo: groups.length,
       enviados: enviadosTotal,
       observados,
-      pulados: pulados + puladosRegra + semTelefone,
+      pulados: pulados + puladosRegra + puladosCompra + semTelefone,
       erro: abortReason,
       processed_at: concluida ? new Date().toISOString() : null,
     }).eq("id", onda.id);
@@ -527,7 +568,8 @@ serve(async (req) => {
       observados,
       pulados,
       pulados_regra: puladosRegra,
-      cooldown_dias: COOLDOWN_AVISO_DIAS,
+      pulados_compra: puladosCompra,
+      cooldown_dias: REENVIO_MESMO_EVENTO_DIAS,
       restantes,
       sem_telefone: semTelefone,
       abort_reason: abortReason,

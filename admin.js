@@ -9478,10 +9478,13 @@
     if (onda0.restantes > 0) {
       linhas.push('Faltam ' + onda0.restantes + ' — saem automaticamente nos próximos minutos.');
     }
+    if (onda0.pulados_compra > 0) {
+      linhas.push(onda0.pulados_compra + ' não receberam porque já compraram esta experiência.');
+    }
     if (onda0.pulados_regra > 0) {
       linhas.push(
-        onda0.pulados_regra + ' não receberam agora: já foram avisadas de outro evento ' +
-        'nos últimos ' + (onda0.cooldown_dias || 7) + ' dias (regra de uma mensagem por pessoa).'
+        onda0.pulados_regra + ' não receberam porque já foram avisadas deste mesmo evento ' +
+        'nos últimos ' + (onda0.cooldown_dias || 30) + ' dias.'
       );
     }
     if (onda0.observados > 0) {

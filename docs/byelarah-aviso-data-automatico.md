@@ -96,12 +96,16 @@ link). Como criar o template e ligar as credenciais:
   (quando existe item legado) e pelo **nome exato** da experiência, que é como o
   formulário da home grava. Igualdade estrita, nunca "contém o nome": senão
   "Vela" pegaria "Vela Aromática" e a mensagem iria pra lista errada.
-- **Um aviso por pessoa a cada 7 dias.** As listas se sobrepõem muito (a mesma
-  pessoa se inscreve em vários eventos). Abrir 10 eventos numa semana manda
-  **uma** mensagem pra quem está nas 10 listas, não dez. É janela e não "uma
-  vez pra sempre" de propósito: quem foi avisada do evento de abril precisa
-  poder ser avisada do de agosto — foi pra isso que ela se inscreveu. Ajuste
-  com o secret `BYELARAH_AVISO_COOLDOWN_DIAS` (0 desliga a regra).
+- **Quem já comprou o evento não recebe.** Convidar pra se inscrever quem já
+  garantiu a vaga é ruído. Casa por telefone, contra as reservas **pagas**
+  daquela experiência. Por padrão vale qualquer compra, de qualquer época;
+  `BYELARAH_AVISO_IGNORA_COMPRA_DIAS` limita a compras recentes (útil se você
+  quiser reconvidar quem comprou uma edição antiga).
+- **Um aviso por pessoa POR EVENTO a cada 30 dias.** A janela é por evento, de
+  propósito: quem se inscreveu no Vitral **e** no Aperol pediu pra saber dos
+  dois, e recebe os dois — mesmo que abram no mesmo minuto. O que a janela
+  evita é a mesma pessoa receber o **mesmo** evento de novo (uma remarcação
+  logo depois). Ajuste com `BYELARAH_AVISO_REENVIO_DIAS` (0 desliga).
 - **Cooldown de 12h.** Quem recebeu qualquer follow-up nas últimas 12h não leva o
   aviso junto (evita duas mensagens no mesmo dia se você acabou de disparar na
   mão).
@@ -120,7 +124,8 @@ casos — todos de propósito:
 
 | Motivo | O que acontece |
 |---|---|
-| Já recebeu aviso de outro evento nos últimos 7 dias | pulada; volta a poder receber quando a janela passar |
+| Já comprou esta experiência | pulada (não se convida quem já garantiu a vaga) |
+| Já foi avisada DESTE evento nos últimos 30 dias | pulada; volta a poder receber quando a janela passar |
 | Sem telefone válido | pulada (precisa de contato manual) |
 | Recebeu qualquer follow-up nas últimas 12h | pulada nesta passada, tentada de novo depois |
 | Já recebeu ESTA onda | pulada (é a idempotência) |
