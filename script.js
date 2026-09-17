@@ -2602,6 +2602,7 @@ if (groupForm) {
         +     '</span>'
         +   '</label>'
         +   '<button type="button" id="erm-confirm" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Confirmar e pagar</button>'
+        +   '<p id="erm-confirm-hint" style="color:#8a6a4a;font-size:.82rem;margin:8px 0 0;text-align:center;min-height:1em;"></p>'
         +   '<p id="erm-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>'
         +   '</div>' // fim erm-form-section
         +   // ===== SEÇÃO PIX QR CODE (só aparece após gerar o PIX) =====
@@ -3873,12 +3874,20 @@ if (groupForm) {
     const CONFIRM_BTN_READY_BG = '#c8742d'; // completo — escuro, "pode ir"
     const CONFIRM_BTN_IDLE_BG = '#f0a05e';  // incompleto — claro
 
-    // Espelha a validação do submit (handleConfirmReservation), porém
-    // SEM escrever mensagem nem mexer em foco/scroll: só responde
-    // "dá pra enviar?". Se um obrigatório novo entrar no formulário,
-    // ele precisa entrar aqui também.
-    function isCheckoutFormComplete() {
-      if (!currentReservationCtx || !modalRoot) return false;
+    // Espelha a validação do submit (handleConfirmReservation), porém SEM
+    // escrever erro nem mexer em foco/scroll. Devolve o NOME do primeiro
+    // obrigatório que falta, ou null quando está tudo certo.
+    //
+    // Devolve o nome, e não um booleano, porque um botão só apagado não
+    // diz nada: quem preencheu e continua vendo a cor de "pendente" não
+    // tem como descobrir o que falta e conclui que o site travou. A dica
+    // embaixo do botão sai daqui.
+    //
+    // A ordem segue a da tela, pra apontar sempre o primeiro pendente de
+    // cima pra baixo. Se um obrigatório novo entrar no formulário, ele
+    // precisa entrar aqui também.
+    function checkoutMissingField() {
+      if (!currentReservationCtx || !modalRoot) return 'carregando';
       const ctx = currentReservationCtx;
       const root = modalRoot;
       const val = function (sel) {
@@ -3886,44 +3895,57 @@ if (groupForm) {
         return el ? String(el.value || '').trim() : '';
       };
 
-      // Aceite dos prazos de remarcação / cancelamento
-      const policyEl = root.querySelector('#erm-policy');
-      if (policyEl && !policyEl.checked) return false;
-
-      // Nome + WhatsApp do comprador
-      const nome = val('#erm-nome').replace(/\s+/g, ' ');
-      if (!nome || nome.length < 3) return false;
-      if (!normalizePhoneBR(val('#erm-telefone'))) return false;
-
-      // E-mail — só no checkout convidado
-      if (ctx.isGuest) {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('#erm-email').toLowerCase())) return false;
-      }
-
-      // CPF — PIX sempre exige; no modo Pagar.me o cartão também
-      if (ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST) {
-        if (!isValidCpfFront(val('#erm-cpf').replace(/\D+/g, ''))) return false;
-      }
-
-      // Variante (ex.: Pintura) da Pessoa 1
       const hasVariants = !!(ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length);
-      if (hasVariants && !ctx.variantSelected) return false;
+
+      // Variante (ex.: Pintura) da Pessoa 1 — seletor fica no topo
+      if (hasVariants && !ctx.variantSelected) {
+        return 'escolher ' + (ctx.variantLabel || 'a opção');
+      }
 
       // Pessoas 2..N — nome, WhatsApp e variante de cada uma
       const qty = Math.max(1, ctx.quantidade || 1);
       if (qty > 1) {
         const nomes = root.querySelectorAll('.erm-part-nome');
         const tels = root.querySelectorAll('.erm-part-telefone');
-        // Cards ainda não renderizados = formulário incompleto.
-        if (nomes.length < qty - 1) return false;
+        if (nomes.length < qty - 1) return 'os dados das outras pessoas';
         for (let i = 0; i < nomes.length; i++) {
+          const pessoa = 'da Pessoa ' + (i + 2);
           const pn = String(nomes[i].value || '').trim();
-          if (!pn || pn.length < 3) return false;
-          if (!normalizePhoneBR(tels[i] ? tels[i].value : '')) return false;
-          if (hasVariants && !(ctx.variantByParticipant && ctx.variantByParticipant[i + 2])) return false;
+          if (!pn || pn.length < 3) return 'o nome ' + pessoa;
+          if (!normalizePhoneBR(tels[i] ? tels[i].value : '')) return 'o WhatsApp ' + pessoa;
+          if (hasVariants && !(ctx.variantByParticipant && ctx.variantByParticipant[i + 2])) {
+            return (ctx.variantLabel || 'a opção') + ' ' + pessoa;
+          }
         }
       }
-      return true;
+
+      // Nome + WhatsApp do comprador
+      const nome = val('#erm-nome').replace(/\s+/g, ' ');
+      if (!nome || nome.length < 3) return 'seu nome completo';
+      if (!normalizePhoneBR(val('#erm-telefone'))) return 'seu WhatsApp com DDD';
+
+      // E-mail — só no checkout convidado
+      if (ctx.isGuest) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('#erm-email').toLowerCase())) {
+          return 'seu e-mail';
+        }
+      }
+
+      // CPF — PIX sempre exige; no modo Pagar.me o cartão também
+      if (ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST) {
+        if (!isValidCpfFront(val('#erm-cpf').replace(/\D+/g, ''))) return 'um CPF válido';
+      }
+
+      // Aceite dos prazos — última coisa antes do botão
+      const policyEl = root.querySelector('#erm-policy');
+      if (policyEl && !policyEl.checked) return 'marcar o aceite dos prazos';
+
+      return null;
+    }
+
+    // Mantida pelo nome antigo — é o mesmo teste, só que em booleano.
+    function isCheckoutFormComplete() {
+      return checkoutMissingField() === null;
     }
 
     // Pinta o botão conforme o estado do formulário.
@@ -3943,14 +3965,19 @@ if (groupForm) {
         // fluxo de pagamento, não o formulário.
         if (btn.disabled) return;
         btn.style.transition = 'background-color .18s ease, opacity .18s ease, box-shadow .18s ease';
-        if (isCheckoutFormComplete()) {
+        const faltando = checkoutMissingField();
+        const hint = modalRoot.querySelector('#erm-confirm-hint');
+        if (faltando === null) {
           btn.style.background = CONFIRM_BTN_READY_BG;
           btn.style.opacity = '1';
           btn.style.boxShadow = '0 6px 16px rgba(200,116,45,.32)';
+          if (hint) hint.textContent = '';
         } else {
           btn.style.background = CONFIRM_BTN_IDLE_BG;
           btn.style.opacity = '.5';
           btn.style.boxShadow = 'none';
+          // 'carregando' = modal ainda montando; não é falha da pessoa.
+          if (hint) hint.textContent = (faltando === 'carregando') ? '' : ('Falta ' + faltando + '.');
         }
       } catch (e) {
         console.warn('[Elarah checkout] não foi possível repintar o botão:', e);
