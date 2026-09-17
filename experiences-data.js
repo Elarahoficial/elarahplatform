@@ -152,6 +152,15 @@
       // Ordem manual de exibição (admin arrasta pra reordenar). null =
       // sem ordem → sort cronológico padrão. sql/elarah_experiences_ordem.sql.
       ordem: (row.ordem == null || row.ordem === '') ? null : Number(row.ordem),
+      // Ordem manual DENTRO da faixa By Elarah / Elarah Originals — é
+      // uma coluna separada de `ordem` (que é a ordem global do site),
+      // pra que arrastar os cards na aba By Elarah do admin não mexa na
+      // posição da experiência nas categorias. null = sem ordem → vai
+      // pro fim da faixa. sql/elarah_experiences_byelarah_ordem.sql.
+      byelarahOrdem: (function () {
+        var n = Number(row.byelarah_ordem);
+        return Number.isFinite(n) && n > 0 ? n : null;
+      })(),
       // --- fornecedor (legado: 1 fornecedor + percentual_repasse) ---
       // Mantido pra retrocompat. O modelo novo é experience_suppliers
       // (1:N) carregado via getSuppliersForExperience.
@@ -553,6 +562,49 @@
           return { _error: { message: 'A coluna "ordem" ainda não existe no banco. Rode sql/elarah_experiences_ordem.sql no Supabase e tente de novo.', code: 'NO_COLUMN' } };
         }
         console.error('[Elarah] reorderExperiences erro ao gravar ordem:', error);
+        return { _error: error };
+      }
+      updated++;
+    }
+    invalidateCache();
+    return { ok: true, updated: updated };
+  }
+
+  // Grava a posição das experiências DENTRO da faixa By Elarah.
+  // `pairs` = [{ id, ordem }] com ordem 1-based (1 = primeiro card).
+  // Escreve direto em byelarah_ordem em vez de passar por expToRow —
+  // assim salvar a experiência pelo formulário normal do admin (que
+  // não tem esse campo) nunca apaga a ordem da faixa.
+  async function setByElarahOrdem(pairs) {
+    const s = sb();
+    if (!s) {
+      console.error('[Elarah] setByElarahOrdem: Supabase indisponível.');
+      return { _error: { message: 'Supabase indisponível.' } };
+    }
+    if (!Array.isArray(pairs) || !pairs.length) return { ok: true, updated: 0 };
+
+    // Mapa id → byelarah_ordem atual, pra atualizar só o que mudou.
+    const current = {};
+    try {
+      const all = cache || await getAllExperiences();
+      (all || []).forEach(function (e) {
+        if (e && e.id != null) current[e.id] = e.byelarahOrdem == null ? null : Number(e.byelarahOrdem);
+      });
+    } catch (e) { /* sem o mapa, grava tudo */ }
+
+    let updated = 0;
+    for (let i = 0; i < pairs.length; i++) {
+      const p = pairs[i];
+      if (!p || p.id == null || p.id === '') continue;
+      const n = Number(p.ordem);
+      const ordem = Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+      if (current[p.id] === ordem) continue; // já está na posição certa
+      const { error } = await s.from(TABLE).update({ byelarah_ordem: ordem }).eq('id', p.id);
+      if (error) {
+        if (extractMissingColumn(error) === 'byelarah_ordem') {
+          return { _error: { message: 'A coluna "byelarah_ordem" ainda não existe no banco. Rode sql/elarah_experiences_byelarah_ordem.sql no Supabase e tente de novo.', code: 'NO_COLUMN' } };
+        }
+        console.error('[Elarah] setByElarahOrdem erro ao gravar ordem:', error);
         return { _error: error };
       }
       updated++;
@@ -1821,6 +1873,7 @@
     getExperienceCopyStats,
     setExperienceActive,
     reorderExperiences,
+    setByElarahOrdem,
     ordemKey,
     isHomeKit,
     categoriasOf,

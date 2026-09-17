@@ -3990,3 +3990,129 @@ a, button, [role="button"], .card__reserve-btn, input[type="submit"] {
    quebrou o scroll do site inteiro. Se precisar impedir pull-to-refresh
    só no app, aplicar de forma escopada (ex.: classe no <html> só no
    Capacitor), nunca global no body do site. */
+
+/* =============================================================
+   CARROSSEL DA FAIXA BY ELARAH (Elarah Originals)
+   -------------------------------------------------------------
+   A home deixou de mostrar só 3 cards: agora entram TODAS as
+   experiências Originals numa esteira horizontal — arrasta com o
+   mouse, desliza no toque, rola no trackpad ou anda de card em card
+   pelas setas. O grid empilhado continua valendo em byelarah.html
+   (o modificador --carousel é aplicado pelo JS só na home).
+
+   Sobre a especificidade: assets/app-skin.css carrega DEPOIS deste
+   arquivo e já transforma .originals__grid numa fileira de cards de
+   210px (o visual "app", hoje ligado pra todo mundo). Os seletores
+   abaixo entram com um nível a mais (.originals .originals__carousel
+   > …) só pra vencer esse empate onde precisamos mudar — o resto do
+   skin continua mandando.
+   ============================================================= */
+.originals__carousel {
+  position: relative;
+}
+
+.originals .originals__carousel > .originals__grid--carousel {
+  display: flex;
+  grid-template-columns: none;
+  gap: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* Barra de rolagem escondida: a navegação é pelas setas/arrasto. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* 16px nas laterais porque o app-skin zera o padding do
+     .originals__inner — sem isso o primeiro card cola na borda.
+     Em cima/embaixo, respiro pro hover (translateY -6px) e pra
+     sombra do card não serem cortados pelo overflow-y: hidden. */
+  padding: 10px 16px 18px;
+  /* Sem isto o scroll-snap encosta o card na borda do container e
+     "come" o padding lateral — o primeiro card nasceria colado na
+     esquerda e a seta "voltar" nunca ficaria desabilitada. */
+  scroll-padding: 0 16px;
+  cursor: grab;
+}
+
+.originals .originals__carousel > .originals__grid--carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Durante o arrasto o snap atrapalha (puxa o card de volta no meio do
+   movimento) e o scroll suave briga com o scrollLeft manual. */
+.originals .originals__carousel > .originals__grid--carousel.is-grabbing {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+}
+
+.originals .originals__carousel > .originals__grid--carousel > .originals__card {
+  scroll-snap-align: start;
+}
+
+/* Arrastar em cima de uma foto dispara o drag nativo de imagem do
+   navegador e mata o nosso arrasto no meio do caminho. */
+.originals .originals__carousel > .originals__grid--carousel img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.originals .originals__carousel > .originals__grid--carousel {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Setas: flutuam nas bordas da faixa. Só no desktop — no toque a
+   navegação natural é deslizar o dedo. */
+.originals__nav {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gray-200);
+  border-radius: 50%;
+  background: var(--white);
+  color: #a4663b;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  z-index: 3;
+  transition: var(--transition);
+}
+
+.originals__nav--prev { left: -6px; }
+.originals__nav--next { right: -6px; }
+
+/* Começo/fim da faixa (ou tudo já cabendo na tela): a seta some em vez
+   de ficar clicável sem efeito nenhum. */
+.originals__nav[disabled] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===== Tablet: 2 cards por vez + setas ===== */
+@media (min-width: 769px) {
+  .originals__nav {
+    display: flex;
+  }
+  .originals__nav:hover {
+    background: var(--orange);
+    border-color: transparent;
+    color: var(--white);
+    transform: translateY(-50%) scale(1.06);
+  }
+  .originals .originals__carousel > .originals__grid--carousel > .originals__card {
+    flex: 0 0 calc((100% - 56px) / 2);
+    width: auto;
+  }
+}
+
+/* ===== Desktop: 3 cards por vez, no tamanho cheio do card ===== */
+@media (min-width: 1025px) {
+  .originals .originals__carousel > .originals__grid--carousel > .originals__card {
+    flex: 0 0 calc((100% - 80px) / 3);
+    width: auto;
+  }
+}

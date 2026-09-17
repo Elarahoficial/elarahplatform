@@ -237,6 +237,46 @@
     return rowToItem(data);
   }
 
+  // Grava só a coluna `ordem` de vários items de uma vez.
+  // `pairs` = [{ id, ordem }] com ordem 1-based (1 = primeiro card
+  // da faixa By Elarah). Propositalmente NÃO passa por itemToRow —
+  // um update parcial evita reescrever nome/imagem/horários e some
+  // com o risco de sobrescrever algo que outra aba do admin acabou
+  // de salvar.
+  async function setItemsOrdem(pairs) {
+    const client = sb();
+    if (!client) return { _error: { message: 'Supabase indisponível.' } };
+    if (!Array.isArray(pairs) || !pairs.length) return { ok: true, updated: 0 };
+
+    // Só grava quem realmente mudou de posição.
+    const current = {};
+    try {
+      (itemsCache || await getAllItems()).forEach(function (i) {
+        if (i && i.id != null) current[i.id] = i.ordem == null ? null : Number(i.ordem);
+      });
+    } catch (e) { /* sem o mapa, grava tudo */ }
+
+    let updated = 0;
+    for (let i = 0; i < pairs.length; i++) {
+      const p = pairs[i];
+      if (!p || !p.id) continue;
+      const n = Number(p.ordem);
+      const ordem = Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+      if (current[p.id] === ordem) continue;
+      const { error } = await client
+        .from(ITEMS_TABLE)
+        .update({ ordem: ordem })
+        .eq('id', p.id);
+      if (error) {
+        console.error('[ElarahByElarah] setItemsOrdem error', error);
+        return { _error: error };
+      }
+      updated++;
+    }
+    invalidate();
+    return { ok: true, updated: updated };
+  }
+
   async function deleteItem(id) {
     const client = sb();
     if (!client) return false;
@@ -345,6 +385,7 @@
     getItemById,
     addItem,
     updateItem,
+    setItemsOrdem,
     deleteItem,
     submitInterest,
     getAllSubmissions,
