@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v41 — Recorrência (aulas regulares) já no cadastro de nova experiência + Duplicar copia variações, turmas e regras de recorrência');
+  console.info('[Elarah Admin] admin.js v42 — Acesso por aba (equipe): profiles.admin_panels limita o menu e a navegação; editor de acesso na aba Usuários');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -231,6 +231,10 @@
       reason: 'unknown',
     };
 
+    // Escopo de abas da pessoa logada (profiles.admin_panels).
+    // null = acesso total (dona do painel). Array = só essas abas.
+    let escopoPaineis = null;
+
     // 2) Estado em memória do ElarahAuth.
     try {
       const memUser = ElarahAuth.getCurrentUser && ElarahAuth.getCurrentUser();
@@ -241,6 +245,7 @@
         diagState.profile_role = memUser.role || null;
         if (memUser.role === 'admin') {
           allowed = true;
+          escopoPaineis = memUser.adminPanels != null ? memUser.adminPanels : null;
           diagState.reason = 'admin (cache em memória)';
         }
         console.info('[Admin BOOT] user em memória:', { email: memUser.email, role: memUser.role });
@@ -265,11 +270,27 @@
           diagState.session_email = session.user.email || null;
           console.info('[Admin BOOT] sessão ativa:', { id: session.user.id, email: session.user.email });
 
-          const { data: prof, error } = await window.supabaseClient
+          // admin_panels é a coluna que limita quais abas a pessoa vê
+          // (equipe). Se o banco ainda não recebeu o
+          // sql/elarah_equipe_acessos.sql, a coluna não existe e o
+          // PostgREST derruba a query inteira — o que trancaria a dona
+          // fora do próprio painel. Por isso: tenta com a coluna e, se
+          // ela faltar, repete sem. Sem coluna = acesso total, como era
+          // antes.
+          let { data: prof, error } = await window.supabaseClient
             .from('profiles')
-            .select('id, role, email, nome')
+            .select('id, role, email, nome, admin_panels')
             .eq('id', session.user.id)
             .maybeSingle();
+
+          if (error && /admin_panels/i.test(String(error.message || ''))) {
+            console.warn('[Admin BOOT] coluna admin_panels ainda não existe no banco — seguindo sem escopo de abas. Rode sql/elarah_equipe_acessos.sql.');
+            ({ data: prof, error } = await window.supabaseClient
+              .from('profiles')
+              .select('id, role, email, nome')
+              .eq('id', session.user.id)
+              .maybeSingle());
+          }
 
           if (error) {
             diagState.profile_query_error = error.message || String(error);
@@ -285,6 +306,7 @@
             console.info('[Admin BOOT] profile encontrado:', prof);
             if (prof.role === 'admin') {
               allowed = true;
+              escopoPaineis = prof.admin_panels != null ? prof.admin_panels : null;
               diagState.reason = 'admin (confirmado no banco)';
             } else {
               diagState.reason = 'profile existe mas role=' + JSON.stringify(prof.role) + ' (precisa ser "admin")';
@@ -308,6 +330,16 @@
     }
 
     console.info('[Admin BOOT] acesso liberado, montando painéis…');
+
+    // Escopo de abas da equipe: some do menu tudo que essa pessoa não
+    // trabalha. Quem tem admin_panels NULL (a dona) não perde nada.
+    // Roda ANTES de montar os painéis pra que a primeira tela já abra
+    // dentro do que ela pode ver.
+    let abasVisiveis = null;
+    if (window.ElarahAcessos) {
+      abasVisiveis = window.ElarahAcessos.aplicar(escopoPaineis);
+    }
+
     wireNavigation();
     wireLogout();
     wireExperienceForm();
@@ -316,7 +348,33 @@
     wireBookingsControls();
     wireCouponPanel();
     wireFollowupModal();
-    await renderOverview();
+
+    // Sem escopo (ou com Visão geral liberada): abre como sempre.
+    // Com escopo que não inclui Visão geral: abre direto na primeira
+    // aba que ela tem — senão ela cairia numa tela em branco, já que o
+    // painel de overview segue marcado como ativo no HTML.
+    if (!abasVisiveis || abasVisiveis.indexOf('overview') !== -1) {
+      await renderOverview();
+    } else if (abasVisiveis.length) {
+      await navigateToPanel(abasVisiveis[0]);
+    } else {
+      renderSemAbasLiberadas();
+    }
+  }
+
+  // Caso de borda: conta marcada como admin mas com admin_panels = {}
+  // (nenhuma aba). Em vez de painel vazio e silencioso, explica.
+  function renderSemAbasLiberadas() {
+    const main = document.querySelector('.admin__main') || document.body;
+    main.innerHTML =
+      '<div style="max-width:520px;margin:64px auto;padding:28px;background:#fff;border-radius:12px;' +
+      'box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center;font-family:inherit;">' +
+        '<h1 style="margin:0 0 10px;font-size:1.2rem;color:#b07b00;">Nenhuma aba liberada pra você</h1>' +
+        '<p style="margin:0;color:#666;font-size:.92rem;">' +
+          'Seu acesso existe, mas ainda não tem nenhuma área liberada. ' +
+          'Peça pra dona do painel abrir <strong>Usuários → Editar acesso</strong> e marcar suas abas.' +
+        '</p>' +
+      '</div>';
   }
 
   // Tela de diagnóstico explícita quando o boot bloqueia o acesso.
@@ -408,6 +466,13 @@
     const panels = document.querySelectorAll('.admin__panel');
     const targetItem = document.querySelector('[data-panel="' + target + '"]');
     if (!targetItem) return;
+    // Atalhos internos do admin pulam de uma aba pra outra por código
+    // (ex.: By Elarah → Experiências). Se a aba de destino não está no
+    // escopo de quem está logada, o atalho não leva pra lá.
+    if (window.ElarahAcessos && !window.ElarahAcessos.podeVer(target)) {
+      console.info('[Admin] navegação bloqueada — aba fora do seu acesso:', target);
+      return;
+    }
     navItems.forEach(n => n.classList.remove('admin__nav-item--active'));
     targetItem.classList.add('admin__nav-item--active');
     panels.forEach(p => p.classList.remove('admin__panel--active'));
@@ -2696,6 +2761,31 @@
     usersSearchWired = true;
   }
 
+  // Célula de acesso ao painel, embaixo do selo de role. Mostra quais
+  // abas a pessoa enxerga e o botão que abre o editor. Só quem tem
+  // acesso total edita — quem já está com escopo limitado nem vê o
+  // botão (senão a comercial se daria contabilidade sozinha).
+  function buildUserAccessCell(u) {
+    if (!window.ElarahAcessos) return '';
+    if (!window.ElarahAcessos.souAdminTotal()) return '';
+
+    const escopo = window.ElarahAcessos.normalizar(u.admin_panels);
+    const ehEquipe = u.role === 'admin';
+    const resumo = ehEquipe ? window.ElarahAcessos.resumo(u.admin_panels) : 'Sem acesso ao painel';
+    const cor = !ehEquipe ? '#aaa' : (escopo === null ? '#b07b00' : '#666');
+
+    return (
+      '<div style="margin-top:6px;font-size:.74rem;line-height:1.3;color:' + cor + ';">' +
+        escapeHtml(resumo) +
+      '</div>' +
+      '<button type="button" data-acesso-user="' + escapeHtml(u.id) + '" ' +
+      'style="margin-top:4px;padding:3px 9px;font-size:.72rem;border:1px solid #e3d9c6;background:#fff;' +
+      'border-radius:5px;cursor:pointer;font-family:inherit;color:#8a7d5f;">' +
+        (ehEquipe ? 'Editar acesso' : 'Dar acesso') +
+      '</button>'
+    );
+  }
+
   // Renderiza a tabela de usuários aplicando o filtro de nome (term).
   // Termo vazio mostra todos.
   function renderUsersList(term) {
@@ -2730,9 +2820,29 @@
         <td>${formatDate(u.created_at)}</td>
         <td>
           <span class="admin__badge admin__badge--${u.role === 'admin' ? 'approved' : 'pending'}">${u.role}</span>
+          ${buildUserAccessCell(u)}
         </td>
       </tr>
     `).join('');
+
+    // Editor de acesso (só aparece pra quem tem acesso total). Abre o
+    // modal de abas do admin-acessos.js e, ao salvar, atualiza a linha
+    // em memória pra não precisar recarregar a lista inteira.
+    tbody.querySelectorAll('[data-acesso-user]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.acessoUser;
+        const user = allUsers.find(x => x.id === id);
+        if (!user || !window.ElarahAcessos) return;
+        window.ElarahAcessos.abrirEditor(user, (salvo) => {
+          if (salvo) {
+            user.admin_panels = salvo.admin_panels;
+            user.role = salvo.role;
+          }
+          const s = document.getElementById('users-search');
+          renderUsersList(s ? s.value : '');
+        });
+      });
+    });
 
     // Wire click handlers nos botões de WhatsApp: marca o usuário
     // como contatado no banco (whatsapp_contacted_at = now) e
