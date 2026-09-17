@@ -44,3 +44,10 @@ verify_jwt = false
 # (validado na tabela melhor_envio_tokens com TTL).
 [functions.melhor-envio-callback]
 verify_jwt = false
+
+# byelarah-aviso-data — aviso automático "a data saiu" pra lista de interesse
+# de um evento By Elarah. Autentica por dentro (CRON_SECRET / service_role /
+# JWT de admin), porque é chamada TANTO pelo pg_cron (sem token de usuário)
+# QUANTO pelo painel logo depois de publicar a data.
+[functions.byelarah-aviso-data]
+verify_jwt = false

@@ -24,9 +24,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
   bookingConfirmationWhatsAppText,
+  feedbackTemplateParams,
   feedbackWhatsAppText,
   gatedSendWhatsApp,
+  pendingRecoveryTemplateParams,
   pendingRecoveryWhatsAppText,
+  reminder48hTemplateParams,
   reminder48hWhatsAppText,
 } from "../_shared/whatsapp.ts";
 
@@ -138,8 +141,11 @@ serve(async (req) => {
     column: "reminder_48h_sent_at" | "feedback_whatsapp_sent_at" | "pending_recovery_sent_at",
     expectedStatus: "pago" | "pending",
     rows: unknown[],
+    // Devolve a mensagem (texto livre, provedor legado) E os parâmetros do
+    // template aprovado (provedor oficial da Meta) — os dois saem do MESMO
+    // dado da reserva, então nunca divergem.
     // deno-lint-ignore no-explicit-any
-    build: (b: any) => Promise<string>,
+    build: (b: any) => Promise<{ texto: string; params: string[] }>,
   ): Promise<PassResult> {
     const r: PassResult = { candidatos: rows.length, enviados: 0, observados: 0, pulados: 0 };
     for (const raw of rows) {
@@ -157,7 +163,7 @@ serve(async (req) => {
       if (freshErr || !fresh) { r.pulados++; continue; }
       const statusAllowed = fresh.status === expectedStatus;
       const suppressed = fresh.aguardando_experiencia === true || isSuppressed(b);
-      const message = await build(b);
+      const { texto: message, params } = await build(b);
       const res = await gatedSendWhatsApp(supabase, {
         kind,
         dedupeKey: kind + ":" + b.id,
@@ -168,6 +174,7 @@ serve(async (req) => {
         image: expImageUrl(b),
         caption: message,
         message,
+        template: { params },
         bookingId: b.id,
         experienciaId: b.experiencia_id,
       });
@@ -196,11 +203,16 @@ serve(async (req) => {
       const ts = deriveEventTs((b as any).data, (b as any).horario, now);
       return ts != null && ts >= now + 36 * H && ts <= now + 48 * H;
     });
-    out.lembrete = await runPass("reminder48", "reminder_48h_sent_at", "pago", elig, (b) =>
-      Promise.resolve(reminder48hWhatsAppText({
+    out.lembrete = await runPass("reminder48", "reminder_48h_sent_at", "pago", elig, (b) => {
+      const opts = {
         nome: b.nome, experienciaNome: b.experiencia_nome ?? "Sua experiência",
         data: b.data, horario: b.horario, ...localOf(b),
-      })));
+      };
+      return Promise.resolve({
+        texto: reminder48hWhatsAppText(opts),
+        params: reminder48hTemplateParams(opts),
+      });
+    });
   }
 
   // ===== 2) FEEDBACK ~2 dias depois (evento entre now-72h e now-36h) =====
@@ -217,9 +229,13 @@ serve(async (req) => {
     out.feedback = await runPass("feedback", "feedback_whatsapp_sent_at", "pago", elig, async (b) => {
       const token = await reviewToken(b.id);
       const link = `${SITE}/avaliar.html?b=${encodeURIComponent(b.id)}&t=${token}`;
-      return feedbackWhatsAppText({
+      const opts = {
         nome: b.nome, experienciaNome: b.experiencia_nome ?? "sua experiência", link,
-      });
+      };
+      return {
+        texto: feedbackWhatsAppText(opts),
+        params: feedbackTemplateParams(opts),
+      };
     });
   }
 
@@ -231,11 +247,16 @@ serve(async (req) => {
       .gte("created_at", new Date(now - 6 * H).toISOString())
       .lte("created_at", new Date(now - 3 * H).toISOString())
       .limit(300);
-    out.pendente = await runPass("pending", "pending_recovery_sent_at", "pending", (data ?? []), (b) =>
-      Promise.resolve(pendingRecoveryWhatsAppText({
+    out.pendente = await runPass("pending", "pending_recovery_sent_at", "pending", (data ?? []), (b) => {
+      const opts = {
         nome: b.nome, experienciaNome: b.experiencia_nome ?? "a experiência",
         data: b.data, horario: b.horario, ...localOf(b),
-      })));
+      };
+      return Promise.resolve({
+        texto: pendingRecoveryWhatsAppText(opts),
+        params: pendingRecoveryTemplateParams(opts),
+      });
+    });
   }
 
   console.info("[automated-notifications] resumo", JSON.stringify(out));
