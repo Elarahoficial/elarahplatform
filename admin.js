@@ -2884,15 +2884,37 @@
     }
   }
 
+  // Mensagem de primeiro contato com o parceiro que se cadastrou pelo
+  // site (aba Parceiros › Pendentes). Fonte única: o botão de WhatsApp
+  // da lista abre o chat já com esse texto pronto — o admin só revisa e
+  // envia. O objetivo da mensagem é agendar a reunião de conhecimento,
+  // então ela pede duas opções de horário e o melhor e-mail pro convite.
+  function buildPartnerWhatsappMessage(primeiroNome) {
+    const oi = primeiroNome ? ('Oii, ' + primeiroNome + '!') : 'Oii!';
+    return oi + ' 🧡 Aqui é da Elarah!\n\n' +
+      'Recebemos o cadastro de vocês como *parceiros* e ficamos super felizes ' +
+      'com o interesse em fazer parte da nossa curadoria de experiências. ✨\n\n' +
+      'Queria marcar uma conversa rápida para conhecer melhor o trabalho de ' +
+      'vocês, entender as experiências que oferecem e contar um pouquinho mais ' +
+      'sobre como funciona a parceria com a Elarah.\n\n' +
+      'Me passa, por favor, *duas opções de dia e horário* que funcionem para ' +
+      'vocês e eu me organizo para encaixar em uma delas. 😊\n\n' +
+      'Ah, e me envia também o melhor e-mail para eu encaminhar o convite da ' +
+      'reunião. 🧡\n\n' +
+      'Vai ser um prazer conversar com vocês! ✨';
+  }
+
   function buildPartnerPhoneCell(u, pd) {
     const raw = ((u.telefone || '') || (pd && pd.whatsapp) || '').trim();
     if (!raw) return '<span style="color:#bbb;">—</span>';
     const digits = raw.replace(/\D+/g, '').replace(/^55/, '');
     if (!digits) return escapeHtml(raw);
     const nome = String((pd && pd.marca) || u.nome || '').trim().split(/\s+/)[0] || '';
-    const saud = nome ? ('Oii, ' + nome + '! ') : 'Oii! ';
-    const msg = saud + 'Aqui é da Elarah 🧡 Recebemos o seu cadastro de parceiro e queremos conversar sobre as suas experiências.';
-    const href = 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(msg);
+    const msg = buildPartnerWhatsappMessage(nome);
+    // api.whatsapp.com/send/ em vez de wa.me — o wa.me corrompe emojis
+    // fora do BMP (🧡 ✨ 😊) e o parceiro recebe "?" no lugar deles.
+    const href = 'https://api.whatsapp.com/send/?phone=55' + digits +
+      '&text=' + encodeURIComponent(msg);
     const id = escapeHtml(u.id);
     const numero = '<a href="' + href + '" target="_blank" rel="noopener" data-partner-wa="' + id + '"' +
       ' style="color:#1a8a4a;text-decoration:none;border-bottom:1px dotted #1a8a4a;white-space:nowrap;">' +
@@ -4259,7 +4281,10 @@
         ' para a experiência *' + expNome + '* no dia *' + data +
         '* às *' + horario + '*: *' + lista + '*.' + localLine + '\n\n' +
         'O repasse será feito até 48h antes do evento.';
-      return 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
+      // api.whatsapp.com/send/ em vez de wa.me — o wa.me corrompe emojis
+      // fora do BMP (o 📍 do "Local" chegava como "?" pro fornecedor).
+      return 'https://api.whatsapp.com/send/?phone=' + waDigits +
+        '&text=' + encodeURIComponent(msg);
     }
 
     function renderWhatsappCell(b, nomeResolved, telefone) {
