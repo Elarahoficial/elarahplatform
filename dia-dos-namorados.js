@@ -487,17 +487,22 @@
       }
       var nome = document.getElementById('ddn-waitlist-nome').value.trim();
       var email = document.getElementById('ddn-waitlist-email').value.trim();
-      var tel = document.getElementById('ddn-waitlist-tel').value.trim();
+      var telEl = document.getElementById('ddn-waitlist-tel');
+      var telInfo = window.ElarahPhone ? window.ElarahPhone.get(telEl) : null;
+      var tel = telInfo ? telInfo.e164 : telEl.value.trim();
       if (!email || email.length < 5) {
         alert('Informe um e-mail válido.');
         return;
       }
-      // Telefone obrigatório — comercial precisa contactar leads
-      var telDigits = String(tel || '').replace(/\D+/g, '');
-      if (telDigits.length < 10) {
-        alert('Telefone obrigatório (com DDD). Ex: (11) 91234-5678');
-        var telInput = document.getElementById('ddn-waitlist-tel');
-        if (telInput) telInput.focus();
+      // Telefone obrigatório — comercial precisa contactar leads. Com o
+      // país escolhido no campo, o aviso diz o que falta.
+      var telOk = telInfo
+        ? telInfo.valid
+        : String(tel || '').replace(/\D+/g, '').length >= 10;
+      if (!telOk) {
+        alert('Telefone obrigatório. ' +
+          ((telInfo && telInfo.error) || 'Use DDD + número. Ex: (11) 91234-5678'));
+        if (telEl) telEl.focus();
         return;
       }
 

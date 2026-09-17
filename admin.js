@@ -16337,6 +16337,20 @@
   // Máscara progressiva pra telefone BR. Mantém só dígitos (até 11) e
   // formata: (xx) xxxx-xxxx (10 dígitos) ou (xx) xxxxx-xxxx (11 dígitos
   // = celular com 9). Aceita parcial enquanto o usuário digita.
+  // Escreve/lê um campo que usa o seletor de país. Sem o phone-input.js
+  // carregado, cai na máscara BR de sempre.
+  function _finSetPhone(el, valor) {
+    if (!el) return;
+    if (window.ElarahPhone) window.ElarahPhone.set(el, valor || '');
+    else el.value = _finMaskPhone(valor || '');
+  }
+
+  function _finReadPhone(el) {
+    if (!el) return '';
+    if (window.ElarahPhone) return window.ElarahPhone.value(el);
+    return String(el.value || '').trim();
+  }
+
   function _finMaskPhone(value) {
     const d = String(value || '').replace(/\D+/g, '').slice(0, 11);
     if (!d) return '';
@@ -16396,10 +16410,13 @@
   // campo de telefone novo que seja adicionado depois.
   //
   // Critério de "campo de telefone": <input type="tel"> ou input cujo id
-  // mencione whatsapp/telefone/phone/celular. Todos os números do admin
-  // são BR, então a máscara de 11 dígitos serve a todos.
+  // mencione whatsapp/telefone/phone/celular. A máscara aqui é de 11
+  // dígitos (Brasil) — campos que aceitam número de fora usam o seletor
+  // de país (phone-input.js) e ficam de fora, senão as duas máscaras
+  // brigariam e a de cá cortaria o número no 11º dígito.
   function _isPhoneInput(el) {
     if (!el || el.tagName !== 'INPUT') return false;
+    if (el.classList && el.classList.contains('elp__input')) return false;
     if ((el.type || '').toLowerCase() === 'tel') return true;
     return /whats?app|telefone|phone|celular/i.test(el.id || '');
   }
@@ -17909,7 +17926,7 @@
       $('ms-id').value = mode === 'edit' ? data.id : '';
       $('ms-customer-name').value = data.customer_name || '';
       $('ms-customer-email').value = data.customer_email || '';
-      $('ms-customer-phone').value = _finMaskPhone(data.customer_phone || '');
+      _finSetPhone($('ms-customer-phone'), data.customer_phone || '');
       $('ms-source').value = data.sale_source || '';
       $('ms-experience').value = data.experience_id || '';
       const expRef = data.experience_id && _finExpById.has(data.experience_id)
@@ -18025,7 +18042,7 @@
     const payload = {
       customer_name: $('ms-customer-name').value.trim(),
       customer_email: $('ms-customer-email').value.trim() || null,
-      customer_phone: $('ms-customer-phone').value.trim() || null,
+      customer_phone: _finReadPhone($('ms-customer-phone')) || null,
       experience_id: expId,
       experience_name: expSnapshot,
       sale_date: $('ms-sale-date').value || null,

@@ -1576,7 +1576,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       var telefoneEl = document.getElementById('originals-telefone');
       var nome = (nomeEl && nomeEl.value) || '';
       var email = (emailEl && emailEl.value) || '';
-      var telefone = (telefoneEl && telefoneEl.value) || '';
+      // Valor com "+DDI" na frente — o lead pode não ser do Brasil.
+      var telefone = (telefoneEl && window.ElarahPhone)
+        ? window.ElarahPhone.value(telefoneEl)
+        : ((telefoneEl && telefoneEl.value) || '');
       var horarioEl = document.getElementById('originals-horario');
       var horarioField = document.getElementById('originals-horario-field');
       var horario = (horarioField && horarioField.style.display !== 'none' && horarioEl)
@@ -1975,7 +1978,10 @@ if (groupForm) {
     e.preventDefault();
 
     var nome = document.getElementById('group-nome').value;
-    var whatsapp = document.getElementById('group-whatsapp').value;
+    var whatsappEl = document.getElementById('group-whatsapp');
+    var whatsapp = window.ElarahPhone
+      ? window.ElarahPhone.value(whatsappEl)
+      : whatsappEl.value;
     var tipoEvento = document.getElementById('group-tipo').value;
     var pessoas = document.getElementById('group-pessoas').value;
     var data = document.getElementById('group-data').value;
@@ -2870,20 +2876,23 @@ if (groupForm) {
       });
       modalRoot.querySelector('#erm-close').addEventListener('click', closeReservationModal);
 
-      // Máscara simples de telefone BR: formata enquanto digita.
-      // (11) 91234-5678 ou (11) 1234-5678 — aceita ambos.
+      // Seletor de país + máscara. O país escolhido é o que permite
+      // dizer se faltou dígito: 10 dígitos no Brasil pode ser celular
+      // sem o 9, mas em Portugal é número completo.
       const telInput = modalRoot.querySelector('#erm-telefone');
       if (telInput) {
-        telInput.addEventListener('input', function () {
-          const raw = telInput.value.replace(/\D+/g, '').slice(0, 11);
-          let formatted = raw;
-          if (raw.length >= 1) formatted = '(' + raw.slice(0, 2);
-          if (raw.length >= 3) formatted += ') ' + raw.slice(2, raw.length >= 11 ? 7 : 6);
-          if (raw.length >= 7) {
-            formatted += '-' + raw.slice(raw.length >= 11 ? 7 : 6);
-          }
-          telInput.value = formatted;
-        });
+        mountPhone(telInput);
+        // Volta a mensagem de ajuda ao normal assim que a pessoa mexe no
+        // campo — o erro vermelho do submit não fica pendurado enquanto
+        // ela corrige. Trocar de país também dispara.
+        const telHelp = modalRoot.querySelector('#erm-telefone-msg');
+        const resetTelHelp = function () {
+          if (!telHelp || telHelp.style.color !== 'rgb(192, 57, 43)') return;
+          telHelp.style.color = '#888';
+          telHelp.textContent = 'Usamos pra te avisar sobre a experiência e mudanças de horário.';
+        };
+        telInput.addEventListener('input', resetTelHelp);
+        telInput.addEventListener('elarahphone:change', resetTelHelp);
       }
 
       // Máscara CPF: 000.000.000-00
@@ -4094,7 +4103,7 @@ if (groupForm) {
           const pessoa = 'da Pessoa ' + (i + 2);
           const pn = String(nomes[i].value || '').trim();
           if (!pn || pn.length < 3) return 'o nome ' + pessoa;
-          if (!normalizePhoneBR(tels[i] ? tels[i].value : '')) return 'o WhatsApp ' + pessoa;
+          if (!readPhone(tels[i]).valid) return 'o WhatsApp ' + pessoa;
           if (hasVariants && !(ctx.variantByParticipant && ctx.variantByParticipant[i + 2])) {
             return (ctx.variantLabel || 'a opção') + ' ' + pessoa;
           }
@@ -4104,7 +4113,7 @@ if (groupForm) {
       // Nome + WhatsApp do comprador
       const nome = val('#erm-nome').replace(/\s+/g, ' ');
       if (!nome || nome.length < 3) return 'seu nome completo';
-      if (!normalizePhoneBR(val('#erm-telefone'))) return 'seu WhatsApp com DDD';
+      if (!readPhone(root.querySelector('#erm-telefone')).valid) return 'seu WhatsApp com DDD';
 
       // E-mail — só no checkout convidado
       if (ctx.isGuest) {
@@ -4498,7 +4507,11 @@ if (groupForm) {
       // Reset telefone field — cada reserva começa limpa.
       const telefoneInput = root.querySelector('#erm-telefone');
       if (telefoneInput) {
-        telefoneInput.value = '';
+        // Limpa pelo componente pra o país voltar pro Brasil junto com o
+        // número; mexer só no .value deixaria a bandeira da reserva
+        // anterior no campo.
+        if (window.ElarahPhone) window.ElarahPhone.set(telefoneInput, '');
+        else telefoneInput.value = '';
         root.querySelector('#erm-telefone-msg').style.color = '#888';
         root.querySelector('#erm-telefone-msg').textContent =
           'Usamos pra te avisar sobre a experiência e mudanças de horário.';
@@ -4832,6 +4845,11 @@ if (groupForm) {
             })(i);
           }
         }
+        // Os cards de Pessoa 2..N nascem agora (innerHTML), então o
+        // seletor de país precisa ser ligado aqui — o upgrade automático
+        // do phone-input.js só varre o que já existia no carregamento.
+        var novosTels = participantsEl.querySelectorAll('.erm-part-telefone');
+        Array.prototype.forEach.call(novosTels, function (el) { mountPhone(el); });
       }
 
       function updateQty(delta) {
@@ -5134,6 +5152,11 @@ if (groupForm) {
     // Valida telefone BR: pelo menos 10 dígitos (fixo) ou 11 (celular).
     // Aceita qualquer formato, só conta dígitos. Retorna a versão
     // só-dígitos (E.164 BR: 55 + DDD + número).
+    //
+    // Sobrou como rede de segurança: os campos do checkout passaram a
+    // usar o seletor de país (phone-input.js), que sabe o país e por
+    // isso consegue dizer "faltou 1 dígito". Esta função só entra em
+    // ação se aquele arquivo não tiver carregado.
     function normalizePhoneBR(raw) {
       const digits = String(raw || '').replace(/\D+/g, '');
       if (digits.length < 10 || digits.length > 13) return null;
@@ -5142,6 +5165,55 @@ if (groupForm) {
         return digits.slice(2);
       }
       return digits;
+    }
+
+    // Liga o seletor de país num input de telefone. Sem o phone-input.js
+    // o campo continua funcionando como antes (máscara BR), só sem a
+    // bandeira — checkout nunca deixa de abrir por causa disso.
+    function mountPhone(input) {
+      if (!input) return null;
+      if (window.ElarahPhone) return window.ElarahPhone.mount(input);
+      maskPhoneBrFallback(input);
+      return null;
+    }
+
+    // Máscara BR de emergência (o que existia antes do seletor).
+    function maskPhoneBrFallback(input) {
+      if (!input || input.dataset.brMask === '1') return;
+      input.dataset.brMask = '1';
+      input.addEventListener('input', function () {
+        const raw = input.value.replace(/\D+/g, '').slice(0, 11);
+        let formatted = raw;
+        if (raw.length >= 1) formatted = '(' + raw.slice(0, 2);
+        if (raw.length >= 3) formatted += ') ' + raw.slice(2, raw.length >= 11 ? 7 : 6);
+        if (raw.length >= 7) formatted += '-' + raw.slice(raw.length >= 11 ? 7 : 6);
+        input.value = formatted;
+      });
+    }
+
+    // Lê um campo de telefone. Com o seletor ligado, devolve o país
+    // escolhido e uma mensagem de erro específica ("faltam 2 dígitos");
+    // sem ele, cai na checagem BR antiga.
+    function readPhone(input) {
+      if (window.ElarahPhone) return window.ElarahPhone.get(input);
+      const raw = input ? String(input.value || '').trim() : '';
+      const norm = normalizePhoneBR(raw);
+      return {
+        country: 'BR', ddi: '55', national: norm || '',
+        digits: norm ? '55' + norm : '',
+        e164: norm ? '+55 ' + raw : '',
+        valid: !!norm,
+        error: norm ? null : 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).',
+      };
+    }
+
+    // Dígitos que vão pra coluna telefone_digits. Brasil continua indo
+    // SEM o 55 — é o formato de todo o histórico, e os cruzamentos do
+    // painel (reserva x participante) comparam esses dígitos entre si.
+    // Estrangeiro vai com o DDI, que é o que identifica o número.
+    function phoneDbDigits(info) {
+      if (!info || !info.valid) return null;
+      return info.country === 'BR' ? info.national : info.digits;
     }
 
     async function handleConfirmReservation() {
@@ -5198,24 +5270,32 @@ if (groupForm) {
       // ===== VALIDAÇÃO TELEFONE =====
       const telefoneInput = root.querySelector('#erm-telefone');
       const telefoneMsg = root.querySelector('#erm-telefone-msg');
-      const telefoneRaw = telefoneInput ? telefoneInput.value.trim() : '';
-      const telefoneNormalized = normalizePhoneBR(telefoneRaw);
-      if (!telefoneNormalized) {
+      const telefoneInfo = readPhone(telefoneInput);
+      if (!telefoneInfo.valid) {
         if (telefoneMsg) {
           telefoneMsg.style.color = '#c0392b';
-          telefoneMsg.textContent = 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).';
+          // Mensagem do seletor de país: diz quantos dígitos faltam pro
+          // país escolhido, em vez do genérico "número inválido".
+          telefoneMsg.textContent = telefoneInfo.error
+            || 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).';
         }
         if (telefoneInput) {
           try { telefoneInput.focus({ preventScroll: true }); } catch (e) {}
         }
-        console.warn('[Elarah checkout] telefone inválido bloqueou o submit:', telefoneRaw);
+        console.warn('[Elarah checkout] telefone inválido bloqueou o submit:',
+          telefoneInfo.country, telefoneInfo.national, telefoneInfo.error);
         return;
       }
       if (telefoneMsg) {
         telefoneMsg.style.color = '#888';
         telefoneMsg.textContent = 'Usamos pra te avisar sobre a experiência e mudanças de horário.';
       }
-      console.log('[Elarah checkout] telefone válido:', telefoneNormalized);
+      // telefoneRaw é o texto que vai pra coluna `telefone` — vai COM o
+      // "+DDI" na frente, que é o que faz o painel respeitar o país em
+      // vez de assumir Brasil ao montar o link do WhatsApp.
+      const telefoneRaw = telefoneInfo.e164;
+      const telefoneNormalized = phoneDbDigits(telefoneInfo);
+      console.log('[Elarah checkout] telefone válido:', telefoneInfo.country, telefoneNormalized);
 
       // ===== [PR F] VALIDAÇÃO EMAIL (só em checkout convidado) =====
       let guestEmailNorm = '';
@@ -5358,14 +5438,15 @@ if (groupForm) {
             break;
           }
           partNomes[pi].style.borderColor = '#ddd';
-          // Telefone precisa ter DDD + número (10 ou 11 dígitos) — sem isso
-          // não dá pra contatar no dia. normalizePhoneBR devolve null quando
-          // falta o DDD ou o número está incompleto.
-          var pTelNorm = normalizePhoneBR(pTel);
+          // Sem telefone completo não dá pra contatar a pessoa no dia.
+          // O seletor de país sabe quantos dígitos o número deveria ter,
+          // então o aviso diz o que falta em vez de só "inválido".
+          var pTelInfo = readPhone(partTels[pi]);
+          var pTelNorm = phoneDbDigits(pTelInfo);
           if (!pTelNorm) {
             partTels[pi].style.borderColor = '#c0392b';
             errEl.textContent = pTel
-              ? 'WhatsApp da Pessoa ' + pIdx + ' inválido — use DDD + número (ex: 11999999999).'
+              ? 'WhatsApp da Pessoa ' + pIdx + ': ' + (pTelInfo.error || 'número inválido.')
               : 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
             try { partTels[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
@@ -5395,7 +5476,7 @@ if (groupForm) {
           }
           participantes.push({
             nome: pNome,
-            telefone: pTel,
+            telefone: pTelInfo.e164,
             telefone_digits: pTelNorm,
             email: pEmail || null,
             // variant_selected fica como undefined quando a experiência
@@ -5403,7 +5484,8 @@ if (groupForm) {
             // sem essa feature.
             variant_selected: pVariant || undefined,
           });
-          // telefone já normalizado (pTelNorm) = só dígitos com DDD + número.
+          // pTelNorm = só dígitos. Brasil vai sem o 55 (DDD + número),
+          // como sempre foi; número de fora vai com o DDI na frente.
           acompanhantes.push({ nome: pNome, telefone: pTelNorm });
         }
         if (!partValid) return;
@@ -5448,7 +5530,9 @@ if (groupForm) {
             options: {
               data: {
                 nome: ctx.nome || '',
-                telefone: telefoneNormalized || '',
+                // Texto com "+DDI" (e não só dígitos): é isso que vira
+                // profiles.telefone quando a conta é criada aqui.
+                telefone: telefoneRaw || '',
                 from_guest_checkout: true,
               }
             }

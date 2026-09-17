@@ -1,3 +1,18 @@
+// Atalhos pro campo de telefone com seletor de país (phone-input.js).
+// Se aquele arquivo não carregar, o campo segue como input comum — a
+// página inteira não pode quebrar por causa do seletor.
+function _contaSetPhone(input, valor) {
+  if (!input) return;
+  if (window.ElarahPhone) window.ElarahPhone.set(input, valor || '');
+  else input.value = valor || '';
+}
+
+function _contaReadPhone(input) {
+  if (!input) return { valid: true, e164: '', error: null };
+  if (window.ElarahPhone) return window.ElarahPhone.get(input);
+  return { valid: true, e164: String(input.value || '').trim(), error: null };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   async function startPage() {
     await ElarahAuth.ready;
@@ -91,16 +106,33 @@ if (badgeEl) {
 
   if (dadosNome) dadosNome.value = user.nome || '';
   if (dadosEmail) dadosEmail.value = user.email || '';
-  if (dadosTelefone) dadosTelefone.value = user.telefone || '';
+  // Pelo componente, pra bandeira do país vir junto com o número salvo
+  // (um "+39 …" no banco abre a tela já com a Itália selecionada).
+  if (dadosTelefone) _contaSetPhone(dadosTelefone, user.telefone || '');
   if (dadosCidade) dadosCidade.value = user.cidade || '';
 
   if (formDados) {
     formDados.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      // Barra o salvamento de número incompleto: com o país na mão dá
+      // pra dizer quantos dígitos faltam em vez de aceitar calado e
+      // descobrir depois, na hora de chamar a pessoa no WhatsApp.
+      const telInfo = _contaReadPhone(dadosTelefone);
+      const erroEl = document.getElementById('dados-erro');
+      if (dadosTelefone && !telInfo.valid) {
+        if (erroEl) {
+          erroEl.textContent = 'WhatsApp: ' + (telInfo.error || 'número inválido.');
+          erroEl.style.display = 'block';
+        }
+        try { dadosTelefone.focus({ preventScroll: true }); } catch (err) {}
+        return;
+      }
+      if (erroEl) { erroEl.textContent = ''; erroEl.style.display = 'none'; }
+
       const result = await ElarahAuth.updateUser({
         nome: dadosNome ? dadosNome.value.trim() : '',
-        telefone: dadosTelefone ? dadosTelefone.value.trim() : '',
+        telefone: telInfo.e164,
         cidade: dadosCidade ? dadosCidade.value.trim() : ''
       });
 
@@ -193,7 +225,7 @@ if (formWrap) {
   // estiver vazio) — o parceiro pode trocar por um número comercial.
   const waInput = document.getElementById('parceiro-whatsapp');
   if (waInput && !waInput.value && currentUser.telefone) {
-    waInput.value = currentUser.telefone;
+    _contaSetPhone(waInput, currentUser.telefone);
   }
 }
 }
@@ -212,7 +244,7 @@ renderPartnerSection();
         bairro: document.getElementById('parceiro-bairro')?.value.trim() || '',
         cidade: document.getElementById('parceiro-cidade')?.value.trim() || '',
         social: document.getElementById('parceiro-social')?.value.trim() || '',
-        whatsapp: document.getElementById('parceiro-whatsapp')?.value.trim() || '',
+        whatsapp: _contaReadPhone(document.getElementById('parceiro-whatsapp')).e164,
         descricao: document.getElementById('parceiro-descricao')?.value.trim() || ''
       };
 
