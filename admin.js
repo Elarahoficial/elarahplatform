@@ -164,6 +164,25 @@
     return String(raw);
   }
 
+  // Monta os dígitos no formato que o wa.me / api.whatsapp.com espera
+  // (E.164 sem o "+"), a partir de um telefone salvo em qualquer formato.
+  // Brasil continua sendo o padrão — 10 ou 11 dígitos são DDD + número e
+  // ganham o 55 —, mas número estrangeiro NÃO vira número BR torto: se o
+  // valor salvo traz o DDI escrito ("+39 351 743 4071") ou já tem 12+
+  // dígitos, os dígitos passam direto. Devolve '' quando não sobra nada
+  // utilizável, pra quem chama não montar link quebrado.
+  function waPhoneDigits(raw) {
+    const text = String(raw == null ? '' : raw).trim();
+    const digits = text.replace(/\D+/g, '');
+    if (!digits) return '';
+    // DDI escrito à mão: confia no que a pessoa cadastrou.
+    if (text.charAt(0) === '+') return digits;
+    // Sem DDI: 10 ou 11 dígitos é Brasil (DDD + número).
+    if (digits.length <= 11) return '55' + digits;
+    // 12+ dígitos já carregam DDI (55 do Brasil ou qualquer outro).
+    return digits;
+  }
+
   // ===== BOOT (async) =====
   // Faz checagem em camadas e LOGA cada etapa, pra que o user veja
   // exatamente onde travou em vez de redirect silencioso.
@@ -1335,22 +1354,17 @@
   // Estado do modal (cache da request atual)
   let followupCtx = null;
 
-  // Normaliza telefone BR pra E.164 (55XXXXXXXXXXX) — formato
-  // que o wa.me aceita. Aceita "(11) 91234-5678", "11912345678",
-  // "+5511912345678", etc. Retorna null se inválido.
+  // Normaliza telefone pra E.164 sem "+" — formato que o wa.me aceita.
+  // Aceita "(11) 91234-5678", "11912345678", "+5511912345678" e também
+  // número estrangeiro com DDI ("+39 351 743 4071"). Retorna null se o
+  // que sobrou não tem cara de telefone discável.
   function normalizePhoneForWhatsApp(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
-    if (!digits) return null;
-    // Já vem com 55 (E.164 completo)
-    if (digits.length === 12 || digits.length === 13) {
-      if (digits.startsWith('55')) return digits;
-      return '55' + digits.slice(-11);
-    }
-    // 10 ou 11 dígitos: assume BR sem o 55
-    if (digits.length === 10 || digits.length === 11) {
-      return '55' + digits;
-    }
-    return null;
+    const digits = waPhoneDigits(raw);
+    // E.164 vai de ~10 (DDI + assinante) a 15 dígitos. Fora disso é lixo
+    // de digitação — melhor não oferecer botão do que abrir conversa com
+    // o número errado.
+    if (digits.length < 10 || digits.length > 15) return null;
+    return digits;
   }
 
   // "Maria Silva" → "Maria". Sem nome → "tudo bem!"
@@ -2777,11 +2791,11 @@
   function buildUserPhoneCell(u) {
     const tel = (u.telefone || '').trim();
     if (!tel) return '<span style="color:#bbb;">—</span>';
-    const digits = tel.replace(/\D+/g, '').replace(/^55/, '');
+    const digits = waPhoneDigits(tel);
     if (!digits) return escapeHtml(tel);
     const primeiroNome = String(u.nome || '').trim().split(/\s+/)[0] || 'tudo bem';
     const msg = 'Oii ' + primeiroNome + '! Você se cadastrou na Elarah e temos um grupo onde liberamos experiências antes de todo mundo (algumas esgotam só por lá). Entra aqui pra não perder: https://chat.whatsapp.com/LRqJa9F7zGWAIMlh2D2yjl';
-    const href = 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(msg);
+    const href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
     const contatado = !!u.whatsapp_contacted_at;
     const btnBg = contatado ? '#25D366' : '#f0a05e';
     const tooltipBotao = contatado
@@ -2907,13 +2921,13 @@
   function buildPartnerPhoneCell(u, pd) {
     const raw = ((u.telefone || '') || (pd && pd.whatsapp) || '').trim();
     if (!raw) return '<span style="color:#bbb;">—</span>';
-    const digits = raw.replace(/\D+/g, '').replace(/^55/, '');
+    const digits = waPhoneDigits(raw);
     if (!digits) return escapeHtml(raw);
     const nome = String((pd && pd.marca) || u.nome || '').trim().split(/\s+/)[0] || '';
     const msg = buildPartnerWhatsappMessage(nome);
     // api.whatsapp.com/send/ em vez de wa.me — o wa.me corrompe emojis
     // fora do BMP (🧡 ✨ 😊) e o parceiro recebe "?" no lugar deles.
-    const href = 'https://api.whatsapp.com/send/?phone=55' + digits +
+    const href = 'https://api.whatsapp.com/send/?phone=' + digits +
       '&text=' + encodeURIComponent(msg);
     const id = escapeHtml(u.id);
     const numero = '<a href="' + href + '" target="_blank" rel="noopener" data-partner-wa="' + id + '"' +
@@ -4250,10 +4264,8 @@
 
     function buildSupplierWhatsappLink(b, nomeResolved, telefone) {
       const wa = b._fornecedorWhatsappResolvido || '';
-      const digits = wa.replace(/\D+/g, '');
-      if (!digits) return null;
-      // Brasil: prepend 55 se não tem código do país.
-      const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const waDigits = waPhoneDigits(wa);
+      if (!waDigits) return null;
       const nomes = collectParticipantNames(b, nomeResolved, telefone);
       const expNome = b.experiencia_nome || '(experiência)';
       const data = b.data || '(data)';
@@ -4414,9 +4426,8 @@
       }
       if (!tpl) return '';
       const btns = [];
-      const digits = String(telefone || '').replace(/\D+/g, '');
-      if (digits) {
-        const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const waDigits = waPhoneDigits(telefone);
+      if (waDigits) {
         // api.whatsapp.com/send (em vez de wa.me) — mais robusto pra
         // emojis fora do BMP, mesmo motivo do follow-up de leads.
         const waUrl = 'https://api.whatsapp.com/send/?phone=' + waDigits +
@@ -4481,8 +4492,7 @@
 
       let telefoneCell;
       if (telefone) {
-        const digits = String(telefone).replace(/\D+/g, '');
-        const waDigits = digits.length >= 10 ? ('55' + digits.replace(/^55/, '')) : digits;
+        const waDigits = waPhoneDigits(telefone);
         const href = waDigits ? 'https://wa.me/' + waDigits : '';
         const telDisplay = formatPhoneBR(telefone);
         telefoneCell = href
@@ -6238,7 +6248,7 @@
       if (!nomeResolved && b.email) { var nk = String(b.email).toLowerCase(); if (nomePorEmail.has(nk)) nomeResolved = nomePorEmail.get(nk); }
       var when = b.created_at ? new Date(b.created_at).toLocaleDateString('pt-BR') : '—';
       var telefoneCell = telefone
-        ? '<a href="https://wa.me/55' + String(telefone).replace(/\D+/g, '').replace(/^55/, '') + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(formatPhoneBR(telefone)) + '</a>'
+        ? '<a href="https://wa.me/' + waPhoneDigits(telefone) + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(formatPhoneBR(telefone)) + '</a>'
         : '<span style="color:#bbb;">—</span>';
       var fuStatus = b.followup_status || 'nenhum';
       var fuBadge = '';
@@ -6295,11 +6305,11 @@
           msgLines.push('Garante aqui: ' + expLink);
         }
         var msg = msgLines.join('\n');
-        var waDigits = String(telefone).replace(/\D+/g, '').replace(/^55/, '');
+        var waDigits = waPhoneDigits(telefone);
         // api.whatsapp.com/send/?phone= é mais robusto pra emojis fora
         // do BMP que wa.me — alguns clientes (Safari iOS, WhatsApp Web)
         // corrompem surrogate pairs no wa.me. Aceita o mesmo formato.
-        var waUrl = 'https://api.whatsapp.com/send/?phone=55' + waDigits + '&text=' + encodeURIComponent(msg);
+        var waUrl = 'https://api.whatsapp.com/send/?phone=' + waDigits + '&text=' + encodeURIComponent(msg);
         var btnLabel = fuStatus === 'nenhum' ? '1º Follow-up' : '2º Follow-up';
         waBtn = '<button class="admin__fu-btn" data-booking-id="' + escapeHtml(b.id) + '" data-fu-next="' + (fuStatus === 'nenhum' ? 'primeiro_enviado' : 'segundo_enviado') + '" data-wa-url="' + escapeHtml(waUrl) + '" style="padding:4px 10px;border:1px solid #1a8a4a;background:#fff;color:#1a8a4a;border-radius:8px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">' + btnLabel + '</button>';
       }
@@ -6522,9 +6532,8 @@
 
     function buildFeedbackWhatsappLink(b, nome, tel) {
       if (!tel) return null;
-      const digits = String(tel).replace(/\D+/g, '');
-      if (digits.length < 10) return null;
-      const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const waDigits = waPhoneDigits(tel);
+      if (waDigits.length < 10) return null;
       const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || '';
       const oi = primeiroNome ? 'Oi, ' + primeiroNome + '!' : 'Oi!';
       const expNome = b.experiencia_nome || '(experiência)';
@@ -9748,7 +9757,7 @@
   // (local, data, horários) quando disponíveis. Se não houver telefone
   // válido, devolve '' — caller não renderiza botão.
   function buildByElarahWaUrl(sub, item) {
-    const digits = String(sub.telefone || '').replace(/\D+/g, '').replace(/^55/, '');
+    const digits = waPhoneDigits(sub.telefone);
     if (!digits) return '';
     const firstName = String(sub.nome || '').trim().split(/\s+/)[0] || 'Oi';
     const exp = (sub.experiencia || (item && item.nome) || '').trim();
@@ -9778,7 +9787,7 @@
     lines.push('As vagas estão nas últimas — essa pode ser a sua *última chance* de garantir seu lugar! 🧡');
     lines.push('Se quiser, eu te envio o link pra confirmar agora mesmo.');
 
-    return 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(lines.join('\n'));
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(lines.join('\n'));
   }
 
   // Fica fora do render pra sobreviver entre re-renders — se
@@ -10680,13 +10689,10 @@
     TIPO_PARCERIA_OPTS.forEach((o, i) => { if (arr.indexOf(o.v) !== -1) mask |= (1 << i); });
     return mask;
   }
-  // Normaliza telefone pra wa.me: só dígitos, prefixo 55 (Brasil) quando
-  // vier sem DDI.
+  // Normaliza telefone pra wa.me. Delega no waPhoneDigits pra fornecedora
+  // estrangeira não virar número BR torto.
   function fornWaPhone(raw) {
-    let d = String(raw || '').replace(/\D/g, '');
-    if (!d) return '';
-    if (d.length <= 11) d = '55' + d;
-    return d;
+    return waPhoneDigits(raw);
   }
   // Mensagem pronta "Solicitar novas experiências" — checklist completo
   // pra o parceiro responder de uma vez só e acelerar o cadastro.
@@ -12704,8 +12710,8 @@
       if (v.capacidade) linhas.push('<div style="font-size:.82rem;color:#555;margin-top:4px;">👥 ' + escapeHtml(v.capacidade) + '</div>');
       const contato = [v.contato_nome, v.whatsapp].filter(Boolean).join(' · ');
       if (contato) {
-        const waDigits = (v.whatsapp || '').replace(/\D/g, '');
-        const waLink = waDigits ? ' <a href="https://wa.me/' + (waDigits.length <= 11 ? '55' + waDigits : waDigits) + '" target="_blank" rel="noopener" style="color:#25908a;text-decoration:none;font-weight:600;">abrir</a>' : '';
+        const waDigits = waPhoneDigits(v.whatsapp);
+        const waLink = waDigits ? ' <a href="https://wa.me/' + waDigits + '" target="_blank" rel="noopener" style="color:#25908a;text-decoration:none;font-weight:600;">abrir</a>' : '';
         linhas.push('<div style="font-size:.82rem;color:#555;margin-top:4px;">📞 ' + escapeHtml(contato) + waLink + '</div>');
       }
       if (v.instagram) {
@@ -15070,13 +15076,11 @@
   }
 
   // Limpa um WhatsApp pra wa.me/<digits>. Aceita "(11) 99999-9999",
-  // "+55 11 99999 9999", "11999999999". Adiciona DDI 55 se ausente
-  // (assume Brasil).
+  // "+55 11 99999 9999", "11999999999" e DDI estrangeiro ("+39 351…").
   function _propWhatsappLink(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
+    const digits = waPhoneDigits(raw);
     if (!digits) return null;
-    const withCountry = digits.length <= 11 ? '55' + digits : digits;
-    return 'https://wa.me/' + withCountry;
+    return 'https://wa.me/' + digits;
   }
 
   function _propInstagramLink(raw) {
@@ -18625,11 +18629,10 @@
   // link de WhatsApp com o recado da compra pronto + estado "✓ Avisado".
   function _finBuildManualSaleAvisarCell(r, supplierDisplay, expObj, fornMetaByKey) {
     const wa = _finManualSaleSupplierWa(supplierDisplay, fornMetaByKey);
-    const digits = wa.replace(/\D+/g, '');
-    if (!digits) {
+    const waDigits = waPhoneDigits(wa);
+    if (!waDigits) {
       return '<span style="font-size:.7rem;color:#bbb;" title="Cadastre o WhatsApp da fornecedora no painel Fornecedores">— sem WhatsApp</span>';
     }
-    const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
     const expNome = r.experience_name || (expObj && expObj.nome) || '(experiência)';
     const dataFmt = r.slot_date
       ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR')
@@ -20600,10 +20603,9 @@
   // ----- Helpers de link (espelham _propWhatsappLink/_propInstagramLink) -----
   // Replicados pra B2B porque o módulo é independente do CRM de parceiros.
   function _b2bWhatsappLink(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
+    const digits = waPhoneDigits(raw);
     if (!digits) return null;
-    const withCountry = digits.length <= 11 ? '55' + digits : digits;
-    return 'https://wa.me/' + withCountry;
+    return 'https://wa.me/' + digits;
   }
   function _b2bInstagramLink(raw) {
     const v = String(raw || '').trim();
@@ -24470,12 +24472,10 @@
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
-  // Normaliza telefone BR pra wa.me: só dígitos; se vier sem o 55
-  // (10 ou 11 dígitos) prepende 55. Já com DDI passa direto.
+  // Normaliza telefone pra wa.me: sem DDI assume Brasil, com DDI
+  // (inclusive estrangeiro) passa direto. Null quando não sobra dígito.
   function _intWhatsappDigits(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
-    if (!digits) return null;
-    return digits.length <= 11 ? '55' + digits : digits;
+    return waPhoneDigits(raw) || null;
   }
 
   async function _intFetch() {
