@@ -2483,7 +2483,8 @@ if (groupForm) {
       modalRoot.id = 'elarah-reserve-modal';
       modalRoot.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(20,12,4,.55);padding:20px;font-family:"DM Sans",sans-serif;';
       modalRoot.innerHTML = ''
-        + '<div style="background:#fff;border-radius:18px;max-width:440px;width:100%;padding:28px 28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto;">'
+        + '<div style="background:#fff;border-radius:18px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">'
+        + '<div id="erm-scroll" style="padding:28px 28px 24px;overflow-y:auto;overscroll-behavior:contain;">'
         +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;">'
         +     '<h3 id="erm-title" style="font-family:\'DM Serif Display\',serif;font-size:1.35rem;color:#1a1a1a;margin:0;">Confirmar reserva</h3>'
         +     '<button type="button" id="erm-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;padding:0 4px;">&times;</button>'
@@ -2677,6 +2678,7 @@ if (groupForm) {
         +     '<button type="button" id="erm-card-back" style="width:100%;margin-top:10px;padding:11px;border:none;background:transparent;color:#999;border-radius:10px;font-size:.85rem;cursor:pointer;">Cancelar e voltar</button>'
         +     '<p style="margin:12px 0 0;font-size:.72rem;color:#aaa;text-align:center;">🔒 Dados do cartão protegidos pela Mercado Pago (Secure Fields).</p>'
         +   '</div>' // fim erm-card-section
+        + '</div>'   // fim erm-scroll
         + '</div>';
       document.body.appendChild(modalRoot);
 
@@ -2725,6 +2727,13 @@ if (groupForm) {
       });
 
       return modalRoot;
+    }
+
+    // O modal de reserva está aberto na tela agora?
+    // Aberto = display 'flex' (openReservationModal);
+    // fechado = 'none' (cssText inicial e closeReservationModal).
+    function isReservationModalOpen() {
+      return !!(modalRoot && modalRoot.style.display !== 'none');
     }
 
     function closeReservationModal() {
@@ -4140,7 +4149,45 @@ if (groupForm) {
         (soldOut ? '.5' : '1') + ';transition:all .15s;';
     }
 
+    // =============================================================
+    // ABERTURA DO MODAL — TUDO OU NADA
+    // -------------------------------------------------------------
+    // openReservationModalInner() publica `currentReservationCtx = ctx`
+    // logo na 4ª linha, mas só termina de preparar esse ctx ~340 linhas
+    // depois (quantidade, participantes, handlers do stepper). Se
+    // qualquer coisa estourar nesse meio — e é um trecho que mexe em
+    // horários, slots e variantes —, o resultado era o pior estado
+    // possível: `currentReservationCtx` já apontando pro ctx NOVO e pela
+    // metade, enquanto a tela continuava mostrando o formulário ANTERIOR,
+    // preenchido. Nada avisava. A pessoa clicava em pagar e a cobrança
+    // saía com os dados do ctx capenga (quantidade 1, total = preço
+    // unitário) em vez do que estava na tela.
+    //
+    // Agora: os campos que o fluxo de pagamento lê são normalizados ANTES
+    // de publicar, e uma falha na montagem FECHA o checkout em vez de
+    // deixá-lo pela metade. Modal que não abre é um problema visível;
+    // modal que abre errado cobra errado.
+    // =============================================================
     function openReservationModal(ctx) {
+      // Normaliza antes de publicar — o ctx nunca existe sem estes.
+      ctx.quantidade = Math.max(1, Math.min(10, Number(ctx.quantidade) || 1));
+      ctx.participantes = [];
+      ctx.acompanhantes = [];
+      ctx.variantByParticipant = {};
+      ctx.totalCentavos = ctx.precoCentavos;
+      try {
+        openReservationModalInner(ctx);
+      } catch (e) {
+        console.error('[Elarah checkout] falha ao montar o modal — abortando pra não deixar o checkout pela metade', e);
+        try { closeReservationModal(); } catch (_e) {}
+        currentReservationCtx = null;
+        try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (_e) {}
+        try { document.body.style.overflow = ''; } catch (_e) {}
+        alert('Não foi possível abrir o checkout agora. Recarregue a página e tente de novo.');
+      }
+    }
+
+    function openReservationModalInner(ctx) {
       // Esconde o spinner do clique de Reservar IMEDIATAMENTE quando o
       // modal abre — antes era escondido com 80ms de atraso no finally
       // do startCheckout, o que causava o spinner aparecer sobreposto
@@ -5044,6 +5091,39 @@ if (groupForm) {
         ctx.variantByParticipant = ctx.variantByParticipant || {};
         ctx.variantByParticipant[1] = ctx.variantSelected;
         // Pessoa 2..N (validação acontece no loop abaixo, junto com nome/telefone)
+      }
+
+      // ===== FONTE DE VERDADE DA QUANTIDADE: A TELA =====
+      // Já aconteceu de ctx.quantidade chegar aqui valendo 1 enquanto a
+      // tela mostrava 2: stepper em "2", card da Pessoa 2 preenchido com
+      // nome e telefone, subtotal "2x R$ 200,00 = R$ 400,00" — e o painel
+      // de cartão abrindo com "1 pessoa · total R$ 200,00". O ctx tinha
+      // sido trocado por baixo sem a tela ser redesenhada, e a compra saía
+      // com uma vaga a menos que o combinado.
+      //
+      // Quem preencheu foi a cliente, olhando a tela — então a tela manda,
+      // não o ctx. Os cards de Pessoa 2..N são a evidência mais forte:
+      // são eles que têm nome e telefone digitados. Divergiu, o ctx é
+      // corrigido e o preço redesenhado ANTES de validar e cobrar.
+      var domPartCount = root.querySelectorAll('.erm-part-nome').length;
+      var domQty = Math.max(1, Math.min(10, domPartCount + 1));
+      var qtyElNow = root.querySelector('#erm-qty');
+      var stepperQty = qtyElNow ? parseInt(String(qtyElNow.textContent || '').trim(), 10) : NaN;
+      if ((ctx.quantidade || 1) !== domQty || (!isNaN(stepperQty) && stepperQty !== domQty)) {
+        // console.error de propósito: isto NUNCA deveria acontecer. Se
+        // aparecer de novo, estes números dizem qual das três fontes
+        // desandou.
+        console.error('[Elarah QTY] divergência corrigida antes de cobrar', {
+          ctxQuantidade: ctx.quantidade,
+          stepperNaTela: stepperQty,
+          cardsDePessoa: domPartCount,
+          usado: domQty,
+        });
+        ctx.quantidade = domQty;
+        if (qtyElNow) qtyElNow.textContent = String(domQty);
+        // Redesenha o total pra que o valor na tela seja o que vai ser
+        // cobrado — nunca cobrar diferente do que a cliente está vendo.
+        refreshPriceBreakdown();
       }
 
       // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
@@ -7078,6 +7158,27 @@ if (groupForm) {
     // a intenção salva em sessionStorage e relançamos o startCheckout
     // automaticamente, encontrando o botão correspondente na página.
     function resumePendingCheckout() {
+      // ===== NUNCA REMONTAR POR CIMA DE UM CHECKOUT ABERTO =====
+      // Esta função é disparada por DOIS gatilhos que não têm nada a ver
+      // com a pessoa ter acabado de logar:
+      //   * onAuthStateChange('SIGNED_IN') — o Supabase emite isso também
+      //     em refresh de token e em restauração de sessão, ou seja, no
+      //     meio de um checkout que já está aberto;
+      //   * um timer 600ms depois do load, se já houver sessão.
+      // Sem esta guarda, ela chamava startCheckout() de novo e o
+      // openReservationModal remontava o modal por cima do formulário já
+      // preenchido. Foi assim que uma reserva de 2 pessoas virou 1: o ctx
+      // era substituído, a tela continuava mostrando 2, e a cobrança saía
+      // por 1.
+      //
+      // Se o modal já está aberto, a intenção de compra JÁ está sendo
+      // atendida — a pendência perdeu o sentido e é descartada.
+      if (isReservationModalOpen()) {
+        console.warn('[Elarah checkout] retomada ignorada: o checkout já está aberto na tela');
+        try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+        return;
+      }
+
       let pending = null;
       try {
         const raw = sessionStorage.getItem(PENDING_KEY);
