@@ -42,6 +42,10 @@ def img(src, alt, pos="center 50%"):
     return f'<img src="assets/{src}" alt="{alt}" style="object-position:{pos}">'
 
 
+def pslot(icon, label, sub):
+    return f'<div class="pslot"><span class="pi">{icon}</span><span class="pl">{label}</span><span class="ps">{sub}</span></div>'
+
+
 def head_block(kicker, main, accent, small):
     return f'''    <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
@@ -120,10 +124,10 @@ vibe = f'''
 espacos = f'''
   <section class="slide">
 {head_simple("Os espaços")}
-    <span class="eyebrow orange">◆ Duas opções de espaço</span>
+    <span class="eyebrow orange">◆ Três opções de espaço</span>
     <h2>Onde <em>celebrar</em></h2>
-    <p class="lead">Escolham a que mais combina com vocês — as duas ficam pertinho da Vila Mariana e Moema, e temos outras opções também, é só pedir. 🍷</p>
-    <div class="vgrid">
+    <p class="lead">Escolham a que mais combina com vocês — temos opções na Vila Mariana, Moema e Brooklin, e outras também, é só pedir. 🍷</p>
+    <div class="vgrid" style="grid-template-columns:repeat(3,1fr)">
       <div class="vcard hl">
         <div class="vph">
           {img("netas-atelie.jpg", "Netas Ateliê — grupo na experiência de cerâmica", "center 40%")}
@@ -156,13 +160,50 @@ espacos = f'''
           </ul>
         </div>
       </div>
+      <div class="vcard">
+        <div class="vph">
+          {img("meu-outro-lado.jpg", "Ateliê Meu Outro Lado — espaço da experiência", "center 50%")}
+          <div class="vpr"><b>R$ 359</b><small>por pessoa</small></div>
+        </div>
+        <div class="vb">
+          <span class="vt">Cerâmica + vinho incluso</span>
+          <h3>Ateliê Meu Outro Lado</h3>
+          <p class="vaddr">Brooklin · vinho incluso 🍷</p>
+          <ul>
+            <li>Experiência completa de cerâmica</li>
+            <li><b>Vinho já incluso</b> no valor</li>
+            <li>Turma de 8 a 10 pessoas</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    {foot("Os espaços")}
+  </section>'''
+
+pacotes = f'''
+  <section class="slide">
+{head_simple("Pacotes & valores")}
+    <span class="eyebrow orange">◆ Outros pacotes</span>
+    <h2>Deixe ainda mais <em>especial</em></h2>
+    <p class="lead">Dá pra somar a qualquer espaço: registro fotográfico profissional e uma lembrancinha personalizada pra cada uma levar pra casa. 🤍</p>
+    <div class="invbox">
+      <div class="incl" style="flex:1;min-width:250px">
+        <span class="vt">Foto profissional</span>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45">Registro fotográfico profissional da experiência, pra guardar cada momento.</p>
+        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--navy);margin-top:10px">R$ 450 <span style="font-size:11px;color:var(--muted);font-family:-apple-system,sans-serif;text-transform:uppercase;letter-spacing:.06em;font-weight:600">valor fixo</span></div>
+      </div>
+      <div class="incl" style="flex:1;min-width:250px">
+        <span class="vt">Lembrancinha</span>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45">Lembrancinha personalizada pra cada convidada levar pra casa de recordação.</p>
+        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--navy);margin-top:10px">R$ 99 <span style="font-size:11px;color:var(--muted);font-family:-apple-system,sans-serif;text-transform:uppercase;letter-spacing:.06em;font-weight:600">por pessoa</span></div>
+      </div>
     </div>
     <div class="splitbox">
-      <span class="sv">R$ 342</span>
-      <span class="sl">É quanto fica <b>por pessoa dividindo entre as 7</b> que presenteiam (grupo de 8 · total R$ 2.392 ÷ 7). O valor final se ajusta ao número de participantes. 🤍</span>
+      <span class="sv">÷ 7</span>
+      <span class="sl">Pra <b>dividir entre as 7</b> que presenteiam: é o valor por pessoa × 8, dividido por 7. Ex.: <b>R$ 299 → R$ 342</b> cada · <b>R$ 359 → R$ 410</b> cada. Ajusta conforme o número final. 🤍</span>
     </div>
-    <p class="fineprint">R$ 299 por pessoa, cerâmica guiada por artista, turma de 8 a 10. No Netas Ateliê vocês levam o próprio vinho; no Sow Café o café da tarde é uma opção à parte. Aniversário em 27/09, região Vila Mariana / Moema. Data e horário sujeitos à disponibilidade de agenda.</p>
-    {foot("Os espaços")}
+    <p class="fineprint">Netas Ateliê e Sow Café: R$ 299/pessoa (Netas: vocês levam o próprio vinho · Sow: café da tarde opcional à parte). Ateliê Meu Outro Lado (Brooklin): R$ 359/pessoa, experiência e vinho inclusos. Turma de 8 a 10. Pacotes: foto profissional R$ 450 (valor fixo) · lembrancinha personalizada R$ 99/pessoa. Aniversário em 27/09. Data e horário sujeitos à disponibilidade de agenda.</p>
+    {foot("Pacotes & valores")}
   </section>'''
 
 proximos = f'''
@@ -173,7 +214,7 @@ proximos = f'''
     <p class="lead">Me confirma o espaço e o número de pessoas que a gente reserva tudo e organiza a experiência pra vocês. Qualquer dúvida, é só chamar. 🍷</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham</h3><p>O espaço (Netas ou Sow) e o número de pessoas.</p></div>
+      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham</h3><p>O espaço (Netas, Sow ou Meu Outro Lado) e o número de pessoas.</p></div>
       <div class="infocard"><div class="ico">2️⃣</div><h3>Reservamos</h3><p>A gente segura a agenda e organiza cada detalhe.</p></div>
       <div class="infocard"><div class="ico">3️⃣</div><h3>É só brindar</h3><p>No dia, chega tudo pronto. Vocês só criam e celebram.</p></div>
     </div>
@@ -184,7 +225,7 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + experiencia + vibe + espacos + proximos + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + experiencia + vibe + espacos + pacotes + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-vinho-ceramica-aniversario.html"
 open(out, "w", encoding="utf-8").write(html)
