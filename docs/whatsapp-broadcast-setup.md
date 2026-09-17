@@ -1,5 +1,11 @@
 # WhatsApp automático pra interessados (Z-API)
 
+> **Atenção:** este documento descreve o provedor **legado** (Z-API, número
+> comum via QR code), que corre risco de banimento em disparo pra lista fria.
+> O caminho recomendado hoje é a **API oficial da Meta** —
+> ver `docs/whatsapp-oficial-meta.md`. As travas de segurança e o painel são
+> os mesmos nos dois provedores.
+
 Dispara automaticamente o follow-up de WhatsApp pra **todos os interessados de
 uma experiência** (a lista de "Respostas do formulário" no admin), em vez de
 abrir o WhatsApp pessoa por pessoa. Feito pra quando uma experiência tem 90, 19,

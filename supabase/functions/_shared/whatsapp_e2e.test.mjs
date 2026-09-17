@@ -36,6 +36,7 @@ const WA_PATH = pathToFileURL(join(HERE, "whatsapp.ts")).href;
 // ---- Números FICTÍCIOS (nunca de cliente real). CLIENT_A é o "meu número". ----
 const CLIENT_A = "5511999990000"; // destinatário legítimo do fluxo
 const CLIENT_B = "5521988887777"; // TERCEIRO — nunca pode ser tocado
+const CLIENT_C = "5531977776666"; // segunda pessoa da MESMA lista de interesse
 const IMG_A = "https://elarah.com.br/assets/APEROLPINTURA.jpg";
 
 let PASS = 0, FAIL = 0;
@@ -50,10 +51,19 @@ function head(t) { out.push("\n" + t); }
 // Banco FAKE (Supabase). whatsapp_send_log com UNIQUE(dedupe_key) REAL:
 // insert de chave repetida devolve {error:{code:'23505'}} — igual ao Postgres.
 // ============================================================
-function makeSupabase(seedBookings = []) {
+function makeSupabase(seedBookings = [], seedSubmissions = []) {
   const bookings = new Map();
   for (const b of seedBookings) bookings.set(b.id, { ...b });
   const sendLog = new Map(); // dedupe_key -> row
+  // Lista de interesse By Elarah (fluxo "a data saiu").
+  const submissions = new Map();
+  for (const sub of seedSubmissions) submissions.set(sub.id, { ...sub });
+
+  function storeFor(name) {
+    if (name === "bookings") return bookings;
+    if (name === "byelarah_submissions") return submissions;
+    return sendLog;
+  }
 
   function tableApi(name) {
     // Builder encadeável e "thenable" (await funciona direto).
@@ -61,7 +71,11 @@ function makeSupabase(seedBookings = []) {
     let mode = null;   // 'select' | 'insert' | 'update'
     let payload = null;
 
-    const matches = (row) => filters.every(([c, v]) => row[c] === v);
+    const matches = (row) => filters.every(([c, v]) => (
+      v && typeof v === "object" && Array.isArray(v.__in)
+        ? v.__in.includes(row[c])
+        : row[c] === v
+    ));
 
     const api = {
       select() { mode = "select"; return api; },
@@ -76,7 +90,7 @@ function makeSupabase(seedBookings = []) {
       limit() { return api; },
       order() { return api; },
       async maybeSingle() {
-        const store = name === "bookings" ? bookings : sendLog;
+        const store = storeFor(name);
         for (const row of store.values()) if (matches(row)) return { data: { ...row }, error: null };
         return { data: null, error: null };
       },
@@ -95,12 +109,12 @@ function makeSupabase(seedBookings = []) {
             return { data: [payload], error: null };
           }
           if (mode === "update") {
-            const store = name === "bookings" ? bookings : sendLog;
+            const store = storeFor(name);
             for (const [k, row] of store.entries()) if (matches(row)) store.set(k, { ...row, ...payload });
             return { data: null, error: null };
           }
           // select-lista
-          const store = name === "bookings" ? bookings : sendLog;
+          const store = storeFor(name);
           const rows = [...store.values()].filter(matches).map((r) => ({ ...r }));
           return { data: rows, error: null };
         }).then(resolve, reject);
@@ -113,6 +127,7 @@ function makeSupabase(seedBookings = []) {
     from: (name) => tableApi(name),
     _bookings: bookings,
     _sendLog: sendLog,
+    _submissions: submissions,
   };
 }
 
@@ -146,6 +161,63 @@ function installZapiMock() {
     reset() { calls.length = 0; },
   };
 }
+
+// FRONTEIRA da Cloud API OFICIAL mockada. Registra o que a Meta receberia:
+// telefone, tipo (text/image/template), nome do template e parâmetros.
+function installMetaMock() {
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    const body = init && init.body ? JSON.parse(init.body) : {};
+    if (u.includes("/messages")) {
+      const bodyComp = (body.template?.components ?? []).find((c) => c.type === "body");
+      calls.push({
+        url: u,
+        auth: (init?.headers ?? {})["Authorization"] ?? "",
+        phone: body.to,
+        type: body.type,
+        template: body.template?.name ?? null,
+        lang: body.template?.language?.code ?? null,
+        params: (bodyComp?.parameters ?? []).map((p) => p.text),
+        components: body.template?.components ?? [],
+        text: body.text?.body ?? body.image?.caption ?? "",
+      });
+    }
+    // HEAD na foto (conferência de tipo/tamanho): responde como um servidor
+    // de imagens. `headTipo`/`headTamanho`/`headStatus` deixam o teste
+    // simular foto boa, tipo errado, pesada demais ou inacessível.
+    if ((init?.method ?? "GET").toUpperCase() === "HEAD") {
+      const h = globalThis.__headFake ?? {};
+      return {
+        ok: (h.status ?? 200) < 400,
+        status: h.status ?? 200,
+        headers: {
+          get: (k) => {
+            const key = String(k).toLowerCase();
+            if (key === "content-type") return h.tipo ?? "image/jpeg";
+            if (key === "content-length") return String(h.tamanho ?? 120000);
+            return null;
+          },
+        },
+      };
+    }
+    const payload = JSON.stringify({ messages: [{ id: "wamid.FAKE" + calls.length }] });
+    return { ok: true, status: 200, json: async () => JSON.parse(payload), text: async () => payload };
+  };
+  return {
+    calls,
+    to(phone) { return calls.filter((c) => c.phone === phone); },
+  };
+}
+
+// Env do provedor OFICIAL: sem credencial da Z-API, só as da Meta.
+const META_ENV = {
+  WHATSAPP_SENDING_ENABLED: "true",
+  WHATSAPP_ENV: "production",
+  WHATSAPP_ROLLOUT_PERCENT: "100",
+  META_WHATSAPP_TOKEN: "TOKEN_FAKE",
+  META_WHATSAPP_PHONE_NUMBER_ID: "123456789",
+};
 
 // Carrega whatsapp.ts REAL com um env específico (re-avalia via query string).
 let ENV = {};
@@ -226,6 +298,126 @@ async function runBroadcast(WA, supabase, campaignId, recipients) {
     if (res.sent) enviados++;
   }
   return enviados;
+}
+
+// ESPELHO do laço do aviso "a data saiu" (byelarah-aviso-data/index.ts):
+// carrega a lista EXATA do item (item_slug), dedup por telefone, gate real com
+// dedupeKey "bydate:"+onda+":"+telefone, e carimba quem recebeu.
+async function runAvisoDeData(
+  WA, supabase, onda,
+  {
+    agora = Date.now(),
+    cooldownMs = 12 * 3600_000,
+    compradores = new Set(),              // já compraram ESTE evento
+    reenvioDias = 30,                     // janela do MESMO evento
+  } = {},
+) {
+  const { data: rows } = await supabase
+    .from("byelarah_submissions")
+    .select("id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, aviso_data_announcement_id")
+    .eq("item_slug", onda.item_slug)
+    .limit(2000);
+
+  // Dedup por telefone: quem preencheu 2x recebe UMA mensagem.
+  const byPhone = new Map();
+  let semTelefone = 0;
+  for (const r of rows ?? []) {
+    const phone = WA.normalizePhoneBR(r.telefone);
+    if (!phone) { semTelefone++; continue; }
+    let g = byPhone.get(phone);
+    if (!g) {
+      g = { phone, nome: r.nome ?? "", ids: [], jaRecebeu: false, maxCount: 0, lastSentAt: null, ultimoAvisoEvento: null };
+      byPhone.set(phone, g);
+    }
+    g.ids.push(r.id);
+    if (!g.nome && r.nome) g.nome = r.nome;
+    if (r.aviso_data_announcement_id === onda.id) g.jaRecebeu = true;
+    if (r.aviso_data_sent_at) {
+      const t = Date.parse(r.aviso_data_sent_at);
+      if (Number.isFinite(t)) g.ultimoAvisoEvento = Math.max(g.ultimoAvisoEvento ?? 0, t);
+    }
+    if (r.whatsapp_followup_sent_at) {
+      const t = Date.parse(r.whatsapp_followup_sent_at);
+      if (Number.isFinite(t)) g.lastSentAt = Math.max(g.lastSentAt ?? 0, t);
+    }
+    g.maxCount = Math.max(g.maxCount, Number(r.whatsapp_followup_count) || 0);
+  }
+
+  const res = { enviados: 0, pulados: 0, semTelefone, alvo: byPhone.size };
+  const fotoDoEvento = onda.imagem || IMG_A;
+  for (const g of byPhone.values()) {
+    if (g.jaRecebeu) { res.pulados++; continue; }
+    // JÁ COMPROU ESTE EVENTO → não recebe convite.
+    if (compradores.has(g.phone)) { res.puladosCompra = (res.puladosCompra ?? 0) + 1; continue; }
+    // JÁ FOI AVISADA DESTE MESMO EVENTO na janela (é por evento, não global).
+    if (reenvioDias > 0 && g.ultimoAvisoEvento !== null &&
+        agora - g.ultimoAvisoEvento < reenvioDias * 24 * 3600_000) {
+      res.puladosRegra = (res.puladosRegra ?? 0) + 1;
+      continue;
+    }
+    if (g.lastSentAt !== null && agora - g.lastSentAt < cooldownMs) { res.pulados++; continue; }
+    const dados = {
+      nome: g.nome,
+      experienciaNome: onda.item_nome,
+      data: onda.data_texto,
+      horarios: onda.horarios,
+      local: onda.local,
+      link: onda.link,
+    };
+    // UMA mensagem só, com ou sem data (espelha a função real).
+    const mensagem = WA.byelarahAvisoWhatsAppText(dados);
+    const templateParams = WA.byelarahAvisoTemplateParams(dados);
+    const r = await WA.gatedSendWhatsApp(supabase, {
+      kind: "byelarah_aviso",
+      preferOfficial: true,
+      dedupeKey: "bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + g.phone,
+      identifierOk: true,
+      rawPhone: g.phone,
+      suppressed: false,
+      statusAllowed: true,
+      image: fotoDoEvento,
+      caption: mensagem,
+      message: mensagem,
+      template: { params: templateParams },
+    });
+    if (r.sent || r.reason === "duplicate") {
+      res.enviados++;
+      await supabase.from("byelarah_submissions").update({
+        aviso_data_sent_at: new Date(agora).toISOString(),
+        aviso_data_announcement_id: onda.id,
+        whatsapp_followup_sent_at: new Date(agora).toISOString(),
+        whatsapp_followup_count: g.maxCount + 1,
+      }).in("id", g.ids);
+    } else {
+      res.pulados++;
+    }
+  }
+  return res;
+}
+
+// ESPELHO de chaveEvento() (byelarah-aviso-data/index.ts): a idempotência é
+// por EVENTO+DATA, não por onda — cadastro duplicado do mesmo evento mira a
+// mesma lista e não pode mandar duas mensagens.
+function chaveEvento(nome, data) {
+  const norm = (t) => String(t ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return norm(nome).slice(0, 48) + ":" + norm(data).slice(0, 24);
+}
+
+function subSeed(over = {}) {
+  return {
+    id: over.id ?? "sub-1",
+    item_slug: "perfumaria-criativa",
+    experiencia: "Oficina de Perfumaria Criativa",
+    nome: "Maria Silva",
+    telefone: CLIENT_A,
+    whatsapp_followup_sent_at: null,
+    whatsapp_followup_count: 0,
+    aviso_data_announcement_id: null,
+    aviso_data_sent_at: null,
+    ...over,
+  };
 }
 
 function bookingSeed(over = {}) {
@@ -541,6 +733,398 @@ async function run() {
     check("rollout allowlist-only: meu número envia", rA.sent === true);
     check("rollout allowlist-only: fora da lista NÃO envia", rB.sent === false && rB.reason === "not_in_allowlist", rB.reason);
     check("só 1 envio (o meu)", zr.calls.length === 1 && zr.to(CLIENT_A).length === 1);
+  }
+
+  // ---------- FLUXO: "A DATA SAIU" (By Elarah) ----------
+  head("FLUXO By Elarah — data publicada avisa a lista DAQUELE item, uma vez só");
+  {
+    const WAb = await loadWA(PROD_ENV);
+    const zb = installZapiMock();
+    const onda = {
+      id: "onda-1",
+      item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa",
+      data_texto: "24 de abril",
+      horarios: ["10h às 13h", "14h às 17h"],
+      local: "Rua Nova Orleans, 34 — Brooklin",
+      link: "https://elarah.com.br/index.html#by-elarah-perfumaria-criativa",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-A1" }),                                   // Maria
+      subSeed({ id: "sub-A2", nome: "Maria Silva" }),              // Maria de novo (mesmo tel)
+      subSeed({ id: "sub-C", nome: "Joana", telefone: CLIENT_C }), // outra da MESMA lista
+      // TERCEIRA: lista de OUTRO item — não pode ser tocada.
+      subSeed({ id: "sub-B", item_slug: "ourivesaria-joia", nome: "Bruna", telefone: CLIENT_B }),
+    ]);
+
+    const p1 = await runAvisoDeData(WAb, sb, onda);
+    check("avisou as 2 pessoas da lista do item", p1.enviados === 2, JSON.stringify(p1));
+    check("inscrição duplicada não vira 2 mensagens", zb.to(CLIENT_A).length === 1);
+    check("Z-API chamada exatamente 2x", zb.calls.length === 2);
+    check("TERCEIRA (outro item) NUNCA foi tocada", zb.to(CLIENT_B).length === 0);
+
+    const msg = zb.to(CLIENT_A)[0].text;
+    check("mensagem traz o nome do evento", msg.includes("Oficina de Perfumaria Criativa"));
+    check("mensagem traz a data publicada", msg.includes("24 de abril"));
+    check("mensagem traz os horários", msg.includes("10h às 13h") && msg.includes("14h às 17h"));
+    check("mensagem traz o local", msg.includes("Brooklin"));
+    check("mensagem traz o link de inscrição", msg.includes(onda.link));
+    check("mensagem é pessoal (primeiro nome)", msg.startsWith("Oi, Maria!"), msg.slice(0, 20));
+    check("uma mensagem só: sempre o mesmo texto de abertura",
+      msg.includes("As inscrições abriram"), msg.slice(0, 40));
+    check("send_log registrou por evento+data+telefone",
+      sb._sendLog.has("bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + CLIENT_A));
+    check("as 2 linhas da mesma pessoa foram carimbadas",
+      sb._submissions.get("sub-A1").aviso_data_announcement_id === "onda-1" &&
+      sb._submissions.get("sub-A2").aviso_data_announcement_id === "onda-1");
+
+    // Segunda passada (cron logo depois do disparo do painel): ninguém recebe 2x.
+    const p2 = await runAvisoDeData(WAb, sb, onda);
+    check("segunda passada não reenvia", p2.enviados === 0, JSON.stringify(p2));
+    check("Z-API continua com 2 chamadas", zb.calls.length === 2);
+  }
+  {
+    // Cooldown: quem recebeu follow-up manual há 1h NÃO leva o aviso junto.
+    const WAc = await loadWA(PROD_ENV);
+    const zc = installZapiMock();
+    const onda = {
+      id: "onda-2", item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa", data_texto: "24 de abril",
+      horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const agora = Date.now();
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-rec", telefone: CLIENT_A,
+        whatsapp_followup_sent_at: new Date(agora - 3600_000).toISOString(), whatsapp_followup_count: 1 }),
+      subSeed({ id: "sub-old", nome: "Joana", telefone: CLIENT_C,
+        whatsapp_followup_sent_at: new Date(agora - 40 * 3600_000).toISOString(), whatsapp_followup_count: 1 }),
+    ]);
+    const r = await runAvisoDeData(WAc, sb, onda, { agora });
+    check("contatada há 1h é pulada (não recebe 2 mensagens no mesmo dia)", zc.to(CLIENT_A).length === 0);
+    check("contatada há 40h recebe normalmente", zc.to(CLIENT_C).length === 1, JSON.stringify(r));
+  }
+  {
+    // Kill switch vale também pro aviso automático.
+    const WAk = await loadWA({ ...PROD_ENV, WHATSAPP_SENDING_ENABLED: "false" });
+    const zk = installZapiMock();
+    const onda = {
+      id: "onda-3", item_slug: "perfumaria-criativa", item_nome: "Oficina de Perfumaria Criativa",
+      data_texto: "24 de abril", horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [subSeed({ id: "sub-k" })]);
+    const r = await runAvisoDeData(WAk, sb, onda);
+    check("kill switch → aviso de data não sai", r.enviados === 0 && zk.calls.length === 0);
+    check("kill switch → ninguém é carimbado como avisado",
+      sb._submissions.get("sub-k").aviso_data_announcement_id === null);
+  }
+
+  {
+    // CADASTRO DUPLICADO: o mesmo evento existe duas vezes no catálogo
+    // (uma ativa, uma oculta que voltou), com ids diferentes. Como a lista
+    // casa pelo NOME, as duas ondas miram AS MESMAS pessoas — e ninguém
+    // pode receber duas vezes.
+    const WAd = await loadWA(PROD_ENV);
+    const zd = installZapiMock();
+    const base = {
+      item_slug: "pintura-aperol", item_nome: "Pintura de Quadro com Cristal & Aperol Spritz",
+      data_texto: "24 de abril", horarios: ["10h às 13h"], local: "Brooklin",
+      link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-d1", item_slug: "pintura-aperol", experiencia: base.item_nome }),
+    ]);
+    const r1 = await runAvisoDeData(WAd, sb, { ...base, id: "onda-dup-A" });
+    const r2 = await runAvisoDeData(WAd, sb, { ...base, id: "onda-dup-B" });
+    check("cadastro duplicado: a 1ª onda avisa", r1.enviados === 1, JSON.stringify(r1));
+    check("cadastro duplicado: a 2ª NÃO manda de novo", zd.to(CLIENT_A).length === 1, JSON.stringify(r2));
+    check("cadastro duplicado: Z-API chamada 1x no total", zd.calls.length === 1);
+  }
+
+  // ---------- FLUXO: PROVEDOR OFICIAL (Meta Cloud API) ----------
+  head("FLUXO OFICIAL — Meta Cloud API: template aprovado, não texto solto");
+  {
+    const WAm = await loadWA(META_ENV);
+    const zm = installMetaMock();
+    check("credenciais da Meta cadastradas → oficial pronta", WAm.whatsappOfficialReady() === true);
+    check("mas o provedor PADRÃO segue o legado (não migra nada sozinho)",
+      WAm.whatsappProviderName() === "zapi");
+
+    const onda = {
+      id: "onda-meta", item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa", data_texto: "24 de abril",
+      horarios: ["10h às 13h", "14h às 17h"], local: "Rua Nova Orleans, 34 — Brooklin",
+      link: "https://elarah.com.br/index.html#by-elarah-perfumaria-criativa",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-m1" }),
+      subSeed({ id: "sub-mB", item_slug: "ourivesaria-joia", nome: "Bruna", telefone: CLIENT_B }),
+    ]);
+    const r = await runAvisoDeData(WAm, sb, onda);
+    check("avisou pela oficial", r.enviados === 1 && zm.calls.length === 1, JSON.stringify(r));
+
+    const c = zm.calls[0];
+    check("bateu na Graph API oficial", c.url.includes("graph.facebook.com") && c.url.endsWith("/123456789/messages"), c.url);
+    check("autenticou com o token da Meta", c.auth === "Bearer TOKEN_FAKE");
+    check("foi TEMPLATE (não texto solto)", c.type === "template");
+    check("template correto", c.template === "elarah_inscricoes_abertas", String(c.template));
+    check("idioma pt_BR", c.lang === "pt_BR");
+    check("destinatário certo", c.phone === CLIENT_A);
+    check("TERCEIRA (outra lista) intocada pela oficial", zm.to(CLIENT_B).length === 0);
+    check("5 parâmetros na ordem do template", c.params.length === 5, JSON.stringify(c.params));
+    check("{{1}} primeiro nome", c.params[0] === "Maria");
+    check("{{2}} experiência", c.params[1] === "Oficina de Perfumaria Criativa");
+    check("{{3}} data + horários", c.params[2].includes("24 de abril") && c.params[2].includes("10h às 13h"));
+    check("{{4}} local", c.params[3].includes("Brooklin"));
+    check("{{5}} link", c.params[4] === onda.link);
+    check("nenhum parâmetro com quebra de linha/tab (a Meta recusa)",
+      c.params.every((t) => !/[\n\t]/.test(t) && !/ {4}/.test(t) && t.trim() !== ""));
+    check("sem header de imagem (template aprovado é só texto)",
+      !c.components.some((comp) => comp.type === "header"));
+
+    // Segunda passada: idempotência do portão vale igual na oficial.
+    const r2 = await runAvisoDeData(WAm, sb, onda);
+    check("oficial: segunda passada não reenvia", r2.enviados === 0 && zm.calls.length === 1);
+  }
+  {
+    // Parâmetro que chegaria vazio ou multilinha não pode quebrar o envio.
+    const WAm = await loadWA(META_ENV);
+    const zm = installMetaMock();
+    const onda = {
+      id: "onda-meta2", item_slug: "perfumaria-criativa", item_nome: "Oficina de Perfumaria Criativa",
+      data_texto: "24 de abril", horarios: [], local: "", link: "",
+    };
+    const sb = makeSupabase([], [subSeed({ id: "sub-m2", nome: "" })]);
+    await runAvisoDeData(WAm, sb, onda);
+    const c = zm.calls[0];
+    check("sem nome/local/link → parâmetros neutros, nunca vazios",
+      c.params.length === 5 && c.params.every((t) => t.trim() !== ""), JSON.stringify(c.params));
+    check("link ausente vira o site da Elarah", c.params[4] === "https://elarah.com.br");
+  }
+  {
+    // Oficial escolhida SEM credencial: fail-closed, nunca cai no legado.
+    const WAm = await loadWA({ ...PROD_ENV, WHATSAPP_PROVIDER: "meta" });
+    const zm = installMetaMock();
+    check("oficial sem credencial → não configurado", WAm.whatsappConfigured() === false);
+    const r = await WAm.sendWhatsAppTemplate({
+      to: CLIENT_A, kind: "byelarah_date", template: { params: ["Maria", "Oficina", "24 de abril", "SP", "link"] },
+    });
+    check("oficial sem credencial → não envia", r.ok === false && r.skipped === true, JSON.stringify(r));
+    check("oficial sem credencial → não chamou ninguém", zm.calls.length === 0);
+  }
+  {
+    // Kill switch e ambiente valem igual na oficial.
+    const WAm = await loadWA({ ...META_ENV, WHATSAPP_SENDING_ENABLED: "false" });
+    const zm = installMetaMock();
+    const r = await WAm.sendWhatsAppTemplate({
+      to: CLIENT_A, kind: "byelarah_date", template: { params: ["Maria", "Oficina", "24 de abril", "SP", "link"] },
+    });
+    check("oficial + kill switch → não envia", r.ok === false && zm.calls.length === 0, JSON.stringify(r));
+
+    const WAs = await loadWA({ ...META_ENV, WHATSAPP_ENV: "staging", WHATSAPP_TEST_ALLOWLIST: "" });
+    const zs = installMetaMock();
+    const rs = await WAs.sendWhatsAppTemplate({
+      to: CLIENT_A, kind: "byelarah_date", template: { params: ["Maria", "Oficina", "24 de abril", "SP", "link"] },
+    });
+    check("oficial fora de produção sem allowlist → não envia", rs.ok === false && zs.calls.length === 0);
+  }
+
+  {
+    // SAIU DA LISTA DE ESPERA sem data conhecida → outro template, e nenhuma
+    // promessa de data que a Elarah não tem.
+    const WAm = await loadWA(META_ENV);
+    const zm = installMetaMock();
+    const onda = {
+      id: "onda-aberta", item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa", data_texto: "",
+      motivo: "inscricoes", horarios: [], local: "",
+      link: "https://elarah.com.br/experiencia.html?id=exp-9",
+    };
+    const sb = makeSupabase([], [subSeed({ id: "sub-ab" })]);
+    const r = await runAvisoDeData(WAm, sb, onda);
+    check("abriu inscrições sem data → avisou mesmo assim", r.enviados === 1, JSON.stringify(r));
+    const c = zm.calls[0];
+    check("é o MESMO template de sempre (só um existe)",
+      c.template === "elarah_inscricoes_abertas", String(c.template));
+    check("mesmos 5 parâmetros, com ou sem data", c.params.length === 5, JSON.stringify(c.params));
+    check("sem data → {{3}} vira texto neutro, nunca vazio", c.params[2] === "data a confirmar", c.params[2]);
+    check("link de checkout no {{5}}", c.params[4] === onda.link);
+  }
+
+  {
+    // O ARRANJO REAL PEDIDO: confirmação/lembrete/feedback continuam no canal
+    // de sempre (já funcionam, templates não aprovados na oficial), e SÓ o
+    // aviso pra lista de interesse — o disparo frio — sai pela oficial.
+    const MISTO = { ...PROD_ENV, ...META_ENV };   // credenciais dos dois
+    const WAx = await loadWA(MISTO);
+    check("misto: provedor padrão continua legado", WAx.whatsappProviderName() === "zapi");
+    check("misto: oficial disponível pro fluxo que pedir", WAx.whatsappOfficialReady() === true);
+
+    // 1) Confirmação de reserva → Z-API (texto/imagem), como hoje.
+    const zz = installZapiMock();
+    const sbz = makeSupabase([bookingSeed({ id: "bkx-A" })]);
+    const rc = await WAx.sendBookingConfirmationGated(sbz, sbz._bookings.get("bkx-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("misto: confirmação sai pelo canal legado", rc.sent === true && zz.calls.length === 1,
+      JSON.stringify({ sent: rc.sent, calls: zz.calls.length }));
+
+    // 2) Aviso "a data saiu" → Meta, com template aprovado.
+    const zm = installMetaMock();
+    const onda = {
+      id: "onda-misto", item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      data_texto: "24 de abril", horarios: ["10h às 13h"], local: "Brooklin",
+      link: "https://elarah.com.br/x",
+    };
+    const sbm = makeSupabase([], [subSeed({ id: "sub-x", item_slug: "vitral", experiencia: onda.item_nome })]);
+    const rx = await runAvisoDeData(WAx, sbm, onda);
+    check("misto: aviso à lista sai pela OFICIAL", rx.enviados === 1 && zm.calls.length === 1,
+      JSON.stringify(rx));
+    check("misto: e vai como template aprovado", zm.calls[0].template === "elarah_inscricoes_abertas");
+  }
+
+  {
+    // FOTO POR PESSOA: com o template aprovado COM cabeçalho de imagem, cada
+    // envio leva a foto do evento em que aquela pessoa se inscreveu. A Meta
+    // aprova a estrutura; a imagem vai em cada mensagem.
+    const FOTO = "https://elarah.com.br/assets/vitral.jpg";
+    const onda = {
+      id: "onda-foto", item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      data_texto: "24 de abril", horarios: ["10h às 13h"], local: "Brooklin",
+      link: "https://elarah.com.br/x", imagem: FOTO,
+    };
+    const seed = [subSeed({ id: "sub-f", item_slug: "vitral", experiencia: onda.item_nome })];
+
+    // (a) secret LIGADO → cabeçalho com a foto do evento
+    const WAon = await loadWA({ ...META_ENV, META_TEMPLATE_INSCRICOES_IMAGEM: "true" });
+    const zOn = installMetaMock();
+    await runAvisoDeData(WAon, makeSupabase([], seed), onda);
+    const cOn = zOn.calls[0];
+    const header = (cOn.components || []).find((c) => c.type === "header");
+    check("com o secret ligado → template vai com cabeçalho de imagem", !!header);
+    check("e a imagem é a FOTO DAQUELE evento",
+      header && header.parameters[0].image.link === FOTO,
+      JSON.stringify(header));
+    check("o corpo continua com os 5 parâmetros", cOn.params.length === 5);
+
+    // (a2) foto em formato que a Meta recusa → cai no logo, mas a mensagem SAI
+    const WAwebp = await loadWA({ ...META_ENV, META_TEMPLATE_INSCRICOES_IMAGEM: "true" });
+    const zWebp = installMetaMock();
+    await runAvisoDeData(WAwebp, makeSupabase([], seed), {
+      ...onda, id: "onda-webp", imagem: "https://elarah.com.br/assets/foto.webp",
+    });
+    const hWebp = (zWebp.calls[0].components || []).find((c) => c.type === "header");
+    check("foto .webp (recusada pela Meta) → mensagem sai mesmo assim", zWebp.calls.length === 1);
+    check("e o cabeçalho cai no logo, nunca numa URL que quebraria o envio",
+      hWebp && /\.png$/.test(hWebp.parameters[0].image.link), JSON.stringify(hWebp));
+
+    // (b) secret DESLIGADO → nenhum cabeçalho (senão a Meta recusa tudo)
+    const WAoff = await loadWA(META_ENV);
+    const zOff = installMetaMock();
+    await runAvisoDeData(WAoff, makeSupabase([], seed), onda);
+    check("sem o secret → NENHUM cabeçalho é enviado",
+      !(zOff.calls[0].components || []).some((c) => c.type === "header"));
+  }
+
+  {
+    // CONFERÊNCIA DA FOTO antes de enviar: tipo e tamanho reais.
+    const WAv = await loadWA({ ...META_ENV, META_TEMPLATE_INSCRICOES_IMAGEM: "true" });
+    const FOTO = "https://elarah.com.br/assets/vitral.jpg";
+
+    globalThis.__headFake = { status: 200, tipo: "image/jpeg", tamanho: 250000 };
+    const okUrl = await WAv.resolverImagemParaTemplate(FOTO);
+    check("foto jpeg de 250 KB → usa a foto do evento", okUrl === FOTO, okUrl);
+
+    globalThis.__headFake = { status: 200, tipo: "image/jpeg", tamanho: 8 * 1024 * 1024 };
+    const pesada = await WAv.resolverImagemParaTemplate(FOTO);
+    check("foto de 8 MB (acima do limite da Meta) → cai no logo",
+      /\/assets\/logo\.png$/.test(pesada), pesada);
+
+    globalThis.__headFake = { status: 404 };
+    const sumiu = await WAv.resolverImagemParaTemplate(FOTO);
+    check("foto que sumiu do servidor (404) → cai no logo", /\/assets\/logo\.png$/.test(sumiu), sumiu);
+
+    globalThis.__headFake = { status: 200, tipo: "text/html", tamanho: 1000 };
+    const errada = await WAv.resolverImagemParaTemplate(FOTO);
+    check("URL que não devolve imagem → cai no logo", /\/assets\/logo\.png$/.test(errada), errada);
+
+    // Sem resposta (rede caiu) não é prova contra a foto: segue com ela.
+    const fetchOk = globalThis.fetch;
+    globalThis.fetch = async () => { throw new Error("rede indisponível"); };
+    const semRede = await WAv.resolverImagemParaTemplate(FOTO);
+    check("rede instável → mantém a foto (não degrada todo mundo pro logo)",
+      semRede === FOTO, semRede);
+    globalThis.fetch = fetchOk;
+    globalThis.__headFake = undefined;
+  }
+
+  {
+    // INSCREVEU-SE EM VÁRIOS EVENTOS → RECEBE DE TODOS. Ela pediu pra saber
+    // de cada um; a regra de janela é POR EVENTO e não atrapalha isso.
+    const WAr = await loadWA(PROD_ENV);
+    const zr = installZapiMock();
+    const eventos = [
+      { id: "o-1", nome: "Crie seu Amuleto em Vitral", slug: "vitral" },
+      { id: "o-2", nome: "Pintura de Quadro com Cristal & Aperol Spritz", slug: "aperol" },
+      { id: "o-3", nome: "Pintura de Abajur & Afetos", slug: "abajur" },
+    ];
+    for (const ev of eventos) {
+      const sb = makeSupabase([], [
+        subSeed({ id: "s-" + ev.id, item_slug: ev.slug, experiencia: ev.nome, telefone: CLIENT_A }),
+      ]);
+      await runAvisoDeData(WAr, sb, {
+        id: ev.id, item_slug: ev.slug, item_nome: ev.nome, data_texto: "24 de abril",
+        horarios: [], local: "", link: "https://elarah.com.br/x",
+      });
+    }
+    check("inscrita em 3 eventos → recebe os 3 avisos", zr.to(CLIENT_A).length === 3,
+      "recebeu " + zr.to(CLIENT_A).length);
+  }
+  {
+    // JÁ COMPROU ESTE EVENTO → não recebe convite pra se inscrever.
+    const WAc = await loadWA(PROD_ENV);
+    const zc = installZapiMock();
+    const onda = {
+      id: "o-compra", item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      data_texto: "24 de abril", horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "s-comprou", item_slug: "vitral", experiencia: onda.item_nome, telefone: CLIENT_A }),
+      subSeed({ id: "s-nao", item_slug: "vitral", experiencia: onda.item_nome, nome: "Joana", telefone: CLIENT_C }),
+    ]);
+    const r = await runAvisoDeData(WAc, sb, onda, { compradores: new Set([CLIENT_A]) });
+    check("quem já comprou o evento NÃO recebe", zc.to(CLIENT_A).length === 0);
+    check("quem não comprou recebe normalmente", zc.to(CLIENT_C).length === 1);
+    check("a contagem separa quem foi pulada por compra", r.puladosCompra === 1, JSON.stringify(r));
+  }
+  {
+    // MESMO EVENTO, DE NOVO em menos de 30 dias (remarcação logo depois) →
+    // a pessoa não recebe duas vezes sobre o mesmo evento.
+    const WAj = await loadWA(PROD_ENV);
+    const zj = installZapiMock();
+    const agora = Date.now();
+    const base = {
+      item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [
+      subSeed({
+        id: "s-javisada", item_slug: "vitral", experiencia: base.item_nome, telefone: CLIENT_A,
+        aviso_data_sent_at: new Date(agora - 5 * 24 * 3600_000).toISOString(),  // avisada há 5 dias
+      }),
+    ]);
+    const r = await runAvisoDeData(WAj, sb, { ...base, id: "o-remarcado", data_texto: "2 de maio" }, { agora });
+    check("mesmo evento de novo em 5 dias → não reenvia", zj.calls.length === 0, JSON.stringify(r));
+
+    // Passados 40 dias, uma data nova volta a avisar.
+    const zj2 = installZapiMock();
+    const sb2 = makeSupabase([], [
+      subSeed({
+        id: "s-antiga", item_slug: "vitral", experiencia: base.item_nome, telefone: CLIENT_A,
+        aviso_data_sent_at: new Date(agora - 40 * 24 * 3600_000).toISOString(),
+      }),
+    ]);
+    await runAvisoDeData(WAj, sb2, { ...base, id: "o-nova-temporada", data_texto: "10 de julho" }, { agora });
+    check("passados 40 dias, nova data do mesmo evento avisa de novo", zj2.calls.length === 1);
   }
 
   // ---------- Relatório ----------
