@@ -51,7 +51,7 @@
           </div>
         </div>
         <!-- Aba Elarah Kids oculta temporariamente (sem experiencias infantis no momento). Para reativar, remova este comentario: <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a> -->
-        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Kits Elarah</a>
+        <a href="elarah-em-casa.html" class="header__nav-link">Kits Elarah</a>
         <!-- Aba Dia dos Pais oculta (campanha encerrada). Para reativar na proxima edicao, remova este comentario: <a href="dia-dos-pais.html" class="header__nav-link header__nav-link--ddp">Dia dos Pais</a> -->
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="blog.html" class="header__nav-link">Blog</a>
@@ -340,7 +340,7 @@
           </div>
           <div class="grp-contact__form-row">
             <label class="sr-only" for="grp-whats">WhatsApp</label>
-            <input id="grp-whats" name="whatsapp" type="tel" class="grp-contact__input" placeholder="WhatsApp" autocomplete="tel" required>
+            <input id="grp-whats" name="whatsapp" type="tel" class="grp-contact__input" data-phone-intl placeholder="WhatsApp" autocomplete="tel" required>
             <label class="sr-only" for="grp-tipo-evento">Tipo de evento</label>
             <select id="grp-tipo-evento" name="tipo_evento" class="grp-contact__input grp-contact__select" required>
               <option value="" disabled selected>Tipo de evento</option>
@@ -468,9 +468,11 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=2" defer></script>
-<script src="auth.js?v=12"></script>
+<script src="phone-input.js?v=1"></script>
+<script src="password-toggle.js?v=1"></script>
+<script src="auth.js?v=14"></script>
 <script src="analytics.js?v=3"></script>
-<script src="script.js?v=87"></script><script>  (function () {
+<script src="script.js?v=90"></script><script>  (function () {
     'use strict';
     var form = document.getElementById('grp-form');
     var success = document.getElementById('grp-form-success');
@@ -481,7 +483,12 @@
 
       var nome    = (document.getElementById('grp-nome').value || '').trim();
       var email   = (document.getElementById('grp-email').value || '').trim();
-      var whats   = (document.getElementById('grp-whats').value || '').trim();
+      // Pelo componente: o valor sai com o "+DDI", senão um número de
+      // fora chegaria aqui sem o código do país.
+      var whatsEl = document.getElementById('grp-whats');
+      var whats   = window.ElarahPhone
+        ? window.ElarahPhone.value(whatsEl)
+        : (whatsEl.value || '').trim();
       var tipo    = document.getElementById('grp-tipo-evento').value || '';
       var pessoas = document.getElementById('grp-pessoas-num').value || '';
       var data    = document.getElementById('grp-data').value || '';

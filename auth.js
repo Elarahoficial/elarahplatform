@@ -529,7 +529,7 @@ const ElarahAuth = (function () {
           <div class="auth-modal__row">
             <div class="auth-modal__field">
               <label class="auth-modal__label">WhatsApp</label>
-              <input type="tel" class="auth-modal__input" id="auth-reg-telefone" placeholder="(11) 99999-9999" required>
+              <input type="tel" class="auth-modal__input" id="auth-reg-telefone" data-phone-intl placeholder="(11) 99999-9999" required>
             </div>
             <div class="auth-modal__field">
               <label class="auth-modal__label">Cidade <span class="auth-modal__optional">opcional</span></label>
@@ -614,6 +614,17 @@ const ElarahAuth = (function () {
       }
     });
 
+    // Seletor de país no WhatsApp do cadastro. O modal é criado por JS,
+    // então o upgrade automático (que varre o DOM no load) não o alcança.
+    if (window.ElarahPhone) {
+      window.ElarahPhone.mount(div.querySelector('#auth-reg-telefone'));
+    }
+
+    // Olhinho de mostrar senha — mesmo motivo: o campo nasce agora.
+    if (window.ElarahPasswordToggle) {
+      window.ElarahPasswordToggle.upgradeAll(div);
+    }
+
     // Forgot password link
     div.querySelector('#auth-forgot-link').addEventListener('click', async (e) => {
       e.preventDefault();
@@ -646,7 +657,7 @@ const ElarahAuth = (function () {
       const nome = document.getElementById('auth-reg-nome').value;
       const email = document.getElementById('auth-reg-email').value;
       const senha = document.getElementById('auth-reg-senha').value;
-      const telefone = document.getElementById('auth-reg-telefone').value;
+      const telefoneEl = document.getElementById('auth-reg-telefone');
       const cidade = document.getElementById('auth-reg-cidade').value;
       const termos = document.getElementById('auth-reg-termos').checked;
 
@@ -658,6 +669,18 @@ const ElarahAuth = (function () {
         errorEl.textContent = 'A senha deve ter pelo menos 6 caracteres.';
         return;
       }
+      // Telefone: com o país escolhido dá pra dizer o que falta ("faltou
+      // 1 dígito") em vez de só recusar. Salva com o "+DDI" na frente —
+      // é o que faz o painel não tratar número de fora como brasileiro.
+      const telInfo = window.ElarahPhone
+        ? window.ElarahPhone.get(telefoneEl)
+        : { valid: true, e164: telefoneEl.value, error: null };
+      if (!telInfo.valid) {
+        errorEl.textContent = 'WhatsApp: ' + (telInfo.error || 'número inválido.');
+        try { telefoneEl.focus({ preventScroll: true }); } catch (err) {}
+        return;
+      }
+      const telefone = telInfo.e164;
 
       const result = await register({ nome, email, senha, telefone, cidade });
 

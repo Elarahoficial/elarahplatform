@@ -16,15 +16,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=21">
-  <link rel="stylesheet" href="admin.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="admin.css?v=15">
   <!-- Auto-bust de cache: se a versão local divergir da esperada,
        força reload limpo via location.replace com query string única.
        Resolve quando admin.html é cacheado pelo CDN/navegador apontando
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 128;
+      var EXPECTED = 130;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -1856,10 +1856,13 @@
         <div>
           <h1 class="admin__page-title">Feedbacks</h1>
           <p class="admin__page-subtitle">
-            Tudo que voltou do link de avaliação enviado depois de cada experiência:
-            quantos pedidos saíram, quantos viraram resposta, a nota média e
-            <strong>todos os comentários</strong> — filtráveis por nota, categoria,
-            parceiro, experiência e período.
+            Tudo que voltou do link de avaliação: quantos pedidos saíram, quantos
+            viraram resposta, a nota média e <strong>todos os comentários</strong> —
+            filtráveis por nota, categoria, parceiro, experiência e período.
+            O menu <strong>“Estou vendo”</strong> troca entre as
+            <strong>experiências</strong> compradas no site e os
+            <strong>eventos fechados</strong> — nos eventos dá pra pedir a
+            avaliação no WhatsApp com o mesmo link.
           </p>
         </div>
         <button id="fb-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
@@ -4401,7 +4404,7 @@
 
         <div class="admin__form-field">
           <label>WhatsApp / Telefone</label>
-          <input type="tel" id="ms-customer-phone" placeholder="(11) 99999-9999" maxlength="15">
+          <input type="tel" id="ms-customer-phone" data-phone-intl placeholder="(11) 99999-9999">
         </div>
 
         <div class="admin__form-field">
@@ -4583,9 +4586,11 @@
 
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
-<script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=37"></script>
-<script src="byelarah-data.js?v=7"></script>
+<script src="phone-input.js?v=1"></script>
+<script src="password-toggle.js?v=1"></script>
+<script src="auth.js?v=14"></script>
+<script src="experiences-data.js?v=38"></script>
+<script src="byelarah-data.js?v=8"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-insights.js?v=3"></script>
 <script src="admin-broadcast.js?v=2"></script>
@@ -4594,10 +4599,11 @@
 <script src="admin-prospect-finder.js?v=1"></script>
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=5"></script>
-<script src="admin-feedbacks.js?v=2"></script>
+<script src="admin-feedbacks.js?v=3"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="admin.js?v=228"></script>
+<script src="admin-searchable-select.js?v=1"></script>
+<script src="admin.js?v=230"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

@@ -164,6 +164,25 @@
     return String(raw);
   }
 
+  // Monta os dígitos no formato que o wa.me / api.whatsapp.com espera
+  // (E.164 sem o "+"), a partir de um telefone salvo em qualquer formato.
+  // Brasil continua sendo o padrão — 10 ou 11 dígitos são DDD + número e
+  // ganham o 55 —, mas número estrangeiro NÃO vira número BR torto: se o
+  // valor salvo traz o DDI escrito ("+39 351 743 4071") ou já tem 12+
+  // dígitos, os dígitos passam direto. Devolve '' quando não sobra nada
+  // utilizável, pra quem chama não montar link quebrado.
+  function waPhoneDigits(raw) {
+    const text = String(raw == null ? '' : raw).trim();
+    const digits = text.replace(/\D+/g, '');
+    if (!digits) return '';
+    // DDI escrito à mão: confia no que a pessoa cadastrou.
+    if (text.charAt(0) === '+') return digits;
+    // Sem DDI: 10 ou 11 dígitos é Brasil (DDD + número).
+    if (digits.length <= 11) return '55' + digits;
+    // 12+ dígitos já carregam DDI (55 do Brasil ou qualquer outro).
+    return digits;
+  }
+
   // ===== BOOT (async) =====
   // Faz checagem em camadas e LOGA cada etapa, pra que o user veja
   // exatamente onde travou em vez de redirect silencioso.
@@ -1335,22 +1354,17 @@
   // Estado do modal (cache da request atual)
   let followupCtx = null;
 
-  // Normaliza telefone BR pra E.164 (55XXXXXXXXXXX) — formato
-  // que o wa.me aceita. Aceita "(11) 91234-5678", "11912345678",
-  // "+5511912345678", etc. Retorna null se inválido.
+  // Normaliza telefone pra E.164 sem "+" — formato que o wa.me aceita.
+  // Aceita "(11) 91234-5678", "11912345678", "+5511912345678" e também
+  // número estrangeiro com DDI ("+39 351 743 4071"). Retorna null se o
+  // que sobrou não tem cara de telefone discável.
   function normalizePhoneForWhatsApp(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
-    if (!digits) return null;
-    // Já vem com 55 (E.164 completo)
-    if (digits.length === 12 || digits.length === 13) {
-      if (digits.startsWith('55')) return digits;
-      return '55' + digits.slice(-11);
-    }
-    // 10 ou 11 dígitos: assume BR sem o 55
-    if (digits.length === 10 || digits.length === 11) {
-      return '55' + digits;
-    }
-    return null;
+    const digits = waPhoneDigits(raw);
+    // E.164 vai de ~10 (DDI + assinante) a 15 dígitos. Fora disso é lixo
+    // de digitação — melhor não oferecer botão do que abrir conversa com
+    // o número errado.
+    if (digits.length < 10 || digits.length > 15) return null;
+    return digits;
   }
 
   // "Maria Silva" → "Maria". Sem nome → "tudo bem!"
@@ -2783,11 +2797,11 @@
   function buildUserPhoneCell(u) {
     const tel = (u.telefone || '').trim();
     if (!tel) return '<span style="color:#bbb;">—</span>';
-    const digits = tel.replace(/\D+/g, '').replace(/^55/, '');
+    const digits = waPhoneDigits(tel);
     if (!digits) return escapeHtml(tel);
     const primeiroNome = String(u.nome || '').trim().split(/\s+/)[0] || 'tudo bem';
     const msg = 'Oii ' + primeiroNome + '! Você se cadastrou na Elarah e temos um grupo onde liberamos experiências antes de todo mundo (algumas esgotam só por lá). Entra aqui pra não perder: https://chat.whatsapp.com/LRqJa9F7zGWAIMlh2D2yjl';
-    const href = 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(msg);
+    const href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
     const contatado = !!u.whatsapp_contacted_at;
     const btnBg = contatado ? '#25D366' : '#f0a05e';
     const tooltipBotao = contatado
@@ -2913,13 +2927,13 @@
   function buildPartnerPhoneCell(u, pd) {
     const raw = ((u.telefone || '') || (pd && pd.whatsapp) || '').trim();
     if (!raw) return '<span style="color:#bbb;">—</span>';
-    const digits = raw.replace(/\D+/g, '').replace(/^55/, '');
+    const digits = waPhoneDigits(raw);
     if (!digits) return escapeHtml(raw);
     const nome = String((pd && pd.marca) || u.nome || '').trim().split(/\s+/)[0] || '';
     const msg = buildPartnerWhatsappMessage(nome);
     // api.whatsapp.com/send/ em vez de wa.me — o wa.me corrompe emojis
     // fora do BMP (🧡 ✨ 😊) e o parceiro recebe "?" no lugar deles.
-    const href = 'https://api.whatsapp.com/send/?phone=55' + digits +
+    const href = 'https://api.whatsapp.com/send/?phone=' + digits +
       '&text=' + encodeURIComponent(msg);
     const id = escapeHtml(u.id);
     const numero = '<a href="' + href + '" target="_blank" rel="noopener" data-partner-wa="' + id + '"' +
@@ -4256,10 +4270,8 @@
 
     function buildSupplierWhatsappLink(b, nomeResolved, telefone) {
       const wa = b._fornecedorWhatsappResolvido || '';
-      const digits = wa.replace(/\D+/g, '');
-      if (!digits) return null;
-      // Brasil: prepend 55 se não tem código do país.
-      const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const waDigits = waPhoneDigits(wa);
+      if (!waDigits) return null;
       const nomes = collectParticipantNames(b, nomeResolved, telefone);
       const expNome = b.experiencia_nome || '(experiência)';
       const data = b.data || '(data)';
@@ -4420,9 +4432,8 @@
       }
       if (!tpl) return '';
       const btns = [];
-      const digits = String(telefone || '').replace(/\D+/g, '');
-      if (digits) {
-        const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const waDigits = waPhoneDigits(telefone);
+      if (waDigits) {
         // api.whatsapp.com/send (em vez de wa.me) — mais robusto pra
         // emojis fora do BMP, mesmo motivo do follow-up de leads.
         const waUrl = 'https://api.whatsapp.com/send/?phone=' + waDigits +
@@ -4487,8 +4498,7 @@
 
       let telefoneCell;
       if (telefone) {
-        const digits = String(telefone).replace(/\D+/g, '');
-        const waDigits = digits.length >= 10 ? ('55' + digits.replace(/^55/, '')) : digits;
+        const waDigits = waPhoneDigits(telefone);
         const href = waDigits ? 'https://wa.me/' + waDigits : '';
         const telDisplay = formatPhoneBR(telefone);
         telefoneCell = href
@@ -6244,7 +6254,7 @@
       if (!nomeResolved && b.email) { var nk = String(b.email).toLowerCase(); if (nomePorEmail.has(nk)) nomeResolved = nomePorEmail.get(nk); }
       var when = b.created_at ? new Date(b.created_at).toLocaleDateString('pt-BR') : '—';
       var telefoneCell = telefone
-        ? '<a href="https://wa.me/55' + String(telefone).replace(/\D+/g, '').replace(/^55/, '') + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(formatPhoneBR(telefone)) + '</a>'
+        ? '<a href="https://wa.me/' + waPhoneDigits(telefone) + '" target="_blank" rel="noopener" style="color:#1a8a4a;text-decoration:none;">' + escapeHtml(formatPhoneBR(telefone)) + '</a>'
         : '<span style="color:#bbb;">—</span>';
       var fuStatus = b.followup_status || 'nenhum';
       var fuBadge = '';
@@ -6301,11 +6311,11 @@
           msgLines.push('Garante aqui: ' + expLink);
         }
         var msg = msgLines.join('\n');
-        var waDigits = String(telefone).replace(/\D+/g, '').replace(/^55/, '');
+        var waDigits = waPhoneDigits(telefone);
         // api.whatsapp.com/send/?phone= é mais robusto pra emojis fora
         // do BMP que wa.me — alguns clientes (Safari iOS, WhatsApp Web)
         // corrompem surrogate pairs no wa.me. Aceita o mesmo formato.
-        var waUrl = 'https://api.whatsapp.com/send/?phone=55' + waDigits + '&text=' + encodeURIComponent(msg);
+        var waUrl = 'https://api.whatsapp.com/send/?phone=' + waDigits + '&text=' + encodeURIComponent(msg);
         var btnLabel = fuStatus === 'nenhum' ? '1º Follow-up' : '2º Follow-up';
         waBtn = '<button class="admin__fu-btn" data-booking-id="' + escapeHtml(b.id) + '" data-fu-next="' + (fuStatus === 'nenhum' ? 'primeiro_enviado' : 'segundo_enviado') + '" data-wa-url="' + escapeHtml(waUrl) + '" style="padding:4px 10px;border:1px solid #1a8a4a;background:#fff;color:#1a8a4a;border-radius:8px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">' + btnLabel + '</button>';
       }
@@ -6528,9 +6538,8 @@
 
     function buildFeedbackWhatsappLink(b, nome, tel) {
       if (!tel) return null;
-      const digits = String(tel).replace(/\D+/g, '');
-      if (digits.length < 10) return null;
-      const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
+      const waDigits = waPhoneDigits(tel);
+      if (waDigits.length < 10) return null;
       const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || '';
       const oi = primeiroNome ? 'Oi, ' + primeiroNome + '!' : 'Oi!';
       const expNome = b.experiencia_nome || '(experiência)';
@@ -9969,7 +9978,7 @@
   // (local, data, horários) quando disponíveis. Se não houver telefone
   // válido, devolve '' — caller não renderiza botão.
   function buildByElarahWaUrl(sub, item) {
-    const digits = String(sub.telefone || '').replace(/\D+/g, '').replace(/^55/, '');
+    const digits = waPhoneDigits(sub.telefone);
     if (!digits) return '';
     const firstName = String(sub.nome || '').trim().split(/\s+/)[0] || 'Oi';
     const exp = (sub.experiencia || (item && item.nome) || '').trim();
@@ -9999,7 +10008,7 @@
     lines.push('As vagas estão nas últimas — essa pode ser a sua *última chance* de garantir seu lugar! 🧡');
     lines.push('Se quiser, eu te envio o link pra confirmar agora mesmo.');
 
-    return 'https://wa.me/55' + digits + '?text=' + encodeURIComponent(lines.join('\n'));
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(lines.join('\n'));
   }
 
   // Fica fora do render pra sobreviver entre re-renders — se
@@ -10124,6 +10133,193 @@
     });
   }
 
+  // ===== REORDENAR A FAIXA BY ELARAH =====
+  // A ordem dos GRUPOS nesta tabela é a ordem dos cards na seção
+  // "Elarah Originals" (home + byelarah.html). Cada grupo é um bloco de
+  // <tr>: o cabeçalho com o nome da experiência + as linhas das sessões.
+  // Arrastar move o bloco inteiro; o drop grava a posição (1-based) em
+  // byelarah_items.ordem e em experiences.byelarah_ordem.
+
+  // Faixa de instrução acima da tabela de itens By Elarah.
+  function renderByElarahReorderHint(enabled, itemsBody) {
+    const wrap = itemsBody && itemsBody.closest ? itemsBody.closest('.admin__table-wrap') : null;
+    if (!wrap || !wrap.parentNode) return;
+    let hint = document.getElementById('by-reorder-hint');
+    if (!enabled) {
+      if (hint) hint.remove();
+      return;
+    }
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'by-reorder-hint';
+      hint.style.cssText = 'font-size:.8rem;color:#8a7a66;padding:0 0 10px;display:flex;align-items:center;gap:6px;';
+      wrap.parentNode.insertBefore(hint, wrap);
+    }
+    hint.innerHTML = '<span style="font-size:1rem;">⠿</span> Arraste as experiências pela alça (ou use ▲▼) pra mudar a ordem — quem fica em cima aparece primeiro na faixa By Elarah do site.';
+  }
+
+  // Todos os <tr> de um grupo (cabeçalho + sessões), na ordem do DOM.
+  function byGroupRows(tbody, gid) {
+    return Array.from(tbody.querySelectorAll('tr[data-by-group="' + gid + '"]'));
+  }
+
+  // Ids dos grupos na ordem em que aparecem hoje no DOM.
+  function byGroupIdsInDomOrder(tbody) {
+    const out = [];
+    const seen = new Set();
+    Array.from(tbody.querySelectorAll('tr[data-by-group]')).forEach(function (tr) {
+      const gid = tr.getAttribute('data-by-group');
+      if (!gid || seen.has(gid)) return;
+      seen.add(gid);
+      out.push(gid);
+    });
+    return out;
+  }
+
+  // Move o bloco `gid` pra antes (before=true) ou depois do bloco `refGid`.
+  function moveByGroup(tbody, gid, refGid, before) {
+    const block = byGroupRows(tbody, gid);
+    const ref = byGroupRows(tbody, refGid);
+    if (!block.length || !ref.length) return false;
+    const anchorNode = before ? ref[0] : ref[ref.length - 1].nextSibling;
+    block.forEach(function (tr) { tbody.insertBefore(tr, anchorNode); });
+    return true;
+  }
+
+  // Grupo sendo arrastado no momento. Fica fora de setupByElarahGroupReorder
+  // porque o listener de dragover é registrado no <tbody> UMA vez só (o
+  // elemento sobrevive aos re-renders, que só trocam o innerHTML) enquanto
+  // os listeners de dragstart são re-registrados nas linhas novas.
+  let _byDragGid = null;
+
+  function setupByElarahGroupReorder(tbody) {
+    tbody.querySelectorAll('tr.admin__group-header[data-by-group]').forEach(function (hdr) {
+      hdr.addEventListener('dragstart', function (e) {
+        _byDragGid = hdr.getAttribute('data-by-group');
+        const dragGid = _byDragGid;
+        byGroupRows(tbody, dragGid).forEach(function (tr) { tr.classList.add('exp-row--dragging'); });
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', dragGid || ''); } catch (_) {}
+        }
+      });
+      hdr.addEventListener('dragend', function () {
+        tbody.querySelectorAll('tr.exp-row--dragging').forEach(function (tr) {
+          tr.classList.remove('exp-row--dragging');
+        });
+        if (_byDragGid) { _byDragGid = null; persistByElarahOrder(tbody); }
+      });
+    });
+
+    // dragover no tbody inteiro (e não só nos headers): assim soltar em
+    // cima de qualquer linha de sessão também posiciona o bloco. Uma vez
+    // só por elemento — o tbody persiste entre renders.
+    if (!tbody.dataset.byDragWired) {
+      tbody.dataset.byDragWired = '1';
+      tbody.addEventListener('dragover', function (e) {
+        if (!_byDragGid) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        const tr = e.target && e.target.closest ? e.target.closest('tr[data-by-group]') : null;
+        if (!tr) return;
+        const overGid = tr.getAttribute('data-by-group');
+        if (!overGid || overGid === _byDragGid) return;
+        const block = byGroupRows(tbody, overGid);
+        if (!block.length) return;
+        // Compara com o meio do BLOCO inteiro (não de uma linha só) —
+        // grupos têm alturas bem diferentes conforme o nº de sessões.
+        const top = block[0].getBoundingClientRect().top;
+        const bottom = block[block.length - 1].getBoundingClientRect().bottom;
+        moveByGroup(tbody, _byDragGid, overGid, e.clientY < (top + bottom) / 2);
+      });
+    }
+
+    // ▲▼: mesmo efeito do arrasto, mas funciona no celular.
+    tbody.querySelectorAll('[data-by-move]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const hdr = btn.closest('tr[data-by-group]');
+        if (!hdr) return;
+        const gid = hdr.getAttribute('data-by-group');
+        const order = byGroupIdsInDomOrder(tbody);
+        const idx = order.indexOf(gid);
+        if (idx < 0) return;
+        const up = btn.getAttribute('data-by-move') === 'up';
+        const targetIdx = up ? idx - 1 : idx + 1;
+        if (targetIdx < 0 || targetIdx >= order.length) return;
+        moveByGroup(tbody, gid, order[targetIdx], up);
+        persistByElarahOrder(tbody);
+      });
+    });
+  }
+
+  let _savingByOrder = false;
+  async function persistByElarahOrder(tbody) {
+    if (_savingByOrder) return;
+
+    // Posição 1-based por grupo, aplicada a todos os ids que ele carrega.
+    const itemPairs = [];
+    const expPairs = [];
+    byGroupIdsInDomOrder(tbody).forEach(function (gid, i) {
+      const hdr = tbody.querySelector('tr.admin__group-header[data-by-group="' + gid + '"]');
+      if (!hdr) return;
+      const pos = i + 1;
+      (hdr.getAttribute('data-by-group-items') || '').split(',').filter(Boolean)
+        .forEach(function (id) { itemPairs.push({ id: id, ordem: pos }); });
+      (hdr.getAttribute('data-by-group-exps') || '').split(',').filter(Boolean)
+        .forEach(function (id) { expPairs.push({ id: id, ordem: pos }); });
+    });
+    if (!itemPairs.length && !expPairs.length) return;
+
+    _savingByOrder = true;
+    try {
+      let updated = 0;
+      if (itemPairs.length) {
+        if (!(window.ElarahByElarah && typeof ElarahByElarah.setItemsOrdem === 'function')) {
+          showAdminToast('Função de reordenar indisponível. Recarregue a página.', false);
+          return;
+        }
+        const r = await ElarahByElarah.setItemsOrdem(itemPairs);
+        if (r && r._error) {
+          showAdminToast('Erro ao salvar a ordem: ' + (r._error.message || 'desconhecido'), false);
+          await renderByElarah();
+          return;
+        }
+        updated += (r && r.updated) || 0;
+      }
+      if (expPairs.length) {
+        if (!(window.ElarahData && typeof ElarahData.setByElarahOrdem === 'function')) {
+          showAdminToast('Função de reordenar indisponível. Recarregue a página.', false);
+          return;
+        }
+        const r = await ElarahData.setByElarahOrdem(expPairs);
+        if (r && r._error) {
+          showAdminToast('Erro ao salvar a ordem: ' + (r._error.message || 'desconhecido'), false);
+          await renderByElarah();
+          return;
+        }
+        updated += (r && r.updated) || 0;
+      }
+      // Sincroniza a coluna "Ordem" com a posição nova sem re-renderizar
+      // a tabela (re-render faria a linha "pular" logo depois do drop).
+      byGroupIdsInDomOrder(tbody).forEach(function (gid, i) {
+        byGroupRows(tbody, gid).forEach(function (tr) {
+          if (tr.classList.contains('admin__group-header')) return;
+          const cell = tr.cells && tr.cells[0];
+          if (cell) cell.textContent = String(i + 1);
+        });
+      });
+      if (updated > 0) showAdminToast('✓ Nova ordem da faixa By Elarah salva');
+    } catch (e) {
+      console.error('[Admin/byelarah] persistByElarahOrder', e);
+      showAdminToast('Erro inesperado ao salvar a ordem.', false);
+      await renderByElarah();
+    } finally {
+      _savingByOrder = false;
+    }
+  }
+
   async function renderByElarah() {
     if (!document.getElementById('byelarah-items-body')) return;
     // Invalida cache do ElarahByElarah pra garantir que items recem
@@ -10165,7 +10361,10 @@
           data: e.data || '',
           horarios: Array.isArray(e.horarios) ? e.horarios.slice() : (e.horario ? [e.horario] : []),
           tipo: 'participar',
-          ordem: Number.isFinite(+e.ordem) ? +e.ordem : 0,
+          // Ordem da FAIXA By Elarah (coluna byelarah_ordem) — não a
+          // `ordem` global do site. Sem posição definida ainda, vai pro
+          // fim da faixa (0 = fim, ver _byOrdemKey).
+          ordem: Number.isFinite(+e.byelarahOrdem) ? +e.byelarahOrdem : 0,
           ativo: e.isActive !== false,
           _fromExperience: true,
         };
@@ -10189,11 +10388,14 @@
     } else {
       // Ordena itens por `ordem` antes de agrupar — dentro de cada
       // grupo os itens saem na ordem natural definida no admin.
-      const sortedItems = items.slice().sort((a, b) => {
-        const oa = Number(a.ordem) || 0;
-        const ob = Number(b.ordem) || 0;
-        return oa - ob;
-      });
+      // ordem 1-based: 1 = primeiro card da faixa. 0/null/inválido =
+      // "sem posição definida" → cai no fim, preservando a ordem
+      // natural de quem nunca foi arrastado (sort estável).
+      const _byOrdemKey = (it) => {
+        const n = Number(it && it.ordem);
+        return Number.isFinite(n) && n > 0 ? n : Infinity;
+      };
+      const sortedItems = items.slice().sort((a, b) => _byOrdemKey(a) - _byOrdemKey(b));
       // Particiona no nível da SESSÃO (item), não do grupo: sessões em foco
       // (futuras E ativas) vs passadas/ocultas. Assim uma experiência com
       // sessão ativa e sessão encerrada mostra a ativa no topo e a encerrada
@@ -10212,8 +10414,15 @@
 
       console.info('[Admin/byelarah] rendering', currentGroups.length, 'current +', pastGroups.length, 'past item groups');
       const html = [];
-      const renderItemGroup = (group, past) => {
+      // Reordenar só faz sentido entre os grupos EM FOCO (os passados/
+      // ocultos ficam escondidos e não entram na faixa da home). Com um
+      // grupo só não há o que arrastar.
+      const reorderEnabled = currentGroups.length > 1;
+      const renderItemGroup = (group, past, groupIdx) => {
         const pastAttr = past ? ' data-by-past="1" style="display:none;"' : '';
+        // Atributo que amarra o header + as linhas de sessão num bloco
+        // só, pra que arrastar o header leve o grupo inteiro junto.
+        const groupAttr = (!past && reorderEnabled) ? ' data-by-group="g' + groupIdx + '"' : '';
         const nSessions = group.rows.length;
         const sessoesLabel = nSessions + ' sess' + (nSessions === 1 ? 'ão' : 'ões');
         // Inline styles como fallback — garantem que o header
@@ -10241,13 +10450,39 @@
             '📱 Follow-up WhatsApp' +
           '</button>';
 
+        // Ids que este grupo carrega, pra persistir a ordem no drop:
+        // byelarah_items (coluna `ordem`) e experiences marcadas como
+        // Original (coluna `byelarah_ordem`).
+        const groupItemIds = group.rows
+          .filter(r => r && !r._fromExperience && typeof r.id === 'string' && r.id && !r.id.startsWith('fallback-'))
+          .map(r => r.id);
+        const groupExpIds = group.rows
+          .filter(r => r && r._fromExperience && r.experienceId)
+          .map(r => r.experienceId);
+        const dragHandle = (!past && reorderEnabled)
+          ? '<span class="exp-drag-handle" title="Arraste pra reordenar — quem fica em cima aparece primeiro na faixa By Elarah do site">⠿</span>'
+          : '';
+        // Setinhas: mesma função do arrasto, mas funcionam no celular
+        // (drag-and-drop nativo de HTML não dispara em touch).
+        const moveBtnStyle = 'background:#fff;border:1px solid #e0cba0;color:#a4663b;width:26px;height:26px;border-radius:6px;font-size:.8rem;line-height:1;cursor:pointer;font-family:inherit;padding:0;';
+        const moveBtns = (!past && reorderEnabled)
+          ? '<span style="display:inline-flex;gap:4px;margin-left:auto;">' +
+              '<button type="button" data-by-move="up" style="' + moveBtnStyle + '" title="Subir uma posição">▲</button>' +
+              '<button type="button" data-by-move="down" style="' + moveBtnStyle + '" title="Descer uma posição">▼</button>' +
+            '</span>'
+          : '';
         html.push(
-          '<tr class="admin__group-header"' + pastAttr + '>' +
+          '<tr class="admin__group-header"' + pastAttr + groupAttr +
+            ((!past && reorderEnabled) ? ' draggable="true"' : '') +
+            ' data-by-group-items="' + escapeHtml(groupItemIds.join(',')) + '"' +
+            ' data-by-group-exps="' + escapeHtml(groupExpIds.join(',')) + '">' +
             '<td colspan="8" style="' + headerStyle + '">' +
               '<div class="admin__group-header-inner" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                dragHandle +
                 '<span class="admin__group-header-title" style="' + titleStyle + '">' + escapeHtml(group.nome) + '</span>' +
                 '<span class="admin__group-header-pill" style="' + pillStyle + '">' + escapeHtml(sessoesLabel) + '</span>' +
                 followupBtnHtml +
+                moveBtns +
               '</div>' +
             '</td>' +
           '</tr>'
@@ -10289,7 +10524,7 @@
             actions = '<span class="admin__badge admin__badge--pending">Fallback</span>';
           }
           html.push(`
-            <tr${pastAttr}>
+            <tr${pastAttr}${groupAttr}>
               <td>${it.ordem || 0}</td>
               <td>${imgHtml}</td>
               <td>${escapeHtml(it.nome)}</td>
@@ -10302,7 +10537,7 @@
           `);
         });
       };
-      currentGroups.forEach(g => renderItemGroup(g, false));
+      currentGroups.forEach((g, i) => renderItemGroup(g, false, i));
       if (pastGroups.length) {
         // Divisor + botão pra revelar as passadas/ocultas (escondidas via
         // display:none; o toggle é puro DOM, não refaz requisição).
@@ -10315,11 +10550,13 @@
             '</button>' +
           '</td></tr>'
         );
-        pastGroups.forEach(g => renderItemGroup(g, true));
+        pastGroups.forEach((g, i) => renderItemGroup(g, true, i));
       }
       itemsBody.innerHTML = html.join('');
       // Listeners são registrados uma única vez via delegação em
       // wireByElarahTableListeners() — não re-wirar aqui.
+      renderByElarahReorderHint(reorderEnabled, itemsBody);
+      if (reorderEnabled) setupByElarahGroupReorder(itemsBody);
     }
 
     // ========== Submissions table — GROUPED BY EXPERIENCE ==========
@@ -10673,13 +10910,10 @@
     TIPO_PARCERIA_OPTS.forEach((o, i) => { if (arr.indexOf(o.v) !== -1) mask |= (1 << i); });
     return mask;
   }
-  // Normaliza telefone pra wa.me: só dígitos, prefixo 55 (Brasil) quando
-  // vier sem DDI.
+  // Normaliza telefone pra wa.me. Delega no waPhoneDigits pra fornecedora
+  // estrangeira não virar número BR torto.
   function fornWaPhone(raw) {
-    let d = String(raw || '').replace(/\D/g, '');
-    if (!d) return '';
-    if (d.length <= 11) d = '55' + d;
-    return d;
+    return waPhoneDigits(raw);
   }
   // Mensagem pronta "Solicitar novas experiências" — checklist completo
   // pra o parceiro responder de uma vez só e acelerar o cadastro.
@@ -12697,8 +12931,8 @@
       if (v.capacidade) linhas.push('<div style="font-size:.82rem;color:#555;margin-top:4px;">👥 ' + escapeHtml(v.capacidade) + '</div>');
       const contato = [v.contato_nome, v.whatsapp].filter(Boolean).join(' · ');
       if (contato) {
-        const waDigits = (v.whatsapp || '').replace(/\D/g, '');
-        const waLink = waDigits ? ' <a href="https://wa.me/' + (waDigits.length <= 11 ? '55' + waDigits : waDigits) + '" target="_blank" rel="noopener" style="color:#25908a;text-decoration:none;font-weight:600;">abrir</a>' : '';
+        const waDigits = waPhoneDigits(v.whatsapp);
+        const waLink = waDigits ? ' <a href="https://wa.me/' + waDigits + '" target="_blank" rel="noopener" style="color:#25908a;text-decoration:none;font-weight:600;">abrir</a>' : '';
         linhas.push('<div style="font-size:.82rem;color:#555;margin-top:4px;">📞 ' + escapeHtml(contato) + waLink + '</div>');
       }
       if (v.instagram) {
@@ -15063,13 +15297,11 @@
   }
 
   // Limpa um WhatsApp pra wa.me/<digits>. Aceita "(11) 99999-9999",
-  // "+55 11 99999 9999", "11999999999". Adiciona DDI 55 se ausente
-  // (assume Brasil).
+  // "+55 11 99999 9999", "11999999999" e DDI estrangeiro ("+39 351…").
   function _propWhatsappLink(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
+    const digits = waPhoneDigits(raw);
     if (!digits) return null;
-    const withCountry = digits.length <= 11 ? '55' + digits : digits;
-    return 'https://wa.me/' + withCountry;
+    return 'https://wa.me/' + digits;
   }
 
   function _propInstagramLink(raw) {
@@ -16326,6 +16558,20 @@
   // Máscara progressiva pra telefone BR. Mantém só dígitos (até 11) e
   // formata: (xx) xxxx-xxxx (10 dígitos) ou (xx) xxxxx-xxxx (11 dígitos
   // = celular com 9). Aceita parcial enquanto o usuário digita.
+  // Escreve/lê um campo que usa o seletor de país. Sem o phone-input.js
+  // carregado, cai na máscara BR de sempre.
+  function _finSetPhone(el, valor) {
+    if (!el) return;
+    if (window.ElarahPhone) window.ElarahPhone.set(el, valor || '');
+    else el.value = _finMaskPhone(valor || '');
+  }
+
+  function _finReadPhone(el) {
+    if (!el) return '';
+    if (window.ElarahPhone) return window.ElarahPhone.value(el);
+    return String(el.value || '').trim();
+  }
+
   function _finMaskPhone(value) {
     const d = String(value || '').replace(/\D+/g, '').slice(0, 11);
     if (!d) return '';
@@ -16385,10 +16631,13 @@
   // campo de telefone novo que seja adicionado depois.
   //
   // Critério de "campo de telefone": <input type="tel"> ou input cujo id
-  // mencione whatsapp/telefone/phone/celular. Todos os números do admin
-  // são BR, então a máscara de 11 dígitos serve a todos.
+  // mencione whatsapp/telefone/phone/celular. A máscara aqui é de 11
+  // dígitos (Brasil) — campos que aceitam número de fora usam o seletor
+  // de país (phone-input.js) e ficam de fora, senão as duas máscaras
+  // brigariam e a de cá cortaria o número no 11º dígito.
   function _isPhoneInput(el) {
     if (!el || el.tagName !== 'INPUT') return false;
+    if (el.classList && el.classList.contains('elp__input')) return false;
     if ((el.type || '').toLowerCase() === 'tel') return true;
     return /whats?app|telefone|phone|celular/i.test(el.id || '');
   }
@@ -17898,7 +18147,7 @@
       $('ms-id').value = mode === 'edit' ? data.id : '';
       $('ms-customer-name').value = data.customer_name || '';
       $('ms-customer-email').value = data.customer_email || '';
-      $('ms-customer-phone').value = _finMaskPhone(data.customer_phone || '');
+      _finSetPhone($('ms-customer-phone'), data.customer_phone || '');
       $('ms-source').value = data.sale_source || '';
       $('ms-experience').value = data.experience_id || '';
       const expRef = data.experience_id && _finExpById.has(data.experience_id)
@@ -18014,7 +18263,7 @@
     const payload = {
       customer_name: $('ms-customer-name').value.trim(),
       customer_email: $('ms-customer-email').value.trim() || null,
-      customer_phone: $('ms-customer-phone').value.trim() || null,
+      customer_phone: _finReadPhone($('ms-customer-phone')) || null,
       experience_id: expId,
       experience_name: expSnapshot,
       sale_date: $('ms-sale-date').value || null,
@@ -18618,11 +18867,10 @@
   // link de WhatsApp com o recado da compra pronto + estado "✓ Avisado".
   function _finBuildManualSaleAvisarCell(r, supplierDisplay, expObj, fornMetaByKey) {
     const wa = _finManualSaleSupplierWa(supplierDisplay, fornMetaByKey);
-    const digits = wa.replace(/\D+/g, '');
-    if (!digits) {
+    const waDigits = waPhoneDigits(wa);
+    if (!waDigits) {
       return '<span style="font-size:.7rem;color:#bbb;" title="Cadastre o WhatsApp da fornecedora no painel Fornecedores">— sem WhatsApp</span>';
     }
-    const waDigits = digits.length >= 12 ? digits : ('55' + digits.replace(/^55/, ''));
     const expNome = r.experience_name || (expObj && expObj.nome) || '(experiência)';
     const dataFmt = r.slot_date
       ? new Date(r.slot_date + 'T00:00:00').toLocaleDateString('pt-BR')
@@ -20593,10 +20841,9 @@
   // ----- Helpers de link (espelham _propWhatsappLink/_propInstagramLink) -----
   // Replicados pra B2B porque o módulo é independente do CRM de parceiros.
   function _b2bWhatsappLink(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
+    const digits = waPhoneDigits(raw);
     if (!digits) return null;
-    const withCountry = digits.length <= 11 ? '55' + digits : digits;
-    return 'https://wa.me/' + withCountry;
+    return 'https://wa.me/' + digits;
   }
   function _b2bInstagramLink(raw) {
     const v = String(raw || '').trim();
@@ -24463,12 +24710,10 @@
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
-  // Normaliza telefone BR pra wa.me: só dígitos; se vier sem o 55
-  // (10 ou 11 dígitos) prepende 55. Já com DDI passa direto.
+  // Normaliza telefone pra wa.me: sem DDI assume Brasil, com DDI
+  // (inclusive estrangeiro) passa direto. Null quando não sobra dígito.
   function _intWhatsappDigits(raw) {
-    const digits = String(raw || '').replace(/\D+/g, '');
-    if (!digits) return null;
-    return digits.length <= 11 ? '55' + digits : digits;
+    return waPhoneDigits(raw) || null;
   }
 
   async function _intFetch() {

@@ -892,6 +892,149 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
   }
 
+  // ===== CARROSSEL DA FAIXA BY ELARAH =====
+  // Na home a faixa mostra TODAS as experiências Originals numa
+  // esteira horizontal: dá pra arrastar com o mouse, rolar com o
+  // trackpad, deslizar o dedo no celular ou clicar nas setas.
+  // Em modo desligado (byelarah.html, que já lista tudo em grid) a
+  // função desmonta o carrossel e devolve o grid normal.
+
+  var ORIGINALS_NAV_SVG = {
+    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="9 18 15 12 9 6"/></svg>'
+  };
+
+  function setupOriginalsCarousel(grid, enabled) {
+    if (!grid) return;
+    var wrap = grid.parentNode && grid.parentNode.classList &&
+      grid.parentNode.classList.contains('originals__carousel')
+      ? grid.parentNode : null;
+
+    if (!enabled) {
+      // Desmonta: tira o grid do wrapper e devolve pro lugar original.
+      grid.classList.remove('originals__grid--carousel');
+      if (wrap && wrap.parentNode) {
+        wrap.parentNode.insertBefore(grid, wrap);
+        wrap.parentNode.removeChild(wrap);
+      }
+      return;
+    }
+
+    grid.classList.add('originals__grid--carousel');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'originals__carousel';
+      grid.parentNode.insertBefore(wrap, grid);
+      wrap.appendChild(grid);
+    }
+
+    var prev = wrap.querySelector('.originals__nav--prev');
+    var next = wrap.querySelector('.originals__nav--next');
+    if (!prev) {
+      prev = document.createElement('button');
+      prev.type = 'button';
+      prev.className = 'originals__nav originals__nav--prev';
+      prev.setAttribute('aria-label', 'Ver experiências anteriores');
+      prev.innerHTML = ORIGINALS_NAV_SVG.prev;
+      prev.addEventListener('click', function () { scrollOriginals(grid, -1); });
+      wrap.appendChild(prev);
+    }
+    if (!next) {
+      next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'originals__nav originals__nav--next';
+      next.setAttribute('aria-label', 'Ver mais experiências');
+      next.innerHTML = ORIGINALS_NAV_SVG.next;
+      next.addEventListener('click', function () { scrollOriginals(grid, 1); });
+      wrap.appendChild(next);
+    }
+
+    var sync = function () { syncOriginalsNav(grid, prev, next); };
+    if (!grid.dataset.navWired) {
+      grid.dataset.navWired = '1';
+      grid.addEventListener('scroll', sync, { passive: true });
+      window.addEventListener('resize', sync);
+    }
+    // Espera o layout assentar (larguras dos cards) antes de decidir
+    // se as setas aparecem.
+    if (window.requestAnimationFrame) window.requestAnimationFrame(sync);
+    else sync();
+
+    setupOriginalsDragScroll(grid);
+  }
+
+  // Rola exatamente um card por clique — previsível e sempre
+  // deixando o próximo card alinhado na borda.
+  function scrollOriginals(grid, dir) {
+    var card = grid.querySelector('.originals__card');
+    var step = grid.clientWidth * 0.8;
+    if (card) {
+      var cs = window.getComputedStyle(grid);
+      var gap = parseFloat(cs.columnGap || cs.gap || '24') || 24;
+      step = card.getBoundingClientRect().width + gap;
+    }
+    grid.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
+
+  // Esconde a seta que não leva a lugar nenhum (início / fim da faixa)
+  // e as duas quando tudo já cabe na tela.
+  function syncOriginalsNav(grid, prev, next) {
+    var max = grid.scrollWidth - grid.clientWidth;
+    var overflowing = max > 4;
+    var atStart = grid.scrollLeft <= 4;
+    var atEnd = grid.scrollLeft >= max - 4;
+    if (prev) prev.disabled = !overflowing || atStart;
+    if (next) next.disabled = !overflowing || atEnd;
+  }
+
+  // Arrastar com o mouse (no celular o scroll de toque já é nativo).
+  function setupOriginalsDragScroll(grid) {
+    if (grid.dataset.dragScroll === '1') return;
+    grid.dataset.dragScroll = '1';
+
+    var down = false, moved = false, startX = 0, startScroll = 0;
+
+    function swallowClick(e) { e.stopPropagation(); e.preventDefault(); }
+
+    grid.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') return;      // toque rola sozinho
+      if (e.button !== 0) return;
+      // Não sequestra o clique de botões/links: o arrasto nunca começa
+      // em cima de um CTA, então "Quero participar" continua clicável.
+      if (e.target && e.target.closest &&
+          e.target.closest('button, a, input, select, textarea')) return;
+      down = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = grid.scrollLeft;
+      grid.classList.add('is-grabbing');
+    });
+
+    window.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      var dx = e.clientX - startX;
+      if (!moved && Math.abs(dx) > 4) moved = true;
+      if (!moved) return;
+      grid.scrollLeft = startScroll - dx;
+      e.preventDefault();
+    });
+
+    function endDrag() {
+      if (!down) return;
+      down = false;
+      grid.classList.remove('is-grabbing');
+      if (!moved) return;
+      // Engole o clique que o navegador dispara no fim do arrasto —
+      // sem isso, soltar em cima de um card abriria a experiência.
+      grid.addEventListener('click', swallowClick, true);
+      setTimeout(function () {
+        grid.removeEventListener('click', swallowClick, true);
+      }, 0);
+    }
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+  }
+
   // ===== ELARAH ORIGINALS DYNAMIC RENDER =====
   // Re-renderiza os cards da seção By Elarah a partir do Supabase
   // assim que estiver disponível, mantendo o HTML estático como
@@ -900,10 +1043,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
     var grid = document.querySelector('.originals__grid');
     if (!grid || !Array.isArray(items) || !items.length) return;
 
-    // opts.limit  → mostra só os N primeiros (home). null = todos.
-    // opts.verMaisHref → URL do botão "Ver mais" quando há mais que N.
+    // opts.carousel → renderiza TODOS os cards numa faixa horizontal
+    //                 que arrasta pro lado (+ setas no desktop).
+    // opts.limit    → mostra só os N primeiros. null = todos.
+    //                 Ignorado quando carousel = true.
+    // opts.verMaisHref → URL do botão abaixo da faixa.
     opts = opts || {};
-    var limit = (typeof opts.limit === 'number' && opts.limit > 0) ? opts.limit : null;
+    var carousel = opts.carousel === true;
+    var limit = (!carousel && typeof opts.limit === 'number' && opts.limit > 0) ? opts.limit : null;
     var verMaisHref = opts.verMaisHref || '';
     var totalCount = items.length;
     var renderList = limit ? items.slice(0, limit) : items;
@@ -1098,7 +1245,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // logo no lugar. Se a foto real falhar, some (fica vazio tambem).
       var realImg = normalizeImagePath(it.imagem);
       var imgHtml = realImg
-        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" onerror="this.style.display=&quot;none&quot;;">'
+        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" draggable="false" onerror="this.style.display=&quot;none&quot;;">'
         : '';
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
@@ -1175,6 +1322,11 @@ if (categoriaURL) activeCategoria = categoriaURL;
 
     grid.innerHTML = html;
 
+    // Modo carrossel: transforma o grid numa faixa horizontal e
+    // pendura as setas. Feito antes do bloco do "Ver mais" porque
+    // envolve o grid num wrapper (muda o parentNode).
+    setupOriginalsCarousel(grid, carousel);
+
     // Descrições da lista de espera: clampadas em 3 linhas via CSS. O
     // botão "ver mais" só aparece quando o texto realmente estoura as 3
     // linhas (mede overflow depois do layout) e expande/recolhe no clique.
@@ -1199,19 +1351,28 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // Em páginas que exibem tudo (sem limit), remove qualquer botão
     // remanescente pra não duplicar.
     (function () {
-      var inner = grid.parentNode;
+      // .originals__inner é o container da seção. Não dá pra usar
+      // grid.parentNode aqui: em modo carrossel o grid fica dentro do
+      // wrapper .originals__carousel e o botão iria parar lá dentro.
+      var inner = (grid.closest && grid.closest('.originals__inner')) || grid.parentNode;
       if (!inner) return;
       var existing = inner.querySelector('.originals__ver-mais');
-      if (limit && verMaisHref && totalCount > limit) {
+      var showVerMais = carousel
+        ? !!verMaisHref
+        : !!(limit && verMaisHref && totalCount > limit);
+      if (showVerMais) {
         if (!existing) {
           existing = document.createElement('div');
           existing.className = 'originals__ver-mais';
-          if (grid.nextSibling) inner.insertBefore(existing, grid.nextSibling);
-          else inner.appendChild(existing);
+          inner.appendChild(existing);
         }
+        // O título "Elarah Originals" está logo acima, então repetir a
+        // marca aqui não acrescentaria nada — o número sim: avisa que
+        // tem mais do que os 3 cards que aparecem sem arrastar.
+        var verMaisLabel = 'Ver todas as ' + totalCount + ' experiências';
         existing.innerHTML =
           '<a href="' + esc(verMaisHref) + '" class="originals__ver-mais-btn">' +
-            'Ver todas as ' + totalCount + ' experiências By Elarah' +
+            verMaisLabel +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
           '</a>';
       } else if (existing) {
@@ -1414,7 +1575,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       var telefoneEl = document.getElementById('originals-telefone');
       var nome = (nomeEl && nomeEl.value) || '';
       var email = (emailEl && emailEl.value) || '';
-      var telefone = (telefoneEl && telefoneEl.value) || '';
+      // Valor com "+DDI" na frente — o lead pode não ser do Brasil.
+      var telefone = (telefoneEl && window.ElarahPhone)
+        ? window.ElarahPhone.value(telefoneEl)
+        : ((telefoneEl && telefoneEl.value) || '');
       var horarioEl = document.getElementById('originals-horario');
       var horarioField = document.getElementById('originals-horario-field');
       var horario = (horarioField && horarioField.style.display !== 'none' && horarioEl)
@@ -1514,7 +1678,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // CTA: respeita cta_mode da experiência (default 'buy').
       tipo: exp.ctaMode === 'waitlist' ? 'espera' : 'participar',
       ctaMode: exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy',
-      ordem: 0,
+      // Posição na faixa By Elarah (1 = primeiro card), definida
+      // arrastando os grupos na aba By Elarah do admin. É a coluna
+      // byelarah_ordem — separada da `ordem` global do site, que
+      // manda no grid da home e nas páginas de categoria.
+      // 0/null = sem posição → vai pro fim da faixa.
+      ordem: (function () {
+        var n = Number(exp.byelarahOrdem);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      })(),
       ativo: exp.isActive !== false,
       // "O que está incluso" — mesmo campo `inclui` do cadastro da
       // experiência. Exibido como lista com check no card.
@@ -1718,13 +1890,25 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
 
     if (combined.length) {
-      // Home: só os 3 primeiros + botão "Ver mais" → byelarah.html.
-      // Página dedicada (body[data-originals="all"]): mostra todas.
+      // Ordem da faixa: 1 = primeiro card. Quem ainda não foi
+      // posicionado no admin (0/null) vai pro fim, preservando a
+      // ordem natural de hoje — o sort do JS é estável.
+      combined.sort(function (a, b) {
+        var na = Number(a && a.ordem);
+        var nb = Number(b && b.ordem);
+        var ka = Number.isFinite(na) && na > 0 ? na : Infinity;
+        var kb = Number.isFinite(nb) && nb > 0 ? nb : Infinity;
+        return ka - kb;
+      });
+
+      // Home: carrossel com TODAS as experiências — arrasta pro lado
+      // ou usa as setas. O botão leva pra página dedicada.
+      // Página dedicada (body[data-originals="all"]): grid com todas.
       var showAllOriginals = document.body &&
         document.body.getAttribute('data-originals') === 'all';
       renderOriginalsGrid(
         combined,
-        showAllOriginals ? {} : { limit: 3, verMaisHref: 'byelarah.html' }
+        showAllOriginals ? {} : { carousel: true, verMaisHref: 'byelarah.html' }
       );
     } else {
       // Nada cadastrado em byelarah_items + nenhuma experience marcada
@@ -1793,7 +1977,10 @@ if (groupForm) {
     e.preventDefault();
 
     var nome = document.getElementById('group-nome').value;
-    var whatsapp = document.getElementById('group-whatsapp').value;
+    var whatsappEl = document.getElementById('group-whatsapp');
+    var whatsapp = window.ElarahPhone
+      ? window.ElarahPhone.value(whatsappEl)
+      : whatsappEl.value;
     var tipoEvento = document.getElementById('group-tipo').value;
     var pessoas = document.getElementById('group-pessoas').value;
     var data = document.getElementById('group-data').value;
@@ -2688,20 +2875,23 @@ if (groupForm) {
       });
       modalRoot.querySelector('#erm-close').addEventListener('click', closeReservationModal);
 
-      // Máscara simples de telefone BR: formata enquanto digita.
-      // (11) 91234-5678 ou (11) 1234-5678 — aceita ambos.
+      // Seletor de país + máscara. O país escolhido é o que permite
+      // dizer se faltou dígito: 10 dígitos no Brasil pode ser celular
+      // sem o 9, mas em Portugal é número completo.
       const telInput = modalRoot.querySelector('#erm-telefone');
       if (telInput) {
-        telInput.addEventListener('input', function () {
-          const raw = telInput.value.replace(/\D+/g, '').slice(0, 11);
-          let formatted = raw;
-          if (raw.length >= 1) formatted = '(' + raw.slice(0, 2);
-          if (raw.length >= 3) formatted += ') ' + raw.slice(2, raw.length >= 11 ? 7 : 6);
-          if (raw.length >= 7) {
-            formatted += '-' + raw.slice(raw.length >= 11 ? 7 : 6);
-          }
-          telInput.value = formatted;
-        });
+        mountPhone(telInput);
+        // Volta a mensagem de ajuda ao normal assim que a pessoa mexe no
+        // campo — o erro vermelho do submit não fica pendurado enquanto
+        // ela corrige. Trocar de país também dispara.
+        const telHelp = modalRoot.querySelector('#erm-telefone-msg');
+        const resetTelHelp = function () {
+          if (!telHelp || telHelp.style.color !== 'rgb(192, 57, 43)') return;
+          telHelp.style.color = '#888';
+          telHelp.textContent = 'Usamos pra te avisar sobre a experiência e mudanças de horário.';
+        };
+        telInput.addEventListener('input', resetTelHelp);
+        telInput.addEventListener('elarahphone:change', resetTelHelp);
       }
 
       // Máscara CPF: 000.000.000-00
@@ -3871,8 +4061,10 @@ if (groupForm) {
     // falta, campo a campo, na validação do submit. Cor é sinalização;
     // travar o clique só esconderia o motivo de não dar pra seguir.
     // =============================================================
-    const CONFIRM_BTN_READY_BG = '#c8742d'; // completo — escuro, "pode ir"
-    const CONFIRM_BTN_IDLE_BG = '#f0a05e';  // incompleto — claro
+    // Mesmo laranja do botão "Reservar" (--orange, #F27623): quem
+    // clicou em Reservar reencontra a mesma cor no "pode pagar".
+    const CONFIRM_BTN_READY_BG = '#F27623'; // completo — laranja da marca
+    const CONFIRM_BTN_IDLE_BG = '#f0a05e';  // incompleto — apagado (com opacity .5)
 
     // Espelha a validação do submit (handleConfirmReservation), porém SEM
     // escrever erro nem mexer em foco/scroll. Devolve o NOME do primeiro
@@ -3912,7 +4104,7 @@ if (groupForm) {
           const pessoa = 'da Pessoa ' + (i + 2);
           const pn = String(nomes[i].value || '').trim();
           if (!pn || pn.length < 3) return 'o nome ' + pessoa;
-          if (!normalizePhoneBR(tels[i] ? tels[i].value : '')) return 'o WhatsApp ' + pessoa;
+          if (!readPhone(tels[i]).valid) return 'o WhatsApp ' + pessoa;
           if (hasVariants && !(ctx.variantByParticipant && ctx.variantByParticipant[i + 2])) {
             return (ctx.variantLabel || 'a opção') + ' ' + pessoa;
           }
@@ -3922,7 +4114,7 @@ if (groupForm) {
       // Nome + WhatsApp do comprador
       const nome = val('#erm-nome').replace(/\s+/g, ' ');
       if (!nome || nome.length < 3) return 'seu nome completo';
-      if (!normalizePhoneBR(val('#erm-telefone'))) return 'seu WhatsApp com DDD';
+      if (!readPhone(root.querySelector('#erm-telefone')).valid) return 'seu WhatsApp com DDD';
 
       // E-mail — só no checkout convidado
       if (ctx.isGuest) {
@@ -3970,7 +4162,7 @@ if (groupForm) {
         if (faltando === null) {
           btn.style.background = CONFIRM_BTN_READY_BG;
           btn.style.opacity = '1';
-          btn.style.boxShadow = '0 6px 16px rgba(200,116,45,.32)';
+          btn.style.boxShadow = '0 6px 16px rgba(242,118,35,.32)';
           if (hint) hint.textContent = '';
         } else {
           btn.style.background = CONFIRM_BTN_IDLE_BG;
@@ -4316,7 +4508,11 @@ if (groupForm) {
       // Reset telefone field — cada reserva começa limpa.
       const telefoneInput = root.querySelector('#erm-telefone');
       if (telefoneInput) {
-        telefoneInput.value = '';
+        // Limpa pelo componente pra o país voltar pro Brasil junto com o
+        // número; mexer só no .value deixaria a bandeira da reserva
+        // anterior no campo.
+        if (window.ElarahPhone) window.ElarahPhone.set(telefoneInput, '');
+        else telefoneInput.value = '';
         root.querySelector('#erm-telefone-msg').style.color = '#888';
         root.querySelector('#erm-telefone-msg').textContent =
           'Usamos pra te avisar sobre a experiência e mudanças de horário.';
@@ -4650,6 +4846,11 @@ if (groupForm) {
             })(i);
           }
         }
+        // Os cards de Pessoa 2..N nascem agora (innerHTML), então o
+        // seletor de país precisa ser ligado aqui — o upgrade automático
+        // do phone-input.js só varre o que já existia no carregamento.
+        var novosTels = participantsEl.querySelectorAll('.erm-part-telefone');
+        Array.prototype.forEach.call(novosTels, function (el) { mountPhone(el); });
       }
 
       function updateQty(delta) {
@@ -4952,6 +5153,11 @@ if (groupForm) {
     // Valida telefone BR: pelo menos 10 dígitos (fixo) ou 11 (celular).
     // Aceita qualquer formato, só conta dígitos. Retorna a versão
     // só-dígitos (E.164 BR: 55 + DDD + número).
+    //
+    // Sobrou como rede de segurança: os campos do checkout passaram a
+    // usar o seletor de país (phone-input.js), que sabe o país e por
+    // isso consegue dizer "faltou 1 dígito". Esta função só entra em
+    // ação se aquele arquivo não tiver carregado.
     function normalizePhoneBR(raw) {
       const digits = String(raw || '').replace(/\D+/g, '');
       if (digits.length < 10 || digits.length > 13) return null;
@@ -4960,6 +5166,55 @@ if (groupForm) {
         return digits.slice(2);
       }
       return digits;
+    }
+
+    // Liga o seletor de país num input de telefone. Sem o phone-input.js
+    // o campo continua funcionando como antes (máscara BR), só sem a
+    // bandeira — checkout nunca deixa de abrir por causa disso.
+    function mountPhone(input) {
+      if (!input) return null;
+      if (window.ElarahPhone) return window.ElarahPhone.mount(input);
+      maskPhoneBrFallback(input);
+      return null;
+    }
+
+    // Máscara BR de emergência (o que existia antes do seletor).
+    function maskPhoneBrFallback(input) {
+      if (!input || input.dataset.brMask === '1') return;
+      input.dataset.brMask = '1';
+      input.addEventListener('input', function () {
+        const raw = input.value.replace(/\D+/g, '').slice(0, 11);
+        let formatted = raw;
+        if (raw.length >= 1) formatted = '(' + raw.slice(0, 2);
+        if (raw.length >= 3) formatted += ') ' + raw.slice(2, raw.length >= 11 ? 7 : 6);
+        if (raw.length >= 7) formatted += '-' + raw.slice(raw.length >= 11 ? 7 : 6);
+        input.value = formatted;
+      });
+    }
+
+    // Lê um campo de telefone. Com o seletor ligado, devolve o país
+    // escolhido e uma mensagem de erro específica ("faltam 2 dígitos");
+    // sem ele, cai na checagem BR antiga.
+    function readPhone(input) {
+      if (window.ElarahPhone) return window.ElarahPhone.get(input);
+      const raw = input ? String(input.value || '').trim() : '';
+      const norm = normalizePhoneBR(raw);
+      return {
+        country: 'BR', ddi: '55', national: norm || '',
+        digits: norm ? '55' + norm : '',
+        e164: norm ? '+55 ' + raw : '',
+        valid: !!norm,
+        error: norm ? null : 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).',
+      };
+    }
+
+    // Dígitos que vão pra coluna telefone_digits. Brasil continua indo
+    // SEM o 55 — é o formato de todo o histórico, e os cruzamentos do
+    // painel (reserva x participante) comparam esses dígitos entre si.
+    // Estrangeiro vai com o DDI, que é o que identifica o número.
+    function phoneDbDigits(info) {
+      if (!info || !info.valid) return null;
+      return info.country === 'BR' ? info.national : info.digits;
     }
 
     async function handleConfirmReservation() {
@@ -5016,24 +5271,32 @@ if (groupForm) {
       // ===== VALIDAÇÃO TELEFONE =====
       const telefoneInput = root.querySelector('#erm-telefone');
       const telefoneMsg = root.querySelector('#erm-telefone-msg');
-      const telefoneRaw = telefoneInput ? telefoneInput.value.trim() : '';
-      const telefoneNormalized = normalizePhoneBR(telefoneRaw);
-      if (!telefoneNormalized) {
+      const telefoneInfo = readPhone(telefoneInput);
+      if (!telefoneInfo.valid) {
         if (telefoneMsg) {
           telefoneMsg.style.color = '#c0392b';
-          telefoneMsg.textContent = 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).';
+          // Mensagem do seletor de país: diz quantos dígitos faltam pro
+          // país escolhido, em vez do genérico "número inválido".
+          telefoneMsg.textContent = telefoneInfo.error
+            || 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).';
         }
         if (telefoneInput) {
           try { telefoneInput.focus({ preventScroll: true }); } catch (e) {}
         }
-        console.warn('[Elarah checkout] telefone inválido bloqueou o submit:', telefoneRaw);
+        console.warn('[Elarah checkout] telefone inválido bloqueou o submit:',
+          telefoneInfo.country, telefoneInfo.national, telefoneInfo.error);
         return;
       }
       if (telefoneMsg) {
         telefoneMsg.style.color = '#888';
         telefoneMsg.textContent = 'Usamos pra te avisar sobre a experiência e mudanças de horário.';
       }
-      console.log('[Elarah checkout] telefone válido:', telefoneNormalized);
+      // telefoneRaw é o texto que vai pra coluna `telefone` — vai COM o
+      // "+DDI" na frente, que é o que faz o painel respeitar o país em
+      // vez de assumir Brasil ao montar o link do WhatsApp.
+      const telefoneRaw = telefoneInfo.e164;
+      const telefoneNormalized = phoneDbDigits(telefoneInfo);
+      console.log('[Elarah checkout] telefone válido:', telefoneInfo.country, telefoneNormalized);
 
       // ===== [PR F] VALIDAÇÃO EMAIL (só em checkout convidado) =====
       let guestEmailNorm = '';
@@ -5176,14 +5439,15 @@ if (groupForm) {
             break;
           }
           partNomes[pi].style.borderColor = '#ddd';
-          // Telefone precisa ter DDD + número (10 ou 11 dígitos) — sem isso
-          // não dá pra contatar no dia. normalizePhoneBR devolve null quando
-          // falta o DDD ou o número está incompleto.
-          var pTelNorm = normalizePhoneBR(pTel);
+          // Sem telefone completo não dá pra contatar a pessoa no dia.
+          // O seletor de país sabe quantos dígitos o número deveria ter,
+          // então o aviso diz o que falta em vez de só "inválido".
+          var pTelInfo = readPhone(partTels[pi]);
+          var pTelNorm = phoneDbDigits(pTelInfo);
           if (!pTelNorm) {
             partTels[pi].style.borderColor = '#c0392b';
             errEl.textContent = pTel
-              ? 'WhatsApp da Pessoa ' + pIdx + ' inválido — use DDD + número (ex: 11999999999).'
+              ? 'WhatsApp da Pessoa ' + pIdx + ': ' + (pTelInfo.error || 'número inválido.')
               : 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
             try { partTels[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
@@ -5213,7 +5477,7 @@ if (groupForm) {
           }
           participantes.push({
             nome: pNome,
-            telefone: pTel,
+            telefone: pTelInfo.e164,
             telefone_digits: pTelNorm,
             email: pEmail || null,
             // variant_selected fica como undefined quando a experiência
@@ -5221,7 +5485,8 @@ if (groupForm) {
             // sem essa feature.
             variant_selected: pVariant || undefined,
           });
-          // telefone já normalizado (pTelNorm) = só dígitos com DDD + número.
+          // pTelNorm = só dígitos. Brasil vai sem o 55 (DDD + número),
+          // como sempre foi; número de fora vai com o DDI na frente.
           acompanhantes.push({ nome: pNome, telefone: pTelNorm });
         }
         if (!partValid) return;
@@ -5266,7 +5531,9 @@ if (groupForm) {
             options: {
               data: {
                 nome: ctx.nome || '',
-                telefone: telefoneNormalized || '',
+                // Texto com "+DDI" (e não só dígitos): é isso que vira
+                // profiles.telefone quando a conta é criada aqui.
+                telefone: telefoneRaw || '',
                 from_guest_checkout: true,
               }
             }

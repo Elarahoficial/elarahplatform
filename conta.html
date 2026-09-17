@@ -51,7 +51,7 @@
           </div>
         </div>
         <!-- Aba Elarah Kids oculta temporariamente (sem experiencias infantis no momento). Para reativar, remova este comentario: <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a> -->
-        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Kits Elarah</a>
+        <a href="elarah-em-casa.html" class="header__nav-link">Kits Elarah</a>
         <!-- Aba Dia dos Pais oculta (campanha encerrada). Para reativar na proxima edicao, remova este comentario: <a href="dia-dos-pais.html" class="header__nav-link header__nav-link--ddp">Dia dos Pais</a> -->
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="blog.html" class="header__nav-link">Blog</a>
@@ -146,13 +146,14 @@
             <div class="account__form-row">
               <div class="account__form-field">
                 <label class="account__form-label">WhatsApp</label>
-                <input type="tel" class="account__form-input" id="dados-telefone" required>
+                <input type="tel" class="account__form-input" id="dados-telefone" data-phone-intl required>
               </div>
               <div class="account__form-field">
                 <label class="account__form-label">Cidade</label>
                 <input type="text" class="account__form-input" id="dados-cidade">
               </div>
             </div>
+            <p id="dados-erro" style="display:none;margin:0 0 10px;color:#c0392b;font-size:.85rem;"></p>
             <div class="account__form-actions">
               <button type="submit" class="account__form-btn">Salvar alterações</button>
               <span class="account__form-success" id="dados-success">Dados atualizados!</span>
@@ -208,7 +209,7 @@
                 </div>
                 <div class="account__form-field">
                   <label class="account__form-label">WhatsApp para contato</label>
-                  <input type="tel" class="account__form-input" id="parceiro-whatsapp" placeholder="(11) 99999-9999">
+                  <input type="tel" class="account__form-input" id="parceiro-whatsapp" data-phone-intl placeholder="(11) 99999-9999">
                 </div>
               </div>
               <div class="account__form-field">
@@ -467,8 +468,10 @@
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=2" defer></script>
-<script src="auth.js?v=12"></script>
+<script src="phone-input.js?v=1"></script>
+<script src="password-toggle.js?v=1"></script>
+<script src="auth.js?v=14"></script>
 <script src="analytics.js?v=3"></script>
-<script src="conta.js?v=18"></script>
+<script src="conta.js?v=19"></script>
 </body>
 </html>
