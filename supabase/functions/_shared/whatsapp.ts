@@ -293,16 +293,14 @@ const META_TEMPLATE_DEFAULTS: Record<string, string> = {
   reminder48: "elarah_lembrete_48h",
   feedback: "elarah_pedido_feedback",
   pending: "elarah_reserva_pendente",
-  byelarah_date: "elarah_data_saiu",
-  byelarah_open: "elarah_inscricoes_abertas",
+  byelarah_aviso: "elarah_inscricoes_abertas",
 };
 const META_TEMPLATE_ENV: Record<string, string> = {
   confirmation: "META_TEMPLATE_CONFIRMACAO",
   reminder48: "META_TEMPLATE_LEMBRETE",
   feedback: "META_TEMPLATE_FEEDBACK",
   pending: "META_TEMPLATE_PENDENTE",
-  byelarah_date: "META_TEMPLATE_DATA_SAIU",
-  byelarah_open: "META_TEMPLATE_INSCRICOES",
+  byelarah_aviso: "META_TEMPLATE_INSCRICOES",
 };
 
 export function metaTemplateName(kind: string): string | null {
@@ -659,11 +657,17 @@ export function pendingRecoveryWhatsAppText(opts: MsgOpts): string {
   return linhas.join("\n");
 }
 
-// Aviso "a data saiu" de um item By Elarah — vai pra quem deixou o contato
-// na lista de interesse DAQUELE item enquanto ele ainda era "data em breve".
+// Aviso ÚNICO pra lista de interesse de um evento By Elarah: "as inscrições
+// abriram". Vai pra quem deixou o contato enquanto o evento ainda estava em
+// lista de espera.
+//
+// UMA mensagem só, de propósito: o texto funciona com data ("🗓️ 24 de abril")
+// e sem data ("🗓️ data a confirmar"), então não existe cenário de a pessoa
+// receber duas mensagens parecidas. Um template só pra aprovar e manter.
+//
 // Quem dispara: supabase/functions/byelarah-aviso-data (fila alimentada pela
 // trigger de sql/elarah_byelarah_aviso_data.sql).
-export function byelarahDateAnnouncementWhatsAppText(opts: {
+export function byelarahAvisoWhatsAppText(opts: {
   nome?: unknown;
   experienciaNome?: unknown;
   data?: unknown;
@@ -677,11 +681,13 @@ export function byelarahDateAnnouncementWhatsAppText(opts: {
     ? opts.horarios.map((h) => String(h ?? "").trim()).filter(Boolean)
     : [String(opts.horarios ?? "").trim()].filter(Boolean);
   const linhas: string[] = [];
-  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}A data saiu ✨`);
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}As inscrições abriram ✨`);
   linhas.push("");
   linhas.push(
-    `Você se inscreveu pra ser avisada quando *${exp}* abrisse — e acabou de entrar no ar.`,
+    `Você se inscreveu pra ser avisada quando *${exp}* abrisse — e as vagas acabaram de entrar no ar.`,
   );
+  // No texto livre a linha some quando não há dado; no template ela existe
+  // sempre (corpo fixo) e recebe o texto neutro de metaParam.
   const detalhes: string[] = [];
   const data = String(opts.data ?? "").trim();
   if (data) detalhes.push(`🗓️ ${data}`);
@@ -691,39 +697,6 @@ export function byelarahDateAnnouncementWhatsAppText(opts: {
   if (detalhes.length) {
     linhas.push("");
     linhas.push(...detalhes);
-  }
-  const link = String(opts.link ?? "").trim();
-  if (link) {
-    linhas.push("");
-    linhas.push(`✨ Garanta sua vaga aqui: ${link}`);
-  }
-  linhas.push("");
-  linhas.push("As vagas são poucas e quem estava na lista está sabendo primeiro 🧡");
-  return linhas.join("\n");
-}
-
-// Aviso "as inscrições abriram" — irmão do de cima, pro caso em que o item
-// SAIU DA LISTA DE ESPERA (virou "participar" / checkout ligado) e não há
-// data conhecida em lugar nenhum. Mesma lista, mesma promessa, sem prometer
-// uma data que a gente não tem.
-export function byelarahOpenEnrollmentWhatsAppText(opts: {
-  nome?: unknown;
-  experienciaNome?: unknown;
-  local?: unknown;
-  link?: unknown;
-}): string {
-  const nome = primeiroNome(opts.nome);
-  const exp = String(opts.experienciaNome ?? "a experiência").trim();
-  const linhas: string[] = [];
-  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}As inscrições abriram ✨`);
-  linhas.push("");
-  linhas.push(
-    `Você se inscreveu pra ser avisada quando *${exp}* abrisse — e as vagas acabaram de entrar no ar.`,
-  );
-  const local = String(opts.local ?? "").trim();
-  if (local) {
-    linhas.push("");
-    linhas.push(`📍 ${local}`);
   }
   const link = String(opts.link ?? "").trim();
   if (link) {
@@ -744,7 +717,7 @@ export function byelarahOpenEnrollmentWhatsAppText(opts: {
 // recusa) — metaParam() normaliza e aplica o texto neutro de cada campo.
 const P_NOME = "tudo bem";                       // "Oi, {{1}}!" sem nome
 const P_EXP = "sua experiência na Elarah";
-const P_QUANDO = "a combinar";
+const P_QUANDO = "data a confirmar";
 const P_LOCAL = "endereço enviado por aqui";
 const P_LINK = "https://elarah.com.br";
 
@@ -801,8 +774,9 @@ export function pendingRecoveryTemplateParams(opts: MsgOpts): string[] {
   ];
 }
 
-// elarah_data_saiu — {{1}} nome · {{2}} experiência · {{3}} quando · {{4}} local · {{5}} link
-export function byelarahDateAnnouncementTemplateParams(opts: {
+// elarah_inscricoes_abertas — o ÚNICO template do aviso By Elarah.
+// {{1}} nome · {{2}} experiência · {{3}} quando · {{4}} local · {{5}} link
+export function byelarahAvisoTemplateParams(opts: {
   nome?: unknown; experienciaNome?: unknown; data?: unknown; horarios?: unknown;
   local?: unknown; link?: unknown;
 }): string[] {
@@ -812,22 +786,13 @@ export function byelarahDateAnnouncementTemplateParams(opts: {
   return [
     metaParam(primeiroNome(opts.nome), P_NOME),
     metaParam(opts.experienciaNome, P_EXP),
+    // Sem data conhecida o corpo do template continua existindo (é fixo),
+    // então a linha vira "🗓️ data a confirmar" em vez de sumir.
     metaParam(
       [String(opts.data ?? "").trim(), horarios.join(" ou ")].filter(Boolean).join(" · "),
       P_QUANDO,
     ),
     metaParam(opts.local, P_LOCAL),
-    metaParam(opts.link, P_LINK),
-  ];
-}
-
-// elarah_inscricoes_abertas — {{1}} nome · {{2}} experiência · {{3}} link
-export function byelarahOpenEnrollmentTemplateParams(opts: {
-  nome?: unknown; experienciaNome?: unknown; link?: unknown;
-}): string[] {
-  return [
-    metaParam(primeiroNome(opts.nome), P_NOME),
-    metaParam(opts.experienciaNome, P_EXP),
     metaParam(opts.link, P_LINK),
   ];
 }

@@ -325,18 +325,11 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
       local: onda.local,
       link: onda.link,
     };
-    // Espelha a escolha da função real: sem data conhecida, o aviso é
-    // "as inscrições abriram" (nunca promete data que não temos).
-    const semData = onda.motivo === "inscricoes" || !String(onda.data_texto ?? "").trim();
-    const kind = semData ? "byelarah_open" : "byelarah_date";
-    const mensagem = semData
-      ? WA.byelarahOpenEnrollmentWhatsAppText(dados)
-      : WA.byelarahDateAnnouncementWhatsAppText(dados);
-    const templateParams = semData
-      ? WA.byelarahOpenEnrollmentTemplateParams(dados)
-      : WA.byelarahDateAnnouncementTemplateParams(dados);
+    // UMA mensagem só, com ou sem data (espelha a função real).
+    const mensagem = WA.byelarahAvisoWhatsAppText(dados);
+    const templateParams = WA.byelarahAvisoTemplateParams(dados);
     const r = await WA.gatedSendWhatsApp(supabase, {
-      kind,
+      kind: "byelarah_aviso",
       preferOfficial: true,
       dedupeKey: "bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + g.phone,
       identifierOk: true,
@@ -737,6 +730,8 @@ async function run() {
     check("mensagem traz o local", msg.includes("Brooklin"));
     check("mensagem traz o link de inscrição", msg.includes(onda.link));
     check("mensagem é pessoal (primeiro nome)", msg.startsWith("Oi, Maria!"), msg.slice(0, 20));
+    check("uma mensagem só: sempre o mesmo texto de abertura",
+      msg.includes("As inscrições abriram"), msg.slice(0, 40));
     check("send_log registrou por evento+data+telefone",
       sb._sendLog.has("bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + CLIENT_A));
     check("as 2 linhas da mesma pessoa foram carimbadas",
@@ -831,7 +826,7 @@ async function run() {
     check("bateu na Graph API oficial", c.url.includes("graph.facebook.com") && c.url.endsWith("/123456789/messages"), c.url);
     check("autenticou com o token da Meta", c.auth === "Bearer TOKEN_FAKE");
     check("foi TEMPLATE (não texto solto)", c.type === "template");
-    check("template correto", c.template === "elarah_data_saiu", String(c.template));
+    check("template correto", c.template === "elarah_inscricoes_abertas", String(c.template));
     check("idioma pt_BR", c.lang === "pt_BR");
     check("destinatário certo", c.phone === CLIENT_A);
     check("TERCEIRA (outra lista) intocada pela oficial", zm.to(CLIENT_B).length === 0);
@@ -908,9 +903,11 @@ async function run() {
     const r = await runAvisoDeData(WAm, sb, onda);
     check("abriu inscrições sem data → avisou mesmo assim", r.enviados === 1, JSON.stringify(r));
     const c = zm.calls[0];
-    check("usou o template de inscrições abertas", c.template === "elarah_inscricoes_abertas", String(c.template));
-    check("3 parâmetros (nome, experiência, link)", c.params.length === 3, JSON.stringify(c.params));
-    check("link de checkout no {{3}}", c.params[2] === onda.link);
+    check("é o MESMO template de sempre (só um existe)",
+      c.template === "elarah_inscricoes_abertas", String(c.template));
+    check("mesmos 5 parâmetros, com ou sem data", c.params.length === 5, JSON.stringify(c.params));
+    check("sem data → {{3}} vira texto neutro, nunca vazio", c.params[2] === "data a confirmar", c.params[2]);
+    check("link de checkout no {{5}}", c.params[4] === onda.link);
   }
 
   {
@@ -942,7 +939,7 @@ async function run() {
     const rx = await runAvisoDeData(WAx, sbm, onda);
     check("misto: aviso à lista sai pela OFICIAL", rx.enviados === 1 && zm.calls.length === 1,
       JSON.stringify(rx));
-    check("misto: e vai como template aprovado", zm.calls[0].template === "elarah_data_saiu");
+    check("misto: e vai como template aprovado", zm.calls[0].template === "elarah_inscricoes_abertas");
   }
 
   // ---------- Relatório ----------

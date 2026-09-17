@@ -25,8 +25,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
-  byelarahDateAnnouncementTemplateParams,
-  byelarahDateAnnouncementWhatsAppText,
+  byelarahAvisoTemplateParams,
+  byelarahAvisoWhatsAppText,
   bookingConfirmationTemplateParams,
   bookingConfirmationWhatsAppText,
   feedbackTemplateParams,
@@ -69,8 +69,8 @@ const SAMPLE_BYELARAH = {
 };
 
 function sampleMessage(tipo: string): string {
-  if (tipo === "byelarah_date" || tipo === "byelarah") {
-    return byelarahDateAnnouncementWhatsAppText(SAMPLE_BYELARAH);
+  if (tipo === "byelarah_date" || tipo === "byelarah" || tipo === "byelarah_aviso") {
+    return byelarahAvisoWhatsAppText(SAMPLE_BYELARAH);
   }
   switch (tipo) {
     case "reminder":
@@ -89,10 +89,10 @@ function sampleMessage(tipo: string): string {
 // recebe — é o único jeito de o teste ser fiel (e de chegar fora da janela de
 // 24h). Texto livre digitado no painel só vale no provedor legado.
 function sampleTemplate(tipo: string): { kind: string; params: string[] } {
-  if (tipo === "byelarah_date" || tipo === "byelarah") {
+  if (tipo === "byelarah_date" || tipo === "byelarah" || tipo === "byelarah_aviso") {
     return {
-      kind: "byelarah_date",
-      params: byelarahDateAnnouncementTemplateParams(SAMPLE_BYELARAH),
+      kind: "byelarah_aviso",
+      params: byelarahAvisoTemplateParams(SAMPLE_BYELARAH),
     };
   }
   switch (tipo) {
@@ -177,7 +177,7 @@ serve(async (req) => {
   }
 
   const testeUsaOficial = whatsappIsOfficial() ||
-    ((tipo === "byelarah_date" || tipo === "byelarah") && whatsappOfficialReady());
+    (tipo.startsWith("byelarah") && whatsappOfficialReady());
   if (!isWhatsAppConfigured() && !testeUsaOficial) {
     return json({
       ok: false,
@@ -193,7 +193,7 @@ serve(async (req) => {
   const tpl = sampleTemplate(tipo);
   // O aviso By Elarah sai pela OFICIAL sempre que ela estiver cadastrada —
   // igualzinho ao envio real — mesmo que o provedor padrão siga o legado.
-  const ehAviso = tpl.kind === "byelarah_date";
+  const ehAviso = tpl.kind === "byelarah_aviso";
   const usaOficial = whatsappIsOfficial() || (ehAviso && whatsappOfficialReady());
   const result = usaOficial
     ? await sendWhatsAppTemplate({ to: telefone, kind: tpl.kind, template: { params: tpl.params } })

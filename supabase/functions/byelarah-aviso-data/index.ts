@@ -35,10 +35,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin } from "../_shared/social_db.ts";
 import {
-  byelarahDateAnnouncementTemplateParams,
-  byelarahDateAnnouncementWhatsAppText,
-  byelarahOpenEnrollmentTemplateParams,
-  byelarahOpenEnrollmentWhatsAppText,
+  byelarahAvisoTemplateParams,
+  byelarahAvisoWhatsAppText,
   experienceImageUrl,
   gatedSendWhatsApp,
   normalizePhoneBR,
@@ -370,23 +368,17 @@ serve(async (req) => {
         local: onda.local,
         link: onda.link,
       };
-      // Duas mensagens possíveis: "a data saiu" (quando há data) e "as
-      // inscrições abriram" (quando o item saiu da lista de espera sem data
-      // conhecida). Nunca prometemos uma data que não temos.
+      // UMA mensagem só ("as inscrições abriram"), com ou sem data: o texto
+      // funciona nos dois casos, então ninguém recebe duas mensagens
+      // parecidas e só existe um template pra aprovar e manter.
       // Mesmo conteúdo nos dois provedores: texto livre no legado, template
       // aprovado na oficial da Meta (obrigatório — é mensagem que a Elarah
       // inicia, fora da janela de 24h).
-      const semData = onda.motivo === "inscricoes" || !String(onda.data_texto ?? "").trim();
-      const kind = semData ? "byelarah_open" : "byelarah_date";
-      const mensagem = semData
-        ? byelarahOpenEnrollmentWhatsAppText(dados)
-        : byelarahDateAnnouncementWhatsAppText(dados);
-      const templateParams = semData
-        ? byelarahOpenEnrollmentTemplateParams(dados)
-        : byelarahDateAnnouncementTemplateParams(dados);
+      const mensagem = byelarahAvisoWhatsAppText(dados);
+      const templateParams = byelarahAvisoTemplateParams(dados);
 
       const res = await gatedSendWhatsApp(supabase, {
-        kind,
+        kind: "byelarah_aviso",
         // Chave por EVENTO+DATA+telefone (ver chaveEvento): a mesma pessoa
         // nunca recebe o mesmo aviso duas vezes — nem com duas chamadas
         // simultâneas (cron + painel), nem por cadastro duplicado do evento.

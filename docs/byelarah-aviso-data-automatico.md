@@ -35,9 +35,9 @@ Dois sinais, e **qualquer um deles basta** — o que acontecer primeiro manda:
 
 Quando o item abre pelo checkout e o campo *Data* ainda está com um texto
 qualquer, a data real é buscada na experiência vinculada (`event_at` da
-experiência ou do próximo horário com vaga). Se não houver data em lugar
-nenhum, a mensagem muda pra **"as inscrições abriram"** — a Elarah nunca
-promete uma data que ainda não tem.
+experiência ou do próximo horário com vaga). Se não houver data em lugar nenhum, a linha da data vira
+**"data a confirmar"** — a Elarah nunca promete uma data que ainda não tem. É
+sempre a MESMA mensagem: ninguém recebe duas parecidas.
 
 E se você fizer tudo em dois saves seguidos (publica a data, depois liga o
 checkout), sai **uma mensagem só**: uma onda por item a cada 48h.
@@ -63,8 +63,7 @@ rollout, allowlist, fail-closed. Ver `docs/whatsapp-seguranca.md`.
 
 **Por qual canal sai:** pela **API oficial da Meta** (Cloud API) — só este
 fluxo, assim que as credenciais da Meta existirem; confirmação, lembrete e
-feedback seguem no canal de sempre. Usa o template aprovado `elarah_data_saiu` (ou `elarah_inscricoes_abertas`, quando
-abre sem data) — é o que permite avisar a lista inteira
+feedback seguem no canal de sempre. Usa o template aprovado `elarah_inscricoes_abertas` — é o que permite avisar a lista inteira
 sem risco de o número ser banido. O texto acima é o corpo do template; o que
 muda por pessoa são as cinco variáveis (nome, evento, data/horários, local,
 link). Como criar o template e ligar as credenciais:
@@ -110,7 +109,7 @@ link). Como criar o template e ligar as credenciais:
 - `sql/elarah_byelarah_aviso_data_cron.sql` — agendamento (a cada 5 min).
 - `supabase/functions/byelarah-aviso-data/index.ts` — Edge Function que envia.
 - `supabase/functions/_shared/whatsapp.ts` — texto da mensagem
-  (`byelarahDateAnnouncementWhatsAppText`).
+  (`byelarahAvisoWhatsAppText`).
 - `admin.html` / `admin.js` — checkbox, campo de link e o disparo imediato ao
   salvar.
 - `supabase/functions/_shared/whatsapp_e2e.test.mjs` — fluxo "By Elarah" na
@@ -129,7 +128,7 @@ link). Como criar o template e ligar as credenciais:
    cron secret, service role ou JWT de admin).
 3. **Agende o cron**: abra `sql/elarah_byelarah_aviso_data_cron.sql`, troque
    `TROQUE_PELA_SUA_CRON_SECRET` pela sua `CRON_SECRET` e rode.
-4. **Aprove SÓ os templates `elarah_data_saiu` e `elarah_inscricoes_abertas`** no WhatsApp Manager e cadastre as
+4. **Aprove o template `elarah_inscricoes_abertas`** (um só) no WhatsApp Manager e cadastre as
    credenciais da Meta nos secrets — passo a passo em
    `docs/whatsapp-oficial-meta.md`. Sem template aprovado, a Meta recusa o
    envio (a onda fica na fila e o erro aparece em `byelarah_date_announcements.erro`).

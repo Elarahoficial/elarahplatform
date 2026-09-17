@@ -19,11 +19,10 @@ Cadastrar as credenciais da Meta **não migra nada sozinho**. O que acontece é:
 
 | Fluxo | Canal | Por quê |
 |---|---|---|
-| **Aviso "a data saiu" / "inscrições abertas"** | **oficial**, assim que as credenciais existirem | é disparo pra lista fria — o que de fato arrisca banir um número comum |
+| **Aviso "as inscrições abriram"** | **oficial**, assim que as credenciais existirem | é disparo pra lista fria — o que de fato arrisca banir um número comum |
 | Confirmação, lembrete 48h, feedback, pendente | segue no canal de sempre | já funcionam, e são mensagens pra quem acabou de comprar (baixo risco) |
 
-Ou seja: pra ligar o aviso automático você precisa aprovar **só os dois
-templates do By Elarah**. Os outros quatro só entram em cena se/quando você
+Ou seja: pra ligar o aviso automático você precisa aprovar **só um template**. Os outros quatro só entram em cena se/quando você
 migrar o resto — e aí é uma decisão explícita: `WHATSAPP_PROVIDER=meta`.
 
 ⚠️ **Não** cadastre `WHATSAPP_PROVIDER=meta` antes de ter os quatro templates
@@ -44,45 +43,36 @@ mensagem → Criar modelo). Regras que fazem a Meta recusar se não seguir:
   que falam de uma reserva que já existe. A Meta pode reclassificar; se
   reclassificar, só muda o preço, não o funcionamento.
 
-**Pro aviso automático, só os dois primeiros são obrigatórios.** Os outros
-quatro ficam pra quando você migrar os fluxos transacionais. Copie e cole o
-corpo exatamente como está:
+**Pro aviso automático, só o primeiro é obrigatório.** Os outros quatro ficam
+pra quando (e se) você migrar os fluxos transacionais. Copie e cole o corpo
+exatamente como está:
 
-### `elarah_data_saiu` — Marketing (é o do aviso automático de data)
+### `elarah_inscricoes_abertas` — Marketing (o ÚNICO do aviso By Elarah)
 
-```
-Oi, {{1}}! A data saiu ✨
-
-Você se inscreveu pra ser avisada quando {{2}} abrisse — e acabou de entrar no ar.
-
-🗓️ {{3}}
-📍 {{4}}
-
-Garanta sua vaga aqui: {{5}}
-
-As vagas são poucas e quem estava na lista está sabendo primeiro 🧡
-```
-
-Exemplos pras variáveis:
-`{{1}}` Maria · `{{2}}` Oficina de Perfumaria Criativa ·
-`{{3}}` 24 de abril · 10h às 13h ou 14h às 17h ·
-`{{4}}` Rua Nova Orleans, 34 — Brooklin ·
-`{{5}}` https://elarah.com.br/index.html#by-elarah-perfumaria-criativa
-
-### `elarah_inscricoes_abertas` — Marketing (quando abre sem data definida)
+Uma mensagem só, que funciona com e sem data — por isso existe um template
+só pra aprovar e manter.
 
 ```
 Oi, {{1}}! As inscrições abriram ✨
 
 Você se inscreveu pra ser avisada quando {{2}} abrisse — e as vagas acabaram de entrar no ar.
 
-Garanta a sua aqui: {{3}}
+🗓️ {{3}}
+📍 {{4}}
+
+Garanta a sua aqui: {{5}}
 
 As vagas são poucas e quem estava na lista está sabendo primeiro 🧡
 ```
 
-Exemplos: `Maria` · `Oficina de Perfumaria Criativa` ·
-`https://elarah.com.br/experiencia.html?id=...`
+Exemplos pras variáveis:
+`{{1}}` Maria · `{{2}}` Crie seu Amuleto em Vitral ·
+`{{3}}` 24 de abril · 10h às 13h ·
+`{{4}}` Rua Nova Orleans, 34 — Brooklin ·
+`{{5}}` https://elarah.com.br/experiencia.html?id=123
+
+Quando o evento abre sem data conhecida, `{{3}}` vira **"data a confirmar"** —
+nenhuma variável fica vazia (a Meta recusa) e nenhuma data é prometida à toa.
 
 ### `elarah_reserva_confirmada` — Utilidade
 
@@ -132,8 +122,8 @@ Sua vaga ainda pode estar disponível — quer que eu te ajude a finalizar? É s
 ```
 
 **Aprovou com outro nome?** Não precisa mexer em código — cadastre o nome que
-você usou no secret correspondente: `META_TEMPLATE_DATA_SAIU`,
-`META_TEMPLATE_INSCRICOES`, `META_TEMPLATE_CONFIRMACAO`,
+você usou no secret correspondente: `META_TEMPLATE_INSCRICOES`,
+`META_TEMPLATE_CONFIRMACAO`,
 `META_TEMPLATE_LEMBRETE`, `META_TEMPLATE_FEEDBACK`, `META_TEMPLATE_PENDENTE`.
 
 ## 2. Pegar as credenciais
@@ -179,7 +169,7 @@ repositório já faz).
 ## 4. Testar antes de valer pra cliente
 
 No admin → WhatsApp → **testar no meu número**. O botão roxo
-**📲 Aviso "a data saiu"** manda o aviso do By Elarah pelo mesmo caminho do
+**📲 Aviso de inscrições abertas** manda o aviso do By Elarah pelo mesmo caminho do
 envio real: template aprovado, pela oficial. Os outros botões seguem o canal
 padrão. Assim o que você vê no seu WhatsApp é exatamente o que a cliente vê.
 
