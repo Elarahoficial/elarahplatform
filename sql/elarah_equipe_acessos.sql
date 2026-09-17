@@ -140,7 +140,7 @@ declare
   email_eventos   text := 'eventos@elarah.com.br';
   email_comercial text := 'comercial@elarah.com.br';
 
-  -- Perfil 1 — Posicionamento, Bar e Eventos.
+  -- Perfil 1 — Orçamentos & Eventos.
   -- Espelha a tabela + Visão geral e Interesses (nenhuma das duas
   -- mostra dinheiro; Interesses é lead na mão pra vender).
   paineis_eventos text[] := array[
@@ -181,7 +181,7 @@ begin
   if achou = 0 then
     raise notice 'NÃO ACHEI a conta % — crie em Authentication → Users → Add user e rode a PARTE 2 de novo.', email_eventos;
   else
-    raise notice 'OK: % agora vê % abas (Posicionamento, Bar e Eventos).', email_eventos, array_length(paineis_eventos, 1);
+    raise notice 'OK: % agora vê % abas (Orçamentos & Eventos).', email_eventos, array_length(paineis_eventos, 1);
   end if;
 
   -- --- Perfil 2 ---

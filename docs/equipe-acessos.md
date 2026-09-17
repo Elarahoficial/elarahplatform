@@ -18,7 +18,7 @@ nasce esperando confirmação de email):
 
 | | Login (email) | Senha sugerida |
 |---|---|---|
-| Posicionamento, Bar e Eventos | `eventos@elarah.com.br` | `Sereno-Aurora-24` |
+| Orçamentos & Eventos | `eventos@elarah.com.br` | `Sereno-Aurora-24` |
 | Comercial | `comercial@elarah.com.br` | `Vinhedo-Lavanda-37` |
 
 Sobre as senhas: são sugestões geradas agora, fáceis de ditar no WhatsApp e
@@ -50,7 +50,7 @@ email e senha. O menu já vai aparecer cortado.
 
 ## O que cada uma vê
 
-| Aba | Posicionamento, Bar e Eventos | Comercial |
+| Aba | Orçamentos & Eventos | Comercial |
 |---|:---:|:---:|
 | Visão geral | ✅ *extra* | ✅ *extra* |
 | O que fazer hoje | ✅ | ✅ |

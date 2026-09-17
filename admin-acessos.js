@@ -76,7 +76,7 @@
   // moram faturamento, dados de pagamento e disparo pra base inteira.
   var PERFIS = {
     eventos: {
-      label: 'Posicionamento, Bar e Eventos',
+      label: 'Orçamentos & Eventos',
       paineis: [
         'overview',          // + extra
         'insights',          // O que fazer hoje
