@@ -2483,7 +2483,8 @@ if (groupForm) {
       modalRoot.id = 'elarah-reserve-modal';
       modalRoot.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(20,12,4,.55);padding:20px;font-family:"DM Sans",sans-serif;';
       modalRoot.innerHTML = ''
-        + '<div style="background:#fff;border-radius:18px;max-width:440px;width:100%;padding:28px 28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto;">'
+        + '<div style="background:#fff;border-radius:18px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">'
+        + '<div id="erm-scroll" style="padding:28px 28px 24px;overflow-y:auto;overscroll-behavior:contain;">'
         +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;">'
         +     '<h3 id="erm-title" style="font-family:\'DM Serif Display\',serif;font-size:1.35rem;color:#1a1a1a;margin:0;">Confirmar reserva</h3>'
         +     '<button type="button" id="erm-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;padding:0 4px;">&times;</button>'
@@ -2677,6 +2678,7 @@ if (groupForm) {
         +     '<button type="button" id="erm-card-back" style="width:100%;margin-top:10px;padding:11px;border:none;background:transparent;color:#999;border-radius:10px;font-size:.85rem;cursor:pointer;">Cancelar e voltar</button>'
         +     '<p style="margin:12px 0 0;font-size:.72rem;color:#aaa;text-align:center;">🔒 Dados do cartão protegidos pela Mercado Pago (Secure Fields).</p>'
         +   '</div>' // fim erm-card-section
+        + '</div>'   // fim erm-scroll
         + '</div>';
       document.body.appendChild(modalRoot);
 
@@ -5044,6 +5046,39 @@ if (groupForm) {
         ctx.variantByParticipant = ctx.variantByParticipant || {};
         ctx.variantByParticipant[1] = ctx.variantSelected;
         // Pessoa 2..N (validação acontece no loop abaixo, junto com nome/telefone)
+      }
+
+      // ===== FONTE DE VERDADE DA QUANTIDADE: A TELA =====
+      // Já aconteceu de ctx.quantidade chegar aqui valendo 1 enquanto a
+      // tela mostrava 2: stepper em "2", card da Pessoa 2 preenchido com
+      // nome e telefone, subtotal "2x R$ 200,00 = R$ 400,00" — e o painel
+      // de cartão abrindo com "1 pessoa · total R$ 200,00". O ctx tinha
+      // sido trocado por baixo sem a tela ser redesenhada, e a compra saía
+      // com uma vaga a menos que o combinado.
+      //
+      // Quem preencheu foi a cliente, olhando a tela — então a tela manda,
+      // não o ctx. Os cards de Pessoa 2..N são a evidência mais forte:
+      // são eles que têm nome e telefone digitados. Divergiu, o ctx é
+      // corrigido e o preço redesenhado ANTES de validar e cobrar.
+      var domPartCount = root.querySelectorAll('.erm-part-nome').length;
+      var domQty = Math.max(1, Math.min(10, domPartCount + 1));
+      var qtyElNow = root.querySelector('#erm-qty');
+      var stepperQty = qtyElNow ? parseInt(String(qtyElNow.textContent || '').trim(), 10) : NaN;
+      if ((ctx.quantidade || 1) !== domQty || (!isNaN(stepperQty) && stepperQty !== domQty)) {
+        // console.error de propósito: isto NUNCA deveria acontecer. Se
+        // aparecer de novo, estes números dizem qual das três fontes
+        // desandou.
+        console.error('[Elarah QTY] divergência corrigida antes de cobrar', {
+          ctxQuantidade: ctx.quantidade,
+          stepperNaTela: stepperQty,
+          cardsDePessoa: domPartCount,
+          usado: domQty,
+        });
+        ctx.quantidade = domQty;
+        if (qtyElNow) qtyElNow.textContent = String(domQty);
+        // Redesenha o total pra que o valor na tela seja o que vai ser
+        // cobrado — nunca cobrar diferente do que a cliente está vendo.
+        refreshPriceBreakdown();
       }
 
       // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
