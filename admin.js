@@ -9335,17 +9335,28 @@
   // Quem decide QUEM recebe é o banco + a função (trigger enfileira a onda,
   // portão de WhatsApp valida telefone/idempotência/kill switch). Aqui é só
   // o atalho pra não esperar o cron — e o retorno pra admin ver o que saiu.
-  async function byDispararAvisoDeData(item, dataAnterior) {
+  async function byDispararAvisoDeData(item, antes) {
     if (!item) return;
-    // Mesma regra da trigger: avisa quando a data VIRA publicada, ou quando a
-    // data publicada MUDA (remarcação). Edição de local/horário/preço com a
-    // mesma data não avisa ninguém.
-    var dataAntes = String(dataAnterior || '').trim();
-    var dataAgora = String(item.data || '').trim();
-    if (!byDataPublicada(dataAgora)) return;
-    if (byDataPublicada(dataAntes) && dataAntes === dataAgora) return;
     if (item.ativo === false) return;
     if (item.avisarInteressados === false) return;
+
+    // Mesmos três sinais da trigger do banco:
+    //   A) a data foi publicada (ou remarcada pra outra data);
+    //   B) o item SAIU DA LISTA DE ESPERA (virou "participar" ou ligou o
+    //      checkout) — sinal inequívoco, não depende de ler texto livre;
+    //   C) estava oculto com tudo pronto e acabou de ir pro ar.
+    // Editar local/horário/preço sem mexer em nada disso não avisa ninguém.
+    var prev = antes || {};
+    var dataAntes = String(prev.data || '').trim();
+    var dataAgora = String(item.data || '').trim();
+    var virouData = byDataPublicada(dataAgora) &&
+      (!byDataPublicada(dataAntes) || dataAntes !== dataAgora);
+    var abriuInscricoes =
+      (item.tipo === 'participar' && prev.tipo !== 'participar') ||
+      (!!item.experienceId && !prev.experienceId);
+    var virouAtivo = prev.ativo === false &&
+      (byDataPublicada(dataAgora) || item.tipo === 'participar');
+    if (!virouData && !abriuInscricoes && !virouAtivo) return;
 
     var sb = window.supabaseClient;
     if (!sb || !sb.functions || !sb.functions.invoke) return;
@@ -9366,9 +9377,11 @@
       console.warn('[Admin/By Elarah] falha ao ler fila de avisos', e);
     }
 
+    var titulo = virouData ? 'Data publicada \u2705' : 'Inscrições abertas \u2705';
+
     if (!onda) {
       alert(
-        'Data publicada \u2705\n\n' +
+        titulo + '\n\n' +
         'Mas o aviso automático pra lista de interesse NÃO foi enfileirado. ' +
         'Falta rodar sql/elarah_byelarah_aviso_data.sql no Supabase.\n\n' +
         'Enquanto isso dá pra avisar a lista na mão, pelo botão de WhatsApp desta experiência.'
@@ -9389,7 +9402,7 @@
     if (!res || res.error) {
       console.warn('[Admin/By Elarah] disparo imediato falhou', res && res.error);
       alert(
-        'Data publicada \u2705\n\n' +
+        titulo + '\n\n' +
         'O aviso pra lista de interesse ficou NA FILA — não deu pra enviar agora ' +
         '(envio de WhatsApp desligado, em modo observação, ou a função não respondeu). ' +
         'O cron tenta de novo a cada 5 minutos.'
@@ -9400,10 +9413,10 @@
     var d = res.data || {};
     var onda0 = (d.ondas && d.ondas[0]) || null;
     if (!onda0) {
-      alert('Data publicada \u2705\n\nO aviso pra lista de interesse está na fila e sai nos próximos minutos.');
+      alert(titulo + '\n\nO aviso pra lista de interesse está na fila e sai nos próximos minutos.');
       return;
     }
-    var linhas = ['Data publicada \u2705', ''];
+    var linhas = [titulo, ''];
     linhas.push('Aviso enviado pra ' + onda0.enviados + ' de ' + onda0.alvo + ' pessoa(s) da lista.');
     if (onda0.restantes > 0) {
       linhas.push('Faltam ' + onda0.restantes + ' — saem automaticamente nos próximos minutos.');
@@ -9501,14 +9514,22 @@
         //    experience como is_active=false (preserva histórico) e
         //    limpa experience_id no item.
         let existingExpId = null;
-        // Data ANTES de salvar: é o que diz se este save é "a data acabou de
-        // sair" (e portanto se a lista de interesse tem que ser avisada).
-        let dataAnterior = '';
+        // Estado ANTES de salvar: é o que diz se este save foi "a data saiu"
+        // ou "saiu da lista de espera" — e portanto se a lista de interesse
+        // tem que ser avisada. Mesmos sinais da trigger do banco.
+        let estadoAnterior = { data: '', tipo: '', experienceId: null, ativo: true };
         if (editId) {
           try {
             const cur = await ElarahByElarah.getItemById(editId);
             existingExpId = cur && cur.experienceId ? cur.experienceId : null;
-            dataAnterior = (cur && cur.data) || '';
+            if (cur) {
+              estadoAnterior = {
+                data: cur.data || '',
+                tipo: cur.tipo || '',
+                experienceId: cur.experienceId || null,
+                ativo: cur.ativo !== false
+              };
+            }
           } catch (e) {}
         }
 
@@ -9629,7 +9650,7 @@
           // acabou de sair. Aqui a gente só pede pra função processar AGORA
           // (senão sairia no cron, em até 5 min).
           try {
-            await byDispararAvisoDeData(savedRecord, dataAnterior);
+            await byDispararAvisoDeData(savedRecord, estadoAnterior);
           } catch (errAviso) {
             console.warn('[Admin/By Elarah] aviso de data não pôde ser disparado', errAviso);
           }

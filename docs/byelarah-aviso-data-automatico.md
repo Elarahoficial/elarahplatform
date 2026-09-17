@@ -22,10 +22,30 @@ Exemplo do que a pessoa recebe:
 >
 > As vagas são poucas e quem estava na lista está sabendo primeiro 🧡
 
+## O que dispara o aviso
+
+Dois sinais, e **qualquer um deles basta** — o que acontecer primeiro manda:
+
+- **A data foi publicada.** O campo *Data* deixa de ser "Data em breve" e vira
+  uma data de verdade (`24 de abril`, `12/10`). Também vale remarcação: mudou
+  pra outra data, a lista é avisada da nova.
+- **O item saiu da lista de espera.** O *Tipo* vira "Quero participar" ou você
+  liga **É comprável** (abre o checkout). Esse sinal não depende de interpretar
+  texto nenhum — é o mais confiável dos dois.
+
+Quando o item abre pelo checkout e o campo *Data* ainda está com um texto
+qualquer, a data real é buscada na experiência vinculada (`event_at` da
+experiência ou do próximo horário com vaga). Se não houver data em lugar
+nenhum, a mensagem muda pra **"as inscrições abriram"** — a Elarah nunca
+promete uma data que ainda não tem.
+
+E se você fizer tudo em dois saves seguidos (publica a data, depois liga o
+checkout), sai **uma mensagem só**: uma onda por item a cada 48h.
+
 ## Como funciona
 
-1. No admin, aba **By Elarah**, você edita o item e troca o campo **Data** de
-   "Data em breve" pra uma data de verdade (ex.: `24 de abril` ou `12/10`).
+1. No admin, aba **By Elarah**, você edita o item: publica a data, tira da lista
+   de espera, ou os dois.
 2. Ao salvar, uma **trigger no banco** percebe a virada e enfileira uma "onda de
    avisos" (`byelarah_date_announcements`). A trigger não envia nada — só
    enfileira.
@@ -42,7 +62,8 @@ mesmo das confirmações e lembretes: idempotência, kill switch, modo observaç
 rollout, allowlist, fail-closed. Ver `docs/whatsapp-seguranca.md`.
 
 **Por qual canal sai:** pela **API oficial da Meta** (Cloud API), usando o
-template aprovado `elarah_data_saiu` — é o que permite avisar a lista inteira
+template aprovado `elarah_data_saiu` (ou `elarah_inscricoes_abertas`, quando
+abre sem data) — é o que permite avisar a lista inteira
 sem risco de o número ser banido. O texto acima é o corpo do template; o que
 muda por pessoa são as cinco variáveis (nome, evento, data/horários, local,
 link). Como criar o template e ligar as credenciais:
@@ -50,9 +71,11 @@ link). Como criar o template e ligar as credenciais:
 
 ## O que impede um disparo errado
 
-- **Só na virada.** O aviso sai na transição "sem data / oculto" → "com data e
-  ativo". Reeditar local, horário, preço ou reordenar o item depois **não**
-  reenvia.
+- **Só na virada.** O aviso sai na transição pra "aberto" (data publicada ou
+  fora da lista de espera). Reeditar local, horário, preço ou reordenar o item
+  depois **não** reenvia.
+- **Uma onda por item a cada 48h.** Publicar a data e ligar o checkout em saves
+  separados manda uma mensagem, não duas.
 - **Uma onda por data.** `UNIQUE (item_id, data_texto)`: a mesma data do mesmo
   item só gera uma onda, pra sempre. Desligar e religar o item não reenvia.
 - **Uma mensagem por pessoa.** Dedup por telefone (quem preencheu o formulário
@@ -93,7 +116,7 @@ link). Como criar o template e ligar as credenciais:
    cron secret, service role ou JWT de admin).
 3. **Agende o cron**: abra `sql/elarah_byelarah_aviso_data_cron.sql`, troque
    `TROQUE_PELA_SUA_CRON_SECRET` pela sua `CRON_SECRET` e rode.
-4. **Aprove o template `elarah_data_saiu`** no WhatsApp Manager e cadastre as
+4. **Aprove os templates `elarah_data_saiu` e `elarah_inscricoes_abertas`** no WhatsApp Manager e cadastre as
    credenciais da Meta nos secrets — passo a passo em
    `docs/whatsapp-oficial-meta.md`. Sem template aprovado, a Meta recusa o
    envio (a onda fica na fila e o erro aparece em `byelarah_date_announcements.erro`).
@@ -133,6 +156,10 @@ update byelarah_date_announcements
 ```
 
 ## Perguntas comuns
+
+**Tirei da lista de espera e ninguém recebeu.** Se outra onda desse mesmo item
+saiu nas últimas 48h, a segunda não é enfileirada de propósito (é a trava
+anti-mensagem-dupla). Fora isso, vale a mesma checagem abaixo.
 
 **Publiquei a data e ninguém recebeu.** Confira, nessa ordem: (1) o SQL foi
 rodado? (a fila existe?); (2) o item tem `slug`?; (3) o texto da data passa na

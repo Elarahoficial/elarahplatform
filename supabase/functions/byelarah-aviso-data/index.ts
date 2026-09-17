@@ -37,6 +37,8 @@ import { authorizeAdmin } from "../_shared/social_db.ts";
 import {
   byelarahDateAnnouncementTemplateParams,
   byelarahDateAnnouncementWhatsAppText,
+  byelarahOpenEnrollmentTemplateParams,
+  byelarahOpenEnrollmentWhatsAppText,
   experienceImageUrl,
   gatedSendWhatsApp,
   normalizePhoneBR,
@@ -84,6 +86,8 @@ interface Announcement {
   horarios: unknown;
   imagem: string | null;
   link: string | null;
+  // 'data' = tem data pra anunciar · 'inscricoes' = abriu sem data conhecida
+  motivo: string | null;
   status: string;
   total_alvo: number | null;
   enviados: number | null;
@@ -208,7 +212,7 @@ serve(async (req) => {
   let q = supabase
     .from("byelarah_date_announcements")
     .select(
-      "id, item_id, item_slug, item_nome, data_texto, local, horarios, imagem, link, status, total_alvo, enviados, observados, pulados, started_at, created_at",
+      "id, item_id, item_slug, item_nome, data_texto, local, horarios, imagem, link, motivo, status, total_alvo, enviados, observados, pulados, started_at, created_at",
     )
     .in("status", ["pendente", "enviando"])
     .order("created_at", { ascending: true })
@@ -343,14 +347,23 @@ serve(async (req) => {
         local: onda.local,
         link: onda.link,
       };
+      // Duas mensagens possíveis: "a data saiu" (quando há data) e "as
+      // inscrições abriram" (quando o item saiu da lista de espera sem data
+      // conhecida). Nunca prometemos uma data que não temos.
       // Mesmo conteúdo nos dois provedores: texto livre no legado, template
       // aprovado na oficial da Meta (obrigatório — é mensagem que a Elarah
       // inicia, fora da janela de 24h).
-      const mensagem = byelarahDateAnnouncementWhatsAppText(dados);
-      const templateParams = byelarahDateAnnouncementTemplateParams(dados);
+      const semData = onda.motivo === "inscricoes" || !String(onda.data_texto ?? "").trim();
+      const kind = semData ? "byelarah_open" : "byelarah_date";
+      const mensagem = semData
+        ? byelarahOpenEnrollmentWhatsAppText(dados)
+        : byelarahDateAnnouncementWhatsAppText(dados);
+      const templateParams = semData
+        ? byelarahOpenEnrollmentTemplateParams(dados)
+        : byelarahDateAnnouncementTemplateParams(dados);
 
       const res = await gatedSendWhatsApp(supabase, {
-        kind: "byelarah_date",
+        kind,
         // Chave por ONDA + telefone: a mesma pessoa nunca recebe o mesmo
         // aviso duas vezes, nem com duas chamadas simultâneas (cron + painel).
         dedupeKey: "bydate:" + onda.id + ":" + g.phone,

@@ -12,8 +12,15 @@
 --   o horário, o local e o LINK pra se inscrever.
 --
 -- COMO FUNCIONA
---   1. Trigger em byelarah_items detecta a TRANSIÇÃO
---      "sem data / oculto" → "com data publicada e ativo".
+--   1. Trigger em byelarah_items detecta o item ABRINDO pra lista. São
+--      DOIS sinais, e qualquer um basta:
+--        a) a DATA foi publicada (o campo Data deixa de ser "em breve");
+--        b) o item SAIU DA LISTA DE ESPERA — tipo vira "participar" ou o
+--           checkout é ligado (experience_id preenchido). Este sinal é
+--           inequívoco: não depende de interpretar texto livre.
+--      Quando (b) acontece sem data no texto, a data é buscada na
+--      experiência vinculada (event_at da experience ou do próximo slot).
+--      Sem data em lugar nenhum, o aviso vira "as inscrições abriram".
 --   2. A trigger NÃO envia nada: ela enfileira UMA linha em
 --      byelarah_date_announcements (a "onda" de avisos).
 --   3. A Edge Function byelarah-aviso-data (cron a cada 5 min, e
@@ -26,6 +33,9 @@
 --   * Só UPDATE (nunca INSERT): item recém-criado não tem lista de
 --     espera pra avisar, e slug reaproveitado num import não vira
 --     disparo pra base antiga.
+--   * Uma onda por item a cada 48h: publicar a data e ligar o checkout
+--     em dois saves seguidos (o fluxo normal do painel) manda UMA
+--     mensagem, não duas.
 --   * UNIQUE (item_id, data_texto): a MESMA data do MESMO item só
 --     gera uma onda, pra sempre. Desligar/ligar o item, reeditar
 --     local/horário ou salvar de novo não reenvia. Remarcar pra uma
@@ -126,6 +136,26 @@ comment on function public.byelarah_data_definida(text) is
   'Regra única: o texto livre de byelarah_items.data já é uma data publicada? Conservadora — na dúvida, false (não dispara aviso).';
 
 -- -------------------------------------------------------------
+-- 3b) Data por extenso a partir de um timestamp
+-- -------------------------------------------------------------
+-- Quando o item abre pelo checkout, a data real está em
+-- experiences.event_at (ou no próximo slot), não no texto livre. Esta
+-- função devolve "24 de abril" pra mensagem ficar natural.
+create or replace function public.byelarah_data_extenso(ts timestamptz)
+returns text
+language sql
+stable
+as $$
+  select case
+    when ts is null then ''
+    else ltrim(to_char(ts at time zone 'America/Sao_Paulo', 'DD'), '0') || ' de ' ||
+      (array['janeiro','fevereiro','março','abril','maio','junho','julho',
+             'agosto','setembro','outubro','novembro','dezembro'])
+        [extract(month from ts at time zone 'America/Sao_Paulo')::int]
+  end;
+$$;
+
+-- -------------------------------------------------------------
 -- 4) Fila de ondas de aviso
 -- -------------------------------------------------------------
 -- Uma linha = "avisar todo mundo da lista do item X de que a data
@@ -146,6 +176,10 @@ create table if not exists public.byelarah_date_announcements (
   horarios       jsonb not null default '[]'::jsonb,
   imagem         text not null default '',
   link           text,
+  -- O que abriu: 'data' (tem data pra anunciar) ou 'inscricoes' (abriu
+  -- sem data conhecida). Decide QUAL mensagem/template é usado.
+  motivo         text not null default 'data'
+                 check (motivo in ('data', 'inscricoes')),
   origem         text not null default 'trigger'
                  check (origem in ('trigger', 'manual')),
   status         text not null default 'pendente'
@@ -160,6 +194,18 @@ create table if not exists public.byelarah_date_announcements (
   started_at     timestamptz,
   processed_at   timestamptz
 );
+
+-- Pra quem já rodou uma versão anterior deste arquivo.
+alter table public.byelarah_date_announcements
+  add column if not exists motivo text not null default 'data';
+
+do $$
+begin
+  alter table public.byelarah_date_announcements
+    add constraint byelarah_date_ann_motivo_check
+    check (motivo in ('data', 'inscricoes'));
+exception when duplicate_object then null;
+end $$;
 
 -- A TRAVA. Mesma data do mesmo item = uma onda só, pra sempre.
 create unique index if not exists byelarah_date_ann_item_data_uidx
@@ -205,62 +251,111 @@ security definer
 set search_path = public
 as $$
 declare
-  antes_anunciavel boolean;
-  agora_anunciavel boolean;
-  data_mudou       boolean;
+  data_pub_antes   boolean;
+  data_pub_agora   boolean;
+  virou_data       boolean;
+  abriu_inscricoes boolean;
+  virou_ativo      boolean;
+  data_final       text;
+  motivo_final     text;
   link_final       text;
+  ja_tem_onda      boolean;
 begin
-  -- "Anunciável" = está no ar E tem data publicada. O aviso sai quando o
-  -- item ENTRA nesse estado ("preenchi a data", "estava oculto com data e
-  -- acabei de publicar") ou quando a data publicada MUDA (remarcação: a
-  -- lista precisa saber da data nova).
-  antes_anunciavel := (old.ativo is true)
-                      and public.byelarah_data_definida(old.data);
-  agora_anunciavel := (new.ativo is true)
-                      and public.byelarah_data_definida(new.data);
-  data_mudou := btrim(coalesce(old.data, '')) is distinct from btrim(coalesce(new.data, ''));
-
-  if not agora_anunciavel then
-    return new;
+  if new.ativo is not true then
+    return new;                                   -- oculto não avisa ninguém
   end if;
-  -- Já era anunciável com a MESMA data → é uma edição qualquer (local,
-  -- horário, preço, ordem). Não avisa ninguém.
-  if antes_anunciavel and not data_mudou then
-    return new;
-  end if;
-
-  -- Chave por item (a admin pode desligar o automático).
   if new.avisar_interessados is not true then
-    return new;
+    return new;                                   -- chave desligada neste item
   end if;
-
-  -- Sem slug não dá pra saber com segurança QUEM é a lista desse
-  -- item — e mandar pra lista errada é o pior resultado possível.
+  -- Sem slug não dá pra saber com segurança QUEM é a lista desse item —
+  -- e mandar pra lista errada é o pior resultado possível.
   if coalesce(btrim(new.slug), '') = '' then
     return new;
   end if;
 
-  -- Link da mensagem: override manual > checkout da experiência
-  -- vinculada > âncora do card na home.
+  data_pub_antes := public.byelarah_data_definida(old.data);
+  data_pub_agora := public.byelarah_data_definida(new.data);
+
+  -- SINAL A — a data foi publicada (ou remarcada pra outra data).
+  virou_data := data_pub_agora and (
+    not data_pub_antes or
+    btrim(coalesce(old.data, '')) is distinct from btrim(coalesce(new.data, ''))
+  );
+
+  -- SINAL B — o item SAIU DA LISTA DE ESPERA: virou "participar" ou o
+  -- checkout foi ligado. Sinal inequívoco: não depende de texto livre.
+  abriu_inscricoes :=
+    (new.tipo = 'participar' and old.tipo is distinct from 'participar') or
+    (new.experience_id is not null and old.experience_id is null);
+
+  -- SINAL C — estava oculto com tudo pronto e acabou de ir pro ar.
+  virou_ativo := (old.ativo is not true) and (data_pub_agora or new.tipo = 'participar');
+
+  if not (virou_data or abriu_inscricoes or virou_ativo) then
+    return new;
+  end if;
+
+  -- ANTI-DUPLICATA DE OPERAÇÃO: publicar a data e ligar o checkout em dois
+  -- saves seguidos é o fluxo normal do painel. Uma onda nas últimas 48h
+  -- (que não foi cancelada) já cobre a lista — não enfileira outra.
+  select exists (
+    select 1 from public.byelarah_date_announcements
+     where item_id = new.id
+       and status <> 'cancelado'
+       and created_at > now() - interval '48 hours'
+  ) into ja_tem_onda;
+  if ja_tem_onda then
+    return new;
+  end if;
+
+  -- QUAL DATA ANUNCIAR: o texto livre, se for data de verdade; senão a data
+  -- real da experiência vinculada (event_at da experience ou do próximo
+  -- slot). Sem nada disso, o aviso vira "as inscrições abriram".
+  data_final := case when data_pub_agora then btrim(new.data) else '' end;
+
+  if data_final = '' and new.experience_id is not null then
+    select public.byelarah_data_extenso(e.event_at)
+      into data_final
+      from public.experiences e
+     where e.id = new.experience_id;
+    data_final := coalesce(data_final, '');
+  end if;
+
+  if data_final = '' and new.experience_id is not null then
+    select public.byelarah_data_extenso(min(s.event_at))
+      into data_final
+      from public.experience_slots s
+     where s.experience_id = new.experience_id
+       and s.is_active is true
+       and s.event_at >= now();
+    data_final := coalesce(data_final, '');
+  end if;
+
+  motivo_final := case when data_final = '' then 'inscricoes' else 'data' end;
+
+  -- Link da mensagem: override manual > checkout da experiência vinculada >
+  -- âncora do card na home.
   link_final := nullif(btrim(coalesce(new.link_inscricao, '')), '');
   if link_final is null and new.experience_id is not null then
     link_final := 'https://elarah.com.br/experiencia.html?id=' || new.experience_id::text;
   end if;
   if link_final is null then
-    link_final := 'https://elarah.com.br/index.html#by-elarah-' || new.slug;
+    link_final := 'https://elarah.com.br/index.html#by-elarah-' || btrim(new.slug);
   end if;
 
   insert into public.byelarah_date_announcements
-    (item_id, item_slug, item_nome, data_texto, local, horarios, imagem, link, origem)
+    (item_id, item_slug, item_nome, data_texto, local, horarios, imagem,
+     link, motivo, origem)
   values
     (new.id,
      btrim(new.slug),
      btrim(new.nome),
-     btrim(new.data),
+     data_final,
      coalesce(new.local, ''),
      coalesce(new.horarios, '[]'::jsonb),
      coalesce(new.imagem, ''),
      link_final,
+     motivo_final,
      'trigger')
   on conflict (item_id, data_texto) do nothing;
 
@@ -280,7 +375,7 @@ notify pgrst, 'reload schema';
 -- =============================================================
 -- VERIFICAÇÃO
 --   -- Ondas na fila e o andamento de cada uma:
---   select item_nome, data_texto, status, total_alvo, enviados,
+--   select item_nome, data_texto, motivo, status, total_alvo, enviados,
 --          observados, pulados, created_at, processed_at
 --     from byelarah_date_announcements
 --    order by created_at desc;

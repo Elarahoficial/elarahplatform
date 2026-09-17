@@ -325,10 +325,18 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
       local: onda.local,
       link: onda.link,
     };
-    const mensagem = WA.byelarahDateAnnouncementWhatsAppText(dados);
-    const templateParams = WA.byelarahDateAnnouncementTemplateParams(dados);
+    // Espelha a escolha da função real: sem data conhecida, o aviso é
+    // "as inscrições abriram" (nunca promete data que não temos).
+    const semData = onda.motivo === "inscricoes" || !String(onda.data_texto ?? "").trim();
+    const kind = semData ? "byelarah_open" : "byelarah_date";
+    const mensagem = semData
+      ? WA.byelarahOpenEnrollmentWhatsAppText(dados)
+      : WA.byelarahDateAnnouncementWhatsAppText(dados);
+    const templateParams = semData
+      ? WA.byelarahOpenEnrollmentTemplateParams(dados)
+      : WA.byelarahDateAnnouncementTemplateParams(dados);
     const r = await WA.gatedSendWhatsApp(supabase, {
-      kind: "byelarah_date",
+      kind,
       dedupeKey: "bydate:" + onda.id + ":" + g.phone,
       identifierOk: true,
       rawPhone: g.phone,
@@ -848,6 +856,26 @@ async function run() {
       to: CLIENT_A, kind: "byelarah_date", template: { params: ["Maria", "Oficina", "24 de abril", "SP", "link"] },
     });
     check("oficial fora de produção sem allowlist → não envia", rs.ok === false && zs.calls.length === 0);
+  }
+
+  {
+    // SAIU DA LISTA DE ESPERA sem data conhecida → outro template, e nenhuma
+    // promessa de data que a Elarah não tem.
+    const WAm = await loadWA(META_ENV);
+    const zm = installMetaMock();
+    const onda = {
+      id: "onda-aberta", item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa", data_texto: "",
+      motivo: "inscricoes", horarios: [], local: "",
+      link: "https://elarah.com.br/experiencia.html?id=exp-9",
+    };
+    const sb = makeSupabase([], [subSeed({ id: "sub-ab" })]);
+    const r = await runAvisoDeData(WAm, sb, onda);
+    check("abriu inscrições sem data → avisou mesmo assim", r.enviados === 1, JSON.stringify(r));
+    const c = zm.calls[0];
+    check("usou o template de inscrições abertas", c.template === "elarah_inscricoes_abertas", String(c.template));
+    check("3 parâmetros (nome, experiência, link)", c.params.length === 3, JSON.stringify(c.params));
+    check("link de checkout no {{3}}", c.params[2] === onda.link);
   }
 
   // ---------- Relatório ----------

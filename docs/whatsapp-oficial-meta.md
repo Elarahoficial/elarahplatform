@@ -27,7 +27,7 @@ mensagem → Criar modelo). Regras que fazem a Meta recusar se não seguir:
   que falam de uma reserva que já existe. A Meta pode reclassificar; se
   reclassificar, só muda o preço, não o funcionamento.
 
-Crie os cinco. Copie e cole o corpo exatamente como está:
+Crie os seis. Copie e cole o corpo exatamente como está:
 
 ### `elarah_data_saiu` — Marketing (é o do aviso automático de data)
 
@@ -49,6 +49,21 @@ Exemplos pras variáveis:
 `{{3}}` 24 de abril · 10h às 13h ou 14h às 17h ·
 `{{4}}` Rua Nova Orleans, 34 — Brooklin ·
 `{{5}}` https://elarah.com.br/index.html#by-elarah-perfumaria-criativa
+
+### `elarah_inscricoes_abertas` — Marketing (quando abre sem data definida)
+
+```
+Oi, {{1}}! As inscrições abriram ✨
+
+Você se inscreveu pra ser avisada quando {{2}} abrisse — e as vagas acabaram de entrar no ar.
+
+Garanta a sua aqui: {{3}}
+
+As vagas são poucas e quem estava na lista está sabendo primeiro 🧡
+```
+
+Exemplos: `Maria` · `Oficina de Perfumaria Criativa` ·
+`https://elarah.com.br/experiencia.html?id=...`
 
 ### `elarah_reserva_confirmada` — Utilidade
 
@@ -99,8 +114,8 @@ Sua vaga ainda pode estar disponível — quer que eu te ajude a finalizar? É s
 
 **Aprovou com outro nome?** Não precisa mexer em código — cadastre o nome que
 você usou no secret correspondente: `META_TEMPLATE_DATA_SAIU`,
-`META_TEMPLATE_CONFIRMACAO`, `META_TEMPLATE_LEMBRETE`,
-`META_TEMPLATE_FEEDBACK`, `META_TEMPLATE_PENDENTE`.
+`META_TEMPLATE_INSCRICOES`, `META_TEMPLATE_CONFIRMACAO`,
+`META_TEMPLATE_LEMBRETE`, `META_TEMPLATE_FEEDBACK`, `META_TEMPLATE_PENDENTE`.
 
 ## 2. Pegar as credenciais
 

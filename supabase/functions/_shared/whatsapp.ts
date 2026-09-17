@@ -286,6 +286,7 @@ const META_TEMPLATE_DEFAULTS: Record<string, string> = {
   feedback: "elarah_pedido_feedback",
   pending: "elarah_reserva_pendente",
   byelarah_date: "elarah_data_saiu",
+  byelarah_open: "elarah_inscricoes_abertas",
 };
 const META_TEMPLATE_ENV: Record<string, string> = {
   confirmation: "META_TEMPLATE_CONFIRMACAO",
@@ -293,6 +294,7 @@ const META_TEMPLATE_ENV: Record<string, string> = {
   feedback: "META_TEMPLATE_FEEDBACK",
   pending: "META_TEMPLATE_PENDENTE",
   byelarah_date: "META_TEMPLATE_DATA_SAIU",
+  byelarah_open: "META_TEMPLATE_INSCRICOES",
 };
 
 export function metaTemplateName(kind: string): string | null {
@@ -692,6 +694,39 @@ export function byelarahDateAnnouncementWhatsAppText(opts: {
   return linhas.join("\n");
 }
 
+// Aviso "as inscrições abriram" — irmão do de cima, pro caso em que o item
+// SAIU DA LISTA DE ESPERA (virou "participar" / checkout ligado) e não há
+// data conhecida em lugar nenhum. Mesma lista, mesma promessa, sem prometer
+// uma data que a gente não tem.
+export function byelarahOpenEnrollmentWhatsAppText(opts: {
+  nome?: unknown;
+  experienciaNome?: unknown;
+  local?: unknown;
+  link?: unknown;
+}): string {
+  const nome = primeiroNome(opts.nome);
+  const exp = String(opts.experienciaNome ?? "a experiência").trim();
+  const linhas: string[] = [];
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}As inscrições abriram ✨`);
+  linhas.push("");
+  linhas.push(
+    `Você se inscreveu pra ser avisada quando *${exp}* abrisse — e as vagas acabaram de entrar no ar.`,
+  );
+  const local = String(opts.local ?? "").trim();
+  if (local) {
+    linhas.push("");
+    linhas.push(`📍 ${local}`);
+  }
+  const link = String(opts.link ?? "").trim();
+  if (link) {
+    linhas.push("");
+    linhas.push(`✨ Garanta a sua aqui: ${link}`);
+  }
+  linhas.push("");
+  linhas.push("As vagas são poucas e quem estava na lista está sabendo primeiro 🧡");
+  return linhas.join("\n");
+}
+
 // ===== PARÂMETROS DOS TEMPLATES OFICIAIS (Meta) =====
 // Cada função devolve os {{1}}, {{2}}, ... na ORDEM do template aprovado.
 // O texto dos templates está em docs/whatsapp-oficial-meta.md — mexer aqui
@@ -774,6 +809,17 @@ export function byelarahDateAnnouncementTemplateParams(opts: {
       P_QUANDO,
     ),
     metaParam(opts.local, P_LOCAL),
+    metaParam(opts.link, P_LINK),
+  ];
+}
+
+// elarah_inscricoes_abertas — {{1}} nome · {{2}} experiência · {{3}} link
+export function byelarahOpenEnrollmentTemplateParams(opts: {
+  nome?: unknown; experienciaNome?: unknown; link?: unknown;
+}): string[] {
+  return [
+    metaParam(primeiroNome(opts.nome), P_NOME),
+    metaParam(opts.experienciaNome, P_EXP),
     metaParam(opts.link, P_LINK),
   ];
 }
