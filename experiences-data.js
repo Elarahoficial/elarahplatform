@@ -144,7 +144,10 @@
       vagasTotal: row.vagas_total != null ? Number(row.vagas_total) : null,
       vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
       eventAt: row.event_at || null,
-      cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : 24,
+      // null = sem exceção; quem manda é o padrão da categoria
+      // (ver effectiveCutoffHours). Um número aqui é exceção explícita
+      // cadastrada no admin pra ESTA experiência.
+      cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : null,
       // Visibilidade (oculta/mostra no site sem excluir).
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
@@ -269,8 +272,11 @@
     const rawEventAt = exp.eventAt != null ? exp.eventAt : exp.event_at;
     const eventAt = rawEventAt && String(rawEventAt).trim() ? String(rawEventAt).trim() : null;
 
+    // Campo vazio no admin = null = padrão da categoria. Antes virava
+    // 24 na marra, o que tornava impossível distinguir "não configurei"
+    // de "quero 24h mesmo".
     const rawCutoff = exp.cutoffHours != null ? exp.cutoffHours : exp.cutoff_hours;
-    const cutoffHours = rawCutoff === '' || rawCutoff == null ? 24 : Number(rawCutoff);
+    const cutoffHours = rawCutoff === '' || rawCutoff == null ? null : Number(rawCutoff);
 
     // Visibilidade: aceita isActive (camelCase) ou is_active (snake_case).
     // Só false explícito oculta — qualquer outra coisa mantém true.
@@ -295,7 +301,7 @@
       horarios: horarios,
       vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
       event_at: eventAt,
-      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
+      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : null,
       is_active: isActive,
       // Ordem manual (admin). Aceita number ou string numérica; vazio/inválido = null.
       ordem: (function () {
@@ -1031,16 +1037,36 @@
   // critério 1 vale.
   // Exposta no window.ElarahData pra que o admin possa marcar status
   // sem duplicar a lógica.
+  // Quantas horas antes do evento a venda encerra (e a experiência some
+  // do site). Duas fontes, nesta ordem:
+  //
+  //   1. cutoff_hours preenchido  → exceção desta experiência, vale como
+  //      está. É a válvula de escape pra um caso pontual (ex.: turma de
+  //      Gastronomia com insumo não perecível que pode vender até a
+  //      véspera) sem mexer na regra das outras.
+  //   2. vazio (null)             → padrão da categoria: Gastronomia
+  //      encerra 48h antes (insumos perecíveis / turmas fechadas cedo),
+  //      as demais 24h.
+  //
+  // Antes daqui saía Math.max(cutoff, 48) pra Gastronomia, então baixar o
+  // campo no admin não tinha efeito nenhum — só dava pra aumentar. Espelha
+  // effectiveCutoffHours de supabase/functions/_shared/booking_guard.ts:
+  // se as duas divergirem, o site mostra o que o pagamento recusa.
+  const GASTRONOMIA_CUTOFF_H = 48;
+  const CUTOFF_PADRAO_H = 24;
+
+  function effectiveCutoffHours(exp) {
+    const raw = exp == null ? null : exp.cutoffHours;
+    const n = Number(raw);
+    if (raw !== null && raw !== '' && Number.isFinite(n)) return n;
+    const isGastronomia = String((exp && exp.categoria) || '').trim().toLowerCase() === 'gastronomia';
+    return isGastronomia ? GASTRONOMIA_CUTOFF_H : CUTOFF_PADRAO_H;
+  }
+
   function isPubliclyVisible(exp, nowMs) {
     if (!exp || exp.isActive === false) return false;
     if (nowMs == null) nowMs = Date.now();
-    // Gastronomia encerra 48h antes: some do site com 2 dias de
-    // antecedência (insumos perecíveis / turmas fechadas cedo). As demais
-    // categorias mantêm o cutoff configurado (default 24h). O Math.max
-    // garante que um cutoff MAIOR definido no admin ainda prevaleça.
-    const baseCutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
-    const isGastronomia = String(exp.categoria || '').trim().toLowerCase() === 'gastronomia';
-    const cutoffH = isGastronomia ? Math.max(baseCutoffH, 48) : baseCutoffH;
+    const cutoffH = effectiveCutoffHours(exp);
     let eventTs = null;
     if (exp.eventAt) {
       const t = new Date(exp.eventAt).getTime();
@@ -1887,6 +1913,7 @@
     isAtividadeSemanal,
     invalidateCache,
     isPubliclyVisible,
+    effectiveCutoffHours,
     deriveEventTimestamp,
     experienceFutureDates,
     distinctSlotHorarios,
