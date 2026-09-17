@@ -73,7 +73,7 @@ email e senha. O menu já vai aparecer cortado.
 | Cotação | ✅ | — |
 | Locais p/ eventos | ✅ | — |
 | Parceiros | ✅ | ✅ |
-| Prospecção | ✅ | ✅ |
+| Prospecção | — | ✅ |
 | Interesses | ✅ *extra* | ✅ *extra* |
 
 As duas marcadas como *extra* não estavam na sua tabela; eu incluí porque

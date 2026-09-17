@@ -154,7 +154,6 @@ declare
     'cotacao',            -- Cotação
     'locais',             -- Locais p/ eventos
     'partners',           -- Parceiros
-    'prospects',          -- Prospecção
     'interesses'
   ];
 
