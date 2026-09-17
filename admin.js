@@ -6964,7 +6964,9 @@
           eventAtEl.value = '';
         }
       }
-      if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : 24;
+      // Vazio = segue o padrão da categoria. Preencher é criar exceção
+      // só pra esta experiência.
+      if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : '';
 
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
@@ -7080,7 +7082,7 @@
       if (cor1El) cor1El.value = '#f6d5a8';
       if (cor2El) cor2El.value = '#f0a05e';
       const cutoffEl = document.getElementById('exp-cutoff-hours');
-      if (cutoffEl) cutoffEl.value = 24;
+      if (cutoffEl) cutoffEl.value = '';
       const vagasRestEl = document.getElementById('exp-vagas-restantes');
       if (vagasRestEl) vagasRestEl.value = '';
       const isActiveEl = document.getElementById('exp-is-active');
@@ -7694,7 +7696,7 @@
         cor: cor1 + ',' + cor2,
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,
-        cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw),
+        cutoffHours: cutoffRaw === '' ? null : Number(cutoffRaw),
         isActive: !!(document.getElementById('exp-is-active')?.checked ?? true),
         fornecedorNome: (document.getElementById('exp-fornecedor-nome')?.value || '').trim() || null,
         valorCheioCentavos: (function () {

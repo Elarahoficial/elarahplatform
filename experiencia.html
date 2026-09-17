@@ -352,7 +352,7 @@
 <script src="phone-input.js?v=1"></script>
 <script src="password-toggle.js?v=1"></script>
 <script src="auth.js?v=14"></script>
-<script src="experiences-data.js?v=36"></script>
+<script src="experiences-data.js?v=39"></script>
 <script src="analytics.js?v=3"></script>
 <script src="kit-checkout.js?v=3"></script>
 <script src="script.js?v=90"></script><script>(function () {
@@ -591,7 +591,13 @@
     // prazo mínimo de compra (default 24h). Sem isso, o chip aparecia mas a
     // reserva era recusada pelo backend ("falta menos de 24h") — opção que
     // não deveria existir. Mesma regra de isPubliclyVisible/booking_guard.
-    var cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    // Mesmo cálculo da listagem: cutoff da experiência quando preenchido,
+    // senão o padrão da categoria (Gastronomia 48h, demais 24h). Ler isso
+    // por conta própria já fez os chips de horário divergirem do que o
+    // site listava.
+    var cutoffH = (window.ElarahData && typeof ElarahData.effectiveCutoffHours === 'function')
+      ? ElarahData.effectiveCutoffHours(exp)
+      : (Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24);
     var cutoffMs = now.getTime() + cutoffH * 60 * 60 * 1000;
     var futureSlots = allSlots
       .filter(function (s) { return s.isActive !== false; })

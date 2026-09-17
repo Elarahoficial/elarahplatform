@@ -3839,8 +3839,8 @@
 
         <div class="admin__form-field">
           <label>Bloqueio antes do evento (horas)</label>
-          <input type="number" id="exp-cutoff-hours" min="0" step="1" value="24">
-          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Quantas horas antes a venda é encerrada. Padrão: 24h.</p>
+          <input type="number" id="exp-cutoff-hours" min="0" step="1" placeholder="padrão da categoria">
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Quantas horas antes a venda é encerrada. <strong>Deixe vazio</strong> pra usar o padrão da categoria: Gastronomia 48h (insumo perecível), demais 24h. Preencha só pra abrir exceção nesta experiência — o valor aqui vale mesmo se for menor que o padrão.</p>
         </div>
 
         <div class="admin__form-field admin__form-field--full">
@@ -4565,7 +4565,7 @@
 <script src="phone-input.js?v=1"></script>
 <script src="password-toggle.js?v=1"></script>
 <script src="auth.js?v=14"></script>
-<script src="experiences-data.js?v=38"></script>
+<script src="experiences-data.js?v=39"></script>
 <script src="byelarah-data.js?v=8"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-insights.js?v=3"></script>
@@ -4579,7 +4579,7 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
-<script src="admin.js?v=230"></script>
+<script src="admin.js?v=231"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

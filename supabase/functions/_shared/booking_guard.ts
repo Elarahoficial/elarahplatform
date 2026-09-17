@@ -289,25 +289,36 @@ function deriveEventTimestamp(
 }
 
 // Cutoff de venda/exibição efetivo (em horas) de uma experiência.
-// Regra de negócio: GASTRONOMIA encerra 48h antes do evento — some do
-// site e bloqueia reserva com 2 dias de antecedência (insumos perecíveis
-// e turmas fechadas cedo). As demais categorias usam o cutoff configurado
-// (default 24h). Usamos o MAIOR entre o cutoff da experiência e 48h para
-// gastronomia, então um cutoff maior definido no admin ainda prevalece.
-// Espelha a mesma lógica de experiences-data.js (isPubliclyVisible) no
-// front, pra que listagem pública e bloqueio de reserva concordem.
-export const GASTRONOMIA_MIN_CUTOFF_HOURS = 48;
+// Duas fontes, nesta ordem:
+//
+//   1. cutoff_hours preenchido → exceção desta experiência, vale como
+//      está. Válvula de escape pra um caso pontual sem mexer na regra
+//      das outras.
+//   2. null (vazio no admin)   → padrão da categoria: GASTRONOMIA encerra
+//      48h antes (insumos perecíveis / turmas fechadas cedo), as demais
+//      24h.
+//
+// Antes daqui saía Math.max(cutoff, 48) pra Gastronomia, então baixar o
+// campo no admin não surtia efeito — só dava pra aumentar.
+//
+// Espelha effectiveCutoffHours de experiences-data.js no front. As duas
+// TÊM que concordar: se o front afrouxar sozinho, o site lista a
+// experiência e o checkout devolve experience_cutoff_passed; se o back
+// afrouxar sozinho, a venda é aceita numa experiência que ninguém vê.
+export const GASTRONOMIA_CUTOFF_HOURS = 48;
+export const CUTOFF_PADRAO_HOURS = 24;
+
 export function effectiveCutoffHours(
   categoria: string | null | undefined,
   cutoffHours: number | null | undefined,
 ): number {
-  const base = Number(cutoffHours ?? 24);
-  const safeBase = Number.isFinite(base) ? base : 24;
+  if (cutoffHours !== null && cutoffHours !== undefined) {
+    const n = Number(cutoffHours);
+    if (Number.isFinite(n)) return n;
+  }
   const isGastronomia =
     String(categoria ?? "").trim().toLowerCase() === "gastronomia";
-  return isGastronomia
-    ? Math.max(safeBase, GASTRONOMIA_MIN_CUTOFF_HOURS)
-    : safeBase;
+  return isGastronomia ? GASTRONOMIA_CUTOFF_HOURS : CUTOFF_PADRAO_HOURS;
 }
 
 /**
