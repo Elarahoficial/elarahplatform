@@ -314,6 +314,7 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
   }
 
   const res = { enviados: 0, pulados: 0, semTelefone, alvo: byPhone.size };
+  const fotoDoEvento = onda.imagem || IMG_A;
   for (const g of byPhone.values()) {
     if (g.jaRecebeu) { res.pulados++; continue; }
     if (g.lastSentAt !== null && agora - g.lastSentAt < cooldownMs) { res.pulados++; continue; }
@@ -336,7 +337,7 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
       rawPhone: g.phone,
       suppressed: false,
       statusAllowed: true,
-      image: IMG_A,
+      image: fotoDoEvento,
       caption: mensagem,
       message: mensagem,
       template: { params: templateParams },
@@ -940,6 +941,38 @@ async function run() {
     check("misto: aviso à lista sai pela OFICIAL", rx.enviados === 1 && zm.calls.length === 1,
       JSON.stringify(rx));
     check("misto: e vai como template aprovado", zm.calls[0].template === "elarah_inscricoes_abertas");
+  }
+
+  {
+    // FOTO POR PESSOA: com o template aprovado COM cabeçalho de imagem, cada
+    // envio leva a foto do evento em que aquela pessoa se inscreveu. A Meta
+    // aprova a estrutura; a imagem vai em cada mensagem.
+    const FOTO = "https://elarah.com.br/assets/vitral.jpg";
+    const onda = {
+      id: "onda-foto", item_slug: "vitral", item_nome: "Crie seu Amuleto em Vitral",
+      data_texto: "24 de abril", horarios: ["10h às 13h"], local: "Brooklin",
+      link: "https://elarah.com.br/x", imagem: FOTO,
+    };
+    const seed = [subSeed({ id: "sub-f", item_slug: "vitral", experiencia: onda.item_nome })];
+
+    // (a) secret LIGADO → cabeçalho com a foto do evento
+    const WAon = await loadWA({ ...META_ENV, META_TEMPLATE_INSCRICOES_IMAGEM: "true" });
+    const zOn = installMetaMock();
+    await runAvisoDeData(WAon, makeSupabase([], seed), onda);
+    const cOn = zOn.calls[0];
+    const header = (cOn.components || []).find((c) => c.type === "header");
+    check("com o secret ligado → template vai com cabeçalho de imagem", !!header);
+    check("e a imagem é a FOTO DAQUELE evento",
+      header && header.parameters[0].image.link === FOTO,
+      JSON.stringify(header));
+    check("o corpo continua com os 5 parâmetros", cOn.params.length === 5);
+
+    // (b) secret DESLIGADO → nenhum cabeçalho (senão a Meta recusa tudo)
+    const WAoff = await loadWA(META_ENV);
+    const zOff = installMetaMock();
+    await runAvisoDeData(WAoff, makeSupabase([], seed), onda);
+    check("sem o secret → NENHUM cabeçalho é enviado",
+      !(zOff.calls[0].components || []).some((c) => c.type === "header"));
   }
 
   // ---------- Relatório ----------

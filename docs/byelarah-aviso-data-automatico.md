@@ -61,6 +61,11 @@ Todo envio passa pelo **portão único de WhatsApp** (`gatedSendWhatsApp`) — o
 mesmo das confirmações e lembretes: idempotência, kill switch, modo observação,
 rollout, allowlist, fail-closed. Ver `docs/whatsapp-seguranca.md`.
 
+**Com a foto do evento:** o template pode ser aprovado com cabeçalho de
+imagem — aí cada pessoa recebe a foto do evento em que ela se inscreveu (a
+Meta aprova a estrutura; a imagem vai em cada envio). Liga com o secret
+`META_TEMPLATE_INSCRICOES_IMAGEM=true`. No canal legado a foto já vai sempre.
+
 **Por qual canal sai:** pela **API oficial da Meta** (Cloud API) — só este
 fluxo, assim que as credenciais da Meta existirem; confirmação, lembrete e
 feedback seguem no canal de sempre. Usa o template aprovado `elarah_inscricoes_abertas` — é o que permite avisar a lista inteira

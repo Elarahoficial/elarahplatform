@@ -39,6 +39,7 @@ import {
   sendWhatsAppImage,
   sendWhatsAppTemplate,
   whatsappAllowlistHas,
+  metaTemplateUsaImagem,
   whatsappIsOfficial,
   whatsappOfficialReady,
 } from "../_shared/whatsapp.ts";
@@ -196,7 +197,16 @@ serve(async (req) => {
   const ehAviso = tpl.kind === "byelarah_aviso";
   const usaOficial = whatsappIsOfficial() || (ehAviso && whatsappOfficialReady());
   const result = usaOficial
-    ? await sendWhatsAppTemplate({ to: telefone, kind: tpl.kind, template: { params: tpl.params } })
+    ? await sendWhatsAppTemplate({
+      to: telefone,
+      kind: tpl.kind,
+      template: {
+        params: tpl.params,
+        // Igual ao envio real: a foto só vai se o template foi aprovado com
+        // cabeçalho de imagem (secret META_TEMPLATE_*_IMAGEM).
+        headerImage: metaTemplateUsaImagem(tpl.kind) ? SAMPLE_IMAGE : undefined,
+      },
+    })
     : await sendWhatsAppImage({ to: telefone, image: SAMPLE_IMAGE, caption: mensagem });
   if (!result.ok) {
     return json({

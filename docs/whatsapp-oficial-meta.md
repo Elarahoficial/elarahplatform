@@ -74,6 +74,22 @@ Exemplos pras variáveis:
 Quando o evento abre sem data conhecida, `{{3}}` vira **"data a confirmar"** —
 nenhuma variável fica vazia (a Meta recusa) e nenhuma data é prometida à toa.
 
+**Com a foto do evento (recomendado).** No passo "Cabeçalho" do editor,
+escolha **Mídia → Imagem** e suba qualquer foto como exemplo. A Meta aprova a
+ESTRUTURA, não a imagem: na hora do envio cada mensagem leva a foto do evento
+em que aquela pessoa se inscreveu. Depois de aprovado assim, cadastre também o
+secret:
+
+```
+META_TEMPLATE_INSCRICOES_IMAGEM = true
+```
+
+⚠️ O secret e o template têm que combinar. Template **com** cabeçalho e secret
+desligado (ou o contrário) faz a Meta recusar **todos** os envios. Se não quiser
+foto, aprove sem cabeçalho e não cadastre o secret. A foto tem que ser JPG ou
+PNG numa URL pública (as do site servem); sem foto cadastrada no evento, vai o
+logo da Elarah.
+
 ### `elarah_reserva_confirmada` — Utilidade
 
 ```
@@ -146,8 +162,9 @@ Guarde o token como senha: quem tem ele manda mensagem pelo número da Elarah.
 Project Settings → Edge Functions → **Secrets**:
 
 ```
-META_WHATSAPP_TOKEN            = <token permanente>
-META_WHATSAPP_PHONE_NUMBER_ID  = <id do número>
+META_WHATSAPP_TOKEN             = <token permanente>
+META_WHATSAPP_PHONE_NUMBER_ID   = <id do número>
+META_TEMPLATE_INSCRICOES_IMAGEM = true   (só se aprovou COM cabeçalho de imagem)
 ```
 
 Só isso. Com esses dois secrets, o **aviso à lista** passa a sair pela oficial

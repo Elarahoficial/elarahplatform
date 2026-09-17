@@ -11,10 +11,17 @@
 //   * zapi (legado) — automatiza um número comum via QR code. Funciona com
 //     texto livre, mas a Meta pode banir o número em disparo frio.
 //
-// Qual entra em ação: WHATSAPP_PROVIDER ("meta" | "zapi"). Sem essa secret,
-// vale "meta" se as credenciais da oficial existirem; senão cai no zapi.
-// Nunca há fallback silencioso de um pro outro: provedor escolhido sem
+// Qual entra em ação: WHATSAPP_PROVIDER ("meta" | "zapi"), default zapi —
+// cadastrar as credenciais da Meta NÃO migra os fluxos transacionais
+// sozinho. O aviso pra lista de interesse é a exceção: ele pede a oficial
+// (preferOfficial) e vai por ela assim que as credenciais existirem, porque
+// é disparo frio. Nunca há fallback silencioso: provedor escolhido sem
 // credencial = NÃO ENVIA (fail-closed), com erro claro.
+//
+// Cabeçalho de imagem nos templates: a Meta aprova a ESTRUTURA, e a foto vai
+// em cada envio — então cada pessoa recebe a foto do evento dela. Ligado por
+// secret (META_TEMPLATE_*_IMAGEM), porque cabeçalho a mais ou a menos em
+// relação ao template aprovado derruba TODOS os envios.
 //
 // Secrets (Supabase → Project Settings → Edge Functions → Secrets):
 //   -- oficial (Meta) --
@@ -23,6 +30,8 @@
 //   META_TEMPLATE_LANG             (opcional) idioma dos templates (pt_BR)
 //   META_GRAPH_VERSION             (opcional) versão da Graph API
 //   META_TEMPLATE_*                (opcional) nome de cada template aprovado
+//   META_TEMPLATE_*_IMAGEM         "true" se o template foi aprovado COM
+//                                  cabeçalho de imagem (a foto vai por envio)
 //   -- legado (Z-API) --
 //   ZAPI_INSTANCE_ID / ZAPI_TOKEN / ZAPI_CLIENT_TOKEN / ZAPI_BASE_URL
 //
@@ -302,6 +311,30 @@ const META_TEMPLATE_ENV: Record<string, string> = {
   pending: "META_TEMPLATE_PENDENTE",
   byelarah_aviso: "META_TEMPLATE_INSCRICOES",
 };
+
+// Templates aprovados COM cabeçalho de imagem. A imagem NÃO faz parte da
+// aprovação: a Meta aprova a ESTRUTURA, e cada envio manda a sua foto — então
+// cada pessoa recebe a foto do evento em que ELA se inscreveu.
+//
+// Por que é secret e não default: mandar cabeçalho pra um template aprovado
+// SEM cabeçalho faz a Meta recusar TODOS os envios (132000) — e o contrário
+// também. Então isto só liga quando você confirma que aprovou o template com
+// a imagem.
+const META_TEMPLATE_IMAGEM_ENV: Record<string, string> = {
+  byelarah_aviso: "META_TEMPLATE_INSCRICOES_IMAGEM",
+  confirmation: "META_TEMPLATE_CONFIRMACAO_IMAGEM",
+  reminder48: "META_TEMPLATE_LEMBRETE_IMAGEM",
+  feedback: "META_TEMPLATE_FEEDBACK_IMAGEM",
+  pending: "META_TEMPLATE_PENDENTE_IMAGEM",
+};
+
+export function metaTemplateUsaImagem(kind: string): boolean {
+  const envKey = META_TEMPLATE_IMAGEM_ENV[kind];
+  if (!envKey) return false;
+  return ["1", "true", "yes", "sim"].includes(
+    (Deno.env.get(envKey) ?? "").trim().toLowerCase(),
+  );
+}
 
 export function metaTemplateName(kind: string): string | null {
   const envKey = META_TEMPLATE_ENV[kind];
@@ -873,23 +906,37 @@ export async function gatedSendWhatsApp(
       // Oficial + template aprovado = o caminho das mensagens iniciadas pela
       // Elarah. O texto livre (abaixo) segue valendo pro provedor legado e
       // pra resposta dentro da janela de 24h.
-      // A foto NÃO é herdada automaticamente: header de imagem só existe se
-      // o template aprovado tiver um. Mandar header num template sem header
-      // faz a Meta recusar TODOS os envios (132000). Quem aprovou um
-      // template com imagem passa headerImage explicitamente.
+      // A foto só entra se o template aprovado TIVER cabeçalho de imagem
+      // (ligado pelo secret correspondente — ver metaTemplateUsaImagem).
+      // Mandar cabeçalho num template sem cabeçalho faz a Meta recusar TODOS
+      // os envios; e não mandar num template COM cabeçalho, idem. Por isso,
+      // quando está ligado, SEMPRE vai uma imagem: a do evento em que a
+      // pessoa se inscreveu ou, na falta dela, o logo da Elarah.
       const viaOficial = (PROVIDER === "meta") ||
         (params.preferOfficial === true && whatsappOfficialReady());
       if (viaOficial && params.template) {
+        let headerImage: string | undefined = undefined;
+        if (metaTemplateUsaImagem(params.kind)) {
+          const candidata = params.template.headerImage ?? params.image;
+          headerImage = candidata && /^https?:\/\//i.test(candidata)
+            ? candidata
+            : experienceImageUrl("");
+        }
         return await sendWhatsAppTemplate({
           to: o.phone,
           kind: params.kind,
-          template: params.template,
+          template: { ...params.template, headerImage },
         });
       }
       if (o.image) return await sendWhatsAppImage({ to: o.phone, image: o.image, caption: o.caption });
       return await sendWhatsAppText({ to: o.phone, message: o.message ?? o.caption ?? "" });
     },
-    log: (_level: string, _msg: string, _fields?: unknown) => {},
+    // Erro/aviso do portão vai pro log da função (antes era engolido, o que
+    // escondia falha real de envio). Info fica de fora pra não poluir.
+    log: (level: string, msg: string, fields?: unknown) => {
+      if (level === "error") console.error("[whatsapp gate]", msg, fields ?? "");
+      else if (level === "warn") console.warn("[whatsapp gate]", msg, fields ?? "");
+    },
   };
   return (await gatedSend(deps, params)) as GatedResult;
 }
