@@ -23,7 +23,8 @@ giftcss = '''
   .gc-rule{width:58px;height:2px;background:#B08D4C;margin:0 auto 17px}
   .gc-para{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#9A9184;font-weight:700;margin-bottom:6px}
   .gc-name{font-family:'DM Serif Display',serif;font-size:33px;color:#2E3A2E;line-height:1.12;margin-bottom:13px}
-  .gc-when{display:inline-block;background:#2E3A2E;color:#fff;border-radius:999px;padding:9px 22px;font-size:13px;font-weight:600;margin-bottom:18px}
+  .gc-when{display:inline-block;background:#2E3A2E;color:#fff;border-radius:999px;padding:9px 22px;font-size:13px;font-weight:600;margin-bottom:10px}
+  .gc-where{font-size:12px;color:#7C7568;font-weight:600;margin-bottom:18px}
   .gc-msg{font-size:12.5px;color:#7C7568;line-height:1.55;max-width:100mm;margin:0 auto}
   .gc-foot{margin-top:auto;font-size:10.5px;color:#8A8276;line-height:1.7;padding-top:16px}
   .gc-foot b{color:#2E3A2E;font-weight:700}
@@ -43,6 +44,7 @@ def card(nome):
     <div class="gc-para">Para</div>
     <div class="gc-name">{nome}</div>
     <div class="gc-when">03 de outubro de 2026 · 14h00 às 15h30</div>
+    <div class="gc-where">📍 Rua Joel Jorge de Melo, 75 · Vila Mariana · São Paulo</div>
     <p class="gc-msg">Um presente escolhido com carinho pra você viver uma tarde de aromas, calma e criatividade. Aproveite cada gotinha. 🌿</p>
     <div class="gc-foot">
       <b>Elarah</b> · Experiências criativas &nbsp;·&nbsp; elarah.com.br &nbsp;·&nbsp; @elarah
