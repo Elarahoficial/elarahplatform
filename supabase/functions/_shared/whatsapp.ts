@@ -420,6 +420,49 @@ export function pendingRecoveryWhatsAppText(opts: MsgOpts): string {
   return linhas.join("\n");
 }
 
+// Aviso "a data saiu" de um item By Elarah — vai pra quem deixou o contato
+// na lista de interesse DAQUELE item enquanto ele ainda era "data em breve".
+// Quem dispara: supabase/functions/byelarah-aviso-data (fila alimentada pela
+// trigger de sql/elarah_byelarah_aviso_data.sql).
+export function byelarahDateAnnouncementWhatsAppText(opts: {
+  nome?: unknown;
+  experienciaNome?: unknown;
+  data?: unknown;
+  horarios?: unknown; // array de strings ou string única
+  local?: unknown;
+  link?: unknown;
+}): string {
+  const nome = primeiroNome(opts.nome);
+  const exp = String(opts.experienciaNome ?? "a experiência").trim();
+  const horarios = Array.isArray(opts.horarios)
+    ? opts.horarios.map((h) => String(h ?? "").trim()).filter(Boolean)
+    : [String(opts.horarios ?? "").trim()].filter(Boolean);
+  const linhas: string[] = [];
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}A data saiu ✨`);
+  linhas.push("");
+  linhas.push(
+    `Você se inscreveu pra ser avisada quando *${exp}* abrisse — e acabou de entrar no ar.`,
+  );
+  const detalhes: string[] = [];
+  const data = String(opts.data ?? "").trim();
+  if (data) detalhes.push(`🗓️ ${data}`);
+  if (horarios.length) detalhes.push(`🕒 ${horarios.join(" ou ")}`);
+  const local = String(opts.local ?? "").trim();
+  if (local) detalhes.push(`📍 ${local}`);
+  if (detalhes.length) {
+    linhas.push("");
+    linhas.push(...detalhes);
+  }
+  const link = String(opts.link ?? "").trim();
+  if (link) {
+    linhas.push("");
+    linhas.push(`✨ Garanta sua vaga aqui: ${link}`);
+  }
+  linhas.push("");
+  linhas.push("As vagas são poucas e quem estava na lista está sabendo primeiro 🧡");
+  return linhas.join("\n");
+}
+
 // ===== PORTÃO ÚNICO (idempotência + auditoria + fail-closed) =====
 // deno-lint-ignore no-explicit-any
 type SB = any;

@@ -4087,6 +4087,29 @@
           <p class="admin__form-hint">Opcional. Se vazio, geramos automaticamente a partir do nome.</p>
         </div>
 
+        <!-- ========== AVISO AUTOMÁTICO DE DATA ========== -->
+        <div class="admin__form-field admin__form-field--full"
+             style="border-top:2px solid #cfe3c8;padding-top:18px;margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:1rem;font-weight:700;color:#1a1a1a;">
+            <input type="checkbox" id="by-avisar-interessados" checked style="width:auto;margin:0;transform:scale(1.3);">
+            <span>📲 Avisar a lista quando a data for publicada</span>
+          </label>
+          <p class="admin__form-hint" style="margin:8px 0 0;font-size:.88rem;color:#555;line-height:1.5;">
+            Ligado: no momento em que o campo <strong>Data</strong> deixa de ser
+            "Data em breve" e vira uma data de verdade (ex.: <em>24 de abril</em> ou
+            <em>12/10</em>), todo mundo que se inscreveu na lista de espera DESTE item
+            recebe um WhatsApp com a data, o horário, o local e o link pra garantir a vaga.
+            Sai sozinho, uma vez só por data — reeditar o item depois não reenvia.
+          </p>
+          <label style="display:block;margin-top:14px;">Link de inscrição da mensagem (opcional)</label>
+          <input type="text" id="by-link-inscricao" placeholder="https://elarah.com.br/nome-da-pagina.html">
+          <p class="admin__form-hint">
+            Deixe vazio que a gente monta sozinho: página de checkout se o item for
+            comprável, senão o card na home. Preencha só pra apontar pra uma
+            landing page específica.
+          </p>
+        </div>
+
         <!-- ========== TOGGLE: É COMPRÁVEL? ========== -->
         <div class="admin__form-field admin__form-field--full"
              style="border-top:2px solid #f0a05e;padding-top:18px;margin-top:8px;">

@@ -9175,6 +9175,10 @@
       $('by-ativo').value = item.ativo === false ? 'false' : 'true';
       $('by-slug').value = item.slug || '';
       $('by-edit-id').value = editId;
+      if ($('by-avisar-interessados')) {
+        $('by-avisar-interessados').checked = item.avisarInteressados !== false;
+      }
+      if ($('by-link-inscricao')) $('by-link-inscricao').value = item.linkInscricao || '';
       byRenderHorarios(item.horarios || []);
 
       // Carrega flags + dados de checkout se há experience vinculada.
@@ -9285,6 +9289,8 @@
       $('by-ordem').value = 0;
       $('by-ativo').value = 'true';
       $('by-edit-id').value = '';
+      if ($('by-avisar-interessados')) $('by-avisar-interessados').checked = true;
+      if ($('by-link-inscricao')) $('by-link-inscricao').value = '';
       byRenderHorarios(['']);
       // Reset toggle e seção
       var purchEl2 = $('by-is-purchasable');
@@ -9301,6 +9307,111 @@
     if (!byModal) return;
     byModal.classList.remove('open');
     document.body.style.overflow = '';
+  }
+
+  // ===== Aviso automático "a data saiu" =====
+  // Espelho em JS da regra SQL public.byelarah_data_definida(): o texto livre
+  // do campo Data já é uma data publicada, ou ainda é lista de espera?
+  // Conservadora de propósito — na dúvida devolve false e ninguém é avisado.
+  function byDataPublicada(raw) {
+    var t = String(raw || '').trim().toLowerCase();
+    if (!t) return false;
+    if (/(em breve|a definir|a combinar|a confirmar|sem data|pr[o\u00f3]xima turma|pr[o\u00f3]ximamente|lista de espera)/.test(t)) return false;
+    if (/\d{1,2}\s*[\/-]\s*\d{1,2}/.test(t)) return true;
+    if (/\d{1,2}/.test(t) &&
+        /(janeiro|fevereiro|mar[c\u00e7]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/.test(t)) {
+      return true;
+    }
+    return false;
+  }
+
+  // Chamado depois de salvar um item By Elarah. Se este save foi a
+  // publicação da data, pede pra Edge Function mandar AGORA o WhatsApp pra
+  // quem estava na lista de espera deste item.
+  //
+  // Quem decide QUEM recebe é o banco + a função (trigger enfileira a onda,
+  // portão de WhatsApp valida telefone/idempotência/kill switch). Aqui é só
+  // o atalho pra não esperar o cron — e o retorno pra admin ver o que saiu.
+  async function byDispararAvisoDeData(item, dataAnterior) {
+    if (!item) return;
+    // Mesma regra da trigger: avisa quando a data VIRA publicada, ou quando a
+    // data publicada MUDA (remarcação). Edição de local/horário/preço com a
+    // mesma data não avisa ninguém.
+    var dataAntes = String(dataAnterior || '').trim();
+    var dataAgora = String(item.data || '').trim();
+    if (!byDataPublicada(dataAgora)) return;
+    if (byDataPublicada(dataAntes) && dataAntes === dataAgora) return;
+    if (item.ativo === false) return;
+    if (item.avisarInteressados === false) return;
+
+    var sb = window.supabaseClient;
+    if (!sb || !sb.functions || !sb.functions.invoke) return;
+
+    // A onda é criada pela trigger durante o UPDATE. Se não existir, o SQL
+    // do recurso não foi rodado no banco — a admin precisa saber disso.
+    var onda = null;
+    try {
+      var q = await sb.from('byelarah_date_announcements')
+        .select('id, status, total_alvo')
+        .eq('item_id', item.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (q && q.error) console.warn('[Admin/By Elarah] fila de avisos indisponível', q.error);
+      onda = (q && q.data) || null;
+    } catch (e) {
+      console.warn('[Admin/By Elarah] falha ao ler fila de avisos', e);
+    }
+
+    if (!onda) {
+      alert(
+        'Data publicada \u2705\n\n' +
+        'Mas o aviso automático pra lista de interesse NÃO foi enfileirado. ' +
+        'Falta rodar sql/elarah_byelarah_aviso_data.sql no Supabase.\n\n' +
+        'Enquanto isso dá pra avisar a lista na mão, pelo botão de WhatsApp desta experiência.'
+      );
+      return;
+    }
+    if (onda.status === 'concluido' || onda.status === 'cancelado') return;
+
+    var res = null;
+    try {
+      res = await sb.functions.invoke('byelarah-aviso-data', {
+        body: { announcement_id: onda.id }
+      });
+    } catch (e) {
+      res = { error: e };
+    }
+
+    if (!res || res.error) {
+      console.warn('[Admin/By Elarah] disparo imediato falhou', res && res.error);
+      alert(
+        'Data publicada \u2705\n\n' +
+        'O aviso pra lista de interesse ficou NA FILA — não deu pra enviar agora ' +
+        '(envio de WhatsApp desligado, em modo observação, ou a função não respondeu). ' +
+        'O cron tenta de novo a cada 5 minutos.'
+      );
+      return;
+    }
+
+    var d = res.data || {};
+    var onda0 = (d.ondas && d.ondas[0]) || null;
+    if (!onda0) {
+      alert('Data publicada \u2705\n\nO aviso pra lista de interesse está na fila e sai nos próximos minutos.');
+      return;
+    }
+    var linhas = ['Data publicada \u2705', ''];
+    linhas.push('Aviso enviado pra ' + onda0.enviados + ' de ' + onda0.alvo + ' pessoa(s) da lista.');
+    if (onda0.restantes > 0) {
+      linhas.push('Faltam ' + onda0.restantes + ' — saem automaticamente nos próximos minutos.');
+    }
+    if (onda0.observados > 0) {
+      linhas.push(onda0.observados + ' em modo observação (registrado, nada enviado).');
+    }
+    if (onda0.sem_telefone > 0) {
+      linhas.push(onda0.sem_telefone + ' sem telefone válido — esses precisam de contato manual.');
+    }
+    alert(linhas.join('\n'));
   }
 
   function wireByElarahForm() {
@@ -9366,7 +9477,13 @@
         // participar"). Se desligar, respeita o que o admin escolheu.
         tipo: isPurchasable ? 'participar' : $('by-tipo').value,
         ordem: parseInt($('by-ordem').value, 10) || 0,
-        ativo: $('by-ativo').value === 'true'
+        ativo: $('by-ativo').value === 'true',
+        // Aviso automático pra lista de interesse quando a data sair
+        // (sql/elarah_byelarah_aviso_data.sql).
+        avisarInteressados: $('by-avisar-interessados')
+          ? !!$('by-avisar-interessados').checked
+          : true,
+        linkInscricao: $('by-link-inscricao') ? $('by-link-inscricao').value.trim() : ''
       };
       const editId = $('by-edit-id').value;
       bySubmitBtn.disabled = true;
@@ -9381,10 +9498,14 @@
         //    experience como is_active=false (preserva histórico) e
         //    limpa experience_id no item.
         let existingExpId = null;
+        // Data ANTES de salvar: é o que diz se este save é "a data acabou de
+        // sair" (e portanto se a lista de interesse tem que ser avisada).
+        let dataAnterior = '';
         if (editId) {
           try {
             const cur = await ElarahByElarah.getItemById(editId);
             existingExpId = cur && cur.experienceId ? cur.experienceId : null;
+            dataAnterior = (cur && cur.data) || '';
           } catch (e) {}
         }
 
@@ -9499,6 +9620,16 @@
           savedRecord = await ElarahByElarah.updateItem(editId, data);
         } else {
           savedRecord = await ElarahByElarah.addItem(data);
+        }
+        if (savedRecord) {
+          // A trigger do banco já enfileirou a onda de avisos se a data
+          // acabou de sair. Aqui a gente só pede pra função processar AGORA
+          // (senão sairia no cron, em até 5 min).
+          try {
+            await byDispararAvisoDeData(savedRecord, dataAnterior);
+          } catch (errAviso) {
+            console.warn('[Admin/By Elarah] aviso de data não pôde ser disparado', errAviso);
+          }
         }
         if (!savedRecord) {
           // updateItem/addItem já alertaram dentro do byelarah-data.js.

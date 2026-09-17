@@ -36,6 +36,7 @@ const WA_PATH = pathToFileURL(join(HERE, "whatsapp.ts")).href;
 // ---- Números FICTÍCIOS (nunca de cliente real). CLIENT_A é o "meu número". ----
 const CLIENT_A = "5511999990000"; // destinatário legítimo do fluxo
 const CLIENT_B = "5521988887777"; // TERCEIRO — nunca pode ser tocado
+const CLIENT_C = "5531977776666"; // segunda pessoa da MESMA lista de interesse
 const IMG_A = "https://elarah.com.br/assets/APEROLPINTURA.jpg";
 
 let PASS = 0, FAIL = 0;
@@ -50,10 +51,19 @@ function head(t) { out.push("\n" + t); }
 // Banco FAKE (Supabase). whatsapp_send_log com UNIQUE(dedupe_key) REAL:
 // insert de chave repetida devolve {error:{code:'23505'}} — igual ao Postgres.
 // ============================================================
-function makeSupabase(seedBookings = []) {
+function makeSupabase(seedBookings = [], seedSubmissions = []) {
   const bookings = new Map();
   for (const b of seedBookings) bookings.set(b.id, { ...b });
   const sendLog = new Map(); // dedupe_key -> row
+  // Lista de interesse By Elarah (fluxo "a data saiu").
+  const submissions = new Map();
+  for (const sub of seedSubmissions) submissions.set(sub.id, { ...sub });
+
+  function storeFor(name) {
+    if (name === "bookings") return bookings;
+    if (name === "byelarah_submissions") return submissions;
+    return sendLog;
+  }
 
   function tableApi(name) {
     // Builder encadeável e "thenable" (await funciona direto).
@@ -61,7 +71,11 @@ function makeSupabase(seedBookings = []) {
     let mode = null;   // 'select' | 'insert' | 'update'
     let payload = null;
 
-    const matches = (row) => filters.every(([c, v]) => row[c] === v);
+    const matches = (row) => filters.every(([c, v]) => (
+      v && typeof v === "object" && Array.isArray(v.__in)
+        ? v.__in.includes(row[c])
+        : row[c] === v
+    ));
 
     const api = {
       select() { mode = "select"; return api; },
@@ -76,7 +90,7 @@ function makeSupabase(seedBookings = []) {
       limit() { return api; },
       order() { return api; },
       async maybeSingle() {
-        const store = name === "bookings" ? bookings : sendLog;
+        const store = storeFor(name);
         for (const row of store.values()) if (matches(row)) return { data: { ...row }, error: null };
         return { data: null, error: null };
       },
@@ -95,12 +109,12 @@ function makeSupabase(seedBookings = []) {
             return { data: [payload], error: null };
           }
           if (mode === "update") {
-            const store = name === "bookings" ? bookings : sendLog;
+            const store = storeFor(name);
             for (const [k, row] of store.entries()) if (matches(row)) store.set(k, { ...row, ...payload });
             return { data: null, error: null };
           }
           // select-lista
-          const store = name === "bookings" ? bookings : sendLog;
+          const store = storeFor(name);
           const rows = [...store.values()].filter(matches).map((r) => ({ ...r }));
           return { data: rows, error: null };
         }).then(resolve, reject);
@@ -113,6 +127,7 @@ function makeSupabase(seedBookings = []) {
     from: (name) => tableApi(name),
     _bookings: bookings,
     _sendLog: sendLog,
+    _submissions: submissions,
   };
 }
 
@@ -226,6 +241,89 @@ async function runBroadcast(WA, supabase, campaignId, recipients) {
     if (res.sent) enviados++;
   }
   return enviados;
+}
+
+// ESPELHO do laço do aviso "a data saiu" (byelarah-aviso-data/index.ts):
+// carrega a lista EXATA do item (item_slug), dedup por telefone, gate real com
+// dedupeKey "bydate:"+onda+":"+telefone, e carimba quem recebeu.
+async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldownMs = 12 * 3600_000 } = {}) {
+  const { data: rows } = await supabase
+    .from("byelarah_submissions")
+    .select("id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, aviso_data_announcement_id")
+    .eq("item_slug", onda.item_slug)
+    .limit(2000);
+
+  // Dedup por telefone: quem preencheu 2x recebe UMA mensagem.
+  const byPhone = new Map();
+  let semTelefone = 0;
+  for (const r of rows ?? []) {
+    const phone = WA.normalizePhoneBR(r.telefone);
+    if (!phone) { semTelefone++; continue; }
+    let g = byPhone.get(phone);
+    if (!g) {
+      g = { phone, nome: r.nome ?? "", ids: [], jaRecebeu: false, maxCount: 0, lastSentAt: null };
+      byPhone.set(phone, g);
+    }
+    g.ids.push(r.id);
+    if (!g.nome && r.nome) g.nome = r.nome;
+    if (r.aviso_data_announcement_id === onda.id) g.jaRecebeu = true;
+    if (r.whatsapp_followup_sent_at) {
+      const t = Date.parse(r.whatsapp_followup_sent_at);
+      if (Number.isFinite(t)) g.lastSentAt = Math.max(g.lastSentAt ?? 0, t);
+    }
+    g.maxCount = Math.max(g.maxCount, Number(r.whatsapp_followup_count) || 0);
+  }
+
+  const res = { enviados: 0, pulados: 0, semTelefone, alvo: byPhone.size };
+  for (const g of byPhone.values()) {
+    if (g.jaRecebeu) { res.pulados++; continue; }
+    if (g.lastSentAt !== null && agora - g.lastSentAt < cooldownMs) { res.pulados++; continue; }
+    const mensagem = WA.byelarahDateAnnouncementWhatsAppText({
+      nome: g.nome,
+      experienciaNome: onda.item_nome,
+      data: onda.data_texto,
+      horarios: onda.horarios,
+      local: onda.local,
+      link: onda.link,
+    });
+    const r = await WA.gatedSendWhatsApp(supabase, {
+      kind: "byelarah_date",
+      dedupeKey: "bydate:" + onda.id + ":" + g.phone,
+      identifierOk: true,
+      rawPhone: g.phone,
+      suppressed: false,
+      statusAllowed: true,
+      image: IMG_A,
+      caption: mensagem,
+      message: mensagem,
+    });
+    if (r.sent || r.reason === "duplicate") {
+      res.enviados++;
+      await supabase.from("byelarah_submissions").update({
+        aviso_data_sent_at: new Date(agora).toISOString(),
+        aviso_data_announcement_id: onda.id,
+        whatsapp_followup_sent_at: new Date(agora).toISOString(),
+        whatsapp_followup_count: g.maxCount + 1,
+      }).in("id", g.ids);
+    } else {
+      res.pulados++;
+    }
+  }
+  return res;
+}
+
+function subSeed(over = {}) {
+  return {
+    id: over.id ?? "sub-1",
+    item_slug: "perfumaria-criativa",
+    experiencia: "Oficina de Perfumaria Criativa",
+    nome: "Maria Silva",
+    telefone: CLIENT_A,
+    whatsapp_followup_sent_at: null,
+    whatsapp_followup_count: 0,
+    aviso_data_announcement_id: null,
+    ...over,
+  };
 }
 
 function bookingSeed(over = {}) {
@@ -541,6 +639,86 @@ async function run() {
     check("rollout allowlist-only: meu número envia", rA.sent === true);
     check("rollout allowlist-only: fora da lista NÃO envia", rB.sent === false && rB.reason === "not_in_allowlist", rB.reason);
     check("só 1 envio (o meu)", zr.calls.length === 1 && zr.to(CLIENT_A).length === 1);
+  }
+
+  // ---------- FLUXO: "A DATA SAIU" (By Elarah) ----------
+  head("FLUXO By Elarah — data publicada avisa a lista DAQUELE item, uma vez só");
+  {
+    const WAb = await loadWA(PROD_ENV);
+    const zb = installZapiMock();
+    const onda = {
+      id: "onda-1",
+      item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa",
+      data_texto: "24 de abril",
+      horarios: ["10h às 13h", "14h às 17h"],
+      local: "Rua Nova Orleans, 34 — Brooklin",
+      link: "https://elarah.com.br/index.html#by-elarah-perfumaria-criativa",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-A1" }),                                   // Maria
+      subSeed({ id: "sub-A2", nome: "Maria Silva" }),              // Maria de novo (mesmo tel)
+      subSeed({ id: "sub-C", nome: "Joana", telefone: CLIENT_C }), // outra da MESMA lista
+      // TERCEIRA: lista de OUTRO item — não pode ser tocada.
+      subSeed({ id: "sub-B", item_slug: "ourivesaria-joia", nome: "Bruna", telefone: CLIENT_B }),
+    ]);
+
+    const p1 = await runAvisoDeData(WAb, sb, onda);
+    check("avisou as 2 pessoas da lista do item", p1.enviados === 2, JSON.stringify(p1));
+    check("inscrição duplicada não vira 2 mensagens", zb.to(CLIENT_A).length === 1);
+    check("Z-API chamada exatamente 2x", zb.calls.length === 2);
+    check("TERCEIRA (outro item) NUNCA foi tocada", zb.to(CLIENT_B).length === 0);
+
+    const msg = zb.to(CLIENT_A)[0].text;
+    check("mensagem traz o nome do evento", msg.includes("Oficina de Perfumaria Criativa"));
+    check("mensagem traz a data publicada", msg.includes("24 de abril"));
+    check("mensagem traz os horários", msg.includes("10h às 13h") && msg.includes("14h às 17h"));
+    check("mensagem traz o local", msg.includes("Brooklin"));
+    check("mensagem traz o link de inscrição", msg.includes(onda.link));
+    check("mensagem é pessoal (primeiro nome)", msg.startsWith("Oi, Maria!"), msg.slice(0, 20));
+    check("send_log registrou por onda+telefone", sb._sendLog.has("bydate:onda-1:" + CLIENT_A));
+    check("as 2 linhas da mesma pessoa foram carimbadas",
+      sb._submissions.get("sub-A1").aviso_data_announcement_id === "onda-1" &&
+      sb._submissions.get("sub-A2").aviso_data_announcement_id === "onda-1");
+
+    // Segunda passada (cron logo depois do disparo do painel): ninguém recebe 2x.
+    const p2 = await runAvisoDeData(WAb, sb, onda);
+    check("segunda passada não reenvia", p2.enviados === 0, JSON.stringify(p2));
+    check("Z-API continua com 2 chamadas", zb.calls.length === 2);
+  }
+  {
+    // Cooldown: quem recebeu follow-up manual há 1h NÃO leva o aviso junto.
+    const WAc = await loadWA(PROD_ENV);
+    const zc = installZapiMock();
+    const onda = {
+      id: "onda-2", item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa", data_texto: "24 de abril",
+      horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const agora = Date.now();
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-rec", telefone: CLIENT_A,
+        whatsapp_followup_sent_at: new Date(agora - 3600_000).toISOString(), whatsapp_followup_count: 1 }),
+      subSeed({ id: "sub-old", nome: "Joana", telefone: CLIENT_C,
+        whatsapp_followup_sent_at: new Date(agora - 40 * 3600_000).toISOString(), whatsapp_followup_count: 1 }),
+    ]);
+    const r = await runAvisoDeData(WAc, sb, onda, { agora });
+    check("contatada há 1h é pulada (não recebe 2 mensagens no mesmo dia)", zc.to(CLIENT_A).length === 0);
+    check("contatada há 40h recebe normalmente", zc.to(CLIENT_C).length === 1, JSON.stringify(r));
+  }
+  {
+    // Kill switch vale também pro aviso automático.
+    const WAk = await loadWA({ ...PROD_ENV, WHATSAPP_SENDING_ENABLED: "false" });
+    const zk = installZapiMock();
+    const onda = {
+      id: "onda-3", item_slug: "perfumaria-criativa", item_nome: "Oficina de Perfumaria Criativa",
+      data_texto: "24 de abril", horarios: [], local: "", link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [subSeed({ id: "sub-k" })]);
+    const r = await runAvisoDeData(WAk, sb, onda);
+    check("kill switch → aviso de data não sai", r.enviados === 0 && zk.calls.length === 0);
+    check("kill switch → ninguém é carimbado como avisado",
+      sb._submissions.get("sub-k").aviso_data_announcement_id === null);
   }
 
   // ---------- Relatório ----------
