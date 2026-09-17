@@ -40,6 +40,7 @@ import {
   experienceImageUrl,
   gatedSendWhatsApp,
   normalizePhoneBR,
+  resolverImagemParaTemplate,
   whatsappConfigured,
   whatsappOfficialReady,
   whatsappSendingDisabled,
@@ -342,7 +343,9 @@ serve(async (req) => {
     }
 
     const horarios = horariosArray(onda.horarios);
-    const imagem = experienceImageUrl(onda.imagem);
+    // Uma conferência por ONDA (não por pessoa): tipo e tamanho reais da foto.
+    // Foto que quebraria o envio vira logo aqui, antes do primeiro disparo.
+    const imagem = await resolverImagemParaTemplate(experienceImageUrl(onda.imagem));
 
     let enviados = 0;
     let observados = 0;

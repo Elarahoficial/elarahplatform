@@ -346,6 +346,54 @@ export function imagemAceitaPelaMeta(url: unknown): boolean {
   return /\.(jpe?g|png)$/.test(limpa);
 }
 
+// Limite da Meta pra imagem de cabeçalho.
+const META_IMAGEM_MAX_BYTES = 5 * 1024 * 1024;
+
+// Confere a foto ANTES de usá-la no cabeçalho: um HEAD rápido diz o tipo e o
+// tamanho reais. A extensão sozinha não basta — uma foto de 8 MB tem .jpg e
+// mesmo assim derruba o envio.
+//
+// Critério de decisão:
+//   * resposta clara e RUIM (404, tipo errado, > 5 MB) → logo da Elarah;
+//   * resposta clara e boa                              → a foto do evento;
+//   * SEM resposta (rede/timeout)                       → mantém a foto.
+// Ou seja: só troca por logo com prova de que a foto quebraria o envio —
+// uma instabilidade de rede não faz todo mundo receber o logo.
+export async function resolverImagemParaTemplate(url: unknown): Promise<string> {
+  const logo = experienceImageUrl("");
+  if (!imagemAceitaPelaMeta(url)) return logo;
+  const alvo = String(url);
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch(alvo, { method: "HEAD", signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) {
+      console.warn("[elarah/whatsapp] foto do evento inacessível (" + res.status + ") — usando o logo:", alvo);
+      return logo;
+    }
+    const tipo = (res.headers.get("content-type") ?? "").toLowerCase();
+    if (tipo && !/^image\/(jpeg|jpg|png)/.test(tipo)) {
+      console.warn("[elarah/whatsapp] foto do evento com tipo " + tipo + " (a Meta só aceita jpeg/png) — usando o logo:", alvo);
+      return logo;
+    }
+    const tamanho = Number(res.headers.get("content-length") ?? "0");
+    if (Number.isFinite(tamanho) && tamanho > META_IMAGEM_MAX_BYTES) {
+      console.warn(
+        "[elarah/whatsapp] foto do evento com " + Math.round(tamanho / 1024 / 1024) +
+          " MB (limite da Meta: 5 MB) — usando o logo:",
+        alvo,
+      );
+      return logo;
+    }
+    return alvo;
+  } catch (e) {
+    // Sem resposta: não é prova de que a foto é ruim. Segue com ela.
+    console.warn("[elarah/whatsapp] não deu pra conferir a foto do evento (segue com ela):", alvo, String(e));
+    return alvo;
+  }
+}
+
 export function metaTemplateName(kind: string): string | null {
   const envKey = META_TEMPLATE_ENV[kind];
   const custom = envKey ? (Deno.env.get(envKey) ?? "").trim() : "";

@@ -87,10 +87,13 @@ META_TEMPLATE_INSCRICOES_IMAGEM = true
 A foto sai do cadastro da experiência — a MESMA que aparece no site. Não há
 nada pra montar por evento: cadastrou a foto no admin, ela vai no aviso.
 
-⚠️ **Só JPG e PNG.** A Meta recusa webp, jfif e afins; nesse caso o sistema
-manda o logo da Elarah (a mensagem chega, mas a foto do evento se perde) e
-registra um aviso no log. Rode `sql/elarah_byelarah_fotos_aviso.sql` pra ver
-quais eventos têm foto em formato que não serve. Limite: 5 MB por imagem.
+⚠️ **Só JPG e PNG, até 5 MB.** Antes de disparar, o sistema confere a foto de
+cada onda (um HEAD: tipo e tamanho reais). Formato recusado, foto acima de
+5 MB, link quebrado ou URL que não devolve imagem → manda o logo da Elarah, e
+a mensagem chega do mesmo jeito; fica um aviso no log com a URL pra você
+trocar no cadastro. Só uma instabilidade de rede não troca nada: sem resposta
+não é prova contra a foto. Pra conferir o acervo de uma vez, rode
+`sql/elarah_byelarah_fotos_aviso.sql`.
 
 ⚠️ O secret e o template têm que combinar. Template **com** cabeçalho e secret
 desligado (ou o contrário) faz a Meta recusar **todos** os envios. Se não quiser

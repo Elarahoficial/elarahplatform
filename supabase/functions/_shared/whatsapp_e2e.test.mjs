@@ -183,6 +183,24 @@ function installMetaMock() {
         text: body.text?.body ?? body.image?.caption ?? "",
       });
     }
+    // HEAD na foto (conferência de tipo/tamanho): responde como um servidor
+    // de imagens. `headTipo`/`headTamanho`/`headStatus` deixam o teste
+    // simular foto boa, tipo errado, pesada demais ou inacessível.
+    if ((init?.method ?? "GET").toUpperCase() === "HEAD") {
+      const h = globalThis.__headFake ?? {};
+      return {
+        ok: (h.status ?? 200) < 400,
+        status: h.status ?? 200,
+        headers: {
+          get: (k) => {
+            const key = String(k).toLowerCase();
+            if (key === "content-type") return h.tipo ?? "image/jpeg";
+            if (key === "content-length") return String(h.tamanho ?? 120000);
+            return null;
+          },
+        },
+      };
+    }
     const payload = JSON.stringify({ messages: [{ id: "wamid.FAKE" + calls.length }] });
     return { ok: true, status: 200, json: async () => JSON.parse(payload), text: async () => payload };
   };
@@ -984,6 +1002,38 @@ async function run() {
     await runAvisoDeData(WAoff, makeSupabase([], seed), onda);
     check("sem o secret → NENHUM cabeçalho é enviado",
       !(zOff.calls[0].components || []).some((c) => c.type === "header"));
+  }
+
+  {
+    // CONFERÊNCIA DA FOTO antes de enviar: tipo e tamanho reais.
+    const WAv = await loadWA({ ...META_ENV, META_TEMPLATE_INSCRICOES_IMAGEM: "true" });
+    const FOTO = "https://elarah.com.br/assets/vitral.jpg";
+
+    globalThis.__headFake = { status: 200, tipo: "image/jpeg", tamanho: 250000 };
+    const okUrl = await WAv.resolverImagemParaTemplate(FOTO);
+    check("foto jpeg de 250 KB → usa a foto do evento", okUrl === FOTO, okUrl);
+
+    globalThis.__headFake = { status: 200, tipo: "image/jpeg", tamanho: 8 * 1024 * 1024 };
+    const pesada = await WAv.resolverImagemParaTemplate(FOTO);
+    check("foto de 8 MB (acima do limite da Meta) → cai no logo",
+      /\/assets\/logo\.png$/.test(pesada), pesada);
+
+    globalThis.__headFake = { status: 404 };
+    const sumiu = await WAv.resolverImagemParaTemplate(FOTO);
+    check("foto que sumiu do servidor (404) → cai no logo", /\/assets\/logo\.png$/.test(sumiu), sumiu);
+
+    globalThis.__headFake = { status: 200, tipo: "text/html", tamanho: 1000 };
+    const errada = await WAv.resolverImagemParaTemplate(FOTO);
+    check("URL que não devolve imagem → cai no logo", /\/assets\/logo\.png$/.test(errada), errada);
+
+    // Sem resposta (rede caiu) não é prova contra a foto: segue com ela.
+    const fetchOk = globalThis.fetch;
+    globalThis.fetch = async () => { throw new Error("rede indisponível"); };
+    const semRede = await WAv.resolverImagemParaTemplate(FOTO);
+    check("rede instável → mantém a foto (não degrada todo mundo pro logo)",
+      semRede === FOTO, semRede);
+    globalThis.fetch = fetchOk;
+    globalThis.__headFake = undefined;
   }
 
   // ---------- Relatório ----------
