@@ -79,8 +79,14 @@ link). Como criar o template e ligar as credenciais:
 - **Uma onda por data.** `UNIQUE (item_id, data_texto)`: a mesma data do mesmo
   item só gera uma onda, pra sempre. Desligar e religar o item não reenvia.
 - **Uma mensagem por pessoa.** Dedup por telefone (quem preencheu o formulário
-  duas vezes recebe uma vez) e chave de idempotência `bydate:<onda>:<telefone>`
-  no `whatsapp_send_log` — painel e cron rodando juntos não duplicam.
+  duas vezes recebe uma vez) e chave de idempotência
+  `bydate:<evento>:<data>:<telefone>` no `whatsapp_send_log` — painel e cron
+  rodando juntos não duplicam.
+- **Cadastro duplicado não duplica mensagem.** O catálogo tem o mesmo evento
+  cadastrado mais de uma vez (ex.: uma linha ativa e uma oculta com o mesmo
+  nome). Como a lista casa pelo nome, os dois cadastros miram as mesmas
+  pessoas — por isso a chave de idempotência é por **evento + data**, e não
+  pelo id da onda: abrir os dois manda uma mensagem só.
 - **Lista exata.** Só quem se inscreveu naquele evento — pelo `item_slug`
   (quando existe item legado) e pelo **nome exato** da experiência, que é como o
   formulário da home grava. Igualdade estrita, nunca "contém o nome": senão

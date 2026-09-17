@@ -170,6 +170,23 @@ function horariosArray(raw: unknown): string[] {
   return [];
 }
 
+// Chave de AUDIÊNCIA — evento + data, não o id da onda.
+//
+// POR QUE: o catálogo tem cadastros DUPLICADOS do mesmo evento (a mesma
+// "Pintura de Quadro com Cristal & Aperol Spritz" aparece duas vezes, uma no
+// ar e uma oculta). Como a lista de interesse casa pelo NOME, os dois
+// cadastros miram exatamente as MESMAS pessoas. Com chave por onda, abrir os
+// dois mandaria a mensagem DUAS vezes pra cada uma (o cooldown de 12h só
+// cobriria o mesmo dia). Com chave por evento+data, o segundo disparo bate na
+// trava de idempotência e não sai.
+function chaveEvento(nome: unknown, data: unknown): string {
+  const norm = (t: unknown) =>
+    String(t ?? "")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return norm(nome).slice(0, 48) + ":" + norm(data).slice(0, 24);
+}
+
 interface OndaResult {
   id: string;
   item: string;
@@ -365,9 +382,10 @@ serve(async (req) => {
 
       const res = await gatedSendWhatsApp(supabase, {
         kind,
-        // Chave por ONDA + telefone: a mesma pessoa nunca recebe o mesmo
-        // aviso duas vezes, nem com duas chamadas simultâneas (cron + painel).
-        dedupeKey: "bydate:" + onda.id + ":" + g.phone,
+        // Chave por EVENTO+DATA+telefone (ver chaveEvento): a mesma pessoa
+        // nunca recebe o mesmo aviso duas vezes — nem com duas chamadas
+        // simultâneas (cron + painel), nem por cadastro duplicado do evento.
+        dedupeKey: "bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + g.phone,
         identifierOk: true, // veio de item_slug exato
         rawPhone: g.phone,
         suppressed: false,

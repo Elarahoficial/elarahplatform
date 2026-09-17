@@ -337,7 +337,7 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
       : WA.byelarahDateAnnouncementTemplateParams(dados);
     const r = await WA.gatedSendWhatsApp(supabase, {
       kind,
-      dedupeKey: "bydate:" + onda.id + ":" + g.phone,
+      dedupeKey: "bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + g.phone,
       identifierOk: true,
       rawPhone: g.phone,
       suppressed: false,
@@ -360,6 +360,16 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
     }
   }
   return res;
+}
+
+// ESPELHO de chaveEvento() (byelarah-aviso-data/index.ts): a idempotência é
+// por EVENTO+DATA, não por onda — cadastro duplicado do mesmo evento mira a
+// mesma lista e não pode mandar duas mensagens.
+function chaveEvento(nome, data) {
+  const norm = (t) => String(t ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return norm(nome).slice(0, 48) + ":" + norm(data).slice(0, 24);
 }
 
 function subSeed(over = {}) {
@@ -726,7 +736,8 @@ async function run() {
     check("mensagem traz o local", msg.includes("Brooklin"));
     check("mensagem traz o link de inscrição", msg.includes(onda.link));
     check("mensagem é pessoal (primeiro nome)", msg.startsWith("Oi, Maria!"), msg.slice(0, 20));
-    check("send_log registrou por onda+telefone", sb._sendLog.has("bydate:onda-1:" + CLIENT_A));
+    check("send_log registrou por evento+data+telefone",
+      sb._sendLog.has("bydate:" + chaveEvento(onda.item_nome, onda.data_texto) + ":" + CLIENT_A));
     check("as 2 linhas da mesma pessoa foram carimbadas",
       sb._submissions.get("sub-A1").aviso_data_announcement_id === "onda-1" &&
       sb._submissions.get("sub-A2").aviso_data_announcement_id === "onda-1");
@@ -769,6 +780,28 @@ async function run() {
     check("kill switch → aviso de data não sai", r.enviados === 0 && zk.calls.length === 0);
     check("kill switch → ninguém é carimbado como avisado",
       sb._submissions.get("sub-k").aviso_data_announcement_id === null);
+  }
+
+  {
+    // CADASTRO DUPLICADO: o mesmo evento existe duas vezes no catálogo
+    // (uma ativa, uma oculta que voltou), com ids diferentes. Como a lista
+    // casa pelo NOME, as duas ondas miram AS MESMAS pessoas — e ninguém
+    // pode receber duas vezes.
+    const WAd = await loadWA(PROD_ENV);
+    const zd = installZapiMock();
+    const base = {
+      item_slug: "pintura-aperol", item_nome: "Pintura de Quadro com Cristal & Aperol Spritz",
+      data_texto: "24 de abril", horarios: ["10h às 13h"], local: "Brooklin",
+      link: "https://elarah.com.br/x",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-d1", item_slug: "pintura-aperol", experiencia: base.item_nome }),
+    ]);
+    const r1 = await runAvisoDeData(WAd, sb, { ...base, id: "onda-dup-A" });
+    const r2 = await runAvisoDeData(WAd, sb, { ...base, id: "onda-dup-B" });
+    check("cadastro duplicado: a 1ª onda avisa", r1.enviados === 1, JSON.stringify(r1));
+    check("cadastro duplicado: a 2ª NÃO manda de novo", zd.to(CLIENT_A).length === 1, JSON.stringify(r2));
+    check("cadastro duplicado: Z-API chamada 1x no total", zd.calls.length === 1);
   }
 
   // ---------- FLUXO: PROVEDOR OFICIAL (Meta Cloud API) ----------
