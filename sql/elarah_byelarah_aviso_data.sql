@@ -12,11 +12,17 @@
 --   o horário, o local e o LINK pra se inscrever.
 --
 -- COMO FUNCIONA
---   1. Trigger em byelarah_items detecta o item ABRINDO pra lista. São
+--   1. Trigger detecta o evento ABRINDO pra lista. Vale nas DUAS fontes
+--      da aba By Elarah:
+--        * public.experiences com is_elarah_original = true (onde os
+--          eventos vivem HOJE — lista de espera = cta_mode 'waitlist');
+--        * public.byelarah_items (legado).
+--      São
 --      DOIS sinais, e qualquer um basta:
 --        a) a DATA foi publicada (o campo Data deixa de ser "em breve");
---        b) o item SAIU DA LISTA DE ESPERA — tipo vira "participar" ou o
---           checkout é ligado (experience_id preenchido). Este sinal é
+--        b) o evento SAIU DA LISTA DE ESPERA — em experiences, cta_mode
+--           vai de 'waitlist' pra 'buy'; em byelarah_items, tipo vira
+--           "participar" ou o checkout é ligado. Este sinal é
 --           inequívoco: não depende de interpretar texto livre.
 --      Quando (b) acontece sem data no texto, a data é buscada na
 --      experiência vinculada (event_at da experience ou do próximo slot).
@@ -64,6 +70,14 @@
 -- o aviso não faz sentido (ex.: evento privado, teste interno).
 alter table public.byelarah_items
   add column if not exists avisar_interessados boolean not null default true;
+
+-- Mesma chave em experiences: como os eventos By Elarah vivem lá hoje,
+-- a admin precisa poder desligar o automático num evento específico.
+alter table public.experiences
+  add column if not exists avisar_interessados boolean not null default true;
+
+comment on column public.experiences.avisar_interessados is
+  'Quando true (default), abrir o evento (cta_mode waitlist→buy ou data publicada) dispara o aviso automático pra lista de interesse.';
 
 -- link_inscricao: link que vai na mensagem. Opcional — quando
 -- vazio, a trigger monta sozinha (experiência comprável → página de
@@ -165,7 +179,14 @@ $$;
 -- uma onda antes de ela sair.
 create table if not exists public.byelarah_date_announcements (
   id             uuid primary key default gen_random_uuid(),
+  -- De onde veio o evento. UM dos dois é preenchido (hoje, na prática,
+  -- experience_id — byelarah_items é legado).
   item_id        uuid references public.byelarah_items(id) on delete cascade,
+  experience_id  uuid references public.experiences(id) on delete cascade,
+  -- Identidade ÚNICA do evento pra fins de anti-duplicata: a experiência
+  -- quando existe, senão o item legado. É o que impede que o mesmo evento
+  -- gere duas ondas ao salvar (o painel escreve nas duas tabelas).
+  alvo_id        uuid,
   -- Snapshot do item NO MOMENTO da publicação. Guardado (em vez de
   -- ler o item na hora do envio) pra que uma edição posterior não
   -- mude o texto de uma onda que já começou a sair.
@@ -197,7 +218,13 @@ create table if not exists public.byelarah_date_announcements (
 
 -- Pra quem já rodou uma versão anterior deste arquivo.
 alter table public.byelarah_date_announcements
-  add column if not exists motivo text not null default 'data';
+  add column if not exists motivo text not null default 'data',
+  add column if not exists experience_id uuid references public.experiences(id) on delete cascade,
+  add column if not exists alvo_id uuid;
+
+update public.byelarah_date_announcements
+   set alvo_id = coalesce(experience_id, item_id)
+ where alvo_id is null;
 
 do $$
 begin
@@ -207,9 +234,12 @@ begin
 exception when duplicate_object then null;
 end $$;
 
--- A TRAVA. Mesma data do mesmo item = uma onda só, pra sempre.
-create unique index if not exists byelarah_date_ann_item_data_uidx
-  on public.byelarah_date_announcements (item_id, data_texto);
+-- A TRAVA. Mesma data do mesmo evento = uma onda só, pra sempre. Por
+-- alvo_id (experiência, quando existe) pra que item legado + experiência
+-- vinculada contem como o MESMO evento.
+drop index if exists byelarah_date_ann_item_data_uidx;
+create unique index if not exists byelarah_date_ann_alvo_data_uidx
+  on public.byelarah_date_announcements (alvo_id, data_texto);
 
 create index if not exists byelarah_date_ann_status_idx
   on public.byelarah_date_announcements (status, created_at);
@@ -259,6 +289,7 @@ declare
   data_final       text;
   motivo_final     text;
   link_final       text;
+  alvo             uuid;
   ja_tem_onda      boolean;
 begin
   if new.ativo is not true then
@@ -298,9 +329,13 @@ begin
   -- ANTI-DUPLICATA DE OPERAÇÃO: publicar a data e ligar o checkout em dois
   -- saves seguidos é o fluxo normal do painel. Uma onda nas últimas 48h
   -- (que não foi cancelada) já cobre a lista — não enfileira outra.
+  -- Identidade do evento: a experiência vinculada quando existe (é ela
+  -- que a outra trigger usa), senão o próprio item legado.
+  alvo := coalesce(new.experience_id, new.id);
+
   select exists (
     select 1 from public.byelarah_date_announcements
-     where item_id = new.id
+     where alvo_id = alvo
        and status <> 'cancelado'
        and created_at > now() - interval '48 hours'
   ) into ja_tem_onda;
@@ -344,10 +379,12 @@ begin
   end if;
 
   insert into public.byelarah_date_announcements
-    (item_id, item_slug, item_nome, data_texto, local, horarios, imagem,
-     link, motivo, origem)
+    (item_id, experience_id, alvo_id, item_slug, item_nome, data_texto,
+     local, horarios, imagem, link, motivo, origem)
   values
     (new.id,
+     new.experience_id,
+     alvo,
      btrim(new.slug),
      btrim(new.nome),
      data_final,
@@ -357,7 +394,7 @@ begin
      link_final,
      motivo_final,
      'trigger')
-  on conflict (item_id, data_texto) do nothing;
+  on conflict (alvo_id, data_texto) do nothing;
 
   return new;
 end;
@@ -369,6 +406,138 @@ create trigger byelarah_items_aviso_data
   after update on public.byelarah_items
   for each row
   execute function public.byelarah_enqueue_aviso_data();
+
+-- -------------------------------------------------------------
+-- 6) A trigger em EXPERIENCES (onde os eventos By Elarah vivem hoje)
+-- -------------------------------------------------------------
+-- Mesma lógica da trigger de byelarah_items, adaptada:
+--   * lista de espera  = cta_mode 'waitlist'
+--   * abriu inscrições = cta_mode vira 'buy'
+--   * data real        = campo `data` (texto) ou event_at / próximo slot
+-- Só mexe em experiência marcada como Elarah Original — o catálogo
+-- normal não dispara nada.
+create or replace function public.byelarah_enqueue_aviso_experiencia()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  data_pub_antes   boolean;
+  data_pub_agora   boolean;
+  virou_data       boolean;
+  abriu_inscricoes boolean;
+  virou_ativo      boolean;
+  data_final       text;
+  motivo_final     text;
+  local_final      text;
+  slug_legado      text;
+  ja_tem_onda      boolean;
+begin
+  if new.is_elarah_original is not true then
+    return new;                                   -- catálogo normal: fora
+  end if;
+  if new.is_active is not true then
+    return new;                                   -- oculta não avisa ninguém
+  end if;
+  if coalesce(new.avisar_interessados, true) is not true then
+    return new;                                   -- chave desligada
+  end if;
+  if coalesce(btrim(new.nome), '') = '' then
+    return new;                                   -- sem nome não dá pra casar a lista
+  end if;
+
+  data_pub_antes := public.byelarah_data_definida(old.data);
+  data_pub_agora := public.byelarah_data_definida(new.data);
+
+  -- SINAL A — data publicada (ou remarcada), no texto ou no event_at.
+  virou_data := (data_pub_agora and (
+                  not data_pub_antes or
+                  btrim(coalesce(old.data, '')) is distinct from btrim(coalesce(new.data, ''))
+                ))
+                or (new.event_at is not null and old.event_at is distinct from new.event_at);
+
+  -- SINAL B — SAIU DA LISTA DE ESPERA (o sinal inequívoco).
+  abriu_inscricoes :=
+    (coalesce(new.cta_mode, 'buy') = 'buy' and coalesce(old.cta_mode, 'buy') = 'waitlist')
+    or (new.is_elarah_original is true and old.is_elarah_original is not true
+        and coalesce(new.cta_mode, 'buy') = 'buy');
+
+  -- SINAL C — estava oculta com tudo pronto e acabou de ir pro ar.
+  virou_ativo := (old.is_active is not true) and (data_pub_agora or new.event_at is not null);
+
+  if not (virou_data or abriu_inscricoes or virou_ativo) then
+    return new;
+  end if;
+
+  -- Uma onda por evento a cada 48h (o painel salva experiência e item
+  -- legado em sequência — isso garante UMA mensagem, não duas).
+  select exists (
+    select 1 from public.byelarah_date_announcements
+     where alvo_id = new.id
+       and status <> 'cancelado'
+       and created_at > now() - interval '48 hours'
+  ) into ja_tem_onda;
+  if ja_tem_onda then
+    return new;
+  end if;
+
+  -- QUAL DATA ANUNCIAR: texto livre → event_at → próximo slot com vaga.
+  data_final := case when data_pub_agora then btrim(new.data) else '' end;
+  if data_final = '' then
+    data_final := coalesce(public.byelarah_data_extenso(new.event_at), '');
+  end if;
+  if data_final = '' then
+    select coalesce(public.byelarah_data_extenso(min(s.event_at)), '')
+      into data_final
+      from public.experience_slots s
+     where s.experience_id = new.id
+       and s.is_active is true
+       and s.event_at >= now();
+    data_final := coalesce(data_final, '');
+  end if;
+
+  motivo_final := case when data_final = '' then 'inscricoes' else 'data' end;
+
+  local_final := nullif(
+    btrim(concat_ws(' — ', nullif(btrim(coalesce(new.endereco, '')), ''),
+                           nullif(btrim(coalesce(new.bairro, '')), ''))),
+    '');
+
+  -- Se existir um item legado apontando pra esta experiência, guarda o
+  -- slug dele: a lista de interesse antiga pode estar gravada por slug.
+  select i.slug into slug_legado
+    from public.byelarah_items i
+   where i.experience_id = new.id
+   limit 1;
+
+  insert into public.byelarah_date_announcements
+    (item_id, experience_id, alvo_id, item_slug, item_nome, data_texto,
+     local, horarios, imagem, link, motivo, origem)
+  values
+    (null,
+     new.id,
+     new.id,
+     coalesce(btrim(slug_legado), ''),
+     btrim(new.nome),
+     data_final,
+     coalesce(local_final, ''),
+     to_jsonb(coalesce(new.horarios, '{}'::text[])),
+     coalesce(new.imagem, ''),
+     'https://elarah.com.br/experiencia.html?id=' || new.id::text,
+     motivo_final,
+     'trigger')
+  on conflict (alvo_id, data_texto) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists experiences_byelarah_aviso_data on public.experiences;
+create trigger experiences_byelarah_aviso_data
+  after update on public.experiences
+  for each row
+  execute function public.byelarah_enqueue_aviso_experiencia();
 
 notify pgrst, 'reload schema';
 

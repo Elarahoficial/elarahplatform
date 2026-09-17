@@ -81,8 +81,10 @@ link). Como criar o template e ligar as credenciais:
 - **Uma mensagem por pessoa.** Dedup por telefone (quem preencheu o formulário
   duas vezes recebe uma vez) e chave de idempotência `bydate:<onda>:<telefone>`
   no `whatsapp_send_log` — painel e cron rodando juntos não duplicam.
-- **Lista exata.** Só quem se inscreveu naquele `item_slug`. Nunca "nome
-  parecido".
+- **Lista exata.** Só quem se inscreveu naquele evento — pelo `item_slug`
+  (quando existe item legado) e pelo **nome exato** da experiência, que é como o
+  formulário da home grava. Igualdade estrita, nunca "contém o nome": senão
+  "Vela" pegaria "Vela Aromática" e a mensagem iria pra lista errada.
 - **Cooldown de 12h.** Quem recebeu qualquer follow-up nas últimas 12h não leva o
   aviso junto (evita duas mensagens no mesmo dia se você acabou de disparar na
   mão).
@@ -109,6 +111,10 @@ link). Como criar o template e ligar as credenciais:
 
 ## Passo a passo pra ligar
 
+0. **Confira quem receberia**, sem enviar nada:
+   `sql/elarah_byelarah_aviso_data_previa.sql` (só leitura, roda antes de
+   instalar qualquer coisa). Os eventos marcados como `NA ESPERA` são os que
+   avisariam a lista quando você abrir.
 1. **Rode o SQL** no Supabase (SQL Editor → cola → Run):
    `sql/elarah_byelarah_aviso_data.sql`.
 2. **Deploy da Edge Function**: o workflow `deploy-edge-functions.yml` publica
@@ -133,10 +139,10 @@ select item_nome, data_texto, status, total_alvo, enviados,
   from byelarah_date_announcements
  order by created_at desc limit 20;
 
--- Quem recebeu o aviso de um evento
+-- Quem recebeu o aviso de um evento (pelo nome exato da experiência)
 select nome, telefone, aviso_data_sent_at
   from byelarah_submissions
- where item_slug = 'perfumaria-criativa'
+ where experiencia = 'Oficina de Perfumaria Criativa'
    and aviso_data_announcement_id is not null;
 
 -- Em modo observação: quem RECEBERIA

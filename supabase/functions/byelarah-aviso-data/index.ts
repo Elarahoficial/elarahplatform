@@ -79,6 +79,7 @@ function json(body: unknown, status = 200) {
 interface Announcement {
   id: string;
   item_id: string | null;
+  experience_id: string | null;
   item_slug: string;
   item_nome: string;
   data_texto: string;
@@ -212,7 +213,7 @@ serve(async (req) => {
   let q = supabase
     .from("byelarah_date_announcements")
     .select(
-      "id, item_id, item_slug, item_nome, data_texto, local, horarios, imagem, link, motivo, status, total_alvo, enviados, observados, pulados, started_at, created_at",
+      "id, item_id, experience_id, item_slug, item_nome, data_texto, local, horarios, imagem, link, motivo, status, total_alvo, enviados, observados, pulados, started_at, created_at",
     )
     .in("status", ["pendente", "enviando"])
     .order("created_at", { ascending: true })
@@ -277,15 +278,30 @@ serve(async (req) => {
   for (const onda of vivas) {
     if (orcamento <= 0) break;
 
-    // Lista EXATA deste item: só quem se inscreveu neste slug. Match exato de
-    // propósito — mandar pra lista de outro evento é o pior erro possível.
-    const { data: subsRaw, error: subsErr } = await supabase
-      .from("byelarah_submissions")
-      .select(
-        "id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, aviso_data_announcement_id",
-      )
-      .eq("item_slug", onda.item_slug)
-      .limit(2000);
+    // Lista EXATA deste evento. Duas chaves, ambas de igualdade estrita:
+    //   * item_slug — quando existe um item By Elarah (legado) com slug;
+    //   * experiencia — o NOME exato, que é como o formulário da home grava
+    //     quando o evento é uma experience (o caso de hoje).
+    // Exato de propósito: "contém o nome" misturaria "Vela" com "Vela
+    // Aromática" e mandaria mensagem pra lista errada.
+    const SUB_COLS =
+      "id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, aviso_data_announcement_id";
+    const porId = new Map<string, SubRow>();
+    let subsErr: { message: string } | null = null;
+
+    const slug = String(onda.item_slug ?? "").trim();
+    if (slug) {
+      const { data, error } = await supabase
+        .from("byelarah_submissions").select(SUB_COLS).eq("item_slug", slug).limit(2000);
+      if (error) subsErr = error;
+      for (const r of (data ?? []) as SubRow[]) porId.set(r.id, r);
+    }
+    if (!subsErr && onda.item_nome) {
+      const { data, error } = await supabase
+        .from("byelarah_submissions").select(SUB_COLS).eq("experiencia", onda.item_nome).limit(2000);
+      if (error) subsErr = error;
+      for (const r of (data ?? []) as SubRow[]) porId.set(r.id, r);
+    }
     if (subsErr) {
       console.error("[byelarah-aviso-data] falha ao carregar lista —", onda.id, subsErr.message);
       await supabase.from("byelarah_date_announcements")
@@ -293,22 +309,7 @@ serve(async (req) => {
       continue;
     }
 
-    // Fallback só pra lead ANTIGO, salvo antes do formulário gravar item_slug:
-    // casa pelo nome EXATO da experiência (mesmo critério do painel). Exato de
-    // propósito — "contém o nome" misturaria "Vela" com "Vela Aromática".
-    let subs = (subsRaw ?? []) as SubRow[];
-    if (!subs.length && onda.item_nome) {
-      const { data: legado } = await supabase
-        .from("byelarah_submissions")
-        .select(
-          "id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, aviso_data_announcement_id",
-        )
-        .eq("experiencia", onda.item_nome)
-        .limit(2000);
-      subs = (legado ?? []) as SubRow[];
-    }
-
-    const { groups, semTelefone } = groupByPhone(subs, onda.id);
+    const { groups, semTelefone } = groupByPhone([...porId.values()], onda.id);
     const pendentes = groups.filter((g) => !g.jaRecebeuEstaOnda);
 
     // Marca a onda como "enviando" (e fixa o alvo na primeira passada).
@@ -375,7 +376,7 @@ serve(async (req) => {
         caption: mensagem,
         message: mensagem,
         template: { params: templateParams },
-        experienciaId: null,
+        experienciaId: onda.experience_id ?? null,
         createdBy: adminId,
       });
 

@@ -7753,6 +7753,14 @@
 
       const editId = document.getElementById('exp-edit-id').value;
 
+      // Estado ANTES de salvar — é o que diz se este save ABRIU o evento
+      // (tirou da lista de espera / publicou a data) e portanto se a lista
+      // de interesse tem que ser avisada. Mesmos sinais da trigger.
+      let expAntes = null;
+      if (editId && window.ElarahData && ElarahData.getExperienceById) {
+        try { expAntes = await ElarahData.getExperienceById(editId); } catch (e) {}
+      }
+
       submitBtn.disabled = true;
       let saved = null;
       let caughtErr = null;
@@ -7784,6 +7792,15 @@
           'ou falha de rede com o Supabase.' + extra
         );
         return;
+      }
+
+      // Aviso automático: se este save abriu o evento pra lista de
+      // interesse, a trigger já enfileirou a onda — aqui só pedimos pra
+      // sair AGORA (senão sairia no cron, em até 5 min).
+      try {
+        await byDispararAvisoExperiencia(saved, expAntes);
+      } catch (errAviso) {
+        console.warn('[Admin/Experiências] aviso de data não pôde ser disparado', errAviso);
       }
 
       // Salva slots (vagas por horário) na tabela experience_slots.
@@ -9358,6 +9375,45 @@
       (byDataPublicada(dataAgora) || item.tipo === 'participar');
     if (!virouData && !abriuInscricoes && !virouAtivo) return;
 
+    var titulo = virouData ? 'Data publicada \u2705' : 'Inscrições abertas \u2705';
+
+    // alvo_id: a experiência vinculada quando existe (é a identidade que a
+    // trigger usa), senão o próprio item legado.
+    await byAvisoProcessarOnda(item.experienceId || item.id, titulo);
+  }
+
+  // Versão do disparo imediato pras EXPERIÊNCIAS marcadas como Elarah
+  // Original — que é onde os eventos By Elarah vivem hoje. Mesmos sinais
+  // da trigger de experiences: saiu da lista de espera (cta_mode
+  // waitlist → buy), data publicada / event_at definido, ou voltou pro ar.
+  async function byDispararAvisoExperiencia(exp, antes) {
+    if (!exp || !exp.id) return;
+    if (!antes) return;   // experiência NOVA: não há lista de espera pra avisar
+    if (exp.isElarahOriginal !== true) return;
+    if (exp.isActive === false) return;
+
+    var prev = antes;
+    var dataAntes = String(prev.data || '').trim();
+    var dataAgora = String(exp.data || '').trim();
+    var virouData = (byDataPublicada(dataAgora) &&
+        (!byDataPublicada(dataAntes) || dataAntes !== dataAgora)) ||
+      (!!exp.eventAt && String(prev.eventAt || '') !== String(exp.eventAt || ''));
+    var abriuInscricoes =
+      (exp.ctaMode !== 'waitlist' && prev.ctaMode === 'waitlist') ||
+      (prev.isElarahOriginal !== true && exp.ctaMode !== 'waitlist');
+    var virouAtivo = prev.isActive === false &&
+      (byDataPublicada(dataAgora) || !!exp.eventAt);
+    if (!virouData && !abriuInscricoes && !virouAtivo) return;
+
+    var titulo = virouData ? 'Data publicada \u2705' : 'Inscrições abertas \u2705';
+    await byAvisoProcessarOnda(exp.id, titulo);
+  }
+
+  // Compartilhado pelos dois caminhos (item legado e experiência): acha a
+  // onda que a trigger acabou de enfileirar e manda a função processar
+  // AGORA, em vez de esperar o cron.
+  async function byAvisoProcessarOnda(alvoId, titulo) {
+    if (!alvoId) return;
     var sb = window.supabaseClient;
     if (!sb || !sb.functions || !sb.functions.invoke) return;
 
@@ -9367,7 +9423,7 @@
     try {
       var q = await sb.from('byelarah_date_announcements')
         .select('id, status, total_alvo')
-        .eq('item_id', item.id)
+        .eq('alvo_id', alvoId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -9376,8 +9432,6 @@
     } catch (e) {
       console.warn('[Admin/By Elarah] falha ao ler fila de avisos', e);
     }
-
-    var titulo = virouData ? 'Data publicada \u2705' : 'Inscrições abertas \u2705';
 
     if (!onda) {
       alert(
