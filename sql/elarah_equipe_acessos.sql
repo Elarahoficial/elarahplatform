@@ -153,8 +153,7 @@ declare
     'byelarah',           -- By Elarah
     'cotacao',            -- Cotação
     'locais',             -- Locais p/ eventos
-    'partners',           -- Parceiros
-    'interesses'
+    'partners'            -- Parceiros
   ];
 
   -- Perfil 2 — Comercial.
