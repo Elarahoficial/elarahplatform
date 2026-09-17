@@ -67,7 +67,7 @@ cover = f'''
           <span class="chip">No <b>local de vocês</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("perfumes11.jpg", "Turma numa oficina de perfumaria natural", "center 40%")}</div>
+      <div class="cover-photo">{img("perfumariamaes.jpg", "Ingredientes naturais de uma experiência de perfumaria", "center 50%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Criando seu Perfume Natural")}
@@ -98,12 +98,12 @@ vibe = f'''
   <section class="slide">
 {head_simple("A vibe")}
     <span class="eyebrow orange">◆ O que vocês vão sentir</span>
-    <h2>Aromas que viram <em>memória</em></h2>
-    <p class="lead">Uma manhã leve e perfumada: ingredientes naturais, muita descoberta e a sensação boa de criar algo tão pessoal quanto um perfume. Entre risadas e cheirinhos, uma experiência de dar orgulho. 🌸</p>
+    <h2>Entre amigas e <em>aromas</em></h2>
+    <p class="lead">Mais que uma oficina: uma manhã de amigas reunidas, muita risada e a alegria de criar algo tão pessoal quanto um perfume. É leve, sensorial e rende as melhores fotos — daquelas que viram memória. 🌸</p>
     <div class="vibe">
-      <figure>{img("perfumariamaes.jpg", "Ingredientes naturais e flores para o perfume", "center 50%")}<figcaption>Ingredientes naturais</figcaption></figure>
-      <figure>{img("perfumes10.jpg", "Notas olfativas e frascos para montar o blend", "center 50%")}<figcaption>Monte seu blend</figcaption></figure>
-      <figure>{img("perfumariadecor.jpg", "Frascos de perfume prontos para levar", "center 50%")}<figcaption>Leva pra casa</figcaption></figure>
+      <figure>{img("capa-croche-cafe.jpg", "Amigas rindo numa experiência criativa", "center 28%")}<figcaption>Risada garantida</figcaption></figure>
+      <figure>{img("macaron-risada.jpg", "Amigas se divertindo juntas", "center 30%")}<figcaption>Pura diversão</figcaption></figure>
+      <figure>{img("aniversario-mesa-real.jpg", "Amigas reunidas numa experiência criativa", "center 50%")}<figcaption>Entre amigas</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
   </section>'''
