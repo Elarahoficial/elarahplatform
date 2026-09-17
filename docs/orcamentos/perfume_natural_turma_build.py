@@ -102,7 +102,7 @@ vibe = f'''
     <p class="lead">Mais que uma oficina: uma manhã de amigas reunidas, muita risada e a alegria de criar algo tão pessoal quanto um perfume. É leve, sensorial e rende as melhores fotos — daquelas que viram memória. 🌸</p>
     <div class="vibe">
       <figure>{img("capa-croche-cafe.jpg", "Amigas rindo numa experiência criativa", "center 28%")}<figcaption>Risada garantida</figcaption></figure>
-      <figure>{img("macaron-risada.jpg", "Amigas se divertindo juntas", "center 30%")}<figcaption>Pura diversão</figcaption></figure>
+      <figure>{img("hidrateimeninas.jpg", "Amigas se divertindo numa experiência", "center 30%")}<figcaption>Pura diversão</figcaption></figure>
       <figure>{img("aniversario-mesa-real.jpg", "Amigas reunidas numa experiência criativa", "center 50%")}<figcaption>Entre amigas</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
