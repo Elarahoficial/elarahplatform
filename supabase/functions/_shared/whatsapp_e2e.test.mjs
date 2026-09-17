@@ -303,7 +303,10 @@ async function runBroadcast(WA, supabase, campaignId, recipients) {
 // ESPELHO do laço do aviso "a data saiu" (byelarah-aviso-data/index.ts):
 // carrega a lista EXATA do item (item_slug), dedup por telefone, gate real com
 // dedupeKey "bydate:"+onda+":"+telefone, e carimba quem recebeu.
-async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldownMs = 12 * 3600_000 } = {}) {
+async function runAvisoDeData(
+  WA, supabase, onda,
+  { agora = Date.now(), cooldownMs = 12 * 3600_000, avisadosRecentes = new Set() } = {},
+) {
   const { data: rows } = await supabase
     .from("byelarah_submissions")
     .select("id, nome, telefone, whatsapp_followup_sent_at, whatsapp_followup_count, aviso_data_announcement_id")
@@ -335,6 +338,8 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
   const fotoDoEvento = onda.imagem || IMG_A;
   for (const g of byPhone.values()) {
     if (g.jaRecebeu) { res.pulados++; continue; }
+    // UM AVISO POR PESSOA NA JANELA (espelha COOLDOWN_AVISO_DIAS).
+    if (avisadosRecentes.has(g.phone)) { res.puladosRegra = (res.puladosRegra ?? 0) + 1; continue; }
     if (g.lastSentAt !== null && agora - g.lastSentAt < cooldownMs) { res.pulados++; continue; }
     const dados = {
       nome: g.nome,
@@ -362,6 +367,7 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
     });
     if (r.sent || r.reason === "duplicate") {
       res.enviados++;
+      avisadosRecentes.add(g.phone);   // protege as ondas seguintes da rodada
       await supabase.from("byelarah_submissions").update({
         aviso_data_sent_at: new Date(agora).toISOString(),
         aviso_data_announcement_id: onda.id,
@@ -1034,6 +1040,40 @@ async function run() {
       semRede === FOTO, semRede);
     globalThis.fetch = fetchOk;
     globalThis.__headFake = undefined;
+  }
+
+  {
+    // UM AVISO POR PESSOA: a mesma pessoa está na lista de TRÊS eventos que
+    // abrem no mesmo dia. Sem a regra ela receberia 3 mensagens.
+    const WAr = await loadWA(PROD_ENV);
+    const zr = installZapiMock();
+    const janela = new Set();
+    const eventos = [
+      { id: "o-1", nome: "Crie seu Amuleto em Vitral", slug: "vitral" },
+      { id: "o-2", nome: "Pintura de Quadro com Cristal & Aperol Spritz", slug: "aperol" },
+      { id: "o-3", nome: "Pintura de Abajur & Afetos", slug: "abajur" },
+    ];
+    let enviadosTotal = 0;
+    for (const ev of eventos) {
+      const sb = makeSupabase([], [
+        // A MESMA pessoa (mesmo telefone) inscrita nos três.
+        subSeed({ id: "s-" + ev.id, item_slug: ev.slug, experiencia: ev.nome, telefone: CLIENT_A }),
+        // E uma pessoa diferente, só no primeiro evento.
+        ...(ev.id === "o-1"
+          ? [subSeed({ id: "s-outra", item_slug: ev.slug, experiencia: ev.nome, nome: "Joana", telefone: CLIENT_C })]
+          : []),
+      ]);
+      const r = await runAvisoDeData(WAr, sb, {
+        id: ev.id, item_slug: ev.slug, item_nome: ev.nome, data_texto: "24 de abril",
+        horarios: [], local: "", link: "https://elarah.com.br/x",
+      }, { avisadosRecentes: janela });
+      enviadosTotal += r.enviados;
+    }
+    check("3 eventos abertos no mesmo dia → a pessoa recebe 1 mensagem só",
+      zr.to(CLIENT_A).length === 1, "recebeu " + zr.to(CLIENT_A).length);
+    check("quem estava em uma lista só recebe normalmente", zr.to(CLIENT_C).length === 1);
+    check("no total: 2 mensagens (uma por pessoa), não 4", zr.calls.length === 2);
+    check("a contagem reflete isso", enviadosTotal === 2, String(enviadosTotal));
   }
 
   // ---------- Relatório ----------

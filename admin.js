@@ -9478,6 +9478,12 @@
     if (onda0.restantes > 0) {
       linhas.push('Faltam ' + onda0.restantes + ' — saem automaticamente nos próximos minutos.');
     }
+    if (onda0.pulados_regra > 0) {
+      linhas.push(
+        onda0.pulados_regra + ' não receberam agora: já foram avisadas de outro evento ' +
+        'nos últimos ' + (onda0.cooldown_dias || 7) + ' dias (regra de uma mensagem por pessoa).'
+      );
+    }
     if (onda0.observados > 0) {
       linhas.push(onda0.observados + ' em modo observação (registrado, nada enviado).');
     }

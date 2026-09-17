@@ -96,6 +96,12 @@ link). Como criar o template e ligar as credenciais:
   (quando existe item legado) e pelo **nome exato** da experiência, que é como o
   formulário da home grava. Igualdade estrita, nunca "contém o nome": senão
   "Vela" pegaria "Vela Aromática" e a mensagem iria pra lista errada.
+- **Um aviso por pessoa a cada 7 dias.** As listas se sobrepõem muito (a mesma
+  pessoa se inscreve em vários eventos). Abrir 10 eventos numa semana manda
+  **uma** mensagem pra quem está nas 10 listas, não dez. É janela e não "uma
+  vez pra sempre" de propósito: quem foi avisada do evento de abril precisa
+  poder ser avisada do de agosto — foi pra isso que ela se inscreveu. Ajuste
+  com o secret `BYELARAH_AVISO_COOLDOWN_DIAS` (0 desliga a regra).
 - **Cooldown de 12h.** Quem recebeu qualquer follow-up nas últimas 12h não leva o
   aviso junto (evita duas mensagens no mesmo dia se você acabou de disparar na
   mão).
@@ -106,6 +112,21 @@ link). Como criar o template e ligar as credenciais:
   — uma data velha nunca vira disparo surpresa quando o envio for religado.
 - **Chave por item.** O checkbox **📲 Avisar a lista quando a data for
   publicada** desliga o automático num item específico.
+
+## Quem NÃO recebe (e por quê)
+
+Ao acompanhar uma onda, a diferença entre `total_alvo` e `enviados` cai nestes
+casos — todos de propósito:
+
+| Motivo | O que acontece |
+|---|---|
+| Já recebeu aviso de outro evento nos últimos 7 dias | pulada; volta a poder receber quando a janela passar |
+| Sem telefone válido | pulada (precisa de contato manual) |
+| Recebeu qualquer follow-up nas últimas 12h | pulada nesta passada, tentada de novo depois |
+| Já recebeu ESTA onda | pulada (é a idempotência) |
+
+O painel mostra esses números no fim do disparo, e a fila guarda em
+`byelarah_date_announcements` (`enviados`, `pulados`, `total_alvo`).
 
 ## Peças no código
 

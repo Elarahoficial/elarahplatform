@@ -67,6 +67,23 @@ const EXPIRA_HORAS = 72;
 // trigger mandou de novo" — o portão sozinho não pega isso (chaves diferentes).
 const COOLDOWN_MS = 12 * 3600_000;
 
+// UMA PESSOA, UM AVISO POR JANELA.
+//
+// As listas se sobrepõem muito (a mesma pessoa se inscreve em vários eventos).
+// Sem esta regra, abrir 10 eventos numa semana mandaria 10 mensagens pra quem
+// está nas 10 listas — e aí vira spam, denúncia, e a Meta derruba a qualidade
+// do número.
+//
+// É janela e não "1x pra sempre" de propósito: quem foi avisada do evento de
+// abril PRECISA poder ser avisada do de agosto — foi pra isso que ela se
+// inscreveu. 7 dias mata a rajada sem cegar o futuro. Ajustável por secret.
+const COOLDOWN_AVISO_DIAS = (() => {
+  const raw = (Deno.env.get("BYELARAH_AVISO_COOLDOWN_DIAS") ?? "").trim();
+  if (raw === "") return 7;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : 7;
+})();
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function json(body: unknown, status = 200) {
@@ -196,6 +213,8 @@ interface OndaResult {
   enviados: number;
   observados: number;
   pulados: number;
+  pulados_regra: number;   // já recebeu aviso de outro evento na janela
+  cooldown_dias: number;
   restantes: number;
   sem_telefone: number;
   abort_reason?: string | null;
@@ -293,6 +312,26 @@ serve(async (req) => {
     }, 423);
   }
 
+  // QUEM JÁ FOI AVISADA NA JANELA (uma consulta por chamada, não por onda).
+  // Telefone normalizado, pra casar a MESMA pessoa entre listas diferentes.
+  const avisadosRecentes = new Set<string>();
+  if (COOLDOWN_AVISO_DIAS > 0) {
+    const corte = new Date(agora - COOLDOWN_AVISO_DIAS * 24 * 3600_000).toISOString();
+    const { data: recentes } = await supabase
+      .from("byelarah_submissions")
+      .select("telefone, aviso_data_sent_at")
+      .not("aviso_data_sent_at", "is", null)
+      .gte("aviso_data_sent_at", corte)
+      .limit(5000);
+    for (const r of (recentes ?? []) as { telefone: string | null; aviso_data_sent_at: string | null }[]) {
+      // Refiltra por data aqui também: não depende só do filtro do servidor.
+      const t = Date.parse(r.aviso_data_sent_at ?? "");
+      if (!Number.isFinite(t) || t < agora - COOLDOWN_AVISO_DIAS * 24 * 3600_000) continue;
+      const phone = normalizePhoneBR(r.telefone);
+      if (phone) avisadosRecentes.add(phone);
+    }
+  }
+
   let orcamento = MAX_ENVIOS_POR_RUN; // envios reais restantes nesta chamada
   const resultados: OndaResult[] = [];
 
@@ -350,11 +389,24 @@ serve(async (req) => {
     let enviados = 0;
     let observados = 0;
     let pulados = 0;
+    let puladosRegra = 0;
     let abortReason: string | null = null;
     const lote = pendentes.slice(0, orcamento);
 
     for (let i = 0; i < lote.length; i++) {
       const g = lote[i];
+
+      // UM AVISO POR PESSOA NA JANELA (ver COOLDOWN_AVISO_DIAS). Carimba como
+      // processada nesta onda — sem data de envio, porque ela NÃO recebeu —
+      // pra onda fechar e o painel mostrar o número certo. Ela volta a poder
+      // ser avisada quando a janela passar, no próximo evento.
+      if (avisadosRecentes.has(g.phone)) {
+        puladosRegra++;
+        await supabase.from("byelarah_submissions")
+          .update({ aviso_data_announcement_id: onda.id })
+          .in("id", g.ids);
+        continue;
+      }
 
       // Cooldown anti-mensagem-dupla (ver COOLDOWN_MS). Não carimba: a pessoa
       // segue pendente e entra na próxima passada, quando a janela fechar.
@@ -424,6 +476,9 @@ serve(async (req) => {
           abortReason = "tracking_failed";
           break;
         }
+        // Entra na janela AGORA: se a próxima onda desta mesma rodada tiver a
+        // mesma pessoa, ela não recebe duas mensagens seguidas.
+        avisadosRecentes.add(g.phone);
         if (res.sent) orcamento--;
       } else if (res.reason === "observed" || res.reason === "dry_run") {
         // Modo observação / dry-run: registrou quem receberia, não enviou e
@@ -442,8 +497,9 @@ serve(async (req) => {
       if (orcamento <= 0) break;
     }
 
-    // Quem ainda falta receber DE VERDADE nesta onda.
-    const restantes = Math.max(0, pendentes.length - enviados);
+    // Quem ainda falta receber DE VERDADE nesta onda. Pulada pela regra de
+    // "um aviso por pessoa" conta como resolvida: não vai receber depois.
+    const restantes = Math.max(0, pendentes.length - enviados - puladosRegra);
     const concluida = restantes === 0 && !abortReason;
 
     // Contadores ABSOLUTOS, não acumulados: a lista inteira é relida a cada
@@ -456,7 +512,7 @@ serve(async (req) => {
       total_alvo: groups.length,
       enviados: enviadosTotal,
       observados,
-      pulados: pulados + semTelefone,
+      pulados: pulados + puladosRegra + semTelefone,
       erro: abortReason,
       processed_at: concluida ? new Date().toISOString() : null,
     }).eq("id", onda.id);
@@ -470,6 +526,8 @@ serve(async (req) => {
       enviados: enviadosTotal,
       observados,
       pulados,
+      pulados_regra: puladosRegra,
+      cooldown_dias: COOLDOWN_AVISO_DIAS,
       restantes,
       sem_telefone: semTelefone,
       abort_reason: abortReason,
