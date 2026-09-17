@@ -1366,11 +1366,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
           existing.className = 'originals__ver-mais';
           inner.appendChild(existing);
         }
-        // No carrossel as N experiências já estão todas ali — o botão
-        // vira um convite pra página dedicada, não um "ver o resto".
-        var verMaisLabel = carousel
-          ? 'Ver as ' + totalCount + ' experiências By Elarah numa página só'
-          : 'Ver todas as ' + totalCount + ' experiências By Elarah';
+        // O título "Elarah Originals" está logo acima, então repetir a
+        // marca aqui não acrescentaria nada — o número sim: avisa que
+        // tem mais do que os 3 cards que aparecem sem arrastar.
+        var verMaisLabel = 'Ver todas as ' + totalCount + ' experiências';
         existing.innerHTML =
           '<a href="' + esc(verMaisHref) + '" class="originals__ver-mais-btn">' +
             verMaisLabel +
