@@ -89,7 +89,7 @@ experiencia = f'''
     <h2>Criar, brindar e <em>relaxar</em></h2>
     <p class="lead">Com um artista ao lado, a turma aprende a modelar ou pintar a própria peça de cerâmica, sem pressa e com a taça sempre por perto. É criativo, relaxante e cheio de conversa boa — do primeiro gole ao último detalhe. 🍷</p>
     <div class="bfeat">
-      <div class="bphoto">{img("atelieleroy-2.jpg", "Grupo de amigas numa experiência de cerâmica", "center 50%")}</div>
+      <div class="bphoto">{img("ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}</div>
       <div class="bbody">
         <span class="btag">Como acontece</span>
         <h3>Da taça à peça pronta</h3>
@@ -110,8 +110,8 @@ vibe = f'''
     <h2>Arte, vinho e <em>afeto</em></h2>
     <p class="lead">Um encontro leve e caloroso: cores, argila, taças cheias e muita risada. A tarde perfeita pra comemorar entre amigas — e ainda levar pra casa uma peça feita à mão. 🍷</p>
     <div class="vibe">
-      <figure>{img("atelieleroy-1.jpg", "Peça de cerâmica pintada à mão", "center 50%")}<figcaption>Peças autorais</figcaption></figure>
-      <figure>{img("ceramica-meninas.jpg", "Amigas criando cerâmica juntas", "center 30%")}<figcaption>Juntas, sem pressa</figcaption></figure>
+      <figure>{img("ceramicacool.jpg", "Peças de cerâmica autorais", "center 50%")}<figcaption>Peças autorais</figcaption></figure>
+      <figure>{img("pinturapratoceramica.jpg", "Prato de cerâmica pintado à mão", "center 50%")}<figcaption>Pintura à mão</figcaption></figure>
       <figure>{img("vinhotintos.jpg", "Vinhos para o brinde", "center 50%")}<figcaption>Vinho &amp; brinde</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
@@ -122,11 +122,11 @@ espacos = f'''
 {head_simple("Os espaços")}
     <span class="eyebrow orange">◆ Duas opções de espaço</span>
     <h2>Onde <em>celebrar</em></h2>
-    <p class="lead">Escolham a que mais combina com vocês — as duas ficam pertinho da Vila Mariana e Moema. 🍷</p>
+    <p class="lead">Escolham a que mais combina com vocês — as duas ficam pertinho da Vila Mariana e Moema, e temos outras opções também, é só pedir. 🍷</p>
     <div class="vgrid">
       <div class="vcard hl">
         <div class="vph">
-          {img("atelieleroy-2.jpg", "Netas Ateliê — cerâmica com vinho", "center 50%")}
+          {img("netas-atelie.jpg", "Netas Ateliê — grupo na experiência de cerâmica", "center 40%")}
           <div class="vpr"><b>R$ 299</b><small>por pessoa</small></div>
         </div>
         <div class="vb">
@@ -142,26 +142,26 @@ espacos = f'''
       </div>
       <div class="vcard">
         <div class="vph">
-          {img("sowcafe.jpg", "Sow Café — cerâmica com café da tarde", "center 50%")}
-          <div class="vpr" style="padding:8px 13px"><b style="font-size:15px">Sob consulta</b><small>café da tarde</small></div>
+          {img("sowcafe.jpg", "Sow Café — cerâmica com opção de café da tarde", "center 50%")}
+          <div class="vpr"><b>R$ 299</b><small>por pessoa</small></div>
         </div>
         <div class="vb">
-          <span class="vt">Cerâmica + café da tarde</span>
+          <span class="vt">Cerâmica</span>
           <h3>Sow Café</h3>
-          <p class="vaddr">Café da tarde incluso ☕</p>
+          <p class="vaddr">Café da tarde opcional, à parte ☕</p>
           <ul>
             <li>Cerâmica guiada por artista</li>
-            <li>Café da tarde incluso no valor</li>
-            <li>Valor a confirmar pra vocês</li>
+            <li>Café da tarde como opção à parte</li>
+            <li>Turma de 8 a 10 pessoas</li>
           </ul>
         </div>
       </div>
     </div>
     <div class="splitbox">
       <span class="sv">R$ 342</span>
-      <span class="sl">É quanto fica <b>por pessoa dividindo entre as 7</b> que presenteiam, na opção Netas Ateliê (grupo de 8 · total R$ 2.392 ÷ 7). O valor final se ajusta ao número de participantes. 🤍</span>
+      <span class="sl">É quanto fica <b>por pessoa dividindo entre as 7</b> que presenteiam (grupo de 8 · total R$ 2.392 ÷ 7). O valor final se ajusta ao número de participantes. 🤍</span>
     </div>
-    <p class="fineprint">Netas Ateliê: R$ 299 por pessoa, cerâmica guiada, grupo levando o próprio vinho, turma de 8 a 10. Sow Café: cerâmica + café da tarde, valor a confirmar. Aniversário em 27/09, região Vila Mariana / Moema. Data e horário sujeitos à disponibilidade de agenda.</p>
+    <p class="fineprint">R$ 299 por pessoa, cerâmica guiada por artista, turma de 8 a 10. No Netas Ateliê vocês levam o próprio vinho; no Sow Café o café da tarde é uma opção à parte. Aniversário em 27/09, região Vila Mariana / Moema. Data e horário sujeitos à disponibilidade de agenda.</p>
     {foot("Os espaços")}
   </section>'''
 
