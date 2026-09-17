@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 130;
+      var EXPECTED = 131;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -4603,7 +4603,8 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
-<script src="admin.js?v=231"></script>
+<script src="admin-acessos.js?v=1"></script>
+<script src="admin.js?v=232"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
