@@ -46,6 +46,7 @@ import { authorizeAdmin } from "../_shared/social_db.ts";
 import {
   gatedSendWhatsApp,
   normalizePhoneBR,
+  whatsappIsOfficial,
   sendWhatsAppText,
   whatsappAllowlistHas,
   whatsappConfigured,
@@ -350,6 +351,13 @@ serve(async (req) => {
       experiencia,
       item_slug: itemSlug,
       amostra,
+      // Na Cloud API oficial, texto livre só é ENTREGUE a quem escreveu pra
+      // Elarah nas últimas 24h; o resto exige template aprovado. O painel
+      // mostra isso na confirmação pra ninguém disparar achando que vai
+      // chegar em todo mundo.
+      aviso_provedor: whatsappIsOfficial()
+        ? "Provedor OFICIAL (Meta): mensagem de texto livre só chega a quem falou com a Elarah nas últimas 24h. Pra lista fria, use o aviso automático de data (template aprovado) ou aprove um template desta campanha."
+        : null,
     });
   }
 

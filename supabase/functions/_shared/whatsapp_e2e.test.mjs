@@ -162,6 +162,45 @@ function installZapiMock() {
   };
 }
 
+// FRONTEIRA da Cloud API OFICIAL mockada. Registra o que a Meta receberia:
+// telefone, tipo (text/image/template), nome do template e parâmetros.
+function installMetaMock() {
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    const body = init && init.body ? JSON.parse(init.body) : {};
+    if (u.includes("/messages")) {
+      const bodyComp = (body.template?.components ?? []).find((c) => c.type === "body");
+      calls.push({
+        url: u,
+        auth: (init?.headers ?? {})["Authorization"] ?? "",
+        phone: body.to,
+        type: body.type,
+        template: body.template?.name ?? null,
+        lang: body.template?.language?.code ?? null,
+        params: (bodyComp?.parameters ?? []).map((p) => p.text),
+        components: body.template?.components ?? [],
+        text: body.text?.body ?? body.image?.caption ?? "",
+      });
+    }
+    const payload = JSON.stringify({ messages: [{ id: "wamid.FAKE" + calls.length }] });
+    return { ok: true, status: 200, json: async () => JSON.parse(payload), text: async () => payload };
+  };
+  return {
+    calls,
+    to(phone) { return calls.filter((c) => c.phone === phone); },
+  };
+}
+
+// Env do provedor OFICIAL: sem credencial da Z-API, só as da Meta.
+const META_ENV = {
+  WHATSAPP_SENDING_ENABLED: "true",
+  WHATSAPP_ENV: "production",
+  WHATSAPP_ROLLOUT_PERCENT: "100",
+  META_WHATSAPP_TOKEN: "TOKEN_FAKE",
+  META_WHATSAPP_PHONE_NUMBER_ID: "123456789",
+};
+
 // Carrega whatsapp.ts REAL com um env específico (re-avalia via query string).
 let ENV = {};
 globalThis.Deno = { env: { get: (k) => (ENV[k] ?? "") } };
@@ -278,14 +317,16 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
   for (const g of byPhone.values()) {
     if (g.jaRecebeu) { res.pulados++; continue; }
     if (g.lastSentAt !== null && agora - g.lastSentAt < cooldownMs) { res.pulados++; continue; }
-    const mensagem = WA.byelarahDateAnnouncementWhatsAppText({
+    const dados = {
       nome: g.nome,
       experienciaNome: onda.item_nome,
       data: onda.data_texto,
       horarios: onda.horarios,
       local: onda.local,
       link: onda.link,
-    });
+    };
+    const mensagem = WA.byelarahDateAnnouncementWhatsAppText(dados);
+    const templateParams = WA.byelarahDateAnnouncementTemplateParams(dados);
     const r = await WA.gatedSendWhatsApp(supabase, {
       kind: "byelarah_date",
       dedupeKey: "bydate:" + onda.id + ":" + g.phone,
@@ -296,6 +337,7 @@ async function runAvisoDeData(WA, supabase, onda, { agora = Date.now(), cooldown
       image: IMG_A,
       caption: mensagem,
       message: mensagem,
+      template: { params: templateParams },
     });
     if (r.sent || r.reason === "duplicate") {
       res.enviados++;
@@ -719,6 +761,93 @@ async function run() {
     check("kill switch → aviso de data não sai", r.enviados === 0 && zk.calls.length === 0);
     check("kill switch → ninguém é carimbado como avisado",
       sb._submissions.get("sub-k").aviso_data_announcement_id === null);
+  }
+
+  // ---------- FLUXO: PROVEDOR OFICIAL (Meta Cloud API) ----------
+  head("FLUXO OFICIAL — Meta Cloud API: template aprovado, não texto solto");
+  {
+    const WAm = await loadWA(META_ENV);
+    const zm = installMetaMock();
+    check("credenciais da Meta presentes → provedor oficial", WAm.whatsappProviderName() === "meta");
+    check("oficial conta como configurado", WAm.whatsappConfigured() === true);
+
+    const onda = {
+      id: "onda-meta", item_slug: "perfumaria-criativa",
+      item_nome: "Oficina de Perfumaria Criativa", data_texto: "24 de abril",
+      horarios: ["10h às 13h", "14h às 17h"], local: "Rua Nova Orleans, 34 — Brooklin",
+      link: "https://elarah.com.br/index.html#by-elarah-perfumaria-criativa",
+    };
+    const sb = makeSupabase([], [
+      subSeed({ id: "sub-m1" }),
+      subSeed({ id: "sub-mB", item_slug: "ourivesaria-joia", nome: "Bruna", telefone: CLIENT_B }),
+    ]);
+    const r = await runAvisoDeData(WAm, sb, onda);
+    check("avisou pela oficial", r.enviados === 1 && zm.calls.length === 1, JSON.stringify(r));
+
+    const c = zm.calls[0];
+    check("bateu na Graph API oficial", c.url.includes("graph.facebook.com") && c.url.endsWith("/123456789/messages"), c.url);
+    check("autenticou com o token da Meta", c.auth === "Bearer TOKEN_FAKE");
+    check("foi TEMPLATE (não texto solto)", c.type === "template");
+    check("template correto", c.template === "elarah_data_saiu", String(c.template));
+    check("idioma pt_BR", c.lang === "pt_BR");
+    check("destinatário certo", c.phone === CLIENT_A);
+    check("TERCEIRA (outra lista) intocada pela oficial", zm.to(CLIENT_B).length === 0);
+    check("5 parâmetros na ordem do template", c.params.length === 5, JSON.stringify(c.params));
+    check("{{1}} primeiro nome", c.params[0] === "Maria");
+    check("{{2}} experiência", c.params[1] === "Oficina de Perfumaria Criativa");
+    check("{{3}} data + horários", c.params[2].includes("24 de abril") && c.params[2].includes("10h às 13h"));
+    check("{{4}} local", c.params[3].includes("Brooklin"));
+    check("{{5}} link", c.params[4] === onda.link);
+    check("nenhum parâmetro com quebra de linha/tab (a Meta recusa)",
+      c.params.every((t) => !/[\n\t]/.test(t) && !/ {4}/.test(t) && t.trim() !== ""));
+    check("sem header de imagem (template aprovado é só texto)",
+      !c.components.some((comp) => comp.type === "header"));
+
+    // Segunda passada: idempotência do portão vale igual na oficial.
+    const r2 = await runAvisoDeData(WAm, sb, onda);
+    check("oficial: segunda passada não reenvia", r2.enviados === 0 && zm.calls.length === 1);
+  }
+  {
+    // Parâmetro que chegaria vazio ou multilinha não pode quebrar o envio.
+    const WAm = await loadWA(META_ENV);
+    const zm = installMetaMock();
+    const onda = {
+      id: "onda-meta2", item_slug: "perfumaria-criativa", item_nome: "Oficina de Perfumaria Criativa",
+      data_texto: "24 de abril", horarios: [], local: "", link: "",
+    };
+    const sb = makeSupabase([], [subSeed({ id: "sub-m2", nome: "" })]);
+    await runAvisoDeData(WAm, sb, onda);
+    const c = zm.calls[0];
+    check("sem nome/local/link → parâmetros neutros, nunca vazios",
+      c.params.length === 5 && c.params.every((t) => t.trim() !== ""), JSON.stringify(c.params));
+    check("link ausente vira o site da Elarah", c.params[4] === "https://elarah.com.br");
+  }
+  {
+    // Oficial escolhida SEM credencial: fail-closed, nunca cai no legado.
+    const WAm = await loadWA({ ...PROD_ENV, WHATSAPP_PROVIDER: "meta" });
+    const zm = installMetaMock();
+    check("oficial sem credencial → não configurado", WAm.whatsappConfigured() === false);
+    const r = await WAm.sendWhatsAppTemplate({
+      to: CLIENT_A, kind: "byelarah_date", template: { params: ["Maria", "Oficina", "24 de abril", "SP", "link"] },
+    });
+    check("oficial sem credencial → não envia", r.ok === false && r.skipped === true, JSON.stringify(r));
+    check("oficial sem credencial → não chamou ninguém", zm.calls.length === 0);
+  }
+  {
+    // Kill switch e ambiente valem igual na oficial.
+    const WAm = await loadWA({ ...META_ENV, WHATSAPP_SENDING_ENABLED: "false" });
+    const zm = installMetaMock();
+    const r = await WAm.sendWhatsAppTemplate({
+      to: CLIENT_A, kind: "byelarah_date", template: { params: ["Maria", "Oficina", "24 de abril", "SP", "link"] },
+    });
+    check("oficial + kill switch → não envia", r.ok === false && zm.calls.length === 0, JSON.stringify(r));
+
+    const WAs = await loadWA({ ...META_ENV, WHATSAPP_ENV: "staging", WHATSAPP_TEST_ALLOWLIST: "" });
+    const zs = installMetaMock();
+    const rs = await WAs.sendWhatsAppTemplate({
+      to: CLIENT_A, kind: "byelarah_date", template: { params: ["Maria", "Oficina", "24 de abril", "SP", "link"] },
+    });
+    check("oficial fora de produção sem allowlist → não envia", rs.ok === false && zs.calls.length === 0);
   }
 
   // ---------- Relatório ----------

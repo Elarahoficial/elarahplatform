@@ -1,27 +1,39 @@
 // =============================================================
-// ELARAH — WhatsApp helper (Z-API)
+// ELARAH — WhatsApp helper (Cloud API oficial da Meta / Z-API)
 // -------------------------------------------------------------
-// Adaptador ÚNICO de disparo de WhatsApp via Z-API (https://z-api.io),
-// usado por dois recursos:
+// DOIS PROVEDORES, o mesmo portão de segurança:
+//
+//   * meta (RECOMENDADO) — WhatsApp Cloud API OFICIAL da Meta. É o canal
+//     que aguenta disparo pra lista sem risco de o número ser banido.
+//     Mensagem iniciada pela empresa (aviso de data, lembrete, feedback,
+//     confirmação) PRECISA de template aprovado — ver metaTemplateName() e
+//     docs/whatsapp-oficial-meta.md.
+//   * zapi (legado) — automatiza um número comum via QR code. Funciona com
+//     texto livre, mas a Meta pode banir o número em disparo frio.
+//
+// Qual entra em ação: WHATSAPP_PROVIDER ("meta" | "zapi"). Sem essa secret,
+// vale "meta" se as credenciais da oficial existirem; senão cai no zapi.
+// Nunca há fallback silencioso de um pro outro: provedor escolhido sem
+// credencial = NÃO ENVIA (fail-closed), com erro claro.
+//
+// Secrets (Supabase → Project Settings → Edge Functions → Secrets):
+//   -- oficial (Meta) --
+//   META_WHATSAPP_TOKEN            token permanente do app/system user
+//   META_WHATSAPP_PHONE_NUMBER_ID  ID do número no WhatsApp Manager
+//   META_TEMPLATE_LANG             (opcional) idioma dos templates (pt_BR)
+//   META_GRAPH_VERSION             (opcional) versão da Graph API
+//   META_TEMPLATE_*                (opcional) nome de cada template aprovado
+//   -- legado (Z-API) --
+//   ZAPI_INSTANCE_ID / ZAPI_TOKEN / ZAPI_CLIENT_TOKEN / ZAPI_BASE_URL
+//
+// Adaptador ÚNICO de disparo de WhatsApp, usado por dois recursos:
 //   1) whatsapp-broadcast  — disparo em massa pros interessados.
 //   2) confirmação de reserva — mensagem automática na hora da compra
 //      (stripe/mp/pagarme webhooks + check-mp-payment-status).
 //
-// Configure em Supabase → Project Settings → Edge Functions → Secrets:
-//   ZAPI_INSTANCE_ID    ID da instância (painel Z-API)
-//   ZAPI_TOKEN          Token da instância (painel Z-API)
-//   ZAPI_CLIENT_TOKEN   Account Security Token (Z-API → Segurança) —
-//                       obrigatório no header se a conta tiver o token ativo.
-//   ZAPI_BASE_URL       (opcional) base da API; default https://api.z-api.io
-//
-// Se ZAPI_INSTANCE_ID / ZAPI_TOKEN não estiverem setados, o envio retorna
-// { ok:false, skipped:true } com erro claro — nada quebra enquanto o
-// WhatsApp não está configurado (mesma filosofia do _shared/email.ts).
-//
-// IMPORTANTE (risco de banimento): Z-API automatiza um número de WhatsApp
-// comum (não é a API oficial da Meta). Disparo em massa frio pode fazer a
-// Meta banir o número — dispare com bom senso (número aquecido, mensagens
-// personalizadas, intervalo entre envios, sem links suspeitos).
+// Credencial ausente → o envio retorna { ok:false, skipped:true } com erro
+// claro; nada quebra enquanto o WhatsApp não está configurado (mesma
+// filosofia do _shared/email.ts).
 // =============================================================
 
 // Portão de segurança (lógica pura, fail-closed + idempotência). Ver
@@ -32,6 +44,36 @@ const ZAPI_BASE = Deno.env.get("ZAPI_BASE_URL") ?? "https://api.z-api.io";
 const INSTANCE = Deno.env.get("ZAPI_INSTANCE_ID") ?? "";
 const TOKEN = Deno.env.get("ZAPI_TOKEN") ?? "";
 const CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN") ?? "";
+
+// ===== Cloud API oficial da Meta =====
+const META_TOKEN = Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
+const META_PHONE_ID = Deno.env.get("META_WHATSAPP_PHONE_NUMBER_ID") ?? "";
+// `?? default` não basta: uma secret criada em branco no painel do Supabase
+// devolve "" (não undefined) e montaria uma URL quebrada. Trim + || cobre os
+// dois casos (ausente e vazia).
+const META_GRAPH_BASE =
+  (Deno.env.get("META_GRAPH_BASE_URL") ?? "").trim().replace(/\/+$/, "") ||
+  "https://graph.facebook.com";
+const META_GRAPH_VERSION = (Deno.env.get("META_GRAPH_VERSION") ?? "").trim() || "v21.0";
+const META_LANG = (Deno.env.get("META_TEMPLATE_LANG") ?? "pt_BR").trim() || "pt_BR";
+
+// Provedor ativo. Explícito por WHATSAPP_PROVIDER; sem ele, a simples
+// presença das credenciais da oficial já manda tudo pela oficial (setar os
+// secrets da Meta É a decisão de migrar). Sem nenhuma das duas → zapi, que
+// então responde "não configurado" — nunca um envio às cegas.
+const PROVIDER: "meta" | "zapi" = (() => {
+  const raw = (Deno.env.get("WHATSAPP_PROVIDER") ?? "").trim().toLowerCase();
+  if (raw === "meta" || raw === "oficial" || raw === "cloud") return "meta";
+  if (raw === "zapi" || raw === "z-api") return "zapi";
+  return META_TOKEN && META_PHONE_ID ? "meta" : "zapi";
+})();
+
+export function whatsappProviderName(): "meta" | "zapi" {
+  return PROVIDER;
+}
+export function whatsappIsOfficial(): boolean {
+  return PROVIDER === "meta";
+}
 
 // DDDs válidos no Brasil (usado pra NUNCA coagir número estrangeiro/torto
 // num BR plausível). DEFINIDO AQUI EM CIMA de propósito: normalizePhoneBR o
@@ -117,9 +159,9 @@ export function whatsappAllowlistHas(rawPhone: unknown): boolean {
   return !!p && TEST_ALLOWLIST.has(p);
 }
 
-// True quando as credenciais mínimas (instância + token) existem.
+// True quando as credenciais mínimas DO PROVEDOR ATIVO existem.
 export function whatsappConfigured(): boolean {
-  return !!(INSTANCE && TOKEN);
+  return PROVIDER === "meta" ? !!(META_TOKEN && META_PHONE_ID) : !!(INSTANCE && TOKEN);
 }
 // Alias — nome usado pelo fluxo de confirmação de reserva.
 export const isWhatsAppConfigured = whatsappConfigured;
@@ -164,6 +206,166 @@ export function normalizePhoneBR(raw: string | null | undefined): string | null 
 export const normalizeWhatsAppPhoneBR = normalizePhoneBR;
 
 // Núcleo do envio (telefone JÁ normalizado em 55DDNXXXXXXXX).
+// ===== CLOUD API OFICIAL (Meta) =====
+// Um POST só pra tudo: texto, imagem e template. A Graph API devolve
+// { messages:[{id}] } no sucesso e { error:{ code, message } } no erro.
+async function metaSend(payload: Record<string, unknown>, phone: string): Promise<WaResult> {
+  if (!META_TOKEN || !META_PHONE_ID) {
+    return {
+      ok: false,
+      skipped: true,
+      error:
+        "META_WHATSAPP_TOKEN/META_WHATSAPP_PHONE_NUMBER_ID ausentes nos secrets do " +
+        "Supabase. Cadastre em Edge Functions → Secrets e faça redeploy.",
+    };
+  }
+  const url = `${META_GRAPH_BASE}/${META_GRAPH_VERSION}/${META_PHONE_ID}/messages`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + META_TOKEN,
+      },
+      body: JSON.stringify(payload),
+    });
+    const raw = await res.text().catch(() => "");
+    let data: Record<string, unknown> = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch { /* corpo não-JSON */ }
+
+    if (!res.ok) {
+      const err = (data.error ?? {}) as { code?: number; message?: string; error_data?: { details?: string } };
+      const code = Number(err.code ?? 0);
+      let friendly = (err.error_data?.details || err.message || raw).slice(0, 300);
+      // Tradução dos erros que de fato aparecem em produção.
+      if (code === 190) {
+        friendly = "Token da Meta expirado/inválido — gere um token permanente (System User). " + friendly;
+      } else if (code === 131047) {
+        friendly = "Fora da janela de 24h: mensagem iniciada pela empresa exige TEMPLATE aprovado. " + friendly;
+      } else if (code === 131026) {
+        friendly = "Número não recebe no WhatsApp (sem conta/incompatível). " + friendly;
+      } else if (code === 132000 || code === 132001 || code === 132005 || code === 132007 || code === 132012 || code === 132015) {
+        friendly = "Template inválido: nome/idioma não existem, não foi aprovado, ou a " +
+          "quantidade/formato dos parâmetros não bate com o aprovado. " + friendly;
+      } else if (code === 131031 || code === 368) {
+        friendly = "Conta do WhatsApp Business restrita pela Meta. " + friendly;
+      } else if (code === 130429 || code === 131048) {
+        friendly = "Limite de envio da Meta atingido (throughput/qualidade do número). " + friendly;
+      }
+      console.error(
+        "[elarah/whatsapp] Meta rejeitou o envio —",
+        "status=" + res.status,
+        "code=" + code,
+        "phone=" + maskPhoneLocal(phone),
+        "body=" + raw.slice(0, 500),
+      );
+      return { ok: false, status: res.status, error: friendly };
+    }
+
+    const messages = (data.messages ?? []) as Array<{ id?: string }>;
+    return { ok: true, status: res.status, id: messages[0]?.id };
+  } catch (e) {
+    console.error("[elarah/whatsapp] exceção durante envio (Meta)", e);
+    return { ok: false, error: String(e) };
+  }
+}
+
+// Máscara local (o maskPhone do portão é importado só onde precisa).
+function maskPhoneLocal(raw: unknown): string {
+  const d = String(raw ?? "").replace(/\D+/g, "");
+  return d.length < 6 ? "•••" : d.slice(0, 4) + "•••••" + d.slice(-4);
+}
+
+// ===== TEMPLATES APROVADOS (obrigatórios fora da janela de 24h) =====
+// Nome default = o que está em docs/whatsapp-oficial-meta.md pra você
+// submeter no WhatsApp Manager. Se aprovar com outro nome, sobrescreva pelo
+// secret correspondente — sem mexer em código.
+const META_TEMPLATE_DEFAULTS: Record<string, string> = {
+  confirmation: "elarah_reserva_confirmada",
+  reminder48: "elarah_lembrete_48h",
+  feedback: "elarah_pedido_feedback",
+  pending: "elarah_reserva_pendente",
+  byelarah_date: "elarah_data_saiu",
+};
+const META_TEMPLATE_ENV: Record<string, string> = {
+  confirmation: "META_TEMPLATE_CONFIRMACAO",
+  reminder48: "META_TEMPLATE_LEMBRETE",
+  feedback: "META_TEMPLATE_FEEDBACK",
+  pending: "META_TEMPLATE_PENDENTE",
+  byelarah_date: "META_TEMPLATE_DATA_SAIU",
+};
+
+export function metaTemplateName(kind: string): string | null {
+  const envKey = META_TEMPLATE_ENV[kind];
+  const custom = envKey ? (Deno.env.get(envKey) ?? "").trim() : "";
+  if (custom) return custom;
+  return META_TEMPLATE_DEFAULTS[kind] ?? null;
+}
+
+// Parâmetro de template: a Meta REJEITA quebra de linha, tab e 4+ espaços
+// seguidos dentro de um parâmetro, e também parâmetro vazio. Normaliza tudo
+// pra uma linha e cai num texto neutro quando o dado não existe.
+export function metaParam(value: unknown, fallback = "—"): string {
+  const s = String(value ?? "").replace(/\s+/g, " ").trim();
+  return (s || fallback).slice(0, 900);
+}
+
+export interface MetaTemplateSpec {
+  params: string[];       // {{1}}, {{2}}, ... na ordem
+  name?: string;          // default: metaTemplateName(kind)
+  headerImage?: string;   // só se o template aprovado tiver header de imagem
+}
+
+// Envia um template aprovado. É o caminho das mensagens que a Elarah INICIA
+// (aviso de data, lembrete, feedback, confirmação) — as únicas que a Meta
+// entrega fora da janela de 24h.
+export async function sendWhatsAppTemplate(opts: {
+  to: unknown;
+  kind: string;
+  template: MetaTemplateSpec;
+}): Promise<WaResult> {
+  const phone = normalizePhoneBR(
+    typeof opts.to === "string" ? opts.to : String(opts.to ?? ""),
+  );
+  if (!phone) return { ok: false, error: "invalid_phone" };
+  if (SENDING_DISABLED) {
+    console.warn("[elarah/whatsapp] KILL SWITCH ligado — template bloqueado");
+    return { ok: false, skipped: true, error: "sending_disabled" };
+  }
+  if (DRY_RUN) {
+    console.info("[elarah/whatsapp] DRY-RUN template — NÃO enviado", "kind=" + opts.kind);
+    return { ok: true, skipped: true, status: 0 };
+  }
+  if (!IS_PROD && !TEST_ALLOWLIST.has(phone)) {
+    console.warn("[elarah/whatsapp] template fora de produção + fora da allowlist — bloqueado");
+    return { ok: false, skipped: true, error: "staging_blocked" };
+  }
+  const name = (opts.template.name ?? metaTemplateName(opts.kind) ?? "").trim();
+  if (!name) {
+    return { ok: false, skipped: true, error: "template_nao_configurado:" + opts.kind };
+  }
+  const components: Record<string, unknown>[] = [];
+  if (opts.template.headerImage) {
+    components.push({
+      type: "header",
+      parameters: [{ type: "image", image: { link: opts.template.headerImage } }],
+    });
+  }
+  if (opts.template.params.length) {
+    components.push({
+      type: "body",
+      parameters: opts.template.params.map((t) => ({ type: "text", text: metaParam(t) })),
+    });
+  }
+  return await metaSend({
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "template",
+    template: { name, language: { code: META_LANG }, components },
+  }, phone);
+}
+
 async function sendTextCore(phone: string, message: string): Promise<WaResult> {
   if (SENDING_DISABLED) {
     console.warn("[elarah/whatsapp] KILL SWITCH ligado (WHATSAPP_SENDING_ENABLED=false) — envio bloqueado", "phone=" + phone);
@@ -179,6 +381,19 @@ async function sendTextCore(phone: string, message: string): Promise<WaResult> {
     console.warn("[elarah/whatsapp] fora de produção + fora da allowlist — bloqueado");
     return { ok: false, skipped: true, error: "staging_blocked" };
   }
+  // OFICIAL: texto livre só é ENTREGUE dentro da janela de 24h (resposta a
+  // quem escreveu primeiro). Fora dela a Meta recusa com 131047 — mensagem
+  // iniciada pela Elarah vai por sendWhatsAppTemplate().
+  if (PROVIDER === "meta") {
+    return await metaSend({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: phone,
+      type: "text",
+      text: { body: message, preview_url: true },
+    }, phone);
+  }
+
   if (!INSTANCE || !TOKEN) {
     return {
       ok: false,
@@ -288,6 +503,20 @@ export async function sendWhatsAppImage(opts: {
   if (!opts.image) {
     // Sem imagem: cai pro texto puro, pra não deixar de avisar o cliente.
     return sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+  }
+  if (PROVIDER === "meta") {
+    // A Meta só aceita imagem por URL pública (data URI não passa) — nesse
+    // caso manda o texto, que é melhor do que não avisar.
+    if (!/^https?:\/\//i.test(opts.image)) {
+      return sendWhatsAppText({ to: phone, message: opts.caption ?? "" });
+    }
+    return await metaSend({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: phone,
+      type: "image",
+      image: { link: opts.image, caption: opts.caption ?? "" },
+    }, phone);
   }
   if (!INSTANCE || !TOKEN) {
     return { ok: false, skipped: true, error: "ZAPI_INSTANCE_ID/ZAPI_TOKEN ausentes." };
@@ -463,6 +692,92 @@ export function byelarahDateAnnouncementWhatsAppText(opts: {
   return linhas.join("\n");
 }
 
+// ===== PARÂMETROS DOS TEMPLATES OFICIAIS (Meta) =====
+// Cada função devolve os {{1}}, {{2}}, ... na ORDEM do template aprovado.
+// O texto dos templates está em docs/whatsapp-oficial-meta.md — mexer aqui
+// sem mexer lá (e re-aprovar na Meta) faz a Meta recusar o envio.
+//
+// Regra de ouro: parâmetro NUNCA vai vazio nem com quebra de linha (a Meta
+// recusa) — metaParam() normaliza e aplica o texto neutro de cada campo.
+const P_NOME = "tudo bem";                       // "Oi, {{1}}!" sem nome
+const P_EXP = "sua experiência na Elarah";
+const P_QUANDO = "a combinar";
+const P_LOCAL = "endereço enviado por aqui";
+const P_LINK = "https://elarah.com.br";
+
+function _quandoParam(data: unknown, horario: unknown): string {
+  return metaParam(
+    [String(data ?? "").trim(), String(horario ?? "").trim()].filter(Boolean).join(" · "),
+    P_QUANDO,
+  );
+}
+function _localParam(endereco: unknown, bairro: unknown): string {
+  return metaParam(
+    [String(endereco ?? "").trim(), String(bairro ?? "").trim()].filter(Boolean).join(" — "),
+    P_LOCAL,
+  );
+}
+
+// elarah_reserva_confirmada — {{1}} nome · {{2}} experiência · {{3}} quando · {{4}} local
+export function bookingConfirmationTemplateParams(opts: {
+  nome?: unknown; experienciaNome?: unknown; data?: unknown; horario?: unknown;
+  endereco?: unknown; bairro?: unknown;
+}): string[] {
+  return [
+    metaParam(primeiroNome(opts.nome), P_NOME),
+    metaParam(opts.experienciaNome, P_EXP),
+    _quandoParam(opts.data, opts.horario),
+    _localParam(opts.endereco, opts.bairro),
+  ];
+}
+
+// elarah_lembrete_48h — {{1}} nome · {{2}} experiência · {{3}} quando · {{4}} local
+export function reminder48hTemplateParams(opts: MsgOpts): string[] {
+  return [
+    metaParam(primeiroNome(opts.nome), P_NOME),
+    metaParam(opts.experienciaNome, P_EXP),
+    _quandoParam(opts.data, opts.horario),
+    _localParam(opts.endereco, opts.bairro),
+  ];
+}
+
+// elarah_pedido_feedback — {{1}} nome · {{2}} experiência · {{3}} link de avaliação
+export function feedbackTemplateParams(opts: MsgOpts & { link?: unknown }): string[] {
+  return [
+    metaParam(primeiroNome(opts.nome), P_NOME),
+    metaParam(opts.experienciaNome, P_EXP),
+    metaParam(opts.link, P_LINK),
+  ];
+}
+
+// elarah_reserva_pendente — {{1}} nome · {{2}} experiência
+export function pendingRecoveryTemplateParams(opts: MsgOpts): string[] {
+  return [
+    metaParam(primeiroNome(opts.nome), P_NOME),
+    metaParam(opts.experienciaNome, P_EXP),
+  ];
+}
+
+// elarah_data_saiu — {{1}} nome · {{2}} experiência · {{3}} quando · {{4}} local · {{5}} link
+export function byelarahDateAnnouncementTemplateParams(opts: {
+  nome?: unknown; experienciaNome?: unknown; data?: unknown; horarios?: unknown;
+  local?: unknown; link?: unknown;
+}): string[] {
+  const horarios = Array.isArray(opts.horarios)
+    ? opts.horarios.map((h) => String(h ?? "").trim()).filter(Boolean)
+    : [String(opts.horarios ?? "").trim()].filter(Boolean);
+  return [
+    metaParam(primeiroNome(opts.nome), P_NOME),
+    metaParam(opts.experienciaNome, P_EXP),
+    metaParam(
+      [String(opts.data ?? "").trim(), horarios.join(" ou ")].filter(Boolean).join(" · "),
+      P_QUANDO,
+    ),
+    metaParam(opts.local, P_LOCAL),
+    metaParam(opts.link, P_LINK),
+  ];
+}
+
 // ===== PORTÃO ÚNICO (idempotência + auditoria + fail-closed) =====
 // deno-lint-ignore no-explicit-any
 type SB = any;
@@ -487,6 +802,10 @@ export async function gatedSendWhatsApp(
     message?: string;
     image?: string;
     caption?: string;
+    // Provedor OFICIAL: parâmetros do template aprovado. Sem isto, na
+    // oficial o envio vira texto livre — que a Meta só entrega dentro da
+    // janela de 24h. Toda automação (mensagem que a Elarah inicia) manda.
+    template?: MetaTemplateSpec;
     bookingId?: string | null;
     experienciaId?: string | null;
     createdBy?: string | null;
@@ -527,6 +846,20 @@ export async function gatedSendWhatsApp(
         .eq("dedupe_key", key);
     },
     send: async (o: { phone: string; message?: string; image?: string; caption?: string }) => {
+      // Oficial + template aprovado = o caminho das mensagens iniciadas pela
+      // Elarah. O texto livre (abaixo) segue valendo pro provedor legado e
+      // pra resposta dentro da janela de 24h.
+      // A foto NÃO é herdada automaticamente: header de imagem só existe se
+      // o template aprovado tiver um. Mandar header num template sem header
+      // faz a Meta recusar TODOS os envios (132000). Quem aprovou um
+      // template com imagem passa headerImage explicitamente.
+      if (PROVIDER === "meta" && params.template) {
+        return await sendWhatsAppTemplate({
+          to: o.phone,
+          kind: params.kind,
+          template: params.template,
+        });
+      }
       if (o.image) return await sendWhatsAppImage({ to: o.phone, image: o.image, caption: o.caption });
       return await sendWhatsAppText({ to: o.phone, message: o.message ?? o.caption ?? "" });
     },
@@ -594,9 +927,20 @@ export async function sendBookingConfirmationGated(
     rawPhone,
     suppressed: aguardando ? true : false,
     statusAllowed,
-    image: imagem, // foto da experiência (cartão)
+    image: imagem, // foto da experiência (cartão) — provedor legado
     caption: texto,
     message: texto,
+    // Provedor oficial: mesma mensagem, via template aprovado.
+    template: {
+      params: bookingConfirmationTemplateParams({
+        nome: booking?.nome,
+        experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+        data: booking?.data,
+        horario: booking?.horario,
+        endereco: (meta?.endereco as string | null) ?? null,
+        bairro: (meta?.bairro as string | null) ?? null,
+      }),
+    },
     bookingId: booking?.id ?? null,
     experienciaId: booking?.experiencia_id ?? null,
   });

@@ -41,6 +41,13 @@ Todo envio passa pelo **portão único de WhatsApp** (`gatedSendWhatsApp`) — o
 mesmo das confirmações e lembretes: idempotência, kill switch, modo observação,
 rollout, allowlist, fail-closed. Ver `docs/whatsapp-seguranca.md`.
 
+**Por qual canal sai:** pela **API oficial da Meta** (Cloud API), usando o
+template aprovado `elarah_data_saiu` — é o que permite avisar a lista inteira
+sem risco de o número ser banido. O texto acima é o corpo do template; o que
+muda por pessoa são as cinco variáveis (nome, evento, data/horários, local,
+link). Como criar o template e ligar as credenciais:
+`docs/whatsapp-oficial-meta.md`.
+
 ## O que impede um disparo errado
 
 - **Só na virada.** O aviso sai na transição "sem data / oculto" → "com data e
@@ -86,7 +93,11 @@ rollout, allowlist, fail-closed. Ver `docs/whatsapp-seguranca.md`.
    cron secret, service role ou JWT de admin).
 3. **Agende o cron**: abra `sql/elarah_byelarah_aviso_data_cron.sql`, troque
    `TROQUE_PELA_SUA_CRON_SECRET` pela sua `CRON_SECRET` e rode.
-4. Confira que o envio de WhatsApp está ligado (`WHATSAPP_SENDING_ENABLED`,
+4. **Aprove o template `elarah_data_saiu`** no WhatsApp Manager e cadastre as
+   credenciais da Meta nos secrets — passo a passo em
+   `docs/whatsapp-oficial-meta.md`. Sem template aprovado, a Meta recusa o
+   envio (a onda fica na fila e o erro aparece em `byelarah_date_announcements.erro`).
+5. Confira que o envio de WhatsApp está ligado (`WHATSAPP_SENDING_ENABLED`,
    `WHATSAPP_ROLLOUT_PERCENT`) — ver `docs/whatsapp-rollout.md`. Com o envio
    desligado ou em modo observação, as ondas ficam na fila e nada sai.
 

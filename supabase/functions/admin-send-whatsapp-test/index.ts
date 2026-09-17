@@ -25,13 +25,19 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
+  bookingConfirmationTemplateParams,
   bookingConfirmationWhatsAppText,
+  feedbackTemplateParams,
   feedbackWhatsAppText,
   isWhatsAppConfigured,
+  pendingRecoveryTemplateParams,
   pendingRecoveryWhatsAppText,
+  reminder48hTemplateParams,
   reminder48hWhatsAppText,
   sendWhatsAppImage,
+  sendWhatsAppTemplate,
   whatsappAllowlistHas,
+  whatsappIsOfficial,
 } from "../_shared/whatsapp.ts";
 
 // Foto de exemplo (uma experiência real do site). Em produção, cada mensagem
@@ -60,6 +66,29 @@ function sampleMessage(tipo: string): string {
     case "confirmation":
     default:
       return bookingConfirmationWhatsAppText(SAMPLE);
+  }
+}
+
+// No provedor OFICIAL o teste vai pelo MESMO template aprovado que o cliente
+// recebe — é o único jeito de o teste ser fiel (e de chegar fora da janela de
+// 24h). Texto livre digitado no painel só vale no provedor legado.
+function sampleTemplate(tipo: string): { kind: string; params: string[] } {
+  switch (tipo) {
+    case "reminder":
+      return { kind: "reminder48", params: reminder48hTemplateParams(SAMPLE) };
+    case "feedback":
+      return {
+        kind: "feedback",
+        params: feedbackTemplateParams({
+          ...SAMPLE,
+          link: "https://elarah.com.br/avaliar.html?exemplo=1",
+        }),
+      };
+    case "pending":
+      return { kind: "pending", params: pendingRecoveryTemplateParams(SAMPLE) };
+    case "confirmation":
+    default:
+      return { kind: "confirmation", params: bookingConfirmationTemplateParams(SAMPLE) };
   }
 }
 
@@ -128,20 +157,27 @@ serve(async (req) => {
   if (!isWhatsAppConfigured()) {
     return json({
       ok: false,
-      error: "zapi_nao_configurado",
-      message: "Cadastre ZAPI_INSTANCE_ID, ZAPI_TOKEN e ZAPI_CLIENT_TOKEN nos Secrets do Supabase.",
+      error: whatsappIsOfficial() ? "meta_nao_configurada" : "zapi_nao_configurado",
+      message: whatsappIsOfficial()
+        ? "Cadastre META_WHATSAPP_TOKEN e META_WHATSAPP_PHONE_NUMBER_ID nos Secrets do Supabase."
+        : "Cadastre ZAPI_INSTANCE_ID, ZAPI_TOKEN e ZAPI_CLIENT_TOKEN nos Secrets do Supabase.",
     }, 422);
   }
 
-  // Envia COM a foto da experiência (caption = a mensagem). Se a imagem
-  // falhar, o sendWhatsAppImage cai pro texto sozinho.
-  const result = await sendWhatsAppImage({ to: telefone, image: SAMPLE_IMAGE, caption: mensagem });
+  // OFICIAL: manda o template aprovado do tipo escolhido (o mesmo que o
+  // cliente recebe). LEGADO: manda a foto + o texto (livre ou de exemplo).
+  const tpl = sampleTemplate(tipo);
+  const result = whatsappIsOfficial()
+    ? await sendWhatsAppTemplate({ to: telefone, kind: tpl.kind, template: { params: tpl.params } })
+    : await sendWhatsAppImage({ to: telefone, image: SAMPLE_IMAGE, caption: mensagem });
   if (!result.ok) {
     return json({
       ok: false,
       error: result.error ?? "envio_falhou",
       status: result.status ?? null,
-      message: "Não consegui enviar. Confira se a instância do Z-API está conectada (QR code) e se o número tem WhatsApp.",
+      message: whatsappIsOfficial()
+        ? "Não consegui enviar. Confira se o template está APROVADO na Meta com esse nome e idioma, e se o número tem WhatsApp."
+        : "Não consegui enviar. Confira se a instância do Z-API está conectada (QR code) e se o número tem WhatsApp.",
     }, 502);
   }
   return json({ ok: true, to: telefone });

@@ -35,6 +35,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin } from "../_shared/social_db.ts";
 import {
+  byelarahDateAnnouncementTemplateParams,
   byelarahDateAnnouncementWhatsAppText,
   experienceImageUrl,
   gatedSendWhatsApp,
@@ -334,14 +335,19 @@ serve(async (req) => {
         continue;
       }
 
-      const mensagem = byelarahDateAnnouncementWhatsAppText({
+      const dados = {
         nome: g.nome,
         experienciaNome: onda.item_nome,
         data: onda.data_texto,
         horarios,
         local: onda.local,
         link: onda.link,
-      });
+      };
+      // Mesmo conteúdo nos dois provedores: texto livre no legado, template
+      // aprovado na oficial da Meta (obrigatório — é mensagem que a Elarah
+      // inicia, fora da janela de 24h).
+      const mensagem = byelarahDateAnnouncementWhatsAppText(dados);
+      const templateParams = byelarahDateAnnouncementTemplateParams(dados);
 
       const res = await gatedSendWhatsApp(supabase, {
         kind: "byelarah_date",
@@ -355,6 +361,7 @@ serve(async (req) => {
         image: imagem,
         caption: mensagem,
         message: mensagem,
+        template: { params: templateParams },
         experienciaId: null,
         createdBy: adminId,
       });

@@ -2078,11 +2078,14 @@
       const resto = alvo > info.amostra.length ? ('\n…e mais ' + (alvo - info.amostra.length) + '.') : '';
       audienciaTxt = '\n\nQuem vai receber (amostra):\n' + linhas + resto;
     }
+    // Provedor oficial da Meta: texto livre só chega dentro da janela de 24h.
+    // O backend avisa aqui pra ninguém disparar achando que vai chegar em todos.
+    var avisoProvedor = info.aviso_provedor ? ('\n\n⚠ ' + info.aviso_provedor) : '';
     const ok = window.confirm(
       'CONFIRA A AUDIÊNCIA antes de enviar.\n\n' +
       'Experiência: "' + followupCtx.experienceName + '"\n' +
       'Vai enviar por WhatsApp pra ' + alvo + ' pessoa(s).' + audienciaTxt + '\n\n' +
-      'Dispara de verdade pela Z-API, ~1 msg/segundo.' + semTel + '\n\nConfirmar envio?'
+      'Dispara de verdade, ~1 msg/segundo.' + semTel + avisoProvedor + '\n\nConfirmar envio?'
     );
     if (!ok) {
       statusEl.textContent = '';
