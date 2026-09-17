@@ -35,7 +35,7 @@
       <div class="card__top"><h1>Elarah</h1></div>
       <div class="card__body">
         <div id="form-area">
-          <h2>Como foi sua experiência?</h2>
+          <h2 id="titulo">Como foi sua experiência?</h2>
           <p class="sub" id="exp-sub">Sua opinião ajuda muita gente a decidir viver isso também. 🧡</p>
           <div class="stars" id="stars">
             <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
@@ -62,9 +62,24 @@
       var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
       var q = new URLSearchParams(location.search);
       var bookingId = q.get('b') || '';
+      // ?v= é o evento fechado (venda manual). O link do evento chega
+      // pelo mesmo caminho da experiência: muda só quem assina a nota.
+      var saleId = q.get('v') || '';
+      var ehEvento = !!saleId && !bookingId;
       var token = q.get('t') || '';
       var nota = parseInt(q.get('nota'), 10);
       if (!(nota >= 1 && nota <= 5)) nota = 0;
+
+      if (ehEvento) {
+        document.title = 'Avaliar evento · Elarah';
+        document.getElementById('titulo').textContent = 'Como foi o seu evento?';
+        document.getElementById('exp-sub').textContent =
+          'Sua opinião ajuda a Elarah a deixar os próximos eventos ainda melhores. 🧡';
+        document.getElementById('comentario').placeholder =
+          'Conta pra gente como foi o evento! (opcional)';
+        document.getElementById('done-sub').textContent =
+          'Você ajudou demais a Elarah. A gente se vê no próximo evento!';
+      }
 
       var starsEl = document.getElementById('stars');
       var stars = Array.prototype.slice.call(starsEl.querySelectorAll('.star'));
@@ -79,7 +94,7 @@
       var btn = document.getElementById('enviar');
       var msg = document.getElementById('msg');
 
-      if (!bookingId || !token) {
+      if ((!bookingId && !saleId) || !token) {
         msg.textContent = 'Link inválido. Use o link que chegou no seu e-mail.';
         msg.style.color = '#b3261e';
         btn.disabled = true;
@@ -92,7 +107,9 @@
           var res = await fetch(FN, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
-            body: JSON.stringify({ mode: 'submit', booking_id: bookingId, token: token, nota: nota, comentario: document.getElementById('comentario').value })
+            body: JSON.stringify(ehEvento
+              ? { mode: 'submit', sale_id: saleId, token: token, nota: nota, comentario: document.getElementById('comentario').value }
+              : { mode: 'submit', booking_id: bookingId, token: token, nota: nota, comentario: document.getElementById('comentario').value })
           });
           var data = await res.json().catch(function () { return {}; });
           if (!res.ok || !data.ok) throw new Error(data.error || ('Erro ' + res.status));
