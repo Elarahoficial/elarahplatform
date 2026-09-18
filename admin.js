@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v43 — Parceiros: categorias do modal saem só do site (quebra "A | B") e chips iguais com/sem acento viram um só');
+  console.info('[Elarah Admin] admin.js v44 — Espaço de evento não vira parceiro: marca no repasse da venda, cadastra em Locais p/ eventos e sai da aba Parceiros');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -12918,6 +12918,45 @@
     return { ok: true };
   }
 
+  // ===== ESPAÇOS DE EVENTO (ponte Eventos ↔ Locais p/ eventos) =====
+  // Um lugar contratado pra um evento (bar, café, salão) entra na venda
+  // como "fornecedor", porque é a quem se paga o repasse. Só que isso
+  // fazia dele um parceiro na aba Parceiros — e parceiro, ali, quer
+  // dizer parceiro de EXPERIÊNCIA. Marcar "é um espaço" na venda grava
+  // o lugar aqui, em event_venues, e a aba Parceiros passa a deixá-lo
+  // de fora (ver venueKeys em renderFornecedores).
+  //
+  // Cache de chaves (nome normalizado) pra não reler a tabela a cada
+  // abertura do modal. Invalida quando um espaço novo é cadastrado.
+  let _venueKeysCache = null;
+  async function venueKeysSet(force) {
+    if (_venueKeysCache && !force) return _venueKeysCache;
+    let venues = [];
+    try { venues = await locaisLoad(); } catch (e) { venues = []; }
+    _venueKeysCache = new Set(
+      (venues || []).map(v => fornecedorKey(v && v.nome)).filter(Boolean)
+    );
+    return _venueKeysCache;
+  }
+  function invalidateVenueKeys() { _venueKeysCache = null; }
+
+  // Cadastra o espaço em Locais p/ eventos se ele ainda não estiver lá.
+  // Idempotente por nome (mesma normalização de fornecedor).
+  async function _finEnsureVenue(nome) {
+    const limpo = String(nome || '').trim();
+    if (!limpo) return { ok: false };
+    const keys = await venueKeysSet(true);
+    if (keys.has(fornecedorKey(limpo))) return { ok: true, criado: false };
+    const res = await locaisSave({
+      nome: limpo,
+      tipo: 'espaço',
+      observacoes: 'Cadastrado a partir de um evento no painel.',
+    });
+    invalidateVenueKeys();
+    if (res && res.ok) console.info('[Admin] espaço cadastrado em Locais p/ eventos:', limpo);
+    return { ok: !!(res && res.ok), criado: true };
+  }
+
   function locaisCobraLabel(v) {
     if (v === 'sim') return '<span style="color:#b07b00;font-weight:600;">Cobra</span>';
     if (v === 'nao') return '<span style="color:#2c5e3f;font-weight:600;">Não cobra</span>';
@@ -13371,13 +13410,17 @@
     // Fonte única: RPC financial_by_supplier (agrega bookings + manual_sales
     // pagos, com tratamento correto de multi-fornecedor) + RPC
     // financial_summary pros totais globais (sem dupla contagem).
-    const [supplierRows, summary, allExperiences, metadata] = await Promise.all([
+    const [supplierRows, summary, allExperiences, metadata, venueKeys] = await Promise.all([
       fetchFinancialBySupplier({ includeTest: false }),
       fetchFinancialSummary({ sources: ['booking', 'manual_sale'], includeTest: false }),
       (window.ElarahData && ElarahData.getAllExperiences)
         ? ElarahData.getAllExperiences().catch(() => [])
         : Promise.resolve([]),
       getFornecedoresMetadata(),
+      // Espaços cadastrados em Locais p/ eventos — usados abaixo pra
+      // tirar da lista de Parceiros o bar/café/salão contratado pra um
+      // evento (ver a seção "ESPAÇOS DE EVENTO").
+      venueKeysSet(true).catch(() => new Set()),
     ]);
 
     const metaByKey = new Map();
@@ -13509,6 +13552,7 @@
     });
 
     const list = Array.from(aggByKey.values());
+
     // Ordena em duas camadas:
     //  1) Status: tudo que NÃO está "ativo" (em negociação, aguardando
     //     retorno, novas experiências, inativo) vai pro topo — é o pipeline
@@ -13535,9 +13579,26 @@
       return b.faturamentoCents - a.faturamentoCents;
     });
 
+    // Espaço de evento x parceiro de experiência.
+    // Um lugar contratado pra um evento entra na venda como fornecedor
+    // (é a quem se paga), e por isso aparecia aqui como se fosse
+    // parceiro. Fica de fora da lista quem está cadastrado em Locais p/
+    // eventos E não tem nenhuma experiência no catálogo — a experiência
+    // é o que define parceria. Assim, um ateliê que dá oficina E aluga o
+    // espaço continua sendo parceiro, como deve ser.
+    // Nada some do financeiro: o repasse segue no evento, e o botão
+    // abaixo da busca mostra os espaços quando você quiser conferir.
+    const espacos = [];
+    const parceiros = [];
+    list.forEach(f => {
+      const ehEspaco = venueKeys && venueKeys.has && venueKeys.has(f.key) && f.experiencesTotal === 0;
+      (ehEspaco ? espacos : parceiros).push(f);
+    });
+    let mostrarEspacos = false;
+
     // Totais GLOBAIS vêm da RPC financial_summary (não da soma das linhas).
     // Isso garante que multi-fornecedor não duplica no header.
-    const totalCount = list.length;
+    const totalCount = parceiros.length;
     const totalGross = summary ? Number(summary.gross_confirmado_centavos) || 0 : 0;
     const totalReceita = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
     const totalRepassesAll = summary
@@ -13565,11 +13626,41 @@
     // você quer. Sem termo, mostra todos.
     const searchInput = document.getElementById('fornecedores-search');
 
+    // Botão "mostrar espaços": criado uma vez, do lado do contador.
+    // Recriado a cada render (removendo o anterior) porque o handler
+    // fecha sobre o `mostrarEspacos` e o `renderFornecedoresRows` DESTE
+    // render — reaproveitar o botão antigo deixaria o clique preso na
+    // lista da visita anterior.
+    (function montaBotaoEspacos() {
+      const antigo = document.getElementById('fornecedores-espacos-toggle');
+      if (antigo && antigo.parentNode) antigo.parentNode.removeChild(antigo);
+      if (!espacos.length || !countEl || !countEl.parentNode) return;
+      const btn = document.createElement('button');
+      btn.id = 'fornecedores-espacos-toggle';
+      btn.type = 'button';
+      btn.style.cssText = 'margin-left:10px;padding:3px 10px;font-size:.75rem;' +
+        'border:1px solid #e3d9c6;background:#fff;border-radius:12px;cursor:pointer;' +
+        'font-family:inherit;color:#8a7d5f;';
+      btn.addEventListener('click', () => {
+        mostrarEspacos = !mostrarEspacos;
+        renderFornecedoresRows();
+      });
+      countEl.parentNode.insertBefore(btn, countEl.nextSibling);
+    })();
+
     function renderFornecedoresRows() {
+      const btnEspacos = document.getElementById('fornecedores-espacos-toggle');
+      if (btnEspacos) {
+        btnEspacos.textContent = (mostrarEspacos ? 'Ocultar' : 'Mostrar') +
+          ' ' + espacos.length + ' espaço' + (espacos.length !== 1 ? 's' : '') + ' de evento';
+      }
+      // Base da tela: só parceiros de experiência; com o botão ligado,
+      // os espaços entram junto (pra conferir repasse pendente, por ex.).
+      const base = mostrarEspacos ? parceiros.concat(espacos) : parceiros;
       const term = (searchInput && searchInput.value || '').trim();
       const termLc = term.toLowerCase();
       const filtered = termLc
-        ? list.filter(f => {
+        ? base.filter(f => {
             const meta = metaByKey.get(f.key);
             const hay = [
               f.nome,
@@ -13580,12 +13671,12 @@
             ].filter(Boolean).join(' ').toLowerCase();
             return hay.indexOf(termLc) !== -1;
           })
-        : list;
+        : base;
 
       if (countEl) {
         countEl.textContent = term
-          ? filtered.length + ' de ' + list.length + ' fornecedor' + (list.length !== 1 ? 'es' : '')
-          : list.length + ' fornecedor' + (list.length !== 1 ? 'es' : '');
+          ? filtered.length + ' de ' + base.length + ' fornecedor' + (base.length !== 1 ? 'es' : '')
+          : base.length + ' fornecedor' + (base.length !== 1 ? 'es' : '');
       }
 
       if (!filtered.length) {
@@ -18342,6 +18433,20 @@
         $('ms-payout-status').value = mode === 'duplicate'
           ? 'pendente'
           : (data.payout_status === 'pago' ? 'pago' : 'pendente');
+        // "É um espaço" já vem marcado se esse nome está em Locais p/
+        // eventos — senão, reabrir a venda e salvar desmarcaria o que a
+        // admin já tinha classificado. Assíncrono de propósito: não vale
+        // segurar a abertura do modal por causa disso.
+        const venueBox = $('ms-payout-supplier-venue');
+        if (venueBox) {
+          venueBox.checked = false;
+          const nomeForn = (data.supplier_name || '').trim();
+          if (nomeForn) {
+            venueKeysSet()
+              .then(keys => { if (keys.has(fornecedorKey(nomeForn))) venueBox.checked = true; })
+              .catch(() => {});
+          }
+        }
       }
       _finRecalcManualSaleTotal();
       if (expRef) await _finAutoFillFromExperience(expRef);
@@ -18541,6 +18646,19 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+
+      // Espaço do evento: a admin marcou que esse "fornecedor" é, na
+      // verdade, o lugar contratado (bar, café, salão). Cadastra em
+      // Locais p/ eventos — é isso que o tira da aba Parceiros, que
+      // passa a ignorar quem é espaço e não tem experiência nenhuma.
+      // O repasse continua igual: quem foi contratado segue a receber.
+      // Best-effort: a venda já gravou, então erro aqui só loga.
+      if (hasPayout && supplierName
+          && $('ms-payout-supplier-venue') && $('ms-payout-supplier-venue').checked) {
+        try { await _finEnsureVenue(supplierName); }
+        catch (e) { console.warn('[Admin] não consegui cadastrar o espaço em Locais p/ eventos:', e); }
+      }
+
       // Só em venda NOVA: dispara o mesmo aviso "Nova venda 🎉" que sai
       // nas vendas automáticas (Stripe/MP). Best-effort — não bloqueia
       // nem falha o salvamento se o e-mail não sair (a venda já gravou).

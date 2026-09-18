@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 132;
+      var EXPECTED = 133;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -4545,6 +4545,15 @@
           <input type="text" id="ms-payout-supplier" list="ms-payout-supplier-datalist"
                  autocomplete="off" placeholder="Digite ou selecione...">
           <datalist id="ms-payout-supplier-datalist"></datalist>
+          <!-- Espaço x parceiro: um bar/café/salão contratado pra UM evento
+               não é parceiro de experiência, mas caía na aba Parceiros só
+               por ter repasse. Marcando aqui, ele vai pra "Locais p/
+               eventos" e sai da lista de Parceiros — o repasse continua
+               igual, só a classificação muda. -->
+          <label style="display:flex;align-items:flex-start;gap:7px;margin-top:8px;font-size:.82rem;color:#555;cursor:pointer;line-height:1.35;">
+            <input type="checkbox" id="ms-payout-supplier-venue" style="width:15px;height:15px;margin:2px 0 0;flex:none;">
+            <span>É um <strong>espaço</strong> que contratei (bar, café, salão) — salva em “Locais p/ eventos” e não entra em Parceiros</span>
+          </label>
         </div>
 
         <div class="admin__form-field" id="ms-payout-amount-wrap" style="display:none;">
@@ -4604,7 +4613,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-acessos.js?v=1"></script>
-<script src="admin.js?v=233"></script>
+<script src="admin.js?v=234"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
