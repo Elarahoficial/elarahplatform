@@ -11,12 +11,11 @@
 //   * zapi (legado) — automatiza um número comum via QR code. Funciona com
 //     texto livre, mas a Meta pode banir o número em disparo frio.
 //
-// Qual entra em ação: WHATSAPP_PROVIDER ("meta" | "zapi"), default zapi —
-// cadastrar as credenciais da Meta NÃO migra os fluxos transacionais
-// sozinho. O aviso pra lista de interesse é a exceção: ele pede a oficial
-// (preferOfficial) e vai por ela assim que as credenciais existirem, porque
-// é disparo frio. Nunca há fallback silencioso: provedor escolhido sem
-// credencial = NÃO ENVIA (fail-closed), com erro claro.
+// Qual entra em ação: OFICIAL por padrão. O número da Elarah vive na Cloud
+// API da Meta, então é por lá que tudo sai. O legado só entra com
+// WHATSAPP_PROVIDER=zapi explícito (saída de emergência). Nunca há fallback
+// silencioso entre os dois: provedor sem credencial = NÃO ENVIA
+// (fail-closed), com erro claro.
 //
 // Cabeçalho de imagem nos templates: a Meta aprova a ESTRUTURA, e a foto vai
 // em cada envio — então cada pessoa recebe a foto do evento dela. Ligado por
@@ -66,15 +65,14 @@ const META_GRAPH_BASE =
 const META_GRAPH_VERSION = (Deno.env.get("META_GRAPH_VERSION") ?? "").trim() || "v21.0";
 const META_LANG = (Deno.env.get("META_TEMPLATE_LANG") ?? "pt_BR").trim() || "pt_BR";
 
-// Provedor PADRÃO das mensagens transacionais (confirmação, lembrete,
-// feedback, pendente). EXPLÍCITO de propósito: cadastrar as credenciais da
-// Meta NÃO migra esses fluxos sozinho — eles só mudam quando
-// WHATSAPP_PROVIDER=meta, e aí os templates deles têm que estar aprovados.
-// Assim ninguém acorda com a confirmação de reserva parando de chegar.
+// Provedor: OFICIAL DA META por padrão. O número da Elarah vive na Cloud API,
+// então é por lá que tudo sai. O caminho legado (QR code) segue no arquivo
+// só como saída de emergência, e exige WHATSAPP_PROVIDER=zapi explícito —
+// ninguém cai nele por acidente.
 const PROVIDER: "meta" | "zapi" = (() => {
   const raw = (Deno.env.get("WHATSAPP_PROVIDER") ?? "").trim().toLowerCase();
-  if (raw === "meta" || raw === "oficial" || raw === "cloud") return "meta";
-  return "zapi";
+  if (raw === "zapi" || raw === "z-api" || raw === "legado") return "zapi";
+  return "meta";
 })();
 
 // A oficial está pronta pra uso (credenciais presentes)? Independe do
@@ -302,12 +300,16 @@ function maskPhoneLocal(raw: unknown): string {
 // Nome default = o que está em docs/whatsapp-oficial-meta.md pra você
 // submeter no WhatsApp Manager. Se aprovar com outro nome, sobrescreva pelo
 // secret correspondente — sem mexer em código.
+// Nomes dos templates JÁ APROVADOS na conta da Elarah (criados em agosto).
+// Cada um pode ser corrigido por secret, sem tocar em código — use o
+// diagnóstico (admin-whatsapp-templates) pra conferir nome e nº de variáveis.
 const META_TEMPLATE_DEFAULTS: Record<string, string> = {
-  confirmation: "elarah_reserva_confirmada",
-  reminder48: "elarah_lembrete_48h",
-  feedback: "elarah_pedido_feedback",
-  pending: "elarah_reserva_pendente",
+  confirmation: "elarah_confirmacao",
+  reminder48: "elarah_lembrete_2dias",
+  feedback: "elarah_feedback",
+  pending: "elarah_pagamento_pendente",
   byelarah_aviso: "elarah_inscricoes_abertas",
+  // Ainda não existem na conta — criar quando for usar estes fluxos.
   instrucoes: "elarah_instrucoes_pos_compra",
   fornecedor: "elarah_aviso_parceira",
 };

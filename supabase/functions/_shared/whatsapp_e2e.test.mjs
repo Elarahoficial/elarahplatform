@@ -234,10 +234,14 @@ async function loadWA(env) {
   return await import(WA_PATH + "?e2e=" + _v);
 }
 
+// Env do canal LEGADO. Agora o padrão do sistema é a oficial da Meta, então
+// estes testes pedem o legado EXPLICITAMENTE — é o que garante que a saída de
+// emergência continua funcionando.
 const PROD_ENV = {
   WHATSAPP_SENDING_ENABLED: "true",
   WHATSAPP_ENV: "production",
   WHATSAPP_ROLLOUT_PERCENT: "100", // liberado DE PROPÓSITO (fail-closed: ausente = 0)
+  WHATSAPP_PROVIDER: "zapi",
   ZAPI_INSTANCE_ID: "INST_FAKE",
   ZAPI_TOKEN: "TOK_FAKE",
   ZAPI_CLIENT_TOKEN: "CLIENT_FAKE",
@@ -851,8 +855,8 @@ async function run() {
     const WAm = await loadWA(META_ENV);
     const zm = installMetaMock();
     check("credenciais da Meta cadastradas → oficial pronta", WAm.whatsappOfficialReady() === true);
-    check("mas o provedor PADRÃO segue o legado (não migra nada sozinho)",
-      WAm.whatsappProviderName() === "zapi");
+    check("e a oficial é o provedor PADRÃO (o legado só com pedido explícito)",
+      WAm.whatsappProviderName() === "meta");
 
     const onda = {
       id: "onda-meta", item_slug: "perfumaria-criativa",
@@ -959,9 +963,11 @@ async function run() {
     // O ARRANJO REAL PEDIDO: confirmação/lembrete/feedback continuam no canal
     // de sempre (já funcionam, templates não aprovados na oficial), e SÓ o
     // aviso pra lista de interesse — o disparo frio — sai pela oficial.
-    const MISTO = { ...PROD_ENV, ...META_ENV };   // credenciais dos dois
+    // Legado pedido explicitamente + credenciais da oficial presentes.
+    const MISTO = { ...PROD_ENV, ...META_ENV };   // PROD_ENV traz WHATSAPP_PROVIDER=zapi
     const WAx = await loadWA(MISTO);
-    check("misto: provedor padrão continua legado", WAx.whatsappProviderName() === "zapi");
+    check("misto: com o legado pedido explicitamente, é ele quem leva o transacional",
+      WAx.whatsappProviderName() === "zapi");
     check("misto: oficial disponível pro fluxo que pedir", WAx.whatsappOfficialReady() === true);
 
     // 1) Confirmação de reserva → Z-API (texto/imagem), como hoje.
@@ -1256,6 +1262,29 @@ async function run() {
     );
     await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-D"), { telefone_digits: CLIENT_A });
     check("com o aviso automático desligado → só a cliente recebe", zf.calls.length === 1);
+  }
+
+  {
+    // O PADRÃO É A OFICIAL: sem WHATSAPP_PROVIDER cadastrado, tudo sai pela
+    // Meta. O legado só entra com pedido explícito.
+    const WAd = await loadWA(META_ENV);
+    check("sem WHATSAPP_PROVIDER → provedor é a oficial", WAd.whatsappProviderName() === "meta");
+    const WAz = await loadWA({ ...META_ENV, WHATSAPP_PROVIDER: "zapi" });
+    check("WHATSAPP_PROVIDER=zapi → volta pro legado (saída de emergência)",
+      WAz.whatsappProviderName() === "zapi");
+
+    // Confirmação de reserva na oficial vai por TEMPLATE, não texto solto.
+    const zd = installMetaMock();
+    const sb = makeSupabase([bookingSeed({ id: "bkd-A" })]);
+    const r = await WAd.sendBookingConfirmationGated(sb, sb._bookings.get("bkd-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("confirmação sai pela oficial por padrão", r.sent === true && zd.calls.length >= 1,
+      JSON.stringify({ sent: r.sent, calls: zd.calls.length }));
+    check("e usa o template aprovado da conta (elarah_confirmacao)",
+      zd.calls[0].template === "elarah_confirmacao", String(zd.calls[0].template));
+    check("com os 4 parâmetros do fluxo de confirmação", zd.calls[0].params.length === 4,
+      JSON.stringify(zd.calls[0].params));
   }
 
   // ---------- Relatório ----------
