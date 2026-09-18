@@ -1936,6 +1936,10 @@
     // "de" é o campo valor_cheio_centavos, não o preço praticado.
     precoCheioBR: precoCheioBR,
     precoDeHTML: precoDeHTML,
+    // Promoção sazonal (promo.js): preço realmente cobrado hoje.
+    // Vitrine e checkout usam estes dois no lugar de exp.preco.
+    precoVigente: precoVigente,
+    precoVigenteCentavos: precoVigenteCentavos,
     // Prazo de remarcação sem custo (por categoria) — ver bloco
     // PRAZO DE REMARCAÇÃO. Devolve { horas, rotulo }.
     prazoRemarcacaoDe: prazoRemarcacaoDe,
@@ -2028,14 +2032,71 @@
     return precoParaCentavos(exp.preco);
   }
 
+  // =============================================================
+  // PROMOÇÃO SAZONAL (promo.js) — desconto em cima do valor cheio
+  // -------------------------------------------------------------
+  // Enquanto a campanha estiver na janela de datas, TODA experiência
+  // é vendida por "valor cheio - X%". A configuração e a matemática
+  // vivem em promo.js (gêmeo do backend em _shared/promo.ts); aqui só
+  // ligamos isso ao preço da experiência.
+  //
+  // Sem promo.js na página, tudo volta ao preço praticado — o site
+  // degrada pro comportamento normal em vez de mostrar um desconto
+  // que o checkout não cobraria.
+  // =============================================================
+
+  // Base do desconto: o valor cheio quando ele existe e é maior que o
+  // praticado; senão o próprio praticado — nas By Elarah o praticado
+  // JÁ é o valor cheio, então é ele que leva os 20%.
+  function basePromoDe(exp) {
+    var cheio = valorCheioDe(exp);
+    var praticado = precoPraticadoDe(exp);
+    if (!praticado) return cheio || null;
+    if (cheio && cheio > praticado) return cheio;
+    return praticado;
+  }
+
+  // Preço que a cliente paga HOJE, em centavos. Fora da janela da
+  // promoção é o preço praticado de sempre.
+  function precoVigenteCentavos(exp) {
+    var praticado = precoPraticadoDe(exp);
+    var promo = window.ElarahPromo;
+    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return praticado;
+    var base = basePromoDe(exp);
+    if (!base) return praticado;
+    var comDesconto = promo.centavos(base);
+    if (!comDesconto) return praticado;
+    // TRAVA: promoção nunca aumenta preço. Se a experiência já era
+    // vendida abaixo de "cheio - 20%", ela mantém o preço menor.
+    if (praticado && comDesconto > praticado) return praticado;
+    return comDesconto;
+  }
+
+  // Rótulo do preço vigente, pronto pro formatPrecoBR de quem exibe.
+  // É o que TODA vitrine e o checkout devem usar no lugar de
+  // exp.preco — exp.preco continua sendo o preço de cadastro (o que o
+  // admin digitou), e não deve aparecer na tela durante a campanha.
+  function precoVigente(exp) {
+    if (!exp || typeof exp !== 'object') return '';
+    var promo = window.ElarahPromo;
+    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return exp.preco || '';
+    var c = precoVigenteCentavos(exp);
+    if (!c) return exp.preco || '';
+    return promo.formatar(c);
+  }
+
   // Rótulo do "de" pra exibir riscado. Ex.: "R$ 610".
-  // Devolve '' quando não há desconto real a mostrar: sem valor cheio
-  // cadastrado, ou valor cheio <= preço praticado (caso By Elarah).
+  // É sempre a MAIOR referência honesta: o valor cheio quando existe,
+  // senão o preço praticado (que durante a promoção também vira "de").
+  // Devolve '' quando não há desconto real a mostrar — fora da
+  // campanha, uma By Elarah continua sem "de", como sempre foi.
   function precoCheioBR(exp) {
     var cheio = valorCheioDe(exp);
     var praticado = precoPraticadoDe(exp);
-    if (!cheio || !praticado || cheio <= praticado) return '';
-    return formatPrecoBR(String(cheio / 100).replace('.', ','));
+    var vigente = precoVigenteCentavos(exp);
+    var de = (cheio && (!praticado || cheio > praticado)) ? cheio : praticado;
+    if (!de || !vigente || de <= vigente) return '';
+    return formatPrecoBR(String(de / 100).replace('.', ','));
   }
 
   // =============================================================

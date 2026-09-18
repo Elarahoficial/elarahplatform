@@ -433,6 +433,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
     window.__elarahRenderCards = renderCards;
   }
 
+  // Preço que a cliente paga hoje: o vigente (com a promoção sazonal
+  // quando ela está no ar) e nunca o preço de cadastro.
+  function precoVigenteDe(exp) {
+    return (window.ElarahData && ElarahData.precoVigente)
+      ? ElarahData.precoVigente(exp)
+      : ((exp && exp.preco) || '');
+  }
+
   function createCard(exp) {
     const colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
     const card = document.createElement('article');
@@ -613,7 +621,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
           </p>
         </div>
         <div class="card__footer">
-          <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
+          <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(precoVigenteDe(exp)) : precoVigenteDe(exp))}</strong></p>
           ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
           <button type="button" class="card__reserve-btn"
             data-reserve
@@ -1695,7 +1703,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // e aplicar o visual premium.
       fromExperience: true,
       experienceId: exp.id,
-      precoLabel: exp.preco || ''
+      // Preço vigente (com a promoção sazonal quando ativa) — é ele
+      // que vira o data-attribute lido pelo checkout.
+      precoLabel: ((window.ElarahData && ElarahData.precoVigente)
+        ? ElarahData.precoVigente(exp) : exp.preco) || ''
     };
   }
 
@@ -2566,7 +2577,15 @@ if (groupForm) {
       if (!card) return '';
       const el = card.querySelector('[data-experience-preco], .card__price, .card__preco');
       if (!el) return '';
-      return (el.getAttribute('data-experience-preco') || el.textContent || '').trim();
+      const attr = el.getAttribute('data-experience-preco');
+      if (attr) return attr.trim();
+      // O bloco de preço tem DOIS valores quando há desconto: o "de"
+      // riscado (<span class="card__price-de">) e o que se paga
+      // (<strong>). Ler o textContent inteiro devolveria
+      // "R$ 162 R$ 129,60" — que não é preço nenhum. O <strong> é o
+      // valor cobrado; só caímos no textContent quando ele não existe.
+      const forte = el.querySelector('strong');
+      return ((forte ? forte.textContent : el.textContent) || '').trim();
     }
 
     // "R$ 1.234,50" / "R$383" / "383,00" -> 38300
@@ -6146,7 +6165,9 @@ if (groupForm) {
 
     function openDescriptionModal(exp, triggerBtn, resolve) {
       const horario = readActiveHorario(triggerBtn) || exp.horario || '';
-      const precoLabel = exp.preco || (triggerBtn && triggerBtn.getAttribute('data-experience-preco')) || '';
+      const precoLabel = ((window.ElarahData && ElarahData.precoVigente)
+        ? ElarahData.precoVigente(exp) : exp.preco)
+        || (triggerBtn && triggerBtn.getAttribute('data-experience-preco')) || '';
       const imagem = exp.imagem && String(exp.imagem).trim() ? exp.imagem : '';
       const bairro = exp.bairro || '';
       const data = exp.data || '';
@@ -6496,7 +6517,9 @@ if (groupForm) {
       // propagada pro checkout via window.__elarahDescVariant, que o modal
       // de reserva lê pra pré-selecionar a Pessoa 1.
       var _descVariantItems = (Array.isArray(exp.variantItems) && exp.variantItems.length)
-        ? exp.variantItems
+        ? ((window.ElarahPromo && ElarahPromo.itensComDesconto)
+            ? ElarahPromo.itensComDesconto(exp.variantItems)
+            : exp.variantItems)
         : (Array.isArray(exp.variantOptions) && exp.variantOptions.length
             ? exp.variantOptions.map(function (n) { return { nome: String(n), preco: '', imagem: '' }; })
             : []);
@@ -7283,8 +7306,12 @@ if (groupForm) {
               : null;
             expCategoria = exp.categoria || null;
             if (!precoLabel || !precoCentavos) {
-              precoLabel = exp.preco || precoLabel;
-              precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
+              // Preço VIGENTE (com a promoção quando ativa) — nunca o de
+              // cadastro, senão o resumo cobraria diferente do anunciado.
+              var _vigente = (window.ElarahData && ElarahData.precoVigente)
+                ? ElarahData.precoVigente(exp) : exp.preco;
+              precoLabel = _vigente || precoLabel;
+              precoCentavos = parsePrecoToCents(_vigente) || precoCentavos;
             }
             if (Array.isArray(exp.horarios) && exp.horarios.length) {
               // Dedup textual: recorrência repete o mesmo horario_label pra
@@ -7318,7 +7345,10 @@ if (groupForm) {
             // Itens ricos (nome + preço) — pra o modal cobrar o preço certo
             // de cada opção (Individual/Dupla/Trio com valores diferentes).
             if (Array.isArray(exp.variantItems) && exp.variantItems.length) {
-              variantItemsArr = exp.variantItems.slice();
+              // Cópia JÁ com o desconto da promoção nos preços das opções.
+              variantItemsArr = (window.ElarahPromo && ElarahPromo.itensComDesconto)
+                ? ElarahPromo.itensComDesconto(exp.variantItems)
+                : exp.variantItems.slice();
             }
           }
         } catch (e) {}

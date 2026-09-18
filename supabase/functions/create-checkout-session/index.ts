@@ -61,6 +61,7 @@ import {
 } from "../_shared/financial.ts";
 import { quoteForService, type ShippingOption } from "../_shared/shipping.ts";
 import { getValidAccessToken } from "../_shared/melhor_envio.ts";
+import { precoLabelBR, precoPromocionalCentavos } from "../_shared/promo.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -663,6 +664,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   }
 
   let cents = parsePrecoToCents(exp.preco);
+  let usouPrecoDeVariacao = false;
   // ===== Preço por variação (kits — Elarah em Casa) =====
   // Se o cliente escolheu uma variação E ela tem preço próprio em
   // experiences.variant_items, ESSE é o preço autoritativo. Recalculado
@@ -700,6 +702,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
 
     if (dbVariantCents) {
       cents = dbVariantCents;
+      usouPrecoDeVariacao = true;
       console.info(
         "[create-checkout-session] preço por variação aplicado (banco)",
         "variante=" + variantSelected,
@@ -722,8 +725,35 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
         "ação=verifique se variant_items desta experiência tem o preço da opção",
       );
       cents = variantExpectedCents;
+      usouPrecoDeVariacao = true;
     }
   }
+
+  // ===== Promoção sazonal (_shared/promo.ts) =====
+  // Mesma regra do booking_guard §5c (PIX/Pagar.me): o desconto da
+  // campanha incide sobre o valor CHEIO da experiência — ou sobre o
+  // preço da variação escolhida, que não tem valor cheio próprio.
+  // Fora da janela da promoção não tem efeito nenhum.
+  if (cents) {
+    const precoAntesDaPromo = cents;
+    cents = precoPromocionalCentavos(
+      cents,
+      usouPrecoDeVariacao ? null : exp.valor_cheio_centavos,
+    );
+    if (cents !== precoAntesDaPromo) {
+      console.info(
+        "[create-checkout-session] promoção aplicada",
+        "exp=" + exp.id,
+        "de=" + precoAntesDaPromo,
+        "por=" + cents,
+      );
+      // preco_label é o que aparece no e-mail de confirmação. Reescreve
+      // pro valor realmente cobrado; o preço de cadastro no banco não
+      // é tocado.
+      exp.preco = precoLabelBR(cents);
+    }
+  }
+
   if (!cents) {
     console.error("[create-checkout-session] invalid price", exp.preco);
     return jsonResponse({ error: "invalid_price" }, 422);
