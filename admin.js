@@ -565,6 +565,7 @@
       case 'captacao':    await renderCaptacao(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
+      case 'desconto-geral': await renderDescontoGeral(); break;
       case 'contabilidade': await renderContabilidade(); break;
       case 'insights':    await renderDiagnostico(); break;
       case 'analytics':   await renderAnalytics(); break;
@@ -893,6 +894,225 @@
 
   let couponsCache = null;
   let couponsExperiencesCache = null;
+
+  // =============================================================
+  // DESCONTO GERAL — o percentual que vale pro site inteiro
+  // -------------------------------------------------------------
+  // Edita a linha única de public.desconto_geral (id = 1). Vitrine
+  // (promo.js) e cobrança (_shared/promo.ts) leem a MESMA linha, então
+  // salvar aqui muda o site e o checkout juntos, sem deploy.
+  //
+  // Os preços das experiências NÃO são tocados: o desconto é aplicado
+  // por cima, na hora. Passou a data de fim, tudo volta ao normal
+  // sozinho — não existe "desfazer" pra esquecer de fazer.
+  // =============================================================
+
+  // <input type="datetime-local"> fala o horário LOCAL do navegador
+  // (que é o de Brasília pra quem opera o painel) sem fuso; o banco
+  // guarda timestamptz. Estas duas funções fazem a ponte.
+  function dgParaInput(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+      'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function dgDoInput(valor) {
+    if (!valor) return null;
+    var d = new Date(valor); // sem sufixo de fuso = horário local
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
+  function dgMsg(texto, erro) {
+    var el = document.getElementById('dg-msg');
+    if (!el) return;
+    if (!texto) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.style.background = erro ? '#fdecea' : '#eaf7ee';
+    el.style.color = erro ? '#c0392b' : '#1a8a4a';
+    el.textContent = texto;
+  }
+
+  // Redesenha o cartão "Agora no site" e a prévia da barra a partir do
+  // que está NOS CAMPOS — assim a admin vê o efeito antes de salvar.
+  function dgAtualizarPrevia() {
+    var ativo = !!(document.getElementById('dg-ativo') || {}).checked;
+    var pct = Number((document.getElementById('dg-percentual') || {}).value || 0);
+    var inicio = dgDoInput((document.getElementById('dg-inicio') || {}).value);
+    var fim = dgDoInput((document.getElementById('dg-fim') || {}).value);
+    var titulo = ((document.getElementById('dg-titulo') || {}).value || '').trim();
+    var subtitulo = ((document.getElementById('dg-subtitulo') || {}).value || '').trim();
+
+    var fimCurto = '';
+    if (fim) {
+      var df = new Date(fim);
+      fimCurto = String(df.getDate()).padStart(2, '0') + '/' + String(df.getMonth() + 1).padStart(2, '0');
+    }
+
+    var previa = document.getElementById('dg-previa');
+    if (previa) {
+      previa.textContent = (titulo || (pct > 0 ? pct + '% OFF em todas as experiências' : 'Sem desconto configurado')) +
+        (subtitulo ? '  ' + subtitulo : (fimCurto ? '  Só até ' + fimCurto : ''));
+      previa.style.opacity = (ativo && pct > 0) ? '1' : '.45';
+    }
+
+    var texto = document.getElementById('dg-status-texto');
+    var detalhe = document.getElementById('dg-status-detalhe');
+    if (!texto || !detalhe) return;
+
+    var agora = Date.now();
+    var valendo = ativo && pct > 0 && inicio && fim &&
+      agora >= new Date(inicio).getTime() && agora <= new Date(fim).getTime();
+
+    if (valendo) {
+      texto.textContent = pct + '% OFF valendo agora';
+      texto.style.color = '#1a8a4a';
+      detalhe.textContent = 'Uma experiência de R$ 180 está sendo vendida por ' +
+        'R$ ' + (180 * (100 - pct) / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) +
+        '. Termina em ' + new Date(fim).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '.';
+    } else if (ativo && pct > 0 && inicio && agora < new Date(inicio).getTime()) {
+      texto.textContent = 'Programado, ainda não começou';
+      texto.style.color = '#b8860b';
+      detalhe.textContent = 'Começa em ' + new Date(inicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '.';
+    } else if (ativo && pct > 0 && fim && agora > new Date(fim).getTime()) {
+      texto.textContent = 'Validade encerrada — preços normais';
+      texto.style.color = '#666';
+      detalhe.textContent = 'Terminou em ' + new Date(fim).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) +
+        '. Pra usar de novo, é só esticar a data e salvar.';
+    } else {
+      texto.textContent = 'Sem desconto — preços normais';
+      texto.style.color = '#666';
+      detalhe.textContent = 'O site está vendendo pelo preço cadastrado em cada experiência.';
+    }
+    // O cartão mostra o estado dos CAMPOS; enquanto houver alteração não
+    // salva, avisa que o site ainda não mudou.
+    if (dgSujo) {
+      detalhe.textContent += ' (prévia — clique em Salvar pra valer no site)';
+    }
+  }
+
+  var dgSujo = false;
+  var dgWired = false;
+
+  async function renderDescontoGeral() {
+    var sb = window.supabaseClient;
+    dgMsg('');
+    if (!sb) {
+      dgMsg('Cliente Supabase não inicializado. Recarregue a página.', true);
+      return;
+    }
+
+    try {
+      var res = await sb.from('desconto_geral').select('*').eq('id', 1).maybeSingle();
+      if (res.error) throw res.error;
+      var row = res.data || { ativo: false, percentual: 0, inicio: null, fim: null, titulo: '', subtitulo: '' };
+
+      var set = function (id, valor) {
+        var el = document.getElementById(id);
+        if (el) el.value = valor == null ? '' : valor;
+      };
+      var chk = document.getElementById('dg-ativo');
+      if (chk) chk.checked = row.ativo === true;
+      set('dg-percentual', row.percentual || '');
+      set('dg-inicio', dgParaInput(row.inicio));
+      set('dg-fim', dgParaInput(row.fim));
+      set('dg-titulo', row.titulo || '');
+      set('dg-subtitulo', row.subtitulo || '');
+      dgSujo = false;
+      dgAtualizarPrevia();
+    } catch (e) {
+      console.error('[Admin] desconto geral — falha ao carregar:', e);
+      dgMsg('Não foi possível carregar o desconto geral. Se a migração ' +
+        'sql/elarah_desconto_geral.sql ainda não rodou, rode antes de usar esta aba.', true);
+      return;
+    }
+
+    if (dgWired) return;
+    dgWired = true;
+
+    ['dg-ativo', 'dg-percentual', 'dg-inicio', 'dg-fim', 'dg-titulo', 'dg-subtitulo'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () { dgSujo = true; dgAtualizarPrevia(); });
+      el.addEventListener('change', function () { dgSujo = true; dgAtualizarPrevia(); });
+    });
+
+    var salvar = document.getElementById('dg-salvar');
+    if (salvar) salvar.addEventListener('click', function () { dgSalvar(false); });
+
+    var desligar = document.getElementById('dg-desligar');
+    if (desligar) {
+      desligar.addEventListener('click', function () {
+        if (!confirm('Desligar o desconto agora? Os preços do site voltam ao normal na hora.')) return;
+        dgSalvar(true);
+      });
+    }
+  }
+
+  async function dgSalvar(desligando) {
+    var sb = window.supabaseClient;
+    if (!sb) { dgMsg('Cliente Supabase não inicializado.', true); return; }
+
+    var ativo = desligando ? false : !!(document.getElementById('dg-ativo') || {}).checked;
+    var pct = Math.round(Number((document.getElementById('dg-percentual') || {}).value || 0));
+    var inicio = dgDoInput((document.getElementById('dg-inicio') || {}).value);
+    var fim = dgDoInput((document.getElementById('dg-fim') || {}).value);
+    var titulo = ((document.getElementById('dg-titulo') || {}).value || '').trim();
+    var subtitulo = ((document.getElementById('dg-subtitulo') || {}).value || '').trim();
+
+    // Validação só aperta quando o desconto vai ficar LIGADO — desligar
+    // nunca pode ser bloqueado por campo mal preenchido.
+    if (ativo) {
+      if (!(pct >= 1 && pct <= 90)) {
+        dgMsg('O percentual precisa ser um número entre 1 e 90.', true); return;
+      }
+      if (!inicio || !fim) {
+        dgMsg('Preencha as duas datas: quando começa e até quando vale.', true); return;
+      }
+      if (new Date(fim).getTime() <= new Date(inicio).getTime()) {
+        dgMsg('A data de fim precisa ser depois da data de início.', true); return;
+      }
+      if (new Date(fim).getTime() <= Date.now()) {
+        dgMsg('Essa data de fim já passou — o desconto não valeria nem por um minuto.', true); return;
+      }
+    }
+
+    var payload = {
+      id: 1,
+      ativo: ativo,
+      percentual: (pct >= 1 && pct <= 90) ? pct : 0,
+      inicio: inicio || new Date().toISOString(),
+      fim: fim || new Date().toISOString(),
+      titulo: titulo || null,
+      subtitulo: subtitulo || null,
+    };
+    try {
+      var user = null;
+      try {
+        var u = await sb.auth.getUser();
+        user = u && u.data && u.data.user ? u.data.user.id : null;
+      } catch (e) {}
+      if (user) payload.updated_by = user;
+
+      var res = await sb.from('desconto_geral').upsert(payload, { onConflict: 'id' });
+      if (res.error) throw res.error;
+
+      if (desligando) {
+        var chk = document.getElementById('dg-ativo');
+        if (chk) chk.checked = false;
+      }
+      dgSujo = false;
+      dgAtualizarPrevia();
+      dgMsg(ativo
+        ? 'Salvo. O desconto de ' + pct + '% já está valendo no site e no checkout.'
+        : 'Desconto desligado. O site voltou aos preços normais.', false);
+    } catch (e) {
+      console.error('[Admin] desconto geral — falha ao salvar:', e);
+      dgMsg('Não foi possível salvar: ' + (e.message || e), true);
+    }
+  }
 
   async function renderCoupons() {
     const tbody = document.getElementById('coupons-body');

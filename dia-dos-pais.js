@@ -250,7 +250,8 @@
       const data = (exp.data || '').trim();
       const horario = (exp.horario || '').trim();
       const bairro = (exp.bairro || '').trim();
-      const precoRaw = (exp.preco || '').trim();
+      const precoRaw = (((window.ElarahData && ElarahData.precoVigente)
+        ? ElarahData.precoVigente(exp) : exp.preco) || '').trim();
       const preco = (window.ElarahData && ElarahData.formatPrecoBR)
         ? ElarahData.formatPrecoBR(precoRaw)
         : precoRaw;
@@ -337,7 +338,8 @@
       const hero = 'assets/churrasco1.jpg';
 
       const rows = ordered.map(function (exp) {
-        const precoRaw = (exp.preco || '').trim();
+        const precoRaw = (((window.ElarahData && ElarahData.precoVigente)
+          ? ElarahData.precoVigente(exp) : exp.preco) || '').trim();
         const preco = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(precoRaw) : precoRaw;
         const special = isSpecial(exp);
         const meta = [exp.bairro, exp.data]

@@ -111,9 +111,11 @@
       ? '<img class="ddn-det__hero-img" src="' + esc(foto) + '" alt="' + esc(titulo) + '">'
       : '';
 
-    var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR && exp.preco)
-      ? ElarahData.formatPrecoBR(exp.preco)
-      : (exp.preco || '');
+    var _precoVig = (window.ElarahData && ElarahData.precoVigente)
+      ? ElarahData.precoVigente(exp) : exp.preco;
+    var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR && _precoVig)
+      ? ElarahData.formatPrecoBR(_precoVig)
+      : (_precoVig || '');
 
     var metaItems = '';
     if (exp.duracao) {

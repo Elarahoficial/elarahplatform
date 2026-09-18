@@ -42,6 +42,7 @@
     { key: 'eventos-privados',     label: 'Eventos privados',     grupo: 'Vendas' },
     { key: 'giftcards',            label: 'Gift Cards',           grupo: 'Vendas' },
     { key: 'coupons',              label: 'Cupons',               grupo: 'Vendas' },
+    { key: 'desconto-geral',       label: 'Desconto geral',       grupo: 'Vendas' },
     { key: 'experiences',          label: 'Experiências',         grupo: 'Catálogo' },
     { key: 'byelarah',             label: 'By Elarah',            grupo: 'Catálogo' },
     { key: 'cotacao',              label: 'Cotação',              grupo: 'Catálogo' },

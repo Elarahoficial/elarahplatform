@@ -21,6 +21,11 @@
 // =============================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  carregarDescontoGeral,
+  precoLabelBR,
+  precoPromocionalCentavos,
+} from "./promo.ts";
 
 export interface GuardInput {
   experienciaId: string;
@@ -741,6 +746,31 @@ export async function reserveExperienceSlot(
         );
       }
     }
+  }
+
+  // ===== 5c. Desconto geral (_shared/promo.ts) =====
+  // Última etapa do preço: o desconto configurado pela admin na aba
+  // "Desconto geral" incide sobre o preço já resolvido aqui. Sem
+  // campanha no ar, precoPromocionalCentavos devolve o mesmo valor.
+  //
+  // Fica DEPOIS da variação de propósito: se o cliente escolheu "Dupla",
+  // é o preço da Dupla que leva o desconto.
+  const descontoGeral = await carregarDescontoGeral(supabase);
+  const precoAntesDaPromo = baseCents;
+  baseCents = precoPromocionalCentavos(baseCents, descontoGeral);
+  if (baseCents !== precoAntesDaPromo) {
+    console.info(
+      "[Elarah Guard] desconto geral aplicado",
+      "exp=" + exp.id,
+      "de=" + precoAntesDaPromo,
+      "por=" + baseCents,
+      "pct=" + descontoGeral.percentual,
+    );
+    // preco_label alimenta o e-mail de confirmação ("qty × R$ X") e o
+    // extrato da reserva. Sem reescrever aqui, a cliente pagaria R$ 144
+    // e receberia um e-mail dizendo R$ 180. O preço de CADASTRO no banco
+    // não é tocado — só o rótulo desta reserva.
+    exp.preco = precoLabelBR(baseCents);
   }
 
   // ===== 6. Resolve user_id + nome =====

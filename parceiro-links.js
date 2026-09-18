@@ -106,10 +106,12 @@
   }
 
   function precoLabel(exp) {
+    var vig = (window.ElarahData && ElarahData.precoVigente)
+      ? ElarahData.precoVigente(exp) : exp.preco;
     if (window.ElarahData && ElarahData.formatPrecoBR) {
-      return ElarahData.formatPrecoBR(exp.preco) || '';
+      return ElarahData.formatPrecoBR(vig) || '';
     }
-    return String(exp.preco || '');
+    return String(vig || '');
   }
 
   // ===== Vínculo com o parceiro =====

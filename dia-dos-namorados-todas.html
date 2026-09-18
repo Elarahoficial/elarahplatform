@@ -236,13 +236,14 @@
 </div>
 </footer>
 
+<script src="promo.js?v=3"></script>
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=2" defer></script>
 <script src="phone-input.js?v=1"></script>
 <script src="password-toggle.js?v=1"></script>
 <script src="auth.js?v=14"></script>
-<script src="experiences-data.js?v=41"></script>
+<script src="experiences-data.js?v=42"></script>
 <script src="header-nav.js?v=1" defer></script>
 <script>
 // Reutiliza o renderVitrine do dia-dos-namorados.js MAS sem limite de 6.
@@ -340,7 +341,9 @@
       if (!e) return '';
       var titulo = (o.titulo_custom && o.titulo_custom.trim()) || e.nome;
       var badge = (o.badge_text && o.badge_text.trim()) || 'Especial Dia dos Namorados';
-      var preco = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(e.preco) : (e.preco || '');
+      var _precoVig = (window.ElarahData && ElarahData.precoVigente)
+        ? ElarahData.precoVigente(e) : e.preco;
+      var preco = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(_precoVig) : (_precoVig || '');
       var foto = (o.imagem_custom && o.imagem_custom.trim()) || e.imagem || '';
       var dt = firstDate.get(e.id);
       var dataChip = '';

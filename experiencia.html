@@ -346,15 +346,16 @@
     <div class="footer__bottom"><p>&copy; 2026 Elarah. Todos os direitos reservados.</p></div>
   </footer>
 
+<script src="promo.js?v=3"></script>
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=2" defer></script>
 <script src="phone-input.js?v=1"></script>
 <script src="password-toggle.js?v=1"></script>
 <script src="auth.js?v=14"></script>
-<script src="experiences-data.js?v=41"></script>
+<script src="experiences-data.js?v=42"></script>
 <script src="analytics.js?v=3"></script>
-<script src="kit-checkout.js?v=3"></script>
+<script src="kit-checkout.js?v=4"></script>
 <script src="script.js?v=91"></script><script>(function () {
   'use strict';
 
@@ -899,8 +900,14 @@
     // seletor funciona como preview/destaque na página; a escolha vinculante
     // por pessoa acontece no modal de checkout (script.js, via variantOptions).
     var _kitItems = (function () {
-      // Formato rico (nome + preço + foto).
-      if (Array.isArray(exp.variantItems) && exp.variantItems.length) return exp.variantItems;
+      // Formato rico (nome + preço + foto). Os preços das opções saem
+      // daqui JÁ com o desconto da promoção (cópia — nunca mexe no
+      // dado de cadastro que o admin edita).
+      if (Array.isArray(exp.variantItems) && exp.variantItems.length) {
+        return (window.ElarahPromo && ElarahPromo.itensComDesconto)
+          ? ElarahPromo.itensComDesconto(exp.variantItems)
+          : exp.variantItems;
+      }
       // Fallback: formato antigo (só nomes) — vira item simples { nome }.
       if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
         return exp.variantOptions
@@ -969,7 +976,9 @@
       '<aside class="exp-detail__booking">' +
       '<div class="exp-detail__price" id="exp-detail-price">' +
         ((window.ElarahData && ElarahData.precoDeHTML) ? ElarahData.precoDeHTML(exp, 'exp-detail__price-de') : '') +
-        esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) +
+        esc((window.ElarahData && ElarahData.formatPrecoBR)
+          ? ElarahData.formatPrecoBR(ElarahData.precoVigente ? ElarahData.precoVigente(exp) : exp.preco)
+          : exp.preco) +
       '</div>' +
       '<div class="exp-detail__installments" style="font-size:.85rem;color:#6b5d4f;margin-top:2px;">ou em até <strong>12x</strong> no cartão</div>' +
       variantSelectorHtml +
@@ -1033,7 +1042,9 @@
           var deHtml = (!usaPrecoDaVariante && window.ElarahData && ElarahData.precoDeHTML)
             ? ElarahData.precoDeHTML(exp, 'exp-detail__price-de')
             : '';
-          priceEl.innerHTML = deHtml + esc(fmtPreco(usaPrecoDaVariante ? it.preco : exp.preco));
+          var _precoBase = (window.ElarahData && ElarahData.precoVigente)
+            ? ElarahData.precoVigente(exp) : exp.preco;
+          priceEl.innerHTML = deHtml + esc(fmtPreco(usaPrecoDaVariante ? it.preco : _precoBase));
         }
         window.__elarahKitVariant = {
           expId: exp.id,

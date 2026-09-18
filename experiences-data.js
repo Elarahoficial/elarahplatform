@@ -680,6 +680,20 @@
 
     cachePromise = (async () => {
       let source = 'supabase';
+      // O desconto geral (promo.js) precisa estar carregado ANTES de
+      // qualquer preço ir pra tela: quem renderiza card espera por este
+      // load, então cobrir aqui resolve vitrine, detalhe e checkout de
+      // uma vez. Sem isso, o catálogo pintaria o preço cheio e só
+      // depois o desconto chegaria — piscando preço errado.
+      //
+      // Dispara JUNTO com a busca das experiências (não antes): são dois
+      // selects independentes, e enfileirá-los somaria uma ida ao banco
+      // no tempo até o primeiro card aparecer.
+      const promoPromise = (window.ElarahPromo && typeof window.ElarahPromo.carregar === 'function')
+        ? window.ElarahPromo.carregar().catch(function (e) {
+            console.warn('[Elarah] desconto geral não carregou — seguindo com preço normal', e);
+          })
+        : null;
       try {
         const { data, error } = await s
           .from(TABLE)
@@ -714,6 +728,9 @@
         console.warn('[Elarah] getAllExperiences exception — usando fallback:', e);
         cache = FALLBACK_SEEDS.slice();
       }
+      // Fecha a espera do desconto antes de entregar o catálogo: quem
+      // recebe esta lista desenha preço em seguida.
+      if (promoPromise) await promoPromise;
       // Diagnóstico explícito: conta quantas experiências têm
       // descrição não-vazia. Se "com descricao = 0" aparecer, a
       // modal nunca vai abrir — sinal claro de que os dados
@@ -2021,6 +2038,10 @@
     // "de" é o campo valor_cheio_centavos, não o preço praticado.
     precoCheioBR: precoCheioBR,
     precoDeHTML: precoDeHTML,
+    // Promoção sazonal (promo.js): preço realmente cobrado hoje.
+    // Vitrine e checkout usam estes dois no lugar de exp.preco.
+    precoVigente: precoVigente,
+    precoVigenteCentavos: precoVigenteCentavos,
     // Prazo de remarcação sem custo (por categoria) — ver bloco
     // PRAZO DE REMARCAÇÃO. Devolve { horas, rotulo }.
     prazoRemarcacaoDe: prazoRemarcacaoDe,
@@ -2113,14 +2134,57 @@
     return precoParaCentavos(exp.preco);
   }
 
+  // =============================================================
+  // PROMOÇÃO SAZONAL (promo.js) — desconto sobre o preço do site
+  // -------------------------------------------------------------
+  // Enquanto a campanha estiver na janela de datas, TODA experiência
+  // é vendida por "preço do site - X%". A configuração e a matemática
+  // vivem em promo.js (gêmeo do backend em _shared/promo.ts); aqui só
+  // ligamos isso ao preço da experiência.
+  //
+  // Sem promo.js na página, tudo volta ao preço praticado — o site
+  // degrada pro comportamento normal em vez de mostrar um desconto
+  // que o checkout não cobraria.
+  // =============================================================
+
+  // Preço que a cliente paga HOJE, em centavos. A base do desconto é o
+  // PREÇO DO SITE (o praticado), pra que o 20% anunciado seja 20% de
+  // verdade na tela. Fora da janela da promoção devolve o praticado,
+  // sem tocar em nada.
+  function precoVigenteCentavos(exp) {
+    var praticado = precoPraticadoDe(exp);
+    var promo = window.ElarahPromo;
+    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return praticado;
+    if (!praticado) return praticado;
+    var comDesconto = promo.centavos(praticado);
+    return comDesconto || praticado;
+  }
+
+  // Rótulo do preço vigente, pronto pro formatPrecoBR de quem exibe.
+  // É o que TODA vitrine e o checkout devem usar no lugar de
+  // exp.preco — exp.preco continua sendo o preço de cadastro (o que o
+  // admin digitou), e não deve aparecer na tela durante a campanha.
+  function precoVigente(exp) {
+    if (!exp || typeof exp !== 'object') return '';
+    var promo = window.ElarahPromo;
+    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return exp.preco || '';
+    var c = precoVigenteCentavos(exp);
+    if (!c) return exp.preco || '';
+    return promo.formatar(c);
+  }
+
   // Rótulo do "de" pra exibir riscado. Ex.: "R$ 610".
-  // Devolve '' quando não há desconto real a mostrar: sem valor cheio
-  // cadastrado, ou valor cheio <= preço praticado (caso By Elarah).
+  // É sempre a MAIOR referência honesta: o valor cheio quando existe e
+  // é maior, senão o preço do site (que durante a promoção vira o "de").
+  // Devolve '' quando não há desconto real a mostrar — fora da
+  // campanha, uma experiência sem valor cheio continua sem "de".
   function precoCheioBR(exp) {
     var cheio = valorCheioDe(exp);
     var praticado = precoPraticadoDe(exp);
-    if (!cheio || !praticado || cheio <= praticado) return '';
-    return formatPrecoBR(String(cheio / 100).replace('.', ','));
+    var vigente = precoVigenteCentavos(exp);
+    var de = (cheio && (!praticado || cheio > praticado)) ? cheio : praticado;
+    if (!de || !vigente || de <= vigente) return '';
+    return formatPrecoBR(String(de / 100).replace('.', ','));
   }
 
   // =============================================================

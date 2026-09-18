@@ -141,6 +141,15 @@
         <span>Cupons</span>
       </button>
 
+      <button class="admin__nav-item" data-panel="desconto-geral">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="5" x2="5" y2="19"/>
+          <circle cx="6.5" cy="6.5" r="2.5"/>
+          <circle cx="17.5" cy="17.5" r="2.5"/>
+        </svg>
+        <span>Desconto geral</span>
+      </button>
+
       <div class="admin__nav-group">Catálogo</div>
 
       <button class="admin__nav-item" data-panel="experiences">
@@ -2884,6 +2893,72 @@
       </div>
     </div>
 
+    <!-- ===== PANEL DESCONTO GERAL ===== -->
+    <!-- Um percentual que vale pro site inteiro, com validade. Não mexe
+         no preço cadastrado de nenhuma experiência: o desconto é
+         aplicado na hora, na vitrine e na cobrança. Acabou a validade,
+         tudo volta ao normal sozinho. -->
+    <div class="admin__panel" id="panel-desconto-geral">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Desconto geral</h1>
+        <p class="admin__page-subtitle">Um percentual em cima do preço de TODAS as experiências, com validade. Os preços do catálogo não são alterados — quando a validade acaba, tudo volta ao normal sozinho.</p>
+      </div>
+
+      <div id="dg-msg" style="display:none;margin-bottom:16px;padding:12px 16px;border-radius:8px;font-size:.9rem;"></div>
+
+      <!-- Cartão de estado: o que está valendo agora, em uma olhada -->
+      <div id="dg-status" style="margin-bottom:22px;padding:18px 20px;border-radius:12px;border:1px solid #eee;background:#fafafa;">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px;">Agora no site</div>
+        <div id="dg-status-texto" style="font-size:1.05rem;font-weight:700;color:#1a1a1a;">Carregando…</div>
+        <div id="dg-status-detalhe" style="font-size:.86rem;color:#666;margin-top:4px;"></div>
+      </div>
+
+      <div style="max-width:640px;">
+        <label style="display:flex;align-items:center;gap:10px;margin-bottom:22px;cursor:pointer;">
+          <input type="checkbox" id="dg-ativo" style="width:18px;height:18px;cursor:pointer;accent-color:#f0a05e;">
+          <span style="font-weight:600;color:#1a1a1a;">Desconto ligado</span>
+        </label>
+
+        <div class="admin__form-grid" style="margin-bottom:18px;">
+          <div class="admin__form-field admin__form-field--full">
+            <label for="dg-percentual">Percentual de desconto (%)</label>
+            <input type="number" id="dg-percentual" min="1" max="90" step="1" placeholder="20">
+            <p class="admin__form-hint">Em cima do preço que está no site hoje. 20 = a experiência de R$ 180 sai por R$ 144.</p>
+          </div>
+
+          <div class="admin__form-field">
+            <label for="dg-inicio">Começa em</label>
+            <input type="datetime-local" id="dg-inicio">
+          </div>
+
+          <div class="admin__form-field">
+            <label for="dg-fim">Vale até</label>
+            <input type="datetime-local" id="dg-fim">
+            <p class="admin__form-hint">Passou desse horário, o site volta ao preço normal sozinho.</p>
+          </div>
+
+          <div class="admin__form-field admin__form-field--full">
+            <label for="dg-titulo">Título do aviso no site (opcional)</label>
+            <input type="text" id="dg-titulo" maxlength="80" placeholder="20% OFF em todas as experiências">
+          </div>
+
+          <div class="admin__form-field admin__form-field--full">
+            <label for="dg-subtitulo">Linha de apoio do aviso (opcional)</label>
+            <input type="text" id="dg-subtitulo" maxlength="80" placeholder="Só até 20/09">
+            <p class="admin__form-hint">Deixe os dois em branco e o site escreve sozinho, a partir do percentual e da data.</p>
+          </div>
+        </div>
+
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:8px;">Prévia do aviso</div>
+        <div id="dg-previa" style="border-radius:8px;margin-bottom:26px;background:linear-gradient(90deg,#f0a05e,#e2833c);color:#fff;text-align:center;padding:9px 16px;font-size:.84rem;font-weight:600;"></div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" id="dg-salvar" class="admin__add-btn">Salvar</button>
+          <button type="button" id="dg-desligar" class="admin__add-btn" style="background:#fff;color:#c0392b;border:1px solid #c0392b;">Desligar agora</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== PANEL CUPONS ===== -->
     <div class="admin__panel" id="panel-coupons">
       <div class="admin__header">
@@ -4604,7 +4679,7 @@
 <script src="phone-input.js?v=1"></script>
 <script src="password-toggle.js?v=1"></script>
 <script src="auth.js?v=14"></script>
-<script src="experiences-data.js?v=41"></script>
+<script src="experiences-data.js?v=42"></script>
 <script src="byelarah-data.js?v=8"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-insights.js?v=3"></script>
@@ -4618,7 +4693,7 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
-<script src="admin-acessos.js?v=1"></script>
+<script src="admin-acessos.js?v=2"></script>
 <script src="admin.js?v=236"></script>
 
 <!-- ==========================================================
