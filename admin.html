@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 133;
+      var EXPECTED = 134;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -1222,6 +1222,12 @@
           <div class="admin__table-empty" style="width:100%;">Carregando categorias…</div>
         </div>
       </div>
+
+      <!-- Divergências: categorias que existem só na ficha de um parceiro
+           (digitadas à mão) e não batem com nenhuma categoria do site.
+           É o que fazia a lista inchar com grafia repetida. Preenchido
+           por renderCotacaoDivergencias(). -->
+      <div id="cotacao-divergencias" style="display:none;margin-top:14px;"></div>
 
       <div class="admin__table-wrap" style="margin-top:18px;">
         <div class="admin__table-header">
@@ -4613,7 +4619,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-acessos.js?v=1"></script>
-<script src="admin.js?v=234"></script>
+<script src="admin.js?v=235"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
