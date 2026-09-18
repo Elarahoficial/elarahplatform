@@ -2904,6 +2904,12 @@
         <p class="admin__page-subtitle">Um percentual em cima do preço de TODAS as experiências, com validade. Os preços do catálogo não são alterados — quando a validade acaba, tudo volta ao normal sozinho.</p>
       </div>
 
+      <style>
+        .dg-atalho{padding:5px 12px;border:1px solid #e0d5c6;background:#fff;color:#8a6b4a;
+          border-radius:999px;font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer;}
+        .dg-atalho:hover{border-color:#f0a05e;background:#fff8ef;color:#a4663b;}
+      </style>
+
       <div id="dg-msg" style="display:none;margin-bottom:16px;padding:12px 16px;border-radius:8px;font-size:.9rem;"></div>
 
       <!-- Cartão de estado: o que está valendo agora, em uma olhada -->
@@ -2934,6 +2940,15 @@
           <div class="admin__form-field">
             <label for="dg-fim">Vale até</label>
             <input type="datetime-local" id="dg-fim">
+            <!-- Atalhos: prazo de campanha quase sempre é "fim de um dia",
+                 e digitar data e hora na mão é onde escapa o erro que faz
+                 a barra prometer um prazo e o site praticar outro. -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+              <button type="button" class="dg-atalho" data-dias="0">Hoje, 23h59</button>
+              <button type="button" class="dg-atalho" data-dias="1">Amanhã, 23h59</button>
+              <button type="button" class="dg-atalho" data-dias="2">Depois de amanhã</button>
+              <button type="button" class="dg-atalho" data-dias="7">Daqui a 7 dias</button>
+            </div>
             <p class="admin__form-hint">Passou desse horário, o site volta ao preço normal sozinho.</p>
           </div>
 
@@ -4694,7 +4709,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-acessos.js?v=2"></script>
-<script src="admin.js?v=236"></script>
+<script src="admin.js?v=237"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

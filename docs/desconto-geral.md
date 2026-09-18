@@ -30,8 +30,27 @@ própria opção.
    sozinho ("20% OFF em todas as experiências" / "Só até 20/09").
 4. **Salvar.** Vale na hora, na vitrine e no checkout.
 
+Os atalhos embaixo de "Vale até" (**Hoje 23h59**, **Amanhã**, **7 dias**)
+preenchem a data com um clique — é onde mais escapa erro de digitação, e um
+prazo digitado errado faz a barra prometer uma coisa e o site praticar outra.
+
 O cartão **Agora no site** mostra o que está valendo neste instante, e a
-**prévia** mostra a barra exatamente como ela aparece no topo do site.
+**prévia** mostra a barra exatamente como ela aparece no topo do site,
+contagem regressiva incluída.
+
+### A barra no site
+
+- Mostra **contagem regressiva** quando falta menos de 48h ("acaba em 5h12").
+  Acima disso ela não aparece: "acaba em 9d 4h" não apressa ninguém e ainda
+  avisa que dá pra deixar pra depois. Na última hora a contagem passa a mostrar
+  os segundos.
+- Se os campos de texto ficarem em branco, o site escreve sozinho — e escreve
+  **"Acaba hoje à meia-noite"** quando o prazo termina hoje, em vez da data
+  (quem lê "18/09" precisa parar pra lembrar que dia é hoje).
+- **Quando o prazo vira com a página aberta**, a barra troca pra "A promoção
+  acabou — os preços voltaram ao normal" com um botão de atualizar. Não
+  recarrega sozinha de propósito: recarregar apagaria o formulário de quem
+  está no meio do checkout.
 
 Pra encerrar antes da hora: **Desligar agora**. Se a data de fim passar, o site
 volta ao preço normal sozinho — não existe "desfazer" pra esquecer de fazer.
