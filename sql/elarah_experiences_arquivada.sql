@@ -32,14 +32,25 @@ comment on column public.experiences.arquivada is
 
 
 -- ===== 2. Arquiva as aulas de Tufting antigas =====
--- São as 7 que estão ocultas no painel: "Aula de Tufting (Seg)",
--- "(Ter/Qui/Sex)" e "(2h)". O padrão exige o parêntese logo depois
--- de "Aula de Tufting", então as turmas novas
--- ("Aula de Tufting – Para Uma 1ª Vez!") ficam de fora.
+-- São as que estão OCULTAS no painel ("Aula de Tufting (Seg)",
+-- "(Ter/Qui/Sex)", "(2h)"). O is_active = false é o que separa elas
+-- das turmas que ainda rodam: existem experiências com nome no mesmo
+-- formato ("Aula de Tufting (2h)", "(3h)") que estão ativas e não
+-- podem sair do site. O padrão do nome sozinho pegava essas também.
 update public.experiences
    set arquivada = true
  where categoria ~* '(^|\|)\s*Tufting & Punch\s*($|\|)'
-   and nome ~ '^Aula de Tufting \(';
+   and nome ~ '^Aula de Tufting \('
+   and is_active = false;
+
+-- ===== 2b. Rede de segurança =====
+-- Desarquiva qualquer experiência ATIVA que tenha sido arquivada por
+-- engano — arquivada só faz sentido pra ficha que já está fora do ar.
+update public.experiences
+   set arquivada = false
+ where arquivada = true
+   and is_active = true;
+
 
 -- ===== 3. Conferência =====
 -- Esperado: as 7 antigas com arquivada = true e as novas com false.
