@@ -62,7 +62,11 @@
     // Horário de funcionamento (agendamento livre / voucher). Quando
     // preenchido, a página da experiência mostra esse horário e deixa o
     // cliente escolher o dia e a hora que quiser. sql/elarah_experiences_horario_funcionamento.sql.
-    'horario_funcionamento'
+    'horario_funcionamento',
+    // Arquivada pelo admin: some da lista do painel e do site, sem
+    // apagar a ficha nem quebrar os vínculos de contabilidade.
+    // sql/elarah_experiences_arquivada.sql.
+    'arquivada'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -152,6 +156,10 @@
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
       isActive: row.is_active === false ? false : true,
+      // Arquivada: a ficha continua no banco (e ligada a despesas,
+      // vendas e reservas), mas sai da lista do admin e do site.
+      // Default false pra bancos que ainda não rodaram a migração.
+      arquivada: row.arquivada === true,
       // Ordem manual de exibição (admin arrasta pra reordenar). null =
       // sem ordem → sort cronológico padrão. sql/elarah_experiences_ordem.sql.
       ordem: (row.ordem == null || row.ordem === '') ? null : Number(row.ordem),
@@ -1065,6 +1073,7 @@
 
   function isPubliclyVisible(exp, nowMs) {
     if (!exp || exp.isActive === false) return false;
+    if (exp.arquivada === true) return false;
     if (nowMs == null) nowMs = Date.now();
     const cutoffH = effectiveCutoffHours(exp);
     let eventTs = null;
@@ -1468,6 +1477,34 @@
 
   // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
   // Só mexe na coluna is_active (não toca nenhum outro campo).
+  // Arquiva/desarquiva. Diferente de excluir: não apaga a ficha, então
+  // despesas, vendas manuais e reservas continuam ligadas a ela e a
+  // contabilidade não muda em nada. Só some da lista do admin e do site.
+  async function setExperienceArquivada(id, arquivada) {
+    const s = sb();
+    if (!s) return { _error: { message: 'Sem conexão com o banco. Recarregue a página.' } };
+    if (!id) return { _error: { message: 'id vazio.' } };
+    const { data: updated, error } = await s
+      .from(TABLE)
+      .update({ arquivada: !!arquivada })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    if (error) {
+      if (extractMissingColumn(error) === 'arquivada') {
+        markColumnMissing('arquivada');
+        return { _error: { message: 'A coluna "arquivada" ainda não existe no banco.\n\nRode sql/elarah_experiences_arquivada.sql no SQL Editor do Supabase e tente de novo.', code: 'NO_COLUMN' } };
+      }
+      console.error('[Elarah] setExperienceArquivada erro:', error);
+      return { _error: error };
+    }
+    if (!updated) {
+      return { _error: { message: 'O banco não alterou nenhuma linha — verifique se o seu usuário está como admin em profiles.', code: 'RLS_BLOCK' } };
+    }
+    invalidateCache();
+    return dbRowToExperience(updated);
+  }
+
   async function setExperienceActive(id, active) {
     const s = sb();
     if (!s) {
@@ -1945,6 +1982,7 @@
     duplicateExperience,
     getExperienceCopyStats,
     setExperienceActive,
+    setExperienceArquivada,
     reorderExperiences,
     setByElarahOrdem,
     ordemKey,
