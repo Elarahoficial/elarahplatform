@@ -4276,8 +4276,6 @@
       const expNome = b.experiencia_nome || '(experiência)';
       const data = b.data || '(data)';
       const horario = b.horario || '(horário)';
-      const plural = nomes.length > 1;
-      const aluno = plural ? 'aluno(s) confirmado(s)' : 'aluno confirmado';
       const lista = joinNames(nomes) || '(participante)';
       // Local da experiência (endereço + bairro).
       // Prefere o endereço da experiência ATUAL (expById) — é a fonte da
@@ -4294,11 +4292,37 @@
       const localFull = endereco && bairro
         ? endereco + ' — ' + bairro
         : (endereco || bairro || '');
-      const localLine = localFull ? '\n📍 *Local:* ' + localFull : '';
-      const msg = 'Oi! Tudo bem? Passando para te avisar que você tem ' + aluno +
-        ' para a experiência *' + expNome + '* no dia *' + data +
-        '* às *' + horario + '*: *' + lista + '*.' + localLine + '\n\n' +
-        'O repasse será feito até 48h antes do evento.';
+      // QUANTIDADE DE VAGAS + CONTATO DA CLIENTE.
+      //
+      // Antes a mensagem listava só NOMES — e quando a compradora leva uma
+      // acompanhante sem informar o nome dela, o parceiro lia "1 aluno" numa
+      // compra de 2 vagas e preparava material pra menos gente. Agora a
+      // quantidade vem do que foi REALMENTE comprado (bookings.quantidade),
+      // e a diferença pros nomes informados aparece explícita.
+      //
+      // Telefone e e-mail entram porque todo parceiro pede: é com eles que a
+      // pessoa é registrada na aula/experiência.
+      const qtd = Math.max(1, Number(b.quantidade) || 1);
+      const vagasLabel = qtd === 1 ? '*1 vaga confirmada*' : '*' + qtd + ' vagas confirmadas*';
+      const semNome = Math.max(0, qtd - nomes.length);
+      const telFmt = formatPhoneBR(telefone || (meta && meta.telefone_digits) || '');
+      const emailCli = String(b.email || (meta && meta.email) || '').trim();
+
+      const linhas = [];
+      linhas.push('Oi! Tudo bem? Passando para te avisar que você tem ' + vagasLabel +
+        ' para a experiência *' + expNome + '* no dia *' + data + '* às *' + horario + '*.');
+      linhas.push('');
+      if (lista) linhas.push('👤 *Em nome de:* ' + lista);
+      if (semNome > 0) {
+        linhas.push('➕ *Mais ' + semNome + (semNome === 1 ? ' pessoa' : ' pessoas') +
+          '* — a compra foi de ' + qtd + ' vagas e o nome não foi informado no checkout.');
+      }
+      if (telFmt) linhas.push('📱 *WhatsApp:* ' + telFmt);
+      if (emailCli) linhas.push('✉️ *E-mail:* ' + emailCli);
+      if (localFull) linhas.push('📍 *Local:* ' + localFull);
+      linhas.push('');
+      linhas.push('O repasse será feito até 48h antes do evento.');
+      const msg = linhas.join('\n');
       // api.whatsapp.com/send/ em vez de wa.me — o wa.me corrompe emojis
       // fora do BMP (o 📍 do "Local" chegava como "?" pro fornecedor).
       return 'https://api.whatsapp.com/send/?phone=' + waDigits +
@@ -18885,18 +18909,34 @@
       : '(data)';
     const horario = (r.slot_time || '').trim() || '(horário)';
     const qty = Number(r.quantity) || 1;
-    const aluno = qty > 1 ? (qty + ' alunos confirmados') : 'aluno confirmado';
+    const vagasLabel = qty === 1 ? '*1 vaga confirmada*' : '*' + qty + ' vagas confirmadas*';
     const lista = (r.customer_name || '').trim() || '(participante)';
+    // Venda manual guarda UM nome; se foram 2+ vagas, as outras pessoas não
+    // têm nome cadastrado — o parceiro precisa saber disso pra preparar
+    // material pra todo mundo.
+    const semNome = Math.max(0, qty - 1);
+    const telFmt = formatPhoneBR(r.customer_phone || '');
+    const emailCli = String(r.customer_email || '').trim();
     const endereco = String((expObj && expObj.endereco) || '').trim();
     const bairro = String((expObj && expObj.bairro) || '').trim();
     const localFull = endereco && bairro
       ? (endereco + ' — ' + bairro)
       : (endereco || bairro || '');
-    const localLine = localFull ? '\n📍 *Local:* ' + localFull : '';
-    const msg = 'Oi! Tudo bem? Passando para te avisar que você tem ' + aluno +
-      ' para a experiência *' + expNome + '* no dia *' + dataFmt +
-      '* às *' + horario + '*: *' + lista + '*.' + localLine + '\n\n' +
-      'O repasse será feito até 48h antes do evento.';
+    const linhas = [];
+    linhas.push('Oi! Tudo bem? Passando para te avisar que você tem ' + vagasLabel +
+      ' para a experiência *' + expNome + '* no dia *' + dataFmt + '* às *' + horario + '*.');
+    linhas.push('');
+    linhas.push('👤 *Em nome de:* ' + lista);
+    if (semNome > 0) {
+      linhas.push('➕ *Mais ' + semNome + (semNome === 1 ? ' pessoa' : ' pessoas') +
+        '* — a compra foi de ' + qty + ' vagas e o nome não foi informado.');
+    }
+    if (telFmt) linhas.push('📱 *WhatsApp:* ' + telFmt);
+    if (emailCli) linhas.push('✉️ *E-mail:* ' + emailCli);
+    if (localFull) linhas.push('📍 *Local:* ' + localFull);
+    linhas.push('');
+    linhas.push('O repasse será feito até 48h antes do evento.');
+    const msg = linhas.join('\n');
     const link = 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
     const id = _finEsc(r.id);
     const avisadoAt = r.fornecedor_avisado_at ? new Date(r.fornecedor_avisado_at) : null;
