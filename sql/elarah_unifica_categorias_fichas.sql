@@ -22,6 +22,10 @@
 --   4. BaresSP: sai "Bartenderia", entram "Drinks & Vinhos" e
 --      "Barismo", que é onde ela realmente atua.
 --
+--   5. Categorias tiradas de ficha específica, a pedido:
+--        Sarques            → sai "Joalheria"
+--        Papelizei Academy  → sai "Artesanato"
+--
 -- Rode UMA vez no SQL Editor do Supabase. É idempotente: rodar de
 -- novo não acha mais nada pra mudar e não estraga nada.
 --
@@ -121,8 +125,18 @@ begin
       -- 3) um nome só pro vidro: fica "Vitral", que é o do site
       if chave = 'vidro' then t := 'Vitral'; end if;
 
-      -- 4) BaresSP não é Bartenderia
-      if ehBares and chave = 'bartenderia' then continue; end if;
+      -- 4 e 5) Remoções pedidas, por ficha. Pra tirar outra no futuro,
+      -- é só acrescentar uma linha aqui: (nome do parceiro em
+      -- minúsculas, categoria em minúsculas e sem acento).
+      if exists (
+        select 1 from (values
+          ('baressp',           'bartenderia'),
+          ('sarques',           'joalheria'),
+          ('papelizei academy', 'artesanato')
+        ) as rem(parceiro, categoria)
+        where rem.parceiro = lower(trim(r.fornecedor_nome))
+          and rem.categoria = chave
+      ) then continue; end if;
 
       if not (novo @> array[t]) then novo := array_append(novo, t); end if;
     end loop;
@@ -163,4 +177,21 @@ select fornecedor_nome as "parceiro", categoria as "categoria agora"
  where categoria is not null
    and (categoria like '%,%' or categoria like '%;%'
         or categoria ilike '%vitral%' or categoria ilike '%beadazzled%')
+ order by 1;
+
+
+-- =========================================================
+-- QUEM AINDA ESTÁ EM "ARTESANATO"
+-- Nenhuma linha = nenhuma ficha de parceiro nessa categoria.
+-- (A categoria continua existindo no site se alguma experiência
+--  estiver nela — isto olha só as fichas.)
+-- =========================================================
+select fornecedor_nome as "ficha ainda em Artesanato"
+  from public.fornecedores_metadata m
+ where exists (
+   select 1
+     from regexp_split_to_table(m.categoria,
+            case when m.categoria like '%;%' then ';' else ',' end) tok
+    where lower(trim(tok)) = 'artesanato'
+ )
  order by 1;
