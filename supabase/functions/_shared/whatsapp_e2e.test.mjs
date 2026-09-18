@@ -51,17 +51,21 @@ function head(t) { out.push("\n" + t); }
 // Banco FAKE (Supabase). whatsapp_send_log com UNIQUE(dedupe_key) REAL:
 // insert de chave repetida devolve {error:{code:'23505'}} — igual ao Postgres.
 // ============================================================
-function makeSupabase(seedBookings = [], seedSubmissions = []) {
+function makeSupabase(seedBookings = [], seedSubmissions = [], seedFornecedores = []) {
   const bookings = new Map();
   for (const b of seedBookings) bookings.set(b.id, { ...b });
   const sendLog = new Map(); // dedupe_key -> row
   // Lista de interesse By Elarah (fluxo "a data saiu").
   const submissions = new Map();
   for (const sub of seedSubmissions) submissions.set(sub.id, { ...sub });
+  // WhatsApp das parceiras (fornecedores_metadata), por fornecedor_key.
+  const fornecedores = new Map();
+  for (const f of seedFornecedores) fornecedores.set(f.fornecedor_key, { ...f });
 
   function storeFor(name) {
     if (name === "bookings") return bookings;
     if (name === "byelarah_submissions") return submissions;
+    if (name === "fornecedores_metadata") return fornecedores;
     return sendLog;
   }
 
@@ -128,6 +132,7 @@ function makeSupabase(seedBookings = [], seedSubmissions = []) {
     _bookings: bookings,
     _sendLog: sendLog,
     _submissions: submissions,
+    _fornecedores: fornecedores,
   };
 }
 
@@ -1176,6 +1181,81 @@ async function run() {
     })]);
     await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-C"), { telefone_digits: CLIENT_A });
     check("reserva suprimida → nem confirmação nem instruções", zi.calls.length === 0);
+  }
+
+  // ---------- FLUXO: AVISO AUTOMÁTICO PRA PARCEIRA ----------
+  head("FLUXO — a parceira é avisada sozinha a cada compra paga");
+  {
+    const WAf = await loadWA(PROD_ENV);
+    const zf = installZapiMock();
+    const WA_PARCEIRA = "5511977778888";
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bkf-A",
+        nome: "Maria Silva",
+        email: "maria@exemplo.com",
+        telefone: CLIENT_A,
+        quantidade: 2,                       // comprou 2 vagas...
+        metadata: {},                        // ...e NÃO informou o 2º nome
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: { imagem: IMG_A, endereco: "Av. Faria Lima, 1572", bairro: "Pinheiros" },
+      })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: WA_PARCEIRA }],
+    );
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-A"), { telefone_digits: CLIENT_A });
+
+    check("a parceira recebeu o aviso", zf.to(WA_PARCEIRA).length === 1,
+      "recebeu " + zf.to(WA_PARCEIRA).length);
+    const msg = zf.to(WA_PARCEIRA)[0].text;
+    check("diz a QUANTIDADE comprada, não a contagem de nomes",
+      msg.includes("*2 vagas confirmadas*"), msg.slice(0, 90));
+    check("avisa que falta o nome de 1 pessoa", msg.includes("Mais 1 pessoa"));
+    check("traz o telefone da cliente formatado", msg.includes("(11) 99999-0000"), msg);
+    check("traz o e-mail da cliente", msg.includes("maria@exemplo.com"));
+    check("traz o local da experiência", msg.includes("Faria Lima") && msg.includes("Pinheiros"));
+    check("e a cliente recebeu a confirmação dela", zf.to(CLIENT_A).length === 1);
+    check("send_log registrou o aviso da parceira", sb._sendLog.has("fornecedor:bkf-A"));
+    check("a reserva foi carimbada como avisada",
+      !!sb._bookings.get("bkf-A").fornecedor_avisado_at);
+
+    // Webhook repetido: a parceira NÃO recebe duas vezes.
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-A"), { telefone_digits: CLIENT_A });
+    check("webhook repetido → a parceira continua com 1 mensagem", zf.to(WA_PARCEIRA).length === 1);
+  }
+  {
+    // Parceira SEM WhatsApp cadastrado → nada sai (o botão manual segue lá).
+    const WAf = await loadWA(PROD_ENV);
+    const zf = installZapiMock();
+    const sb = makeSupabase([bookingSeed({ id: "bkf-B", fornecedor_nome: "Sem Cadastro" })], [], []);
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-B"), { telefone_digits: CLIENT_A });
+    check("parceira sem WhatsApp cadastrado → só a cliente recebe", zf.calls.length === 1);
+    check("e nada de chave de fornecedor na send_log", !sb._sendLog.has("fornecedor:bkf-B"));
+  }
+  {
+    // Reserva "aguardando experiência": ninguém é avisado ainda.
+    const WAf = await loadWA(PROD_ENV);
+    const zf = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bkf-C", aguardando_experiencia: true, fornecedor_nome: "Lado B" })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: "5511977778888" }],
+    );
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-C"), { telefone_digits: CLIENT_A });
+    check("reserva sem data definida → parceira não é avisada ainda", zf.calls.length === 0);
+  }
+  {
+    // Desligável: WHATSAPP_AVISO_FORNECEDOR=false volta pro envio manual.
+    const WAf = await loadWA({ ...PROD_ENV, WHATSAPP_AVISO_FORNECEDOR: "false" });
+    const zf = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bkf-D", fornecedor_nome: "Lado B" })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: "5511977778888" }],
+    );
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-D"), { telefone_digits: CLIENT_A });
+    check("com o aviso automático desligado → só a cliente recebe", zf.calls.length === 1);
   }
 
   // ---------- Relatório ----------

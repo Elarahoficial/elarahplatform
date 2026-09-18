@@ -81,6 +81,11 @@ const PROVIDER: "meta" | "zapi" = (() => {
 // provedor padrão: é o que permite UM fluxo específico — o aviso pra lista
 // de interesse, que é disparo frio e não pode arriscar o número — sair pela
 // oficial enquanto o resto continua no canal de sempre.
+// Aviso automático ao parceiro a cada compra paga. Ligado por padrão; pra
+// voltar ao envio manual pelo painel, cadastre WHATSAPP_AVISO_FORNECEDOR=false.
+const AVISO_FORNECEDOR_ATIVO =
+  (Deno.env.get("WHATSAPP_AVISO_FORNECEDOR") ?? "").trim().toLowerCase() !== "false";
+
 export function whatsappOfficialReady(): boolean {
   return !!(META_TOKEN && META_PHONE_ID);
 }
@@ -750,6 +755,79 @@ export function pendingRecoveryWhatsAppText(opts: MsgOpts): string {
   return linhas.join("\n");
 }
 
+// ===== AVISO AO PARCEIRO (fornecedor) =====
+// Mesma mensagem que o painel monta no botão "Avisar" — a diferença é que
+// agora sai sozinha quando a compra é confirmada.
+//
+// Vai pelo canal LEGADO de propósito (o número da Elarah conectado por QR
+// code): assim a conversa aparece no WhatsApp da Elarah, a admin lê, o
+// parceiro responde e ela responde ali mesmo. Pela API oficial a conversa
+// viveria só em webhook, fora do alcance dela.
+export function supplierBookingWhatsAppText(opts: {
+  quantidade?: unknown;
+  experienciaNome?: unknown;
+  data?: unknown;
+  horario?: unknown;
+  nomes?: string[];
+  telefoneCliente?: unknown;
+  emailCliente?: unknown;
+  endereco?: unknown;
+  bairro?: unknown;
+}): string {
+  const qtd = Math.max(1, Number(opts.quantidade) || 1);
+  const nomes = (opts.nomes ?? []).map((n) => String(n ?? "").trim()).filter(Boolean);
+  const exp = String(opts.experienciaNome ?? "(experiência)").trim();
+  const data = String(opts.data ?? "(data)").trim() || "(data)";
+  const horario = String(opts.horario ?? "(horário)").trim() || "(horário)";
+
+  const lista = nomes.length === 0
+    ? "(participante)"
+    : nomes.length === 1
+    ? nomes[0]
+    : nomes.length === 2
+    ? nomes[0] + " e " + nomes[1]
+    : nomes.slice(0, -1).join(", ") + " e " + nomes[nomes.length - 1];
+
+  // A QUANTIDADE vem do que foi comprado, não da contagem de nomes: quando a
+  // compradora leva alguém e não informa o nome, o parceiro precisa saber
+  // que vai ter mais gente do que os nomes na lista.
+  const semNome = Math.max(0, qtd - nomes.length);
+  const vagas = qtd === 1 ? "*1 vaga confirmada*" : "*" + qtd + " vagas confirmadas*";
+
+  const linhas: string[] = [];
+  linhas.push(
+    `Oi! Tudo bem? Passando para te avisar que você tem ${vagas} para a experiência ` +
+      `*${exp}* no dia *${data}* às *${horario}*.`,
+  );
+  linhas.push("");
+  linhas.push(`👤 *Em nome de:* ${lista}`);
+  if (semNome > 0) {
+    linhas.push(
+      `➕ *Mais ${semNome} ${semNome === 1 ? "pessoa" : "pessoas"}* — a compra foi de ` +
+        `${qtd} vagas e o nome não foi informado no checkout.`,
+    );
+  }
+  const tel = formatPhoneBRHuman(opts.telefoneCliente);
+  if (tel) linhas.push(`📱 *WhatsApp:* ${tel}`);
+  const email = String(opts.emailCliente ?? "").trim();
+  if (email) linhas.push(`✉️ *E-mail:* ${email}`);
+  const local = [String(opts.endereco ?? "").trim(), String(opts.bairro ?? "").trim()]
+    .filter(Boolean).join(" — ");
+  if (local) linhas.push(`📍 *Local:* ${local}`);
+  linhas.push("");
+  linhas.push("O repasse será feito até 48h antes do evento.");
+  return linhas.join("\n");
+}
+
+// (11) 91234-5678 — pra leitura humana na mensagem do parceiro.
+function formatPhoneBRHuman(raw: unknown): string {
+  const all = String(raw ?? "").replace(/\D+/g, "");
+  const d = all.length > 11 && all.startsWith("55") ? all.slice(2) : all;
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return String(raw ?? "").trim();
+}
+
 // Instruções pós-compra da experiência (cadastro do parceiro, sala, link,
 // orientações). Sai logo depois da confirmação, como mensagem SEPARADA de
 // propósito: é uma AÇÃO que a cliente precisa fazer, e misturada na
@@ -1055,6 +1133,132 @@ export async function gatedSendWhatsApp(
   return (await gatedSend(deps, params)) as GatedResult;
 }
 
+// Envia o aviso da compra pro PARCEIRO, sozinho, quando a reserva é paga.
+//
+// Resolve o WhatsApp do parceiro igual ao painel: nome do fornecedor
+// (snapshot da reserva ou o da experiência) → fornecedores_metadata.whatsapp,
+// casando por nome normalizado. Sem WhatsApp cadastrado, não faz nada — o
+// botão manual do painel continua lá.
+//
+// Sai pelo canal LEGADO sempre (nunca template oficial): é conversa da Elarah
+// com a parceira, tem que aparecer no WhatsApp dela.
+export async function sendSupplierBookingNoticeGated(
+  supabase: SB,
+  // deno-lint-ignore no-explicit-any
+  booking: any,
+): Promise<GatedResult | null> {
+  const bookingId = String(booking?.id ?? "");
+  if (!bookingId) return null;
+  if (!AVISO_FORNECEDOR_ATIVO) return null;
+
+  // RELEITURA AUTORITATIVA (fail-closed): status, supressão e os dados da
+  // experiência vêm do banco AGORA, não do objeto que o webhook trouxe.
+  let statusAllowed = false;
+  let suppressed = true;
+  let fornecedorNome = "";
+  let endereco: unknown = null;
+  let bairro: unknown = null;
+  // deno-lint-ignore no-explicit-any
+  let fresh: any = null;
+  try {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(
+        "status, aguardando_experiencia, quantidade, nome, telefone, email, metadata, " +
+          "data, horario, experiencia_id, experiencia_nome, fornecedor_nome, fornecedor_avisado_at, " +
+          "experiences(fornecedor_nome, endereco, bairro)",
+      )
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (error || !data) return null;
+    fresh = data;
+    statusAllowed = data.status === "pago";
+    suppressed = data.aguardando_experiencia === true;
+    const exp = (data as {
+      experiences?: { fornecedor_nome?: unknown; endereco?: unknown; bairro?: unknown };
+    }).experiences;
+    fornecedorNome = String(data.fornecedor_nome ?? exp?.fornecedor_nome ?? "").trim();
+    endereco = exp?.endereco ?? null;
+    bairro = exp?.bairro ?? null;
+  } catch (_e) {
+    return null; // fail-closed
+  }
+
+  if (!fornecedorNome) return null;
+
+  // WhatsApp do parceiro: fornecedores_metadata, por nome normalizado.
+  let waParceiro = "";
+  try {
+    const chave = fornecedorNome.toLowerCase().replace(/\s+/g, " ").trim();
+    const { data } = await supabase
+      .from("fornecedores_metadata")
+      .select("whatsapp")
+      .eq("fornecedor_key", chave)
+      .maybeSingle();
+    waParceiro = String(data?.whatsapp ?? "").trim();
+  } catch (_e) {
+    return null;
+  }
+  if (!waParceiro) return null;   // sem cadastro → segue o botão manual
+
+  // Nomes: compradora + acompanhantes de metadata.participantes, deduplicados.
+  const meta = (fresh.metadata ?? {}) as Record<string, unknown>;
+  const nomes: string[] = [];
+  const vistos = new Set<string>();
+  const empurra = (n: unknown) => {
+    const nome = String(n ?? "").trim();
+    if (!nome) return;
+    const chave = nome.toLowerCase().replace(/\s+/g, " ");
+    if (vistos.has(chave)) return;
+    vistos.add(chave);
+    nomes.push(nome);
+  };
+  empurra(fresh.nome);
+  const participantes = meta.participantes;
+  if (Array.isArray(participantes)) {
+    for (const p of participantes) empurra((p as { nome?: unknown })?.nome);
+  }
+
+  const mensagem = supplierBookingWhatsAppText({
+    quantidade: fresh.quantidade,
+    experienciaNome: fresh.experiencia_nome,
+    data: fresh.data,
+    horario: fresh.horario,
+    nomes,
+    telefoneCliente: (meta.telefone_digits as string | undefined) ?? fresh.telefone,
+    emailCliente: fresh.email,
+    endereco,
+    bairro,
+  });
+
+  const res = await gatedSendWhatsApp(supabase, {
+    kind: "fornecedor",
+    dedupeKey: "fornecedor:" + bookingId,
+    identifierOk: !!fresh.experiencia_id || !!fornecedorNome,
+    rawPhone: waParceiro,
+    suppressed,
+    statusAllowed,
+    message: mensagem,
+    caption: mensagem,
+    // Sem `template`: mesmo que a oficial esteja cadastrada, este aviso vai
+    // pelo canal legado — é a conversa da Elarah com a parceira.
+    bookingId,
+    experienciaId: fresh.experiencia_id ?? null,
+  });
+
+  // Carimba "avisado" pra lista de Compras mostrar ✓ sem a admin clicar.
+  if (res.sent && !fresh.fornecedor_avisado_at) {
+    try {
+      await supabase.from("bookings")
+        .update({ fornecedor_avisado_at: new Date().toISOString() })
+        .eq("id", bookingId);
+    } catch (e) {
+      console.warn("[elarah/whatsapp] avisei a parceira mas não carimbei fornecedor_avisado_at", e);
+    }
+  }
+  return res;
+}
+
 // URL pública da foto da experiência (ou logo da Elarah como fallback).
 const ELARAH_SITE = "https://elarah.com.br";
 export function experienceImageUrl(rawImagem: unknown): string {
@@ -1179,6 +1383,15 @@ export async function sendBookingConfirmationGated(
       // Nunca derruba a confirmação por causa da segunda mensagem.
       console.error("[elarah/whatsapp] falha ao enviar instruções pós-compra", e);
     }
+  }
+
+  // TERCEIRA MENSAGEM, pra OUTRA pessoa: o aviso da compra pra parceira que
+  // vai receber a cliente. Mesmo ponto de entrada, então vale pra Stripe,
+  // Mercado Pago, Pagar.me e confirmação manual sem tocar em cada webhook.
+  try {
+    await sendSupplierBookingNoticeGated(supabase, booking);
+  } catch (e) {
+    console.error("[elarah/whatsapp] falha ao avisar a parceira", e);
   }
 
   return confirmacao;
