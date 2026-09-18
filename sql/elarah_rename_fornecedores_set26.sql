@@ -4,7 +4,6 @@
 --   "Nata Manchon"     →  "Naia Cerâmica"
 --   "Mariana Kuntz"    →  "Corpo Contato"
 --   "Isabel Artes"     →  "Mozart Ateliê"
---   "Kraken Criativa"  →  "Karen Criativa"
 --
 -- =========================================================
 -- Rode UMA vez no SQL Editor do Supabase. É idempotente: no
@@ -52,8 +51,7 @@ begin
     select * from (values
       ('Nata Manchon',    'Naia Cerâmica'),
       ('Mariana Kuntz',   'Corpo Contato'),
-      ('Isabel Artes',    'Mozart Ateliê'),
-      ('Kraken Criativa', 'Karen Criativa')
+      ('Isabel Artes',    'Mozart Ateliê')
     ) as t(nome_antigo, nome_novo)
   loop
     -- Mesma normalização que o painel usa em fornecedorKey():
@@ -166,7 +164,7 @@ commit;
 -- Se sobrar algum número, me mande esta tabela.
 -- =========================================================
 with antigos as (
-  select unnest(array['nata manchon', 'mariana kuntz', 'isabel artes', 'kraken criativa']) as chave
+  select unnest(array['nata manchon', 'mariana kuntz', 'isabel artes']) as chave
 )
 select 'experiences' as tabela, count(*) as sobrou
   from public.experiences e, antigos a
@@ -209,7 +207,7 @@ select 'financial_expenses', count(*)
 -- Serve pra confirmar que o dinheiro foi junto com o nome.
 -- =========================================================
 with novos as (
-  select unnest(array['naia cerâmica', 'corpo contato', 'mozart ateliê', 'karen criativa']) as chave
+  select unnest(array['naia cerâmica', 'corpo contato', 'mozart ateliê']) as chave
 )
 select n.chave as fornecedor,
        (select count(*) from public.experiences e
