@@ -192,10 +192,54 @@
     return CONFIG.TITULO || (CONFIG.PERCENTUAL + '% OFF em todas as experiências');
   }
 
+  // "Acaba hoje à meia-noite" vale mais que "Só até 18/09": quem lê a
+  // data precisa parar pra lembrar que dia é hoje; "hoje" é imediato.
   function subtituloDoAviso() {
     if (CONFIG.SUBTITULO) return CONFIG.SUBTITULO;
-    var dia = fimCurto();
-    return dia ? ('Só até ' + dia) : '';
+    if (!CONFIG.FIM) return '';
+    var f = new Date(CONFIG.FIM);
+    if (isNaN(f.getTime())) return '';
+    var agora = new Date();
+    var mesmoDia = function (a, b) {
+      return a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    };
+    var amanha = new Date(agora.getTime() + 86400000);
+    // Meia-noite "de verdade" inclui 23h59 e 23h59m59s — é assim que a
+    // admin escreve o fim de um dia no formulário.
+    var viraOdia = f.getHours() === 23 && f.getMinutes() >= 55;
+    if (mesmoDia(f, agora)) {
+      return viraOdia ? 'Acaba hoje à meia-noite'
+        : ('Acaba hoje às ' + f.getHours() + 'h' + (f.getMinutes() ? String(f.getMinutes()).padStart(2, '0') : ''));
+    }
+    if (mesmoDia(f, amanha)) return viraOdia ? 'Só até amanhã' : 'Só até amanhã';
+    return 'Só até ' + fimCurto();
+  }
+
+  // ===== CONTAGEM REGRESSIVA =====
+  // Prazo em horas é o que mais move: a pessoa vê o tempo andando e
+  // decide agora. Mas só aparece quando falta POUCO — "acaba em 9d 4h"
+  // não apressa ninguém e ainda entrega que dá pra deixar pra depois.
+  var LIMITE_CONTAGEM_MS = 48 * 3600 * 1000;
+
+  function msRestantes() {
+    if (!CONFIG.FIM) return 0;
+    var f = new Date(CONFIG.FIM).getTime();
+    return isNaN(f) ? 0 : (f - Date.now());
+  }
+
+  // Quanto menos tempo sobra, mais fina é a unidade: horas e minutos no
+  // último dia, minutos e SEGUNDOS na última hora (é aí que o segundo
+  // correndo faz diferença).
+  function rotuloContagem(ms) {
+    if (ms <= 0) return '';
+    var totalSeg = Math.floor(ms / 1000);
+    var h = Math.floor(totalSeg / 3600);
+    var m = Math.floor((totalSeg % 3600) / 60);
+    var seg = totalSeg % 60;
+    if (h >= 1) return 'acaba em ' + h + 'h' + String(m).padStart(2, '0');
+    if (m >= 1) return 'acaba em ' + m + 'min' + String(seg).padStart(2, '0');
+    return 'acaba em ' + seg + 's';
   }
 
   // ===== Aviso no topo do site =====
@@ -208,33 +252,30 @@
     var path = (location.pathname || '').toLowerCase();
     if (path.indexOf('admin') !== -1) return;
 
+    injetarEstilo();
+
     var bar = document.createElement('div');
     bar.id = 'elarah-promo-bar';
     bar.setAttribute('role', 'status');
-    bar.style.cssText = [
-      'background:linear-gradient(90deg,#f0a05e,#e2833c)',
-      'color:#fff',
-      'text-align:center',
-      'padding:9px 16px',
-      'font-family:inherit',
-      'font-size:.84rem',
-      'line-height:1.35',
-      'font-weight:600',
-      'letter-spacing:.2px',
-      'position:relative',
-      'z-index:101',
-    ].join(';');
 
     var titulo = document.createElement('strong');
+    titulo.className = 'elarah-promo-bar__titulo';
     titulo.textContent = tituloDoAviso();
-    titulo.style.cssText = 'font-weight:800;';
 
     var sub = document.createElement('span');
+    sub.className = 'elarah-promo-bar__sub';
     sub.textContent = subtituloDoAviso();
-    sub.style.cssText = 'font-weight:500;opacity:.92;margin-left:8px;';
 
     bar.appendChild(titulo);
     bar.appendChild(sub);
+
+    // A contagem é um leitor de tela falando a cada segundo se ficar
+    // dentro do role="status" — por isso aria-hidden. O texto fixo ao
+    // lado já diz o essencial ("acaba hoje à meia-noite").
+    var relogio = document.createElement('span');
+    relogio.className = 'elarah-promo-bar__relogio';
+    relogio.setAttribute('aria-hidden', 'true');
+    bar.appendChild(relogio);
 
     // Vai como primeiro elemento do body: o header é sticky (não
     // fixed), então a barra rola pra fora e o header continua colando
@@ -244,6 +285,87 @@
     } else {
       document.body.appendChild(bar);
     }
+
+    iniciarContagem(bar, relogio);
+  }
+
+  function iniciarContagem(bar, relogio) {
+    var timer = null;
+
+    function tick() {
+      var ms = msRestantes();
+      if (ms <= 0) {
+        if (timer) clearInterval(timer);
+        encerrar(bar);
+        return;
+      }
+      relogio.textContent = ms <= LIMITE_CONTAGEM_MS ? rotuloContagem(ms) : '';
+    }
+
+    tick();
+    timer = setInterval(tick, 1000);
+  }
+
+  // Virou a hora com a página aberta. Os preços na tela foram desenhados
+  // ANTES do fim e agora estão vencidos — o servidor já voltou a cobrar
+  // cheio (ele relê a configuração a cada 30s).
+  //
+  // NÃO recarrega sozinho de propósito: recarregar apagaria o formulário
+  // de quem está no meio do checkout. Em vez disso, avisa e deixa a
+  // cliente atualizar quando ela quiser.
+  function encerrar(bar) {
+    bar.classList.add('elarah-promo-bar--fim');
+    bar.textContent = '';
+
+    var texto = document.createElement('strong');
+    texto.className = 'elarah-promo-bar__titulo';
+    texto.textContent = 'A promoção acabou';
+
+    var aviso = document.createElement('span');
+    aviso.className = 'elarah-promo-bar__sub';
+    aviso.textContent = 'Os preços voltaram ao normal.';
+
+    var botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'elarah-promo-bar__btn';
+    botao.textContent = 'Atualizar página';
+    botao.addEventListener('click', function () { location.reload(); });
+
+    bar.appendChild(texto);
+    bar.appendChild(aviso);
+    bar.appendChild(botao);
+  }
+
+  // CSS da barra num <style> só: inline não cobre media query, e o
+  // celular é de onde vem a maior parte do tráfego — sem isto o título
+  // e a contagem se espremem numa linha só em tela estreita.
+  function injetarEstilo() {
+    if (document.getElementById('elarah-promo-bar-style')) return;
+    var st = document.createElement('style');
+    st.id = 'elarah-promo-bar-style';
+    st.textContent = [
+      '#elarah-promo-bar{background:linear-gradient(90deg,#f0a05e,#e2833c);color:#fff;',
+      'text-align:center;padding:9px 16px;font-family:inherit;font-size:.84rem;',
+      'line-height:1.35;font-weight:600;letter-spacing:.2px;position:relative;z-index:101;}',
+      '#elarah-promo-bar.elarah-promo-bar--fim{background:#6b6b6b;}',
+      '.elarah-promo-bar__titulo{font-weight:800;}',
+      '.elarah-promo-bar__sub{font-weight:500;opacity:.92;margin-left:8px;}',
+      // A contagem é o único pedaço que muda sozinho: cápsula própria pra
+      // o olho achar sem reler a frase inteira. Largura mínima + números
+      // tabulares evitam a barra "pulsando" a cada segundo que muda.
+      '.elarah-promo-bar__relogio:not(:empty){display:inline-block;margin-left:10px;',
+      'padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.22);',
+      'font-weight:800;font-variant-numeric:tabular-nums;min-width:96px;}',
+      '.elarah-promo-bar__btn{margin-left:10px;padding:3px 12px;border-radius:999px;',
+      'border:1px solid rgba(255,255,255,.7);background:transparent;color:#fff;',
+      'font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;}',
+      '@media (max-width:560px){',
+      '#elarah-promo-bar{padding:8px 12px;font-size:.78rem;}',
+      '.elarah-promo-bar__sub{display:block;margin-left:0;}',
+      '.elarah-promo-bar__relogio:not(:empty){margin-left:0;margin-top:3px;}',
+      '}',
+    ].join('');
+    document.head.appendChild(st);
   }
 
   window.ElarahPromo = {

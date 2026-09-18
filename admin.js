@@ -951,10 +951,23 @@
       fimCurto = String(df.getDate()).padStart(2, '0') + '/' + String(df.getMonth() + 1).padStart(2, '0');
     }
 
+    // Contagem regressiva: o site mostra quando falta menos de 48h. A
+    // prévia repete a regra pra não prometer uma barra diferente da real.
+    var contagem = '';
+    if (fim) {
+      var restam = new Date(fim).getTime() - Date.now();
+      if (restam > 0 && restam <= 48 * 3600 * 1000) {
+        var h = Math.floor(restam / 3600000);
+        var m = Math.floor((restam % 3600000) / 60000);
+        contagem = h >= 1 ? ('   acaba em ' + h + 'h' + String(m).padStart(2, '0'))
+          : ('   acaba em ' + m + 'min');
+      }
+    }
+
     var previa = document.getElementById('dg-previa');
     if (previa) {
       previa.textContent = (titulo || (pct > 0 ? pct + '% OFF em todas as experiências' : 'Sem desconto configurado')) +
-        (subtitulo ? '  ' + subtitulo : (fimCurto ? '  Só até ' + fimCurto : ''));
+        (subtitulo ? '  ' + subtitulo : (fimCurto ? '  Só até ' + fimCurto : '')) + contagem;
       previa.style.opacity = (ativo && pct > 0) ? '1' : '.45';
     }
 
@@ -1037,6 +1050,22 @@
       if (!el) return;
       el.addEventListener('input', function () { dgSujo = true; dgAtualizarPrevia(); });
       el.addEventListener('change', function () { dgSujo = true; dgAtualizarPrevia(); });
+    });
+
+    // Atalhos de prazo: preenchem "Vale até" com o fim do dia escolhido.
+    // 23:59 (e não 00:00 do dia seguinte) porque é o que a cliente lê no
+    // aviso do site: "acaba hoje à meia-noite".
+    Array.prototype.forEach.call(document.querySelectorAll('.dg-atalho'), function (btn) {
+      btn.addEventListener('click', function () {
+        var dias = Number(btn.dataset.dias || 0);
+        var d = new Date();
+        d.setDate(d.getDate() + dias);
+        d.setHours(23, 59, 0, 0);
+        var el = document.getElementById('dg-fim');
+        if (el) el.value = dgParaInput(d.toISOString());
+        dgSujo = true;
+        dgAtualizarPrevia();
+      });
     });
 
     var salvar = document.getElementById('dg-salvar');
