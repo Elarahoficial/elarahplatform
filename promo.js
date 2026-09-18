@@ -228,18 +228,23 @@
     return isNaN(f) ? 0 : (f - Date.now());
   }
 
-  // Quanto menos tempo sobra, mais fina é a unidade: horas e minutos no
-  // último dia, minutos e SEGUNDOS na última hora (é aí que o segundo
-  // correndo faz diferença).
+  // Os SEGUNDOS aparecem sempre, não só no último minuto: é o dígito
+  // mudando na frente da pessoa que cria urgência. Um contador parado em
+  // "5h12" parece um aviso; o mesmo prazo com o segundo correndo parece
+  // um relógio andando contra ela.
+  //
+  // As unidades maiores somem quando zeram (5h 12min 07s → 12min 07s →
+  // 07s), pra frase não carregar zero à toa no fim.
   function rotuloContagem(ms) {
     if (ms <= 0) return '';
     var totalSeg = Math.floor(ms / 1000);
     var h = Math.floor(totalSeg / 3600);
     var m = Math.floor((totalSeg % 3600) / 60);
     var seg = totalSeg % 60;
-    if (h >= 1) return 'acaba em ' + h + 'h' + String(m).padStart(2, '0');
-    if (m >= 1) return 'acaba em ' + m + 'min' + String(seg).padStart(2, '0');
-    return 'acaba em ' + seg + 's';
+    var ss = String(seg).padStart(2, '0') + 's';
+    if (h >= 1) return 'acaba em ' + h + 'h ' + String(m).padStart(2, '0') + 'min ' + ss;
+    if (m >= 1) return 'acaba em ' + m + 'min ' + ss;
+    return 'acaba em ' + ss;
   }
 
   // ===== Aviso no topo do site =====
@@ -355,7 +360,7 @@
       // tabulares evitam a barra "pulsando" a cada segundo que muda.
       '.elarah-promo-bar__relogio:not(:empty){display:inline-block;margin-left:10px;',
       'padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.22);',
-      'font-weight:800;font-variant-numeric:tabular-nums;min-width:96px;}',
+      'font-weight:800;font-variant-numeric:tabular-nums;min-width:152px;}',
       '.elarah-promo-bar__btn{margin-left:10px;padding:3px 12px;border-radius:999px;',
       'border:1px solid rgba(255,255,255,.7);background:transparent;color:#fff;',
       'font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;}',

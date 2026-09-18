@@ -957,10 +957,12 @@
     if (fim) {
       var restam = new Date(fim).getTime() - Date.now();
       if (restam > 0 && restam <= 48 * 3600 * 1000) {
-        var h = Math.floor(restam / 3600000);
-        var m = Math.floor((restam % 3600000) / 60000);
-        contagem = h >= 1 ? ('   acaba em ' + h + 'h' + String(m).padStart(2, '0'))
-          : ('   acaba em ' + m + 'min');
+        var totalSeg = Math.floor(restam / 1000);
+        var h = Math.floor(totalSeg / 3600);
+        var m = Math.floor((totalSeg % 3600) / 60);
+        var ss = String(totalSeg % 60).padStart(2, '0') + 's';
+        contagem = '   acaba em ' + (h >= 1 ? (h + 'h ' + String(m).padStart(2, '0') + 'min ' + ss)
+          : (m >= 1 ? (m + 'min ' + ss) : ss));
       }
     }
 
@@ -1067,6 +1069,13 @@
         dgAtualizarPrevia();
       });
     });
+
+    // A prévia anda de segundo em segundo, igual à barra do site — uma
+    // prévia com o relógio congelado pareceria contador quebrado.
+    setInterval(function () {
+      var painel = document.getElementById('panel-desconto-geral');
+      if (painel && painel.classList.contains('admin__panel--active')) dgAtualizarPrevia();
+    }, 1000);
 
     var salvar = document.getElementById('dg-salvar');
     if (salvar) salvar.addEventListener('click', function () { dgSalvar(false); });
