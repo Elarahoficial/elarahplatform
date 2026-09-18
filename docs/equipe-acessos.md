@@ -73,19 +73,19 @@ email e senha. O menu já vai aparecer cortado.
 | Cotação | ✅ | — |
 | Locais p/ eventos | ✅ | — |
 | Parceiros | ✅ | ✅ |
-| Prospecção | ✅ | ✅ |
-| Interesses | ✅ *extra* | ✅ *extra* |
+| Prospecção | — | ✅ |
+| Interesses | — | ✅ *extra* |
 
-As duas marcadas como *extra* não estavam na sua tabela; eu incluí porque
-ajudam e não mostram dinheiro nenhum:
+As marcadas como *extra* não estavam nas suas tabelas; entraram porque ajudam e
+não mostram dinheiro nenhum:
 
 - **Visão geral** é a tela de entrada do painel — só contadores (quantas
   usuárias, parceiras, experiências). Sem ela, a pessoa cai numa aba qualquer
   ao logar.
-- **Interesses** é a lista de quem levantou a mão pedindo experiência. É lead
-  na mão pra quem trabalha com venda.
+- **Interesses** é a lista de quem levantou a mão pedindo experiência: lead na
+  mão pra quem prospecta. Ficou só com a Comercial.
 
-Tirar qualquer uma das duas é um clique (veja abaixo).
+Tirar qualquer uma delas é um clique (veja abaixo).
 
 **Ficou de fora das duas, de propósito:** Compras, Gift Cards, Cupons,
 Contabilidade, Analytics, Usuários e Novidades — é onde moram faturamento,

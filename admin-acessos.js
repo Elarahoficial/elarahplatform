@@ -87,9 +87,7 @@
         'byelarah',
         'cotacao',
         'locais',
-        'partners',
-        'prospects',
-        'interesses'         // + extra
+        'partners'
       ]
     },
     comercial: {

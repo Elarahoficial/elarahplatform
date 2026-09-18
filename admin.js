@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v42 — Acesso por aba (equipe): profiles.admin_panels limita o menu e a navegação; editor de acesso na aba Usuários');
+  console.info('[Elarah Admin] admin.js v43 — Parceiros: categorias do modal saem só do site (quebra "A | B") e chips iguais com/sem acento viram um só');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -11099,11 +11099,18 @@
   // vírgula (compatível com a coluna text existente — sem migração).
   function mountMultiChip(container, allOptions, initialSelectedStr) {
     if (!container) return { getValue: () => '' };
-    const optionMap = new Map(); // chave minúscula -> rótulo exibido
+    const optionMap = new Map(); // chave normalizada -> rótulo exibido
+    // Chave sem caixa, sem acento e sem espaço duplicado: "Cerâmica",
+    // "ceramica" e "CERÂMICA " são o mesmo chip. Sem isso, uma ficha
+    // salva sem acento criava um chip gêmeo do que veio do site.
+    const chipKey = (v) => String(v == null ? '' : v)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().trim().replace(/\s+/g, ' ');
     const addOpt = (v) => {
       const t = String(v == null ? '' : v).trim();
       if (!t) return '';
-      const k = t.toLowerCase();
+      const k = chipKey(t);
+      if (!k) return '';
       if (!optionMap.has(k)) optionMap.set(k, t);
       return k;
     };
@@ -13378,21 +13385,42 @@
       if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m);
     });
 
-    // Opções de categoria/bairro pro modal — todas as que já existem
-    // no site (experiências) + as já cadastradas em fornecedores.
+    // Opções de categoria/bairro pro modal de fornecedor.
+    //
+    // CATEGORIAS: só as que existem NO SITE, lidas das experiências e
+    // quebradas em "|" — uma experiência marcada como "Cerâmica |
+    // Pintura" vira as duas categorias reais, não um chip colado. É a
+    // mesma leitura que o site e a aba Cotação fazem
+    // (ElarahData.categoriasOf), então o que aparece aqui é o que a
+    // cliente vê lá.
+    //
+    // O que NÃO entra mais: a categoria já salva nos fornecedores. Era
+    // de lá que vinha a bagunça — pares colados e erros de digitação
+    // ("Beadazzeld" ao lado de "Beadazzled") que, uma vez salvos numa
+    // ficha, apareciam pra sempre na lista de todo mundo. Nada se
+    // perde: o que cada fornecedor já tem salvo continua aparecendo
+    // (e marcado) quando a ficha dele abre, e categoria nova é só
+    // digitar em "+ adicionar nova".
+    //
+    // BAIRROS seguem como antes (site + o que já está nas fichas): lá
+    // não há par colado nem lista inflada.
     (function () {
-      const cats = new Set();
+      const cats = new Map();      // chave sem acento/caixa → rótulo do site
       const bairros = new Set();
+      const catsDaExperiencia = (e) =>
+        (window.ElarahData && typeof ElarahData.categoriasOf === 'function')
+          ? ElarahData.categoriasOf(e)
+          : String((e && e.categoria) || '').split('|').map(c => c.trim()).filter(Boolean);
+
       (allExperiences || []).forEach(e => {
-        if (e && e.categoria) cats.add(String(e.categoria).trim());
-        if (e && e.bairro) bairros.add(String(e.bairro).trim());
+        if (!e) return;
+        catsDaExperiencia(e).forEach(c => {
+          const k = cotacaoCatKey(c);
+          if (k && !cats.has(k)) cats.set(k, c);
+        });
+        if (e.bairro) bairros.add(String(e.bairro).trim());
       });
       (metadata || []).forEach(m => {
-        if (m && m.categoria) {
-          String(m.categoria).split(',').forEach(c => {
-            const t = c.trim(); if (t) cats.add(t);
-          });
-        }
         if (m && m.bairro) {
           String(m.bairro).split(',').forEach(b => {
             const t = b.trim(); if (t) bairros.add(t);
@@ -13400,7 +13428,7 @@
         }
       });
       fornModalOptions = {
-        categorias: Array.from(cats).filter(Boolean),
+        categorias: Array.from(cats.values()).filter(Boolean),
         bairros: Array.from(bairros).filter(Boolean),
       };
     })();
