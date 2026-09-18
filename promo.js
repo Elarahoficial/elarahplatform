@@ -1,65 +1,114 @@
 /* =====================================================================
-   promo.js — PROMOÇÃO SAZONAL ELARAH (fonte única do navegador)
+   promo.js — DESCONTO GERAL DO SITE (fonte única do navegador)
    ---------------------------------------------------------------------
-   Um desconto que vale pra TODAS as experiências ao mesmo tempo, sem
-   precisar mexer no preço de cada uma no admin. Enquanto a janela
-   estiver aberta:
+   Um percentual que vale pra TODAS as experiências ao mesmo tempo,
+   com validade. Enquanto a janela estiver aberta:
 
      preço promocional = PREÇO DO SITE - PERCENTUAL%
 
-   A base é o preço que está no ar hoje (experiences.preco) — o mesmo
-   que a cliente vê antes da campanha. Assim o que o banner promete é
-   exatamente o que ela ganha: anunciou 20%, ela paga 20% a menos do
-   que pagaria ontem.
+   A base é o preço que está no ar (experiences.preco) — o mesmo que a
+   cliente vê antes da campanha. É o que faz o banner ser verdade:
+   anunciou 20%, ela paga 20% a menos do que pagaria ontem.
 
-   POR QUE NÃO O valor_cheio_centavos: aquele campo é resquício do
-   modelo antigo, em que o catálogo já entrava com 10% embutido e o
-   cheio era a referência riscada. Com o catálogo vendendo pelo preço
-   inteiro, descontar sobre o cheio daria menos de 20% na tela — a
-   cliente veria "20% OFF" e ganharia 11%. O cheio continua servindo
-   só pro "de" riscado, quando estiver cadastrado e for maior.
+   QUEM MANDA É O ADMIN: a configuração (ativo, percentual, início,
+   fim, textos) mora na tabela public.desconto_geral e é editada na aba
+   "Desconto geral" do painel. Nada aqui é chumbado — sem o banco, ou
+   com a linha desligada, o site simplesmente não dá desconto nenhum.
 
-   ATENÇÃO — ESTE ARQUIVO TEM UM GÊMEO NO BACKEND:
-   supabase/functions/_shared/promo.ts. O Deno não importa JS do site,
-   então não dá pra ter fonte única de verdade. As duas implementações
-   precisam concordar no percentual e na janela de datas, senão a
-   vitrine mostra um valor e o checkout cobra outro. MUDOU AQUI, MUDA
-   LÁ. As duas trazem este mesmo aviso.
+   POR QUE O PADRÃO É "SEM DESCONTO": se a leitura do banco falhar, a
+   vitrine mostra o preço cheio e o servidor cobra o preço cheio. Os
+   dois erram pro mesmo lado. O contrário — vitrine anunciando 20% que
+   a cobrança não honra — seria propaganda enganosa.
 
-   PRA DESLIGAR A PROMOÇÃO: basta ATIVA = false aqui e em promo.ts
-   (ou deixar a data FIM passar — ela desliga sozinha).
+   ORDEM DE CARREGAMENTO: quem desenha preço espera por carregar().
+   O experiences-data.js faz isso dentro do próprio load do catálogo,
+   então nenhuma tela pinta preço antes do desconto ser conhecido.
+
+   ATENÇÃO — A MESMA REGRA EXISTE NO BACKEND:
+   supabase/functions/_shared/promo.ts lê a MESMA tabela e recalcula o
+   preço na hora de cobrar (o preço nunca vem do cliente). As duas
+   implementações precisam concordar na conta; a configuração, essa
+   sim, é uma só — o banco.
    ===================================================================== */
 (function (window) {
   'use strict';
 
-  // ----- Configuração da campanha -----
+  // Tabela de linha única com a configuração (sql/elarah_desconto_geral.sql).
+  var TABELA = 'desconto_geral';
+
+  // Estado efetivo. Começa desligado: sem resposta do banco, sem
+  // desconto — nem na tela, nem na cobrança.
   var CONFIG = {
-    // Liga/desliga geral. Com false, o site volta ao comportamento
-    // normal (preço praticado) sem precisar remover nada.
-    ATIVA: true,
-    // Percentual de desconto sobre o valor cheio.
-    PERCENTUAL: 20,
-    // Janela de validade (horário de Brasília). Fora dela o desconto
-    // não vale — nem na vitrine, nem no checkout.
-    INICIO: '2026-09-18T00:00:00-03:00',
-    FIM: '2026-09-20T23:59:59-03:00',
-    // Textos do aviso no topo do site.
-    TITULO: '20% OFF em todas as experiências',
-    SUBTITULO: 'Só até domingo (20/09), meia-noite',
+    ATIVA: false,
+    PERCENTUAL: 0,
+    INICIO: null,
+    FIM: null,
+    TITULO: null,
+    SUBTITULO: null,
   };
 
-  // Data final formatada pra usar em texto ("27/09").
+  var carregado = false;
+  var carregarPromise = null;
+
+  // Lê a configuração do banco. Idempotente: várias chamadas
+  // simultâneas compartilham a mesma promise (o catálogo, o banner e
+  // a página de detalhe chamam quase ao mesmo tempo).
+  function carregar() {
+    if (carregarPromise) return carregarPromise;
+    carregarPromise = (async function () {
+      try {
+        var s = window.supabaseClient;
+        if (!s && window.ElarahSupabase && typeof window.ElarahSupabase.waitClient === 'function') {
+          s = await window.ElarahSupabase.waitClient(8000);
+        }
+        if (!s) {
+          console.info('[Elarah Promo] Supabase indisponível — sem desconto geral.');
+          return CONFIG;
+        }
+        var res = await s.from(TABELA).select('*').eq('id', 1).maybeSingle();
+        if (res.error) {
+          // Tabela ainda não migrada (sql/elarah_desconto_geral.sql) ou
+          // erro de leitura: segue sem desconto.
+          console.warn('[Elarah Promo] não foi possível ler o desconto geral:', res.error.message);
+          return CONFIG;
+        }
+        if (res.data) aplicarLinha(res.data);
+      } catch (e) {
+        console.warn('[Elarah Promo] exceção ao ler o desconto geral:', e);
+      } finally {
+        carregado = true;
+      }
+      return CONFIG;
+    })();
+    return carregarPromise;
+  }
+
+  // Row do banco → CONFIG. Tolerante: qualquer campo inválido
+  // simplesmente não liga o desconto.
+  function aplicarLinha(row) {
+    var pct = Number(row.percentual);
+    CONFIG.PERCENTUAL = (isFinite(pct) && pct > 0 && pct <= 90) ? Math.round(pct) : 0;
+    CONFIG.ATIVA = row.ativo === true && CONFIG.PERCENTUAL > 0;
+    CONFIG.INICIO = row.inicio || null;
+    CONFIG.FIM = row.fim || null;
+    CONFIG.TITULO = (row.titulo && String(row.titulo).trim()) || null;
+    CONFIG.SUBTITULO = (row.subtitulo && String(row.subtitulo).trim()) || null;
+  }
+
+  // Data final formatada pra usar em texto ("20/09").
   function fimCurto() {
+    if (!CONFIG.FIM) return '';
     var d = new Date(CONFIG.FIM);
     if (isNaN(d.getTime())) return '';
     return String(d.getDate()).padStart(2, '0') + '/' +
       String(d.getMonth() + 1).padStart(2, '0');
   }
 
-  // A promoção está valendo AGORA? Datas inválidas desligam o desconto
-  // (falha pro lado seguro: preço normal).
+  // O desconto está valendo AGORA? Datas inválidas ou faltando
+  // desligam (falha pro lado seguro: preço normal).
   function ativa() {
-    if (!CONFIG.ATIVA) return false;
+    if (!CONFIG.ATIVA || !CONFIG.PERCENTUAL) return false;
+    if (!CONFIG.INICIO || !CONFIG.FIM) return false;
     var agora = Date.now();
     var ini = new Date(CONFIG.INICIO).getTime();
     var fim = new Date(CONFIG.FIM).getTime();
@@ -135,6 +184,20 @@
     });
   }
 
+  // Textos do aviso. O admin pode escrever os dele nos campos de texto
+  // da aba "Desconto geral"; vazio = o site monta sozinho a partir do
+  // percentual e da data de fim, que é o que a maioria das campanhas
+  // precisa.
+  function tituloDoAviso() {
+    return CONFIG.TITULO || (CONFIG.PERCENTUAL + '% OFF em todas as experiências');
+  }
+
+  function subtituloDoAviso() {
+    if (CONFIG.SUBTITULO) return CONFIG.SUBTITULO;
+    var dia = fimCurto();
+    return dia ? ('Só até ' + dia) : '';
+  }
+
   // ===== Aviso no topo do site =====
   // Injetado por JS em vez de copiado no HTML de 50+ páginas: quando a
   // promoção acabar, some de tudo de uma vez.
@@ -163,11 +226,11 @@
     ].join(';');
 
     var titulo = document.createElement('strong');
-    titulo.textContent = CONFIG.TITULO;
+    titulo.textContent = tituloDoAviso();
     titulo.style.cssText = 'font-weight:800;';
 
     var sub = document.createElement('span');
-    sub.textContent = CONFIG.SUBTITULO;
+    sub.textContent = subtituloDoAviso();
     sub.style.cssText = 'font-weight:500;opacity:.92;margin-left:8px;';
 
     bar.appendChild(titulo);
@@ -185,6 +248,10 @@
 
   window.ElarahPromo = {
     CONFIG: CONFIG,
+    // Carrega a configuração do banco. Quem desenha preço DEVE esperar
+    // por esta promise antes de pintar qualquer valor na tela.
+    carregar: carregar,
+    carregado: function () { return carregado; },
     ativa: ativa,
     percentual: function () { return CONFIG.PERCENTUAL; },
     centavos: centavos,
@@ -195,10 +262,16 @@
     fimCurto: fimCurto,
   };
 
+  // O aviso só pode ser desenhado depois de saber se existe desconto —
+  // e o body precisa existir pra receber a barra.
+  function iniciar() {
+    carregar().then(renderBanner).catch(function () {});
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderBanner);
+    document.addEventListener('DOMContentLoaded', iniciar);
   } else {
-    renderBanner();
+    iniciar();
   }
 
 })(window);

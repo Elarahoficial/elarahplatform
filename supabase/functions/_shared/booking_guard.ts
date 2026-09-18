@@ -21,7 +21,11 @@
 // =============================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { precoLabelBR, precoPromocionalCentavos } from "./promo.ts";
+import {
+  carregarDescontoGeral,
+  precoLabelBR,
+  precoPromocionalCentavos,
+} from "./promo.ts";
 
 export interface GuardInput {
   experienciaId: string;
@@ -744,21 +748,23 @@ export async function reserveExperienceSlot(
     }
   }
 
-  // ===== 5c. Promoção sazonal (_shared/promo.ts) =====
-  // Última etapa do preço: o desconto da campanha incide sobre o preço
-  // que já está resolvido aqui. Fora da janela da promoção
-  // precoPromocionalCentavos devolve o mesmo valor, sem efeito.
+  // ===== 5c. Desconto geral (_shared/promo.ts) =====
+  // Última etapa do preço: o desconto configurado pela admin na aba
+  // "Desconto geral" incide sobre o preço já resolvido aqui. Sem
+  // campanha no ar, precoPromocionalCentavos devolve o mesmo valor.
   //
   // Fica DEPOIS da variação de propósito: se o cliente escolheu "Dupla",
   // é o preço da Dupla que leva o desconto.
+  const descontoGeral = await carregarDescontoGeral(supabase);
   const precoAntesDaPromo = baseCents;
-  baseCents = precoPromocionalCentavos(baseCents);
+  baseCents = precoPromocionalCentavos(baseCents, descontoGeral);
   if (baseCents !== precoAntesDaPromo) {
     console.info(
-      "[Elarah Guard] promoção aplicada",
+      "[Elarah Guard] desconto geral aplicado",
       "exp=" + exp.id,
       "de=" + precoAntesDaPromo,
       "por=" + baseCents,
+      "pct=" + descontoGeral.percentual,
     );
     // preco_label alimenta o e-mail de confirmação ("qty × R$ X") e o
     // extrato da reserva. Sem reescrever aqui, a cliente pagaria R$ 144

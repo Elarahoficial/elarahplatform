@@ -672,6 +672,20 @@
 
     cachePromise = (async () => {
       let source = 'supabase';
+      // O desconto geral (promo.js) precisa estar carregado ANTES de
+      // qualquer preço ir pra tela: quem renderiza card espera por este
+      // load, então cobrir aqui resolve vitrine, detalhe e checkout de
+      // uma vez. Sem isso, o catálogo pintaria o preço cheio e só
+      // depois o desconto chegaria — piscando preço errado.
+      //
+      // Dispara JUNTO com a busca das experiências (não antes): são dois
+      // selects independentes, e enfileirá-los somaria uma ida ao banco
+      // no tempo até o primeiro card aparecer.
+      const promoPromise = (window.ElarahPromo && typeof window.ElarahPromo.carregar === 'function')
+        ? window.ElarahPromo.carregar().catch(function (e) {
+            console.warn('[Elarah] desconto geral não carregou — seguindo com preço normal', e);
+          })
+        : null;
       try {
         const { data, error } = await s
           .from(TABLE)
@@ -706,6 +720,9 @@
         console.warn('[Elarah] getAllExperiences exception — usando fallback:', e);
         cache = FALLBACK_SEEDS.slice();
       }
+      // Fecha a espera do desconto antes de entregar o catálogo: quem
+      // recebe esta lista desenha preço em seguida.
+      if (promoPromise) await promoPromise;
       // Diagnóstico explícito: conta quantas experiências têm
       // descrição não-vazia. Se "com descricao = 0" aparecer, a
       // modal nunca vai abrir — sinal claro de que os dados
