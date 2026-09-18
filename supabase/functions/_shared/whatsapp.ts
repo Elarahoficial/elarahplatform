@@ -309,6 +309,7 @@ const META_TEMPLATE_DEFAULTS: Record<string, string> = {
   pending: "elarah_reserva_pendente",
   byelarah_aviso: "elarah_inscricoes_abertas",
   instrucoes: "elarah_instrucoes_pos_compra",
+  fornecedor: "elarah_aviso_parceira",
 };
 const META_TEMPLATE_ENV: Record<string, string> = {
   confirmation: "META_TEMPLATE_CONFIRMACAO",
@@ -317,6 +318,7 @@ const META_TEMPLATE_ENV: Record<string, string> = {
   pending: "META_TEMPLATE_PENDENTE",
   byelarah_aviso: "META_TEMPLATE_INSCRICOES",
   instrucoes: "META_TEMPLATE_INSTRUCOES",
+  fornecedor: "META_TEMPLATE_PARCEIRA",
 };
 
 // Templates aprovados COM cabeçalho de imagem. A imagem NÃO faz parte da
@@ -759,10 +761,9 @@ export function pendingRecoveryWhatsAppText(opts: MsgOpts): string {
 // Mesma mensagem que o painel monta no botão "Avisar" — a diferença é que
 // agora sai sozinha quando a compra é confirmada.
 //
-// Vai pelo canal LEGADO de propósito (o número da Elarah conectado por QR
-// code): assim a conversa aparece no WhatsApp da Elarah, a admin lê, o
-// parceiro responde e ela responde ali mesmo. Pela API oficial a conversa
-// viveria só em webhook, fora do alcance dela.
+// No canal legado a conversa aparece no WhatsApp da Elarah (ela lê a resposta
+// da parceira); na oficial vai por template aprovado, com a formatação no
+// corpo do template — a mensagem que chega é a mesma nos dois.
 export function supplierBookingWhatsAppText(opts: {
   quantidade?: unknown;
   experienciaNome?: unknown;
@@ -987,6 +988,41 @@ export function postPurchaseInstructionsTemplateParams(opts: {
   ];
 }
 
+// elarah_aviso_parceira — {{1}} vagas · {{2}} experiência · {{3}} quando ·
+// {{4}} em nome de · {{5}} whatsapp da cliente · {{6}} e-mail · {{7}} local
+//
+// A formatação (emojis, quebras de linha) vive no CORPO do template, que é
+// fixo e aprovado — só os VALORES são variáveis. Por isso a mensagem fica
+// idêntica à do canal legado, sem a limitação de "parâmetro numa linha só".
+export function supplierBookingTemplateParams(opts: {
+  quantidade?: unknown; experienciaNome?: unknown; data?: unknown; horario?: unknown;
+  nomes?: string[]; telefoneCliente?: unknown; emailCliente?: unknown;
+  endereco?: unknown; bairro?: unknown;
+}): string[] {
+  const qtd = Math.max(1, Number(opts.quantidade) || 1);
+  const nomes = (opts.nomes ?? []).map((n) => String(n ?? "").trim()).filter(Boolean);
+  const semNome = Math.max(0, qtd - nomes.length);
+  const lista = nomes.length ? nomes.join(", ") : "(participante)";
+  return [
+    metaParam(qtd === 1 ? "1 vaga confirmada" : qtd + " vagas confirmadas"),
+    metaParam(opts.experienciaNome, "(experiência)"),
+    metaParam(
+      [String(opts.data ?? "").trim(), String(opts.horario ?? "").trim()].filter(Boolean).join(" · "),
+      "(data)",
+    ),
+    // Quem falta aparece AQUI, junto dos nomes: é o dado que a parceira usa
+    // pra saber quanta gente preparar.
+    metaParam(semNome > 0 ? lista + " + " + semNome + (semNome === 1 ? " pessoa" : " pessoas") +
+      " sem nome informado" : lista),
+    metaParam(formatPhoneBRHuman(opts.telefoneCliente), "não informado"),
+    metaParam(opts.emailCliente, "não informado"),
+    metaParam(
+      [String(opts.endereco ?? "").trim(), String(opts.bairro ?? "").trim()].filter(Boolean).join(" — "),
+      "combinado com a Elarah",
+    ),
+  ];
+}
+
 // elarah_inscricoes_abertas — o ÚNICO template do aviso By Elarah.
 // {{1}} nome · {{2}} experiência · {{3}} quando · {{4}} local · {{5}} link
 export function byelarahAvisoTemplateParams(opts: {
@@ -1140,8 +1176,9 @@ export async function gatedSendWhatsApp(
 // casando por nome normalizado. Sem WhatsApp cadastrado, não faz nada — o
 // botão manual do painel continua lá.
 //
-// Sai pelo canal LEGADO sempre (nunca template oficial): é conversa da Elarah
-// com a parceira, tem que aparecer no WhatsApp dela.
+// Segue o provedor padrão (WHATSAPP_PROVIDER). No legado, a conversa aparece
+// no WhatsApp da Elarah e ela vê a resposta da parceira; na oficial, vai pelo
+// template elarah_aviso_parceira.
 export async function sendSupplierBookingNoticeGated(
   supabase: SB,
   // deno-lint-ignore no-explicit-any
@@ -1240,8 +1277,24 @@ export async function sendSupplierBookingNoticeGated(
     statusAllowed,
     message: mensagem,
     caption: mensagem,
-    // Sem `template`: mesmo que a oficial esteja cadastrada, este aviso vai
-    // pelo canal legado — é a conversa da Elarah com a parceira.
+    // Segue o provedor PADRÃO: enquanto for o legado, a conversa aparece no
+    // WhatsApp da Elarah (ela lê a resposta da parceira). Quando o
+    // transacional migrar pra oficial (WHATSAPP_PROVIDER=meta), vai por
+    // template aprovado — a formatação fica no corpo do template, então a
+    // mensagem continua igual.
+    template: {
+      params: supplierBookingTemplateParams({
+        quantidade: fresh.quantidade,
+        experienciaNome: fresh.experiencia_nome,
+        data: fresh.data,
+        horario: fresh.horario,
+        nomes,
+        telefoneCliente: (meta.telefone_digits as string | undefined) ?? fresh.telefone,
+        emailCliente: fresh.email,
+        endereco,
+        bairro,
+      }),
+    },
     bookingId,
     experienciaId: fresh.experiencia_id ?? null,
   });
