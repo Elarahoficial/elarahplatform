@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v45 — Cotação mostra e corrige categoria divergente (só ficha de parceiro); ficha passa a gravar lista com ";" pra aguentar categoria com vírgula');
+  console.info('[Elarah Admin] admin.js v46 — Arquivar experiência (some da lista sem mexer na contabilidade); Excluir agora diz o motivo quando o banco recusa');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -2422,7 +2422,9 @@
     document.getElementById('stat-users').textContent = profiles.length;
     document.getElementById('stat-partners').textContent = partners.filter(p => p.partner_status === 'approved').length;
     document.getElementById('stat-purchases').textContent = totalCompras;
-    document.getElementById('stat-experiences').textContent = experiences.length;
+    // Arquivadas não entram no contador — elas saíram da lista.
+    document.getElementById('stat-experiences').textContent =
+      (experiences || []).filter(function (e) { return e && !e.arquivada; }).length;
 
     // Atualiza a stat-gift opcional se o painel de overview tiver
     // essa box. A box é criada no admin.html — se não existir, apenas
@@ -6876,7 +6878,7 @@
     if (!datalist) return;
     const seed = [
       'Gastronomia', 'Cerâmica', 'Pintura', 'Vela', 'Sabonete',
-      'Tufting', 'Floral', 'Macramê', 'Bartenderia',
+      'Tufting & Punch', 'Floral', 'Macramê', 'Bartenderia',
     ];
     let dbCategorias = [];
     try {
@@ -8007,6 +8009,11 @@
   // Filtra contra nome, categoria, bairro e descrição (case-insensitive).
   let activeExpSearch = '';
 
+  // Arquivadas ficam escondidas da lista por padrão. A pílula
+  // "Arquivadas (N)" da barra de filtro alterna pra vê-las (e aí o
+  // botão da linha vira "Desarquivar").
+  let showArquivadas = false;
+
   // Popula o <select id="exp-filter-fornecedor"> com os nomes únicos
   // que aparecem em qualquer experiência. Compara case-insensitive
   // pra não duplicar (ex: "accademia gastronomica" vs "Accademia
@@ -8151,7 +8158,7 @@
     if (linkInput) linkInput.value = '';
   }
 
-  function buildExpFilterBar(experiences) {
+  function buildExpFilterBar(experiences, totalArquivadas) {
     const bar = document.getElementById('exp-filter-bar');
     if (!bar) return;
     // Extrai categorias únicas (case-insensitive, preserva capitalização original)
@@ -8196,6 +8203,29 @@
       });
       bar.appendChild(btn);
     });
+
+    // Pílula das arquivadas — só aparece quando existe alguma, ou
+    // quando já estamos vendo a lista de arquivadas (pra ter como
+    // voltar). Alterna entre as duas listas.
+    if (totalArquivadas > 0 || showArquivadas) {
+      var arqBtn = document.createElement('button');
+      arqBtn.type = 'button';
+      arqBtn.textContent = showArquivadas
+        ? '← Voltar pras ativas'
+        : 'Arquivadas (' + totalArquivadas + ')';
+      arqBtn.title = showArquivadas
+        ? 'Volta pra lista normal de experiências.'
+        : 'Experiências guardadas fora da lista. Nada foi apagado — elas continuam no banco e na contabilidade.';
+      arqBtn.className = 'admin__filter-pill admin__filter-pill--arquivadas' +
+        (showArquivadas ? ' admin__filter-pill--active' : '');
+      arqBtn.style.marginLeft = 'auto';
+      arqBtn.addEventListener('click', function () {
+        showArquivadas = !showArquivadas;
+        activeExpFilter = '';
+        renderExperiences();
+      });
+      bar.appendChild(arqBtn);
+    }
   }
 
   // Toast simples de confirmação (reusado pelos fluxos de reativação).
@@ -8309,15 +8339,25 @@
       return !!e;
     });
 
-    // Constrói barra de filtro com TODAS as experiências (antes de filtrar)
-    buildExpFilterBar(allExperiences);
-    buildExpFornecedorFilter(allExperiences);
+    // Constrói barra de filtro com TODAS as experiências do modo atual
+    // (arquivadas ou não), antes dos outros filtros: uma categoria que
+    // só tem experiência arquivada não deve virar pílula na lista normal.
+    const noModoAtual = (allExperiences || []).filter(function (e) {
+      return !!e.arquivada === showArquivadas;
+    });
+    const totalArquivadas = (allExperiences || []).filter(function (e) {
+      return !!e.arquivada;
+    }).length;
+    buildExpFilterBar(noModoAtual, totalArquivadas);
+    buildExpFornecedorFilter(noModoAtual);
 
     // Aplica filtros em AND: categoria (pílulas) + fornecedor (select)
     // + busca livre (input).
     const searchNorm = (activeExpSearch || '').trim().toLowerCase();
     const experiences = (allExperiences || []).filter(function (e) {
       if (!e) return false;
+      // Arquivada: fora da lista, a não ser que a pílula esteja ligada.
+      if (!!e.arquivada !== showArquivadas) return false;
       if (activeExpFilter) {
         var _match = (window.ElarahData && ElarahData.matchesCategoria)
           ? ElarahData.matchesCategoria(e, activeExpFilter)
@@ -8541,6 +8581,7 @@
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
           <button class="admin__action-btn ${toggleClass}" data-toggle-exp="${escapeHtml(exp.id)}" data-toggle-active="${isActive ? '1' : '0'}" data-auto-hidden="${autoHidden ? '1' : '0'}">${toggleLabel}</button>
           <button class="admin__action-btn admin__action-btn--duplicate" data-duplicate-exp="${escapeHtml(exp.id)}">Duplicar</button>
+          <button class="admin__action-btn admin__action-btn--archive" data-archive-exp="${escapeHtml(exp.id)}" data-archive-to="${exp.arquivada ? '0' : '1'}" title="${exp.arquivada ? 'Traz a experiência de volta pra lista.' : 'Tira da lista sem apagar nada: a ficha continua no banco e a contabilidade (despesas, vendas e reservas) não muda.'}">${exp.arquivada ? 'Desarquivar' : 'Arquivar'}</button>
           <button class="admin__action-btn admin__action-btn--delete" data-delete-exp="${escapeHtml(exp.id)}">Excluir</button>
         </td>
       </tr>
@@ -8646,13 +8687,68 @@
         await renderOverview();
       });
     });
+    tbody.querySelectorAll('[data-archive-exp]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const paraArquivar = btn.dataset.archiveTo === '1';
+        if (paraArquivar && !confirm(
+            'Arquivar esta experiência?\n\n' +
+            'Ela sai da lista e do site, mas NADA é apagado: a ficha continua no banco ' +
+            'e as despesas, vendas manuais e reservas seguem ligadas a ela — a contabilidade ' +
+            'não muda em nada.\n\nDá pra desarquivar depois na pílula "Arquivadas".')) return;
+        const originalLabel = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = paraArquivar ? 'Arquivando…' : 'Voltando…';
+        let res = null;
+        try {
+          res = (typeof ElarahData.setExperienceArquivada === 'function')
+            ? await ElarahData.setExperienceArquivada(btn.dataset.archiveExp, paraArquivar)
+            : { _error: { message: 'Função indisponível. Recarregue a página.' } };
+        } catch (err) {
+          console.error('[Admin] archive-exp exceção:', err);
+          res = { _error: { message: (err && err.message) || String(err) } };
+        }
+        if (!res || res._error) {
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          alert('Não consegui ' + (paraArquivar ? 'arquivar' : 'desarquivar') + '.\n\n' +
+            ((res && res._error && res._error.message) || 'erro desconhecido'));
+          return;
+        }
+        showAdminToast(paraArquivar ? '✓ Arquivada — nada foi apagado.' : '✓ De volta pra lista.');
+        await renderExperiences();
+        await renderOverview();
+      });
+    });
     tbody.querySelectorAll('[data-delete-exp]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Tem certeza que deseja excluir esta experiência? Essa ação é permanente — se quiser apenas tirar do site, use "Ocultar".')) {
-          await ElarahData.deleteExperience(btn.dataset.deleteExp);
-          await renderExperiences();
-          await renderOverview();
+        if (!confirm('Tem certeza que deseja excluir esta experiência? Essa ação é permanente — se quiser apenas tirar do site, use "Ocultar".')) return;
+        // Antes esse handler ignorava o retorno de deleteExperience: quando
+        // o banco recusava (trava da recorrência, RLS), a tela só
+        // re-renderizava com a linha ainda lá e sem nenhuma explicação.
+        const originalLabel = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Excluindo…';
+        let ok = false;
+        let motivo = '';
+        try {
+          ok = await ElarahData.deleteExperience(btn.dataset.deleteExp);
+          if (!ok) {
+            motivo = (typeof ElarahData.getLastDeleteError === 'function'
+              && ElarahData.getLastDeleteError()) || 'motivo não informado pelo banco.';
+          }
+        } catch (err) {
+          console.error('[Admin] delete-exp exceção:', err);
+          motivo = (err && err.message) || String(err);
         }
+        if (!ok) {
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          alert('Não consegui excluir esta experiência.\n\n' + motivo);
+          return;
+        }
+        showAdminToast('✓ Experiência excluída.');
+        await renderExperiences();
+        await renderOverview();
       });
     });
 
