@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v44 — Espaço de evento não vira parceiro: marca no repasse da venda, cadastra em Locais p/ eventos e sai da aba Parceiros');
+  console.info('[Elarah Admin] admin.js v45 — Cotação mostra e corrige categoria divergente (só ficha de parceiro); ficha passa a gravar lista com ";" pra aguentar categoria com vírgula');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -10940,6 +10940,30 @@
     return String(nome || '').trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
+  // ===== LISTAS NA FICHA DO PARCEIRO (categoria / bairro) =====
+  // fornecedores_metadata.categoria e .bairro guardam vários valores
+  // numa string só. O separador histórico era a vírgula — e é ela que
+  // quebrava justamente "Casa, Arte & Design", categoria que TEM vírgula
+  // no nome: era lida como duas ("Casa" e "Arte & Design") e aparecia
+  // assim na Cotação, sem corresponder a nada do site.
+  //
+  // Agora escrevemos com ponto e vírgula. A leitura aceita os dois, sem
+  // migração nenhuma: tem ';' → separa por ';'; não tem → separa por
+  // vírgula, como as fichas antigas continuam gravadas.
+  function parseFichaLista(str) {
+    const s = String(str == null ? '' : str);
+    if (!s.trim()) return [];
+    const sep = s.indexOf(';') !== -1 ? ';' : ',';
+    return s.split(sep).map(t => t.trim()).filter(Boolean);
+  }
+  function joinFichaLista(arr) {
+    const limpo = (arr || []).map(t => String(t == null ? '' : t).trim()).filter(Boolean);
+    const out = limpo.join('; ');
+    // Valor único que contém vírgula ("Casa, Arte & Design") precisa de
+    // um ';' pendurado, senão a próxima leitura o separa em dois de novo.
+    return (limpo.length === 1 && out.indexOf(',') !== -1) ? out + ';' : out;
+  }
+
   // Formata diferença em dias pra string humana.
   // 0 → "entrou hoje", 1 → "1 dia", 2-29 → "X dias",
   // 30-89 → "X meses" arredondado, 90-364 → "X meses",
@@ -11212,7 +11236,7 @@
     };
     (allOptions || []).forEach(addOpt);
     const selected = new Set();
-    String(initialSelectedStr || '').split(',').forEach(v => {
+    parseFichaLista(initialSelectedStr).forEach(v => {
       const k = addOpt(v);
       if (k) selected.add(k);
     });
@@ -11264,8 +11288,9 @@
     }
     render();
     return {
-      getValue: () => Array.from(selected)
-        .map(k => optionMap.get(k)).filter(Boolean).join(', '),
+      // Grava com ';' (ver parseFichaLista/joinFichaLista): é o que
+      // permite uma categoria com vírgula no nome sobreviver ao salvar.
+      getValue: () => joinFichaLista(Array.from(selected).map(k => optionMap.get(k))),
     };
   }
 
@@ -13560,11 +13585,7 @@
         if (e.bairro) bairros.add(String(e.bairro).trim());
       });
       (metadata || []).forEach(m => {
-        if (m && m.bairro) {
-          String(m.bairro).split(',').forEach(b => {
-            const t = b.trim(); if (t) bairros.add(t);
-          });
-        }
+        if (m && m.bairro) parseFichaLista(m.bairro).forEach(b => bairros.add(b));
       });
       fornModalOptions = {
         categorias: Array.from(cats.values()).filter(Boolean),
@@ -14108,7 +14129,19 @@
       const k = cotacaoCatKey(catNome);
       let bucket = cats.get(k);
       if (!bucket) {
-        bucket = { key: k, nome: String(catNome).trim(), grafias: new Map(), fornecedores: new Map() };
+        bucket = {
+          key: k,
+          nome: String(catNome).trim(),
+          grafias: new Map(),
+          fornecedores: new Map(),
+          // De onde essa categoria veio. temSite = alguma experiência do
+          // site está nela (é categoria de verdade, a que a cliente vê).
+          // fichas = parceiros que a têm digitada à mão na ficha.
+          // Categoria só com ficha e sem site é divergência: grafia
+          // solta que ninguém encontra navegando.
+          temSite: false,
+          fichas: new Map(),
+        };
         cats.set(k, bucket);
       }
       // "Cerâmica" e "ceramica" são a mesma categoria (a chave ignora
@@ -14153,6 +14186,7 @@
 
       categorias.forEach(cat => {
         const bucket = catBucket(cat);
+        bucket.temSite = true;   // veio do catálogo, é categoria do site
         nomes.forEach(nome => { fornEntry(bucket, nome).exps.push(exp); });
       });
     });
@@ -14162,12 +14196,15 @@
     // lista à parte — dá pra cotar mesmo assim.
     (metadata || []).forEach(m => {
       if (!m || !m.categoria) return;
-      String(m.categoria).split(',').forEach(raw => {
-        const cat = raw.trim();
+      parseFichaLista(m.categoria).forEach(cat => {
         if (!cat) return;
         const bucket = catBucket(cat);
         const fk = m.fornecedor_key || fornecedorKey(m.fornecedor_nome);
-        if (!fk || bucket.fornecedores.has(fk)) return;
+        if (!fk) return;
+        // Registra QUEM tem essa categoria na ficha e com qual grafia —
+        // é o que o quadro de divergências mostra e corrige.
+        bucket.fichas.set(fk, { nome: m.fornecedor_nome || fk, grafia: cat });
+        if (bucket.fornecedores.has(fk)) return;
         bucket.fornecedores.set(fk, {
           key: fk,
           nome: m.fornecedor_nome || fk,
@@ -14198,6 +14235,10 @@
         nome: b.nome,
         fornecedores: b.fornecedores.size,
         experiencias: expCount,
+        temSite: !!b.temSite,
+        // Divergência: ninguém no site está nessa categoria; ela só
+        // existe porque foi digitada na ficha de algum parceiro.
+        soFicha: !b.temSite && b.fichas.size > 0,
       };
     });
     lista.sort((a, b) => {
@@ -14306,6 +14347,162 @@
   }
 
   // ===== Chips de categoria =====
+  // ===== DIVERGÊNCIAS DE CATEGORIA =====
+  // A Cotação junta duas fontes: a categoria das EXPERIÊNCIAS (o que a
+  // cliente vê navegando o site) e a categoria digitada à mão em cada
+  // FICHA de parceiro. Quando as duas não batem — "Beadazzeld" numa
+  // ficha e "Beadazzled" no site, "Casa" solto em vez de "Casa, Arte &
+  // Design" — a lista incha com grafia que não leva a lugar nenhum.
+  //
+  // Este quadro mostra só o que está divergente (existe em ficha e em
+  // nenhuma experiência) e resolve na hora: escolhe a categoria do site
+  // e reescreve a ficha de todos os parceiros que usavam a grafia solta.
+  function renderCotacaoDivergencias() {
+    const box = document.getElementById('cotacao-divergencias');
+    if (!box || !_cotacaoData) return;
+
+    const divergentes = _cotacaoData.lista.filter(c => c.soFicha);
+    if (!divergentes.length) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+
+    // Categorias legítimas (as do site) — opções da correção.
+    const doSite = _cotacaoData.lista
+      .filter(c => c.temSite)
+      .map(c => c.nome)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    const linhas = divergentes.map(c => {
+      const bucket = _cotacaoData.cats.get(c.key);
+      const fichas = bucket ? Array.from(bucket.fichas.values()) : [];
+      const quem = fichas.map(f => escapeHtml(f.nome)).join(', ') || '—';
+      const opcoes = doSite.map(n =>
+        '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>'
+      ).join('');
+      return '<tr data-div-key="' + escapeHtml(c.key) + '">' +
+        '<td style="padding:8px 10px;font-weight:600;color:#8a6d2f;white-space:nowrap;">' +
+          escapeHtml(c.nome) +
+        '</td>' +
+        '<td style="padding:8px 10px;font-size:.84rem;color:#555;">' + quem + '</td>' +
+        '<td style="padding:8px 10px;white-space:nowrap;">' +
+          '<select class="cotacao-div-alvo" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:.82rem;max-width:210px;">' +
+            '<option value="">— escolher categoria do site —</option>' +
+            opcoes +
+            '<option value="__remover__">— só remover da ficha —</option>' +
+          '</select> ' +
+          '<button type="button" class="cotacao-div-apply" style="padding:5px 12px;border:1px solid #e3d9c6;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.82rem;">Aplicar</button>' +
+          ' <span class="cotacao-div-msg" style="font-size:.78rem;margin-left:6px;"></span>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    box.style.display = '';
+    box.innerHTML =
+      '<div class="admin__table-wrap">' +
+        '<div class="admin__table-header">' +
+          '<span class="admin__table-title">⚠ Categorias que só existem em ficha de parceiro</span>' +
+          '<span class="admin__table-count" style="margin-left:8px;">' + divergentes.length + '</span>' +
+        '</div>' +
+        '<p style="margin:0;padding:10px 16px 0;font-size:.84rem;color:#666;line-height:1.45;">' +
+          'Estas foram digitadas à mão na ficha do parceiro e não batem com nenhuma categoria de experiência do site — ' +
+          'ninguém chega nelas navegando. Escolha a categoria do site correspondente e clique em Aplicar: ' +
+          'a ficha de todos os parceiros listados é reescrita de uma vez.' +
+        '</p>' +
+        '<table class="admin__table" style="margin-top:6px;">' +
+          '<thead><tr>' +
+            '<th style="text-align:left;">Na ficha está</th>' +
+            '<th style="text-align:left;">De quem</th>' +
+            '<th style="text-align:left;">Trocar por</th>' +
+          '</tr></thead>' +
+          '<tbody>' + linhas + '</tbody>' +
+        '</table>' +
+      '</div>';
+
+    box.querySelectorAll('.cotacao-div-apply').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tr = btn.closest('[data-div-key]');
+        if (!tr) return;
+        const catKey = tr.getAttribute('data-div-key');
+        const sel = tr.querySelector('.cotacao-div-alvo');
+        const msg = tr.querySelector('.cotacao-div-msg');
+        const alvo = sel ? sel.value : '';
+        if (!alvo) {
+          msg.textContent = 'Escolha pra qual categoria vai.';
+          msg.style.color = '#b00';
+          return;
+        }
+        btn.disabled = true;
+        msg.style.color = '#666';
+        msg.textContent = 'Aplicando…';
+        const r = await cotacaoAplicarDivergencia(catKey, alvo === '__remover__' ? null : alvo);
+        if (!r.ok) {
+          msg.style.color = '#b00';
+          msg.textContent = r.error || 'Não deu pra aplicar.';
+          btn.disabled = false;
+          return;
+        }
+        msg.style.color = '#1a8a4a';
+        msg.textContent = 'Pronto — ' + r.fichas + ' ficha(s) atualizada(s).';
+        // Recarrega os dados da cotação pra lista refletir a correção.
+        _cotacaoData = null;
+        await cotacaoBuildData();
+        renderCotacaoCategorias();
+        renderCotacaoDivergencias();
+        renderCotacaoResultados();
+      });
+    });
+  }
+
+  // Reescreve fornecedores_metadata.categoria de todos os parceiros que
+  // carregam a grafia divergente. `alvo` null = só tira a categoria.
+  // A comparação é pela chave (sem acento/caixa), a mesma dos chips.
+  async function cotacaoAplicarDivergencia(catKey, alvo) {
+    const s = window.supabaseClient;
+    if (!s) return { ok: false, error: 'Supabase indisponível.' };
+    const bucket = _cotacaoData && _cotacaoData.cats.get(catKey);
+    if (!bucket || !bucket.fichas.size) return { ok: false, error: 'Nada pra corrigir.' };
+
+    // Lê as fichas frescas do banco: o que vale é a string de categoria
+    // como está lá agora, não a que foi carregada na montagem da tela.
+    const metadata = await getFornecedoresMetadata();
+    const metaByKey = new Map();
+    (metadata || []).forEach(m => { if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m); });
+
+    let alteradas = 0;
+    const chaves = Array.from(bucket.fichas.keys());
+    for (let i = 0; i < chaves.length; i++) {
+      const fk = chaves[i];
+      const m = metaByKey.get(fk);
+      if (!m || !m.categoria) continue;
+
+      const restantes = [];
+      let achou = false;
+      parseFichaLista(m.categoria).forEach(t => {
+        if (cotacaoCatKey(t) === catKey) { achou = true; return; }  // sai a grafia solta
+        restantes.push(t);
+      });
+      if (!achou) continue;
+      if (alvo && !restantes.some(t => cotacaoCatKey(t) === cotacaoCatKey(alvo))) {
+        restantes.push(alvo);
+      }
+
+      const novo = joinFichaLista(restantes);
+      const { error } = await s.from('fornecedores_metadata')
+        .update({ categoria: novo || null })
+        .eq('fornecedor_key', fk);
+      if (error) {
+        console.error('[Cotação] erro corrigindo categoria de', fk, error);
+        return { ok: false, error: error.message };
+      }
+      alteradas += 1;
+    }
+
+    fornecedoresMetaCache = null;   // próxima leitura vem do banco
+    return { ok: true, fichas: alteradas };
+  }
+
   function renderCotacaoCategorias() {
     const wrap = document.getElementById('cotacao-cats');
     const countEl = document.getElementById('cotacao-cats-count');
@@ -14341,8 +14538,16 @@
         'font-weight:600;white-space:nowrap;' +
         (ativa
           ? 'border:1px solid var(--orange,#f0a05e);background:var(--orange,#f0a05e);color:#fff;'
-          : 'border:1px solid #e2e2e2;background:#fff;color:#444;') + '" ' +
-        'title="' + escapeHtml(c.fornecedores + ' fornecedor(es) · ' + c.experiencias + ' experiência(s)') + '">' +
+          // Categoria que só existe em ficha de parceiro fica com borda
+          // tracejada: dá pra ver de longe o que não é categoria do site.
+          : (c.soFicha
+            ? 'border:1px dashed #d9b36a;background:#fffdf7;color:#8a6d2f;'
+            : 'border:1px solid #e2e2e2;background:#fff;color:#444;')) + '" ' +
+        'title="' + escapeHtml(
+          c.fornecedores + ' fornecedor(es) · ' + c.experiencias + ' experiência(s)' +
+          (c.soFicha ? ' — só na ficha de parceiro, não é categoria do site' : '')
+        ) + '">' +
+        (c.soFicha ? '⚠ ' : '') +
         escapeHtml(c.nome) +
         '<span style="margin-left:7px;font-weight:700;opacity:.75;">' + c.fornecedores + '</span>' +
       '</button>';
@@ -14702,6 +14907,7 @@
       _cotacaoState.categoria = '';
     }
     renderCotacaoCategorias();
+    renderCotacaoDivergencias();
     renderCotacaoResultados();
   }
 
