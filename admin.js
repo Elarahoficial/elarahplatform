@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v41 — Recorrência (aulas regulares) já no cadastro de nova experiência + Duplicar copia variações, turmas e regras de recorrência');
+  console.info('[Elarah Admin] admin.js v46 — Arquivar experiência (some da lista sem mexer na contabilidade); Excluir agora diz o motivo quando o banco recusa');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -231,6 +231,10 @@
       reason: 'unknown',
     };
 
+    // Escopo de abas da pessoa logada (profiles.admin_panels).
+    // null = acesso total (dona do painel). Array = só essas abas.
+    let escopoPaineis = null;
+
     // 2) Estado em memória do ElarahAuth.
     try {
       const memUser = ElarahAuth.getCurrentUser && ElarahAuth.getCurrentUser();
@@ -241,6 +245,7 @@
         diagState.profile_role = memUser.role || null;
         if (memUser.role === 'admin') {
           allowed = true;
+          escopoPaineis = memUser.adminPanels != null ? memUser.adminPanels : null;
           diagState.reason = 'admin (cache em memória)';
         }
         console.info('[Admin BOOT] user em memória:', { email: memUser.email, role: memUser.role });
@@ -265,11 +270,27 @@
           diagState.session_email = session.user.email || null;
           console.info('[Admin BOOT] sessão ativa:', { id: session.user.id, email: session.user.email });
 
-          const { data: prof, error } = await window.supabaseClient
+          // admin_panels é a coluna que limita quais abas a pessoa vê
+          // (equipe). Se o banco ainda não recebeu o
+          // sql/elarah_equipe_acessos.sql, a coluna não existe e o
+          // PostgREST derruba a query inteira — o que trancaria a dona
+          // fora do próprio painel. Por isso: tenta com a coluna e, se
+          // ela faltar, repete sem. Sem coluna = acesso total, como era
+          // antes.
+          let { data: prof, error } = await window.supabaseClient
             .from('profiles')
-            .select('id, role, email, nome')
+            .select('id, role, email, nome, admin_panels')
             .eq('id', session.user.id)
             .maybeSingle();
+
+          if (error && /admin_panels/i.test(String(error.message || ''))) {
+            console.warn('[Admin BOOT] coluna admin_panels ainda não existe no banco — seguindo sem escopo de abas. Rode sql/elarah_equipe_acessos.sql.');
+            ({ data: prof, error } = await window.supabaseClient
+              .from('profiles')
+              .select('id, role, email, nome')
+              .eq('id', session.user.id)
+              .maybeSingle());
+          }
 
           if (error) {
             diagState.profile_query_error = error.message || String(error);
@@ -285,6 +306,7 @@
             console.info('[Admin BOOT] profile encontrado:', prof);
             if (prof.role === 'admin') {
               allowed = true;
+              escopoPaineis = prof.admin_panels != null ? prof.admin_panels : null;
               diagState.reason = 'admin (confirmado no banco)';
             } else {
               diagState.reason = 'profile existe mas role=' + JSON.stringify(prof.role) + ' (precisa ser "admin")';
@@ -308,6 +330,16 @@
     }
 
     console.info('[Admin BOOT] acesso liberado, montando painéis…');
+
+    // Escopo de abas da equipe: some do menu tudo que essa pessoa não
+    // trabalha. Quem tem admin_panels NULL (a dona) não perde nada.
+    // Roda ANTES de montar os painéis pra que a primeira tela já abra
+    // dentro do que ela pode ver.
+    let abasVisiveis = null;
+    if (window.ElarahAcessos) {
+      abasVisiveis = window.ElarahAcessos.aplicar(escopoPaineis);
+    }
+
     wireNavigation();
     wireLogout();
     wireExperienceForm();
@@ -316,7 +348,33 @@
     wireBookingsControls();
     wireCouponPanel();
     wireFollowupModal();
-    await renderOverview();
+
+    // Sem escopo (ou com Visão geral liberada): abre como sempre.
+    // Com escopo que não inclui Visão geral: abre direto na primeira
+    // aba que ela tem — senão ela cairia numa tela em branco, já que o
+    // painel de overview segue marcado como ativo no HTML.
+    if (!abasVisiveis || abasVisiveis.indexOf('overview') !== -1) {
+      await renderOverview();
+    } else if (abasVisiveis.length) {
+      await navigateToPanel(abasVisiveis[0]);
+    } else {
+      renderSemAbasLiberadas();
+    }
+  }
+
+  // Caso de borda: conta marcada como admin mas com admin_panels = {}
+  // (nenhuma aba). Em vez de painel vazio e silencioso, explica.
+  function renderSemAbasLiberadas() {
+    const main = document.querySelector('.admin__main') || document.body;
+    main.innerHTML =
+      '<div style="max-width:520px;margin:64px auto;padding:28px;background:#fff;border-radius:12px;' +
+      'box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center;font-family:inherit;">' +
+        '<h1 style="margin:0 0 10px;font-size:1.2rem;color:#b07b00;">Nenhuma aba liberada pra você</h1>' +
+        '<p style="margin:0;color:#666;font-size:.92rem;">' +
+          'Seu acesso existe, mas ainda não tem nenhuma área liberada. ' +
+          'Peça pra dona do painel abrir <strong>Usuários → Editar acesso</strong> e marcar suas abas.' +
+        '</p>' +
+      '</div>';
   }
 
   // Tela de diagnóstico explícita quando o boot bloqueia o acesso.
@@ -408,6 +466,13 @@
     const panels = document.querySelectorAll('.admin__panel');
     const targetItem = document.querySelector('[data-panel="' + target + '"]');
     if (!targetItem) return;
+    // Atalhos internos do admin pulam de uma aba pra outra por código
+    // (ex.: By Elarah → Experiências). Se a aba de destino não está no
+    // escopo de quem está logada, o atalho não leva pra lá.
+    if (window.ElarahAcessos && !window.ElarahAcessos.podeVer(target)) {
+      console.info('[Admin] navegação bloqueada — aba fora do seu acesso:', target);
+      return;
+    }
     navItems.forEach(n => n.classList.remove('admin__nav-item--active'));
     targetItem.classList.add('admin__nav-item--active');
     panels.forEach(p => p.classList.remove('admin__panel--active'));
@@ -500,6 +565,7 @@
       case 'captacao':    await renderCaptacao(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
+      case 'desconto-geral': await renderDescontoGeral(); break;
       case 'contabilidade': await renderContabilidade(); break;
       case 'insights':    await renderDiagnostico(); break;
       case 'analytics':   await renderAnalytics(); break;
@@ -828,6 +894,263 @@
 
   let couponsCache = null;
   let couponsExperiencesCache = null;
+
+  // =============================================================
+  // DESCONTO GERAL — o percentual que vale pro site inteiro
+  // -------------------------------------------------------------
+  // Edita a linha única de public.desconto_geral (id = 1). Vitrine
+  // (promo.js) e cobrança (_shared/promo.ts) leem a MESMA linha, então
+  // salvar aqui muda o site e o checkout juntos, sem deploy.
+  //
+  // Os preços das experiências NÃO são tocados: o desconto é aplicado
+  // por cima, na hora. Passou a data de fim, tudo volta ao normal
+  // sozinho — não existe "desfazer" pra esquecer de fazer.
+  // =============================================================
+
+  // <input type="datetime-local"> fala o horário LOCAL do navegador
+  // (que é o de Brasília pra quem opera o painel) sem fuso; o banco
+  // guarda timestamptz. Estas duas funções fazem a ponte.
+  function dgParaInput(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+      'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function dgDoInput(valor) {
+    if (!valor) return null;
+    var d = new Date(valor); // sem sufixo de fuso = horário local
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
+  function dgMsg(texto, erro) {
+    var el = document.getElementById('dg-msg');
+    if (!el) return;
+    if (!texto) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.style.background = erro ? '#fdecea' : '#eaf7ee';
+    el.style.color = erro ? '#c0392b' : '#1a8a4a';
+    el.textContent = texto;
+  }
+
+  // Redesenha o cartão "Agora no site" e a prévia da barra a partir do
+  // que está NOS CAMPOS — assim a admin vê o efeito antes de salvar.
+  function dgAtualizarPrevia() {
+    var ativo = !!(document.getElementById('dg-ativo') || {}).checked;
+    var pct = Number((document.getElementById('dg-percentual') || {}).value || 0);
+    var inicio = dgDoInput((document.getElementById('dg-inicio') || {}).value);
+    var fim = dgDoInput((document.getElementById('dg-fim') || {}).value);
+    var titulo = ((document.getElementById('dg-titulo') || {}).value || '').trim();
+    var subtitulo = ((document.getElementById('dg-subtitulo') || {}).value || '').trim();
+
+    var fimCurto = '';
+    if (fim) {
+      var df = new Date(fim);
+      fimCurto = String(df.getDate()).padStart(2, '0') + '/' + String(df.getMonth() + 1).padStart(2, '0');
+    }
+
+    // Contagem regressiva: o site mostra quando falta menos de 48h. A
+    // prévia repete a regra pra não prometer uma barra diferente da real.
+    var contagem = '';
+    if (fim) {
+      var restam = new Date(fim).getTime() - Date.now();
+      if (restam > 0 && restam <= 48 * 3600 * 1000) {
+        var totalSeg = Math.floor(restam / 1000);
+        var h = Math.floor(totalSeg / 3600);
+        var m = Math.floor((totalSeg % 3600) / 60);
+        var ss = String(totalSeg % 60).padStart(2, '0') + 's';
+        contagem = '   acaba em ' + (h >= 1 ? (h + 'h ' + String(m).padStart(2, '0') + 'min ' + ss)
+          : (m >= 1 ? (m + 'min ' + ss) : ss));
+      }
+    }
+
+    var previa = document.getElementById('dg-previa');
+    if (previa) {
+      previa.textContent = (titulo || (pct > 0 ? pct + '% OFF em todas as experiências' : 'Sem desconto configurado')) +
+        (subtitulo ? '  ' + subtitulo : (fimCurto ? '  Só até ' + fimCurto : '')) + contagem;
+      previa.style.opacity = (ativo && pct > 0) ? '1' : '.45';
+    }
+
+    var texto = document.getElementById('dg-status-texto');
+    var detalhe = document.getElementById('dg-status-detalhe');
+    if (!texto || !detalhe) return;
+
+    var agora = Date.now();
+    var valendo = ativo && pct > 0 && inicio && fim &&
+      agora >= new Date(inicio).getTime() && agora <= new Date(fim).getTime();
+
+    if (valendo) {
+      texto.textContent = pct + '% OFF valendo agora';
+      texto.style.color = '#1a8a4a';
+      detalhe.textContent = 'Uma experiência de R$ 180 está sendo vendida por ' +
+        'R$ ' + (180 * (100 - pct) / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) +
+        '. Termina em ' + new Date(fim).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '.';
+    } else if (ativo && pct > 0 && inicio && agora < new Date(inicio).getTime()) {
+      texto.textContent = 'Programado, ainda não começou';
+      texto.style.color = '#b8860b';
+      detalhe.textContent = 'Começa em ' + new Date(inicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '.';
+    } else if (ativo && pct > 0 && fim && agora > new Date(fim).getTime()) {
+      texto.textContent = 'Validade encerrada — preços normais';
+      texto.style.color = '#666';
+      detalhe.textContent = 'Terminou em ' + new Date(fim).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) +
+        '. Pra usar de novo, é só esticar a data e salvar.';
+    } else {
+      texto.textContent = 'Sem desconto — preços normais';
+      texto.style.color = '#666';
+      detalhe.textContent = 'O site está vendendo pelo preço cadastrado em cada experiência.';
+    }
+    // O cartão mostra o estado dos CAMPOS; enquanto houver alteração não
+    // salva, avisa que o site ainda não mudou.
+    if (dgSujo) {
+      detalhe.textContent += ' (prévia — clique em Salvar pra valer no site)';
+    }
+  }
+
+  var dgSujo = false;
+  var dgWired = false;
+
+  async function renderDescontoGeral() {
+    var sb = window.supabaseClient;
+    dgMsg('');
+    if (!sb) {
+      dgMsg('Cliente Supabase não inicializado. Recarregue a página.', true);
+      return;
+    }
+
+    try {
+      var res = await sb.from('desconto_geral').select('*').eq('id', 1).maybeSingle();
+      if (res.error) throw res.error;
+      var row = res.data || { ativo: false, percentual: 0, inicio: null, fim: null, titulo: '', subtitulo: '' };
+
+      var set = function (id, valor) {
+        var el = document.getElementById(id);
+        if (el) el.value = valor == null ? '' : valor;
+      };
+      var chk = document.getElementById('dg-ativo');
+      if (chk) chk.checked = row.ativo === true;
+      set('dg-percentual', row.percentual || '');
+      set('dg-inicio', dgParaInput(row.inicio));
+      set('dg-fim', dgParaInput(row.fim));
+      set('dg-titulo', row.titulo || '');
+      set('dg-subtitulo', row.subtitulo || '');
+      dgSujo = false;
+      dgAtualizarPrevia();
+    } catch (e) {
+      console.error('[Admin] desconto geral — falha ao carregar:', e);
+      dgMsg('Não foi possível carregar o desconto geral. Se a migração ' +
+        'sql/elarah_desconto_geral.sql ainda não rodou, rode antes de usar esta aba.', true);
+      return;
+    }
+
+    if (dgWired) return;
+    dgWired = true;
+
+    ['dg-ativo', 'dg-percentual', 'dg-inicio', 'dg-fim', 'dg-titulo', 'dg-subtitulo'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () { dgSujo = true; dgAtualizarPrevia(); });
+      el.addEventListener('change', function () { dgSujo = true; dgAtualizarPrevia(); });
+    });
+
+    // Atalhos de prazo: preenchem "Vale até" com o fim do dia escolhido.
+    // 23:59 (e não 00:00 do dia seguinte) porque é o que a cliente lê no
+    // aviso do site: "acaba hoje à meia-noite".
+    Array.prototype.forEach.call(document.querySelectorAll('.dg-atalho'), function (btn) {
+      btn.addEventListener('click', function () {
+        var dias = Number(btn.dataset.dias || 0);
+        var d = new Date();
+        d.setDate(d.getDate() + dias);
+        d.setHours(23, 59, 0, 0);
+        var el = document.getElementById('dg-fim');
+        if (el) el.value = dgParaInput(d.toISOString());
+        dgSujo = true;
+        dgAtualizarPrevia();
+      });
+    });
+
+    // A prévia anda de segundo em segundo, igual à barra do site — uma
+    // prévia com o relógio congelado pareceria contador quebrado.
+    setInterval(function () {
+      var painel = document.getElementById('panel-desconto-geral');
+      if (painel && painel.classList.contains('admin__panel--active')) dgAtualizarPrevia();
+    }, 1000);
+
+    var salvar = document.getElementById('dg-salvar');
+    if (salvar) salvar.addEventListener('click', function () { dgSalvar(false); });
+
+    var desligar = document.getElementById('dg-desligar');
+    if (desligar) {
+      desligar.addEventListener('click', function () {
+        if (!confirm('Desligar o desconto agora? Os preços do site voltam ao normal na hora.')) return;
+        dgSalvar(true);
+      });
+    }
+  }
+
+  async function dgSalvar(desligando) {
+    var sb = window.supabaseClient;
+    if (!sb) { dgMsg('Cliente Supabase não inicializado.', true); return; }
+
+    var ativo = desligando ? false : !!(document.getElementById('dg-ativo') || {}).checked;
+    var pct = Math.round(Number((document.getElementById('dg-percentual') || {}).value || 0));
+    var inicio = dgDoInput((document.getElementById('dg-inicio') || {}).value);
+    var fim = dgDoInput((document.getElementById('dg-fim') || {}).value);
+    var titulo = ((document.getElementById('dg-titulo') || {}).value || '').trim();
+    var subtitulo = ((document.getElementById('dg-subtitulo') || {}).value || '').trim();
+
+    // Validação só aperta quando o desconto vai ficar LIGADO — desligar
+    // nunca pode ser bloqueado por campo mal preenchido.
+    if (ativo) {
+      if (!(pct >= 1 && pct <= 90)) {
+        dgMsg('O percentual precisa ser um número entre 1 e 90.', true); return;
+      }
+      if (!inicio || !fim) {
+        dgMsg('Preencha as duas datas: quando começa e até quando vale.', true); return;
+      }
+      if (new Date(fim).getTime() <= new Date(inicio).getTime()) {
+        dgMsg('A data de fim precisa ser depois da data de início.', true); return;
+      }
+      if (new Date(fim).getTime() <= Date.now()) {
+        dgMsg('Essa data de fim já passou — o desconto não valeria nem por um minuto.', true); return;
+      }
+    }
+
+    var payload = {
+      id: 1,
+      ativo: ativo,
+      percentual: (pct >= 1 && pct <= 90) ? pct : 0,
+      inicio: inicio || new Date().toISOString(),
+      fim: fim || new Date().toISOString(),
+      titulo: titulo || null,
+      subtitulo: subtitulo || null,
+    };
+    try {
+      var user = null;
+      try {
+        var u = await sb.auth.getUser();
+        user = u && u.data && u.data.user ? u.data.user.id : null;
+      } catch (e) {}
+      if (user) payload.updated_by = user;
+
+      var res = await sb.from('desconto_geral').upsert(payload, { onConflict: 'id' });
+      if (res.error) throw res.error;
+
+      if (desligando) {
+        var chk = document.getElementById('dg-ativo');
+        if (chk) chk.checked = false;
+      }
+      dgSujo = false;
+      dgAtualizarPrevia();
+      dgMsg(ativo
+        ? 'Salvo. O desconto de ' + pct + '% já está valendo no site e no checkout.'
+        : 'Desconto desligado. O site voltou aos preços normais.', false);
+    } catch (e) {
+      console.error('[Admin] desconto geral — falha ao salvar:', e);
+      dgMsg('Não foi possível salvar: ' + (e.message || e), true);
+    }
+  }
 
   async function renderCoupons() {
     const tbody = document.getElementById('coupons-body');
@@ -2357,7 +2680,9 @@
     document.getElementById('stat-users').textContent = profiles.length;
     document.getElementById('stat-partners').textContent = partners.filter(p => p.partner_status === 'approved').length;
     document.getElementById('stat-purchases').textContent = totalCompras;
-    document.getElementById('stat-experiences').textContent = experiences.length;
+    // Arquivadas não entram no contador — elas saíram da lista.
+    document.getElementById('stat-experiences').textContent =
+      (experiences || []).filter(function (e) { return e && !e.arquivada; }).length;
 
     // Atualiza a stat-gift opcional se o painel de overview tiver
     // essa box. A box é criada no admin.html — se não existir, apenas
@@ -2696,6 +3021,31 @@
     usersSearchWired = true;
   }
 
+  // Célula de acesso ao painel, embaixo do selo de role. Mostra quais
+  // abas a pessoa enxerga e o botão que abre o editor. Só quem tem
+  // acesso total edita — quem já está com escopo limitado nem vê o
+  // botão (senão a comercial se daria contabilidade sozinha).
+  function buildUserAccessCell(u) {
+    if (!window.ElarahAcessos) return '';
+    if (!window.ElarahAcessos.souAdminTotal()) return '';
+
+    const escopo = window.ElarahAcessos.normalizar(u.admin_panels);
+    const ehEquipe = u.role === 'admin';
+    const resumo = ehEquipe ? window.ElarahAcessos.resumo(u.admin_panels) : 'Sem acesso ao painel';
+    const cor = !ehEquipe ? '#aaa' : (escopo === null ? '#b07b00' : '#666');
+
+    return (
+      '<div style="margin-top:6px;font-size:.74rem;line-height:1.3;color:' + cor + ';">' +
+        escapeHtml(resumo) +
+      '</div>' +
+      '<button type="button" data-acesso-user="' + escapeHtml(u.id) + '" ' +
+      'style="margin-top:4px;padding:3px 9px;font-size:.72rem;border:1px solid #e3d9c6;background:#fff;' +
+      'border-radius:5px;cursor:pointer;font-family:inherit;color:#8a7d5f;">' +
+        (ehEquipe ? 'Editar acesso' : 'Dar acesso') +
+      '</button>'
+    );
+  }
+
   // Renderiza a tabela de usuários aplicando o filtro de nome (term).
   // Termo vazio mostra todos.
   function renderUsersList(term) {
@@ -2730,9 +3080,29 @@
         <td>${formatDate(u.created_at)}</td>
         <td>
           <span class="admin__badge admin__badge--${u.role === 'admin' ? 'approved' : 'pending'}">${u.role}</span>
+          ${buildUserAccessCell(u)}
         </td>
       </tr>
     `).join('');
+
+    // Editor de acesso (só aparece pra quem tem acesso total). Abre o
+    // modal de abas do admin-acessos.js e, ao salvar, atualiza a linha
+    // em memória pra não precisar recarregar a lista inteira.
+    tbody.querySelectorAll('[data-acesso-user]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.acessoUser;
+        const user = allUsers.find(x => x.id === id);
+        if (!user || !window.ElarahAcessos) return;
+        window.ElarahAcessos.abrirEditor(user, (salvo) => {
+          if (salvo) {
+            user.admin_panels = salvo.admin_panels;
+            user.role = salvo.role;
+          }
+          const s = document.getElementById('users-search');
+          renderUsersList(s ? s.value : '');
+        });
+      });
+    });
 
     // Wire click handlers nos botões de WhatsApp: marca o usuário
     // como contatado no banco (whatsapp_contacted_at = now) e
@@ -6790,7 +7160,7 @@
     if (!datalist) return;
     const seed = [
       'Gastronomia', 'Cerâmica', 'Pintura', 'Vela', 'Sabonete',
-      'Tufting', 'Floral', 'Macramê', 'Bartenderia',
+      'Tufting & Punch', 'Floral', 'Macramê', 'Bartenderia',
     ];
     let dbCategorias = [];
     try {
@@ -6994,7 +7364,9 @@
           eventAtEl.value = '';
         }
       }
-      if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : 24;
+      // Vazio = segue o padrão da categoria. Preencher é criar exceção
+      // só pra esta experiência.
+      if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : '';
 
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
@@ -7113,7 +7485,7 @@
       if (cor1El) cor1El.value = '#f6d5a8';
       if (cor2El) cor2El.value = '#f0a05e';
       const cutoffEl = document.getElementById('exp-cutoff-hours');
-      if (cutoffEl) cutoffEl.value = 24;
+      if (cutoffEl) cutoffEl.value = '';
       const vagasRestEl = document.getElementById('exp-vagas-restantes');
       if (vagasRestEl) vagasRestEl.value = '';
       const isActiveEl = document.getElementById('exp-is-active');
@@ -7729,7 +8101,7 @@
         cor: cor1 + ',' + cor2,
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,
-        cutoffHours: cutoffRaw === '' ? 24 : Number(cutoffRaw),
+        cutoffHours: cutoffRaw === '' ? null : Number(cutoffRaw),
         isActive: !!(document.getElementById('exp-is-active')?.checked ?? true),
         fornecedorNome: (document.getElementById('exp-fornecedor-nome')?.value || '').trim() || null,
         valorCheioCentavos: (function () {
@@ -7927,6 +8299,11 @@
   // Filtra contra nome, categoria, bairro e descrição (case-insensitive).
   let activeExpSearch = '';
 
+  // Arquivadas ficam escondidas da lista por padrão. A pílula
+  // "Arquivadas (N)" da barra de filtro alterna pra vê-las (e aí o
+  // botão da linha vira "Desarquivar").
+  let showArquivadas = false;
+
   // Popula o <select id="exp-filter-fornecedor"> com os nomes únicos
   // que aparecem em qualquer experiência. Compara case-insensitive
   // pra não duplicar (ex: "accademia gastronomica" vs "Accademia
@@ -8071,7 +8448,7 @@
     if (linkInput) linkInput.value = '';
   }
 
-  function buildExpFilterBar(experiences) {
+  function buildExpFilterBar(experiences, totalArquivadas) {
     const bar = document.getElementById('exp-filter-bar');
     if (!bar) return;
     // Extrai categorias únicas (case-insensitive, preserva capitalização original)
@@ -8116,6 +8493,29 @@
       });
       bar.appendChild(btn);
     });
+
+    // Pílula das arquivadas — só aparece quando existe alguma, ou
+    // quando já estamos vendo a lista de arquivadas (pra ter como
+    // voltar). Alterna entre as duas listas.
+    if (totalArquivadas > 0 || showArquivadas) {
+      var arqBtn = document.createElement('button');
+      arqBtn.type = 'button';
+      arqBtn.textContent = showArquivadas
+        ? '← Voltar pras ativas'
+        : 'Arquivadas (' + totalArquivadas + ')';
+      arqBtn.title = showArquivadas
+        ? 'Volta pra lista normal de experiências.'
+        : 'Experiências guardadas fora da lista. Nada foi apagado — elas continuam no banco e na contabilidade.';
+      arqBtn.className = 'admin__filter-pill admin__filter-pill--arquivadas' +
+        (showArquivadas ? ' admin__filter-pill--active' : '');
+      arqBtn.style.marginLeft = 'auto';
+      arqBtn.addEventListener('click', function () {
+        showArquivadas = !showArquivadas;
+        activeExpFilter = '';
+        renderExperiences();
+      });
+      bar.appendChild(arqBtn);
+    }
   }
 
   // Toast simples de confirmação (reusado pelos fluxos de reativação).
@@ -8229,15 +8629,25 @@
       return !!e;
     });
 
-    // Constrói barra de filtro com TODAS as experiências (antes de filtrar)
-    buildExpFilterBar(allExperiences);
-    buildExpFornecedorFilter(allExperiences);
+    // Constrói barra de filtro com TODAS as experiências do modo atual
+    // (arquivadas ou não), antes dos outros filtros: uma categoria que
+    // só tem experiência arquivada não deve virar pílula na lista normal.
+    const noModoAtual = (allExperiences || []).filter(function (e) {
+      return !!e.arquivada === showArquivadas;
+    });
+    const totalArquivadas = (allExperiences || []).filter(function (e) {
+      return !!e.arquivada;
+    }).length;
+    buildExpFilterBar(noModoAtual, totalArquivadas);
+    buildExpFornecedorFilter(noModoAtual);
 
     // Aplica filtros em AND: categoria (pílulas) + fornecedor (select)
     // + busca livre (input).
     const searchNorm = (activeExpSearch || '').trim().toLowerCase();
     const experiences = (allExperiences || []).filter(function (e) {
       if (!e) return false;
+      // Arquivada: fora da lista, a não ser que a pílula esteja ligada.
+      if (!!e.arquivada !== showArquivadas) return false;
       if (activeExpFilter) {
         var _match = (window.ElarahData && ElarahData.matchesCategoria)
           ? ElarahData.matchesCategoria(e, activeExpFilter)
@@ -8461,6 +8871,7 @@
           <button class="admin__action-btn admin__action-btn--edit" data-edit-exp="${escapeHtml(exp.id)}">Editar</button>
           <button class="admin__action-btn ${toggleClass}" data-toggle-exp="${escapeHtml(exp.id)}" data-toggle-active="${isActive ? '1' : '0'}" data-auto-hidden="${autoHidden ? '1' : '0'}">${toggleLabel}</button>
           <button class="admin__action-btn admin__action-btn--duplicate" data-duplicate-exp="${escapeHtml(exp.id)}">Duplicar</button>
+          <button class="admin__action-btn admin__action-btn--archive" data-archive-exp="${escapeHtml(exp.id)}" data-archive-to="${exp.arquivada ? '0' : '1'}" title="${exp.arquivada ? 'Traz a experiência de volta pra lista.' : 'Tira da lista sem apagar nada: a ficha continua no banco e a contabilidade (despesas, vendas e reservas) não muda.'}">${exp.arquivada ? 'Desarquivar' : 'Arquivar'}</button>
           <button class="admin__action-btn admin__action-btn--delete" data-delete-exp="${escapeHtml(exp.id)}">Excluir</button>
         </td>
       </tr>
@@ -8566,13 +8977,68 @@
         await renderOverview();
       });
     });
+    tbody.querySelectorAll('[data-archive-exp]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const paraArquivar = btn.dataset.archiveTo === '1';
+        if (paraArquivar && !confirm(
+            'Arquivar esta experiência?\n\n' +
+            'Ela sai da lista e do site, mas NADA é apagado: a ficha continua no banco ' +
+            'e as despesas, vendas manuais e reservas seguem ligadas a ela — a contabilidade ' +
+            'não muda em nada.\n\nDá pra desarquivar depois na pílula "Arquivadas".')) return;
+        const originalLabel = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = paraArquivar ? 'Arquivando…' : 'Voltando…';
+        let res = null;
+        try {
+          res = (typeof ElarahData.setExperienceArquivada === 'function')
+            ? await ElarahData.setExperienceArquivada(btn.dataset.archiveExp, paraArquivar)
+            : { _error: { message: 'Função indisponível. Recarregue a página.' } };
+        } catch (err) {
+          console.error('[Admin] archive-exp exceção:', err);
+          res = { _error: { message: (err && err.message) || String(err) } };
+        }
+        if (!res || res._error) {
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          alert('Não consegui ' + (paraArquivar ? 'arquivar' : 'desarquivar') + '.\n\n' +
+            ((res && res._error && res._error.message) || 'erro desconhecido'));
+          return;
+        }
+        showAdminToast(paraArquivar ? '✓ Arquivada — nada foi apagado.' : '✓ De volta pra lista.');
+        await renderExperiences();
+        await renderOverview();
+      });
+    });
     tbody.querySelectorAll('[data-delete-exp]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Tem certeza que deseja excluir esta experiência? Essa ação é permanente — se quiser apenas tirar do site, use "Ocultar".')) {
-          await ElarahData.deleteExperience(btn.dataset.deleteExp);
-          await renderExperiences();
-          await renderOverview();
+        if (!confirm('Tem certeza que deseja excluir esta experiência? Essa ação é permanente — se quiser apenas tirar do site, use "Ocultar".')) return;
+        // Antes esse handler ignorava o retorno de deleteExperience: quando
+        // o banco recusava (trava da recorrência, RLS), a tela só
+        // re-renderizava com a linha ainda lá e sem nenhuma explicação.
+        const originalLabel = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Excluindo…';
+        let ok = false;
+        let motivo = '';
+        try {
+          ok = await ElarahData.deleteExperience(btn.dataset.deleteExp);
+          if (!ok) {
+            motivo = (typeof ElarahData.getLastDeleteError === 'function'
+              && ElarahData.getLastDeleteError()) || 'motivo não informado pelo banco.';
+          }
+        } catch (err) {
+          console.error('[Admin] delete-exp exceção:', err);
+          motivo = (err && err.message) || String(err);
         }
+        if (!ok) {
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          alert('Não consegui excluir esta experiência.\n\n' + motivo);
+          return;
+        }
+        showAdminToast('✓ Experiência excluída.');
+        await renderExperiences();
+        await renderOverview();
       });
     });
 
@@ -10764,6 +11230,30 @@
     return String(nome || '').trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
+  // ===== LISTAS NA FICHA DO PARCEIRO (categoria / bairro) =====
+  // fornecedores_metadata.categoria e .bairro guardam vários valores
+  // numa string só. O separador histórico era a vírgula — e é ela que
+  // quebrava justamente "Casa, Arte & Design", categoria que TEM vírgula
+  // no nome: era lida como duas ("Casa" e "Arte & Design") e aparecia
+  // assim na Cotação, sem corresponder a nada do site.
+  //
+  // Agora escrevemos com ponto e vírgula. A leitura aceita os dois, sem
+  // migração nenhuma: tem ';' → separa por ';'; não tem → separa por
+  // vírgula, como as fichas antigas continuam gravadas.
+  function parseFichaLista(str) {
+    const s = String(str == null ? '' : str);
+    if (!s.trim()) return [];
+    const sep = s.indexOf(';') !== -1 ? ';' : ',';
+    return s.split(sep).map(t => t.trim()).filter(Boolean);
+  }
+  function joinFichaLista(arr) {
+    const limpo = (arr || []).map(t => String(t == null ? '' : t).trim()).filter(Boolean);
+    const out = limpo.join('; ');
+    // Valor único que contém vírgula ("Casa, Arte & Design") precisa de
+    // um ';' pendurado, senão a próxima leitura o separa em dois de novo.
+    return (limpo.length === 1 && out.indexOf(',') !== -1) ? out + ';' : out;
+  }
+
   // Formata diferença em dias pra string humana.
   // 0 → "entrou hoje", 1 → "1 dia", 2-29 → "X dias",
   // 30-89 → "X meses" arredondado, 90-364 → "X meses",
@@ -11019,17 +11509,24 @@
   // vírgula (compatível com a coluna text existente — sem migração).
   function mountMultiChip(container, allOptions, initialSelectedStr) {
     if (!container) return { getValue: () => '' };
-    const optionMap = new Map(); // chave minúscula -> rótulo exibido
+    const optionMap = new Map(); // chave normalizada -> rótulo exibido
+    // Chave sem caixa, sem acento e sem espaço duplicado: "Cerâmica",
+    // "ceramica" e "CERÂMICA " são o mesmo chip. Sem isso, uma ficha
+    // salva sem acento criava um chip gêmeo do que veio do site.
+    const chipKey = (v) => String(v == null ? '' : v)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().trim().replace(/\s+/g, ' ');
     const addOpt = (v) => {
       const t = String(v == null ? '' : v).trim();
       if (!t) return '';
-      const k = t.toLowerCase();
+      const k = chipKey(t);
+      if (!k) return '';
       if (!optionMap.has(k)) optionMap.set(k, t);
       return k;
     };
     (allOptions || []).forEach(addOpt);
     const selected = new Set();
-    String(initialSelectedStr || '').split(',').forEach(v => {
+    parseFichaLista(initialSelectedStr).forEach(v => {
       const k = addOpt(v);
       if (k) selected.add(k);
     });
@@ -11081,8 +11578,9 @@
     }
     render();
     return {
-      getValue: () => Array.from(selected)
-        .map(k => optionMap.get(k)).filter(Boolean).join(', '),
+      // Grava com ';' (ver parseFichaLista/joinFichaLista): é o que
+      // permite uma categoria com vírgula no nome sobreviver ao salvar.
+      getValue: () => joinFichaLista(Array.from(selected).map(k => optionMap.get(k))),
     };
   }
 
@@ -12831,6 +13329,45 @@
     return { ok: true };
   }
 
+  // ===== ESPAÇOS DE EVENTO (ponte Eventos ↔ Locais p/ eventos) =====
+  // Um lugar contratado pra um evento (bar, café, salão) entra na venda
+  // como "fornecedor", porque é a quem se paga o repasse. Só que isso
+  // fazia dele um parceiro na aba Parceiros — e parceiro, ali, quer
+  // dizer parceiro de EXPERIÊNCIA. Marcar "é um espaço" na venda grava
+  // o lugar aqui, em event_venues, e a aba Parceiros passa a deixá-lo
+  // de fora (ver venueKeys em renderFornecedores).
+  //
+  // Cache de chaves (nome normalizado) pra não reler a tabela a cada
+  // abertura do modal. Invalida quando um espaço novo é cadastrado.
+  let _venueKeysCache = null;
+  async function venueKeysSet(force) {
+    if (_venueKeysCache && !force) return _venueKeysCache;
+    let venues = [];
+    try { venues = await locaisLoad(); } catch (e) { venues = []; }
+    _venueKeysCache = new Set(
+      (venues || []).map(v => fornecedorKey(v && v.nome)).filter(Boolean)
+    );
+    return _venueKeysCache;
+  }
+  function invalidateVenueKeys() { _venueKeysCache = null; }
+
+  // Cadastra o espaço em Locais p/ eventos se ele ainda não estiver lá.
+  // Idempotente por nome (mesma normalização de fornecedor).
+  async function _finEnsureVenue(nome) {
+    const limpo = String(nome || '').trim();
+    if (!limpo) return { ok: false };
+    const keys = await venueKeysSet(true);
+    if (keys.has(fornecedorKey(limpo))) return { ok: true, criado: false };
+    const res = await locaisSave({
+      nome: limpo,
+      tipo: 'espaço',
+      observacoes: 'Cadastrado a partir de um evento no painel.',
+    });
+    invalidateVenueKeys();
+    if (res && res.ok) console.info('[Admin] espaço cadastrado em Locais p/ eventos:', limpo);
+    return { ok: !!(res && res.ok), criado: true };
+  }
+
   function locaisCobraLabel(v) {
     if (v === 'sim') return '<span style="color:#b07b00;font-weight:600;">Cobra</span>';
     if (v === 'nao') return '<span style="color:#2c5e3f;font-weight:600;">Não cobra</span>';
@@ -13284,13 +13821,17 @@
     // Fonte única: RPC financial_by_supplier (agrega bookings + manual_sales
     // pagos, com tratamento correto de multi-fornecedor) + RPC
     // financial_summary pros totais globais (sem dupla contagem).
-    const [supplierRows, summary, allExperiences, metadata] = await Promise.all([
+    const [supplierRows, summary, allExperiences, metadata, venueKeys] = await Promise.all([
       fetchFinancialBySupplier({ includeTest: false }),
       fetchFinancialSummary({ sources: ['booking', 'manual_sale'], includeTest: false }),
       (window.ElarahData && ElarahData.getAllExperiences)
         ? ElarahData.getAllExperiences().catch(() => [])
         : Promise.resolve([]),
       getFornecedoresMetadata(),
+      // Espaços cadastrados em Locais p/ eventos — usados abaixo pra
+      // tirar da lista de Parceiros o bar/café/salão contratado pra um
+      // evento (ver a seção "ESPAÇOS DE EVENTO").
+      venueKeysSet(true).catch(() => new Set()),
     ]);
 
     const metaByKey = new Map();
@@ -13298,29 +13839,46 @@
       if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m);
     });
 
-    // Opções de categoria/bairro pro modal — todas as que já existem
-    // no site (experiências) + as já cadastradas em fornecedores.
+    // Opções de categoria/bairro pro modal de fornecedor.
+    //
+    // CATEGORIAS: só as que existem NO SITE, lidas das experiências e
+    // quebradas em "|" — uma experiência marcada como "Cerâmica |
+    // Pintura" vira as duas categorias reais, não um chip colado. É a
+    // mesma leitura que o site e a aba Cotação fazem
+    // (ElarahData.categoriasOf), então o que aparece aqui é o que a
+    // cliente vê lá.
+    //
+    // O que NÃO entra mais: a categoria já salva nos fornecedores. Era
+    // de lá que vinha a bagunça — pares colados e erros de digitação
+    // ("Beadazzeld" ao lado de "Beadazzled") que, uma vez salvos numa
+    // ficha, apareciam pra sempre na lista de todo mundo. Nada se
+    // perde: o que cada fornecedor já tem salvo continua aparecendo
+    // (e marcado) quando a ficha dele abre, e categoria nova é só
+    // digitar em "+ adicionar nova".
+    //
+    // BAIRROS seguem como antes (site + o que já está nas fichas): lá
+    // não há par colado nem lista inflada.
     (function () {
-      const cats = new Set();
+      const cats = new Map();      // chave sem acento/caixa → rótulo do site
       const bairros = new Set();
+      const catsDaExperiencia = (e) =>
+        (window.ElarahData && typeof ElarahData.categoriasOf === 'function')
+          ? ElarahData.categoriasOf(e)
+          : String((e && e.categoria) || '').split('|').map(c => c.trim()).filter(Boolean);
+
       (allExperiences || []).forEach(e => {
-        if (e && e.categoria) cats.add(String(e.categoria).trim());
-        if (e && e.bairro) bairros.add(String(e.bairro).trim());
+        if (!e) return;
+        catsDaExperiencia(e).forEach(c => {
+          const k = cotacaoCatKey(c);
+          if (k && !cats.has(k)) cats.set(k, c);
+        });
+        if (e.bairro) bairros.add(String(e.bairro).trim());
       });
       (metadata || []).forEach(m => {
-        if (m && m.categoria) {
-          String(m.categoria).split(',').forEach(c => {
-            const t = c.trim(); if (t) cats.add(t);
-          });
-        }
-        if (m && m.bairro) {
-          String(m.bairro).split(',').forEach(b => {
-            const t = b.trim(); if (t) bairros.add(t);
-          });
-        }
+        if (m && m.bairro) parseFichaLista(m.bairro).forEach(b => bairros.add(b));
       });
       fornModalOptions = {
-        categorias: Array.from(cats).filter(Boolean),
+        categorias: Array.from(cats.values()).filter(Boolean),
         bairros: Array.from(bairros).filter(Boolean),
       };
     })();
@@ -13401,6 +13959,7 @@
     });
 
     const list = Array.from(aggByKey.values());
+
     // Ordena em duas camadas:
     //  1) Status: tudo que NÃO está "ativo" (em negociação, aguardando
     //     retorno, novas experiências, inativo) vai pro topo — é o pipeline
@@ -13427,9 +13986,26 @@
       return b.faturamentoCents - a.faturamentoCents;
     });
 
+    // Espaço de evento x parceiro de experiência.
+    // Um lugar contratado pra um evento entra na venda como fornecedor
+    // (é a quem se paga), e por isso aparecia aqui como se fosse
+    // parceiro. Fica de fora da lista quem está cadastrado em Locais p/
+    // eventos E não tem nenhuma experiência no catálogo — a experiência
+    // é o que define parceria. Assim, um ateliê que dá oficina E aluga o
+    // espaço continua sendo parceiro, como deve ser.
+    // Nada some do financeiro: o repasse segue no evento, e o botão
+    // abaixo da busca mostra os espaços quando você quiser conferir.
+    const espacos = [];
+    const parceiros = [];
+    list.forEach(f => {
+      const ehEspaco = venueKeys && venueKeys.has && venueKeys.has(f.key) && f.experiencesTotal === 0;
+      (ehEspaco ? espacos : parceiros).push(f);
+    });
+    let mostrarEspacos = false;
+
     // Totais GLOBAIS vêm da RPC financial_summary (não da soma das linhas).
     // Isso garante que multi-fornecedor não duplica no header.
-    const totalCount = list.length;
+    const totalCount = parceiros.length;
     const totalGross = summary ? Number(summary.gross_confirmado_centavos) || 0 : 0;
     const totalReceita = summary ? Number(summary.receita_confirmada_centavos) || 0 : 0;
     const totalRepassesAll = summary
@@ -13457,11 +14033,41 @@
     // você quer. Sem termo, mostra todos.
     const searchInput = document.getElementById('fornecedores-search');
 
+    // Botão "mostrar espaços": criado uma vez, do lado do contador.
+    // Recriado a cada render (removendo o anterior) porque o handler
+    // fecha sobre o `mostrarEspacos` e o `renderFornecedoresRows` DESTE
+    // render — reaproveitar o botão antigo deixaria o clique preso na
+    // lista da visita anterior.
+    (function montaBotaoEspacos() {
+      const antigo = document.getElementById('fornecedores-espacos-toggle');
+      if (antigo && antigo.parentNode) antigo.parentNode.removeChild(antigo);
+      if (!espacos.length || !countEl || !countEl.parentNode) return;
+      const btn = document.createElement('button');
+      btn.id = 'fornecedores-espacos-toggle';
+      btn.type = 'button';
+      btn.style.cssText = 'margin-left:10px;padding:3px 10px;font-size:.75rem;' +
+        'border:1px solid #e3d9c6;background:#fff;border-radius:12px;cursor:pointer;' +
+        'font-family:inherit;color:#8a7d5f;';
+      btn.addEventListener('click', () => {
+        mostrarEspacos = !mostrarEspacos;
+        renderFornecedoresRows();
+      });
+      countEl.parentNode.insertBefore(btn, countEl.nextSibling);
+    })();
+
     function renderFornecedoresRows() {
+      const btnEspacos = document.getElementById('fornecedores-espacos-toggle');
+      if (btnEspacos) {
+        btnEspacos.textContent = (mostrarEspacos ? 'Ocultar' : 'Mostrar') +
+          ' ' + espacos.length + ' espaço' + (espacos.length !== 1 ? 's' : '') + ' de evento';
+      }
+      // Base da tela: só parceiros de experiência; com o botão ligado,
+      // os espaços entram junto (pra conferir repasse pendente, por ex.).
+      const base = mostrarEspacos ? parceiros.concat(espacos) : parceiros;
       const term = (searchInput && searchInput.value || '').trim();
       const termLc = term.toLowerCase();
       const filtered = termLc
-        ? list.filter(f => {
+        ? base.filter(f => {
             const meta = metaByKey.get(f.key);
             const hay = [
               f.nome,
@@ -13472,12 +14078,12 @@
             ].filter(Boolean).join(' ').toLowerCase();
             return hay.indexOf(termLc) !== -1;
           })
-        : list;
+        : base;
 
       if (countEl) {
         countEl.textContent = term
-          ? filtered.length + ' de ' + list.length + ' fornecedor' + (list.length !== 1 ? 'es' : '')
-          : list.length + ' fornecedor' + (list.length !== 1 ? 'es' : '');
+          ? filtered.length + ' de ' + base.length + ' fornecedor' + (base.length !== 1 ? 'es' : '')
+          : base.length + ' fornecedor' + (base.length !== 1 ? 'es' : '');
       }
 
       if (!filtered.length) {
@@ -13813,7 +14419,19 @@
       const k = cotacaoCatKey(catNome);
       let bucket = cats.get(k);
       if (!bucket) {
-        bucket = { key: k, nome: String(catNome).trim(), grafias: new Map(), fornecedores: new Map() };
+        bucket = {
+          key: k,
+          nome: String(catNome).trim(),
+          grafias: new Map(),
+          fornecedores: new Map(),
+          // De onde essa categoria veio. temSite = alguma experiência do
+          // site está nela (é categoria de verdade, a que a cliente vê).
+          // fichas = parceiros que a têm digitada à mão na ficha.
+          // Categoria só com ficha e sem site é divergência: grafia
+          // solta que ninguém encontra navegando.
+          temSite: false,
+          fichas: new Map(),
+        };
         cats.set(k, bucket);
       }
       // "Cerâmica" e "ceramica" são a mesma categoria (a chave ignora
@@ -13858,6 +14476,7 @@
 
       categorias.forEach(cat => {
         const bucket = catBucket(cat);
+        bucket.temSite = true;   // veio do catálogo, é categoria do site
         nomes.forEach(nome => { fornEntry(bucket, nome).exps.push(exp); });
       });
     });
@@ -13867,12 +14486,15 @@
     // lista à parte — dá pra cotar mesmo assim.
     (metadata || []).forEach(m => {
       if (!m || !m.categoria) return;
-      String(m.categoria).split(',').forEach(raw => {
-        const cat = raw.trim();
+      parseFichaLista(m.categoria).forEach(cat => {
         if (!cat) return;
         const bucket = catBucket(cat);
         const fk = m.fornecedor_key || fornecedorKey(m.fornecedor_nome);
-        if (!fk || bucket.fornecedores.has(fk)) return;
+        if (!fk) return;
+        // Registra QUEM tem essa categoria na ficha e com qual grafia —
+        // é o que o quadro de divergências mostra e corrige.
+        bucket.fichas.set(fk, { nome: m.fornecedor_nome || fk, grafia: cat });
+        if (bucket.fornecedores.has(fk)) return;
         bucket.fornecedores.set(fk, {
           key: fk,
           nome: m.fornecedor_nome || fk,
@@ -13903,6 +14525,10 @@
         nome: b.nome,
         fornecedores: b.fornecedores.size,
         experiencias: expCount,
+        temSite: !!b.temSite,
+        // Divergência: ninguém no site está nessa categoria; ela só
+        // existe porque foi digitada na ficha de algum parceiro.
+        soFicha: !b.temSite && b.fichas.size > 0,
       };
     });
     lista.sort((a, b) => {
@@ -14011,6 +14637,162 @@
   }
 
   // ===== Chips de categoria =====
+  // ===== DIVERGÊNCIAS DE CATEGORIA =====
+  // A Cotação junta duas fontes: a categoria das EXPERIÊNCIAS (o que a
+  // cliente vê navegando o site) e a categoria digitada à mão em cada
+  // FICHA de parceiro. Quando as duas não batem — "Beadazzeld" numa
+  // ficha e "Beadazzled" no site, "Casa" solto em vez de "Casa, Arte &
+  // Design" — a lista incha com grafia que não leva a lugar nenhum.
+  //
+  // Este quadro mostra só o que está divergente (existe em ficha e em
+  // nenhuma experiência) e resolve na hora: escolhe a categoria do site
+  // e reescreve a ficha de todos os parceiros que usavam a grafia solta.
+  function renderCotacaoDivergencias() {
+    const box = document.getElementById('cotacao-divergencias');
+    if (!box || !_cotacaoData) return;
+
+    const divergentes = _cotacaoData.lista.filter(c => c.soFicha);
+    if (!divergentes.length) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+
+    // Categorias legítimas (as do site) — opções da correção.
+    const doSite = _cotacaoData.lista
+      .filter(c => c.temSite)
+      .map(c => c.nome)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    const linhas = divergentes.map(c => {
+      const bucket = _cotacaoData.cats.get(c.key);
+      const fichas = bucket ? Array.from(bucket.fichas.values()) : [];
+      const quem = fichas.map(f => escapeHtml(f.nome)).join(', ') || '—';
+      const opcoes = doSite.map(n =>
+        '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>'
+      ).join('');
+      return '<tr data-div-key="' + escapeHtml(c.key) + '">' +
+        '<td style="padding:8px 10px;font-weight:600;color:#8a6d2f;white-space:nowrap;">' +
+          escapeHtml(c.nome) +
+        '</td>' +
+        '<td style="padding:8px 10px;font-size:.84rem;color:#555;">' + quem + '</td>' +
+        '<td style="padding:8px 10px;white-space:nowrap;">' +
+          '<select class="cotacao-div-alvo" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:.82rem;max-width:210px;">' +
+            '<option value="">— escolher categoria do site —</option>' +
+            opcoes +
+            '<option value="__remover__">— só remover da ficha —</option>' +
+          '</select> ' +
+          '<button type="button" class="cotacao-div-apply" style="padding:5px 12px;border:1px solid #e3d9c6;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.82rem;">Aplicar</button>' +
+          ' <span class="cotacao-div-msg" style="font-size:.78rem;margin-left:6px;"></span>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    box.style.display = '';
+    box.innerHTML =
+      '<div class="admin__table-wrap">' +
+        '<div class="admin__table-header">' +
+          '<span class="admin__table-title">⚠ Categorias que só existem em ficha de parceiro</span>' +
+          '<span class="admin__table-count" style="margin-left:8px;">' + divergentes.length + '</span>' +
+        '</div>' +
+        '<p style="margin:0;padding:10px 16px 0;font-size:.84rem;color:#666;line-height:1.45;">' +
+          'Estas foram digitadas à mão na ficha do parceiro e não batem com nenhuma categoria de experiência do site — ' +
+          'ninguém chega nelas navegando. Escolha a categoria do site correspondente e clique em Aplicar: ' +
+          'a ficha de todos os parceiros listados é reescrita de uma vez.' +
+        '</p>' +
+        '<table class="admin__table" style="margin-top:6px;">' +
+          '<thead><tr>' +
+            '<th style="text-align:left;">Na ficha está</th>' +
+            '<th style="text-align:left;">De quem</th>' +
+            '<th style="text-align:left;">Trocar por</th>' +
+          '</tr></thead>' +
+          '<tbody>' + linhas + '</tbody>' +
+        '</table>' +
+      '</div>';
+
+    box.querySelectorAll('.cotacao-div-apply').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tr = btn.closest('[data-div-key]');
+        if (!tr) return;
+        const catKey = tr.getAttribute('data-div-key');
+        const sel = tr.querySelector('.cotacao-div-alvo');
+        const msg = tr.querySelector('.cotacao-div-msg');
+        const alvo = sel ? sel.value : '';
+        if (!alvo) {
+          msg.textContent = 'Escolha pra qual categoria vai.';
+          msg.style.color = '#b00';
+          return;
+        }
+        btn.disabled = true;
+        msg.style.color = '#666';
+        msg.textContent = 'Aplicando…';
+        const r = await cotacaoAplicarDivergencia(catKey, alvo === '__remover__' ? null : alvo);
+        if (!r.ok) {
+          msg.style.color = '#b00';
+          msg.textContent = r.error || 'Não deu pra aplicar.';
+          btn.disabled = false;
+          return;
+        }
+        msg.style.color = '#1a8a4a';
+        msg.textContent = 'Pronto — ' + r.fichas + ' ficha(s) atualizada(s).';
+        // Recarrega os dados da cotação pra lista refletir a correção.
+        _cotacaoData = null;
+        await cotacaoBuildData();
+        renderCotacaoCategorias();
+        renderCotacaoDivergencias();
+        renderCotacaoResultados();
+      });
+    });
+  }
+
+  // Reescreve fornecedores_metadata.categoria de todos os parceiros que
+  // carregam a grafia divergente. `alvo` null = só tira a categoria.
+  // A comparação é pela chave (sem acento/caixa), a mesma dos chips.
+  async function cotacaoAplicarDivergencia(catKey, alvo) {
+    const s = window.supabaseClient;
+    if (!s) return { ok: false, error: 'Supabase indisponível.' };
+    const bucket = _cotacaoData && _cotacaoData.cats.get(catKey);
+    if (!bucket || !bucket.fichas.size) return { ok: false, error: 'Nada pra corrigir.' };
+
+    // Lê as fichas frescas do banco: o que vale é a string de categoria
+    // como está lá agora, não a que foi carregada na montagem da tela.
+    const metadata = await getFornecedoresMetadata();
+    const metaByKey = new Map();
+    (metadata || []).forEach(m => { if (m && m.fornecedor_key) metaByKey.set(m.fornecedor_key, m); });
+
+    let alteradas = 0;
+    const chaves = Array.from(bucket.fichas.keys());
+    for (let i = 0; i < chaves.length; i++) {
+      const fk = chaves[i];
+      const m = metaByKey.get(fk);
+      if (!m || !m.categoria) continue;
+
+      const restantes = [];
+      let achou = false;
+      parseFichaLista(m.categoria).forEach(t => {
+        if (cotacaoCatKey(t) === catKey) { achou = true; return; }  // sai a grafia solta
+        restantes.push(t);
+      });
+      if (!achou) continue;
+      if (alvo && !restantes.some(t => cotacaoCatKey(t) === cotacaoCatKey(alvo))) {
+        restantes.push(alvo);
+      }
+
+      const novo = joinFichaLista(restantes);
+      const { error } = await s.from('fornecedores_metadata')
+        .update({ categoria: novo || null })
+        .eq('fornecedor_key', fk);
+      if (error) {
+        console.error('[Cotação] erro corrigindo categoria de', fk, error);
+        return { ok: false, error: error.message };
+      }
+      alteradas += 1;
+    }
+
+    fornecedoresMetaCache = null;   // próxima leitura vem do banco
+    return { ok: true, fichas: alteradas };
+  }
+
   function renderCotacaoCategorias() {
     const wrap = document.getElementById('cotacao-cats');
     const countEl = document.getElementById('cotacao-cats-count');
@@ -14046,8 +14828,16 @@
         'font-weight:600;white-space:nowrap;' +
         (ativa
           ? 'border:1px solid var(--orange,#f0a05e);background:var(--orange,#f0a05e);color:#fff;'
-          : 'border:1px solid #e2e2e2;background:#fff;color:#444;') + '" ' +
-        'title="' + escapeHtml(c.fornecedores + ' fornecedor(es) · ' + c.experiencias + ' experiência(s)') + '">' +
+          // Categoria que só existe em ficha de parceiro fica com borda
+          // tracejada: dá pra ver de longe o que não é categoria do site.
+          : (c.soFicha
+            ? 'border:1px dashed #d9b36a;background:#fffdf7;color:#8a6d2f;'
+            : 'border:1px solid #e2e2e2;background:#fff;color:#444;')) + '" ' +
+        'title="' + escapeHtml(
+          c.fornecedores + ' fornecedor(es) · ' + c.experiencias + ' experiência(s)' +
+          (c.soFicha ? ' — só na ficha de parceiro, não é categoria do site' : '')
+        ) + '">' +
+        (c.soFicha ? '⚠ ' : '') +
         escapeHtml(c.nome) +
         '<span style="margin-left:7px;font-weight:700;opacity:.75;">' + c.fornecedores + '</span>' +
       '</button>';
@@ -14407,6 +15197,7 @@
       _cotacaoState.categoria = '';
     }
     renderCotacaoCategorias();
+    renderCotacaoDivergencias();
     renderCotacaoResultados();
   }
 
@@ -18234,6 +19025,20 @@
         $('ms-payout-status').value = mode === 'duplicate'
           ? 'pendente'
           : (data.payout_status === 'pago' ? 'pago' : 'pendente');
+        // "É um espaço" já vem marcado se esse nome está em Locais p/
+        // eventos — senão, reabrir a venda e salvar desmarcaria o que a
+        // admin já tinha classificado. Assíncrono de propósito: não vale
+        // segurar a abertura do modal por causa disso.
+        const venueBox = $('ms-payout-supplier-venue');
+        if (venueBox) {
+          venueBox.checked = false;
+          const nomeForn = (data.supplier_name || '').trim();
+          if (nomeForn) {
+            venueKeysSet()
+              .then(keys => { if (keys.has(fornecedorKey(nomeForn))) venueBox.checked = true; })
+              .catch(() => {});
+          }
+        }
       }
       _finRecalcManualSaleTotal();
       if (expRef) await _finAutoFillFromExperience(expRef);
@@ -18433,6 +19238,19 @@
       }
       if (res.error) throw res.error;
       msgEl.textContent = 'Salvo!'; msgEl.style.color = '#1a8a4a';
+
+      // Espaço do evento: a admin marcou que esse "fornecedor" é, na
+      // verdade, o lugar contratado (bar, café, salão). Cadastra em
+      // Locais p/ eventos — é isso que o tira da aba Parceiros, que
+      // passa a ignorar quem é espaço e não tem experiência nenhuma.
+      // O repasse continua igual: quem foi contratado segue a receber.
+      // Best-effort: a venda já gravou, então erro aqui só loga.
+      if (hasPayout && supplierName
+          && $('ms-payout-supplier-venue') && $('ms-payout-supplier-venue').checked) {
+        try { await _finEnsureVenue(supplierName); }
+        catch (e) { console.warn('[Admin] não consegui cadastrar o espaço em Locais p/ eventos:', e); }
+      }
+
       // Só em venda NOVA: dispara o mesmo aviso "Nova venda 🎉" que sai
       // nas vendas automáticas (Stripe/MP). Best-effort — não bloqueia
       // nem falha o salvamento se o e-mail não sair (a venda já gravou).

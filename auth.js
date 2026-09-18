@@ -78,6 +78,10 @@ const ElarahAuth = (function () {
       telefone: currentProfile.telefone || '',
       cidade: currentProfile.cidade || '',
       role: currentProfile.role || 'user',
+      // Escopo de abas do painel admin (equipe). null/ausente = acesso
+      // total; array = só essas abas aparecem no menu. Quem lê é o
+      // admin-acessos.js. Vem do banco em profiles.admin_panels.
+      adminPanels: currentProfile.admin_panels != null ? currentProfile.admin_panels : null,
       partnerStatus: currentProfile.partner_status || 'none',
       partnerData: currentProfile.partner_data || null,
       favorites: getFavorites()

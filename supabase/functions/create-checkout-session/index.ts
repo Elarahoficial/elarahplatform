@@ -61,6 +61,11 @@ import {
 } from "../_shared/financial.ts";
 import { quoteForService, type ShippingOption } from "../_shared/shipping.ts";
 import { getValidAccessToken } from "../_shared/melhor_envio.ts";
+import {
+  carregarDescontoGeral,
+  precoLabelBR,
+  precoPromocionalCentavos,
+} from "../_shared/promo.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -724,6 +729,30 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
       cents = variantExpectedCents;
     }
   }
+
+  // ===== Desconto geral (_shared/promo.ts) =====
+  // Mesma regra do booking_guard §5c (PIX/Pagar.me): o desconto que a
+  // admin configurou incide sobre o preço já resolvido — o do site, ou
+  // o da variação escolhida. Sem campanha no ar, não tem efeito.
+  if (cents) {
+    const descontoGeral = await carregarDescontoGeral(supabase);
+    const precoAntesDaPromo = cents;
+    cents = precoPromocionalCentavos(cents, descontoGeral);
+    if (cents !== precoAntesDaPromo) {
+      console.info(
+        "[create-checkout-session] desconto geral aplicado",
+        "exp=" + exp.id,
+        "de=" + precoAntesDaPromo,
+        "por=" + cents,
+        "pct=" + descontoGeral.percentual,
+      );
+      // preco_label é o que aparece no e-mail de confirmação. Reescreve
+      // pro valor realmente cobrado; o preço de cadastro no banco não
+      // é tocado.
+      exp.preco = precoLabelBR(cents);
+    }
+  }
+
   if (!cents) {
     console.error("[create-checkout-session] invalid price", exp.preco);
     return jsonResponse({ error: "invalid_price" }, 422);

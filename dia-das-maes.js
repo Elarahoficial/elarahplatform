@@ -100,6 +100,7 @@
     'perfumaria':  'assets/perfumaria.jpg',
     'ceramica':    'assets/ceramica-fria.jpg',
     'tufting':     'assets/tufting1.jpg',
+    'tufting & punch': 'assets/tufting1.jpg',
     'pintura':     'assets/pinturataca.jpg',
     'vela':        'assets/velaaromatica.jpg',
     'gastronomia': 'assets/cookies.jpg',
@@ -154,7 +155,8 @@
     const data = (exp.data || '').trim();
     const horario = (exp.horario || '').trim();
     const bairro = (exp.bairro || '').trim();
-    const precoRaw = (exp.preco || '').trim();
+    const precoRaw = (((window.ElarahData && ElarahData.precoVigente)
+        ? ElarahData.precoVigente(exp) : exp.preco) || '').trim();
     const preco = (window.ElarahData && ElarahData.formatPrecoBR)
       ? ElarahData.formatPrecoBR(precoRaw)
       : precoRaw;

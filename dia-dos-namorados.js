@@ -294,9 +294,11 @@
         var titulo = (o.titulo_custom && o.titulo_custom.trim()) || e.nome;
         var badge = (o.badge_text && o.badge_text.trim()) || 'Especial Dia dos Namorados';
         // Padronização: usa formatPrecoBR pra garantir "R$ 248" / "R$ 1.290"
+        var _precoE = (window.ElarahData && ElarahData.precoVigente)
+          ? ElarahData.precoVigente(e) : e.preco;
         var preco = (window.ElarahData && ElarahData.formatPrecoBR)
-          ? ElarahData.formatPrecoBR(e.preco)
-          : (e.preco || '');
+          ? ElarahData.formatPrecoBR(_precoE)
+          : (_precoE || '');
 
         // Proxima data NA JANELA DDN como badge no canto superior
         // esquerdo da imagem — mesmo padrao visual dos cards normais

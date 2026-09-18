@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'perfumaria':  'assets/perfumaria.jpg',
     'ceramica':    'assets/ceramica-fria.jpg',
     'tufting':     'assets/tufting1.jpg',
+    'tufting & punch': 'assets/tufting1.jpg',
     'pintura':     'assets/pinturataca.jpg',
     'vela':        'assets/velaaromatica.jpg',
     'gastronomia': 'assets/cookies.jpg',
@@ -69,6 +70,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   let activeFilter = '';
 
   // ===== RENDER CARDS =====
+  // Preço que a cliente paga hoje: o vigente (com a promoção sazonal
+  // quando ela está no ar) e nunca o preço de cadastro.
+  function precoVigenteDe(exp) {
+    return (window.ElarahData && ElarahData.precoVigente)
+      ? ElarahData.precoVigente(exp)
+      : ((exp && exp.preco) || '');
+  }
+
   function renderGiftCards() {
     if (!grid) return;
 
@@ -156,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </p>
           </div>
           <div class="card__footer">
-            <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
+            <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(precoVigenteDe(exp)) : precoVigenteDe(exp))}</strong></p>
             ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
             <button type="button" class="card__reserve-btn"
               data-reserve
