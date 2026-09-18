@@ -1,37 +1,43 @@
 # Promoção 20% OFF — como funciona e como desligar
 
 Campanha que coloca **todas as experiências** com 20% de desconto **sobre o
-valor cheio**, sem precisar reeditar preço nenhum no admin.
+preço que está no site**, sem precisar reeditar preço nenhum no admin.
 
-**Janela configurada:** 18/09/2026 → 27/09/2026, 23h59 (horário de Brasília).
+**Janela configurada:** 18/09/2026 → 20/09/2026, 23h59 (horário de Brasília).
+Flash de fim de semana.
 
 ---
 
 ## A regra do preço
 
 ```
-preço promocional = VALOR CHEIO - 20%
+preço promocional = PREÇO DO SITE - 20%
 ```
 
-- **Valor cheio** = o campo `valor_cheio_centavos` da experiência (o mesmo que
-  já aparecia riscado no card). É a base do desconto.
-- **Sem valor cheio cadastrado** (By Elarah, onde cheio == praticado): a base
-  vira o próprio preço praticado.
-- **Variações** (Individual / Dupla / Trio, kits): não têm valor cheio próprio,
-  então os 20% saem do preço da opção escolhida.
-- **Trava de segurança:** a promoção **nunca aumenta preço**. Se a experiência
-  já era vendida abaixo de "cheio − 20%", ela mantém o preço menor.
+A base é o preço que estava no ar antes da campanha (`experiences.preco`) — o
+mesmo que a cliente via ontem. É o que faz o banner ser verdade: anunciou 20%,
+ela paga 20% a menos do que pagaria ontem.
 
-Exemplos:
+| Preço no site | Na promoção |
+|---|---|
+| R$ 180 | **R$ 144** |
+| R$ 610 | **R$ 488** |
+| R$ 261 | **R$ 208,80** |
 
-| Experiência | Valor cheio | Preço praticado | Na promoção |
-|---|---|---|---|
-| Parceira | R$ 610 | R$ 549 | **R$ 488** |
-| By Elarah (sem cheio) | — | R$ 180 | **R$ 144** |
-| Já vendida barata | R$ 610 | R$ 400 | **R$ 400** (trava) |
+**Variações** (Individual / Dupla / Trio, kits) descontam sobre o preço da
+opção escolhida, que é o preço dela.
 
-O "de" riscado na vitrine passa a ser sempre a maior referência honesta: o
-valor cheio quando existe, senão o preço praticado.
+### Por que NÃO usamos o `valor_cheio_centavos` como base
+
+Aquele campo é resquício do modelo antigo, em que o catálogo já entrava com 10%
+embutido e o cheio era só a referência riscada. Com o catálogo vendendo pelo
+preço inteiro, descontar sobre o cheio daria **menos de 20% na tela**: numa
+experiência de cheio R$ 610 vendida a R$ 549, o "20% OFF" viraria R$ 488 — 11%
+de desconto real pra quem olha a página. O cheio continua servindo só pro "de"
+riscado, quando estiver cadastrado e for maior que o preço do site.
+
+(Ele também é a base do rateio com o fornecedor em `computeFinancialBreakdown`
+— mexer nele mexeria em todo repasse.)
 
 ---
 
@@ -97,14 +103,14 @@ depois que a janela fechar, checam que o preço volta intacto.
 ## Dois avisos que valem dinheiro
 
 **1. O desconto sai inteiro da comissão da Elarah.** O repasse ao fornecedor
-continua sendo calculado sobre o **valor cheio** (`computeFinancialBreakdown`
-não olha o que foi cobrado). Numa experiência de R$ 610 com 70% de repasse:
+continua sendo calculado sobre o `valor_cheio_centavos` — não sobre o que foi
+cobrado. Numa experiência de R$ 610 com 70% de repasse:
 
 | | Fora da promoção | Na promoção |
 |---|---|---|
-| Cliente paga | R$ 549 | R$ 488 |
+| Cliente paga | R$ 610 | R$ 488 |
 | Fornecedor recebe | R$ 427 | R$ 427 |
-| Sobra pra Elarah | R$ 122 | **R$ 61** |
+| Sobra pra Elarah | R$ 183 | **R$ 61** |
 
 Em experiências com repasse acima de 80% do valor cheio, a venda passa a dar
 prejuízo. Vale conferir as faixas de repasse antes de anunciar, ou combinar a

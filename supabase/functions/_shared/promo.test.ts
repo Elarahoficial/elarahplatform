@@ -25,45 +25,42 @@ import {
 
 const ativa = promoAtiva();
 
-Deno.test("parceira: 20% sobre o VALOR CHEIO, não sobre o praticado", () => {
-  // Cheio R$ 610, praticado R$ 549 → 610 - 20% = R$ 488.
-  // (20% sobre o praticado daria R$ 439,20 — não é a regra.)
-  assertEquals(precoPromocionalCentavos(54900, 61000), ativa ? 48800 : 54900);
+Deno.test("20% sobre o preço do site — o que o banner promete", () => {
+  assertEquals(precoPromocionalCentavos(18000), ativa ? 14400 : 18000);
+  assertEquals(precoPromocionalCentavos(61000), ativa ? 48800 : 61000);
 });
 
-Deno.test("By Elarah (sem valor cheio): base é o próprio preço", () => {
-  assertEquals(precoPromocionalCentavos(18000, null), ativa ? 14400 : 18000);
+Deno.test("valor cheio NÃO entra na conta (senão o 20% viraria 11%)", () => {
+  // Experiência de cheio R$ 610 vendida a R$ 549: a cliente paga 20% em
+  // cima dos R$ 549 que ela via no site, não em cima dos R$ 610.
+  assertEquals(precoPromocionalCentavos(54900), ativa ? 43920 : 54900);
 });
 
-Deno.test("valor cheio igual ao praticado: desconta igual", () => {
-  assertEquals(precoPromocionalCentavos(24800, 24800), ativa ? 19840 : 24800);
+Deno.test("variação (Individual/Dupla/kit) desconta sobre o preço da opção", () => {
+  assertEquals(precoPromocionalCentavos(30000), ativa ? 24000 : 30000);
 });
 
-Deno.test("TRAVA: promoção nunca aumenta preço", () => {
-  // Cheio R$ 610 mas a experiência já é vendida a R$ 400. Cheio - 20%
-  // daria R$ 488 — mais CARO que o preço atual. Mantém os R$ 400.
-  assertEquals(precoPromocionalCentavos(40000, 61000), 40000);
-});
-
-Deno.test("variação (sem valor cheio próprio) desconta sobre a opção", () => {
-  assertEquals(precoPromocionalCentavos(30000, null), ativa ? 24000 : 30000);
-});
-
-Deno.test("valor cheio zerado/inválido cai no preço praticado", () => {
-  assertEquals(precoPromocionalCentavos(18000, 0), ativa ? 14400 : 18000);
-  assertEquals(precoPromocionalCentavos(18000, -1), ativa ? 14400 : 18000);
+Deno.test("preço que quebra em centavos", () => {
+  assertEquals(precoPromocionalCentavos(26100), ativa ? 20880 : 26100);
 });
 
 Deno.test("preço inválido volta intacto (não inventa cobrança)", () => {
-  assertEquals(precoPromocionalCentavos(0, 61000), 0);
+  assertEquals(precoPromocionalCentavos(0), 0);
+  assertEquals(precoPromocionalCentavos(-1), -1);
+});
+
+Deno.test("desconto nunca zera a cobrança", () => {
+  // 1 centavo × 0,8 arredonda pra 1 — nunca pra 0, que viraria reserva
+  // grátis silenciosa.
+  assertEquals(precoPromocionalCentavos(1), 1);
 });
 
 Deno.test("percentual configurado é o que manda", () => {
   const base = 100000;
-  const esperado = ativa
-    ? Math.round(base * (100 - PROMO.PERCENTUAL) / 100)
-    : base;
-  assertEquals(precoPromocionalCentavos(base, base), esperado);
+  assertEquals(
+    precoPromocionalCentavos(base),
+    ativa ? Math.round(base * (100 - PROMO.PERCENTUAL) / 100) : base,
+  );
 });
 
 Deno.test("janela de datas é coerente (início antes do fim)", () => {
@@ -75,6 +72,6 @@ Deno.test("janela de datas é coerente (início antes do fim)", () => {
 
 Deno.test("precoLabelBR: centavos só quando existem de verdade", () => {
   assertEquals(precoLabelBR(48800), "R$ 488");
-  assertEquals(precoLabelBR(19840), "R$ 198,40");
+  assertEquals(precoLabelBR(43920), "R$ 439,20");
   assertEquals(precoLabelBR(110400), "R$ 1.104");
 });

@@ -5,17 +5,19 @@
    precisar mexer no preço de cada uma no admin. Enquanto a janela
    estiver aberta:
 
-     preço promocional = VALOR CHEIO - PERCENTUAL%
+     preço promocional = PREÇO DO SITE - PERCENTUAL%
 
-   O valor cheio é o `valor_cheio_centavos` da experiência (o mesmo que
-   já aparecia riscado no card). Quando ele não está cadastrado — caso
-   das By Elarah, onde cheio == praticado — a base é o próprio preço
-   praticado, que ali é o valor cheio de fato.
+   A base é o preço que está no ar hoje (experiences.preco) — o mesmo
+   que a cliente vê antes da campanha. Assim o que o banner promete é
+   exatamente o que ela ganha: anunciou 20%, ela paga 20% a menos do
+   que pagaria ontem.
 
-   TRAVA DE SEGURANÇA: o preço promocional NUNCA sobe. Se uma
-   experiência já é vendida com desconto maior que o da promoção
-   (ex.: cheio R$ 610 vendido a R$ 400, e 20% do cheio daria R$ 488),
-   ela mantém o preço menor. Promoção que aumenta preço não é promoção.
+   POR QUE NÃO O valor_cheio_centavos: aquele campo é resquício do
+   modelo antigo, em que o catálogo já entrava com 10% embutido e o
+   cheio era a referência riscada. Com o catálogo vendendo pelo preço
+   inteiro, descontar sobre o cheio daria menos de 20% na tela — a
+   cliente veria "20% OFF" e ganharia 11%. O cheio continua servindo
+   só pro "de" riscado, quando estiver cadastrado e for maior.
 
    ATENÇÃO — ESTE ARQUIVO TEM UM GÊMEO NO BACKEND:
    supabase/functions/_shared/promo.ts. O Deno não importa JS do site,
@@ -40,10 +42,10 @@
     // Janela de validade (horário de Brasília). Fora dela o desconto
     // não vale — nem na vitrine, nem no checkout.
     INICIO: '2026-09-18T00:00:00-03:00',
-    FIM: '2026-09-27T23:59:59-03:00',
+    FIM: '2026-09-20T23:59:59-03:00',
     // Textos do aviso no topo do site.
     TITULO: '20% OFF em todas as experiências',
-    SUBTITULO: 'Desconto sobre o valor cheio · até 27/09',
+    SUBTITULO: 'Só até domingo (20/09), meia-noite',
   };
 
   // Data final formatada pra usar em texto ("27/09").

@@ -2033,10 +2033,10 @@
   }
 
   // =============================================================
-  // PROMOÇÃO SAZONAL (promo.js) — desconto em cima do valor cheio
+  // PROMOÇÃO SAZONAL (promo.js) — desconto sobre o preço do site
   // -------------------------------------------------------------
   // Enquanto a campanha estiver na janela de datas, TODA experiência
-  // é vendida por "valor cheio - X%". A configuração e a matemática
+  // é vendida por "preço do site - X%". A configuração e a matemática
   // vivem em promo.js (gêmeo do backend em _shared/promo.ts); aqui só
   // ligamos isso ao preço da experiência.
   //
@@ -2045,31 +2045,17 @@
   // que o checkout não cobraria.
   // =============================================================
 
-  // Base do desconto: o valor cheio quando ele existe e é maior que o
-  // praticado; senão o próprio praticado — nas By Elarah o praticado
-  // JÁ é o valor cheio, então é ele que leva os 20%.
-  function basePromoDe(exp) {
-    var cheio = valorCheioDe(exp);
-    var praticado = precoPraticadoDe(exp);
-    if (!praticado) return cheio || null;
-    if (cheio && cheio > praticado) return cheio;
-    return praticado;
-  }
-
-  // Preço que a cliente paga HOJE, em centavos. Fora da janela da
-  // promoção é o preço praticado de sempre.
+  // Preço que a cliente paga HOJE, em centavos. A base do desconto é o
+  // PREÇO DO SITE (o praticado), pra que o 20% anunciado seja 20% de
+  // verdade na tela. Fora da janela da promoção devolve o praticado,
+  // sem tocar em nada.
   function precoVigenteCentavos(exp) {
     var praticado = precoPraticadoDe(exp);
     var promo = window.ElarahPromo;
     if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return praticado;
-    var base = basePromoDe(exp);
-    if (!base) return praticado;
-    var comDesconto = promo.centavos(base);
-    if (!comDesconto) return praticado;
-    // TRAVA: promoção nunca aumenta preço. Se a experiência já era
-    // vendida abaixo de "cheio - 20%", ela mantém o preço menor.
-    if (praticado && comDesconto > praticado) return praticado;
-    return comDesconto;
+    if (!praticado) return praticado;
+    var comDesconto = promo.centavos(praticado);
+    return comDesconto || praticado;
   }
 
   // Rótulo do preço vigente, pronto pro formatPrecoBR de quem exibe.
@@ -2086,10 +2072,10 @@
   }
 
   // Rótulo do "de" pra exibir riscado. Ex.: "R$ 610".
-  // É sempre a MAIOR referência honesta: o valor cheio quando existe,
-  // senão o preço praticado (que durante a promoção também vira "de").
+  // É sempre a MAIOR referência honesta: o valor cheio quando existe e
+  // é maior, senão o preço do site (que durante a promoção vira o "de").
   // Devolve '' quando não há desconto real a mostrar — fora da
-  // campanha, uma By Elarah continua sem "de", como sempre foi.
+  // campanha, uma experiência sem valor cheio continua sem "de".
   function precoCheioBR(exp) {
     var cheio = valorCheioDe(exp);
     var praticado = precoPraticadoDe(exp);

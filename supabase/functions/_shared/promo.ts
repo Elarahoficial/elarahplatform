@@ -4,14 +4,16 @@
 // Desconto que vale pra TODAS as experiências durante uma janela de
 // datas, sem mexer no preço cadastrado de cada uma:
 //
-//     preço promocional = VALOR CHEIO - PERCENTUAL%
+//     preço promocional = PREÇO DO SITE - PERCENTUAL%
 //
-// O valor cheio é experiences.valor_cheio_centavos (o mesmo que o site
-// já mostrava riscado). Quando não está cadastrado — By Elarah, onde
-// cheio == praticado — a base é o próprio preço praticado.
+// A base é experiences.preco — o preço que estava no ar antes da
+// campanha. É o que faz o banner ser verdade: anunciou 20%, cobra 20%
+// a menos do que cobraria ontem.
 //
-// TRAVA DE SEGURANÇA: o preço promocional NUNCA sobe. Experiência já
-// vendida abaixo de "cheio - PERCENTUAL%" mantém o preço menor.
+// NÃO usamos valor_cheio_centavos como base: aquele campo é a
+// referência riscada (e a base do rateio com o fornecedor em
+// computeFinancialBreakdown). Descontar sobre ele daria menos de 20%
+// na tela sempre que cheio > praticado.
 //
 // POR QUE ISSO VIVE NO SERVIDOR TAMBÉM: o preço cobrado nunca vem do
 // cliente (ver booking_guard §5). Se só a vitrine aplicasse o
@@ -31,7 +33,7 @@ export const PROMO = {
   PERCENTUAL: 20,
   // Janela em horário de Brasília (UTC-3).
   INICIO: "2026-09-18T00:00:00-03:00",
-  FIM: "2026-09-27T23:59:59-03:00",
+  FIM: "2026-09-20T23:59:59-03:00",
 } as const;
 
 export function promoAtiva(agora: Date = new Date()): boolean {
@@ -44,28 +46,16 @@ export function promoAtiva(agora: Date = new Date()): boolean {
 }
 
 // Preço unitário (em centavos) que deve ser COBRADO hoje.
-//   precoCents      — preço praticado da experiência (ou da variação)
-//   valorCheioCents — valor cheio cadastrado; null quando não existe
-//                     (variações e By Elarah) → a base vira o praticado
-// Fora da janela da promoção devolve o praticado, sem tocar em nada.
-export function precoPromocionalCentavos(
-  precoCents: number,
-  valorCheioCents?: number | null,
-): number {
+//   precoCents — preço do site da experiência, ou da variação escolhida
+//                (Individual/Dupla/kit), que é o preço dela.
+// Fora da janela da promoção devolve o mesmo preço, sem tocar em nada.
+export function precoPromocionalCentavos(precoCents: number): number {
   const praticado = Math.round(Number(precoCents));
   if (!isFinite(praticado) || praticado <= 0) return praticado;
   if (!promoAtiva()) return praticado;
 
-  const cheioRaw = Number(valorCheioCents);
-  const cheio = isFinite(cheioRaw) && cheioRaw > 0 ? Math.round(cheioRaw) : 0;
-  // Base do desconto: valor cheio quando é maior que o praticado;
-  // senão o praticado (que ali JÁ é o valor cheio).
-  const base = cheio > praticado ? cheio : praticado;
-
-  const comDesconto = Math.round(base * (100 - PROMO.PERCENTUAL) / 100);
-  if (comDesconto <= 0) return praticado;
-  // TRAVA: promoção nunca aumenta preço.
-  return Math.min(comDesconto, praticado);
+  const comDesconto = Math.round(praticado * (100 - PROMO.PERCENTUAL) / 100);
+  return comDesconto > 0 ? comDesconto : praticado;
 }
 
 // Centavos → rótulo "R$ 1.380,50" (centavos só quando existem de

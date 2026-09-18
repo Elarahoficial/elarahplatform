@@ -682,7 +682,6 @@ export async function reserveExperienceSlot(
   // quando ele é MAIOR que o base. Assim o PIX nunca sai com o valor do
   // ingresso individual quando o cliente escolheu a opção "Dupla" mais cara,
   // e como só aceitamos pra cima, ninguém consegue pagar a menos.
-  let usouPrecoDeVariacao = false;
   if (input.variantSelected && String(input.variantSelected).trim()) {
     let dbVariantCents: number | null = null;
     try {
@@ -713,7 +712,6 @@ export async function reserveExperienceSlot(
     if (dbVariantCents) {
       // Caminho normal: banco é autoritativo.
       baseCents = dbVariantCents;
-      usouPrecoDeVariacao = true;
       console.info(
         "[Elarah Guard] preço por variação aplicado (banco)",
         "variante=" + input.variantSelected,
@@ -732,7 +730,6 @@ export async function reserveExperienceSlot(
           "ação=verifique se variant_items desta experiência tem o preço da opção",
         );
         baseCents = Math.round(hintCents);
-        usouPrecoDeVariacao = true;
       } else if (Number.isFinite(hintCents) && hintCents > 0 && hintCents < baseCents) {
         // Dica menor que o base: ignora (nunca cobramos a menos por dica do
         // cliente). Loga pra visibilidade caso seja variação legítima mais
@@ -748,25 +745,20 @@ export async function reserveExperienceSlot(
   }
 
   // ===== 5c. Promoção sazonal (_shared/promo.ts) =====
-  // Última etapa do preço: o desconto da campanha incide sobre o valor
-  // CHEIO da experiência (ou sobre o preço da variação escolhida, que
-  // não tem valor cheio próprio). Fora da janela da promoção
-  // precoPromocionalCentavos devolve o mesmo preço, sem efeito.
+  // Última etapa do preço: o desconto da campanha incide sobre o preço
+  // que já está resolvido aqui. Fora da janela da promoção
+  // precoPromocionalCentavos devolve o mesmo valor, sem efeito.
   //
   // Fica DEPOIS da variação de propósito: se o cliente escolheu "Dupla",
   // é o preço da Dupla que leva o desconto.
   const precoAntesDaPromo = baseCents;
-  baseCents = precoPromocionalCentavos(
-    baseCents,
-    usouPrecoDeVariacao ? null : exp.valor_cheio_centavos,
-  );
+  baseCents = precoPromocionalCentavos(baseCents);
   if (baseCents !== precoAntesDaPromo) {
     console.info(
       "[Elarah Guard] promoção aplicada",
       "exp=" + exp.id,
       "de=" + precoAntesDaPromo,
       "por=" + baseCents,
-      "variacao=" + (usouPrecoDeVariacao ? input.variantSelected : "-"),
     );
     // preco_label alimenta o e-mail de confirmação ("qty × R$ X") e o
     // extrato da reserva. Sem reescrever aqui, a cliente pagaria R$ 144
