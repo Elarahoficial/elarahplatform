@@ -40,10 +40,11 @@ contagem regressiva incluída.
 
 ### A barra no site
 
-- Mostra **contagem regressiva** quando falta menos de 48h ("acaba em 5h12").
-  Acima disso ela não aparece: "acaba em 9d 4h" não apressa ninguém e ainda
-  avisa que dá pra deixar pra depois. Na última hora a contagem passa a mostrar
-  os segundos.
+- Mostra **contagem regressiva** quando falta menos de 48h, sempre **com os
+  segundos correndo** ("acaba em 2h 23min 56s") — é o dígito mudando na frente
+  da pessoa que cria urgência; o mesmo prazo parado parece só um aviso. Acima
+  de 48h ela não aparece: "acaba em 9d 4h" não apressa ninguém e ainda avisa
+  que dá pra deixar pra depois.
 - Se os campos de texto ficarem em branco, o site escreve sozinho — e escreve
   **"Acaba hoje à meia-noite"** quando o prazo termina hoje, em vez da data
   (quem lê "18/09" precisa parar pra lembrar que dia é hoje).
