@@ -1127,6 +1127,57 @@ async function run() {
     check("passados 40 dias, nova data do mesmo evento avisa de novo", zj2.calls.length === 1);
   }
 
+  // ---------- FLUXO: INSTRUÇÕES PÓS-COMPRA ----------
+  head("FLUXO — experiência que exige cadastro/sala: instrução sai sozinha após a compra");
+  {
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const INSTR = "Pra garantir seu lugar, o parceiro precisa te registrar.\n" +
+      "Preencha: https://exemplo.com/cadastro";
+    const sb = makeSupabase([bookingSeed({
+      id: "bki-A",
+      experiencia_nome: "Aula de Coquetelaria",
+      experiences: { imagem: IMG_A, instrucoes_pos_compra: INSTR },
+    })]);
+    const r = await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("a confirmação sai normalmente", r.sent === true);
+    check("e sai TAMBÉM a mensagem de instruções (2 no total)", zi.to(CLIENT_A).length === 2,
+      "saíram " + zi.to(CLIENT_A).length);
+    const instr = zi.to(CLIENT_A)[1].text;
+    check("a instrução traz o texto cadastrado na experiência", instr.includes("https://exemplo.com/cadastro"));
+    check("e o nome da experiência", instr.includes("Aula de Coquetelaria"));
+    check("é pessoal", instr.startsWith("Oi, Maria!"), instr.slice(0, 20));
+    check("send_log tem chave própria pras instruções", sb._sendLog.has("instrucoes:bki-A"));
+    check("e continua com a chave da confirmação", sb._sendLog.has("confirmation:bki-A"));
+
+    // Webhook repetido (Stripe manda o mesmo evento 2x): nada duplica.
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-A"), { telefone_digits: CLIENT_A });
+    check("webhook repetido → continua com 2 mensagens", zi.to(CLIENT_A).length === 2);
+  }
+  {
+    // Experiência SEM instrução: nada muda (só a confirmação).
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase([bookingSeed({ id: "bki-B" })]);
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-B"), { telefone_digits: CLIENT_A });
+    check("sem instrução cadastrada → só a confirmação", zi.to(CLIENT_A).length === 1);
+    check("e nada de chave de instruções na send_log", !sb._sendLog.has("instrucoes:bki-B"));
+  }
+  {
+    // Reserva "aguardando experiência" (suprimida): NENHUMA das duas sai.
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase([bookingSeed({
+      id: "bki-C",
+      aguardando_experiencia: true,
+      experiences: { imagem: IMG_A, instrucoes_pos_compra: "Preencha o cadastro" },
+    })]);
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-C"), { telefone_digits: CLIENT_A });
+    check("reserva suprimida → nem confirmação nem instruções", zi.calls.length === 0);
+  }
+
   // ---------- Relatório ----------
   console.log(out.join("\n"));
   console.log(`\n==== E2E: ${PASS} verificações passaram, ${FAIL} falharam ====`);

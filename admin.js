@@ -6995,6 +6995,9 @@
       // Horário de funcionamento (agendamento livre / voucher).
       var hfEl = document.getElementById('exp-horario-funcionamento');
       if (hfEl) hfEl.value = exp.horarioFuncionamento || '';
+      // Instruções pós-compra (WhatsApp automático após a confirmação).
+      var instrEl = document.getElementById('exp-instrucoes-pos-compra');
+      if (instrEl) instrEl.value = exp.instrucoesPosCompra || '';
       if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
       if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
 
@@ -7116,6 +7119,8 @@
       if (campOrdEl2) campOrdEl2.value = '';
       var hfEl2 = document.getElementById('exp-horario-funcionamento');
       if (hfEl2) hfEl2.value = '';
+      var instrEl2 = document.getElementById('exp-instrucoes-pos-compra');
+      if (instrEl2) instrEl2.value = '';
       if (typeof window._toggleCampanhaImagemField === 'function') window._toggleCampanhaImagemField();
       if (typeof window._refreshCampanhaImagePreview === 'function') window._refreshCampanhaImagePreview();
       document.getElementById('exp-edit-id').value = '';
@@ -7760,7 +7765,10 @@
           return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
         })(),
         // Horário de funcionamento (agendamento livre / voucher).
-        horarioFuncionamento: (document.getElementById('exp-horario-funcionamento')?.value || '').trim()
+        horarioFuncionamento: (document.getElementById('exp-horario-funcionamento')?.value || '').trim(),
+        // O que a cliente precisa fazer depois de comprar — sai por WhatsApp
+        // sozinho quando a compra é confirmada. Vazio = não envia nada.
+        instrucoesPosCompra: (document.getElementById('exp-instrucoes-pos-compra')?.value || '').trim()
       };
 
       const editId = document.getElementById('exp-edit-id').value;

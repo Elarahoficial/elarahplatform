@@ -62,7 +62,11 @@
     // Horário de funcionamento (agendamento livre / voucher). Quando
     // preenchido, a página da experiência mostra esse horário e deixa o
     // cliente escolher o dia e a hora que quiser. sql/elarah_experiences_horario_funcionamento.sql.
-    'horario_funcionamento'
+    'horario_funcionamento',
+    // Instruções enviadas por WhatsApp logo após a compra (cadastro do
+    // parceiro, sala, link). Vazio = não envia nada.
+    // sql/elarah_experiences_instrucoes_pos_compra.sql.
+    'instrucoes_pos_compra'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -199,6 +203,9 @@
       })(),
       // Horário de funcionamento (agendamento livre). '' = agenda normal.
       horarioFuncionamento: row.horario_funcionamento || '',
+      // O que a cliente precisa fazer depois de comprar (vai por WhatsApp
+      // automaticamente). sql/elarah_experiences_instrucoes_pos_compra.sql.
+      instrucoesPosCompra: row.instrucoes_pos_compra || '',
       // --- Variantes (escolha extra do cliente) ---
       // Exemplo: Pintura com Cristal & Aperol → label="Modelo do quadro",
       // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
@@ -371,6 +378,13 @@
       // Horário de funcionamento (agendamento livre). Vazio → null.
       horario_funcionamento: (function () {
         var raw = exp.horarioFuncionamento != null ? exp.horarioFuncionamento : exp.horario_funcionamento;
+        if (raw == null) return null;
+        var s = String(raw).trim();
+        return s ? s : null;
+      })(),
+      // Instruções pós-compra (WhatsApp automático). Vazio → null.
+      instrucoes_pos_compra: (function () {
+        var raw = exp.instrucoesPosCompra != null ? exp.instrucoesPosCompra : exp.instrucoes_pos_compra;
         if (raw == null) return null;
         var s = String(raw).trim();
         return s ? s : null;

@@ -303,6 +303,7 @@ const META_TEMPLATE_DEFAULTS: Record<string, string> = {
   feedback: "elarah_pedido_feedback",
   pending: "elarah_reserva_pendente",
   byelarah_aviso: "elarah_inscricoes_abertas",
+  instrucoes: "elarah_instrucoes_pos_compra",
 };
 const META_TEMPLATE_ENV: Record<string, string> = {
   confirmation: "META_TEMPLATE_CONFIRMACAO",
@@ -310,6 +311,7 @@ const META_TEMPLATE_ENV: Record<string, string> = {
   feedback: "META_TEMPLATE_FEEDBACK",
   pending: "META_TEMPLATE_PENDENTE",
   byelarah_aviso: "META_TEMPLATE_INSCRICOES",
+  instrucoes: "META_TEMPLATE_INSTRUCOES",
 };
 
 // Templates aprovados COM cabeçalho de imagem. A imagem NÃO faz parte da
@@ -748,6 +750,32 @@ export function pendingRecoveryWhatsAppText(opts: MsgOpts): string {
   return linhas.join("\n");
 }
 
+// Instruções pós-compra da experiência (cadastro do parceiro, sala, link,
+// orientações). Sai logo depois da confirmação, como mensagem SEPARADA de
+// propósito: é uma AÇÃO que a cliente precisa fazer, e misturada na
+// confirmação ela se perde.
+//
+// O texto vem do cadastro da experiência (experiences.instrucoes_pos_compra),
+// então cada experiência diz o que ela precisa — sem nada hardcoded.
+export function postPurchaseInstructionsWhatsAppText(opts: {
+  nome?: unknown;
+  experienciaNome?: unknown;
+  instrucoes?: unknown;
+}): string {
+  const nome = primeiroNome(opts.nome);
+  const exp = String(opts.experienciaNome ?? "sua experiência").trim();
+  const corpo = String(opts.instrucoes ?? "").trim();
+  const linhas: string[] = [];
+  linhas.push(`${nome ? "Oi, " + nome + "! " : "Oi! "}Só mais um passo pra sua vaga ficar certinha 🧡`);
+  linhas.push("");
+  linhas.push(`*${exp}*`);
+  linhas.push("");
+  linhas.push(corpo);
+  linhas.push("");
+  linhas.push("Qualquer dúvida é só responder por aqui ✨");
+  return linhas.join("\n");
+}
+
 // Aviso ÚNICO pra lista de interesse de um evento By Elarah: "as inscrições
 // abriram". Vai pra quem deixou o contato enquanto o evento ainda estava em
 // lista de espera.
@@ -862,6 +890,22 @@ export function pendingRecoveryTemplateParams(opts: MsgOpts): string[] {
   return [
     metaParam(primeiroNome(opts.nome), P_NOME),
     metaParam(opts.experienciaNome, P_EXP),
+  ];
+}
+
+// elarah_instrucoes_pos_compra — {{1}} nome · {{2}} experiência · {{3}} o que fazer
+//
+// ATENÇÃO: parâmetro de template não aceita quebra de linha (a Meta recusa),
+// então na oficial as instruções viram UMA linha. Instrução longa e em vários
+// parágrafos rende melhor no canal legado — ou merece um template próprio,
+// com o texto fixo no corpo.
+export function postPurchaseInstructionsTemplateParams(opts: {
+  nome?: unknown; experienciaNome?: unknown; instrucoes?: unknown;
+}): string[] {
+  return [
+    metaParam(primeiroNome(opts.nome), P_NOME),
+    metaParam(opts.experienciaNome, P_EXP),
+    metaParam(opts.instrucoes, "te mando os detalhes por aqui"),
   ];
 }
 
@@ -1035,19 +1079,25 @@ export async function sendBookingConfirmationGated(
   let statusAllowed = false;
   let aguardando: boolean = true;
   let imagem: string = ELARAH_SITE + "/assets/logo.png";
+  // Instruções cadastradas NA EXPERIÊNCIA (cadastro do parceiro, sala, link).
+  // Vazio = a cliente recebe só a confirmação, como sempre foi.
+  let instrucoes = "";
   if (bookingId) {
     try {
       const { data, error } = await supabase
         .from("bookings")
-        .select("status, aguardando_experiencia, experiences(imagem)")
+        .select("status, aguardando_experiencia, experiences(imagem, instrucoes_pos_compra)")
         .eq("id", bookingId)
         .maybeSingle();
       if (!error && data) {
         statusAllowed = data.status === "pago";
         aguardando = data.aguardando_experiencia === true ||
           (meta && (meta.aguardando_experiencia === true || meta.suppress_customer_messaging === true));
-        const exp = (data as { experiences?: { imagem?: unknown } }).experiences;
+        const exp = (data as {
+          experiences?: { imagem?: unknown; instrucoes_pos_compra?: unknown };
+        }).experiences;
         imagem = experienceImageUrl(exp?.imagem);
+        instrucoes = String(exp?.instrucoes_pos_compra ?? "").trim();
       }
     } catch (_e) {
       // fail-closed: mantém statusAllowed=false / aguardando=true
@@ -1063,7 +1113,7 @@ export async function sendBookingConfirmationGated(
     bairro: (meta?.bairro as string | null) ?? null,
     quantidade: booking?.quantidade ?? null,
   });
-  return await gatedSendWhatsApp(supabase, {
+  const confirmacao = await gatedSendWhatsApp(supabase, {
     kind: "confirmation",
     dedupeKey: "confirmation:" + String(booking?.id ?? ""),
     identifierOk: !!booking?.id,
@@ -1087,4 +1137,49 @@ export async function sendBookingConfirmationGated(
     bookingId: booking?.id ?? null,
     experienciaId: booking?.experiencia_id ?? null,
   });
+
+  // SEGUNDA MENSAGEM: o que a cliente precisa FAZER. Só quando a experiência
+  // tem instrução cadastrada. Passa pelo mesmo portão (chave própria), então:
+  // não sai duas vezes, respeita kill switch/rollout/ambiente, e não sai se a
+  // reserva não estiver paga ou estiver suprimida.
+  //
+  // Vai DEPOIS da confirmação de propósito (a ordem importa pra leitura) e
+  // não deixa de sair se a confirmação já tinha ido antes ("duplicate") —
+  // são duas mensagens independentes.
+  if (instrucoes) {
+    const textoInstr = postPurchaseInstructionsWhatsAppText({
+      nome: booking?.nome,
+      experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+      instrucoes,
+    });
+    try {
+      const rInstr = await gatedSendWhatsApp(supabase, {
+        kind: "instrucoes",
+        dedupeKey: "instrucoes:" + bookingId,
+        identifierOk: !!booking?.id,
+        rawPhone,
+        suppressed: aguardando ? true : false,
+        statusAllowed,
+        message: textoInstr,
+        caption: textoInstr,
+        template: {
+          params: postPurchaseInstructionsTemplateParams({
+            nome: booking?.nome,
+            experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+            instrucoes,
+          }),
+        },
+        bookingId: booking?.id ?? null,
+        experienciaId: booking?.experiencia_id ?? null,
+      });
+      if (!rInstr.sent && rInstr.reason && rInstr.reason !== "duplicate") {
+        console.warn("[elarah/whatsapp] instruções pós-compra não enviadas —", rInstr.reason, bookingId);
+      }
+    } catch (e) {
+      // Nunca derruba a confirmação por causa da segunda mensagem.
+      console.error("[elarah/whatsapp] falha ao enviar instruções pós-compra", e);
+    }
+  }
+
+  return confirmacao;
 }
