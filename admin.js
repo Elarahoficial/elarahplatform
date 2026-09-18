@@ -8648,11 +8648,34 @@
     });
     tbody.querySelectorAll('[data-delete-exp]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('Tem certeza que deseja excluir esta experiência? Essa ação é permanente — se quiser apenas tirar do site, use "Ocultar".')) {
-          await ElarahData.deleteExperience(btn.dataset.deleteExp);
-          await renderExperiences();
-          await renderOverview();
+        if (!confirm('Tem certeza que deseja excluir esta experiência? Essa ação é permanente — se quiser apenas tirar do site, use "Ocultar".')) return;
+        // Antes esse handler ignorava o retorno de deleteExperience: quando
+        // o banco recusava (trava da recorrência, RLS), a tela só
+        // re-renderizava com a linha ainda lá e sem nenhuma explicação.
+        const originalLabel = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Excluindo…';
+        let ok = false;
+        let motivo = '';
+        try {
+          ok = await ElarahData.deleteExperience(btn.dataset.deleteExp);
+          if (!ok) {
+            motivo = (typeof ElarahData.getLastDeleteError === 'function'
+              && ElarahData.getLastDeleteError()) || 'motivo não informado pelo banco.';
+          }
+        } catch (err) {
+          console.error('[Admin] delete-exp exceção:', err);
+          motivo = (err && err.message) || String(err);
         }
+        if (!ok) {
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          alert('Não consegui excluir esta experiência.\n\n' + motivo);
+          return;
+        }
+        showAdminToast('✓ Experiência excluída.');
+        await renderExperiences();
+        await renderOverview();
       });
     });
 

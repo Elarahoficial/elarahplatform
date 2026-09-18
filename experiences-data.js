@@ -1229,12 +1229,58 @@
     }
   }
 
+  // Motivo da última falha de exclusão, em português, pra UI conseguir
+  // dizer o que houve em vez de simplesmente não fazer nada. É
+  // sobrescrito a cada chamada de deleteExperience.
+  let _lastDeleteError = null;
+
+  function getLastDeleteError() { return _lastDeleteError; }
+
+  // Traduz o erro cru do Postgres/PostgREST pro que a admin precisa
+  // fazer. O caso mais comum é a trava de integridade da recorrência:
+  // apagar a experiência cascateia pros slots (experience_slots), e a
+  // trigger enforce_recurrence_slot_delete_trg barra slots ligados a
+  // uma regra semanal — o DELETE inteiro volta atrás.
+  function _deleteErrorMessage(error) {
+    const txt = String((error && (error.message || error.details || error.hint)) || 'erro desconhecido');
+    if (/integridade recorr|allow_recurrence_slot_delete/i.test(txt)) {
+      return 'Essa experiência tem turmas geradas pela Recorrência semanal, e o banco bloqueia apagar essas turmas por esse caminho.\n\n' +
+        'Pra liberar: rode UMA vez, no SQL Editor do Supabase, o arquivo\n' +
+        'sql/elarah_experience_delete_cascade_fix.sql\n\n' +
+        'Depois disso o botão Excluir passa a funcionar normalmente.\n\n' +
+        '(Mensagem do banco: ' + txt + ')';
+    }
+    if ((error && error.code === '23503') || /violates foreign key|foreign key constraint/i.test(txt)) {
+      return 'Existe outro registro no banco ligado a essa experiência que impede a exclusão:\n\n' + txt;
+    }
+    if ((error && error.code === '42501') || /permission denied|row-level security/i.test(txt)) {
+      return 'Seu usuário não tem permissão de admin pra apagar experiências ' +
+        '(em profiles, role precisa estar como "admin").';
+    }
+    return txt;
+  }
+
   async function deleteExperience(id) {
+    _lastDeleteError = null;
     const s = sb();
-    if (!s) return false;
-    const { error } = await s.from(TABLE).delete().eq('id', id);
+    if (!s) {
+      _lastDeleteError = 'Sem conexão com o banco (o Supabase não carregou). Recarregue a página e tente de novo.';
+      return false;
+    }
+    // O .select('id') devolve as linhas realmente apagadas. Sem ele, um
+    // DELETE que não apaga nada (RLS bloqueando, id que não existe mais)
+    // é indistinguível de sucesso — e a linha "volta" na tela sem
+    // nenhuma explicação.
+    const { data, error } = await s.from(TABLE).delete().eq('id', id).select('id');
     if (error) {
       console.error('[Elarah] deleteExperience error', error);
+      _lastDeleteError = _deleteErrorMessage(error);
+      return false;
+    }
+    if (!Array.isArray(data) || data.length === 0) {
+      console.error('[Elarah] deleteExperience: 0 linhas apagadas para id=' + id);
+      _lastDeleteError = 'O banco não apagou nenhuma linha. Normalmente é (1) permissão de admin ' +
+        '(profiles.role = "admin") ou (2) a experiência já não existe mais — nesse caso é só recarregar a página.';
       return false;
     }
     invalidateCache();
@@ -1895,6 +1941,7 @@
     addExperience,
     updateExperience,
     deleteExperience,
+    getLastDeleteError,
     duplicateExperience,
     getExperienceCopyStats,
     setExperienceActive,
