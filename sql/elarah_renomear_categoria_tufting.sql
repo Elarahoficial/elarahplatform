@@ -1,8 +1,9 @@
 -- =============================================================
--- ELARAH — Renomeia a categoria "Tufting" → "Tufting e Punch"
+-- ELARAH — Unifica a categoria em "Tufting & Punch"
 -- -------------------------------------------------------------
--- A categoria antiga "Tufting" ficou duplicando com o nome que o
--- site usa hoje ("Tufting e Punch"). Em vez de apagar as
+-- A categoria antiga "Tufting" (e a variante "Tufting e Punch",
+-- escrita com "e" no lugar do "&") ficaram duplicando com o nome que
+-- o site usa de verdade: "Tufting & Punch". Em vez de apagar as
 -- experiências (que quebraria o vínculo das reservas antigas com a
 -- ficha), este script só troca o NOME da categoria.
 --
@@ -46,14 +47,14 @@ select e.categoria, count(*) as experiencias
 -- 1b. As experiências que vão ser renomeadas.
 select e.id, e.nome, e.categoria, e.is_active
   from public.experiences e
- where e.categoria ~* '(^|\|)\s*tufting\s*($|\|)'
+ where e.categoria ~* '(^|\|)\s*tufting( e punch)?\s*($|\|)'
  order by e.nome;
 
 -- 1c. Cupons presos à categoria antiga (o cupom compara o nome da
 --     categoria por texto — sem esta troca, ele pararia de valer).
 select c.id, c.code, c.categoria
   from public.coupons c
- where lower(trim(c.categoria)) = 'tufting';
+ where c.categoria ~* '^\s*tufting( e punch)?\s*$';
 
 
 -- =============================================================
@@ -67,8 +68,9 @@ begin;
 
 do $$
 declare
-  v_antigo constant text := 'Tufting';
-  v_novo   constant text := 'Tufting e Punch';
+  -- Casa tanto "Tufting" puro quanto "Tufting e Punch".
+  v_antigo constant text := 'Tufting( e Punch)?';
+  v_novo   constant text := 'Tufting & Punch';
   v_exps   integer;
   v_cupons integer := 0;
   v_camp   integer := 0;
@@ -81,7 +83,7 @@ begin
        set categoria = regexp_replace(
              e.categoria,
              '(^|\|)\s*' || v_antigo || '\s*($|\|)',
-             '\1' || v_novo || '\2',
+             '\1' || v_novo || '\3',
              'gi')
      where e.categoria ~* ('(^|\|)\s*' || v_antigo || '\s*($|\|)')
     returning 1
@@ -93,7 +95,7 @@ begin
     with alvo as (
       update public.coupons c
          set categoria = v_novo
-       where lower(trim(c.categoria)) = lower(v_antigo)
+       where c.categoria ~* ('^\s*' || v_antigo || '\s*$')
       returning 1
     )
     select count(*) into v_cupons from alvo;
@@ -107,7 +109,7 @@ begin
     with alvo as (
       update public.campaign_upcoming_experiences u
          set categoria = v_novo
-       where lower(trim(u.categoria)) = lower(v_antigo)
+       where u.categoria ~* ('^\s*' || v_antigo || '\s*$')
       returning 1
     )
     select count(*) into v_camp from alvo;
@@ -125,7 +127,7 @@ commit;
 -- =============================================================
 -- PARTE 3 — CONFERÊNCIA FINAL
 -- =============================================================
--- Esperado: só "Tufting e Punch" (nenhuma linha com "Tufting" puro).
+-- Esperado: uma linha só, "Tufting & Punch".
 select e.categoria, count(*) as experiencias
   from public.experiences e
  where e.categoria ~* 'tufting|punch'

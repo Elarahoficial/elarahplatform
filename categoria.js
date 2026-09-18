@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'perfumaria':  'assets/perfumaria.jpg',
       'ceramica':    'assets/ceramica-fria.jpg',
       'tufting':     'assets/tufting1.jpg',
-      'tufting e punch': 'assets/tufting1.jpg',
+      'tufting & punch': 'assets/tufting1.jpg',
       'pintura':     'assets/pinturataca.jpg',
       'vela':        'assets/velaaromatica.jpg',
       'gastronomia': 'assets/cookies.jpg',

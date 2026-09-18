@@ -6876,7 +6876,7 @@
     if (!datalist) return;
     const seed = [
       'Gastronomia', 'Cerâmica', 'Pintura', 'Vela', 'Sabonete',
-      'Tufting e Punch', 'Floral', 'Macramê', 'Bartenderia',
+      'Tufting & Punch', 'Floral', 'Macramê', 'Bartenderia',
     ];
     let dbCategorias = [];
     try {
