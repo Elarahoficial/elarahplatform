@@ -62,7 +62,11 @@
     // Horário de funcionamento (agendamento livre / voucher). Quando
     // preenchido, a página da experiência mostra esse horário e deixa o
     // cliente escolher o dia e a hora que quiser. sql/elarah_experiences_horario_funcionamento.sql.
-    'horario_funcionamento'
+    'horario_funcionamento',
+    // Arquivada pelo admin: some da lista do painel e do site, sem
+    // apagar a ficha nem quebrar os vínculos de contabilidade.
+    // sql/elarah_experiences_arquivada.sql.
+    'arquivada'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -70,12 +74,12 @@
   const FALLBACK_SEEDS = [
     { id:"seed_022", nome:"Vela (Cerveja & Caipirinha)", categoria:"Vela", data:"12/04", duracao:"1h30", bairro:"Brooklin", endereco:"Rua Nova York, 345 – São Paulo", inclui:"Coffee break + petisco + cerveja", preco:"R$180", cor:"#f6e6a8,#e0c05e", imagem:"assets/experiences/vela-cerveja.jpg", descricao:"", horario:"10h30 – 12h00", horarios:["10h30 – 12h00"] },
     { id:"seed_023", nome:"Pintura em Cerâmica", categoria:"Pintura", data:"12/04", duracao:"3h", bairro:"Pinheiros", endereco:"Rua Capote Valente, 697 – São Paulo", inclui:"Materiais inclusos", preco:"R$360", cor:"#f9d1d1,#e07a7a", imagem:"assets/experiences/pintura-ceramica.jpg", descricao:"", horario:"15h00 – 18h00", horarios:["15h00 – 18h00"] },
-    { id:"seed_024", nome:"Aula de Tufting (Seg)", categoria:"Tufting", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/experiences/tufting.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios. Desde escolher cores e montar o design até finalizar os acabamentos.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade, saindo com uma peça única e cheia de personalidade.", horario:"19h00 – 21h00", horarios:["19h00 – 21h00"] },
-    { id:"seed_025", nome:"Aula de Tufting (Seg)", categoria:"Tufting", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting1.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior e mais elaborada\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar a sua casa ou presentear alguém especial.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
-    { id:"seed_026", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting2.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade.", horario:"17h15 – 19h15", horarios:["17h15 – 19h15"] },
-    { id:"seed_027", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting3.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nPerfeito pra quem quer viver uma experiência offline de verdade e sair com algo feito pelas próprias mãos.", horario:"19h30 – 21h30", horarios:["19h30 – 21h30"] },
-    { id:"seed_028", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting4.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar sua casa.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
-    { id:"seed_029", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting5.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional", horario:"14h00 – 17h00", horarios:["14h00 – 17h00"] },
+    { id:"seed_024", nome:"Aula de Tufting (Seg)", categoria:"Tufting & Punch", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/experiences/tufting.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios. Desde escolher cores e montar o design até finalizar os acabamentos.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade, saindo com uma peça única e cheia de personalidade.", horario:"19h00 – 21h00", horarios:["19h00 – 21h00"] },
+    { id:"seed_025", nome:"Aula de Tufting (Seg)", categoria:"Tufting & Punch", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting1.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior e mais elaborada\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar a sua casa ou presentear alguém especial.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
+    { id:"seed_026", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting2.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade.", horario:"17h15 – 19h15", horarios:["17h15 – 19h15"] },
+    { id:"seed_027", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting3.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nPerfeito pra quem quer viver uma experiência offline de verdade e sair com algo feito pelas próprias mãos.", horario:"19h30 – 21h30", horarios:["19h30 – 21h30"] },
+    { id:"seed_028", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting4.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar sua casa.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
+    { id:"seed_029", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting5.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional", horario:"14h00 – 17h00", horarios:["14h00 – 17h00"] },
     { id:"exp_1775835623993_b1di8r", nome:"Oficina de Bolsa de Crochê", categoria:"Macramê", data:"25/04", duracao:"3h30", bairro:"Brooklin", endereco:"Rua Nova York, 345", inclui:"Todo material incluso", preco:"R$144", cor:"#f6d5a8,#f0a05e", imagem:"assets/croche.jpg", descricao:"Aprenda a criar sua própria bolsa de crochê do zero em uma experiência prática, criativa e super relaxante!\n\nNesta aula, você vai descobrir os fundamentos do crochê, desde os pontos básicos até a construção completa da peça, com acompanhamento passo a passo, mesmo que nunca tenha feito nada antes. Ao longo do workshop, você escolhe cores, aprende técnicas de acabamento e vê sua bolsa ganhar forma nas suas mãos.\n\nMais do que uma aula, é um momento para desacelerar, se desconectar do digital e criar algo único, feito por você.\n\nVocê sai com:\n– Sua própria bolsa de crochê (em produção ou finalizada)\n– Conhecimento para continuar criando depois\n– Um momento leve, criativo e diferente do óbvio\n\nPerfeito para quem quer aprender algo novo, explorar a criatividade ou simplesmente viver uma experiência offline de verdade.", horario:"10h30 - 14h00", horarios:["10h30 - 14h00"] },
     { id:"exp_1775836324375_k01u01", nome:"Cerâmica em Torno", categoria:"Cerâmica", data:"15/04", duracao:"1h30", bairro:"Pinheiros", endereco:"Rua Capote Valente, 697", inclui:"Todo material incluso", preco:"R$248", cor:"#f6d5a8,#f0a05e", imagem:"assets/torno.jpg", descricao:"Descubra a sensação única de criar com as próprias mãos no seu primeiro contato com o torno de cerâmica!\n\nNesta experiência, você vai aprender os fundamentos do torno: desde a centralização da argila até a modelagem das primeiras peças, com orientação passo a passo, mesmo sem nenhuma experiência prévia. É aquele momento em que tudo desacelera e você entra no ritmo do giro, da matéria e da criação.\n\nAqui, o processo é tão especial quanto o resultado: sentir a argila tomando forma entre as mãos, testar, errar, tentar de novo… e se surpreender com o que é capaz de criar.\n\nVocê vai:\n– Aprender a usar o torno desde o zero\n– Criar suas primeiras peças em cerâmica\n– Entender o básico de modelagem e acabamento\n\nUma experiência perfeita para sair do automático, se desconectar do barulho lá fora e viver algo completamente novo: com as mãos na argila e a mente leve.", horario:"19h30 - 21h00", horarios:["19h30 - 21h00"] },
     { id:"exp_1775836484792_e0yojh", nome:"Cerâmica em Torno", categoria:"Cerâmica", data:"18/04", duracao:"1h30", bairro:"Pinheiros", endereco:"Rua Capote Valente, 697", inclui:"Todo material incluso", preco:"R$248", cor:"#f6d5a8,#f0a05e", imagem:"assets/torno2.jpg", descricao:"Descubra a sensação única de criar com as próprias mãos no seu primeiro contato com o torno de cerâmica!\n\nNesta experiência, você vai aprender os fundamentos do torno: desde a centralização da argila até a modelagem das primeiras peças, com orientação passo a passo, mesmo sem nenhuma experiência prévia. É aquele momento em que tudo desacelera e você entra no ritmo do giro, da matéria e da criação.\n\nAqui, o processo é tão especial quanto o resultado: sentir a argila tomando forma entre as mãos, testar, errar, tentar de novo… e se surpreender com o que é capaz de criar.\n\nVocê vai:\n– Aprender a usar o torno desde o zero\n– Criar suas primeiras peças em cerâmica\n– Entender o básico de modelagem e acabamento\n\nUma experiência perfeita para sair do automático, se desconectar do barulho lá fora e viver algo completamente novo: com as mãos na argila e a mente leve.", horario:"10h00 - 11h30", horarios:["10h00 - 11h30"] },
@@ -152,6 +156,10 @@
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
       isActive: row.is_active === false ? false : true,
+      // Arquivada: a ficha continua no banco (e ligada a despesas,
+      // vendas e reservas), mas sai da lista do admin e do site.
+      // Default false pra bancos que ainda não rodaram a migração.
+      arquivada: row.arquivada === true,
       // Ordem manual de exibição (admin arrasta pra reordenar). null =
       // sem ordem → sort cronológico padrão. sql/elarah_experiences_ordem.sql.
       ordem: (row.ordem == null || row.ordem === '') ? null : Number(row.ordem),
@@ -1082,6 +1090,7 @@
 
   function isPubliclyVisible(exp, nowMs) {
     if (!exp || exp.isActive === false) return false;
+    if (exp.arquivada === true) return false;
     if (nowMs == null) nowMs = Date.now();
     const cutoffH = effectiveCutoffHours(exp);
     let eventTs = null;
@@ -1246,12 +1255,58 @@
     }
   }
 
+  // Motivo da última falha de exclusão, em português, pra UI conseguir
+  // dizer o que houve em vez de simplesmente não fazer nada. É
+  // sobrescrito a cada chamada de deleteExperience.
+  let _lastDeleteError = null;
+
+  function getLastDeleteError() { return _lastDeleteError; }
+
+  // Traduz o erro cru do Postgres/PostgREST pro que a admin precisa
+  // fazer. O caso mais comum é a trava de integridade da recorrência:
+  // apagar a experiência cascateia pros slots (experience_slots), e a
+  // trigger enforce_recurrence_slot_delete_trg barra slots ligados a
+  // uma regra semanal — o DELETE inteiro volta atrás.
+  function _deleteErrorMessage(error) {
+    const txt = String((error && (error.message || error.details || error.hint)) || 'erro desconhecido');
+    if (/integridade recorr|allow_recurrence_slot_delete/i.test(txt)) {
+      return 'Essa experiência tem turmas geradas pela Recorrência semanal, e o banco bloqueia apagar essas turmas por esse caminho.\n\n' +
+        'Pra liberar: rode UMA vez, no SQL Editor do Supabase, o arquivo\n' +
+        'sql/elarah_experience_delete_cascade_fix.sql\n\n' +
+        'Depois disso o botão Excluir passa a funcionar normalmente.\n\n' +
+        '(Mensagem do banco: ' + txt + ')';
+    }
+    if ((error && error.code === '23503') || /violates foreign key|foreign key constraint/i.test(txt)) {
+      return 'Existe outro registro no banco ligado a essa experiência que impede a exclusão:\n\n' + txt;
+    }
+    if ((error && error.code === '42501') || /permission denied|row-level security/i.test(txt)) {
+      return 'Seu usuário não tem permissão de admin pra apagar experiências ' +
+        '(em profiles, role precisa estar como "admin").';
+    }
+    return txt;
+  }
+
   async function deleteExperience(id) {
+    _lastDeleteError = null;
     const s = sb();
-    if (!s) return false;
-    const { error } = await s.from(TABLE).delete().eq('id', id);
+    if (!s) {
+      _lastDeleteError = 'Sem conexão com o banco (o Supabase não carregou). Recarregue a página e tente de novo.';
+      return false;
+    }
+    // O .select('id') devolve as linhas realmente apagadas. Sem ele, um
+    // DELETE que não apaga nada (RLS bloqueando, id que não existe mais)
+    // é indistinguível de sucesso — e a linha "volta" na tela sem
+    // nenhuma explicação.
+    const { data, error } = await s.from(TABLE).delete().eq('id', id).select('id');
     if (error) {
       console.error('[Elarah] deleteExperience error', error);
+      _lastDeleteError = _deleteErrorMessage(error);
+      return false;
+    }
+    if (!Array.isArray(data) || data.length === 0) {
+      console.error('[Elarah] deleteExperience: 0 linhas apagadas para id=' + id);
+      _lastDeleteError = 'O banco não apagou nenhuma linha. Normalmente é (1) permissão de admin ' +
+        '(profiles.role = "admin") ou (2) a experiência já não existe mais — nesse caso é só recarregar a página.';
       return false;
     }
     invalidateCache();
@@ -1439,6 +1494,34 @@
 
   // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
   // Só mexe na coluna is_active (não toca nenhum outro campo).
+  // Arquiva/desarquiva. Diferente de excluir: não apaga a ficha, então
+  // despesas, vendas manuais e reservas continuam ligadas a ela e a
+  // contabilidade não muda em nada. Só some da lista do admin e do site.
+  async function setExperienceArquivada(id, arquivada) {
+    const s = sb();
+    if (!s) return { _error: { message: 'Sem conexão com o banco. Recarregue a página.' } };
+    if (!id) return { _error: { message: 'id vazio.' } };
+    const { data: updated, error } = await s
+      .from(TABLE)
+      .update({ arquivada: !!arquivada })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    if (error) {
+      if (extractMissingColumn(error) === 'arquivada') {
+        markColumnMissing('arquivada');
+        return { _error: { message: 'A coluna "arquivada" ainda não existe no banco.\n\nRode sql/elarah_experiences_arquivada.sql no SQL Editor do Supabase e tente de novo.', code: 'NO_COLUMN' } };
+      }
+      console.error('[Elarah] setExperienceArquivada erro:', error);
+      return { _error: error };
+    }
+    if (!updated) {
+      return { _error: { message: 'O banco não alterou nenhuma linha — verifique se o seu usuário está como admin em profiles.', code: 'RLS_BLOCK' } };
+    }
+    invalidateCache();
+    return dbRowToExperience(updated);
+  }
+
   async function setExperienceActive(id, active) {
     const s = sb();
     if (!s) {
@@ -1912,9 +1995,11 @@
     addExperience,
     updateExperience,
     deleteExperience,
+    getLastDeleteError,
     duplicateExperience,
     getExperienceCopyStats,
     setExperienceActive,
+    setExperienceArquivada,
     reorderExperiences,
     setByElarahOrdem,
     ordemKey,

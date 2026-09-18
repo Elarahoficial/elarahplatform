@@ -379,6 +379,13 @@
 .admin__action-btn--delete:hover { background: #dc3545; color: #fff; }
 .admin__action-btn--duplicate { background: #FFF3CD; color: #856404; }
 .admin__action-btn--duplicate:hover { background: #f0ad4e; color: #fff; }
+/* Arquivar: tira da lista sem apagar. Tom neutro pra nao competir
+   com Excluir (vermelho) nem com Duplicar (ambar). */
+.admin__action-btn--archive { background: #ECEFF1; color: #4a5560; }
+.admin__action-btn--archive:hover { background: #4a5560; color: #fff; }
+
+/* Pilula "Arquivadas (N)" — encostada na direita da barra de filtro. */
+.admin__filter-pill--arquivadas { border-style: dashed; }
 
 /* Horarios list (multi-horario field in experience form) */
 .admin__horarios-list {
