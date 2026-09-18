@@ -63,11 +63,27 @@ insert into public.desconto_geral (id, ativo, percentual, inicio, fim)
 values (1, true, 20, now(), timestamptz '2026-09-20 23:59:59-03')
 on conflict (id) do nothing;
 
--- Trigger updated_at — helper já existente em elarah_extensions.sql
-drop trigger if exists trg_desconto_geral_updated_at on public.desconto_geral;
-create trigger trg_desconto_geral_updated_at
-  before update on public.desconto_geral
-  for each row execute function public.set_updated_at();
+-- Trigger updated_at — usa o helper de elarah_extensions.sql. Se aquela
+-- migration ainda não rodou neste banco, o trigger é simplesmente
+-- pulado: updated_at deixa de se atualizar sozinho (chato, não grave) e
+-- o resto do arquivo continua rodando. Sem esta guarda, colar tudo no
+-- SQL Editor quebraria aqui e as políticas de RLS abaixo não seriam
+-- criadas — aí sim a aba não funcionaria.
+do $$
+begin
+  if exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'set_updated_at'
+  ) then
+    drop trigger if exists trg_desconto_geral_updated_at on public.desconto_geral;
+    create trigger trg_desconto_geral_updated_at
+      before update on public.desconto_geral
+      for each row execute function public.set_updated_at();
+  else
+    raise notice 'public.set_updated_at() não existe — trigger de updated_at pulado (rode sql/elarah_extensions.sql depois).';
+  end if;
+end $$;
 
 -- =========================================================
 -- RLS
