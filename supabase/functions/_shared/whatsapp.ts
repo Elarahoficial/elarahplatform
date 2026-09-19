@@ -1102,38 +1102,50 @@ export function partnerInstructionsTemplateParams(opts: {
   });
 }
 
-// elarah_aviso_parceira — {{1}} vagas · {{2}} experiência · {{3}} quando ·
-// {{4}} em nome de · {{5}} whatsapp da cliente · {{6}} e-mail · {{7}} local
+// elarah_aviso_parceira — CINCO variáveis, cada uma ao lado de um rótulo fixo:
 //
-// A formatação (emojis, quebras de linha) vive no CORPO do template, que é
+//     Experiência: {{1}}
+//     Quando: {{2}}
+//     Vagas: {{3}}
+//     Em nome de: {{4}}
+//     Contato da cliente: {{5}}
+//
+// Eram sete. Caíram duas, por dois motivos diferentes:
+//
+//   * O LOCAL saiu porque é a casa da própria parceira — ela não precisa que
+//     a gente diga o endereço dela.
+//   * TELEFONE e E-MAIL viraram um campo só ("Contato"), porque o
+//     classificador da Meta recusa modelo que é quase só variável. Com rótulo
+//     fixo do lado de cada valor, o corpo tem texto de verdade e passa como
+//     Utilidade — foi o que destravou o elarah_instrucoes_pos_compra.
+//
+// A formatação (quebras de linha, rótulos) vive no CORPO do template, que é
 // fixo e aprovado — só os VALORES são variáveis. Por isso a mensagem fica
-// idêntica à do canal legado, sem a limitação de "parâmetro numa linha só".
+// bem formatada, sem a limitação de "parâmetro numa linha só".
 export function supplierBookingTemplateParams(opts: {
   quantidade?: unknown; experienciaNome?: unknown; data?: unknown; horario?: unknown;
   nomes?: string[]; telefoneCliente?: unknown; emailCliente?: unknown;
-  endereco?: unknown; bairro?: unknown;
 }): string[] {
   const qtd = Math.max(1, Number(opts.quantidade) || 1);
   const nomes = (opts.nomes ?? []).map((n) => String(n ?? "").trim()).filter(Boolean);
   const semNome = Math.max(0, qtd - nomes.length);
   const lista = nomes.length ? nomes.join(", ") : "(participante)";
+  const contato = [
+    formatPhoneBRHuman(opts.telefoneCliente),
+    String(opts.emailCliente ?? "").trim(),
+  ].filter(Boolean).join(" · ");
   return [
-    metaParam(qtd === 1 ? "1 vaga confirmada" : qtd + " vagas confirmadas"),
     metaParam(opts.experienciaNome, "(experiência)"),
     metaParam(
       [String(opts.data ?? "").trim(), String(opts.horario ?? "").trim()].filter(Boolean).join(" · "),
       "(data)",
     ),
+    metaParam(qtd === 1 ? "1" : String(qtd)),
     // Quem falta aparece AQUI, junto dos nomes: é o dado que a parceira usa
     // pra saber quanta gente preparar.
     metaParam(semNome > 0 ? lista + " + " + semNome + (semNome === 1 ? " pessoa" : " pessoas") +
       " sem nome informado" : lista),
-    metaParam(formatPhoneBRHuman(opts.telefoneCliente), "não informado"),
-    metaParam(opts.emailCliente, "não informado"),
-    metaParam(
-      [String(opts.endereco ?? "").trim(), String(opts.bairro ?? "").trim()].filter(Boolean).join(" — "),
-      "combinado com a Elarah",
-    ),
+    metaParam(contato, "não informado"),
   ];
 }
 
@@ -1418,8 +1430,6 @@ export async function sendSupplierBookingNoticeGated(
         nomes,
         telefoneCliente: (meta.telefone_digits as string | undefined) ?? fresh.telefone,
         emailCliente: fresh.email,
-        endereco,
-        bairro,
       }),
     },
     bookingId,
