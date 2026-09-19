@@ -79,6 +79,27 @@ const PROVIDER: "meta" | "zapi" = (() => {
 // provedor padrão: é o que permite UM fluxo específico — o aviso pra lista
 // de interesse, que é disparo frio e não pode arriscar o número — sair pela
 // oficial enquanto o resto continua no canal de sempre.
+// FLUXOS DESLIGADOS — lista de kinds que NÃO devem sair desta plataforma.
+//
+// Existem Edge Functions publicadas fora do repositório (whatsapp-lembrete,
+// whatsapp-feedback, whatsapp-pendente, agendadas no pg_cron) que já mandam
+// alguns destes avisos pela Meta. Sem esta trava, ligar a plataforma na
+// oficial faria a cliente receber tudo em DOBRO.
+//
+// Ex.: WHATSAPP_FLUXOS_DESLIGADOS="reminder48,feedback,pending"
+// Kinds: confirmation, reminder48, feedback, pending, instrucoes,
+//        fornecedor, byelarah_aviso.
+const FLUXOS_DESLIGADOS = new Set(
+  (Deno.env.get("WHATSAPP_FLUXOS_DESLIGADOS") ?? "")
+    .split(/[,\s]+/)
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+export function whatsappFluxoDesligado(kind: string): boolean {
+  return FLUXOS_DESLIGADOS.has(String(kind ?? "").trim().toLowerCase());
+}
+
 // Aviso automático ao parceiro a cada compra paga. Ligado por padrão; pra
 // voltar ao envio manual pelo painel, cadastre WHATSAPP_AVISO_FORNECEDOR=false.
 const AVISO_FORNECEDOR_ATIVO =
@@ -1086,6 +1107,12 @@ export async function gatedSendWhatsApp(
     createdBy?: string | null;
   },
 ): Promise<GatedResult> {
+  // Fluxo desligado de propósito (outro sistema já manda este aviso): nem
+  // chega a reservar chave nem a montar mensagem.
+  if (whatsappFluxoDesligado(params.kind)) {
+    return { ok: false, sent: false, reason: "fluxo_desligado" } as GatedResult;
+  }
+
   const deps = {
     config: {
       sendingDisabled: SENDING_DISABLED,

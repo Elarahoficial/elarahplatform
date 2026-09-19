@@ -1287,6 +1287,29 @@ async function run() {
       JSON.stringify(zd.calls[0].params));
   }
 
+  {
+    // FLUXO DESLIGADO: outro sistema já manda este aviso, então a plataforma
+    // não pode mandar de novo. A trava age ANTES de reservar chave.
+    const WAf = await loadWA({ ...META_ENV, WHATSAPP_FLUXOS_DESLIGADOS: "confirmation,feedback" });
+    const zf = installMetaMock();
+    const sb = makeSupabase([bookingSeed({ id: "bkfd-A" })]);
+    const r = await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkfd-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("fluxo desligado → não envia", r.sent === false && r.reason === "fluxo_desligado", JSON.stringify(r));
+    check("fluxo desligado → nem chama a Meta", zf.calls.length === 0);
+    check("fluxo desligado → nem ocupa chave na send_log", sb._sendLog.size === 0);
+
+    // E um fluxo que NÃO está na lista continua saindo normalmente.
+    const WAon = await loadWA({ ...META_ENV, WHATSAPP_FLUXOS_DESLIGADOS: "reminder48" });
+    const zon = installMetaMock();
+    const sb2 = makeSupabase([bookingSeed({ id: "bkfd-B" })]);
+    const r2 = await WAon.sendBookingConfirmationGated(sb2, sb2._bookings.get("bkfd-B"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("fluxo fora da lista → segue enviando", r2.sent === true && zon.calls.length === 1);
+  }
+
   // ---------- Relatório ----------
   console.log(out.join("\n"));
   console.log(`\n==== E2E: ${PASS} verificações passaram, ${FAIL} falharam ====`);
