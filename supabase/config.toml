@@ -51,3 +51,9 @@ verify_jwt = false
 # QUANTO pelo painel logo depois de publicar a data.
 [functions.byelarah-aviso-data]
 verify_jwt = false
+
+# admin-whatsapp-templates — diagnóstico (só leitura) dos templates aprovados
+# na Meta x o que o código manda em cada fluxo. Autentica por dentro (JWT de
+# admin ou CRON_SECRET/service role).
+[functions.admin-whatsapp-templates]
+verify_jwt = false

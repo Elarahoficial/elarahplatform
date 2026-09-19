@@ -51,17 +51,21 @@ function head(t) { out.push("\n" + t); }
 // Banco FAKE (Supabase). whatsapp_send_log com UNIQUE(dedupe_key) REAL:
 // insert de chave repetida devolve {error:{code:'23505'}} — igual ao Postgres.
 // ============================================================
-function makeSupabase(seedBookings = [], seedSubmissions = []) {
+function makeSupabase(seedBookings = [], seedSubmissions = [], seedFornecedores = []) {
   const bookings = new Map();
   for (const b of seedBookings) bookings.set(b.id, { ...b });
   const sendLog = new Map(); // dedupe_key -> row
   // Lista de interesse By Elarah (fluxo "a data saiu").
   const submissions = new Map();
   for (const sub of seedSubmissions) submissions.set(sub.id, { ...sub });
+  // WhatsApp das parceiras (fornecedores_metadata), por fornecedor_key.
+  const fornecedores = new Map();
+  for (const f of seedFornecedores) fornecedores.set(f.fornecedor_key, { ...f });
 
   function storeFor(name) {
     if (name === "bookings") return bookings;
     if (name === "byelarah_submissions") return submissions;
+    if (name === "fornecedores_metadata") return fornecedores;
     return sendLog;
   }
 
@@ -128,6 +132,7 @@ function makeSupabase(seedBookings = [], seedSubmissions = []) {
     _bookings: bookings,
     _sendLog: sendLog,
     _submissions: submissions,
+    _fornecedores: fornecedores,
   };
 }
 
@@ -229,10 +234,14 @@ async function loadWA(env) {
   return await import(WA_PATH + "?e2e=" + _v);
 }
 
+// Env do canal LEGADO. Agora o padrão do sistema é a oficial da Meta, então
+// estes testes pedem o legado EXPLICITAMENTE — é o que garante que a saída de
+// emergência continua funcionando.
 const PROD_ENV = {
   WHATSAPP_SENDING_ENABLED: "true",
   WHATSAPP_ENV: "production",
   WHATSAPP_ROLLOUT_PERCENT: "100", // liberado DE PROPÓSITO (fail-closed: ausente = 0)
+  WHATSAPP_PROVIDER: "zapi",
   ZAPI_INSTANCE_ID: "INST_FAKE",
   ZAPI_TOKEN: "TOK_FAKE",
   ZAPI_CLIENT_TOKEN: "CLIENT_FAKE",
@@ -846,8 +855,8 @@ async function run() {
     const WAm = await loadWA(META_ENV);
     const zm = installMetaMock();
     check("credenciais da Meta cadastradas → oficial pronta", WAm.whatsappOfficialReady() === true);
-    check("mas o provedor PADRÃO segue o legado (não migra nada sozinho)",
-      WAm.whatsappProviderName() === "zapi");
+    check("e a oficial é o provedor PADRÃO (o legado só com pedido explícito)",
+      WAm.whatsappProviderName() === "meta");
 
     const onda = {
       id: "onda-meta", item_slug: "perfumaria-criativa",
@@ -954,9 +963,11 @@ async function run() {
     // O ARRANJO REAL PEDIDO: confirmação/lembrete/feedback continuam no canal
     // de sempre (já funcionam, templates não aprovados na oficial), e SÓ o
     // aviso pra lista de interesse — o disparo frio — sai pela oficial.
-    const MISTO = { ...PROD_ENV, ...META_ENV };   // credenciais dos dois
+    // Legado pedido explicitamente + credenciais da oficial presentes.
+    const MISTO = { ...PROD_ENV, ...META_ENV };   // PROD_ENV traz WHATSAPP_PROVIDER=zapi
     const WAx = await loadWA(MISTO);
-    check("misto: provedor padrão continua legado", WAx.whatsappProviderName() === "zapi");
+    check("misto: com o legado pedido explicitamente, é ele quem leva o transacional",
+      WAx.whatsappProviderName() === "zapi");
     check("misto: oficial disponível pro fluxo que pedir", WAx.whatsappOfficialReady() === true);
 
     // 1) Confirmação de reserva → Z-API (texto/imagem), como hoje.
@@ -1125,6 +1136,221 @@ async function run() {
     ]);
     await runAvisoDeData(WAj, sb2, { ...base, id: "o-nova-temporada", data_texto: "10 de julho" }, { agora });
     check("passados 40 dias, nova data do mesmo evento avisa de novo", zj2.calls.length === 1);
+  }
+
+  // ---------- FLUXO: INSTRUÇÕES PÓS-COMPRA ----------
+  head("FLUXO — experiência que exige cadastro/sala: instrução sai sozinha após a compra");
+  {
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const INSTR = "Pra garantir seu lugar, o parceiro precisa te registrar.\n" +
+      "Preencha: https://exemplo.com/cadastro";
+    const sb = makeSupabase([bookingSeed({
+      id: "bki-A",
+      experiencia_nome: "Aula de Coquetelaria",
+      experiences: { imagem: IMG_A, instrucoes_pos_compra: INSTR },
+    })]);
+    const r = await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("a confirmação sai normalmente", r.sent === true);
+    check("e sai TAMBÉM a mensagem de instruções (2 no total)", zi.to(CLIENT_A).length === 2,
+      "saíram " + zi.to(CLIENT_A).length);
+    const instr = zi.to(CLIENT_A)[1].text;
+    check("a instrução traz o texto cadastrado na experiência", instr.includes("https://exemplo.com/cadastro"));
+    check("e o nome da experiência", instr.includes("Aula de Coquetelaria"));
+    check("é pessoal", instr.startsWith("Oi, Maria!"), instr.slice(0, 20));
+    check("send_log tem chave própria pras instruções", sb._sendLog.has("instrucoes:bki-A"));
+    check("e continua com a chave da confirmação", sb._sendLog.has("confirmation:bki-A"));
+
+    // Webhook repetido (Stripe manda o mesmo evento 2x): nada duplica.
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-A"), { telefone_digits: CLIENT_A });
+    check("webhook repetido → continua com 2 mensagens", zi.to(CLIENT_A).length === 2);
+  }
+  {
+    // Experiência SEM instrução: nada muda (só a confirmação).
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase([bookingSeed({ id: "bki-B" })]);
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-B"), { telefone_digits: CLIENT_A });
+    check("sem instrução cadastrada → só a confirmação", zi.to(CLIENT_A).length === 1);
+    check("e nada de chave de instruções na send_log", !sb._sendLog.has("instrucoes:bki-B"));
+  }
+  {
+    // Reserva "aguardando experiência" (suprimida): NENHUMA das duas sai.
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase([bookingSeed({
+      id: "bki-C",
+      aguardando_experiencia: true,
+      experiences: { imagem: IMG_A, instrucoes_pos_compra: "Preencha o cadastro" },
+    })]);
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-C"), { telefone_digits: CLIENT_A });
+    check("reserva suprimida → nem confirmação nem instruções", zi.calls.length === 0);
+  }
+
+  // ---------- FLUXO: AVISO AUTOMÁTICO PRA PARCEIRA ----------
+  head("FLUXO — a parceira é avisada sozinha a cada compra paga");
+  {
+    const WAf = await loadWA(PROD_ENV);
+    const zf = installZapiMock();
+    const WA_PARCEIRA = "5511977778888";
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bkf-A",
+        nome: "Maria Silva",
+        email: "maria@exemplo.com",
+        telefone: CLIENT_A,
+        quantidade: 2,                       // comprou 2 vagas...
+        metadata: {},                        // ...e NÃO informou o 2º nome
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: { imagem: IMG_A, endereco: "Av. Faria Lima, 1572", bairro: "Pinheiros" },
+      })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: WA_PARCEIRA }],
+    );
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-A"), { telefone_digits: CLIENT_A });
+
+    check("a parceira recebeu o aviso", zf.to(WA_PARCEIRA).length === 1,
+      "recebeu " + zf.to(WA_PARCEIRA).length);
+    const msg = zf.to(WA_PARCEIRA)[0].text;
+    check("diz a QUANTIDADE comprada, não a contagem de nomes",
+      msg.includes("*2 vagas confirmadas*"), msg.slice(0, 90));
+    check("avisa que falta o nome de 1 pessoa", msg.includes("Mais 1 pessoa"));
+    check("traz o telefone da cliente formatado", msg.includes("(11) 99999-0000"), msg);
+    check("traz o e-mail da cliente", msg.includes("maria@exemplo.com"));
+    check("traz o local da experiência", msg.includes("Faria Lima") && msg.includes("Pinheiros"));
+    check("e a cliente recebeu a confirmação dela", zf.to(CLIENT_A).length === 1);
+    check("send_log registrou o aviso da parceira", sb._sendLog.has("fornecedor:bkf-A"));
+    check("a reserva foi carimbada como avisada",
+      !!sb._bookings.get("bkf-A").fornecedor_avisado_at);
+
+    // Webhook repetido: a parceira NÃO recebe duas vezes.
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-A"), { telefone_digits: CLIENT_A });
+    check("webhook repetido → a parceira continua com 1 mensagem", zf.to(WA_PARCEIRA).length === 1);
+  }
+  {
+    // Parceira SEM WhatsApp cadastrado → nada sai (o botão manual segue lá).
+    const WAf = await loadWA(PROD_ENV);
+    const zf = installZapiMock();
+    const sb = makeSupabase([bookingSeed({ id: "bkf-B", fornecedor_nome: "Sem Cadastro" })], [], []);
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-B"), { telefone_digits: CLIENT_A });
+    check("parceira sem WhatsApp cadastrado → só a cliente recebe", zf.calls.length === 1);
+    check("e nada de chave de fornecedor na send_log", !sb._sendLog.has("fornecedor:bkf-B"));
+  }
+  {
+    // Reserva "aguardando experiência": ninguém é avisado ainda.
+    const WAf = await loadWA(PROD_ENV);
+    const zf = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bkf-C", aguardando_experiencia: true, fornecedor_nome: "Lado B" })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: "5511977778888" }],
+    );
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-C"), { telefone_digits: CLIENT_A });
+    check("reserva sem data definida → parceira não é avisada ainda", zf.calls.length === 0);
+  }
+  {
+    // Desligável: WHATSAPP_AVISO_FORNECEDOR=false volta pro envio manual.
+    const WAf = await loadWA({ ...PROD_ENV, WHATSAPP_AVISO_FORNECEDOR: "false" });
+    const zf = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bkf-D", fornecedor_nome: "Lado B" })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: "5511977778888" }],
+    );
+    await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkf-D"), { telefone_digits: CLIENT_A });
+    check("com o aviso automático desligado → só a cliente recebe", zf.calls.length === 1);
+  }
+
+  {
+    // O PADRÃO É A OFICIAL: sem WHATSAPP_PROVIDER cadastrado, tudo sai pela
+    // Meta. O legado só entra com pedido explícito.
+    const WAd = await loadWA(META_ENV);
+    check("sem WHATSAPP_PROVIDER → provedor é a oficial", WAd.whatsappProviderName() === "meta");
+    const WAz = await loadWA({ ...META_ENV, WHATSAPP_PROVIDER: "zapi" });
+    check("WHATSAPP_PROVIDER=zapi → volta pro legado (saída de emergência)",
+      WAz.whatsappProviderName() === "zapi");
+
+    // Confirmação de reserva na oficial vai por TEMPLATE, não texto solto.
+    const zd = installMetaMock();
+    const sb = makeSupabase([bookingSeed({ id: "bkd-A" })]);
+    const r = await WAd.sendBookingConfirmationGated(sb, sb._bookings.get("bkd-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("confirmação sai pela oficial por padrão", r.sent === true && zd.calls.length >= 1,
+      JSON.stringify({ sent: r.sent, calls: zd.calls.length }));
+    check("e usa o template aprovado da conta (elarah_confirmacao_reserva)",
+      zd.calls[0].template === "elarah_confirmacao_reserva", String(zd.calls[0].template));
+    check("com os 4 parâmetros do fluxo de confirmação", zd.calls[0].params.length === 4,
+      JSON.stringify(zd.calls[0].params));
+  }
+
+  {
+    // FLUXO DESLIGADO: outro sistema já manda este aviso, então a plataforma
+    // não pode mandar de novo. A trava age ANTES de reservar chave.
+    const WAf = await loadWA({ ...META_ENV, WHATSAPP_FLUXOS_DESLIGADOS: "confirmation,feedback" });
+    const zf = installMetaMock();
+    const sb = makeSupabase([bookingSeed({ id: "bkfd-A" })]);
+    const r = await WAf.sendBookingConfirmationGated(sb, sb._bookings.get("bkfd-A"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("fluxo desligado → não envia", r.sent === false && r.reason === "fluxo_desligado", JSON.stringify(r));
+    check("fluxo desligado → nem chama a Meta", zf.calls.length === 0);
+    check("fluxo desligado → nem ocupa chave na send_log", sb._sendLog.size === 0);
+
+    // E um fluxo que NÃO está na lista continua saindo normalmente.
+    const WAon = await loadWA({ ...META_ENV, WHATSAPP_FLUXOS_DESLIGADOS: "reminder48" });
+    const zon = installMetaMock();
+    const sb2 = makeSupabase([bookingSeed({ id: "bkfd-B" })]);
+    const r2 = await WAon.sendBookingConfirmationGated(sb2, sb2._bookings.get("bkfd-B"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("fluxo fora da lista → segue enviando", r2.sent === true && zon.calls.length === 1);
+  }
+
+  {
+    // A CONFIGURAÇÃO REAL DA ELARAH: outro sistema (Edge Functions publicadas
+    // fora do repositório) manda confirmação, boas-vindas, lembrete, feedback
+    // e pendente. A plataforma manda só o que ninguém manda — e isso tem que
+    // continuar valendo, porque instruções e aviso à parceira saem do MESMO
+    // ponto do código que a confirmação desligada.
+    const WAr = await loadWA({
+      ...META_ENV,
+      WHATSAPP_FLUXOS_DESLIGADOS: "confirmation,reminder48,feedback,pending",
+      META_TEMPLATE_INSCRICOES_IMAGEM: "true",
+    });
+    const zr = installMetaMock();
+    const WA_PARCEIRA = "5511977778888";
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bkreal-A",
+        telefone: CLIENT_A,
+        quantidade: 2,
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: {
+          imagem: IMG_A,
+          endereco: "Av. Faria Lima, 1572",
+          bairro: "Pinheiros",
+          instrucoes_pos_compra: "Preencha o cadastro: https://exemplo.com/x",
+        },
+      })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: WA_PARCEIRA }],
+    );
+    const r = await WAr.sendBookingConfirmationGated(sb, sb._bookings.get("bkreal-A"), {
+      telefone_digits: CLIENT_A,
+    });
+
+    check("confirmação NÃO sai (quem manda é o outro sistema)",
+      r.sent === false && r.reason === "fluxo_desligado", JSON.stringify(r));
+    check("a cliente recebe SÓ as instruções pós-compra", zr.to(CLIENT_A).length === 1,
+      "recebeu " + zr.to(CLIENT_A).length);
+    check("e a parceira recebe o aviso da compra", zr.to(WA_PARCEIRA).length === 1);
+    check("2 mensagens no total, nenhuma duplicada", zr.calls.length === 2);
+    check("nenhuma chave de confirmação foi ocupada", !sb._sendLog.has("confirmation:bkreal-A"));
   }
 
   // ---------- Relatório ----------
