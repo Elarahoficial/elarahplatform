@@ -57,31 +57,20 @@ create policy whatsapp_mensagens_admin_update on public.whatsapp_mensagens
 -- Sem isso a tela só atualiza quando alguém recarrega — e a graça é a
 -- mensagem aparecer na hora em que a pessoa manda.
 --
--- `add table` dá erro se a tabela já estiver na publicação, e o SQL Editor
--- aborta o script inteiro no primeiro erro. Por isso o bloco condicional.
-do $$
-begin
-  if not exists (
-    select 1 from pg_publication_tables
-     where pubname = 'supabase_realtime'
-       and schemaname = 'public'
-       and tablename = 'whatsapp_mensagens'
-  ) then
-    alter publication supabase_realtime add table public.whatsapp_mensagens;
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_publication_tables
-     where pubname = 'supabase_realtime'
-       and schemaname = 'public'
-       and tablename = 'whatsapp_send_log'
-  ) then
-    alter publication supabase_realtime add table public.whatsapp_send_log;
-  end if;
-end $$;
+-- ISSO NÃO É FEITO AQUI, É NO PAINEL:
+--   Supabase → Database → Publications → supabase_realtime → marcar
+--   as tabelas `whatsapp_mensagens` e `whatsapp_send_log`.
+--
+-- Por que não em SQL: o comando é `alter publication ... add table`, que
+-- NÃO tem "if not exists" e dá erro se a tabela já estiver lá. A forma
+-- condicional exige um bloco `do $$ ... $$`, e o editor de SQL do Supabase
+-- quebra esses blocos nos `;` de dentro — o script inteiro falha com
+-- "syntax error at end of input". Dois cliques no painel resolvem sem risco.
+--
+-- Se preferir pela linha de comando (psql), é isto, uma de cada vez,
+-- ignorando o erro caso a tabela já esteja na publicação:
+--   alter publication supabase_realtime add table public.whatsapp_mensagens;
+--   alter publication supabase_realtime add table public.whatsapp_send_log;
 
 -- ---------- 4) A LISTA DA ESQUERDA ----------
 -- Uma linha por telefone, com o que a lista de conversas precisa mostrar:
@@ -148,6 +137,15 @@ comment on view public.whatsapp_conversas is
 -- A view roda com os direitos de quem consulta, então o RLS das tabelas
 -- de baixo continua valendo (só admin lê).
 alter view public.whatsapp_conversas set (security_invoker = on);
+
+-- SEM ISTO A VIEW NÃO APARECE NA API.
+--   Tabela criada no schema public herda as permissões padrão do Supabase;
+--   VIEW não herda. Sem o grant, a consulta do painel volta "permission
+--   denied for view" — e a tela, que não tem como distinguir, mostraria
+--   "nenhuma conversa ainda". Some o sintoma, fica o problema.
+--   O RLS das tabelas de baixo continua valendo (security_invoker acima),
+--   então quem não é admin continua sem ver nada.
+grant select on public.whatsapp_conversas to authenticated;
 
 notify pgrst, 'reload schema';
 

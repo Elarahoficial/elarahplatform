@@ -159,6 +159,14 @@ esquerda, o fio da conversa à direita, campo de resposta embaixo.
 `whatsapp_mensagens`. Mensagem que chega aparece na hora — se for da conversa
 aberta, entra no fio; se for de outra, sobe na lista com o contador.
 
+⚠️ O tempo real é ligado **no painel**, não no SQL: Supabase → **Database →
+Publications → `supabase_realtime`** → marcar `whatsapp_mensagens` e
+`whatsapp_send_log`. O comando equivalente (`alter publication ... add
+table`) não tem `if not exists`, e a forma condicional exige um bloco
+`do $$ ... $$` — que o editor de SQL do Supabase quebra nos `;` de dentro,
+derrubando o script inteiro com *"syntax error at end of input"*. Sem o
+Realtime a tela funciona igual, só não atualiza sozinha.
+
 **Quem é a pessoa:** ao abrir a conversa, o telefone é cruzado com `bookings`
 e as últimas reservas aparecem no cabeçalho. É o que um CRM tem e o WhatsApp
 não: abrir a conversa e já saber o que ela comprou.
