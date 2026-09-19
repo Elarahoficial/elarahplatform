@@ -18,34 +18,33 @@ número. Não é configuração: o recurso não existe na API oficial. Se a parc
 tem mais de uma pessoa que precisa saber, o caminho é cadastrar mais de um
 número (hoje o cadastro guarda um só).
 
-## O template: cinco variáveis, não sete
+## O template
 
-O corpo aprovado na Meta tem os **rótulos fixos** e só os valores variáveis:
+O corpo aprovado na Meta guarda os emojis, os rótulos e as quebras de linha —
+só os **valores** são variáveis. Por isso a mensagem sai idêntica à que a
+parceira já recebia:
 
 ```
-Olá! Você recebeu uma nova reserva pela Elarah.
+Oi! Tudo bem? Passando para te avisar que você tem {{1}} para a experiência {{2}} no dia {{3}}.
 
-Experiência: {{1}}
-Quando: {{2}}
-Vagas: {{3}}
-Em nome de: {{4}}
-Contato da cliente: {{5}}
+👤 Em nome de: {{4}}
+📱 WhatsApp: {{5}}
+✉️ E-mail: {{6}}
+📍 Local: {{7}}
 
-Qualquer dúvida, é só responder por aqui.
+O repasse será feito até 48h antes do evento.
 ```
 
-Eram sete. Caíram duas, por motivos diferentes:
+⚠️ A **contagem** tem que bater: mandar um número diferente de parâmetros do
+que o modelo tem faz a Meta recusar a mensagem inteira. Se o modelo mudar lá,
+`supplierBookingTemplateParams` em `whatsapp.ts` muda junto.
 
-- **O local saiu** porque é a casa da própria parceira — ela não precisa que a
-  gente diga o endereço dela.
-- **Telefone e e-mail viraram um campo só** ("Contato"), porque o classificador
-  da Meta recusa como Marketing um modelo que é quase só variável. Com rótulo
-  fixo ao lado de cada valor, o corpo tem texto de verdade e passa como
-  Utilidade — foi exatamente o que destravou o `elarah_instrucoes_pos_compra`.
-
-⚠️ A **contagem** tem que bater: mandar 7 parâmetros num modelo de 5 faz a Meta
-recusar a mensagem inteira. Se o modelo mudar lá, `supplierBookingTemplateParams`
-em `whatsapp.ts` muda junto.
+Uma observação sobre a categoria: o classificador da Meta recusa como Marketing
+modelos que são quase só variável. Este passa porque o corpo tem texto de
+verdade (a frase de abertura, os rótulos, a linha do repasse). Se um dia ele
+travar assim mesmo, o caminho é enxugar: o **local** pode sair (é a casa da
+própria parceira) e **WhatsApp + e-mail** cabem num campo só de "Contato",
+caindo pra 5 variáveis.
 
 ## A mensagem (no canal legado, de emergência)
 

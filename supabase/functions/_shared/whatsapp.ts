@@ -1102,50 +1102,53 @@ export function partnerInstructionsTemplateParams(opts: {
   });
 }
 
-// elarah_aviso_parceira — CINCO variáveis, cada uma ao lado de um rótulo fixo:
+// elarah_aviso_parceira — SETE variáveis, no mesmo formato que a parceira já
+// recebe hoje pelo canal legado:
 //
-//     Experiência: {{1}}
-//     Quando: {{2}}
-//     Vagas: {{3}}
-//     Em nome de: {{4}}
-//     Contato da cliente: {{5}}
+//     Oi! Tudo bem? Passando para te avisar que você tem {{1}} para a
+//     experiência {{2}} no dia {{3}}.
 //
-// Eram sete. Caíram duas, por dois motivos diferentes:
+//     👤 Em nome de: {{4}}
+//     📱 WhatsApp: {{5}}
+//     ✉️ E-mail: {{6}}
+//     📍 Local: {{7}}
 //
-//   * O LOCAL saiu porque é a casa da própria parceira — ela não precisa que
-//     a gente diga o endereço dela.
-//   * TELEFONE e E-MAIL viraram um campo só ("Contato"), porque o
-//     classificador da Meta recusa modelo que é quase só variável. Com rótulo
-//     fixo do lado de cada valor, o corpo tem texto de verdade e passa como
-//     Utilidade — foi o que destravou o elarah_instrucoes_pos_compra.
+//     O repasse será feito até 48h antes do evento.
 //
-// A formatação (quebras de linha, rótulos) vive no CORPO do template, que é
-// fixo e aprovado — só os VALORES são variáveis. Por isso a mensagem fica
-// bem formatada, sem a limitação de "parâmetro numa linha só".
+// Emoji, rótulo e quebra de linha vivem no CORPO do template, que é fixo e
+// aprovado — só os VALORES são variáveis. Por isso a mensagem sai idêntica à
+// do canal legado, sem a limitação de "parâmetro numa linha só".
+//
+// A CONTAGEM tem que bater com o template aprovado: mandar 5 num modelo de 7
+// (ou o contrário) faz a Meta recusar a mensagem inteira.
 export function supplierBookingTemplateParams(opts: {
   quantidade?: unknown; experienciaNome?: unknown; data?: unknown; horario?: unknown;
   nomes?: string[]; telefoneCliente?: unknown; emailCliente?: unknown;
+  endereco?: unknown; bairro?: unknown;
 }): string[] {
   const qtd = Math.max(1, Number(opts.quantidade) || 1);
   const nomes = (opts.nomes ?? []).map((n) => String(n ?? "").trim()).filter(Boolean);
   const semNome = Math.max(0, qtd - nomes.length);
   const lista = nomes.length ? nomes.join(", ") : "(participante)";
-  const contato = [
-    formatPhoneBRHuman(opts.telefoneCliente),
-    String(opts.emailCliente ?? "").trim(),
-  ].filter(Boolean).join(" · ");
   return [
+    metaParam(qtd === 1 ? "1 vaga confirmada" : qtd + " vagas confirmadas"),
     metaParam(opts.experienciaNome, "(experiência)"),
+    // "03/10 às 10h00 – 11h30" — o corpo do template já diz "no dia".
     metaParam(
-      [String(opts.data ?? "").trim(), String(opts.horario ?? "").trim()].filter(Boolean).join(" · "),
+      [String(opts.data ?? "").trim(), String(opts.horario ?? "").trim()].filter(Boolean).join(" às "),
       "(data)",
     ),
-    metaParam(qtd === 1 ? "1" : String(qtd)),
     // Quem falta aparece AQUI, junto dos nomes: é o dado que a parceira usa
-    // pra saber quanta gente preparar.
+    // pra saber quanta gente preparar. Linha condicional não existe em
+    // template, então o aviso mora dentro do próprio valor.
     metaParam(semNome > 0 ? lista + " + " + semNome + (semNome === 1 ? " pessoa" : " pessoas") +
       " sem nome informado" : lista),
-    metaParam(contato, "não informado"),
+    metaParam(formatPhoneBRHuman(opts.telefoneCliente), "não informado"),
+    metaParam(opts.emailCliente, "não informado"),
+    metaParam(
+      [String(opts.endereco ?? "").trim(), String(opts.bairro ?? "").trim()].filter(Boolean).join(" — "),
+      "combinado com a Elarah",
+    ),
   ];
 }
 
@@ -1430,6 +1433,8 @@ export async function sendSupplierBookingNoticeGated(
         nomes,
         telefoneCliente: (meta.telefone_digits as string | undefined) ?? fresh.telefone,
         emailCliente: fresh.email,
+        endereco,
+        bairro,
       }),
     },
     bookingId,

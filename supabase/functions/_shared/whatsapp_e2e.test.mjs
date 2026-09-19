@@ -1431,19 +1431,21 @@ async function run() {
     const aviso = zt.to(WA_PARCEIRA)[0];
     check("parceira recebe pela oficial, via template aprovado",
       aviso?.template === "elarah_aviso_parceira", JSON.stringify(aviso?.template));
-    check("com 5 parâmetros, do jeito que o modelo foi aprovado",
-      aviso?.params?.length === 5, JSON.stringify(aviso?.params));
-    check("1º experiência", aviso?.params?.[0] === "Aula de Coquetelaria");
-    check("2º quando", aviso?.params?.[1] === "15/08 · 15h00 – 18h00");
-    check("3º vagas: a QUANTIDADE comprada, não a contagem de nomes",
-      aviso?.params?.[2] === "2");
+    check("com 7 parâmetros, do jeito que o modelo foi aprovado",
+      aviso?.params?.length === 7, JSON.stringify(aviso?.params));
+    check("1º vagas: a QUANTIDADE comprada, não a contagem de nomes",
+      aviso?.params?.[0] === "2 vagas confirmadas", aviso?.params?.[0]);
+    check("2º experiência", aviso?.params?.[1] === "Aula de Coquetelaria");
+    check("3º quando, no formato que o corpo do modelo espera (\"no dia ...\")",
+      aviso?.params?.[2] === "15/08 às 15h00 – 18h00", aviso?.params?.[2]);
     check("4º em nome de, avisando que falta 1 nome",
       aviso?.params?.[3] === "Maria Silva + 1 pessoa sem nome informado",
       aviso?.params?.[3]);
-    check("5º contato: telefone e e-mail num campo só",
-      aviso?.params?.[4] === "(11) 99999-0000 · maria@exemplo.com", aviso?.params?.[4]);
-    check("o endereço NÃO vai: é a casa da própria parceira",
-      !(aviso?.params ?? []).some((x) => String(x).includes("Faria Lima")));
+    check("5º WhatsApp da cliente, formatado",
+      aviso?.params?.[4] === "(11) 99999-0000", aviso?.params?.[4]);
+    check("6º e-mail da cliente", aviso?.params?.[5] === "maria@exemplo.com");
+    check("7º local", aviso?.params?.[6] === "Av. Faria Lima, 1572 — Pinheiros",
+      aviso?.params?.[6]);
   }
 
   {
