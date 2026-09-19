@@ -34,13 +34,17 @@ order by 1 desc
 limit 20;
 
 -- ===== 3. DESDE QUANDO, E QUANTO =====
-select
-  count(*)  as total_de_linhas,
-  min(created_at) as primeira,
-  max(created_at) as ultima
-from public.message_log;
--- Se a coluna de data tiver outro nome (a query 1 mostra), troque
--- created_at pelo nome certo e rode de novo.
+-- RODE AS QUERIES UMA DE CADA VEZ: no SQL Editor, um erro numa query
+-- aborta o restante do script, e aí você perde o resultado das outras.
+--
+-- Esta usa só count(*), que funciona em qualquer tabela. Pro intervalo
+-- de datas, troque <coluna_de_data> pelo nome que a query 1 mostrou
+-- (pode ser created_at, inserted_at, timestamp, data, sent_at...).
+select count(*) as total_de_linhas from public.message_log;
+
+-- select min(<coluna_de_data>) as primeira,
+--        max(<coluna_de_data>) as ultima
+--   from public.message_log;
 
 -- =============================================================
 -- A OUTRA TABELA
