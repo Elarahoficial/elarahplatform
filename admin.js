@@ -11484,22 +11484,81 @@
     return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
   }
 
+  // Colunas de fornecedores_metadata que só passam a existir depois de
+  // rodar a migração correspondente. Serve pra dizer QUAL .sql rodar
+  // quando o banco ainda não tem a coluna.
+  const FORN_COL_MIGRACAO = {
+    pix: 'sql/elarah_fornecedores_pix.sql',
+    tipo_parceria: 'sql/elarah_fornecedores_tipo_parceria_em_casa.sql',
+    instrucoes_pos_compra: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+    instrucoes_template: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+    instrucoes_variaveis: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+    instrucoes_link: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+  };
+
+  // Nome da coluna que o PostgREST diz não existir (erro PGRST204):
+  //   "Could not find the 'instrucoes_link' column of
+  //    'fornecedores_metadata' in the schema cache"
+  function fornMissingColumn(errMsg) {
+    const m = String(errMsg || '').match(/could not find the '([^']+)' column/i);
+    return m ? m[1] : null;
+  }
+
+  // Texto de "rode a migração" pras colunas que ficaram de fora.
+  function fornMigracaoHint(cols) {
+    const files = [];
+    (cols || []).forEach((c) => {
+      const f = FORN_COL_MIGRACAO[c];
+      if (f && files.indexOf(f) === -1) files.push(f);
+    });
+    if (!files.length) return '';
+    return '\n\nRode no SQL Editor do Supabase: ' + files.join(' e ') + '.';
+  }
+
   // Upsert completo de um registro de fornecedor (cadastro manual + edição
   // dos campos de CRM). Chaveado por fornecedor_key derivado do nome.
+  //
+  // Uma coluna que ainda não existe no banco (migração pendente) faz o
+  // PostgREST recusar o upsert INTEIRO — e aí nem o Pix, que existe há
+  // tempos, consegue ser salvo. Em vez de perder tudo por causa de um
+  // campo, tira do payload só a coluna que falta e tenta de novo,
+  // devolvendo no fim o que ficou de fora pra quem chamou avisar.
   async function saveFornecedorMetadata(payload) {
     const s = window.supabaseClient;
     if (!s) return { ok: false, error: 'Supabase client indisponível' };
     const key = fornecedorKey(payload.fornecedor_nome);
     if (!key) return { ok: false, error: 'Nome do fornecedor é obrigatório' };
     const row = Object.assign({}, payload, { fornecedor_key: key });
-    const { error } = await s.from('fornecedores_metadata')
-      .upsert(row, { onConflict: 'fornecedor_key' });
-    if (error) {
-      console.error('[Admin] saveFornecedorMetadata error', error);
-      return { ok: false, error: error.message };
+    const OBRIGATORIAS = ['fornecedor_key', 'fornecedor_nome'];
+    const ausentes = [];  // colunas que o banco não tem
+    const perdidas = [];  // dessas, as que tinham conteúdo digitado
+    for (let tentativa = 0; tentativa < 12; tentativa++) {
+      const { error } = await s.from('fornecedores_metadata')
+        .upsert(row, { onConflict: 'fornecedor_key' });
+      if (!error) {
+        fornecedoresMetaCache = null;
+        return { ok: true, missingColumns: ausentes, lostColumns: perdidas };
+      }
+      const col = fornMissingColumn(error.message);
+      // Erro que não é "coluna inexistente", ou coluna que não dá pra
+      // tirar (a chave), ou que nem está no payload: sem o que tentar.
+      if (!col || OBRIGATORIAS.indexOf(col) !== -1 ||
+          !Object.prototype.hasOwnProperty.call(row, col)) {
+        console.error('[Admin] saveFornecedorMetadata error', error);
+        return { ok: false, error: error.message };
+      }
+      const v = row[col];
+      if (v !== null && v !== undefined && String(v).trim() !== '') perdidas.push(col);
+      ausentes.push(col);
+      delete row[col];
+      console.warn('[Admin] fornecedores_metadata não tem a coluna "' + col +
+        '" (migração pendente) — salvando o resto sem ela.');
     }
-    fornecedoresMetaCache = null;
-    return { ok: true };
+    return {
+      ok: false,
+      error: 'Colunas demais faltando em fornecedores_metadata.' +
+        fornMigracaoHint(ausentes),
+    };
   }
 
   // Remove o registro de um fornecedor de fornecedores_metadata.
@@ -11983,17 +12042,24 @@
         btn.disabled = false;
         btn.textContent = 'Salvar';
         const errStr = String(res.error || '');
-        const hint = errStr.includes('tipo_parceria')
-          ? '\n\nA vertente "Elarah em casa" precisa ser liberada no banco — rode sql/elarah_fornecedores_tipo_parceria_em_casa.sql no SQL Editor do Supabase.'
-          : (errStr.includes('instrucoes_')
-            ? '\n\nA coluna "instrucoes_pos_compra" ainda não existe — rode sql/elarah_experiences_instrucoes_pos_compra.sql no SQL Editor do Supabase.'
-          : (errStr.includes('pix')
-            ? '\n\nA coluna "pix" ainda não existe — rode sql/elarah_fornecedores_pix.sql no SQL Editor do Supabase.'
+        const col = fornMissingColumn(errStr);
+        const hint = col
+          ? (fornMigracaoHint([col]) ||
+             '\n\nA coluna "' + col + '" ainda não existe em fornecedores_metadata.')
+          : (errStr.includes('tipo_parceria')
+            ? '\n\nA vertente "Elarah em casa" precisa ser liberada no banco — rode sql/elarah_fornecedores_tipo_parceria_em_casa.sql no SQL Editor do Supabase.'
             : (errStr.includes('fornecedores_metadata')
               ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
-              : '')));
+              : ''));
         alert('Não consegui salvar o fornecedor.\n' + (res.error || '') + hint);
         return;
+      }
+      // Salvou, mas alguma coluna preenchida ainda não existe no banco:
+      // o resto (Pix, WhatsApp, categoria…) foi salvo — avisa o que não.
+      if (res.lostColumns && res.lostColumns.length) {
+        alert('Salvei o fornecedor, mas estes campos ainda não existem no ' +
+          'banco e ficaram de fora:\n• ' + res.lostColumns.join('\n• ') +
+          fornMigracaoHint(res.lostColumns));
       }
       close();
       if (typeof renderFornecedores === 'function') renderFornecedores();
