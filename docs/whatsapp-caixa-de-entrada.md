@@ -84,6 +84,36 @@ select wa_timestamp, telefone, nome_perfil, tipo, texto
  limit 10;
 ```
 
+## Se o teste do painel da Meta chega mas mensagem de verdade não
+
+Foi o que aconteceu na instalação. O botão **Teste** do painel de Webhooks
+conversa **direto** com a URL, então ele prova que URL, assinatura e banco
+estão certos — e mesmo assim mensagem real não chega.
+
+Configurar webhook na Meta são **duas** coisas, e a interface não deixa claro:
+
+1. O **app** tem uma URL de callback e assina o campo `messages`.
+2. A **conta do WhatsApp (WABA)** precisa estar **inscrita nesse app**.
+
+Faltando a 2, o silêncio é total: nenhuma entrega, nenhum erro, nada no log.
+Isso é `subscribed_apps` na Graph API, e não tem botão pra isso em todo
+layout do painel.
+
+A função `admin-whatsapp-inscricao` resolve:
+
+```bash
+# Diagnóstico — quais apps a conta entrega hoje (não muda nada):
+curl -s "https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/admin-whatsapp-inscricao" \
+  -H "Authorization: Bearer <CRON_SECRET>"
+
+# Correção — inscreve este app na conta (idempotente):
+curl -s -X POST "https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/admin-whatsapp-inscricao" \
+  -H "Authorization: Bearer <CRON_SECRET>"
+```
+
+`apps_inscritos` vazio explica o silêncio. Se vier um app **diferente** do que
+você configurou, as mensagens estão indo pra ele.
+
 ## Segurança
 
 Toda entrega da Meta vem assinada em `X-Hub-Signature-256`:
