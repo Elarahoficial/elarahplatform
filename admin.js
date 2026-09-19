@@ -4053,10 +4053,28 @@
     const btn = document.getElementById('bookings-export-csv');
     if (!btn || btn._ligado) return;
     btn._ligado = true;
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', async function () {
+      // A lista só é preenchida quando o painel RENDERIZA. Se alguém clicar
+      // antes disso (aba já aberta de antes, JS recém-carregado), a
+      // exportação sairia vazia sem motivo aparente — então renderiza na
+      // hora e segue. Barato: os dados já estão em cache.
+      if (!(_bookingsExportaveis || []).length) {
+        btn.disabled = true;
+        const rotulo = btn.textContent;
+        btn.textContent = 'Preparando…';
+        try {
+          await renderBookings();
+        } catch (e) {
+          console.error('[Compras] falha ao preparar a exportação', e);
+        }
+        btn.disabled = false;
+        btn.textContent = rotulo;
+      }
       const lista = _bookingsExportaveis || [];
       if (!lista.length) {
-        alert('Não há compras na tela pra exportar. Ajuste os filtros e tente de novo.');
+        alert('Não há compras passando pelos filtros agora.\n\n' +
+          'Se a tabela abaixo está cheia e mesmo assim deu isso, me avise — ' +
+          'o erro fica no console (F12).');
         return;
       }
       const ts = new Date().toISOString().slice(0, 10);
