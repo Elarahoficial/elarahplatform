@@ -170,6 +170,8 @@ export async function gatedSend(deps, params) {
         kind: "observe:" + p.kind,
         status: "observed",
         phone_masked: maskPhone(phone),
+        // Telefone inteiro: é ele que liga a mensagem à conversa na tela.
+        telefone: phone,
         booking_id: p.bookingId ?? null,
         experiencia_id: p.experienciaId ?? null,
       });
@@ -197,6 +199,8 @@ export async function gatedSend(deps, params) {
     reservation = await deps.reserve(p.dedupeKey, {
       kind: p.kind,
       phone_masked: maskPhone(phone),
+      // Telefone inteiro: é ele que liga a mensagem à conversa na tela.
+      telefone: phone,
       booking_id: p.bookingId ?? null,
       experiencia_id: p.experienciaId ?? null,
     });

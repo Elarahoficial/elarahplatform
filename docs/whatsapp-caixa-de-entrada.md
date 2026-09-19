@@ -144,18 +144,71 @@ ferramenta pronta (Kommo, Chatwoot, Respond.io) no mesmo número, ela toma esse
 lugar e a nossa função para de receber. Não dá pra ter as duas sem alguém no
 meio reencaminhando.
 
-## O que ainda não existe (fases 2 e 3)
+## Fase 2 — a tela de Conversas
 
-- **Fase 2 — a tela.** Painel "Conversas" no admin: lista, histórico,
-  não-lidas, e quem é a pessoa (cruzando o telefone com reservas e parceiros).
-  O download da mídia (`media_id` → arquivo) entra aqui.
-- **Fase 3 — responder.** Caixa de resposta que envia pela API. Regra da Meta
-  que molda tudo: texto livre só **dentro de 24h** da última mensagem da
-  pessoa; fora disso, só template aprovado.
+Aba **Conversas** no admin, no formato que todo mundo já sabe usar: lista à
+esquerda, o fio da conversa à direita, campo de resposta embaixo.
+
+| Parte | De onde vem |
+| --- | --- |
+| Bolhas da esquerda (recebidas) | `whatsapp_mensagens` |
+| Bolhas da direita (enviadas) | `whatsapp_send_log` |
+| Lista de conversas | view `whatsapp_conversas` |
+
+**Tempo real:** uma inscrição no Realtime do Supabase em
+`whatsapp_mensagens`. Mensagem que chega aparece na hora — se for da conversa
+aberta, entra no fio; se for de outra, sobe na lista com o contador.
+
+**Quem é a pessoa:** ao abrir a conversa, o telefone é cruzado com `bookings`
+e as últimas reservas aparecem no cabeçalho. É o que um CRM tem e o WhatsApp
+não: abrir a conversa e já saber o que ela comprou.
+
+### O que precisou mudar no banco
+
+`whatsapp_send_log` guardava o telefone **mascarado** e **não guardava o
+texto**. Foi uma decisão consciente lá atrás (não vazar número em log), mas
+ela impede exatamente isto: sem número inteiro não dá pra saber a qual
+conversa a mensagem pertence, e sem texto não há o que mostrar.
+
+`sql/elarah_whatsapp_conversas.sql` adiciona `telefone` e `corpo`, com limite:
+as colunas só são legíveis por admin (RLS), e `phone_masked` continua lá pra
+quem só quer auditar.
+
+Mensagens com status `pending` não viram bolha — mostrar como enviada o que
+ainda não saiu seria mentir pra quem lê. As que **falharam** aparecem com o
+aviso e o motivo.
+
+### Fase 3 — responder (já incluída)
+
+A função `admin-whatsapp-responder` manda a resposta pela API oficial, pelo
+mesmo portão das outras mensagens (kill switch, ambiente, registro).
+
+**A regra das 24 horas molda tudo:** a Meta só entrega texto livre dentro de
+24h da última mensagem **da pessoa**. Fora dela, só template aprovado, e a
+recusa vem como erro `131047` — que sem contexto não diz nada.
+
+Por isso a conta mora num lugar só, `janelaDe24hAberta` em
+`_shared/whatsapp_inbox.ts`, usada pelos dois lados: a função confere **antes**
+de tentar, e a tela mostra quanto falta antes de deixar escrever. Duas cópias
+divergiriam, e o sintoma seria a mensagem sumir sem explicação.
+
+Quem nunca escreveu tem a janela **fechada** — conversa iniciada pela Elarah
+sempre precisa de template.
+
+### O que ainda não existe
+
+- **Mídia.** O `media_id` é guardado, mas baixar a foto/áudio da Meta (que
+  exige uma chamada com o token) ainda não foi feito. Na bolha aparece o tipo
+  do arquivo.
+- **Responder com template** quando a janela fechou.
 
 ## Peças no código
 
 - `sql/elarah_whatsapp_inbox.sql` — as duas tabelas, índices e RLS (só admin lê).
+- `sql/elarah_whatsapp_conversas.sql` — o lado enviado, o tempo real e a view
+  `whatsapp_conversas`.
+- `admin-conversas.js` + o painel `panel-conversas` no `admin.html` — a tela.
+- `supabase/functions/admin-whatsapp-responder/index.ts` — a resposta.
 - `supabase/functions/whatsapp-webhook/index.ts` — o handler (handshake,
   assinatura, gravação).
 - `supabase/functions/_shared/whatsapp_inbox.ts` — as partes puras: assinatura

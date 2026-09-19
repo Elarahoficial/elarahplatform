@@ -72,3 +72,8 @@ verify_jwt = false
 # service role), igual ao admin-whatsapp-templates.
 [functions.admin-whatsapp-inscricao]
 verify_jwt = false
+
+# admin-whatsapp-responder — a resposta que a Elarah escreve na tela de
+# Conversas. Autentica por dentro (JWT de admin, CRON_SECRET ou service role).
+[functions.admin-whatsapp-responder]
+verify_jwt = false

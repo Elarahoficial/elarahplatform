@@ -160,3 +160,39 @@ export function lerWebhook(corpo: any): {
   }
   return { mensagens, statuses };
 }
+
+// ---------- A JANELA DE 24 HORAS ----------
+//
+// A Meta só ENTREGA texto livre dentro de 24h da última mensagem DA PESSOA.
+// Fora dela, só template aprovado, e a recusa vem como erro 131047 — que
+// sem contexto não diz nada a quem escreveu.
+//
+// Por isso a regra mora aqui, num lugar só: a função de resposta confere
+// antes de tentar, e a tela mostra quanto falta antes de deixar escrever.
+// Duas cópias dessa conta acabariam divergindo, e o sintoma seria a
+// mensagem sumir sem explicação.
+//
+// Nunca recebeu mensagem dessa pessoa (null) = janela FECHADA: conversa
+// iniciada pela Elarah sempre precisa de template.
+export function janelaDe24hAberta(
+  ultimaRecebidaISO: unknown,
+  agoraMs: number = Date.now(),
+): boolean {
+  const s = String(ultimaRecebidaISO ?? "").trim();
+  if (!s) return false;
+  const t = new Date(s).getTime();
+  if (!Number.isFinite(t)) return false;
+  return t > agoraMs - 24 * 60 * 60 * 1000;
+}
+
+// Quanto ainda resta da janela, em minutos (0 = fechada). A tela usa pra
+// dizer "aberta por mais 3h20" em vez de só "pode responder".
+export function minutosRestantesDaJanela(
+  ultimaRecebidaISO: unknown,
+  agoraMs: number = Date.now(),
+): number {
+  if (!janelaDe24hAberta(ultimaRecebidaISO, agoraMs)) return 0;
+  const t = new Date(String(ultimaRecebidaISO)).getTime();
+  const fim = t + 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.ceil((fim - agoraMs) / 60000));
+}

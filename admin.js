@@ -548,6 +548,14 @@
       case 'b2b-prospects': await renderB2BProspects(); break;
       case 'purchases-pending': invalidateBookings(); await renderPendingBookings(); break;
       case 'postevent':   invalidateBookings(); await renderPostEvent(); break;
+      // Caixa de entrada do WhatsApp oficial (admin-conversas.js). O módulo
+      // tem estado próprio e uma inscrição de tempo real, então aqui é só
+      // abrir — ele decide o que recarregar.
+      case 'conversas':
+        if (window.ElarahConversas && window.ElarahConversas.run) {
+          await window.ElarahConversas.run();
+        }
+        break;
       // Aba renderizada por admin-feedbacks.js. O módulo tem cache
       // próprio (TTL de 5min) + botão "Atualizar", então aqui é só
       // abrir — sem force pra não repuxar o banco a cada clique.
