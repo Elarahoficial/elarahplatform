@@ -147,6 +147,23 @@ alter view public.whatsapp_conversas set (security_invoker = on);
 --   então quem não é admin continua sem ver nada.
 grant select on public.whatsapp_conversas to authenticated;
 
+-- E NAS TABELAS DE BAIXO TAMBÉM.
+--   Com security_invoker, ler a view exige permissão em CADA tabela que ela
+--   junta. RLS sozinho não basta: a policy diz QUEM pode ler as linhas, o
+--   grant diz se o papel pode tocar na tabela. Sem os dois, a consulta volta
+--   vazia ou negada.
+--
+--   whatsapp_send_log foi criada de propósito como "só service_role", sem
+--   grant nenhum — por isso ela é a que faltava.
+--
+--   O que isso NÃO abre: as policies acima continuam exigindo is_admin(),
+--   então quem está logado e não é admin continua sem ver linha nenhuma.
+grant select on public.whatsapp_mensagens to authenticated;
+grant select on public.whatsapp_send_log to authenticated;
+
+-- Marcar como lida é o único write da tela — e só nessa coluna.
+grant update (lida_em) on public.whatsapp_mensagens to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- =============================================================

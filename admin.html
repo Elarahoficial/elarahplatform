@@ -937,6 +937,11 @@
             <option value="site">Só vendas pelo site</option>
             <option value="manual">Só vendas manuais</option>
           </select>
+          <!-- Exporta o que os filtros deixaram na tela, inteiro. O
+               visualizador de SQL do Supabase desenha só 100 linhas; aqui
+               não há esse teto, porque o arquivo não precisa ser desenhado. -->
+          <button class="admin__add-btn" id="bookings-export-csv" type="button"
+                  title="Baixa em CSV todas as compras que estão passando pelos filtros acima — sem limite de linhas. Abre no Excel.">⬇ Exportar CSV</button>
           <button class="admin__add-btn" id="btn-mark-manuais-avisadas" type="button"
                   title="Marca todas as vendas manuais ainda não marcadas como &quot;fornecedor avisado&quot; hoje (útil se você já avisa direto no WhatsApp)">✓ Marcar manuais avisadas</button>
           <button class="admin__add-btn" id="btn-register-manual-sale" type="button"
@@ -4776,9 +4781,9 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
-<script src="admin-conversas.js?v=1"></script>
+<script src="admin-conversas.js?v=2"></script>
 <script src="admin-acessos.js?v=2"></script>
-<script src="admin.js?v=238"></script>
+<script src="admin.js?v=239"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
