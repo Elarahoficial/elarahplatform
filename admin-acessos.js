@@ -37,6 +37,7 @@
     { key: 'overview',             label: 'Visão geral',          grupo: 'Hoje' },
     { key: 'insights',             label: 'O que fazer hoje',     grupo: 'Hoje' },
     { key: 'feedbacks',            label: 'Feedbacks',            grupo: 'Hoje' },
+    { key: 'postevent',            label: 'Pós-compra',           grupo: 'Hoje' },
     { key: 'purchases',            label: 'Compras',              grupo: 'Vendas' },
     { key: 'eventos',              label: 'Eventos',              grupo: 'Vendas' },
     { key: 'eventos-privados',     label: 'Eventos privados',     grupo: 'Vendas' },
