@@ -4026,9 +4026,23 @@
     return '"' + s.replace(/"/g, '""') + '"';
   }
 
+  // Dinheiro no banco é CENTAVOS (inteiro). No CSV vai em reais com VÍRGULA
+  // decimal — é o que o Excel em português entende como número; com ponto
+  // ele trata "150.00" como texto e nenhuma soma funciona.
+  function _csvReais(centavos) {
+    // null, undefined e '' viram 0 no Number() — e "sem repasse registrado"
+    // não é a mesma coisa que "repasse de R$ 0,00". Célula vazia é honesta;
+    // zero seria uma afirmação que o dado não sustenta.
+    if (centavos == null || centavos === '') return '';
+    const n = Number(centavos);
+    if (!Number.isFinite(n)) return '';
+    return (n / 100).toFixed(2).replace('.', ',');
+  }
+
   function _bookingsParaCsv(lista) {
     const cab = ['Nome', 'WhatsApp', 'E-mail', 'Experiência', 'Data da experiência',
-      'Horário', 'Quantidade', 'Valor', 'Fornecedor', 'Status', 'Comprou em'];
+      'Horário', 'Quantidade', 'Valor pago', 'Valor cheio', 'Repasse', 'Comissão',
+      'Fornecedor', 'Status', 'Comprou em'];
     const linhas = [cab.map(_csvCampo).join(',')];
     (lista || []).forEach(function (b) {
       linhas.push([
@@ -4039,7 +4053,14 @@
         b.data,
         b.horario,
         b.quantidade,
-        b.valor_total != null ? b.valor_total : b.valor,
+        // Os valores resolvidos são os MESMOS que a tabela mostra na tela —
+        // o bruto do banco nem sempre está preenchido (variante, cortesia,
+        // gift card), e exportar o bruto daria coluna vazia ou divergente
+        // do que a admin acabou de ver.
+        _csvReais(b._valorElarahResolvido != null ? b._valorElarahResolvido : b.amount_total),
+        _csvReais(b._valorCheioResolvido),
+        _csvReais(b._valorRepasseResolvido),
+        _csvReais(b._valorComissaoResolvido),
         b._fornecedorResolvido || b.fornecedor_nome,
         b.status,
         b.created_at
