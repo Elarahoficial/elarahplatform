@@ -117,8 +117,29 @@ contagem não bater com o template. Um nome que o código não conhece ainda
 conta como um parâmetro (com valor neutro), pra contagem nunca desalinhar.
 
 **Sem template próprio**, a mensagem sai pelo template genérico
-`elarah_instrucoes_pos_compra` ({{1}} nome, {{2}} experiência, {{3}} o que
-fazer), com o seu texto na variável — e aí ele vira uma linha.
+`elarah_instrucoes_pos_compra`, com **duas** variáveis:
+
+```
+Olá, {{1}}. Sua compra na Elarah foi confirmada.
+
+{{2}}
+
+Qualquer dúvida, é só responder por aqui.
+```
+
+`{{1}}` = primeiro nome · `{{2}}` = o texto cadastrado (parceiro ou
+experiência), num parágrafo só.
+
+O nome da experiência **não** está no modelo de propósito. O classificador da
+Meta recusava o modelo como Marketing enquanto o corpo era quase só variável;
+com uma variável a menos — mais texto fixo e "sua compra foi confirmada" logo
+na primeira linha — ele passou como Utilidade. E não faz falta: a confirmação
+de reserva chega logo antes, com experiência, data e horário.
+
+⚠️ A **contagem** de parâmetros tem que bater com o modelo aprovado. Mandar 3
+num modelo de 2 faz a Meta recusar a mensagem inteira. Se um dia você editar o
+modelo na Meta e mudar o número de variáveis, `postPurchaseInstructionsTemplateParams`
+em `whatsapp.ts` precisa mudar junto.
 
 **Quem ganha de quem:**
 

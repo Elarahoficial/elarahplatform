@@ -1371,9 +1371,16 @@ async function run() {
     });
     check("exceção da experiência ganha do template do parceiro",
       !zt.to(CLIENT_A).some((c) => c.template === "lado_b_pos_compra"));
+    const generico = zt.to(CLIENT_A).find((c) => c.template === "elarah_instrucoes_pos_compra");
     check("e sai pelo template genérico, com o texto da experiência",
-      zt.to(CLIENT_A).some((c) => c.template === "elarah_instrucoes_pos_compra" &&
-        (c.params ?? []).some((x) => String(x).includes("sala 411"))));
+      (generico?.params ?? []).some((x) => String(x).includes("sala 411")));
+    // O modelo aprovado tem DUAS variáveis (nome + o que fazer). Mandar 3 num
+    // modelo de 2 faz a Meta recusar a mensagem inteira.
+    check("template genérico vai com 2 parâmetros, do jeito que foi aprovado",
+      generico?.params?.length === 2, JSON.stringify(generico?.params));
+    check("o 1º é o primeiro nome", generico?.params?.[0] === "Maria");
+    check("e o 2º é o que a cliente precisa fazer",
+      generico?.params?.[1] === "Hoje é na sala 411.");
   }
   {
     // Só template do parceiro (sem texto livre) no canal LEGADO: não há corpo

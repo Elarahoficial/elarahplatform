@@ -999,18 +999,27 @@ export function pendingRecoveryTemplateParams(opts: MsgOpts): string[] {
   ];
 }
 
-// elarah_instrucoes_pos_compra — {{1}} nome · {{2}} experiência · {{3}} o que fazer
+// elarah_instrucoes_pos_compra — {{1}} nome · {{2}} o que fazer
+//
+// DUAS variáveis, não três. O nome da experiência saiu do template: o
+// classificador da Meta recusava o modelo como Marketing enquanto o corpo era
+// quase só variável, e com uma a menos (mais texto fixo, âncora explícita na
+// compra) ele passou como Utilidade. Não faz falta — a confirmação de reserva
+// chega logo antes com experiência, data e horário.
+//
+// A CONTAGEM tem que bater com o template aprovado: mandar 3 parâmetros num
+// modelo de 2 faz a Meta recusar a mensagem inteira.
 //
 // ATENÇÃO: parâmetro de template não aceita quebra de linha (a Meta recusa),
-// então na oficial as instruções viram UMA linha. Instrução longa e em vários
-// parágrafos rende melhor no canal legado — ou merece um template próprio,
-// com o texto fixo no corpo.
+// então na oficial as instruções viram UM parágrafo. O WhatsApp ainda quebra
+// a linha na tela; o que some são as linhas em branco. Texto longo e em vários
+// parágrafos rende melhor num template próprio do parceiro, com o texto fixo
+// no corpo — ver partnerInstructionsTemplateParams.
 export function postPurchaseInstructionsTemplateParams(opts: {
   nome?: unknown; experienciaNome?: unknown; instrucoes?: unknown;
 }): string[] {
   return [
     metaParam(primeiroNome(opts.nome), P_NOME),
-    metaParam(opts.experienciaNome, P_EXP),
     metaParam(opts.instrucoes, "te mando os detalhes por aqui"),
   ];
 }
