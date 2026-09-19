@@ -57,3 +57,12 @@ verify_jwt = false
 # admin ou CRON_SECRET/service role).
 [functions.admin-whatsapp-templates]
 verify_jwt = false
+
+# whatsapp-webhook — mensagens que CHEGAM no WhatsApp oficial (Cloud API).
+# A Meta não manda JWT do Supabase: autentica com X-Hub-Signature-256,
+# conferida dentro da função com o META_APP_SECRET. Sem verify_jwt=false o
+# Supabase responde 401 antes do código rodar, a Meta registra falha e,
+# depois de muitas seguidas, DESATIVA o webhook — aí a mensagem volta a
+# ser descartada.
+[functions.whatsapp-webhook]
+verify_jwt = false
