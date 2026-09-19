@@ -4782,7 +4782,7 @@
             'antecedência, para podermos nos organizar quanto aos horários ' +
             'dos professores.\n\n' +
             '📍 Endereço do Lado B: Avenida Brigadeiro Faria Lima, 1572 — ' +
-            'sala 1607 (próximo à estação de metrô Faria Lima, na linha ' +
+            'sala 411 (próximo à estação de metrô Faria Lima, na linha ' +
             'amarela).\n\n' +
             '🚗 Estacionamento: Rua Tavares Cabral, 61 (é o estacionamento ' +
             'do Ibis Hotel, tem uma parede branca com um grafite grandão). ' +
@@ -4819,6 +4819,23 @@
           if (r && r.fornecedor_nome) candidatos.push(r.fornecedor_nome);
         });
       }
+      // Parceiro que JÁ tem mensagem pós-compra automática cadastrada
+      // (fornecedores_metadata.instrucoes_template ou .instrucoes_pos_compra)
+      // não mostra botão manual: a cliente já recebeu sozinha e clicar aqui
+      // mandaria a mesma coisa duas vezes. Limpou o cadastro, o botão volta —
+      // é ele o plano B quando o automático não deu conta.
+      // Chave igual à que grava fornecedores_metadata: minúsculo + espaços
+      // colapsados, SEM tirar acento (normalizeFornecedorNome acima tira, e
+      // aqui isso daria chave diferente da que está no banco).
+      const chaveMeta = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const temAutomatico = candidatos.some(function (nome) {
+        const m = fornecedoresMetaByKey.get(chaveMeta(nome));
+        if (!m) return false;
+        return !!String(m.instrucoes_template || '').trim() ||
+          !!String(m.instrucoes_pos_compra || '').trim();
+      });
+      if (temAutomatico) return '';
+
       let tpl = null;
       for (const nome of candidatos) {
         tpl = customerSupplierMessage(nome, primeiroNome);
