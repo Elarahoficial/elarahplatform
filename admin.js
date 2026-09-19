@@ -11690,6 +11690,20 @@
               '<input type="text" id="forn-f-pix" value="' + val('pix') + '" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória" style="' + inputStyle + '">') +
           '</div>' +
           '<div style="grid-column:1/-1;">' +
+            field('📲 O que a cliente precisa fazer depois de comprar',
+              '<textarea id="forn-f-instrucoes" rows="4" ' +
+              'placeholder="Ex.: Pra garantir seu lugar, o parceiro precisa te registrar na aula.&#10;' +
+              'Preencha este cadastro: https://exemplo.com/cadastro&#10;Leva 2 minutinhos 🧡" ' +
+              'style="' + inputStyle + 'resize:vertical;">' +
+              val('instrucoes_pos_compra') + '</textarea>' +
+              '<p style="margin:6px 0 0;font-size:.72rem;color:#888;line-height:1.5;">' +
+              'Preenchido, este texto vai <b>sozinho por WhatsApp</b> logo depois da compra ' +
+              'ser confirmada, em <b>todas as experiências deste parceiro</b> — numa segunda ' +
+              'mensagem, separada da confirmação. <b>Vazio = não envia nada.</b> ' +
+              'Uma experiência específica pode ter texto próprio no cadastro dela, e aí ' +
+              'ele substitui este.</p>') +
+          '</div>' +
+          '<div style="grid-column:1/-1;">' +
             field('Observações internas',
               '<textarea id="forn-f-obs" rows="3" style="' + inputStyle + 'resize:vertical;">' +
               val('observacoes') + '</textarea>') +
@@ -11914,6 +11928,7 @@
         tipo_parceria: tipoWidget.getValue() || null,
         data_entrada: overlay.querySelector('#forn-f-data').value || null,
         pix: trimOrNull('#forn-f-pix'),
+        instrucoes_pos_compra: trimOrNull('#forn-f-instrucoes'),
         observacoes: trimOrNull('#forn-f-obs'),
       });
       if (!res.ok) {
@@ -11922,11 +11937,13 @@
         const errStr = String(res.error || '');
         const hint = errStr.includes('tipo_parceria')
           ? '\n\nA vertente "Elarah em casa" precisa ser liberada no banco — rode sql/elarah_fornecedores_tipo_parceria_em_casa.sql no SQL Editor do Supabase.'
+          : (errStr.includes('instrucoes_pos_compra')
+            ? '\n\nA coluna "instrucoes_pos_compra" ainda não existe — rode sql/elarah_experiences_instrucoes_pos_compra.sql no SQL Editor do Supabase.'
           : (errStr.includes('pix')
             ? '\n\nA coluna "pix" ainda não existe — rode sql/elarah_fornecedores_pix.sql no SQL Editor do Supabase.'
             : (errStr.includes('fornecedores_metadata')
               ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
-              : ''));
+              : '')));
         alert('Não consegui salvar o fornecedor.\n' + (res.error || '') + hint);
         return;
       }

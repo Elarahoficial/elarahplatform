@@ -1177,6 +1177,86 @@ async function run() {
     check("e nada de chave de instruções na send_log", !sb._sendLog.has("instrucoes:bki-B"));
   }
   {
+    // A MENSAGEM DO PARCEIRO (o caso normal): a experiência não tem texto
+    // próprio, mas o parceiro tem. A cliente recebe o texto do parceiro.
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bki-P",
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: { imagem: IMG_A },          // sem texto na experiência
+      })],
+      [],
+      [{
+        fornecedor_key: "lado b",
+        fornecedor_nome: "Lado B",
+        instrucoes_pos_compra: "O Lado B precisa te registrar: https://ladob.com/cadastro",
+      }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-P"), { telefone_digits: CLIENT_A });
+    check("experiência sem texto + parceiro com texto → sai a instrução do parceiro",
+      zi.to(CLIENT_A).length === 2, "saíram " + zi.to(CLIENT_A).length);
+    check("com o texto cadastrado no parceiro",
+      (zi.to(CLIENT_A)[1] || {}).text?.includes("https://ladob.com/cadastro"));
+  }
+  {
+    // A EXCEÇÃO: a experiência tem texto próprio → substitui o do parceiro.
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bki-S",
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: { imagem: IMG_A, instrucoes_pos_compra: "Hoje é na sala 1607, 16º andar." },
+      })],
+      [],
+      [{
+        fornecedor_key: "lado b",
+        fornecedor_nome: "Lado B",
+        instrucoes_pos_compra: "O Lado B precisa te registrar: https://ladob.com/cadastro",
+      }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-S"), { telefone_digits: CLIENT_A });
+    const txt = (zi.to(CLIENT_A)[1] || {}).text ?? "";
+    check("experiência com texto próprio → manda o dela", txt.includes("sala 1607"));
+    check("e NÃO manda o do parceiro junto", !txt.includes("ladob.com"));
+    check("uma instrução só (não duas)", zi.to(CLIENT_A).length === 2);
+  }
+  {
+    // Nome do parceiro com espaços/caixa diferentes: casa do mesmo jeito
+    // (a chave é o nome normalizado, igual ao painel).
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bki-K",
+        fornecedor_nome: "  LADO   B  ",
+        experiences: { imagem: IMG_A },
+      })],
+      [],
+      [{ fornecedor_key: "lado b", instrucoes_pos_compra: "Cadastro: https://ladob.com/x" }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-K"), { telefone_digits: CLIENT_A });
+    check("nome do parceiro com caixa/espaços diferentes ainda acha o texto",
+      zi.to(CLIENT_A).length === 2, "saíram " + zi.to(CLIENT_A).length);
+  }
+  {
+    // Parceiro cadastrado mas SEM texto: nada muda (só a confirmação).
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bki-V", fornecedor_nome: "Lado B", experiences: { imagem: IMG_A } })],
+      [],
+      [{ fornecedor_key: "lado b", fornecedor_nome: "Lado B", whatsapp: "" }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-V"), { telefone_digits: CLIENT_A });
+    check("os dois vazios → só a confirmação", zi.to(CLIENT_A).length === 1);
+    check("e nenhuma chave de instruções", !sb._sendLog.has("instrucoes:bki-V"));
+  }
+  {
     // Reserva "aguardando experiência" (suprimida): NENHUMA das duas sai.
     const WAi = await loadWA(PROD_ENV);
     const zi = installZapiMock();

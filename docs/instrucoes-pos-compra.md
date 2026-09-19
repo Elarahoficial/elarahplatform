@@ -5,12 +5,30 @@ preencher o cadastro do parceiro, entrar num link, saber em que sala é, levar
 um documento. Antes, essa mensagem dependia de alguém lembrar de mandar — e
 quando esquecia, a pessoa chegava no dia sem estar registrada.
 
-Agora o texto fica cadastrado **na experiência**, e sai sozinho.
+Agora o texto fica cadastrado, e sai sozinho.
+
+## Onde escrever — o normal é no PARCEIRO
+
+A mensagem quase sempre é a mesma do parceiro, não muda de experiência pra
+experiência. Por isso há dois lugares, e a regra é simples:
+
+| Onde | Pra que serve |
+| --- | --- |
+| **Admin → Fornecedores → abrir o parceiro** | O texto **padrão** dele. Vale pra **todas** as experiências desse parceiro. É aqui que você escreve normalmente. |
+| **Admin → Experiências → editar a experiência** | A **exceção**. Preenchido, **substitui** o texto do parceiro só naquela experiência. |
+
+Na hora de enviar, a ordem é:
+
+```
+texto da experiência  →  texto do parceiro  →  não envia nada
+```
+
+Os dois vazios = a cliente recebe só a confirmação, como sempre foi.
+
+O parceiro é encontrado pelo **nome** (o mesmo que aparece na experiência),
+então basta o parceiro estar cadastrado em Fornecedores com esse nome.
 
 ## Como usar
-
-No admin → Experiências → editar a experiência, campo
-**"📲 O que a cliente precisa fazer depois de comprar"**.
 
 Escreva o texto como você mandaria no WhatsApp, com quebras de linha:
 
@@ -61,9 +79,9 @@ Passa pelo mesmo portão das outras mensagens automáticas:
 ## Fornecedores com fluxo próprio (BaresSp, Lado B)
 
 Continuam funcionando como antes, pelo botão do painel. A diferença é que
-agora dá pra fazer o mesmo **sem código**, por experiência: é só escrever o
-texto no campo. Se quiser migrar esses dois pra cá, basta colar o texto deles
-nas experiências correspondentes.
+agora dá pra fazer o mesmo **sem código**: cole o texto deles na **ficha do
+parceiro** (Fornecedores), uma vez só, e vale pra todas as experiências
+daquele parceiro.
 
 ## Se um dia o transacional migrar pra API oficial da Meta
 
@@ -79,20 +97,31 @@ fixo no corpo, em vez de uma variável gigante.
 
 ## Peças no código
 
-- `sql/elarah_experiences_instrucoes_pos_compra.sql` — a coluna.
+- `sql/elarah_experiences_instrucoes_pos_compra.sql` — as duas colunas
+  (`fornecedores_metadata.instrucoes_pos_compra` e
+  `experiences.instrucoes_pos_compra`).
 - `supabase/functions/_shared/whatsapp.ts` —
   `postPurchaseInstructionsWhatsAppText` e o envio dentro de
   `sendBookingConfirmationGated`.
-- `admin.html` / `admin.js` / `experiences-data.js` — o campo no painel.
+- `admin.html` / `admin.js` / `experiences-data.js` — o campo na experiência.
+- `admin.js` (`openFornecedorModal`) — o campo na ficha do parceiro.
 - `supabase/functions/_shared/whatsapp_e2e.test.mjs` — fluxo coberto na
   bateria E2E (sai junto da confirmação, não duplica em webhook repetido, não
-  sai sem texto cadastrado, não sai em reserva suprimida).
+  sai sem texto cadastrado, não sai em reserva suprimida, cai no texto do
+  parceiro quando a experiência não tem, e o da experiência sobrescreve o do
+  parceiro).
 
 ## Conferir
 
 ```sql
--- Experiências que já têm instrução cadastrada:
-select nome, instrucoes_pos_compra
+-- Parceiros com texto padrão cadastrado:
+select fornecedor_nome, instrucoes_pos_compra
+  from fornecedores_metadata
+ where coalesce(btrim(instrucoes_pos_compra), '') <> ''
+ order by fornecedor_nome;
+
+-- Experiências que sobrescrevem o texto do parceiro:
+select nome, fornecedor_nome, instrucoes_pos_compra
   from experiences
  where coalesce(btrim(instrucoes_pos_compra), '') <> ''
  order by nome;

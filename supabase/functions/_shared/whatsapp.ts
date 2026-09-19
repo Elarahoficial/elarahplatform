@@ -1202,6 +1202,13 @@ export async function gatedSendWhatsApp(
   return (await gatedSend(deps, params)) as GatedResult;
 }
 
+// Chave do parceiro em fornecedores_metadata: o nome normalizado (minúsculo,
+// espaços colapsados). Mesma regra do admin (fornecedorKey), porque é ela que
+// grava as linhas dessa tabela.
+export function fornecedorKeyDeNome(nome: unknown): string {
+  return String(nome ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 // Envia o aviso da compra pro PARCEIRO, sozinho, quando a reserva é paga.
 //
 // Resolve o WhatsApp do parceiro igual ao painel: nome do fornecedor
@@ -1259,7 +1266,7 @@ export async function sendSupplierBookingNoticeGated(
   // WhatsApp do parceiro: fornecedores_metadata, por nome normalizado.
   let waParceiro = "";
   try {
-    const chave = fornecedorNome.toLowerCase().replace(/\s+/g, " ").trim();
+    const chave = fornecedorKeyDeNome(fornecedorNome);
     const { data } = await supabase
       .from("fornecedores_metadata")
       .select("whatsapp")
@@ -1369,14 +1376,21 @@ export async function sendBookingConfirmationGated(
   let statusAllowed = false;
   let aguardando: boolean = true;
   let imagem: string = ELARAH_SITE + "/assets/logo.png";
-  // Instruções cadastradas NA EXPERIÊNCIA (cadastro do parceiro, sala, link).
-  // Vazio = a cliente recebe só a confirmação, como sempre foi.
+  // Instruções pós-compra (cadastro do parceiro, sala, link).
+  // Vêm do PARCEIRO por padrão — a mensagem quase sempre é a mesma pra todas
+  // as experiências dele. A experiência só SOBRESCREVE quando tem texto
+  // próprio. Os dois vazios = a cliente recebe só a confirmação, como sempre.
   let instrucoes = "";
+  // Nome do parceiro dessa reserva, pra buscar o texto padrão dele.
+  let fornecedorNome = "";
   if (bookingId) {
     try {
       const { data, error } = await supabase
         .from("bookings")
-        .select("status, aguardando_experiencia, experiences(imagem, instrucoes_pos_compra)")
+        .select(
+          "status, aguardando_experiencia, fornecedor_nome, " +
+            "experiences(imagem, instrucoes_pos_compra, fornecedor_nome)",
+        )
         .eq("id", bookingId)
         .maybeSingle();
       if (!error && data) {
@@ -1384,13 +1398,38 @@ export async function sendBookingConfirmationGated(
         aguardando = data.aguardando_experiencia === true ||
           (meta && (meta.aguardando_experiencia === true || meta.suppress_customer_messaging === true));
         const exp = (data as {
-          experiences?: { imagem?: unknown; instrucoes_pos_compra?: unknown };
+          experiences?: {
+            imagem?: unknown;
+            instrucoes_pos_compra?: unknown;
+            fornecedor_nome?: unknown;
+          };
         }).experiences;
         imagem = experienceImageUrl(exp?.imagem);
         instrucoes = String(exp?.instrucoes_pos_compra ?? "").trim();
+        fornecedorNome = String(
+          (data as { fornecedor_nome?: unknown }).fornecedor_nome ??
+            exp?.fornecedor_nome ?? "",
+        ).trim();
       }
     } catch (_e) {
       // fail-closed: mantém statusAllowed=false / aguardando=true
+    }
+  }
+
+  // Sem texto na experiência → cai no texto padrão do parceiro. Uma consulta
+  // a mais só nesse caso; se falhar, fica vazio e simplesmente não envia.
+  if (!instrucoes && fornecedorNome) {
+    try {
+      const { data } = await supabase
+        .from("fornecedores_metadata")
+        .select("instrucoes_pos_compra")
+        .eq("fornecedor_key", fornecedorKeyDeNome(fornecedorNome))
+        .maybeSingle();
+      instrucoes = String(
+        (data as { instrucoes_pos_compra?: unknown } | null)?.instrucoes_pos_compra ?? "",
+      ).trim();
+    } catch (_e) {
+      instrucoes = "";
     }
   }
   const rawPhone = (meta?.telefone_digits as string | undefined) ?? booking?.telefone;
