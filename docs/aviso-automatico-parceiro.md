@@ -4,25 +4,49 @@ Toda compra **paga** no site dispara, sozinha, o WhatsApp pra parceira que vai
 receber a cliente — a mesma mensagem que antes dependia de alguém clicar no
 botão "Avisar" da lista de Compras.
 
-## Por que pelo número da Elarah (e não pela API oficial)
+## Por onde sai
 
-Vai pelo **canal de sempre**: o número da Elarah conectado por QR code. Isso é
-uma decisão, não uma limitação:
+Segue o **provedor padrão**, que hoje é a **API oficial da Meta** — o número da
+Elarah migrou pra Cloud API e um número não pode estar nos dois canais ao mesmo
+tempo. Então este aviso vai por **template aprovado**: `elarah_aviso_parceira`.
 
-- a conversa aparece **no WhatsApp da Elarah**, como qualquer outra;
-- dá pra **ler o que a parceira responde** e responder ali mesmo;
-- o histórico fica junto com o resto da conversa com aquela parceira.
+As respostas da parceira chegam na **Caixa de Entrada do Meta Business Suite**,
+não no app do WhatsApp. É lá que se lê e responde.
 
-Pela API oficial da Meta o número sai do app: as respostas chegariam só por
-webhook, e seria preciso uma ferramenta externa pra ver as conversas. Pra
-mensagem de cliente (disparo frio, centenas de pessoas) a oficial compensa;
-pra conversa com parceira, não — são poucas mensagens por dia, pra gente que
-já conversa com a Elarah e responde.
+**Grupo não dá.** A Cloud API não envia para grupos — só 1 a 1, de número para
+número. Não é configuração: o recurso não existe na API oficial. Se a parceira
+tem mais de uma pessoa que precisa saber, o caminho é cadastrar mais de um
+número (hoje o cadastro guarda um só).
 
-Por isso este aviso **nunca** usa template oficial, mesmo com as credenciais da
-Meta cadastradas.
+## O template
 
-## A mensagem
+O corpo aprovado na Meta guarda os emojis, os rótulos e as quebras de linha —
+só os **valores** são variáveis. Por isso a mensagem sai idêntica à que a
+parceira já recebia:
+
+```
+Oi! Tudo bem? Passando para te avisar que você tem {{1}} para a experiência {{2}} no dia {{3}}.
+
+👤 Em nome de: {{4}}
+📱 WhatsApp: {{5}}
+✉️ E-mail: {{6}}
+📍 Local: {{7}}
+
+O repasse será feito até 48h antes do evento.
+```
+
+⚠️ A **contagem** tem que bater: mandar um número diferente de parâmetros do
+que o modelo tem faz a Meta recusar a mensagem inteira. Se o modelo mudar lá,
+`supplierBookingTemplateParams` em `whatsapp.ts` muda junto.
+
+Uma observação sobre a categoria: o classificador da Meta recusa como Marketing
+modelos que são quase só variável. Este passa porque o corpo tem texto de
+verdade (a frase de abertura, os rótulos, a linha do repasse). Se um dia ele
+travar assim mesmo, o caminho é enxugar: o **local** pode sair (é a casa da
+própria parceira) e **WhatsApp + e-mail** cabem num campo só de "Contato",
+caindo pra 5 variáveis.
+
+## A mensagem (no canal legado, de emergência)
 
 > Oi! Tudo bem? Passando para te avisar que você tem **2 vagas confirmadas**
 > para a experiência **Aula de Coquetelaria** no dia **12/04** às **15h00**.

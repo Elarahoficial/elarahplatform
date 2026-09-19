@@ -1102,12 +1102,25 @@ export function partnerInstructionsTemplateParams(opts: {
   });
 }
 
-// elarah_aviso_parceira — {{1}} vagas · {{2}} experiência · {{3}} quando ·
-// {{4}} em nome de · {{5}} whatsapp da cliente · {{6}} e-mail · {{7}} local
+// elarah_aviso_parceira — SETE variáveis, no mesmo formato que a parceira já
+// recebe hoje pelo canal legado:
 //
-// A formatação (emojis, quebras de linha) vive no CORPO do template, que é
-// fixo e aprovado — só os VALORES são variáveis. Por isso a mensagem fica
-// idêntica à do canal legado, sem a limitação de "parâmetro numa linha só".
+//     Oi! Tudo bem? Passando para te avisar que você tem {{1}} para a
+//     experiência {{2}} no dia {{3}}.
+//
+//     👤 Em nome de: {{4}}
+//     📱 WhatsApp: {{5}}
+//     ✉️ E-mail: {{6}}
+//     📍 Local: {{7}}
+//
+//     O repasse será feito até 48h antes do evento.
+//
+// Emoji, rótulo e quebra de linha vivem no CORPO do template, que é fixo e
+// aprovado — só os VALORES são variáveis. Por isso a mensagem sai idêntica à
+// do canal legado, sem a limitação de "parâmetro numa linha só".
+//
+// A CONTAGEM tem que bater com o template aprovado: mandar 5 num modelo de 7
+// (ou o contrário) faz a Meta recusar a mensagem inteira.
 export function supplierBookingTemplateParams(opts: {
   quantidade?: unknown; experienciaNome?: unknown; data?: unknown; horario?: unknown;
   nomes?: string[]; telefoneCliente?: unknown; emailCliente?: unknown;
@@ -1120,12 +1133,14 @@ export function supplierBookingTemplateParams(opts: {
   return [
     metaParam(qtd === 1 ? "1 vaga confirmada" : qtd + " vagas confirmadas"),
     metaParam(opts.experienciaNome, "(experiência)"),
+    // "03/10 às 10h00 – 11h30" — o corpo do template já diz "no dia".
     metaParam(
-      [String(opts.data ?? "").trim(), String(opts.horario ?? "").trim()].filter(Boolean).join(" · "),
+      [String(opts.data ?? "").trim(), String(opts.horario ?? "").trim()].filter(Boolean).join(" às "),
       "(data)",
     ),
     // Quem falta aparece AQUI, junto dos nomes: é o dado que a parceira usa
-    // pra saber quanta gente preparar.
+    // pra saber quanta gente preparar. Linha condicional não existe em
+    // template, então o aviso mora dentro do próprio valor.
     metaParam(semNome > 0 ? lista + " + " + semNome + (semNome === 1 ? " pessoa" : " pessoas") +
       " sem nome informado" : lista),
     metaParam(formatPhoneBRHuman(opts.telefoneCliente), "não informado"),
