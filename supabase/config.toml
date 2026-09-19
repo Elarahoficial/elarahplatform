@@ -66,3 +66,9 @@ verify_jwt = false
 # ser descartada.
 [functions.whatsapp-webhook]
 verify_jwt = false
+
+# admin-whatsapp-inscricao — consulta/inscreve a conta do WhatsApp neste app
+# (subscribed_apps). Autentica por dentro (JWT de admin, CRON_SECRET ou
+# service role), igual ao admin-whatsapp-templates.
+[functions.admin-whatsapp-inscricao]
+verify_jwt = false
