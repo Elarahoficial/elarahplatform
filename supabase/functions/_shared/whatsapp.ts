@@ -1015,6 +1015,84 @@ export function postPurchaseInstructionsTemplateParams(opts: {
   ];
 }
 
+// Template PRÓPRIO do parceiro: o texto inteiro fica FIXO no corpo, aprovado
+// na Meta, e só o que muda vai como variável. É assim que um texto longo —
+// bullets, parágrafos, endereço, estacionamento — chega formatado pela
+// oficial, porque variável de template NÃO aceita quebra de linha.
+//
+// Cada parceiro usa variáveis diferentes, na ordem que quiser:
+//   Lado B         → {{1}} nome
+//   BARES SP       → {{1}} nome · {{2}} link do formulário
+//   THE COZY HOME  → {{1}} nome · {{2}} experiência · {{3}} data · {{4}} horário
+//
+// Então a ordem é DECLARADA no cadastro do parceiro
+// (fornecedores_metadata.instrucoes_variaveis), ex.: "nome, experiencia, data,
+// horario". Sai sempre UM parâmetro por item declarado — a Meta recusa a
+// mensagem se a contagem não bater com o template.
+const INSTR_VARS_PADRAO = ["nome"];
+
+// Nomes aceitos em instrucoes_variaveis → valor. Aceita apelidos e ignora
+// acento/caixa/pontuação, porque isso é digitado à mão no painel.
+export function partnerInstructionsVarList(raw: unknown): string[] {
+  const limpo = String(raw ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")   // tira acento
+    .toLowerCase()
+    .replace(/\{\{\s*\d+\s*\}\}/g, " ")              // "{{1}}" não é nome
+    .replace(/[^a-z_]+/g, " ")
+    .trim();
+  const itens = limpo ? limpo.split(/\s+/).filter(Boolean) : [];
+  return itens.length ? itens : INSTR_VARS_PADRAO.slice();
+}
+
+export function partnerInstructionsTemplateParams(opts: {
+  variaveis?: unknown;
+  nome?: unknown;
+  experienciaNome?: unknown;
+  data?: unknown;
+  horario?: unknown;
+  link?: unknown;
+  endereco?: unknown;
+  bairro?: unknown;
+  quantidade?: unknown;
+}): string[] {
+  const local = [opts.endereco, opts.bairro]
+    .map((x) => String(x ?? "").trim()).filter(Boolean).join(" — ");
+  return partnerInstructionsVarList(opts.variaveis).map((v) => {
+    switch (v) {
+      case "nome":
+      case "primeiro_nome":
+        return metaParam(primeiroNome(opts.nome), P_NOME);
+      case "nome_completo":
+        return metaParam(opts.nome, P_NOME);
+      case "experiencia":
+      case "experiencia_nome":
+      case "aula":
+      case "evento":
+        return metaParam(opts.experienciaNome, P_EXP);
+      case "data":
+      case "dia":
+        return metaParam(opts.data, "na data combinada");
+      case "horario":
+      case "hora":
+        return metaParam(opts.horario, "no horário combinado");
+      case "link":
+      case "formulario":
+      case "cadastro":
+        return metaParam(opts.link, "te mando o link por aqui");
+      case "local":
+      case "endereco":
+        return metaParam(local, "te passo o endereço por aqui");
+      case "quantidade":
+      case "vagas":
+        return metaParam(opts.quantidade, "1");
+      default:
+        // Nome que o código não conhece: manda um valor neutro pra CONTAGEM
+        // de parâmetros continuar batendo com o template.
+        return metaParam(null);
+    }
+  });
+}
+
 // elarah_aviso_parceira — {{1}} vagas · {{2}} experiência · {{3}} quando ·
 // {{4}} em nome de · {{5}} whatsapp da cliente · {{6}} e-mail · {{7}} local
 //
@@ -1416,20 +1494,40 @@ export async function sendBookingConfirmationGated(
     }
   }
 
-  // Sem texto na experiência → cai no texto padrão do parceiro. Uma consulta
-  // a mais só nesse caso; se falhar, fica vazio e simplesmente não envia.
+  // Template PRÓPRIO do parceiro na Meta (texto todo fixo no corpo) e o link
+  // que vira {{2}} nele. Só entram quando é o texto do PARCEIRO que vale — se
+  // a experiência tem texto próprio, ela manda pelo template genérico.
+  let instrTemplate = "";
+  let instrLink = "";
+  let instrVars = "";
+
+  // Sem texto na experiência → cai no cadastro do parceiro. Uma consulta a
+  // mais só nesse caso; se falhar, fica vazio e simplesmente não envia.
   if (!instrucoes && fornecedorNome) {
     try {
       const { data } = await supabase
         .from("fornecedores_metadata")
-        .select("instrucoes_pos_compra")
+        .select(
+          "instrucoes_pos_compra, instrucoes_template, instrucoes_link, " +
+            "instrucoes_variaveis",
+        )
         .eq("fornecedor_key", fornecedorKeyDeNome(fornecedorNome))
         .maybeSingle();
-      instrucoes = String(
-        (data as { instrucoes_pos_compra?: unknown } | null)?.instrucoes_pos_compra ?? "",
-      ).trim();
+      const f = data as {
+        instrucoes_pos_compra?: unknown;
+        instrucoes_template?: unknown;
+        instrucoes_link?: unknown;
+        instrucoes_variaveis?: unknown;
+      } | null;
+      instrucoes = String(f?.instrucoes_pos_compra ?? "").trim();
+      instrTemplate = String(f?.instrucoes_template ?? "").trim();
+      instrLink = String(f?.instrucoes_link ?? "").trim();
+      instrVars = String(f?.instrucoes_variaveis ?? "").trim();
     } catch (_e) {
       instrucoes = "";
+      instrTemplate = "";
+      instrLink = "";
+      instrVars = "";
     }
   }
   const rawPhone = (meta?.telefone_digits as string | undefined) ?? booking?.telefone;
@@ -1475,12 +1573,28 @@ export async function sendBookingConfirmationGated(
   // Vai DEPOIS da confirmação de propósito (a ordem importa pra leitura) e
   // não deixa de sair se a confirmação já tinha ido antes ("duplicate") —
   // são duas mensagens independentes.
-  if (instrucoes) {
-    const textoInstr = postPurchaseInstructionsWhatsAppText({
-      nome: booking?.nome,
-      experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
-      instrucoes,
-    });
+  //
+  // Dois jeitos de mandar, e o portão é o mesmo:
+  //   * template PRÓPRIO do parceiro (instrucoes_template) — o texto inteiro
+  //     está fixo no corpo, aprovado na Meta, com {{1}} nome (e {{2}} link se
+  //     houver). É o único jeito de um texto longo, com bullets e parágrafos,
+  //     chegar formatado pela oficial.
+  //   * template genérico (elarah_instrucoes_pos_compra) — o texto vai como
+  //     variável e, por regra da Meta, sai em UMA linha.
+  //
+  // Sem texto livre e sem template do parceiro → não há o que mandar. E com
+  // só o template do parceiro, o canal legado (texto livre) não tem corpo
+  // pra enviar, então esse caso só sai pela oficial.
+  const temTemplateParceiro = !!instrTemplate;
+  const podeEnviarInstr = !!instrucoes || (temTemplateParceiro && whatsappIsOfficial());
+  if (podeEnviarInstr) {
+    const textoInstr = instrucoes
+      ? postPurchaseInstructionsWhatsAppText({
+        nome: booking?.nome,
+        experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+        instrucoes,
+      })
+      : "";
     try {
       const rInstr = await gatedSendWhatsApp(supabase, {
         kind: "instrucoes",
@@ -1491,13 +1605,28 @@ export async function sendBookingConfirmationGated(
         statusAllowed,
         message: textoInstr,
         caption: textoInstr,
-        template: {
-          params: postPurchaseInstructionsTemplateParams({
-            nome: booking?.nome,
-            experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
-            instrucoes,
-          }),
-        },
+        template: temTemplateParceiro
+          ? {
+            name: instrTemplate,
+            params: partnerInstructionsTemplateParams({
+              variaveis: instrVars,
+              nome: booking?.nome,
+              experienciaNome: booking?.experiencia_nome,
+              data: booking?.data,
+              horario: booking?.horario,
+              link: instrLink,
+              endereco: (meta?.endereco as string | null) ?? null,
+              bairro: (meta?.bairro as string | null) ?? null,
+              quantidade: booking?.quantidade ?? null,
+            }),
+          }
+          : {
+            params: postPurchaseInstructionsTemplateParams({
+              nome: booking?.nome,
+              experienciaNome: booking?.experiencia_nome ?? "Sua experiência",
+              instrucoes,
+            }),
+          },
         bookingId: booking?.id ?? null,
         experienciaId: booking?.experiencia_id ?? null,
       });

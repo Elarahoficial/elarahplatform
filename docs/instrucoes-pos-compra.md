@@ -83,41 +83,83 @@ agora dá pra fazer o mesmo **sem código**: cole o texto deles na **ficha do
 parceiro** (Fornecedores), uma vez só, e vale pra todas as experiências
 daquele parceiro.
 
-## Se um dia o transacional migrar pra API oficial da Meta
+## Template próprio do parceiro — pro texto longo chegar formatado
 
-Hoje essas mensagens saem pelo canal de sempre e aceitam texto livre, com
-quebras de linha e links. Na API oficial, a mensagem precisaria de template
-aprovado — e **parâmetro de template não aceita quebra de linha**, então o
-texto viraria uma linha só.
+Pela API oficial, **variável de template não aceita quebra de linha** (a Meta
+recusa). Quem manda o texto como variável recebe tudo **numa linha só**. Pra
+mensagem curta, tudo bem. Pra uma mensagem como a da Lado B — endereço,
+estacionamento, regra de 48h, bullets — não serve.
 
-O código já manda os parâmetros do template `elarah_instrucoes_pos_compra`
-({{1}} nome, {{2}} experiência, {{3}} o que fazer) pra esse caso. Se isso
-acontecer, o ideal é aprovar um template por instrução recorrente, com o texto
-fixo no corpo, em vez de uma variável gigante.
+A saída é aprovar na Meta **um template por parceiro**, com o texto **inteiro
+fixo no corpo**, e só o que muda como variável. Aí, na ficha do parceiro, você
+preenche o bloco *"Template próprio deste parceiro na Meta"*:
+
+| Campo | O que é |
+| --- | --- |
+| **Nome do template aprovado** | O nome exato do template na Meta, ex.: `lado_b_pos_compra`. Preenchido, é **ele** que sai. |
+| **Ordem das variáveis** | Os nomes na mesma ordem de `{{1}}`, `{{2}}`, `{{3}}`… no template. |
+| **Link do formulário** | O valor da variável `link`, quando o template tem uma. |
+
+Nomes aceitos na ordem das variáveis: `nome` (primeiro nome), `nome_completo`,
+`experiencia`, `data`, `horario`, `link`, `local` (endereço + bairro),
+`quantidade`. Campo vazio = só `nome`.
+
+Os três parceiros reais:
+
+| Parceiro | Ordem das variáveis |
+| --- | --- |
+| Lado B | `nome` |
+| BARES SP | `nome, link` |
+| The Cozy Home | `nome, experiencia, data, horario` |
+
+Sai **um parâmetro por item declarado** — a Meta recusa a mensagem se a
+contagem não bater com o template. Um nome que o código não conhece ainda
+conta como um parâmetro (com valor neutro), pra contagem nunca desalinhar.
+
+**Sem template próprio**, a mensagem sai pelo template genérico
+`elarah_instrucoes_pos_compra` ({{1}} nome, {{2}} experiência, {{3}} o que
+fazer), com o seu texto na variável — e aí ele vira uma linha.
+
+**Quem ganha de quem:**
+
+1. Texto na **experiência** → sempre ele, pelo template genérico. É a exceção
+   que alguém escreveu de propósito.
+2. **Template próprio** do parceiro → sai por ele.
+3. Só **texto do parceiro** → template genérico com esse texto.
+4. Nada → não envia.
+
+No canal legado (emergência), o que vale é o **texto livre** — template próprio
+sem texto livre não tem corpo pra enviar, então não sai nada, e a chave da
+`whatsapp_send_log` fica livre pra quando voltar pra oficial.
 
 ## Peças no código
 
-- `sql/elarah_experiences_instrucoes_pos_compra.sql` — as duas colunas
-  (`fornecedores_metadata.instrucoes_pos_compra` e
-  `experiences.instrucoes_pos_compra`).
+- `sql/elarah_experiences_instrucoes_pos_compra.sql` — as colunas:
+  `fornecedores_metadata.instrucoes_pos_compra`, `.instrucoes_template`,
+  `.instrucoes_variaveis`, `.instrucoes_link` e
+  `experiences.instrucoes_pos_compra`.
 - `supabase/functions/_shared/whatsapp.ts` —
-  `postPurchaseInstructionsWhatsAppText` e o envio dentro de
-  `sendBookingConfirmationGated`.
+  `postPurchaseInstructionsWhatsAppText`,
+  `partnerInstructionsVarList` / `partnerInstructionsTemplateParams` (template
+  próprio do parceiro) e o envio dentro de `sendBookingConfirmationGated`.
 - `admin.html` / `admin.js` / `experiences-data.js` — o campo na experiência.
 - `admin.js` (`openFornecedorModal`) — o campo na ficha do parceiro.
 - `supabase/functions/_shared/whatsapp_e2e.test.mjs` — fluxo coberto na
   bateria E2E (sai junto da confirmação, não duplica em webhook repetido, não
   sai sem texto cadastrado, não sai em reserva suprimida, cai no texto do
-  parceiro quando a experiência não tem, e o da experiência sobrescreve o do
-  parceiro).
+  parceiro quando a experiência não tem, o da experiência sobrescreve o do
+  parceiro, e os três parceiros reais saindo cada um pelo template dele com a
+  ordem de variáveis certa).
 
 ## Conferir
 
 ```sql
--- Parceiros com texto padrão cadastrado:
-select fornecedor_nome, instrucoes_pos_compra
+-- Parceiros com mensagem pós-compra cadastrada:
+select fornecedor_nome, instrucoes_template, instrucoes_variaveis,
+       instrucoes_link, instrucoes_pos_compra
   from fornecedores_metadata
  where coalesce(btrim(instrucoes_pos_compra), '') <> ''
+    or coalesce(btrim(instrucoes_template), '') <> ''
  order by fornecedor_nome;
 
 -- Experiências que sobrescrevem o texto do parceiro:

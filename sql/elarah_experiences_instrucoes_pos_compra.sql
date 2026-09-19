@@ -58,6 +58,53 @@ alter table public.fornecedores_metadata
 comment on column public.fornecedores_metadata.instrucoes_pos_compra is
   'Texto padrão enviado por WhatsApp à cliente logo após a compra ser confirmada, em QUALQUER experiência deste parceiro (cadastro, sala, link). Uma experiência pode sobrescrever em experiences.instrucoes_pos_compra. Vazio = não envia nada.';
 
+-- 1b) Template PRÓPRIO do parceiro na Meta (opcional, e é o que fica bonito).
+--
+--   Pela API oficial, VARIÁVEL de template não aceita quebra de linha — a Meta
+--   recusa. Então um texto longo, com bullets e parágrafos (Lado B), sairia
+--   numa linha só se fosse enviado como variável.
+--
+--   A saída: aprovar na Meta um template POR PARCEIRO, com o texto todo FIXO
+--   no corpo, e só o que muda como variável. Aqui você guarda o nome dele.
+--
+--   Cada parceiro usa variáveis diferentes, então a ORDEM é declarada em
+--   instrucoes_variaveis (abaixo). Ex. reais:
+--       Lado B         → nome
+--       BARES SP       → nome, link
+--       THE COZY HOME  → nome, experiencia, data, horario
+alter table public.fornecedores_metadata
+  add column if not exists instrucoes_template text;
+
+comment on column public.fornecedores_metadata.instrucoes_template is
+  'Nome do template aprovado na Meta com o texto pós-compra DESTE parceiro fixo no corpo. As variáveis dele vêm de instrucoes_variaveis. Vazio = usa o template genérico com instrucoes_pos_compra como variável (sai em uma linha).';
+
+-- 1c) A ORDEM das variáveis do template do parceiro.
+--
+--   Escreva os nomes separados por vírgula, na MESMA ORDEM em que aparecem
+--   {{1}}, {{2}}, {{3}}... no template aprovado. Sai um parâmetro por item —
+--   a Meta recusa a mensagem se a contagem não bater.
+--
+--   Nomes aceitos (com apelidos):
+--       nome          primeiro nome da cliente   (padrão quando o campo é vazio)
+--       nome_completo nome como ela escreveu
+--       experiencia   nome da experiência        (aula, evento)
+--       data          data da reserva            (dia)
+--       horario       horário da reserva         (hora)
+--       link          o que está em instrucoes_link  (formulario, cadastro)
+--       local         endereço + bairro          (endereco)
+--       quantidade    vagas compradas            (vagas)
+alter table public.fornecedores_metadata
+  add column if not exists instrucoes_variaveis text;
+
+comment on column public.fornecedores_metadata.instrucoes_variaveis is
+  'Ordem das variáveis do template do parceiro, separadas por vírgula, ex.: "nome, experiencia, data, horario". Aceita: nome, nome_completo, experiencia, data, horario, link, local, quantidade. Vazio = só "nome".';
+
+alter table public.fornecedores_metadata
+  add column if not exists instrucoes_link text;
+
+comment on column public.fornecedores_metadata.instrucoes_link is
+  'Link do formulário/cadastro do parceiro. É o valor da variável "link" em instrucoes_variaveis.';
+
 -- 2) A exceção POR EXPERIÊNCIA (sobrescreve o texto do parceiro).
 alter table public.experiences
   add column if not exists instrucoes_pos_compra text;
@@ -69,10 +116,12 @@ notify pgrst, 'reload schema';
 
 -- =============================================================
 -- VERIFICAÇÃO
---   -- Parceiros com texto padrão cadastrado:
---   select fornecedor_nome, instrucoes_pos_compra
+--   -- Parceiros com mensagem pós-compra cadastrada:
+--   select fornecedor_nome, instrucoes_template, instrucoes_variaveis,
+--          instrucoes_link, instrucoes_pos_compra
 --     from fornecedores_metadata
 --    where coalesce(btrim(instrucoes_pos_compra), '') <> ''
+--       or coalesce(btrim(instrucoes_template), '') <> ''
 --    order by fornecedor_nome;
 --
 --   -- Experiências que sobrescrevem o texto do parceiro:
