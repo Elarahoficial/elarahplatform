@@ -1177,6 +1177,231 @@ async function run() {
     check("e nada de chave de instruções na send_log", !sb._sendLog.has("instrucoes:bki-B"));
   }
   {
+    // A MENSAGEM DO PARCEIRO (o caso normal): a experiência não tem texto
+    // próprio, mas o parceiro tem. A cliente recebe o texto do parceiro.
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bki-P",
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: { imagem: IMG_A },          // sem texto na experiência
+      })],
+      [],
+      [{
+        fornecedor_key: "lado b",
+        fornecedor_nome: "Lado B",
+        instrucoes_pos_compra: "O Lado B precisa te registrar: https://ladob.com/cadastro",
+      }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-P"), { telefone_digits: CLIENT_A });
+    check("experiência sem texto + parceiro com texto → sai a instrução do parceiro",
+      zi.to(CLIENT_A).length === 2, "saíram " + zi.to(CLIENT_A).length);
+    check("com o texto cadastrado no parceiro",
+      (zi.to(CLIENT_A)[1] || {}).text?.includes("https://ladob.com/cadastro"));
+  }
+  {
+    // A EXCEÇÃO: a experiência tem texto próprio → substitui o do parceiro.
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bki-S",
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: { imagem: IMG_A, instrucoes_pos_compra: "Hoje é na sala 1607, 16º andar." },
+      })],
+      [],
+      [{
+        fornecedor_key: "lado b",
+        fornecedor_nome: "Lado B",
+        instrucoes_pos_compra: "O Lado B precisa te registrar: https://ladob.com/cadastro",
+      }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-S"), { telefone_digits: CLIENT_A });
+    const txt = (zi.to(CLIENT_A)[1] || {}).text ?? "";
+    check("experiência com texto próprio → manda o dela", txt.includes("sala 1607"));
+    check("e NÃO manda o do parceiro junto", !txt.includes("ladob.com"));
+    check("uma instrução só (não duas)", zi.to(CLIENT_A).length === 2);
+  }
+  {
+    // Nome do parceiro com espaços/caixa diferentes: casa do mesmo jeito
+    // (a chave é o nome normalizado, igual ao painel).
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bki-K",
+        fornecedor_nome: "  LADO   B  ",
+        experiences: { imagem: IMG_A },
+      })],
+      [],
+      [{ fornecedor_key: "lado b", instrucoes_pos_compra: "Cadastro: https://ladob.com/x" }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-K"), { telefone_digits: CLIENT_A });
+    check("nome do parceiro com caixa/espaços diferentes ainda acha o texto",
+      zi.to(CLIENT_A).length === 2, "saíram " + zi.to(CLIENT_A).length);
+  }
+  {
+    // Parceiro cadastrado mas SEM texto: nada muda (só a confirmação).
+    const WAi = await loadWA(PROD_ENV);
+    const zi = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bki-V", fornecedor_nome: "Lado B", experiences: { imagem: IMG_A } })],
+      [],
+      [{ fornecedor_key: "lado b", fornecedor_nome: "Lado B", whatsapp: "" }],
+    );
+    await WAi.sendBookingConfirmationGated(sb, sb._bookings.get("bki-V"), { telefone_digits: CLIENT_A });
+    check("os dois vazios → só a confirmação", zi.to(CLIENT_A).length === 1);
+    check("e nenhuma chave de instruções", !sb._sendLog.has("instrucoes:bki-V"));
+  }
+  // ---------- TEMPLATE PRÓPRIO DE CADA PARCEIRO (oficial) ----------
+  // Texto longo não cabe em variável de template (a Meta recusa quebra de
+  // linha). A saída é um template por parceiro, texto fixo no corpo, e só o
+  // que muda como variável — em ordem que cada parceiro escolhe.
+  head("FLUXO — cada parceiro com o template dele aprovado na Meta");
+  {
+    // LADO B: texto gigante (endereço, estacionamento, 48h) → só {{1}} nome.
+    const WAt = await loadWA(META_ENV);
+    const zt = installMetaMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bkt-LB", nome: "Maria Silva", fornecedor_nome: "Lado B" })],
+      [],
+      [{
+        fornecedor_key: "lado b",
+        instrucoes_template: "lado_b_pos_compra",
+        instrucoes_variaveis: "nome",
+      }],
+    );
+    await WAt.sendBookingConfirmationGated(sb, sb._bookings.get("bkt-LB"), {
+      telefone_digits: CLIENT_A,
+    });
+    const instr = zt.to(CLIENT_A).filter((c) => c.template === "lado_b_pos_compra");
+    check("Lado B: sai pelo template do parceiro", instr.length === 1,
+      JSON.stringify(zt.to(CLIENT_A).map((c) => c.template)));
+    check("Lado B: com 1 variável só", (instr[0] || {}).params?.length === 1);
+    check("Lado B: e ela é o primeiro nome", (instr[0] || {}).params?.[0] === "Maria");
+    check("Lado B: nem toca no template genérico",
+      !zt.to(CLIENT_A).some((c) => c.template === "elarah_instrucoes_pos_compra"));
+  }
+  {
+    // BARES SP: {{1}} nome · {{2}} link do formulário.
+    const WAt = await loadWA(META_ENV);
+    const zt = installMetaMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bkt-BS", nome: "Ana Paula", fornecedor_nome: "BARES SP" })],
+      [],
+      [{
+        fornecedor_key: "bares sp",
+        instrucoes_template: "bares_sp_pos_compra",
+        instrucoes_variaveis: "nome, link",
+        instrucoes_link: "https://forms.gle/baressp",
+      }],
+    );
+    await WAt.sendBookingConfirmationGated(sb, sb._bookings.get("bkt-BS"), {
+      telefone_digits: CLIENT_A,
+    });
+    const instr = zt.to(CLIENT_A).find((c) => c.template === "bares_sp_pos_compra");
+    check("BARES SP: sai pelo template do parceiro", !!instr);
+    check("BARES SP: 2 variáveis, na ordem declarada",
+      JSON.stringify(instr?.params) === JSON.stringify(["Ana", "https://forms.gle/baressp"]),
+      JSON.stringify(instr?.params));
+  }
+  {
+    // THE COZY HOME: {{1}} nome · {{2}} experiência · {{3}} data · {{4}} horário.
+    const WAt = await loadWA(META_ENV);
+    const zt = installMetaMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bkt-CH",
+        nome: "Júlia Menezes",
+        experiencia_nome: "Oficina de Cerâmica",
+        data: "12/10",
+        horario: "14h00 – 17h00",
+        fornecedor_nome: "The Cozy Home",
+      })],
+      [],
+      [{
+        fornecedor_key: "the cozy home",
+        instrucoes_template: "the_cozy_home_pos_compra",
+        instrucoes_variaveis: "nome, experiencia, data, horario",
+      }],
+    );
+    await WAt.sendBookingConfirmationGated(sb, sb._bookings.get("bkt-CH"), {
+      telefone_digits: CLIENT_A,
+    });
+    const instr = zt.to(CLIENT_A).find((c) => c.template === "the_cozy_home_pos_compra");
+    check("The Cozy Home: sai pelo template do parceiro", !!instr);
+    check("The Cozy Home: 4 variáveis, na ordem declarada",
+      JSON.stringify(instr?.params) ===
+        JSON.stringify(["Júlia", "Oficina de Cerâmica", "12/10", "14h00 – 17h00"]),
+      JSON.stringify(instr?.params));
+  }
+  {
+    // A ordem é ESCRITA À MÃO no painel: aceita vírgula, acento, caixa,
+    // espaço sobrando e até "{{1}}" colado junto.
+    const WAt = await loadWA(META_ENV);
+    check("ordem escrita torta ainda é lida certo",
+      JSON.stringify(WAt.partnerInstructionsVarList("{{1}} Nome, {{2}} Experiência , {{3}} HORÁRIO")) ===
+        JSON.stringify(["nome", "experiencia", "horario"]),
+      JSON.stringify(WAt.partnerInstructionsVarList("{{1}} Nome, {{2}} Experiência , {{3}} HORÁRIO")));
+    check("campo vazio → só o nome",
+      JSON.stringify(WAt.partnerInstructionsVarList("")) === JSON.stringify(["nome"]));
+    check("nome desconhecido não muda a CONTAGEM de parâmetros",
+      WAt.partnerInstructionsTemplateParams({ variaveis: "nome, xpto, data", nome: "Ana", data: "12/10" })
+        .length === 3);
+  }
+  {
+    // A experiência com texto próprio ganha do template do parceiro: quem
+    // escreveu a exceção quis aquela mensagem ali.
+    const WAt = await loadWA(META_ENV);
+    const zt = installMetaMock();
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bkt-OV",
+        fornecedor_nome: "Lado B",
+        experiences: { imagem: IMG_A, instrucoes_pos_compra: "Hoje é na sala 411." },
+      })],
+      [],
+      [{ fornecedor_key: "lado b", instrucoes_template: "lado_b_pos_compra", instrucoes_variaveis: "nome" }],
+    );
+    await WAt.sendBookingConfirmationGated(sb, sb._bookings.get("bkt-OV"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("exceção da experiência ganha do template do parceiro",
+      !zt.to(CLIENT_A).some((c) => c.template === "lado_b_pos_compra"));
+    const generico = zt.to(CLIENT_A).find((c) => c.template === "elarah_instrucoes_pos_compra");
+    check("e sai pelo template genérico, com o texto da experiência",
+      (generico?.params ?? []).some((x) => String(x).includes("sala 411")));
+    // O modelo aprovado tem DUAS variáveis (nome + o que fazer). Mandar 3 num
+    // modelo de 2 faz a Meta recusar a mensagem inteira.
+    check("template genérico vai com 2 parâmetros, do jeito que foi aprovado",
+      generico?.params?.length === 2, JSON.stringify(generico?.params));
+    check("o 1º é o primeiro nome", generico?.params?.[0] === "Maria");
+    check("e o 2º é o que a cliente precisa fazer",
+      generico?.params?.[1] === "Hoje é na sala 411.");
+  }
+  {
+    // Só template do parceiro (sem texto livre) no canal LEGADO: não há corpo
+    // pra mandar, então não manda — e não queima a chave da send_log.
+    const WAt = await loadWA(PROD_ENV);
+    const zt = installZapiMock();
+    const sb = makeSupabase(
+      [bookingSeed({ id: "bkt-LG", fornecedor_nome: "Lado B" })],
+      [],
+      [{ fornecedor_key: "lado b", instrucoes_template: "lado_b_pos_compra", instrucoes_variaveis: "nome" }],
+    );
+    await WAt.sendBookingConfirmationGated(sb, sb._bookings.get("bkt-LG"), {
+      telefone_digits: CLIENT_A,
+    });
+    check("no legado, template do parceiro sem texto livre → só a confirmação",
+      zt.to(CLIENT_A).length === 1, "saíram " + zt.to(CLIENT_A).length);
+    check("e a chave de instruções fica livre pra quando voltar pra oficial",
+      !sb._sendLog.has("instrucoes:bkt-LG"));
+  }
+
+  {
     // Reserva "aguardando experiência" (suprimida): NENHUMA das duas sai.
     const WAi = await loadWA(PROD_ENV);
     const zi = installZapiMock();

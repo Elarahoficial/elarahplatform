@@ -5,12 +5,30 @@ preencher o cadastro do parceiro, entrar num link, saber em que sala é, levar
 um documento. Antes, essa mensagem dependia de alguém lembrar de mandar — e
 quando esquecia, a pessoa chegava no dia sem estar registrada.
 
-Agora o texto fica cadastrado **na experiência**, e sai sozinho.
+Agora o texto fica cadastrado, e sai sozinho.
+
+## Onde escrever — o normal é no PARCEIRO
+
+A mensagem quase sempre é a mesma do parceiro, não muda de experiência pra
+experiência. Por isso há dois lugares, e a regra é simples:
+
+| Onde | Pra que serve |
+| --- | --- |
+| **Admin → Fornecedores → abrir o parceiro** | O texto **padrão** dele. Vale pra **todas** as experiências desse parceiro. É aqui que você escreve normalmente. |
+| **Admin → Experiências → editar a experiência** | A **exceção**. Preenchido, **substitui** o texto do parceiro só naquela experiência. |
+
+Na hora de enviar, a ordem é:
+
+```
+texto da experiência  →  texto do parceiro  →  não envia nada
+```
+
+Os dois vazios = a cliente recebe só a confirmação, como sempre foi.
+
+O parceiro é encontrado pelo **nome** (o mesmo que aparece na experiência),
+então basta o parceiro estar cadastrado em Fornecedores com esse nome.
 
 ## Como usar
-
-No admin → Experiências → editar a experiência, campo
-**"📲 O que a cliente precisa fazer depois de comprar"**.
 
 Escreva o texto como você mandaria no WhatsApp, com quebras de linha:
 
@@ -61,38 +79,112 @@ Passa pelo mesmo portão das outras mensagens automáticas:
 ## Fornecedores com fluxo próprio (BaresSp, Lado B)
 
 Continuam funcionando como antes, pelo botão do painel. A diferença é que
-agora dá pra fazer o mesmo **sem código**, por experiência: é só escrever o
-texto no campo. Se quiser migrar esses dois pra cá, basta colar o texto deles
-nas experiências correspondentes.
+agora dá pra fazer o mesmo **sem código**: cole o texto deles na **ficha do
+parceiro** (Fornecedores), uma vez só, e vale pra todas as experiências
+daquele parceiro.
 
-## Se um dia o transacional migrar pra API oficial da Meta
+## Template próprio do parceiro — pro texto longo chegar formatado
 
-Hoje essas mensagens saem pelo canal de sempre e aceitam texto livre, com
-quebras de linha e links. Na API oficial, a mensagem precisaria de template
-aprovado — e **parâmetro de template não aceita quebra de linha**, então o
-texto viraria uma linha só.
+Pela API oficial, **variável de template não aceita quebra de linha** (a Meta
+recusa). Quem manda o texto como variável recebe tudo **numa linha só**. Pra
+mensagem curta, tudo bem. Pra uma mensagem como a da Lado B — endereço,
+estacionamento, regra de 48h, bullets — não serve.
 
-O código já manda os parâmetros do template `elarah_instrucoes_pos_compra`
-({{1}} nome, {{2}} experiência, {{3}} o que fazer) pra esse caso. Se isso
-acontecer, o ideal é aprovar um template por instrução recorrente, com o texto
-fixo no corpo, em vez de uma variável gigante.
+A saída é aprovar na Meta **um template por parceiro**, com o texto **inteiro
+fixo no corpo**, e só o que muda como variável. Aí, na ficha do parceiro, você
+preenche o bloco *"Template próprio deste parceiro na Meta"*:
+
+| Campo | O que é |
+| --- | --- |
+| **Nome do template aprovado** | O nome exato do template na Meta, ex.: `lado_b_pos_compra`. Preenchido, é **ele** que sai. |
+| **Ordem das variáveis** | Os nomes na mesma ordem de `{{1}}`, `{{2}}`, `{{3}}`… no template. |
+| **Link do formulário** | O valor da variável `link`, quando o template tem uma. |
+
+Nomes aceitos na ordem das variáveis: `nome` (primeiro nome), `nome_completo`,
+`experiencia`, `data`, `horario`, `link`, `local` (endereço + bairro),
+`quantidade`. Campo vazio = só `nome`.
+
+Os três parceiros reais:
+
+| Parceiro | Ordem das variáveis |
+| --- | --- |
+| Lado B | `nome` |
+| BARES SP | `nome, link` |
+| The Cozy Home | `nome, experiencia, data, horario` |
+
+Sai **um parâmetro por item declarado** — a Meta recusa a mensagem se a
+contagem não bater com o template. Um nome que o código não conhece ainda
+conta como um parâmetro (com valor neutro), pra contagem nunca desalinhar.
+
+**Sem template próprio**, a mensagem sai pelo template genérico
+`elarah_instrucoes_pos_compra`, com **duas** variáveis:
+
+```
+Olá, {{1}}. Sua compra na Elarah foi confirmada.
+
+{{2}}
+
+Qualquer dúvida, é só responder por aqui.
+```
+
+`{{1}}` = primeiro nome · `{{2}}` = o texto cadastrado (parceiro ou
+experiência), num parágrafo só.
+
+O nome da experiência **não** está no modelo de propósito. O classificador da
+Meta recusava o modelo como Marketing enquanto o corpo era quase só variável;
+com uma variável a menos — mais texto fixo e "sua compra foi confirmada" logo
+na primeira linha — ele passou como Utilidade. E não faz falta: a confirmação
+de reserva chega logo antes, com experiência, data e horário.
+
+⚠️ A **contagem** de parâmetros tem que bater com o modelo aprovado. Mandar 3
+num modelo de 2 faz a Meta recusar a mensagem inteira. Se um dia você editar o
+modelo na Meta e mudar o número de variáveis, `postPurchaseInstructionsTemplateParams`
+em `whatsapp.ts` precisa mudar junto.
+
+**Quem ganha de quem:**
+
+1. Texto na **experiência** → sempre ele, pelo template genérico. É a exceção
+   que alguém escreveu de propósito.
+2. **Template próprio** do parceiro → sai por ele.
+3. Só **texto do parceiro** → template genérico com esse texto.
+4. Nada → não envia.
+
+No canal legado (emergência), o que vale é o **texto livre** — template próprio
+sem texto livre não tem corpo pra enviar, então não sai nada, e a chave da
+`whatsapp_send_log` fica livre pra quando voltar pra oficial.
 
 ## Peças no código
 
-- `sql/elarah_experiences_instrucoes_pos_compra.sql` — a coluna.
+- `sql/elarah_experiences_instrucoes_pos_compra.sql` — as colunas:
+  `fornecedores_metadata.instrucoes_pos_compra`, `.instrucoes_template`,
+  `.instrucoes_variaveis`, `.instrucoes_link` e
+  `experiences.instrucoes_pos_compra`.
 - `supabase/functions/_shared/whatsapp.ts` —
-  `postPurchaseInstructionsWhatsAppText` e o envio dentro de
-  `sendBookingConfirmationGated`.
-- `admin.html` / `admin.js` / `experiences-data.js` — o campo no painel.
+  `postPurchaseInstructionsWhatsAppText`,
+  `partnerInstructionsVarList` / `partnerInstructionsTemplateParams` (template
+  próprio do parceiro) e o envio dentro de `sendBookingConfirmationGated`.
+- `admin.html` / `admin.js` / `experiences-data.js` — o campo na experiência.
+- `admin.js` (`openFornecedorModal`) — o campo na ficha do parceiro.
 - `supabase/functions/_shared/whatsapp_e2e.test.mjs` — fluxo coberto na
   bateria E2E (sai junto da confirmação, não duplica em webhook repetido, não
-  sai sem texto cadastrado, não sai em reserva suprimida).
+  sai sem texto cadastrado, não sai em reserva suprimida, cai no texto do
+  parceiro quando a experiência não tem, o da experiência sobrescreve o do
+  parceiro, e os três parceiros reais saindo cada um pelo template dele com a
+  ordem de variáveis certa).
 
 ## Conferir
 
 ```sql
--- Experiências que já têm instrução cadastrada:
-select nome, instrucoes_pos_compra
+-- Parceiros com mensagem pós-compra cadastrada:
+select fornecedor_nome, instrucoes_template, instrucoes_variaveis,
+       instrucoes_link, instrucoes_pos_compra
+  from fornecedores_metadata
+ where coalesce(btrim(instrucoes_pos_compra), '') <> ''
+    or coalesce(btrim(instrucoes_template), '') <> ''
+ order by fornecedor_nome;
+
+-- Experiências que sobrescrevem o texto do parceiro:
+select nome, fornecedor_nome, instrucoes_pos_compra
   from experiences
  where coalesce(btrim(instrucoes_pos_compra), '') <> ''
  order by nome;

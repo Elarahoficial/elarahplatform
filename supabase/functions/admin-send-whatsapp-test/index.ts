@@ -60,13 +60,17 @@ const SAMPLE = {
   quantidade: 1,
 };
 // Exemplo do aviso By Elarah, com os mesmos dados de um evento real.
+// Exemplo do aviso By Elarah. O NOME bate com a SAMPLE_IMAGE de propósito:
+// no teste a foto é fixa (imagem de exemplo), e citar outro evento no texto
+// dava a impressão de que a foto tinha vindo errada. No envio REAL a foto sai
+// do cadastro da experiência — cada pessoa recebe a do evento dela.
 const SAMPLE_BYELARAH = {
   nome: "Você",
-  experienciaNome: "Crie seu Amuleto em Vitral",
+  experienciaNome: "Pintura de Quadro com Cristal & Aperol Spritz",
   data: "24 de abril",
   horarios: ["10h às 13h", "14h às 17h"],
   local: "Rua Nova Orleans, 34 — Brooklin",
-  link: "https://elarah.com.br/index.html#by-elarah-vitral",
+  link: "https://elarah.com.br/index.html#by-elarah-pintura-aperol",
 };
 
 function sampleMessage(tipo: string): string {

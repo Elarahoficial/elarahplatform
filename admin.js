@@ -4782,7 +4782,7 @@
             'antecedência, para podermos nos organizar quanto aos horários ' +
             'dos professores.\n\n' +
             '📍 Endereço do Lado B: Avenida Brigadeiro Faria Lima, 1572 — ' +
-            'sala 1607 (próximo à estação de metrô Faria Lima, na linha ' +
+            'sala 411 (próximo à estação de metrô Faria Lima, na linha ' +
             'amarela).\n\n' +
             '🚗 Estacionamento: Rua Tavares Cabral, 61 (é o estacionamento ' +
             'do Ibis Hotel, tem uma parede branca com um grafite grandão). ' +
@@ -4819,6 +4819,23 @@
           if (r && r.fornecedor_nome) candidatos.push(r.fornecedor_nome);
         });
       }
+      // Parceiro que JÁ tem mensagem pós-compra automática cadastrada
+      // (fornecedores_metadata.instrucoes_template ou .instrucoes_pos_compra)
+      // não mostra botão manual: a cliente já recebeu sozinha e clicar aqui
+      // mandaria a mesma coisa duas vezes. Limpou o cadastro, o botão volta —
+      // é ele o plano B quando o automático não deu conta.
+      // Chave igual à que grava fornecedores_metadata: minúsculo + espaços
+      // colapsados, SEM tirar acento (normalizeFornecedorNome acima tira, e
+      // aqui isso daria chave diferente da que está no banco).
+      const chaveMeta = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const temAutomatico = candidatos.some(function (nome) {
+        const m = fornecedoresMetaByKey.get(chaveMeta(nome));
+        if (!m) return false;
+        return !!String(m.instrucoes_template || '').trim() ||
+          !!String(m.instrucoes_pos_compra || '').trim();
+      });
+      if (temAutomatico) return '';
+
       let tpl = null;
       for (const nome of candidatos) {
         tpl = customerSupplierMessage(nome, primeiroNome);
@@ -11690,6 +11707,48 @@
               '<input type="text" id="forn-f-pix" value="' + val('pix') + '" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória" style="' + inputStyle + '">') +
           '</div>' +
           '<div style="grid-column:1/-1;">' +
+            field('📲 O que a cliente precisa fazer depois de comprar',
+              '<textarea id="forn-f-instrucoes" rows="4" ' +
+              'placeholder="Ex.: Pra garantir seu lugar, o parceiro precisa te registrar na aula.&#10;' +
+              'Preencha este cadastro: https://exemplo.com/cadastro&#10;Leva 2 minutinhos 🧡" ' +
+              'style="' + inputStyle + 'resize:vertical;">' +
+              val('instrucoes_pos_compra') + '</textarea>' +
+              '<p style="margin:6px 0 0;font-size:.72rem;color:#888;line-height:1.5;">' +
+              'Preenchido, este texto vai <b>sozinho por WhatsApp</b> logo depois da compra ' +
+              'ser confirmada, em <b>todas as experiências deste parceiro</b> — numa segunda ' +
+              'mensagem, separada da confirmação. <b>Vazio = não envia nada.</b> ' +
+              'Uma experiência específica pode ter texto próprio no cadastro dela, e aí ' +
+              'ele substitui este.</p>') +
+          '</div>' +
+          '<div style="grid-column:1/-1;border:1px dashed #e0d5c8;border-radius:10px;padding:14px;background:#fffaf5;">' +
+            '<p style="margin:0 0 12px;font-size:.76rem;color:#8a6a45;line-height:1.55;">' +
+            '<b>Template próprio deste parceiro na Meta</b> (opcional, mas é o que fica bonito).<br>' +
+            'Pela API oficial, variável de template <b>não aceita quebra de linha</b> — um texto ' +
+            'longo, com bullets e parágrafos, sairia numa linha só. A saída é aprovar na Meta um ' +
+            'template com o texto <b>inteiro fixo no corpo</b> e só o que muda como variável. ' +
+            'Preenchendo aqui, é esse template que sai.</p>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+              field('Nome do template aprovado',
+                '<input type="text" id="forn-f-instr-template" value="' + val('instrucoes_template') + '" ' +
+                'placeholder="ex.: lado_b_pos_compra" style="' + inputStyle + '">') +
+              field('Link do formulário (variável "link")',
+                '<input type="text" id="forn-f-instr-link" value="' + val('instrucoes_link') + '" ' +
+                'placeholder="https://forms.gle/..." style="' + inputStyle + '">') +
+              '<div style="grid-column:1/-1;">' +
+                field('Ordem das variáveis do template',
+                  '<input type="text" id="forn-f-instr-vars" value="' + val('instrucoes_variaveis') + '" ' +
+                  'placeholder="nome, experiencia, data, horario" style="' + inputStyle + '">' +
+                  '<p style="margin:6px 0 0;font-size:.72rem;color:#888;line-height:1.5;">' +
+                  'Na <b>mesma ordem</b> de {{1}}, {{2}}, {{3}}… no template aprovado. ' +
+                  'Aceita: <code>nome</code>, <code>nome_completo</code>, <code>experiencia</code>, ' +
+                  '<code>data</code>, <code>horario</code>, <code>link</code>, <code>local</code>, ' +
+                  '<code>quantidade</code>. Vazio = só <code>nome</code>.<br>' +
+                  'Exemplos reais: Lado B → <code>nome</code> · BARES SP → <code>nome, link</code> · ' +
+                  'The Cozy Home → <code>nome, experiencia, data, horario</code>.</p>') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="grid-column:1/-1;">' +
             field('Observações internas',
               '<textarea id="forn-f-obs" rows="3" style="' + inputStyle + 'resize:vertical;">' +
               val('observacoes') + '</textarea>') +
@@ -11914,6 +11973,10 @@
         tipo_parceria: tipoWidget.getValue() || null,
         data_entrada: overlay.querySelector('#forn-f-data').value || null,
         pix: trimOrNull('#forn-f-pix'),
+        instrucoes_pos_compra: trimOrNull('#forn-f-instrucoes'),
+        instrucoes_template: trimOrNull('#forn-f-instr-template'),
+        instrucoes_variaveis: trimOrNull('#forn-f-instr-vars'),
+        instrucoes_link: trimOrNull('#forn-f-instr-link'),
         observacoes: trimOrNull('#forn-f-obs'),
       });
       if (!res.ok) {
@@ -11922,11 +11985,13 @@
         const errStr = String(res.error || '');
         const hint = errStr.includes('tipo_parceria')
           ? '\n\nA vertente "Elarah em casa" precisa ser liberada no banco — rode sql/elarah_fornecedores_tipo_parceria_em_casa.sql no SQL Editor do Supabase.'
+          : (errStr.includes('instrucoes_')
+            ? '\n\nA coluna "instrucoes_pos_compra" ainda não existe — rode sql/elarah_experiences_instrucoes_pos_compra.sql no SQL Editor do Supabase.'
           : (errStr.includes('pix')
             ? '\n\nA coluna "pix" ainda não existe — rode sql/elarah_fornecedores_pix.sql no SQL Editor do Supabase.'
             : (errStr.includes('fornecedores_metadata')
               ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
-              : ''));
+              : '')));
         alert('Não consegui salvar o fornecedor.\n' + (res.error || '') + hint);
         return;
       }

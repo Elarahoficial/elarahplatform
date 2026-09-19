@@ -779,7 +779,7 @@ export function supplierCustomerMessage(
         `antecedência, para podermos nos organizar quanto aos horários dos ` +
         `professores.\n\n` +
         `📍 Endereço do Lado B: Avenida Brigadeiro Faria Lima, 1572 — sala ` +
-        `1607 (próximo à estação de metrô Faria Lima, na linha amarela).\n\n` +
+        `411 (próximo à estação de metrô Faria Lima, na linha amarela).\n\n` +
         `🚗 Estacionamento: Rua Tavares Cabral, 61 (é o estacionamento do ` +
         `Ibis Hotel, tem uma parede branca com um grafite grandão). Quando ` +
         `chegar no estacionamento, avise que você é aluna do Lado B e traga ` +
