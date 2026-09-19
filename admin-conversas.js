@@ -35,7 +35,8 @@
     canal: null,         // inscrição do Realtime
     carregando: false,
     busca: '',
-    ficha: null          // quem é a pessoa (cruzamento com reservas)
+    ficha: null,         // quem é a pessoa (cruzamento com reservas)
+    erro: null           // falha da consulta, mostrada na tela
   };
 
   function sb() { return window.supabaseClient; }
@@ -110,9 +111,14 @@
       .order('ultima_em', { ascending: false })
       .limit(300);
     if (r.error) {
+      // NÃO engole: lista vazia por erro é diferente de lista vazia por não
+      // ter conversa, e dizer "nenhuma conversa ainda" quando a consulta
+      // falhou manda a pessoa procurar no lugar errado.
       console.error('[Conversas] falha ao listar', r.error.message);
+      estado.erro = r.error.message || String(r.error);
       return [];
     }
+    estado.erro = null;
     return r.data || [];
   }
 
@@ -229,6 +235,15 @@
         String(c.telefone || '').indexOf(termo.replace(/\D+/g, '')) >= 0 ||
         String(c.ultimo_texto || '').toLowerCase().indexOf(termo) >= 0;
     });
+    if (estado.erro) {
+      el.innerHTML = '<div style="padding:22px 16px;font-size:.8rem;color:#c0392b;line-height:1.6;">' +
+        '<b>Não consegui ler as conversas.</b><br><br>' +
+        '<code style="font-size:.74rem;word-break:break-word;">' + esc(estado.erro) + '</code>' +
+        '<br><br><span style="color:#8a6a45;">Se fala em permissão ou em ' +
+        '<code>whatsapp_conversas</code>, falta rodar o GRANT do ' +
+        'sql/elarah_whatsapp_conversas.sql.</span></div>';
+      return;
+    }
     if (!itens.length) {
       el.innerHTML = '<div style="padding:28px 18px;color:#999;font-size:.85rem;text-align:center;">' +
         (termo ? 'Nada encontrado.' : 'Nenhuma conversa ainda.<br><br>' +

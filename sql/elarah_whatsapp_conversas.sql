@@ -138,6 +138,15 @@ comment on view public.whatsapp_conversas is
 -- de baixo continua valendo (só admin lê).
 alter view public.whatsapp_conversas set (security_invoker = on);
 
+-- SEM ISTO A VIEW NÃO APARECE NA API.
+--   Tabela criada no schema public herda as permissões padrão do Supabase;
+--   VIEW não herda. Sem o grant, a consulta do painel volta "permission
+--   denied for view" — e a tela, que não tem como distinguir, mostraria
+--   "nenhuma conversa ainda". Some o sintoma, fica o problema.
+--   O RLS das tabelas de baixo continua valendo (security_invoker acima),
+--   então quem não é admin continua sem ver nada.
+grant select on public.whatsapp_conversas to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- =============================================================
