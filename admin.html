@@ -102,6 +102,12 @@
         </svg>
         <span>Pós-compra</span>
       </button>
+      <button class="admin__nav-item" data-panel="conversas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Conversas</span>
+        <span id="conversas-contador" style="display:none;margin-left:auto;background:#25d366;color:#fff;border-radius:999px;font-size:.66rem;font-weight:700;padding:1px 7px;"></span>
+      </button>
 
       <div class="admin__nav-group">Vendas</div>
 
@@ -1948,6 +1954,41 @@
             <tr><td colspan="7" class="admin__table-empty">Carregando…</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ===== CONVERSAS (WhatsApp oficial) ===== -->
+    <!-- Caixa de entrada do número oficial: lista à esquerda, fio à
+         direita, resposta embaixo. Os dados vêm de whatsapp_mensagens
+         (o que chega, gravado pela função whatsapp-webhook) e de
+         whatsapp_send_log (o que sai). A altura é fixa em viewport
+         porque as duas colunas rolam por dentro, como num app de
+         mensagem — a página em si não rola. -->
+    <div class="admin__panel" id="panel-conversas">
+      <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Conversas</h1>
+          <p class="admin__page-subtitle">O WhatsApp oficial da Elarah — tudo que chega e tudo que sai, em tempo real</p>
+        </div>
+        <button type="button" id="conversas-atualizar" style="padding:8px 14px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-family:inherit;">↻ Atualizar</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:0;border:1px solid #e8e4e0;border-radius:12px;overflow:hidden;background:#fff;height:calc(100vh - 210px);min-height:460px;">
+        <!-- ESQUERDA: lista de conversas -->
+        <div style="display:flex;flex-direction:column;border-right:1px solid #eee;background:#fff;min-width:0;">
+          <div style="padding:10px 12px;border-bottom:1px solid #eee;">
+            <input type="search" id="conversas-busca" placeholder="Buscar por nome, telefone ou texto"
+              style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:18px;font-size:.82rem;font-family:inherit;box-sizing:border-box;">
+          </div>
+          <div id="conversas-lista" style="flex:1;overflow-y:auto;"></div>
+        </div>
+
+        <!-- DIREITA: o fio da conversa -->
+        <div style="display:flex;flex-direction:column;min-width:0;background:#efeae2;">
+          <div id="conversas-cabecalho"></div>
+          <div id="conversas-fio" style="flex:1;overflow-y:auto;padding:14px 16px;"></div>
+          <div id="conversas-rodape"></div>
+        </div>
       </div>
     </div>
 
@@ -4735,6 +4776,7 @@
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
+<script src="admin-conversas.js?v=1"></script>
 <script src="admin-acessos.js?v=2"></script>
 <script src="admin.js?v=238"></script>
 

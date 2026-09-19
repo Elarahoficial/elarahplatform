@@ -1236,6 +1236,13 @@ export async function gatedSendWhatsApp(
         booking_id: meta.booking_id ?? null,
         experiencia_id: meta.experiencia_id ?? null,
         phone_masked: meta.phone_masked ?? null,
+        // Telefone inteiro e texto: é o lado ENVIADO da conversa na tela de
+        // Conversas. Sem o número não dá pra saber a que conversa a mensagem
+        // pertence; sem o texto não há o que mostrar. Só admin lê (RLS em
+        // sql/elarah_whatsapp_conversas.sql); phone_masked continua aí pra
+        // auditoria.
+        telefone: meta.telefone ?? null,
+        corpo: (params.message ?? params.caption ?? null) as string | null,
         status: (meta.status as string) ?? "pending",
         created_by: params.createdBy ?? null,
       });

@@ -1161,6 +1161,17 @@ async function run() {
     check("e o nome da experiência", instr.includes("Aula de Coquetelaria"));
     check("é pessoal", instr.startsWith("Oi, Maria!"), instr.slice(0, 20));
     check("send_log tem chave própria pras instruções", sb._sendLog.has("instrucoes:bki-A"));
+    // A tela de Conversas monta o lado ENVIADO a partir daqui. Sem o
+    // telefone inteiro não dá pra saber a que conversa a mensagem pertence;
+    // sem o corpo não há o que mostrar na bolha.
+    const linhaInstr = sb._sendLog.get("instrucoes:bki-A");
+    check("o envio grava o telefone inteiro (é ele que liga à conversa)",
+      linhaInstr?.telefone === CLIENT_A, String(linhaInstr?.telefone));
+    check("e grava o texto que saiu",
+      String(linhaInstr?.corpo || "").includes("https://exemplo.com/cadastro"));
+    check("phone_masked continua existindo pra auditoria",
+      !!linhaInstr?.phone_masked && linhaInstr.phone_masked !== CLIENT_A,
+      String(linhaInstr?.phone_masked));
     check("e continua com a chave da confirmação", sb._sendLog.has("confirmation:bki-A"));
 
     // Webhook repetido (Stripe manda o mesmo evento 2x): nada duplica.

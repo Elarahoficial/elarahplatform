@@ -245,6 +245,31 @@ head("PAYLOADS ESTRANHOS — não derrubam e não gravam lixo");
     mensagens[0].nome_perfil === "Maria" && mensagens[1].nome_perfil === null);
 }
 
+// ---------- JANELA DE 24H ----------
+head("JANELA DE 24H — a regra que decide se dá pra responder");
+{
+  const AGORA = Date.parse("2026-09-19T12:00:00Z");
+  const hMenos = (h) => new Date(AGORA - h * 3600_000).toISOString();
+
+  check("mensagem de 1 hora atrás → aberta", WI.janelaDe24hAberta(hMenos(1), AGORA));
+  check("de 23h59 → ainda aberta", WI.janelaDe24hAberta(hMenos(23.98), AGORA));
+  check("de 24h01 → fechada", !WI.janelaDe24hAberta(hMenos(24.02), AGORA));
+  check("de uma semana → fechada", !WI.janelaDe24hAberta(hMenos(168), AGORA));
+
+  // Nunca escreveu: conversa iniciada pela Elarah SEMPRE precisa de
+  // template. Tratar null como "aberta" faria a mensagem ser recusada pela
+  // Meta com 131047, sem explicação pra quem escreveu.
+  check("nunca recebeu mensagem dessa pessoa → fechada", !WI.janelaDe24hAberta(null, AGORA));
+  check("string vazia → fechada", !WI.janelaDe24hAberta("", AGORA));
+  check("data inválida → fechada", !WI.janelaDe24hAberta("ontem à noite", AGORA));
+
+  check("restam ~23h quando a mensagem tem 1 hora",
+    Math.abs(WI.minutosRestantesDaJanela(hMenos(1), AGORA) - 23 * 60) <= 1,
+    String(WI.minutosRestantesDaJanela(hMenos(1), AGORA)));
+  check("fechada → 0 minutos", WI.minutosRestantesDaJanela(hMenos(30), AGORA) === 0);
+  check("sem mensagem → 0 minutos", WI.minutosRestantesDaJanela(null, AGORA) === 0);
+}
+
 out.push("\n==== whatsapp-webhook: " + ok + " verificações passaram, " + fail + " falharam ====");
 console.log(out.join("\n"));
 process.exit(fail ? 1 : 0);
