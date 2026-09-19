@@ -20,6 +20,11 @@ Mandam pela **API oficial da Meta**, com os templates aprovados na conta, e
 cobrem **cinco fluxos**: confirmação de compra, boas-vindas, lembrete,
 feedback e pagamento pendente. É o que entrega ~293 mensagens por semana.
 
+Templates que elas usam (nomes conferidos no Gerenciador do WhatsApp):
+`elarah_confirmacao_reserva` (Utilidade), `elarah_boas_vindas_grupo`
+(Marketing), `elarah_lembrete_2dias`, `elarah_feedback` e
+`elarah_pagamento_pendente`.
+
 No mesmo caso (fora do repositório): `auto-newsletter`, `prospect-finder` e
 `reviews`.
 

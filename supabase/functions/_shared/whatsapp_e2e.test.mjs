@@ -1281,8 +1281,8 @@ async function run() {
     });
     check("confirmação sai pela oficial por padrão", r.sent === true && zd.calls.length >= 1,
       JSON.stringify({ sent: r.sent, calls: zd.calls.length }));
-    check("e usa o template aprovado da conta (elarah_confirmacao)",
-      zd.calls[0].template === "elarah_confirmacao", String(zd.calls[0].template));
+    check("e usa o template aprovado da conta (elarah_confirmacao_reserva)",
+      zd.calls[0].template === "elarah_confirmacao_reserva", String(zd.calls[0].template));
     check("com os 4 parâmetros do fluxo de confirmação", zd.calls[0].params.length === 4,
       JSON.stringify(zd.calls[0].params));
   }

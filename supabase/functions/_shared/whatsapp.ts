@@ -325,7 +325,11 @@ function maskPhoneLocal(raw: unknown): string {
 // Cada um pode ser corrigido por secret, sem tocar em código — use o
 // diagnóstico (admin-whatsapp-templates) pra conferir nome e nº de variáveis.
 const META_TEMPLATE_DEFAULTS: Record<string, string> = {
-  confirmation: "elarah_confirmacao",
+  // Nomes conferidos no Gerenciador do WhatsApp. Estes quatro fluxos hoje
+  // são enviados por OUTRO sistema (ver docs/whatsapp-quem-manda-o-que.md) e
+  // ficam em WHATSAPP_FLUXOS_DESLIGADOS — os nomes seguem aqui pro dia em que
+  // a plataforma assumir algum deles.
+  confirmation: "elarah_confirmacao_reserva",
   reminder48: "elarah_lembrete_2dias",
   feedback: "elarah_feedback",
   pending: "elarah_pagamento_pendente",
