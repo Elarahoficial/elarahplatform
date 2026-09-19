@@ -4012,8 +4012,61 @@
     });
   }
 
+  // ===== EXPORTAR COMPRAS (CSV) =====
+  // O visualizador de SQL do Supabase só desenha 100 linhas — é limite da
+  // TELA dele, não dos dados. Aqui a exportação sai completa, já filtrada
+  // pelos campos do painel, e abre direto no Excel.
+  let _bookingsExportaveis = [];
+
+  // Campo de CSV: aspas duplicadas e o valor entre aspas. Sem isso, um nome
+  // com vírgula ("Silva, Maria") quebra a linha em duas colunas, e uma
+  // quebra de linha no meio do texto quebra a linha do arquivo.
+  function _csvCampo(v) {
+    const s = v == null ? '' : String(v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+
+  function _bookingsParaCsv(lista) {
+    const cab = ['Nome', 'WhatsApp', 'E-mail', 'Experiência', 'Data da experiência',
+      'Horário', 'Quantidade', 'Valor', 'Fornecedor', 'Status', 'Comprou em'];
+    const linhas = [cab.map(_csvCampo).join(',')];
+    (lista || []).forEach(function (b) {
+      linhas.push([
+        b.nome,
+        b.telefone,
+        b.email,
+        b.experiencia_nome,
+        b.data,
+        b.horario,
+        b.quantidade,
+        b.valor_total != null ? b.valor_total : b.valor,
+        b._fornecedorResolvido || b.fornecedor_nome,
+        b.status,
+        b.created_at
+      ].map(_csvCampo).join(','));
+    });
+    // BOM na frente: sem ele o Excel no Windows abre "João" como "JoÃ£o".
+    return '\ufeff' + linhas.join('\r\n');
+  }
+
+  function wireBookingsExport() {
+    const btn = document.getElementById('bookings-export-csv');
+    if (!btn || btn._ligado) return;
+    btn._ligado = true;
+    btn.addEventListener('click', function () {
+      const lista = _bookingsExportaveis || [];
+      if (!lista.length) {
+        alert('Não há compras na tela pra exportar. Ajuste os filtros e tente de novo.');
+        return;
+      }
+      const ts = new Date().toISOString().slice(0, 10);
+      _downloadTextFile('compras-elarah-' + ts + '.csv', _bookingsParaCsv(lista), 'text/csv');
+    });
+  }
+
   async function renderBookings() {
     if (!document.getElementById('purchases-body')) return;
+    wireBookingsExport();
     // Renderiza gift cards na mesma tela (seção auxiliar) — assim o
     // operador vê TODAS as compras (reservas + gift cards) sem trocar
     // de menu. Não bloqueia o render principal.
@@ -5207,6 +5260,10 @@
     //      em um terceiro grupo pra não serem perdidos.
     // Painel de pagas: lista flat, sem grupos
     const sorted = sortByCreatedDesc(filtered);
+    // Guarda o que está na tela pra exportação. O botão exporta EXATAMENTE
+    // o que os filtros deixaram visível — se exportasse tudo, o filtro que a
+    // pessoa acabou de aplicar seria ignorado sem ela perceber.
+    _bookingsExportaveis = sorted;
     tbody.innerHTML = sorted.length
       ? sorted.map(renderBookingRow).join('')
       : '<tr><td colspan="19" class="admin__table-empty">Nenhuma compra paga encontrada.</td></tr>';
