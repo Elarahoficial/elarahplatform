@@ -1310,6 +1310,49 @@ async function run() {
     check("fluxo fora da lista → segue enviando", r2.sent === true && zon.calls.length === 1);
   }
 
+  {
+    // A CONFIGURAÇÃO REAL DA ELARAH: outro sistema (Edge Functions publicadas
+    // fora do repositório) manda confirmação, boas-vindas, lembrete, feedback
+    // e pendente. A plataforma manda só o que ninguém manda — e isso tem que
+    // continuar valendo, porque instruções e aviso à parceira saem do MESMO
+    // ponto do código que a confirmação desligada.
+    const WAr = await loadWA({
+      ...META_ENV,
+      WHATSAPP_FLUXOS_DESLIGADOS: "confirmation,reminder48,feedback,pending",
+      META_TEMPLATE_INSCRICOES_IMAGEM: "true",
+    });
+    const zr = installMetaMock();
+    const WA_PARCEIRA = "5511977778888";
+    const sb = makeSupabase(
+      [bookingSeed({
+        id: "bkreal-A",
+        telefone: CLIENT_A,
+        quantidade: 2,
+        experiencia_nome: "Aula de Coquetelaria",
+        fornecedor_nome: "Lado B",
+        experiences: {
+          imagem: IMG_A,
+          endereco: "Av. Faria Lima, 1572",
+          bairro: "Pinheiros",
+          instrucoes_pos_compra: "Preencha o cadastro: https://exemplo.com/x",
+        },
+      })],
+      [],
+      [{ fornecedor_key: "lado b", whatsapp: WA_PARCEIRA }],
+    );
+    const r = await WAr.sendBookingConfirmationGated(sb, sb._bookings.get("bkreal-A"), {
+      telefone_digits: CLIENT_A,
+    });
+
+    check("confirmação NÃO sai (quem manda é o outro sistema)",
+      r.sent === false && r.reason === "fluxo_desligado", JSON.stringify(r));
+    check("a cliente recebe SÓ as instruções pós-compra", zr.to(CLIENT_A).length === 1,
+      "recebeu " + zr.to(CLIENT_A).length);
+    check("e a parceira recebe o aviso da compra", zr.to(WA_PARCEIRA).length === 1);
+    check("2 mensagens no total, nenhuma duplicada", zr.calls.length === 2);
+    check("nenhuma chave de confirmação foi ocupada", !sb._sendLog.has("confirmation:bkreal-A"));
+  }
+
   // ---------- Relatório ----------
   console.log(out.join("\n"));
   console.log(`\n==== E2E: ${PASS} verificações passaram, ${FAIL} falharam ====`);
