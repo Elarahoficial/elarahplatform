@@ -183,6 +183,19 @@
     return digits;
   }
 
+  // Link de WhatsApp com mensagem pronta. SEMPRE api.whatsapp.com/send/
+  // em vez de wa.me/<telefone>?text=: o wa.me corrompe surrogate pairs
+  // (emoji fora do BMP — 📅 🚀 ⚡ 😊) e o parceiro recebe "" no lugar de
+  // cada um. Acento não quebra porque cabe em 2 bytes; emoji precisa de
+  // 4, e é justamente aí que o wa.me erra. Mesmo formato de telefone;
+  // sem telefone, o WhatsApp abre o seletor de contato.
+  function waSendUrl(phone, msg) {
+    const digits = String(phone == null ? '' : phone).replace(/\D+/g, '');
+    return 'https://api.whatsapp.com/send/?' +
+      (digits ? 'phone=' + digits + '&' : '') +
+      'text=' + encodeURIComponent(msg == null ? '' : msg);
+  }
+
   // ===== BOOT (async) =====
   // Faz checagem em camadas e LOGA cada etapa, pra que o user veja
   // exatamente onde travou em vez de redirect silencioso.
@@ -2150,8 +2163,7 @@
     // (Safari iOS, WhatsApp Web certos contextos) corrompe surrogate
     // pairs e o emoji aparece como '��' pro destinatário. /send/?phone=
     // não tem esse bug. Aceita o mesmo formato de telefone.
-    const url = 'https://api.whatsapp.com/send/?phone=' + phoneNorm +
-                '&text=' + encodeURIComponent(filled);
+    const url = waSendUrl(phoneNorm, filled);
 
     // Abre PRIMEIRO (gesto do usuário) pra evitar bloqueio do popup
     window.open(url, '_blank', 'noopener');
@@ -2779,7 +2791,7 @@
     }
     msg += 'Qualquer coisa é só me chamar aqui!';
 
-    const waHref = 'https://wa.me/?text=' + encodeURIComponent(msg);
+    const waHref = waSendUrl('', msg);
 
     const box = (inner) =>
       '<div style="padding:14px 16px;background:#f0fdf4;border:1px solid #bbe6c9;border-radius:10px;">' + inner + '</div>';
@@ -3179,7 +3191,7 @@
     if (!digits) return escapeHtml(tel);
     const primeiroNome = String(u.nome || '').trim().split(/\s+/)[0] || 'tudo bem';
     const msg = 'Oii ' + primeiroNome + '! Você se cadastrou na Elarah e temos um grupo onde liberamos experiências antes de todo mundo (algumas esgotam só por lá). Entra aqui pra não perder: https://chat.whatsapp.com/LRqJa9F7zGWAIMlh2D2yjl';
-    const href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+    const href = waSendUrl(digits, msg);
     const contatado = !!u.whatsapp_contacted_at;
     const btnBg = contatado ? '#25D366' : '#f0a05e';
     const tooltipBotao = contatado
@@ -10627,7 +10639,7 @@
     lines.push('As vagas estão nas últimas — essa pode ser a sua *última chance* de garantir seu lugar! 🧡');
     lines.push('Se quiser, eu te envio o link pra confirmar agora mesmo.');
 
-    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(lines.join('\n'));
+    return waSendUrl(digits, lines.join('\n'));
   }
 
   // Fica fora do render pra sobreviver entre re-renders — se
@@ -11595,7 +11607,7 @@
       meta && meta.nome_contato,
       meta && meta.fornecedor_nome
     );
-    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    return waSendUrl(phone, msg);
   }
 
   // Upsert completo de um registro de fornecedor (cadastro manual + edição
@@ -12072,7 +12084,7 @@
         overlay.querySelector('#forn-f-contato').value,
         overlay.querySelector('#forn-f-nome').value
       );
-      solicitarLink.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+      solicitarLink.href = waSendUrl(phone, msg);
     };
     refreshSolicitar();
     overlay.querySelector('#forn-f-whatsapp').addEventListener('input', refreshSolicitar);
@@ -14909,7 +14921,7 @@
       '• O que está incluso (material, comidinha, etc.)\n' +
       '• Local (ou se você vai até o espaço do cliente)\n\n' +
       'Obrigada!';
-    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    return waSendUrl(phone, msg);
   }
 
   // Experiências do fornecedor já filtradas pelo toggle "só ativas".
@@ -20076,7 +20088,7 @@
     linhas.push('');
     linhas.push('O repasse será feito até 48h antes do evento.');
     const msg = linhas.join('\n');
-    const link = 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
+    const link = waSendUrl(waDigits, msg);
     const id = _finEsc(r.id);
     const avisadoAt = r.fornecedor_avisado_at ? new Date(r.fornecedor_avisado_at) : null;
     const isAvisado = avisadoAt && !isNaN(avisadoAt.getTime());
@@ -26038,7 +26050,7 @@
     }
     msg += '\n\nQualquer dúvida é só me chamar 😊';
 
-    const url = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+    const url = waSendUrl(digits, msg);
     window.open(url, '_blank', 'noopener');
 
     // Marca como avisado (não bloqueia a abertura do WhatsApp se falhar).
