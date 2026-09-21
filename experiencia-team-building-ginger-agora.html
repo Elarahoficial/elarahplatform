@@ -192,11 +192,27 @@
   .gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(16,23,28,.86),transparent)}
   .gstrip .pslot{min-height:158px}
 
-  .checks{display:grid;grid-template-columns:1fr 1fr;gap:12px 26px;margin-top:18px}
-  .checks li{list-style:none;position:relative;padding-left:28px;font-size:13.5px;color:var(--ink);line-height:1.35}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;margin-top:14px}
+  .checks li{list-style:none;position:relative;padding-left:26px;font-size:12px;color:var(--ink);line-height:1.3}
   .checks li b{color:var(--navy);font-weight:700}
-  .checks li .ck{position:absolute;left:0;top:-1px;width:19px;height:19px;border-radius:999px;background:var(--orange);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .checks li .ck{position:absolute;left:0;top:0;width:17px;height:17px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
   .num{font-family:'DM Serif Display',serif;color:var(--orange);font-size:24px;line-height:1}
+  .priceband{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--navy);color:#fff;border-radius:18px;padding:20px 28px;margin-top:14px}
+  .priceband .pl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:700}
+  .priceband .pv{font-family:'DM Serif Display',serif;font-size:44px;line-height:1;margin-top:3px}
+  .priceband .side{font-size:12px;color:rgba(255,255,255,.82);line-height:1.6;text-align:right}
+  .priceband .side b{color:#fff}
+  .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;align-items:stretch}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
+  .opt .ot{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .opt h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);line-height:1.06;margin-top:3px}
+  .opt p{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:7px}
+  .opt ul{list-style:none;margin-top:9px;display:flex;flex-direction:column;gap:5px}
+  .opt ul li{position:relative;padding-left:16px;font-size:11px;color:var(--ink);line-height:1.3}
+  .opt ul li::before{content:"\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:9px}
+  .opt .op{margin-top:auto;padding-top:12px;font-family:'DM Serif Display',serif;font-size:24px;color:var(--navy);line-height:1}
+  .opt .op small{font-family:-apple-system,sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-left:4px}
 </style>
 <style>
   :root{
@@ -474,81 +490,53 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Por que funciona</span></div>
-    </div>
-    <span class="eyebrow orange">◆ O que o time leva junto</span>
-    <h2>Um encontro que o time <em>lembra depois</em></h2>
-    <p class="lead">A conexão acontece sozinha quando o time senta na mesma mesa pra criar com as próprias mãos — sem hierarquia, sem quem sabe mais e quem sabe menos. São 3 horas que soltam o grupo de verdade e viram assunto por semanas.</p>
-    <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Conversa que não rola no escritório</h3><p>Horas lado a lado fazem o time falar do que a reunião nunca puxa. Áreas diferentes se aproximam sozinhas.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber modelar. Diretoria e time começam do zero juntos — e é aí que a hierarquia cai.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>Fica depois do dia</h3><p>Cada um leva a própria peça pra mesa de trabalho. A lembrança do encontro segue visível no dia a dia.</p></div>
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ A gente cuida de tudo: profissional que conduz, material, estrutura e ambientação. O RH só avisa a data e reúne o time — e, se quiserem, a gente reserva um momento de fala da liderança no meio do encontro.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Por que funciona</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
     <span class="eyebrow orange">◆ Cerâmica · modelagem à mão</span>
     <h2>Cada um cria a <em>própria peça</em></h2>
-    <p class="lead">Modelagem à mão, à mesa posta, com a <strong>ceramista conduzindo</strong> do começo ao fim. A argila desacelera o time, aproxima as conversas — e no fim cada um leva pra casa algo que fez com as próprias mãos, esmaltado e queimado, pronto pra durar.</p>
+    <p class="lead">Modelagem à mão, à mesa posta, com a <strong>ceramista conduzindo</strong>. A argila desacelera o time, aproxima as conversas — e cada um leva pra casa algo que fez com as próprias mãos, esmaltado e queimado, pronto pra durar.</p>
     <div class="bfeat">
       <div class="bphoto"><img src="assets/ceramicamodelagem.jpg" alt="Mãos modelando uma peça de cerâmica" style="object-position:center 50%"></div>
       <div class="bbody">
         <span class="btag">Como acontece · 3h</span>
         <h3>Da argila à peça pronta</h3>
         <ul class="feat">
-          <li><span class="st">1</span><b>Boas-vindas</b> — a mesa posta, a playlist e o clima acolhedor do espaço.</li>
+          <li><span class="st">1</span><b>Boas-vindas</b> — mesa posta, playlist e o clima acolhedor do espaço.</li>
           <li><span class="st">2</span><b>Mão na argila</b> — cada um modela a própria peça, guiado pela ceramista.</li>
           <li><span class="st">3</span><b>Fica pronta</b> — a gente esmalta, queima e devolve a peça de cada um.</li>
         </ul>
       </div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O que inclui</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Tudo incluso, sem surpresa</span>
-    <h2>A Ginger só precisa <em>reunir o time</em></h2>
-    <p class="lead">Do espaço à última peça queimada, a gente cuida de cada detalhe pro encontro ser leve do começo ao fim.</p>
-    <div class="rule"></div>
+    <p class="subh">Tudo incluso, sem surpresa</p>
     <ul class="checks">
-      <li><span class="ck">✓</span><b>Espaço exclusivo</b> no Agora Intu, só pro time</li>
-      <li><span class="ck">✓</span><b>Ceramista / professora</b> conduzindo</li>
+      <li><span class="ck">✓</span><b>Espaço exclusivo</b> no Agora Intu</li>
+      <li><span class="ck">✓</span><b>Ceramista</b> conduzindo</li>
       <li><span class="ck">✓</span><b>Todos os materiais</b> inclusos</li>
-      <li><span class="ck">✓</span><b>Queima da cerâmica</b> (peça devolvida pronta)</li>
+      <li><span class="ck">✓</span><b>Queima</b> (peça devolvida pronta)</li>
       <li><span class="ck">✓</span><b>Mesas e ambientação</b> montadas</li>
-      <li><span class="ck">✓</span><b>Playlist, velas</b> e o clima do espaço</li>
+      <li><span class="ck">✓</span><b>Playlist, velas</b> e o clima</li>
       <li><span class="ck">✓</span><b>Café, chá e água</b> à vontade</li>
-      <li><span class="ck">✓</span>Cada participante <b>cria a própria peça</b></li>
+      <li><span class="ck">✓</span>Cada um <b>leva a própria peça</b></li>
     </ul>
-    <div class="bnote" style="margin-top:18px">◆ Sem custos escondidos: material, queima, estrutura e ambientação já estão no valor. É só escolher a data.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O que inclui</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">A atmosfera</span></div>
     </div>
-    <span class="eyebrow orange">◆ Já rolou aqui</span>
+    <span class="eyebrow orange">◆ Cerâmica de verdade</span>
     <h2>O clima que espera <em>o time</em></h2>
     <p class="lead">Mesa posta com velas e flores, mãos na argila e o grupo criando junto — luz baixa, playlist boa e aquela sensação de estar num lugar especial. É essa a atmosfera do Agora Intu.</p>
     <div class="vibe">
       <figure><img src="assets/agora-mesa.jpg" alt="Mesa posta com velas e flores no Agora Intu" style="object-position:center 50%"><figcaption>Mesa posta &amp; velas</figcaption></figure>
       <figure><img src="assets/ceramica-meninas.jpg" alt="Grupo criando cerâmica junto" style="object-position:center 30%"><figcaption>Mão na massa, juntas</figcaption></figure>
-      <figure><img src="assets/agora-grupo.jpg" alt="Time reunido à mesa no Agora Intu" style="object-position:center 50%"><figcaption>O time à mesa</figcaption></figure>
+      <figure><img src="assets/torno.jpg" alt="Mãos modelando argila" style="object-position:center 50%"><figcaption>Argila nas mãos</figcaption></figure>
     </div>
     <div class="gstrip">
-      <figure><img src="assets/ceramicacool.jpg" alt="Peças de cerâmica autorais" style="object-position:center 50%"><figcaption>As peças que ficam</figcaption></figure>
-      <figure><img src="assets/agora-ceramica.jpg" alt="Modelagem de cerâmica à mão" style="object-position:center 40%"><figcaption>Modelagem à mão</figcaption></figure>
-      <figure><img src="assets/agora-selfie.jpg" alt="Time rindo durante a experiência" style="object-position:center 40%"><figcaption>Risada garantida</figcaption></figure>
+      <figure><img src="assets/ceramica2.jpg" alt="Peças de cerâmica autorais" style="object-position:center 50%"><figcaption>As peças que ficam</figcaption></figure>
+      <figure><img src="assets/agora-ceramica.jpg" alt="Modelagem de cerâmica à mão no Agora Intu" style="object-position:center 40%"><figcaption>Modelagem à mão</figcaption></figure>
+      <figure><img src="assets/agora-grupo.jpg" alt="Time reunido à mesa no Agora Intu" style="object-position:center 50%"><figcaption>O time à mesa</figcaption></figure>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A atmosfera do Agora</span></div>
   </section>
@@ -559,26 +547,32 @@
     </div>
     <span class="eyebrow orange">◆ Cerâmica no Agora Intu</span>
     <h2>Um encontro que <em>vale a lembrança</em></h2>
-    <p class="lead">A experiência completa de cerâmica (3h), para a turma privada de 14, com tudo incluso — já está tudo somado, sem surpresa.</p>
-    <div class="invbox">
-      <div class="incl" style="flex:1;min-width:300px">
-        <span class="vt">Já está incluso</span>
-        <ul>
-          <li><span>✦</span>Espaço exclusivo + ceramista conduzindo</li>
-          <li><span>✦</span>Todos os materiais + queima da cerâmica</li>
-          <li><span>✦</span>Mesas, ambientação, playlist e velas</li>
-          <li><span>✦</span>Café, chá e água à vontade</li>
-          <li><span>✦</span>Cada um leva a própria peça pra casa</li>
-        </ul>
+    <p class="lead">A experiência completa de cerâmica (3h), para a turma privada de 14, com tudo incluso — já está tudo somado.</p>
+    <div class="priceband">
+      <div><span class="pl">A experiência · por pessoa</span><span class="pv">R$ 269</span></div>
+      <div class="side">Cerâmica · 3h · turma de 14<br><b>Total da turma: R$ 3.766</b></div>
+    </div>
+    <p class="subh">Opcionais pra deixar completo</p>
+    <div class="opts">
+      <div class="opt">
+        <span class="ot">Alimentação</span>
+        <h4>Menu Completo</h4>
+        <p>Finger food + doce da casa + café, assinado pela chef parceira do Agora e servido durante a experiência.</p>
+        <div class="op">R$ 150<small>por pessoa</small></div>
       </div>
-      <div class="pricebox">
-        <span class="pl">Cerâmica · 3h · por pessoa</span>
-        <span class="pv">R$ 269</span>
-        <span class="ps">turma de 14 · total R$ 3.766</span>
+      <div class="opt">
+        <span class="ot">Registro</span>
+        <h4>Foto profissional</h4>
+        <ul>
+          <li>Um fotógrafo cobre o encontro inteiro</li>
+          <li>Cada conversa e cada criação registradas</li>
+          <li>Álbum digital pronto pro RH e a comunicação interna</li>
+          <li>Conteúdo pronto pra usar no LinkedIn</li>
+        </ul>
+        <div class="op">R$ 450<small>valor total</small></div>
       </div>
     </div>
-    <div class="bnote">◆ <b>Opção de alimentação</b> — Menu Completo por <b>R$ 150 por pessoa</b>: finger food + doce da casa + café, assinado pela chef parceira do Agora, servido durante a experiência. Com o Menu Completo, o valor por pessoa fica em R$ 419.</div>
-    <p class="fineprint">Valor por pessoa para a experiência de cerâmica (modelagem à mão, 3h), turma privada de 14, no Agora Intu (Pinheiros). Datas disponíveis: 23/10 (sex), 29/10 (qui) ou 30/10 (sex). Reserva com sinal de 50%; saldo até 3 dias antes; número de convidados confirmado até 7 dias antes. A Elarah emite nota fiscal.</p>
+    <p class="fineprint">Valor por pessoa para a experiência de cerâmica (modelagem à mão, 3h), turma privada de 14, no Agora Intu (Pinheiros). Opcionais: Menu Completo (finger food + doce da casa + café) R$ 150 por pessoa; Registro fotográfico profissional R$ 450 (valor total). Datas: 23/10 (sex), 29/10 (qui) ou 30/10 (sex). Reserva com sinal de 50%; saldo até 3 dias antes; nº de convidados até 7 dias antes. A Elarah emite nota fiscal.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
