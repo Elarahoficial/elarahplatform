@@ -302,13 +302,21 @@ contato = f'''
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><span class="num">01</span><h3>Escolham a experiência e o plano</h3><p>A gente organiza a data em novembro de 2026 e reserva a agenda pro time do Itaú.</p></div>
-      <div class="infocard"><span class="num">02</span><h3>A gente leva tudo</h3><p>Profissional, todo o material e a estrutura. Chegamos antes, montamos e desmontamos no espaço do Itaú.</p></div>
-      <div class="infocard"><span class="num">03</span><h3>Cada um leva a sua peça</h3><p>E o RH sai com o álbum digital pronto pra comunicação interna.</p></div>
+      <div class="infocard"><span class="num">02</span><h3>A gente leva tudo</h3><p>Profissional, materiais e estrutura. Chegamos antes, montamos e desmontamos no espaço do Itaú.</p></div>
+      <div class="infocard"><span class="num">03</span><h3>Cada experiência deixa uma lembrança</h3><p>Seja uma peça criada por cada participante ou uma memória coletiva do encontro, a experiência continua depois do dia.</p></div>
+    </div>
+    <div class="addon">
+      <span class="plus">+</span>
+      <div>
+        <h4 style="font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy);margin:0 0 4px">Sob medida pro time</h4>
+        <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:0">Dá pra reservar um momento de fala da liderança no meio do encontro, adaptar o brunch a restrições alimentares e personalizar o brinde com a marca do Itaú. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro. É só combinar. 🧡</p>
+      </div>
     </div>
     <div class="quote">
       Nathália, me confirma a <strong>experiência</strong> e o <strong>plano</strong> que fazem mais sentido para o time, que a gente organiza os próximos passos e cuida de toda a produção. ✦<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
+    <p class="fineprint">Proposta de experiência da Elarah para team building do Itaú — turma privada de 25 pessoas, em novembro de 2026, em São Paulo, com realização no espaço do próprio Itaú. Experiências à escolha, desenvolvidas para iniciantes: Sabonete ou Vela, Pintura em Porcelana ou Pintura/Colagem. Valores por pessoa no plano de entrada: R$ 289 (Sabonete ou Vela), R$ 349 (Pintura em Porcelana) e R$ 369 (Pintura ou Colagem). O plano Premium inclui registro fotográfico profissional e brunch corporativo servido durante a experiência; o plano Completo acrescenta brinde personalizado por participante. O brunch tem valor de R$ 99 por pessoa e já está contemplado nos planos Premium e Completo. Fotos do brunch e do brinde são ilustrativas; o cardápio pode ser adaptado a restrições alimentares e o item/personalização do brinde será definido na confirmação. A experiência inclui profissional, materiais, estrutura, montagem e desmontagem no espaço do Itaú. Emissão de nota fiscal e condições de pagamento serão alinhadas com o financeiro do Itaú. Proposta válida mediante confirmação da data, disponibilidade de agenda e definição da experiência escolhida.</p>
     {foot("Como funciona & contato")}
   </section>'''
 
