@@ -149,7 +149,7 @@ cover = f'''
           <span class="chip">A partir de <b>R$ 289</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("perfumaria-oficina.jpg", "Oficina criativa corporativa: várias pessoas de mão na massa", "center 42%")}</div>
+      <div class="cover-photo">{img("capa-itau-oficina.jpg", "Time pintando cerâmica junto: homens e mulheres de mão na massa", "center 38%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Itaú")}
@@ -164,15 +164,15 @@ proposito = f'''
     <div class="rule"></div>
     <div class="pgrid">
       <div class="pcard">
-        <div class="pphoto">{img("cover-corp.jpg", "Time conversando e se conectando num encontro", "center 40%")}</div>
+        <div class="pphoto">{img("corp-conexao.jpg", "Colegas rindo e se conectando de verdade", "center 30%")}</div>
         <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Duas horas e meia lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("corp-criativo.jpg", "Time criando junto, de mão na massa", "center 45%")}</div>
+        <div class="pphoto">{img("slide2-arte.jpg", "Homens e mulheres fazendo arte juntos, rindo", "center 30%")}</div>
         <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber pintar ou modelar. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("vibe-conexao-corp.jpg", "Time rindo e celebrando o encontro", "center 40%")}</div>
+        <div class="pphoto">{img("vibe-conexao-corp.jpg", "Time rindo e celebrando o encontro", "center 35%")}</div>
         <div class="pbody"><h3>Fica depois do dia</h3><p>Cada um leva a própria peça pra mesa de trabalho. <b>A lembrança do encontro fica visível</b> no dia a dia do time.</p></div>
       </div>
     </div>
@@ -227,8 +227,8 @@ coffee = f'''
     <h2>A mesa posta <em>esperando o time</em></h2>
     <p class="lead">A gente monta uma mesa de brunch completa pro grupo, servida durante a experiência no próprio <strong>Centro Empresarial Itaú Conceição</strong> — sem precisar contratar buffet à parte. Porque a pausa pro cafezinho também faz parte do encontro. 🥐</p>
     <div class="bphotos">
-      <div class="bph">{img("menu-coffee.jpg", "Mesa de brunch com salgados e finger food", "center 45%")}</div>
-      <div class="bph">{img("mesa-montada-corp.jpg", "Mesa de brunch montada, elegante e diurna", "center 55%")}</div>
+      <div class="bph">{img("salgadinho1.jpg", "Pão de queijo e salgados quentinhos com café", "center 50%")}</div>
+      <div class="bph">{img("bolocaseiro.jpg", "Bolo caseiro de laranja para o coffee", "center 50%")}</div>
     </div>
     <div class="bmenu">
       <div class="cofcat"><h4>Salgados</h4><p>Mini croissants de presunto e queijo · mini sanduíches de frango cremoso · pão de queijo</p></div>
@@ -265,15 +265,15 @@ mimos = f'''
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph">{img("garrafa-itau-brinde.jpg", "Garrafa laranja premium personalizada com a marca do Itaú", "center 50%")}</div>
+        <div class="oph">{img("aromatizador-corp.jpg", "Kit de aromas premium personalizado — vela e difusor", "center 50%")}</div>
         <div class="ob">
           <span class="ot">★ Plano completo · o brinde</span>
-          <h4>Garrafa laranja personalizada</h4>
+          <h4>Kit de aromas personalizado</h4>
           <ul>
-            <li>Uma garrafa premium pra cada pessoa do time</li>
-            <li>Gravação discreta com o nome ou a marca do Itaú</li>
+            <li>Vela e difusor de ambientes premium pra cada pessoa</li>
+            <li>Embalagem discreta com a marca do Itaú</li>
             <li>Entregue no dia, junto da peça que cada um criou</li>
-            <li>Um mimo clean que fica na mesa do time</li>
+            <li>Um mimo elegante que fica na mesa do time</li>
           </ul>
         </div>
       </div>
@@ -340,7 +340,8 @@ contato = f'''
       </div>
     </div>
     <div class="quote">
-      Nathália, me confirma a <strong>experiência</strong> e o <strong>plano</strong> que fazem mais sentido para o time, que a gente organiza os próximos passos e cuida de toda a produção. ✦<br>
+      <strong style="font-family:'DM Serif Display',serif;font-weight:400;font-size:23px;color:var(--navy);display:block;margin-bottom:8px">Bora reunir o time? ✦</strong>
+      Nathália, me confirma a <strong>experiência</strong> e o <strong>plano</strong> que fazem mais sentido para o time, que a gente organiza os próximos passos e cuida de toda a produção.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     <p class="fineprint">Proposta de experiência da Elarah para team building do Itaú — turma privada de 25 pessoas, em novembro de 2026, em São Paulo, com realização no espaço do próprio Itaú. Experiências à escolha, desenvolvidas para iniciantes: Sabonete ou Vela, Pintura em Porcelana ou Pintura/Colagem. Valores por pessoa no plano de entrada: R$ 289 (Sabonete ou Vela), R$ 349 (Pintura em Porcelana) e R$ 369 (Pintura ou Colagem). O plano Premium inclui registro fotográfico profissional e brunch corporativo servido durante a experiência; o plano Completo acrescenta brinde personalizado por participante. O brunch tem valor de R$ 99 por pessoa e já está contemplado nos planos Premium e Completo. Fotos do brunch e do brinde são ilustrativas; o cardápio pode ser adaptado a restrições alimentares e o item/personalização do brinde será definido na confirmação. A experiência inclui profissional, materiais, estrutura, montagem e desmontagem no espaço do Itaú. Emissão de nota fiscal e condições de pagamento serão alinhadas com o financeiro do Itaú. Proposta válida mediante confirmação da data, disponibilidade de agenda e definição da experiência escolhida.</p>
