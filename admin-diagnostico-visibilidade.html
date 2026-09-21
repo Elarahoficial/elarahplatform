@@ -64,7 +64,7 @@
 <body>
   <header>
     <h1>🔎 Diagnóstico de Visibilidade das Experiências</h1>
-    <p>Varredura ao vivo: por que cada experiência <strong>aparece</strong> ou <strong>some</strong> do site. Usa exatamente a mesma lógica do site público.</p>
+    <p>Varredura ao vivo: por que cada experiência <strong>aparece</strong> ou <strong>some</strong> do site — e quais aparecem mas abrem em <strong>“Sem datas disponíveis”</strong>. Usa exatamente a mesma lógica do site público.</p>
   </header>
 
   <main>
@@ -75,6 +75,7 @@
       <button data-f="all" class="active">Todas</button>
       <button data-f="hidden">Só as que somem do site</button>
       <button data-f="visible">Só as que aparecem</button>
+      <button data-f="semcompra">No site, sem data pra comprar</button>
     </div>
     <div style="overflow-x:auto;">
       <table id="tbl" style="display:none;">
@@ -193,6 +194,29 @@
         if (ts == null) { semData++; return; }
         if (ts >= now) futuras++; else passadas++;
       });
+      // --- Dá pra COMPRAR alguma data? ---
+      // Mesma regra da página da experiência (experiencia.html): turma
+      // ativa, com event_at, fora da janela de cutoff e com vaga. É o que
+      // decide entre mostrar os chips de data e o aviso "Sem datas
+      // disponíveis no momento". Aparecer no site e não ter data pra
+      // comprar são coisas diferentes — esta parte cobre a segunda.
+      var cutoffH = ED.effectiveCutoffHours ? ED.effectiveCutoffHours(e) : 24;
+      var cutoffMs = now + cutoffH * 60 * 60 * 1000;
+      var compraveis = 0, esgotadas = 0, dentroCutoff = 0, semEventAt = 0;
+      slotsAtivos.forEach(function (s) {
+        var t = s.eventAt ? new Date(s.eventAt).getTime() : NaN;
+        if (isNaN(t)) { semEventAt++; return; }        // sem data exata: o site não oferece
+        if (t < now) return;                            // já passou (conta em `passadas`)
+        if (t < cutoffMs) { dentroCutoff++; return; }   // futura, mas dentro do prazo mínimo
+        var cap = s.vagasTotal != null ? Number(s.vagasTotal) : null;
+        if (cap != null) {
+          var rest = s.vagasRestantes != null ? Number(s.vagasRestantes) : cap;
+          if (!(rest > 0)) { esgotadas++; return; }     // esgotada
+        }
+        compraveis++;
+      });
+      var slotManaged = slots.length > 0;
+
       var sig = sigOf(e);
       var isDupLoser = publicVisible && dedupWinner[sig] && dedupWinner[sig] !== e.id;
 
@@ -230,8 +254,43 @@
         fix = 'Renomeie ou exclua a cópia duplicada — ou mude algo (data/horário) pra elas ficarem distintas.';
       }
 
+      // No site, porém sem nenhuma data comprável: o card aparece na
+      // listagem e a página abre com "Sem datas disponíveis no momento".
+      // Para o cliente é igual a não existir — e não havia nada no admin
+      // que mostrasse essa lista.
+      var semCompra = onSite && slotManaged && compraveis === 0;
+      var semCompraMotivo = '', semCompraFix = '';
+      if (semCompra) {
+        if (esgotadas > 0 && dentroCutoff === 0) {
+          semCompraMotivo = esgotadas === 1
+            ? 'Esgotada: a única turma futura está sem nenhuma vaga.'
+            : 'Esgotada: as ' + esgotadas + ' turmas futuras estão sem nenhuma vaga.';
+          semCompraFix = 'Abra vagas nas turmas (edição › horários) ou crie novas datas.';
+        } else if (dentroCutoff > 0 && esgotadas === 0) {
+          semCompraMotivo = (dentroCutoff === 1
+            ? 'A única turma futura está'
+            : 'As ' + dentroCutoff + ' turmas futuras estão') +
+            ' dentro do prazo mínimo de compra (' + cutoffH + 'h).';
+          semCompraFix = 'Crie uma data mais adiante — o site só vende com ' + cutoffH + 'h de antecedência.';
+        } else if (dentroCutoff > 0 || esgotadas > 0) {
+          semCompraMotivo = 'Nenhuma data comprável: ' + esgotadas + ' esgotada' +
+            (esgotadas === 1 ? '' : 's') + ' e ' + dentroCutoff + ' dentro do prazo de ' + cutoffH + 'h.';
+          semCompraFix = 'Abra vagas nas esgotadas e/ou cadastre uma data mais adiante.';
+        } else if (semEventAt > 0) {
+          semCompraMotivo = semEventAt + ' turma' + (semEventAt === 1 ? '' : 's') +
+            ' sem data definida — o site não oferece turma sem data.';
+          semCompraFix = 'Edite a experiência e preencha a data de cada horário.';
+        } else {
+          semCompraMotivo = 'Sem nenhuma turma futura cadastrada.';
+          semCompraFix = 'Cadastre as próximas datas (ou materialize a recorrência).';
+        }
+      }
+
       return {
         e: e, slots: slots, onSite: onSite, gates: gates,
+        semCompra: semCompra, semCompraMotivo: semCompraMotivo, semCompraFix: semCompraFix,
+        compraveis: compraveis, esgotadas: esgotadas, dentroCutoff: dentroCutoff,
+        semEventAt: semEventAt, cutoffH: cutoffH, slotManaged: slotManaged,
         reason: reason, fix: fix, nextTs: nextTs,
         isActive: isActive, publicVisible: publicVisible,
         hideFromCat: hideFromCat, expiredRec: expiredRec, isDupLoser: isDupLoser,
@@ -247,13 +306,17 @@
     var ghosts = rows.filter(function (r) {
       return !r.onSite && r.isActive && !r.hideFromCat;
     });
+    // No site, mas a página abre em "Sem datas disponíveis": o cliente
+    // chega e não consegue comprar. Some do funil sem sumir da vitrine.
+    var semCompraList = rows.filter(function (r) { return r.semCompra; });
 
     var summaryEl = document.getElementById('summary');
     summaryEl.innerHTML =
       '<div class="card"><div class="n">' + rows.length + '</div><div class="l">Total cadastradas</div></div>' +
       '<div class="card ok"><div class="n">' + totalOnSite + '</div><div class="l">Aparecem no site</div></div>' +
       '<div class="card bad"><div class="n">' + totalHidden + '</div><div class="l">Somem do site</div></div>' +
-      '<div class="card warn"><div class="n">' + ghosts.length + '</div><div class="l">Deveriam aparecer mas somem ⚠️</div></div>';
+      '<div class="card warn"><div class="n">' + ghosts.length + '</div><div class="l">Deveriam aparecer mas somem ⚠️</div></div>' +
+      '<div class="card warn"><div class="n">' + semCompraList.length + '</div><div class="l">No site, sem data pra comprar 🗓️</div></div>';
     summaryEl.style.display = 'flex';
 
     // --- Tabela ---
@@ -262,28 +325,42 @@
       var list = rows.filter(function (r) {
         if (filter === 'hidden') return !r.onSite;
         if (filter === 'visible') return r.onSite;
+        if (filter === 'semcompra') return r.semCompra;
         return true;
       });
       // Ordena: fantasmas primeiro, depois somem, depois aparecem.
       list.sort(function (a, b) {
-        var ga = (!a.onSite && a.isActive && !a.hideFromCat) ? 0 : (a.onSite ? 2 : 1);
-        var gb = (!b.onSite && b.isActive && !b.hideFromCat) ? 0 : (b.onSite ? 2 : 1);
+        function rank(r) {
+          if (!r.onSite && r.isActive && !r.hideFromCat) return 0;  // fantasma
+          if (r.semCompra) return 1;                                // no site, sem data
+          return r.onSite ? 3 : 2;
+        }
+        var ga = rank(a), gb = rank(b);
         return ga - gb;
       });
       tbody.innerHTML = list.map(function (r) {
         var e = r.e;
-        var rowCls = r.onSite ? '' : ((r.isActive && !r.hideFromCat) ? 'row-bad' : 'row-warn');
+        var rowCls = r.onSite
+          ? (r.semCompra ? 'row-warn' : '')
+          : ((r.isActive && !r.hideFromCat) ? 'row-bad' : 'row-warn');
         var cat = (ED.categoriaLabel ? ED.categoriaLabel(e) : (e.categoria || ''));
         var horario = (Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '';
         var gatesHtml = r.gates.map(function (g) {
           return '<span class="gate ' + (g.pass ? 'gate-pass' : 'gate-fail') + '">' +
             (g.pass ? '✓ ' : '✕ ') + esc(g.nome) + '</span>';
         }).join('');
-        var reasonHtml = r.onSite
-          ? '<span class="muted">Tudo certo — aparece no site.' +
-            (r.nextTs ? ' Próxima turma: ' + fmtDate(r.nextTs) + '.' : '') + '</span>'
-          : '<span class="reason">' + esc(r.reason) + '</span>' +
+        var reasonHtml;
+        if (r.onSite && r.semCompra) {
+          reasonHtml = '<span class="reason">Aparece no site, mas abre em “Sem datas disponíveis”. ' +
+            esc(r.semCompraMotivo) + '</span>' +
+            '<span class="fix">✅ ' + esc(r.semCompraFix) + '</span>';
+        } else if (r.onSite) {
+          reasonHtml = '<span class="muted">Tudo certo — aparece no site.' +
+            (r.nextTs ? ' Próxima turma: ' + fmtDate(r.nextTs) + '.' : '') + '</span>';
+        } else {
+          reasonHtml = '<span class="reason">' + esc(r.reason) + '</span>' +
             '<span class="fix">✅ ' + esc(r.fix) + '</span>';
+        }
         return '<tr class="' + rowCls + '">' +
           '<td><span class="nome">' + esc(e.nome) + '</span>' +
             (e.isElarahOriginal ? ' <span class="muted">· By Elarah</span>' : '') + '</td>' +
@@ -293,7 +370,13 @@
             '<span style="color:' + (r.futuras > 0 ? '#1a8a4a' : '#c0392b') + ';font-weight:600;">' +
             r.futuras + ' futura' + (r.futuras === 1 ? '' : 's') + '</span>' +
             (r.passadas ? '<br><span class="muted">' + r.passadas + ' passada' + (r.passadas === 1 ? '' : 's') + '</span>' : '') +
-            (r.semData ? '<br><span class="muted">' + r.semData + ' s/ data</span>' : '') + '</td>' +
+            (r.semData ? '<br><span class="muted">' + r.semData + ' s/ data</span>' : '') +
+            (r.slotManaged
+              ? '<br><span style="color:' + (r.compraveis > 0 ? '#1a8a4a' : '#c0392b') + ';font-weight:600;">' +
+                (r.compraveis === 1 ? '1 comprável' : r.compraveis + ' compráveis') + '</span>' +
+                (r.esgotadas ? '<br><span class="muted">' + r.esgotadas + ' esgotada' + (r.esgotadas === 1 ? '' : 's') + '</span>' : '') +
+                (r.dentroCutoff ? '<br><span class="muted">' + r.dentroCutoff + ' dentro do prazo</span>' : '')
+              : '') + '</td>' +
           '<td>' + (r.onSite
             ? '<span class="pill pill-site-yes">✓ Aparece</span>'
             : '<span class="pill pill-site-no">✕ Some</span>') + '</td>' +
