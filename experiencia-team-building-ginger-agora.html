@@ -220,6 +220,16 @@
   .opt ul li::before{content:"\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:9px}
   .opt .op{margin-top:auto;padding-top:12px;font-family:'DM Serif Display',serif;font-size:24px;color:var(--navy);line-height:1}
   .opt .op small{font-family:-apple-system,sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-left:4px}
+  .foodbanner{height:118px;border-radius:16px;overflow:hidden;margin-top:14px;border:1px solid var(--line);position:relative}
+  .foodbanner img{width:100%;height:100%;object-fit:cover;display:block}
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+  .tier{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px 16px;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28);position:relative}
+  .tier.hl{border:2px solid var(--navy)}
+  .tier .tname{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .tier .tprice{font-family:'DM Serif Display',serif;font-size:30px;color:var(--navy);margin:6px 0 1px;line-height:1}
+  .tier .tbase{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:10px}
+  .tier p{font-size:11.5px;color:var(--ink);line-height:1.4;margin:0}
+  .tier .tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:999px;white-space:nowrap}
 </style>
 <style>
   :root{
@@ -480,8 +490,8 @@
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>14</b> pessoas</span>
-          <span class="chip">Cerâmica · <b>3h</b></span>
-          <span class="chip"><b>R$ 269</b> por pessoa</span>
+          <span class="chip">Cerâmica · <b>1h30</b></span>
+          <span class="chip">A partir de <b>R$ 279</b></span>
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip"><b>23/10</b> sex</span>
@@ -505,7 +515,7 @@
     <div class="bfeat">
       <div class="bphoto"><img src="assets/ceramicamodelagem.jpg" alt="Mãos modelando uma peça de cerâmica" style="object-position:center 50%"></div>
       <div class="bbody">
-        <span class="btag">Como acontece · 3h</span>
+        <span class="btag">Como acontece · 1h30</span>
         <h3>Da argila à peça pronta</h3>
         <ul class="feat">
           <li><span class="st">1</span><b>Boas-vindas</b> — mesa posta, playlist e o clima acolhedor do espaço.</li>
@@ -549,43 +559,36 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Investimento</span></div>
+      <div class="head-right"><span class="kicker">Os planos</span></div>
     </div>
-    <span class="eyebrow orange">◆ Cerâmica no Agora Intu</span>
-    <h2>Um encontro que <em>vale a lembrança</em></h2>
-    <p class="lead">A experiência completa de cerâmica (3h), para a turma privada de 14, com tudo incluso — já está tudo somado.</p>
-    <div class="priceband">
-      <div><span class="pl">A experiência · por pessoa</span><span class="pv">R$ 269</span></div>
-      <div class="side">Cerâmica · 3h · turma de 14<br><b>Total da turma: R$ 3.766</b></div>
-    </div>
-    <p class="subh">Opcionais pra deixar completo</p>
-    <div class="opts">
-      <div class="opt">
-        <div class="oph"><img src="assets/menu-coffee.jpg" alt="Finger food e doces do coffee break" style="object-position:center 50%"></div>
-        <div class="ob">
-          <span class="ot">Alimentação</span>
-          <h4>Menu Completo</h4>
-          <p>Finger food + doce da casa + café, assinado pela chef parceira do Agora e servido durante a experiência.</p>
-          <div class="op">R$ 150<small>por pessoa</small></div>
-        </div>
+    <span class="eyebrow orange">◆ A experiência + o menu</span>
+    <h2>Escolham o <em>plano</em></h2>
+    <p class="lead">A experiência de cerâmica no Agora Intu — <strong>espaço exclusivo só do time (1h30)</strong>, o momento de criar e o coffee — por <strong>R$ 279 por pessoa</strong>. É só escolher o menu que completa o encontro:</p>
+    <div class="foodbanner"><img src="assets/menu-coffee.jpg" alt="Finger food e doces do menu" style="object-position:center 42%"></div>
+    <div class="tiers">
+      <div class="tier">
+        <span class="tname">Tábua de boas-vindas</span>
+        <span class="tprice">R$ 378</span>
+        <span class="tbase">base R$ 279 + R$ 99</span>
+        <p>Queijos, embutidos, pães artesanais, conservas e frutas.</p>
       </div>
-      <div class="opt">
-        <div class="oph"><img src="assets/eventocorporativo.jpg" alt="Registro fotográfico profissional de evento corporativo" style="object-position:center 40%"></div>
-        <div class="ob">
-          <span class="ot">Registro</span>
-          <h4>Foto profissional</h4>
-          <ul>
-            <li>Um fotógrafo cobre o encontro inteiro</li>
-            <li>Cada conversa e cada criação registradas</li>
-            <li>Álbum digital pronto pro RH e a comunicação interna</li>
-            <li>Conteúdo pronto pra usar no LinkedIn</li>
-          </ul>
-          <div class="op">R$ 450<small>valor total</small></div>
-        </div>
+      <div class="tier hl">
+        <span class="tag">Mais escolhido</span>
+        <span class="tname">Finger food</span>
+        <span class="tprice">R$ 418</span>
+        <span class="tbase">base R$ 279 + R$ 139</span>
+        <p>5 bites quentes e frios, servidos ao longo do encontro.</p>
+      </div>
+      <div class="tier">
+        <span class="tname">Menu completo</span>
+        <span class="tprice">R$ 468</span>
+        <span class="tbase">base R$ 279 + R$ 189</span>
+        <p>Finger food + doce da casa + café.</p>
       </div>
     </div>
-    <p class="fineprint">Valor por pessoa para a experiência de cerâmica (modelagem à mão, 3h), turma privada de 14, no Agora Intu (Pinheiros). Opcionais: Menu Completo (finger food + doce da casa + café) R$ 150 por pessoa; Registro fotográfico profissional R$ 450 (valor total). Datas: 23/10 (sex), 29/10 (qui) ou 30/10 (sex). Reserva com sinal de 50%; saldo até 3 dias antes; nº de convidados até 7 dias antes. A Elarah emite nota fiscal.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
+    <div class="bnote" style="margin-top:14px">◆ <b>Bônus pra deixar completo:</b> brinde personalizado com a marca da Ginger + registro fotográfico profissional (R$ 450) — um fotógrafo cobre o encontro e o álbum digital fica pronto pro RH e a comunicação interna.</div>
+    <p class="fineprint">Valores por pessoa, turma privada de 14, no Agora Intu (Pinheiros). Base R$ 279 (espaço exclusivo só do time por 1h30, o momento da experiência de cerâmica e o coffee) + menu à escolha: Tábua R$ 99, Finger food R$ 139 ou Menu completo R$ 189 por pessoa. Bônus: brinde personalizado e registro fotográfico profissional (R$ 450, valor total). Datas: 23/10 (sex), 29/10 (qui) ou 30/10 (sex). Reserva com sinal de 50%. A Elarah emite nota fiscal.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Os planos</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
