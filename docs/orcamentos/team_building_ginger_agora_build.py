@@ -30,6 +30,10 @@ xcss = '''
   .checks li b{color:var(--navy);font-weight:700}
   .checks li .ck{position:absolute;left:0;top:0;width:17px;height:17px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
   .num{font-family:'DM Serif Display',serif;color:var(--orange);font-size:24px;line-height:1}
+  .egrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .egrid figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:205px;border:1px solid rgba(62,37,48,.10);box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
+  .egrid img{width:100%;height:100%;object-fit:cover;display:block}
+  .egrid figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 10px;color:#fff;font-size:11.5px;font-weight:600;background:linear-gradient(to top,rgba(16,23,28,.86),transparent)}
   .priceband{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--navy);color:#fff;border-radius:18px;padding:20px 28px;margin-top:14px}
   .priceband .pl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:700}
   .priceband .pv{font-family:'DM Serif Display',serif;font-size:44px;line-height:1;margin-top:3px}
@@ -37,7 +41,10 @@ xcss = '''
   .priceband .side b{color:#fff}
   .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
   .opts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;align-items:stretch}
-  .opt{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
+  .opt .oph{height:112px;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid var(--line)}
+  .opt .oph img{width:100%;height:100%;object-fit:cover;display:block}
+  .opt .ob{padding:15px 20px 17px;flex:1;display:flex;flex-direction:column}
   .opt .ot{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
   .opt h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);line-height:1.06;margin-top:3px}
   .opt p{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:7px}
@@ -141,12 +148,10 @@ atmosfera = f'''
     <span class="eyebrow orange">◆ Cerâmica de verdade</span>
     <h2>O clima que espera <em>o time</em></h2>
     <p class="lead">Mesa posta com velas e flores, mãos na argila e o grupo criando junto — luz baixa, playlist boa e aquela sensação de estar num lugar especial. É essa a atmosfera do Agora Intu.</p>
-    <div class="vibe">
+    <div class="egrid">
       <figure>{img("agora-mesa.jpg", "Mesa posta com velas e flores no Agora Intu", "center 50%")}<figcaption>Mesa posta &amp; velas</figcaption></figure>
       <figure>{img("ceramica-meninas.jpg", "Grupo criando cerâmica junto", "center 30%")}<figcaption>Mão na massa, juntas</figcaption></figure>
       <figure>{img("torno.jpg", "Mãos modelando argila", "center 50%")}<figcaption>Argila nas mãos</figcaption></figure>
-    </div>
-    <div class="gstrip">
       <figure>{img("ceramica2.jpg", "Peças de cerâmica autorais", "center 50%")}<figcaption>As peças que ficam</figcaption></figure>
       <figure>{img("agora-ceramica.jpg", "Modelagem de cerâmica à mão no Agora Intu", "center 40%")}<figcaption>Modelagem à mão</figcaption></figure>
       <figure>{img("agora-grupo.jpg", "Time reunido à mesa no Agora Intu", "center 50%")}<figcaption>O time à mesa</figcaption></figure>
@@ -167,21 +172,27 @@ investimento = f'''
     <p class="subh">Opcionais pra deixar completo</p>
     <div class="opts">
       <div class="opt">
-        <span class="ot">Alimentação</span>
-        <h4>Menu Completo</h4>
-        <p>Finger food + doce da casa + café, assinado pela chef parceira do Agora e servido durante a experiência.</p>
-        <div class="op">R$ 150<small>por pessoa</small></div>
+        <div class="oph">{img("ojardim4.jpg", "Mesa de coffee com finger food e doces", "center 50%")}</div>
+        <div class="ob">
+          <span class="ot">Alimentação</span>
+          <h4>Menu Completo</h4>
+          <p>Finger food + doce da casa + café, assinado pela chef parceira do Agora e servido durante a experiência.</p>
+          <div class="op">R$ 150<small>por pessoa</small></div>
+        </div>
       </div>
       <div class="opt">
-        <span class="ot">Registro</span>
-        <h4>Foto profissional</h4>
-        <ul>
-          <li>Um fotógrafo cobre o encontro inteiro</li>
-          <li>Cada conversa e cada criação registradas</li>
-          <li>Álbum digital pronto pro RH e a comunicação interna</li>
-          <li>Conteúdo pronto pra usar no LinkedIn</li>
-        </ul>
-        <div class="op">R$ 450<small>valor total</small></div>
+        <div class="oph">{img("eventocorporativo.jpg", "Registro fotográfico profissional de evento corporativo", "center 40%")}</div>
+        <div class="ob">
+          <span class="ot">Registro</span>
+          <h4>Foto profissional</h4>
+          <ul>
+            <li>Um fotógrafo cobre o encontro inteiro</li>
+            <li>Cada conversa e cada criação registradas</li>
+            <li>Álbum digital pronto pro RH e a comunicação interna</li>
+            <li>Conteúdo pronto pra usar no LinkedIn</li>
+          </ul>
+          <div class="op">R$ 450<small>valor total</small></div>
+        </div>
       </div>
     </div>
     <p class="fineprint">Valor por pessoa para a experiência de cerâmica (modelagem à mão, 3h), turma privada de 14, no Agora Intu (Pinheiros). Opcionais: Menu Completo (finger food + doce da casa + café) R$ 150 por pessoa; Registro fotográfico profissional R$ 450 (valor total). Datas: 23/10 (sex), 29/10 (qui) ou 30/10 (sex). Reserva com sinal de 50%; saldo até 3 dias antes; nº de convidados até 7 dias antes. A Elarah emite nota fiscal.</p>
