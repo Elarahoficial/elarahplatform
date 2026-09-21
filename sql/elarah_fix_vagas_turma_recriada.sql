@@ -262,7 +262,31 @@ update public.bookings b
  where c.booking_id = b.id
    and c.n_candidatos = 1;
 
--- 3c) Recalcula tudo do zero com as regras novas.
+-- 3c) Venda manual PRESA na turma errada pelo matcher antigo.
+--     O vínculo era gravado na hora da venda, então o atalho da "única
+--     turma ativa" não sujou só a recontagem: deixou slot_id errado
+--     gravado em manual_sales. O passo 3a só preenche vínculo VAZIO —
+--     este aqui corrige o vínculo ERRADO, e só quando a própria venda
+--     desmente a turma (a venda tem data e a turma é de outro dia).
+--     Quando não existe turma na data da venda, o vínculo fica nulo de
+--     propósito: a venda aparece no relatório 4b pra decisão humana.
+update public.manual_sales ms
+   set slot_id = public.manual_sale_match_slot(ms.experience_id, ms.slot_date, ms.slot_time)
+  from public.experience_slots s
+ where s.id = ms.slot_id
+   and ms.slot_date is not null
+   and ms.payment_status in ('pago', 'pendente')
+   and (
+         (s.event_at is not null
+           and (s.event_at at time zone 'America/Sao_Paulo')::date <> ms.slot_date)
+      or (s.event_at is null
+           and coalesce(s.data, '') not in (
+                 to_char(ms.slot_date, 'DD/MM'),
+                 to_char(ms.slot_date, 'DD/MM/YYYY')
+               ))
+       );
+
+-- 3d) Recalcula tudo do zero com as regras novas.
 select public.reconcile_all_vagas();
 
 
@@ -276,21 +300,72 @@ select public.reconcile_all_vagas();
 --       painel de Vendas manuais resolve a maioria).
 -- =============================================================
 
--- 4a) Turmas com vaga negativa (overbooking real ou contador torto)
+-- 4a) Turmas com vaga negativa, e DE ONDE vêm as pessoas.
+-- Como ler:
+--   pessoas_de_outra_data > 0 → ainda tem venda presa na turma errada
+--     (não deveria sobrar nenhuma depois do passo 3c; se sobrar, é venda
+--     cuja data não tem turma cadastrada — ver 4b).
+--   pessoas_de_outra_data = 0 e total_de_pessoas > capacidade → a conta
+--     está certa e a CAPACIDADE é que está errada (caso clássico:
+--     vagas_total gravado como 0, que no site significa esgotado).
 select
-  e.nome                                   as experiencia,
-  coalesce(s.data, '—')                    as data_rotulo,
-  to_char(s.event_at at time zone 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') as data_real,
+  e.nome                                as experiencia,
+  coalesce(s.data, '—')                 as turma,
+  to_char(s.event_at at time zone 'America/Sao_Paulo', 'DD/MM/YYYY') as data_real,
   s.horario,
-  s.vagas_total,
-  s.vagas_restantes,
-  (s.vagas_total - s.vagas_restantes)      as pessoas_contadas,
-  s.id                                     as slot_id
+  s.vagas_total                         as capacidade,
+  s.vagas_restantes                     as restantes,
+  coalesce(bk.pessoas, 0)               as pelo_site,
+  coalesce(vm.pessoas, 0)               as vendas_manuais,
+  coalesce(bk.pessoas, 0) + coalesce(vm.pessoas, 0) as total_de_pessoas,
+  coalesce(vm.pessoas_data_errada, 0)   as pessoas_de_outra_data,
+  s.id                                  as slot_id
 from public.experience_slots s
 join public.experiences e on e.id = s.experience_id
+left join lateral (
+  select sum(greatest(coalesce(b.quantidade, 1), 1)) as pessoas
+    from public.bookings b
+   where b.slot_id = s.id
+     and b.status in ('pending', 'pago')
+) bk on true
+left join lateral (
+  select
+    sum(greatest(coalesce(ms.quantity, 1), 1)) as pessoas,
+    sum(case when ms.slot_date is not null
+              and s.event_at is not null
+              and (s.event_at at time zone 'America/Sao_Paulo')::date <> ms.slot_date
+             then greatest(coalesce(ms.quantity, 1), 1) else 0 end) as pessoas_data_errada
+    from public.manual_sales ms
+   where ms.slot_id = s.id
+     and ms.payment_status in ('pago', 'pendente')
+) vm on true
 where s.vagas_total is not null
   and s.vagas_restantes < 0
 order by s.vagas_restantes asc;
+
+-- 4a-bis) Turmas com capacidade ZERO. Zero não é "ilimitado" — é
+-- "nenhum lugar", e o site trata como esgotada. Quase sempre é o campo
+-- "Vagas" preenchido com 0 quando devia estar VAZIO (ilimitado) ou com
+-- o número real. Corrige no cadastro da experiência.
+select
+  e.nome                    as experiencia,
+  coalesce(s.data, '—')     as turma,
+  s.horario,
+  s.vagas_restantes         as restantes,
+  coalesce((
+    select sum(greatest(coalesce(b.quantidade, 1), 1))
+      from public.bookings b
+     where b.slot_id = s.id and b.status in ('pending', 'pago')
+  ), 0)
+  + coalesce((
+    select sum(greatest(coalesce(ms.quantity, 1), 1))
+      from public.manual_sales ms
+     where ms.slot_id = s.id and ms.payment_status in ('pago', 'pendente')
+  ), 0)                     as pessoas_dentro
+from public.experience_slots s
+join public.experiences e on e.id = s.experience_id
+where s.vagas_total = 0
+order by e.nome;
 
 -- 4b) Vendas manuais sem turma (não entram na conta de nenhuma turma)
 select
