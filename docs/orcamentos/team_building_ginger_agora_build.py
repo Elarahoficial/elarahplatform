@@ -55,6 +55,13 @@ xcss = '''
   .opt .op small{font-family:-apple-system,sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-left:4px}
   .foodbanner{height:118px;border-radius:16px;overflow:hidden;margin-top:14px;border:1px solid var(--line);position:relative}
   .foodbanner img{width:100%;height:100%;object-fit:cover;display:block}
+  .foodrow{display:flex;gap:22px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .foodsq{flex:0 0 200px;aspect-ratio:1/1;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 34px -22px rgba(0,0,0,.34)}
+  .foodsq img{width:100%;height:100%;object-fit:cover;display:block}
+  .foodrow .lead{flex:1;min-width:270px;margin:0}
+  .ophduo{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line);border-bottom:1px solid var(--line)}
+  .ophduo .sq{aspect-ratio:1/1;overflow:hidden;position:relative;background:#eee}
+  .ophduo .sq img{width:100%;height:100%;object-fit:cover;display:block}
   .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
   .tier{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px 16px;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28);position:relative}
   .tier.hl{border:2px solid var(--navy)}
@@ -175,8 +182,10 @@ investimento = f'''
 {head_simple("Os planos")}
     <span class="eyebrow orange">◆ A experiência + o menu</span>
     <h2>Escolham o <em>plano</em></h2>
-    <p class="lead">A experiência de cerâmica no Agora Intu — <strong>espaço exclusivo só do time (1h30)</strong>, o momento de criar e o coffee — por <strong>R$ 279 por pessoa</strong>. É só escolher o menu que completa o encontro:</p>
-    <div class="foodbanner">{img("menu-coffee.jpg", "Finger food e doces do menu", "center 42%")}</div>
+    <div class="foodrow">
+      <div class="foodsq">{img("menu-coffee.jpg", "Finger food e doces do menu", "center 42%")}</div>
+      <p class="lead">A experiência de cerâmica no Agora Intu — <strong>espaço exclusivo só do time (1h30)</strong>, o momento de criar e o coffee — por <strong>R$ 279 por pessoa</strong>. É só escolher o menu que completa o encontro:</p>
+    </div>
     <div class="tiers">
       <div class="tier">
         <span class="tname">Tábua de boas-vindas</span>
@@ -210,11 +219,11 @@ bonus = f'''
     <p class="lead">Além da peça que cada um cria, dá pra somar dois mimos que ficam com o time depois do encontro:</p>
     <div class="opts">
       <div class="opt">
-        <div class="oph">{img("lembrancinha-garrafa.jpg", "Garrafa personalizada com o nome de cada participante", "center 42%")}</div>
+        <div class="ophduo"><div class="sq">{img("garrafa-ginger.jpg", "Garrafa personalizada com a marca Ginger", "center 50%")}</div><div class="sq">{img("garrafa-tassia.jpg", "Garrafa personalizada com o nome de cada participante", "center 50%")}</div></div>
         <div class="ob">
           <span class="ot">Lembrancinha</span>
           <h4>Garrafa personalizada</h4>
-          <p>Uma garrafa gravada com o nome de cada participante — ou a marca da Ginger. Um mimo que fica na mesa de trabalho.</p>
+          <p>Gravada com a <b>marca da Ginger</b> ou o <b>nome de cada participante</b> — um mimo que fica na mesa de trabalho.</p>
           <div class="op">R$ 139<small>por pessoa</small></div>
         </div>
       </div>
