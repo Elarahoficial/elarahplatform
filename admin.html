@@ -1980,19 +1980,24 @@
 
       <div style="display:grid;grid-template-columns:320px 1fr;gap:0;border:1px solid #e8e4e0;border-radius:12px;overflow:hidden;background:#fff;height:calc(100vh - 210px);min-height:460px;">
         <!-- ESQUERDA: lista de conversas -->
-        <div style="display:flex;flex-direction:column;border-right:1px solid #eee;background:#fff;min-width:0;">
-          <div style="padding:10px 12px;border-bottom:1px solid #eee;">
+        <!-- min-height:0 nas duas colunas E nas áreas que rolam. Sem isso o
+             filho de um container flex em coluna NÃO encolhe abaixo do
+             tamanho do próprio conteúdo (min-height:auto é o padrão), então
+             ele cresce, estoura o container e o overflow-y:auto nunca entra
+             em ação — a lista simplesmente não rola. -->
+        <div style="display:flex;flex-direction:column;min-height:0;border-right:1px solid #eee;background:#fff;min-width:0;">
+          <div style="padding:10px 12px;border-bottom:1px solid #eee;flex:none;">
             <input type="search" id="conversas-busca" placeholder="Buscar por nome, telefone ou texto"
               style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:18px;font-size:.82rem;font-family:inherit;box-sizing:border-box;">
           </div>
-          <div id="conversas-lista" style="flex:1;overflow-y:auto;"></div>
+          <div id="conversas-lista" style="flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;"></div>
         </div>
 
         <!-- DIREITA: o fio da conversa -->
-        <div style="display:flex;flex-direction:column;min-width:0;background:#efeae2;">
-          <div id="conversas-cabecalho"></div>
-          <div id="conversas-fio" style="flex:1;overflow-y:auto;padding:14px 16px;"></div>
-          <div id="conversas-rodape"></div>
+        <div style="display:flex;flex-direction:column;min-height:0;min-width:0;background:#efeae2;">
+          <div id="conversas-cabecalho" style="flex:none;"></div>
+          <div id="conversas-fio" style="flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px 16px;"></div>
+          <div id="conversas-rodape" style="flex:none;"></div>
         </div>
       </div>
     </div>
